@@ -4,6 +4,7 @@ import {
   type LayoutChangeEvent,
   Platform,
   type StyleProp,
+  StyleSheet,
   View,
   type ViewStyle,
 } from 'react-native';
@@ -17,6 +18,37 @@ const MASKED = Platform.OS === 'ios';
 const PROBE: ViewStyle = { position: 'absolute', top: 0, left: 0, width: 0, height: 0 };
 const OPAQUE = '#000';
 const REMEASURE_MS = 120;
+const ROOM = 24;
+const SIZES = ['width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight'] as const;
+
+const pad = (value: unknown): number => (typeof value === 'number' ? value : 0);
+
+function withRoom(box: ViewStyle | undefined, face: StyleProp<ViewStyle>) {
+  const b: ViewStyle = { ...box };
+  const f: ViewStyle = { ...StyleSheet.flatten(face) };
+  const grown: ViewStyle = {};
+  for (const key of SIZES) {
+    const size = b[key];
+    if (typeof size === 'number') grown[key] = size + ROOM * 2;
+  }
+  return {
+    box: {
+      ...b,
+      ...grown,
+      marginTop: pad(b.marginTop ?? b.marginVertical ?? b.margin) - ROOM,
+      marginBottom: pad(b.marginBottom ?? b.marginVertical ?? b.margin) - ROOM,
+      marginLeft: pad(b.marginLeft ?? b.marginHorizontal ?? b.margin) - ROOM,
+      marginRight: pad(b.marginRight ?? b.marginHorizontal ?? b.margin) - ROOM,
+    },
+    face: {
+      ...f,
+      paddingTop: pad(f.paddingTop ?? f.paddingVertical ?? f.padding) + ROOM,
+      paddingBottom: pad(f.paddingBottom ?? f.paddingVertical ?? f.padding) + ROOM,
+      paddingLeft: pad(f.paddingLeft ?? f.paddingHorizontal ?? f.padding) + ROOM,
+      paddingRight: pad(f.paddingRight ?? f.paddingHorizontal ?? f.padding) + ROOM,
+    },
+  };
+}
 
 interface Frame {
   top: number;
@@ -79,7 +111,8 @@ export function ScrollMask({
 
   if (!MASKED || !position) return <View style={style}>{children}</View>;
 
-  const layers = splitBoxLayers(style);
+  const split = splitBoxLayers(style);
+  const layers = withRoom(split.box, split.face);
   const onLayout = (e: LayoutChangeEvent) => {
     height.current = e.nativeEvent.layout.height;
     measure();
