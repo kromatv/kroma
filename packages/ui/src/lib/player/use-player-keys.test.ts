@@ -54,19 +54,18 @@ function makeController(): PlayerController {
 function makeNav(): PlayerNav {
   return {
     revealed: true,
-    zone: 'controls',
     overlay: null,
     controls: [],
-    focusedControl: null,
+    spot: null,
     handleKey: vi.fn(),
-    walkChrome: vi.fn(),
+    chromeKey: vi.fn(() => false),
     poke: vi.fn(),
     rearmHide: vi.fn(),
     openOverlay: vi.fn(),
     closeOverlay: vi.fn(),
     activate: vi.fn(),
-    focusControl: vi.fn(),
-    focusProgress: vi.fn(),
+    focus: vi.fn(),
+    blur: vi.fn(),
     exit: vi.fn(),
   };
 }
@@ -79,8 +78,7 @@ interface Params {
   locked: boolean;
   seekNudge: Mock<(dir: -1 | 1, press: SeekPress) => void>;
   setVolume: Mock<(level: number) => void>;
-  intro?: { active: boolean; onSkip: () => void };
-  credits?: { active: boolean; onKey: (key: string) => boolean };
+  credits?: { active: boolean; onBack: () => void };
 }
 
 const TV_BROWSER_FLAGS = { ...WEB_FLAGS, pointer: false };
@@ -166,41 +164,55 @@ describe('usePlayerKeys letter/space transport shortcuts', () => {
   });
 });
 
-describe('usePlayerKeys D-pad routing (a browser TV shell, no pointer)', () => {
-  it('routes an arrow key to nav.handleKey when revealed with no panel', () => {
+describe('usePlayerKeys leaves the walk to the navigator', () => {
+  it('lets an arrow through untouched on a browser TV shell', () => {
     const { params, press } = setup({ flags: TV_BROWSER_FLAGS });
-    press({ key: 'ArrowRight' });
-    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+
+    const notPrevented = press({ key: 'ArrowRight' });
+
+    expect(notPrevented).toBe(true);
+    expect(params.nav.handleKey).not.toHaveBeenCalled();
     expect(params.seekNudge).not.toHaveBeenCalled();
   });
 
-  it('while hidden the first arrow only pokes (does not route)', () => {
-    const nav = makeNav();
-    nav.revealed = false;
-    const { press, params } = setup({ nav, flags: TV_BROWSER_FLAGS });
-    press({ key: 'ArrowRight' });
-    expect(nav.poke).toHaveBeenCalledTimes(1);
-    expect(nav.handleKey).not.toHaveBeenCalled();
-    expect(params.seekNudge).not.toHaveBeenCalled();
+  it('lets OK through untouched', () => {
+    const { params, press } = setup();
+
+    const notPrevented = press({ key: 'Enter' });
+
+    expect(notPrevented).toBe(true);
+    expect(params.nav.handleKey).not.toHaveBeenCalled();
   });
 
-  it('an open panel gets first refusal; a consumed key stops before nav', () => {
+  it('lets Tab through untouched', () => {
+    const { params, press } = setup();
+
+    const notPrevented = press({ key: 'Tab' });
+
+    expect(notPrevented).toBe(true);
+    expect(params.nav.handleKey).not.toHaveBeenCalled();
+  });
+
+  it('gives an open panel Back first, and stops there when it takes it', () => {
     const nav = makeNav();
     nav.overlay = 'settings';
     const onKey = vi.fn(() => true);
     const { press } = setup({ nav, panelRef: { current: { onKey } } });
-    press({ key: 'ArrowDown' });
-    expect(onKey).toHaveBeenCalledWith('Down');
+
+    press({ key: 'Escape' });
+
+    expect(onKey).toHaveBeenCalledWith('Back');
     expect(nav.handleKey).not.toHaveBeenCalled();
   });
 
-  it('a panel that declines the key lets nav handle it (Back closes the panel)', () => {
+  it('hands Back to the player when the open panel lets it go', () => {
     const nav = makeNav();
     nav.overlay = 'settings';
     const onKey = vi.fn(() => false);
     const { press } = setup({ nav, panelRef: { current: { onKey } } });
+
     press({ key: 'Escape' });
-    expect(onKey).toHaveBeenCalledWith('Back');
+
     expect(nav.handleKey).toHaveBeenCalledWith('Back');
   });
 });
@@ -210,9 +222,9 @@ describe('usePlayerKeys owns the keys it takes', () => {
     const { params } = setup({ flags: TV_BROWSER_FLAGS });
     const behind = heard(document);
 
-    pressOn(document.body, { key: 'ArrowRight' });
+    pressOn(document.body, { key: 'Escape' });
 
-    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+    expect(params.nav.handleKey).toHaveBeenCalledWith('Back');
     expect(behind).toEqual([]);
   });
 
@@ -239,7 +251,7 @@ describe('usePlayerKeys owns the keys it takes', () => {
   });
 });
 
-describe('usePlayerKeys locked / intro / credits gates', () => {
+describe('usePlayerKeys locked and credits gates', () => {
   it('when locked only Back/OK leave the player; arrows are ignored', () => {
     const nav = makeNav();
     const { press } = setup({ nav, locked: true });
@@ -249,24 +261,26 @@ describe('usePlayerKeys locked / intro / credits gates', () => {
     expect(nav.exit).toHaveBeenCalledWith('back');
   });
 
-  it('the skip-intro affordance consumes OK', () => {
+  it('dismisses the credits card on Back', () => {
     const nav = makeNav();
-    const onSkip = vi.fn();
-    const { press } = setup({ nav, intro: { active: true, onSkip } });
-    press({ key: 'Enter' });
-    expect(onSkip).toHaveBeenCalledTimes(1);
+    const onBack = vi.fn();
+    const { press } = setup({ nav, credits: { active: true, onBack } });
+
+    press({ key: 'Escape' });
+
+    expect(onBack).toHaveBeenCalledOnce();
     expect(nav.handleKey).not.toHaveBeenCalled();
   });
 
-  it('the credits card consumes keys it claims, else nav handles them', () => {
-    const nav = makeNav();
-    const onKey = vi.fn((k: string) => k === 'Left');
-    const { press } = setup({ nav, credits: { active: true, onKey } });
-    press({ key: 'ArrowLeft' });
-    expect(onKey).toHaveBeenCalledWith('Left');
-    expect(nav.handleKey).not.toHaveBeenCalled();
-    press({ key: 'ArrowRight' });
-    expect(nav.handleKey).toHaveBeenCalledWith('Right');
+  it('leaves the arrows to the credits card', () => {
+    const onBack = vi.fn();
+    const { params, press } = setup({ credits: { active: true, onBack } });
+
+    const notPrevented = press({ key: 'ArrowLeft' });
+
+    expect(notPrevented).toBe(true);
+    expect(params.seekNudge).not.toHaveBeenCalled();
+    expect(onBack).not.toHaveBeenCalled();
   });
 });
 
@@ -328,14 +342,17 @@ describe('usePlayerKeys arrow seek', () => {
     ]);
   });
 
-  it('an open panel keeps the arrows for itself', () => {
+  it('leaves the arrows to an open panel', () => {
     const nav = makeNav();
     nav.overlay = 'settings';
     const onKey = vi.fn(() => true);
     const { params, press } = setup({ nav, panelRef: { current: { onKey } } });
-    press({ key: 'ArrowRight' });
+
+    const notPrevented = press({ key: 'ArrowRight' });
+
+    expect(notPrevented).toBe(true);
     expect(params.seekNudge).not.toHaveBeenCalled();
-    expect(onKey).toHaveBeenCalledWith('Right');
+    expect(onKey).not.toHaveBeenCalled();
   });
 });
 
@@ -374,36 +391,7 @@ describe('usePlayerKeys listener lifecycle', () => {
   it('removes the window listener on unmount', () => {
     const { params, press, unmount } = setup();
     unmount();
-    press({ key: 'ArrowRight' });
+    press({ key: 'Escape' });
     expect(params.nav.handleKey).not.toHaveBeenCalled();
-  });
-});
-
-describe('usePlayerKeys Tab', () => {
-  it('walks the chrome in reading order, and backwards with Shift', () => {
-    const { params, press } = setup();
-    expect(press({ key: 'Tab' })).toBe(false);
-    expect(params.nav.walkChrome).toHaveBeenCalledWith(false);
-    press({ key: 'Tab', shiftKey: true });
-    expect(params.nav.walkChrome).toHaveBeenCalledWith(true);
-  });
-
-  it('walks a settings list downwards, since a list is a column', () => {
-    const nav = makeNav();
-    const panel: PanelHandle = { onKey: vi.fn(() => true) };
-    const { press } = setup({
-      nav: { ...nav, overlay: 'settings' },
-      panelRef: { current: panel },
-    });
-    press({ key: 'Tab' });
-    expect(panel.onKey).toHaveBeenCalledWith('Down');
-  });
-
-  it('is ignored while the chrome is locked', () => {
-    const nav = makeNav();
-    const { press } = setup({ nav, locked: true });
-    press({ key: 'Tab' });
-    expect(nav.walkChrome).not.toHaveBeenCalled();
-    expect(nav.handleKey).not.toHaveBeenCalled();
   });
 });

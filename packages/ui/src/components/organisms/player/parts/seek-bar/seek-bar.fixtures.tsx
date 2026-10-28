@@ -13,7 +13,6 @@ export interface ScrubbableProps {
   cur: number;
   dur: number;
   bufEnd: number;
-  focused: boolean;
   endsAt: string;
   withChapters: boolean;
   scrubbing: boolean;
@@ -24,7 +23,6 @@ export function Scrubbable({
   cur: curArg,
   dur,
   bufEnd,
-  focused,
   endsAt,
   withChapters,
   scrubbing,
@@ -64,7 +62,6 @@ export function Scrubbable({
           bufEnd={bufEnd}
           chapters={chapters}
           seekPreview={seekPreview}
-          focused={focused}
           elapsed={formatTimecode(shown)}
           chapterLabel={currentChapter(chapters, shown * 1000)?.title ?? ''}
           total={formatTimecode(dur)}
@@ -76,6 +73,10 @@ export function Scrubbable({
           }
           onScrub={onScrub}
           onScrubCommit={onScrubCommit}
+          onActivate={() => {}}
+          onNudge={(dir) => setCur((at) => Math.min(dur, Math.max(0, at + dir * 10)))}
+          onFocus={() => {}}
+          onBlur={() => {}}
         />
       </Box>
     </Ground>

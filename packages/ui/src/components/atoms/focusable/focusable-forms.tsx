@@ -78,11 +78,12 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // remote is on is a focused control, not a doubly-lit one.
   const hover = at.hovered ? at.hoveredStyle : null;
   const face = layers ? layers.face : at.style;
+  const lift = lit ? LIFTED : GROUNDED;
   const base = [
     face,
     hover,
     lit ? at.focusedStyle : null,
-    layers ? null : lit ? LIFTED : GROUNDED,
+    layers ? null : lift,
     lit && at.showRing ? ring : null,
     at.animated,
   ];
@@ -120,11 +121,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   );
   if (!layers) return control;
   return (
-    <FocusTargetHost
-      focused={at.focused}
-      radius={radiusOf(face)}
-      style={[layers.box, lit ? LIFTED : GROUNDED]}
-    >
+    <FocusTargetHost focused={at.focused} radius={radiusOf(face)} style={[layers.box, lift]}>
       {control}
     </FocusTargetHost>
   );

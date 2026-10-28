@@ -53,24 +53,24 @@ describe('usePlayerNav global + overlay behaviour', () => {
     expect(actions.onExit).toHaveBeenCalledWith('back');
   });
 
-  it('with a panel open only Back closes it (other keys are swallowed)', () => {
+  it('Back with a panel open closes the panel and keeps the film', () => {
     const { result, key, actions } = nav();
     act(() => result.current.openOverlay('settings'));
-    expect(result.current.overlay).toBe('settings');
-    key('Right');
-    expect(actions.onExit).not.toHaveBeenCalled();
+
     key('Back');
+
     expect(result.current.overlay).toBeNull();
+    expect(actions.onExit).not.toHaveBeenCalled();
   });
 
-  it('while hidden the first key only re-reveals the chrome', () => {
-    const actions = makeActions();
-    const { result, key } = nav(WEB_FLAGS, true, actions); // playing → auto-hide arms
-    act(() => vi.advanceTimersByTime(3500));
-    expect(result.current.revealed).toBe(false);
+  it('ignores the directions and OK, which belong to the navigator', () => {
+    const { result, key, actions } = nav();
+
     key('Right');
+    key('Enter');
+
     expect(result.current.revealed).toBe(true);
-    expect(result.current.focusedControl).toBe('play');
+    expect(actions.togglePlay).not.toHaveBeenCalled();
   });
 });
 
@@ -111,95 +111,6 @@ describe('usePlayerNav activate() maps every control', () => {
   });
 });
 
-describe('usePlayerNav Tab walk', () => {
-  it('reaches every zone going forward, ending on the up-next sheet', () => {
-    const { result, tab } = nav();
-    act(() => result.current.focusControl('rewind'));
-    const seen: string[] = [];
-
-    for (let i = 0; i < result.current.controls.length; i++) {
-      tab();
-      seen.push(
-        result.current.overlay ?? `${result.current.zone}:${result.current.focusedControl}`,
-      );
-    }
-
-    expect(seen[0]).toBe('controls:play');
-    expect(seen[seen.length - 2]).toBe('controls:fullscreen');
-    expect(seen[seen.length - 1]).toBe('sheet');
-  });
-
-  it('climbs off the leftmost control to the seek bar, then to the back button', () => {
-    const { result, tab } = nav();
-    act(() => result.current.focusControl('play'));
-
-    tab(true);
-    expect(result.current.focusedControl).toBe('rewind');
-    tab(true);
-    expect(result.current.zone).toBe('progress');
-    tab(true);
-    expect(result.current.zone).toBe('back');
-  });
-
-  it('lands on the head of the row rather than the control the remote left', () => {
-    const { result, tab } = nav();
-    act(() => result.current.focusControl('settings'));
-    act(() => result.current.focusProgress());
-
-    tab();
-
-    expect(result.current.focusedControl).toBe('rewind');
-  });
-
-  it('steps off the volume control instead of changing the level', () => {
-    const actions = makeActions();
-    const { result, tab } = nav(WEB_FLAGS, false, actions);
-    act(() => result.current.focusControl('volume'));
-
-    tab(true);
-
-    expect(actions.volumeNudge).not.toHaveBeenCalled();
-    expect(result.current.focusedControl).toBe('forward');
-  });
-
-  it('holds the chrome open at the back button rather than dismissing it', () => {
-    const { result, tab } = nav();
-    act(() => result.current.focusControl('rewind'));
-    tab(true);
-    tab(true);
-
-    tab(true);
-
-    expect(result.current.zone).toBe('back');
-    expect(result.current.revealed).toBe(true);
-  });
-
-  it('stops at the last control when there is nothing up next', () => {
-    const { result, tab } = nav(WEB_FLAGS, false, makeActions({ sheetHasItems: false }));
-    act(() => result.current.focusControl('fullscreen'));
-
-    tab();
-
-    expect(result.current.overlay).toBeNull();
-    expect(result.current.focusedControl).toBe('fullscreen');
-  });
-});
-
-describe('usePlayerNav pointer focus helpers', () => {
-  it('ignores a hover over a control the row does not draw', () => {
-    const { result } = nav(TV_FLAGS);
-    act(() => result.current.focusControl('fullscreen'));
-    expect(result.current.focusedControl).toBe('play');
-  });
-
-  it('focusProgress leaves the controls row', () => {
-    const { result } = nav();
-    act(() => result.current.focusProgress());
-    expect(result.current.zone).toBe('progress');
-    expect(result.current.focusedControl).toBeNull();
-  });
-});
-
 describe('usePlayerNav auto-hide timer', () => {
   it('hides after the idle window while playing, and a poke re-arms it', () => {
     const { result } = nav(WEB_FLAGS, true);
@@ -219,19 +130,19 @@ describe('usePlayerNav auto-hide timer', () => {
   });
 
   it('keeps the chrome up while paused after a key press', () => {
-    const { result, key } = nav(WEB_FLAGS, false);
+    const { result, press } = nav(WEB_FLAGS, false);
 
-    key('Right');
+    press('right');
     act(() => vi.advanceTimersByTime(10_000));
 
     expect(result.current.revealed).toBe(true);
   });
 
   it('does not arm the auto-hide while a panel is open', () => {
-    const { result, key } = nav(WEB_FLAGS, true);
+    const { result, press } = nav(WEB_FLAGS, true);
 
     act(() => result.current.openOverlay('settings'));
-    key('Right');
+    press('right');
     act(() => vi.advanceTimersByTime(10_000));
 
     expect(result.current.revealed).toBe(true);

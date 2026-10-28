@@ -18,8 +18,6 @@ export const story = defineStory({
     subtitle: 'S1 E8',
     secondsLeft: 3,
     total: 5,
-    playFocused: true,
-    cancelFocused: false,
   },
   controls: { secondsLeft: { min: 0, max: 10, step: 1 }, total: { min: 1, max: 10, step: 1 } },
   render: ({ title, subtitle, ...props }) => (
@@ -43,8 +41,6 @@ The card that appears over the credits: what is next, and a ring draining toward
   item={{ title: next.title, subtitle: next.episodeLabel, posterUrl: next.poster }}
   secondsLeft={countdown}
   total={AUTOPLAY_SECONDS}
-  playFocused={nav.at === 'play'}
-  cancelFocused={nav.at === 'cancel'}
   onPlay={playNext}
   onCancel={stopAutoplay}
 />
@@ -53,8 +49,6 @@ The card that appears over the credits: what is next, and a ring draining toward
 <Scene name="About to fire" args={{ secondsLeft: 1 }}>
   One second left: the ring is nearly drained.
 </Scene>
-
-<Scene name="Cancel focused" args={{ playFocused: false, cancelFocused: true }} />
 
 <Do>
 - Keep the countdown in the player and pass its position in; the card is not a timer.

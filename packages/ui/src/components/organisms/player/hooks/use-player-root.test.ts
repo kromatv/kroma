@@ -85,8 +85,7 @@ describe('usePlayerRoot', () => {
   it('moves the volume a step and flashes it when the volume control takes Up', () => {
     const { result, controller } = root({ volume: 0.5, volumeMax: 1 });
 
-    act(() => result.current.nav.focusControl('volume'));
-    act(() => result.current.nav.handleKey('Up'));
+    act(() => result.current.volumeNudge(1));
 
     expect(controller.setVolume).toHaveBeenCalledWith(0.55);
     expect(result.current.flash).toMatchObject({ kind: 'volume' });

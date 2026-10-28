@@ -7,15 +7,15 @@
 // row for each of the three layers.
 
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { createRef, type RefObject, useState } from 'react';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import {
   DEFAULT_SUB_APPEARANCE,
   SUB_COLORS,
   type SubtitleAppearance,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { I18nProvider } from '#ui/services/i18n';
+import { onScreen } from '#ui/testing';
 import { SubtitleAppearancePanel } from './subtitle-appearance-panel';
 
 afterEach(cleanup);
@@ -27,35 +27,25 @@ function panel(over: Partial<SubtitleAppearance> = {}) {
       <SubtitleAppearancePanel
         appearance={{ ...DEFAULT_SUB_APPEARANCE, ...over }}
         onAppearanceChange={onAppearanceChange}
-        onBack={vi.fn()}
       />
     </I18nProvider>,
   );
   return { onAppearanceChange };
 }
 
-function Live({ handle }: Readonly<{ handle: RefObject<PanelHandle | null> }>) {
+function Live() {
   const [appearance, setAppearance] = useState(DEFAULT_SUB_APPEARANCE);
   return (
-    <I18nProvider locale="en">
-      <SubtitleAppearancePanel
-        ref={handle}
-        appearance={appearance}
-        onAppearanceChange={(patch) => setAppearance((prev) => ({ ...prev, ...patch }))}
-        onBack={vi.fn()}
-      />
-    </I18nProvider>
+    <SubtitleAppearancePanel
+      appearance={appearance}
+      onAppearanceChange={(patch) => setAppearance((prev) => ({ ...prev, ...patch }))}
+    />
   );
 }
 
-function press(
-  handle: RefObject<PanelHandle | null>,
-  ...keys: ('Up' | 'Down' | 'Left' | 'Right')[]
-) {
-  for (const key of keys) {
-    act(() => {
-      handle.current?.onKey(key);
-    });
+function step(label: string, times = 1) {
+  for (let at = 0; at < times; at += 1) {
+    act(() => screen.getByLabelText(label).click());
   }
 }
 
@@ -144,19 +134,18 @@ describe('SubtitleAppearancePanel', () => {
   });
 
   it('steps a value from where it stands, not from where it stood at mount', () => {
-    const handle = createRef<PanelHandle>();
-    render(<Live handle={handle} />);
+    render(onScreen(<Live />));
 
-    press(handle, 'Down', 'Down', 'Down', 'Down', 'Down', 'Right', 'Right');
+    step('Increase Background opacity', 2);
 
     expect(screen.getByText('10%')).toBeTruthy();
   });
 
-  it('steps the row the focus is on once a row has appeared above it', () => {
-    const handle = createRef<PanelHandle>();
-    render(<Live handle={handle} />);
+  it('reveals the window colour row once the window is made visible', () => {
+    render(onScreen(<Live />));
 
-    press(handle, 'Down', 'Down', 'Down', 'Down', 'Down', 'Right', 'Down', 'Down', 'Right');
+    step('Increase Background opacity');
+    step('Increase Window opacity');
 
     expect(screen.getByText('Background color')).toBeTruthy();
     expect(screen.getByText('Window color')).toBeTruthy();

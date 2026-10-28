@@ -23,7 +23,7 @@ function deferred() {
 describe('ReportPanel', () => {
   it('sends the category that was pressed', () => {
     const onReport = vi.fn().mockResolvedValue(undefined);
-    show(<ReportPanel onReport={onReport} onBack={() => {}} />);
+    show(<ReportPanel onReport={onReport} />);
 
     fireEvent.click(screen.getByText('Audio problem'));
     expect(onReport).toHaveBeenCalledWith('audio');
@@ -31,7 +31,7 @@ describe('ReportPanel', () => {
 
   it('becomes its own receipt once the report is in, instead of closing', async () => {
     const onReport = vi.fn().mockResolvedValue(undefined);
-    show(<ReportPanel onReport={onReport} onBack={() => {}} />);
+    show(<ReportPanel onReport={onReport} />);
 
     fireEvent.click(screen.getByText('Subtitles'));
     expect(await screen.findByText('Thanks, your report has been sent.')).toBeTruthy();
@@ -40,7 +40,7 @@ describe('ReportPanel', () => {
 
   it('says so when the report could not be sent, and lets the viewer retry', async () => {
     const onReport = vi.fn().mockRejectedValue(new Error('offline'));
-    show(<ReportPanel onReport={onReport} onBack={() => {}} />);
+    show(<ReportPanel onReport={onReport} />);
 
     fireEvent.click(screen.getByText('Other'));
     expect(await screen.findByText('Could not send the report.')).toBeTruthy();
@@ -51,7 +51,7 @@ describe('ReportPanel', () => {
   it('ignores a second press while the first is still in flight', () => {
     const gate = deferred();
     const onReport = vi.fn().mockReturnValue(gate.promise);
-    show(<ReportPanel onReport={onReport} onBack={() => {}} />);
+    show(<ReportPanel onReport={onReport} />);
 
     fireEvent.click(screen.getByText('Video problem'));
     fireEvent.click(screen.getByText('Video problem'));
