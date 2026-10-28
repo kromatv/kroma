@@ -10,7 +10,6 @@ function at(over: Partial<TabWalk> = {}): TabWalk {
     control: 'rewind',
     drawnControls: CONTROLS,
     sheetHasItems: true,
-    resumeShown: false,
     ...over,
   };
 }
@@ -61,27 +60,6 @@ describe('nextTabStop backwards', () => {
 
   it('stops at the back button rather than dismissing the chrome', () => {
     expect(nextTabStop(at({ zone: 'back', control: null }), true)).toBeNull();
-  });
-});
-
-describe('nextTabStop with the resume prompt up', () => {
-  it('reaches the prompt between the back button and the seek bar', () => {
-    expect(nextTabStop(at({ zone: 'back', control: null, resumeShown: true }), false)).toEqual({
-      zone: 'resume',
-    });
-    expect(nextTabStop(at({ zone: 'resume', control: null, resumeShown: true }), false)).toEqual({
-      zone: 'progress',
-    });
-  });
-
-  it('climbs back through it from the seek bar', () => {
-    expect(nextTabStop(at({ zone: 'progress', control: null, resumeShown: true }), true)).toEqual({
-      zone: 'resume',
-    });
-  });
-
-  it('skips it once it has gone', () => {
-    expect(nextTabStop(at({ zone: 'back', control: null }), false)).toEqual({ zone: 'progress' });
   });
 });
 

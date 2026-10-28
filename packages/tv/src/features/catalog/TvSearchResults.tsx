@@ -49,7 +49,7 @@ export function TvSearchResults({
   const found = sections.filter((section) => section.hits.length > 0);
   return (
     <TopFade style={s.scroll}>
-      <FocusScroll style={s.scroll} offsetFromStart={80}>
+      <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={80}>
         {header}
         <Box row wrap align="center" gap={14} mb={18}>
           <Text variant="strongTv" color="textMuted">
@@ -91,4 +91,5 @@ const MIN_POSTER_W = 250;
 
 const sDefinition = styles({
   scroll: { flex: true, minH: 0 },
+  content: { px: 20 },
 });

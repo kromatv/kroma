@@ -53,6 +53,7 @@ let exchangeFailsFrom = Number.POSITIVE_INFINITY;
 // bearer refused, which is how a session token that expires mid-use reads.
 let bearerAcceptedFrom = 1;
 let bearer = '';
+let refusal: Record<string, unknown> = {};
 
 // Only the three fields the client reads on the way out of `fetch`, so nothing
 // here depends on the runner having a real `Response`.
@@ -74,7 +75,7 @@ function serve(input: string | URL | Request, init?: RequestInit) {
   calls.push({ method: init?.method ?? 'GET', path, authed });
   if (path === '/auth/token') {
     exchanges += 1;
-    if (exchanges >= exchangeFailsFrom) return reply(401, { error: 'token invalid' });
+    if (exchanges >= exchangeFailsFrom) return reply(401, { error: 'token invalid', ...refusal });
     const token = sessionTokenOf(exchanges);
     if (exchanges >= bearerAcceptedFrom) bearer = token;
     return reply(200, { token, user: USER });
@@ -163,6 +164,7 @@ beforeEach(() => {
   exchangeFailsFrom = Number.POSITIVE_INFINITY;
   bearerAcceptedFrom = 1;
   bearer = '';
+  refusal = {};
   auth = null;
   vi.stubGlobal('fetch', vi.fn(serve));
   vi.stubGlobal('WebSocket', SilentSocket);
@@ -229,6 +231,41 @@ describe('TV boot with a dead access token', () => {
     expect(calls.map((c) => c.path)).toEqual(['/auth/token', '/handoff/announce']);
     expect(localStorage.getItem('kroma.session')).toBeNull();
     expect(sockets).toEqual([]);
+  });
+
+  it('keeps the profile on the picker when the server gives no reason', async () => {
+    exchangeFailsFrom = 1;
+    await boot();
+
+    expect(JSON.parse(localStorage.getItem('kroma.accounts') ?? '[]')).toHaveLength(1);
+  });
+
+  it('forgets the profile when its token was revoked from another device', async () => {
+    exchangeFailsFrom = 1;
+    refusal = { tokenInvalid: true };
+    await boot();
+
+    expect(JSON.parse(localStorage.getItem('kroma.accounts') ?? '[]')).toEqual([]);
+    expect(auth?.accounts).toEqual([]);
+  });
+
+  it('locks the profile when a PIN was set on it from another device', async () => {
+    exchangeFailsFrom = 1;
+    refusal = { pinRequired: true };
+    await boot();
+
+    expect(auth?.accounts.map((a) => a.user.hasPin)).toEqual([true]);
+  });
+});
+
+describe('changing profile', () => {
+  it('relocks the profile it leaves so its PIN is asked again', async () => {
+    await boot();
+
+    act(() => auth?.switchProfile());
+    await flush();
+
+    expect(calls).toContainEqual(expect.objectContaining({ method: 'POST', path: '/auth/relock' }));
   });
 });
 

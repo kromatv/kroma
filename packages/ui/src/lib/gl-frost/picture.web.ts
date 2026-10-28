@@ -12,6 +12,8 @@ function load(src: string, cors: boolean): Promise<HTMLImageElement | null> {
   });
 }
 
+const fresh = (src: string): string => `${src}${src.includes('?') ? '&' : '?'}frost=1`;
+
 /** The art and veil a frost layer draws, loaded, or null when the art will not load. */
 export async function loadPicture(
   src: string,
@@ -19,7 +21,7 @@ export async function loadPicture(
   position: string,
   amount: number,
 ): Promise<FrostPicture | null> {
-  const art = await load(src, true);
+  const art = (await load(src, true)) ?? (await load(fresh(src), true));
   if (!art) return null;
   const ramp = veil ? veilBitmap(veil) : null;
   return {

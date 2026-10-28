@@ -87,7 +87,7 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
 function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return false;
-  if (nav.overlay || p.credits?.active) return false;
+  if (nav.overlay || p.credits?.active || p.resume?.active) return false;
   const immersive = flags.fullscreen && controller.fullscreen && !nav.revealed;
   if (!flags.pointer && !immersive) return false;
   takeKey(e);

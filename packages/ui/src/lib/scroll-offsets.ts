@@ -3,9 +3,14 @@ interface PageMetrics {
   offsetFromStart: number;
   viewport: number;
   content: number;
+  /** The row's height; with `lead`, lets the first row reveal the page's start. */
+  size?: number;
+  /** The content's own top padding: a row starting there is the page's first. */
+  lead?: number;
 }
 
-function pageOffset({ top, offsetFromStart, viewport, content }: PageMetrics): number {
+function pageOffset({ top, offsetFromStart, viewport, content, size, lead }: PageMetrics): number {
+  if (lead != null && size != null && top <= lead && top + size <= viewport) return 0;
   const last = Math.max(0, content - viewport);
   return Math.min(Math.max(top - offsetFromStart, 0), last);
 }

@@ -7,26 +7,28 @@ export const story = defineStory({
   group: 'Player',
   width: { min: 480, max: 1000 },
   viewport: 'tv',
-  args: { at: 280, shown: true, secondsLeft: 6, total: 6, focused: false, scale: 1, lift: 214 },
+  args: { at: 280, shown: true, secondsLeft: 6, total: 6, focus: 'resume', scale: 1, lift: 214 },
   controls: {
     at: { min: 0, max: 7200, step: 10 },
     secondsLeft: { min: 0, max: 6, step: 1 },
     scale: { min: 0.5, max: 1, step: 0.05 },
     lift: { min: 40, max: 400, step: 2 },
   },
-  render: ({ at, shown, secondsLeft, total, focused, scale, lift }) => (
+  render: ({ at, shown, secondsLeft, total, focus, scale, lift }) => (
     // It positions itself absolutely against the player surface, so the story
     // provides a 16:9 one to sit in; `lift` is measured from the bottom of it.
     <Ground tone="dark">
       <Box aspect={16 / 9} minH={280} bg="surface2" radius="lg" overflow="hidden">
         <ResumePrompt
           at={at}
+          title="Dune : Deuxième partie"
           shown={shown}
           secondsLeft={secondsLeft}
           total={total}
-          focused={focused}
+          focus={focus}
           scale={scale}
           lift={lift}
+          onResume={() => {}}
           onStartOver={() => {}}
         />
       </Box>
@@ -34,9 +36,9 @@ export const story = defineStory({
   ),
 });
 
-What a film says when it opens where it was left. It states the time as a fact, because by the time anyone reads it the picture has already resumed, and it offers the one thing that fact makes anyone want: the beginning. The rule along its foot drains while the window runs, so the prompt going away is never a surprise.
+What a film says when it opens where it was left, drawn as the next episode's card: the title's art with the ring draining over it, the time it opened on as a fact, then keep watching or go back to the beginning.
 
-It shares the skip pill's corner and takes the same `lift`, and the player draws only one of the two at a time. `focused` comes from the nav machine rather than from the DOM, so on a television the remote reaches it without the picture ever losing the real focus.
+It takes the remote the moment it appears, on **Resume**, so a reflex OK only puts it away; one press to the side and OK starts the film over. It shares the skip pill's corner and takes the same `lift`, and the player draws only one of the two at a time. `focus` comes from the player's key routing rather than from the DOM, so on a television the remote reaches it without the picture ever losing the real focus.
 
 ```tsx
 <ResumePrompt
@@ -44,14 +46,19 @@ It shares the skip pill's corner and takes the same `lift`, and the player draws
   shown={notice.shown}
   secondsLeft={notice.secondsLeft}
   lift={transportHeight + gap}
+  onResume={notice.dismiss}
   onStartOver={() => controller.seekTo(0)}
 />
 ```
 
-Inside `<Player.Root>` none of that is a caller's business: write `<Player.Resume at={resumedAt} />` and the chrome owns the clock, the corner and the D-pad stop.
+Inside `<Player.Root>` none of that is a caller's business: write `<Player.Resume at={resumedAt} art={backdrop} />` and the chrome owns the clock, the corner and the remote.
 
-<Scene name="Focused" args={{ focused: true }}>
-  What the remote resting on it looks like.
+<Scene name="Restart" args={{ focus: 'restart' }}>
+  One press to the side: OK now starts over.
+</Scene>
+
+<Scene name="Pointer" args={{ focus: null }}>
+  Driven by a pointer or a finger, so neither button wears the ring.
 </Scene>
 
 <Scene name="Last second" args={{ secondsLeft: 1 }}>
@@ -59,7 +66,7 @@ Inside `<Player.Root>` none of that is a caller's business: write `<Player.Resum
 </Scene>
 
 <Scene name="Held" args={{ secondsLeft: null }}>
-  Aimed at, so it stopped counting and the rule is gone with the countdown.
+  Moved across, so it stopped counting and the ring is gone with the countdown.
 </Scene>
 
 <Scene name="Gone" args={{ shown: false }}>
@@ -72,6 +79,6 @@ Inside `<Player.Root>` none of that is a caller's business: write `<Player.Resum
 </Do>
 
 <Dont>
-- Let it answer OK. A film that opened where it was left must not restart because someone pressed play.
+- Open it on Restart. A film that opened where it was left must not restart because someone pressed OK.
 - Word it as an offer. "Resume at 4:40" reads as a question about something that already happened.
 </Dont>

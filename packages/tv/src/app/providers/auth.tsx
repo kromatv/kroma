@@ -2,7 +2,7 @@ import { useAccountStorage } from '@kromatv/ui';
 // Multi-server per-user session for the TV: unlike the web (single origin), the
 // TV remembers profiles from several KROMA servers at once.
 
-import type { KromaClient } from '@kromatv/client';
+import { apiErrorBody, KromaApiError, type KromaClient } from '@kromatv/client';
 import {
   type AuthResult,
   normalizeServerUrl as norm,
@@ -21,6 +21,12 @@ import {
   useRef,
   useState,
 } from 'react';
+
+/** Whether a request was refused because the device's access token is gone: revoked from
+ * another device or expired. No PIN can rescue it; the profile has to be paired again. */
+export function isTokenRevoked(e: unknown): boolean {
+  return e instanceof KromaApiError && e.status === 401 && apiErrorBody(e).tokenInvalid === true;
+}
 
 const keyOf = (a: Pick<StoredSession, 'serverUrl' | 'user'>) => `${norm(a.serverUrl)}|${a.user.id}`;
 
@@ -52,7 +58,7 @@ interface Auth {
   login: (res: AuthResult, serverUrl: string) => void;
   activate: (account: StoredSession) => void;
   switchProfile: () => void;
-  forget: (userId: UserId, serverUrl: string) => void;
+  forget: (userId: UserId, serverUrl: string | undefined) => void;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   isUnlocked: (account: Pick<StoredSession, 'serverUrl' | 'user'>) => boolean;
@@ -146,11 +152,16 @@ export function AuthProvider({
           setResumed(stored.accessToken);
           return res.token as string | undefined;
         })
-        .catch(() => {
+        .catch((e: unknown) => {
           if (cancelled) return undefined;
           // Unresumable (revoked/expired token, or PIN required after a reset):
           // drop to the picker rather than a signed-in state with no bearer.
+          if (isTokenRevoked(e)) forgetAccountStore(stored.user.id, stored.serverUrl);
+          else if (apiErrorBody(e).pinRequired) {
+            saveSession({ ...stored, user: { ...stored.user, hasPin: true } });
+          }
           drop(client);
+          setAccounts(loadAccounts());
           return undefined;
         });
 
@@ -160,7 +171,16 @@ export function AuthProvider({
       cancelled = true;
       client.setRefreshHandler();
     };
-  }, [client, session, activeServerUrl, resumed, drop, saveSession]);
+  }, [
+    client,
+    session,
+    activeServerUrl,
+    resumed,
+    drop,
+    saveSession,
+    forgetAccountStore,
+    loadAccounts,
+  ]);
 
   useEffect(() => {
     onSignedInChange(ready && Boolean(session));
@@ -200,10 +220,13 @@ export function AuthProvider({
     [enter],
   );
 
-  const switchProfile = useCallback(() => drop(client), [client, drop]);
+  const switchProfile = useCallback(() => {
+    if (session) client?.accounts.relock(session.accessToken).catch(() => undefined);
+    drop(client);
+  }, [client, session, drop]);
 
   const forget = useCallback(
-    (userId: UserId, serverUrl: string) => {
+    (userId: UserId, serverUrl: string | undefined) => {
       forgetAccountStore(userId, serverUrl);
       setAccounts(loadAccounts());
       setSession((s) => {

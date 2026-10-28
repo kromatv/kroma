@@ -12,19 +12,32 @@ afterEach(() => vi.restoreAllMocks());
 
 function prompt(over: Partial<React.ComponentProps<typeof ResumePrompt>> = {}) {
   const onStartOver = vi.fn();
+  const onResume = vi.fn();
   const view = render(
-    onScreen(<ResumePrompt at={280} shown lift={120} onStartOver={onStartOver} {...over} />),
+    onScreen(
+      <ResumePrompt
+        at={280}
+        title="Dune"
+        shown
+        lift={120}
+        onResume={onResume}
+        onStartOver={onStartOver}
+        {...over}
+      />,
+    ),
   );
-  return { ...view, onStartOver };
+  return { ...view, onStartOver, onResume };
 }
 
 const startOver = () => screen.getByRole('button', { name: 'Restart' });
+const resume = () => screen.getByRole('button', { name: 'Resume' });
 
 describe('ResumePrompt', () => {
-  it('states the time the film opened on rather than telling the viewer to resume', () => {
+  it('states the time the film opened on, and the film', () => {
     prompt();
 
     expect(screen.getByText('Resumed at 4:40')).toBeTruthy();
+    expect(screen.getByText('Dune')).toBeTruthy();
   });
 
   it('announces itself politely, since nothing asked for it', () => {
@@ -33,33 +46,37 @@ describe('ResumePrompt', () => {
     expect(container.querySelector('[aria-live="polite"]')).toBeTruthy();
   });
 
-  it('offers exactly one control, and starting over runs through the caller', () => {
-    const { onStartOver } = prompt();
+  it('offers keep watching and starting over, each through the caller', () => {
+    const { onStartOver, onResume } = prompt();
 
+    act(() => resume().click());
     act(() => startOver().click());
 
-    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getAllByRole('button')).toHaveLength(2);
+    expect(onResume).toHaveBeenCalledOnce();
     expect(onStartOver).toHaveBeenCalledOnce();
   });
 
-  it('wears the kit ring when the player says it is focused, and nothing when it is not', () => {
-    const lit = prompt({ focused: true });
-    expect(wearsRing(startOver())).toBe(true);
+  it('wears the kit ring on the button the remote is on, and on neither without one', () => {
+    const lit = prompt({ focus: 'resume' });
+    expect(wearsRing(resume())).toBe(true);
+    expect(wearsRing(startOver())).toBe(false);
 
     lit.unmount();
     prompt();
 
+    expect(wearsRing(resume())).toBe(false);
     expect(wearsRing(startOver())).toBe(false);
   });
 
-  it('shows how long it has left only while it is counting', () => {
+  it('draws the countdown only while it is counting', () => {
     const counting = prompt({ secondsLeft: 4, total: 6 });
-    expect(counting.container.querySelector('[role="progressbar"]')).toBeTruthy();
+    expect(screen.getByText('4')).toBeTruthy();
 
     counting.unmount();
-    const kept = prompt({ secondsLeft: null });
+    prompt({ secondsLeft: null });
 
-    expect(kept.container.querySelector('[role="progressbar"]')).toBeNull();
+    expect(screen.queryByText('4')).toBeNull();
   });
 
   it('draws nothing at all before it is first shown', () => {
@@ -70,8 +87,9 @@ describe('ResumePrompt', () => {
 
   it('sits where the skip pill sits, clear of the transport it was lifted over', () => {
     const { container } = prompt({ lift: 240 });
-    const plate = container.querySelector('[aria-live="polite"]')?.parentElement?.parentElement;
+    const card = container.querySelector('[aria-live="polite"]');
+    const anchor = card?.parentElement?.parentElement;
 
-    expect(declared(plate as Element, 'bottom')).toBe('240px');
+    expect(declared(anchor as Element, 'bottom')).toBe('240px');
   });
 });

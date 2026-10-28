@@ -161,7 +161,15 @@ export function Player({
           onSkip={() => pb.seekTo(intro.endMs / 1000)}
         />
       ) : null}
-      {resumeAt != null ? <UnifiedPlayer.Resume at={resumeAt} /> : null}
+      {resumeAt != null ? (
+        <UnifiedPlayer.Resume
+          at={resumeAt}
+          art={
+            webRuntime.client.media.artwork.backdropFor(item) ??
+            webRuntime.client.media.artwork.posterFor(item)
+          }
+        />
+      ) : null}
       <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
       {terminated ? (
         <UnifiedPlayer.Panel>

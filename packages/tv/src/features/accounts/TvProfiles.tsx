@@ -22,6 +22,7 @@ import { useNav } from '#tv/app/router';
 import { useRootBack } from '#tv/app/useRootBack';
 import { useServersHealth } from '#tv/app/useServersHealth';
 import { AuthScreen, artUrl, GATE_MARK, hostOf, KromaMark } from '#tv/shared/ui';
+import { useProfileMenu } from './ProfileMenu';
 
 interface Tile {
   key: string;
@@ -64,8 +65,8 @@ export function TvProfiles() {
   );
   const health = useServersHealth(serverUrls);
 
-  const onBack = useRootBack();
-  useFocusNav({ onBack, resetKey: tiles.length });
+  const profileMenu = useProfileMenu(useRootBack());
+  useFocusNav({ onBack: profileMenu.onBack, resetKey: tiles.length });
 
   const onSelect = (a: StoredSession, offline: boolean) => {
     // Signing in would only fail against a server that isn't answering.
@@ -98,6 +99,7 @@ export function TvProfiles() {
             <Box key={key} w={150} align="center" gap={12}>
               <Focusable
                 onPress={() => onSelect(account, offline)}
+                onLongPress={() => profileMenu.open(account)}
                 label={account.user.username}
                 // The screen's entry point: tvOS picks by geometry and the web
                 // engine by DOM order, so this isn't left to chance.
@@ -152,6 +154,7 @@ export function TvProfiles() {
           style={SETTINGS}
         />
       </Box>
+      {profileMenu.menu}
     </AuthScreen>
   );
 }
