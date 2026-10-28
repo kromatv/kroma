@@ -1,11 +1,22 @@
 import { kroma } from '@kromatv/bundler';
+import { thirdPartyNotices } from '@kromatv/bundler/third-party-notices';
 import { defineConfig, type UserConfig } from 'vite';
 
 export default defineConfig(({ command }): UserConfig => ({
   // This shell writes its own config rather than taking `tvShellConfig`, so
   // the workbench's `.docs.mdx` needs compiling here too: without it they
   // reach the JS parser as prose.
-  plugins: [kroma({ mdx: true, alias: { '#tv': '../../packages/tv/src' } })],
+  plugins: [
+    kroma({ mdx: true, alias: { '#tv': '../../packages/tv/src' } }),
+    thirdPartyNotices({
+      title: 'KROMA desktop: third-party notices',
+      include: ['licenses/native.txt'],
+      cargo: {
+        manifest: 'src-tauri/Cargo.toml',
+        targets: ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu'],
+      },
+    }),
+  ],
   base: './',
   server: {
     host: true,

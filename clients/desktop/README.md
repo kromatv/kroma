@@ -143,6 +143,21 @@ throwaway venv (Python 3.10+).
 The script mounts the result and fails if the app, the Applications link, the
 background, the `.DS_Store` or the volume icon is missing.
 
+## Third-party notices
+
+The frontend build writes `dist/THIRD-PARTY-NOTICES.txt` (the
+`thirdPartyNotices` plugin in `@kromatv/bundler`): `licenses/native.txt`, the
+notice for mpv and FFmpeg written by hand, then every crate the Rust program
+links on the three desktop targets (read with `cargo metadata`), then every
+installed package the bundle actually carries, each with its license text.
+Each text appears once, under every package that ships it. The file is
+embedded in the app with the rest of `dist`, and the release attaches it as
+`KROMA-desktop-THIRD-PARTY-NOTICES.txt`.
+
+On a laptop without cargo the Rust section is left out with a warning; under
+CI that fails the build. Changing what is bundled under `src-tauri/bin` or
+into the macOS Frameworks means updating `licenses/native.txt` by hand.
+
 ## Install on the Steam Deck
 
 1. Copy `KROMA_*.AppImage` to the Deck and `chmod +x` it. (mpv is bundled inside;

@@ -61,6 +61,7 @@ jobs:
             files: |
               clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb
+              clients/desktop/src-tauri/target/release/bundle/KROMA-desktop-THIRD-PARTY-NOTICES.txt
             updater: |
               clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.sig
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb.sig
@@ -290,6 +291,13 @@ jobs:
           [ ${#APPIMAGES[@]} -eq 1 ] || { echo "expected exactly one AppImage, got: ${APPIMAGES[*]:-none}"; exit 1; }
           bash clients/desktop/scripts/fix-appimage.sh "${APPIMAGES[0]}"
           (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/${APPIMAGES[0]}")
+
+      # The licenses of everything the app ships (the frontend build writes
+      # them, bundler/third-party-notices.ts), identical on every OS, so one
+      # leg attaches them to the Release.
+      - name: Name the third-party notices for the Release (Linux)
+        if: runner.os == 'Linux'
+        run: cp clients/desktop/dist/THIRD-PARTY-NOTICES.txt clients/desktop/src-tauri/target/release/bundle/KROMA-desktop-THIRD-PARTY-NOTICES.txt
 
       # Launch what ships and fail if it dies within 20 seconds: a dylib left
       # out of the bundle, a DLL the installer did not put down. Only on this
