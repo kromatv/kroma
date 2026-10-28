@@ -1,10 +1,10 @@
-import MaskedView from '@react-native-masked-view/masked-view';
 import { type ReactNode, useState } from 'react';
-import { type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
+import { type LayoutChangeEvent, Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { colors } from '#ui/core/tokens';
+import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
-const RAMP = 160;
+const RAMP = 80;
 const FILL: ViewStyle = {
   position: 'absolute',
   top: 0,
@@ -36,7 +36,10 @@ function Ramp({ inset, color }: Readonly<{ inset: number; color: string }>) {
   );
 }
 
-/** A copy of the backdrop over the top edge: while `active`, it hides scrolled content above `inset` and fades it back in over the next 160 px. `offset` is how far below the backdrop's origin the band's parent sits; no `children` fades to the ground colour. */
+/** Whether page content can mask itself here (see `ScrollMask`), so a screen that does needs no band. */
+export const CONTENT_MASKS = Platform.OS === 'ios';
+
+/** A copy of the backdrop over the top edge: while `active`, it hides scrolled content above `inset` and fades it back in over the next 80 px. `offset` is how far below the backdrop's origin the band's parent sits; no `children` fades to the ground colour. */
 export function TopFadeBand({
   inset,
   active,
@@ -64,7 +67,11 @@ export function TopFadeBand({
   return (
     <View style={FILL} onLayout={(e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height)}>
       {height > 0 ? (
-        <MaskedView style={band} maskElement={<Ramp inset={inset} color="#000" />}>
+        <StableMaskedView
+          style={band}
+          contentStyle={StyleSheet.absoluteFill}
+          maskElement={<Ramp inset={inset} color="#000" />}
+        >
           <View
             style={{
               position: 'absolute',
@@ -77,7 +84,7 @@ export function TopFadeBand({
           >
             {children}
           </View>
-        </MaskedView>
+        </StableMaskedView>
       ) : null}
     </View>
   );
