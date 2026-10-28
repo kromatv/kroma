@@ -20,20 +20,12 @@ export function formatDayShort(day: string, lang: Lang): string {
   );
 }
 
-/**
- * `2026-08-21T03:58:35Z` as the reader's own date and clock time, or null when
- * it is not an instant.
- *
- * In the reader's zone rather than UTC, unlike `formatDay`: this one is a moment
- * in time, and a build that landed at 03:58 UTC did not land at 03:58 for
- * someone in Tokyo. Several builds share a day, so the clock is what tells them
- * apart.
- */
+/** A build timestamp in UTC so server and browser render the same instant. */
 export function formatMoment(iso: string | null | undefined, lang: Lang): string | null {
   if (!iso) return null;
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return null;
-  return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' }).format(at);
+  return `${new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(at)} UTC`;
 }
 
 /** The month a timestamp falls in, as `2026-08`, or null for no timestamp. */

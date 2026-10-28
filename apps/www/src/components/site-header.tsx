@@ -37,7 +37,7 @@ export function SiteHeader() {
       >
         <Logo />
 
-        <nav aria-label={m.header_home()} className="hidden items-center gap-8 md:flex">
+        <nav aria-label={m.header_home()} className="hidden items-center gap-8 lg:flex">
           {nav.map((l) =>
             l.kind === 'route' ? (
               <L key={l.id} to={l.to} className={linkCls} activeClassName="text-text">
@@ -69,7 +69,7 @@ export function SiteHeader() {
             </Button>
           </div>
 
-          <details className="relative md:hidden">
+          <details className="relative lg:hidden">
             <summary
               className="flex size-9 cursor-pointer list-none items-center justify-center rounded-lg text-text transition-colors hover:bg-wash [&::-webkit-details-marker]:hidden"
               aria-label={m.header_menu()}

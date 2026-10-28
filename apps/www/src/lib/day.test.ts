@@ -26,6 +26,18 @@ describe('formatDay', () => {
 });
 
 describe('formatMoment', () => {
+  it('renders the same build time across server and browser time zones', () => {
+    const tz = process.env.TZ;
+    try {
+      process.env.TZ = 'America/Los_Angeles';
+      const west = formatMoment('2026-10-28T17:30:00Z', 'en');
+      process.env.TZ = 'Asia/Tokyo';
+      expect(formatMoment('2026-10-28T17:30:00Z', 'en')).toBe(west);
+      expect(west).toContain('UTC');
+    } finally {
+      process.env.TZ = tz;
+    }
+  });
   it('reads a build time as a date and a clock, which is what tells two builds of one day apart', () => {
     const moment = formatMoment('2026-08-21T03:58:35Z', 'en');
 

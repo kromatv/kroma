@@ -23,9 +23,9 @@ describe('BuildRow', () => {
     expect(container.querySelector('details')).not.toBeNull();
   });
 
-  it('opens the newest on arrival and leaves the rest folded', () => {
+  it('keeps files folded, including the newest build', () => {
     const open = render(<BuildRow version="0.1.39" at={null} files={[file()]} featured />);
-    expect(open.container.querySelector('details')?.open).toBe(true);
+    expect(open.container.querySelector('details')?.open).toBe(false);
     open.unmount();
 
     const shut = render(<BuildRow version="0.1.38" at={null} files={[file()]} />);
@@ -35,7 +35,7 @@ describe('BuildRow', () => {
   it('counts the files it carries', () => {
     render(<BuildRow version="0.1.39" at={null} files={[file(), file({ key: 'b' })]} />);
 
-    expect(screen.getByText('2')).toBeDefined();
+    expect(screen.getByText('2 files')).toBeDefined();
   });
 
   it('shows the note a build carries, and nothing when it has none', () => {

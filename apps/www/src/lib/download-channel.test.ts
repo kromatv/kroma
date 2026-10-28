@@ -49,4 +49,23 @@ describe('canaryRelease', () => {
       'kroma-0.1.40.3570000-x86_64.spk',
     ]);
   });
+  it('keeps an Intel upload that lands after the Apple silicon upload', () => {
+    const release = canaryRelease([
+      build('0.1.40-3580000', '2026-10-20T12:30:00Z', [
+        { ...file('macos-intel', 'intel.dmg'), builtAt: '2026-10-20T12:30:00Z' },
+        { ...file('macos', 'apple.dmg'), builtAt: '2026-10-20T12:00:00Z' },
+      ]),
+    ]);
+    expect(release?.downloads.map((download) => download.target)).toEqual(['macos-intel', 'macos']);
+  });
+
+  it('offers one file per platform when a rolling bucket carries duplicate uploads', () => {
+    const release = canaryRelease([
+      build('0.1.40', '2026-10-20T12:30:00Z', [
+        { ...file('tizen', 'old.wgt'), builtAt: '2026-10-20T12:00:00Z' },
+        { ...file('tizen', 'new.wgt'), builtAt: '2026-10-20T12:30:00Z' },
+      ]),
+    ]);
+    expect(release?.downloads.map((download) => download.name)).toEqual(['new.wgt']);
+  });
 });

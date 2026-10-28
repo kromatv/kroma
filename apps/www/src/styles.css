@@ -54,6 +54,7 @@
 
 @layer base {
   html {
+    scrollbar-gutter: stable;
     scroll-behavior: smooth;
     /* The header is sticky; anchored section links land below it, not under it. */
     scroll-padding-top: 5.5rem;
