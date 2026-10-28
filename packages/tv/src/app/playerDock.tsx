@@ -26,7 +26,7 @@ export interface PlayerSlotState {
 const DockCtx = createContext<PlayerDock | null>(null);
 const SlotCtx = createContext<PlayerSlotState | null>(null);
 
-const SHOWN = style({ flex: true });
+const SHOWN = style({ fill: true });
 const DOCKED = style({ fill: true, opacity: 0 });
 
 /** Holds the film whose player stays mounted behind the screens while its
