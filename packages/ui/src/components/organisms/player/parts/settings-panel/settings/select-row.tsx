@@ -7,7 +7,8 @@ import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { style, useStyles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
-import { radiusOf, useFocusTarget } from '#ui/lib/focus-target';
+import { FocusTargetHost, radiusOf } from '#ui/lib/focus-target';
+import { NATIVE_FOCUS } from '#ui/lib/native-focus';
 import { panel, rowStyle } from './panel-style';
 
 const MIN_W = style({ minWidth: 0 });
@@ -51,28 +52,28 @@ export function SelectRow({
 
   const anchor = useFocusedRow(focused);
   const look = rowStyle(panelScoped.selectRow, panelScoped.rowOn, focused);
-  const target = useFocusTarget(focused, radiusOf(look), 'host');
   return (
-    <Pressable
-      {...(target.hostProps ?? VIRTUAL_FOCUS)}
-      ref={anchor}
-      onPress={target.remoteSelects ? undefined : () => onActivate(index)}
-      onPointerEnter={() => onFocus(index)}
-      accessibilityRole="button"
-      // The row's words may arrive as nodes rather than text, and a row named by
-      // nothing is one of a list of identical rows.
-      accessibilityLabel={typeof label === 'string' ? label : undefined}
-      {...a11yState({ selected: Boolean(selected) })}
-      style={look}
-    >
-      {leading}
-      <Box flex style={MIN_W}>
-        <Line node={label} style={panelScoped.selectLabel} />
-        <Line node={sub} style={panelScoped.selectSub} />
-      </Box>
-      {trailing}
-      {selected ? <IconOk size={24} color="accentText" /> : null}
-      {target.overlay}
-    </Pressable>
+    <FocusTargetHost focused={focused} radius={radiusOf(look)}>
+      <Pressable
+        {...VIRTUAL_FOCUS}
+        ref={anchor}
+        onPress={NATIVE_FOCUS ? undefined : () => onActivate(index)}
+        onPointerEnter={() => onFocus(index)}
+        accessibilityRole="button"
+        // The row's words may arrive as nodes rather than text, and a row named by
+        // nothing is one of a list of identical rows.
+        accessibilityLabel={typeof label === 'string' ? label : undefined}
+        {...a11yState({ selected: Boolean(selected) })}
+        style={look}
+      >
+        {leading}
+        <Box flex style={MIN_W}>
+          <Line node={label} style={panelScoped.selectLabel} />
+          <Line node={sub} style={panelScoped.selectSub} />
+        </Box>
+        {trailing}
+        {selected ? <IconOk size={24} color="accentText" /> : null}
+      </Pressable>
+    </FocusTargetHost>
   );
 }

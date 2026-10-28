@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Icon } from '#ui/components/atoms/icon';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { SUB_COLORS } from '#ui/components/organisms/player/lib/subtitle-appearance';
@@ -9,6 +10,7 @@ import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
+import { FocusTargetHost, radiusOf } from '#ui/lib/focus-target';
 import { useT } from '#ui/services/i18n';
 import { panel, rowStyle } from './panel-style';
 
@@ -45,44 +47,50 @@ export function AppearanceRow({
 
   const t = useT();
   const anchor = useFocusedRow(focused);
+  const look = rowStyle(panelScoped.valueRow, panelScoped.valueRowOn, focused);
   return (
-    <Box
-      ref={anchor}
-      role="group"
-      accessibilityLabel={label}
-      onPointerEnter={() => onFocus(index)}
-      style={rowStyle(panelScoped.valueRow, panelScoped.valueRowOn, focused)}
-    >
-      <Box row align="center" between mb={11}>
-        <Text style={panelScoped.valueLabel}>{label}</Text>
-        <Box row align="center" gap={16}>
-          <Arrow
-            glyph="◀"
-            label={`${t('common.decrease')} ${label}`}
-            dim={!focused}
-            onPress={() => onNudge(index, -1)}
-          />
-          <Arrow
-            glyph="▶"
-            label={`${t('common.increase')} ${label}`}
-            dim={!focused}
-            onPress={() => onNudge(index, 1)}
-          />
+    <FocusTargetHost focused={focused} radius={radiusOf(look)}>
+      <Box
+        ref={anchor}
+        role="group"
+        accessibilityLabel={label}
+        onPointerEnter={() => onFocus(index)}
+        style={look}
+      >
+        <Box row align="center" between mb={11}>
+          <Text style={panelScoped.valueLabel}>{label}</Text>
+          <Box row align="center" gap={16}>
+            <Arrow
+              icon="chevron-left"
+              label={`${t('common.decrease')} ${label}`}
+              dim={!focused}
+              onPress={() => onNudge(index, -1)}
+            />
+            <Arrow
+              icon="chevron-right"
+              label={`${t('common.increase')} ${label}`}
+              dim={!focused}
+              onPress={() => onNudge(index, 1)}
+            />
+          </Box>
         </Box>
+        {children}
       </Box>
-      {children}
-    </Box>
+    </FocusTargetHost>
   );
 }
 
 function Arrow({
-  glyph,
+  icon,
   label,
   dim,
   onPress,
-}: Readonly<{ glyph: string; label: string; dim: boolean; onPress: () => void }>) {
-  const s = useStyles(sDefinition);
-
+}: Readonly<{
+  icon: 'chevron-left' | 'chevron-right';
+  label: string;
+  dim: boolean;
+  onPress: () => void;
+}>) {
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -90,9 +98,7 @@ function Arrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text style={[s.arrow, dim ? s.dim : s.full]} color="accentText">
-        {glyph}
-      </Text>
+      <Icon name={icon} size={24} thickness={2.4} color={dim ? 'textDim' : 'accentText'} />
     </Pressable>
   );
 }
@@ -203,9 +209,6 @@ export function Meter({ value }: Readonly<{ value: number }>) {
 }
 
 const sDefinition = styles({
-  dim: { opacity: 0.4 },
-  full: { opacity: 1 },
-  arrow: { px: 4, text: 'strongTv' },
   meterValue: {
     minW: 52,
     textAlign: 'right',

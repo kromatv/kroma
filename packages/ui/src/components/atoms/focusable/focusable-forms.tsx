@@ -3,7 +3,7 @@ import type { ReactNode, RefObject } from 'react';
 import type { StyleProp, View, ViewStyle } from 'react-native';
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
-import type { splitBoxLayers } from '#ui/lib/box-layers';
+import { splitBoxLayers } from '#ui/lib/box-layers';
 import { StillHost } from '#ui/lib/control-platform';
 import { linkProps, platformRole } from '#ui/lib/control-role';
 import type { FocusServices } from '#ui/lib/focus-services';
@@ -20,7 +20,8 @@ import type {
   WebKeys,
 } from './focusable-types';
 import { Painted, TouchPressable } from './touch-pressable';
-import { radiusOf, useFocusTarget } from '#ui/lib/focus-target';
+import { FocusTargetHost, radiusOf } from '#ui/lib/focus-target';
+import { NATIVE_FOCUS } from '#ui/lib/native-focus';
 import { useMirroredFocus } from './use-mirrored-focus';
 
 function DisabledForm({
@@ -70,21 +71,22 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // sheet's `:focus-visible` rule drawing a square outline in its place.
   const lit = at.focusVisible;
   const ring = useFocusRing(at.ringToken);
-  const target = useFocusTarget(at.controlled && at.focused, radiusOf(at.style), 'host');
-  const remote = at.controlled && target.remoteSelects;
+  const hosted = NATIVE_FOCUS && at.controlled;
+  const layers = hosted ? splitBoxLayers(at.style) : null;
   const box = useControlledMirror(at.controlled && at.focused, at.setBox);
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
   const hover = at.hovered ? at.hoveredStyle : null;
+  const face = layers ? layers.face : at.style;
   const base = [
-    at.style,
+    face,
     hover,
     lit ? at.focusedStyle : null,
-    lit ? LIFTED : GROUNDED,
+    layers ? null : lit ? LIFTED : GROUNDED,
     lit && at.showRing ? ring : null,
     at.animated,
   ];
-  return (
+  const control = (
     <TouchPressable
       boxRef={box}
       webKeys={at.webKeys}
@@ -95,29 +97,36 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
       a11yState={at.a11yState}
       base={base}
       pressedStyle={at.pressedStyle}
-      onPress={remote ? IGNORE : at.onPress}
-      onLongPress={remote ? undefined : at.onLongPress}
+      onPress={hosted ? IGNORE : at.onPress}
+      onLongPress={hosted ? undefined : at.onLongPress}
       onHoverIn={at.onHoverIn}
       onHoverOut={at.onHoverOut}
       onFocus={at.onFocus}
       onBlur={at.onBlur}
       hitSlop={at.hitSlop}
-      {...(at.controlled ? { unfocusable: !target.hostProps, hostProps: target.hostProps } : null)}
+      {...(at.controlled ? { unfocusable: true } : null)}
     >
-      {(pressed) => (
-        <>
-          {typeof at.children === 'function'
-            ? at.children({
-                focused: at.focused,
-                pressed,
-                hovered: at.hovered,
-                slots: at.resolve(pressed),
-              })
-            : at.children}
-          {at.controlled ? target.overlay : null}
-        </>
-      )}
+      {(pressed) =>
+        typeof at.children === 'function'
+          ? at.children({
+              focused: at.focused,
+              pressed,
+              hovered: at.hovered,
+              slots: at.resolve(pressed),
+            })
+          : at.children
+      }
     </TouchPressable>
+  );
+  if (!layers) return control;
+  return (
+    <FocusTargetHost
+      focused={at.focused}
+      radius={radiusOf(face)}
+      style={[layers.box, lit ? LIFTED : GROUNDED]}
+    >
+      {control}
+    </FocusTargetHost>
   );
 }
 

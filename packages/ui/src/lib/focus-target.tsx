@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { FocusCard, HAS_FOCUS_CARD } from './focus-card';
 import { NATIVE_FOCUS, useNativeFocus } from './native-focus';
 
@@ -52,4 +52,31 @@ export function useFocusTarget(focused: boolean, radius: number, face: FocusFace
     ) : null,
     remoteSelects: true,
   };
+}
+
+/**
+ * The box a control whose focus is decided outside the navigator wears on Apple TV, the
+ * same shape the navigator's own controls have: tvOS focuses this box and it carries the
+ * card, while the painted face inside keeps its ring and its look. Elsewhere it renders
+ * its children alone.
+ */
+export function FocusTargetHost({
+  focused,
+  radius,
+  style,
+  children,
+}: Readonly<{
+  focused: boolean;
+  radius: number;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}>): ReactNode {
+  const target = useFocusTarget(focused, radius, 'child');
+  if (!target.hostProps) return children;
+  return (
+    <View style={style} collapsable={false} {...target.hostProps}>
+      {children}
+      {target.overlay}
+    </View>
+  );
 }

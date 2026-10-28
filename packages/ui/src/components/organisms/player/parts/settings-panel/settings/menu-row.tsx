@@ -9,7 +9,8 @@ import { style, styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
-import { radiusOf, useFocusTarget } from '#ui/lib/focus-target';
+import { FocusTargetHost, radiusOf } from '#ui/lib/focus-target';
+import { NATIVE_FOCUS } from '#ui/lib/native-focus';
 import { panel, rowStyle } from './panel-style';
 
 /**
@@ -54,33 +55,33 @@ export function MenuRow({
 
   const anchor = useFocusedRow(focused);
   const look = rowStyle(panelScoped.menuRow, panelScoped.rowOn, focused);
-  const target = useFocusTarget(focused, radiusOf(look), 'host');
   return (
-    <Pressable
-      {...(target.hostProps ?? VIRTUAL_FOCUS)}
-      ref={anchor}
-      onPress={target.remoteSelects ? undefined : onActivate}
-      onPointerEnter={onFocus}
-      accessibilityRole={toggle ? 'switch' : 'button'}
-      accessibilityLabel={label}
-      {...(toggle ? a11yState({ checked: Boolean(on) }) : null)}
-      style={[...look, style]}
-    >
-      {icon}
-      <Box flex style={MIN_W}>
-        <Text style={panelScoped.menuLabel}>{label}</Text>
-        {!toggle && value != null ? <Text style={panelScoped.menuValue}>{value}</Text> : null}
-      </Box>
-      {/* The KIT's switch face, not a lookalike: the row is the control (see the
+    <FocusTargetHost focused={focused} radius={radiusOf(look)}>
+      <Pressable
+        {...VIRTUAL_FOCUS}
+        ref={anchor}
+        onPress={NATIVE_FOCUS ? undefined : onActivate}
+        onPointerEnter={onFocus}
+        accessibilityRole={toggle ? 'switch' : 'button'}
+        accessibilityLabel={label}
+        {...(toggle ? a11yState({ checked: Boolean(on) }) : null)}
+        style={[...look, style]}
+      >
+        {icon}
+        <Box flex style={MIN_W}>
+          <Text style={panelScoped.menuLabel}>{label}</Text>
+          {!toggle && value != null ? <Text style={panelScoped.menuValue}>{value}</Text> : null}
+        </Box>
+        {/* The KIT's switch face, not a lookalike: the row is the control (see the
           header), so it renders the atom's visuals without its `Focusable`.
           `size="tv"`: this panel is read from a sofa. */}
-      {toggle ? (
-        <SwitchFace checked={Boolean(on)} size="tv" style={s.noShrink} />
-      ) : (
-        <Icon name="chevron-right" size={23} thickness={2.2} />
-      )}
-      {target.overlay}
-    </Pressable>
+        {toggle ? (
+          <SwitchFace checked={Boolean(on)} size="tv" style={s.noShrink} />
+        ) : (
+          <Icon name="chevron-right" size={23} thickness={2.2} />
+        )}
+      </Pressable>
+    </FocusTargetHost>
   );
 }
 
