@@ -4,6 +4,9 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type ThirdPartyNoticesOptions, thirdPartyNotices } from './third-party-notices';
 
+const cargo = vi.hoisted(() => ({ notices: vi.fn() }));
+vi.mock('./cargo-notices.ts', () => ({ cargoNotices: cargo.notices }));
+
 interface Emitted {
   fileName: string;
   source: string;
@@ -51,6 +54,7 @@ function build(options: ThirdPartyNoticesOptions, root: string, module: string):
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
+  cargo.notices.mockReset();
 });
 
 describe('thirdPartyNotices', () => {
@@ -71,12 +75,33 @@ describe('thirdPartyNotices', () => {
     expect(file?.source).toContain('React MIT text');
   });
 
+  it('lists the crates of the Cargo.toml it is given, for the targets named', () => {
+    const { root, module } = project();
+    cargo.notices.mockReturnValue([
+      { name: 'serde', version: '1.0.0', license: 'MIT', source: null, texts: ['Serde text'] },
+    ]);
+
+    const options = { manifest: 'src-tauri/Cargo.toml', targets: ['aarch64-apple-darwin'] };
+    const [file] = build({ title: 'T', cargo: options }, root, module);
+
+    expect(cargo.notices).toHaveBeenCalledWith(join(root, 'src-tauri/Cargo.toml'), [
+      'aarch64-apple-darwin',
+    ]);
+    expect(file?.source).toContain('Rust crates\n===========\n\n  serde 1.0.0  MIT');
+    expect(file?.source.indexOf('Rust crates')).toBeLessThan(
+      file?.source.indexOf('JavaScript packages') ?? 0,
+    );
+  });
+
   it('leaves the Rust crates out with a warning when cargo fails on a laptop', () => {
     const { root, module } = project();
+    cargo.notices.mockImplementation(() => {
+      throw new Error('cargo: command not found');
+    });
     vi.stubEnv('CI', '');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const [file] = build({ title: 'T', cargo: { manifest: 'missing/Cargo.toml' } }, root, module);
+    const [file] = build({ title: 'T', cargo: { manifest: 'Cargo.toml' } }, root, module);
 
     expect(file?.source).not.toContain('Rust crates');
     expect(warn).toHaveBeenCalledOnce();
@@ -84,10 +109,13 @@ describe('thirdPartyNotices', () => {
 
   it('fails the build when cargo fails under CI', () => {
     const { root, module } = project();
+    cargo.notices.mockImplementation(() => {
+      throw new Error('cargo: command not found');
+    });
     vi.stubEnv('CI', 'true');
 
-    expect(() =>
-      build({ title: 'T', cargo: { manifest: 'missing/Cargo.toml' } }, root, module),
-    ).toThrow();
+    expect(() => build({ title: 'T', cargo: { manifest: 'Cargo.toml' } }, root, module)).toThrow(
+      'cargo: command not found',
+    );
   });
 });
