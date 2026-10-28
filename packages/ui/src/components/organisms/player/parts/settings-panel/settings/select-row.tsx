@@ -7,6 +7,7 @@ import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { style, useStyles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
+import { radiusOf, useFocusTarget } from '#ui/lib/focus-target';
 import { panel, rowStyle } from './panel-style';
 
 const MIN_W = style({ minWidth: 0 });
@@ -49,18 +50,20 @@ export function SelectRow({
   const panelScoped = useStyles(panel);
 
   const anchor = useFocusedRow(focused);
+  const look = rowStyle(panelScoped.selectRow, panelScoped.rowOn, focused);
+  const target = useFocusTarget(focused, radiusOf(look), 'host');
   return (
     <Pressable
-      {...VIRTUAL_FOCUS}
+      {...(target.hostProps ?? VIRTUAL_FOCUS)}
       ref={anchor}
-      onPress={() => onActivate(index)}
+      onPress={target.remoteSelects ? undefined : () => onActivate(index)}
       onPointerEnter={() => onFocus(index)}
       accessibilityRole="button"
       // The row's words may arrive as nodes rather than text, and a row named by
       // nothing is one of a list of identical rows.
       accessibilityLabel={typeof label === 'string' ? label : undefined}
       {...a11yState({ selected: Boolean(selected) })}
-      style={rowStyle(panelScoped.selectRow, panelScoped.rowOn, focused)}
+      style={look}
     >
       {leading}
       <Box flex style={MIN_W}>
@@ -69,6 +72,7 @@ export function SelectRow({
       </Box>
       {trailing}
       {selected ? <IconOk size={24} color="accentText" /> : null}
+      {target.overlay}
     </Pressable>
   );
 }

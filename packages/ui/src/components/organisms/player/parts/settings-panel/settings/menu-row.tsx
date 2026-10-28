@@ -9,6 +9,7 @@ import { style, styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
+import { radiusOf, useFocusTarget } from '#ui/lib/focus-target';
 import { panel, rowStyle } from './panel-style';
 
 /**
@@ -52,16 +53,18 @@ export function MenuRow({
   const s = useStyles(sDefinition);
 
   const anchor = useFocusedRow(focused);
+  const look = rowStyle(panelScoped.menuRow, panelScoped.rowOn, focused);
+  const target = useFocusTarget(focused, radiusOf(look), 'host');
   return (
     <Pressable
-      {...VIRTUAL_FOCUS}
+      {...(target.hostProps ?? VIRTUAL_FOCUS)}
       ref={anchor}
-      onPress={onActivate}
+      onPress={target.remoteSelects ? undefined : onActivate}
       onPointerEnter={onFocus}
       accessibilityRole={toggle ? 'switch' : 'button'}
       accessibilityLabel={label}
       {...(toggle ? a11yState({ checked: Boolean(on) }) : null)}
-      style={[...rowStyle(panelScoped.menuRow, panelScoped.rowOn, focused), style]}
+      style={[...look, style]}
     >
       {icon}
       <Box flex style={MIN_W}>
@@ -76,6 +79,7 @@ export function MenuRow({
       ) : (
         <Icon name="chevron-right" size={23} thickness={2.2} />
       )}
+      {target.overlay}
     </Pressable>
   );
 }
