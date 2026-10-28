@@ -1,11 +1,45 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 /** Whether tvOS's own focus follows the app's here: the control the app focuses is the view tvOS focuses. */
 export const NATIVE_FOCUS = Platform.isTV === true && Platform.OS === 'ios';
 
-interface NativeFocusHost {
-  hold: () => () => void;
+/** The claims on tvOS's focus under one window: the latest claim holds it. */
+export interface NativeFocusHost {
+  claim: () => number;
+  release: (claim: number) => void;
+  holder: () => number | null;
+  subscribe: (listener: () => void) => () => void;
+}
+
+function createNativeFocusHost(): NativeFocusHost {
+  const claims: number[] = [];
+  const listeners = new Set<() => void>();
+  let next = 0;
+  const notify = () => {
+    for (const listener of listeners) listener();
+  };
+  return {
+    claim: () => {
+      next += 1;
+      claims.push(next);
+      notify();
+      return next;
+    },
+    release: (claim) => {
+      const at = claims.indexOf(claim);
+      if (at < 0) return;
+      claims.splice(at, 1);
+      notify();
+    },
+    holder: () => claims.at(-1) ?? null,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
 }
 
 const NativeFocusContext = createContext<NativeFocusHost | null>(null);
@@ -13,27 +47,39 @@ const NativeFocusContext = createContext<NativeFocusHost | null>(null);
 /** Provided by <FocusRoot> to the controls under it. */
 export const NativeFocusProvider = NativeFocusContext.Provider;
 
-/** For <FocusRoot>: whether one of its controls holds tvOS's focus, which is when its key host must stop being a place tvOS could move to. */
-export function useNativeFocusHost(): { held: boolean; host: NativeFocusHost } {
-  const [holders, setHolders] = useState(0);
-  const [host] = useState<NativeFocusHost>(() => ({
-    hold: () => {
-      setHolders((n) => n + 1);
-      let released = false;
-      return () => {
-        if (released) return;
-        released = true;
-        setHolders((n) => n - 1);
-      };
-    },
-  }));
-  return { held: holders > 0, host };
+/**
+ * For <FocusRoot>: the host its controls claim tvOS's focus from, and whether one of
+ * them holds it, which is when its key host must stop being a place tvOS could move
+ * to. A root that `shares` uses the host of the root it sits in, so a sheet or a
+ * dialog drawn in the same window competes with the screen behind it for one focus.
+ */
+export function useNativeFocusHost(shares: boolean): { held: boolean; host: NativeFocusHost } {
+  const parent = useContext(NativeFocusContext);
+  const [own] = useState(createNativeFocusHost);
+  const host = shares && parent ? parent : own;
+  const held = useSyncExternalStore(host.subscribe, () => host.holder() !== null);
+  return { held, host };
 }
 
-/** Whether tvOS should focus this control now, held against the focus root's key host while it does. */
+/** Whether tvOS should focus this control now: it is focused, and its claim is the latest. */
 export function useNativeFocus(focused: boolean): boolean {
   const host = useContext(NativeFocusContext);
-  const on = NATIVE_FOCUS && focused && host !== null;
-  useEffect(() => (on && host ? host.hold() : undefined), [on, host]);
-  return on;
+  const wants = NATIVE_FOCUS && focused && host !== null;
+  const [claim, setClaim] = useState<number | null>(null);
+  useEffect(() => {
+    if (!wants || !host) return;
+    const mine = host.claim();
+    setClaim(mine);
+    return () => {
+      host.release(mine);
+      setClaim(null);
+    };
+  }, [wants, host]);
+  const holder = useSyncExternalStore(
+    host?.subscribe ?? NO_SUBSCRIBE,
+    () => host?.holder() ?? null,
+  );
+  return wants && claim !== null && holder === claim;
 }
+
+const NO_SUBSCRIBE = () => () => {};
