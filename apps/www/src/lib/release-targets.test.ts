@@ -6,6 +6,7 @@ const PRODUCT = {
   'tv.kroma.webos_0.1.38_all.ipk': 'webos',
   'KROMA-androidtv-0.1.38.apk': 'androidtv',
   'KROMA_0.1.38_aarch64.dmg': 'macos',
+  'KROMA_0.1.38_x64.dmg': 'macos-intel',
   'KROMA_0.1.38_x64-setup.exe': 'windows-exe',
   'KROMA_0.1.38_x64_en-US.msi': 'windows-msi',
   'KROMA_0.1.38_amd64.AppImage': 'linux-appimage',
@@ -26,6 +27,9 @@ const NOT_OFFERED = [
   'tv.kroma.whisper-x86_64-unknown-linux-musl.kmod.tarsha',
   'KROMA_0.1.39-3490257_aarch64.app.tar.gz',
   'KROMA_0.1.39-3490257_aarch64.app.tar.gz.sig',
+  'KROMA_0.1.39-3490257_x64.app.tar.gz',
+  'KROMA-desktop-THIRD-PARTY-NOTICES.txt',
+  'SHA256SUMS',
   'KROMA_0.1.39-3490257_amd64.AppImage.sig',
   'KROMA_0.1.39-3490257_amd64.deb.sig',
   'KROMA_0.1.39-3490257_x64-setup.exe.sig',
@@ -51,6 +55,7 @@ describe('classify', () => {
 
   it('claims the rolling desktop channel, whose builds carry a stamped version', () => {
     expect(classify('KROMA_0.1.39-3490257_aarch64.dmg')).toBe('macos');
+    expect(classify('KROMA_0.1.39-3490257_x64.dmg')).toBe('macos-intel');
     expect(classify('KROMA_0.1.39-3490257_amd64.AppImage')).toBe('linux-appimage');
   });
 

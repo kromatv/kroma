@@ -2,8 +2,7 @@ import { site } from '@kromatv/site-meta';
 import type { Plugin } from 'vite';
 import { type ChannelBuild, toCanaryBuilds } from '../src/lib/channels.ts';
 import { Feed } from '../src/lib/release-feed.ts';
-import { TARGET_IDS } from '../src/lib/release-targets.ts';
-import { type SiteRelease, toSiteReleases } from '../src/lib/releases.ts';
+import { missingTargets, type SiteRelease, toSiteReleases } from '../src/lib/releases.ts';
 import { fetchBody } from './fetch-body.ts';
 
 // The site offers the releases as of its last deploy, so `bun run deploy:site`
@@ -69,10 +68,9 @@ async function fetchReleases(): Promise<Published> {
 
   // Only the newest has to be whole. An old release predates a platform, and
   // failing the build over that would pin the archive to whatever shipped first.
-  const [newest] = releases;
-  const missing = TARGET_IDS.filter((id) => !newest?.downloads.some((d) => d.target === id));
-  if (newest && missing.length > 0) {
-    throw new Error(`${newest.tag} carries no file for ${missing.join(', ')}`);
+  const missing = missingTargets(releases);
+  if (missing.length > 0) {
+    throw new Error(`${releases[0]?.tag} carries no file for ${missing.join(', ')}`);
   }
   return { releases, canary: toCanaryBuilds(feed) };
 }
