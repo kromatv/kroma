@@ -70,6 +70,14 @@ waiting rather than working:
 **Left to automation**: `dependencies`, `javascript`, `rust`, `github_actions` are
 Dependabot's. Do not apply them by hand.
 
+**Triage fills the gaps.** `.github/workflows/triage.yml` labels every new issue and pull
+request, on an axis only while it has nothing yet, so a label a person sets is never
+replaced: correct a wrong one by hand and it stays. A pull request takes its `type/` from
+its conventional title and its `area/` from the paths it changes, and no priority. An
+issue takes its `area/` from the form's Surface answer and the rest from Claude reading
+this file. Triage never applies `needs-info` or `blocked`, and a card it labelled still
+leaves Triage only once a person has read it.
+
 Status does **not** live in labels. The board owns it. Two sources of truth for status
 is how boards die.
 

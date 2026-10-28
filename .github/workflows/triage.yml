@@ -1,0 +1,69 @@
+name: Triage
+
+# Labels a new issue or pull request on the axes docs/TICKETS.md defines,
+# filling only an axis that carries nothing yet, so a label a person chose is
+# never replaced. A pull request's type comes from its conventional title and
+# its areas from the paths it changes. An issue's areas come from its form, and
+# the rest from Claude reading TICKETS.md, through the same federation as the
+# release notes; when Claude cannot be reached the issue keeps what its form
+# gave it.
+#
+#   gh workflow run triage.yml                 # every open issue and pull request
+#   gh workflow run triage.yml -f number=278   # one
+#
+# pull_request_target runs this file as it is on main and never checks out the
+# pull request, so no code from a fork runs with the write token.
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      number:
+        description: 'Issue or pull request to triage. Empty triages every open one.'
+        type: string
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: triage-${{ github.event.issue.number || github.event.pull_request.number || inputs.number || 'open' }}
+  cancel-in-progress: false
+
+jobs:
+  label:
+    name: Label
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # add labels
+      pull-requests: write # add labels to a pull request
+      id-token: write # federate to Claude
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - name: Label
+        env:
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01SKjkxdn6pfKsK4aQDajSRL
+          ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
+          ANTHROPIC_WORKSPACE_ID: wrkspc_016CYAvvxkS4fuLX2KuZAUHk
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number || inputs.number }}
+        run: |
+          if [ -n "$NUMBER" ]; then
+            bun run ci triage --number "$NUMBER"
+          else
+            bun run ci triage --open
+          fi

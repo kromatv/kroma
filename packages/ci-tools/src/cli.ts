@@ -8,6 +8,7 @@ const COMMANDS = {
   canary: async (args: string[]) => (await import('./canary-command')).main(args),
   changelog: async (args: string[]) => (await import('./changelog-command')).main(args),
   notes: async (args: string[]) => (await import('./notes-command')).main(args),
+  triage: async (args: string[]) => (await import('./triage-command')).main(args),
   cache: async (args: string[]) => (await import('./cache')).main(args),
   tools: async (args: string[]) => (await import('./tools')).main(args),
   sonar: async (args: string[]) => (await import('./sonar')).main(args),
