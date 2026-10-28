@@ -10,3 +10,30 @@ index 8023963e8977ef3b9c9549e28bb9467e4a02ce25..b69472cad9803d3a2cd6286c20b3bffb
    longPressRecognizer.delegate = self;
  
    [self.view addGestureRecognizer:longPressRecognizer];
+diff --git a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTEnhancedScrollView.mm b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTEnhancedScrollView.mm
+index 941db3b3ea0ab96461a44dc578e7354714573323..fa92938529b8d886424138571e3ab15f57c46153 100644
+--- a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTEnhancedScrollView.mm
++++ b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTEnhancedScrollView.mm
+@@ -166,6 +166,9 @@
+ - (void)didUpdateFocusInContext:(UIFocusUpdateContext *)context
+        withAnimationCoordinator:(UIFocusAnimationCoordinator *)coordinator
+ {
++  if (!self.isScrollEnabled) {
++    return;
++  }
+   if (_scrollAnimationEnabled) {
+     [super didUpdateFocusInContext:context withAnimationCoordinator:coordinator];
+     return;
+diff --git a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
+index b3ebe19466bdb24827e201f5e1661d39e1d2ec5f..0f2f6fbab5629070fc9eab39229a459dbaa3b125 100644
+--- a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
++++ b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
+@@ -1324,7 +1324,7 @@ static inline UIViewAnimationOptions animationOptionsWithCurve(UIViewAnimationCu
+         return;
+     }
+     if (!_props->isTVSelectable && !hasItemSnapAlignment) {
+-        if (!scrollProps.scrollAnimationEnabled && [context.nextFocusedView isDescendantOfView:_scrollView]) {
++        if (_scrollView.isScrollEnabled && !scrollProps.scrollAnimationEnabled && [context.nextFocusedView isDescendantOfView:_scrollView]) {
+             // When animations are disabled and there's no snap alignment, manually scroll
+             // the focused view into view instantly. We can't let UIScrollView's default
+             // focus handling do this because it uses deceleration (timer-based) that can't
