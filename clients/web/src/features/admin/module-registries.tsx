@@ -66,8 +66,6 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
   const commit = (next: DraftRegistry[]) => {
     setDraft(next);
     void run(async () => {
-      const webRuntime = useWebRuntime();
-
       await saveRegistries(
         next.map(({ name, url, enabled }) => ({ name, url, enabled })),
         webRuntime,

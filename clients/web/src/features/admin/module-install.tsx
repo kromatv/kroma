@@ -63,8 +63,6 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
   const defaulted = useRef(false);
 
   useEffect(() => {
-    const webRuntime = useWebRuntime();
-
     if (stage !== 'plan') return;
     let alive = true;
     setPlanBusy(true);
@@ -100,7 +98,7 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
     return () => {
       alive = false;
     };
-  }, [id, include, stage]);
+  }, [webRuntime, id, include, stage]);
 
   // Adopt the op stream the server opened for this install.
   useEffect(() => {
