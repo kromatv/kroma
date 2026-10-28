@@ -1,3 +1,4 @@
+import type { Direction } from '@kromatv/spatial-nav';
 import type { ComponentRef, ReactElement, ReactNode, Ref } from 'react';
 import type {
   AccessibilityRole,
@@ -70,6 +71,8 @@ interface FocusableProps<R extends AnySv = AnySv> {
   onPress?: () => void;
   /** A finger or OK held down; given, OK acts on its release, not its press. */
   onLongPress?: () => void;
+  /** A remote press while this control holds the focus, before the navigator moves: return true to keep it. */
+  onKey?: (direction: Direction) => boolean;
   onFocus?: () => void;
   onBlur?: () => void;
   onHoverIn?: () => void;

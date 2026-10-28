@@ -1,4 +1,4 @@
-import type { Orientation } from '@kromatv/spatial-nav';
+import type { Direction, Orientation } from '@kromatv/spatial-nav';
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useNavigatorHost } from './navigator-context';
@@ -9,6 +9,8 @@ interface NavigatorViewProps {
   children: ReactNode;
   direction: Orientation;
   alignInGrid?: boolean;
+  /** Answers a press while the focus is inside this view, before the navigator moves; true keeps it. */
+  onKey?: (direction: Direction) => boolean;
   style?: StyleProp<ViewStyle>;
   ref?: Ref<NodeHandle>;
 }
@@ -21,6 +23,7 @@ function NavigatorView({
   children,
   direction,
   alignInGrid = false,
+  onKey,
   style,
   ref,
 }: Readonly<NavigatorViewProps>) {
@@ -30,7 +33,7 @@ function NavigatorView({
   );
   if (!host) return box;
   return (
-    <NavigatorNode orientation={direction} alignInGrid={alignInGrid} ref={ref}>
+    <NavigatorNode orientation={direction} alignInGrid={alignInGrid} onKey={onKey} ref={ref}>
       {box}
     </NavigatorNode>
   );

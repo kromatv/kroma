@@ -1,4 +1,4 @@
-import type { Orientation } from './directions';
+import type { Direction, Orientation } from './directions';
 
 /** What a node declares when it registers. `index` is its slot among its
  *  siblings: omitted, the node lands after the highest index its parent has
@@ -16,6 +16,8 @@ export interface NodeConfig {
   onSelect?: () => void;
   holds?: () => boolean;
   onLongSelect?: () => void;
+  /** Answers a press before the navigator acts on it, from the focused node up; true keeps it. */
+  onKey?: (direction: Direction) => boolean;
 }
 
 export interface TreeNode {

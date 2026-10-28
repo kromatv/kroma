@@ -166,6 +166,7 @@ function NavigatorForm({
     onPointerUp: () => void;
     onLongPress: FocusableProps['onLongPress'];
     onLongSelect: (() => void) | undefined;
+    onKey: FocusableProps['onKey'];
     hitSlop: FocusableProps['hitSlop'];
     resolve: Resolve;
     children: FocusableProps['children'];
@@ -196,6 +197,7 @@ function NavigatorForm({
       entry={entry}
       onSelect={at.press}
       onLongSelect={at.onLongSelect}
+      onKey={at.onKey}
       onFocus={mirror.focus}
       onBlur={at.handleBlur}
       painted={painted}

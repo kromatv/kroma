@@ -7,6 +7,7 @@ import { InputSourceProvider, useInputSourceParent } from './input-source';
 // native on purpose so behaviour can't drift between them (only the screen
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
+import type { Direction } from '@kromatv/spatial-nav';
 import { NavigatorView, RemoteProvider, useLockNavigator } from '@kromatv/spatial-nav/react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
@@ -46,7 +47,12 @@ interface ScreenScopeProps extends FocusScopeProps {
   active?: boolean;
 }
 
-interface FocusColumnProps extends FocusScopeProps {
+interface FocusGroupProps extends FocusScopeProps {
+  /** A remote press while the focus is inside this group, before the navigator moves: return true to keep it. */
+  onKey?: (direction: Direction) => boolean;
+}
+
+interface FocusColumnProps extends FocusGroupProps {
   grid?: boolean;
 }
 
@@ -144,7 +150,7 @@ function useLockFocusBehind(active: boolean): void {
  * inside a group horizontally; nothing measures anything, the shape comes
  * from the tree.
  */
-function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
+function FocusRegion({ children, style, onKey }: Readonly<FocusGroupProps>) {
   // A group is only a group to a navigator. Unscoped - the browser app, a
   // phone - there is none to register with, and asking would throw ("No
   // registered spatial navigator"), so the row is a plain view. This is the
@@ -158,7 +164,11 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
         // The row lifts ITSELF while it holds the focus: rows are separate
         // stacking contexts, so a lifted tile is still under the whole of the
         // row after it. No wrapper view - one would collapse the row.
-        <NavigatorView direction="horizontal" style={flat([style, held ? LIFTED : GROUNDED])}>
+        <NavigatorView
+          direction="horizontal"
+          onKey={onKey}
+          style={flat([style, held ? LIFTED : GROUNDED])}
+        >
           {children}
         </NavigatorView>
       )}
@@ -172,7 +182,7 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
  * grid: without it, moving down lands on each row's last-focused key (Down
  * from T lands on A); with it, the navigator keeps the column position.
  */
-function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProps>) {
+function FocusColumn({ children, style, grid = false, onKey }: Readonly<FocusColumnProps>) {
   // See <FocusRegion>: unscoped, a stack is just a stack.
   if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
   return (
@@ -181,6 +191,7 @@ function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProp
         <NavigatorView
           direction="vertical"
           alignInGrid={grid}
+          onKey={onKey}
           style={flat([style, held ? LIFTED : GROUNDED])}
         >
           {children}
@@ -190,5 +201,5 @@ function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProp
   );
 }
 
-export type { FocusColumnProps, FocusScopeProps, ScreenScopeProps };
+export type { FocusColumnProps, FocusGroupProps, FocusScopeProps, ScreenScopeProps };
 export { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind };

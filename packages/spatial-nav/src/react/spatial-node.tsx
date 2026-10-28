@@ -1,4 +1,4 @@
-import type { Orientation } from '@kromatv/spatial-nav';
+import type { Direction, Orientation } from '@kromatv/spatial-nav';
 import {
   type ReactNode,
   type Ref,
@@ -35,6 +35,7 @@ interface SpatialNodeProps {
   onLongSelect?: () => void;
   onActive?: () => void;
   onInactive?: () => void;
+  onKey?: (direction: Direction) => boolean;
   ref?: Ref<NodeHandle>;
 }
 
@@ -50,6 +51,7 @@ function SpatialNode({
   onLongSelect,
   onActive,
   onInactive,
+  onKey,
   ref,
 }: Readonly<SpatialNodeProps>) {
   const { host, parentId } = useNodeHost();
@@ -67,6 +69,7 @@ function SpatialNode({
     onLongSelect,
     onActive,
     onInactive,
+    onKey,
     watched: false,
   });
   useEffect(() => {
@@ -77,6 +80,7 @@ function SpatialNode({
       onLongSelect,
       onActive,
       onInactive,
+      onKey,
       watched: typeof children === 'function',
     };
   });
@@ -102,6 +106,7 @@ function SpatialNode({
       onSelect: () => latest.current.onSelect?.(),
       holds: () => latest.current.onLongSelect !== undefined,
       onLongSelect: () => latest.current.onLongSelect?.(),
+      onKey: (direction) => latest.current.onKey?.(direction) === true,
       onActive: () => {
         latest.current.onActive?.();
         if (latest.current.watched) setActive(true);
