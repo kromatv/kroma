@@ -1,10 +1,11 @@
+import { SamsungIcon } from '#site/components/download/samsung-icon';
+import { LgIcon } from '#site/components/download/lg-icon';
+import { LinuxIcon } from '#site/components/download/linux-icon';
 import {
   IconBrandAndroid,
   IconBrandApple,
   IconBrandDebian,
-  IconBrandUbuntu,
   IconBrandWindows,
-  IconDeviceTv,
   IconDeviceTvOld,
   IconServer,
 } from '@tabler/icons-react';
@@ -49,14 +50,14 @@ export const TARGETS: Readonly<Record<TargetId, Target>> = {
     ext: '.wgt',
     arch: null,
     asset: /^KROMA-tizen-.+\.wgt$/,
-    icon: IconDeviceTv,
+    icon: SamsungIcon,
   },
   webos: {
     label: 'LG',
     ext: '.ipk',
     arch: null,
     asset: /^tv\.kroma\.webos_.+_all\.ipk$/,
-    icon: IconDeviceTv,
+    icon: LgIcon,
   },
   androidtv: {
     label: 'Android TV',
@@ -98,7 +99,7 @@ export const TARGETS: Readonly<Record<TargetId, Target>> = {
     ext: '.AppImage',
     arch: 'x86-64',
     asset: /^KROMA_.+_amd64\.AppImage$/,
-    icon: IconBrandUbuntu,
+    icon: LinuxIcon,
   },
   'linux-deb': {
     label: 'Debian',

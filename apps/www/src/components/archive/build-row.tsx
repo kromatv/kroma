@@ -19,7 +19,7 @@ export interface BuildRowProps {
   /** Where the build came from, on GitHub. */
   source?: { href: string; label: string };
   /** Extra detail under the files, such as checksums. */
-  /** The newest build on its channel: marked, and open on arrival. */
+  /** Mark the newest build while keeping the file list folded. */
   featured?: boolean;
 }
 
@@ -42,41 +42,41 @@ export function BuildRow({
   const made = formatMoment(at, lang);
 
   return (
-    <details
-      open={featured}
-      className="group border-b border-border/60 first:border-t first:border-border/60"
-    >
-      <summary className="grid cursor-pointer list-none grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 py-3.5 [&::-webkit-details-marker]:hidden">
-        <IconChevronRight
-          size={15}
-          stroke={2}
-          className="row-span-2 shrink-0 self-start text-dim transition-transform duration-200 ease-out group-open:rotate-90 sm:row-span-1 sm:self-center"
-          aria-hidden
-        />
-
+    <details className="group/build border-b border-border/60 last:border-b-0 open:bg-surface-2/25">
+      <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_1rem] items-center gap-x-3 px-4 py-4 transition-colors hover:bg-wash sm:grid-cols-[minmax(0,1fr)_14rem_6rem_1rem] sm:gap-x-4 sm:px-5 [&::-webkit-details-marker]:hidden">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-          <span className="break-all font-mono text-base font-medium text-text">{version}</span>
+          <span className="break-all font-mono text-sm font-medium text-text">{version}</span>
           {tag}
           {featured && (
-            <span className="rounded-full bg-accent-soft px-2 py-0.5 font-sans text-[0.62rem] font-bold uppercase tracking-wider text-accent-text">
+            <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[0.6rem] font-semibold text-accent-text">
               {m.archive_latest()}
             </span>
           )}
-          {at && made && (
-            <time dateTime={at} className="shrink-0 text-xs tabular-nums text-dim">
-              {made}
-            </time>
-          )}
         </div>
-
-        <span className="shrink-0 self-start rounded-full border border-border px-2 py-0.5 font-sans text-xs tabular-nums text-dim sm:self-center">
-          {files.length}
+        {at && made && (
+          <time
+            dateTime={at}
+            className="col-start-1 row-start-2 mt-1 text-[0.68rem] tabular-nums text-muted sm:col-start-2 sm:row-start-1 sm:mt-0 sm:text-xs"
+          >
+            {made}
+          </time>
+        )}
+        <span className="col-start-2 row-start-1 text-right text-[0.68rem] tabular-nums text-muted sm:col-start-3 sm:text-xs">
+          {m.archive_file_count({ count: String(files.length) })}
         </span>
-
-        {note && <span className="col-start-2 min-w-0 truncate text-sm text-muted">{note}</span>}
+        <IconChevronRight
+          size={15}
+          stroke={1.75}
+          className="col-start-3 row-start-1 shrink-0 text-dim transition-transform duration-200 group-open/build:rotate-90 sm:col-start-4"
+          aria-hidden
+        />
+        {note && (
+          <span className="col-start-1 mt-1 min-w-0 truncate text-xs text-muted sm:col-span-3">
+            {note}
+          </span>
+        )}
       </summary>
-
-      <div className="pb-5 pl-6">
+      <div className="border-t border-border/60 bg-surface-2/20 px-4 py-5 sm:px-5">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {files.map((file) => (
             <DownloadButton key={file.key} file={file} withPlatform />
@@ -87,10 +87,10 @@ export function BuildRow({
             href={source.href}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-text transition-opacity hover:opacity-80"
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-accent-text transition-opacity hover:opacity-80"
           >
             {source.label}
-            <IconArrowUpRight size={14} stroke={2} aria-hidden />
+            <IconArrowUpRight size={13} stroke={1.75} aria-hidden />
           </a>
         )}
       </div>

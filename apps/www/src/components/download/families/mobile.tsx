@@ -1,37 +1,92 @@
-import { IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
+import { IconArrowUpRight, IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
+import { useState, useSyncExternalStore } from 'react';
+import { DevicePicker } from '#site/components/download/device-picker';
 import { family } from '#site/components/download/families/meta';
-import { docs, join } from '#site/components/download/links';
+import { JoinButton } from '#site/components/download/join-button';
+import { join } from '#site/components/download/links';
+import { PlatformDownload } from '#site/components/download/platform-download';
+import { PlatformEntry } from '#site/components/download/platform-entry';
 import { PlatformFamily } from '#site/components/download/platform-family';
-import { downloadsFor } from '#site/lib/releases';
+import { StepList } from '#site/components/download/step-list';
 import { m } from '#site/paraglide/messages';
-import { useDownloadRelease } from '#site/components/download/channel';
 
-/**
- * iOS has no file here: the release carries an App Store `.ipa`, which nobody
- * who downloads it can install.
- */
+const subscribeNever = () => () => undefined;
+const clientDevice = () => (/android/i.test(navigator.userAgent) ? 'android' : 'apple');
+const serverDevice = () => 'apple';
+
 export function MobileFamily() {
-  const release = useDownloadRelease();
+  const detected = useSyncExternalStore(subscribeNever, clientDevice, serverDevice);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const selected = chosen ?? detected;
+  const choices = [
+    { id: 'apple', name: 'iPhone & iPad', icon: IconBrandApple },
+    { id: 'android', name: 'Android', icon: IconBrandAndroid },
+  ];
   return (
     <PlatformFamily
       meta={family('mobile')}
-      intro={m.download_family_mobile_intro()}
-      docHref={docs.beta}
-      entries={[
-        {
-          icon: IconBrandApple,
-          name: 'iPhone / iPad',
-          beta: true,
-          join: { href: join.testflight, channel: 'TestFlight' },
-        },
-        {
-          icon: IconBrandAndroid,
-          name: 'Android',
-          beta: true,
-          downloads: downloadsFor(release, ['android']),
-          join: { href: join.firebase, channel: 'Firebase App Distribution' },
-        },
-      ]}
-    />
+      picker={
+        <DevicePicker
+          choices={choices}
+          selected={selected}
+          onSelect={setChosen}
+          label={m.download_mobile_choice_label()}
+          controls="mobile-download"
+        />
+      }
+    >
+      {selected === 'apple' ? (
+        <PlatformEntry
+          icon={IconBrandApple}
+          name="iPhone & iPad"
+          badge={`${m.download_ui_beta()} · TestFlight`}
+          description={m.download_mobile_apple_body()}
+          help={
+            <StepList
+              steps={[
+                m.download_mobile_apple_step_1(),
+                m.download_mobile_apple_step_2(),
+                m.download_mobile_apple_step_3(),
+              ]}
+            />
+          }
+        >
+          <JoinButton
+            href={join.testflight}
+            channel="TestFlight"
+            label={m.download_join_testflight()}
+          />
+        </PlatformEntry>
+      ) : (
+        <PlatformEntry
+          icon={IconBrandAndroid}
+          name="Android"
+          badge={m.download_ui_beta()}
+          description={m.download_mobile_android_body()}
+          help={
+            <div className="space-y-4">
+              <StepList
+                steps={[
+                  m.download_mobile_android_step_1(),
+                  m.download_mobile_android_step_2(),
+                  m.download_mobile_android_step_3(),
+                ]}
+              />
+              <a
+                href={join.firebase}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1 text-xs text-accent-text hover:underline"
+              >
+                {m.download_mobile_firebase()}
+                <IconArrowUpRight size={12} aria-hidden />
+              </a>
+            </div>
+          }
+        >
+          <PlatformDownload target="android" label={m.download_android_apk()} />
+        </PlatformEntry>
+      )}
+    </PlatformFamily>
   );
 }

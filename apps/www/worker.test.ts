@@ -154,3 +154,64 @@ describe('the site worker', () => {
     expect((await get('/api/canary/dl/32406018041/tizen')).status).toBe(404);
   });
 });
+
+describe('live installer downloads', () => {
+  const release = (tag: string) => ({
+    tag_name: tag,
+    prerelease: true,
+    html_url: `https://github.com/kromatv/kroma/releases/tag/${tag}`,
+    assets: [
+      {
+        name: 'KROMA_0.1.40-3580000_x64.dmg',
+        size: 1024,
+        browser_download_url: `https://github.com/kromatv/kroma/releases/download/${tag}/KROMA_0.1.40-3580000_x64.dmg`,
+        created_at: '2026-10-20T12:30:00Z',
+      },
+    ],
+  });
+
+  it('finds the Intel installer without rebuilding the site and caches the response', async () => {
+    const put = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('caches', { default: { match: vi.fn().mockResolvedValue(undefined), put } });
+    const upstream = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(
+          url.endsWith('/desktop-latest')
+            ? Response.json(release('desktop-latest'))
+            : new Response(null, { status: 404 }),
+        ),
+      );
+    vi.stubGlobal('fetch', upstream);
+    const response = await get('/api/downloads/canary.json');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=300');
+    expect(JSON.stringify(await response.json())).toContain('_x64.dmg');
+    expect(upstream).toHaveBeenCalledTimes(2);
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves a cached listing without calling GitHub again', async () => {
+    vi.stubGlobal('caches', {
+      default: { match: vi.fn().mockResolvedValue(Response.json([release('desktop-latest')])) },
+    });
+    const upstream = vi.fn();
+    vi.stubGlobal('fetch', upstream);
+    expect((await get('/api/downloads/canary.json')).status).toBe(200);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it('does not cache an upstream failure', async () => {
+    const put = vi.fn();
+    vi.stubGlobal('caches', { default: { match: vi.fn().mockResolvedValue(undefined), put } });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const response = await get('/api/downloads/canary.json');
+    expect(response.status).toBe(503);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('refuses writes to the public listing', async () => {
+    expect((await get('/api/downloads/canary.json', 'POST')).status).toBe(405);
+  });
+});
