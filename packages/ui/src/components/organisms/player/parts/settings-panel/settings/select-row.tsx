@@ -1,15 +1,11 @@
 import type { ReactNode } from 'react';
-import { Pressable, type TextStyle } from 'react-native';
+import type { TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
-import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { style, useStyles } from '#ui/core';
-import { a11yState } from '#ui/lib/a11y';
-import { useFocusedRow } from '#ui/lib/use-focused-row';
-import { FocusTargetHost, radiusOf } from '#ui/lib/focus-target';
-import { NATIVE_FOCUS } from '#ui/lib/native-focus';
-import { panel, rowStyle } from './panel-style';
+import { panel, ROW_FOCUS } from './panel-style';
 
 const MIN_W = style({ minWidth: 0 });
 function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
@@ -21,20 +17,16 @@ function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>)
 /**
  * One row of a settings sub-list (Quality / Audio / Subtitles / Speed / audio
  * filter): a label, an optional sub-line, an accent check when it is the current
- * value, and an optional trailing control.
- *
- * Focus is the `focused` PROP, not CSS state: the panel's list navigation owns
- * which row is current, and a pointer entering a row moves that selection
- * exactly as the D-pad would (§15).
+ * value, and an optional trailing control. One control the remote walks like any
+ * other; the list it sits in opens on the current value.
  */
 export function SelectRow({
   index,
   label,
   sub,
   selected,
-  focused,
+  autoFocus = selected,
   onActivate,
-  onFocus,
   leading,
   trailing,
 }: Readonly<{
@@ -42,38 +34,32 @@ export function SelectRow({
   label: ReactNode;
   sub?: ReactNode;
   selected?: boolean;
-  focused: boolean;
+  /** Where the list opens. Default: the selected row. */
+  autoFocus?: boolean;
   onActivate: (index: number) => void;
-  onFocus: (index: number) => void;
   leading?: ReactNode;
   trailing?: ReactNode;
 }>) {
   const panelScoped = useStyles(panel);
 
-  const anchor = useFocusedRow(focused);
-  const look = rowStyle(panelScoped.selectRow, panelScoped.rowOn, focused);
   return (
-    <FocusTargetHost focused={focused} radius={radiusOf(look)}>
-      <Pressable
-        {...VIRTUAL_FOCUS}
-        ref={anchor}
-        onPress={NATIVE_FOCUS ? undefined : () => onActivate(index)}
-        onPointerEnter={() => onFocus(index)}
-        accessibilityRole="button"
-        // The row's words may arrive as nodes rather than text, and a row named by
-        // nothing is one of a list of identical rows.
-        accessibilityLabel={typeof label === 'string' ? label : undefined}
-        {...a11yState({ selected: Boolean(selected) })}
-        style={look}
-      >
-        {leading}
-        <Box flex style={MIN_W}>
-          <Line node={label} style={panelScoped.selectLabel} />
-          <Line node={sub} style={panelScoped.selectSub} />
-        </Box>
-        {trailing}
-        {selected ? <IconOk size={24} color="accentText" /> : null}
-      </Pressable>
-    </FocusTargetHost>
+    <Focusable
+      // The row's words may arrive as nodes rather than text, and a row named by
+      // nothing is one of a list of identical rows.
+      label={typeof label === 'string' ? label : undefined}
+      selected={Boolean(selected)}
+      autoFocus={Boolean(autoFocus)}
+      onPress={() => onActivate(index)}
+      states={ROW_FOCUS}
+      style={panelScoped.selectRow}
+    >
+      {leading}
+      <Box flex style={MIN_W}>
+        <Line node={label} style={panelScoped.selectLabel} />
+        <Line node={sub} style={panelScoped.selectSub} />
+      </Box>
+      {trailing}
+      {selected ? <IconOk size={24} color="accentText" /> : null}
+    </Focusable>
   );
 }

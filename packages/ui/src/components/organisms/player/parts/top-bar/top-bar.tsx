@@ -24,8 +24,10 @@ export interface TopBarProps {
   /** Pre-translated warning, or nothing to hide the pill. */
   warn?: ReactNode;
   onBack: () => void;
-  /** Whether the nav machine currently rests on the back button. */
-  backFocused?: boolean;
+  /** The navigator's focus landed on the back button. */
+  onBackFocus?: () => void;
+  /** The navigator's focus left the back button. */
+  onBackBlur?: () => void;
   /** Host-supplied controls for the right edge (the web's "play on TV"). The
    * TV passes none: it is the screen things are cast TO. */
   actions?: ReactNode;
@@ -42,7 +44,8 @@ export const TopBar = memo(function TopBar({
   subtitle,
   warn,
   onBack,
-  backFocused,
+  onBackFocus,
+  onBackBlur,
   actions,
   scale = 1,
 }: Readonly<TopBarProps>) {
@@ -65,14 +68,12 @@ export const TopBar = memo(function TopBar({
       py={px(26)}
       style={[s.bar, gradient(SCRIM)]}
     >
-      {/* Controlled focus (`focused` is ALWAYS passed): the button must never
-          become a platform / navigator focus target inside the player - see
-          ../lib/virtual-focus.ts. */}
       <BackButton
         variant="glass"
         diameter={px(42)}
         style={NO_OUTLINE}
-        focused={backFocused ?? false}
+        onFocus={onBackFocus}
+        onBlur={onBackBlur}
         onPress={onBack}
         label={t('player.back')}
       />

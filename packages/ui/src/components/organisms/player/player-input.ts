@@ -1,49 +1,5 @@
-import type { Dispatch, SetStateAction } from 'react';
-import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { usePlayerNav } from './hooks/use-player-nav';
 import type { PlayerController, PlayerFlags } from './types';
-
-function handleCreditsKey(
-  key: RemoteKey,
-  focus: 'play' | 'cancel',
-  setFocus: Dispatch<SetStateAction<'play' | 'cancel'>>,
-  onPlay: () => void,
-  onCancel: () => void,
-): boolean {
-  if (key === 'Left' || key === 'Right') {
-    setFocus((f) => (f === 'play' ? 'cancel' : 'play'));
-    return true;
-  }
-  if (key === 'Enter') {
-    if (focus === 'play') onPlay();
-    else onCancel();
-    return true;
-  }
-  if (key === 'Back') {
-    onCancel();
-    return true;
-  }
-  return false;
-}
-
-function handlePostPlayKey(
-  key: RemoteKey,
-  focus: 'play' | 'home',
-  setFocus: Dispatch<SetStateAction<'play' | 'home'>>,
-  onPlay: () => void,
-  onHome: () => void,
-): void {
-  if (key === 'Left' || key === 'Right') {
-    setFocus((f) => (f === 'play' ? 'home' : 'play'));
-    return;
-  }
-  if (key === 'Enter' || key === 'Play' || key === 'PlayPause') {
-    if (focus === 'play') onPlay();
-    else onHome();
-    return;
-  }
-  if (key === 'Back') onHome();
-}
 
 function playerInputHandlers(
   nav: ReturnType<typeof usePlayerNav>,
@@ -70,4 +26,4 @@ function playerInputHandlers(
   };
 }
 
-export { handleCreditsKey, handlePostPlayKey, playerInputHandlers };
+export { playerInputHandlers };

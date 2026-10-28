@@ -6,9 +6,9 @@ import { type StyleScope, sharedStyle, useStyleScope, useStyles } from '#ui/core
 // and a setting never read as one undifferentiated list.
 
 import { Fragment } from 'react';
-import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { playerStyle } from '#ui/components/organisms/player/lib/style';
+import { FocusColumn } from '#ui/lib/focus-scope';
 
 import { useT } from '#ui/services/i18n';
 import type { Entry } from './entries';
@@ -22,14 +22,10 @@ const gapOf = (marginTop: number, scope: StyleScope) =>
 export function MenuList({
   entries,
   moved,
-  focused,
-  onFocus,
   px,
 }: Readonly<{
   entries: readonly Entry[];
   moved: number;
-  focused: number;
-  onFocus: (index: number) => () => void;
   /** The chrome's scaler (see ../../lib/metrics). */
   px: (n: number) => number;
 }>) {
@@ -39,7 +35,7 @@ export function MenuList({
 
   const t = useT();
   return (
-    <Box gap={px(12)}>
+    <FocusColumn style={{ gap: px(12) }}>
       {entries.map((e, i) => (
         <Fragment key={e.id}>
           {moved > 0 && i === 0 ? (
@@ -53,13 +49,12 @@ export function MenuList({
             value={e.value}
             toggle={e.toggle}
             on={e.on}
-            focused={focused === i}
+            autoFocus={i === 0}
             onActivate={e.activate}
-            onFocus={onFocus(i)}
             style={moved > 0 && i === moved ? gapOf(px(20), scope) : undefined}
           />
         </Fragment>
       ))}
-    </Box>
+    </FocusColumn>
   );
 }

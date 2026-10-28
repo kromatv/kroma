@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
+import { createContext, useContext, useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 /** Whether tvOS's own focus follows the app's here: the control the app focuses is the view tvOS focuses. */
@@ -6,25 +6,22 @@ export const NATIVE_FOCUS = Platform.isTV === true && Platform.OS === 'ios';
 
 /** The claims on tvOS's focus under one window: the latest claim holds it. */
 export interface NativeFocusHost {
-  claim: () => number;
-  release: (claim: number) => void;
-  holder: () => number | null;
+  claim: (claim: string) => void;
+  release: (claim: string) => void;
+  holder: () => string | null;
   subscribe: (listener: () => void) => () => void;
 }
 
 function createNativeFocusHost(): NativeFocusHost {
-  const claims: number[] = [];
+  const claims: string[] = [];
   const listeners = new Set<() => void>();
-  let next = 0;
   const notify = () => {
     for (const listener of listeners) listener();
   };
   return {
-    claim: () => {
-      next += 1;
-      claims.push(next);
+    claim: (claim) => {
+      claims.push(claim);
       notify();
-      return next;
     },
     release: (claim) => {
       const at = claims.indexOf(claim);
@@ -65,21 +62,17 @@ export function useNativeFocusHost(shares: boolean): { held: boolean; host: Nati
 export function useNativeFocus(focused: boolean): boolean {
   const host = useContext(NativeFocusContext);
   const wants = NATIVE_FOCUS && focused && host !== null;
-  const [claim, setClaim] = useState<number | null>(null);
+  const claim = useId();
   useEffect(() => {
     if (!wants || !host) return;
-    const mine = host.claim();
-    setClaim(mine);
-    return () => {
-      host.release(mine);
-      setClaim(null);
-    };
-  }, [wants, host]);
+    host.claim(claim);
+    return () => host.release(claim);
+  }, [wants, host, claim]);
   const holder = useSyncExternalStore(
     host?.subscribe ?? NO_SUBSCRIBE,
     () => host?.holder() ?? null,
   );
-  return wants && claim !== null && holder === claim;
+  return wants && holder === claim;
 }
 
 const NO_SUBSCRIBE = () => () => {};

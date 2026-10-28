@@ -43,7 +43,6 @@ public class FocusCardView: ExpoView {
   private let glare = CAGradientLayer()
   private var holds = false
   private var outline = CGRect.zero
-  private var radius: CGFloat = 0
   private weak var host: UIView?
   private var tiltEffect: UIMotionEffect?
   var styleRadius: CGFloat = 0
@@ -144,7 +143,6 @@ public class FocusCardView: ExpoView {
   private func shadow(on: Bool, of control: UIView) {
     let layer = control.layer
     layer.shadowColor = UIColor.black.cgColor
-    layer.shadowPath = UIBezierPath(roundedRect: outline, cornerRadius: radius).cgPath
     ease(layer, "shadowOpacity", Float(on ? 0.45 : 0))
     ease(layer, "shadowRadius", on ? 24 : 8)
     ease(layer, "shadowOffset", NSValue(cgSize: CGSize(width: 0, height: on ? 18 : 4)))
@@ -180,7 +178,6 @@ public class FocusCardView: ExpoView {
       corner = inner.layer.cornerRadius
     }
     outline = rect
-    radius = corner
     let local = convert(rect, from: control)
     CATransaction.begin()
     CATransaction.setDisableActions(true)

@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-track';
 import { clamp01 } from '#ui/components/organisms/player/lib/fmt';
@@ -21,11 +22,9 @@ import {
   useSv,
 } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-import { a11yValue } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { formatTimecode } from '#ui/lib/intl';
-import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import { seekBarPaint } from '../../lib/style';
@@ -42,7 +41,6 @@ export interface SeekBarProps {
   /** Empty = one continuous segment over the whole runtime. */
   chapters: Chapter[];
   tileAt: (sec: number) => StoryboardTile | null;
-  focused: boolean;
   elapsed: string;
   chapterLabel?: string;
   total: string;
@@ -50,6 +48,12 @@ export interface SeekBarProps {
   scale?: number;
   onScrub: (sec: number) => void;
   onScrubCommit: () => void;
+  /** OK on the focused bar. */
+  onActivate: () => void;
+  /** Left or Right on the focused bar: a step back or forward through the film. */
+  onNudge: (dir: -1 | 1) => void;
+  onFocus: () => void;
+  onBlur: () => void;
 }
 
 function previewCentre(centre: number, trackWidth: number, half: number): number {
@@ -65,7 +69,6 @@ export function SeekBar({
   seekPreview,
   chapters,
   tileAt,
-  focused,
   elapsed,
   chapterLabel,
   total,
@@ -73,6 +76,10 @@ export function SeekBar({
   scale = 1,
   onScrub,
   onScrubCommit,
+  onActivate,
+  onNudge,
+  onFocus,
+  onBlur,
 }: Readonly<SeekBarProps>) {
   const seekTrackScoped = useSv(seekTrack);
 
@@ -81,7 +88,7 @@ export function SeekBar({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const mirror = useFocusMirror(focused);
+  const [focused, setFocused] = useState(false);
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
@@ -195,18 +202,31 @@ export function SeekBar({
       </Box>
 
       {/* track */}
-      <Box
-        row
-        align="center"
-        gap={px(4)}
-        h={px(18)}
-        px={px(2)}
-        radius="pill"
-        ref={mirror}
-        accessibilityRole="adjustable"
-        accessibilityLabel={t('player.seekBar')}
-        {...a11yValue({ min: 0, max: Math.round(dur), now: Math.round(shown), text: elapsed })}
-        style={seekTrackScoped(undefined, { focus: focused }).root}
+      <Focusable
+        ring={false}
+        // oxlint-disable-next-line jsx-a11y/aria-role -- React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`.
+        role="adjustable"
+        label={t('player.seekBar')}
+        value={{ min: 0, max: Math.round(dur), now: Math.round(shown), text: elapsed }}
+        onPress={onActivate}
+        onFocus={() => {
+          setFocused(true);
+          onFocus();
+        }}
+        onBlur={() => {
+          setFocused(false);
+          onBlur();
+        }}
+        onKey={(direction) => {
+          if (direction !== 'left' && direction !== 'right') return false;
+          onNudge(direction === 'left' ? -1 : 1);
+          return true;
+        }}
+        style={[
+          s.bar,
+          { gap: px(4), height: px(18), paddingHorizontal: px(2) },
+          seekTrackScoped(undefined, { focus: focused }).root,
+        ]}
       >
         {/* The varying offset rides the transform via `style`, never a shorthand
             prop: a shorthand mints a permanent sharedBoxStyle entry per pixel. */}
@@ -284,7 +304,7 @@ export function SeekBar({
             ]}
           />
         </View>
-      </Box>
+      </Focusable>
     </Box>
   );
 }
@@ -312,6 +332,7 @@ const sDefinition = styles({
   track: { position: 'relative', row: true, align: 'center', flex: true, gap: SEGMENT_GAP },
   stamp: { font: 'ui', fontWeight: '700', color: 'white', fontVariant: ['tabular-nums'] },
   inert: { pointerEvents: 'none' },
+  bar: { row: true, align: 'center', radius: 'pill' },
 });
 
 function scaled(scale: number, scope: StyleScope) {

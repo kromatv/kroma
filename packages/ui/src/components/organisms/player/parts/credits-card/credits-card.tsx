@@ -21,8 +21,6 @@ export interface CreditsCardProps {
   secondsLeft: number;
   /** Countdown length the ring drains against (e.g. 5). */
   total: number;
-  playFocused: boolean;
-  cancelFocused: boolean;
   /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
   scale?: number;
   onPlay: () => void;
@@ -38,8 +36,6 @@ export function CreditsCard({
   item,
   secondsLeft,
   total,
-  playFocused,
-  cancelFocused,
   scale = 1,
   onPlay,
   onCancel,
@@ -56,11 +52,10 @@ export function CreditsCard({
         secondsLeft={secondsLeft}
         total={total}
         scale={scale}
-        secondary={{ label: t('player.cancel'), focused: cancelFocused, onPress: onCancel }}
+        secondary={{ label: t('player.cancel'), onPress: onCancel }}
         primary={{
           label: t('player.playNow'),
           icon: 'player-play-filled',
-          focused: playFocused,
           onPress: onPlay,
         }}
       />

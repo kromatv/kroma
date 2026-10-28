@@ -5,6 +5,8 @@ import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
+import { useInsideFocusScope } from '#ui/lib/focus-presence';
+import { FocusColumn, FocusScope } from '#ui/lib/focus-scope';
 import { PLAYER_ROOT_ID } from './hooks/use-idle-cursor';
 import { usePlayerRoot } from './hooks/use-player-root';
 import { surfaceShrink } from './lib/surface-shrink';
@@ -86,7 +88,6 @@ function Root({
     closeFromChrome,
     notice,
     startOver,
-    resumeCard,
     intro,
     metrics,
     flash,
@@ -107,9 +108,12 @@ function Root({
     openSheet,
     runOverflow,
     playUpNextItem,
+    seekNudge,
+    volumeNudge,
   } = usePlayerRoot({ controller, flags, active, onCast, onClose, children });
 
-  return (
+  const scoped = useInsideFocusScope();
+  const player = (
     <PlayerScope>
       <Box
         ref={ref}
@@ -138,17 +142,6 @@ function Root({
 
           <StageFlashView flash={flash} scale={metrics.scale} lift={introLift} />
 
-          {/* skip intro (§13) */}
-          {intro ? (
-            <SkipIntroButton
-              visible={intro.active}
-              focused={intro.active && !nav.overlay && !credits.show}
-              scale={metrics.scale}
-              lift={introLift}
-              onSkip={intro.onSkip}
-            />
-          ) : null}
-
           {slots.resume ? (
             <ResumePrompt
               at={slots.resume.at}
@@ -157,10 +150,10 @@ function Root({
               shown={notice.shown}
               secondsLeft={notice.secondsLeft}
               total={notice.total}
-              focus={nav.overlay ? null : resumeCard.focus}
               scale={metrics.scale}
               lift={introLift}
-              onResume={resumeCard.resume}
+              onHold={notice.holdOpen}
+              onResume={notice.dismiss}
               onStartOver={startOver}
             />
           ) : null}
@@ -171,8 +164,6 @@ function Root({
               item={nextTitle}
               secondsLeft={credits.secondsLeft}
               total={credits.total}
-              playFocused={ending.creditsFocus === 'play'}
-              cancelFocused={ending.creditsFocus === 'cancel'}
               scale={metrics.scale}
               onPlay={() => onPlayNext?.()}
               onCancel={credits.cancel}
@@ -182,25 +173,55 @@ function Root({
           {/* stats (§9) */}
           {statsOn ? <StatsPanel controller={c} onClose={() => setStatsOn(false)} /> : null}
 
-          {/* top bar */}
-          <Box
-            absolute
-            left={0}
-            right={0}
-            top={0}
-            z={20}
-            opacity={chromeShown ? 1 : 0}
-            style={chromeShown ? s.chromeLive : s.inert}
-          >
-            <TopBar
-              title={slots.title}
-              subtitle={slots.subtitle}
-              warn={slots.warning}
-              actions={slots.actions}
-              scale={metrics.scale}
-              backFocused={nav.zone === 'back'}
-              onBack={closeFromChrome}
-            />
+          <Box style={s.chrome}>
+            <FocusColumn style={s.column} onKey={nav.chromeKey}>
+              {/* top bar */}
+              <Box
+                absolute
+                left={0}
+                right={0}
+                top={0}
+                z={20}
+                opacity={chromeShown ? 1 : 0}
+                style={chromeShown ? s.chromeLive : s.inert}
+              >
+                <TopBar
+                  title={slots.title}
+                  subtitle={slots.subtitle}
+                  warn={slots.warning}
+                  actions={slots.actions}
+                  scale={metrics.scale}
+                  onBackFocus={() => nav.focus('back')}
+                  onBackBlur={() => nav.blur('back')}
+                  onBack={closeFromChrome}
+                />
+              </Box>
+
+              {/* skip intro (§13) */}
+              {intro ? (
+                <SkipIntroButton
+                  visible={intro.active && !nav.overlay && !credits.show}
+                  scale={metrics.scale}
+                  lift={introLift}
+                  onSkip={intro.onSkip}
+                  onFocus={() => nav.focus('skip')}
+                  onBlur={() => nav.blur('skip')}
+                />
+              ) : null}
+
+              <Transport
+                controller={c}
+                chapters={rawChapters}
+                tileAt={tileAt}
+                metrics={metrics}
+                nav={nav}
+                onSeekNudge={seekNudge}
+                onVolumeNudge={volumeNudge}
+                chromeShown={chromeShown}
+                bottomInset={bottomInset}
+                onLayout={onTransportLayout}
+              />
+            </FocusColumn>
           </Box>
 
           {/* up-next sheet (peek + expand, §10) */}
@@ -212,17 +233,6 @@ function Root({
             onOpen={openSheet}
             onClose={nav.closeOverlay}
             onPlay={playUpNextItem}
-          />
-
-          <Transport
-            controller={c}
-            chapters={rawChapters}
-            tileAt={tileAt}
-            metrics={metrics}
-            nav={nav}
-            chromeShown={chromeShown}
-            bottomInset={bottomInset}
-            onLayout={onTransportLayout}
           />
 
           {/* settings / audio / subtitles panel (§5) */}
@@ -253,7 +263,6 @@ function Root({
             <PostPlay
               item={postPlay}
               finished={title}
-              focus={ending.postPlayFocus}
               stageWidth={stageSize.width}
               onPlay={ending.playOffer}
               onHome={ending.goHome}
@@ -266,9 +275,12 @@ function Root({
       </Box>
     </PlayerScope>
   );
+  return scoped ? player : <FocusScope>{player}</FocusScope>;
 }
 
 const sDefinition = styles({
+  chrome: { fill: true, z: 20, pointerEvents: 'box-none' },
+  column: { fill: true, pointerEvents: 'box-none' },
   inert: { pointerEvents: 'none' },
   chromeLive: { pointerEvents: 'box-none' },
 });

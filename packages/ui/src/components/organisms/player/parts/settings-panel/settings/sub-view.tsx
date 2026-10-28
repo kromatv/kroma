@@ -4,8 +4,8 @@
 // `view === 'x' ? <XPanel …/> : null` lines it replaces read as eight
 // independent decisions when they are one.
 //
-// Every panel takes the same ref - the open one owns the keys (PanelHandle) -
-// and the same `onBack`, which returns to the menu.
+// A panel that steps back inside itself before the menu takes the ref (see
+// PanelHandle); `onBack` returns to the menu.
 
 import type { Ref } from 'react';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
@@ -47,7 +47,6 @@ export function SubView({
     case 'quality':
       return (
         <QualityPanel
-          ref={ref}
           qualities={c.qualities}
           current={c.qualityId}
           onSelect={(id) => c.setQuality(id)}
@@ -58,7 +57,6 @@ export function SubView({
     case 'engine':
       return c.engines ? (
         <QualityPanel
-          ref={ref}
           qualities={c.engines}
           current={c.engineId ?? ''}
           onSelect={(id) => c.setEngine?.(id)}
@@ -68,7 +66,6 @@ export function SubView({
     case 'audio':
       return (
         <AudioPanel
-          ref={ref}
           tracks={c.audioTracks}
           current={c.audioIndex}
           onSelect={(i) => c.setAudio(i)}
@@ -78,7 +75,6 @@ export function SubView({
     case 'audioFilter':
       return (
         <AudioFilterPanel
-          ref={ref}
           value={c.audioFilter}
           onSelect={(m) => c.setAudioFilter(m)}
           onBack={onBack}
@@ -97,17 +93,12 @@ export function SubView({
       );
     case 'appearance':
       return (
-        <SubtitleAppearancePanel
-          ref={ref}
-          appearance={appearance}
-          onAppearanceChange={onAppearanceChange}
-          onBack={onBack}
-        />
+        <SubtitleAppearancePanel appearance={appearance} onAppearanceChange={onAppearanceChange} />
       );
     case 'report':
-      return onReport ? <ReportPanel ref={ref} onReport={onReport} onBack={onBack} /> : null;
+      return onReport ? <ReportPanel onReport={onReport} /> : null;
     case 'speed':
-      return <SpeedPanel ref={ref} rate={c.rate} onSelect={(r) => c.setRate(r)} onBack={onBack} />;
+      return <SpeedPanel rate={c.rate} onSelect={(r) => c.setRate(r)} onBack={onBack} />;
     default:
       return null;
   }

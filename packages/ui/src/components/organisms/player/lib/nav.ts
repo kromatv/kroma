@@ -9,15 +9,10 @@ import type { RemoteKey } from '#ui/lib/remote-keys';
  */
 export type { RemoteKey } from '#ui/lib/remote-keys';
 
-/** The vertical zones the player is split into (§3), top to bottom. The bottom
- * "À suivre" zone is the {@link Overlay} `sheet`, opened by ▼ from the controls
- * (never on hover).
- *
- * `back` is the top chrome's round Back button. It is a ZONE rather than a
- * control because this player drives its own D-pad chain instead of the
- * spatial navigator: anything not named here cannot be reached at all, which
- * is exactly how the Back button spent its life unreachable by ▲. */
-export type Zone = 'back' | 'progress' | 'controls';
+/** Where in the chrome the navigator's focus is: the top bar's Back button, the
+ * seek bar, the skip-intro pill, or one of the row's controls. The bottom
+ * "À suivre" sheet is the {@link Overlay} `sheet`, opened by ▼ from the row. */
+export type Spot = 'back' | 'progress' | 'skip' | ControlId;
 
 /** An open panel that captures navigation until dismissed. */
 export type Overlay = 'settings' | 'audio' | 'subtitles' | 'sheet' | null;
@@ -56,14 +51,10 @@ export function controlOrder(flags: PlayerFlags, hasNext: boolean): ControlId[] 
 }
 
 /**
- * Imperative handle an open panel exposes so the player shell can route D-pad
- * keys into it (useImperativeHandle). `onKey` returns true when the panel
- * consumed the key (so the shell stops), false to let the shell handle it (e.g.
- * an unhandled Back bubbles up to close the panel).
+ * Imperative handle an open panel exposes so the player shell can give it Back
+ * first: `onKey` returns true when the panel took the press (a sub-view stepping
+ * up to its menu), false to let the shell close the panel.
  */
 export interface PanelHandle {
   onKey(key: RemoteKey): boolean;
-  /** Tab's reading-order walk. Return false to hand the press back; omit it and
-   *  Tab arrives through `onKey` as a direction. */
-  onTab?(backwards: boolean): boolean;
 }
