@@ -3,21 +3,14 @@ import { type Ref, useImperativeHandle, useState } from 'react';
 import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
+import { Focusable } from '#ui/components/atoms/focusable';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import type { PlayerSubCapabilities } from '#ui/components/organisms/player/media-types';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
-import {
-  type ColorValue,
-  resolveStyles,
-  type StyleScope,
-  sharedStyle,
-  styles,
-  useStyleScope,
-} from '#ui/core';
+import { type ColorValue, resolveStyles, type StyleScope, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
@@ -36,13 +29,6 @@ interface GenerateWizardProps {
   ref?: Ref<PanelHandle>;
 }
 
-/** One focusable wizard field, in display order for the current mode. */
-interface Field {
-  key: 'mode' | 'lang' | 'quality' | 'source' | 'start';
-  nudge?: (dir: -1 | 1) => void;
-  activate?: () => void;
-}
-
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 /**
@@ -59,8 +45,6 @@ export function GenerateWizard({
   ref,
 }: Readonly<GenerateWizardProps>) {
   const panelScoped = useStyles(panel);
-
-  const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
 
@@ -103,28 +87,17 @@ export function GenerateWizard({
   const cycleSource = (d: -1 | 1) =>
     setSourceIndex((i) => (sources.length ? mod(i + d, sources.length) : 0));
 
-  const fields: Field[] =
-    mode === 'transcribe'
-      ? [
-          { key: 'mode', nudge: toggleMode },
-          { key: 'lang', nudge: cycleLang },
-          { key: 'quality', nudge: cycleQuality },
-          { key: 'start', activate: start },
-        ]
-      : [
-          { key: 'mode', nudge: toggleMode },
-          { key: 'source', nudge: cycleSource },
-          { key: 'start', activate: start },
-        ];
-  const at = (key: Field['key']) => fields.findIndex((f) => f.key === key);
-
-  const focus = useListFocus({
-    count: fields.length,
-    onActivate: (i) => fields[i]?.activate?.(),
-    onHorizontal: (i, d) => fields[i]?.nudge?.(d),
-    onBack: onClose,
-  });
-  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      onKey: (key) => {
+        if (key !== 'Back') return false;
+        onClose();
+        return true;
+      },
+    }),
+    [onClose],
+  );
 
   const curSource = sources[sourceIndex] ?? sources[0];
   const curLang = GEN_LANGS[langIndex] ?? GEN_LANGS[0];
@@ -154,18 +127,16 @@ export function GenerateWizard({
         />
       </Box>
 
-      {/* mode tabs (index 0): ◀▶ toggles, a press picks directly. */}
-      <Box
-        row
-        gap={10}
-        mb={14}
-        radius="xl"
-        onPointerEnter={focus.hover(0)}
-        style={
-          focus.index === 0
-            ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusLift' }, scope)
-            : null
-        }
+      {/* mode tabs: ◀▶ toggles, a press picks directly. */}
+      <Focusable
+        autoFocus
+        label={t('player.subGenerate')}
+        onKey={(direction) => {
+          if (direction !== 'left' && direction !== 'right') return false;
+          toggleMode();
+          return true;
+        }}
+        style={s.tabs}
       >
         <ModeTab
           on={mode === 'transcribe'}
@@ -181,15 +152,13 @@ export function GenerateWizard({
           hint={t('player.subModeTranslateHint')}
           onPress={() => caps?.translate && setMode('translate')}
         />
-      </Box>
+      </Focusable>
 
       <Box gap={12}>
         {mode === 'translate' && curSource != null ? (
           <CycleField
             label={t('player.subSource')}
             value={sourceLabel(curSource)}
-            focused={focus.index === at('source')}
-            onFocus={focus.hover(at('source'))}
             onDec={() => cycleSource(-1)}
             onInc={() => cycleSource(1)}
           />
@@ -202,16 +171,12 @@ export function GenerateWizard({
             <CycleField
               label={t('player.subSpokenLang')}
               value={curLang?.label ?? ''}
-              focused={focus.index === at('lang')}
-              onFocus={focus.hover(at('lang'))}
               onDec={() => cycleLang(-1)}
               onInc={() => cycleLang(1)}
             />
             <CycleField
               label={t('player.subQuality')}
               value={qualityLabel(quality)}
-              focused={focus.index === at('quality')}
-              onFocus={focus.hover(at('quality'))}
               onDec={() => cycleQuality(-1)}
               onInc={() => cycleQuality(1)}
             />
@@ -223,17 +188,13 @@ export function GenerateWizard({
         {t('player.subGenBackground')}
       </Text>
 
-      {/* Controlled kit button (`focused` is ALWAYS passed - the wizard's own
-          list focus drives it; see ../../lib/virtual-focus.ts). */}
       <Button
         block
         variant="primary"
         size="tv"
         icon="sparkles"
         label={t('player.subGenStart')}
-        focused={focus.index === at('start')}
         disabled={noSource}
-        onHoverIn={focus.hover(at('start'))}
         onPress={start}
         style={s.startButton}
       />
@@ -242,6 +203,7 @@ export function GenerateWizard({
 }
 
 const sDefinition = styles({
+  tabs: { row: true, gap: 10, mb: 14, radius: 'xl' },
   startButton: { mt: 4 },
   backgroundHint: { mx: 2, mt: 12, mb: 4, text: 'captionTv' },
   modeTab: { flex: 1, radius: 'xl', px: 18, py: 14 },

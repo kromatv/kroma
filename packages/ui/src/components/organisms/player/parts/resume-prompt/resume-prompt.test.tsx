@@ -29,6 +29,12 @@ function prompt(over: Partial<React.ComponentProps<typeof ResumePrompt>> = {}) {
   return { ...view, onStartOver, onResume };
 }
 
+function press(key: string) {
+  act(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+  });
+}
+
 const startOver = () => screen.getByRole('button', { name: 'Restart' });
 const resume = () => screen.getByRole('button', { name: 'Resume' });
 
@@ -57,16 +63,21 @@ describe('ResumePrompt', () => {
     expect(onStartOver).toHaveBeenCalledOnce();
   });
 
-  it('wears the kit ring on the button the remote is on, and on neither without one', () => {
-    const lit = prompt({ focus: 'resume' });
-    expect(wearsRing(resume())).toBe(true);
-    expect(wearsRing(startOver())).toBe(false);
-
-    lit.unmount();
+  it('opens with the ring on resume', () => {
     prompt();
 
-    expect(wearsRing(resume())).toBe(false);
+    expect(wearsRing(resume())).toBe(true);
     expect(wearsRing(startOver())).toBe(false);
+  });
+
+  it('holds the countdown once the remote moves to restart', () => {
+    const onHold = vi.fn();
+    prompt({ onHold });
+
+    press('ArrowLeft');
+
+    expect(wearsRing(startOver())).toBe(true);
+    expect(onHold).toHaveBeenCalled();
   });
 
   it('draws the countdown only while it is counting', () => {

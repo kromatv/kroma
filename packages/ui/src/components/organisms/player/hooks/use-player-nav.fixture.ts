@@ -1,3 +1,4 @@
+import type { Direction } from '@kromatv/spatial-nav';
 import { act, renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
 import { controlOrder } from '#ui/components/organisms/player/lib/nav';
@@ -27,6 +28,12 @@ export function nav(flags = WEB_FLAGS, playing = false, actions: PlayerNavAction
     usePlayerNav(playing, actions, controlOrder(flags, actions.hasNext)),
   );
   const key = (k: RemoteKey) => act(() => view.result.current.handleKey(k));
-  const tab = (backwards = false) => act(() => view.result.current.walkChrome(backwards));
-  return { ...view, actions, key, tab };
+  const press = (direction: Direction) => {
+    let taken = false;
+    act(() => {
+      taken = view.result.current.chromeKey(direction);
+    });
+    return taken;
+  };
+  return { ...view, actions, key, press };
 }

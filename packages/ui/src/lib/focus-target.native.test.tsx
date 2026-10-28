@@ -24,7 +24,7 @@ async function load(os: string) {
 
 async function focusOn(os: string, focused: boolean) {
   const { target, native } = await load(os);
-  const root = renderHook(() => native.useNativeFocusHost());
+  const root = renderHook(() => native.useNativeFocusHost(false));
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(native.NativeFocusProvider, { value: root.result.current.host }, children);
   return renderHook(() => target.useFocusTarget(focused, 12, 'host'), { wrapper }).result.current;

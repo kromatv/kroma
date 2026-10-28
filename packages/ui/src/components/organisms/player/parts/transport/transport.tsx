@@ -7,7 +7,7 @@ import { gradient } from '#ui/lib/css';
 import { formatTimecode as fmtTime } from '#ui/lib/intl';
 import { useLocale, useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
-import type { usePlayerNav } from '../../hooks/use-player-nav';
+import type { PlayerNav } from '../../hooks/use-player-nav';
 import { currentChapter, normalizeChapters } from '../../lib/chapters';
 import { endsAtClock } from '../../lib/fmt';
 import { type ChromeMetrics, GUTTER, scaler } from '../../lib/metrics';
@@ -20,7 +20,11 @@ interface TransportProps {
   chapters?: Chapter[];
   tileAt: (sec: number) => StoryboardTile | null;
   metrics: ChromeMetrics;
-  nav: ReturnType<typeof usePlayerNav>;
+  nav: PlayerNav;
+  /** Left or Right on the focused seek bar. */
+  onSeekNudge: (dir: -1 | 1) => void;
+  /** Up or Down on the focused volume pill. */
+  onVolumeNudge: (dir: -1 | 1) => void;
   chromeShown: boolean;
   /** The padding the up-next peek claims under the controls, in real pixels: it
    *  is the sheet's own height and is never scaled. */
@@ -34,6 +38,8 @@ function Transport({
   tileAt,
   metrics,
   nav,
+  onSeekNudge,
+  onVolumeNudge,
   chromeShown,
   bottomInset,
   onLayout,
@@ -79,7 +85,6 @@ function Transport({
           seekPreview={c.seekPreview}
           chapters={chapters}
           tileAt={tileAt}
-          focused={nav.zone === 'progress'}
           elapsed={fmtTime(shown)}
           chapterLabel={curChapter?.title || undefined}
           total={fmtTime(c.dur)}
@@ -87,9 +92,12 @@ function Transport({
           scale={metrics.scale}
           onScrub={c.scrubPreview}
           onScrubCommit={c.scrubCommit}
+          onActivate={c.togglePlay}
+          onNudge={onSeekNudge}
+          onFocus={() => nav.focus('progress')}
+          onBlur={() => nav.blur('progress')}
         />
         <ControlCluster
-          focused={nav.focusedControl}
           playing={c.playing}
           muted={c.muted}
           volume={c.volume}
@@ -98,8 +106,10 @@ function Transport({
           fullscreen={c.fullscreen}
           metrics={metrics}
           onActivate={nav.activate}
-          onFocus={nav.focusControl}
+          onFocus={nav.focus}
+          onBlur={nav.blur}
           onVolume={c.setVolume}
+          onVolumeNudge={onVolumeNudge}
         />
       </Box>
     </Box>

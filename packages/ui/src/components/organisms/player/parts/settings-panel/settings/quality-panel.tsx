@@ -1,9 +1,6 @@
-import { type Ref, useImperativeHandle } from 'react';
-import { Box } from '#ui/components/atoms/box';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { PlayerQuality } from '#ui/components/organisms/player/types';
 import { useStyles } from '#ui/core';
+import { FocusColumn } from '#ui/lib/focus-scope';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
@@ -13,7 +10,6 @@ interface QualityPanelProps {
   onSelect: (id: string) => void;
   /** Return to the settings menu (Back, or after a pick). */
   onBack: () => void;
-  ref?: Ref<PanelHandle>;
 }
 
 /**
@@ -26,7 +22,6 @@ export function QualityPanel({
   current,
   onSelect,
   onBack,
-  ref,
 }: Readonly<QualityPanelProps>) {
   const panelScoped = useStyles(panel);
 
@@ -35,11 +30,9 @@ export function QualityPanel({
     if (q) onSelect(q.id);
     onBack();
   };
-  const focus = useListFocus({ count: qualities.length, onActivate: pick, onBack });
-  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   return (
-    <Box style={panelScoped.panelList}>
+    <FocusColumn style={panelScoped.panelList}>
       {qualities.map((q, i) => (
         <SelectRow
           key={q.id}
@@ -47,11 +40,9 @@ export function QualityPanel({
           label={q.label}
           sub={q.note}
           selected={q.id === current}
-          focused={focus.index === i}
           onActivate={pick}
-          onFocus={focus.setIndex}
         />
       ))}
-    </Box>
+    </FocusColumn>
   );
 }

@@ -24,7 +24,7 @@ function wrapperFor(mod: Module, host: ReturnType<Module['useNativeFocusHost']>[
 describe('native focus on Apple TV', () => {
   it('makes the focused control the one view tvOS may focus, and asks tvOS to focus it', async () => {
     const mod = await load('ios');
-    const root = renderHook(() => mod.useNativeFocusHost());
+    const root = renderHook(() => mod.useNativeFocusHost(false));
 
     const control = renderHook(({ on }) => mod.useNativeFocus(on), {
       initialProps: { on: true },
@@ -37,7 +37,7 @@ describe('native focus on Apple TV', () => {
 
   it('gives tvOS focus back to the key host once no control holds it', async () => {
     const mod = await load('ios');
-    const root = renderHook(() => mod.useNativeFocusHost());
+    const root = renderHook(() => mod.useNativeFocusHost(false));
     const control = renderHook(({ on }) => mod.useNativeFocus(on), {
       initialProps: { on: true },
       wrapper: wrapperFor(mod, root.result.current.host),
@@ -51,7 +51,7 @@ describe('native focus on Apple TV', () => {
 
   it('keeps the key host away while focus passes from one control to the next', async () => {
     const mod = await load('ios');
-    const root = renderHook(() => mod.useNativeFocusHost());
+    const root = renderHook(() => mod.useNativeFocusHost(false));
     const wrapper = wrapperFor(mod, root.result.current.host);
     const first = renderHook(({ on }) => mod.useNativeFocus(on), {
       initialProps: { on: true },
@@ -68,6 +68,43 @@ describe('native focus on Apple TV', () => {
     });
 
     expect(root.result.current.held).toBe(true);
+  });
+});
+
+describe('several claims on Apple TV', () => {
+  it('gives tvOS focus to the latest control to claim it, and back when that one lets go', async () => {
+    const mod = await load('ios');
+    const root = renderHook(() => mod.useNativeFocusHost(false));
+    const wrapper = wrapperFor(mod, root.result.current.host);
+    const chrome = renderHook(({ on }) => mod.useNativeFocus(on), {
+      initialProps: { on: true },
+      wrapper,
+    });
+    const card = renderHook(({ on }) => mod.useNativeFocus(on), {
+      initialProps: { on: true },
+      wrapper,
+    });
+
+    expect(chrome.result.current).toBe(false);
+    expect(card.result.current).toBe(true);
+
+    act(() => card.rerender({ on: false }));
+
+    expect(chrome.result.current).toBe(true);
+  });
+
+  it('has a root nested in another claim from the outer root, so one key host steps aside', async () => {
+    const mod = await load('ios');
+    const outer = renderHook(() => mod.useNativeFocusHost(false));
+    const inner = renderHook(() => mod.useNativeFocusHost(true), {
+      wrapper: wrapperFor(mod, outer.result.current.host),
+    });
+
+    renderHook(() => mod.useNativeFocus(true), {
+      wrapper: wrapperFor(mod, inner.result.current.host),
+    });
+
+    expect(outer.result.current.held).toBe(true);
   });
 });
 

@@ -120,7 +120,7 @@ describe('<Player> as a compound', () => {
     expect(seek.getAttribute('aria-valuenow')).toBe('164');
     expect(seek.getAttribute('aria-valuemax')).toBe('9840');
 
-    const volume = screen.getByLabelText('Volume');
+    const volume = screen.getByRole('slider', { name: 'Volume' });
     expect(volume.getAttribute('aria-valuenow')).toBe('70');
     expect(volume.getAttribute('aria-valuetext')).toBe('70%');
   });
@@ -306,7 +306,7 @@ describe('<Player.Root> when the film is over', () => {
       player(media, { postPlay: OFFER, onPlayItem, controller: fakeController({ endedNonce: 1 }) }),
     );
 
-    fireEvent.keyDown(window, { key: 'Enter' });
+    fireEvent.keyDown(document, { key: 'Enter' });
 
     expect(onPlayItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'br' }));
   });
@@ -318,8 +318,8 @@ describe('<Player.Root> when the film is over', () => {
     const { rerender } = render(player(media, props));
     rerender(player(media, { ...props, controller: fakeController({ endedNonce: 1 }) }));
 
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
-    fireEvent.keyDown(window, { key: 'Enter' });
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    fireEvent.keyDown(document, { key: 'Enter' });
     expect(onGoHome).toHaveBeenCalledTimes(1);
     expect(onPlayItem).not.toHaveBeenCalled();
 
@@ -391,7 +391,7 @@ describe('<Player.Panel>, which takes the stage over', () => {
     const controller = fakeController();
     const togglePlay = vi.spyOn(controller, 'togglePlay');
     render(player(media, { controller, onClose }));
-    fireEvent.keyDown(window, { key: 'Enter' });
+    fireEvent.keyDown(document, { key: 'Enter' });
     expect(togglePlay).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled();
   });

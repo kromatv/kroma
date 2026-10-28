@@ -17,7 +17,6 @@ export const story = defineStory({
     cur: 2_940,
     dur: 9_840,
     bufEnd: 4_200,
-    focused: true,
     endsAt: 'ends at 22:38',
     withChapters: true,
     scrubbing: false,
@@ -40,10 +39,13 @@ The progress bar, aware of what it is scrubbing through. Each chapter is its OWN
   seekPreview={controller.seekPreview}
   chapters={chapters}
   tileAt={storyboard.tileAt}
-  focused={nav.zone === 'progress'}
   elapsed={fmtTime(cur)} total={fmtTime(dur)} endsAt={endClock}
   onScrub={controller.scrubPreview}
   onScrubCommit={controller.scrubCommit}
+  onActivate={controller.togglePlay}
+  onNudge={(dir) => seekNudge(dir, 'tap')}
+  onFocus={() => nav.focus('progress')}
+  onBlur={() => nav.blur('progress')}
 />
 ```
 

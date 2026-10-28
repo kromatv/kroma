@@ -4,6 +4,8 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Ground } from '#ui/components/atoms/ground';
 
+import { volumeStep } from '#ui/components/organisms/player/lib/fmt';
+
 import { chromeMetrics, GUTTER } from '#ui/components/organisms/player/lib/metrics';
 
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
@@ -24,7 +26,6 @@ export const ALL: ControlId[] = [
 ];
 
 export interface LiveProps {
-  focused: ControlId;
   playing: boolean;
   muted: boolean;
   volume: number;
@@ -32,22 +33,11 @@ export interface LiveProps {
   fullscreen: boolean;
 }
 
-export function Live({
-  focused: focusedArg,
-  playing,
-  muted,
-  volume,
-  ...rest
-}: Readonly<LiveProps>) {
-  const [state, setState] = useState({ focused: focusedArg, playing, muted, volume });
-  const [args, setArgs] = useState({ focused: focusedArg, playing, muted, volume });
-  if (
-    args.focused !== focusedArg ||
-    args.playing !== playing ||
-    args.muted !== muted ||
-    args.volume !== volume
-  ) {
-    const next = { focused: focusedArg, playing, muted, volume };
+export function Live({ playing, muted, volume, ...rest }: Readonly<LiveProps>) {
+  const [state, setState] = useState({ playing, muted, volume });
+  const [args, setArgs] = useState({ playing, muted, volume });
+  if (args.playing !== playing || args.muted !== muted || args.volume !== volume) {
+    const next = { playing, muted, volume };
     setArgs(next);
     setState(next);
   }
@@ -72,14 +62,17 @@ export function Live({
       >
         <ControlCluster
           {...rest}
-          focused={state.focused}
           playing={state.playing}
           muted={state.muted}
           volume={state.volume}
           metrics={metrics}
           onActivate={activate}
-          onFocus={(id) => setState((prev) => ({ ...prev, focused: id }))}
+          onFocus={() => {}}
+          onBlur={() => {}}
           onVolume={(next) => setState((prev) => ({ ...prev, muted: false, volume: next }))}
+          onVolumeNudge={(dir) =>
+            setState((prev) => ({ ...prev, muted: false, volume: volumeStep(prev.volume, dir, 2) }))
+          }
         />
       </Box>
     </Ground>

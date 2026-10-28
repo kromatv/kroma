@@ -1,6 +1,6 @@
 import { hashString } from '@kromatv/core';
-import { type ReactNode, useMemo } from 'react';
-import { Animated, type DimensionValue } from 'react-native';
+import { useMemo } from 'react';
+import type { DimensionValue } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
@@ -11,8 +11,6 @@ import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
-import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
-import { useFocusScale } from '#ui/lib/focus-transition';
 
 export interface UpNextItem {
   id: string;
@@ -98,10 +96,10 @@ function Face({ item }: Readonly<{ item: UpNextItem }>) {
 /**
  * One card of the up-next sheet: a still with its caption on it.
  *
- * The card is a <Focusable>, so the ring, the lift over its neighbours and the
- * scroll that brings it into view are the kit's, the same ones every tile in the
- * product uses - the sheet used to run its own index, its own ring and its own
- * scrolling, and each of the three drifted from the kit in its own way.
+ * The card is a <Focusable> around its picture, like every tile in the product,
+ * so the ring, the lift, the focus scale and the scroll that brings it into view
+ * are the kit's. The parked peek draws the same picture with no control around
+ * it, so the remote cannot reach it while it drives the chrome.
  */
 export function UpNextCard({
   item,
@@ -112,53 +110,22 @@ export function UpNextCard({
 }: Readonly<UpNextCardProps>) {
   const s = useStyles(sDefinition);
 
-  return (
-    <FocusLiftHost>
-      {(held) => (
-        <CardBox held={held} width={width}>
-          {/* The picture is clipped to the corner; the CARD is not, or the ring
-              of the control over it would be cut off by its own artwork. */}
-          <Box style={s.face}>
-            <Face item={item} />
-          </Box>
-          {/* The control is an OVERLAY on the picture rather than a box around
-              it, and that is what keeps the artwork loaded: parking the sheet
-              takes the control away, and if the picture lived inside it, React
-              would unmount the <Img> with it and every card would go blank
-              until it downloaded again. */}
-          {interactive ? (
-            <Focusable
-              label={item.title}
-              onPress={() => onActivate(item)}
-              autoFocus={autoFocus}
-              focusScale={1}
-              style={[s.hit, NO_OUTLINE]}
-            >
-              <Box fill />
-            </Focusable>
-          ) : null}
-        </CardBox>
-      )}
-    </FocusLiftHost>
+  const face = (
+    <Box style={s.face}>
+      <Face item={item} />
+    </Box>
   );
-}
-
-/** The card's box: it grows and rises while the control inside it holds the
- *  focus, since the control is only an overlay and cannot do either itself. */
-function CardBox({
-  held,
-  width,
-  children,
-}: Readonly<{ held: boolean; width: DimensionValue; children: ReactNode }>) {
-  const s = useStyles(sDefinition);
-
-  const grow = useFocusScale(held, FOCUS_SCALE);
-  // <Animated.View>, not <Box>: on native `grow` carries an Animated.Value, and a
-  // plain view rejects it ("Transform with key of scale must be a number").
+  if (!interactive) return <Box style={[s.card, { width }]}>{face}</Box>;
   return (
-    <Animated.View style={[s.card, { width }, held ? LIFTED : null, grow]}>
-      {children}
-    </Animated.View>
+    <Focusable
+      label={item.title}
+      onPress={() => onActivate(item)}
+      autoFocus={autoFocus}
+      focusScale={FOCUS_SCALE}
+      style={[s.card, { width }, NO_OUTLINE]}
+    >
+      {face}
+    </Focusable>
   );
 }
 
@@ -174,7 +141,6 @@ const sDefinition = styles({
     overflow: 'hidden',
     bg: 'surface1',
   },
-  hit: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, radius: 'xl' },
   vignette: { pointerEvents: 'none' },
   category: {
     font: 'ui',

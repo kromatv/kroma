@@ -10,13 +10,19 @@ import { makeActions, nav } from './use-player-nav.fixture';
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
+function hidden(actions = makeActions()) {
+  const view = nav(WEB_FLAGS, true, actions);
+  act(() => vi.advanceTimersByTime(3500));
+  return view;
+}
+
 describe('usePlayerNav initial state', () => {
-  it('reveals, sits in the controls zone, and focuses Play first', () => {
+  it('starts revealed with no panel open and no spot focused', () => {
     const { result } = nav();
+
     expect(result.current.revealed).toBe(true);
-    expect(result.current.zone).toBe('controls');
     expect(result.current.overlay).toBeNull();
-    expect(result.current.focusedControl).toBe('play');
+    expect(result.current.spot).toBeNull();
   });
 
   it('exposes the control row it was given and follows it when hasNext appears', () => {
@@ -25,115 +31,106 @@ describe('usePlayerNav initial state', () => {
         usePlayerNav(false, makeActions({ hasNext }), controlOrder(WEB_FLAGS, hasNext)),
       { initialProps: { hasNext: false } },
     );
-    expect(result.current.controls).not.toContain('next');
+
     rerender({ hasNext: true });
+
     expect(result.current.controls[3]).toBe('next');
   });
 });
 
-describe('usePlayerNav controls-row navigation', () => {
-  it('◀ ▶ walk the focused control and clamp at the ends', () => {
-    const { result, key } = nav();
-    key('Right');
-    expect(result.current.focusedControl).toBe('forward');
-    key('Left');
-    expect(result.current.focusedControl).toBe('play');
-    key('Left');
-    key('Left');
-    expect(result.current.focusedControl).toBe('rewind');
+describe('usePlayerNav focus reports', () => {
+  it('records the spot a part reports focus on', () => {
+    const { result } = nav();
+
+    act(() => result.current.focus('progress'));
+
+    expect(result.current.spot).toBe('progress');
   });
 
-  it('Enter on a control runs its action (Play toggles, Subtitles opens a panel)', () => {
-    const { result, key, actions } = nav();
-    key('Enter');
-    expect(actions.togglePlay).toHaveBeenCalledTimes(1);
-    act(() => result.current.focusControl('subtitles'));
-    key('Enter');
-    expect(result.current.overlay).toBe('subtitles');
+  it('clears the spot when the part holding it blurs', () => {
+    const { result } = nav();
+    act(() => result.current.focus('play'));
+
+    act(() => result.current.blur('play'));
+
+    expect(result.current.spot).toBeNull();
   });
 
-  it('▲ enters the progress zone (no control focused there)', () => {
-    const { result, key } = nav();
-    key('Up');
-    expect(result.current.zone).toBe('progress');
-    expect(result.current.focusedControl).toBeNull();
-  });
+  it('keeps the spot when a part that no longer holds it blurs late', () => {
+    const { result } = nav();
+    act(() => result.current.focus('play'));
+    act(() => result.current.focus('forward'));
 
-  it('▼ from the controls opens the up-next sheet', () => {
-    const { result, key } = nav();
-    key('Down');
-    expect(result.current.overlay).toBe('sheet');
-  });
+    act(() => result.current.blur('play'));
 
-  it('on the volume control ▲/▼ nudge volume instead of changing zone', () => {
-    const actions = makeActions();
-    const { result, key } = nav(WEB_FLAGS, false, actions);
-    act(() => result.current.focusControl('volume'));
-    key('Up');
-    expect(actions.volumeNudge).toHaveBeenCalledWith(1);
-    expect(result.current.zone).toBe('controls');
-    key('Down');
-    expect(actions.volumeNudge).toHaveBeenCalledWith(-1);
+    expect(result.current.spot).toBe('forward');
   });
 });
 
-describe('usePlayerNav progress zone', () => {
-  it('◀ ▶ nudge the seek and Enter toggles play', () => {
-    const actions = makeActions();
-    const { key } = nav(WEB_FLAGS, false, actions);
-    key('Up');
-    key('Left');
-    expect(actions.seekNudge).toHaveBeenCalledWith(-1, 'hold');
-    key('Right');
-    expect(actions.seekNudge).toHaveBeenCalledWith(1, 'hold');
-    key('Enter');
-    expect(actions.togglePlay).toHaveBeenCalledTimes(1);
+describe('usePlayerNav chromeKey', () => {
+  it('lets the navigator move when the chrome is shown', () => {
+    const { result, press } = nav();
+    act(() => result.current.focus('play'));
+
+    expect(press('right')).toBe(false);
   });
 
-  it('▼ returns to the controls zone; ▲ climbs to Back, then hides the chrome', () => {
-    const { result, key } = nav();
-    key('Up');
-    key('Down');
-    expect(result.current.zone).toBe('controls');
-    key('Up');
-    expect(result.current.zone).toBe('progress');
-    // The top chrome's Back button is a zone of its own: without it ▲ ran out of
-    // places to go and dismissed the chrome, leaving the button unreachable.
-    key('Up');
-    expect(result.current.zone).toBe('back');
+  it('takes the first press on a hidden chrome and reveals it', () => {
+    const { result, press } = hidden();
+
+    const taken = press('right');
+
+    expect(taken).toBe(true);
     expect(result.current.revealed).toBe(true);
-    key('Up');
+  });
+
+  it('lets the skip pill take a press while the chrome is hidden', () => {
+    const { result, press } = hidden();
+    act(() => result.current.focus('skip'));
+
+    const taken = press('down');
+
+    expect(taken).toBe(false);
     expect(result.current.revealed).toBe(false);
   });
 
-  it('▼ from Back returns to the progress zone', () => {
-    const { result, key } = nav();
-    key('Up');
-    key('Up');
-    expect(result.current.zone).toBe('back');
-    key('Down');
-    expect(result.current.zone).toBe('progress');
+  it('hides the chrome on Up from the back button', () => {
+    const { result, press } = nav();
+    act(() => result.current.focus('back'));
+
+    const taken = press('up');
+
+    expect(taken).toBe(true);
+    expect(result.current.revealed).toBe(false);
   });
 
-  it('OK on Back leaves the player', () => {
-    const actions = makeActions();
-    const { key } = nav(WEB_FLAGS, false, actions);
-    key('Up');
-    key('Up');
-    key('Enter');
-    expect(actions.onExit).toHaveBeenCalledTimes(1);
-  });
-});
+  it('opens the up-next sheet on Down from a control', () => {
+    const { result, press } = nav();
+    act(() => result.current.focus('settings'));
 
-describe('usePlayerNav with an empty control row', () => {
-  it('focuses nothing, and ◀ ▶ and OK have nowhere to land', () => {
-    const actions = makeActions();
-    const { result } = renderHook(() => usePlayerNav(false, actions, []));
-    expect(result.current.focusedControl).toBeNull();
-    act(() => result.current.handleKey('Right'));
-    act(() => result.current.handleKey('Left'));
-    expect(result.current.focusedControl).toBeNull();
-    act(() => result.current.handleKey('Enter'));
-    expect(actions.togglePlay).not.toHaveBeenCalled();
+    const taken = press('down');
+
+    expect(taken).toBe(true);
+    expect(result.current.overlay).toBe('sheet');
+  });
+
+  it('keeps Down on the row when there is nothing up next', () => {
+    const { result, press } = nav(WEB_FLAGS, false, makeActions({ sheetHasItems: false }));
+    act(() => result.current.focus('play'));
+
+    const taken = press('down');
+
+    expect(taken).toBe(true);
+    expect(result.current.overlay).toBeNull();
+  });
+
+  it('lets Down from the seek bar reach the row', () => {
+    const { result, press } = nav();
+    act(() => result.current.focus('progress'));
+
+    const taken = press('down');
+
+    expect(taken).toBe(false);
+    expect(result.current.overlay).toBeNull();
   });
 });

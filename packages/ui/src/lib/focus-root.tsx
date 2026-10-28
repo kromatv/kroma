@@ -51,7 +51,7 @@ export function FocusRoot({
   // Android delivers keys to the focused VIEW rather than through a global
   // stream, so the key host below is also where they arrive. Empty elsewhere.
   const hostProps = useRemoteHostProps(bridge);
-  const native = useNativeFocusHost();
+  const native = useNativeFocusHost(!bridge);
   const free = !native.held;
   return (
     <NavigatorRoot active={active} onEdge={onEdge}>

@@ -4,7 +4,6 @@ import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { subtitleName } from '#ui/components/organisms/player/lib/subtitle-name';
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
@@ -16,6 +15,7 @@ import { useT } from '#ui/services/i18n';
 import type { PlayerSubtitleGeneration } from '../../../media-types';
 import type { SubtitleGenBundle } from './gen';
 import { GenerateWizard } from './generate-wizard';
+import { FocusColumn } from '#ui/lib/focus-scope';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
@@ -70,25 +70,28 @@ export function SubtitlesPanel({
     }
   };
 
-  const focus = useListFocus({ count: rowCount, onActivate: activate, onBack });
   useImperativeHandle(
     ref,
     () => ({
-      onKey: (k: RemoteKey) => (wizardOpen ? Boolean(wizardRef.current?.onKey(k)) : focus.onKey(k)),
+      onKey: (k: RemoteKey) => {
+        if (!wizardOpen) return false;
+        if (wizardRef.current?.onKey(k)) return true;
+        if (k !== 'Back') return false;
+        setWizardOpen(false);
+        return true;
+      },
     }),
-    [wizardOpen, focus.onKey],
+    [wizardOpen],
   );
 
   return (
     <Box>
-      <Box style={panelScoped.panelList}>
+      <FocusColumn style={panelScoped.panelList}>
         <SelectRow
           index={0}
           label={t('player.subtitlesOff')}
           selected={current == null}
-          focused={focus.index === 0}
           onActivate={activate}
-          onFocus={focus.setIndex}
         />
         {subs.map((s, i) => {
           const codec = s.codec.toUpperCase();
@@ -106,9 +109,7 @@ export function SubtitlesPanel({
                 sub={s.selectable ? codec : `${codec} · ${t('player.pictureSub')}`}
                 trailing={s.ai ? <AiBadge /> : null}
                 selected={current === s.index}
-                focused={focus.index === i + 1}
                 onActivate={activate}
-                onFocus={focus.setIndex}
               />
             </Box>
           );
@@ -136,12 +137,10 @@ export function SubtitlesPanel({
             index={createIndex}
             leading={<IconAi size={22} />}
             label={t('player.subCreateMissing')}
-            focused={focus.index === createIndex}
             onActivate={activate}
-            onFocus={focus.setIndex}
           />
         ) : null}
-      </Box>
+      </FocusColumn>
 
       {gen.canCreate && wizardOpen ? (
         <Box mt={12}>

@@ -1,9 +1,6 @@
-import { type Ref, useImperativeHandle } from 'react';
-import { Box } from '#ui/components/atoms/box';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useStyles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
+import { FocusColumn } from '#ui/lib/focus-scope';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
@@ -13,11 +10,10 @@ interface SpeedPanelProps {
   rate: number;
   onSelect: (rate: number) => void;
   onBack: () => void;
-  ref?: Ref<PanelHandle>;
 }
 
 /** Playback-speed picker (§5). `1` reads as "Normal"; others as "1.25×". */
-export function SpeedPanel({ rate, onSelect, onBack, ref }: Readonly<SpeedPanelProps>) {
+export function SpeedPanel({ rate, onSelect, onBack }: Readonly<SpeedPanelProps>) {
   const panelScoped = useStyles(panel);
 
   const t = useT();
@@ -26,22 +22,18 @@ export function SpeedPanel({ rate, onSelect, onBack, ref }: Readonly<SpeedPanelP
     if (r != null) onSelect(r);
     onBack();
   };
-  const focus = useListFocus({ count: RATES.length, onActivate: pick, onBack });
-  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   return (
-    <Box style={panelScoped.panelList}>
+    <FocusColumn style={panelScoped.panelList}>
       {RATES.map((r, i) => (
         <SelectRow
           key={r}
           index={i}
           label={r === 1 ? t('player.normalSpeed') : `${r}×`}
           selected={r === rate}
-          focused={focus.index === i}
           onActivate={pick}
-          onFocus={focus.setIndex}
         />
       ))}
-    </Box>
+    </FocusColumn>
   );
 }

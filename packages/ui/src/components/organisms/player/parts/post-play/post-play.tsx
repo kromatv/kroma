@@ -6,6 +6,7 @@ import { Text } from '#ui/components/atoms/text';
 import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
+import { FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useT } from '#ui/services/i18n';
 import { useRise } from '#ui/lib/player/rise';
 
@@ -27,16 +28,11 @@ export interface PostPlayItem {
   artUrl?: string | null;
 }
 
-export type PostPlayFocus = 'play' | 'home';
-
 export interface PostPlayProps {
   item: PostPlayItem;
   /** The film that just ended, named at the top so the screen says where the
    *  viewer is before it says where they could go. */
   finished: string;
-  /** Which control wears the ring. The player's nav machine owns it, so both
-   *  buttons are controlled and neither is a platform focus target. */
-  focus: PostPlayFocus;
   /** The stage's width, which is what picks the type tier: this is a page
    *  rather than chrome, so it is typed for three metres or for a desk. */
   stageWidth: number;
@@ -112,14 +108,7 @@ const copyOf = (tier: (typeof TIERS)[keyof typeof TIERS], scope: StyleScope) =>
  * replaces the chrome rather than sitting over it, and it is the only thing the
  * remote can reach while it is up.
  */
-export function PostPlay({
-  item,
-  finished,
-  focus,
-  stageWidth,
-  onPlay,
-  onHome,
-}: Readonly<PostPlayProps>) {
+export function PostPlay({ item, finished, stageWidth, onPlay, onHome }: Readonly<PostPlayProps>) {
   const scope = useStyleScope();
 
   const layers = useStyles(layersDefinition);
@@ -128,6 +117,7 @@ export function PostPlay({
   const t = useT();
   const tier = stageWidth >= TV_STAGE ? TIERS.tv : TIERS.desk;
   const rise = useRise();
+  useLockFocusBehind(true);
   return (
     <Box fill z={50} bg="playerBlack">
       <Animated.View style={[s.art, rise.veil]}>
@@ -177,26 +167,25 @@ export function PostPlay({
             {item.overview}
           </Text>
         ) : null}
-        {/* Controlled kit buttons (`focus` is ALWAYS one of them) so neither
-            becomes a platform focus target; see ../lib/virtual-focus. */}
-        <Box row gap={14}>
-          <Button
-            variant="primary"
-            size={tier.button}
-            icon="player-play-filled"
-            focused={focus === 'play'}
-            onPress={onPlay}
-            label={t('player.play')}
-          />
-          <Button
-            variant="glass"
-            size={tier.button}
-            icon="home"
-            focused={focus === 'home'}
-            onPress={onHome}
-            label={t('nav.home')}
-          />
-        </Box>
+        <FocusScope bridge={false} entryKey={item.id}>
+          <FocusRegion style={s.actions}>
+            <Button
+              variant="primary"
+              size={tier.button}
+              icon="player-play-filled"
+              autoFocus
+              onPress={onPlay}
+              label={t('player.play')}
+            />
+            <Button
+              variant="glass"
+              size={tier.button}
+              icon="home"
+              onPress={onHome}
+              label={t('nav.home')}
+            />
+          </FocusRegion>
+        </FocusScope>
       </Animated.View>
     </Box>
   );
@@ -204,5 +193,6 @@ export function PostPlay({
 
 const sDefinition = styles({
   art: { fill: true },
+  actions: { row: true, gap: 14 },
   inert: { pointerEvents: 'none' },
 });

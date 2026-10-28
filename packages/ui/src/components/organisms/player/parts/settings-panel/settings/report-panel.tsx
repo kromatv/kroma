@@ -1,12 +1,11 @@
-import { type Ref, useImperativeHandle, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useStyles } from '#ui/core';
 import { REPORT_CATEGORIES } from '#ui/lib/report-categories';
 import { useT } from '#ui/services/i18n';
 import type { PlayerReportCategory } from '../../../media-types';
+import { FocusColumn } from '#ui/lib/focus-scope';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
@@ -14,11 +13,9 @@ import { SelectRow } from './select-row';
 // the detail page's report screen.
 interface ReportPanelProps {
   onReport: (category: PlayerReportCategory) => Promise<void>;
-  onBack: () => void;
-  ref?: Ref<PanelHandle>;
 }
 
-export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps>) {
+export function ReportPanel({ onReport }: Readonly<ReportPanelProps>) {
   const panelScoped = useStyles(panel);
 
   const t = useT();
@@ -41,8 +38,6 @@ export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps
         sending.current = false;
       });
   };
-  const focus = useListFocus({ count: REPORT_CATEGORIES.length, onActivate: pick, onBack });
-  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   // The panel becomes its own receipt rather than closing itself: closing
   // playback chrome from under the viewer loses their place in the film.
@@ -55,16 +50,15 @@ export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps
   }
 
   return (
-    <Box style={panelScoped.panelList}>
+    <FocusColumn style={panelScoped.panelList}>
       {REPORT_CATEGORIES.map((c, i) => (
         <SelectRow
           key={c.key}
           index={i}
           label={t(c.labelKey)}
           sub={t(c.hintKey)}
-          focused={focus.index === i}
+          autoFocus={i === 0}
           onActivate={pick}
-          onFocus={focus.setIndex}
         />
       ))}
       {state === 'failed' ? (
@@ -72,6 +66,6 @@ export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps
           {t('report.failed')}
         </Text>
       ) : null}
-    </Box>
+    </FocusColumn>
   );
 }
