@@ -22,12 +22,16 @@
 #                           Omit when the identity is already in your keychain
 #                           (the local case).
 #   APPLE_CERTIFICATE_PASSWORD  password for that .p12
+#   ASC_KEY_ID / ASC_ISSUER_ID / ASC_PRIVATE_KEY
+#                           notarization credentials, preferred: the App Store
+#                           Connect API key the TestFlight uploads already use
+#                           (the .p8's contents in ASC_PRIVATE_KEY).
 #   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID
-#                           notarization credentials. APPLE_PASSWORD is an
-#                           APP-SPECIFIC password from appleid.apple.com, not
-#                           the Apple ID password. When unset, the artifacts are
-#                           signed but NOT notarized (Gatekeeper still warns on
-#                           another Mac) - useful for a fast local check.
+#                           fallback notarization credentials. APPLE_PASSWORD is
+#                           an APP-SPECIFIC password from appleid.apple.com, not
+#                           the Apple ID password. With neither set, the artifacts
+#                           are signed but NOT notarized (Gatekeeper still warns
+#                           on another Mac) - useful for a fast local check.
 #
 # Signing locally, once a Developer ID Application cert is in your login
 # keychain:
@@ -56,6 +60,9 @@ APPLE_CERTIFICATE=${APPLE_CERTIFICATE:-}
 APPLE_ID=${APPLE_ID:-}
 APPLE_PASSWORD=${APPLE_PASSWORD:-}
 APPLE_TEAM_ID=${APPLE_TEAM_ID:-}
+ASC_KEY_ID=${ASC_KEY_ID:-}
+ASC_ISSUER_ID=${ASC_ISSUER_ID:-}
+ASC_PRIVATE_KEY=${ASC_PRIVATE_KEY:-}
 
 # Restore the previous default keychain - leaving a temp one as default is fine
 # on a throwaway runner, not on a real Mac.
@@ -67,7 +74,7 @@ cleanup() {
   if [[ -n "${KEYCHAIN:-}" && -f "$KEYCHAIN" ]]; then
     security delete-keychain "$KEYCHAIN" 2>/dev/null || true
   fi
-  rm -f "$WORK/cert.p12"
+  rm -f "$WORK/cert.p12" "$WORK"/AuthKey_*.p8
 }
 trap cleanup EXIT
 
@@ -100,15 +107,29 @@ sign_one() {
     --sign "$APPLE_SIGNING_IDENTITY" "$target"
 }
 
+NOTARY=none
+if [[ -n "$ASC_KEY_ID" && -n "$ASC_ISSUER_ID" && -n "$ASC_PRIVATE_KEY" ]]; then
+  NOTARY=api-key
+  printf '%s' "$ASC_PRIVATE_KEY" > "$WORK/AuthKey_${ASC_KEY_ID}.p8"
+elif [[ -n "$APPLE_ID" && -n "$APPLE_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
+  NOTARY=apple-id
+fi
+
 notarize() {
   local submission="$1"
-  xcrun notarytool submit "$submission" \
-    --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
-    --team-id "$APPLE_TEAM_ID" --wait
+  if [[ "$NOTARY" = api-key ]]; then
+    xcrun notarytool submit "$submission" \
+      --key "$WORK/AuthKey_${ASC_KEY_ID}.p8" --key-id "$ASC_KEY_ID" \
+      --issuer "$ASC_ISSUER_ID" --wait
+  else
+    xcrun notarytool submit "$submission" \
+      --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
+      --team-id "$APPLE_TEAM_ID" --wait
+  fi
 }
 
 can_notarize() {
-  [[ -n "$APPLE_ID" && -n "$APPLE_PASSWORD" && -n "$APPLE_TEAM_ID" ]]
+  [[ "$NOTARY" != none ]]
 }
 
 if [[ "$SIGN" = "true" ]]; then
@@ -143,24 +164,14 @@ if [[ "$SIGN" = "true" ]]; then
     xcrun stapler staple "$APP"
     echo "Notarized + stapled: $APP"
   else
-    echo "::warning::No APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID; signed but NOT notarized."
+    echo "::warning::No ASC_* API key nor APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID; signed but NOT notarized."
   fi
 fi
 
-# Name it exactly as tauri's own bundler names the other installers -
-# <product>_<version>_<arch> - from the version the build was stamped with, so
-# the .dmg is identifiable once downloaded and two channels never collide.
-VERSION=$(sed -nE 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
-  clients/desktop/src-tauri/tauri.conf.json | head -1)
-case "$(uname -m)" in
-  arm64 | aarch64) DMG_ARCH=aarch64 ;;
-  x86_64) DMG_ARCH=x64 ;;
-  *) DMG_ARCH=$(uname -m) ;;
-esac
-
-mkdir -p "$BUNDLE/dmg"
-DMG="$BUNDLE/dmg/KROMA_${VERSION:+${VERSION}_}${DMG_ARCH}.dmg"
-hdiutil create -volname KROMA -srcfolder "$APP" -ov -format UDZO "$DMG"
+# The styled installer window, named <product>_<version>_<arch> like tauri's
+# other installers so the .dmg is identifiable once downloaded and two channels
+# never collide. See clients/desktop/dmg.
+DMG=$(bash clients/desktop/scripts/package-dmg-macos.sh "$APP")
 
 if [[ "$SIGN" = "true" ]]; then
   codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$DMG"

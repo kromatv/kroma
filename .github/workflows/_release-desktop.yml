@@ -34,7 +34,7 @@ jobs:
           # entry (macos-13) - most Macs are arm64 now.
           - os: macos-14
             label: 'macOS (.dmg)'
-            bundles: app,dmg
+            bundles: app
             artifact: kroma-desktop-macos
             files: |
               clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
@@ -232,10 +232,10 @@ jobs:
           bash clients/desktop/scripts/bundle-libmpv-macos.sh "$APP"
 
       # Sign deep (incl. the embedded dylibs) + notarize when a Developer ID cert is
-      # present, then package the dmg. The macsign step already validated + then DELETED
-      # its keychain, so re-import the cert here. NOTE: the signed path needs a CI run
-      # with the real APPLE_* secrets to confirm end-to-end; the unsigned path (hdiutil
-      # dmg) mirrors what was validated locally.
+      # present, then package the styled dmg (dmgbuild, clients/desktop/dmg). The
+      # macsign step already validated + then DELETED its keychain, so re-import the
+      # cert here. Notarization prefers the App Store Connect API key the TestFlight
+      # uploads use, and falls back to the Apple ID + app-specific password.
       - name: Sign + notarize + package dmg (macOS)
         if: runner.os == 'macOS'
         env:
@@ -246,6 +246,9 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: .github/scripts/macos-sign-and-package-dmg.sh
 
       # Tauri's default bundler sweeps the runner's wayland/glib/gstreamer libs
