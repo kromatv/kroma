@@ -21,8 +21,9 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build --bundles appimage",
     "tauri:build:mac": "tauri build --bundles app",
-    "tauri:build:mac:dmg": "tauri build --bundles app,dmg",
-    "tauri:icon": "tauri icon src-tauri/icons/icon.png"
+    "tauri:build:mac:dmg": "tauri build --bundles app && bash scripts/package-dmg-macos.sh",
+    "tauri:icon": "tauri icon src-tauri/icons/icon.png",
+    "dmg:background": "bun scripts/render-dmg-background.ts"
   },
   "dependencies": {
     "@kromatv/client": "workspace:*",

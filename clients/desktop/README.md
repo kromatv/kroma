@@ -110,12 +110,35 @@ attaches the AppImage to the GitHub Release.
 ```bash
 cd clients/desktop
 bun run tauri:build:mac        # -> src-tauri/target/release/bundle/macos/KROMA.app
-bun run tauri:build:mac:dmg    # also a .dmg (needs Finder automation / a GUI session)
+bun run tauri:build:mac:dmg    # also the styled .dmg, headless (see below)
 ```
 
 `tauri:build:mac` produces a normal `.app` (opaque window, traffic lights, resize,
-the KROMA icon) with no mpv process. The `.dmg` step styles its window via AppleScript,
-so it needs a real GUI session (it fails in headless/automated shells).
+the KROMA icon) with no mpv process. The `.dmg` is never tauri's: its bundler skips
+the Finder styling whenever `CI=true`, so every installer, local or released, comes
+from `scripts/package-dmg-macos.sh`.
+
+### The installer window
+
+`dmg/` holds it. [dmgbuild](https://github.com/dmgbuild/dmgbuild) writes the
+window's `.DS_Store` directly, so it runs headless, with no Finder and no
+AppleScript; it is pinned by hash in `dmg/requirements.txt` and installed into a
+throwaway venv (Python 3.10+).
+
+- `background.svg` is the art, 640x432. Finder's 32 pt title bar sits inside
+  the window bounds, so the bottom strip is bleed, not layout.
+- `background.png` and `background@2x.png` are rendered from it with
+  `bun run dmg:background` and committed; dmgbuild folds them into one HiDPI
+  TIFF. Change the SVG, re-render, commit all three.
+- `settings.py` places the icons over the art (`icon_locations`) and takes the
+  window size from the 1x PNG.
+- A custom background makes Finder draw icon labels in black whatever the
+  appearance, which is why the icons sit on the light tray.
+- The volume is named `KROMA <version>`: Finder caches a background per volume
+  name, so a new version never opens with an old one's.
+
+The script mounts the result and fails if the app, the Applications link, the
+background, the `.DS_Store` or the volume icon is missing.
 
 ## Install on the Steam Deck
 

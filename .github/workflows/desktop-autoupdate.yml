@@ -148,8 +148,10 @@ jobs:
           # embedding libmpv needs the manual build->bundle->sign->tarball reorder
           # (see release.yml) which tauri-action's updater-tarball flow can't host.
           # The release .dmg DOES bundle libmpv; bringing it here is a follow-up.
+          # The .app only: tauri's own dmg skips its Finder styling under CI
+          # (--skip-jenkins), so the styled dmg is packaged after the build.
           - os: macos-14
-            bundles: app,dmg
+            bundles: app
             extra_args: '-- --no-default-features'
           # Windows auto-update bundles libmpv (self-contained mpv-2.dll beside the exe).
           - os: windows-latest
@@ -238,6 +240,24 @@ jobs:
           # extra_args carries the cargo `-- --no-default-features` forward marker,
           # so it MUST trail the tauri flags (the CLI rejects a bare --no-default-features).
           args: --bundles ${{ matrix.bundles }} ${{ matrix.extra_args }}
+
+      # The same styled installer the release ships (clients/desktop/dmg),
+      # uploaded next to the updater tarball tauri-action already attached.
+      - name: Package + upload the dmg (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
+        run: |
+          set -euo pipefail
+          DMG="$(bash clients/desktop/scripts/package-dmg-macos.sh)"
+          curl -sf -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$DMG" \
+            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=$(basename "$DMG")" >/dev/null
+          echo "uploaded $(basename "$DMG")"
 
       # Tauri's default bundler sweeps the runner's wayland/glib/gstreamer libs
       # into the AppImage, which breaks it on Mesa 25+ hosts (SteamOS 3.7+:
