@@ -28,6 +28,10 @@ export interface PlayerRootProps {
   /** What is playing, as a name for assistive tech and for the end card. It
    *  draws nothing: `<Player.Title>` is what puts it on screen. */
   title: string;
+  /** Default true. False while the player stays mounted out of sight, behind a
+   *  picture-in-picture window: it ignores the remote and leaves Back and Menu
+   *  to the screen in front. */
+  active?: boolean;
   onCast?: () => void;
   onClose: (details: PlayerCloseDetails) => void;
   ref?: React.Ref<View>;
@@ -52,6 +56,7 @@ function Root({
   controller,
   flags,
   title,
+  active = true,
   onCast,
   onClose,
   ref,
@@ -102,7 +107,7 @@ function Root({
     openSheet,
     runOverflow,
     playUpNextItem,
-  } = usePlayerRoot({ controller, flags, onCast, onClose, children });
+  } = usePlayerRoot({ controller, flags, active, onCast, onClose, children });
 
   return (
     <PlayerScope>

@@ -7,7 +7,12 @@ import {
 } from '#tv/features/playback/player/playbackBackend';
 import { TvPlayer } from '#tv/features/playback/TvPlayer';
 
-const BROWSER_BACKEND: PlaybackBackend = { planEngine, createTvEngine, Surface: PlayerSurface };
+const BROWSER_BACKEND: PlaybackBackend = {
+  planEngine,
+  createTvEngine,
+  Surface: PlayerSurface,
+  pictureInPicture: () => false,
+};
 
 /** The player screen on the browser shells: a `<video>`, AVPlay or mpv. */
 export function BrowserPlayer(): ReactNode {

@@ -3,10 +3,10 @@
 
 import { classes, style } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
-import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
+import type { SurfaceProps } from '#tv/features/playback/player/playbackBackend';
 
 const FILL = style({ width: '100%', height: '100%' });
-export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
+export function PlayerSurface({ pb, title }: Readonly<SurfaceProps>): ReactNode {
   const { surface, objectRef, videoRef } = pb;
   if (surface === 'avplay') {
     // NO child text: AVPlay renders to a hardware plane, not into this <object>'s
