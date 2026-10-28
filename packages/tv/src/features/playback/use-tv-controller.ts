@@ -11,6 +11,7 @@ import {
 } from '#tv/app/enginePref';
 import { useLangPrefs } from '#tv/app/langPref';
 import { type Playback, useDirectPlayback } from '#tv/features/playback/player/useDirectPlayback';
+import type { TvPip } from '#tv/features/playback/use-tv-pip';
 import { type TvSubtitles, useTvSubtitles } from '#tv/features/playback/use-tv-subtitles';
 
 // Shared, because a fresh `() => undefined` per render is a new prop on every
@@ -31,10 +32,14 @@ export interface TvController {
 
 /**
  * Adapts the TV engine + subtitle state into the shared {@link PlayerController}.
- * Volume, PiP, fullscreen and rate are no-ops on a TV, so the shared chrome hides
- * or disables them.
+ * Volume and fullscreen are no-ops on a TV, so the shared chrome hides them;
+ * picture-in-picture is whatever `pip` says.
  */
-export function useTvController(client: KromaClient, item: MediaItem): TvController {
+export function useTvController(
+  client: KromaClient,
+  item: MediaItem,
+  pip: Pick<TvPip, 'active' | 'toggle'>,
+): TvController {
   const t = useT();
   const langs = useLangPrefs();
   const pb = useDirectPlayback(client, item, langs.audio);
@@ -164,8 +169,8 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     // A native plane answers for its own DSP (ExoPlayer has none before API 28 or
     // on passthrough), so the row hides rather than showing a dead mode.
     audioFilterSupported: pb.surface === 'video' ? filter.supported : pb.audioFilterSupported,
-    pipActive: false,
-    togglePip: NOOP,
+    pipActive: pip.active,
+    togglePip: pip.toggle,
     fullscreen: false,
     toggleFullscreen: NOOP,
     setPlaneRect: pb.setPlaneRect,

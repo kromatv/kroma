@@ -12,12 +12,13 @@ import {
   startTransition,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
 import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
+import { loadDevStack, useDevStackMirror } from './devStack';
 import { useDevicePreferences } from './device-preferences';
+import { PlayerDockProvider, PlayerSlot } from './playerDock';
 
 // The screen registry of the in-memory router: a TV has no address bar, so
 // history is a stack. Adding a key here type-checks `go` / `reset` / `<TvOutlet>`.
@@ -77,35 +78,6 @@ const PROFILES = { name: 'profiles', params: undefined } as TvRoute;
 const HOME = { name: 'home', params: undefined } as TvRoute;
 const NavCtx = createContext<TvNav | null>(null);
 
-// Dev-only: the stack is in-memory, so it is mirrored to sessionStorage to survive
-// an HMR full-reload. Compiled out of production builds via IS_DEV.
-const IS_DEV = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
-const DEV_NAV_KEY = 'kroma:dev-nav';
-
-function isTvRoute(entry: unknown, screens: TvScreens): entry is TvRoute {
-  if (typeof entry !== 'object' || entry === null) return false;
-  if (!('name' in entry) || typeof entry.name !== 'string') return false;
-  if (!Object.hasOwn(screens, entry.name)) return false;
-  return !('params' in entry) || entry.params === undefined || typeof entry.params === 'object';
-}
-
-function loadDevStack(screens: TvScreens): TvRoute[] | null {
-  if (!IS_DEV) return null;
-  try {
-    // oxlint-disable-next-line no-restricted-globals -- audited - dev-only (IS_DEV) and inside try/catch, so React Native simply keeps the default stack.
-    const saved = sessionStorage.getItem(DEV_NAV_KEY);
-    if (!saved) return null;
-    const parsed: unknown = JSON.parse(saved);
-    // All or nothing: a stack the running build no longer knows every screen of
-    // would render `undefined` as a component.
-    if (!Array.isArray(parsed) || parsed.length === 0) return null;
-    const known = (entry: unknown): entry is TvRoute => isTvRoute(entry, screens);
-    return parsed.every(known) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
 /** The route → component registry. Screens take no props; they read their own
  * params and data from hooks. */
 export type TvScreens = { [K in RouteName]: ComponentType };
@@ -148,15 +120,7 @@ export function TvNavProvider({
 }>) {
   const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack(screens) ?? [PROFILES]);
 
-  useEffect(() => {
-    if (!IS_DEV) return;
-    try {
-      // oxlint-disable-next-line no-restricted-globals -- audited - dev-only (IS_DEV) and inside try/catch.
-      sessionStorage.setItem(DEV_NAV_KEY, JSON.stringify(stack));
-    } catch {
-      /* ignore quota/availability */
-    }
-  }, [stack]);
+  useDevStackMirror(stack);
 
   const go = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
     startTransition(() => setStack((s) => [...s, make(name, params)]));
@@ -197,7 +161,9 @@ export function TvNavProvider({
   return (
     <NavCtx.Provider value={value}>
       <ScreensCtx.Provider value={screens}>
-        <ChromeCtx.Provider value={chrome ?? null}>{children}</ChromeCtx.Provider>
+        <ChromeCtx.Provider value={chrome ?? null}>
+          <PlayerDockProvider>{children}</PlayerDockProvider>
+        </ChromeCtx.Provider>
       </ScreensCtx.Provider>
     </NavCtx.Provider>
   );
@@ -261,6 +227,7 @@ export function TvOutlet() {
   // without <FocusScope> a screen with no `autoFocus` control mounts with focus
   // nowhere and the remote does nothing.
   const scopeKey = inScope.length > 0 ? 'chrome' : key;
+  const playing = route.name === 'player' ? route.params.item : null;
   return (
     <PageMain>
       {/* First, so they paint behind, and outside the scope, so the remote can
@@ -268,19 +235,22 @@ export function TvOutlet() {
       {under.map((layer) => (
         <layer.render key={layer.routes[0]} />
       ))}
-      <Suspense fallback={<Box fill bg="bg" />}>
-        <FocusScope key={scopeKey} entryKey={key}>
-          <ConfirmHost>
-            {inScope.map((layer) => (
-              <layer.render key={layer.routes[0]} />
-            ))}
-            <Screen key={key} />
-            {/* Inside the scope, because that is what a dialog needs to take the
-              remote: outside one, `useLockFocusBehind` is a documented no-op and
-              the panel's own buttons never register with a navigator. */}
-          </ConfirmHost>
-        </FocusScope>
-      </Suspense>
+      <PlayerSlot top={playing} Screen={screens.player} />
+      {playing ? null : (
+        <Suspense fallback={<Box fill bg="bg" />}>
+          <FocusScope key={scopeKey} entryKey={key}>
+            <ConfirmHost>
+              {inScope.map((layer) => (
+                <layer.render key={layer.routes[0]} />
+              ))}
+              <Screen key={key} />
+              {/* Inside the scope, because that is what a dialog needs to take the
+                remote: outside one, `useLockFocusBehind` is a documented no-op and
+                the panel's own buttons never register with a navigator. */}
+            </ConfirmHost>
+          </FocusScope>
+        </Suspense>
+      )}
       {/* Outside the scope on purpose: the remote must not be able to land on it. */}
       <PerfHud
         enabled={usePerfHud()}

@@ -17,7 +17,8 @@ import type { PlayerAudioTrack } from './media-types';
 export interface PlayerFlags {
   /** Volume slider + mute (web). TV delegates volume to the set / amp remote. */
   volume: boolean;
-  /** Picture-in-Picture floating window (web). No windowing on TV. */
+  /** Picture-in-Picture: the browser's floating window on the web, the system's
+   *  on a television whose player can hand its picture over. */
   pip: boolean;
   /** Fullscreen toggle (web). A TV is already fullscreen. */
   fullscreen: boolean;
