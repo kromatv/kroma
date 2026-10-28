@@ -94,11 +94,8 @@ function Archive() {
           </header>
           <div className="mt-8 rounded-2xl border border-border bg-surface-1 p-3 sm:mt-9">
             <div className="flex flex-wrap items-center gap-3">
-              <div
-                role="group"
-                aria-label={m.download_channel_label()}
-                className="inline-flex shrink-0 rounded-xl bg-surface-2 p-1"
-              >
+              <fieldset className="m-0 inline-flex min-w-0 shrink-0 rounded-xl border-0 bg-surface-2 p-1">
+                <legend className="sr-only">{m.download_channel_label()}</legend>
                 {(['stable', 'canary'] as const).map((value) => (
                   <button
                     key={value}
@@ -113,7 +110,7 @@ function Archive() {
                     {value === 'stable' ? m.download_channel_stable() : m.download_channel_canary()}
                   </button>
                 ))}
-              </div>
+              </fieldset>
               <label className="order-3 flex w-full min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-bg/50 px-3 transition-colors focus-within:border-accent sm:order-none sm:w-auto">
                 <IconSearch size={16} className="shrink-0 text-dim" aria-hidden />
                 <input
@@ -155,12 +152,12 @@ function Archive() {
             </div>
           </div>
           <div className="mb-3 mt-6 flex items-center justify-between px-1">
-            <p className="text-xs text-dim" role="status">
+            <output className="text-xs text-dim">
               {m.archive_showing({
                 showing: String(Math.min(limit, rows.length)),
                 total: String(rows.length),
               })}
-            </p>
+            </output>
             {channel === 'canary' && (
               <p className="text-xs text-dim">{m.download_channel_canary_note()}</p>
             )}

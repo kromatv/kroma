@@ -60,11 +60,8 @@ export function AppPlatforms() {
             className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted"
           />
         </div>
-        <div
-          role="group"
-          aria-label={m.download_device_label()}
-          className="hidden grid-cols-6 sm:grid"
-        >
+        <fieldset className="m-0 hidden min-w-0 grid-cols-6 border-0 p-0 sm:grid">
+          <legend className="sr-only">{m.download_device_label()}</legend>
           {devices.map((device) => (
             <button
               key={device.id}
@@ -78,7 +75,7 @@ export function AppPlatforms() {
               {device.title}
             </button>
           ))}
-        </div>
+        </fieldset>
       </div>
       <div id="download-platforms">
         {selected === 'tv' && <TvFamily />}

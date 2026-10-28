@@ -22,7 +22,8 @@ export function DevicePicker({
   controls: string;
 }>) {
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
+    <fieldset className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
+      <legend className="sr-only">{label}</legend>
       {choices.map((choice) => (
         <button
           key={choice.id}
@@ -36,6 +37,6 @@ export function DevicePicker({
           <span className={choice.logoOnly ? 'sr-only' : undefined}>{choice.name}</span>
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
