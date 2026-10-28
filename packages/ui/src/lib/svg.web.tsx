@@ -37,6 +37,8 @@ export const G: El<SVGGElement> = (props) => <g {...props} />;
 
 const sDefinition = styles({ box: { display: 'flex' } });
 
+const UNSIZED_ROOT = /^(\s*<svg\b)(?![^>]*\swidth=)/;
+
 const sizeOf = (
   width: number | string | undefined,
   height: number | string | undefined,
@@ -56,7 +58,9 @@ export function SvgXml({
     <div
       className={classes(s.box, sizeOf(width, height, scope))}
       // oxlint-disable-next-line react/no-danger -- app-generated QR SVG built by qrcode-generator from a trusted server URL + server-issued code, never user input.
-      dangerouslySetInnerHTML={{ __html: xml }}
+      dangerouslySetInnerHTML={{
+        __html: xml.replace(UNSIZED_ROOT, '$1 width="100%" height="100%"'),
+      }}
     />
   );
 }

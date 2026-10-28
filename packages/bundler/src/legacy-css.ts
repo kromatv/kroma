@@ -9,8 +9,12 @@
 //    padding-bottom (resolves against width), which also centres in-flow
 //    children of flex tiles the way aspect-ratio does.
 //  - bare `display: grid` is dropped, since Chromium 53 ignores it anyway.
+//  - an absolutely positioned `<button>` pinned by opposite zero insets gets an
+//    explicit 100% size: before Chromium 88 a button's auto width fits its
+//    content even with `left` and `right` both set, so a pressable laid over a
+//    picture (the player stage, an up-next card) came out zero wide.
 
-import type { Declaration, Plugin, Root } from 'postcss';
+import { type Declaration, type Plugin, type Root, type Rule, rule as cssRule } from 'postcss';
 
 const RATIO = /(?=(\d+(?:\.\d+)?))\1\s*\/\s*(\d+(?:\.\d+)?)/;
 
@@ -136,10 +140,47 @@ function stripGridDisplay(root: Root): void {
   }
 }
 
+const ATOMIC = /^\.([\w-]+)$/;
+const ZERO = /^0(px|%)?$/;
+
+function atomicClasses(root: Root): Map<string, string[]> {
+  const byDecl = new Map<string, string[]>();
+  root.walkRules((r: Rule) => {
+    const cls = ATOMIC.exec(r.selector);
+    const only = r.nodes.length === 1 ? r.nodes[0] : undefined;
+    if (!cls?.[1] || only?.type !== 'decl') return;
+    const value = only.value.trim();
+    let key: string | null = null;
+    if (only.prop === 'position') key = `position:${value}`;
+    else if (ZERO.test(value)) key = `${only.prop}:0`;
+    if (!key) return;
+    byDecl.set(key, [...(byDecl.get(key) ?? []), cls[1]]);
+  });
+  return byDecl;
+}
+
+function stretchPinnedButtons(root: Root): void {
+  const byDecl = atomicClasses(root);
+  const absolute = byDecl.get('position:absolute') ?? [];
+  const axes = [
+    { from: 'left:0', to: 'right:0', size: 'width' },
+    { from: 'top:0', to: 'bottom:0', size: 'height' },
+  ];
+  for (const { from, to, size } of axes) {
+    const selectors: string[] = [];
+    for (const a of absolute)
+      for (const start of byDecl.get(from) ?? [])
+        for (const end of byDecl.get(to) ?? []) selectors.push(`button.${a}.${start}.${end}`);
+    if (selectors.length === 0) continue;
+    root.append(cssRule({ selectors }).append({ prop: size, value: '100%' }));
+  }
+}
+
 export function kromaLegacyCss(): Plugin {
   return {
     postcssPlugin: 'kroma-legacy-css',
     Once(root) {
+      stretchPinnedButtons(root);
       stripGridDisplay(root);
       shimAspect(root, collectRatioVars(root));
       shimGap(root);
