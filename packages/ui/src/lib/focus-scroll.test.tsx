@@ -33,6 +33,18 @@ describe('pageOffset', () => {
   it('does not scroll a page that fits', () => {
     expect(pageOffset({ top: 700, offsetFromStart: 120, viewport: 1080, content: 900 })).toBe(0);
   });
+
+  it('reveals the start for the first row when it fits on screen', () => {
+    expect(pageOffset({ top: 367, size: 420, lead: 367, offsetFromStart: 120, ...page })).toBe(0);
+  });
+
+  it('rests the first row like any other when it is taller than the screen', () => {
+    expect(pageOffset({ top: 367, size: 900, lead: 367, offsetFromStart: 120, ...page })).toBe(247);
+  });
+
+  it('rests a row below the first one at the offset', () => {
+    expect(pageOffset({ top: 800, size: 200, lead: 367, offsetFromStart: 120, ...page })).toBe(680);
+  });
 });
 
 describe('nearestOffset', () => {

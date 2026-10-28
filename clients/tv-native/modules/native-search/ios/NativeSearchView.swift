@@ -92,14 +92,17 @@ public final class NativeSearchView: ExpoView, UISearchResultsUpdating {
   // anywhere at all when this runs - on the app's own host, or nowhere, both of
   // which make the plain call a no-op.
   private func moveFocus(to owner: FocusOwner) {
-    guard attached, let system = UIFocusSystem.focusSystem(for: self) else { return }
+    let target: UIFocusEnvironment = owner == .app ? resultsFocusHost : searchController
+    guard attached, isOnScreen(target), let system = UIFocusSystem.focusSystem(for: self) else {
+      return
+    }
     // The results refuse to let the focus go on their own (see ResultsFocusHost);
     // this is the one moment they are asked to. Only when they are the SOURCE:
     // as the destination the same flag makes the host unfocusable, and since it
     // is the only focusable thing in the results area the update has nowhere to
     // land and UIKit refuses it.
     resultsFocusHost.releasing = owner == .platform
-    system.requestFocusUpdate(to: owner == .app ? resultsFocusHost : searchController)
+    system.requestFocusUpdate(to: target)
     system.updateFocusIfNeeded()
     resultsFocusHost.releasing = false
   }
@@ -111,6 +114,12 @@ public final class NativeSearchView: ExpoView, UISearchResultsUpdating {
   private func claimFocusIfLoose() {
     guard attached, !holdsFocus(UIFocusSystem.focusSystem(for: self)?.focusedItem) else { return }
     moveFocus(to: wantedOwner)
+  }
+
+  private func isOnScreen(_ environment: UIFocusEnvironment) -> Bool {
+    if let view = environment as? UIView { return view.window != nil }
+    if let controller = environment as? UIViewController { return controller.viewIfLoaded?.window != nil }
+    return false
   }
 
   private func holdsFocus(_ item: UIFocusItem?) -> Bool {
@@ -155,7 +164,7 @@ public final class NativeSearchView: ExpoView, UISearchResultsUpdating {
       object: nil,
       queue: .main
     ) { [weak self] _ in self?.claimFocusIfLoose() }
-    claimFocusIfLoose()
+    DispatchQueue.main.async { [weak self] in self?.claimFocusIfLoose() }
   }
 
   private func detach() {

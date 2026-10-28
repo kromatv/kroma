@@ -23,6 +23,7 @@ import type {
 import { useIdleCursor } from './use-idle-cursor';
 import { usePlayerEnding } from './use-player-ending';
 import { usePlayerNav } from './use-player-nav';
+import { useResumeCard } from './use-resume-card';
 import { useResumeNotice } from './use-resume-notice';
 import { useSeekNudge } from './use-seek-nudge';
 import { useVolumeFlash } from './use-volume-flash';
@@ -103,6 +104,7 @@ function usePlayerRoot({
     notice.dismiss();
     c.seekTo(0);
   };
+  const resumeCard = useResumeCard(notice, startOver);
   // The skip pill waits: it is the same corner as the resume prompt, and OK
   // belongs to whichever of the two is drawn.
   const intro = useMemo(
@@ -141,7 +143,6 @@ function usePlayerRoot({
       toggleFullscreen: c.toggleFullscreen,
       onCast,
       onExit: close,
-      resume: notice.shown ? { onStartOver: startOver, onFocus: notice.holdOpen } : undefined,
     },
     metrics.controls,
   );
@@ -169,7 +170,7 @@ function usePlayerRoot({
     seekNudge: seek.nudge,
     setVolume,
     intro,
-    resume: { active: notice.shown, onDismiss: notice.dismiss },
+    resume: { active: notice.shown, onKey: resumeCard.onKey },
     credits: { active: credits.show, onKey: ending.onCreditsKey },
     postPlay: { active: ending.over, onKey: ending.onPostPlayKey },
   });
@@ -229,6 +230,7 @@ function usePlayerRoot({
     closeFromChrome,
     notice,
     startOver,
+    resumeCard,
     intro,
     metrics,
     flash,

@@ -156,7 +156,15 @@ export function TvPlayer() {
       {intro ? (
         <Player.SkipIntro active={introActive} onSkip={() => pb.seekTo(intro.endMs / 1000)} />
       ) : null}
-      {pb.resumedAt ? <Player.Resume at={pb.resumedAt} /> : null}
+      {pb.resumedAt ? (
+        <Player.Resume
+          at={pb.resumedAt}
+          art={
+            client.media.artwork.backdropFor(item, UP_NEXT_ART_W) ??
+            client.media.artwork.posterFor(item, UP_NEXT_ART_W)
+          }
+        />
+      ) : null}
       <Player.Media>
         <Surface pb={pb} title={item.title} />
       </Player.Media>

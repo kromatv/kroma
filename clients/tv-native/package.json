@@ -30,6 +30,7 @@
     "@kromatv/media3-ffmpeg": "workspace:*",
     "@kromatv/tv": "workspace:*",
     "@kromatv/ui": "workspace:*",
+    "@react-native-masked-view/masked-view": "0.3.2",
     "expo": "~58.0.16",
     "expo-blur": "~58.0.5",
     "expo-constants": "~58.0.12",

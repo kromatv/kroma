@@ -1,70 +1,55 @@
 import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Frost } from '#ui/components/atoms/frost';
-import { Progress } from '#ui/components/atoms/progress';
-import { Text } from '#ui/components/atoms/text';
 import { RESUME_WINDOW } from '#ui/components/organisms/player/hooks/use-resume-notice';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
-import {
-  activeTheme,
-  type StyleScope,
-  scaledRadius,
-  sharedStyle,
-  styles,
-  sv,
-  useStyleScope,
-  useSv,
-} from '#ui/core';
-import { useStyles } from '#ui/core/styles';
+import { CountdownCard } from '#ui/components/organisms/player/parts/countdown-card';
 import { formatTimecode } from '#ui/lib/intl';
 import { useFadeRise } from '#ui/lib/use-fade-rise';
 import { useT } from '#ui/services/i18n';
 
-const LABEL_SIZE = 17;
-const PLATE_WIDTH = 360;
-
-// Pinned on the focused state too, because `primary` carries no border: unpinned,
-// the button moved a pixel the moment focus landed on it (as the skip pill did).
-const restartPill = sv({ base: { _focus: { border: 'accent' } } });
-
-const sizeOf = (fontSize: number, scope: StyleScope) =>
-  sharedStyle(`resume:size:${fontSize}`, { fontSize }, scope);
+/** Which of the prompt's two buttons the remote is on. */
+export type ResumeFocus = 'resume' | 'restart';
 
 export interface ResumePromptProps {
   /** The second playback opened on, drawn as the timecode it reads. */
   at: number;
+  /** What is playing, under the timecode. */
+  title?: string;
+  /** Artwork for the card's picture; a tinted fill without it. */
+  art?: string | null;
   /** False plays the prompt out, after which it draws nothing. */
   shown: boolean;
-  /** Whole seconds before the prompt leaves on its own; null draws no rule. */
+  /** Whole seconds before the prompt leaves on its own; null draws no ring. */
   secondsLeft?: number | null;
   /** The window `secondsLeft` drains against. Defaults to the one
    *  `useResumeNotice` counts. */
   total?: number;
-  focused?: boolean;
+  /** The button the remote is on; none where a pointer or a finger drives it. */
+  focus?: ResumeFocus | null;
   /** The chrome's scale (see ../../lib/metrics). 1 on a television stage. */
   scale?: number;
   /** How high it sits above the bottom edge, in real pixels (already scaled). */
   lift: number;
+  /** Keeps playing from `at` and puts the prompt away. */
+  onResume: () => void;
   onStartOver: () => void;
 }
 
+/** The card that says a film opened where it was left, in the shape of the next
+ * episode's: keep watching, or go back to the beginning. */
 export function ResumePrompt({
   at,
+  title,
+  art,
   shown,
   secondsLeft = null,
   total = RESUME_WINDOW,
-  focused = false,
+  focus = null,
   scale = 1,
   lift,
+  onResume,
   onStartOver,
 }: Readonly<ResumePromptProps>) {
-  const restartPillScoped = useSv(restartPill);
-
-  const scope = useStyleScope();
-
-  const s = useStyles(sDefinition);
-
   const t = useT();
   const px = scaler(scale);
   const fade = useFadeRise(shown);
@@ -81,42 +66,28 @@ export function ResumePrompt({
       pointerEvents={shown ? 'box-none' : 'none'}
     >
       <Animated.View style={fade.style}>
-        <Frost>
-          <Box
-            w={px(PLATE_WIDTH)}
-            maxW="100%"
-            radius={scaledRadius('xl', scale, activeTheme(scope.theme))}
-            overflow="hidden"
-            accessibilityLiveRegion="polite"
-            style={s.plate}
-          >
-            <Box px={px(18)} py={px(14)} gap={px(12)} align="flex-start">
-              <Text variant="labelTv" style={sizeOf(px(LABEL_SIZE), scope)}>
-                {t('player.resumedAt', { time: formatTimecode(at) })}
-              </Text>
-              <Button
-                variant={focused ? 'primary' : 'scrim'}
-                size="sm"
-                focused={focused}
-                icon="rotate-clockwise-2"
-                label={t('player.restart')}
-                onPress={onStartOver}
-                style={restartPillScoped(undefined, { focus: focused }).root}
-              />
-            </Box>
-            {secondsLeft == null ? null : (
-              <Progress
-                value={total > 0 ? secondsLeft / total : 0}
-                thickness={2}
-                rounded={false}
-                trackColor="transparent"
-              />
-            )}
-          </Box>
-        </Frost>
+        <CountdownCard
+          art={art}
+          eyebrow={t('player.resumedAt', { time: formatTimecode(at) })}
+          title={title ?? ''}
+          secondsLeft={secondsLeft}
+          total={total}
+          scale={scale}
+          announce
+          secondary={{
+            label: t('player.restart'),
+            icon: 'rotate-clockwise-2',
+            focused: focus === 'restart',
+            onPress: onStartOver,
+          }}
+          primary={{
+            label: t('player.resume'),
+            icon: 'player-play-filled',
+            focused: focus === 'resume',
+            onPress: onResume,
+          }}
+        />
       </Animated.View>
     </Box>
   );
 }
-
-const sDefinition = styles({ plate: { bg: 'tint/12', border: 'tint/20' } });

@@ -58,6 +58,14 @@ const sDefinition = styles({
   faceFill: { grow: 1 },
 });
 
+const pinned = (flat: Record<string, unknown>, from: string, to: string) =>
+  flat[from] != null && flat[to] != null;
+
+function pinnedOpen(flat: Record<string, unknown>): boolean {
+  if (flat.position !== 'absolute') return false;
+  return pinned(flat, 'top', 'bottom') || pinned(flat, 'left', 'right');
+}
+
 /**
  * One authored control style as the two views it has to drive on native.
  * `box` is undefined when the style is pure paint, which is the common case and
@@ -86,6 +94,7 @@ export function splitBoxLayers(
     }
   }
   if (!boxed) return { face: style };
+  sized ||= pinnedOpen(flat);
   return {
     box: box as ViewStyle,
     face: sized

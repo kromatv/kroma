@@ -81,6 +81,7 @@ function Root({
     closeFromChrome,
     notice,
     startOver,
+    resumeCard,
     intro,
     metrics,
     flash,
@@ -146,12 +147,15 @@ function Root({
           {slots.resume ? (
             <ResumePrompt
               at={slots.resume.at}
+              title={title}
+              art={slots.resume.art}
               shown={notice.shown}
               secondsLeft={notice.secondsLeft}
               total={notice.total}
-              focused={nav.zone === 'resume'}
+              focus={nav.overlay ? null : resumeCard.focus}
               scale={metrics.scale}
               lift={introLift}
+              onResume={resumeCard.resume}
               onStartOver={startOver}
             />
           ) : null}

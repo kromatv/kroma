@@ -8,7 +8,7 @@ import type { RemoteTransportOptions } from './remote-transport-types';
 // emitter export has been unreliable.
 
 import { type Direction, Directions } from '@kromatv/spatial-nav';
-import { useCallback, useEffect, useEffectEvent } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import {
   type HWEvent,
   type NativeSyntheticEvent,
@@ -34,6 +34,14 @@ const REMOTE: Record<string, Direction> = {
   swipeLeft: Directions.LEFT,
   swipeRight: Directions.RIGHT,
 };
+
+const HELD: Record<string, Direction> = {
+  longUp: Directions.UP,
+  longDown: Directions.DOWN,
+  longLeft: Directions.LEFT,
+  longRight: Directions.RIGHT,
+};
+const REPEAT_MS = 150;
 
 const RELEASE = Directions.RELEASE;
 const HOLD = Directions.HOLD;
@@ -83,10 +91,27 @@ export function useRemoteBridge(on = true): void {
   const { remote } = useFocusServices();
   const { inputHeld } = useInputGate();
   const perf = usePerfSampler();
+  const repeat = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stop = () => {
+    if (repeat.current) clearInterval(repeat.current);
+    repeat.current = null;
+  };
+  useEffect(() => stop, []);
   useRemoteEvents((event: HWEvent) => {
+    stop();
     if (!on) return;
     // A full-screen overlay (the brand intro) owns the remote while it's up.
     if (inputHeld()) return;
+    const held = HELD[event.eventType];
+    if (held) {
+      if (event.eventKeyAction === 1) return;
+      remote.stepRing(held, 'events', perf);
+      repeat.current = setInterval(() => {
+        if (inputHeld()) stop();
+        else remote.stepRing(held, 'events', perf);
+      }, REPEAT_MS);
+      return;
+    }
     for (const direction of directionsOf(event)) remote.stepRing(direction, 'events', perf);
   });
 }

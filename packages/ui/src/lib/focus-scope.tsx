@@ -12,7 +12,11 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { FocusLiftHost, GROUNDED, LIFTED } from './focus-lift';
-import { PlatformFocusProvider, usePlatformFocusHost } from './focus-platform';
+import {
+  PlatformFocusProvider,
+  PlatformHoldsProvider,
+  usePlatformFocusHost,
+} from './focus-platform';
 import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
 import { useRemoteBridge } from './focus-remote';
 import { FocusRoot } from './focus-root';
@@ -85,7 +89,9 @@ function FocusScopeHost({
             keyHost={platform.owner === null}
             onEdge={platform.onEdge}
           >
-            {children}
+            <PlatformHoldsProvider value={platform.owner === 'platform'}>
+              {children}
+            </PlatformHoldsProvider>
           </FocusRoot>
         </PlatformFocusProvider>
       </FocusPresenceProvider>

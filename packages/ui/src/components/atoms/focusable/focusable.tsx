@@ -27,6 +27,7 @@ import { useFocusReport } from '#ui/lib/focus-report';
 import { useRevealOnFocusBy } from '#ui/lib/use-reveal-on-focus';
 import { useFocusServices } from '#ui/lib/focus-services-context';
 import { useFocusScale } from '#ui/lib/focus-transition';
+import { usePlatformHoldsFocus } from '#ui/lib/focus-platform';
 import { useFocusVisibleBy } from '#ui/lib/focus-visible';
 import { useHoverPassthrough } from '#ui/lib/hover-passthrough';
 import { useInputGate } from '#ui/lib/input-gate';
@@ -89,7 +90,8 @@ function Focusable<R extends AnySv = AnySv>({
   const pressRef = useRef<() => void>(() => {});
 
   const controlled = controlledFocus !== undefined;
-  const focused = controlled ? controlledFocus : selfFocused;
+  const dormant = usePlatformHoldsFocus();
+  const focused = (controlled ? controlledFocus : selfFocused) && !dormant;
   const focusVisible = useFocusVisibleBy(focused, source.pointerDriving);
   const scoped = useInsideFocusScope();
 

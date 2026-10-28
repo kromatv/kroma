@@ -1,6 +1,7 @@
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
 import type { MediaItem } from '@kromatv/client/media';
+import { sizedImageUrl } from '@kromatv/core';
 import { ResumePrompt, StatsPanel, type SubtitleAppearance, useResumeNotice } from '@kromatv/ui';
 import {
   Box,
@@ -23,6 +24,7 @@ import {
 } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
 import { useChromeReveal } from '#mobile/player/useChromeReveal';
 import { ControlsLayer } from './chrome/ControlsLayer';
 import { PortraitControls } from './chrome/portrait-controls';
@@ -90,6 +92,7 @@ export function PlayerChrome({
   const { shown, poke, toggle, hold } = useChromeReveal();
   const visible = shown || engine.waiting;
 
+  const client = useClient();
   const stats = usePhoneStats(engine, item);
   const resume = useResumeNotice({
     at: resumedAt || undefined,
@@ -193,10 +196,13 @@ export function PlayerChrome({
         {resumedAt ? (
           <ResumePrompt
             at={resumedAt}
+            title={item.title}
+            art={sizedImageUrl(client.media.artwork.backdropFor(item), 400)}
             shown={resume.shown}
             secondsLeft={resume.secondsLeft}
             total={resume.total}
             lift={lift}
+            onResume={resume.dismiss}
             onStartOver={() => {
               resume.dismiss();
               engine.seekTo(0);

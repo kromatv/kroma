@@ -9,8 +9,10 @@ import {
   useCallback,
   useContext,
   useRef,
+  useState,
 } from 'react';
 import {
+  Animated,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -26,6 +28,7 @@ import { usePointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 import { useReducedMotion } from '#ui/lib/reduced-motion';
 import { ScrolledReport } from '#ui/lib/scrolled-report';
+import { type ScrollPosition, ScrollPositionContext } from '#ui/lib/scroll-position';
 import { flat } from '#ui/lib/flat-style';
 import {
   type Anchor,
@@ -37,6 +40,11 @@ import { nearestOffset, pageOffset } from '#ui/lib/scroll-offsets';
 import { ringRoom } from '#ui/lib/scroll-ring-room';
 
 type Reveal = 'start' | 'nearest';
+
+const leadOf = (content: ViewStyle | undefined): number => {
+  const value = content?.paddingTop ?? content?.paddingVertical ?? content?.padding;
+  return typeof value === 'number' ? value : 0;
+};
 
 interface FocusScrollProps {
   children: ReactNode;
@@ -81,6 +89,10 @@ function AxisScroll({
   const showing = useRef<Anchor | null>(null);
   const reduced = useReducedMotion();
   const frost = useFrostGlide();
+  const [position] = useState<ScrollPosition>(() => ({
+    offset: new Animated.Value(0),
+    content: inner,
+  }));
 
   const reveal = useCallback(
     (anchor: Anchor) => {
@@ -93,26 +105,15 @@ function AxisScroll({
       target.measureLayout(
         measuredAgainst,
         (left, top, width, height) => {
-          const { viewport, content } = extent.current;
-          const offset =
-            mode === 'nearest'
-              ? nearestOffset({
-                  top: horizontal ? left : top,
-                  size: horizontal ? width : height,
-                  current: current.current,
-                  margin: offsetFromStart + RING_ROOM,
-                  viewport,
-                  content,
-                })
-              : pageOffset({
-                  top: horizontal ? left : top,
-                  // The reach above is padding on the content, so every item
-                  // measures that much further in: without it here the row would
-                  // scroll the room back out from under the first tile's ring.
-                  offsetFromStart: horizontal ? offsetFromStart + RING_ROOM : offsetFromStart,
-                  viewport,
-                  content,
-                });
+          const offset = offsetFor({
+            mode,
+            horizontal,
+            box: { left, top, width, height },
+            current: current.current,
+            offsetFromStart,
+            contentStyle,
+            ...extent.current,
+          });
           if (mode === 'nearest' && offset === current.current) return;
           current.current = offset;
           if (!reduced && frost?.glide(scroller.current, horizontal, offset)) return;
@@ -124,51 +125,102 @@ function AxisScroll({
         () => {},
       );
     },
-    [frost, horizontal, mode, offsetFromStart, reduced],
+    [contentStyle, frost, horizontal, mode, offsetFromStart, reduced],
   );
 
   const room = ringRoom(flat(style), flat(contentStyle), horizontal);
 
   return (
     <RevealContext.Provider value={reveal}>
-      <ScrollView
-        ref={scroller}
-        horizontal={horizontal}
-        // React 19 types a ref as nullable; React Native's prop does not.
-        innerViewRef={inner as RefObject<View>}
-        style={room.box}
-        contentContainerStyle={room.content}
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-        onLayout={(e: LayoutChangeEvent) => {
-          const { width, height } = e.nativeEvent.layout;
-          extent.current.viewport = horizontal ? width : height;
-        }}
-        scrollEventThrottle={16}
-        onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
-          const { x, y } = e.nativeEvent.contentOffset;
-          current.current = horizontal ? x : y;
-          const scrolled = current.current > 1;
-          if (scrolled !== wasScrolled.current) {
-            wasScrolled.current = scrolled;
-            onScrolledChange?.(scrolled);
-          }
-        }}
-        onContentSizeChange={(width: number, height: number) => {
-          extent.current.content = horizontal ? width : height;
-          // Re-reveal: the content may only now be long enough to bring the
-          // anchor where it belongs. Not under the pointer, where re-pinning the
-          // old anchor snatches the page back mid-scroll.
-          if (showing.current && !pointerDriving()) reveal(showing.current);
-        }}
-        // A television has no wheel or trackpad, and a scrollable view there is
-        // one more thing for the platform to try to focus.
-        scrollEnabled={WEB}
-      >
-        {children}
-      </ScrollView>
+      <ScrollPositionContext.Provider value={horizontal ? null : position}>
+        <ScrollView
+          ref={scroller}
+          horizontal={horizontal}
+          // React 19 types a ref as nullable; React Native's prop does not.
+          innerViewRef={inner as RefObject<View>}
+          style={room.box}
+          contentContainerStyle={room.content}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          onLayout={(e: LayoutChangeEvent) => {
+            const { width, height } = e.nativeEvent.layout;
+            extent.current.viewport = horizontal ? width : height;
+          }}
+          scrollEventThrottle={16}
+          onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            const { x, y } = e.nativeEvent.contentOffset;
+            current.current = horizontal ? x : y;
+            position.offset.setValue(current.current);
+            const scrolled = current.current > 1;
+            if (scrolled !== wasScrolled.current) {
+              wasScrolled.current = scrolled;
+              onScrolledChange?.(scrolled);
+            }
+          }}
+          onContentSizeChange={(width: number, height: number) => {
+            extent.current.content = horizontal ? width : height;
+            // Re-reveal: the content may only now be long enough to bring the
+            // anchor where it belongs. Not under the pointer, where re-pinning the
+            // old anchor snatches the page back mid-scroll.
+            if (showing.current && !pointerDriving()) reveal(showing.current);
+          }}
+          // A television has no wheel or trackpad, and a scrollable view there is
+          // one more thing for the platform to try to focus.
+          scrollEnabled={WEB}
+        >
+          {children}
+        </ScrollView>
+      </ScrollPositionContext.Provider>
     </RevealContext.Provider>
   );
+}
+
+interface OffsetRequest {
+  mode: Reveal;
+  horizontal: boolean;
+  box: { left: number; top: number; width: number; height: number };
+  current: number;
+  offsetFromStart: number;
+  contentStyle: StyleProp<ViewStyle>;
+  viewport: number;
+  content: number;
+}
+
+function offsetFor({
+  mode,
+  horizontal,
+  box,
+  current,
+  offsetFromStart,
+  contentStyle,
+  viewport,
+  content,
+}: OffsetRequest): number {
+  const top = horizontal ? box.left : box.top;
+  if (mode === 'nearest') {
+    return nearestOffset({
+      top,
+      size: horizontal ? box.width : box.height,
+      current,
+      margin: offsetFromStart + RING_ROOM,
+      viewport,
+      content,
+    });
+  }
+  if (horizontal) {
+    // The reach above is padding on the content, so every item measures that
+    // much further in: without it here the row would scroll the room back out
+    // from under the first tile's ring.
+    return pageOffset({ top, offsetFromStart: offsetFromStart + RING_ROOM, viewport, content });
+  }
+  return pageOffset({
+    top,
+    size: box.height,
+    lead: leadOf(flat(contentStyle)),
+    offsetFromStart,
+    viewport,
+    content,
+  });
 }
 
 function FocusScroll(props: Readonly<FocusScrollProps>) {
