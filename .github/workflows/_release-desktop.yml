@@ -287,7 +287,7 @@ jobs:
         run: |
           set -euo pipefail
           TARBALL="$(bash clients/desktop/scripts/updater-tarball-macos.sh)"
-          (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/$TARBALL")
+          (cd clients/desktop && bun run tauri signer sign "$TARBALL")
 
       # Tauri's default bundler sweeps the runner's wayland/glib/gstreamer libs
       # into the AppImage, which breaks it on Mesa 25+ hosts (SteamOS 3.7+,
