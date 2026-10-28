@@ -43,6 +43,7 @@ jobs:
       rust_shards: ${{ steps.lanes.outputs.rust_shards }}
       sdk: ${{ steps.lanes.outputs.sdk }}
       sonar: ${{ steps.sonar.outputs.run }}
+      sccache: ${{ steps.sccache.outputs.on }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -60,6 +61,12 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: echo "run=${{ env.SONAR_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      # The R2 compile cache the Rust tests share once its bucket is set up
+      # (docs/ci.md); without the secret they compile as before.
+      - id: sccache
+        env:
+          SCCACHE_R2_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
+        run: echo "on=${{ env.SCCACHE_R2_BUCKET != '' }}" >> "$GITHUB_OUTPUT"
 
   branch-name:
     name: Branch name
@@ -363,6 +370,8 @@ jobs:
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2
         with:
           tool: cargo-llvm-cov
+      - uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        if: needs.lanes.outputs.sccache == 'true'
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: server
@@ -377,7 +386,17 @@ jobs:
         continue-on-error: true
       - run: bun run ci tools ffmpeg
       - run: bun run ci rust clippy --only "${{ join(matrix.shard.workspaces, ',') }}"
+      # The credentials reach this step alone, not the install before it.
       - run: bun run ci rust test --only "${{ join(matrix.shard.workspaces, ',') }}"
+        env:
+          RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
+          SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
+          SCCACHE_ENDPOINT: ${{ secrets.SCCACHE_R2_ENDPOINT }}
+          SCCACHE_REGION: auto
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCCACHE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_R2_SECRET_ACCESS_KEY }}
+      - run: sccache --show-stats
+        if: needs.lanes.outputs.sccache == 'true'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-rust-${{ strategy.job-index }}

@@ -118,8 +118,10 @@ the run's exact bytes, behind the `production` environment approval, and writes
 the Release body (`releases/<v>/en.md` unless it is still a draft, then `ci
 changelog`). A version whose tag already carries a prerelease on another commit
 is refused: release tags cannot move, so that prerelease and its tag are
-deleted first. `CHANGELOG.md` is written by hand after a release: `bun run ci
-changelog --version <v> --write`.
+deleted first. The Release also carries `SHA256SUMS`, written from the bytes
+it attaches, so `sha256sum -c SHA256SUMS` checks a whole download folder.
+`CHANGELOG.md` is written by hand after a release: `bun run ci changelog
+--version <v> --write`.
 
 `ci version` resolves one version, one `triplet`, and one `build` number
 (minutes since 2020) for the run; every store-bound package in the run carries
@@ -261,9 +263,22 @@ ten-minute `rust` job. `gh cache list` shows what is there;
 
 The remaining 3 GB of Rust trees are the next step, and it leaves the quota
 entirely: `sccache` with an R2 bucket (S3-compatible, no egress fees) caches
-per object, is warm for pull requests too, and needs only an access key pair
-and the bucket name as repository secrets. Not done here because the bucket
-and its token have to be created in the Cloudflare dashboard.
+per object and is warm for pull requests too. The Rust test step is wired for
+it and stays off until the bucket exists (the `lanes` job reads the secret,
+the way it does Sonar's). To turn it on:
+
+1. Create an R2 bucket, with a lifecycle rule that deletes objects after
+   about 30 days: R2 never evicts on its own.
+2. Create an R2 API token with Object Read & Write on that bucket alone.
+3. Add four repository secrets: `SCCACHE_R2_BUCKET`, `SCCACHE_R2_ENDPOINT`
+   (`https://<account id>.r2.cloudflarestorage.com`),
+   `SCCACHE_R2_ACCESS_KEY_ID` and `SCCACHE_R2_SECRET_ACCESS_KEY`.
+
+The credentials reach the test step alone, never `bun install`. clippy does
+not go through sccache; its deps are check builds the test step would not
+share anyway. Each shard prints `sccache --show-stats`, which is where a hit
+rate shows. Once it is warm, the per-shard Rust cache entries are the next
+thing to retire.
 
 ## Bun
 

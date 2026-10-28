@@ -14,8 +14,16 @@ echo "Publishing $TAG from $SHA with ${#files[@]} assets."
 
 # A release asset is addressed by basename, so two files sharing one across
 # subfolders would silently overwrite each other under --clobber.
-dupes=$(printf '%s\n' "${files[@]}" | xargs -n1 basename | sort | uniq -d)
+dupes=$(printf '%s\n' "${files[@]}" SHA256SUMS | xargs -n1 basename | sort | uniq -d)
 [[ -z "$dupes" ]] || { echo "::error::duplicate asset name(s):"; echo "$dupes"; exit 1; }
+
+# One file `sha256sum -c` checks a whole download folder against, written from
+# the bytes being attached.
+sums="$(mktemp -d)/SHA256SUMS"
+for f in "${files[@]}"; do
+  printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")"
+done | sort -k2 > "$sums"
+files+=("$sums")
 
 # Pointed at the promoted commit, not at whatever main has drifted to since.
 if gh api "repos/$GH_REPO/git/ref/tags/${TAG#refs/tags/}" >/dev/null 2>&1; then
