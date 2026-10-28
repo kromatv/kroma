@@ -199,6 +199,7 @@ fn read_bounded(reader: impl std::io::Read, max_bytes: u64) -> anyhow::Result<Ve
 
 fn unpack_validated(tar_bytes: &[u8], dest: &std::path::Path) -> anyhow::Result<()> {
     let mut archive = tar::Archive::new(tar_bytes);
+    archive.set_preserve_mtime(false);
     for entry in archive.entries()? {
         let mut entry = entry?;
         // Only ever write regular files: `sanitized_entry` rewrites an entry's
