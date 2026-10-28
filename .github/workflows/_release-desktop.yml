@@ -38,6 +38,9 @@ jobs:
             artifact: kroma-desktop-macos
             files: |
               clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz.sig
           # NSIS .exe installer + .msi.
           - os: windows-latest
             label: 'Windows (.exe + .msi)'
@@ -46,6 +49,9 @@ jobs:
             files: |
               clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
               clients/desktop/src-tauri/target/release/bundle/msi/*.msi
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+              clients/desktop/src-tauri/target/release/bundle/msi/*.msi.sig
           # Steam Deck / Linux .AppImage. Ubuntu 22.04 = oldest base with WebKitGTK
           # 4.1 (Tauri v2's floor), keeping the AppImage's glibc low enough for SteamOS.
           - os: ubuntu-22.04
@@ -55,6 +61,9 @@ jobs:
             files: |
               clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.sig
+              clients/desktop/src-tauri/target/release/bundle/deb/*.deb.sig
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write # attach assets to the Release
@@ -251,21 +260,53 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: .github/scripts/macos-sign-and-package-dmg.sh
 
+      # The updater's bundle, from the app the dmg carries: tauri's own
+      # tarball predates libmpv and the signature. deploy.yml serves it on the
+      # desktop-stable feed, so a stable update installs the promoted bytes.
+      - name: Updater bundle (macOS)
+        if: runner.os == 'macOS'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          set -euo pipefail
+          TARBALL="$(bash clients/desktop/scripts/updater-tarball-macos.sh)"
+          (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/$TARBALL")
+
       # Tauri's default bundler sweeps the runner's wayland/glib/gstreamer libs
       # into the AppImage, which breaks it on Mesa 25+ hosts (SteamOS 3.7+,
       # Fedora 41+: "Could not create default EGL display: EGL_BAD_PARAMETER",
-      # no window) - tauri-apps/tauri#15665. Strip + repack. No .sig concern
-      # here: this workflow ships no updater artifacts (the desktop-latest
-      # channel does; its workflow re-signs after the same fix).
+      # no window) - tauri-apps/tauri#15665. Strip + repack, then sign again:
+      # the .sig tauri wrote is for the bytes before the repack.
       - name: Fix AppImage over-bundling (tauri#15665)
         if: runner.os == 'Linux'
-        run: bash clients/desktop/scripts/fix-appimage.sh clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          APPIMAGES=(clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage)
+          [ ${#APPIMAGES[@]} -eq 1 ] || { echo "expected exactly one AppImage, got: ${APPIMAGES[*]:-none}"; exit 1; }
+          bash clients/desktop/scripts/fix-appimage.sh "${APPIMAGES[0]}"
+          (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/${APPIMAGES[0]}")
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 30
+
+      # Not under kroma-*: deploy.yml attaches every kroma-* file to the
+      # Release, and the canary channel offers them for download. These are
+      # the stable feed's signatures and the macOS tarball, nothing to install.
+      - name: Upload updater artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-updater-${{ runner.os == 'macOS' && 'macos' || runner.os == 'Windows' && 'windows' || 'linux' }}
+          path: ${{ matrix.updater }}
           if-no-files-found: error
           retention-days: 30
 

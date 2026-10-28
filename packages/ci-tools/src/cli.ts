@@ -7,6 +7,7 @@ const COMMANDS = {
   build: async (args: string[]) => (await import('./build')).main(args),
   version: async (args: string[]) => (await import('./version')).main(args),
   canary: async (args: string[]) => (await import('./canary-command')).main(args),
+  'desktop-feed': async (args: string[]) => (await import('./desktop-feed-command')).main(args),
   changelog: async (args: string[]) => (await import('./changelog-command')).main(args),
   notes: async (args: string[]) => (await import('./notes-command')).main(args),
   cache: async (args: string[]) => (await import('./cache')).main(args),

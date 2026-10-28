@@ -176,13 +176,30 @@ the page offers **stable only**. The data is there (`canary` from
 needs a channel switch the way the archive already has one, and a "last
 canary, built N hours ago" line under each platform.
 
-`desktop-autoupdate.yml` builds the three desktop installers a second time per
-push (without libmpv on macOS) for the updater's `desktop-latest` tag. Folding
-it into the candidate's desktop build (produce the updater tarball and
-signature after the libmpv bundling and signing, write `latest.json` from the
-three artifacts) would drop three full Tauri builds per push and put the
-updater on the same bytes the canary offers. It needs a live run with the
-signing secrets to verify, which is why it is not part of this rebuild.
+### The desktop update feeds
+
+The installed desktop apps poll one of two feeds, by the channel of the server
+they are signed into.
+
+**`desktop-stable`** serves the promoted candidate's own bytes. The release
+build writes an update signature beside every installer (`createUpdaterArtifacts`)
+and uploads them as `desktop-updater-<os>`, apart from the `kroma-*` artifacts
+the Release attaches. On macOS the update bundle is packed from the app the
+dmg carries, after libmpv is embedded and the bundle signed and stapled; the
+AppImage is signed again after `fix-appimage.sh` repacks it. On a stable
+promotion, `deploy.yml` downloads the installers and their signatures, and
+`bun run ci desktop-feed publish` writes `latest.json` and swaps the release
+in (staged on `desktop-stable-staging`, so a failed upload leaves every app on
+the previous feed). Nothing is rebuilt on promotion, and a candidate without
+the `desktop-updater-*` artifacts is refused before the approval.
+
+**`desktop-latest`**, the canary feed, is still its own build:
+`desktop-autoupdate.yml` builds the three installers again per desktop-facing
+push. Each push needs a strictly newer version than the last, and the
+candidate is stamped with the release's X.Y.Z; a `-<build>` suffix cannot go
+into the candidate because the .msi's fourth version field stops at 65535,
+and the build number is past three million. The macOS canary also still lacks
+libmpv, since tauri-action packs its bundle before anything could be embedded.
 
 ## Caches and the 10 GB budget
 

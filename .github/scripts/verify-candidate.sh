@@ -2,7 +2,7 @@
 # Decide whether a "Build & Release" run may be promoted to a Release. Runs
 # before the approval gate, so a reviewer is only asked about viable promotions.
 #
-# Inputs (env):  RUN_ID, GH_TOKEN, GH_REPO
+# Inputs (env):  RUN_ID, GH_TOKEN, GH_REPO, PRERELEASE
 # Outputs (GITHUB_OUTPUT): version, sha, synology_run
 set -euo pipefail
 
@@ -49,6 +49,16 @@ if released=$(gh release view "v$VERSION" --json targetCommitish,isPrerelease --
     exit 1
   fi
   echo "note: v$VERSION is already released from this same commit; re-running."
+fi
+
+# A stable promotion also publishes the desktop-stable feed from this run's
+# update signatures, which a candidate built before them does not carry.
+if [[ "${PRERELEASE:-false}" != "true" ]]; then
+  artifacts="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts" --paginate --jq '.artifacts[].name')"
+  for os in macos windows linux; do
+    grep -qx "desktop-updater-$os" <<<"$artifacts" \
+      || { echo "::error::Run $RUN_ID has no desktop-updater-$os artifact; promote a newer candidate."; exit 1; }
+  done
 fi
 
 # The .spk comes from synology.yml, a separate workflow, so it is matched by
