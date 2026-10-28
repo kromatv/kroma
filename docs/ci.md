@@ -28,12 +28,19 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ desktop (cargo check, Linux mpv path)         desktop
        ├─ rust (server) ┐                               rust
        ├─ rust (modules n) ┴─ rust (one lcov)           rust
-       └─ sonar ◄── test-report + rust                  SONAR_TOKEN present
+       ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
+       └─ required ◄── lanes + every job above but sonar
 ```
 
-Required checks on `main`: **Typecheck + lint**, **Unit tests**, **Rust**. A
-job whose lane is off is skipped, and a skipped job satisfies the gate: a
-docs-only pull request passes in a minute without building anything.
+The one required check on `main` is **Required** (`bun run ci required`). A
+job whose lane is off is skipped, and `required` passes a skip only then: a
+docs-only pull request passes in a minute without building anything, and a
+`lanes` that failed or was cancelled turns it red. That second half is why it
+exists. GitHub reports a skipped required check as a pass, so when the
+required checks were the jobs themselves, a failed `lanes` skipped all three
+and the pull request could merge with nothing run. Adding a job means adding
+it to `required`'s `needs` and to its `LANE_OF` map; branch protection stays
+as it is.
 
 `lanes` lists the changed files through the GitHub API (pull request files, or
 the push's compare) and matches them against `packages/ci-tools/src/lanes.ts`.

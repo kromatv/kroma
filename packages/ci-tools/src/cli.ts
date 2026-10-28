@@ -1,5 +1,6 @@
 const COMMANDS = {
   lanes: async (args: string[]) => (await import('./lanes-command')).main(args),
+  required: async () => (await import('./required-command')).main(),
   typecheck: async (args: string[]) => (await import('./typecheck')).main(args),
   test: async (args: string[]) => (await import('./test')).main(args),
   rust: async (args: string[]) => (await import('./rust')).main(args),

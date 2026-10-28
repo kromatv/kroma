@@ -4,9 +4,10 @@ name: CI
 # measured. Every step is `bun run ci <command>` (packages/ci-tools), so a job
 # is the list of commands a laptop runs too; docs/ci.md explains the shape.
 #
-# `lanes` decides which jobs a change can reach. A skipped job reports as
-# successful, which is what lets `checks` and `rust` stay required on main
-# while a docs-only pull request builds nothing.
+# `lanes` decides which jobs a change can reach. `required` is the one check
+# main requires: it passes a skipped job only when `lanes` turned its lane
+# off, so a docs-only pull request builds nothing and a failed `lanes` cannot
+# pass as a run that skipped everything.
 #
 # workflow_dispatch runs every lane: the Rust caches save only from main, so
 # once evicted they stay cold until a Rust-touching push lands there. A manual
@@ -416,6 +417,34 @@ jobs:
           path: server/lcov.info
           retention-days: 1
           if-no-files-found: error
+
+  # The check main requires, in place of one per job. A skipped required
+  # check reports as a pass, so when `lanes` failed every job behind it was
+  # skipped and the run went green; here a skip passes only with its lane off.
+  # A new gated job joins `needs` and LANE_OF, and branch protection never
+  # changes.
+  required:
+    name: Required
+    needs: [lanes, checks, test-report, audit, build, tv-native, sdk, desktop, rust]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: bun run ci required
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          LANE_OF: >-
+            {"checks": "code", "test-report": "code", "audit": "code",
+            "build": "fleet", "tv-native": "android", "sdk": "sdk",
+            "desktop": "desktop", "rust": "rust"}
 
   # The scan reads the coverage the gates above produced; nothing runs twice.
   # Rust coverage is absent on a change that touched no Rust, and the scan
