@@ -704,6 +704,32 @@ async fn allowed_to_preflight_an_announce(t: &TestApp, origin: &str) -> Option<S
     allow_origin(&headers)
 }
 
+#[tokio::test]
+async fn a_preflight_names_the_method_and_headers_it_allows() {
+    let t = test_app();
+
+    let (_status, headers, _body) = raw(
+        &t.app,
+        "OPTIONS",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+        &[
+            ("origin", "file://"),
+            ("access-control-request-method", "POST"),
+            ("access-control-request-headers", "content-type,authorization"),
+        ],
+    )
+    .await;
+
+    let named = |name: &str| headers.get(name).and_then(|v| v.to_str().ok()).map(str::to_string);
+    assert_eq!(named("access-control-allow-methods").as_deref(), Some("POST"));
+    assert_eq!(
+        named("access-control-allow-headers").as_deref(),
+        Some("content-type,authorization")
+    );
+}
+
 fn allow_origin(headers: &HeaderMap) -> Option<String> {
     headers
         .get("access-control-allow-origin")

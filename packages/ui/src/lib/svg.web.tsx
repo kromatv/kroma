@@ -37,7 +37,7 @@ export const G: El<SVGGElement> = (props) => <g {...props} />;
 
 const sDefinition = styles({ box: { display: 'flex' } });
 
-const UNSIZED_ROOT = /^(\s*<svg\b)(?![^>]*\swidth=)/;
+const UNSIZED_ROOT = /(<svg)(?=[\s>])(?![^>]*\s(?:width|height)=)/;
 
 const sizeOf = (
   width: number | string | undefined,

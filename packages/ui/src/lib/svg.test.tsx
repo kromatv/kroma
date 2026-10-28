@@ -24,4 +24,18 @@ describe('SvgXml', () => {
 
     expect(container.querySelector('svg')?.getAttribute('width')).toBe('24');
   });
+
+  it('sizes a document that opens with an XML prolog', () => {
+    const { container } = render(
+      <SvgXml xml='<?xml version="1.0"?><svg viewBox="0 0 10 10"/>' width="100%" />,
+    );
+
+    expect(container.querySelector('svg')?.getAttribute('width')).toBe('100%');
+  });
+
+  it('leaves a document that declares only a height alone', () => {
+    const { container } = render(<SvgXml xml='<svg height="24" viewBox="0 0 24 24"/>' />);
+
+    expect(container.querySelector('svg')?.getAttribute('height')).toBe('24');
+  });
 });

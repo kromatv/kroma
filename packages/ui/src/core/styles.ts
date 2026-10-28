@@ -73,22 +73,15 @@ export function styles<const S extends Record<string, StyleDecl>>(
     owners.set(scope, { at, step, built });
     return built;
   };
-  return new Proxy({} as Styles<S>, {
-    get: (_, key) => {
-      if (key === RESOLVE) return resolve;
-      if (key === MASK) return mask;
-      return Reflect.get(resolve(owner), key);
-    },
-    has: (_, key) => key in resolve(owner),
-    ownKeys: () => Reflect.ownKeys(resolve(owner)),
-    getOwnPropertyDescriptor: (_, key) => {
-      const desc = Object.getOwnPropertyDescriptor(resolve(owner), key);
-      return desc ? { ...desc, configurable: true } : undefined;
-    },
-    set: () => false,
-    defineProperty: () => false,
-    deleteProperty: () => false,
-  });
+  const binding: Record<PropertyKey, unknown> = {};
+  for (const name of Object.keys(decls))
+    Object.defineProperty(binding, name, {
+      enumerable: true,
+      get: () => Reflect.get(resolve(owner), name),
+    });
+  Object.defineProperty(binding, RESOLVE, { value: resolve });
+  Object.defineProperty(binding, MASK, { value: mask });
+  return Object.freeze(binding) as Styles<S>;
 }
 
 export function resolveStyles<S>(definition: Styles<S>, scope: StyleScope): Styles<S> {
