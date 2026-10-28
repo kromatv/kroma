@@ -2,6 +2,7 @@
 
 - Status: **DRAFT**
 - PR: #NNNN
+- Epic: #422
 - Affects: no spec chapter covers notifications yet, so acceptance comes with a new one
   (`docs/spec/accounts/notifications.md`); the `notifications` table, `NotificationSpec` in
   `kroma-module-wire`, the module host's `notify` callback, `@kromatv/client/notifications`,
@@ -191,18 +192,21 @@ parsing at the host boundary, like any other cross-process body.
 
 ## Rollout
 
-Each step ships alone and fixes something on its own.
+Each step ships alone and fixes something on its own. #432 fixes today's dead link first,
+without waiting for any of them.
 
-1. Subject, actor and data, and routes from the subject. Fixes the dead link and the
+1. Subject, actor and data, and routes from the subject (#423). Fixes the dead link and the
    too-early link.
-2. Server-side folding and the push collapse key. Fixes the sixteen rows and the stacked
-   banners.
-3. The dedupe key. Fixes the four "Prêt à regarder".
-4. Resolve by subject. Fixes the stale Approve and Deny.
-5. Seen and archived.
-6. The delivery record.
-7. Module-declared types, with their catalogs in the renderer.
-8. Per-type preferences.
+2. Server-side folding and the push collapse key (#424). Fixes the sixteen rows and the
+   stacked banners.
+3. The dedupe key (#425). Fixes the four "Prêt à regarder".
+4. Resolve by subject (#426). Fixes the stale Approve and Deny.
+5. Seen and archived (#427).
+6. The delivery record (#428).
+7. Module-declared types, with their catalogs in the renderer (#429).
+8. Per-type preferences (#430).
+
+The spec chapter is #431.
 
 ## What this costs
 
