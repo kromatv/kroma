@@ -12,3 +12,11 @@
 // for a missing one on purpose.
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'intersection-observer';
+
+if (!('BigInt' in window)) {
+  Object.defineProperty(window, 'BigInt', {
+    value: (value: string | number) => Number(value),
+    configurable: true,
+    writable: true,
+  });
+}

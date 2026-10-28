@@ -17,6 +17,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { type TransformOptions, transformAsync } from '@babel/core';
 // @ts-expect-error -- untyped package
+import transformArrows from '@babel/plugin-transform-arrow-functions';
+// @ts-expect-error -- untyped package
 import transformClasses from '@babel/plugin-transform-classes';
 // @ts-expect-error -- untyped package
 import presetEnv from '@babel/preset-env';
@@ -104,7 +106,7 @@ export async function lowerJs(
   const lowered = await babelPass(
     readFileSync(path, 'utf8'),
     path,
-    [transformClasses],
+    [transformClasses, transformArrows],
     [[presetEnv, { targets: { chrome: String(chrome) }, modules: false }]],
   );
   if (!lowered?.code) throw new Error(`deep-tier: babel produced no output for ${path}`);

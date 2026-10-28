@@ -10,7 +10,7 @@ use axum::extract::{Request, State};
 use axum::http::{header, StatusCode, Uri};
 use axum::middleware::Next;
 use axum::response::Response;
-use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, Any, CorsLayer};
 
 use crate::api::error::json_error;
 use crate::state::SharedState;
@@ -26,8 +26,8 @@ const OFFICIAL_CLIENTS: &[&str] = &["https://tv.kroma.tv"];
 pub fn cors(named: &[String]) -> CorsLayer {
     let named = named.to_vec();
     CorsLayer::new()
-        .allow_methods(Any)
-        .allow_headers(Any)
+        .allow_methods(AllowMethods::mirror_request())
+        .allow_headers(AllowHeaders::mirror_request())
         .expose_headers(Any)
         .allow_origin(AllowOrigin::predicate(move |origin, _| {
             origin.to_str().is_ok_and(|origin| may_read(origin, &named))
