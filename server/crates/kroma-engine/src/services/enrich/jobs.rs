@@ -26,9 +26,6 @@ pub(super) struct Job {
 }
 
 impl Job {
-    // A settled movie's only remaining call is for a language added since, which
-    // the nightly `pipeline.metadata` stage is what notices. A show always has
-    // one: a season added since the last pass is only filled in from here.
     pub(super) const fn fetches(&self) -> bool {
         self.is_show || self.resolved_tmdb.is_none()
     }

@@ -16,8 +16,7 @@ use super::engine::{engine_for, Counters, Engine, FinishGuard};
 use super::jobs::{art_intact, build_jobs, load_pins, pin_for, Job};
 use super::process::process_job;
 
-// TMDB allows ~50 rps, so the ceiling is the box rather than the API: every
-// worker is another SQLite writer queueing behind whatever the scan is holding.
+// TMDB allows ~50 rps; every worker is another SQLite writer.
 pub(super) fn workers() -> usize {
     std::thread::available_parallelism()
         .map(std::num::NonZeroUsize::get)

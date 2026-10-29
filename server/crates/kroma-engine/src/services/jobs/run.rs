@@ -27,7 +27,6 @@ pub(super) fn run_job(
     let pool = state.db.clone();
     // The run still executes if this fails, but the later UPDATEs no-op against a
     // missing row and it leaves no trace, so surface it rather than swallowing.
-    // Retried first: a scan holding the write lock is exactly when a job starts.
     let recorded = db::retry_busy(&db::BUSY_RETRY_MS, || {
         db::insert_job_run(&pool, &run_id, key, trigger, started_ms)
     });
