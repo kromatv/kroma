@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 
 use tokio::time::sleep;
 
+use super::admission::SUPERSEDED_TRANSCODE_GRACE;
 use super::key::same_program;
 use super::naming::seg_index;
 use super::session::{Session, Sessions};
@@ -49,27 +50,35 @@ impl Sessions {
         self.budget.load(Ordering::Relaxed)
     }
 
-    // A sibling of `key` is either the same viewer's superseded stream or another
-    // viewer still on the title, and nothing here can tell them apart. So one
-    // that has gone quiet goes now, and one still being read is only marked: the
-    // reaper takes it a grace later if nothing reads it again, and the next
-    // request for it clears the mark.
-    pub(super) async fn reap_superseded(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
+    // A sibling `opener` opened themselves is the anchor they just left, and a
+    // player cannot read two anchors of one program at once, so it goes now. A
+    // sibling anyone else opened goes only once it has gone quiet; one still
+    // being read is marked, and the next request for it clears the mark.
+    pub(super) async fn reap_superseded(
+        &self,
+        map: &mut HashMap<String, Arc<Session>>,
+        key: &str,
+        opener: Option<&str>,
+    ) -> bool {
         let now = Instant::now();
         let mut stale = Vec::new();
+        let mut marked_a_transcode = false;
         for (k, s) in map.iter() {
             if k == key || !same_program(k, key) {
                 continue;
             }
-            if now.duration_since(*s.last_access.lock().await) >= BUDGET_GRACE {
+            if s.opened_by(opener) || now.duration_since(*s.last_access.lock().await) >= BUDGET_GRACE
+            {
                 stale.push(k.clone());
             } else {
                 s.supersede();
+                marked_a_transcode |= s.transcodes_video();
             }
         }
         for k in stale {
             self.evict(map, &k).await;
         }
+        marked_a_transcode
     }
 
     // Evict idle sessions oldest-first until the cache is under budget (0
@@ -93,7 +102,7 @@ impl Sessions {
 
     // Returns the bytes the session was holding, so a caller measuring the cache
     // afterwards can discount a directory the discard has not unlinked yet.
-    async fn evict(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) -> u64 {
+    pub(super) async fn evict(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) -> u64 {
         let Some(s) = map.remove(key) else { return 0 };
         let _ = s.child.lock().await.start_kill();
         let held = if self.budget_bytes() == 0 {
@@ -189,10 +198,14 @@ impl Session {
     // A superseded session has minutes of an ordinary idle life taken off it: a
     // remux nobody re-anchored into keeps pulling its input at up to twice
     // realtime, for a playlist nobody is reading.
-    async fn idle_past_its_limit(&self, now: Instant) -> bool {
-        let limit = match self.superseded.load(Ordering::Relaxed) {
-            true => BUDGET_GRACE,
-            false => IDLE_TIMEOUT,
+    pub(super) async fn idle_past_its_limit(&self, now: Instant) -> bool {
+        let limit = match (
+            self.superseded.load(Ordering::Relaxed),
+            self.transcodes_video(),
+        ) {
+            (true, true) => SUPERSEDED_TRANSCODE_GRACE,
+            (true, false) => BUDGET_GRACE,
+            (false, _) => IDLE_TIMEOUT,
         };
         now.duration_since(*self.last_access.lock().await) > limit
     }

@@ -4,7 +4,7 @@
 
 use axum::extract::{FromRequestParts, Query};
 use axum::http::request::Parts;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::Response;
 use kroma_media::Credential;
 use serde::Deserialize;
@@ -43,6 +43,18 @@ impl TicketQuery {
     pub fn credential(&self) -> Credential {
         Credential::new(PARAM, self.ticket())
     }
+}
+
+/// A short opaque id for the player behind a media request: the ticket's device,
+/// else a hash of the session bearer, so the raw token never travels further.
+/// Two requests carrying the same id are the same player; `None` is a caller
+/// that presented neither, and matches nobody.
+pub fn opener(key: &str, headers: &HeaderMap, ticket: &TicketQuery) -> Option<String> {
+    if let Some(token) = bearer_from_headers(headers) {
+        return Some(crate::services::scan::short_hash(&token));
+    }
+    let now = time::OffsetDateTime::now_utc().unix_timestamp();
+    media_ticket::device_of(key, ticket.ticket()?, now)
 }
 
 /// The account a media byte request may be answered for. Resolved from the
@@ -96,6 +108,50 @@ mod tests {
             "?t=dev.999.sig"
         );
         assert_eq!(TicketQuery::default().credential().query(), "");
+    }
+
+    fn bearing(token: &str) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            axum::http::header::AUTHORIZATION,
+            format!("Bearer {token}").parse().expect("a header value"),
+        );
+        headers
+    }
+
+    #[test]
+    fn a_ticket_names_its_device_as_the_player_asking() {
+        let now = time::OffsetDateTime::now_utc().unix_timestamp();
+        let ticket = presented(&media_ticket::mint("secret", "abc123", now));
+
+        let asking = opener("secret", &HeaderMap::new(), &ticket);
+
+        assert_eq!(asking.as_deref(), Some("abc123"));
+    }
+
+    #[test]
+    fn a_bearer_names_the_player_without_the_token_travelling_with_it() {
+        let headers = bearing("session-token");
+
+        let asking = opener("secret", &headers, &TicketQuery::default()).expect("an id");
+
+        assert_ne!(asking, "session-token");
+        assert_eq!(
+            Some(&asking),
+            opener("secret", &headers, &TicketQuery::default()).as_ref(),
+            "the same player twice reads as one"
+        );
+    }
+
+    #[test]
+    fn a_caller_with_neither_a_bearer_nor_a_ticket_names_nobody() {
+        let unsigned = presented("dev.999.not-a-signature");
+
+        assert_eq!(
+            opener("secret", &HeaderMap::new(), &TicketQuery::default()),
+            None
+        );
+        assert_eq!(opener("secret", &HeaderMap::new(), &unsigned), None);
     }
 
     #[test]
