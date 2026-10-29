@@ -74,7 +74,10 @@ fn persist(metrics: &Metrics, rollup: &mut Rollup, point: Means) {
     let Some(closed) = rollup.add(now_unix(), point) else {
         return;
     };
-    if let Err(e) = crate::db::record_metric_sample(&metrics.store, &closed) {
+    let stored = crate::db::retry_busy(&crate::db::BUSY_RETRY_MS, || {
+        crate::db::record_metric_sample(&metrics.store, &closed)
+    });
+    if let Err(e) = stored {
         tracing::warn!(error = %e, "metrics sample not stored");
         return;
     }

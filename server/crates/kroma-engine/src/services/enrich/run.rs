@@ -16,8 +16,14 @@ use super::engine::{engine_for, Counters, Engine, FinishGuard};
 use super::jobs::{art_intact, build_jobs, load_pins, pin_for, Job};
 use super::process::process_job;
 
-// TMDB allows ~50 rps; SQLite write contention also grows with writers.
-const WORKERS: usize = 8;
+// TMDB allows ~50 rps, so the ceiling is the box rather than the API: every
+// worker is another SQLite writer queueing behind whatever the scan is holding.
+pub(super) fn workers() -> usize {
+    std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(4)
+        .clamp(2, 8)
+}
 
 pub struct EnrichSummary {
     pub total: usize,
@@ -28,6 +34,10 @@ pub struct EnrichSummary {
 }
 
 /// Returns immediately; work proceeds on detached threads.
+///
+/// Only the titles with a TMDB call to make, because this runs after every scan
+/// and one imported film must not re-resolve the whole catalog. The sweep that
+/// does revisit everything is the nightly `pipeline.metadata` stage.
 pub fn maybe_spawn(state: &SharedState, items: &[MediaItem], shows: &[Show]) {
     let Some(api_key) = state.config.tmdb_api_key.clone() else {
         return;
@@ -35,7 +45,8 @@ pub fn maybe_spawn(state: &SharedState, items: &[MediaItem], shows: &[Show]) {
     if !state.config.tmdb_enrich {
         return;
     }
-    let jobs = build_jobs(items, shows, &load_pins(&state.db), &state.config.data_dir);
+    let mut jobs = build_jobs(items, shows, &load_pins(&state.db), &state.config.data_dir);
+    jobs.retain(Job::fetches);
     if jobs.is_empty() {
         return;
     }
@@ -55,7 +66,7 @@ pub(super) fn spawn(eng: Engine, activity: Activity, search: Arc<SearchEngine>, 
     let queue = Arc::new(Mutex::new(jobs));
     let counters = Arc::new(Counters::default());
     thread::spawn(move || {
-        let worker_count = WORKERS.min(total.max(1));
+        let worker_count = workers().min(total.max(1));
         let mut handles = Vec::with_capacity(worker_count);
         for _ in 0..worker_count {
             let (eng, queue, counters, activity) = (
@@ -199,7 +210,7 @@ pub fn run_tracked(
     let queue = Arc::new(Mutex::new(jobs));
     let counters = Arc::new(Counters::default());
     let cancel = Arc::new(AtomicBool::new(false));
-    let worker_count = WORKERS.min(total.max(1));
+    let worker_count = workers().min(total.max(1));
     let mut handles = Vec::with_capacity(worker_count);
     for _ in 0..worker_count {
         let (eng, queue, counters, cancel) =

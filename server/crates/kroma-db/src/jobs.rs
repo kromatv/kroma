@@ -131,6 +131,11 @@ pub fn is_busy(e: &anyhow::Error) -> bool {
     )
 }
 
+/// The ladder [`retry_busy`] is given for a write that must not be lost: the
+/// pool's own `busy_timeout` already covers a slow commit, so these delays are
+/// what a scan or an enrichment pass holding the lock for minutes needs.
+pub const BUSY_RETRY_MS: [u64; 3] = [1_000, 5_000, 15_000];
+
 /// Runs `f`, and runs it again after each delay in `delays_ms` for as long as
 /// it fails with [`is_busy`]. Any other error, or the busy error that outlasts
 /// the delays, is returned.
