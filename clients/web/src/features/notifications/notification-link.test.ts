@@ -44,6 +44,18 @@ describe('notificationLink', () => {
     expect(moved('/person/zendaya')).toBe('/people/zendaya');
   });
 
+  it('sends the request queue to the monitoring tab it became', () => {
+    const one = at({ link: '/admin/requests' });
+
+    expect(notificationLink(one)).toBe('/admin/monitoring?tab=requests');
+  });
+
+  it('leaves a request page that still exists alone', () => {
+    const one = at({ link: '/admin/requests/req-7' });
+
+    expect(notificationLink(one)).toBe('/admin/requests/req-7');
+  });
+
   it('leaves a path that never moved alone', () => {
     const same = (link: string) => notificationLink(at({ link }));
 

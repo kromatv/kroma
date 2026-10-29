@@ -134,7 +134,7 @@ fn moderators_can_decide_from_the_notification_itself() {
     assert_eq!(audience, &Audience::permission(Permission::RequestsManage));
     assert_eq!(spec.event, NotificationEvent::RequestSubmitted);
     assert_eq!(param(&spec.params, "user").as_deref(), Some("alice"));
-    assert_eq!(spec.link.as_deref(), Some("/admin/requests"));
+    assert_eq!(spec.link.as_deref(), Some("/admin/requests/req-7"));
     assert_eq!(spec.push_category, Some(PushCategory::RequestReview));
 
     let ids: Vec<&str> = spec.actions.iter().map(|a| a.id.as_str()).collect();

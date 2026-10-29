@@ -4,7 +4,7 @@ import type { Notification } from '@kromatv/client/notifications';
 // is PERSISTED with the notification, so a row written by an older build - or by
 // a newer client talking to an older server - still points at a path the route
 // tree no longer has, and would land on the catch-all instead of the title.
-const RENAMED: Readonly<Record<string, string>> = {
+const RENAMED_HEAD: Readonly<Record<string, string>> = {
   film: '/movies',
   films: '/movies',
   movie: '/movies',
@@ -16,9 +16,15 @@ const RENAMED: Readonly<Record<string, string>> = {
   person: '/people',
 };
 
+const RENAMED_PATH: Readonly<Record<string, string>> = {
+  '/admin/requests': '/admin/monitoring?tab=requests',
+};
+
 function current(link: string): string {
+  const whole = RENAMED_PATH[link];
+  if (whole) return whole;
   const [, head, ...rest] = link.split('/');
-  const moved = RENAMED[head ?? ''];
+  const moved = RENAMED_HEAD[head ?? ''];
   return moved ? [moved, ...rest].join('/') : link;
 }
 
