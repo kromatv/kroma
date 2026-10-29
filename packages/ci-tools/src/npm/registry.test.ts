@@ -1,15 +1,28 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setTimeout as delay } from 'node:timers/promises';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { npmRegistry } from './registry';
 
 type Reply = { exitCode: number; stdout: string; stderr: string };
 
-const state = vi.hoisted(() => ({ reply: undefined as unknown, calls: [] as unknown[][] }));
+const state = vi.hoisted(() => ({
+  reply: undefined as unknown,
+  calls: [] as unknown[][],
+  replies: [] as unknown[],
+}));
+
+vi.mock('node:timers/promises', () => ({ setTimeout: vi.fn(async () => {}) }));
 
 vi.mock('bun', () => ({
   $: (_strings: TemplateStringsArray, ...values: unknown[]) => {
     state.calls.push(values);
     const reply = {
-      nothrow: () => ({ quiet: async () => state.reply as Reply }),
+      nothrow: () => {
+        const value = (state.replies.shift() ?? state.reply) as Reply;
+        return {
+          quiet: async () => value,
+          then: (resolve: (value: Reply) => void) => resolve(value),
+        };
+      },
       then: (resolve: () => void) => resolve(),
     };
     return reply;
@@ -20,9 +33,14 @@ function answer(exitCode: number, stdout: string, stderr = ''): void {
   state.reply = { exitCode, stdout: Buffer.from(stdout), stderr: Buffer.from(stderr) };
 }
 
+beforeEach(() => answer(0, ''));
+
 afterEach(() => {
   vi.unstubAllGlobals();
   state.calls.length = 0;
+  state.replies.length = 0;
+  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe('npmRegistry.publishedTarball', () => {
@@ -95,4 +113,57 @@ describe('npmRegistry.publish', () => {
 
     expect(state.calls[0]).toEqual([['publish', 'p.tgz', '--access', 'public', '--tag', 'latest']]);
   });
+});
+
+const conflict =
+  'TLOG_CREATE_ENTRY_ERROR: (409) an equivalent entry already exists in the transparency log';
+
+it('retries the provenance conflict with provenance still enabled', async () => {
+  state.replies.push({ exitCode: 1, stdout: '', stderr: conflict });
+  await npmRegistry.publish('p.tgz', { tag: 'canary', provenance: true, dryRun: false });
+  expect(state.calls).toHaveLength(2);
+  expect(state.calls[1]).toEqual(state.calls[0]);
+  expect(state.calls[1]?.[0]).toContain('--provenance');
+});
+
+it('fails after repeated provenance conflicts', async () => {
+  answer(1, '', conflict);
+  await expect(
+    npmRegistry.publish('p.tgz', { tag: 'canary', provenance: true, dryRun: false }),
+  ).rejects.toThrow(/TLOG_CREATE_ENTRY_ERROR/);
+  expect(state.calls).toHaveLength(3);
+  expect(vi.mocked(delay).mock.calls).toEqual([[10_000], [20_000]]);
+});
+
+it.each([
+  'E403 forbidden',
+  'EPUBLISHCONFLICT already published',
+  'TLOG_CREATE_ENTRY_ERROR: unrelated failure',
+])('does not retry %s', async (message) => {
+  answer(1, '', message);
+  await expect(
+    npmRegistry.publish('p.tgz', { tag: 'canary', provenance: true, dryRun: false }),
+  ).rejects.toThrow(message);
+  expect(state.calls).toHaveLength(1);
+});
+
+it('propagates a different error from the retry', async () => {
+  state.replies.push({ exitCode: 1, stdout: '', stderr: conflict });
+  answer(1, '', 'E403 forbidden');
+  await expect(
+    npmRegistry.publish('p.tgz', { tag: 'canary', provenance: true, dryRun: false }),
+  ).rejects.toThrow(/E403/);
+  expect(state.calls).toHaveLength(2);
+});
+
+it.each([
+  { provenance: false, dryRun: false },
+  { provenance: true, dryRun: true },
+])('does not retry when provenance is disabled or publishing is a dry run: %o', async (options) => {
+  answer(1, '', conflict);
+  await expect(npmRegistry.publish('p.tgz', { tag: 'canary', ...options })).rejects.toThrow(
+    /TLOG_CREATE_ENTRY_ERROR/,
+  );
+  expect(state.calls).toHaveLength(1);
+  expect(delay).not.toHaveBeenCalled();
 });

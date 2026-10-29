@@ -43,6 +43,7 @@
 #     APPLE_ID=… APPLE_PASSWORD=… APPLE_TEAM_ID=… \
 #     bash .github/scripts/macos-sign-and-package-dmg.sh
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/macos-staple.sh"
 
 BUNDLE=clients/desktop/src-tauri/target/release/bundle
 APP=$(find "$BUNDLE/macos" -maxdepth 1 -name '*.app' | head -n1)
@@ -161,7 +162,7 @@ if [[ "$SIGN" = "true" ]]; then
   if can_notarize; then
     ditto -c -k --keepParent "$APP" "$WORK/app.zip"
     notarize "$WORK/app.zip"
-    xcrun stapler staple "$APP"
+    staple_and_validate "$APP"
     echo "Notarized + stapled: $APP"
   else
     echo "::warning::No ASC_* API key nor APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID; signed but NOT notarized."
@@ -177,7 +178,7 @@ if [[ "$SIGN" = "true" ]]; then
   codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$DMG"
   if can_notarize; then
     notarize "$DMG"
-    xcrun stapler staple "$DMG"
+    staple_and_validate "$DMG"
   fi
   # Advisory: `spctl` needs the notarized+stapled ticket to pass, so an
   # intentionally un-notarized local build reports rejection without failing the build.
