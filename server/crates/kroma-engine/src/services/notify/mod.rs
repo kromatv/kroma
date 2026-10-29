@@ -12,6 +12,7 @@ pub mod art;
 pub mod digest;
 pub mod push;
 pub mod render;
+pub mod subject;
 
 use kroma_db::notifications::StoredNotification;
 use kroma_module_host::{Event, HostStorage};
@@ -122,20 +123,7 @@ fn deliver<S: HostStorage>(
     // The row we are about to write, kept in hand: rendering the push below needs
     // exactly this, and re-SELECTing it would be a query plus two JSON parses for
     // data already sitting here.
-    let stored = StoredNotification {
-        id: id.clone(),
-        category,
-        event: spec.event,
-        title_key: spec.title_key.clone(),
-        body_key: spec.body_key.clone(),
-        params: spec.params.clone(),
-        link: spec.link.clone(),
-        image_url: spec.image_url.clone(),
-        actions: spec.actions.clone(),
-        push_category: spec.push_category,
-        read: false,
-        created_at: now,
-    };
+    let stored = StoredNotification::from_spec(id.clone(), spec, now);
     let unread = db::notifications::insert_notification(&conn, user.id.as_str(), &stored)?;
 
     // Wake this user's open clients. Addressed, so the bell on someone else's
@@ -154,7 +142,15 @@ fn deliver<S: HostStorage>(
         // Sized on the way out: the device fetches this URL itself, over its own
         // network, and a lock-screen thumbnail has no use for the master (see
         // `art`).
-        let rendered = art::sized_for_push(render::render(&stored, render::locale_of(user)));
+        let subjects = subject::Subjects::from(
+            db::notifications::subject_facts(&conn, std::slice::from_ref(&stored))
+                .unwrap_or_default(),
+        );
+        let rendered = art::sized_for_push(render::render(
+            &stored,
+            render::locale_of(user),
+            &subjects,
+        ));
         drop(conn);
         push::deliver(state, push, &user.id, &rendered);
     }

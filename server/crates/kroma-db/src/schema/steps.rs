@@ -9,4 +9,9 @@ pub(super) const STEPS: &[Step] = &[
         run: Run::Sql(include_str!("steps/0002_upgrade_tasks.sql")),
         rebuilds: false,
     },
+    Step {
+        name: "0003_notification_subjects",
+        run: Run::Sql(include_str!("steps/0003_notification_subjects.sql")),
+        rebuilds: false,
+    },
 ];

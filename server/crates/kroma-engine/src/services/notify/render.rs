@@ -8,6 +8,7 @@
 use kroma_db::notifications::StoredNotification;
 use kroma_domain::{Notification, NotificationAction};
 
+use super::subject::Subjects;
 use crate::i18n;
 
 /// The locale to render for: the account's preference, else the server default.
@@ -32,7 +33,11 @@ fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> 
 }
 
 /// Render one stored notification into its wire shape.
-pub fn render(stored: &StoredNotification, locale: &str) -> Notification {
+///
+/// `subjects` carries what the row's subject needs looked up: the route and the
+/// actor come from it, so a route rename or a renamed account shows on rows
+/// already written.
+pub fn render(stored: &StoredNotification, locale: &str, subjects: &Subjects) -> Notification {
     let resolved = vars_for(stored, locale);
     let vars: Vec<(&str, &str)> = resolved
         .iter()
@@ -44,7 +49,10 @@ pub fn render(stored: &StoredNotification, locale: &str) -> Notification {
         event: stored.event,
         title: i18n::t(locale, &stored.title_key, &vars),
         body: i18n::t(locale, &stored.body_key, &vars),
-        link: stored.link.clone(),
+        subject: stored.subject.clone(),
+        actor: subjects.actor(stored),
+        data: stored.data.clone(),
+        link: subjects.link(stored),
         image_url: stored.image_url.clone(),
         actions: stored
             .actions
@@ -84,6 +92,9 @@ mod tests {
             title_key: "notifications.request.available.title".into(),
             body_key: "notifications.request.available.body".into(),
             params: BTreeMap::from([("title".to_string(), ParamValue::Text("Dune".into()))]),
+            subject: None,
+            actor_id: None,
+            data: None,
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: vec![ActionSpec {
@@ -102,7 +113,7 @@ mod tests {
 
     #[test]
     fn interpolates_params_into_title_and_body() {
-        let out = render(&stored(), "en");
+        let out = render(&stored(), "en", &Subjects::default());
         // The catalogs carry these keys, so the title must not come back as the
         // raw key and must have the film's name substituted in.
         assert!(
@@ -119,8 +130,8 @@ mod tests {
     #[test]
     fn renders_the_same_notification_differently_per_locale() {
         let s = stored();
-        let fr = render(&s, "fr");
-        let en = render(&s, "en");
+        let fr = render(&s, "fr", &Subjects::default());
+        let en = render(&s, "en", &Subjects::default());
         // Same row, two readers, two languages this is why text is not stored.
         assert_ne!(
             fr.body, en.body,
@@ -130,7 +141,7 @@ mod tests {
 
     #[test]
     fn carries_image_link_and_actions_through_untouched() {
-        let out = render(&stored(), "en");
+        let out = render(&stored(), "en", &Subjects::default());
         assert_eq!(out.link.as_deref(), Some("/movie/ab12"));
         assert_eq!(out.image_url.as_deref(), Some("https://img/p.jpg"));
         assert_eq!(out.actions.len(), 1);
@@ -151,7 +162,7 @@ mod tests {
             "job".to_string(),
             ParamValue::Key("jobs.library.scan.name".into()),
         )]);
-        let out = render(&s, "en");
+        let out = render(&s, "en", &Subjects::default());
         assert!(
             !out.body.contains("jobs.library.scan.name"),
             "raw key leaked: {}",
@@ -162,7 +173,7 @@ mod tests {
     #[test]
     fn ordinary_param_text_is_left_alone() {
         // A film title must never be mistaken for a key and rewritten.
-        let out = render(&stored(), "en");
+        let out = render(&stored(), "en", &Subjects::default());
         assert!(out.body.contains("Dune"), "{}", out.body);
     }
 
@@ -177,7 +188,7 @@ mod tests {
             ("user".to_string(), ParamValue::Text("reports.sheet".into())),
             ("title".to_string(), ParamValue::Text("Dune".into())),
         ]);
-        let out = render(&s, "en");
+        let out = render(&s, "en", &Subjects::default());
         assert!(
             out.body.contains("reports.sheet"),
             "collided param was rewritten: {}",
@@ -202,7 +213,7 @@ mod tests {
             ),
             ("title".to_string(), ParamValue::Text("Dune".into())),
         ]);
-        let out = render(&s, "en");
+        let out = render(&s, "en", &Subjects::default());
         let resolved = crate::i18n::t("en", "reports.sheet", &[]);
         assert!(
             out.body.contains(&resolved),
@@ -217,7 +228,7 @@ mod tests {
         // title, a note), and resolving is only ever a lookup, never a guess.
         let mut s = stored();
         s.params = BTreeMap::from([("title".to_string(), ParamValue::Legacy("Dune".into()))]);
-        let out = render(&s, "en");
+        let out = render(&s, "en", &Subjects::default());
         assert!(out.body.contains("Dune"), "{}", out.body);
     }
 
@@ -225,7 +236,7 @@ mod tests {
     fn an_unknown_key_degrades_to_the_key_itself() {
         let mut s = stored();
         s.title_key = "notifications.does.not.exist".into();
-        let out = render(&s, "en");
+        let out = render(&s, "en", &Subjects::default());
         // i18n falls back to the raw key rather than panicking or emptying the
         // row: a notification with an odd title still beats a missing one.
         assert_eq!(out.title, "notifications.does.not.exist");

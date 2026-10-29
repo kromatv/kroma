@@ -9,7 +9,7 @@ import type { KromaClient } from '@kromatv/client';
 import type * as Notifications from 'expo-notifications';
 import { z } from 'zod';
 
-import { mobileRoute } from './route';
+import { mobileRoute, subjectRoute } from './route';
 
 export const PushAction = z.object({
   id: z.string().min(1),
@@ -26,8 +26,16 @@ const PushActions = z
   .pipe(z.array(z.unknown()).catch([]))
   .transform((list) => list.flatMap((e) => PushAction.safeParse(e).data ?? []));
 
+const PushSubject = z.union([z.string().transform(jsonOrNull), z.unknown()]).pipe(
+  z
+    .object({ kind: z.string().min(1), id: z.string().min(1) })
+    .optional()
+    .catch(undefined),
+);
+
 export const PushData = z.object({
   id: z.string().min(1).optional().catch(undefined),
+  subject: PushSubject.catch(undefined),
   link: z.string().min(1).optional().catch(undefined),
   category: z.string().min(1).optional().catch(undefined),
   actions: PushActions.catch([]),
@@ -72,5 +80,5 @@ export async function handleTap(
     }
   }
 
-  return mobileRoute(data.link);
+  return subjectRoute(data.subject) ?? mobileRoute(data.link);
 }

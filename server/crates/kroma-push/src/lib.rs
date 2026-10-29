@@ -30,6 +30,9 @@ pub struct Alert<'a> {
     pub id: &'a str,
     pub title: &'a str,
     pub body: &'a str,
+    /// What the notification is about, as `(kind, id)`. A tap routes from this
+    /// where the app knows the kind, and from `link` where it does not.
+    pub subject: Option<(&'a str, &'a str)>,
     pub link: Option<&'a str>,
     pub image_url: Option<&'a str>,
     pub category: Option<&'a str>,

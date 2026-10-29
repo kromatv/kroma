@@ -2,14 +2,14 @@
 //! delete transitions, retention, and the per-user delivery matrix. Rows store
 //! i18n keys, not rendered text; `services::notify::render` builds the wire shape.
 
-use std::collections::BTreeMap;
-
-use super::{params, Connection, Result, Row};
-use kroma_domain::{ActionSpec, NotificationCategory, NotificationEvent, ParamValue, PushCategory};
+use super::{params, Connection, Result};
+use kroma_domain::PushCategory;
 
 mod digest;
 mod preferences;
 mod read_state;
+mod stored;
+mod subjects;
 
 #[cfg(test)]
 mod test_support;
@@ -17,54 +17,12 @@ mod test_support;
 pub use digest::*;
 pub use preferences::*;
 pub use read_state::*;
+pub use stored::*;
+pub use subjects::*;
+
+use stored::{data_column, row_to_notification, NOTIFICATION_COLS};
 
 pub const RETENTION_PER_USER: usize = 200;
-
-// Column order must match `row_to_notification`.
-const NOTIFICATION_COLS: &str = "id, category, event, title_key, body_key, params, link, \
-    image_url, actions, push_category, read_at, created_at";
-
-/// One notification as stored: keys + params, not yet rendered.
-#[derive(Debug, Clone)]
-pub struct StoredNotification {
-    pub id: String,
-    pub category: NotificationCategory,
-    pub event: NotificationEvent,
-    pub title_key: String,
-    pub body_key: String,
-    pub params: BTreeMap<String, ParamValue>,
-    pub link: Option<String>,
-    pub image_url: Option<String>,
-    pub actions: Vec<ActionSpec>,
-    pub push_category: Option<PushCategory>,
-    pub read: bool,
-    pub created_at: i64,
-}
-
-fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotification> {
-    let category: String = r.get(1)?;
-    let event: String = r.get(2)?;
-    let params: String = r.get(5)?;
-    let actions: String = r.get(8)?;
-    let push_category: Option<String> = r.get(9)?;
-    let read_at: Option<i64> = r.get(10)?;
-    Ok(StoredNotification {
-        id: r.get(0)?,
-        // Unknown category (written by a newer build): fall back rather than drop the row.
-        category: NotificationCategory::parse(&category).unwrap_or(NotificationCategory::System),
-        // An unknown event is exactly what `Custom` means.
-        event: NotificationEvent::parse(&event).unwrap_or(NotificationEvent::Custom),
-        title_key: r.get(3)?,
-        body_key: r.get(4)?,
-        params: serde_json::from_str(&params).unwrap_or_default(),
-        link: r.get(6)?,
-        image_url: r.get(7)?,
-        actions: serde_json::from_str(&actions).unwrap_or_default(),
-        push_category: push_category.as_deref().and_then(PushCategory::parse),
-        read: read_at.is_some(),
-        created_at: r.get(11)?,
-    })
-}
 
 /// Every image a stored notification still points at, so the size-based cache
 /// trimmer knows an uploaded image is spoken for and must not evict it.
@@ -88,8 +46,8 @@ pub fn insert_notification(
     conn.execute(
         "INSERT INTO notifications \
          (id, user_id, category, event, title_key, body_key, params, link, image_url, actions, \
-          push_category, created_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+          push_category, created_at, subject_kind, subject_id, actor_id, data) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
         params![
             n.id,
             user_id,
@@ -104,7 +62,11 @@ pub fn insert_notification(
             n.image_url,
             actions,
             n.push_category.map(PushCategory::as_str),
-            n.created_at
+            n.created_at,
+            n.subject.as_ref().map(|s| s.kind.as_str()),
+            n.subject.as_ref().map(|s| s.id.as_str()),
+            n.actor_id,
+            data_column(n)
         ],
     )?;
     prune(conn, user_id)?;
@@ -154,7 +116,7 @@ pub fn unread_count(conn: &Connection, user_id: &str) -> rusqlite::Result<u32> {
 mod tests {
     use super::*;
     use crate::notifications::test_support::*;
-    use kroma_domain::ActionKind;
+    use kroma_domain::{ActionKind, NotificationCategory, ParamValue};
 
     #[test]
     fn insert_round_trips_every_rich_field() {
@@ -177,6 +139,52 @@ mod tests {
         // The category column is derived from the event, not passed in.
         assert_eq!(n.category, NotificationCategory::Requests);
         assert!(!n.read);
+    }
+
+    #[test]
+    fn insert_round_trips_the_subject_the_actor_and_the_data() {
+        let (p, u1, _) = pool();
+        insert(&p, "n1", &u1, 1_000);
+        let conn = p.get().unwrap();
+        let n = &list_notifications(&conn, &u1, 50, false).unwrap()[0];
+        assert_eq!(
+            n.subject,
+            Some(kroma_domain::NotificationSubject::request("req-1"))
+        );
+        assert_eq!(n.actor_id.as_deref(), Some("mod-1"));
+        assert_eq!(n.data, Some(serde_json::json!({ "requestId": "req-1" })));
+    }
+
+    #[test]
+    fn a_row_written_before_subjects_existed_reads_back_with_none() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        let mut legacy = new("old", 1_000);
+        legacy.subject = None;
+        legacy.actor_id = None;
+        legacy.data = None;
+        insert_notification(&conn, &u1, &legacy).unwrap();
+
+        let n = &list_notifications(&conn, &u1, 50, false).unwrap()[0];
+
+        assert_eq!(n.subject, None);
+        assert_eq!(n.actor_id, None);
+        assert_eq!(n.data, None);
+        assert_eq!(n.link.as_deref(), Some("/movie/ab12"));
+    }
+
+    #[test]
+    fn data_past_the_ceiling_is_dropped_rather_than_stored() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        let mut bloated = new("fat", 1_000);
+        bloated.data = Some(serde_json::json!({ "blob": "x".repeat(MAX_DATA_BYTES) }));
+        insert_notification(&conn, &u1, &bloated).unwrap();
+
+        let n = &list_notifications(&conn, &u1, 50, false).unwrap()[0];
+
+        assert_eq!(n.data, None);
+        assert_eq!(n.title_key, "notifications.request.approved.title");
     }
 
     #[test]

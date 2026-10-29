@@ -154,6 +154,9 @@ pub fn build_request(
     // Everything the app needs on tap rides in `data`, which survives both the
     // foreground and background paths; `notification` only drives the shade.
     let mut data = json!({ "id": alert.id });
+    if let Some((kind, id)) = alert.subject {
+        data["subject"] = json!(json!({ "kind": kind, "id": id }).to_string());
+    }
     if let Some(link) = alert.link {
         data["link"] = json!(link);
     }
@@ -269,6 +272,7 @@ mod tests {
             id: "n1",
             title: "Ready to watch",
             body: "Dune is now in your library.",
+            subject: Some(("movie", "ab12")),
             link: Some("/movie/ab12"),
             image_url: Some("https://img/p.jpg"),
             category: Some("media_available"),

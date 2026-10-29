@@ -5,10 +5,13 @@
 //! below is the RENDERED form and is a public client contract, so field names,
 //! casing and epoch-millisecond timestamps must not drift.
 
+mod data;
 mod view;
 
+pub use data::*;
 pub use kroma_module_wire::{
-    ActionKind, ActionSpec, ActionStyle, NotificationAction, NotificationCategory,
-    NotificationEvent, NotificationSpec, ParamValue,
+    ActionKind, ActionSpec, ActionStyle, NotificationAction, NotificationActor,
+    NotificationCategory, NotificationEvent, NotificationSpec, NotificationSubject, ParamValue,
+    SubjectKind,
 };
 pub use view::*;

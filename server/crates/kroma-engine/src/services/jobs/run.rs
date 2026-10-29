@@ -72,6 +72,7 @@ pub(super) fn run_job(
         other => info!(job = key, run = %run_id, status = other, "job finished"),
     }
     let repeated = status == "failed" && already_failing(&pool, key, &run_id);
+    let failed_run = run_id.clone();
     state.events.publish(ServerEvent::JobFinished {
         key: key.to_string(),
         run_id,
@@ -88,6 +89,11 @@ pub(super) fn run_job(
         )
         // Passed as an i18n key so the job name resolves in the reader's language.
         .param_key("job", format!("jobs.{key}.name"))
+        .subject(crate::model::NotificationSubject::job(key))
+        .data(&crate::model::JobFailedData {
+            job: key.to_string(),
+            run_id: failed_run,
+        })
         .link("/admin/jobs");
         crate::services::notify::emit(
             &state,

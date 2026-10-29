@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { useT } from '#mobile/lib/i18n';
-import { mobileRoute, useRefreshNotifications } from '#mobile/lib/notifications';
+import { mobileRoute, subjectRoute, useRefreshNotifications } from '#mobile/lib/notifications';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
@@ -124,11 +124,9 @@ export function NotificationRow({
   );
 }
 
-// The list draws no buttons, so the notification's own `link` is the
-// destination, falling back to its first `link` action. `mobileRoute` returns
-// null for screens this app doesn't have, and `api` actions (Approve, Deny)
-// are never offered as a destination here.
 function destinationOf(row: Notification): string | null {
+  const about = subjectRoute(row.subject);
+  if (about) return about;
   const own = mobileRoute(row.link);
   if (own) return own;
   for (const action of row.actions) {
