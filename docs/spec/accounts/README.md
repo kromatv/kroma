@@ -9,6 +9,9 @@ One server, one household. The account model is sized for that: a person who own
 the NAS, the people they let in, and the screens each of them signs into. Anything
 grander is a cost this product declines to pay.
 
+What the server tells each of those people about, and the inbox they read it in, has its own
+chapter: [`notifications.md`](notifications.md).
+
 ## The account model
 
 Status: **SHIPPED**
