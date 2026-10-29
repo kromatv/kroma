@@ -7,7 +7,7 @@ use axum::response::Response;
 use kroma_module_wire::{AudioStream, VideoStream};
 use serde::Deserialize;
 
-use crate::hls::{HlsEngine, StreamMode};
+use crate::hls::{Asked, HlsEngine, Refusal, StreamMode};
 use crate::json_error::json_error;
 use crate::stream::metered_body;
 use crate::{playlist, ByteMeter, Credential};
@@ -76,23 +76,35 @@ impl Program<'_> {
     }
 
     /// The media playlist of `session`, starting it over the file when none
-    /// runs, with every child URI carrying `credential`. `None` when ffmpeg
-    /// produced no playlist in time.
+    /// runs, with every child URI carrying `credential`. `opener` names the
+    /// player asking, so its own earlier anchor of this program is taken back
+    /// rather than left running beside the one it just asked for. The
+    /// [`Refusal`] says which answer the caller owes the client: a host already
+    /// at its re-encode ceiling is worth asking again, a missing playlist is not.
     pub async fn master<M: ByteMeter>(
         &self,
         engine: &HlsEngine,
         input: &str,
         session: Session,
+        opener: Option<&str>,
         credential: &Credential,
         meter: M,
-    ) -> Option<Response> {
+    ) -> Result<Response, Refusal> {
         let Session {
             mode,
             anchor,
             audio,
         } = session;
         let (body, start) = engine
-            .master(self.id, input, audio, mode, anchor, self.frame())
+            .master(Asked {
+                item_id: self.id,
+                input,
+                opener,
+                audio,
+                mode,
+                anchor,
+                source: self.frame(),
+            })
             .await?;
         let body = playlist::with_credential(&body, credential);
         let mut resp = playlist_response(body, meter);
@@ -112,7 +124,7 @@ impl Program<'_> {
         {
             insert_seconds(&mut resp, "X-Media-Duration", secs);
         }
-        Some(resp)
+        Ok(resp)
     }
 }
 

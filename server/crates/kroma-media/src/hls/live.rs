@@ -56,6 +56,10 @@ impl Plan {
             started_at: time::OffsetDateTime::now_utc().unix_timestamp(),
         }
     }
+
+    pub(super) const fn transcodes_video(&self) -> bool {
+        !matches!(self.mode.video, VideoMode::Copy)
+    }
 }
 
 /// One live remux: what it is producing, what it is producing it on, and whether
@@ -140,7 +144,7 @@ fn report(plan: &Plan, dir: &Path, running: bool) -> Transcode {
         audio_track: plan.audio_track,
         video: video_label(plan.mode.video).to_owned(),
         audio: audio_label(plan.mode.audio).to_owned(),
-        transcodes_video: !matches!(plan.mode.video, VideoMode::Copy),
+        transcodes_video: plan.transcodes_video(),
         transcodes_audio: !matches!(plan.mode.audio, AudioMode::Copy),
         accel: plan.pipeline.accel.label().to_owned(),
         effort: plan.pipeline.effort.label().to_owned(),

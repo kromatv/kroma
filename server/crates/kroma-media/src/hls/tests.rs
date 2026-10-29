@@ -8,9 +8,21 @@ fn engine(root: &Path) -> HlsEngine {
     HlsEngine::new(root.join("hls"), 2, 0)
 }
 
+fn asked<'a>(input: &'a Path, anchor: u64) -> Asked<'a> {
+    Asked {
+        item_id: "it1",
+        input: input.to_str().unwrap(),
+        opener: None,
+        audio: 0,
+        mode: COPY,
+        anchor,
+        source: Some((320, 180)),
+    }
+}
+
 async fn remux(engine: &HlsEngine, input: &Path) -> String {
     engine
-        .master("it1", input.to_str().unwrap(), 0, COPY, 0, Some((320, 180)))
+        .master(asked(input, 0))
         .await
         .expect("a playlist out of a file ffmpeg can read")
         .0
@@ -161,7 +173,7 @@ async fn a_re_anchor_into_a_session_already_running_is_answered_out_of_it() {
     finished_playlist(&engine).await;
 
     let (playlist, start) = engine
-        .master("it1", input.to_str().unwrap(), 0, COPY, 2, Some((320, 180)))
+        .master(asked(&input, 2))
         .await
         .expect("the anchor sits inside what the running session has produced");
 
