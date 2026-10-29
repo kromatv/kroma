@@ -11,6 +11,7 @@
 pub mod art;
 pub mod digest;
 pub mod push;
+pub mod record;
 pub mod render;
 pub mod subject;
 
@@ -158,6 +159,9 @@ fn deliver<S: HostStorage>(
         ));
         drop(conn);
         push::deliver(state, push, &user.id, &rendered);
+    } else {
+        drop(conn);
+        record::muted(state, &user.id, &id);
     }
     Ok(true)
 }
@@ -328,6 +332,67 @@ mod tests {
         .unwrap();
         // The spec is a `requests` event, which is untouched by the media mute.
         assert_eq!(emit(&host, &Audience::user(ana), &spec()), 1);
+    }
+
+    #[test]
+    fn a_push_a_reader_muted_is_written_down_against_the_device_it_would_have_woken() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        db::push_subs::upsert_subscription(
+            host.db(),
+            &kroma_db::push_subs::NewSubscription {
+                id: "sub-1".into(),
+                user_id: ana.clone(),
+                transport: kroma_domain::PushTransport::WebPush,
+                endpoint: "https://push.example/1".into(),
+                p256dh: None,
+                auth: None,
+                device: Some("iPhone".into()),
+            },
+            1,
+        )
+        .unwrap();
+        db::notifications::set_prefs(
+            host.db(),
+            &ana,
+            &[kroma_domain::CategoryPref {
+                category: NotificationCategory::Requests,
+                in_app: true,
+                push: false,
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(emit(&host, &Audience::user(ana.clone()), &spec()), 1);
+
+        let conn = host.db().get().unwrap();
+        let written = db::notification_deliveries::deliveries_for_user(&conn, &ana, 10).unwrap();
+        assert_eq!(written.len(), 1);
+        assert_eq!(written[0].status, kroma_domain::DeliveryStatus::SkippedMuted);
+        assert_eq!(written[0].device.as_deref(), Some("iPhone"));
+    }
+
+    #[test]
+    fn a_reader_with_no_device_registered_leaves_no_record_of_a_push_that_was_never_due() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        db::notifications::set_prefs(
+            host.db(),
+            &ana,
+            &[kroma_domain::CategoryPref {
+                category: NotificationCategory::Requests,
+                in_app: true,
+                push: false,
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(emit(&host, &Audience::user(ana.clone()), &spec()), 1);
+
+        let conn = host.db().get().unwrap();
+        assert!(db::notification_deliveries::deliveries_for_user(&conn, &ana, 10)
+            .unwrap()
+            .is_empty());
     }
 
     #[test]

@@ -26,7 +26,8 @@ use crate::api::util::blocking;
 use kroma_db::notifications::StoredNotification;
 
 use crate::model::{
-    Audience, Notification, NotificationCategory, NotificationEvent, NotificationSpec, Permission,
+    Audience, DeliveriesView, Notification, NotificationCategory, NotificationEvent,
+    NotificationSpec, Permission,
 };
 use crate::state::SharedState;
 
@@ -63,15 +64,41 @@ fn within(value: &str, max: usize, too_long: &'static str) -> Result<(), &'stati
     Ok(())
 }
 
+const DELIVERY_PAGE: usize = 100;
+
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/notifications", post(send))
+        .route("/notifications/deliveries", get(deliveries))
         .route("/notifications/samples", get(catalogue))
         .route(
             "/notifications/image",
             post(upload_image).layer(DefaultBodyLimit::max(MAX_IMAGE_BYTES)),
         )
         .route("/notifications/images", get(list_images))
+}
+
+/// `GET /api/admin/notifications/deliveries` → what became of this server's
+/// recent pushes, every account included, newest first.
+///
+/// Each record names whose device it was and what the device calls itself.
+/// Endpoints, device tokens and relay grants are credentials and are not in the
+/// answer, for the admin any more than for the reader.
+pub async fn deliveries(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let bg = state.clone();
+    let deliveries = blocking(move || {
+        let conn = bg.db.get()?;
+        Ok(kroma_db::notification_deliveries::recent_deliveries(
+            &conn,
+            DELIVERY_PAGE,
+        )?)
+    })
+    .await?;
+    Ok(Json(DeliveriesView { deliveries }).into_response())
 }
 
 /// `GET /api/admin/notifications/samples` → every kind this server can send,

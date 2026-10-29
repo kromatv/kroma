@@ -1,10 +1,11 @@
 use kroma_db::push_subs::{self, PushSubscription};
 use kroma_module_host::HostStorage;
 
-use kroma_domain::{Notification, NotificationCategory, NotificationEvent, User};
+use kroma_domain::{DeliveryStatus, Notification, NotificationCategory, NotificationEvent, User};
 
 use crate::services::jobs::now_ms;
 use crate::services::notify::art;
+use crate::services::notify::record;
 
 use super::credentials::sender;
 use super::transports;
@@ -44,11 +45,14 @@ pub fn deliver<S: HostStorage>(
 
     let mut sent = 0;
     for sub in subs {
-        match send_one(state, sender, &sub, &out) {
-            Ok(true) => sent += 1,
-            Ok(false) => {}
-            Err(e) => tracing::warn!(error = %e, endpoint = %sub.endpoint, "push failed"),
+        let attempt = send_one(state, sender, &sub, &out);
+        if attempt.status == DeliveryStatus::Sent {
+            sent += 1;
         }
+        if let Some(error) = &attempt.error {
+            tracing::warn!(error = %error, endpoint = %sub.endpoint, "push failed");
+        }
+        record::attempt(state, &notification.id, &sub, attempt.status, attempt.error);
     }
     sent
 }
@@ -77,27 +81,63 @@ pub fn send_test<S: HostStorage>(state: &S, user: &User) -> anyhow::Result<usize
     Ok(deliver(state, &sender, &user.id, &notification))
 }
 
-// `Ok(false)` = not delivered but handled (dropped as gone, or a transport
-// this server has no credentials for).
+pub(super) struct Attempt {
+    pub status: DeliveryStatus,
+    pub error: Option<String>,
+}
+
+impl Attempt {
+    fn sent() -> Self {
+        Self {
+            status: DeliveryStatus::Sent,
+            error: None,
+        }
+    }
+
+    fn gone() -> Self {
+        Self {
+            status: DeliveryStatus::Gone,
+            error: None,
+        }
+    }
+
+    fn failed(error: impl Into<String>) -> Self {
+        Self {
+            status: DeliveryStatus::Failed,
+            error: Some(error.into()),
+        }
+    }
+}
+
 fn send_one<S: HostStorage>(
     state: &S,
     sender: &Sender,
     sub: &PushSubscription,
     out: &transports::Outgoing<'_>,
-) -> anyhow::Result<bool> {
-    let Some(mut request) = transports::build(sender, sub, out, now_ms() / 1_000)? else {
-        return Ok(false); // transport not configured on this server
+) -> Attempt {
+    let built = match transports::build(sender, sub, out, now_ms() / 1_000) {
+        Ok(built) => built,
+        Err(e) => return Attempt::failed(format!("{e:#}")),
     };
-    let mut response = send(&request)?;
+    let Some(mut request) = built else {
+        return Attempt::failed("no credentials for this transport on this server");
+    };
+    let mut response = match send(&request) {
+        Ok(response) => response,
+        Err(e) => return Attempt::failed(format!("{e:#}")),
+    };
 
     if transports::retry(sub, &mut request, response.status, &response.text()) {
         tracing::debug!(endpoint = %sub.endpoint, "retrying push after an adjustable rejection");
-        response = send(&request)?;
+        response = match send(&request) {
+            Ok(response) => response,
+            Err(e) => return Attempt::failed(format!("{e:#}")),
+        };
     }
 
     if (200..300).contains(&response.status) {
         let _ = push_subs::record_success(state.db(), &sub.id, now_ms());
-        return Ok(true);
+        return Attempt::sent();
     }
     let body = response.text();
     if transports::is_gone(sub, response.status, &body) {
@@ -106,17 +146,20 @@ fn send_one<S: HostStorage>(
             "dropping dead push endpoint"
         );
         let _ = push_subs::drop_subscription(state.db(), &sub.id);
-        return Ok(false);
+        return Attempt::gone();
     }
     if is_transient(response.status) {
         // Not this endpoint's fault, so it earns no strike.
-        anyhow::bail!("push service is unavailable ({}): {body}", response.status)
+        return Attempt::failed(format!(
+            "push service is unavailable ({}): {body}",
+            response.status
+        ));
     }
     if push_subs::record_failure(state.db(), &sub.id).unwrap_or(false) {
         tracing::info!(endpoint = %sub.endpoint, "dropping push endpoint after repeated failures");
         let _ = push_subs::drop_subscription(state.db(), &sub.id);
     }
-    anyhow::bail!("push service returned {} {body}", response.status)
+    Attempt::failed(format!("push service returned {} {body}", response.status))
 }
 
 // Whether a rejection is the SERVICE's problem rather than this endpoint's. A
