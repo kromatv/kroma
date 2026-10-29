@@ -1,10 +1,10 @@
-# RFC NNNN: notifications that name their subject, fold their repeats, and resolve
+# RFC 441: notifications that name their subject, fold their repeats, and resolve
 
-- Status: **DRAFT**
-- PR: #NNNN
+- Status: **ACCEPTED**
+- PR: #441
 - Epic: #422
-- Affects: no spec chapter covers notifications yet, so acceptance comes with a new one
-  (`docs/spec/accounts/notifications.md`); the `notifications` table, `NotificationSpec` in
+- Affects: a new spec chapter, `docs/spec/accounts/notifications.md` (ACCT-36 to ACCT-71),
+  which this PR writes; the `notifications` table, `NotificationSpec` in
   `kroma-module-wire`, the module host's `notify` callback, `@kromatv/client/notifications`,
   the web and mobile inboxes, the push transports. Areas `area/server`, `area/web`,
   `area/mobile`, `area/modules`, `area/sdk`
