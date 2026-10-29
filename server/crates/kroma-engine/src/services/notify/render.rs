@@ -95,6 +95,7 @@ mod tests {
             subject: None,
             actor_id: None,
             data: None,
+            dedupe_key: None,
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: vec![ActionSpec {

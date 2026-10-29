@@ -96,7 +96,7 @@ pub fn emit_to<S: HostStorage>(state: &S, recipients: &[User], spec: &Notificati
     sent
 }
 
-// `Ok(false)` means they have this category muted.
+// `Ok(false)` means they have this category muted, or were told this already.
 fn deliver<S: HostStorage>(
     state: &S,
     user: &User,
@@ -111,6 +111,11 @@ fn deliver<S: HostStorage>(
     let (in_app, push_allowed) = db::notifications::allows(&conn, &user.id, category)?;
     if !in_app {
         return Ok(false);
+    }
+    if let Some(key) = spec.dedupe_key.as_deref() {
+        if db::notifications::holds_dedupe_key(&conn, &user.id, key)? {
+            return Ok(false);
+        }
     }
 
     let now = now_ms();

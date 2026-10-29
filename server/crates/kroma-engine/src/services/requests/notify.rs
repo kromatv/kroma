@@ -55,6 +55,7 @@ pub(super) fn notify_requester<S: HostStorage>(
     )
     .param("title", req.title.clone())
     .subject(NotificationSubject::request(&req.id))
+    .dedupe_key(transition_key(event, &req.id, status))
     .data(&facts(req, status))
     .image(req.poster_url.clone())
     .link(link);
@@ -114,6 +115,10 @@ pub(super) fn notify_moderators<S: HostStorage>(state: &S, req: &MediaRequest, r
         style: ActionStyle::Danger,
     });
     state.notify(&Audience::permission(Permission::RequestsManage), &spec);
+}
+
+fn transition_key(event: NotificationEvent, req_id: &str, status: RequestStatus) -> String {
+    format!("{}:{}:{}", event.as_str(), req_id, status.as_str())
 }
 
 fn facts(req: &MediaRequest, status: RequestStatus) -> RequestEventData {

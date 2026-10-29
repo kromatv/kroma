@@ -32,6 +32,7 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
         subject: Some(NotificationSubject::request("req-1")),
         actor_id: Some("mod-1".into()),
         data: Some(serde_json::json!({ "requestId": "req-1" })),
+        dedupe_key: None,
         link: Some("/movie/ab12".into()),
         image_url: Some("https://img/p.jpg".into()),
         actions: vec![ActionSpec {

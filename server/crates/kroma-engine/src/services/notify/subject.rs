@@ -82,6 +82,7 @@ mod tests {
             subject,
             actor_id: None,
             data: None,
+            dedupe_key: None,
             link: Some("/admin/requests".into()),
             image_url: None,
             actions: Vec::new(),
