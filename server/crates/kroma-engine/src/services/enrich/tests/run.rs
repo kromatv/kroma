@@ -257,3 +257,10 @@ fn maybe_spawn_with_an_empty_catalog_does_nothing() {
 
     assert_eq!(tmdb_id_of_movie(&state), None);
 }
+
+#[test]
+fn a_pass_runs_at_least_two_workers_and_never_more_than_eight() {
+    let workers = super::super::run::workers();
+
+    assert!((2..=8).contains(&workers), "{workers}");
+}

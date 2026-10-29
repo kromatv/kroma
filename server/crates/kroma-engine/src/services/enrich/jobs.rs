@@ -25,6 +25,12 @@ pub(super) struct Job {
     pub(super) refetch: Option<u64>,
 }
 
+impl Job {
+    pub(super) const fn fetches(&self) -> bool {
+        self.is_show || self.resolved_tmdb.is_none()
+    }
+}
+
 pub(super) fn build_jobs(
     items: &[MediaItem],
     shows: &[Show],
@@ -219,6 +225,54 @@ mod tests {
         assert_eq!(job.resolved_tmdb, None);
         assert_eq!(job.pin, None);
         assert_eq!(job.refetch, Some(603));
+    }
+
+    #[test]
+    fn a_movie_that_matched_and_kept_its_art_is_left_to_the_nightly_sweep() {
+        let dir = data_dir();
+
+        let jobs = build_jobs(&[movie_with("m1", 603)], &[], &Pins::default(), dir.path());
+
+        assert!(!jobs[0].fetches());
+    }
+
+    #[test]
+    fn a_movie_with_nothing_on_file_a_pin_or_cleared_art_is_fetched_after_a_scan() {
+        let dir = data_dir();
+        let mut pins = Pins::default();
+        pins.items.insert("m2".into(), 999);
+        let mut cleared = movie_with("m3", 603);
+        cleared.metadata.as_mut().unwrap().poster_url = Some("/api/images/gone.webp".into());
+
+        let jobs = build_jobs(
+            &[movie_with("m1", 0), movie_with("m2", 603), cleared],
+            &[],
+            &pins,
+            dir.path(),
+        );
+
+        assert!(jobs.iter().all(Job::fetches), "{}", jobs.len());
+    }
+
+    #[test]
+    fn a_show_is_always_fetched_so_a_season_added_since_gets_its_stills() {
+        let dir = data_dir();
+        let show = Show {
+            id: "s1".into(),
+            title: "Breaking Bad".into(),
+            year: None,
+            library: "lib".into(),
+            season_count: 1,
+            episode_count: 1,
+            video: None,
+            added_at: String::new(),
+            metadata: movie_with("x", 1396).metadata,
+            progress: None,
+        };
+
+        let jobs = build_jobs(&[], &[show], &Pins::default(), dir.path());
+
+        assert!(jobs[0].fetches());
     }
 
     #[test]
