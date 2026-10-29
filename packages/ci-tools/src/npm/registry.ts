@@ -1,4 +1,5 @@
 import { $ } from 'bun';
+import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
 import type { Registry } from './publish';
 
@@ -26,6 +27,20 @@ export const npmRegistry: Registry = {
     if (provenance) args.push('--provenance');
     if (dryRun) args.push('--dry-run');
     console.log(`npm ${args.join(' ')}`);
-    await $`npm ${args}`;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const result = await $`npm ${args}`.nothrow();
+      if (result.exitCode === 0) return;
+      const output = result.stdout.toString() + result.stderr.toString();
+      // A duplicate Rekor entry does not mean npm stored the package. Start a
+      // fresh publish (and attestation), keeping provenance enabled.
+      const conflict =
+        output.includes('TLOG_CREATE_ENTRY_ERROR') &&
+        output.includes('equivalent entry already exists in the transparency log');
+      if (!provenance || dryRun || !conflict || attempt === 3) {
+        throw new Error(`npm publish failed (exit ${result.exitCode}): ${output}`);
+      }
+      console.warn(`npm provenance log conflict; retrying publish (${attempt}/3).`);
+      await delay(attempt * 10_000);
+    }
   },
 };
