@@ -29,3 +29,6 @@ walkdir = { workspace = true }
 [dev-dependencies]
 # The self-deleting scratch dir the session and probe tests write in.
 kroma-testing = { workspace = true }
+# `test-util` gives the runtime a clock a test can advance, so the sweep a seek
+# schedules is reachable without waiting out its grace.
+tokio = { workspace = true, features = ["test-util"] }

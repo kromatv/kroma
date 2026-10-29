@@ -1,4 +1,5 @@
 use super::super::session::testing::{keys, registry, seed, LIVE};
+use super::super::{AudioMode, Asked, Rung, StreamMode, VideoMode};
 use super::*;
 
 const TRANSCODE: &str = "itA:h264-1080-copy:0:a0";
@@ -72,6 +73,40 @@ async fn a_caller_that_presented_no_credential_takes_nobody_elses_stream() {
         .await;
 
     assert_eq!(map.len(), 1);
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_sweep_a_seek_asks_for_lands_without_waiting_for_the_reaper() {
+    let (s, _dir) = registry_allowing("admit-later", 2, &[(TRANSCODE, LEFT_BEHIND)]).await;
+    supersede(&s, TRANSCODE).await;
+    let s = Arc::new(s);
+
+    s.reclaim_superseded_later();
+    tokio::time::sleep(SUPERSEDED_TRANSCODE_GRACE * 2).await;
+
+    assert!(keys(&s).await.is_empty());
+}
+
+#[tokio::test]
+async fn a_host_with_no_slot_left_refuses_a_master_before_it_spawns_anything() {
+    let (mut s, dir) = registry("admit-refused", 8, &[(TRANSCODE, LIVE)]).await;
+    s.transcode_cap = 1;
+    let s = Arc::new(s);
+    let input = dir.path().join("never-opened.mkv");
+    let asked = Asked {
+        item_id: "itB",
+        input: input.to_str().expect("a path"),
+        opener: Some(VIEWER),
+        audio: 0,
+        mode: StreamMode::new(VideoMode::H264At(Rung::P1080), AudioMode::Copy),
+        anchor: 0,
+        source: None,
+    };
+
+    let answer = s.master("itB:h264-1080-copy:0:a0", &asked).await;
+
+    assert_eq!(answer.err(), Some(Refusal::Busy));
+    assert!(!input.exists(), "nothing read the file it was refused for");
 }
 
 #[tokio::test]

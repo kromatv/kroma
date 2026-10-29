@@ -85,7 +85,7 @@ pub async fn hls_master(
         audio,
     };
     let sink = byte_sink(&state, &headers, &addr);
-    let opener = crate::api::media_ticket::opener(&state, &headers, &q.ticket);
+    let opener = crate::api::media_ticket::opener(&state.media_ticket_key, &headers, &q.ticket);
     match program
         .master(&state.hls, &abs, session, opener.as_deref(), &credential, sink)
         .await
