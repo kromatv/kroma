@@ -13,11 +13,13 @@ export function EngineBadge() {
     <Row align="center" justify="space-between" gap={10}>
       <Row align="center" gap={7}>
         <Icon name="plug" size={GLYPH} color="textDim" />
-        <Text variant="overline" color="textDim">
+        <Text variant="meta" color="textDim">
           Engine
         </Text>
       </Row>
-      <Text variant="label">{name}</Text>
+      <Text variant="meta" color="textMuted">
+        {name}
+      </Text>
     </Row>
   );
 }

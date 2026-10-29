@@ -26,7 +26,7 @@ const HOST_STYLE = {
   bottom: `${EDGE_PX}px`,
   zIndex: '2147483000',
   display: 'flex',
-  touchAction: 'none',
+  touchAction: 'auto',
 } as const;
 
 function disposeLive(): void {

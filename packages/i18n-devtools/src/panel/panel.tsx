@@ -1,5 +1,18 @@
-import type { IconName } from '@kromatv/ui/kit';
-import { Divider, Icon, IconButton, Row, SegmentGroup, Surface, Text } from '@kromatv/ui/kit';
+import { useState } from 'react';
+import {
+  Button,
+  Column,
+  Divider,
+  Icon,
+  IconButton,
+  Row,
+  SegmentGroup,
+  Surface,
+  Switch,
+  Text,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import type { Outline } from '../live';
 import { Chord, chordName, HOLD } from './chord';
 import { GRIP_DATA } from './drag';
@@ -17,19 +30,18 @@ export interface PanelProps {
   onOutline: (outline: Outline) => void;
   onEditor: (editor: string | null) => void;
   onClose: () => void;
+  onReset: () => void;
+  canReset: boolean;
   /** The letter each chord is pressed with, held with `HOLD`. */
   keysKey: string;
   outlineKey: string;
   panelKey: string;
 }
 
-const WIDTH_PX = 320;
-const GLYPH = 16;
-
-const MODES: ReadonlyArray<{ value: Outline; label: string; icon: IconName }> = [
-  { value: 'off', label: 'Off', icon: 'eye-off' },
-  { value: 'problems', label: 'Issues', icon: 'alert-triangle' },
-  { value: 'all', label: 'All', icon: 'eye' },
+const MODES: ReadonlyArray<{ value: Outline; label: string }> = [
+  { value: 'off', label: 'Off' },
+  { value: 'problems', label: 'Issues' },
+  { value: 'all', label: 'All text' },
 ];
 
 export function Panel({
@@ -42,57 +54,115 @@ export function Panel({
   onOutline,
   onEditor,
   onClose,
+  onReset,
+  canReset,
   keysKey,
   outlineKey,
   panelKey,
 }: Readonly<PanelProps>) {
+  const s = useStyles(panelStyles);
+  const [options, setOptions] = useState(false);
   return (
-    <Surface tone="raised" pad="md" elevated gap={10} style={{ width: WIDTH_PX }}>
-      <Row align="center" justify="space-between" gap={8} dataSet={GRIP_DATA}>
-        <Row align="center" gap={7}>
-          <Icon name="grip-vertical" size={GLYPH} color="textDim" />
-          <Text variant="label">i18n devtools</Text>
+    <Surface tone="raised" pad="none" p={16} elevated gap={14} style={s.panel}>
+      <Row between gap={8}>
+        <Row gap={8} dataSet={GRIP_DATA} style={s.grip}>
+          <Icon name="grip-vertical" size={16} color="textDim" />
+          <Text variant="label">Translations</Text>
         </Row>
-        <Row align="center" gap={6}>
-          <Chord hold={HOLD} press={panelKey} />
-          <IconButton icon="x" label="Close" control="sm" variant="ghost" onPress={onClose} />
-        </Row>
+        <IconButton icon="x" label="Close" control="sm" variant="ghost" onPress={onClose} />
       </Row>
 
       <LocalePicker locale={locale} onLocale={onLocale} />
 
-      <Row align="center" gap={6}>
+      <Column gap={6}>
+        <Text variant="meta" color="textMuted">
+          Highlight
+        </Text>
         <SegmentGroup.Root
-          label={`Outline (${chordName(outlineKey)})`}
+          label={`Highlight (${chordName(outlineKey)})`}
           size="sm"
           stretch
           value={outline}
           onValueChange={onOutline}
-          style={GROW}
         >
-          {MODES.map(({ value, label, icon }) => (
-            <SegmentGroup.Item key={value} value={value} icon={icon}>
+          {MODES.map(({ value, label }) => (
+            <SegmentGroup.Item key={value} value={value}>
               <SegmentGroup.Label>{label}</SegmentGroup.Label>
             </SegmentGroup.Item>
           ))}
         </SegmentGroup.Root>
-        <IconButton
-          icon="braces"
+        {outline !== 'off' && (
+          <Text variant="meta" color="textMuted">
+            Hover over highlighted text to inspect.
+          </Text>
+        )}
+      </Column>
+
+      <Row between gap={12}>
+        <Text variant="meta">Show message keys</Text>
+        <Switch
           label={`Show message keys (${chordName(keysKey)})`}
-          control="sm"
-          variant="glass"
-          active={keys}
-          onPress={() => onKeys(!keys)}
+          checked={keys}
+          onCheckedChange={onKeys}
         />
       </Row>
 
-      <EditorPicker editor={editor} onEditor={onEditor} />
-
       <Divider />
-
-      <EngineBadge />
+      <Row between gap={8}>
+        <Button
+          label="Options"
+          variant="ghost"
+          size="sm"
+          focusScale={1}
+          iconRight={options ? 'chevron-up' : 'chevron-down'}
+          expanded={options}
+          onPress={() => setOptions(!options)}
+        />
+        <Button
+          label="Reset"
+          variant="ghost"
+          size="sm"
+          focusScale={1}
+          disabled={!canReset}
+          onPress={onReset}
+        />
+      </Row>
+      {options && (
+        <Column gap={12}>
+          <EditorPicker editor={editor} onEditor={onEditor} />
+          <EngineBadge />
+          <Divider />
+          <Row between gap={8}>
+            <Text variant="meta" color="textMuted">
+              Highlight
+            </Text>
+            <Chord hold={HOLD} press={outlineKey} />
+          </Row>
+          <Row between gap={8}>
+            <Text variant="meta" color="textMuted">
+              Message keys
+            </Text>
+            <Chord hold={HOLD} press={keysKey} />
+          </Row>
+          <Row between gap={8}>
+            <Text variant="meta" color="textMuted">
+              Open / close
+            </Text>
+            <Chord hold={HOLD} press={panelKey} />
+          </Row>
+        </Column>
+      )}
     </Surface>
   );
 }
 
-const GROW = { flexGrow: 1 } as const;
+const panelStyles = styles({
+  panel: {
+    w: 320,
+    maxWidth: 'calc(100vw - 32px)',
+    maxHeight: 'calc(100dvh - 32px)',
+    overflowY: 'auto',
+    shadow: 'card',
+  },
+  grip: { grow: 1, shrink: 1, minW: 0, cursor: 'move', touchAction: 'none', userSelect: 'none' },
+});

@@ -1,4 +1,5 @@
-import { Select } from '@kromatv/ui/kit';
+import { Column, Select, Text } from '@kromatv/ui/kit';
+import { engine } from '../engine/engine';
 import { useLocales } from '../engine/use-locales';
 
 export interface LocalePickerProps {
@@ -18,14 +19,27 @@ function nameOf(code: string): string {
  *  a list the panel does not have to grow to hold. */
 export function LocalePicker({ locale, onLocale }: Readonly<LocalePickerProps>) {
   const locales = useLocales();
+  if (locales.length === 0) {
+    return (
+      <Text variant="meta" color="textMuted">
+        No languages connected. Text inspection is available.
+      </Text>
+    );
+  }
+  const active = locale || engine().activeLocale();
   return (
-    <Select.Root label="Locale" placeholder={locale} value={locale} onValueChange={onLocale}>
-      <Select.Trigger size="sm" block />
-      {locales.map((code) => (
-        <Select.Item key={code} value={code} note={code.toUpperCase()}>
-          {nameOf(code)}
-        </Select.Item>
-      ))}
-    </Select.Root>
+    <Column gap={6}>
+      <Text variant="meta" color="textMuted">
+        Language
+      </Text>
+      <Select.Root label="Locale" placeholder={active} value={active} onValueChange={onLocale}>
+        <Select.Trigger size="sm" block />
+        {locales.map((code) => (
+          <Select.Item key={code} value={code} note={code.toUpperCase()}>
+            {nameOf(code)}
+          </Select.Item>
+        ))}
+      </Select.Root>
+    </Column>
   );
 }

@@ -10,7 +10,7 @@ import {
 } from '@kromatv/bundler/rnw';
 import launchEditor from 'launch-editor';
 import type { Plugin, ViteDevServer } from 'vite';
-import { type Editor, installedEditors, launcherOf, resolveFile, within } from './editors.ts';
+import { installedEditors, launcherOf, resolveFile, within } from './editors.ts';
 import { forgetMaps, type Served, sourceOf } from './where.ts';
 
 /**
@@ -127,7 +127,12 @@ function open(file: string, editor: string, server: ViteDevServer): boolean {
     server.config.logger.warn(`[i18n] refused to open ${file}`);
     return false;
   }
-  launchEditor(at, launcherOf(editor) ?? undefined, (name, error) => {
+  const launcher = editor ? launcherOf(editor) : null;
+  if (editor && !launcher) {
+    server.config.logger.warn(`[i18n] editor ${editor} is no longer available`);
+    return false;
+  }
+  launchEditor(at, launcher ?? undefined, (name, error) => {
     server.config.logger.warn(`[i18n] could not open ${name}: ${error ?? 'no editor found'}`);
   });
   return true;
@@ -157,7 +162,6 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
   const { anchor, engine, wire } = ADAPTERS[speaking];
   const entry = panelEntry();
   const adapterEntry = adapterFor(entry, speaking);
-  let editors: Editor[] | null = null;
   // The module the tools went into, remembered so the panel can ask for it to
   // be re-run: it is the one every message is rendered through.
   let anchored: string | null = null;
@@ -190,7 +194,7 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
     configureServer(server) {
       const { hot } = server.environments.client;
       hot.on('kroma:i18n:editors', (ask: { at: number }, client) => {
-        editors ??= installedEditors();
+        const editors = installedEditors();
         client.send('kroma:i18n:editors', { at: ask.at, editors });
       });
       hot.on('kroma:i18n:where', (ask: Served & { at: number }, client) => {
