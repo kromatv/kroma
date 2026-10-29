@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use tauri::webview::{PageLoadEvent, PageLoadPayload};
 use tauri::{Runtime, Webview, WebviewWindow};
 
-static SAID: Mutex<Vec<&'static str>> = Mutex::new(Vec::new());
+static SAID: Mutex<Vec<&str>> = Mutex::new(Vec::new());
 
 /// Tells the page `script` now and on every later page load.
 pub fn announce<R: Runtime>(win: &WebviewWindow<R>, script: &'static str) {
