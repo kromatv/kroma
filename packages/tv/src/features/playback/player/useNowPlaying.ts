@@ -2,6 +2,7 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import { webDocument } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { z } from 'zod';
 import { getTauri } from '#tv/features/playback/player/engine';
 
 // Hoisted so the `arrayBuffer().then().catch()` chain doesn't nest inside
@@ -74,6 +75,8 @@ export interface NowPlayingInput {
   seek: (deltaSec: number) => void;
   seekNonce: number;
 }
+
+const MediaKeyAction = z.string().catch('');
 
 const HOLD_DELAY_MS = 300;
 const HOLD_REPEAT_MS = 100;
@@ -201,7 +204,7 @@ export function useNowPlaying({
 
   const held = useHeldKey();
   useShellEvent(bridge, active, 'media-key', (payload) => {
-    const action = String(payload ?? '');
+    const action = MediaKeyAction.parse(payload);
     const skip = /^skip:(-?[\d.]+)$/.exec(action);
     const key = REMOTE_KEY[action];
     if (skip) seek(Number(skip[1]));
