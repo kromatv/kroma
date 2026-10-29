@@ -8,9 +8,21 @@ import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 
 import type { PlayerFlags } from './types';
 
-export const WEB: PlayerFlags = { volume: true, pip: true, fullscreen: true, pointer: true };
+export const WEB: PlayerFlags = {
+  volume: true,
+  pip: true,
+  fullscreen: true,
+  pointer: true,
+  arrowSeek: true,
+};
 
-export const TV: PlayerFlags = { volume: false, pip: false, fullscreen: false, pointer: false };
+export const TV: PlayerFlags = {
+  volume: false,
+  pip: false,
+  fullscreen: false,
+  pointer: false,
+  arrowSeek: false,
+};
 
 export const NO_GEN: SubtitleGenBundle = {
   canCreate: false,

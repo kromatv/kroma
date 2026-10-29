@@ -18,6 +18,7 @@ import {
   Img,
   ScrollMask,
   qualityTone,
+  RING_ROOM,
   styles,
   Text,
   typeSpec as textRoles,
@@ -50,7 +51,14 @@ const sDefinition = styles({
     letterSpacing: -1.64,
   },
   featuredLabel: { fontSize: textSizes.compactLabel },
-  copy: { position: 'absolute', left: 64, bottom: 36, zIndex: 2, maxWidth: 820 },
+  copy: {
+    position: 'absolute',
+    left: 64 - RING_ROOM,
+    bottom: 36 - RING_ROOM,
+    zIndex: 2,
+    maxWidth: 820 + RING_ROOM * 2,
+    p: RING_ROOM,
+  },
 });
 
 export interface HeroInfo {

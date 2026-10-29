@@ -38,28 +38,27 @@ export function TvReleases() {
 
   return (
     <Box fill overflow="hidden" style={RADIAL_GROUND}>
-      {view && releases.length === 0 ? (
-        <Box absolute left={64} top={190}>
-          <Text variant="bodyTv" color="textDim">
-            {t('releases.empty')}
-          </Text>
-        </Box>
-      ) : null}
-
-      {release ? (
-        <>
-          <Box absolute left={64} top={190} w={700}>
-            <ReleaseHeading release={release} date={formatDay(release.date, locale)} />
-            <ReleaseRowList rows={rows} picked={picked.row} onPick={pickRow} />
-          </Box>
-          {row ? <ReleasePane row={row} /> : null}
-        </>
-      ) : null}
       <BrandBar>
         {release ? (
           <VersionPicker releases={releases} picked={picked.version} onPick={pickVersion} />
         ) : null}
       </BrandBar>
+      <Box flex minH={0} row gap={76} px={64} pt={84}>
+        {view && releases.length === 0 ? (
+          <Text variant="bodyTv" color="textDim">
+            {t('releases.empty')}
+          </Text>
+        ) : null}
+        {release ? (
+          <>
+            <Box w={700}>
+              <ReleaseHeading release={release} date={formatDay(release.date, locale)} />
+              <ReleaseRowList rows={rows} picked={picked.row} onPick={pickRow} />
+            </Box>
+            {row ? <ReleasePane row={row} /> : null}
+          </>
+        ) : null}
+      </Box>
     </Box>
   );
 }

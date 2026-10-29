@@ -81,7 +81,7 @@ interface Params {
   credits?: { active: boolean; onBack: () => void };
 }
 
-const TV_BROWSER_FLAGS = { ...WEB_FLAGS, pointer: false };
+const TV_BROWSER_FLAGS = { ...WEB_FLAGS, pointer: false, arrowSeek: false };
 
 function setup(over: Partial<Params> = {}) {
   const params: Params = {
@@ -143,11 +143,15 @@ describe('usePlayerKeys letter/space transport shortcuts', () => {
   });
 
   it('"f" toggles fullscreen only when the fullscreen flag is on', () => {
-    const on = setup({ flags: { volume: true, pip: true, fullscreen: true, pointer: true } });
+    const on = setup({
+      flags: { volume: true, pip: true, fullscreen: true, pointer: true, arrowSeek: true },
+    });
     on.press({ key: 'f' });
     expect(on.params.controller.toggleFullscreen).toHaveBeenCalledTimes(1);
 
-    const off = setup({ flags: { volume: true, pip: true, fullscreen: false, pointer: true } });
+    const off = setup({
+      flags: { volume: true, pip: true, fullscreen: false, pointer: true, arrowSeek: true },
+    });
     off.press({ key: 'f' });
     expect(off.params.controller.toggleFullscreen).not.toHaveBeenCalled();
   });

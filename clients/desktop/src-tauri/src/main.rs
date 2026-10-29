@@ -16,6 +16,8 @@
 ))]
 #[allow(dead_code)]
 mod libmpv_shared;
+mod device_name;
+mod engine_flags;
 mod updater;
 
 // mpv binary IPC runtime (Linux): default backend, and the automatic fallback
@@ -99,7 +101,10 @@ fn init_libmpv_deferred(app: &tauri::AppHandle) {
                     // Advertise mpv to the frontend ONLY after the engine is up,
                     // so playback started early can't invoke a no-op mpv_load.
                     if libmpv_mac::init(&h, nsw) {
-                        let _ = win.eval("window.__KROMA_MPV__ = true;");
+                        engine_flags::announce(win, "window.__KROMA_MPV__ = true;");
+                        if libmpv_mac::pip_available() {
+                            engine_flags::announce(win, "window.__KROMA_PIP__ = true;");
+                        }
                     }
                 }
             }
@@ -122,7 +127,7 @@ fn init_libmpv_win_deferred(app: &tauri::AppHandle) {
             if let Some(win) = h.webview_windows().values().next() {
                 if let Ok(hwnd) = win.hwnd() {
                     if libmpv_win::init(&h, hwnd.0 as isize as i64) {
-                        let _ = win.eval("window.__KROMA_MPV__ = true;");
+                        engine_flags::announce(&win, "window.__KROMA_MPV__ = true;");
                     }
                 }
             }
@@ -147,7 +152,7 @@ fn init_libmpv_linux_deferred(app: &tauri::AppHandle) {
             if up {
                 mpv_dispatch::mark_inproc_active();
                 if let Some(win) = h.webview_windows().values().next() {
-                    let _ = win.eval("window.__KROMA_MPV__ = true;");
+                    engine_flags::announce(&win, "window.__KROMA_MPV__ = true;");
                 }
             } else {
                 eprintln!("KROMA: in-process libmpv unavailable on Linux; using the mpv binary");
@@ -261,6 +266,7 @@ fn main() {
             video_hole::video_hole_set,
             app_quit,
             app_relaunch,
+            device_name::device_name,
             updater::update_install
         ]);
     }
@@ -272,8 +278,11 @@ fn main() {
                 libmpv_mac::mpv_load,
                 libmpv_mac::mpv_command,
                 libmpv_mac::set_now_playing,
+                libmpv_mac::pip_start,
+                libmpv_mac::pip_stop,
                 app_quit,
                 app_relaunch,
+                device_name::device_name,
                 updater::update_install
             ]);
     }
@@ -286,6 +295,7 @@ fn main() {
                 libmpv_win::mpv_command,
                 app_quit,
                 app_relaunch,
+                device_name::device_name,
                 updater::update_install
             ]);
     }
@@ -299,6 +309,7 @@ fn main() {
         builder = builder.invoke_handler(tauri::generate_handler![
             app_quit,
             app_relaunch,
+            device_name::device_name,
             updater::update_install
         ]);
     }
@@ -310,6 +321,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build());
 
     builder
+        .on_page_load(engine_flags::on_page_load)
         .on_window_event(|_window, _event| {
             #[cfg(target_os = "linux")]
             linux_window_event(_window, _event);

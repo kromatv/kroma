@@ -104,11 +104,11 @@ describe('the ring an open sheet wears', () => {
     expect(declared(control('Up next'), 'outlineStyle')).toBe('none');
   });
 
-  it('rings the header the remote climbs to', () => {
+  it('wears no ring on the header the remote climbs to, since the sheet would cut it', () => {
     sheet(true);
 
     press('ArrowUp');
 
-    expect(wearsRing(control('Up next'))).toBe(true);
+    expect(wearsRing(control('Up next'))).toBe(false);
   });
 });

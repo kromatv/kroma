@@ -169,9 +169,18 @@ function VideoIntro({
       if (typeof muted?.then === 'function') muted.catch(fail);
     };
 
-    const begin = () => {
+    // Only a refusal of sound means sound: a play() interrupted by the film's
+    // own loading (AbortError) is retried with sound once it can play.
+    const begin = (retry = true) => {
       const p = v.play();
-      if (typeof p?.then === 'function') p.catch(beginMuted);
+      if (typeof p?.then === 'function') {
+        p.catch((error: unknown) => {
+          const aborted = error instanceof DOMException && error.name === 'AbortError';
+          if (!aborted || !retry) beginMuted();
+          else if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) begin(false);
+          else v.addEventListener('canplay', () => begin(false), { once: true });
+        });
+      }
       rearmSafety();
     };
 

@@ -9,7 +9,7 @@ import { type NavKey, TvTopNav } from '#tv/features/catalog/home/TopNav';
 
 // These routes also share one focus scope, so keep this to screens that
 // genuinely wear the same chrome.
-const ROUTES = ['home', 'grid', 'genres', 'genre', 'person', 'movie', 'show'] as const;
+const ROUTES = ['home', 'grid', 'genres', 'genre', 'person', 'movie', 'show', 'discover'] as const;
 
 // The deep screens (a title, a person, one genre) light nothing: they are not
 // a section, and lighting the one you arrived from would claim you're still there.

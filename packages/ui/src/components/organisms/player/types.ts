@@ -30,6 +30,9 @@ export interface PlayerFlags {
    *  magic-remote cursor emits phantom `pointermove` events that would otherwise
    *  keep the chrome (title + controls) revealed forever instead of auto-hiding. */
   pointer: boolean;
+  /** Left and Right seek wherever the chrome is (web, YouTube's keys). Off on
+   *  the 10-foot app, where the arrows walk the controls. */
+  arrowSeek: boolean;
 }
 
 export const WEB_FLAGS: PlayerFlags = {
@@ -37,12 +40,14 @@ export const WEB_FLAGS: PlayerFlags = {
   pip: true,
   fullscreen: true,
   pointer: true,
+  arrowSeek: true,
 };
 export const TV_FLAGS: PlayerFlags = {
   volume: false,
   pip: false,
   fullscreen: false,
   pointer: false,
+  arrowSeek: false,
 };
 
 /** Why the player asked to be closed: `close` is the chrome's own back control,

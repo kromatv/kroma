@@ -1,4 +1,4 @@
-import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
+import { SKIP_BACK_ICON, SKIP_FORWARD_ICON } from '@kromatv/ui';
 import { Box, Icon, IconButton, Spinner, styles, useStyles } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { colors } from '#mobile/lib/theme';
@@ -15,7 +15,7 @@ export function TransportControls({
     <Box style={[s.centerRow, compact && s.compactRow]} pointerEvents="box-none">
       <IconButton
         diameter={compact ? 40 : 56}
-        icon={BACK_10_ICON}
+        icon={SKIP_BACK_ICON}
         glyph={compact ? 22 : 28}
         onPress={() => {
           engine.skip(-10);
@@ -44,7 +44,7 @@ export function TransportControls({
       </IconButton>
       <IconButton
         diameter={compact ? 40 : 56}
-        icon={FWD_10_ICON}
+        icon={SKIP_FORWARD_ICON}
         glyph={compact ? 22 : 28}
         onPress={() => {
           engine.skip(10);

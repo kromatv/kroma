@@ -22,6 +22,8 @@ fn main() {
         // Obj-C render-API shim: an NSOpenGLView mpv draws into, behind the webview.
         cc::Build::new()
             .file("src/window_shim.m")
+            .file("src/pip_shim.m")
+            .file("src/media_shim.m")
             .include("/opt/homebrew/include")
             .include("/usr/local/include")
             .flag("-Wno-deprecated-declarations") // NSOpenGLView is deprecated but works
@@ -31,6 +33,8 @@ fn main() {
         println!("cargo:rustc-link-lib=framework=CoreVideo");
         println!("cargo:rustc-link-lib=framework=MediaPlayer"); // MacBook media keys
         println!("cargo:rerun-if-changed=src/window_shim.m");
+        println!("cargo:rerun-if-changed=src/pip_shim.m");
+        println!("cargo:rerun-if-changed=src/media_shim.m");
     }
 
     tauri_build::build();

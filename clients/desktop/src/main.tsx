@@ -9,16 +9,14 @@ import { installStage } from '@kromatv/tv/stage';
 // `scale=1920:1080` x264 crf18 re-encode (avc1 + faststart), see packages/ui
 // KromaIntro/constants.ts.
 import introFilm from './assets/kroma-intro-h264-1080.mp4';
+import { desktopDeviceName } from './deviceName';
 import { startGamepadBridge } from './gamepad';
 import { startUpdater } from './updater';
 import { installVideoHole, nativePlane } from './video-hole';
 
-// The 1920x1080 stage, on EVERY desktop window: the shared 10-foot UI is authored
-// in fixed pixels against that canvas (PosterGrid's 8 x 203px columns, the nav row,
-// the episode column), so a free-size window narrower than 1920 does not shrink the
-// layout, it clips it. Fitted the same way as the Steam Deck panel and the browser
-// shell (`installStage`, @kromatv/tv/stage). A genuinely fluid 10-foot
-// layout is a design-system change, not a shell one.
+// The 10-foot UI is authored against a 1920x1080 canvas; the stage scales it to
+// the window and hands it the rest of the window as canvas, so a window of any
+// shape is filled edge to edge (`installStage`, @kromatv/tv/stage).
 const fixedScreen = nativePlane();
 installStage();
 
@@ -26,7 +24,7 @@ installStage();
 // same synthetic key events the shared TV nav already listens for.
 startGamepadBridge();
 
-mountTv({ platform: 'Desktop', introVideoSrc: introFilm });
+mountTv({ platform: 'Desktop', introVideoSrc: introFilm, deviceName: desktopDeviceName() });
 
 // Linux draws the picture on an mpv plane cut into the page, and WebKitGTK never
 // lets a pixel through on its own; the plane's shape is what makes it visible

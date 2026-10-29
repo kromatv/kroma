@@ -2,12 +2,13 @@
 // backend the playback hook chose. PlayerSurface.tsx is the native half.
 
 import { classes, style } from '@kromatv/ui/kit';
-import type { ReactNode } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
+import { useShellPip, useVideoPip } from '#tv/features/playback/browser/surfacePip';
 import type { SurfaceProps } from '#tv/features/playback/player/playbackBackend';
 
 const FILL = style({ width: '100%', height: '100%' });
-export function PlayerSurface({ pb, title }: Readonly<SurfaceProps>): ReactNode {
-  const { surface, objectRef, videoRef } = pb;
+export function PlayerSurface({ pb, title, pip }: Readonly<SurfaceProps>): ReactNode {
+  const { surface, objectRef } = pb;
   if (surface === 'avplay') {
     // NO child text: AVPlay renders to a hardware plane, not into this <object>'s
     // box, so fallback children draw visibly over the video. aria-label carries
@@ -21,9 +22,26 @@ export function PlayerSurface({ pb, title }: Readonly<SurfaceProps>): ReactNode 
       />
     );
   }
-  if (surface === 'mpv') {
-    return <div className={classes(FILL)} role="img" aria-label={title} />;
-  }
+  if (surface === 'mpv') return <MpvSurface pb={pb} title={title} pip={pip} />;
+  return <VideoSurface pb={pb} title={title} pip={pip} />;
+}
+
+function MpvSurface({ pb, title, pip }: Readonly<SurfaceProps>): ReactNode {
+  useShellPip(pip, pb.aspect);
+  return <div className={classes(FILL)} role="img" aria-label={title} />;
+}
+
+function VideoSurface({ pb, pip }: Readonly<SurfaceProps>): ReactNode {
+  const { videoRef } = pb;
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  const bind = useCallback(
+    (el: HTMLVideoElement | null) => {
+      videoRef.current = el;
+      setVideo(el);
+    },
+    [videoRef],
+  );
+  useVideoPip(pip, video);
   // Subtitles render through the shared SubtitleRenderer; the empty captions
   // track only satisfies the media-caption accessibility requirement.
   //
@@ -33,7 +51,7 @@ export function PlayerSurface({ pb, title }: Readonly<SurfaceProps>): ReactNode 
   // (tainted). The server's CORS allowlist answers a document loaded off a
   // device, which is what keeps this element readable (server api/origin.rs).
   return (
-    <video ref={videoRef} autoPlay playsInline crossOrigin="anonymous" style={ROUNDED}>
+    <video ref={bind} autoPlay playsInline crossOrigin="anonymous" style={ROUNDED}>
       <track kind="captions" />
     </video>
   );
