@@ -77,10 +77,10 @@ export function NotificationEntry({
 
   function go(one: Notification) {
     markRead(ids);
-    const to = notificationLink(one);
-    if (to) {
+    const href = notificationLink(one);
+    if (href) {
       onNavigate();
-      void navigate({ to });
+      void navigate({ href });
     }
   }
 

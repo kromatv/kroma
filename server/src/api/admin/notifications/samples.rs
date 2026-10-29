@@ -6,6 +6,8 @@ use crate::model::{
     PushCategory,
 };
 
+const REQUEST_QUEUE: &str = "/admin/monitoring?tab=requests";
+
 // Uses the same message keys a real producer would, so what lands in the bell
 // matches the real thing. Buttons are always LINKS here, even where the real
 // notification carries an API action, so a preview never POSTs to a request
@@ -20,12 +22,12 @@ pub(super) fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec 
         )
         .param("title", film)
         .param("user", admin)
-        .link("/admin/requests")
+        .link(REQUEST_QUEUE)
         .push_category(PushCategory::RequestReview)
         .action(link_action(
             "review",
             "notifications.action.review",
-            "/admin/requests",
+            REQUEST_QUEUE,
         )),
         NotificationEvent::RequestApproved => NotificationSpec::new(
             event,
