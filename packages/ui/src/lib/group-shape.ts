@@ -1,4 +1,4 @@
-import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
+import { type StyleScope, resolveStyles, sharedStyle, styles, useStyleScope } from '#ui/core';
 // What a <ButtonGroup> publishes to each of its children, and the style a member
 // builds from it.
 //
@@ -53,30 +53,34 @@ function groupSlot(
   return made;
 }
 
+// Keep joins in the build's sheet as well as the runtime sheet. Otherwise a
+// static button radius loaded after the SSR sheet rounds these corners again.
+const joins = styles({
+  left: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeftWidth: 0 },
+  right: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
+  top: { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 },
+  bottom: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+});
+
 function corners(
   orientation: GroupOrientation,
   position: GroupPosition,
   radius: Radius,
+  scope: StyleScope,
 ): ViewStyle {
   const joinsBefore = position === 'middle' || position === 'last';
   const joinsAfter = position === 'middle' || position === 'first';
-  const leading = joinsBefore ? 0 : radius;
-  const trailing = joinsAfter ? 0 : radius;
-  if (orientation === 'vertical') {
-    return {
-      borderTopLeftRadius: leading,
-      borderTopRightRadius: leading,
-      borderBottomLeftRadius: trailing,
-      borderBottomRightRadius: trailing,
-      ...(joinsBefore ? { borderTopWidth: 0 } : null),
-    };
-  }
+  const s = resolveStyles(joins, scope);
+  const vertical = orientation === 'vertical';
+  const before = vertical ? s.top : s.left;
+  const after = vertical ? s.bottom : s.right;
   return {
-    borderTopLeftRadius: leading,
-    borderBottomLeftRadius: leading,
-    borderTopRightRadius: trailing,
-    borderBottomRightRadius: trailing,
-    ...(joinsBefore ? { borderLeftWidth: 0 } : null),
+    borderTopLeftRadius: radius,
+    borderTopRightRadius: radius,
+    borderBottomLeftRadius: radius,
+    borderBottomRightRadius: radius,
+    ...(joinsBefore ? before : null),
+    ...(joinsAfter ? after : null),
   };
 }
 
@@ -91,7 +95,7 @@ function shapeOf(slot: GroupSlot, focused: boolean, scope: StyleScope): ViewStyl
   return sharedStyle(
     `group-shape:${orientation}:${position}:${radius}:${focused}`,
     {
-      ...corners(orientation, position, radius),
+      ...corners(orientation, position, radius, scope),
       ...(focused ? RAISED : null),
     },
     scope,
