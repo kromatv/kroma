@@ -18,6 +18,7 @@ use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tracing::{info, warn};
 
+use super::admission::{max_live_transcodes, Refusal};
 use super::covered::Serving;
 use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
 use super::hwaccel::Pipeline;
@@ -56,12 +57,23 @@ impl Session {
     pub(super) async fn finished(&self) -> bool {
         matches!(self.child.lock().await.try_wait(), Ok(Some(_)))
     }
+
+    pub(super) fn transcodes_video(&self) -> bool {
+        self.plan.transcodes_video()
+    }
+
+    pub(super) fn is_superseded_transcode(&self) -> bool {
+        self.superseded.load(std::sync::atomic::Ordering::Relaxed) && self.transcodes_video()
+    }
 }
 
 /// Remux sessions keyed per program + anchor (see `session_key`).
 pub struct Sessions {
     pub(super) root: PathBuf,
     pub(super) cap: usize,
+    // Live video re-encodes allowed at once, never more than `cap`: the session
+    // cap counts streams and this one counts decodes (see [`super::admission`]).
+    pub(super) transcode_cap: usize,
     // On-disk byte budget for the whole cache; 0 = unlimited.
     pub(super) budget: AtomicU64,
     burst: bool,
@@ -73,9 +85,11 @@ impl Sessions {
     pub fn new(root: PathBuf, cap: usize, budget: u64) -> Self {
         let _ = std::fs::remove_dir_all(&root);
         let _ = std::fs::create_dir_all(&root);
+        let cap = cap.max(1);
         Sessions {
             root,
-            cap: cap.max(1),
+            cap,
+            transcode_cap: max_live_transcodes().min(cap),
             budget: AtomicU64::new(budget),
             burst: detect_burst(),
             inner: Mutex::new(HashMap::new()),
@@ -99,31 +113,24 @@ impl Sessions {
     /// what the picture costs to decode, and so half of what the box is being
     /// asked to keep up with.
     pub async fn master(
-        &self,
+        self: &Arc<Self>,
         key: &str,
         input: &Path,
         audio: u32,
         mode: StreamMode,
         start_secs: f64,
         source: Option<(u32, u32)>,
-    ) -> Option<(Vec<u8>, f64)> {
+    ) -> Result<(Vec<u8>, f64), Refusal> {
         if let Some(reused) = self.reuse(key, start_secs).await {
             reused.session.touch().await;
             self.serving.note(key, &reused.key).await;
             info!(session = %key, serving = %reused.key, "answered a re-anchor out of a running session");
-            return Some((ended(&reused.session, reused.playlist).await, reused.start));
+            return Ok((ended(&reused.session, reused.playlist).await, reused.start));
         }
         self.serving.forget(key).await;
-        let session = match self
+        let session = self
             .ensure(key, input, audio, mode, start_secs, source)
-            .await
-        {
-            Ok(s) => s,
-            Err(e) => {
-                warn!(error = %e, session = %key, "failed to start HLS remux");
-                return None;
-            }
-        };
+            .await?;
         let start = session.start;
         let path = session.dir.join("index.m3u8");
         let deadline = Instant::now() + FILE_WAIT;
@@ -131,11 +138,14 @@ impl Sessions {
             if let Ok(bytes) = tokio::fs::read(&path).await {
                 // A media playlist is only valid once it carries a target duration.
                 if contains(&bytes, b"#EXT-X-TARGETDURATION") {
-                    return Some((bytes, start));
+                    return Ok((bytes, start));
                 }
             }
             if Instant::now() >= deadline {
-                return tokio::fs::read(&path).await.ok().map(|b| (b, start));
+                return tokio::fs::read(&path)
+                    .await
+                    .map(|b| (b, start))
+                    .map_err(|_| Refusal::Unavailable);
             }
             sleep(Duration::from_millis(80)).await;
         }
@@ -178,14 +188,14 @@ impl Sessions {
     }
 
     async fn ensure(
-        &self,
+        self: &Arc<Self>,
         key: &str,
         input: &Path,
         audio: u32,
         mode: StreamMode,
         start_secs: f64,
         source: Option<(u32, u32)>,
-    ) -> std::io::Result<Arc<Session>> {
+    ) -> Result<Arc<Session>, Refusal> {
         // The anchor is part of the key, so an existing session is always the right one.
         {
             let map = self.inner.lock().await;
@@ -194,7 +204,9 @@ impl Sessions {
                 return Ok(s.clone());
             }
         }
-        self.retire_superseded(key).await;
+        if self.retire_superseded(key).await {
+            self.reclaim_superseded_later();
+        }
         // Both shell out on their first call: must not run under the lock.
         let start = keyframe_before(input, start_secs).await;
         // Off the reactor: the first call makes every candidate device encode a
@@ -213,10 +225,22 @@ impl Sessions {
             return Ok(s.clone());
         }
         self.make_room(&mut map).await;
+        if !matches!(mode.video, VideoMode::Copy) && !self.admits_transcode(&mut map).await {
+            warn!(session = %key, cap = self.transcode_cap, "refused a re-encode: every slot is taken");
+            return Err(Refusal::Busy);
+        }
         let dir = self.root.join(session_dir(key));
         super::reclaim::discard_dir(&dir);
-        tokio::fs::create_dir_all(&dir).await?;
-        let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst, pipeline)?;
+        let child = match self
+            .spawn_into(&dir, input, audio, mode, start_secs, pipeline)
+            .await
+        {
+            Ok(child) => child,
+            Err(e) => {
+                warn!(error = %e, session = %key, "failed to start HLS remux");
+                return Err(Refusal::Unavailable);
+            }
+        };
         info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, accel = pipeline.accel.label(), effort = pipeline.effort.label(), "started HLS remux");
         let session = Arc::new(Session {
             plan: Plan::new(key, audio, mode, pipeline, source, child.id(), start_secs),
@@ -232,9 +256,22 @@ impl Sessions {
         Ok(session)
     }
 
-    async fn retire_superseded(&self, key: &str) {
+    async fn spawn_into(
+        &self,
+        dir: &Path,
+        input: &Path,
+        audio: u32,
+        mode: StreamMode,
+        start_secs: f64,
+        pipeline: Pipeline,
+    ) -> std::io::Result<Child> {
+        tokio::fs::create_dir_all(dir).await?;
+        spawn_stream(input, dir, audio, mode, start_secs, self.burst, pipeline)
+    }
+
+    async fn retire_superseded(&self, key: &str) -> bool {
         let mut map = self.inner.lock().await;
-        self.reap_superseded(&mut map, key).await;
+        self.reap_superseded(&mut map, key).await
     }
 
     async fn serving_session(&self, key: &str) -> Option<Arc<Session>> {

@@ -32,7 +32,17 @@ pub(in crate::hls) const PLAYLIST: &str = "#EXTM3U\n\
     #EXTINF:4.000000,\n\
     seg_00002.m4s\n";
 
-pub(in crate::hls) fn fake_session(dir: PathBuf, age: Duration) -> Arc<Session> {
+// The mode is read back out of the key, so a fixture keyed `itA:h264-1080-copy:…`
+// really is a session that re-encodes its picture.
+fn mode_of(key: &str) -> StreamMode {
+    key.rsplit_once(':')
+        .and_then(|(head, _audio)| head.rsplit_once(':'))
+        .and_then(|(head, _anchor)| head.rsplit_once(':'))
+        .and_then(|(_item, mode)| StreamMode::parse(mode))
+        .unwrap_or(StreamMode::new(VideoMode::Copy, AudioMode::Copy))
+}
+
+pub(in crate::hls) fn fake_session(key: &str, dir: PathBuf, age: Duration) -> Arc<Session> {
     let child = Command::new("sleep")
         .arg("30")
         .stdin(Stdio::null())
@@ -45,9 +55,9 @@ pub(in crate::hls) fn fake_session(dir: PathBuf, age: Duration) -> Arc<Session> 
         .checked_sub(age)
         .expect("monotonic clock older than the test window");
     let plan = Plan::new(
-        "it:copy:0:a0",
+        key,
         0,
-        StreamMode::new(VideoMode::Copy, AudioMode::Copy),
+        mode_of(key),
         Pipeline {
             accel: HwAccel::Software,
             effort: Effort::Quality,
@@ -90,7 +100,7 @@ pub(in crate::hls) async fn registry_with_budget(
     for (key, age) in sessions {
         let dir = s.root.join(session_dir(key));
         tokio::fs::create_dir_all(&dir).await.expect("session dir");
-        map.insert((*key).to_string(), fake_session(dir, *age));
+        map.insert((*key).to_string(), fake_session(key, dir, *age));
     }
     drop(map);
     (s, data)

@@ -10,6 +10,7 @@
 //! of them has already produced is answered out of it ([`covered`]) rather than
 //! sharing a session.
 
+mod admission;
 mod covered;
 mod cut;
 mod ffmpeg;
@@ -25,6 +26,7 @@ mod session;
 mod software;
 mod window;
 
+pub use admission::Refusal;
 pub use hwaccel::{prime as prime_hwaccel, Detection};
 pub use live::Transcode;
 pub use mode::{AudioMode, Rung, StreamMode, VideoMode};
@@ -102,13 +104,14 @@ impl HlsEngine {
         mode: StreamMode,
         anchor: u64,
         source: Option<(u32, u32)>,
-    ) -> Option<(String, f64)> {
+    ) -> Result<(String, f64), Refusal> {
         let key = session_key(item_id, mode, anchor, audio);
         let (bytes, start) = self
             .sessions
             .master(&key, Path::new(input), audio, mode, anchor as f64, source)
             .await?;
-        Some((String::from_utf8(bytes).ok()?, start))
+        let playlist = String::from_utf8(bytes).map_err(|_| Refusal::Unavailable)?;
+        Ok((playlist, start))
     }
 
     /// Every remux running right now, newest first: what it is producing, on

@@ -68,6 +68,25 @@ async fn superseded_siblings_are_reclaimed_only_once_quiet() {
 }
 
 #[tokio::test]
+async fn superseding_a_re_encode_asks_for_a_sweep_where_superseding_a_copy_does_not() {
+    let (s, _dir) = registry(
+        "supersede-reports",
+        8,
+        &[("itA:h264-1080-copy:0:a0", LIVE), ("itB:copy:0:a0", LIVE)],
+    )
+    .await;
+    let mut map = s.inner.lock().await;
+
+    let re_encode = s
+        .reap_superseded(&mut map, "itA:h264-1080-copy:600:a0")
+        .await;
+    let copy = s.reap_superseded(&mut map, "itB:copy:600:a0").await;
+
+    assert!(re_encode);
+    assert!(!copy);
+}
+
+#[tokio::test]
 async fn a_sibling_another_viewer_is_reading_survives_a_seek_that_supersedes_it() {
     let (s, _dir) = registry("arriving", 8, &[("itA:copy:0:a0", LIVE)]).await;
 

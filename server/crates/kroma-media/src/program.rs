@@ -7,7 +7,7 @@ use axum::response::Response;
 use kroma_module_wire::{AudioStream, VideoStream};
 use serde::Deserialize;
 
-use crate::hls::{HlsEngine, StreamMode};
+use crate::hls::{HlsEngine, Refusal, StreamMode};
 use crate::json_error::json_error;
 use crate::stream::metered_body;
 use crate::{playlist, ByteMeter, Credential};
@@ -76,8 +76,9 @@ impl Program<'_> {
     }
 
     /// The media playlist of `session`, starting it over the file when none
-    /// runs, with every child URI carrying `credential`. `None` when ffmpeg
-    /// produced no playlist in time.
+    /// runs, with every child URI carrying `credential`. The [`Refusal`] says
+    /// which answer the caller owes the client: a host already at its re-encode
+    /// ceiling is worth asking again, a missing playlist is not.
     pub async fn master<M: ByteMeter>(
         &self,
         engine: &HlsEngine,
@@ -85,7 +86,7 @@ impl Program<'_> {
         session: Session,
         credential: &Credential,
         meter: M,
-    ) -> Option<Response> {
+    ) -> Result<Response, Refusal> {
         let Session {
             mode,
             anchor,
@@ -112,7 +113,7 @@ impl Program<'_> {
         {
             insert_seconds(&mut resp, "X-Media-Duration", secs);
         }
-        Some(resp)
+        Ok(resp)
     }
 }
 

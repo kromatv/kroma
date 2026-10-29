@@ -7,7 +7,7 @@ use axum::extract::{ConnectInfo, Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 
-use kroma_media::hls::StreamMode;
+use kroma_media::hls::{Refusal, StreamMode};
 use kroma_media::program::{self, Program, Session};
 use kroma_media::Credential;
 
@@ -89,13 +89,19 @@ pub async fn hls_master(
         .master(&state.hls, &abs, session, &credential, sink)
         .await
     {
-        Some(resp) => match q.subtitle.as_deref() {
+        Ok(resp) => match q.subtitle.as_deref() {
             Some(source) => {
                 super::native_subtitles::master(resp, &item.id, source, session, &credential)
             }
             None => resp,
         },
-        None => json_error(
+        // Answered now rather than after the playlist wait: a stall long enough
+        // for the player to give up reads to a viewer as a broken file.
+        Err(Refusal::Busy) => json_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "the server is already re-encoding as many titles as it can",
+        ),
+        Err(Refusal::Unavailable) => json_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "HLS remux unavailable (is ffmpeg installed?)",
         ),
