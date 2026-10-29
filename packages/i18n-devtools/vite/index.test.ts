@@ -351,6 +351,18 @@ describe('asking the dev server for a fresh render', () => {
 });
 
 describe('an editor that will not open', () => {
+  it('rejects a removed editor instead of silently choosing another', async () => {
+    const at = serving({ plugin: await pluginWhoseEditorFails('should not launch') });
+    await at.ask('kroma:i18n:open', {
+      at: 1,
+      file: '/repo/clients/web/src/app.tsx:1:1',
+      editor: 'removed-editor',
+    });
+    expect(at.said.at(-1)?.data).toMatchObject({ opened: false });
+    expect(at.warned.join(' ')).toContain('removed-editor is no longer available');
+    expect(at.warned.join(' ')).not.toContain('should not launch');
+  });
+
   it('says which one and why, rather than failing quietly', async () => {
     const at = serving({ plugin: await pluginWhoseEditorFails('no such editor') });
 

@@ -69,11 +69,44 @@ export function runnable(command: string, where: Where): boolean {
   return onPath(dirs, commandNames(command, where.platform, where.pathExt), where.exists);
 }
 
+// Display names only; discovery and launch commands stay owned by launch-editor.
+const NAMES: Readonly<Record<string, string>> = {
+  atom: 'Atom',
+  brackets: 'Brackets',
+  code: 'Visual Studio Code',
+  'code-insiders': 'Visual Studio Code Insiders',
+  'code - insiders': 'Visual Studio Code Insiders',
+  codium: 'VSCodium',
+  vscodium: 'VSCodium',
+  cursor: 'Cursor',
+  trae: 'Trae',
+  antigravity: 'Antigravity',
+  appcode: 'AppCode',
+  clion: 'CLion',
+  idea: 'IntelliJ IDEA',
+  phpstorm: 'PhpStorm',
+  pycharm: 'PyCharm',
+  rubymine: 'RubyMine',
+  webstorm: 'WebStorm',
+  goland: 'GoLand',
+  rider: 'Rider',
+  zed: 'Zed',
+  subl: 'Sublime Text',
+  sublime_text: 'Sublime Text',
+  vim: 'Vim',
+  gvim: 'GVim',
+  mvim: 'MacVim',
+  emacs: 'Emacs',
+  'notepad++': 'Notepad++',
+};
+
 /** What an editor is called, read off where it installs: the application on
  *  macOS, the command everywhere else. */
 export function nameOf(install: string): string {
   const app = install.split(sep).find((part) => part.endsWith('.app'));
-  return app ? app.slice(0, -'.app'.length) : idOf(install);
+  if (app) return app.slice(0, -'.app'.length);
+  const id = idOf(install);
+  return NAMES[id.toLowerCase().replace(/64$/, '')] ?? id;
 }
 
 /** The editor's own name for itself, which is what the panel holds on to: a

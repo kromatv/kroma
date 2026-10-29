@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ask } from './host';
 
 /** An editor the machine running the dev server can open a file in. */
@@ -9,27 +9,26 @@ export interface Editor {
 
 const NONE: readonly Editor[] = [];
 
-let asked: Promise<readonly Editor[]> | null = null;
-
-function fetchEditors(): Promise<readonly Editor[]> {
-  asked ??= ask('kroma:i18n:editors', {}).then((answer) => answer?.editors ?? NONE);
-  return asked;
-}
-
-/** What this machine can open a file in, asked for once. Empty until the dev
- *  server answers, and empty for good where it does not serve the route. */
-export function useEditors(): readonly Editor[] {
+/** Discover on opening the options, or on demand after an editor is installed. */
+export function useEditors() {
   const [editors, setEditors] = useState(NONE);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
   useEffect(() => {
     let live = true;
-    void fetchEditors().then((found) => {
-      if (live) setEditors(found);
+    setLoading(true);
+    setError(false);
+    void ask('kroma:i18n:editors', {}).then((answer) => {
+      if (!live) return;
+      if (answer) setEditors(answer.editors);
+      setError(answer === null);
+      setLoading(false);
     });
-    return () => {
-      live = false;
-    };
-  }, []);
-  return editors;
+    return () => { live = false; };
+  }, [revision]);
+  return { editors, loading, error, refresh };
 }
 
 /** Open `file` in `editor`, or in whichever one the dev server guesses when
