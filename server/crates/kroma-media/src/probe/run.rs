@@ -102,9 +102,8 @@ fn run_ffprobe(path: &Path) -> Outcome {
 }
 
 fn outcome_of(path: &Path, exit_code: Option<i32>, stdout: &[u8], stderr: &[u8]) -> Outcome {
-    // No code at all means a signal took the process, which on a box that is out
-    // of memory says nothing about the file. Recorded as a refusal it would null
-    // the title's streams and never be asked again.
+    // No code at all means a signal took the process, which says nothing about
+    // the file.
     let Some(code) = exit_code else {
         debug!(file = %path.display(), "ffprobe was killed before it answered");
         return Outcome::Killed;
