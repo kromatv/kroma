@@ -931,7 +931,7 @@ async fn the_sample_catalogue_holds_one_rendered_row_per_event_the_server_can_se
 
     let submitted = &events[0];
     assert_eq!(submitted["category"], json!("requests"));
-    assert_eq!(submitted["link"], json!("/admin/requests"));
+    assert_eq!(submitted["link"], json!("/admin/monitoring?tab=requests"));
     let text = submitted["body"].as_str().unwrap();
     assert!(text.contains("Sample Film"), "{text}");
     assert!(text.contains("owner"), "{text}");

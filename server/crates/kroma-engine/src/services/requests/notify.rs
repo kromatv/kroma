@@ -86,7 +86,7 @@ pub(super) fn notify_moderators<S: HostStorage>(state: &S, req: &MediaRequest, r
     .param("title", req.title.clone())
     .param("user", requester.username.clone())
     .image(req.poster_url.clone())
-    .link("/admin/requests")
+    .link(format!("/admin/requests/{}", req.id))
     .push_category(PushCategory::RequestReview)
     .action(ActionSpec {
         id: "approve".into(),
