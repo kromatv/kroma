@@ -67,16 +67,27 @@ pub fn all_file_sigs(pool: &Pool) -> Result<Vec<(String, String)>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// `(abs_path, item_id, probed)` for one file; `None` if the file row is gone.
-pub fn probe_target(pool: &Pool, file_id: &str) -> Result<Option<(String, String, bool)>> {
+/// One file as a probe pass sees it. `described` is false for a file nothing has
+/// read yet AND for one whose last pass came back with a fault: a mount that was
+/// away or an ffprobe the box killed must not leave a title with no streams for
+/// good.
+pub struct ProbeTarget {
+    pub abs_path: String,
+    pub item_id: String,
+    pub described: bool,
+}
+
+/// `None` if the file row is gone.
+pub fn probe_target(pool: &Pool, file_id: &str) -> Result<Option<ProbeTarget>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare("SELECT abs_path, item_id, probed FROM files WHERE id=?1")?;
+    let mut stmt =
+        conn.prepare("SELECT abs_path, item_id, probed, unreadable FROM files WHERE id=?1")?;
     let mut rows = stmt.query_map(params![file_id], |r| {
-        Ok((
-            r.get::<_, String>(0)?,
-            r.get::<_, String>(1)?,
-            r.get::<_, i64>(2)? != 0,
-        ))
+        Ok(ProbeTarget {
+            abs_path: r.get(0)?,
+            item_id: r.get(1)?,
+            described: r.get::<_, i64>(2)? != 0 && r.get::<_, Option<String>>(3)?.is_none(),
+        })
     })?;
     match rows.next() {
         Some(r) => Ok(Some(r?)),
@@ -147,10 +158,9 @@ mod tests {
         ids.sort();
         assert_eq!(ids, vec!["f1".to_string(), "f2".to_string()]);
 
-        assert_eq!(
-            probe_target(&p, "f1").unwrap(),
-            Some(("/a".to_string(), "m1".to_string(), true))
-        );
+        let f1 = probe_target(&p, "f1").unwrap().expect("the probed file");
+        assert_eq!((f1.abs_path.as_str(), f1.item_id.as_str()), ("/a", "m1"));
+        assert!(f1.described);
         assert!(probe_target(&p, "gone").unwrap().is_none());
         let sigs: HashMap<String, String> = all_file_sigs(&p).unwrap().into_iter().collect();
         assert_eq!(sigs.get("f1").map(String::as_str), Some("100:2000"));
@@ -158,6 +168,37 @@ mod tests {
 
         unprobe_item_files(&p, "m1").unwrap();
         assert!(!item_has_probed_file(&p, "m1").unwrap());
+    }
+
+    #[test]
+    fn a_file_a_pass_left_with_a_fault_is_offered_to_the_next_one() {
+        let p = pool();
+        crate::sync_all(
+            &p,
+            &[lib("lib")],
+            &[],
+            &[movie(
+                "m1",
+                "Dune",
+                "lib",
+                vec![file("f1", "/media/m1.mkv", false)],
+            )],
+            &HashMap::new(),
+        )
+        .unwrap();
+        crate::set_file_probe(
+            &p,
+            "f1",
+            &crate::FileProbe {
+                unreadable: Some("Invalid data found when processing input"),
+                ..crate::FileProbe::default()
+            },
+        )
+        .unwrap();
+
+        let target = probe_target(&p, "f1").unwrap().expect("the faulted file");
+
+        assert!(!target.described);
     }
 
     #[test]

@@ -2,8 +2,9 @@
 //! chapters) and persist it. Wraps [`crate::infra::probe::probe_one`]. The
 //! detached scan-time probe pass still runs for immediate results + the
 //! `/api/status` activity panel; this stage is the incremental, observable,
-//! retriable view over the same `files.probed` state (a no-op on already-probed
-//! files, so the two coexist safely).
+//! retriable view over the same `files.probed` state (a no-op on a file already
+//! described, so the two coexist safely), and the one that comes back to a file
+//! an earlier pass left with a fault.
 
 use anyhow::Result;
 
@@ -29,10 +30,10 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
 }
 
 fn process(ctx: &JobContext, file_id: &str) -> Result<()> {
-    let Some((abs_path, item_id, probed)) = crate::db::probe_target(&ctx.state.db, file_id)? else {
+    let Some(target) = crate::db::probe_target(&ctx.state.db, file_id)? else {
         return Ok(()); // file row gone since enumerate; nothing to do
     };
-    if probed {
+    if target.described {
         return Ok(()); // already probed (here or by the scan-time pass)
     }
     crate::infra::probe::probe_one(
@@ -40,8 +41,8 @@ fn process(ctx: &JobContext, file_id: &str) -> Result<()> {
         ctx.state.ffprobe_available,
         &ctx.state.events,
         file_id,
-        &abs_path,
-        &item_id,
+        &target.abs_path,
+        &target.item_id,
     )
 }
 
@@ -102,6 +103,33 @@ mod tests {
             rx.try_recv().is_err(),
             "nothing was re-probed, so nothing changed"
         );
+    }
+
+    #[test]
+    fn a_file_an_earlier_pass_left_with_a_fault_is_read_again() {
+        let state = test_state();
+        seed_movie(&state, "m1");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                "UPDATE files SET probed=1, unreadable='ffprobe was killed' WHERE id='m1-f'",
+                [],
+            )
+            .unwrap();
+
+        process(&JobContext::for_test(state.clone()), "m1-f").unwrap();
+
+        let fault: Option<String> = state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT unreadable FROM files WHERE id='m1-f'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(fault, None);
     }
 
     #[test]

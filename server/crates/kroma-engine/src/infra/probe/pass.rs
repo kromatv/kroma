@@ -146,6 +146,9 @@ fn probe_worker_loop(
 /// Store the stream columns (+ `probed=1`), derive intro/credits markers from any
 /// embedded chapters, and emit `ItemUpdated` when this is the item's first probed
 /// file. Shared by the background probe pass and the `pipeline.probe` stage.
+///
+/// A probe a signal took writes nothing: the file keeps `probed = 0` so a later
+/// pass reads it, rather than standing as a title with no streams for good.
 pub fn probe_one(
     pool: &Pool,
     ffprobe: bool,
@@ -157,7 +160,10 @@ pub fn probe_one(
     let first_for_item = db::item_has_probed_file(pool, item_id)
         .map(|has| !has)
         .unwrap_or(true);
-    let result = probe_file(Path::new(abs_path), ffprobe);
+    let Some(result) = probe_file(Path::new(abs_path), ffprobe) else {
+        warn!(file = %file_id, "ffprobe was killed before it answered; leaving the file unprobed");
+        return Ok(());
+    };
     db::set_file_probe(
         pool,
         file_id,
