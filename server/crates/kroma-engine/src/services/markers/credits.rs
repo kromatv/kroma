@@ -33,7 +33,7 @@ pub fn detect_movie(ctx: &JobContext, item: &MediaItem) -> Result<bool> {
         return Ok(false);
     };
     let path = Path::new(path);
-    let probe = probe_file(path, ctx.state.ffprobe_available);
+    let probe = probe_file(path, ctx.state.ffprobe_available).unwrap_or_default();
     let duration_ms = probe.duration_ms.filter(|d| *d > 0).unwrap_or(duration_ms);
     let chapter = markers_from_chapters(&probe.chapters, Some(duration_ms))
         .into_iter()

@@ -200,7 +200,7 @@ fn decode_one(
     ffprobe: bool,
 ) -> EpData {
     let path = std::path::Path::new(e.abs_path.as_ref().unwrap());
-    let result = probe_file(path, ffprobe);
+    let result = probe_file(path, ffprobe).unwrap_or_default();
     let duration = result.duration_ms.or(e.duration_ms);
     let chapters = markers_from_chapters(&result.chapters, duration);
     let (start_fp, end_fp) = if do_fp {
