@@ -7,14 +7,9 @@ description = "KROMA core entities + pure rules (serde types, zero I/O). The for
 license.workspace = true
 
 # Purity is now enforced by the compiler, not a CI grep: this crate depends only
-# on serde, so an accidental `use axum::` / `use rusqlite::` won't resolve.
+# on serde and serde_json, so an accidental `use axum::` / `use rusqlite::` won't
+# resolve.
 [dependencies]
 kroma-module-wire = { workspace = true }
 serde = { workspace = true }
-
-# Tests only, so the purity rule above still holds for library code: the wire
-# shapes here are a public contract, and asserting on them needs a serializer
-# (`cast.rs` and `notifications.rs` both check that a serde rename and its
-# `as_str()` spelling agree).
-[dev-dependencies]
 serde_json = { workspace = true }

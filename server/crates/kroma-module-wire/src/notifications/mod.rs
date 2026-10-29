@@ -4,8 +4,10 @@ mod action;
 mod event;
 mod param;
 mod spec;
+mod subject;
 
 pub use action::*;
 pub use event::*;
 pub use param::*;
 pub use spec::*;
+pub use subject::*;

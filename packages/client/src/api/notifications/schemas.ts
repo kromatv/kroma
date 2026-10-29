@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UserId } from '../accounts';
 import { NotificationId } from './ids';
 
 export const NotificationCategory = z.enum(['requests', 'media', 'reports', 'downloads', 'system']);
@@ -48,12 +49,36 @@ export const NotificationAction = z.object({
 });
 export type NotificationAction = z.infer<typeof NotificationAction>;
 
+/** The core names `request`, `movie`, `show`, `episode`, `report` and `job`; a
+ * module names its own as `<module id>/<local name>`. The field is an open
+ * string, so a client routes what it knows and falls back to `link` otherwise. */
+export const KnownSubjectKind = z.enum(['request', 'movie', 'show', 'episode', 'report', 'job']);
+export type KnownSubjectKind = z.infer<typeof KnownSubjectKind>;
+
+/** What a notification is about. */
+export const NotificationSubject = z.object({ kind: z.string(), id: z.string() });
+export type NotificationSubject = z.infer<typeof NotificationSubject>;
+
+/** Who caused the event, as their account reads now rather than when the row
+ * was written. Absent for anything the server did on its own. */
+export const NotificationActor = z.object({
+  id: UserId,
+  name: z.string(),
+  avatarUrl: z.string().optional(),
+});
+export type NotificationActor = z.infer<typeof NotificationActor>;
+
 export const Notification = z.object({
   id: NotificationId,
   category: NotificationCategory,
   event: z.string(),
   title: z.string(),
   body: z.string(),
+  subject: NotificationSubject.optional(),
+  actor: NotificationActor.optional(),
+  /** The event's own facts, parsed per event by `notificationData`: an event
+   * this client does not know keeps its object unread. */
+  data: z.record(z.string(), z.unknown()).optional(),
   link: z.string().optional(),
   imageUrl: z.string().optional(),
   actions: z.array(NotificationAction).default([]),

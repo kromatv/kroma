@@ -140,6 +140,9 @@ pub fn build_request(
     }
 
     let mut payload = json!({ "aps": aps, "id": alert.id });
+    if let Some((kind, id)) = alert.subject {
+        payload["subject"] = json!({ "kind": kind, "id": id });
+    }
     if let Some(link) = alert.link {
         payload["link"] = json!(link);
     }
@@ -255,6 +258,7 @@ mod tests {
             id: "n1",
             title: "Ready to watch",
             body: "Dune is now in your library.",
+            subject: Some(("movie", "ab12")),
             link: Some("/movie/ab12"),
             image_url: Some("https://img/p.jpg"),
             category: Some("media_available"),

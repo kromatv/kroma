@@ -44,6 +44,24 @@ describe('notificationLink', () => {
     expect(moved('/person/zendaya')).toBe('/people/zendaya');
   });
 
+  it('opens what the row is about rather than the link beside it', () => {
+    const one = at({
+      subject: { kind: 'show', id: 'shw' },
+      link: '/requests',
+    } as Partial<Notification>);
+
+    expect(notificationLink(one)).toBe('/shows/shw');
+  });
+
+  it('keeps the link for a subject kind this client has no screen for', () => {
+    const one = at({
+      subject: { kind: 'tv.kroma.torrents/torrent', id: 'abc' },
+      link: '/downloads',
+    } as Partial<Notification>);
+
+    expect(notificationLink(one)).toBe('/downloads');
+  });
+
   it('sends the request queue to the monitoring tab it became', () => {
     const one = at({ link: '/admin/requests' });
 

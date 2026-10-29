@@ -95,21 +95,9 @@ pub async fn catalogue(AuthUser(user): AuthUser) -> Result<Response, Response> {
 // list by it.
 fn preview(event: NotificationEvent, admin: &str, locale: &str) -> Notification {
     let spec = sample(event, admin);
-    let stored = StoredNotification {
-        id: event.as_str().to_string(),
-        category: spec.category(),
-        event: spec.event,
-        title_key: spec.title_key.clone(),
-        body_key: spec.body_key.clone(),
-        params: spec.params.clone(),
-        link: spec.link.clone(),
-        image_url: spec.image_url.clone(),
-        actions: spec.actions.clone(),
-        push_category: spec.push_category,
-        read: false,
-        created_at: 0,
-    };
-    kroma_engine::services::notify::render::render(&stored, locale)
+    let stored = StoredNotification::from_spec(event.as_str(), &spec, 0);
+    let subjects = kroma_engine::services::notify::subject::Subjects::default();
+    kroma_engine::services::notify::render::render(&stored, locale, &subjects)
 }
 
 #[derive(Debug, Deserialize)]

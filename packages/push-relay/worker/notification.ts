@@ -3,7 +3,7 @@
 
 import type { Notification } from './schemas';
 
-export type { Action, Notification, Urgency } from './schemas';
+export type { Action, Notification, Subject, Urgency } from './schemas';
 
 /** The Apple payload. `mutable-content` lets a Notification Service Extension
  * attach `imageUrl`; harmless when the app ships no extension. */
@@ -17,6 +17,7 @@ export function apnsPayload(n: Notification): Record<string, unknown> {
   if (n.threadId) aps['thread-id'] = n.threadId;
 
   const payload: Record<string, unknown> = { aps, id: n.id };
+  if (n.subject) payload.subject = n.subject;
   if (n.link) payload.link = n.link;
   if (n.imageUrl) payload.imageUrl = n.imageUrl;
   if (n.actions.length) payload.actions = n.actions;
@@ -30,6 +31,7 @@ export function fcmMessage(n: Notification, deviceToken: string): Record<string,
   // `data` is the only part that survives both the foreground and background
   // delivery paths, so everything the app needs on tap rides there.
   const data: Record<string, unknown> = { id: n.id };
+  if (n.subject) data.subject = JSON.stringify(n.subject);
   if (n.link) data.link = n.link;
   if (n.category) data.category = n.category;
   if (n.actions.length) {

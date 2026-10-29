@@ -355,6 +355,40 @@ async fn resolving_a_show_report_deep_links_the_reporter_to_the_show() {
     let row = &inbox["notifications"][0];
     assert_eq!(row["event"], json!("report.resolved"));
     assert_eq!(row["link"], json!(format!("/shows/{show}")));
+    assert_eq!(row["subject"], json!({ "kind": "show", "id": show }));
+    assert_eq!(row["actor"]["name"], json!("owner"));
+}
+
+#[tokio::test]
+async fn dismissing_an_episode_report_is_about_that_episode() {
+    let t = test_app();
+    let m = member(&t, "episodeflag");
+    let episode = demo_item_id("Islands");
+    let (_, created) = send(
+        &t.app,
+        "POST",
+        "/api/reports",
+        Some(&m),
+        Some(json!({ "subjectKind": "episode", "subjectId": episode, "category": "video" })),
+    )
+    .await;
+    let id = created["id"].as_str().unwrap().to_string();
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{id}/dismiss"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&m)).await;
+    let row = &inbox["notifications"][0];
+    assert_eq!(row["event"], json!("report.dismissed"));
+    assert_eq!(row["subject"], json!({ "kind": "episode", "id": episode }));
+    assert_eq!(row["link"], json!(format!("/movies/{episode}")));
 }
 
 #[tokio::test]

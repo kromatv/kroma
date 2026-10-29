@@ -10,8 +10,8 @@ use kroma_db::notifications::AddedTitle;
 use kroma_module_host::HostStorage;
 
 use kroma_domain::{
-    ActionKind, ActionSpec, ActionStyle, Audience, NotificationEvent, NotificationSpec,
-    PushCategory,
+    ActionKind, ActionSpec, ActionStyle, Audience, MediaAddedData, MediaEpisodeData,
+    NotificationEvent, NotificationSpec, NotificationSubject, PushCategory,
 };
 
 use crate::db;
@@ -108,6 +108,11 @@ fn announce_movies<S: HostStorage>(state: &S, movies: &[AddedTitle]) -> usize {
             "notifications.media.addedOne.body",
         )
         .param("title", newest.title.clone())
+        .subject(NotificationSubject::movie(&newest.id))
+        .data(&MediaAddedData {
+            count: 1,
+            item_id: Some(newest.id.clone()),
+        })
         .link(format!("/movies/{}", newest.id))
         .image(newest.poster_url.clone())
         .push_category(PushCategory::MediaAvailable)
@@ -129,6 +134,10 @@ fn announce_movies<S: HostStorage>(state: &S, movies: &[AddedTitle]) -> usize {
         // Name the newest anyway: "12 new titles" is a lot less enticing than
         // knowing one of them is the film you have been waiting for.
         .param("title", newest.title.clone())
+        .data(&MediaAddedData {
+            count: movies.len() as u32,
+            item_id: None,
+        })
         .image(newest.poster_url.clone())
         .link("/movies")
     };
@@ -147,6 +156,7 @@ fn announce_episodes<S: HostStorage>(state: &S, show_id: &str, eps: &[AddedTitle
     // "S01E04" for a single episode, "4 new episodes" for a batch a season drop
     // should read as one arrival, not four. Only the body key and its one var
     // differ; title key, link, push category and audience are the same either way.
+    let single = eps.len() == 1;
     let (body_key, (var, value)) = match (eps.len(), newest.season, newest.episode) {
         (1, Some(s), Some(e)) => (
             "notifications.media.episode.body",
@@ -164,6 +174,13 @@ fn announce_episodes<S: HostStorage>(state: &S, show_id: &str, eps: &[AddedTitle
     )
     .param("title", show_title)
     .param(var, value)
+    .subject(NotificationSubject::show(show_id))
+    .data(&MediaEpisodeData {
+        show_id: show_id.to_string(),
+        count: eps.len() as u32,
+        season: single.then_some(newest.season).flatten(),
+        episode: single.then_some(newest.episode).flatten(),
+    })
     .link(format!("/shows/{show_id}"))
     .image(newest.poster_url.clone())
     .push_category(PushCategory::MediaAvailable);
@@ -173,6 +190,8 @@ fn announce_episodes<S: HostStorage>(state: &S, show_id: &str, eps: &[AddedTitle
 #[cfg(test)]
 mod tests {
     use kroma_module_host::HostCtx;
+
+    use serde_json::json;
 
     use super::*;
     use crate::test_support;
@@ -274,6 +293,42 @@ mod tests {
         );
         // A lone arrival is worth a Watch button.
         assert_eq!(rows[0].actions.len(), 1);
+    }
+
+    #[test]
+    fn a_lone_arrival_is_about_the_title_and_a_batch_is_about_the_list() {
+        let (state, user) = seeded();
+        add_movie(&state, "m1", "Dune", "2026-01-01T00:00:00Z");
+        run(&state).unwrap();
+        add_movie(&state, "m2", "Arrival", "2026-01-03T00:00:00Z");
+        run(&state).unwrap();
+        add_movie(&state, "m3", "Sicario", "2026-01-04T00:00:00Z");
+        add_movie(&state, "m4", "Prisoners", "2026-01-05T00:00:00Z");
+        run(&state).unwrap();
+
+        let conn = state.db.get().unwrap();
+        let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
+        assert_eq!(rows[1].subject, Some(NotificationSubject::movie("m2")));
+        assert_eq!(rows[1].data, Some(json!({ "count": 1, "itemId": "m2" })));
+        assert_eq!(rows[0].subject, None);
+        assert_eq!(rows[0].data, Some(json!({ "count": 2 })));
+    }
+
+    #[test]
+    fn an_episode_announcement_is_about_the_show_it_belongs_to() {
+        let (state, user) = seeded();
+        add_show(&state, "shw", "Severance", &user);
+        adopt(&state);
+        add_episode(&state, "e1", "shw", 1, 4, "2026-02-01T00:00:00Z");
+        run(&state).unwrap();
+
+        let conn = state.db.get().unwrap();
+        let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
+        assert_eq!(rows[0].subject, Some(NotificationSubject::show("shw")));
+        assert_eq!(
+            rows[0].data,
+            Some(json!({ "showId": "shw", "count": 1, "season": 1, "episode": 4 }))
+        );
     }
 
     #[test]

@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::push::PushCategory;
 
-use super::{NotificationAction, NotificationCategory, NotificationEvent};
+use super::{
+    NotificationAction, NotificationActor, NotificationCategory, NotificationEvent,
+    NotificationSubject,
+};
 
 /// One notification as a client sees it: fully rendered in the reader's locale.
 #[derive(Debug, Clone, Serialize)]
@@ -15,6 +18,12 @@ pub struct Notification {
     pub event: NotificationEvent,
     pub title: String,
     pub body: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject: Option<NotificationSubject>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor: Option<NotificationActor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
