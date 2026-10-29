@@ -66,6 +66,8 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
           onOutline={(next) => setLive({ outline: next })}
           onEditor={(next) => patch({ editor: next })}
           onClose={() => patch({ open: false })}
+          canReset={keys || outline !== 'off' || locale !== null}
+          onReset={() => setLive({ keys: false, outline: 'off', locale: null })}
           keysKey={letterOf(KEYS_CODE)}
           outlineKey={letterOf(OUTLINE_CODE)}
           panelKey={letterOf(PANEL_CODE)}

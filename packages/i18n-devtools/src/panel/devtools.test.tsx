@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { liveState, setLive } from '../live';
 import { readSession, writeSession } from '../session';
@@ -13,11 +13,23 @@ function press(code: string): void {
 }
 
 afterEach(() => {
+  cleanup();
   sessionStorage.clear();
   setLive({ keys: false, outline: 'off', locale: null });
 });
 
 describe('the dev tools', () => {
+  it('resets page inspection and language overrides while keeping the panel and editor preference', () => {
+    writeSession({ open: true, editor: 'code' });
+    setLive({ keys: true, outline: 'all', locale: 'fr' });
+    render(<Devtools host={document.createElement('div')} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+
+    expect(liveState()).toEqual({ keys: false, outline: 'off', locale: null });
+    expect(readSession()).toMatchObject({ open: true, editor: 'code' });
+  });
+
   it('keeps the corner a drag stored, which it does not own, when the panel opens', () => {
     render(<Devtools host={document.createElement('div')} />);
     writeSession({ x: 40, y: 60 });

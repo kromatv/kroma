@@ -60,13 +60,46 @@ describe('whether this machine can run a command', () => {
 });
 
 describe('what an editor is called and held on to as', () => {
+  it.each([
+    ['idea', 'IntelliJ IDEA'],
+    ['idea64.exe', 'IntelliJ IDEA'],
+    ['Code.exe', 'Visual Studio Code'],
+    ['code-insiders', 'Visual Studio Code Insiders'],
+    ['Code - Insiders.exe', 'Visual Studio Code Insiders'],
+    ['codium', 'VSCodium'],
+    ['VSCodium.exe', 'VSCodium'],
+    ['subl', 'Sublime Text'],
+    ['sublime_text.exe', 'Sublime Text'],
+    ['phpstorm64.exe', 'PhpStorm'],
+    ['pycharm.sh', 'PyCharm'],
+    ['rubymine', 'RubyMine'],
+    ['webstorm64.exe', 'WebStorm'],
+    ['goland', 'GoLand'],
+    ['rider64.exe', 'Rider'],
+    ['clion64.exe', 'CLion'],
+    ['appcode', 'AppCode'],
+    ['cursor', 'Cursor'],
+    ['trae', 'Trae'],
+    ['antigravity', 'Antigravity'],
+    ['zed', 'Zed'],
+    ['atom', 'Atom'],
+    ['brackets', 'Brackets'],
+    ['emacs', 'Emacs'],
+    ['gvim', 'GVim'],
+    ['mvim', 'MacVim'],
+    ['notepad++.exe', 'Notepad++'],
+    ['unknown-editor', 'unknown-editor'],
+  ])('names %s as %s', (command, label) => {
+    expect(nameOf(command)).toBe(label);
+  });
+
   it('is named after the application, where it installs as one', () => {
     expect(nameOf('/Applications/Zed.app/Contents/MacOS/zed')).toBe('Zed');
   });
 
   it('is named after the command, where that is how it installs', () => {
-    expect(nameOf('vim')).toBe('vim');
-    expect(nameOf('Code.exe')).toBe('Code');
+    expect(nameOf('vim')).toBe('Vim');
+    expect(nameOf('Code.exe')).toBe('Visual Studio Code');
   });
 
   it('is held on to as a command, never as a path on this machine', () => {
@@ -92,15 +125,15 @@ describe('the editors this machine has', () => {
   });
 
   it('finds a terminal editor on macOS as readily as on Linux', () => {
-    expect(installedEditors(machine(['/usr/bin/vim']))).toEqual([{ id: 'vim', name: 'vim' }]);
+    expect(installedEditors(machine(['/usr/bin/vim']))).toEqual([{ id: 'vim', name: 'Vim' }]);
     expect(installedEditors(machine(['/usr/bin/vim'], 'linux'))).toEqual([
-      { id: 'vim', name: 'vim' },
+      { id: 'vim', name: 'Vim' },
     ]);
   });
 
   it('finds an executable on the path on Windows', () => {
     expect(installedEditors(machine(['/usr/bin/Code.exe'], 'win32'))).toEqual([
-      { id: 'Code', name: 'Code' },
+      { id: 'Code', name: 'Visual Studio Code' },
     ]);
   });
 
@@ -189,7 +222,7 @@ describe('asking the machine this is actually running on', () => {
     const at = machine(['/usr/bin/zed', '/usr/bin/vim', '/usr/bin/code']);
 
     expect(installedEditors(at).map((editor) => editor.name)).toEqual([
-      'vim',
+      'Vim',
       'Visual Studio Code',
       'Zed',
     ]);
