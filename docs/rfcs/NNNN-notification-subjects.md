@@ -159,6 +159,11 @@ failure group. The module host API gains the same call.
 | `interacted` | The user presses one of its actions | Admin statistics, later |
 | `archived` | The user dismisses it ("Done") | Leaves the default list, replaces delete |
 
+The badge counts **unseen** rows: opening the panel clears it, whether or not each row is
+then opened, and a row still shows read or unread on its own. Counting unread (GitHub, and
+KROMA today) was the alternative; it keeps a number on the bell until every row has been
+opened one by one, which on a household server is a number nobody ever clears.
+
 Retention keeps 200 rows per user and prunes archived rows first, then the oldest read
 ones. An unread row is never pruned for being old.
 
@@ -253,10 +258,11 @@ The spec chapter is #431.
 
 ## Unresolved
 
-- The badge: counting unseen (Facebook) clears it when the panel opens; counting unread
-  (GitHub, and KROMA today) keeps it until each row is opened. This RFC proposes unseen; the
-  maintainer decides in review.
+Three points are left open, each with the value it ships with unless the maintainer says
+otherwise in review. The spec chapter carries them as DRAFT requirements.
+
 - The push throttle window for a folded group. One hour is a starting point.
 - Whether a resolved row should also withdraw its push from the lock screen. APNs and FCM can
-  replace a banner with a silent update, which costs a second push per resolve.
-- Which subject kinds the TV client routes. It shows no inbox today.
+  replace a banner with a silent update, which costs a second push per resolve. Until it is
+  decided, a resolve leaves a banner already delivered alone.
+- Which subject kinds the TV client routes. It shows no inbox today, so it routes none.
