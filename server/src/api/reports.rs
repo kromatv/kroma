@@ -15,7 +15,8 @@ use crate::db;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
 use crate::model::{
-    Audience, CreateReportBody, Kind, MediaItem, NotificationEvent, NotificationSpec, Permission,
+    Audience, CreateReportBody, Kind, MediaItem, NotificationEvent, NotificationSpec,
+    NotificationSubject, Permission,
     ReportSubjectKind, User,
 };
 use crate::services::auth::random_token;
@@ -120,6 +121,14 @@ pub async fn create(
             )
             .param("title", report.subject_title.clone())
             .param("user", user.username.clone())
+            .subject(NotificationSubject::report(&report.id))
+            .actor(&user.id)
+            .data(&crate::model::ReportEventData {
+                report_id: report.id.clone(),
+                subject_kind: report.subject_kind,
+                subject_id: report.subject_id.clone(),
+                status: report.status,
+            })
             .link("/admin/reports");
             let bg = state.clone();
             // `emit` resolves the audience and writes rows: blocking work.

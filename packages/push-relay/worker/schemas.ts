@@ -18,6 +18,14 @@ export const Action = z.object({
 });
 export type Action = z.infer<typeof Action>;
 
+/** What the notification is about. The app routes a tap from it, falling back
+ * to `link` for a kind it has no screen for. */
+export const Subject = z.object({
+  kind: z.string().min(1).max(128),
+  id: z.string().min(1).max(128),
+});
+export type Subject = z.infer<typeof Subject>;
+
 /**
  * What a server may ask the relay to deliver: structure, not a finished Apple or
  * Google payload. The topic, push type, priority and collapse key are the
@@ -28,6 +36,7 @@ export const Notification = z.object({
   id: z.string().min(1).max(128),
   title: z.string().min(1).max(256),
   body: z.string().max(1024).default(''),
+  subject: Subject.optional(),
   link: z.string().max(1024).optional(),
   imageUrl: z.string().max(2048).optional(),
   category: z.string().max(64).optional(),

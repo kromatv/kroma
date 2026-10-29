@@ -135,6 +135,10 @@ fn moderators_can_decide_from_the_notification_itself() {
     assert_eq!(spec.event, NotificationEvent::RequestSubmitted);
     assert_eq!(param(&spec.params, "user").as_deref(), Some("alice"));
     assert_eq!(spec.link.as_deref(), Some("/admin/requests/req-7"));
+    assert_eq!(
+        spec.subject,
+        Some(crate::model::NotificationSubject::request("req-7"))
+    );
     assert_eq!(spec.push_category, Some(PushCategory::RequestReview));
 
     let ids: Vec<&str> = spec.actions.iter().map(|a| a.id.as_str()).collect();
@@ -165,4 +169,54 @@ fn a_notification_links_to_the_title_once_it_is_in_the_library() {
     );
     seed_show(&host, "show-9", 42, &[]);
     assert_eq!(request_link(&host, &show), "/shows/show-9");
+}
+
+#[test]
+fn a_moderators_row_names_the_request_and_the_account_that_filed_it() {
+    let host = test_host();
+    let mut pending = req(RequestKind::Show, RequestStatus::Pending);
+    pending.id = "req-7".into();
+    let requester = user("alice", vec![Permission::Playback]);
+
+    notify_moderators(&host, &pending, &requester);
+
+    let spec = &host.notifications()[0].1;
+    assert_eq!(spec.actor_id.as_deref(), Some(requester.id.as_str()));
+    assert_eq!(
+        spec.data,
+        Some(serde_json::json!({
+            "requestId": "req-7",
+            "kind": "show",
+            "tmdbId": 42,
+            "status": "pending",
+        }))
+    );
+}
+
+#[test]
+fn a_requesters_row_names_the_request_and_the_moderator_who_decided_it() {
+    let host = test_host();
+    let mut denied = req_by(RequestKind::Movie, RequestStatus::Denied, "u1");
+    denied.id = "req-7".into();
+    denied.reviewed_by = Some("mod-1".into());
+
+    notify_requester(&host, &denied, RequestStatus::Denied, "/requests");
+
+    let spec = &host.notifications()[0].1;
+    assert_eq!(
+        spec.subject,
+        Some(crate::model::NotificationSubject::request("req-7"))
+    );
+    assert_eq!(spec.actor_id.as_deref(), Some("mod-1"));
+    assert_eq!(spec.data.as_ref().unwrap()["status"], "denied");
+}
+
+#[test]
+fn an_arrival_the_server_reached_on_its_own_names_no_actor() {
+    let host = test_host();
+    let arrived = req_by(RequestKind::Movie, RequestStatus::Available, "u1");
+
+    notify_requester(&host, &arrived, RequestStatus::Available, "/requests");
+
+    assert_eq!(host.notifications()[0].1.actor_id, None);
 }

@@ -9,7 +9,9 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{get, seed_session, send, test_app, TestApp};
-use crate::model::{Audience, NotificationEvent, NotificationSpec, Permission};
+use crate::model::{
+    Audience, NotificationEvent, NotificationSpec, NotificationSubject, Permission,
+};
 
 fn member(t: &TestApp, tag: &str) -> (String, String) {
     let (id, token) = seed_session(
@@ -74,6 +76,47 @@ async fn the_inbox_returns_rendered_rows_with_image_link_and_actions() {
         .as_str()
         .unwrap()
         .starts_with("notifications."));
+}
+
+#[tokio::test]
+async fn a_row_carries_what_it_is_about_and_who_caused_it() {
+    let t = test_app();
+    let (ana_id, ana) = member(&t, "ana");
+    let (bo_id, _) = member(&t, "bo");
+    let spec = NotificationSpec::new(
+        NotificationEvent::MediaAdded,
+        "notifications.media.added.title",
+        "notifications.media.addedOne.body",
+    )
+    .param("title", "Dune")
+    .subject(NotificationSubject::movie("item-9"))
+    .actor(&bo_id)
+    .data(&serde_json::json!({ "count": 1, "itemId": "item-9" }));
+    crate::services::notify::emit(&t.state, &Audience::user(&ana_id), &spec);
+
+    let (_, body) = get(&t.app, "/api/notifications", Some(&ana)).await;
+
+    let row = &body["notifications"][0];
+    assert_eq!(row["subject"], json!({ "kind": "movie", "id": "item-9" }));
+    assert_eq!(row["actor"]["id"], json!(bo_id));
+    assert_eq!(row["actor"]["name"], json!("bo"));
+    assert_eq!(row["data"], json!({ "count": 1, "itemId": "item-9" }));
+    assert_eq!(row["link"], json!("/movies/item-9"));
+}
+
+#[tokio::test]
+async fn a_row_written_before_subjects_existed_renders_exactly_as_it_did() {
+    let t = test_app();
+    let (ana_id, ana) = member(&t, "ana");
+    notify_user(&t, &ana_id, "Dune");
+
+    let (_, body) = get(&t.app, "/api/notifications", Some(&ana)).await;
+
+    let row = &body["notifications"][0];
+    assert_eq!(row["link"], json!("/movie/ab12"));
+    assert_eq!(row["subject"], json!(null));
+    assert_eq!(row["actor"], json!(null));
+    assert_eq!(row["data"], json!(null));
 }
 
 #[tokio::test]

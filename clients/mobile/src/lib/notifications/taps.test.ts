@@ -54,6 +54,14 @@ describe('pushData', () => {
     expect(d.actions[0]).toEqual({ id: 'a', href: '/api/x', method: 'POST' });
   });
 
+  it('reads the subject off both wrappings', () => {
+    const subject = { kind: 'movie', id: 'ab12' };
+
+    expect(pushData(notification({ subject })).subject).toEqual(subject);
+    expect(pushData(notification({ subject: JSON.stringify(subject) })).subject).toEqual(subject);
+    expect(pushData(notification({ subject: 'not json' })).subject).toBeUndefined();
+  });
+
   it('reads a notification that carries no payload at all', () => {
     const d = pushData(notification(undefined));
     expect(d.actions).toEqual([]);
@@ -109,6 +117,17 @@ describe('handleTap', () => {
     const client = { notifications: { runAction: vi.fn() } };
     const route = await handleTap(response({ link: '/admin/reports' }, 'default'), client as never);
     expect(route).toBeNull();
+  });
+
+  it('opens what the push is about rather than where it says it points', async () => {
+    const client = { notifications: { runAction: vi.fn() } };
+
+    const route = await handleTap(
+      response({ subject: { kind: 'show', id: 'shw' }, link: '/requests' }, 'default'),
+      client as never,
+    );
+
+    expect(route).toBe('/show/shw');
   });
 
   it('ignores an action id the payload does not describe', async () => {

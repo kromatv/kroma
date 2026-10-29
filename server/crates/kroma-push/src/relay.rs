@@ -34,6 +34,9 @@ pub fn build_request(grant: &str, alert: &Alert<'_>, urgency: Urgency) -> Result
         "body": alert.body,
         "urgency": urgency.as_str(),
     });
+    if let Some((kind, id)) = alert.subject {
+        notification["subject"] = json!({ "kind": kind, "id": id });
+    }
     if let Some(link) = alert.link {
         notification["link"] = json!(link);
     }
@@ -88,6 +91,7 @@ mod tests {
             id: "n1",
             title: "Ready to watch",
             body: "Dune is now in your library.",
+            subject: Some(("movie", "ab12")),
             link: Some("/movie/ab12"),
             image_url: Some("https://img/p.jpg"),
             category: Some("media_available"),
@@ -136,6 +140,7 @@ mod tests {
             id: "n1",
             title: "Hello",
             body: "",
+            subject: None,
             link: None,
             image_url: None,
             category: None,

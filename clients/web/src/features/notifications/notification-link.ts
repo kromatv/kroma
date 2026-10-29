@@ -1,4 +1,5 @@
 import type { Notification } from '@kromatv/client/notifications';
+import { subjectRoute } from '#web/features/notifications/subject-route';
 
 // A link this server minted before the catalogue routes were renamed. The link
 // is PERSISTED with the notification, so a row written by an older build - or by
@@ -28,11 +29,14 @@ function current(link: string): string {
   return moved ? [moved, ...rest].join('/') : link;
 }
 
-/** Where a notification points: its own `link`, else its first `link`-kind
- * action. An `api` action (Approve, Deny) has no destination and is
- * deliberately not offered, since its notification links to the queue where
- * the decision belongs. */
+/** Where a notification points: the screen for its subject, else its own
+ * `link`, else its first `link`-kind action. An `api` action (Approve, Deny)
+ * has no destination and is deliberately not offered, since its notification
+ * links to the queue where the decision belongs. */
 export function notificationLink(notification: Notification): string | undefined {
+  const fromSubject =
+    notification.subject && subjectRoute(notification.subject, notification.event);
+  if (fromSubject) return fromSubject;
   const link = notification.link ?? notification.actions.find((a) => a.kind === 'link')?.href;
   return link === undefined ? undefined : current(link);
 }

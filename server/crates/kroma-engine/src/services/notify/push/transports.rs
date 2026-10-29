@@ -163,6 +163,10 @@ fn alert<'a>(out: &'a Outgoing<'a>) -> kroma_push::Alert<'a> {
         id: &n.id,
         title: &n.title,
         body: &n.body,
+        subject: n
+            .subject
+            .as_ref()
+            .map(|s| (s.kind.as_str(), s.id.as_str())),
         link: n.link.as_deref(),
         image_url: out.native_image.as_deref(),
         category: push_category(n),
@@ -221,6 +225,9 @@ mod tests {
             event: NotificationEvent::RequestAvailable,
             title: "Ready to watch".into(),
             body: "Dune is now in your library.".into(),
+            subject: None,
+            actor: None,
+            data: None,
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: Vec::new(),

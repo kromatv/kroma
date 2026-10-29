@@ -7,6 +7,9 @@ pub(super) fn notification(category: NotificationCategory) -> Notification {
         event: NotificationEvent::RequestAvailable,
         title: "Ready to watch".into(),
         body: "Dune is now in your library.".into(),
+        subject: None,
+        actor: None,
+        data: None,
         link: Some("/movie/ab12".into()),
         image_url: Some("https://img/p.jpg".into()),
         actions: vec![NotificationAction {

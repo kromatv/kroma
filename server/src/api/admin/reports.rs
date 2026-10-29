@@ -18,7 +18,8 @@ use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::model::{
-    Audience, NotificationEvent, NotificationSpec, Permission, Report, ReportCategory,
+    Audience, NotificationEvent, NotificationSpec, NotificationSubject, Permission, Report,
+    ReportCategory,
     ReportCounts, ReportStatus, ReportSubjectKind, ReportsView, User,
 };
 use crate::services::jobs::now_ms;
@@ -154,13 +155,23 @@ async fn notify_reporter(state: &SharedState, report: &Report) {
     let Some(reporter) = report.reported_by.clone() else {
         return;
     };
-    let spec = NotificationSpec::new(
+    let mut spec = NotificationSpec::new(
         event,
         &format!("notifications.report.{key}.title"),
         &format!("notifications.report.{key}.body"),
     )
     .param("title", report.subject_title.clone())
+    .subject(media_subject(report))
+    .data(&crate::model::ReportEventData {
+        report_id: report.id.clone(),
+        subject_kind: report.subject_kind,
+        subject_id: report.subject_id.clone(),
+        status: report.status,
+    })
     .link(format!("/{}/{}", subject_route(report), report.subject_id));
+    if let Some(moderator) = report.resolved_by.as_deref() {
+        spec = spec.actor(moderator);
+    }
     let state = state.clone();
     // `emit` resolves the audience and writes rows: blocking work, so it must
     // not run inline on the async runtime.
@@ -169,6 +180,14 @@ async fn notify_reporter(state: &SharedState, report: &Report) {
         Ok(())
     })
     .await;
+}
+
+fn media_subject(report: &Report) -> NotificationSubject {
+    match report.subject_kind {
+        ReportSubjectKind::Show => NotificationSubject::show(&report.subject_id),
+        ReportSubjectKind::Episode => NotificationSubject::episode(&report.subject_id),
+        ReportSubjectKind::Movie => NotificationSubject::movie(&report.subject_id),
+    }
 }
 
 fn subject_route(report: &Report) -> &'static str {
