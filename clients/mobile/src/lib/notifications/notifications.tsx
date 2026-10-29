@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { useClient, useSession } from '#mobile/lib/session';
 
 export type { Notification } from '@kromatv/client/notifications';
-export { mobileRoute } from './route';
+export { mobileRoute, subjectRoute } from './route';
 
 /** Opens the stream while signed in. Mount once, near the root. */
 export function useNotificationStream(): void {

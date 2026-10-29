@@ -5,7 +5,8 @@ use crate::testing::TempPool;
 use crate::Pool;
 
 use kroma_domain::{
-    ActionKind, ActionSpec, ActionStyle, NotificationEvent, ParamValue, PushCategory,
+    ActionKind, ActionSpec, ActionStyle, NotificationEvent, NotificationSubject, ParamValue,
+    PushCategory,
 };
 
 // Real accounts: notifications.user_id FKs users (and cascades).
@@ -28,6 +29,9 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
         title_key: "notifications.request.approved.title".into(),
         body_key: "notifications.request.approved.body".into(),
         params: BTreeMap::from([("title".to_string(), ParamValue::Text("Dune".into()))]),
+        subject: Some(NotificationSubject::request("req-1")),
+        actor_id: Some("mod-1".into()),
+        data: Some(serde_json::json!({ "requestId": "req-1" })),
         link: Some("/movie/ab12".into()),
         image_url: Some("https://img/p.jpg".into()),
         actions: vec![ActionSpec {

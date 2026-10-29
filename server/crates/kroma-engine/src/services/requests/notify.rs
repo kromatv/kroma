@@ -5,7 +5,8 @@ use kroma_module_host::{Event, HostStorage};
 use crate::db;
 use crate::model::{
     ActionKind, ActionSpec, ActionStyle, Audience, MediaRequest, NotificationEvent,
-    NotificationSpec, Permission, PushCategory, RequestKind, RequestStatus, User,
+    NotificationSpec, NotificationSubject, Permission, PushCategory, RequestEventData,
+    RequestKind, RequestStatus, User,
 };
 
 #[cfg(test)]
@@ -53,8 +54,13 @@ pub(super) fn notify_requester<S: HostStorage>(
         &format!("notifications.request.{key}.body"),
     )
     .param("title", req.title.clone())
+    .subject(NotificationSubject::request(&req.id))
+    .data(&facts(req, status))
     .image(req.poster_url.clone())
     .link(link);
+    if let Some(reviewer) = req.reviewed_by.as_deref() {
+        spec = spec.actor(reviewer);
+    }
     if let Some(note) = req
         .note
         .as_deref()
@@ -85,6 +91,9 @@ pub(super) fn notify_moderators<S: HostStorage>(state: &S, req: &MediaRequest, r
     )
     .param("title", req.title.clone())
     .param("user", requester.username.clone())
+    .subject(NotificationSubject::request(&req.id))
+    .actor(&requester.id)
+    .data(&facts(req, req.status))
     .image(req.poster_url.clone())
     .link(format!("/admin/requests/{}", req.id))
     .push_category(PushCategory::RequestReview)
@@ -105,6 +114,15 @@ pub(super) fn notify_moderators<S: HostStorage>(state: &S, req: &MediaRequest, r
         style: ActionStyle::Danger,
     });
     state.notify(&Audience::permission(Permission::RequestsManage), &spec);
+}
+
+fn facts(req: &MediaRequest, status: RequestStatus) -> RequestEventData {
+    RequestEventData {
+        request_id: req.id.clone(),
+        kind: req.kind,
+        tmdb_id: req.tmdb_id,
+        status,
+    }
 }
 
 pub(super) fn request_link<S: HostStorage>(state: &S, req: &MediaRequest) -> String {

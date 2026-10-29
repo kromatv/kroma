@@ -52,7 +52,7 @@ one takes, so each person's preferences still decide whether it reaches them
 
 ## What a row shows, and where it leads
 
-Status: **SHIPPED** in part; each requirement carries its own.
+Status: **SHIPPED**
 
 **ACCT-42** (SHIPPED) - A row says what happened in the reader's own language, names the
 title, show or job it is about, and carries that title's artwork where there is one. The
@@ -66,17 +66,17 @@ row with nowhere to go offers nothing rather than a link that fails.
 opening a title, and pressing one does that from the inbox without a detour through the
 screen that owns it.
 
-**ACCT-45** (AGREED) - A row records **what it is about** (a request, a title, an episode, a
+**ACCT-45** (SHIPPED) - A row records **what it is about** (a request, a title, an episode, a
 job, a report, a download) and **who caused it**, and each client decides from that which of
 its own screens to open. A client with no screen for that kind shows the row as a message
 rather than leading nowhere.
 
-**ACCT-46** (AGREED) - A destination is never frozen into a stored row. Renaming a screen
+**ACCT-46** (SHIPPED) - A destination is never frozen into a stored row. Renaming a screen
 moves every row already sitting in an inbox, and a row whose subject only becomes reachable
 later, such as a film that reaches the catalogue after its request was answered, starts
 leading to it.
 
-**ACCT-47** (AGREED) - The person a row names is read when the row is read, so a renamed
+**ACCT-47** (SHIPPED) - The person a row names is read when the row is read, so a renamed
 account or a new avatar shows on rows written before the change.
 
 ## Repeats

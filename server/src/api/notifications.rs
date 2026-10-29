@@ -54,10 +54,12 @@ pub async fn list(
         let conn = pool.get()?;
         let stored = db::notifications::list_notifications(&conn, &uid, PAGE, false)?;
         let unread = db::notifications::unread_count(&conn, &uid)?;
+        let subjects =
+            notify::subject::Subjects::from(db::notifications::subject_facts(&conn, &stored)?);
         Ok(NotificationsView {
             notifications: stored
                 .iter()
-                .map(|s| notify::render::render(s, &locale))
+                .map(|s| notify::render::render(s, &locale, &subjects))
                 .collect(),
             unread,
         })

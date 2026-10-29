@@ -68,6 +68,32 @@ fn a_notification_returns_how_many_the_core_sent() {
 }
 
 #[test]
+fn a_module_names_its_own_subject_and_the_core_forwards_it() {
+    let sidecar = sidecar();
+    let spec: NotificationSpec = serde_json::from_value(serde_json::json!({
+        "event": "custom",
+        "titleKey": "a",
+        "bodyKey": "b",
+        "subject": { "kind": "tv.kroma.torrents/torrent", "id": "abc" },
+        "actorId": "u9",
+        "data": { "ratio": 1.5 },
+    }))
+    .expect("a spec");
+
+    sidecar.host.notify(&Audience::Everyone, &spec);
+
+    let calls = sidecar.core.to("/api/_host/notify");
+    assert!(
+        calls.iter().any(|call| {
+            call.body.contains("tv.kroma.torrents/torrent")
+                && call.body.contains("\"actorId\":\"u9\"")
+                && call.body.contains("ratio")
+        }),
+        "{calls:?}"
+    );
+}
+
+#[test]
 fn lookups_fall_through_to_the_core_answer() {
     let sidecar = sidecar();
 

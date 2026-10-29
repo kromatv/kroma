@@ -4,6 +4,26 @@
 // testable without an Expo runtime (`lib/session` pulls in native modules the
 // moment it is imported).
 
+import type { NotificationSubject } from '@kromatv/client/notifications';
+
+/**
+ * The screen for a notification's subject, or `null` when this app has none:
+ * the admin queues, a request and a report are web-only, so those rows fall
+ * back to {@link mobileRoute} and usually stay a message.
+ */
+export function subjectRoute(subject: NotificationSubject | undefined): string | null {
+  if (!subject?.id) return null;
+  switch (subject.kind) {
+    case 'movie':
+    case 'episode':
+      return `/item/${subject.id}`;
+    case 'show':
+      return `/show/${subject.id}`;
+    default:
+      return null;
+  }
+}
+
 /**
  * Translates a server link (written for the web app's routes) into this app's
  * route, or `null` when the phone has no matching screen; e.g. `/watch/:id`
