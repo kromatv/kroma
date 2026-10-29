@@ -49,17 +49,22 @@ pub fn probe_duration_ms(path: &Path) -> Option<u64> {
 /// parse falls back to a container-extension guess, because neither is the
 /// file's fault. A file ffprobe opened and refused comes back carrying its
 /// reason and no invented streams.
-pub fn probe_file(path: &Path, ffprobe_present: bool) -> ProbeResult {
+///
+/// `None` where ffprobe was killed before it answered: nothing was learned about
+/// the file, so the caller must leave it to a later pass rather than record a
+/// verdict that would stand for good.
+pub fn probe_file(path: &Path, ffprobe_present: bool) -> Option<ProbeResult> {
     if !ffprobe_present {
-        return fallback_from_extension(path);
+        return Some(fallback_from_extension(path));
     }
     match run_ffprobe(path) {
-        Outcome::Read(result) => *result,
-        Outcome::Unreadable(reason) => ProbeResult {
+        Outcome::Read(result) => Some(*result),
+        Outcome::Unreadable(reason) => Some(ProbeResult {
             unreadable: Some(reason),
             ..ProbeResult::default()
-        },
-        Outcome::NotProbed => fallback_from_extension(path),
+        }),
+        Outcome::NotProbed => Some(fallback_from_extension(path)),
+        Outcome::Killed => None,
     }
 }
 
@@ -67,6 +72,7 @@ enum Outcome {
     Read(Box<ProbeResult>),
     Unreadable(String),
     NotProbed,
+    Killed,
 }
 
 // Failures log at DEBUG, not WARN: every worker probing every file would flood
@@ -96,9 +102,16 @@ fn run_ffprobe(path: &Path) -> Outcome {
 }
 
 fn outcome_of(path: &Path, exit_code: Option<i32>, stdout: &[u8], stderr: &[u8]) -> Outcome {
-    if exit_code != Some(0) {
-        let reason = failure_reason(path, exit_code, stderr);
-        debug!(file = %path.display(), code = exit_code.unwrap_or(-1), %reason, "ffprobe refused the file");
+    // No code at all means a signal took the process, which on a box that is out
+    // of memory says nothing about the file. Recorded as a refusal it would null
+    // the title's streams and never be asked again.
+    let Some(code) = exit_code else {
+        debug!(file = %path.display(), "ffprobe was killed before it answered");
+        return Outcome::Killed;
+    };
+    if code != 0 {
+        let reason = failure_reason(path, stderr, code);
+        debug!(file = %path.display(), code, %reason, "ffprobe refused the file");
         return Outcome::Unreadable(reason);
     }
     match serde_json::from_slice(stdout) {
@@ -110,7 +123,7 @@ fn outcome_of(path: &Path, exit_code: Option<i32>, stdout: &[u8], stderr: &[u8])
     }
 }
 
-fn failure_reason(path: &Path, exit_code: Option<i32>, stderr: &[u8]) -> String {
+fn failure_reason(path: &Path, stderr: &[u8], exit_code: i32) -> String {
     let text = String::from_utf8_lossy(stderr);
     // The reason reaches clients, which are never told a file's absolute path.
     let prefix = format!("{}: ", path.display());
@@ -122,10 +135,7 @@ fn failure_reason(path: &Path, exit_code: Option<i32>, stderr: &[u8]) -> String 
         .map(|line| line.strip_prefix(prefix.as_str()).unwrap_or(line))
         .unwrap_or_default();
     if said.is_empty() {
-        return match exit_code {
-            Some(code) => format!("ffprobe exited with status {code}"),
-            None => "ffprobe was killed before it answered".to_string(),
-        };
+        return format!("ffprobe exited with status {exit_code}");
     }
     said.chars().take(REASON_CHARS).collect()
 }
@@ -168,6 +178,7 @@ mod tests {
             Outcome::Unreadable(reason) => reason,
             Outcome::Read(_) => panic!("a refusal must not read as a description"),
             Outcome::NotProbed => panic!("a refusal must not read as a missing probe"),
+            Outcome::Killed => panic!("a refusal must not read as a killed probe"),
         }
     }
 
@@ -199,10 +210,13 @@ mod tests {
             reason_of(outcome_of(path, Some(183), b"", b"  \n")),
             "ffprobe exited with status 183"
         );
-        assert_eq!(
-            reason_of(outcome_of(path, None, b"", b"")),
-            "ffprobe was killed before it answered"
-        );
+    }
+
+    #[test]
+    fn a_probe_a_signal_took_is_no_verdict_about_the_file() {
+        let outcome = outcome_of(Path::new("/media/x.mkv"), None, b"", b"");
+
+        assert!(matches!(outcome, Outcome::Killed));
     }
 
     #[test]
@@ -240,7 +254,7 @@ mod tests {
 
     #[test]
     fn without_ffprobe_the_container_extension_still_names_a_codec() {
-        let guessed = probe_file(Path::new("/media/x.webm"), false);
+        let guessed = probe_file(Path::new("/media/x.webm"), false).expect("a guess");
 
         assert_eq!(guessed.video.map(|v| v.codec), Some("vp9".to_string()));
         assert!(guessed.unreadable.is_none());
@@ -248,7 +262,7 @@ mod tests {
 
     #[test]
     fn a_container_nothing_recognises_guesses_nothing() {
-        let guessed = probe_file(Path::new("/media/x.bin"), false);
+        let guessed = probe_file(Path::new("/media/x.bin"), false).expect("a guess");
 
         assert_eq!(guessed.video.map(|v| v.codec), Some("unknown".to_string()));
     }
