@@ -121,12 +121,15 @@ Status: **SHIPPED** in part; each requirement carries its own.
 under day headings, and filters down to the unread ones. A reader can mark a row read, put it
 back to unread, or mark everything read at once.
 
-**ACCT-56** (SHIPPED) - The badge on the bell counts what the person has not dealt with, and
-every open screen agrees on the number within a moment of one of them changing it.
+**ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them
+changing it: reading a row on the phone drops the number in the browser.
 
 **ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel
 clears it, whether or not they then open each row. Each row still shows whether it was read,
 and the unread filter still works on that.
+
+Today the badge counts unread rows, so it stays lit until every row has been opened one by
+one. Unseen is the number a person can actually clear, which is what a badge is for.
 
 **ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row
 leaves the default list and stays findable.
@@ -153,7 +156,7 @@ Status: **SHIPPED**, with per-type choice **AGREED**.
 downloads, server), whether it reaches their inbox and whether it reaches their devices.
 Everything starts on, so a new category needs no visit to the settings to work.
 
-**ACCT-64** (SHIPPED) - A category switched off at the inbox writes no row at all. Muting is
+**ACCT-64** (SHIPPED) - A category whose inbox switch is off writes no row at all. Muting is
 not a filter over a pile that was kept anyway: what a person muted was never recorded against
 their account.
 

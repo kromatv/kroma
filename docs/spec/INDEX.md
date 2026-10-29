@@ -62,7 +62,7 @@
 - **ACCT-53** (AGREED) - A settled row is not deleted behind the reader's back. It stays where <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-54** (DRAFT) - Whether settling a row also takes back a banner already delivered to a <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-55** (SHIPPED) - The inbox opens from the bell on any screen, lists rows newest first <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-56** (SHIPPED) - The badge on the bell counts what the person has not dealt with, and <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go, <sub>[notifications.md](accounts/notifications.md)</sub>
@@ -70,7 +70,7 @@
 - **ACCT-61** (SHIPPED) - The inbox is on the web client and on the phone. The television has <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-62** (DRAFT) - Which kinds of subject a television would open, if it ever gains an <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports, <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-64** (SHIPPED) - A category switched off at the inbox writes no row at all. Muting is <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-64** (SHIPPED) - A category whose inbox switch is off writes no row at all. Muting is <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-65** (AGREED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-66** (SHIPPED) - A device asks to receive banners, and nothing is sent to a device that <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-67** (SHIPPED) - A banner that cannot be delivered costs the banner, never the <sub>[notifications.md](accounts/notifications.md)</sub>
