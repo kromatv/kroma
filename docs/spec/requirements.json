@@ -7,7 +7,7 @@
     "status": "SHIPPED",
     "text": "An **account** is a person. It has credentials, its own watch state,",
     "file": "docs/spec/accounts/README.md",
-    "line": 16
+    "line": 19
   },
   {
     "id": "ACCT-2",
@@ -17,7 +17,7 @@
     "status": "SHIPPED",
     "text": "The first account created at first-run is the **owner**, an account",
     "file": "docs/spec/accounts/README.md",
-    "line": 19
+    "line": 22
   },
   {
     "id": "ACCT-3",
@@ -27,7 +27,7 @@
     "status": "SHIPPED",
     "text": "Every subsequent account is an ordinary **user**, created by invitation",
     "file": "docs/spec/accounts/README.md",
-    "line": 22
+    "line": 25
   },
   {
     "id": "ACCT-4",
@@ -37,7 +37,7 @@
     "status": "SHIPPED",
     "text": "There are no profiles under an account, and there will not be. A person",
     "file": "docs/spec/accounts/README.md",
-    "line": 25
+    "line": 28
   },
   {
     "id": "ACCT-5",
@@ -47,7 +47,7 @@
     "status": "SHIPPED",
     "text": "A person proves who they are with a **username and password**. That is",
     "file": "docs/spec/accounts/README.md",
-    "line": 44
+    "line": 47
   },
   {
     "id": "ACCT-6",
@@ -57,7 +57,7 @@
     "status": "SHIPPED",
     "text": "A successful authentication mints a **session**: a long-lived,",
     "file": "docs/spec/accounts/README.md",
-    "line": 49
+    "line": 52
   },
   {
     "id": "ACCT-7",
@@ -67,7 +67,7 @@
     "status": "SHIPPED",
     "text": "**Sessions do not expire on a clock.** A session lives until it is",
     "file": "docs/spec/accounts/README.md",
-    "line": 53
+    "line": 56
   },
   {
     "id": "ACCT-8",
@@ -77,7 +77,7 @@
     "status": "SHIPPED",
     "text": "A session is per device, not per account, so one can be revoked without",
     "file": "docs/spec/accounts/README.md",
-    "line": 57
+    "line": 60
   },
   {
     "id": "ACCT-9",
@@ -87,7 +87,7 @@
     "status": "SHIPPED",
     "text": "A **device** is where a session lives. Signing in on a phone, a browser",
     "file": "docs/spec/accounts/README.md",
-    "line": 66
+    "line": 69
   },
   {
     "id": "ACCT-10",
@@ -97,7 +97,7 @@
     "status": "AGREED",
     "text": "Every session appears in the account's **device list** with enough to",
     "file": "docs/spec/accounts/README.md",
-    "line": 69
+    "line": 72
   },
   {
     "id": "ACCT-11",
@@ -107,7 +107,7 @@
     "status": "SHIPPED",
     "text": "A television binds to an account through the pairing handshake rather",
     "file": "docs/spec/accounts/README.md",
-    "line": 72
+    "line": 75
   },
   {
     "id": "ACCT-12",
@@ -117,7 +117,7 @@
     "status": "AGREED",
     "text": "A paired television is not a special class of trust. It lands in the",
     "file": "docs/spec/accounts/README.md",
-    "line": 76
+    "line": 79
   },
   {
     "id": "ACCT-13",
@@ -127,7 +127,7 @@
     "status": "SHIPPED",
     "text": "**Unbinding is revocation.** Revoking a device's session ends its",
     "file": "docs/spec/accounts/README.md",
-    "line": 80
+    "line": 83
   },
   {
     "id": "ACCT-14",
@@ -137,7 +137,7 @@
     "status": "SHIPPED",
     "text": "A revoked device that returns must pair or sign in afresh.",
     "file": "docs/spec/accounts/README.md",
-    "line": 84
+    "line": 87
   },
   {
     "id": "ACCT-15",
@@ -147,7 +147,7 @@
     "status": "SHIPPED",
     "text": "A television session is long-lived and revocable, and is **never",
     "file": "docs/spec/accounts/README.md",
-    "line": 90
+    "line": 93
   },
   {
     "id": "ACCT-16",
@@ -157,7 +157,7 @@
     "status": "AGREED",
     "text": "The device list is the control that replaces expiry: security comes",
     "file": "docs/spec/accounts/README.md",
-    "line": 93
+    "line": 96
   },
   {
     "id": "ACCT-17",
@@ -167,7 +167,7 @@
     "status": "SHIPPED",
     "text": "An **owner or admin** runs the server: users, settings, jobs and",
     "file": "docs/spec/accounts/README.md",
-    "line": 106
+    "line": 109
   },
   {
     "id": "ACCT-18",
@@ -177,7 +177,7 @@
     "status": "AGREED",
     "text": "The owner is the founding admin, the owner may grant admin to another",
     "file": "docs/spec/accounts/README.md",
-    "line": 109
+    "line": 112
   },
   {
     "id": "ACCT-19",
@@ -187,7 +187,7 @@
     "status": "SHIPPED",
     "text": "A **user** uses the server: browses and plays what they are permitted",
     "file": "docs/spec/accounts/README.md",
-    "line": 112
+    "line": 115
   },
   {
     "id": "ACCT-20",
@@ -197,7 +197,7 @@
     "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
-    "line": 115
+    "line": 118
   },
   {
     "id": "ACCT-21",
@@ -207,7 +207,7 @@
     "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 123
+    "line": 126
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 164
+    "line": 167
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 173
+    "line": 176
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 201
+    "line": 204
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 206
+    "line": 209
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 210
+    "line": 213
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 220
+    "line": 223
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 224
+    "line": 227
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 228
+    "line": 231
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 232
+    "line": 235
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 241
+    "line": 244
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 244
+    "line": 247
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 248
+    "line": 251
   },
   {
     "id": "ACCT-34",
@@ -337,7 +337,7 @@
     "status": "SHIPPED",
     "text": "A title outside a person's grant is absent from browse, search, every",
     "file": "docs/spec/accounts/README.md",
-    "line": 129
+    "line": 132
   },
   {
     "id": "ACCT-35",
@@ -347,7 +347,367 @@
     "status": "SHIPPED",
     "text": "Every request for media bytes carries a credential the grant can be",
     "file": "docs/spec/accounts/README.md",
+    "line": 137
+  },
+  {
+    "id": "ACCT-36",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "A notification belongs to an **account**, not to a device. Every",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 14
+  },
+  {
+    "id": "ACCT-37",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 37,
+    "status": "SHIPPED",
+    "text": "The occasions are these, and a person hears only the ones addressed",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 18
+  },
+  {
+    "id": "ACCT-38",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 38,
+    "status": "SHIPPED",
+    "text": "A notification is addressed to one account, to everyone, to the",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 34
+  },
+  {
+    "id": "ACCT-39",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 39,
+    "status": "SHIPPED",
+    "text": "New media is announced as a **digest**, never per file. A scan that",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 39
+  },
+  {
+    "id": "ACCT-40",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 40,
+    "status": "SHIPPED",
+    "text": "A job that fails again on its next run says nothing. Only the first",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 44
+  },
+  {
+    "id": "ACCT-41",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 41,
+    "status": "SHIPPED",
+    "text": "An admin can write a notification by hand and send it to one account,",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 48
+  },
+  {
+    "id": "ACCT-42",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 42,
+    "status": "SHIPPED",
+    "text": "A row says what happened in the reader's own language, names the",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 57
+  },
+  {
+    "id": "ACCT-43",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 43,
+    "status": "SHIPPED",
+    "text": "A row leads to the screen it is about, and opening it goes there. A",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 62
+  },
+  {
+    "id": "ACCT-44",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 44,
+    "status": "SHIPPED",
+    "text": "A row may carry up to a few actions, such as approving a request or",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 65
+  },
+  {
+    "id": "ACCT-45",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 45,
+    "status": "AGREED",
+    "text": "A row records **what it is about** (a request, a title, an episode, a",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 69
+  },
+  {
+    "id": "ACCT-46",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 46,
+    "status": "AGREED",
+    "text": "A destination is never frozen into a stored row. Renaming a screen",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 74
+  },
+  {
+    "id": "ACCT-47",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 47,
+    "status": "AGREED",
+    "text": "The person a row names is read when the row is read, so a renamed",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 79
+  },
+  {
+    "id": "ACCT-48",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 48,
+    "status": "SHIPPED",
+    "text": "Repeats of one thing read as one row with a count, so a run of",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 86
+  },
+  {
+    "id": "ACCT-49",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 49,
+    "status": "AGREED",
+    "text": "A repeat folds into the row the person already has: its count rises,",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 90
+  },
+  {
+    "id": "ACCT-50",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 50,
+    "status": "DRAFT",
+    "text": "A folded group raises a banner at most once an hour, and repeats in",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 94
+  },
+  {
+    "id": "ACCT-51",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 51,
+    "status": "AGREED",
+    "text": "A second telling of something a person already holds is dropped",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 97
+  },
+  {
+    "id": "ACCT-52",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 52,
+    "status": "AGREED",
+    "text": "A notification that asked for a decision stops asking once the decision",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 105
+  },
+  {
+    "id": "ACCT-53",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 53,
+    "status": "AGREED",
+    "text": "A settled row is not deleted behind the reader's back. It stays where",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 110
+  },
+  {
+    "id": "ACCT-54",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 54,
+    "status": "DRAFT",
+    "text": "Whether settling a row also takes back a banner already delivered to a",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 113
+  },
+  {
+    "id": "ACCT-55",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 55,
+    "status": "SHIPPED",
+    "text": "The inbox opens from the bell on any screen, lists rows newest first",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 120
+  },
+  {
+    "id": "ACCT-56",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 56,
+    "status": "SHIPPED",
+    "text": "Every open screen agrees on the badge within a moment of one of them",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 124
+  },
+  {
+    "id": "ACCT-57",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 57,
+    "status": "AGREED",
+    "text": "The badge counts rows the person has **not seen**: opening the panel",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 127
+  },
+  {
+    "id": "ACCT-58",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 58,
+    "status": "AGREED",
+    "text": "A reader **archives** a row rather than deleting it. An archived row",
+    "file": "docs/spec/accounts/notifications.md",
     "line": 134
+  },
+  {
+    "id": "ACCT-59",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 59,
+    "status": "SHIPPED",
+    "text": "An inbox holds two hundred rows per person. Beyond that the oldest go,",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 137
+  },
+  {
+    "id": "ACCT-60",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 60,
+    "status": "AGREED",
+    "text": "What goes first is archived rows, then the oldest rows that were read.",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 140
+  },
+  {
+    "id": "ACCT-61",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 61,
+    "status": "SHIPPED",
+    "text": "The inbox is on the web client and on the phone. The television has",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 144
+  },
+  {
+    "id": "ACCT-62",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 62,
+    "status": "DRAFT",
+    "text": "Which kinds of subject a television would open, if it ever gains an",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 148
+  },
+  {
+    "id": "ACCT-63",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 63,
+    "status": "SHIPPED",
+    "text": "Each person decides, per category (requests, media, reports,",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 155
+  },
+  {
+    "id": "ACCT-64",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 64,
+    "status": "SHIPPED",
+    "text": "A category whose inbox switch is off writes no row at all. Muting is",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 159
+  },
+  {
+    "id": "ACCT-65",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 65,
+    "status": "AGREED",
+    "text": "The same choice is available per notification type, a module's own",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 163
+  },
+  {
+    "id": "ACCT-66",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 66,
+    "status": "SHIPPED",
+    "text": "A device asks to receive banners, and nothing is sent to a device that",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 171
+  },
+  {
+    "id": "ACCT-67",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 67,
+    "status": "SHIPPED",
+    "text": "A banner that cannot be delivered costs the banner, never the",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 175
+  },
+  {
+    "id": "ACCT-68",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 68,
+    "status": "AGREED",
+    "text": "Every delivery attempt is recorded with its outcome (delivered, failed,",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 178
+  },
+  {
+    "id": "ACCT-69",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 69,
+    "status": "SHIPPED",
+    "text": "A module tells people through this same inbox rather than inventing",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 187
+  },
+  {
+    "id": "ACCT-70",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 70,
+    "status": "SHIPPED",
+    "text": "A module addresses the audiences the core addresses and no others: one",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 191
+  },
+  {
+    "id": "ACCT-71",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 71,
+    "status": "AGREED",
+    "text": "A module declares the kinds of notification it sends and ships their",
+    "file": "docs/spec/accounts/notifications.md",
+    "line": 195
   },
   {
     "id": "ADMIN-1",

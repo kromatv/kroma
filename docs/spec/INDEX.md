@@ -3,45 +3,81 @@
 
 # Requirement index
 
-471 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+507 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
-- **ACCT-1** (SHIPPED) - An **account** is a person. It has credentials, its own watch state,
-- **ACCT-2** (SHIPPED) - The first account created at first-run is the **owner**, an account
-- **ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, created by invitation
-- **ACCT-4** (SHIPPED) - There are no profiles under an account, and there will not be. A person
-- **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is
-- **ACCT-6** (SHIPPED) - A successful authentication mints a **session**: a long-lived,
-- **ACCT-7** (SHIPPED) - **Sessions do not expire on a clock.** A session lives until it is
-- **ACCT-8** (SHIPPED) - A session is per device, not per account, so one can be revoked without
-- **ACCT-9** (SHIPPED) - A **device** is where a session lives. Signing in on a phone, a browser
-- **ACCT-10** (AGREED) - Every session appears in the account's **device list** with enough to
-- **ACCT-11** (SHIPPED) - A television binds to an account through the pairing handshake rather
-- **ACCT-12** (AGREED) - A paired television is not a special class of trust. It lands in the
-- **ACCT-13** (SHIPPED) - **Unbinding is revocation.** Revoking a device's session ends its
-- **ACCT-14** (SHIPPED) - A revoked device that returns must pair or sign in afresh.
-- **ACCT-15** (SHIPPED) - A television session is long-lived and revocable, and is **never
-- **ACCT-16** (AGREED) - The device list is the control that replaces expiry: security comes
-- **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
-- **ACCT-18** (AGREED) - The owner is the founding admin, the owner may grant admin to another
-- **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
-- **ACCT-20** (SHIPPED) - **Library visibility is per user.** An admin decides which libraries a
-- **ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user
-- **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
-- **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power
-- **ACCT-24** (SHIPPED) - **Per-user**: watch state, meaning resume points, watched flags and
-- **ACCT-25** (SHIPPED) - **Per-server**: the libraries and their contents, metadata and
-- **ACCT-26** (SHIPPED) - Watch state is per user and never per device: resume a film on the
-- **ACCT-27** (SHIPPED) - Deletion destroys the account's credentials, all of its sessions and
-- **ACCT-28** (SHIPPED) - Everything per-server survives. Libraries, media, metadata and
-- **ACCT-29** (AGREED) - The owner account cannot be deleted while it is the only admin.
-- **ACCT-30** (AGREED) - A user may request deletion of their own account, which revokes their
-- **ACCT-31** (SHIPPED) - Revocation stops a session doing anything new. It cannot fetch, refresh
-- **ACCT-32** (AGREED) - Bytes already downloaded for offline viewing sit in local storage the
-- **ACCT-33** (AGREED) - The guarantee is that a revoked device gains nothing new and loses its
-- **ACCT-34** (SHIPPED) - A title outside a person's grant is absent from browse, search, every
-- **ACCT-35** (SHIPPED) - Every request for media bytes carries a credential the grant can be
+- **ACCT-1** (SHIPPED) - An **account** is a person. It has credentials, its own watch state, <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-2** (SHIPPED) - The first account created at first-run is the **owner**, an account <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, created by invitation <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-4** (SHIPPED) - There are no profiles under an account, and there will not be. A person <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-6** (SHIPPED) - A successful authentication mints a **session**: a long-lived, <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-7** (SHIPPED) - **Sessions do not expire on a clock.** A session lives until it is <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-8** (SHIPPED) - A session is per device, not per account, so one can be revoked without <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-9** (SHIPPED) - A **device** is where a session lives. Signing in on a phone, a browser <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-10** (AGREED) - Every session appears in the account's **device list** with enough to <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-11** (SHIPPED) - A television binds to an account through the pairing handshake rather <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-12** (AGREED) - A paired television is not a special class of trust. It lands in the <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-13** (SHIPPED) - **Unbinding is revocation.** Revoking a device's session ends its <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-14** (SHIPPED) - A revoked device that returns must pair or sign in afresh. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-15** (SHIPPED) - A television session is long-lived and revocable, and is **never <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-16** (AGREED) - The device list is the control that replaces expiry: security comes <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-18** (AGREED) - The owner is the founding admin, the owner may grant admin to another <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-20** (SHIPPED) - **Library visibility is per user.** An admin decides which libraries a <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-24** (SHIPPED) - **Per-user**: watch state, meaning resume points, watched flags and <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-25** (SHIPPED) - **Per-server**: the libraries and their contents, metadata and <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-26** (SHIPPED) - Watch state is per user and never per device: resume a film on the <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-27** (SHIPPED) - Deletion destroys the account's credentials, all of its sessions and <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-28** (SHIPPED) - Everything per-server survives. Libraries, media, metadata and <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-29** (AGREED) - The owner account cannot be deleted while it is the only admin. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-30** (AGREED) - A user may request deletion of their own account, which revokes their <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-31** (SHIPPED) - Revocation stops a session doing anything new. It cannot fetch, refresh <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-32** (AGREED) - Bytes already downloaded for offline viewing sit in local storage the <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-33** (AGREED) - The guarantee is that a revoked device gains nothing new and loses its <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-34** (SHIPPED) - A title outside a person's grant is absent from browse, search, every <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-35** (SHIPPED) - Every request for media bytes carries a credential the grant can be <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-36** (SHIPPED) - A notification belongs to an **account**, not to a device. Every <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-37** (SHIPPED) - The occasions are these, and a person hears only the ones addressed <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-38** (SHIPPED) - A notification is addressed to one account, to everyone, to the <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-39** (SHIPPED) - New media is announced as a **digest**, never per file. A scan that <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-40** (SHIPPED) - A job that fails again on its next run says nothing. Only the first <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-41** (SHIPPED) - An admin can write a notification by hand and send it to one account, <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-42** (SHIPPED) - A row says what happened in the reader's own language, names the <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-43** (SHIPPED) - A row leads to the screen it is about, and opening it goes there. A <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-44** (SHIPPED) - A row may carry up to a few actions, such as approving a request or <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-45** (AGREED) - A row records **what it is about** (a request, a title, an episode, a <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-46** (AGREED) - A destination is never frozen into a stored row. Renaming a screen <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-47** (AGREED) - The person a row names is read when the row is read, so a renamed <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-48** (SHIPPED) - Repeats of one thing read as one row with a count, so a run of <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-49** (AGREED) - A repeat folds into the row the person already has: its count rises, <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-50** (DRAFT) - A folded group raises a banner at most once an hour, and repeats in <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-51** (AGREED) - A second telling of something a person already holds is dropped <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-52** (AGREED) - A notification that asked for a decision stops asking once the decision <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-53** (AGREED) - A settled row is not deleted behind the reader's back. It stays where <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-54** (DRAFT) - Whether settling a row also takes back a banner already delivered to a <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-55** (SHIPPED) - The inbox opens from the bell on any screen, lists rows newest first <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go, <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-60** (AGREED) - What goes first is archived rows, then the oldest rows that were read. <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-61** (SHIPPED) - The inbox is on the web client and on the phone. The television has <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-62** (DRAFT) - Which kinds of subject a television would open, if it ever gains an <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports, <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-64** (SHIPPED) - A category whose inbox switch is off writes no row at all. Muting is <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-65** (AGREED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-66** (SHIPPED) - A device asks to receive banners, and nothing is sent to a device that <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-67** (SHIPPED) - A banner that cannot be delivered costs the banner, never the <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-68** (AGREED) - Every delivery attempt is recorded with its outcome (delivered, failed, <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-70** (SHIPPED) - A module addresses the audiences the core addresses and no others: one <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-71** (AGREED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
