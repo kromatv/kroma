@@ -1,18 +1,28 @@
 // Renders the module page mounted at a splat path under / (main shell) or
 // /admin (admin shell). The registry resolves the path to an enabled module's
-// route; a disabled or unknown module renders the not-found state, so turning a
-// module off makes its pages vanish just like its nav.
+// route; a module that is turned off renders the unavailable state, so its
+// pages vanish just like its nav. A path no module claims renders the
+// `notFound` the route hands down.
 
 import { type KromaHost, ModuleLoading, ModuleScope, ModuleUnavailable } from '@kromatv/module-sdk';
-import { Suspense, useMemo } from 'react';
-import { useModuleHostValue, useModuleRoute, useModuleT } from '#web/modules/ModuleHostProvider';
+import { type ReactNode, Suspense, useMemo } from 'react';
+import {
+  useModuleHostValue,
+  useModuleRouteMatch,
+  useModuleT,
+} from '#web/modules/ModuleHostProvider';
 
-export function ModuleRouteOutlet({ path }: Readonly<{ path: string }>) {
+interface ModuleRouteOutletProps {
+  path: string;
+  notFound: ReactNode;
+}
+
+export function ModuleRouteOutlet({ path, notFound }: Readonly<ModuleRouteOutletProps>) {
   const host = useModuleHostValue();
-  const route = useModuleRoute(path);
+  const match = useModuleRouteMatch(path);
   // Give the page a host whose i18n resolves the module's OWN catalog first
   // (falling back to the core catalogs). `moduleT` is stable per module + locale.
-  const moduleT = useModuleT(route?.moduleId ?? '');
+  const moduleT = useModuleT(match.kind === 'page' ? match.route.moduleId : '');
   const scopedHost = useMemo<KromaHost | null>(
     () =>
       host
@@ -32,11 +42,12 @@ export function ModuleRouteOutlet({ path }: Readonly<{ path: string }>) {
   // The registry is still resolving, so it is too early to say the module is
   // missing: hold the page's silhouette rather than accusing it of absence.
   if (!scopedHost) return <ModuleLoading />;
-  if (!route) return <ModuleUnavailable />;
-  const Panel = route.component;
+  if (match.kind === 'disabled') return <ModuleUnavailable />;
+  if (match.kind === 'unknown') return notFound;
+  const Panel = match.route.component;
   return (
     <Suspense fallback={<ModuleLoading />}>
-      <ModuleScope id={route.moduleId}>
+      <ModuleScope id={match.route.moduleId}>
         <Panel host={scopedHost} />
       </ModuleScope>
     </Suspense>

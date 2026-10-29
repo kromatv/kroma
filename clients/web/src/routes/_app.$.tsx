@@ -4,6 +4,7 @@
 // path reaches it.
 
 import { createFileRoute } from '@tanstack/react-router';
+import { NotFound } from '#web/features/errors/error-page';
 import { ModuleRouteOutlet } from '#web/modules/ModuleRouteOutlet';
 
 export const Route = createFileRoute('/_app/$')({
@@ -12,5 +13,5 @@ export const Route = createFileRoute('/_app/$')({
 
 function ModulePage() {
   const { _splat } = Route.useParams();
-  return <ModuleRouteOutlet path={_splat ?? ''} />;
+  return <ModuleRouteOutlet path={_splat ?? ''} notFound={<NotFound />} />;
 }

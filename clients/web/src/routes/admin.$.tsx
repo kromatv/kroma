@@ -5,6 +5,7 @@
 // it.
 
 import { createFileRoute } from '@tanstack/react-router';
+import { NotFound } from '#web/features/errors/error-page';
 import { ModuleRouteOutlet } from '#web/modules/ModuleRouteOutlet';
 
 export const Route = createFileRoute('/admin/$')({
@@ -13,5 +14,5 @@ export const Route = createFileRoute('/admin/$')({
 
 function AdminModulePage() {
   const { _splat } = Route.useParams();
-  return <ModuleRouteOutlet path={_splat ?? ''} />;
+  return <ModuleRouteOutlet path={_splat ?? ''} notFound={<NotFound />} />;
 }

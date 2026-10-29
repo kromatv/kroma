@@ -5,6 +5,8 @@
 // ...) may have no installed backend at all; it must hide exactly like a
 // disabled one.
 
+import type { ModuleRoute } from '@kromatv/module-sdk';
+
 export interface ModuleListing {
   id: string;
   enabled?: boolean;
@@ -20,4 +22,22 @@ export function hiddenModuleIds(
   if (!manifest) return new Set<string>();
   const active = new Set(manifest.filter((m) => m.enabled !== false).map((m) => m.id));
   return new Set(registeredIds.filter((id) => !active.has(id)));
+}
+
+export type ModuleRouteMatch =
+  | { kind: 'page'; route: ModuleRoute }
+  | { kind: 'disabled' }
+  | { kind: 'unknown' };
+
+/** Who answers for `path`: a visible module's page, a hidden module's page, or
+ *  no registered module at all. */
+export function moduleRouteAt(
+  routes: readonly ModuleRoute[],
+  hiddenIds: ReadonlySet<string>,
+  path: string,
+): ModuleRouteMatch {
+  const owners = routes.filter((r) => r.path === path);
+  const visible = owners.find((r) => !hiddenIds.has(r.moduleId));
+  if (visible) return { kind: 'page', route: visible };
+  return owners.length > 0 ? { kind: 'disabled' } : { kind: 'unknown' };
 }
