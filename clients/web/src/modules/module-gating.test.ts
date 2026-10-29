@@ -1,5 +1,6 @@
+import type { ModuleRoute } from '@kromatv/module-sdk';
 import { describe, expect, it } from 'vitest';
-import { hiddenModuleIds } from './module-gating';
+import { hiddenModuleIds, moduleRouteAt } from './module-gating';
 
 const REGISTERED = ['tv.kroma.vpn', 'tv.kroma.torrents', 'tv.kroma.remote', 'tv.kroma.indexer'];
 
@@ -34,5 +35,42 @@ describe('hiddenModuleIds', () => {
 
   it('hides nothing while the backend list has not resolved yet', () => {
     expect(hiddenModuleIds(undefined, REGISTERED).size).toBe(0);
+  });
+});
+
+const page = (moduleId: string, path: string): ModuleRoute => ({
+  moduleId,
+  path,
+  component: () => null,
+});
+
+describe('moduleRouteAt', () => {
+  it('finds the page an enabled module mounts there', () => {
+    const route = page('tv.kroma.torrents', 'torrents');
+
+    expect(moduleRouteAt([route], new Set(), 'torrents')).toEqual({ kind: 'page', route });
+  });
+
+  it('still knows a hidden module owns the path', () => {
+    const hidden = new Set(['tv.kroma.torrents']);
+
+    expect(moduleRouteAt([page('tv.kroma.torrents', 'torrents')], hidden, 'torrents')).toEqual({
+      kind: 'disabled',
+    });
+  });
+
+  it('leaves a path no registered module mounts to nobody', () => {
+    expect(moduleRouteAt([page('tv.kroma.torrents', 'torrents')], new Set(), 'nope')).toEqual({
+      kind: 'unknown',
+    });
+  });
+
+  it('prefers the enabled module when two mount the same path', () => {
+    const live = page('tv.kroma.indexer', 'downloads');
+    const hidden = new Set(['tv.kroma.torrents']);
+
+    expect(
+      moduleRouteAt([page('tv.kroma.torrents', 'downloads'), live], hidden, 'downloads'),
+    ).toEqual({ kind: 'page', route: live });
   });
 });

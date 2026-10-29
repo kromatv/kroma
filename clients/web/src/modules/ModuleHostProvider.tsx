@@ -11,7 +11,7 @@ import { useScopedT, useT } from '@kromatv/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { useModuleHost } from '#web/modules/host';
-import { hiddenModuleIds } from '#web/modules/module-gating';
+import { hiddenModuleIds, type ModuleRouteMatch, moduleRouteAt } from '#web/modules/module-gating';
 import { createModuleRuntime } from '#web/modules/registry';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -163,13 +163,11 @@ export function useModuleNav(section: string): ModuleNav[] {
   return useMemo(() => all.filter((n) => (n.section ?? 'library') === section), [all, section]);
 }
 
-/** The route mounted at `path`, if its module is registered and enabled. */
-export function useModuleRoute(path: string): ModuleRoute | undefined {
+/** What is mounted at `path`: an enabled module's page, a page whose module is
+ *  turned off, or nothing any registered module claims. */
+export function useModuleRouteMatch(path: string): ModuleRouteMatch {
   const { routes, disabledIds } = useContext(ModuleHostContext);
-  return useMemo(
-    () => routes.find((r) => r.path === path && !disabledIds.has(r.moduleId)),
-    [routes, disabledIds, path],
-  );
+  return useMemo(() => moduleRouteAt(routes, disabledIds, path), [routes, disabledIds, path]);
 }
 
 export function useModuleSettingsPanels(moduleId: string): {
