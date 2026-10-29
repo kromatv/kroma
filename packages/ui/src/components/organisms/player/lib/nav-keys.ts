@@ -14,6 +14,20 @@ const TRANSPORT_KEYS: ReadonlySet<RemoteKey> = new Set([
   'Stop',
 ]);
 
+/** The transport keys that only drive the film: the picture itself (and the
+ *  stage pill, for a seek) says what they did, so a hidden chrome stays hidden. */
+const QUIET_KEYS: ReadonlySet<RemoteKey> = new Set([
+  'Play',
+  'Pause',
+  'PlayPause',
+  'Prev',
+  'Rewind',
+  'FastForward',
+]);
+
+/** The quiet keys that flip play and pause. */
+const PLAY_KEYS: ReadonlySet<RemoteKey> = new Set(['Play', 'Pause', 'PlayPause']);
+
 function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
   switch (key) {
     case 'Play':
@@ -39,4 +53,4 @@ function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
   }
 }
 
-export { handleMediaKey, TRANSPORT_KEYS };
+export { handleMediaKey, PLAY_KEYS, QUIET_KEYS, TRANSPORT_KEYS };

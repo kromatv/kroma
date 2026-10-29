@@ -79,16 +79,16 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
 }
 
 // ArrowLeft/Right seek like YouTube's: a tap is 10 s, taps add up, a held key
-// ramps (see useSeekNudge). Where a fine pointer drives the chrome, the arrows
-// are always a seek: hovering moves the focus and Tab walks the row, so the
-// D-pad never needs them. A browser TV shell keeps them for the D-pad, and only
-// gets the seek in immersive mode (fullscreen + chrome hidden).
+// ramps (see useSeekNudge). Where the flags ask for it (the web client), the
+// arrows are always a seek: hovering moves the focus and Tab walks the row, so
+// the D-pad never needs them. The 10-foot app keeps them for walking the
+// controls, and only gets the seek in immersive mode (fullscreen + chrome hidden).
 function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return false;
   if (nav.overlay || p.credits?.active || p.resume?.active || p.postPlay?.active) return false;
   const immersive = flags.fullscreen && controller.fullscreen && !nav.revealed;
-  if (!flags.pointer && !immersive) return false;
+  if (!flags.arrowSeek && !immersive) return false;
   takeKey(e);
   keepChrome(nav, controller, flags);
   p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1, pressOf(e));

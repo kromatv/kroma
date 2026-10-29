@@ -64,6 +64,11 @@ const KEY_NAMES: Record<string, RemoteKey> = {
   MediaFastForward: 'FastForward',
   MediaTrackNext: 'Next',
   MediaTrackPrevious: 'Prev',
+  // A Mac keyboard's media row as plain function keys (fn held, or the
+  // standard-function-keys setting on).
+  F7: 'Rewind',
+  F8: 'PlayPause',
+  F9: 'FastForward',
   // Spacebar = play/pause (desktop/keyboard). ' ' is the modern name; 'Spacebar' the
   // legacy one (old WebKit / some TV browsers). Unused elsewhere, so safe to claim.
   ' ': 'PlayPause',

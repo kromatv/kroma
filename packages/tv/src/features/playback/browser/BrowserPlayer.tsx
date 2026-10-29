@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { createTvEngine, planEngine } from '#tv/features/playback/browser/backend';
 import { PlayerSurface } from '#tv/features/playback/browser/PlayerSurface';
+import { browserPictureInPicture } from '#tv/features/playback/browser/surfacePip';
 import {
   type PlaybackBackend,
   PlaybackBackendProvider,
@@ -11,7 +12,7 @@ const BROWSER_BACKEND: PlaybackBackend = {
   planEngine,
   createTvEngine,
   Surface: PlayerSurface,
-  pictureInPicture: () => false,
+  pictureInPicture: browserPictureInPicture,
 };
 
 /** The player screen on the browser shells: a `<video>`, AVPlay or mpv. */

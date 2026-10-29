@@ -4,8 +4,8 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
 import {
-  IconBack10,
-  IconFwd10,
+  IconSkipBack,
+  IconSkipForward,
   IconMute,
   IconVolHigh,
   IconVolLow,
@@ -21,7 +21,7 @@ import { useT } from '#ui/services/i18n';
  *  echo: a seek burst adding up as the presses land, or the level a volume key
  *  set. `null` once nothing is being shown. */
 export type StageFlash =
-  | { kind: 'seek'; dir: -1 | 1; deltaSec: number }
+  | { kind: 'seek'; dir: -1 | 1; deltaSec: number; rate?: number }
   | { kind: 'volume'; level: number };
 
 export interface StageFlashProps {
@@ -52,7 +52,7 @@ function seekLabel(deltaSec: number, t: ReturnType<typeof useT>): string {
 
 function seekGlyph(seek: { dir: -1 | 1; deltaSec: number }, size: number) {
   const back = seek.deltaSec < 0 || (seek.deltaSec === 0 && seek.dir < 0);
-  return back ? <IconBack10 size={size} /> : <IconFwd10 size={size} />;
+  return back ? <IconSkipBack size={size} /> : <IconSkipForward size={size} />;
 }
 
 function volumeGlyph(level: number, size: number) {
@@ -104,6 +104,11 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
           <Text variant="title" color="white" style={sizeOf(px(24), scope)}>
             {label}
           </Text>
+          {held.kind === 'seek' && (held.rate ?? 1) > 1 ? (
+            <Text variant="title" color="accentText" style={sizeOf(px(24), scope)}>
+              {`\u00d7${held.rate}`}
+            </Text>
+          ) : null}
         </Box>
       </Animated.View>
     </Box>

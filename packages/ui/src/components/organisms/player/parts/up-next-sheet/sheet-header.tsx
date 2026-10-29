@@ -11,8 +11,8 @@ import { usePointerDriving } from '#ui/lib/input-source';
 
 const sDefinition = styles({
   sheetTitle: { font: 'display', fontSize: textRoles.h2.size, fontWeight: '700' },
-  headerRow: { row: true, align: 'flex-start' },
-  headerBox: { px: 56, pt: 28, pb: 18, radius: 'xl' },
+  headerRow: { row: true },
+  headerBox: { flex: true, px: 56, pt: 28, pb: 18 },
   chevronOpen: { transform: [{ rotate: '0deg' }] },
   chevronClosed: { transform: [{ rotate: '180deg' }] },
 });
@@ -51,9 +51,9 @@ export function SheetHeader({
         onPress={onToggle}
         onFocus={open ? leave : undefined}
         // Registered while parked so it keeps its place ABOVE the grid (the
-        // navigator fixes a node's order when it mounts), but it wears nothing:
-        // a ring on a parked sheet marks a focus the remote is not on.
-        ring={open}
+        // navigator fixes a node's order when it mounts). It spans the sheet, so
+        // a ring would be cut by the sheet's edges.
+        ring={false}
         focusScale={1}
         style={[s.headerBox, NO_OUTLINE]}
       >

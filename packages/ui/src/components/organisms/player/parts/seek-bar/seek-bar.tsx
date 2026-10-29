@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { type GestureResponderEvent, PanResponder, View } from 'react-native';
+import { type GestureResponderEvent, PanResponder, type PointerEvent, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
@@ -24,6 +24,7 @@ import {
 import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
+import { usePointerDriving } from '#ui/lib/input-source';
 import { formatTimecode } from '#ui/lib/intl';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
@@ -100,6 +101,7 @@ export function SeekBar({
   const trackWidth = track.width;
   const dragging = useRef(false);
   const [hoverSec, setHoverSec] = useState<number | null>(null);
+  const pointerDriving = usePointerDriving();
 
   const shown = seekPreview ?? cur;
 
@@ -113,10 +115,18 @@ export function SeekBar({
     [chapters, dur],
   );
 
-  const secAt = (locationX: number): number | null => {
-    const offset = track.offsetOf(locationX);
+  const secAtOffset = (offset: number | null): number | null => {
     if (offset == null || dur <= 0 || track.width <= 0) return null;
-    return msAtOffset(offset, segs, track.width) / 1000;
+    return msAtOffset(Math.max(0, Math.min(track.width, offset)), segs, track.width) / 1000;
+  };
+  const secAt = (locationX: number): number | null => secAtOffset(track.offsetOf(locationX));
+
+  const hover = (e: PointerEvent) => {
+    if (dragging.current) return;
+    setHoverSec(secAtOffset(track.offsetAtClient(e.nativeEvent.clientX)));
+  };
+  const leave = () => {
+    if (!dragging.current) setHoverSec(null);
   };
 
   const endSelectionBlock = useRef(NOOP);
@@ -174,7 +184,7 @@ export function SeekBar({
 
   let previewSec: number | null = null;
   if (hoverSec != null) previewSec = hoverSec;
-  else if (focused) previewSec = shown;
+  else if (focused && !pointerDriving()) previewSec = shown;
   const previewTile = previewSec != null ? tileAt(previewSec) : null;
   // Centred on the cursor, but kept inside the track: at 0:00 half the thumbnail
   // would otherwise hang off the edge of the screen.
@@ -248,61 +258,69 @@ export function SeekBar({
         ) : null}
 
         {/* segmented track */}
-        <View ref={trackRef} onLayout={onTrackLayout} {...pan.panHandlers} style={sized.track}>
-          {segs.map((seg) => {
-            const span = Math.max(1, seg.endMs - seg.startMs);
-            const played = clamp01((shownMs - seg.startMs) / span);
-            const buffed = bufMs == null ? null : clamp01((bufMs - seg.startMs) / span);
-            return (
-              // `flex={span}`: a segment is as wide as its chapter is long, so the
-              // playhead agrees with its fill. `h="100%"` mints one shared style,
-              // not one per chapter per scale.
-              <Box
-                key={seg.startMs}
-                flex={span}
-                h="100%"
-                radius="pill"
-                overflow="hidden"
-                bg={seekBar(scope.theme).track}
-                style={s.inert}
-              >
-                {/* Insets vary per tick, so they bypass the shared cache via `style`.
+        <View
+          {...pan.panHandlers}
+          onPointerEnter={track.measure}
+          onPointerMove={hover}
+          onPointerLeave={leave}
+          style={s.hit}
+        >
+          <View ref={trackRef} onLayout={onTrackLayout} style={[sized.track, s.inert]}>
+            {segs.map((seg) => {
+              const span = Math.max(1, seg.endMs - seg.startMs);
+              const played = clamp01((shownMs - seg.startMs) / span);
+              const buffed = bufMs == null ? null : clamp01((bufMs - seg.startMs) / span);
+              return (
+                // `flex={span}`: a segment is as wide as its chapter is long, so the
+                // playhead agrees with its fill. `h="100%"` mints one shared style,
+                // not one per chapter per scale.
+                <Box
+                  key={seg.startMs}
+                  flex={span}
+                  h="100%"
+                  radius="pill"
+                  overflow="hidden"
+                  bg={seekBar(scope.theme).track}
+                  style={s.inert}
+                >
+                  {/* Insets vary per tick, so they bypass the shared cache via `style`.
                     Not scaleX: that would stretch the gradient and the pill caps. */}
-                {buffed == null ? null : (
+                  {buffed == null ? null : (
+                    <Box
+                      fill
+                      radius="pill"
+                      bg={seekBar(scope.theme).buffered}
+                      style={{ right: `${(1 - buffed) * 100}%` }}
+                    />
+                  )}
                   <Box
                     fill
                     radius="pill"
-                    bg={seekBar(scope.theme).buffered}
-                    style={{ right: `${(1 - buffed) * 100}%` }}
+                    style={[playedFill(scope.theme), { right: `${(1 - played) * 100}%` }]}
                   />
-                )}
-                <Box
-                  fill
-                  radius="pill"
-                  style={[playedFill(scope.theme), { right: `${(1 - played) * 100}%` }]}
-                />
-              </Box>
-            );
-          })}
+                </Box>
+              );
+            })}
 
-          {/* The offset is folded into the transform so a tick only moves a
+            {/* The offset is folded into the transform so a tick only moves a
               composited layer. */}
-          <Box
-            absolute
-            top="50%"
-            left={0}
-            w={px(16)}
-            h={px(16)}
-            radius="circle"
-            bg="white"
-            style={[
-              s.inert,
-              playheadRing(scope.theme),
-              {
-                transform: [{ translateX: playheadX - px(16) / 2 }, { translateY: -px(16) / 2 }],
-              },
-            ]}
-          />
+            <Box
+              absolute
+              top="50%"
+              left={0}
+              w={px(16)}
+              h={px(16)}
+              radius="circle"
+              bg="white"
+              style={[
+                s.inert,
+                playheadRing(scope.theme),
+                {
+                  transform: [{ translateX: playheadX - px(16) / 2 }, { translateY: -px(16) / 2 }],
+                },
+              ]}
+            />
+          </View>
         </View>
       </Focusable>
     </Box>
@@ -312,6 +330,7 @@ export function SeekBar({
 const TIME_SIZE = 18;
 const STAMP_SIZE = 14;
 const TRACK_HEIGHT = 6;
+const HIT_PAD = 14;
 
 const playedFill = themed((theme) =>
   style(
@@ -329,10 +348,11 @@ const sDefinition = styles({
   time: { font: 'ui', fontWeight: '600', color: 'text', fontVariant: ['tabular-nums'] },
   muted: { fontWeight: '500' },
   shrink: { shrink: 1 },
-  track: { position: 'relative', row: true, align: 'center', flex: true, gap: SEGMENT_GAP },
+  track: { position: 'relative', row: true, align: 'center', gap: SEGMENT_GAP },
   stamp: { font: 'ui', fontWeight: '700', color: 'white', fontVariant: ['tabular-nums'] },
   inert: { pointerEvents: 'none' },
   bar: { row: true, align: 'center', radius: 'pill' },
+  hit: { flex: true, py: HIT_PAD, my: -HIT_PAD },
 });
 
 function scaled(scale: number, scope: StyleScope) {

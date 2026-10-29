@@ -33,6 +33,9 @@ interface Burst {
 export interface SeekBurst {
   dir: -1 | 1;
   deltaSec: number;
+  /** How many times the hold's starting pace it is moving at now: 1 for taps,
+   *  climbing for as long as the key is held. */
+  rate: number;
 }
 
 /**
@@ -85,11 +88,13 @@ export function useSeekNudge(controller: PlayerController): SeekNudge {
     const holding = press === 'hold' && prev?.dir === dir && now - prev.lastAt <= REPEAT_MS;
 
     let target: number;
+    let rate = 1;
     if (holding) {
       const heldS = (now - prev.startedAt) / 1000;
       const speed = Math.min(HOLD_MAX, HOLD_BASE * HOLD_GROWTH ** heldS);
       const tickS = Math.min(MAX_TICK_S, (now - prev.lastAt) / 1000);
       target = prev.target + dir * speed * tickS;
+      rate = Math.max(1, Math.floor(speed / HOLD_BASE));
     } else {
       // Continue from the cursor if one is already showing, else the playhead.
       target = (prev?.target ?? c.cur) + dir * TAP_STEP;
@@ -106,7 +111,7 @@ export function useSeekNudge(controller: PlayerController): SeekNudge {
       dir,
     };
     c.scrubPreview(target);
-    setShown({ dir, deltaSec: target - origin });
+    setShown({ dir, deltaSec: target - origin, rate });
 
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(commit, COMMIT_MS);

@@ -40,7 +40,7 @@ export type {
   PlayerVideoTrack,
 } from './media-types';
 export type { CreditsCardItem } from './parts/credits-card';
-export { BACK_10_ICON, FWD_10_ICON } from './parts/icons';
+export { SKIP_BACK_ICON, SKIP_FORWARD_ICON } from './parts/icons';
 // The width the end-of-film hero is drawn at, so a host asks for art that size.
 export { POST_PLAY_ART_W, type PostPlayItem } from './parts/post-play';
 export { ResumePrompt, type ResumePromptProps } from './parts/resume-prompt';

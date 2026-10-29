@@ -17,9 +17,9 @@ import {
   IconAppearance,
   IconAudioFilter,
   IconAudioTrack,
-  IconBack10,
+  IconSkipBack,
   IconCast,
-  IconFwd10,
+  IconSkipForward,
   IconGear,
   IconMute,
   IconNext,
@@ -68,8 +68,8 @@ const MOVEABLE: Partial<Record<ControlId, { icon: ReactNode; label: MessageKey }
   cast: { icon: <IconCast />, label: 'cast.moveToTv' },
   pip: { icon: <IconPip />, label: 'player.pip' },
   volume: { icon: <IconMute />, label: 'player.mute' },
-  rewind: { icon: <IconBack10 />, label: 'player.back10' },
-  forward: { icon: <IconFwd10 />, label: 'player.fwd10' },
+  rewind: { icon: <IconSkipBack />, label: 'player.back10' },
+  forward: { icon: <IconSkipForward />, label: 'player.fwd10' },
 };
 
 /** The controls the transport row had no room for. Volume is a toggle because

@@ -7,10 +7,9 @@
 // height the browse screen's header, filter chips, grid and hint bar stop
 // fitting - so the HEIGHT is what the scale is taken from, always.
 //
-// The width is not fitted, it is HANDED OVER: the canvas is as wide as the
-// window leaves at that scale, and the layout auto-fills it. What this file
-// guards is that the canvas never overflows the window in either direction, and
-// that the surround only appears where the canvas has stopped narrowing.
+// The size is not fitted, it is HANDED OVER: the canvas is as wide and as tall
+// as the window leaves at that scale, and the layout fills it. What this file
+// guards is that the canvas covers the window exactly, with no bar on any side.
 //
 // The maths itself is `fitStage` (tested beside it); this is the browser
 // half - the box, the custom properties, and the resize listener.
@@ -26,6 +25,8 @@ function resizeTo(width: number, height: number) {
 const scale = () => Number(document.documentElement.style.getPropertyValue('--kroma-stage-scale'));
 const width = () =>
   Number.parseFloat(document.documentElement.style.getPropertyValue('--kroma-stage-width'));
+const height = () =>
+  Number.parseFloat(document.documentElement.style.getPropertyValue('--kroma-stage-height'));
 
 const css = () => document.head.querySelector('style')?.textContent ?? '';
 
@@ -56,14 +57,14 @@ describe('fitting the canvas', () => {
     expect(scale()).toBeCloseTo(1400 / MIN_STAGE_W, 6);
   });
 
-  it('keeps the full 1080 of height whatever it costs in scale', () => {
-    resizeTo(600, 900);
+  it('hands a window taller than 16:9 the extra height instead of a letterbox', () => {
+    resizeTo(1280, 800);
     installStage();
     expect(width()).toBe(MIN_STAGE_W);
-    expect(STAGE_H * scale()).toBeLessThanOrEqual(900);
+    expect(height()).toBe(1200);
   });
 
-  it('never lets the canvas overflow the window', () => {
+  it('covers the window exactly', () => {
     for (const [w, h] of [
       [1024, 768],
       [1280, 720],
@@ -78,8 +79,8 @@ describe('fitting the canvas', () => {
       installStage();
       // A rail's last poster clipped, the right gutter gone, the grid's last
       // column off the edge - all the same overflow.
-      expect(width() * scale()).toBeLessThanOrEqual(w + 1);
-      expect(STAGE_H * scale()).toBeLessThanOrEqual(h + 1);
+      expect(Math.abs(width() * scale() - w)).toBeLessThanOrEqual(1);
+      expect(Math.abs(height() * scale() - h)).toBeLessThanOrEqual(1);
     }
   });
 
@@ -90,35 +91,34 @@ describe('fitting the canvas', () => {
     const fit = fitStage(960, 540);
     expect(scale()).toBeCloseTo(fit.scale, 6);
     expect(width()).toBe(fit.width);
+    expect(height()).toBe(fit.height);
   });
 });
 
 describe('the stage box', () => {
-  it('is 1080 tall, as wide as the fit says, and scales from the centre', () => {
+  it('is as large as the fit says, and scales from the centre', () => {
     installStage();
-    expect(css()).toContain(`height: ${STAGE_H}px`);
+    expect(css()).toContain('height: var(--kroma-stage-height');
     expect(css()).toContain('width: var(--kroma-stage-width');
     // Symmetric surround: a corner origin puts all of it on two sides.
     expect(css()).toContain('transform-origin: center center');
   });
 
-  it('falls back to the design width before the first fit is written', () => {
+  it('falls back to the design size before the first fit is written', () => {
     installStage();
     expect(css()).toContain(`var(--kroma-stage-width, ${STAGE_W}px)`);
+    expect(css()).toContain(`var(--kroma-stage-height, ${STAGE_H}px)`);
   });
 
   it('makes #root the containing block for the app’s fixed layers', () => {
     installStage();
     // Home, player and detail are `position: fixed`; without the transform they
     // fill the WINDOW and escape the stage.
-    expect(css()).toMatch(/#root\s*\{[^}]*position: fixed/);
     expect(css()).toContain('scale(var(--kroma-stage-scale, 1))');
   });
 
-  it('paints the surround, since nothing renders behind a browser', () => {
+  it('paints the page, since nothing renders behind a browser', () => {
     installStage();
-    // The desktop shell goes transparent where mpv is behind the web view; here
-    // an unpainted bar is just an unpainted bar.
     expect(css()).toContain('var(--kroma-bg, #0a0a0c)');
     expect(css()).not.toContain('background: transparent');
   });

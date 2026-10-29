@@ -14,13 +14,19 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { webWindow } from './dom';
 
+/** How a host treats the pointer. */
+export interface InputSourceOptions {
+  pointerShowsFocus?: boolean;
+}
+
 /** Pointer modality and its listeners have the same lifetime as their host. */
-export function createInputSource() {
+export function createInputSource({ pointerShowsFocus = false }: InputSourceOptions = {}) {
   let pointerDrove = false;
   let holds = 0;
   let stop = () => {};
   return {
     pointerDriving: () => pointerDrove,
+    focusHidden: () => pointerDrove && !pointerShowsFocus,
     retain() {
       holds += 1;
       if (holds === 1) {
@@ -57,11 +63,17 @@ export function createInputSource() {
 const Context = createContext<ReturnType<typeof createInputSource> | null>(null);
 export const InputSourceProvider = Context.Provider;
 export const useInputSourceParent = () => useContext(Context);
-export function usePointerDriving(): () => boolean {
+function useInputSource(): ReturnType<typeof createInputSource> {
   const parent = useContext(Context);
   const [owned] = useState(() => (parent ? null : createInputSource()));
   const source = parent ?? owned;
   if (!source) throw new Error('Input source requires its owning root');
   useEffect(() => (parent ? undefined : source.retain()), [parent, source]);
-  return source.pointerDriving;
+  return source;
+}
+export function usePointerDriving(): () => boolean {
+  return useInputSource().pointerDriving;
+}
+export function useFocusHidden(): () => boolean {
+  return useInputSource().focusHidden;
 }

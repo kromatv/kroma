@@ -1,6 +1,8 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
-import { useCallback, useEffect, useRef } from 'react';
+import { webDocument } from '@kromatv/ui/kit';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { z } from 'zod';
 import { getTauri } from '#tv/features/playback/player/engine';
 
 // Hoisted so the `arrayBuffer().then().catch()` chain doesn't nest inside
@@ -70,11 +72,90 @@ export interface NowPlayingInput {
   positionSec: number;
   playing: boolean;
   seekTo: (sec: number) => void;
+  seek: (deltaSec: number) => void;
+  seekNonce: number;
+}
+
+const MediaKeyAction = z.string().catch('');
+
+const HOLD_DELAY_MS = 300;
+const HOLD_REPEAT_MS = 100;
+
+const REMOTE_KEY: Record<string, string> = {
+  next: 'MediaFastForward',
+  prev: 'MediaRewind',
+  'hold:forward:begin': 'MediaFastForward',
+  'hold:back:begin': 'MediaRewind',
+};
+
+function pressRemoteKey(key: string, repeat: boolean): void {
+  webDocument()?.dispatchEvent(new KeyboardEvent('keydown', { key, repeat, bubbles: true }));
+}
+
+function useHeldKey(): { press(key: string): void; hold(key: string): void; release(): void } {
+  const delay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const release = useCallback(() => {
+    if (delay.current) clearTimeout(delay.current);
+    if (timer.current) clearInterval(timer.current);
+    delay.current = null;
+    timer.current = null;
+  }, []);
+  useEffect(() => release, [release]);
+  return useMemo(
+    () => ({
+      press: (key) => pressRemoteKey(key, false),
+      hold: (key) => {
+        release();
+        pressRemoteKey(key, false);
+        delay.current = setTimeout(() => {
+          timer.current = setInterval(() => pressRemoteKey(key, true), HOLD_REPEAT_MS);
+        }, HOLD_DELAY_MS);
+      },
+      release,
+    }),
+    [release],
+  );
+}
+
+function flips(action: string, playing: boolean): boolean {
+  if (action === 'play') return !playing;
+  if (action === 'pause') return playing;
+  return true;
+}
+
+function useShellEvent(
+  bridge: ReturnType<typeof getTauri>,
+  active: boolean,
+  name: string,
+  handle: (payload: unknown) => void,
+): void {
+  const handleRef = useRef(handle);
+  useEffect(() => {
+    handleRef.current = handle;
+  });
+  useEffect(() => {
+    if (!active || !bridge) return;
+    let un: (() => void) | undefined;
+    let dead = false;
+    void bridge.event
+      .listen(name, (e) => handleRef.current((e as { payload?: unknown }).payload))
+      .then((u) => {
+        if (dead) u();
+        else un = u;
+      })
+      .catch(() => undefined);
+    return () => {
+      dead = true;
+      un?.();
+    };
+  }, [active, bridge, name]);
 }
 
 /** Pushes the current item + playback progress to the OS "Now Playing" widget
- * via the native shell's `set_now_playing` command, and honors its scrubber.
- * Only active on the macOS libmpv shell; a no-op everywhere else. */
+ * via the native shell's `set_now_playing` command, and honors its scrubber and
+ * the keyboard's media keys. Only active on the macOS libmpv shell; a no-op
+ * everywhere else. */
 export function useNowPlaying({
   client,
   item,
@@ -84,17 +165,17 @@ export function useNowPlaying({
   positionSec,
   playing,
   seekTo,
+  seek,
+  seekNonce,
 }: NowPlayingInput): void {
   const bridge = getTauri();
   const active = !!bridge && '__KROMA_MPV__' in globalThis;
 
-  // Current values in refs so the poster/seek effects don't re-run on every position tick
+  // Current values in refs so the poster effects don't re-run on every position tick
   // (they only care about item changes / play-pause), yet always send fresh data.
   const infoRef = useRef({ title, subtitle, durationSec, positionSec, playing });
-  const seekRef = useRef(seekTo);
   useEffect(() => {
     infoRef.current = { title, subtitle, durationSec, positionSec, playing };
-    seekRef.current = seekTo;
   });
 
   // One place to build + send the payload (artwork empty = keep the current poster).
@@ -116,26 +197,22 @@ export function useNowPlaying({
     [bridge],
   );
 
-  // Dragging the OS scrubber (Control Center) fires `media-seek` with a target second.
-  useEffect(() => {
-    if (!active || !bridge) return;
-    let un: (() => void) | undefined;
-    let dead = false;
-    void bridge.event
-      .listen('media-seek', (e) => {
-        const pos = Number((e as { payload?: unknown }).payload ?? Number.NaN);
-        if (Number.isFinite(pos)) seekRef.current(pos);
-      })
-      .then((u) => {
-        if (dead) u();
-        else un = u;
-      })
-      .catch(() => undefined);
-    return () => {
-      dead = true;
-      un?.();
-    };
-  }, [active, bridge]);
+  useShellEvent(bridge, active, 'media-seek', (payload) => {
+    const pos = Number(payload ?? Number.NaN);
+    if (Number.isFinite(pos)) seekTo(pos);
+  });
+
+  const held = useHeldKey();
+  useShellEvent(bridge, active, 'media-key', (payload) => {
+    const action = MediaKeyAction.parse(payload);
+    const skip = /^skip:(-?[\d.]+)$/.exec(action);
+    const key = REMOTE_KEY[action];
+    if (skip) seek(Number(skip[1]));
+    else if (action.startsWith('hold:') && action.endsWith(':end')) held.release();
+    else if (key && action.startsWith('hold:')) held.hold(key);
+    else if (key) held.press(key);
+    else if (flips(action, playing)) held.press('MediaPlayPause');
+  });
 
   // On item change ONLY: resolve + rasterize the poster, then push the full info.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- key on item.id (not identity); title/subtitle/duration are read via ref in push.
@@ -150,9 +227,9 @@ export function useNowPlaying({
     };
   }, [active, client, item.id, push]);
 
-  // On play/pause: update the rate + elapsed time (keep the current poster).
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- fire on play/pause; the value is read via ref in push.
+  // On play/pause and after a seek: update the rate + elapsed time (keep the current poster).
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- fire on play/pause and seeks; the value is read via ref in push.
   useEffect(() => {
     if (active) push([]);
-  }, [active, playing, push]);
+  }, [active, playing, seekNonce, push]);
 }

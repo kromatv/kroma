@@ -1,4 +1,4 @@
-import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
+import { SKIP_BACK_ICON, SKIP_FORWARD_ICON } from '@kromatv/ui';
 import {
   Box,
   radius as cornerRadius,
@@ -29,14 +29,14 @@ export function RemoteTransport({
   const t = useT();
   return (
     <Box style={s.transport}>
-      <Round icon={BACK_10_ICON} label={t('player.back10')} onPress={() => onSkip(-SKIP_MS)} />
+      <Round icon={SKIP_BACK_ICON} label={t('player.back10')} onPress={() => onSkip(-SKIP_MS)} />
       <Round
         big
         icon={isPlaying || buffering ? 'player-pause-filled' : 'player-play-filled'}
         label={t(isPlaying ? 'player.pause' : 'player.play')}
         onPress={onTogglePlay}
       />
-      <Round icon={FWD_10_ICON} label={t('player.fwd10')} onPress={() => onSkip(SKIP_MS)} />
+      <Round icon={SKIP_FORWARD_ICON} label={t('player.fwd10')} onPress={() => onSkip(SKIP_MS)} />
     </Box>
   );
 }

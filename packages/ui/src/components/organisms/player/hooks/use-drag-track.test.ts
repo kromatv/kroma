@@ -7,10 +7,10 @@ import { useDragTrack } from './use-drag-track';
 const laidOutAt = (width: number) =>
   ({ nativeEvent: { layout: { width } } }) as unknown as LayoutChangeEvent;
 
-const measuring = (screenWidth: () => number) =>
+const measuring = (screenWidth: () => number, left = 0) =>
   ({
     measureInWindow: (cb: (x: number, y: number, width: number, height: number) => void) =>
-      cb(0, 0, screenWidth(), 12),
+      cb(left, 0, screenWidth(), 12),
   }) as never;
 
 describe('useDragTrack', () => {
@@ -57,5 +57,13 @@ describe('useDragTrack', () => {
     const { result } = renderHook(() => useDragTrack());
     act(() => result.current.onLayout(laidOutAt(0)));
     expect(result.current.offsetOf(400)).toBeNull();
+  });
+
+  it('reads a hover from the window edge, less where the track starts', () => {
+    const { result } = renderHook(() => useDragTrack());
+    result.current.ref.current = measuring(() => 800, 100);
+    act(() => result.current.onLayout(laidOutAt(1600)));
+
+    expect(result.current.offsetAtClient(500)).toBe(800);
   });
 });

@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useFocusVisible } from '#ui/lib/focus-visible';
+import { createInputSource, InputSourceProvider } from '#ui/lib/input-source';
 
 afterEach(() => {
   cleanup();
@@ -72,5 +73,26 @@ describe('useFocusVisible', () => {
     view.rerender(<Probe focus="deux" />);
 
     expect(seen.at(-1)).toBe(false);
+  });
+
+  it('shows the ring for a focus the pointer took when the host asks for it', () => {
+    const { Probe, seen } = probe();
+    const source = createInputSource({ pointerShowsFocus: true });
+    const release = source.retain();
+    const view = render(
+      <InputSourceProvider value={source}>
+        <Probe focus={false} />
+      </InputSourceProvider>,
+    );
+
+    fireEvent.mouseMove(window);
+    view.rerender(
+      <InputSourceProvider value={source}>
+        <Probe focus />
+      </InputSourceProvider>,
+    );
+    release();
+
+    expect(seen.at(-1)).toBe(true);
   });
 });

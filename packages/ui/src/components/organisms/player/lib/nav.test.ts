@@ -40,7 +40,10 @@ describe('controlOrder', () => {
   });
 
   it('honors individual flags independently', () => {
-    const row = controlOrder({ volume: true, pip: false, fullscreen: true, pointer: true }, false);
+    const row = controlOrder(
+      { volume: true, pip: false, fullscreen: true, pointer: true, arrowSeek: true },
+      false,
+    );
     expect(row).toContain('volume');
     expect(row).not.toContain('pip');
     expect(row).toContain('fullscreen');

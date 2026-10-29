@@ -101,7 +101,7 @@ describe('useSeekNudge clicks', () => {
     advance(80);
     act(() => result.current.nudge(1, 'tap'));
 
-    expect(result.current.burst).toEqual({ dir: 1, deltaSec: 3 * TAP_STEP });
+    expect(result.current.burst).toEqual({ dir: 1, deltaSec: 3 * TAP_STEP, rate: 1 });
   });
 
   it('still issues ONE seek for a run of clicks', () => {
@@ -137,6 +137,25 @@ describe('useSeekNudge clicks', () => {
 });
 
 describe('useSeekNudge hold', () => {
+  it('tells the stage a pace that climbs for as long as the key is held', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'hold'));
+    const rates: number[] = [];
+    for (let i = 0; i < 16; i++) {
+      advance(100);
+      act(() => result.current.nudge(1, 'hold'));
+      rates.push(result.current.burst?.rate ?? 0);
+    }
+
+    expect(rates[0]).toBe(1);
+    expect(rates.at(-1)).toBeGreaterThan(2);
+    for (let i = 1; i < rates.length; i++) {
+      expect(rates[i]).toBeGreaterThanOrEqual(rates[i - 1] as number);
+    }
+  });
+
   it('accelerates: each repeat travels further than the one before', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
@@ -217,7 +236,7 @@ describe('what the stage flash is told', () => {
 
     act(() => result.current.nudge(-1, 'hold'));
 
-    expect(result.current.burst).toEqual({ dir: -1, deltaSec: -TAP_STEP });
+    expect(result.current.burst).toEqual({ dir: -1, deltaSec: -TAP_STEP, rate: 1 });
   });
 
   it('reports a forward seek as a positive one', () => {
@@ -226,7 +245,7 @@ describe('what the stage flash is told', () => {
 
     act(() => result.current.nudge(1, 'hold'));
 
-    expect(result.current.burst).toEqual({ dir: 1, deltaSec: TAP_STEP });
+    expect(result.current.burst).toEqual({ dir: 1, deltaSec: TAP_STEP, rate: 1 });
   });
 
   it('stays positive when a run that went forward turns back one press', () => {
@@ -239,6 +258,6 @@ describe('what the stage flash is told', () => {
     advance(400);
     act(() => result.current.nudge(-1, 'hold'));
 
-    expect(result.current.burst).toEqual({ dir: -1, deltaSec: TAP_STEP });
+    expect(result.current.burst).toEqual({ dir: -1, deltaSec: TAP_STEP, rate: 1 });
   });
 });

@@ -2,7 +2,11 @@ import type { Direction } from '@kromatv/spatial-nav';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
 import type { ControlId, Overlay, Spot } from '#ui/components/organisms/player/lib/nav';
-import { handleMediaKey } from '#ui/components/organisms/player/lib/nav-keys';
+import {
+  handleMediaKey,
+  PLAY_KEYS,
+  QUIET_KEYS,
+} from '#ui/components/organisms/player/lib/nav-keys';
 import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -103,9 +107,12 @@ export function usePlayerNav(
   }, [clearHide]);
 
   const [chromeKeyOf, setChromeKeyOf] = useState({ playing, overlay });
+  const [quietToggle, setQuietToggle] = useState(false);
   if (chromeKeyOf.playing !== playing || chromeKeyOf.overlay !== overlay) {
+    const keptHidden = quietToggle && chromeKeyOf.overlay === overlay;
     setChromeKeyOf({ playing, overlay });
-    setRevealed(true);
+    if (keptHidden) setQuietToggle(false);
+    else setRevealed(true);
   }
 
   useEffect(() => {
@@ -154,7 +161,12 @@ export function usePlayerNav(
 
   const handleKey = useEffectEvent((key: RemoteKey) => {
     if (handleMediaKey(key, actions)) {
-      poke();
+      if (revealed || !QUIET_KEYS.has(key)) {
+        poke();
+        return;
+      }
+      if (PLAY_KEYS.has(key)) setQuietToggle(true);
+      rearmHide();
       return;
     }
     if (key !== 'Back') return;

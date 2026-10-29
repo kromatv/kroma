@@ -44,6 +44,7 @@ export interface UpNextSheetProps {
 
 // The player's bottom chrome has to clear exactly this much (see Player.tsx).
 export const PEEK_HEIGHT = 150;
+const PEEK_LIFT = 10;
 const SHEET_FRACTION = 0.82;
 
 // In pixels, never a percentage string: react-native-web resolves a percentage
@@ -65,7 +66,27 @@ const SHEET_FILL =
 const fillsDefinition = styles({
   scrimOn: { opacity: 1, pointerEvents: 'auto' },
   scrimOff: { opacity: 0, pointerEvents: 'none' },
+  peek: { fill: true, z: 2 },
 });
+
+function PeekTarget({
+  label,
+  onOpen,
+  onHover,
+}: Readonly<{ label: string; onOpen: () => void; onHover: (hovered: boolean) => void }>) {
+  const fills = useStyles(fillsDefinition);
+  return (
+    <Pressable
+      {...VIRTUAL_FOCUS}
+      onPress={onOpen}
+      onHoverIn={() => onHover(true)}
+      onHoverOut={() => onHover(false)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={[fills.peek, NO_OUTLINE]}
+    />
+  );
+}
 
 interface Section {
   id: string;
@@ -126,8 +147,11 @@ function UpNextSheetBase({
   const { height: stageHeight } = useWindowDimensions();
   const [sheetHeight, setSheetHeight] = useState(() => Math.round(stageHeight * SHEET_FRACTION));
 
-  const slide = useSheetSlide(open, parkOffset(sheetHeight));
   const live = useDeferredValue(open);
+  const [lifted, setLifted] = useState(false);
+  if (open && lifted) setLifted(false);
+  const lift = !open && !live && lifted ? PEEK_LIFT : 0;
+  const slide = useSheetSlide(open, parkOffset(sheetHeight) - lift);
 
   // An open sheet is an OVERLAY: it takes the remote from the screen behind it
   // (which is also what stops ▲ off the top row climbing out of the sheet), and
@@ -225,6 +249,9 @@ function UpNextSheetBase({
             </FocusColumn>
           </FocusScroll>
         </SheetScope>
+        {live ? null : (
+          <PeekTarget label={t('player.upNextTitle')} onOpen={onOpen} onHover={setLifted} />
+        )}
       </Animated.View>
     </>
   );
