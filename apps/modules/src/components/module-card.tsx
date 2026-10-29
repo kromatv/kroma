@@ -112,7 +112,7 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
                 {m.name}
               </Text>
             </Box>
-            <Row gap={6} shrink={0} wrap>
+            <Row gap={6} shrink={1} minW={0} wrap>
               <Badge tone="neutral">v{m.version}</Badge>
               {m.library ? <Badge tone="info">Library</Badge> : null}
               {(m.contributes ?? []).map((c: { point: string; id?: string | null }) => (
