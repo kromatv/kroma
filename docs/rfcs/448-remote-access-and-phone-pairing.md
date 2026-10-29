@@ -1,7 +1,7 @@
-# RFC NNNN: remote access a television can reach, and a phone that puts it there
+# RFC 448: remote access a television can reach, and a phone that puts it there
 
 - Status: **DRAFT**
-- PR: #NNNN
+- PR: #448
 - Issue: #408
 - Affects: `docs/spec/discovery/`, `docs/spec/accounts/` and `docs/tv-pairing.md`; the
   `quickconnect` endpoints and device-token minting in `server/src/api/accounts/`; a new
