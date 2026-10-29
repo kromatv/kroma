@@ -37,6 +37,25 @@ use std::sync::Arc;
 use key::session_key;
 use session::Sessions;
 
+/// What a master request asks for: the program, the stream wanted out of it, and
+/// an opaque id for the player asking.
+///
+/// `anchor` is the start in seconds (input `-ss`, 0 = start) and `audio` the
+/// audio-relative track index. `source` is the file's own frame size where the
+/// catalog knows it, which is what a re-encode has to decode before it can
+/// encode anything. Two requests carrying the same `opener` are the same player,
+/// which is how a seek is told from a second viewer on the same title; `None`
+/// is a caller that presented no credential, and matches nobody.
+pub struct Asked<'a> {
+    pub item_id: &'a str,
+    pub input: &'a str,
+    pub opener: Option<&'a str>,
+    pub audio: u32,
+    pub mode: StreamMode,
+    pub anchor: u64,
+    pub source: Option<(u32, u32)>,
+}
+
 pub struct HlsEngine {
     sessions: Arc<Sessions>,
     durations: std::sync::Mutex<std::collections::HashMap<String, Option<u64>>>,
@@ -89,27 +108,12 @@ impl HlsEngine {
         self.sessions.set_budget(bytes);
     }
 
-    /// The media playlist for `item_id` in `mode`, anchored at `anchor` seconds
-    /// (input `-ss`, 0 = start), muxing the `audio`-th audio track. Returns the
-    /// playlist text + the REAL stream start (s) - the keyframe at-or-before
-    /// `anchor` - for the client's `baseSec`.
-    ///
-    /// `source` is the file's own frame size where the catalog knows it, which is
-    /// what a re-encode has to decode before it can encode anything.
-    pub async fn master(
-        &self,
-        item_id: &str,
-        input: &str,
-        audio: u32,
-        mode: StreamMode,
-        anchor: u64,
-        source: Option<(u32, u32)>,
-    ) -> Result<(String, f64), Refusal> {
-        let key = session_key(item_id, mode, anchor, audio);
-        let (bytes, start) = self
-            .sessions
-            .master(&key, Path::new(input), audio, mode, anchor as f64, source)
-            .await?;
+    /// The media playlist for [`Asked`]. Returns the playlist text + the REAL
+    /// stream start (s) - the keyframe at-or-before the anchor - for the
+    /// client's `baseSec`.
+    pub async fn master(&self, asked: Asked<'_>) -> Result<(String, f64), Refusal> {
+        let key = session_key(asked.item_id, asked.mode, asked.anchor, asked.audio);
+        let (bytes, start) = self.sessions.master(&key, &asked).await?;
         let playlist = String::from_utf8(bytes).map_err(|_| Refusal::Unavailable)?;
         Ok((playlist, start))
     }

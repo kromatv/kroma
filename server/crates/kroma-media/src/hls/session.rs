@@ -19,6 +19,7 @@ use tokio::time::sleep;
 use tracing::{info, warn};
 
 use super::admission::{max_live_transcodes, Refusal};
+use super::Asked;
 use super::covered::Serving;
 use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
 use super::hwaccel::Pipeline;
@@ -41,6 +42,7 @@ pub(super) struct Session {
     // Real stream start (s): the keyframe at-or-before the requested anchor,
     // which the client uses as `baseSec`.
     pub(super) start: f64,
+    pub(super) opener: Option<String>,
     pub(super) superseded: AtomicBool,
     // Held only where the picture is re-encoded on the CPU, and dropped with the
     // session: for as long as it lives, background media passes are held to one
@@ -65,14 +67,19 @@ impl Session {
     pub(super) fn is_superseded_transcode(&self) -> bool {
         self.superseded.load(std::sync::atomic::Ordering::Relaxed) && self.transcodes_video()
     }
+
+    pub(super) fn opened_by(&self, opener: Option<&str>) -> bool {
+        match (self.opener.as_deref(), opener) {
+            (Some(mine), Some(asking)) => mine == asking,
+            _ => false,
+        }
+    }
 }
 
 /// Remux sessions keyed per program + anchor (see `session_key`).
 pub struct Sessions {
     pub(super) root: PathBuf,
     pub(super) cap: usize,
-    // Live video re-encodes allowed at once, never more than `cap`: the session
-    // cap counts streams and this one counts decodes (see [`super::admission`]).
     pub(super) transcode_cap: usize,
     // On-disk byte budget for the whole cache; 0 = unlimited.
     pub(super) budget: AtomicU64,
@@ -108,19 +115,12 @@ impl Sessions {
     }
 
     /// Returns the media playlist bytes plus the real stream start (s) for `baseSec`.
-    ///
-    /// `source` is the file's own frame size where the catalog knows it: it is
-    /// what the picture costs to decode, and so half of what the box is being
-    /// asked to keep up with.
     pub async fn master(
         self: &Arc<Self>,
         key: &str,
-        input: &Path,
-        audio: u32,
-        mode: StreamMode,
-        start_secs: f64,
-        source: Option<(u32, u32)>,
+        asked: &Asked<'_>,
     ) -> Result<(Vec<u8>, f64), Refusal> {
+        let start_secs = asked.anchor as f64;
         if let Some(reused) = self.reuse(key, start_secs).await {
             reused.session.touch().await;
             self.serving.note(key, &reused.key).await;
@@ -128,9 +128,7 @@ impl Sessions {
             return Ok((ended(&reused.session, reused.playlist).await, reused.start));
         }
         self.serving.forget(key).await;
-        let session = self
-            .ensure(key, input, audio, mode, start_secs, source)
-            .await?;
+        let session = self.ensure(key, asked).await?;
         let start = session.start;
         let path = session.dir.join("index.m3u8");
         let deadline = Instant::now() + FILE_WAIT;
@@ -187,15 +185,9 @@ impl Sessions {
         }
     }
 
-    async fn ensure(
-        self: &Arc<Self>,
-        key: &str,
-        input: &Path,
-        audio: u32,
-        mode: StreamMode,
-        start_secs: f64,
-        source: Option<(u32, u32)>,
-    ) -> Result<Arc<Session>, Refusal> {
+    async fn ensure(self: &Arc<Self>, key: &str, asked: &Asked<'_>) -> Result<Arc<Session>, Refusal> {
+        let (input, mode, source) = (Path::new(asked.input), asked.mode, asked.source);
+        let (audio, start_secs) = (asked.audio, asked.anchor as f64);
         // The anchor is part of the key, so an existing session is always the right one.
         {
             let map = self.inner.lock().await;
@@ -204,7 +196,7 @@ impl Sessions {
                 return Ok(s.clone());
             }
         }
-        if self.retire_superseded(key).await {
+        if self.retire_superseded(key, asked.opener).await {
             self.reclaim_superseded_later();
         }
         // Both shell out on their first call: must not run under the lock.
@@ -249,6 +241,7 @@ impl Sessions {
             last_access: Mutex::new(Instant::now()),
             window: Window::new(),
             start,
+            opener: asked.opener.map(str::to_owned),
             superseded: AtomicBool::new(false),
             _cpu: on_the_cpu.then(ffmpeg_gate::reserve),
         });
@@ -269,9 +262,9 @@ impl Sessions {
         spawn_stream(input, dir, audio, mode, start_secs, self.burst, pipeline)
     }
 
-    async fn retire_superseded(&self, key: &str) -> bool {
+    async fn retire_superseded(&self, key: &str, opener: Option<&str>) -> bool {
         let mut map = self.inner.lock().await;
-        self.reap_superseded(&mut map, key).await
+        self.reap_superseded(&mut map, key, opener).await
     }
 
     async fn serving_session(&self, key: &str) -> Option<Arc<Session>> {

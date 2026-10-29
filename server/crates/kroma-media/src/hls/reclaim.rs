@@ -50,18 +50,15 @@ impl Sessions {
         self.budget.load(Ordering::Relaxed)
     }
 
-    // A sibling of `key` is either the same viewer's superseded stream or another
-    // viewer still on the title, and nothing here can tell them apart. So one
-    // that has gone quiet goes now, and one still being read is only marked: the
-    // reaper takes it a grace later if nothing reads it again, and the next
-    // request for it clears the mark.
-    //
-    // Reports whether a re-encode was left marked, which is the case worth
-    // sweeping for before the reaper's next tick (see [`super::admission`]).
+    // A sibling `opener` opened themselves is the anchor they just left, and a
+    // player cannot read two anchors of one program at once, so it goes now. A
+    // sibling anyone else opened goes only once it has gone quiet; one still
+    // being read is marked, and the next request for it clears the mark.
     pub(super) async fn reap_superseded(
         &self,
         map: &mut HashMap<String, Arc<Session>>,
         key: &str,
+        opener: Option<&str>,
     ) -> bool {
         let now = Instant::now();
         let mut stale = Vec::new();
@@ -70,7 +67,8 @@ impl Sessions {
             if k == key || !same_program(k, key) {
                 continue;
             }
-            if now.duration_since(*s.last_access.lock().await) >= BUDGET_GRACE {
+            if s.opened_by(opener) || now.duration_since(*s.last_access.lock().await) >= BUDGET_GRACE
+            {
                 stale.push(k.clone());
             } else {
                 s.supersede();
@@ -199,9 +197,7 @@ impl Session {
 
     // A superseded session has minutes of an ordinary idle life taken off it: a
     // remux nobody re-anchored into keeps pulling its input at up to twice
-    // realtime, for a playlist nobody is reading. A superseded RE-ENCODE is
-    // decoding every frame of that input as well, so it is given only as long as
-    // a second viewer needs to clear the mark with their next segment request.
+    // realtime, for a playlist nobody is reading.
     pub(super) async fn idle_past_its_limit(&self, now: Instant) -> bool {
         let limit = match (
             self.superseded.load(Ordering::Relaxed),

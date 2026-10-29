@@ -1,11 +1,3 @@
-//! Whether this host starts another re-encode, and what it takes back first.
-//!
-//! A stream copy costs a file read; a re-encode decodes every frame of the
-//! source, so a 4K title pulled at `-readrate 2.0` is the dearest thing in the
-//! delivery path. [`super::reclaim`] is the general sweep. This is the narrow one
-//! that does not wait for its next tick, and the ceiling past which a program is
-//! refused rather than started.
-
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -23,11 +15,6 @@ pub enum Refusal {
     Unavailable,
 }
 
-// What a superseded re-encode is given before it is taken: long enough for a
-// second viewer still reading it to clear the mark with their next request,
-// short enough that a seek does not leave a whole 4K decode running for a
-// minute. A superseded stream COPY keeps the longer grace, because it costs the
-// box a file read and its segments are worth re-anchoring into.
 pub(super) const SUPERSEDED_TRANSCODE_GRACE: Duration = Duration::from_secs(10);
 
 /// Live video re-encodes this host allows at once, `KROMA_MAX_TRANSCODES`
@@ -49,15 +36,11 @@ pub fn max_live_transcodes() -> usize {
 }
 
 impl Sessions {
-    // False means every slot is held by a stream someone is still reading, and
-    // the caller must refuse rather than queue or take one away.
     pub(super) async fn admits_transcode(&self, map: &mut HashMap<String, Arc<Session>>) -> bool {
         self.reclaim_superseded(map).await;
         live_transcodes(map).await < self.transcode_cap
     }
 
-    // The reaper's own idle rule, narrowed to the sessions this exists for and
-    // run without waiting for its next tick.
     pub(super) async fn reclaim_superseded(&self, map: &mut HashMap<String, Arc<Session>>) {
         let now = Instant::now();
         let mut left_behind = Vec::new();
@@ -71,8 +54,6 @@ impl Sessions {
         }
     }
 
-    // A viewer who seeks and then stops asking would otherwise leave a decode
-    // running until the reaper's next tick.
     pub(super) fn reclaim_superseded_later(self: &Arc<Self>) {
         let this = self.clone();
         tokio::spawn(async move {
@@ -83,8 +64,6 @@ impl Sessions {
     }
 }
 
-// A session whose ffmpeg has exited holds no slot: it is a directory waiting to
-// be reaped, not a decode.
 async fn live_transcodes(map: &HashMap<String, Arc<Session>>) -> usize {
     let mut live = 0;
     for session in map.values() {

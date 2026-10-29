@@ -124,7 +124,7 @@ Environment variables carry all configuration:
 | `KROMA_HWACCEL`    | *(probed)*  | Pins the re-encode pipeline: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, or `software` to rule hardware out of a problem. See [Hardware transcoding](#hardware-transcoding). |
 | `KROMA_RENDER_NODE`| `/dev/dri/renderD128` | Which DRM render node VAAPI/QSV open, for a host with more than one. |
 | `KROMA_ENCODE_EFFORT`| *(from the box)* | Pins the software encoder tier: `quality` or `realtime`. |
-| `KROMA_MAX_TRANSCODES`| *(half the cores, 1..4)* | Video re-encodes allowed at once, never more than the `maxConcurrent` session cap. A master request past it is refused with `503` rather than queued, so the player can say so instead of buffering. Stream copies are not counted. |
+| `KROMA_MAX_TRANSCODES`| *(half the cores, 1..4)* | Video re-encodes allowed at once, never more than the `maxConcurrent` session cap. Stream copies are not counted, and a seek never costs a slot: a player's own earlier anchor of the same title is taken back first. A request past the ceiling is refused with `503` rather than queued, so the player can say so instead of buffering. |
 | `KROMA_FFMPEG_CONCURRENCY`| *(cores − 1)* | How many background media passes (storyboards, fingerprints, subtitle extraction) may run at once. |
 | `KROMA_PROBE_WORKERS`| *(half the cores, 2..4)* | Concurrent `ffprobe` processes during a scan.        |
 | `KROMA_WALK_THREADS`| *(cores × 4, 8..32)* | Threads walking the library roots. Raise it for remote mounts. |

@@ -85,8 +85,9 @@ pub async fn hls_master(
         audio,
     };
     let sink = byte_sink(&state, &headers, &addr);
+    let opener = crate::api::media_ticket::opener(&state, &headers, &q.ticket);
     match program
-        .master(&state.hls, &abs, session, &credential, sink)
+        .master(&state.hls, &abs, session, opener.as_deref(), &credential, sink)
         .await
     {
         Ok(resp) => match q.subtitle.as_deref() {
@@ -95,8 +96,6 @@ pub async fn hls_master(
             }
             None => resp,
         },
-        // Answered now rather than after the playlist wait: a stall long enough
-        // for the player to give up reads to a viewer as a broken file.
         Err(Refusal::Busy) => json_error(
             StatusCode::SERVICE_UNAVAILABLE,
             "the server is already re-encoding as many titles as it can",

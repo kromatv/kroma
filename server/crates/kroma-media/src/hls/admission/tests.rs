@@ -1,9 +1,11 @@
-use super::super::session::testing::{keys, registry, LIVE};
+use super::super::session::testing::{keys, registry, seed, LIVE};
 use super::*;
 
 const TRANSCODE: &str = "itA:h264-1080-copy:0:a0";
 const OTHER_TRANSCODE: &str = "itB:h264-720-aac:0:a0";
 const LEFT_BEHIND: Duration = Duration::from_secs(SUPERSEDED_TRANSCODE_GRACE.as_secs() + 2);
+const VIEWER: &str = "dev-1";
+const ANOTHER_VIEWER: &str = "dev-2";
 
 async fn registry_allowing(
     name: &str,
@@ -27,6 +29,49 @@ async fn sweep(s: &Sessions) {
 async fn admits(s: &Sessions) -> bool {
     let mut map = s.inner.lock().await;
     s.admits_transcode(&mut map).await
+}
+
+async fn retires_then_admits(s: &Sessions, key: &str, opener: &str) -> bool {
+    let mut map = s.inner.lock().await;
+    s.reap_superseded(&mut map, key, Some(opener)).await;
+    s.admits_transcode(&mut map).await
+}
+
+#[tokio::test]
+async fn one_viewer_seeking_twice_is_admitted_each_time_and_leaves_one_decode() {
+    let (s, _dir) = registry_allowing("admit-seeking", 1, &[]).await;
+    seed(&s, "itA:h264-1080-copy:0:a0", LIVE, Some(VIEWER)).await;
+
+    let first = retires_then_admits(&s, "itA:h264-1080-copy:2700:a0", VIEWER).await;
+    seed(&s, "itA:h264-1080-copy:2700:a0", LIVE, Some(VIEWER)).await;
+    let second = retires_then_admits(&s, "itA:h264-1080-copy:2808:a0", VIEWER).await;
+    seed(&s, "itA:h264-1080-copy:2808:a0", LIVE, Some(VIEWER)).await;
+
+    assert!(first && second);
+    assert_eq!(keys(&s).await, ["itA:h264-1080-copy:2808:a0"]);
+}
+
+#[tokio::test]
+async fn a_sibling_another_viewer_opened_holds_its_slot_at_the_ceiling() {
+    let (s, _dir) = registry_allowing("admit-sibling", 1, &[]).await;
+    seed(&s, "itA:h264-1080-copy:0:a0", LIVE, Some(ANOTHER_VIEWER)).await;
+
+    let admitted = retires_then_admits(&s, "itA:h264-1080-copy:2700:a0", VIEWER).await;
+
+    assert!(!admitted);
+    assert_eq!(keys(&s).await, ["itA:h264-1080-copy:0:a0"]);
+}
+
+#[tokio::test]
+async fn a_caller_that_presented_no_credential_takes_nobody_elses_stream() {
+    let (s, _dir) = registry_allowing("admit-anon", 8, &[]).await;
+    seed(&s, "itA:h264-1080-copy:0:a0", LIVE, None).await;
+    let mut map = s.inner.lock().await;
+
+    s.reap_superseded(&mut map, "itA:h264-1080-copy:2700:a0", None)
+        .await;
+
+    assert_eq!(map.len(), 1);
 }
 
 #[tokio::test]

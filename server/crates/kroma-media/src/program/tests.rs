@@ -142,6 +142,7 @@ async fn a_program_answers_its_playlist_with_the_start_and_the_true_length() {
             &engine,
             input.to_str().unwrap(),
             session,
+            None,
             &Credential::new("t", Some("tok")),
             Unmetered,
         )
@@ -178,6 +179,7 @@ async fn an_unprobed_program_takes_its_length_off_the_file_itself() {
                 anchor: 0,
                 audio: 0,
             },
+            None,
             &Credential::new("t", None),
             Unmetered,
         )
@@ -228,6 +230,7 @@ async fn a_segment_url_is_good_forever_and_a_playlist_never_is() {
             &engine,
             input.to_str().unwrap(),
             session,
+            None,
             &Credential::new("t", None),
             Unmetered,
         )

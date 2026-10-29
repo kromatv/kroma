@@ -4,7 +4,7 @@
 
 use axum::extract::{FromRequestParts, Query};
 use axum::http::request::Parts;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::Response;
 use kroma_media::Credential;
 use serde::Deserialize;
@@ -43,6 +43,18 @@ impl TicketQuery {
     pub fn credential(&self) -> Credential {
         Credential::new(PARAM, self.ticket())
     }
+}
+
+/// A short opaque id for the player behind a media request: the ticket's device,
+/// else a hash of the session bearer, so the raw token never travels further.
+/// Two requests carrying the same id are the same player; `None` is a caller
+/// that presented neither, and matches nobody.
+pub fn opener(state: &SharedState, headers: &HeaderMap, ticket: &TicketQuery) -> Option<String> {
+    if let Some(token) = bearer_from_headers(headers) {
+        return Some(crate::services::scan::short_hash(&token));
+    }
+    let now = time::OffsetDateTime::now_utc().unix_timestamp();
+    media_ticket::device_of(&state.media_ticket_key, ticket.ticket()?, now)
 }
 
 /// The account a media byte request may be answered for. Resolved from the
