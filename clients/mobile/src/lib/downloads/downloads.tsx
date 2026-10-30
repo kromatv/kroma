@@ -8,6 +8,7 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useT } from '#mobile/lib/i18n';
+import { useDownloadPrompt } from '#mobile/lib/notifications/useDownloadPrompt';
 import { useTransferQueue } from './queue';
 import type { DownloadEntry, DownloadState } from './store';
 
@@ -71,12 +72,18 @@ export function DownloadsProvider({
     queuedIds,
     activeItems,
     canDownload,
-    start,
+    start: enqueue,
     pause,
     resume,
     cancel,
     remove,
   } = useTransferQueue(client);
+
+  const promptFirst = useDownloadPrompt();
+  const start = useCallback(
+    (item: MediaItem) => promptFirst(() => enqueue(item)),
+    [enqueue, promptFirst],
+  );
 
   const stateFor = useCallback(
     (itemId: string): DownloadState => {
