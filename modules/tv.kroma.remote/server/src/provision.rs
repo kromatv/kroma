@@ -1,8 +1,8 @@
 //! Self-provisioning of the `cloudflared` binary the connector runs.
 //!
 //! On first enable the server downloads the pinned `cloudflared` release for its
-//! platform into `<data_dir>/bin` using `curl` (the same HTTP path as the rest of
-//! the server). The download is checked against the sha256 pinned in [`pins`]
+//! platform into `<data_dir>/bin` through `Fetch` (the same HTTP path as the rest
+//! of the server). The download is checked against the sha256 pinned in [`pins`]
 //! before it is unpacked or run, and validated by running `--version` before it
 //! is accepted. A cached copy is trusted only if it came from that pinned
 //! download.
@@ -11,12 +11,14 @@ pub(crate) mod pins;
 
 use std::path::{Path, PathBuf};
 
+use kroma_module_sdk::http::Fetch;
 use kroma_module_sdk::primitives::sha256_file;
 use tokio::process::Command;
 
 use pins::{Asset, VERSION};
 
 const RELEASE: &str = "https://github.com/cloudflare/cloudflared/releases/download";
+const DOWNLOAD_MAX_SECS: u32 = 180;
 
 /// The cached binary's file name.
 pub fn bin_name() -> &'static str {
@@ -76,14 +78,7 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     let tmp = bindir.join(format!("cloudflared.download.{}", std::process::id()));
     let url = format!("{RELEASE}/{VERSION}/{}", asset.name);
 
-    let ok = Command::new("curl")
-        .args(["-fSL", "--max-time", "180", "-o"])
-        .arg(&tmp)
-        .arg(&url)
-        .status()
-        .await
-        .map(|s| s.success())
-        .unwrap_or(false);
+    let ok = fetch_release(url.clone(), tmp.clone()).await;
     if !ok {
         let _ = tokio::fs::remove_file(&tmp).await;
         return Err(format!("download failed: {url}"));
@@ -129,6 +124,17 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     }
     let _ = tokio::fs::write(sha256_path(data_dir), asset.sha256).await;
     Ok(dest)
+}
+
+async fn fetch_release(url: String, dest: PathBuf) -> bool {
+    tokio::task::spawn_blocking(move || {
+        Fetch::new()
+            .purpose("binary-download")
+            .max_time(DOWNLOAD_MAX_SECS)
+            .download(&url, &dest)
+    })
+    .await
+    .is_ok_and(|fetched| fetched.is_ok_and(|response| (200..300).contains(&response.status)))
 }
 
 #[cfg(test)]

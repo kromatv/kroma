@@ -3,7 +3,6 @@
 //! Best-effort: a 404, no network or no `curl` leaves `theme_url` unset.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::model::Metadata;
@@ -14,6 +13,9 @@ const ARCHIVE: &str = "https://tvthemes.plexapp.com";
 
 // Anything smaller is an error body, not a theme.
 const MIN_BYTES: u64 = 8 * 1024;
+const MAX_THEME_BYTES: u64 = 30 * 1024 * 1024;
+const MAX_TIME_SECS: u32 = 25;
+const MAX_REDIRECTS: u8 = 2;
 
 static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
@@ -52,32 +54,18 @@ fn cache(data_dir: &Path, tvdb_id: u64) -> Option<String> {
 fn download(tvdb_id: u64, out: &Path) -> bool {
     let url = format!("{ARCHIVE}/{tvdb_id}.mp3");
     let tmp = unique_tmp(out);
-    // `-f` fails on HTTP >= 400 (the archive 404s for unknown shows); the time
-    // and size bounds stop a bad URL stalling or ballooning the pass.
-    let dl = Command::new("curl")
-        .args([
-            "-sf",
-            "-L",
-            // https only, redirects included: in plain HTTP the series ids of
-            // the library travel readable, and a redirect could aim the fetch
-            // at an internal host.
-            "--proto",
-            "=https",
-            "--proto-redir",
-            "=https",
-            "--max-redirs",
-            "2",
-            "--max-time",
-            "25",
-            "--max-filesize",
-            "30M",
-            "-o",
-        ])
-        .arg(&tmp)
-        .arg("--")
-        .arg(&url)
-        .status();
-    let ok = matches!(dl, Ok(s) if s.success())
+    // The archive 404s for unknown shows; the time and size bounds stop a bad
+    // URL stalling or ballooning the pass. https only, redirects included: in
+    // plain HTTP the series ids of the library travel readable, and a redirect
+    // could aim the fetch at an internal host.
+    let fetched = kroma_http::Fetch::new()
+        .purpose("themes")
+        .https_only()
+        .max_redirects(MAX_REDIRECTS)
+        .max_time(MAX_TIME_SECS)
+        .max_bytes(MAX_THEME_BYTES)
+        .download(&url, &tmp);
+    let ok = fetched.is_ok_and(|response| (200..300).contains(&response.status))
         && std::fs::metadata(&tmp)
             .map(|m| m.len() >= MIN_BYTES)
             .unwrap_or(false)

@@ -6,16 +6,14 @@ use std::time::Instant;
 
 use anyhow::{bail, Result};
 
-use crate::address::{web_target, WebTarget};
+use crate::address::WebTarget;
 use crate::curl::run;
-use crate::egress::{self, Decision, Exchange, Outgoing, Route, Ruling, BLOCKED};
+use crate::egress::{self, scrubbed, Decision, Exchange, Route, Ruling, BLOCKED};
 use crate::pin::public_resolve_line;
 use crate::response::Response;
 
 use super::render::{bare_proxy, proxy_lines};
 use super::Fetch;
-
-const MAX_ERROR_CHARS: usize = 300;
 
 pub(super) struct Call<'a> {
     method: &'static str,
@@ -65,8 +63,7 @@ struct Sent<'a> {
 impl Fetch {
     pub(super) fn send(&self, call: Call<'_>, url: &str, mut config: String) -> Result<Response> {
         let started = Instant::now();
-        let target = web_target(url);
-        let Ruling { decision, rule } = self.ruling(call.method, target.as_ref());
+        let (target, Ruling { decision, rule }) = egress::rule_url(self.purpose, call.method, url);
         let sent = Sent {
             call,
             target,
@@ -92,22 +89,6 @@ impl Fetch {
         };
         self.report(sent, route, url, &outcome);
         outcome
-    }
-
-    fn ruling(&self, method: &'static str, target: Option<&WebTarget>) -> Ruling {
-        match target {
-            Some(target) => egress::decide(&Outgoing {
-                purpose: self.purpose,
-                method,
-                target: target.clone(),
-            }),
-            // A URL the gate cannot read (userinfo, another scheme) must not
-            // slip past it.
-            None if egress::gated() => {
-                Decision::Block("not a plain http or https URL".to_string()).into()
-            }
-            None => Decision::Direct.into(),
-        }
     }
 
     fn pinned(&self, url: &str, mut config: String) -> Result<String> {
@@ -154,15 +135,4 @@ pub(super) fn chosen_proxy(
             .ok_or_else(|| "the network policy named an empty proxy".to_string()),
         Decision::Direct => Ok(own.map(str::to_string)),
     }
-}
-
-// The journal must never hold a URL's path, query or userinfo, and our own
-// errors (and some of curl's) quote the URL whole.
-pub(super) fn scrubbed(error: &str, url: &str, host: &str) -> String {
-    let scrubbed = if url.is_empty() {
-        error.to_string()
-    } else {
-        error.replace(url, host)
-    };
-    scrubbed.chars().take(MAX_ERROR_CHARS).collect()
 }

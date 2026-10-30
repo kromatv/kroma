@@ -5,8 +5,11 @@
 
 use std::path::{Path, PathBuf};
 
+use kroma_module_sdk::http::Fetch;
 use kroma_module_sdk::primitives::sha256_file;
 use tokio::process::Command;
+
+const DOWNLOAD_MAX_SECS: u32 = 180;
 
 // Never track `latest`: an upstream change (e.g. v1.1.3's SNI-proxy rework) can
 // break the opaque BitTorrent TCP the bridge carries while HTTPS keeps working,
@@ -118,14 +121,7 @@ async fn download(data_dir: &Path, asset: &Asset) -> Result<PathBuf, String> {
     let tmp = bindir.join(format!("wireproxy.download.{}", std::process::id()));
     let url = format!("{RELEASE}/{VERSION}/{}", asset.name);
 
-    let ok = Command::new("curl")
-        .args(["-fSL", "--max-time", "180", "-o"])
-        .arg(&tmp)
-        .arg(&url)
-        .status()
-        .await
-        .map(|s| s.success())
-        .unwrap_or(false);
+    let ok = fetch_archive(url.clone(), tmp.clone()).await;
     if !ok {
         let _ = tokio::fs::remove_file(&tmp).await;
         return Err(format!("download failed: {url}"));
@@ -165,6 +161,17 @@ async fn download(data_dir: &Path, asset: &Asset) -> Result<PathBuf, String> {
     }
     let _ = tokio::fs::write(sha256_path(data_dir), asset.sha256).await;
     Ok(dest)
+}
+
+async fn fetch_archive(url: String, dest: PathBuf) -> bool {
+    tokio::task::spawn_blocking(move || {
+        Fetch::new()
+            .purpose("binary-download")
+            .max_time(DOWNLOAD_MAX_SECS)
+            .download(&url, &dest)
+    })
+    .await
+    .is_ok_and(|fetched| fetched.is_ok_and(|response| (200..300).contains(&response.status)))
 }
 
 #[cfg(test)]

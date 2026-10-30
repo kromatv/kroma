@@ -134,6 +134,7 @@ fn fetch(base: &str, channel: Channel) -> Result<Option<Latest>> {
     };
     let url = format!("{}/{path}", base.trim_end_matches('/'));
     let res = kroma_http::Fetch::new()
+        .purpose("updates")
         .max_time(15)
         .max_bytes(MAX_FEED_BYTES)
         .header("Accept", "application/vnd.github+json")

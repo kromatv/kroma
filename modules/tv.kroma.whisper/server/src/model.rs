@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
+use kroma_module_sdk::http::Fetch;
 use kroma_module_sdk::primitives::sha256_file;
+
+const MAX_DOWNLOAD_SECS: u32 = 1800;
 
 struct File {
     name: &'static str,
@@ -83,7 +85,7 @@ pub(crate) fn resolve(data_dir: &Path, spec: &str) -> Option<PathBuf> {
     model
         .files
         .iter()
-        .all(|file| ensure(&dir, file, &url(model, file), &curl))
+        .all(|file| ensure(&dir, file, &url(model, file), &download))
         .then_some(dir)
 }
 
@@ -112,14 +114,12 @@ fn hashes_to(path: &Path, sha256: &str) -> bool {
     sha256_file(path).is_ok_and(|actual| actual == sha256)
 }
 
-fn curl(url: &str, dest: &Path) -> bool {
-    Command::new("curl")
-        .args(["-sSL", "--fail", "--max-time", "1800", "-o"])
-        .arg(dest)
-        .arg(url)
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+fn download(url: &str, dest: &Path) -> bool {
+    Fetch::new()
+        .purpose("model-download")
+        .max_time(MAX_DOWNLOAD_SECS)
+        .download(url, dest)
+        .is_ok_and(|response| (200..300).contains(&response.status))
 }
 
 #[cfg(test)]

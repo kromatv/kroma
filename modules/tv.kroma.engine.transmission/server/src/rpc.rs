@@ -8,7 +8,9 @@ pub(crate) const SESSION_HEADER: &str = "X-Transmission-Session-Id";
 
 impl Transmission {
     fn fetch(&self) -> kroma_module_sdk::http::Fetch {
-        let mut f = kroma_module_sdk::http::Fetch::new().max_time(60);
+        let mut f = kroma_module_sdk::http::Fetch::new()
+            .purpose("download-client")
+            .max_time(60);
         let sid = self.session_id.lock().unwrap().clone();
         if !sid.is_empty() {
             f = f.header(SESSION_HEADER, sid);

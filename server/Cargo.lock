@@ -2002,6 +2002,7 @@ dependencies = [
  "hex",
  "kroma-db",
  "kroma-domain",
+ "kroma-http",
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-primitives",

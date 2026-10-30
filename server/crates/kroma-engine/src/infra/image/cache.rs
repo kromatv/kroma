@@ -1,11 +1,13 @@
 use std::path::Path;
-use std::process::Command;
 
 use kroma_primitives::short_hash;
 
 use super::encode::encode_webp;
 use super::scratch::{finalize, unique_tmp};
 use super::{images_dir, PUBLIC_PREFIX};
+
+const MAX_TIME_SECS: u32 = 25;
+const MAX_ARTWORK_BYTES: u64 = 32 * 1024 * 1024;
 
 pub(super) fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String> {
     if !remote_url.starts_with("http") {
@@ -17,13 +19,7 @@ pub(super) fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Op
     let out = dir.join(&name);
     if !out.exists() {
         let tmp = unique_tmp(&out);
-        let dl = Command::new("curl")
-            .args(["-sf", "-L", "--max-time", "25", "-o"])
-            .arg(&tmp)
-            .arg("--")
-            .arg(remote_url)
-            .status();
-        if !matches!(dl, Ok(s) if s.success()) || !tmp.exists() {
+        if !download(remote_url, &tmp) {
             let _ = std::fs::remove_file(&tmp);
             return None;
         }
@@ -63,13 +59,7 @@ pub(super) fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
 
 fn transcode(remote_url: &str, out: &Path) -> bool {
     let src_tmp = unique_tmp(out);
-    let dl = Command::new("curl")
-        .args(["-sf", "-L", "--max-time", "25", "-o"])
-        .arg(&src_tmp)
-        .arg("--")
-        .arg(remote_url)
-        .status();
-    if !matches!(dl, Ok(s) if s.success()) {
+    if !download(remote_url, &src_tmp) {
         let _ = std::fs::remove_file(&src_tmp);
         return false;
     }
@@ -82,6 +72,16 @@ fn transcode(remote_url: &str, out: &Path) -> bool {
         return false;
     }
     finalize(&out_tmp, out).is_some()
+}
+
+fn download(remote_url: &str, dest: &Path) -> bool {
+    kroma_http::Fetch::new()
+        .purpose("artwork")
+        .max_time(MAX_TIME_SECS)
+        .max_bytes(MAX_ARTWORK_BYTES)
+        .download(remote_url, dest)
+        .is_ok_and(|response| (200..300).contains(&response.status))
+        && dest.exists()
 }
 
 #[cfg(test)]

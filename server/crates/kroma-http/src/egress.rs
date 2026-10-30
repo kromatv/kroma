@@ -6,7 +6,7 @@ use std::sync::{Arc, OnceLock};
 
 use anyhow::{bail, Result};
 
-use crate::address::WebTarget;
+use crate::address::{web_target, WebTarget};
 
 /// One call about to leave the process, as the gate sees it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +74,8 @@ pub type Sink = Arc<dyn Fn(Exchange) + Send + Sync>;
 /// refusal from a network failure.
 pub const BLOCKED: &str = "blocked by the network policy";
 
+const MAX_ERROR_CHARS: usize = 300;
+
 static GATE: OnceLock<Gate> = OnceLock::new();
 static SINK: OnceLock<Sink> = OnceLock::new();
 
@@ -104,6 +106,29 @@ pub fn decide(outgoing: &Outgoing) -> Ruling {
     }
 }
 
+/// The installed gate's ruling on a `method` call to `url`, as [`crate::Fetch`]
+/// asks it, with the target it read. While a gate is installed, a URL it
+/// cannot read (userinfo, another scheme) is refused rather than let past it.
+pub fn rule_url(
+    purpose: &'static str,
+    method: &'static str,
+    url: &str,
+) -> (Option<WebTarget>, Ruling) {
+    let target = web_target(url);
+    let ruling = match &target {
+        Some(target) => decide(&Outgoing {
+            purpose,
+            method,
+            target: target.clone(),
+        }),
+        None if GATE.get().is_some() => {
+            Decision::Block("not a plain http or https URL".to_string()).into()
+        }
+        None => Decision::Direct.into(),
+    };
+    (target, ruling)
+}
+
 /// Hand `exchange` to the installed sink, if any. For a client that is not
 /// [`crate::Fetch`] and reports to the same sink.
 pub fn record(exchange: Exchange) {
@@ -112,6 +137,13 @@ pub fn record(exchange: Exchange) {
     }
 }
 
-pub(crate) fn gated() -> bool {
-    GATE.get().is_some()
+/// `error` fit for an [`Exchange`]: `url` replaced by `host`, since our own
+/// errors and some of curl's quote the URL whole, and cut to a bounded length.
+pub fn scrubbed(error: &str, url: &str, host: &str) -> String {
+    let scrubbed = if url.is_empty() {
+        error.to_string()
+    } else {
+        error.replace(url, host)
+    };
+    scrubbed.chars().take(MAX_ERROR_CHARS).collect()
 }
