@@ -60,6 +60,7 @@ export function DownloadsProvider({
           downloadPaused: t('offline.paused'),
           downloadFinished: t('offline.downloaded'),
           groupTitle: t('offline.downloads'),
+          groupText: t('offline.inProgressCount', { count: '{count}' }),
         },
       },
     });

@@ -6,7 +6,7 @@
 
 import { beaconTxt, type LanService } from '@kromatv/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useLanCast } from '#ui/services/cast-lan';
 
 function stubLan(initial: LanService[] = []) {
@@ -144,18 +144,52 @@ function appVisibility(state: 'visible' | 'hidden') {
 }
 
 describe('a phone with the app behind it', () => {
-  it('stops the browse until the app is in front again', async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('stops the browse once the app has stayed away, until it is in front again', () => {
+    vi.useFakeTimers();
     const { lan, stop } = stubLan([waiting('h1', 'Salon')]);
     const { result } = run({ lan });
-    await waitFor(() => expect(result.current).toHaveLength(1));
+    expect(result.current).toHaveLength(1);
 
     appVisibility('hidden');
-    await waitFor(() => expect(stop).toHaveBeenCalled());
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(stop).toHaveBeenCalledTimes(1);
     expect(result.current).toEqual([]);
 
     appVisibility('visible');
-    await waitFor(() => expect(result.current).toHaveLength(1));
+    expect(result.current).toHaveLength(1);
     expect(lan.browse).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the browse through a permission prompt over the app', () => {
+    vi.useFakeTimers();
+    const { lan, stop } = stubLan([waiting('h1', 'Salon')]);
+    const { result } = run({ lan });
+
+    appVisibility('hidden');
+    act(() => vi.advanceTimersByTime(5000));
+    appVisibility('visible');
+    act(() => vi.advanceTimersByTime(60_000));
+
+    expect(lan.browse).toHaveBeenCalledTimes(1);
+    expect(stop).not.toHaveBeenCalled();
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('does not browse when it mounts behind another app', () => {
+    vi.useFakeTimers();
+    appVisibility('hidden');
+    const { lan } = stubLan();
+
+    run({ lan });
+    const whileBehind = lan.browse.mock.calls.length;
+    appVisibility('visible');
+
+    expect(whileBehind).toBe(0);
+    expect(lan.browse).toHaveBeenCalledTimes(1);
   });
 });
 
