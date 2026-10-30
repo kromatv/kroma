@@ -1,6 +1,7 @@
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, SegmentGroup, useConfirm } from '@kromatv/ui/kit';
+import { useBlocker } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NetworkConnections } from '#web/features/admin/network-connections';
 import { NetworkDestinations } from '#web/features/admin/network-destinations';
@@ -27,7 +28,7 @@ const LABEL: Record<NetworkTab, MessageKey> = {
 };
 
 function isNetworkTab(value: string): value is NetworkTab {
-  return NETWORK_TABS.some((tab) => tab === value);
+  return (NETWORK_TABS as readonly string[]).includes(value);
 }
 
 interface NetworkPageProps {
@@ -44,18 +45,29 @@ function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
   const t = useT();
   const confirm = useConfirm();
   const [rulesDirty, setRulesDirty] = useState(false);
+  const unsaved = tab === 'rules' && rulesDirty;
+
+  const confirmLeave = () =>
+    confirm({
+      title: t('network.leaveTitle'),
+      message: t('network.leaveMessage'),
+      confirmLabel: t('network.discard'),
+      cancelLabel: t('network.stay'),
+      destructive: true,
+    });
+
+  useBlocker({
+    shouldBlockFn: async ({ current, next }) => {
+      if (!unsaved || next.pathname === current.pathname) return false;
+      return !(await confirmLeave());
+    },
+    enableBeforeUnload: () => unsaved,
+  });
 
   const pick = async (next: string) => {
     if (!isNetworkTab(next) || next === tab) return;
-    if (tab === 'rules' && rulesDirty) {
-      const leave = await confirm({
-        title: t('network.leaveTitle'),
-        message: t('network.leaveMessage'),
-        confirmLabel: t('network.discard'),
-        cancelLabel: t('network.stay'),
-        destructive: true,
-      });
-      if (!leave) return;
+    if (unsaved) {
+      if (!(await confirmLeave())) return;
       setRulesDirty(false);
     }
     onTab(next);
