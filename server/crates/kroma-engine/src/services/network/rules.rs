@@ -65,7 +65,7 @@ pub enum RulesError {
     InvalidCaller(String),
     InvalidPurpose(String),
     InvalidHost(String),
-    InvalidNote(String),
+    InvalidNote,
 }
 
 impl RulesError {
@@ -77,10 +77,26 @@ impl RulesError {
             RulesError::InvalidCaller(_) => "invalid_caller",
             RulesError::InvalidPurpose(_) => "invalid_purpose",
             RulesError::InvalidHost(_) => "invalid_host",
-            RulesError::InvalidNote(_) => "invalid_note",
+            RulesError::InvalidNote => "invalid_note",
         }
     }
 }
+
+impl std::fmt::Display for RulesError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RulesError::TooManyRules => write!(f, "at most {MAX_RULES} rules"),
+            RulesError::InvalidId(id) => write!(f, "invalid rule id: {id:?}"),
+            RulesError::DuplicateId(id) => write!(f, "two rules share the id {id:?}"),
+            RulesError::InvalidCaller(caller) => write!(f, "invalid caller: {caller:?}"),
+            RulesError::InvalidPurpose(purpose) => write!(f, "invalid purpose: {purpose:?}"),
+            RulesError::InvalidHost(host) => write!(f, "invalid host: {host:?}"),
+            RulesError::InvalidNote => write!(f, "a note is at most {MAX_NOTE_CHARS} characters"),
+        }
+    }
+}
+
+impl std::error::Error for RulesError {}
 
 impl NetworkRules {
     /// The stored rules, or the defaults (allow, no rules) when nothing valid is
@@ -140,7 +156,7 @@ fn check(rule: &Rule) -> Result<(), RulesError> {
     }
     if let Some(note) = &rule.note {
         if note.chars().count() > MAX_NOTE_CHARS {
-            return Err(RulesError::InvalidNote(note.chars().take(40).collect()));
+            return Err(RulesError::InvalidNote);
         }
     }
     Ok(())
