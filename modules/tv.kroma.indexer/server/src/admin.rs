@@ -42,7 +42,8 @@ pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyho
     {
         return Ok(caps);
     }
-    let result = peers::caps(host, &row.kind, &endpoint_of(row));
+    let result =
+        endpoint_of(host, row).and_then(|endpoint| peers::caps(host, &row.kind, &endpoint));
     match &result {
         Ok(_) => {
             let _ = crate::db::note_indexer_result(store, &row.id, true, None, now_ms());
@@ -80,7 +81,9 @@ pub fn invalidate_caps(indexer_id: &str) {
 
 /// The runtime definition cache (lives under the data dir).
 pub fn definition_store(host: &dyn HostCtx) -> DefinitionStore {
-    DefinitionStore::new(host.data_dir())
+    let store = DefinitionStore::new(host.data_dir());
+    let route = peers::route_for(host, store.source());
+    store.routed(route)
 }
 
 // Keyed so a config change (url / settings / VPN / FlareSolverr) yields a fresh
@@ -88,15 +91,16 @@ pub fn definition_store(host: &dyn HostCtx) -> DefinitionStore {
 // throttling + the login cookie jar persist across the sweep's requests.
 static SESSION_CACHE: Mutex<Option<HashMap<String, Arc<Session>>>> = Mutex::new(None);
 
-fn session_key(host: &dyn HostCtx, row: &IndexerRow) -> String {
-    let vpn = host.setting_bool("acqIndexersUseVpn", false);
+fn session_key(host: &dyn HostCtx, row: &IndexerRow, proxy: Option<&str>) -> String {
     let fs = host.setting_str("acqFlaresolverrUrl", "");
-    format!("{}|{}|{}|{vpn}|{fs}", row.id, row.url, row.settings)
+    let proxy = proxy.unwrap_or("direct");
+    format!("{}|{}|{}|{proxy}|{fs}", row.id, row.url, row.settings)
 }
 
 /// Get (or build + cache) the shared session for a `builtin` indexer row.
 pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Arc<Session>> {
-    let key = session_key(host, row);
+    let proxy = peers::route_for(host, &row.url)?;
+    let key = session_key(host, row, proxy.as_deref());
     if let Some(s) = SESSION_CACHE
         .lock()
         .unwrap()
@@ -106,7 +110,7 @@ pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<A
     {
         return Ok(s);
     }
-    let session = Arc::new(build_builtin_session(host, row)?);
+    let session = Arc::new(build_builtin_session(host, row, proxy)?);
     SESSION_CACHE
         .lock()
         .unwrap()
@@ -115,20 +119,32 @@ pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<A
     Ok(session)
 }
 
-fn vpn_proxy_url(host: &dyn HostCtx) -> Option<String> {
-    // Check the opt-in first so the WireGuard config isn't read on the common
-    // (off) path.
-    if host.setting_bool("acqIndexersUseVpn", false) {
-        peers::proxy_url(host)
-    } else {
-        None
+// FlareSolverr fetches the tracker from its own network, so behind the VPN it
+// would carry the tracker's URL and cookies around the tunnel.
+fn flaresolverr_url(host: &dyn HostCtx, behind_vpn: bool) -> Option<String> {
+    let url = host.setting_str("acqFlaresolverrUrl", "");
+    let url = url.trim();
+    if url.is_empty() {
+        return None;
     }
+    if behind_vpn {
+        tracing::warn!(
+            "FlareSolverr is not used while indexers go through the VPN: it would reach the tracker outside the tunnel"
+        );
+        return None;
+    }
+    Some(url.to_string())
 }
 
 /// Build a live [`Session`] for a `builtin` indexer row: load its definition,
-/// seed config from the stored settings JSON + base link, and wire optional
-/// VPN / FlareSolverr transport. Prefer [`builtin_session`] (cached) on hot paths.
-pub fn build_builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Session> {
+/// seed config from the stored settings JSON + base link, and wire the proxy
+/// [`peers::route_for`] chose and FlareSolverr. Prefer [`builtin_session`]
+/// (cached) on hot paths.
+pub fn build_builtin_session(
+    host: &dyn HostCtx,
+    row: &IndexerRow,
+    proxy: Option<String>,
+) -> anyhow::Result<Session> {
     let def_id = row
         .definition_id
         .as_deref()
@@ -139,21 +155,14 @@ pub fn build_builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Re
         base_url: row.url.clone(),
         settings,
     };
-
-    // Route search traffic through the VPN bridge only when the admin opted in
-    // (a downed tunnel must not silently break search otherwise).
-    let socks5 = vpn_proxy_url(host);
-    let flaresolverr = {
-        let url = host.setting_str("acqFlaresolverrUrl", "");
-        (!url.trim().is_empty()).then(|| url.trim().to_string())
-    };
+    let flaresolverr = flaresolverr_url(host, proxy.is_some());
 
     Ok(Session::new(
         host.data_dir(),
         &row.id,
         def,
         cfg,
-        socks5,
+        proxy,
         flaresolverr,
     ))
 }
