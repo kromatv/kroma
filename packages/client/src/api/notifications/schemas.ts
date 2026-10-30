@@ -126,6 +126,35 @@ export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
 export const PushTransport = z.enum(['webpush', 'relay', 'apns', 'fcm']);
 export type PushTransport = z.infer<typeof PushTransport>;
 
+/** What became of one attempt to reach a device. `skipped_muted` is the reader's
+ * own preference, `throttled` a group that pushed too recently, `gone` an
+ * endpoint the push service has retired. */
+export const DeliveryStatus = z.enum(['sent', 'failed', 'skipped_muted', 'throttled', 'gone']);
+export type DeliveryStatus = z.infer<typeof DeliveryStatus>;
+
+export const DeliveryAccount = z.object({ id: z.string(), username: z.string() });
+export type DeliveryAccount = z.infer<typeof DeliveryAccount>;
+
+/** One push attempt. It names the device, never its address: the endpoint, the
+ * device token and the relay grant stay on the server. `account` is present
+ * only in the admin's view, and `error` only when a transport refused. */
+export const NotificationDelivery = z.object({
+  id: z.string(),
+  notificationId: z.string().optional(),
+  deviceId: z.string().optional(),
+  device: z.string().optional(),
+  transport: PushTransport,
+  status: DeliveryStatus,
+  error: z.string().optional(),
+  account: DeliveryAccount.optional(),
+  createdAt: z.number(),
+});
+export type NotificationDelivery = z.infer<typeof NotificationDelivery>;
+
+/** `GET /api/notifications/deliveries` and `GET /api/admin/notifications/deliveries`. */
+export const DeliveriesView = z.object({ deliveries: z.array(NotificationDelivery) });
+export type DeliveriesView = z.infer<typeof DeliveriesView>;
+
 /** `POST /api/push/subscribe`. Web Push sends `endpoint` plus both keys; the
  * native transports send the device token (or relay grant) as `endpoint` and
  * omit the keys. */

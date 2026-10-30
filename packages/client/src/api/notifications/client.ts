@@ -2,7 +2,12 @@ import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
 import type { NotificationId } from './ids';
 import { pushApi } from './push';
-import { type NotificationAction, NotificationPrefs, NotificationsView } from './schemas';
+import {
+  DeliveriesView,
+  type NotificationAction,
+  NotificationPrefs,
+  NotificationsView,
+} from './schemas';
 
 const Unread = z.object({ unread: z.number() });
 
@@ -14,6 +19,10 @@ export default function notificationsApi(ctx: RequestContext) {
 
     /** Newest first, with the unread tally. */
     list: () => ctx.get('/notifications', NotificationsView),
+
+    /** What became of this account's own pushes, newest first. Each record
+     * names the device it was sent to and never that device's address. */
+    deliveries: () => ctx.get('/notifications/deliveries', DeliveriesView),
 
     markRead: (ids: NotificationId[]) => ctx.post('/notifications/read', Unread, { body: { ids } }),
 

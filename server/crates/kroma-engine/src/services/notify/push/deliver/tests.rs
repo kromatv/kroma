@@ -12,7 +12,7 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 
 use kroma_db::push_subs::{self, NewSubscription};
-use kroma_domain::PushTransport;
+use kroma_domain::{DeliveryStatus, NotificationDelivery, PushTransport};
 
 struct FakeService {
     endpoint: String,
@@ -73,10 +73,44 @@ impl FakeService {
         }
     }
 
+    // A service that answers by quoting the request back, which APNs and FCM
+    // both do in their own words when they refuse a token.
+    fn quoting_the_address(status: u16) -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let port = listener.local_addr().unwrap().port();
+        let endpoint = format!("http://127.0.0.1:{port}/push/{ADDRESS}");
+        let hits = Arc::new(Mutex::new(0usize));
+        let counter = Arc::clone(&hits);
+        let quoted = endpoint.clone();
+
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { break };
+                if !drain_request(&stream) {
+                    continue;
+                }
+                *counter.lock().unwrap() += 1;
+                let body = format!("BadDeviceToken: {quoted} is not registered");
+                let resp = format!(
+                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                let _ = stream.write_all(resp.as_bytes());
+                let _ = stream.flush();
+            }
+        });
+
+        Self { endpoint, hits }
+    }
+
     fn hits(&self) -> usize {
         *self.hits.lock().unwrap()
     }
 }
+
+// Long enough to be an address and distinctive enough that finding it in a
+// stored row means it came from the endpoint.
+const ADDRESS: &str = "gAAAAABk7Qd3rL9device-token";
 
 fn state_with_endpoint(
     endpoint: &str,
@@ -372,4 +406,111 @@ fn a_caller_that_says_nothing_is_not_counted_as_a_push() {
         "the silent caller must not have consumed the listener"
     );
     assert_eq!(service.hits(), 1);
+}
+
+fn records(state: &crate::state::SharedState, user: &str) -> Vec<NotificationDelivery> {
+    let conn = state.db.get().unwrap();
+    kroma_db::notification_deliveries::deliveries_for_user(&conn, user, 50).unwrap()
+}
+
+#[test]
+fn a_push_the_service_accepts_is_written_down_against_its_device() {
+    let service = FakeService::answering(201);
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+
+    deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    let written = records(&state, &user);
+    assert_eq!(written.len(), 1);
+    assert_eq!(written[0].status, DeliveryStatus::Sent);
+    assert_eq!(written[0].device.as_deref(), Some("Firefox"));
+    assert_eq!(written[0].notification_id.as_deref(), Some("n1"));
+    assert_eq!(written[0].error, None);
+}
+
+#[test]
+fn a_retired_endpoint_leaves_a_record_its_own_deletion_cannot_take() {
+    let service = FakeService::answering(410);
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+
+    deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    let written = records(&state, &user);
+    assert_eq!(written.len(), 1);
+    assert_eq!(written[0].status, DeliveryStatus::Gone);
+    assert_eq!(subscription_count(&state, &user), 0);
+}
+
+#[test]
+fn a_refusal_is_written_down_in_the_services_own_words() {
+    let service = FakeService::answering(400);
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+
+    deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    let written = records(&state, &user);
+    assert_eq!(written[0].status, DeliveryStatus::Failed);
+    assert!(
+        written[0]
+            .error
+            .as_deref()
+            .unwrap_or_default()
+            .contains("400"),
+        "{:?}",
+        written[0].error
+    );
+}
+
+#[test]
+fn a_transport_this_server_cannot_speak_says_so_rather_than_nothing() {
+    let service = FakeService::answering(201);
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::Apns, true);
+
+    deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    let written = records(&state, &user);
+    assert_eq!(written[0].status, DeliveryStatus::Failed);
+    assert_eq!(
+        written[0].error.as_deref(),
+        Some("no credentials for this transport on this server")
+    );
+}
+
+#[test]
+fn a_service_that_quotes_the_address_back_does_not_get_it_written_down() {
+    let service = FakeService::quoting_the_address(400);
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+
+    deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    let written = records(&state, &user);
+    let said = written[0].error.as_deref().unwrap_or_default();
+    assert!(said.contains("BadDeviceToken"), "{said}");
+    assert!(!said.contains(ADDRESS), "{said}");
+    assert!(!said.contains(&service.endpoint), "{said}");
 }

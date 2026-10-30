@@ -70,6 +70,83 @@ pub struct SubscribeBody {
     pub device: Option<String>,
 }
 
+/// What became of one attempt to reach a device. `SkippedMuted` is the reader's
+/// own preference, `Throttled` a group that pushed too recently, `Gone` an
+/// endpoint the push service has retired.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeliveryStatus {
+    Sent,
+    Failed,
+    SkippedMuted,
+    Throttled,
+    Gone,
+}
+
+impl DeliveryStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            DeliveryStatus::Sent => "sent",
+            DeliveryStatus::Failed => "failed",
+            DeliveryStatus::SkippedMuted => "skipped_muted",
+            DeliveryStatus::Throttled => "throttled",
+            DeliveryStatus::Gone => "gone",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<DeliveryStatus> {
+        match s {
+            "sent" => Some(DeliveryStatus::Sent),
+            "failed" => Some(DeliveryStatus::Failed),
+            "skipped_muted" => Some(DeliveryStatus::SkippedMuted),
+            "throttled" => Some(DeliveryStatus::Throttled),
+            "gone" => Some(DeliveryStatus::Gone),
+            _ => None,
+        }
+    }
+}
+
+/// Whose device a delivery was for. Carried only by the admin's view; a reader
+/// asking about their own devices already knows.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeliveryAccount {
+    pub id: String,
+    pub username: String,
+}
+
+/// One push attempt as a reader sees it.
+///
+/// It names the device and never its address: an endpoint, a device token and a
+/// relay grant are all credentials, and none of them leaves the server. `device`
+/// is the label the device chose for itself, `device_id` the subscription it was
+/// sent to, which is what groups a run of attempts under one device.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationDelivery {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notification_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub device: Option<String>,
+    pub transport: PushTransport,
+    pub status: DeliveryStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account: Option<DeliveryAccount>,
+    pub created_at: i64,
+}
+
+/// `GET /api/notifications/deliveries` and its admin counterpart.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeliveriesView {
+    pub deliveries: Vec<NotificationDelivery>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,5 +166,23 @@ mod tests {
         }
         assert_eq!(PushTransport::parse("expo"), None);
         assert_eq!(PushCategory::parse("digest"), None);
+    }
+
+    #[test]
+    fn a_delivery_status_round_trips_through_its_wire_string() {
+        for s in [
+            DeliveryStatus::Sent,
+            DeliveryStatus::Failed,
+            DeliveryStatus::SkippedMuted,
+            DeliveryStatus::Throttled,
+            DeliveryStatus::Gone,
+        ] {
+            assert_eq!(DeliveryStatus::parse(s.as_str()), Some(s));
+            assert_eq!(
+                serde_json::to_string(&s).unwrap(),
+                format!("\"{}\"", s.as_str())
+            );
+        }
+        assert_eq!(DeliveryStatus::parse("queued"), None);
     }
 }
