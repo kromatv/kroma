@@ -44,7 +44,11 @@ const captions = {
     featureBody: 'Toute votre collection, au même endroit.',
     footer: 'GRATUIT ET OPEN SOURCE · VOTRE PROPRE SERVEUR',
     shots: [
-      ['01-movies', 'Votre cinéma.\nPartout avec vous.', 'Tous vos films, rangés et prêts à lancer.'],
+      [
+        '01-movies',
+        'Votre cinéma.\nPartout avec vous.',
+        'Tous vos films, rangés et prêts à lancer.',
+      ],
       ['02-detail', 'Tout sur\nvotre film.', 'L’affiche, le résumé, les détails : tout est là.'],
       [
         '03-home',
