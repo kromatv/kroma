@@ -46,8 +46,8 @@ pub fn insert_notification(
     conn.execute(
         "INSERT INTO notifications \
          (id, user_id, category, event, title_key, body_key, params, link, image_url, actions, \
-          push_category, created_at, subject_kind, subject_id, actor_id, data) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+          push_category, created_at, subject_kind, subject_id, actor_id, data, dedupe_key) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)",
         params![
             n.id,
             user_id,
@@ -66,7 +66,8 @@ pub fn insert_notification(
             n.subject.as_ref().map(|s| s.kind.as_str()),
             n.subject.as_ref().map(|s| s.id.as_str()),
             n.actor_id,
-            data_column(n)
+            data_column(n),
+            n.dedupe_key
         ],
     )?;
     prune(conn, user_id)?;
@@ -101,6 +102,16 @@ pub fn list_notifications(
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map(params![user_id, limit as i64], row_to_notification)?;
     rows.collect()
+}
+
+/// Whether `user_id` still holds a row this producer has already sent, named by
+/// its `dedupe_key`.
+pub fn holds_dedupe_key(conn: &Connection, user_id: &str, key: &str) -> rusqlite::Result<bool> {
+    conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM notifications WHERE user_id = ?1 AND dedupe_key = ?2)",
+        params![user_id, key],
+        |r| r.get(0),
+    )
 }
 
 /// Unread tally for the bell badge.
@@ -185,6 +196,21 @@ mod tests {
 
         assert_eq!(n.data, None);
         assert_eq!(n.title_key, "notifications.request.approved.title");
+    }
+
+    #[test]
+    fn a_dedupe_key_is_held_by_the_one_recipient_that_was_told() {
+        let (p, u1, u2) = pool();
+        let conn = p.get().unwrap();
+        let mut told = new("n1", 1_000);
+        told.dedupe_key = Some("request.available:req-1:available".into());
+        insert_notification(&conn, &u1, &told).unwrap();
+
+        assert!(holds_dedupe_key(&conn, &u1, "request.available:req-1:available").unwrap());
+        assert!(!holds_dedupe_key(&conn, &u2, "request.available:req-1:available").unwrap());
+        assert!(
+            !holds_dedupe_key(&conn, &u1, "request.available:req-1:partially_available").unwrap()
+        );
     }
 
     #[test]

@@ -81,7 +81,8 @@ account or a new avatar shows on rows written before the change.
 
 ## Repeats
 
-Status: **SHIPPED** in the reader's list; the rest **AGREED**.
+Status: **SHIPPED** in the reader's list and for a second telling; folding on
+the server **AGREED**.
 
 **ACCT-48** (SHIPPED) - Repeats of one thing read as one row with a count, so a run of
 identical failures is a line saying how many. The fold happens in the list being read, so a
@@ -94,7 +95,7 @@ the earlier one instead of stacking beside it.
 **ACCT-50** (DRAFT) - A folded group raises a banner at most once an hour, and repeats in
 between update the inbox silently. One hour is the proposed window and is still open.
 
-**ACCT-51** (AGREED) - A second telling of something a person already holds is dropped
+**ACCT-51** (SHIPPED) - A second telling of something a person already holds is dropped
 rather than folded. A request that flips between partly and fully available tells its
 requester once per real change, not once per flip.
 

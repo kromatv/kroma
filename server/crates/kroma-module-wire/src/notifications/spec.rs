@@ -33,6 +33,10 @@ pub struct NotificationSpec {
     /// The event's own facts, as a JSON object typed per event.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
+    /// Names this emission, so one the recipient already holds is not told
+    /// again. Leave it unset for an event worth repeating.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dedupe_key: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -57,6 +61,7 @@ impl NotificationSpec {
             subject: None,
             actor_id: None,
             data: None,
+            dedupe_key: None,
             link: None,
             image_url: None,
             actions: Vec::new(),
@@ -116,6 +121,15 @@ impl NotificationSpec {
     /// the clients' schemas are keyed by field name.
     pub fn data(mut self, data: &impl Serialize) -> Self {
         self.data = serde_json::to_value(data).ok().filter(Value::is_object);
+        self
+    }
+
+    /// Names this emission so a repeat of it is dropped rather than told twice.
+    /// A key must name the transition, not just its subject: the same request
+    /// reaching the catalogue twice is one piece of news, two different
+    /// statuses are two.
+    pub fn dedupe_key(mut self, key: impl Into<String>) -> Self {
+        self.dedupe_key = Some(key.into());
         self
     }
 
@@ -230,6 +244,21 @@ mod tests {
         assert_eq!(spec.subject, None);
         assert_eq!(spec.actor_id, None);
         assert_eq!(spec.data, None);
+        assert_eq!(spec.dedupe_key, None);
+    }
+
+    #[test]
+    fn a_dedupe_key_crosses_the_wire_under_its_own_name() {
+        let spec = NotificationSpec::new(
+            NotificationEvent::RequestAvailable,
+            "notifications.request.available.title",
+            "notifications.request.available.body",
+        )
+        .dedupe_key("request.available:req-7:available");
+
+        let json = serde_json::to_value(&spec).unwrap();
+
+        assert_eq!(json["dedupeKey"], "request.available:req-7:available");
     }
 
     #[test]

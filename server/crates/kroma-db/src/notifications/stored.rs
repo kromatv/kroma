@@ -12,7 +12,7 @@ use crate::Row;
 // Column order must match `row_to_notification`.
 pub(super) const NOTIFICATION_COLS: &str = "id, category, event, title_key, body_key, params, \
     link, image_url, actions, push_category, read_at, created_at, subject_kind, subject_id, \
-    actor_id, data";
+    actor_id, data, dedupe_key";
 
 /// The ceiling on an event's `data`, enforced where the row is written so a
 /// module's object is bounded like any other cross-process body.
@@ -30,6 +30,7 @@ pub struct StoredNotification {
     pub subject: Option<NotificationSubject>,
     pub actor_id: Option<String>,
     pub data: Option<serde_json::Value>,
+    pub dedupe_key: Option<String>,
     pub link: Option<String>,
     pub image_url: Option<String>,
     pub actions: Vec<ActionSpec>,
@@ -53,6 +54,7 @@ impl StoredNotification {
             subject: spec.subject.clone(),
             actor_id: spec.actor_id.clone(),
             data: spec.data.clone(),
+            dedupe_key: spec.dedupe_key.clone(),
             link: spec.link.clone(),
             image_url: spec.image_url.clone(),
             actions: spec.actions.clone(),
@@ -87,6 +89,7 @@ pub(super) fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotificatio
             .map(|(kind, id)| NotificationSubject { kind, id }),
         actor_id: r.get(14)?,
         data: data.as_deref().and_then(|raw| serde_json::from_str(raw).ok()),
+        dedupe_key: r.get(16)?,
         link: r.get(6)?,
         image_url: r.get(7)?,
         actions: serde_json::from_str(&actions).unwrap_or_default(),
