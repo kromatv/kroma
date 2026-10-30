@@ -3,7 +3,7 @@ use serde_json::json;
 use kroma_module_host::{NetworkAction, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkRoute};
 
 use super::*;
-use crate::db::testing::{TempPool, temp_pool};
+use crate::db::testing::{temp_pool, TempPool};
 
 fn network(tag: &str, vpn: Point) -> (Network, TempPool) {
     let pool = temp_pool(tag);
@@ -78,7 +78,11 @@ fn a_block_names_the_rule_or_the_guard_that_refused() {
     network.set_rules(everything("block")).unwrap();
 
     let by_rule = network.rule_on(CORE, "stats", &target("stats.kroma.tv"));
-    let by_guard = network.rule_on("tv.kroma.roku", "roku", &target("127.0.0.1"));
+    let bridge = WebTarget {
+        port: 25345,
+        ..target("127.0.0.1")
+    };
+    let by_guard = network.rule_on("tv.kroma.roku", "roku", &bridge);
 
     assert_eq!(by_rule.decision, Decision::Block("rule all".to_string()));
     assert_eq!(by_guard.rule.as_deref(), Some(GUARD_LOOPBACK));
@@ -169,24 +173,45 @@ fn the_purposes_offered_include_the_cores_and_every_one_seen() {
 }
 
 fn ask(host: &str) -> NetworkAsk {
+    ask_at(host, 8080)
+}
+
+fn ask_at(host: &str, port: u16) -> NetworkAsk {
     NetworkAsk {
         purpose: "download-client".to_string(),
         method: "POST".to_string(),
         host: host.to_string(),
-        port: 8080,
+        port,
         https: false,
     }
 }
 
 #[test]
-fn a_module_asking_for_loopback_is_refused_with_the_reason() {
+fn a_module_asking_for_one_of_this_servers_ports_is_refused_with_the_reason() {
     let (network, _pool) = network("network-ask-loopback", Point::absent(VPN_POINT));
+    let network = network.with_core_ports(4040, None);
+
+    for port in [4040, 4443, 25345] {
+        let answer = NetworkPolicy::decide(
+            &network,
+            "tv.kroma.engine.qbittorrent",
+            &ask_at("localhost", port),
+        );
+
+        assert_eq!(answer.action, NetworkAction::Block, "{port}");
+        assert_eq!(answer.rule.as_deref(), Some(GUARD_LOOPBACK), "{port}");
+        assert!(answer.reason.unwrap().contains("loopback"), "{port}");
+    }
+}
+
+#[test]
+fn a_download_client_on_this_machine_is_reachable() {
+    let (network, _pool) = network("network-ask-local-client", Point::absent(VPN_POINT));
+    let network = network.with_core_ports(4040, None);
 
     let answer = NetworkPolicy::decide(&network, "tv.kroma.engine.qbittorrent", &ask("127.0.0.1"));
 
-    assert_eq!(answer.action, NetworkAction::Block);
-    assert_eq!(answer.rule.as_deref(), Some(GUARD_LOOPBACK));
-    assert!(answer.reason.unwrap().contains("loopback"));
+    assert_eq!(answer.action, NetworkAction::Direct);
 }
 
 #[test]

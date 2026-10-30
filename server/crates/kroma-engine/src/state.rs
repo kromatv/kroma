@@ -146,7 +146,8 @@ impl AppState {
             db.clone(),
             settings.clone(),
             crate::point::Point::new(crate::services::network::VPN_POINT, contributions.clone()),
-        ));
+        )
+        .with_core_ports(config.port, config.https_port_override));
         Arc::new_cyclic(|weak| AppState {
             config,
             ffprobe_available,

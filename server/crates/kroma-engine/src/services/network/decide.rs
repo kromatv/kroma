@@ -19,14 +19,16 @@ pub const GUARD_LOOPBACK: &str = "guard:loopback";
 /// The action for one call, and the id of the rule (or guard) that chose it;
 /// `None` when the default did. A guard cannot be overridden by any rule. A
 /// `vpn` rule for a host on the local network resolves to `direct`, since the
-/// tunnel cannot reach it.
+/// tunnel cannot reach it. `own_ports` are the ports this server listens on
+/// itself, which no module may reach on this machine.
 pub fn decide(
     rules: &NetworkRules,
     caller: &str,
     purpose: &str,
     target: &WebTarget,
+    own_ports: &[u16],
 ) -> (Action, Option<String>) {
-    if let Some(guard) = guard(caller, target) {
+    if let Some(guard) = guard(caller, target, own_ports) {
         return (Action::Block, Some(guard.to_string()));
     }
     let host = target.host.trim_end_matches('.').to_ascii_lowercase();
@@ -48,16 +50,28 @@ pub fn decide(
     (action, Some(rule.id.clone()))
 }
 
-fn guard(caller: &str, target: &WebTarget) -> Option<&'static str> {
-    let ip = target.literal().map(unmapped)?;
-    if is_link_local(ip) {
+// A download client or FlareSolverr on this machine is a legitimate
+// destination; this server's own listeners are not, since a module reaches
+// the core and its peers through the host API, which checks who is asking.
+fn guard(caller: &str, target: &WebTarget, own_ports: &[u16]) -> Option<&'static str> {
+    if target.literal().map(unmapped).is_some_and(is_link_local) {
         return Some(GUARD_LINK_LOCAL);
     }
-    // 0.0.0.0 and :: connect to this machine on Linux, so they count as loopback.
-    if caller != CORE && (ip.is_loopback() || ip.is_unspecified()) {
+    if caller != CORE && is_this_machine(target) && own_ports.contains(&target.port) {
         return Some(GUARD_LOOPBACK);
     }
     None
+}
+
+// 0.0.0.0 and :: connect to this machine on Linux, so they count as loopback.
+fn is_this_machine(target: &WebTarget) -> bool {
+    match target.literal().map(unmapped) {
+        Some(ip) => ip.is_loopback() || ip.is_unspecified(),
+        None => {
+            let host = target.host.trim_end_matches('.').to_ascii_lowercase();
+            host == "localhost" || host.ends_with(".localhost")
+        }
+    }
 }
 
 fn unmapped(ip: IpAddr) -> IpAddr {
@@ -85,9 +99,12 @@ fn matches(rule: &Rule, caller: &str, purpose: &str, host: &str) -> bool {
 
 fn host_matches(pattern: &str, host: &str) -> bool {
     match pattern.strip_prefix("*.") {
-        Some(suffix) => host
-            .strip_suffix(suffix)
-            .is_some_and(|label| label.len() > 1 && label.ends_with('.')),
+        Some(suffix) => {
+            host == suffix
+                || host
+                    .strip_suffix(suffix)
+                    .is_some_and(|label| label.len() > 1 && label.ends_with('.'))
+        }
         None => pattern == host,
     }
 }

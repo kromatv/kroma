@@ -23,13 +23,13 @@ mod journal;
 mod rules;
 mod summary;
 
-pub use decide::{CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK, decide};
+pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK};
 pub use flow::{Flow, FlowFilter, FlowReport, FlowRoute, Verdict};
 pub use journal::{Journal, RECENT_CAPACITY};
 pub use rules::{
-    Action, DefaultAction, MAX_BODY_BYTES, NetworkRules, Rule, RulesError, SETTING_KEY,
+    Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
 };
-pub use summary::{MAX_DAYS, Summary, SummaryRow, Totals};
+pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 
 /// The point a `vpn` rule takes its SOCKS5 URL from.
 pub const VPN_POINT: &str = "tv.kroma.vpn/proxy";
@@ -68,6 +68,8 @@ pub struct Network {
     vpn: Point,
     journal: Journal,
     proxy: Mutex<Option<(Instant, Option<String>)>>,
+    core_port: Option<u16>,
+    https_port: Option<u16>,
 }
 
 impl Network {
@@ -80,7 +82,30 @@ impl Network {
             vpn,
             journal: Journal::default(),
             proxy: Mutex::new(None),
+            core_port: None,
+            https_port: None,
         }
+    }
+
+    /// The core's own HTTP port, and its HTTPS port when the environment pins
+    /// one (otherwise the `httpsPort` setting is read at each decision).
+    pub fn with_core_ports(mut self, http: u16, https: Option<u16>) -> Self {
+        self.core_port = Some(http);
+        self.https_port = https;
+        self
+    }
+
+    fn own_ports(&self) -> Vec<u16> {
+        let setting =
+            |key: &str, fallback: i64| u16::try_from(self.settings.get_i64(key, fallback)).ok();
+        [
+            self.core_port,
+            self.https_port.or_else(|| setting("httpsPort", 4443)),
+            setting("vpnLocalPort", 25345),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
     }
 
     /// Put this policy and journal on every `kroma_http::Fetch` call this
@@ -111,7 +136,7 @@ impl Network {
     /// Where a call `caller` makes for `purpose` to `target` goes. A `vpn`
     /// action becomes the VPN's proxy, or a refusal while no VPN answers.
     pub fn rule_on(&self, caller: &str, purpose: &str, target: &WebTarget) -> Ruling {
-        let (action, rule) = decide(&self.rules(), caller, purpose, target);
+        let (action, rule) = decide(&self.rules(), caller, purpose, target, &self.own_ports());
         let decision = match action {
             Action::Direct => Decision::Direct,
             Action::Block => Decision::Block(refusal(rule.as_deref())),
@@ -196,7 +221,9 @@ impl Network {
 fn refusal(rule: Option<&str>) -> String {
     match rule {
         Some(GUARD_LINK_LOCAL) => "a link-local address is never reachable".to_string(),
-        Some(GUARD_LOOPBACK) => "a module may not reach this machine's loopback".to_string(),
+        Some(GUARD_LOOPBACK) => {
+            "a module may not reach this server's own listeners on loopback".to_string()
+        }
         Some(id) => format!("rule {id}"),
         None => "the default action is block".to_string(),
     }
