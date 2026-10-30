@@ -1083,6 +1083,7 @@
   "patchedDependencies": {
     "react-native-web@0.21.2": "patches/react-native-web@0.21.2.patch",
     "expo-video@58.0.12": "patches/expo-video@58.0.12.patch",
+    "@kesha-antonov/react-native-background-downloader@4.6.4": "patches/@kesha-antonov%2Freact-native-background-downloader@4.6.4.patch",
     "react-native-tvos@0.88.0-0": "patches/react-native-tvos@0.88.0-0.patch",
     "react-native-svg@15.16.0": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
   },

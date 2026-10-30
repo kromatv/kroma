@@ -7,6 +7,7 @@
   "offline.downloads": "Téléchargements",
   "offline.empty": "Aucun téléchargement. Utilisez le bouton de téléchargement d'un film ou d'un épisode pour le regarder hors ligne.",
   "offline.failed": "Échec du téléchargement. Votre serveur doit peut-être être mis à jour.",
+  "offline.inProgressCount": "{count} en cours",
   "offline.pause": "Mettre en pause",
   "offline.paused": "En pause",
   "offline.queued": "En attente",
