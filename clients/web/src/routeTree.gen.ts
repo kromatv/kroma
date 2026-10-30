@@ -41,6 +41,7 @@ import { Route as AdminReportsRouteImport } from './routes/admin.reports';
 import { Route as AdminStorageRouteImport } from './routes/admin.storage';
 import { Route as AdminStoreRouteImport } from './routes/admin.store';
 import { Route as AdminTranscoderRouteImport } from './routes/admin.transcoder';
+import { Route as AdminUpdatesRouteImport } from './routes/admin.updates';
 import { Route as AdminUsersRouteImport } from './routes/admin.users';
 import { Route as AppGenresIndexRouteImport } from './routes/_app.genres.index';
 import { Route as AppGenresIdRouteImport } from './routes/_app.genres.$id';
@@ -216,6 +217,11 @@ const AdminTranscoderRoute = AdminTranscoderRouteImport.update({
   path: '/transcoder',
   getParentRoute: () => AdminRoute,
 } as any);
+const AdminUpdatesRoute = AdminUpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => AdminRoute,
+} as any);
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -328,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/admin/storage': typeof AdminStorageRoute;
   '/admin/store': typeof AdminStoreRoute;
   '/admin/transcoder': typeof AdminTranscoderRoute;
+  '/admin/updates': typeof AdminUpdatesRoute;
   '/admin/users': typeof AdminUsersRoute;
   '/admin/': typeof AdminIndexRoute;
   '/genres/$id': typeof AppGenresIdRoute;
@@ -375,6 +382,7 @@ export interface FileRoutesByTo {
   '/admin/storage': typeof AdminStorageRoute;
   '/admin/store': typeof AdminStoreRoute;
   '/admin/transcoder': typeof AdminTranscoderRoute;
+  '/admin/updates': typeof AdminUpdatesRoute;
   '/admin/users': typeof AdminUsersRoute;
   '/admin': typeof AdminIndexRoute;
   '/genres/$id': typeof AppGenresIdRoute;
@@ -425,6 +433,7 @@ export interface FileRoutesById {
   '/admin/storage': typeof AdminStorageRoute;
   '/admin/store': typeof AdminStoreRoute;
   '/admin/transcoder': typeof AdminTranscoderRoute;
+  '/admin/updates': typeof AdminUpdatesRoute;
   '/admin/users': typeof AdminUsersRoute;
   '/_app/': typeof AppIndexRoute;
   '/admin/': typeof AdminIndexRoute;
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/admin/storage'
     | '/admin/store'
     | '/admin/transcoder'
+    | '/admin/updates'
     | '/admin/users'
     | '/admin/'
     | '/genres/$id'
@@ -523,6 +533,7 @@ export interface FileRouteTypes {
     | '/admin/storage'
     | '/admin/store'
     | '/admin/transcoder'
+    | '/admin/updates'
     | '/admin/users'
     | '/admin'
     | '/genres/$id'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/admin/storage'
     | '/admin/store'
     | '/admin/transcoder'
+    | '/admin/updates'
     | '/admin/users'
     | '/_app/'
     | '/admin/'
@@ -827,6 +839,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTranscoderRouteImport;
       parentRoute: typeof AdminRoute;
     };
+    '/admin/updates': {
+      id: '/admin/updates';
+      path: '/updates';
+      fullPath: '/admin/updates';
+      preLoaderRoute: typeof AdminUpdatesRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/users': {
       id: '/admin/users';
       path: '/users';
@@ -1016,6 +1035,7 @@ interface AdminRouteChildren {
   AdminStorageRoute: typeof AdminStorageRoute;
   AdminStoreRoute: typeof AdminStoreRoute;
   AdminTranscoderRoute: typeof AdminTranscoderRoute;
+  AdminUpdatesRoute: typeof AdminUpdatesRoute;
   AdminUsersRoute: typeof AdminUsersRoute;
   AdminIndexRoute: typeof AdminIndexRoute;
   AdminModulesIdRoute: typeof AdminModulesIdRoute;
@@ -1041,6 +1061,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminStorageRoute: AdminStorageRoute,
   AdminStoreRoute: AdminStoreRoute,
   AdminTranscoderRoute: AdminTranscoderRoute,
+  AdminUpdatesRoute: AdminUpdatesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminModulesIdRoute: AdminModulesIdRoute,

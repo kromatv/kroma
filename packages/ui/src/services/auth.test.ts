@@ -125,6 +125,35 @@ describe('boot', () => {
     unmount();
     expect(client.setRefreshHandler).toHaveBeenLastCalledWith();
   });
+
+  it.each([new TypeError('offline'), apiError(502)])(
+    'keeps the active account during a server restart (%s)',
+    async (error) => {
+      saveSession(stored());
+      const client = sessionClient({ exchangeToken: vi.fn().mockRejectedValue(error) });
+      const { result } = renderHook(() => useAuthSession(client));
+      await waitFor(() => expect(result.current.ready).toBe(true));
+      expect(result.current.user?.id).toBe('u1');
+      expect(createAccountStorage(deviceStore).loadSession()?.accessToken).toBe('access-1');
+    },
+  );
+
+  it('does not sign out when a refresh encounters a temporary gateway failure', async () => {
+    saveSession(stored());
+    const exchangeToken = vi
+      .fn()
+      .mockResolvedValueOnce({ token: 'session-1', user: user() })
+      .mockRejectedValueOnce(apiError(503));
+    const client = sessionClient({ exchangeToken });
+    const { result } = renderHook(() => useAuthSession(client));
+    await waitFor(() => expect(result.current.user?.id).toBe('u1'));
+    const refresh = client.setRefreshHandler.mock.calls[0]?.[0];
+    await act(async () => {
+      await refresh?.();
+    });
+    expect(result.current.user?.id).toBe('u1');
+    expect(createAccountStorage(deviceStore).loadSession()).not.toBeNull();
+  });
 });
 
 describe('activate', () => {

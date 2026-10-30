@@ -57,6 +57,7 @@ async fn main() -> anyhow::Result<()> {
     let addr = config.socket_addr();
 
     let (state, supervisor) = boot::state::build(config, ffprobe_available, db, settings);
+    services::updates::recover(&state)?;
     plan.applied(&state);
 
     boot::background::spawn(&state).await;

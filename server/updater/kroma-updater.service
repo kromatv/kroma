@@ -1,0 +1,14 @@
+[Unit]
+Description=KROMA host updater
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/kroma-updater/kroma_updater.py --config /etc/kroma-updater.json
+Restart=on-failure
+RestartSec=10
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

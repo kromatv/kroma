@@ -1,17 +1,7 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  classes,
-  Drawer,
-  Logo,
-  Row,
-  styles,
-  Text,
-  useBreakpoint,
-  useStyles,
-} from '@kromatv/ui/kit';
+import { Box, classes, Drawer, Logo, Row, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 import {
   IconBookmark,
   IconCategory,
@@ -29,11 +19,14 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
+import {
+  ServerUpdateIndicator,
+  ServerUpdateNotice,
+} from '#web/features/catalog/server-update-notice';
 import { WhatsNewLink } from '#web/features/catalog/whats-new-link';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
-import { CapabilityChip } from '#web/shared/ui/capability-chip';
 import { useNavActions } from '#web/shared/ui/nav-actions';
 import { NavMenuButton } from '#web/shared/ui/nav-menu-button';
 import type { RoutePath } from '#web/shared/ui/route-link';
@@ -53,7 +46,7 @@ const sDefinition = styles({
     borderRightWidth: 1,
     borderStyle: 'solid',
     borderRightColor: 'var(--kroma-border)',
-    backgroundColor: 'var(--kroma-bg)',
+    backgroundColor: 'var(--kroma-surface-1)',
   },
   topbar: {
     position: 'sticky',
@@ -79,7 +72,9 @@ const sDefinition = styles({
     pb: 8,
   },
   logoLink: { display: 'block', color: 'inherit', textDecorationLine: 'none' },
-  navFill: { bg: 'bg' },
+  navFill: { bg: 'surface1' },
+  scrollContent: { flexGrow: 1 },
+  accountArea: { pt: 12, mt: 12, borderTopWidth: 1, borderTopColor: 'border' },
 });
 
 // `env()` has no React Native spelling, so the sheet's own insets stay CSS.
@@ -90,7 +85,6 @@ const NAV: { labelKey: MessageKey; to: RoutePath; icon: TablerIcon; exact?: bool
   { labelKey: 'nav.films', to: '/movies', icon: IconMovie },
   { labelKey: 'nav.series', to: '/shows', icon: IconDeviceTv },
   { labelKey: 'nav.genres', to: '/genres', icon: IconCategory },
-  { labelKey: 'nav.myList', to: '/my-list', icon: IconBookmark },
 ];
 
 export function Sidebar() {
@@ -111,8 +105,9 @@ export function Sidebar() {
 // The desktop aside's own scroll frame. In the phone sheet the frame is the
 // drawer's <Drawer.Panel>, which is why the two are separate.
 function SidebarBody() {
+  const s = useStyles(sDefinition);
   return (
-    <ScrollView style={SIDE_NAV_FRAME}>
+    <ScrollView style={SIDE_NAV_FRAME} contentContainerStyle={s.scrollContent}>
       <SidebarNav />
     </ScrollView>
   );
@@ -120,32 +115,38 @@ function SidebarBody() {
 
 function SidebarNav() {
   const t = useT();
+  const s = useStyles(sDefinition);
   return (
     <SideNav.Root>
-      {NAV.map((item) => (
-        <SideNav.Item key={item.to} to={item.to} exact={item.exact} icon={item.icon}>
-          <SideNav.Label>{t(item.labelKey)}</SideNav.Label>
+      <SideNav.Group label={t('nav.discover')}>
+        {NAV.map((item) => (
+          <SideNav.Item key={item.to} to={item.to} exact={item.exact} icon={item.icon}>
+            <SideNav.Label>{t(item.labelKey)}</SideNav.Label>
+          </SideNav.Item>
+        ))}
+      </SideNav.Group>
+      <SideNav.Group label={t('nav.yourSpace')}>
+        <SideNav.Item to="/my-list" icon={IconBookmark}>
+          <SideNav.Label>{t('nav.myList')}</SideNav.Label>
         </SideNav.Item>
-      ))}
-      <RequestsLink />
-
-      <ModuleNavLinks />
+        <RequestsLink />
+        <ModuleNavLinks />
+      </SideNav.Group>
       <SideNav.Footer>
-        <InviteLink />
-        <SideNav.Item to="/connect" icon={IconDeviceDesktop}>
-          <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
-        </SideNav.Item>
-        <AdminLink />
-        <WhatsNewLink />
-        <UserChip />
-        <Box gap={8} px={8} pt={4}>
-          <Box row wrap align="center" between gapX={8} gapY={6}>
-            <Text variant="overline" color="textDim">
-              {t('nav.thisDevice')}
-            </Text>
-            <CapabilityChip />
+        <ServerUpdateNotice />
+        <SideNav.Group label={t('nav.more')}>
+          <InviteLink />
+          <SideNav.Item to="/connect" icon={IconDeviceDesktop}>
+            <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
+          </SideNav.Item>
+          <AdminLink />
+          <WhatsNewLink />
+        </SideNav.Group>
+        <Box style={s.accountArea}>
+          <UserChip />
+          <Box px={10} pt={6}>
+            <VersionInfo />
           </Box>
-          <VersionInfo />
         </Box>
       </SideNav.Footer>
     </SideNav.Root>
@@ -196,6 +197,7 @@ export function MobileTopbar() {
         </Drawer.Root>
       </Box>
       <Box row align="center" gap={2}>
+        <ServerUpdateIndicator />
         {actions}
       </Box>
     </header>
@@ -233,9 +235,10 @@ function AdminLink() {
       hasPermission(user, 'library.manage') ||
       hasPermission(user, 'settings.manage') ||
       hasPermission(user, 'requests.manage'));
+  if (!isAdmin) return null;
   return (
-    <SideNav.Item to="/admin" icon={IconSettings} disabled={!isAdmin}>
-      <SideNav.Label>{t(isAdmin ? 'nav.server' : 'nav.settings')}</SideNav.Label>
+    <SideNav.Item to="/admin" icon={IconSettings}>
+      <SideNav.Label>{t('nav.server')}</SideNav.Label>
     </SideNav.Item>
   );
 }

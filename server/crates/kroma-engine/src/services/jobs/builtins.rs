@@ -21,6 +21,7 @@ mod sections_curate;
 mod sections_personalize;
 mod stats_report;
 mod update_check;
+mod update_install;
 
 /// A built-in job descriptor: identity ([`JobKey`]) + metadata + handler.
 /// Constructed as a `const SPEC` in the handler's own file; this is just the
@@ -55,6 +56,7 @@ const JOBS: &[Builtin] = &[
     notifications_digest::SPEC,
     stats_report::SPEC,
     update_check::SPEC,
+    update_install::SPEC,
     // Acquisition jobs (search/import/match) moved to the tv.kroma.torrents
     // crate; the binary registers them separately via `AppState::new`.
     // Per-element pipeline stages: each drains its `pipeline_tasks` queue via

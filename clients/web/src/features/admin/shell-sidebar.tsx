@@ -3,6 +3,7 @@ import type { ModuleNav } from '@kromatv/module-sdk';
 import { useFormat, useT } from '@kromatv/ui';
 import {
   activeTheme,
+  Badge,
   Box,
   color,
   Drawer,
@@ -21,6 +22,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { adminNavSections } from '#web/features/admin/admin-nav';
+import { usePoll } from '#web/features/admin/hooks';
 import { PillDot } from '#web/features/admin/pill';
 import { useAdmin } from '#web/features/admin/shell-context';
 import { ADMIN_BAR_TOP, ADMIN_RAIL_WIDTH } from '#web/features/admin/web-style';
@@ -105,7 +107,8 @@ function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
 
 function AdminNav() {
   const t = useT();
-  const { user } = useAuth();
+  const { user, client } = useAuth();
+  const { data: updates } = usePoll(['admin', 'updates'], () => client.admin.updates(), 60_000);
   const { sections, orphans } = adminNavSections(
     useModuleNavAll(),
     (cap) => !cap || (!!user && hasPermission(user, cap)),
@@ -117,6 +120,11 @@ function AdminNav() {
           {section.items.map((item) => (
             <SideNav.Item key={item.to} to={item.to} exact={item.exact} icon={item.icon}>
               <SideNav.Label>{t(item.labelKey)}</SideNav.Label>
+              {item.to === '/admin/updates' && updates?.available ? (
+                <SideNav.Trailing>
+                  <Badge tone="4K">{t('admin.updatesNew')}</Badge>
+                </SideNav.Trailing>
+              ) : null}
             </SideNav.Item>
           ))}
           {section.modules.map((item) => (

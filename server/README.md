@@ -563,3 +563,11 @@ optional, and one left out reads as `unknown`.
 It builds on either arch natively. Use `docker buildx build --platform
 linux/arm64` to cross-build. CI assembles the published image from prebuilt
 static payloads instead (see `server/Dockerfile.runtime`).
+
+## Server updates
+
+Admin → Server updates checks Stable or Canary and offers an owner-initiated
+update with a backup and restart notice. One-click installation uses a separate
+host updater for Docker Compose or Synology, with a command adapter for other
+deployments. See [setup and recovery](updater/README.md) and the
+[implementation plan](../docs/server-updates-plan.md).

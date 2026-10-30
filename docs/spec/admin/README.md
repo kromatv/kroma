@@ -296,8 +296,13 @@ the backup remembers, so watch history reattaches to media the moment it is scan
 Status: **AGREED**
 
 **ADMIN-89** (AGREED) - A server learns it is out of date by checking for a newer release and
-saying so, quietly, in Admin, as a passive notice and never an automatic action. The owner
-decides when. Nothing on a self-hosted media server updates itself under the family mid-film.
+saying so, quietly, in Admin. Checking alone never grants permission to install.
+The default is a passive notice and a manual update confirmation. The owner may
+explicitly enable automatic installation when idle for the chosen Stable/Canary
+channel. Playing and paused sessions defer automatic installation; the host
+rechecks playback immediately before replacing the service. Every installation
+saves a portable backup and exposes its progress in Admin. An automatic failure
+requires a manual retry rather than an unattended retry loop.
 
 The risk an update carries, and how KROMA bounds it:
 

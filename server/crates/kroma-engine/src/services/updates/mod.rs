@@ -1,8 +1,8 @@
-//! Whether a newer server exists on the owner's channel. A passive notice and
-//! never an action (ADMIN-89): the check reads GitHub's release feed and
-//! stores what it found; nothing here downloads or installs anything.
+//! Channel-aware discovery and owner-initiated updates through a host bridge.
 
 mod feed;
+mod install;
+pub use install::{install, install_automatically, recover, Installer, Operation, Target};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,8 @@ pub use feed::{is_newer, Latest};
 
 pub const CHANNEL_KEY: &str = "updateChannel";
 pub const AUTO_KEY: &str = "autoUpdate";
+pub const AUTO_INSTALL_KEY: &str = "autoInstallUpdates";
+pub const OPERATION_KEY: &str = "update.operation";
 pub const STATUS_KEY: &str = "update.status";
 
 const RELEASES_URL: &str = "https://api.github.com/repos/kromatv/kroma/releases";
@@ -57,10 +59,13 @@ pub struct Status {
     pub build: u64,
     pub channel: Channel,
     pub auto: bool,
+    pub auto_install: bool,
     pub latest: Option<Latest>,
     pub available: bool,
     pub checked_at: Option<String>,
     pub error: Option<String>,
+    pub installer: Installer,
+    pub operation: Option<Operation>,
 }
 
 fn stored(settings: &Settings, channel: Channel) -> Option<Checked> {
@@ -84,9 +89,12 @@ pub fn status(state: &SharedState) -> Status {
         build: build.number,
         channel,
         auto: state.settings.get_bool(AUTO_KEY, true),
+        auto_install: state.settings.get_bool(AUTO_INSTALL_KEY, false),
         latest,
         checked_at: checked.as_ref().map(|c| c.checked_at.clone()),
         error: checked.and_then(|c| c.error),
+        installer: install::installer(state),
+        operation: install::operation(state),
     }
 }
 
