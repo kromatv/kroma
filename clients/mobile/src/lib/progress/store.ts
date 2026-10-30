@@ -19,12 +19,8 @@ export function pendingProgressStore(): PendingProgressStore {
     },
 
     async write(entries: PendingProgress[]): Promise<void> {
-      try {
-        await FileSystem.makeDirectoryAsync(DIR, { intermediates: true }).catch(() => undefined);
-        await FileSystem.writeAsStringAsync(FILE, JSON.stringify(entries));
-      } catch {
-        /* a device with no room left still plays */
-      }
+      await FileSystem.makeDirectoryAsync(DIR, { intermediates: true }).catch(() => undefined);
+      await FileSystem.writeAsStringAsync(FILE, JSON.stringify(entries)).catch(() => undefined);
     },
   };
 }

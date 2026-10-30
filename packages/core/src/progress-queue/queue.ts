@@ -1,3 +1,4 @@
+import { KromaApiError, KromaSchemaError } from '@kromatv/client';
 import type { ItemId, ProgressEntry } from '@kromatv/client/media';
 import { belongsTo, PendingProgress, type ProgressAccount, progressKey } from './pending';
 import { shouldReplay } from './replay';
@@ -28,7 +29,9 @@ export interface ReplayReport {
  * `remember` replaces what a title was holding, `settle` drops it for a position
  * the server has just taken, and `replay` sends an account's entries oldest
  * capture first, stopping at the first the server could not be reached for so a
- * dead link costs one call. Every call runs after the one before it, so two
+ * dead link costs one call. An entry is spent when the server answers, even to
+ * refuse it, and kept only when the server could not be reached: a dropped link,
+ * a 5xx, or a 401, 408 or 429. Every call runs after the one before it, so two
  * players and a replay pass cannot write over each other.
  */
 export interface ProgressQueue {
@@ -87,30 +90,12 @@ export function createProgressQueue(store: PendingProgressStore): ProgressQueue 
           .filter((entry) => belongsTo(entry, account))
           .sort((a, b) => a.capturedAt - b.capturedAt);
         const outcome = new Map<string, PendingProgress | null>();
-        let unreachable = false;
-        for (const entry of mine) {
-          if (unreachable) {
-            report.kept += 1;
-            continue;
-          }
-          try {
-            if (await shouldSend(entry, target)) {
-              await target.save(entry.itemId, entry.positionMs, entry.durationMs);
-              report.saved += 1;
-            } else {
-              report.dropped += 1;
-            }
-            outcome.set(progressKey(entry), null);
-          } catch {
-            unreachable = true;
-            report.kept += 1;
-            outcome.set(progressKey(entry), { ...entry, attempts: entry.attempts + 1 });
-          }
-        }
+        await walk(mine, target, report, outcome);
         await replace((current) =>
           current.flatMap((entry) => {
-            if (!outcome.has(progressKey(entry))) return [entry];
-            const kept = outcome.get(progressKey(entry));
+            const key = progressKey(entry);
+            if (!outcome.has(key)) return [entry];
+            const kept = outcome.get(key);
             return kept ? [kept] : [];
           }),
         );
@@ -119,6 +104,41 @@ export function createProgressQueue(store: PendingProgressStore): ProgressQueue 
   };
 }
 
-async function shouldSend(entry: PendingProgress, target: ProgressTarget): Promise<boolean> {
-  return shouldReplay(entry, await target.current(entry.itemId));
+type Verdict = 'saved' | 'dropped' | 'unreachable';
+
+async function walk(
+  queue: readonly PendingProgress[],
+  target: ProgressTarget,
+  report: ReplayReport,
+  outcome: Map<string, PendingProgress | null>,
+): Promise<void> {
+  const [entry, ...rest] = queue;
+  if (!entry) return;
+  const verdict = await attempt(entry, target);
+  if (verdict === 'unreachable') {
+    outcome.set(progressKey(entry), { ...entry, attempts: entry.attempts + 1 });
+    report.kept += 1 + rest.length;
+    return;
+  }
+  report[verdict] += 1;
+  outcome.set(progressKey(entry), null);
+  return walk(rest, target, report, outcome);
+}
+
+async function attempt(entry: PendingProgress, target: ProgressTarget): Promise<Verdict> {
+  try {
+    if (!shouldReplay(entry, await target.current(entry.itemId))) return 'dropped';
+    await target.save(entry.itemId, entry.positionMs, entry.durationMs);
+    return 'saved';
+  } catch (error) {
+    return answered(error) ? 'dropped' : 'unreachable';
+  }
+}
+
+const WORTH_ANOTHER_PASS = new Set([401, 408, 429]);
+
+function answered(error: unknown): boolean {
+  if (error instanceof KromaSchemaError) return true;
+  if (!(error instanceof KromaApiError)) return false;
+  return error.status >= 400 && error.status < 500 && !WORTH_ANOTHER_PASS.has(error.status);
 }

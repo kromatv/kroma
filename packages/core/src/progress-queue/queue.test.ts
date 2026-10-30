@@ -1,3 +1,4 @@
+import { KromaApiError, KromaSchemaError } from '@kromatv/client';
 import type { ItemId, ProgressEntry } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import type { PendingProgress, ProgressAccount } from './pending';
@@ -116,6 +117,71 @@ describe('replaying what is queued', () => {
     expect(report).toEqual({ saved: 0, dropped: 1, kept: 0 });
     expect(target.saved).toEqual([]);
     expect(await queue.pending()).toEqual([]);
+  });
+
+  it('drops a title the server refuses for good, and sends the ones behind it', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position({ itemId: 'gone' as ItemId, capturedAt: CAPTURED_AT }));
+    await queue.remember(position({ itemId: 'itm-2' as ItemId, capturedAt: CAPTURED_AT + 1 }));
+    const reached: string[] = [];
+    const target = server({
+      save: async (itemId) => {
+        if (itemId === 'gone') throw new KromaApiError(404, 'PUT /progress/gone failed (404)');
+        reached.push(itemId);
+      },
+    });
+
+    const report = await queue.replay(ACCOUNT, target);
+
+    expect(report).toEqual({ saved: 1, dropped: 1, kept: 0 });
+    expect(reached).toEqual(['itm-2']);
+    expect(await queue.pending()).toEqual([]);
+  });
+
+  it('keeps a title the server failed on, because a later pass may get through', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position({ itemId: 'itm-1' as ItemId, capturedAt: CAPTURED_AT }));
+    await queue.remember(position({ itemId: 'itm-2' as ItemId, capturedAt: CAPTURED_AT + 1 }));
+    const target = server({
+      save: async () => {
+        throw new KromaApiError(503, 'PUT /progress/itm-1 failed (503)');
+      },
+    });
+
+    const report = await queue.replay(ACCOUNT, target);
+
+    expect(report).toEqual({ saved: 0, dropped: 0, kept: 2 });
+    expect(await queue.pending()).toHaveLength(2);
+  });
+
+  it('spends an entry on an answer this build cannot read', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position());
+    const target = server({
+      save: async () => {
+        throw new KromaSchemaError('PUT /progress/itm-1', []);
+      },
+    });
+
+    const report = await queue.replay(ACCOUNT, target);
+
+    expect(report).toEqual({ saved: 0, dropped: 1, kept: 0 });
+    expect(await queue.pending()).toEqual([]);
+  });
+
+  it('keeps an entry past a credential the server asked to be refreshed', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position());
+    const target = server({
+      save: async () => {
+        throw new KromaApiError(401, 'PUT /progress/itm-1 failed (401)');
+      },
+    });
+
+    const report = await queue.replay(ACCOUNT, target);
+
+    expect(report).toEqual({ saved: 0, dropped: 0, kept: 1 });
+    expect((await queue.pending())[0]?.attempts).toBe(1);
   });
 
   it('stops at the first title the server could not be reached for', async () => {
