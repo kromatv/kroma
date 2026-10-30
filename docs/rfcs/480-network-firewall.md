@@ -291,6 +291,58 @@ In first-party code, `clippy.toml` `disallowed-types` and `disallowed-methods` f
 `Command::new("curl")` outside `kroma-http` and `kroma-egress`. A `bun run ci` check does
 the same for module workspaces, which `--workspace` does not reach.
 
+### The same isolation on every platform
+
+The tiers above share a weakness: each one is a different operating system
+mechanism. Namespaces exist on Linux only, Docker's default seccomp profile
+refuses them, macOS has Seatbelt and Windows has AppContainer, and DSM has
+nothing usable. Five mechanisms, one of them missing, each with its own gaps,
+cannot promise one behaviour. KROMA runs on Linux, macOS, Windows, Docker and
+Synology, and a user's safety cannot depend on which one they picked.
+
+So the guarantee moves out of the operating system and into the server: **a
+module is a WebAssembly component (WASI 0.2), run by wasmtime inside the core.**
+
+- **No ambient authority.** A component cannot make a system call. It can only
+  call the functions the host links into it. Sockets, files, environment,
+  clocks and processes do not exist unless the host provides them. There is
+  nothing to escape through, on any platform.
+- **Permissions are the linker.** `net` links a KROMA network import whose every
+  call goes through the policy and the gateway. HTTP and stream dial and listen
+  go to direct, a network or blocked, and are journaled. `fs` preopens the
+  declared roots only, read-only where declared. `env` passes the declared
+  variables only. `run` does not exist: what a module used to start (ffmpeg, an
+  inference runtime) becomes a host capability with fixed operations
+  (`wasi-nn` for the Whisper and embedding models).
+- **The instance is the identity.** The host knows which component is calling.
+  No token crosses the seam, so there is none to steal or replay.
+- **Limits.** Each component has a memory ceiling and a CPU budget (epoch
+  interruption), set per module.
+- **One artifact.** The same `.wasm` runs unchanged on every platform and
+  architecture KROMA ships: x86_64 and arm64, Linux, macOS and Windows. A module
+  release builds once instead of once per platform. wasmtime compiles it ahead
+  of time at install, so no JIT runs at start.
+- **Speed.** Compute runs close to native. A call into the host is a function
+  call, faster than today's HTTP and JSON over loopback. The heavy work stays
+  native in host capabilities: file I/O, hashing, ffmpeg, inference. The torrent
+  engine moves last, behind a throughput benchmark it must pass.
+
+What still has to touch the operating system becomes a host capability, not a
+native module:
+
+- A userspace WireGuard network inside the gateway, in pure Rust. It also
+  carries UDP for DHT and uTP.
+- LAN discovery (mDNS, SSDP) as a host capability.
+- The remote tunnel.
+
+The VPN, mDNS, Roku and remote modules keep their configuration and their pages,
+as components.
+
+Until the move is complete, a native sidecar is accepted from the official
+registry only, labelled native in the admin, and contained by the OS tier
+where one exists, as defense in depth. **A module from any other registry must be
+a component.**
+
 ### East-west
 
 The module seam moves off TCP. `kroma_http::loopback` already chooses a transport per URL,
@@ -432,6 +484,15 @@ the per-module view, and the leak suite in CI.
 **Phase 3c, networks and middleware.** The `network` and `network-policy`
 points, several networks at once, and the VPN module moved onto `network`.
 
+**Phase 3d, WebAssembly components.** In order:
+
+1. A wasmtime host with a minimal WIT world, tested on Linux, macOS and Windows runners.
+2. The full host API as WIT, behind the same SDK traits, so a module's code does not change.
+3. The HTTP-only modules move first.
+4. The userspace WireGuard network and the discovery capability.
+5. The torrent engine, last, behind its benchmark.
+6. Third-party modules are accepted as components only.
+
 **Phase 4, UDP and inbound on a route.** A route that carries UDP, either a userspace
 WireGuard inside the gateway or a wireproxy replacement, so DHT and uTP can run sealed.
 Inbound peers through the provider's port forwarding.
@@ -468,6 +529,15 @@ Inbound peers through the provider's port forwarding.
   check in Phase 2, then disappear.
 
 ## Alternatives
+
+- **Per-OS sandboxes as the main line.** Namespaces, Seatbelt and AppContainer
+  are each real, but they are three implementations with three sets of gaps. DSM
+  and Docker's default profile have none of them. They stay as defense in depth
+  for native sidecars, not as the guarantee.
+- **A VM per module (Firecracker, libkrun).** Strong, but Linux-first, heavy on a
+  NAS, and absent from Windows and DSM.
+- **A JavaScript runtime with permissions (Deno).** Portable, but every module is
+  Rust today, and embedding V8 in the server costs more than wasmtime.
 
 - **Do nothing and keep per-call `.socks5()`.** Findings 1 to 3 show what that produces in
   first-party code. A third-party module would get the same freedom and less review.

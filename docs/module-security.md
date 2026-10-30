@@ -64,8 +64,24 @@ was attempted.
 
 ## How each permission is enforced
 
-The supervisor picks the strongest tier the platform allows (see
-[networking](networking.md#enforcement)). This is what each tier makes real:
+The target is the same on every platform. A module is a WebAssembly component
+run by wasmtime inside the server. It cannot make a system call, and it reaches
+the network, files and environment only through what the host links into it
+for its declared permissions. That holds identically on Linux, macOS, Windows,
+Docker and Synology, because the operating system is not what enforces it. See
+[RFC 480](rfcs/480-network-firewall.md#the-same-isolation-on-every-platform).
+
+| | WebAssembly component |
+|---|---|
+| `net` | the only network import goes through the policy and the gateway |
+| `fs` | only the declared roots are preopened, read-only where declared |
+| `run` | no process can be started; heavy work is a host capability |
+| `env` | only the declared variables exist |
+| CPU, memory | a ceiling per module |
+
+Native sidecars remain while modules move over: official registry only,
+labelled native, and contained by the strongest OS tier the platform allows
+(see [networking](networking.md#enforcement)):
 
 | | Strict, namespace | Strict, one user | Watch |
 |---|---|---|---|
@@ -143,4 +159,5 @@ the runner offers namespaces, and the build says so when it does not.
 | Strict tiers wired into the supervisor, Watch scanner | planned |
 | Filesystem and `run` enforcement | planned |
 | `kroma audit`, per-module network view | planned |
-| Leak test suite in CI | planned |
+| Leak test suite in CI | in review (namespace tier) |
+| WebAssembly components on every platform | planned |

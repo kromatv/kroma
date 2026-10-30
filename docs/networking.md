@@ -152,9 +152,14 @@ what a household downloads, so the journal and the rules need the
 
 ## Enforcement
 
-Deciding is not enough. A module is a native program, and nothing stops a native
-program from opening its own socket unless the operating system does. The server
-picks the strongest tier the platform allows and shows it under Admin → Réseau:
+Deciding is not enough: something has to make the decision binding. The target
+is the same everywhere. Modules are WebAssembly components with no network of
+their own: their only network import is the policy itself. See
+[module security](module-security.md#how-each-permission-is-enforced).
+
+A native sidecar, while one remains, is a program that can open its own socket
+unless the operating system stops it. For those, the server picks the strongest
+tier the platform allows and shows it under Admin → Réseau:
 
 | Tier | Where | A module that ignores the gateway |
 |---|---|---|
@@ -200,3 +205,4 @@ configured but down. The trade-off is fewer peers until a network can carry UDP.
 | `network` point and several networks | planned |
 | Network middleware | planned |
 | A network that carries UDP | planned |
+| Modules as WebAssembly components, the same isolation on every platform | planned |
