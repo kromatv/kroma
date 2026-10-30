@@ -77,10 +77,16 @@ pub fn attempt<S: HostStorage>(
     }
 }
 
-/// Write down that a reader's own preferences stopped a push before it was
-/// built, once per device that would have received it. A reader with no device
+/// Write down that a push was stopped before it was built, once per device that
+/// would have received it: `SkippedMuted` for the reader's own preference,
+/// `Throttled` for a folded row that pushed too recently. A reader with no device
 /// registered leaves nothing: there was no push to explain.
-pub fn muted<S: HostStorage>(state: &S, user_id: &str, notification_id: &str) {
+pub fn withheld<S: HostStorage>(
+    state: &S,
+    user_id: &str,
+    notification_id: &str,
+    status: DeliveryStatus,
+) {
     let subs = {
         let Ok(conn) = state.db().get() else {
             return;
@@ -88,13 +94,7 @@ pub fn muted<S: HostStorage>(state: &S, user_id: &str, notification_id: &str) {
         kroma_db::push_subs::subscriptions_for_user(&conn, user_id).unwrap_or_default()
     };
     for sub in subs {
-        attempt(
-            state,
-            notification_id,
-            &sub,
-            DeliveryStatus::SkippedMuted,
-            None,
-        );
+        attempt(state, notification_id, &sub, status, None);
     }
 }
 
