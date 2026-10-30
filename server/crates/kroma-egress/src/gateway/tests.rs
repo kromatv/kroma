@@ -217,6 +217,45 @@ async fn link_local_stays_unreachable_even_when_private_is_allowed() {
 }
 
 #[tokio::test]
+async fn a_destination_refusing_every_address_is_answered_connection_refused() {
+    let closed = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = closed.local_addr().unwrap().port();
+    drop(closed);
+    let policy = TestPolicy::answering(Verdict::Direct {
+        private_allowed: true,
+    });
+    let (_dir, path) = gateway_socket(policy.clone());
+
+    let (_stream, answer) = socks_connect(&path, CREDENTIAL, "127.0.0.1", port).await;
+
+    assert_eq!(answer, 0x05);
+    let flow = policy.flow().await;
+    assert_eq!(flow.route, Route::Direct);
+    assert!(flow
+        .error
+        .unwrap()
+        .starts_with(&format!("connect 127.0.0.1:{port}")));
+}
+
+#[tokio::test]
+async fn a_name_that_does_not_resolve_is_answered_host_unreachable() {
+    let policy = TestPolicy::answering(Verdict::Direct {
+        private_allowed: true,
+    });
+    let (_dir, path) = gateway_socket(policy.clone());
+
+    let (_stream, answer) = socks_connect(&path, CREDENTIAL, "nowhere.invalid", 443).await;
+
+    assert_eq!(answer, 0x04);
+    assert!(policy
+        .flow()
+        .await
+        .error
+        .unwrap()
+        .starts_with("resolve nowhere.invalid"));
+}
+
+#[tokio::test]
 async fn anything_but_connect_is_refused() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,

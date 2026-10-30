@@ -80,3 +80,6 @@ pub(crate) async fn connect(upstream: &Upstream, host: &Host, port: u16) -> Resu
     stream.read_exact(&mut rest).await?;
     Ok(stream)
 }
+
+#[cfg(test)]
+mod tests;
