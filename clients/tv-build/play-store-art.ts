@@ -5,7 +5,10 @@ import { chromium } from 'playwright';
 
 const repo = resolve(import.meta.dirname, '../..');
 const store = resolve(repo, 'store/google-play');
-const raw = resolve(store, 'captures/android-phone');
+const rawCaptures: Record<string, string> = {
+  'en-US': resolve(store, 'captures/android-phone'),
+  'fr-FR': resolve(store, 'captures/android-phone-fr'),
+};
 const metadata = resolve(repo, 'fastlane/metadata/android');
 
 function data(path: string, mime: string) {
@@ -38,15 +41,15 @@ const captions = {
   },
   'fr-FR': {
     feature: 'Votre cinéma.\nSur tous vos écrans.',
-    featureBody: 'Votre bibliothèque, chez vous.',
+    featureBody: 'Toute votre collection, au même endroit.',
     footer: 'GRATUIT ET OPEN SOURCE · VOTRE PROPRE SERVEUR',
     shots: [
-      ['01-movies', 'Votre cinéma.\nDans votre poche.', 'Vos films ont trouvé leur place.'],
-      ['02-detail', 'L’histoire\ncommence ici.', 'Affiches, distribution et détails réunis.'],
+      ['01-movies', 'Votre cinéma.\nPartout avec vous.', 'Tous vos films, rangés et prêts à lancer.'],
+      ['02-detail', 'Tout sur\nvotre film.', 'L’affiche, le résumé, les détails : tout est là.'],
       [
         '03-home',
         'On regarde\nquoi ce soir ?',
-        'Votre liste et vos derniers ajouts dès l’accueil.',
+        'Votre liste et vos derniers ajouts, dès l’accueil.',
       ],
     ],
   },
@@ -111,7 +114,7 @@ for (const [locale, copy] of Object.entries(captions)) {
     resolve(images, 'tvBanner.png'),
   );
   for (const [name, headline, description] of copy.shots) {
-    const capture = data(resolve(raw, `${name}.png`), 'image/png');
+    const capture = data(resolve(rawCaptures[locale], `${name}.png`), 'image/png');
     await render(
       htmlDocument(
         `<div class="bloom"></div><img class="brand" src="${lockup}"><span class="index">${name.slice(0, 2)} / 03</span><h1>${escape(headline)}</h1><p class="description">${escape(description)}</p><div class="phone"><img src="${capture}"></div><p class="footer">${escape(copy.footer)}</p>`,
