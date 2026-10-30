@@ -1,0 +1,15 @@
+[package]
+name = "kroma-egress"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "The one way out: a SOCKS5 gateway that names the caller of every connection, asks a policy where it may go, dials it direct or through an upstream proxy, and reports what crossed"
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+kroma-http = { workspace = true }
+
+[dev-dependencies]
+kroma-testing = { workspace = true }
