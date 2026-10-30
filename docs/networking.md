@@ -74,8 +74,11 @@ The policy evaluates, in order:
 1. **Guards.** Fixed. A rule cannot relax them.
    - A link-local address (`169.254.0.0/16`, `fe80::/10`, IPv4-mapped forms
      included) is never reachable. Cloud metadata services answer there.
-   - A module never reaches loopback directly. The core and the other modules
-     are reached through the host API, which checks who is asking.
+   - A module never reaches this server's own listeners on this machine: its
+     HTTP and HTTPS ports and the VPN bridge, whether written as an address or
+     as `localhost`. It reaches the core and the other modules through the host
+     API, which checks who is asking. A download client or FlareSolverr on
+     another local port stays reachable.
    - A host on the local network (a private address, a single-label name,
      `.local`, `.lan`, `.home.arpa`, `.internal`, `localhost`) can only go
      direct, because a tunnel cannot reach it. A rule that sends one to a VPN
@@ -193,16 +196,17 @@ configured but down. The trade-off is fewer peers until a network can carry UDP.
 
 | Piece | State |
 |---|---|
-| Fetch: proxy resolves names, `NO_PROXY` overridden, `-q`, web protocols only, `public_only`, `is_local` | in review |
-| Torrent engine and indexers sealed behind the VPN, fail closed | in review |
-| VPN bridge requires credentials | in review |
-| Per-module tokens, declared-only module calls, environment allowlist | in review |
-| Egress gate, purposes, policy, journal, admin API | in progress |
-| Admin → Réseau dashboard | in progress |
-| `kroma-egress` gateway | in review, not yet wired |
-| Network namespace sandbox primitive | in review, not yet wired |
+| Fetch: proxy resolves names, `NO_PROXY` overridden, `-q`, web protocols only, `public_only`, `is_local` | in review (#500) |
+| Torrent engine and indexers sealed behind the VPN, fail closed | in review (#501) |
+| VPN bridge requires credentials | in review (#503) |
+| Per-module tokens, declared-only module calls, environment allowlist | in review (#503) |
+| Egress gate, purposes, policy, journal, admin API | in review (#516) |
+| Admin → Réseau dashboard | in review (#517) |
+| `kroma-egress` gateway | in review, not yet wired (#507) |
+| Network namespace sandbox primitive and leak suite | in review, not yet wired (#507) |
 | Module seam on Unix sockets, sandbox wiring | planned |
 | `network` point and several networks | planned |
 | Network middleware | planned |
 | A network that carries UDP | planned |
-| Modules as WebAssembly components, the same isolation on every platform | planned |
+| ffmpeg and ffprobe open local inputs only | in review (#515) |
+| Modules as WebAssembly components, the same isolation on every platform | planned (#509) |

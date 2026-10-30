@@ -155,7 +155,8 @@ the runner offers namespaces, and the build says so when it does not.
 | Environment allowlist for sidecars | in review |
 | Host API refuses relayed traffic | in review |
 | Network namespace primitive | in review, not yet wired |
-| `permissions` in the manifest, consent screen, denial errors | planned |
+| `permissions` in the manifest | in review (#508) |
+| Consent screen, denial errors, enforcement of `permissions` | planned |
 | Strict tiers wired into the supervisor, Watch scanner | planned |
 | Filesystem and `run` enforcement | planned |
 | `kroma audit`, per-module network view | planned |
