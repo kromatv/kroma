@@ -2,6 +2,10 @@
 //! through the SOCKS5 proxy, plus (best-effort) directly, and compare. A dead
 //! proxy and a proxy that is not diverting traffic both read as "not sealed".
 
+use std::collections::HashMap;
+use std::sync::{Mutex, PoisonError};
+use std::time::{Duration, Instant};
+
 #[derive(Debug, Clone, Default)]
 pub struct VpnCheck {
     pub proxied_ip: Option<String>,
@@ -29,32 +33,65 @@ fn short_ip(body: String) -> Option<String> {
 }
 
 /// Probe `check_url` through `proxy` (`socks5://[user:pass@]host:port` or
-/// `host:port`) and directly.
+/// `host:port`) and compare with the direct route. The direct answer is reused
+/// for [`DIRECT_PROBE_EVERY`] unless the tunnel's exit moves: sent beside every
+/// proxied probe, it would tell the echo service which real address stands
+/// behind which exit, once a minute.
 pub fn check(proxy: &str, check_url: &str) -> VpnCheck {
-    let proxied = kroma_module_sdk::http::Fetch::new()
-        .max_time(12)
-        .socks5(proxy)
-        .get(check_url)
-        .and_then(|r| r.ensure_ok())
-        .map(|r| r.text());
-    let direct = kroma_module_sdk::http::Fetch::new()
-        .max_time(12)
-        .get(check_url)
-        .and_then(|r| r.ensure_ok())
-        .map(|r| r.text());
+    let proxied = echo(check_url, Some(proxy));
     let mut out = VpnCheck::default();
     match proxied {
         Ok(body) => out.proxied_ip = short_ip(body),
         Err(e) => out.error = Some(format!("{e:#}")),
     }
-    if let Ok(body) = direct {
-        out.direct_ip = short_ip(body);
-    }
+    out.direct_ip = direct_ip(check_url, out.proxied_ip.as_deref());
     out
+}
+
+/// How long a direct probe's answer stands for the same tunnel exit.
+pub const DIRECT_PROBE_EVERY: Duration = Duration::from_secs(6 * 60 * 60);
+
+struct DirectProbe {
+    at: Instant,
+    exit: Option<String>,
+    direct: Option<String>,
+}
+
+static DIRECT_PROBES: Mutex<Option<HashMap<String, DirectProbe>>> = Mutex::new(None);
+
+fn direct_ip(check_url: &str, exit: Option<&str>) -> Option<String> {
+    let mut probes = DIRECT_PROBES.lock().unwrap_or_else(PoisonError::into_inner);
+    let probes = probes.get_or_insert_with(HashMap::new);
+    if let Some(kept) = probes.get(check_url) {
+        if kept.at.elapsed() < DIRECT_PROBE_EVERY && kept.exit.as_deref() == exit {
+            return kept.direct.clone();
+        }
+    }
+    let direct = echo(check_url, None).ok().and_then(short_ip);
+    probes.insert(
+        check_url.to_string(),
+        DirectProbe {
+            at: Instant::now(),
+            exit: exit.map(str::to_string),
+            direct: direct.clone(),
+        },
+    );
+    direct
+}
+
+fn echo(check_url: &str, proxy: Option<&str>) -> anyhow::Result<String> {
+    let mut fetch = kroma_module_sdk::http::Fetch::new().max_time(12);
+    if let Some(proxy) = proxy {
+        fetch = fetch.socks5(proxy);
+    }
+    Ok(fetch.get(check_url)?.ensure_ok()?.text())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
     use super::*;
 
     #[test]
@@ -103,6 +140,46 @@ mod tests {
             }
         });
         format!("http://127.0.0.1:{port}/ip")
+    }
+
+    fn counting_echo(body: &'static str) -> (String, Arc<AtomicUsize>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let hits = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&hits);
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { break };
+                counter.fetch_add(1, Ordering::SeqCst);
+                read_http_request(&mut stream);
+                write_http_response(&mut stream, body);
+            }
+        });
+        (format!("http://127.0.0.1:{port}/ip"), hits)
+    }
+
+    #[test]
+    fn the_direct_route_is_asked_once_while_the_exit_stays_put() {
+        let (url, direct_hits) = counting_echo("203.0.113.7");
+        let proxy = socks5_echo("198.51.100.9");
+
+        let first = check(&proxy, &url);
+        let second = check(&proxy, &url);
+
+        assert_eq!(first.direct_ip.as_deref(), Some("203.0.113.7"));
+        assert_eq!(second.direct_ip, first.direct_ip);
+        assert_eq!(direct_hits.load(Ordering::SeqCst), 1);
+        assert!(second.sealed());
+    }
+
+    #[test]
+    fn a_new_tunnel_exit_asks_the_direct_route_again() {
+        let (url, direct_hits) = counting_echo("203.0.113.7");
+
+        check(&socks5_echo("198.51.100.9"), &url);
+        check(&socks5_echo("198.51.100.10"), &url);
+
+        assert_eq!(direct_hits.load(Ordering::SeqCst), 2);
     }
 
     fn socks5_echo(body: &'static str) -> String {
