@@ -43,6 +43,11 @@ vi.mock('expo-network', () => ({
 const translate = vi.hoisted(() => (key: string) => key);
 vi.mock('#mobile/lib/i18n', () => ({ useT: () => translate }));
 
+const prompt = vi.hoisted(() => vi.fn((then: () => void) => then()));
+vi.mock('#mobile/lib/notifications/useDownloadPrompt', () => ({
+  useDownloadPrompt: () => prompt,
+}));
+
 const alert = vi.hoisted(() => vi.fn());
 vi.mock('react-native', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -159,6 +164,33 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe('the notification prompt', () => {
+  it('holds a title back until the prompt has its answer', async () => {
+    const view = await mounted();
+    let answer = () => {};
+
+    prompt.mockImplementationOnce((then) => {
+      answer = then;
+    });
+
+    act(() => view.result.current.start(media('a')));
+    const whileAsking = transfer.runTransfer.mock.calls.length;
+    act(() => answer());
+
+    expect(whileAsking).toBe(0);
+    expect(transfer.runTransfer).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays quiet when a launch requeues a title nobody just tapped', async () => {
+    store.readWanted.mockResolvedValue([media('a')]);
+
+    await mounted();
+
+    expect(transfer.runTransfer).toHaveBeenCalledTimes(1);
+    expect(prompt).not.toHaveBeenCalled();
+  });
 });
 
 describe('the download queue', () => {
