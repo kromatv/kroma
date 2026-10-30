@@ -14,12 +14,13 @@ pub struct Tidied {
     pub access_tokens: usize,
     pub pipeline_tasks: usize,
     pub deliveries: usize,
+    pub flow_tallies: usize,
 }
 
 /// Deletes the sessions and device tokens that expired before `now` (unix
 /// seconds), the pipeline tasks whose item or file no longer exists (a subject
 /// that comes back is queued again by the scan that finds it), and the push
-/// records past their retention.
+/// records and daily flow tallies past their retention.
 pub fn tidy(pool: &Pool, now: i64) -> Result<Tidied> {
     let conn = pool.get()?;
     let sessions = conn.execute("DELETE FROM sessions WHERE expires_at <= ?1", params![now])?;
@@ -35,11 +36,13 @@ pub fn tidy(pool: &Pool, now: i64) -> Result<Tidied> {
     )?;
     drop(conn);
     let deliveries = crate::notification_deliveries::prune(pool, now * 1_000)?;
+    let flow_tallies = crate::network_flows::prune(pool, now * 1_000)?;
     Ok(Tidied {
         sessions,
         access_tokens,
         pipeline_tasks,
         deliveries,
+        flow_tallies,
     })
 }
 
