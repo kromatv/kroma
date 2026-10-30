@@ -7,6 +7,7 @@ import {
   IconBell,
   IconClockBolt,
   IconDatabase,
+  IconDownload,
   IconFlag,
   IconHistory,
   IconLayoutDashboard,
@@ -136,6 +137,12 @@ export const NAV_GROUPS: AdminNavGroup[] = [
     labelKey: 'admin.groupMaintenance',
     section: 'maintenance',
     items: [
+      {
+        to: '/admin/updates',
+        labelKey: 'admin.updatesTitle',
+        cap: 'settings.manage',
+        icon: IconDownload,
+      },
       { to: '/admin/jobs', labelKey: 'admin.navJobs', cap: 'settings.manage', icon: IconClockBolt },
       {
         to: '/admin/pipeline',

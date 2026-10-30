@@ -21,5 +21,13 @@
   "nav.settings": "Réglages",
   "nav.thisDevice": "Cet appareil",
   "nav.versionClient": "Client",
-  "nav.versionServer": "Serveur"
+  "nav.versionServer": "Serveur",
+  "nav.discover": "Découvrir",
+  "nav.yourSpace": "Votre espace",
+  "nav.more": "Plus",
+  "nav.updateAvailable": "Nouvelle version",
+  "nav.serverUpdating": "Mise à jour en cours",
+  "nav.updateReview": "Voir",
+  "nav.updateProgress": "Suivre",
+  "nav.updateInProgress": "Mise à jour…"
 }

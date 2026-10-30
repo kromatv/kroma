@@ -33,6 +33,8 @@ pub struct Config {
     /// The release feed the update check reads. `None` is the project's own on
     /// GitHub; a fork, or a test, names another.
     pub releases_url: Option<String>,
+    /// Private directory shared with the separately supervised host updater.
+    pub update_dir: Option<PathBuf>,
     pub web_dir: Option<PathBuf>,
     // Every `*_override` is `None` = defer to the stored admin setting, `Some` =
     // env pins it and wins over the toggle.
@@ -169,6 +171,11 @@ impl Config {
             .map(|s| PathBuf::from(s.trim()))
             .filter(|p| !p.as_os_str().is_empty() && p.join("_shell.html").is_file());
 
+        let update_dir = env::var("KROMA_UPDATE_DIR")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from);
+
         let https_override = env::var("KROMA_HTTPS")
             .ok()
             .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off" | ""));
@@ -220,6 +227,7 @@ impl Config {
             web_url,
             mail_relay_url,
             releases_url,
+            update_dir,
             web_dir,
             https_override,
             https_port_override,
@@ -369,6 +377,7 @@ mod tests {
         "KROMA_WEB_URL",
         "KROMA_MAIL_RELAY_URL",
         "KROMA_RELEASES_URL",
+        "KROMA_UPDATE_DIR",
         "KROMA_WEB_DIR",
         "KROMA_TRUSTED_PROXIES",
         "KROMA_ALLOWED_ORIGINS",

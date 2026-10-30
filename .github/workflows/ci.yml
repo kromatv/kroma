@@ -136,6 +136,9 @@ jobs:
           no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun run ci test --shard ${{ matrix.shard }}/${{ env.SHARDS }}
+      - name: Host updater tests
+        if: matrix.shard == 1
+        run: python3 -m unittest discover -s server/updater -v
       # A dot-directory: without include-hidden-files the upload finds nothing.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}

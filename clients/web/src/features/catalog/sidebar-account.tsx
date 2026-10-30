@@ -3,7 +3,7 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 import buildInfo from 'virtual:build-info';
 import { useT } from '@kromatv/ui';
-import { Box, Menu, type MenuTriggerBind, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, classes, Menu, type MenuTriggerBind, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouterState } from '@tanstack/react-router';
 import { type Ref, useState } from 'react';
@@ -21,6 +21,7 @@ import { UserAvatar } from '#web/shared/ui/user-avatar';
 // traces is the box the eye sees.
 const sDefinition = styles({
   tabular: { fontVariant: ['tabular-nums'] },
+  versionTooltip: { display: 'flex', minWidth: 0 },
   noCaps: { textTransform: 'none' },
   chipButton: {
     display: 'block',
@@ -50,25 +51,24 @@ export function VersionInfo() {
   const t = useT();
   const { data: health } = useQuery(webRuntime.queries.serverQueries.health());
   const clientTitle = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''} · ${buildInfo.branch} · ${buildInfo.buildDate}`;
+  const serverVersion = health ? `v${health.version}` : '…';
   return (
     <Box row align="center" gap={6} px={2}>
-      <span title={clientTitle}>
-        <Text variant="overline" color="textDim" style={s.noCaps}>
-          {t('nav.versionClient')}{' '}
-          <Text variant="overline" color="textDim" style={s.tabular}>
-            {`v${buildInfo.version}`}
+      <Box flex minW={0}>
+        <span title={clientTitle} className={classes(s.versionTooltip)}>
+          <Text variant="meta" color="textDim" lines={1} style={s.tabular}>
+            {`${t('nav.versionClient')} v${buildInfo.version}`}
           </Text>
-        </Text>
-      </span>
-      <Text variant="overline" color="textDim" opacity={0.4}>
+        </span>
+      </Box>
+      <Text variant="meta" color="textDim" opacity={0.4}>
         ·
       </Text>
-      <Text variant="overline" color="textDim" style={s.noCaps}>
-        {t('nav.versionServer')}{' '}
-        <Text variant="overline" color="textDim" style={s.tabular}>
-          {health ? `v${health.version}` : '…'}
+      <Box flex minW={0}>
+        <Text variant="meta" color="textDim" lines={1} textAlign="right" style={s.tabular}>
+          {`${t('nav.versionServer')} ${serverVersion}`}
         </Text>
-      </Text>
+      </Box>
     </Box>
   );
 }
@@ -85,6 +85,9 @@ export function UserChip() {
       <Menu.Trigger render={userChipTrigger(user, t('nav.account'))} />
       <Menu.Item icon="user-circle" label={t('nav.accountSettings')} asChild>
         <RouteLink to="/account" />
+      </Menu.Item>
+      <Menu.Item icon="sparkles" label={t('releases.title')} asChild>
+        <RouteLink to="/whats-new" />
       </Menu.Item>
       <Menu.Item icon="users" label={t('nav.changeProfile')} asChild>
         <RouteLink to="/login" search={{ redirect: href }} />

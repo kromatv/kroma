@@ -220,3 +220,199 @@ fn a_feed_with_no_release_yet_offers_nothing() {
     assert!(shown.error.is_none());
     assert!(!shown.available);
 }
+
+fn updater() -> SharedState {
+    let state = crate::test_support::test_state_with_updater(&feeds());
+    let dir = state.config.update_dir.as_ref().unwrap();
+    std::fs::create_dir_all(dir).unwrap();
+    heartbeat(&state, "docker", 0);
+    state
+}
+
+fn heartbeat(state: &SharedState, platform: &str, age: u64) {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    std::fs::write(
+        state
+            .config
+            .update_dir
+            .as_ref()
+            .unwrap()
+            .join("heartbeat.json"),
+        json!({"protocol": 1, "platform": platform, "timestamp": now - age}).to_string(),
+    )
+    .unwrap();
+}
+
+fn target() -> Target {
+    Target {
+        channel: Channel::Stable,
+        version: "999.0.0".into(),
+        build: 3_600_000,
+    }
+}
+
+#[test]
+fn an_update_saves_a_private_backup_before_queuing_the_reviewed_build() {
+    let state = updater();
+    let shown = install(&state, target()).unwrap();
+    let op = shown.operation.unwrap();
+    assert_eq!(op.phase, "queued");
+    assert_eq!(op.target.build, 3_600_000);
+    let backup = state
+        .config
+        .data_dir
+        .join("update-backups")
+        .join(format!("{}.zip", op.id));
+    assert!(std::fs::read(&backup).unwrap().starts_with(b"PK"));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(backup).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+    assert!(install(&state, target())
+        .unwrap_err()
+        .to_string()
+        .contains("already in progress"));
+}
+
+#[test]
+fn an_offline_or_wrong_platform_updater_cannot_receive_an_install() {
+    let state = updater();
+    heartbeat(&state, "docker", 100);
+    assert!(!status(&state).installer.ready);
+    assert!(install(&state, target()).is_err());
+    heartbeat(&state, "synology", 0);
+    assert!(!status(&state).installer.ready);
+}
+
+#[test]
+fn a_stale_review_or_another_channel_never_queues_an_update() {
+    let state = updater();
+    let mut asked = target();
+    asked.build -= 1;
+    assert!(install(&state, asked).is_err());
+    let mut asked = target();
+    asked.channel = Channel::Canary;
+    assert!(install(&state, asked).is_err());
+    assert!(status(&state).operation.is_none());
+}
+
+#[test]
+fn a_result_for_an_older_request_does_not_finish_the_current_operation() {
+    let state = updater();
+    let op = install(&state, target()).unwrap().operation.unwrap();
+    let dir = state.config.update_dir.as_ref().unwrap();
+    let mut old = op.clone();
+    old.id = "old".into();
+    old.phase = "complete".into();
+    std::fs::write(dir.join("result.json"), serde_json::to_vec(&old).unwrap()).unwrap();
+    assert_eq!(status(&state).operation.unwrap().phase, "queued");
+    old.id = op.id;
+    old.phase = "failed".into();
+    std::fs::write(dir.join("result.json"), serde_json::to_vec(&old).unwrap()).unwrap();
+    assert_eq!(status(&state).operation.unwrap().phase, "failed");
+    assert!(install(&state, target()).is_ok());
+}
+
+fn enable_automatic(state: &SharedState) {
+    state.settings.set_patch(
+        &state.db,
+        [(AUTO_INSTALL_KEY.to_owned(), json!(true))].into(),
+    );
+}
+
+#[test]
+fn automatic_installation_is_opt_in_and_marks_its_request() {
+    let state = updater();
+    check(&state).unwrap();
+    assert!(install_automatically(&state).unwrap().is_none());
+    assert!(status(&state).operation.is_none());
+    enable_automatic(&state);
+    let op = install_automatically(&state)
+        .unwrap()
+        .unwrap()
+        .operation
+        .unwrap();
+    assert!(op.automatic);
+    assert_eq!(op.phase, "queued");
+}
+
+#[test]
+fn automatic_installation_waits_for_playing_or_paused_sessions() {
+    let state = updater();
+    enable_automatic(&state);
+    check(&state).unwrap();
+    state.playback.upsert(
+        crate::services::playback::Ping {
+            session_id: "watching".into(),
+            item_id: "movie".into(),
+            position_ms: 0,
+            duration_ms: None,
+            state: "paused".into(),
+            mode: "direct".into(),
+            player: "web".into(),
+            device: "browser".into(),
+            audio: None,
+            subtitle: None,
+        },
+        None,
+        "viewer".into(),
+        "127.0.0.1".into(),
+        "LAN".into(),
+        None,
+    );
+    assert!(install_automatically(&state).unwrap().is_none());
+    assert!(status(&state).operation.is_none());
+    state.playback.remove("watching");
+    assert!(install_automatically(&state).unwrap().is_some());
+}
+
+#[test]
+fn a_failed_build_is_not_retried_automatically() {
+    let state = updater();
+    enable_automatic(&state);
+    check(&state).unwrap();
+    let mut op = install_automatically(&state)
+        .unwrap()
+        .unwrap()
+        .operation
+        .unwrap();
+    op.phase = "failed".into();
+    std::fs::write(
+        state
+            .config
+            .update_dir
+            .as_ref()
+            .unwrap()
+            .join("result.json"),
+        serde_json::to_vec(&op).unwrap(),
+    )
+    .unwrap();
+    assert!(install_automatically(&state).unwrap().is_none());
+    assert!(install(&state, target()).is_ok());
+}
+
+#[test]
+fn a_backup_interrupted_by_restart_can_be_retried() {
+    let state = updater();
+    state
+        .settings
+        .set_internal(
+            &state.db,
+            OPERATION_KEY,
+            json!({
+                "id": "interrupted", "target": target(), "phase": "backing_up",
+                "message": null, "requestedAt": "2026-10-29T12:00:00Z", "automatic": false,
+            }),
+        )
+        .unwrap();
+    recover(&state).unwrap();
+    assert_eq!(status(&state).operation.unwrap().phase, "failed");
+    assert!(install(&state, target()).is_ok());
+}

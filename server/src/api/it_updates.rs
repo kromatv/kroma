@@ -52,6 +52,30 @@ async fn a_member_cannot_read_or_run_the_check() {
 
     assert_eq!(read, StatusCode::FORBIDDEN);
     assert_eq!(run, StatusCode::FORBIDDEN);
+    let (install, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/updates/install",
+        Some(&ana),
+        Some(json!({"channel":"Stable", "version":"999.0.0", "build":1})),
+    )
+    .await;
+    assert_eq!(install, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn an_install_without_a_host_updater_explains_the_conflict() {
+    let t = test_app();
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/updates/install",
+        Some(&t.token),
+        Some(json!({"channel":"Stable", "version":"999.0.0", "build":1})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert!(body["error"].as_str().unwrap().contains("host updater"));
 }
 
 async fn spawn_feed() -> String {
@@ -124,11 +148,39 @@ async fn changing_the_channel_checks_the_new_one() {
 #[tokio::test]
 async fn health_names_the_channel_a_desktop_app_should_follow() {
     let t = test_app();
-    t.state
-        .settings
-        .set_patch(&t.state.db, [("updateChannel".to_string(), json!("Canary"))].into());
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("updateChannel".to_string(), json!("Canary"))].into(),
+    );
 
     let (_, body) = get(&t.app, "/api/health", None).await;
 
     assert_eq!(body["updateChannel"], json!("Canary"));
+}
+
+#[tokio::test]
+async fn automatic_installation_enables_checks_and_disabling_checks_revokes_it() {
+    let t = test_app();
+    let (code, _) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/settings",
+        Some(&t.token),
+        Some(json!({"autoInstallUpdates": true})),
+    )
+    .await;
+    assert_eq!(code, StatusCode::OK);
+    let (_, body) = get(&t.app, "/api/admin/updates", Some(&t.token)).await;
+    assert_eq!(body["autoInstall"], json!(true));
+    assert_eq!(body["auto"], json!(true));
+    send(
+        &t.app,
+        "PUT",
+        "/api/admin/settings",
+        Some(&t.token),
+        Some(json!({"autoUpdate": false})),
+    )
+    .await;
+    let (_, body) = get(&t.app, "/api/admin/updates", Some(&t.token)).await;
+    assert_eq!(body["autoInstall"], json!(false));
 }

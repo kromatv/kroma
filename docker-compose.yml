@@ -28,6 +28,9 @@ services:
     environment:
       # Library roots INSIDE the container (match the bind-mounts below).
       KROMA_MEDIA_DIRS: /media
+      # Optional one-click updates: run the updater on the HOST and bind-mount
+      # its private bridge below. Setup: server/updater/README.md.
+      # KROMA_UPDATE_DIR: /updates
       # TMDB works out of the box; set your own key to raise rate limits.
       # KROMA_TMDB_API_KEY: "your-key"
       # KROMA_TMDB_LANGUAGE: "fr-FR"
@@ -44,6 +47,7 @@ services:
       # origin prompts for trust and some TV/native clients can't follow it.
       # KROMA_HTTPS_REDIRECT: "1"
     volumes:
+      # - /opt/kroma/update-bridge:/updates
       - kroma-data:/data
       # Mount media READ-WRITE if you use the built-in requests/downloads (import
       # writes into the library); :ro is only safe for a pre-existing library.
