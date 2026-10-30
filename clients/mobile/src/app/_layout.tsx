@@ -28,6 +28,7 @@ import { I18nProvider, useI18n } from '#mobile/lib/i18n';
 import { useNotificationStream } from '#mobile/lib/notifications';
 import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/notifications/usePush';
 import { lockUpright, UPRIGHT } from '#mobile/lib/orientation';
+import { ProgressQueueProvider } from '#mobile/lib/progress';
 import { SessionProvider, useSession } from '#mobile/lib/session';
 import { MOBILE, mobileTheme } from '#mobile/lib/theme';
 import { PlaybackOwnerProvider } from '#mobile/player/playback-owner';
@@ -107,33 +108,35 @@ function Shell() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <KitI18nBridge>
-          <DownloadsProvider client={client}>
-            {/* Which TV this phone is driving is app-wide: the button on a
+          <ProgressQueueProvider client={client} userId={user?.id ?? null}>
+            <DownloadsProvider client={client}>
+              {/* Which TV this phone is driving is app-wide: the button on a
                 detail page, the bar above the tabs and the remote screen are
                 three views of one session. */}
-            <CastProvider
-              client={client}
-              enabled={status === 'signedIn'}
-              deviceName={Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}
-              lan={lanBeacon ?? undefined}
-            >
-              <NotificationStream />
-              <BottomSheetModalProvider>
-                {/* Innermost: a theme swap REMOUNTS this subtree, so every provider
+              <CastProvider
+                client={client}
+                enabled={status === 'signedIn'}
+                deviceName={Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}
+                lan={lanBeacon ?? undefined}
+              >
+                <NotificationStream />
+                <BottomSheetModalProvider>
+                  {/* Innermost: a theme swap REMOUNTS this subtree, so every provider
                     above it survives one and only the screens are drawn again. */}
-                <ThemeProvider theme={theme}>
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: { backgroundColor: theme.colors.bg },
-                      animation: 'fade',
-                      orientation: UPRIGHT,
-                    }}
-                  />
-                </ThemeProvider>
-              </BottomSheetModalProvider>
-            </CastProvider>
-          </DownloadsProvider>
+                  <ThemeProvider theme={theme}>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: theme.colors.bg },
+                        animation: 'fade',
+                        orientation: UPRIGHT,
+                      }}
+                    />
+                  </ThemeProvider>
+                </BottomSheetModalProvider>
+              </CastProvider>
+            </DownloadsProvider>
+          </ProgressQueueProvider>
         </KitI18nBridge>
       </I18nProvider>
     </QueryClientProvider>
