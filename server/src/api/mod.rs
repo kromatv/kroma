@@ -101,6 +101,8 @@ mod it_member_reach;
 #[cfg(test)]
 mod it_monitoring;
 #[cfg(test)]
+mod it_network;
+#[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
