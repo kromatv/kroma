@@ -136,9 +136,8 @@ impl DownloadManager {
                 return;
             }
         };
-        // librqbit routes all its traffic through the VPN proxy and a
-        // `0.0.0.0/0` tunnel can't reach a LAN indexer, so its own `.torrent`
-        // fetch hangs: fetch it ourselves, direct, and hand over the bytes.
+        // Behind the VPN the engine takes bytes, not a URL: fetch the `.torrent`
+        // ourselves, through the tunnel unless the indexer is on the LAN.
         let prefetched = match self.prefetch_torrent(host, row, &client) {
             Ok(p) => p,
             Err(()) => return,
@@ -180,7 +179,7 @@ impl DownloadManager {
         }
         match fetch_torrent_for(host, row) {
             Ok(bytes) => {
-                tracing::info!(id = %row.id, bytes = bytes.len(), "fetched .torrent directly (bypassing VPN)");
+                tracing::info!(id = %row.id, bytes = bytes.len(), "fetched .torrent ahead of the engine");
                 Ok(Some(bytes))
             }
             Err(e) => {

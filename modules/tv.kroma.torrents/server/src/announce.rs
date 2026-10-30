@@ -1,31 +1,46 @@
-//! Self-managed tracker announce that feeds the embedded engine peers it can't
-//! get for itself behind the VPN. librqbit dials trackers through reqwest, whose
-//! SOCKS support can't traverse the WireGuard-to-SOCKS bridge (it fails
-//! "host unreachable"), so with a proxy configured the engine's OWN tracker
-//! announce yields nothing - fatal for a private, IPv6-only swarm (no DHT
-//! fallback). We announce ourselves over the bridge with `curl`
-//! (`--socks5-hostname`, which DOES traverse it), parse BOTH `peers` and
-//! `peers6`, and hand librqbit the result as `initial_peers`. Any parse or
-//! network failure yields an empty list and the engine falls back to its own
-//! discovery.
+//! Self-managed tracker announce for the embedded engine behind the VPN. With a
+//! proxy set, the engine's own trackers, DHT and LSD are off (they would leave
+//! from the real address or resolve names locally), so this is its peer source
+//! besides peer exchange: announce over the bridge with `curl`, whose proxy
+//! resolves the names, parse `peers` and `peers6`, and hand librqbit the result.
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use sha1::{Digest, Sha1};
 
-/// Announce to every HTTP tracker in the `.torrent` and return the union of
-/// peers (IPv4 + IPv6), deduped.
-pub fn tracker_peers(torrent_bytes: &[u8], socks: Option<&str>) -> Vec<SocketAddr> {
+/// Announce through `proxy` to the HTTP trackers in the `.torrent` and return
+/// the union of peers (IPv4 + IPv6), deduped.
+pub fn tracker_peers(torrent_bytes: &[u8], proxy: &str, peer_id: &[u8; 20]) -> Vec<SocketAddr> {
     let Some(info_hash) = info_hash(torrent_bytes) else {
         return Vec::new();
     };
+    announce_all(&info_hash, announce_urls(torrent_bytes), proxy, peer_id)
+}
+
+/// The same for a magnet link, from its `xt` info hash and `tr` trackers.
+pub fn magnet_peers(magnet: &str, proxy: &str, peer_id: &[u8; 20]) -> Vec<SocketAddr> {
+    let Ok(parsed) = librqbit_core::magnet::Magnet::parse(magnet) else {
+        return Vec::new();
+    };
+    let Some(info_hash) = parsed.as_id20() else {
+        return Vec::new();
+    };
+    announce_all(&info_hash.0, parsed.trackers, proxy, peer_id)
+}
+
+fn announce_all(
+    info_hash: &[u8; 20],
+    trackers: Vec<String>,
+    proxy: &str,
+    peer_id: &[u8; 20],
+) -> Vec<SocketAddr> {
     let mut out = Vec::new();
     let mut seen = std::collections::HashSet::new();
-    for url in announce_urls(torrent_bytes).into_iter().take(4) {
-        if !(url.starts_with("http://") || url.starts_with("https://")) {
-            continue; // UDP trackers need a different protocol; skip.
-        }
-        for addr in announce_once(&url, &info_hash, socks) {
+    let http = trackers
+        .into_iter()
+        .filter(|url| url.starts_with("http://") || url.starts_with("https://"));
+    for url in http.take(4) {
+        for addr in announce_once(&url, info_hash, proxy, peer_id) {
             if seen.insert(addr) {
                 out.push(addr);
             }
@@ -34,25 +49,23 @@ pub fn tracker_peers(torrent_bytes: &[u8], socks: Option<&str>) -> Vec<SocketAdd
     out
 }
 
-fn announce_once(base: &str, info_hash: &[u8; 20], socks: Option<&str>) -> Vec<SocketAddr> {
-    let mut peer_id = *b"-LM0001-000000000000";
-    for (i, b) in info_hash.iter().take(6).enumerate() {
-        let hex = b"0123456789abcdef";
-        peer_id[8 + i * 2] = hex[(b >> 4) as usize];
-        peer_id[9 + i * 2] = hex[(b & 0xf) as usize];
-    }
+fn announce_once(
+    base: &str,
+    info_hash: &[u8; 20],
+    proxy: &str,
+    peer_id: &[u8; 20],
+) -> Vec<SocketAddr> {
     let q = format!(
         "info_hash={}&peer_id={}&port=6881&uploaded=0&downloaded=0&left=1&numwant=200&compact=1&supportcrypto=1&event=started",
         urlencode(info_hash),
-        urlencode(&peer_id),
+        urlencode(peer_id),
     );
     let sep = if base.contains('?') { '&' } else { '?' };
     let url = format!("{base}{sep}{q}");
 
-    let mut fetch = kroma_module_sdk::http::Fetch::new().max_time(20);
-    if let Some(proxy) = socks {
-        fetch = fetch.socks5(proxy.to_string());
-    }
+    let fetch = kroma_module_sdk::http::Fetch::new()
+        .max_time(20)
+        .socks5(proxy);
     match fetch.get(&url).and_then(|r| r.ensure_ok()) {
         Ok(resp) => parse_peers(&resp.body),
         Err(_) => Vec::new(),
