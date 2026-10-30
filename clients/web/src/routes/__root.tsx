@@ -7,7 +7,6 @@ import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Scripts } from '@tanstack/react-router';
 import { lazy, type ReactNode, Suspense } from 'react';
 import { preload } from 'react-dom';
-import { Intro } from '#web/features/catalog/intro';
 import { NotificationBell } from '#web/features/notifications/panel';
 import { ModuleHostProvider } from '#web/modules/ModuleHostProvider';
 import type { WebRuntime } from '#web/shared/lib/api';
@@ -17,6 +16,7 @@ import { LocaleProvider } from '#web/shared/lib/locale';
 import { MyListProvider } from '#web/shared/lib/mylist';
 import { WatchedProvider } from '#web/shared/lib/watched';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
+import { BOOT_SCREEN_CSS, BootScreen } from '#web/shared/ui/boot-screen';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
 
 // Dev-only: lazy so the devtools bundle never ships in the packaged SPA.
@@ -46,6 +46,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       // viewport-fit=cover extends the canvas under the iPhone notch/home
       // indicator so `env(safe-area-inset-*)` paddings (player, topbar) apply.
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+      { name: 'description', content: 'Your media library, everywhere.' },
       { title: 'KROMA' },
     ],
     links: [
@@ -60,6 +61,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       // where notifications only work from a home-screen install.
       { rel: 'manifest', href: '/manifest.webmanifest' },
     ],
+    styles: [{ href: 'kroma-boot', precedence: 'default', children: BOOT_SCREEN_CSS }],
   }),
   shellComponent: RootDocument,
 });
@@ -98,14 +100,15 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                       <MyListProvider>
                         <LocaleProvider>
                           <NavActionsProvider actions={<NotificationBell />}>
-                            <ModuleHostProvider>{children}</ModuleHostProvider>
+                            <ModuleHostProvider>
+                              <BootScreen>{children}</BootScreen>
+                            </ModuleHostProvider>
                           </NavActionsProvider>
                         </LocaleProvider>
                       </MyListProvider>
                     </WatchedProvider>
                   </AuthProvider>
                 </WebRuntimeProvider>
-                <Intro />
 
                 <div className={classes(s.toasts)}>
                   <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />

@@ -1,7 +1,6 @@
 import { CastProvider } from '@kromatv/ui';
 import { Box, classes, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
 import { MobileTopbar, Sidebar } from '#web/features/catalog/sidebar';
 import { useNotificationStream } from '#web/features/notifications/use-notifications';
@@ -44,7 +43,7 @@ function AppLayout() {
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';
   useNotificationStream();
-  if (!(ready && authed)) return <GateLoading />;
+  if (!(ready && authed)) return null;
   return (
     <CastProvider client={webRuntime.client} enabled deviceName={BROWSER_LABEL}>
       <Box row={wide} minH="100%">
