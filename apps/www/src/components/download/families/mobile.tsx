@@ -1,5 +1,6 @@
 import { IconArrowUpRight, IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
 import { useState, useSyncExternalStore } from 'react';
+import { AndroidBetaLink } from '#site/components/download/android-beta-link';
 import { DevicePicker } from '#site/components/download/device-picker';
 import { family } from '#site/components/download/families/meta';
 import { JoinButton } from '#site/components/download/join-button';
@@ -85,6 +86,7 @@ export function MobileFamily() {
           }
         >
           <PlatformDownload target="android" label={m.download_android_apk()} />
+          <AndroidBetaLink />
         </PlatformEntry>
       )}
     </PlatformFamily>

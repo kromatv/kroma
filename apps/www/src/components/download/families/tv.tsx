@@ -1,5 +1,6 @@
 import { IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
 import { useState } from 'react';
+import { AndroidBetaLink } from '#site/components/download/android-beta-link';
 import { DevicePicker } from '#site/components/download/device-picker';
 import { SamsungIcon } from '#site/components/download/samsung-icon';
 import { LgIcon } from '#site/components/download/lg-icon';
@@ -102,6 +103,7 @@ export function TvFamily() {
             target="androidtv"
             label={m.download_for_chip({ chip: 'Android TV' })}
           />
+          <AndroidBetaLink />
         </PlatformEntry>
       )}
       {selected === 'apple' && (
