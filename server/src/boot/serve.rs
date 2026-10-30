@@ -90,6 +90,10 @@ pub async fn run(
     await_jobs_drained(&state).await;
     // Blocking: each sidecar gets a grace period to run its own shutdown hooks.
     let _ = tokio::task::spawn_blocking(move || supervisor.stop_all()).await;
+    let network = state.network.clone();
+    if let Ok(Err(e)) = tokio::task::spawn_blocking(move || network.flush()).await {
+        tracing::warn!("the last network tallies could not be written: {e:#}");
+    }
     Ok(())
 }
 

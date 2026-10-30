@@ -38,6 +38,7 @@ mod rows;
 // would clash with `media::counts`, and the call sites read clearer scoped.
 pub mod audio_analysis;
 mod curated;
+pub mod network_flows;
 pub mod notification_deliveries;
 pub mod notifications;
 pub mod pipeline;
