@@ -18,6 +18,7 @@ use crate::services::settings::Settings;
 
 mod decide;
 mod flow;
+mod host_policy;
 mod journal;
 mod rules;
 mod summary;

@@ -1,20 +1,22 @@
 //! The `/api/_host/*` callback API a sidecar reaches back into the core with:
-//! settings, events, notifications, jobs and session lookups.
+//! settings, events, notifications, jobs, session lookups and the network
+//! policy.
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-use axum::extract::State;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::http::StatusCode;
 use axum::middleware::from_fn_with_state;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use kroma_module_host::{Event, HostCtx, SettingReachOf};
+use kroma_module_host::{Event, HostCtx, NetworkPolicyOf, SettingReachOf};
 use serde_json::{json, Value};
 
 use super::Supervisor;
 
 mod caller;
+mod network;
 mod settings;
 
 use caller::{resolve_caller, Caller};
@@ -22,8 +24,12 @@ use caller::{resolve_caller, Caller};
 /// The `/_host/*` callback router modules call back into (mount under `/api`).
 /// Every route is behind a token the `supervisor` minted, which is what names the
 /// calling module; `reach` is the core's answer for how far one settings key
-/// reaches out of it.
-pub fn host_router<S>(supervisor: Arc<Supervisor>, reach: SettingReachOf) -> Router<S>
+/// reaches out of it, and `network` its policy on a module's outbound calls.
+pub fn host_router<S>(
+    supervisor: Arc<Supervisor>,
+    reach: SettingReachOf,
+    network: NetworkPolicyOf,
+) -> Router<S>
 where
     S: HostCtx + Clone + Send + Sync + 'static,
 {
@@ -50,8 +56,17 @@ where
         // How a module reaches a peer: it asks for a CONTRACT and the core
         // answers with whoever serves it. No module id crosses this wire.
         .route("/_host/contributions", get(contributions))
+        .route(
+            "/_host/network/decide",
+            post(network::decide).layer(DefaultBodyLimit::max(network::MAX_ASK_BYTES)),
+        )
+        .route(
+            "/_host/network/flows",
+            post(network::flows).layer(DefaultBodyLimit::max(network::MAX_FLOWS_BYTES)),
+        )
         .route_layer(from_fn_with_state(supervisor, resolve_caller))
         .layer(Extension(reach))
+        .layer(Extension(network))
 }
 
 #[derive(serde::Deserialize)]

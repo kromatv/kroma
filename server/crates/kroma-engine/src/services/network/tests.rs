@@ -1,5 +1,7 @@
 use serde_json::json;
 
+use kroma_module_host::{NetworkAction, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkRoute};
+
 use super::*;
 use crate::db::testing::{TempPool, temp_pool};
 
@@ -164,4 +166,69 @@ fn the_purposes_offered_include_the_cores_and_every_one_seen() {
     assert!(purposes.contains(&seen));
     assert!(purposes.contains(&core));
     assert_eq!(purposes.len(), CORE_PURPOSES.len() + 1);
+}
+
+fn ask(host: &str) -> NetworkAsk {
+    NetworkAsk {
+        purpose: "download-client".to_string(),
+        method: "POST".to_string(),
+        host: host.to_string(),
+        port: 8080,
+        https: false,
+    }
+}
+
+#[test]
+fn a_module_asking_for_loopback_is_refused_with_the_reason() {
+    let (network, _pool) = network("network-ask-loopback", Point::absent(VPN_POINT));
+
+    let answer = NetworkPolicy::decide(&network, "tv.kroma.engine.qbittorrent", &ask("127.0.0.1"));
+
+    assert_eq!(answer.action, NetworkAction::Block);
+    assert_eq!(answer.rule.as_deref(), Some(GUARD_LOOPBACK));
+    assert!(answer.reason.unwrap().contains("loopback"));
+}
+
+#[test]
+fn a_module_routed_to_the_vpn_is_handed_its_proxy() {
+    let vpn = Point::stub(VPN_POINT, |_, _| {
+        Some(json!("socks5://kroma:pw@127.0.0.1:25345"))
+    });
+    let (network, _pool) = network("network-ask-vpn", vpn);
+    network.set_rules(everything("vpn")).unwrap();
+
+    let answer = NetworkPolicy::decide(&network, "tv.kroma.indexer", &ask("tracker.example"));
+
+    assert_eq!(answer.action, NetworkAction::Vpn);
+    assert_eq!(
+        answer.proxy.as_deref(),
+        Some("socks5://kroma:pw@127.0.0.1:25345")
+    );
+}
+
+#[test]
+fn flows_a_module_reports_are_journaled_under_that_module() {
+    let (network, _pool) = network("network-module-flows", Point::absent(VPN_POINT));
+    let flow = NetworkFlow {
+        purpose: "torznab".to_string(),
+        method: "GET".to_string(),
+        host: "indexer.example".to_string(),
+        port: 443,
+        route: NetworkRoute::Proxy,
+        status: Some(200),
+        bytes_in: 5,
+        bytes_out: 0,
+        duration_ms: 3,
+        error: None,
+        rule: Some("all".to_string()),
+    };
+
+    network.record_flows("tv.kroma.torznab", vec![flow]);
+
+    let flows = network.flows(&FlowFilter {
+        limit: 10,
+        ..FlowFilter::default()
+    });
+    assert_eq!(flows[0].caller, "tv.kroma.torznab");
+    assert_eq!(flows[0].route, FlowRoute::Vpn);
 }
