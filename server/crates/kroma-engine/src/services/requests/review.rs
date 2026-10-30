@@ -7,7 +7,7 @@ use crate::model::{MediaRequest, RequestStatus};
 use crate::services::jobs::now_ms;
 
 use super::availability::match_one;
-use super::notify::{notify_transition, publish};
+use super::notify::{notify_transition, publish, settle_review};
 use super::wanted::materialize_wanted;
 
 #[cfg(test)]
@@ -35,6 +35,7 @@ pub fn approve_request<S: HostStorage>(
     )?;
     let status = match_one(state, id)?.unwrap_or(RequestStatus::Approved);
     publish(state, id, status);
+    settle_review(state, id, reviewer);
     notify_transition(state, id, status);
     // A no-op until the downloads milestone registers this job key.
     state.trigger_job("acquisition.search", "request-approved");
@@ -60,6 +61,7 @@ pub fn deny_request<S: HostStorage>(
         bail!("request not found");
     }
     publish(state, id, RequestStatus::Denied);
+    settle_review(state, id, Some(reviewer));
     notify_transition(state, id, RequestStatus::Denied);
     let conn = state.db().get()?;
     db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after deny"))

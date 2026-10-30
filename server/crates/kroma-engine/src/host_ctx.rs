@@ -114,6 +114,15 @@ impl HostCtx for AppState {
         crate::services::notify::emit(self, audience, spec)
     }
 
+    fn resolve_notifications(
+        &self,
+        subject: &kroma_module_host::NotificationSubject,
+        event: kroma_module_host::NotificationEvent,
+        by: Option<&str>,
+    ) -> usize {
+        crate::services::notify::resolve(self, subject, event, by)
+    }
+
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         if let Some(state) = self.shared() {
             let _ = state.jobs.trigger(state.clone(), JobKey(key), reason);

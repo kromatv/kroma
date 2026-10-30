@@ -58,9 +58,9 @@
 - **ACCT-49** (SHIPPED) - A repeat folds into the row the person already has: its count rises, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-50** (SHIPPED) - A folded group raises a banner at most once an hour, and repeats in <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-51** (SHIPPED) - A second telling of something a person already holds is dropped <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-52** (AGREED) - A notification that asked for a decision stops asking once the decision <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-53** (AGREED) - A settled row is not deleted behind the reader's back. It stays where <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-54** (DRAFT) - Whether settling a row also takes back a banner already delivered to a <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-52** (SHIPPED) - A notification that asked for a decision stops asking once the decision <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-53** (SHIPPED) - A settled row is not deleted behind the reader's back. It stays where <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-54** (SHIPPED) - Settling a row leaves a banner already delivered to a device alone. <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-55** (SHIPPED) - The inbox opens from the bell on any screen, lists rows newest first <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
@@ -68,7 +68,7 @@
 - **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-60** (AGREED) - What goes first is archived rows, then the oldest rows that were read. <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-61** (SHIPPED) - The inbox is on the web client and on the phone. The television has <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-62** (DRAFT) - Which kinds of subject a television would open, if it ever gains an <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-62** (AGREED) - The television routes no subject kinds. It gains them with the inbox, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-64** (SHIPPED) - A category whose inbox switch is off writes no row at all. Muting is <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-65** (AGREED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>

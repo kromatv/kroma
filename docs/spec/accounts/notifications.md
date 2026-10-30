@@ -99,18 +99,19 @@ requester once per real change, not once per flip.
 
 ## Rows that no longer need anyone
 
-Status: **AGREED**
+Status: **SHIPPED**
 
-**ACCT-52** (AGREED) - A notification that asked for a decision stops asking once the decision
+**ACCT-52** (SHIPPED) - A notification that asked for a decision stops asking once the decision
 is made: its actions go, and it says who decided. This holds for every recipient, not only
 the admin who acted, and for any subject that can settle: a request approved or denied, a
 report closed, a job that succeeds after failing.
 
-**ACCT-53** (AGREED) - A settled row is not deleted behind the reader's back. It stays where
+**ACCT-53** (SHIPPED) - A settled row is not deleted behind the reader's back. It stays where
 it is and reads as settled, because "this was dealt with" is itself worth knowing.
 
-**ACCT-54** (DRAFT) - Whether settling a row also takes back a banner already delivered to a
-device is open. Taking it back costs a second delivery per decision.
+**ACCT-54** (SHIPPED) - Settling a row leaves a banner already delivered to a device alone.
+Taking it back would cost a second delivery per decision, and the inbox already reads as
+settled.
 
 ## The inbox
 
@@ -144,8 +145,8 @@ request nobody has answered yet.
 none: it is a screen people watch from a sofa, and an inbox there is a list nobody can act
 on ([`surfaces/`](../surfaces/)).
 
-**ACCT-62** (DRAFT) - Which kinds of subject a television would open, if it ever gains an
-inbox, is open.
+**ACCT-62** (AGREED) - The television routes no subject kinds. It gains them with the inbox,
+if it ever gets one.
 
 ## Preferences
 

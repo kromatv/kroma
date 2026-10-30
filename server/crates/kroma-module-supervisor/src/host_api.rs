@@ -33,6 +33,7 @@ where
         .route("/_host/events", post(publish_event::<S>))
         .route("/_host/events_to", post(publish_event_to::<S>))
         .route("/_host/notify", post(notify::<S>))
+        .route("/_host/notify/resolve", post(resolve_notifications::<S>))
         .route("/_host/job", post(trigger_job::<S>))
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
@@ -134,6 +135,22 @@ struct NotifyBody {
 async fn notify<S: HostCtx>(State(host): State<S>, Json(body): Json<NotifyBody>) -> Json<Value> {
     let sent = host.notify(&body.audience, &body.spec);
     Json(json!({ "sent": sent }))
+}
+
+#[derive(serde::Deserialize)]
+struct ResolveBody {
+    subject: kroma_module_host::NotificationSubject,
+    event: kroma_module_host::NotificationEvent,
+    #[serde(default)]
+    by: Option<String>,
+}
+
+async fn resolve_notifications<S: HostCtx>(
+    State(host): State<S>,
+    Json(body): Json<ResolveBody>,
+) -> Json<Value> {
+    let resolved = host.resolve_notifications(&body.subject, body.event, body.by.as_deref());
+    Json(json!({ "resolved": resolved }))
 }
 
 #[derive(serde::Deserialize)]

@@ -83,6 +83,10 @@ export const Notification = z.object({
   imageUrl: z.string().optional(),
   actions: z.array(NotificationAction).default([]),
   read: z.boolean(),
+  /** Set once the subject no longer needs anyone. A settled row carries no
+   * actions and says who settled it. */
+  resolved: z.boolean().default(false),
+  resolvedBy: NotificationActor.optional(),
   /** Emissions this row stands for. A server built before folding sends none,
    * which reads as the `1` an unfolded row has. */
   count: z.number().default(1),

@@ -46,6 +46,12 @@ function foldLabels(
   };
 }
 
+function settledLabel(one: Notification, t: Translate): string | null {
+  if (!one.resolved) return null;
+  const by = one.resolvedBy?.name;
+  return by ? t('notifications.resolvedBy', { user: by }) : t('notifications.resolved');
+}
+
 export function NotificationEntry({
   one,
   onNavigate,
@@ -62,6 +68,7 @@ export function NotificationEntry({
   const at = notificationUpdatedAt(one);
   const latest = relative(at);
   const { span, repeat } = foldLabels(one, latest, relative, t);
+  const settled = settledLabel(one, t);
 
   function go() {
     markRead([one.id]);
@@ -77,7 +84,7 @@ export function NotificationEntry({
       <Box>
         <ListRow.Root
           size="sm"
-          label={[one.title, repeat, span].filter(Boolean).join(' · ')}
+          label={[one.title, repeat, settled, span].filter(Boolean).join(' · ')}
           onPress={go}
           chevron={false}
           style={s.rowPad}
@@ -91,9 +98,9 @@ export function NotificationEntry({
             body={one.body}
             repeat={repeat ? <Badge tone={unread ? 'warning' : 'neutral'}>{repeat}</Badge> : null}
             meta={
-              span ? (
+              settled || span ? (
                 <Text variant="meta" color="textDim" lines={1} mt={3}>
-                  {span}
+                  {[settled, span].filter(Boolean).join(' · ')}
                 </Text>
               ) : null
             }

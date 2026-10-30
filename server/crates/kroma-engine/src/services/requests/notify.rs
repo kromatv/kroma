@@ -130,6 +130,15 @@ fn facts(req: &MediaRequest, status: RequestStatus) -> RequestEventData {
     }
 }
 
+pub(super) fn settle_review<S: HostStorage>(state: &S, req_id: &str, reviewer: Option<&str>) {
+    crate::services::notify::resolve(
+        state,
+        &NotificationSubject::request(req_id),
+        NotificationEvent::RequestSubmitted,
+        reviewer,
+    );
+}
+
 pub(super) fn request_link<S: HostStorage>(state: &S, req: &MediaRequest) -> String {
     let local = state.db().get().ok().and_then(|conn| match req.kind {
         RequestKind::Movie => db::movie_item_by_tmdb(&conn, req.tmdb_id)

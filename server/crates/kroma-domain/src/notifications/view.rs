@@ -39,6 +39,11 @@ pub struct Notification {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub push_category: Option<PushCategory>,
     pub read: bool,
+    /// Set once the subject no longer needs anyone. A settled row keeps its
+    /// place and its words, and carries no actions.
+    pub resolved: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolved_by: Option<NotificationActor>,
     /// Emissions this row stands for. `1` for a row nothing folded into, which
     /// is how a client built before folding reads every row.
     pub count: u32,
