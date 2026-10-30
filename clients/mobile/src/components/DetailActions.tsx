@@ -178,7 +178,7 @@ export function DetailActions({
           >
             <Icon name="flag" size={24} thickness={1.8} />
             <Text lines={1} style={s.secondaryLabel}>
-              {t('reports.sheet')}
+              {t('report.actionShort')}
             </Text>
           </Pressable>
         ) : null}
