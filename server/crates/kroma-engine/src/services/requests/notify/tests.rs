@@ -220,3 +220,64 @@ fn an_arrival_the_server_reached_on_its_own_names_no_actor() {
 
     assert_eq!(host.notifications()[0].1.actor_id, None);
 }
+
+fn delivering_state() -> (crate::state::SharedState, String) {
+    let state = crate::test_support::test_state();
+    let user = kroma_db::create_user(&state.db, "ana@test.dev", "Ana", "h", &[])
+        .unwrap()
+        .id;
+    (state, user)
+}
+
+fn told(state: &crate::state::SharedState, user: &str) -> usize {
+    let conn = state.db.get().unwrap();
+    db::notifications::list_notifications(&conn, user, 50, false)
+        .unwrap()
+        .len()
+}
+
+#[test]
+fn a_request_flapping_between_partial_and_available_is_told_once_per_status() {
+    let (state, user) = delivering_state();
+    let mut req = req_by(RequestKind::Show, RequestStatus::PartiallyAvailable, &user);
+    req.id = "req-flap".into();
+
+    for status in [
+        RequestStatus::PartiallyAvailable,
+        RequestStatus::Available,
+        RequestStatus::PartiallyAvailable,
+        RequestStatus::Available,
+    ] {
+        notify_requester(&state, &req, status, "/requests");
+    }
+
+    assert_eq!(told(&state, &user), 2);
+}
+
+#[test]
+fn two_requests_reaching_the_same_status_are_two_pieces_of_news() {
+    let (state, user) = delivering_state();
+    let mut dune = req_by(RequestKind::Movie, RequestStatus::Available, &user);
+    dune.id = "req-dune".into();
+    let mut arrival = req_by(RequestKind::Movie, RequestStatus::Available, &user);
+    arrival.id = "req-arrival".into();
+
+    notify_requester(&state, &dune, RequestStatus::Available, "/requests");
+    notify_requester(&state, &arrival, RequestStatus::Available, "/requests");
+
+    assert_eq!(told(&state, &user), 2);
+}
+
+#[test]
+fn a_key_names_the_event_the_request_and_the_status_it_reached() {
+    let host = test_host();
+    let mut req = req_by(RequestKind::Movie, RequestStatus::Denied, "u1");
+    req.id = "req-7".into();
+
+    notify_requester(&host, &req, RequestStatus::Denied, "/requests");
+
+    assert_eq!(
+        host.notifications()[0].1.dedupe_key.as_deref(),
+        Some("request.denied:req-7:denied")
+    );
+}
