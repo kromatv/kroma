@@ -8,6 +8,7 @@ use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::infra::metadata::Target;
 use crate::model::{MediaItem, Show};
+use crate::services::scan::ScanData;
 use crate::services::activity::{self, Shared as Activity};
 use crate::services::search::SearchEngine;
 use crate::state::SharedState;
@@ -35,17 +36,24 @@ pub struct EnrichSummary {
 /// Returns immediately; work proceeds on detached threads.
 ///
 /// Only the titles with a TMDB call to make, because this runs after every scan
-/// and one imported film must not re-resolve the whole catalog. The sweep that
-/// does revisit everything is the nightly `pipeline.metadata` stage.
-pub fn maybe_spawn(state: &SharedState, items: &[MediaItem], shows: &[Show]) {
+/// and one imported film must not re-resolve the whole catalog: a title that
+/// matched and kept its art is left alone, and so is a show whose episodes the
+/// scan did not move. The sweep that does revisit everything is the nightly
+/// `pipeline.metadata` stage.
+pub fn maybe_spawn(state: &SharedState, scanned: &ScanData) {
     let Some(api_key) = state.config.tmdb_api_key.clone() else {
         return;
     };
     if !state.config.tmdb_enrich {
         return;
     }
-    let mut jobs = build_jobs(items, shows, &load_pins(&state.db), &state.config.data_dir);
-    jobs.retain(Job::fetches);
+    let mut jobs = build_jobs(
+        &scanned.items,
+        &scanned.shows,
+        &load_pins(&state.db),
+        &state.config.data_dir,
+    );
+    jobs.retain(|job| job.fetches(&scanned.changed_shows));
     if jobs.is_empty() {
         return;
     }
