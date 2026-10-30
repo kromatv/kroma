@@ -1318,6 +1318,7 @@ version = "0.1.0"
 dependencies = [
  "kroma-module-wire",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1341,6 +1342,23 @@ name = "kroma-i18n"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+]
+
+[[package]]
+name = "kroma-media"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "kroma-module-wire",
+ "kroma-primitives",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "walkdir",
 ]
 
 [[package]]
@@ -1399,6 +1417,7 @@ dependencies = [
  "kroma-db",
  "kroma-http",
  "kroma-i18n",
+ "kroma-media",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",
@@ -1416,6 +1435,7 @@ name = "kroma-module-wire"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2653,6 +2673,19 @@ dependencies = [
  "log",
  "tokio",
  "tungstenite",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.7.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e464cf451ba96ebfc6f9b6542f17ee8b8956e33f1e40d9690624e59d7a7f8a4b"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-sink",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]

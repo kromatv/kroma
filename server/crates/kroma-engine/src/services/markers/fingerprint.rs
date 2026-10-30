@@ -10,6 +10,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
+use kroma_media::input;
 use rusty_chromaprint::{match_fingerprints, Configuration, Fingerprinter};
 
 // Keep only well-aligned segments. `Segment::score` is 0 (identical) … 32 (worst).
@@ -82,8 +83,7 @@ fn decode_args(path: &Path, secs: u32, from_end: bool, sample_rate: u32) -> Vec<
         args.push(OsString::from("-sseof"));
         args.push(OsString::from(format!("-{secs}")));
     }
-    args.push(OsString::from("-i"));
-    args.push(path.as_os_str().to_os_string());
+    args.extend(input::file(path));
     // The end window is already bounded by the seek; `-t` there would cut it.
     if !from_end {
         args.push(OsString::from("-t"));
@@ -209,7 +209,10 @@ mod tests {
         // output and reads the file from the start - the credits fingerprint
         // would then be of the intro, and every credits marker would be wrong.
         let a = args(30, true);
-        assert!(at(&a, "-sseof").unwrap() < at(&a, "-i").unwrap(), "{a:?}");
+        assert!(
+            at(&a, "-sseof").unwrap() < at(&a, "/media/ep.mkv").unwrap(),
+            "{a:?}"
+        );
     }
 
     #[test]

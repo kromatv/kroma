@@ -9,6 +9,8 @@ use std::path::PathBuf;
 
 use tokio::process::{Child, Command};
 
+use crate::input;
+
 use super::hwaccel::Pipeline;
 use super::naming::contains;
 use super::{StreamMode, VideoMode};
@@ -82,7 +84,7 @@ pub async fn keyframe_before(input: &Path, anchor: f64) -> f64 {
         .arg("-read_intervals")
         .arg(format!("{anchor:.3}%+#1"))
         .args(["-show_entries", "frame=pts_time", "-of", "csv=p=0"])
-        .arg(input)
+        .args(input::file(input))
         .output()
         .await;
     let Ok(out) = out else {
@@ -136,7 +138,7 @@ pub fn spawn_stream(
     if burst {
         cmd.args(["-readrate_initial_burst", READRATE_BURST]);
     }
-    cmd.arg("-i").arg(input);
+    cmd.args(input::file(input));
     if seeking {
         cmd.arg("-copyts"); // keep source timestamps so video + audio stay on one timeline
     }
@@ -205,8 +207,8 @@ mod tests {
     fn clip(dir: &Path) -> Option<PathBuf> {
         let path = dir.join("clip.mp4");
         std::process::Command::new("ffmpeg")
-            .args(["-v", "error", "-f", "lavfi", "-i"])
-            .arg("testsrc=duration=20:size=64x48:rate=25")
+            .args(["-v", "error"])
+            .args(input::generated("testsrc=duration=20:size=64x48:rate=25"))
             .args(["-c:v", "libx264", "-g", "50", "-y"])
             .arg(&path)
             .status()
