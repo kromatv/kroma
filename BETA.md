@@ -130,12 +130,13 @@ The setting also lives under **Settings** > **Apps** > **Special access** >
 **"App not installed" or a signature error**
 An older KROMA is already present and was signed with a different key.
 Uninstall it first, then install again. From a command line:
-`adb uninstall tv.kroma.tv`.
+`adb uninstall tv.kroma.app`.
 
 **Two KROMA apps on the home screen**
-The Android TV client used to be a WebView shell (`tv.kroma.androidtv`) and is
-now the native app (`tv.kroma.tv`). The new package id installs alongside the
-old one instead of replacing it: `adb uninstall tv.kroma.androidtv` once.
+Mobile and Android TV now share `tv.kroma.app`, one Google Play listing with
+separate builds for each form factor. Older TV sideloads used `tv.kroma.tv`
+(native) or `tv.kroma.androidtv` (WebView). Those remain installed alongside the
+new app; remove the old entry after connecting the new app to your server.
 
 **The app cannot find the server**
 Check that the device and the server are on the same network, and enter the

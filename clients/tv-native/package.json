@@ -23,6 +23,7 @@
     "perf:androidtv": "bun ./scripts/perf-androidtv.ts"
   },
   "dependencies": {
+    "@kromatv/android-build": "workspace:*",
     "@kromatv/build-info": "workspace:*",
     "@kromatv/client": "workspace:*",
     "@kromatv/core": "workspace:*",
