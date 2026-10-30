@@ -208,6 +208,14 @@ in (staged on `desktop-stable-staging`, so a failed upload leaves every app on
 the previous feed). Nothing is rebuilt on promotion, and a candidate without
 the `desktop-updater-*` artifacts is refused before the approval.
 
+Stapling on macOS depends on Apple's ticket service, which `macos-15-intel`
+runners often lose the connection to. `macos-staple.sh` retries an unreachable
+service for about ten minutes per target, keeping a ticket once it is attached,
+then continues with a warning in the job summary. Notarization is already
+`Accepted` by then, so Gatekeeper fetches the ticket online: the one cost is
+that an unstapled build needs a network on first launch. A rejected or revoked
+ticket still fails the job, and so does any notarization verdict but `Accepted`.
+
 **`desktop-latest`**, the canary feed, is still its own build:
 `desktop-autoupdate.yml` builds the three installers again per desktop-facing
 push. Each push needs a strictly newer version than the last, and the
