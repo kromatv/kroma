@@ -35,6 +35,7 @@ impl QBittorrent {
 
     fn fetch(&self) -> kroma_module_sdk::http::Fetch {
         kroma_module_sdk::http::Fetch::new()
+            .purpose("download-client")
             .max_time(60)
             .cookie_jar(&self.jar)
     }

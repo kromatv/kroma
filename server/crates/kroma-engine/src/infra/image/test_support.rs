@@ -8,14 +8,16 @@ use super::images_dir;
 
 pub const SCOPE: &str = "kroma-image-fake";
 
-const CURL: &str = r#"prev=
-for a in "$@"; do
-  [ "$prev" = -o ] && out=$a
-  url=$a
-  prev=$a
-done
+const ARGS_GUARD: &str = r#"case "$*" in *{scope}*) ;; *) {real_path}; exec {tool} "$@";; esac"#;
+
+const CONFIG_GUARD: &str = r#"config=$(cat)
+case "$config" in *{scope}*) ;; *) {real_path}; printf '%s\n' "$config" | {tool} "$@"; exit;; esac"#;
+
+const CURL: &str = r#"option() { printf '%s\n' "$config" | sed -n "s/^$1 = \"\(.*\)\"\$/\1/p"; }
+url=$(option url)
 case "$url" in *bad*) exit 22;; esac
-echo "$url" > "$out"
+printf 'HTTP/1.1 200 OK\r\n\r\n' > "$(option dump-header)"
+echo "$url" > "$(option output)"
 "#;
 
 const CWEBP: &str = r#"prev=
@@ -48,13 +50,13 @@ pub fn install_fake_tools() {
     INSTALLED.get_or_init(|| {
         let dir = std::env::temp_dir().join("kroma-image-tool-fakes");
         std::fs::create_dir_all(&dir).unwrap();
-        for (tool, body) in [
-            ("curl", CURL),
-            ("cwebp", CWEBP),
-            ("ffmpeg", FFMPEG),
-            ("ffprobe", FFPROBE),
+        for (tool, guard, body) in [
+            ("curl", CONFIG_GUARD, CURL),
+            ("cwebp", ARGS_GUARD, CWEBP),
+            ("ffmpeg", ARGS_GUARD, FFMPEG),
+            ("ffprobe", ARGS_GUARD, FFPROBE),
         ] {
-            write_tool(&dir, tool, body);
+            write_tool(&dir, tool, guard, body);
         }
         let path = std::env::var_os("PATH").unwrap_or_default();
         let mut paths = vec![dir];
@@ -63,11 +65,13 @@ pub fn install_fake_tools() {
     });
 }
 
-fn write_tool(dir: &Path, tool: &str, body: &str) {
+fn write_tool(dir: &Path, tool: &str, guard: &str, body: &str) {
     let real_path = format!("PATH=\"${{PATH#{}:}}\"", dir.display());
-    let script = format!(
-        "#!/bin/sh\ncase \"$*\" in *{SCOPE}*) ;; *) {real_path}; exec {tool} \"$@\";; esac\n{body}"
-    );
+    let guard = guard
+        .replace("{scope}", SCOPE)
+        .replace("{real_path}", &real_path)
+        .replace("{tool}", tool);
+    let script = format!("#!/bin/sh\n{guard}\n{body}");
     let staged = dir.join(format!("{tool}.{}", std::process::id()));
     std::fs::write(&staged, script).unwrap();
     std::fs::set_permissions(&staged, std::fs::Permissions::from_mode(0o700)).unwrap();

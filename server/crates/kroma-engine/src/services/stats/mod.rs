@@ -121,7 +121,10 @@ fn post(url: &str, payload: &Payload) -> Result<Outcome> {
     // A server with no route out is not a broken server, and a job that fails
     // every night notifies its admins every night about the one thing they
     // asked to be optional.
-    let Ok(res) = kroma_http::Fetch::new().max_time(15).post_json(url, &body) else {
+    let Ok(res) = kroma_http::Fetch::new()
+        .purpose("stats")
+        .max_time(15)
+        .post_json(url, &body) else {
         return Ok(Outcome::Transient(0));
     };
     if res.status < 400 {

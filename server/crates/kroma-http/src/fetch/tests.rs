@@ -1,9 +1,9 @@
 use std::path::Path;
 
 use super::render::proxy_lines;
-use super::send::{chosen_proxy, scrubbed};
+use super::send::chosen_proxy;
 use super::*;
-use crate::egress::Decision;
+use crate::egress::{scrubbed, Decision};
 
 #[test]
 fn empty_socks5_is_ignored() {
