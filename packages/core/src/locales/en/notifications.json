@@ -56,6 +56,8 @@
   "notifications.request.denied.title": "Request declined",
   "notifications.request.submitted.body": "{user} asked for {title}.",
   "notifications.request.submitted.title": "New request",
+  "notifications.resolved": "Settled",
+  "notifications.resolvedBy": "Settled by {user}",
   "notifications.settings": "Notification settings",
   "notifications.system.disk.low.body": "Only {free} left on {path}.",
   "notifications.system.disk.low.title": "Storage almost full",

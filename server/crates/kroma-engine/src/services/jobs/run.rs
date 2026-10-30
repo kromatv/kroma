@@ -104,6 +104,14 @@ pub(super) fn run_job(
             &spec,
         );
     }
+    if status == "success" {
+        crate::services::notify::resolve(
+            &state,
+            &crate::model::NotificationSubject::job(key),
+            crate::model::NotificationEvent::SystemJobFailed,
+            None,
+        );
+    }
 
     chain_after(&manager, &state, job, key, status);
 }

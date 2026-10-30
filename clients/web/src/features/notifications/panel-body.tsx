@@ -1,8 +1,4 @@
-import {
-  groupNotificationRepeats,
-  groupNotificationsByDay,
-  NOTIFICATION_DAY_LABEL,
-} from '@kromatv/core';
+import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
   Box,
@@ -85,8 +81,8 @@ export function PanelBody({
             </Box>
           </h3>
           <ListRow.Group size="sm">
-            {groupNotificationRepeats(group.items).map((run) => (
-              <NotificationEntry key={run.head.id} run={run} onNavigate={onNavigate} />
+            {group.items.map((one) => (
+              <NotificationEntry key={one.id} one={one} onNavigate={onNavigate} />
             ))}
           </ListRow.Group>
         </section>
