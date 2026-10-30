@@ -61,6 +61,8 @@ impl Supervisor {
             }
         };
         let mut child = Command::new(&bin)
+            .env_clear()
+            .envs(crate::sidecar_env::inherited(std::env::vars_os()))
             .env("KROMA_MODULE_ID", id)
             .env("KROMA_MODULE_PORT", port.to_string())
             .env("KROMA_CORE_URL", &self.cfg.core_url)

@@ -17,6 +17,7 @@ mod origin;
 mod process;
 mod proxy;
 mod registry;
+mod sidecar_env;
 mod watch;
 
 pub use host_api::host_router;
