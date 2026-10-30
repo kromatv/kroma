@@ -78,7 +78,7 @@ export function SheetMenu(
         on={at.statsOn}
         onPress={at.onToggleStats}
       />
-      <MenuRow icon="flag" label={at.t('reports.sheet')} onPress={at.onReport} />
+      <MenuRow icon="flag" label={at.t('report.action')} onPress={at.onReport} />
     </Box>
   );
 }

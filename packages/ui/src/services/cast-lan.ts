@@ -16,6 +16,11 @@ import { watchLanBeacons } from '@kromatv/core';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { useForeground } from '#ui/lib/use-foreground';
 
+// Android reports `background` for any activity over the app, including the
+// permission prompt the browse itself raises. Tearing the browse down there
+// restarts it when the prompt closes, which asks again.
+const DEPARTURE_GRACE_MS = 15_000;
+
 export interface LanCastOptions {
   /** This device's DNS-SD stack, when it has one. Absent everywhere else, and
    * everything below then reports nothing. */
@@ -33,13 +38,13 @@ export interface LanCastOptions {
 /** The signed-out televisions in the room, and a nudge to refetch when a
  * signed-in one turns up that the server has not mentioned yet.
  *
- * Listens only while the app is in front: the browse is a multicast listener,
- * and on Android a worker thread with it, so a phone in a pocket would
- * otherwise pay for it for the whole signed-in session. */
+ * Listens only while the app is in front, give or take a short grace: the browse
+ * is a multicast listener, and on Android a worker thread with it, so a phone in
+ * a pocket would otherwise pay for it for the whole signed-in session. */
 export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
   const { lan, enabled, onUnknownReceiver, knowsReceiver } = opts;
   const [pairable, setPairable] = useState<DiscoveredTv[]>([]);
-  const inFront = useForeground();
+  const inFront = useStaysInFront();
 
   // An effect event: the browse outlives any particular roster, so what it
   // needs from the provider is read at call time rather than captured in the
@@ -70,6 +75,20 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
   }, [lan, enabled, inFront]);
 
   return pairable;
+}
+
+function useStaysInFront(): boolean {
+  const inFront = useForeground();
+  const [departed, setDeparted] = useState(!inFront);
+  if (inFront && departed) setDeparted(false);
+
+  useEffect(() => {
+    if (inFront) return;
+    const timer = setTimeout(() => setDeparted(true), DEPARTURE_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [inFront]);
+
+  return !departed;
 }
 
 function sameTvs(held: readonly DiscoveredTv[], found: readonly DiscoveredTv[]): boolean {

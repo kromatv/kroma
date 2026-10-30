@@ -1,0 +1,53 @@
+diff --git a/node_modules/@kesha-antonov/react-native-background-downloader/.bun-tag-e8ed6f69c585c082 b/.bun-tag-e8ed6f69c585c082
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt b/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt
+index e9e582d389a5c5583b8a6f8ac5c5f8a376752395..5386ec19156152fbbcd4f9d5b63a08e0c764ec88 100644
+--- a/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt
++++ b/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt
+@@ -306,6 +306,8 @@ class RNBackgroundDownloaderModuleImpl(private val reactContext: ReactApplicatio
+       }
+     }
+ 
++    ResumableDownloadService.notificationTexts = textsMap
++
+     // Store the config for use by UIDTDownloadJobService
+     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+       UIDTDownloadJobService.setNotificationGroupingConfig(
+diff --git a/android/src/main/java/com/eko/ResumableDownloadService.kt b/android/src/main/java/com/eko/ResumableDownloadService.kt
+index deaecd095ff9099218267f26840675341bbda8ce..9d6570c1dd704488c5b5c96277e8ecda01cce4f7 100644
+--- a/android/src/main/java/com/eko/ResumableDownloadService.kt
++++ b/android/src/main/java/com/eko/ResumableDownloadService.kt
+@@ -41,6 +41,8 @@ class ResumableDownloadService : Service() {
+     const val EXTRA_START_BYTE = "start_byte"
+     const val EXTRA_TOTAL_BYTES = "total_bytes"
+     const val EXTRA_IS_ALLOWED_OVER_METERED = "is_allowed_over_metered"
++
++    @Volatile var notificationTexts: Map<String, String> = emptyMap()
+   }
+ 
+   private val binder = LocalBinder()
+@@ -475,10 +477,11 @@ class ResumableDownloadService : Service() {
+     val runningCount = activeCount - pausedCount - waitingCount
+ 
+     val parts = mutableListOf<String>()
+-    if (runningCount > 0) parts.add("$runningCount downloading")
++    val texts = notificationTexts
++    if (runningCount > 0) parts.add(texts["groupText"]?.replace("{count}", "$runningCount") ?: "$runningCount downloading")
+     if (waitingCount > 0) parts.add("$waitingCount waiting for unmetered network")
+-    if (pausedCount > 0) parts.add("$pausedCount paused")
+-    val contentText = if (parts.isEmpty()) "Download service running" else parts.joinToString(", ")
++    if (pausedCount > 0) parts.add("$pausedCount ${(texts["downloadPaused"] ?: "paused").lowercase()}")
++    val contentText = if (parts.isEmpty()) texts["downloadStarting"] ?: "Download service running" else parts.joinToString(", ")
+ 
+     // Use download icon when actively downloading, pause icon when all paused
+     val icon = if (runningCount > 0) {
+@@ -488,7 +491,7 @@ class ResumableDownloadService : Service() {
+     }
+ 
+     return NotificationCompat.Builder(this, DownloadConstants.NOTIFICATION_CHANNEL_ID)
+-      .setContentTitle("Background Download")
++      .setContentTitle(texts["groupTitle"] ?: "Background Download")
+       .setContentText(contentText)
+       .setSmallIcon(icon)
+       .setPriority(NotificationCompat.PRIORITY_LOW)

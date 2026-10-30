@@ -7,6 +7,7 @@
   "offline.downloads": "Downloads",
   "offline.empty": "No downloads yet. Use the download button on a movie or episode to watch it offline.",
   "offline.failed": "Download failed. Your server may need an update.",
+  "offline.inProgressCount": "{count} in progress",
   "offline.pause": "Pause",
   "offline.paused": "Paused",
   "offline.queued": "Waiting",

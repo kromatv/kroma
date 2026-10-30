@@ -582,3 +582,20 @@ describe('a title adopted while it is still queued', () => {
     expect(view.result.current.queuedItems).toEqual([]);
   });
 });
+
+describe('the texts the notification is given', () => {
+  it('names the transfer and counts the running ones in the app language', async () => {
+    await mounted();
+
+    expect(downloader.setConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notificationsGrouping: expect.objectContaining({
+          texts: expect.objectContaining({
+            groupTitle: 'offline.downloads',
+            groupText: 'offline.inProgressCount',
+          }),
+        }),
+      }),
+    );
+  });
+});
