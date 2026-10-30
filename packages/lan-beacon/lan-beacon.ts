@@ -106,14 +106,15 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
     browse(onFound) {
       listeners.add(onFound);
       if (listeners.size === 1) {
-        subscription = module.addListener('lan-beacon:found', (event) => {
+        const session = module.addListener('lan-beacon:found', (event) => {
           if (event.epoch !== epoch) return;
           latest = event.services;
           for (const listener of listeners) listener(latest);
         });
+        subscription = session;
         void askNearby()
           .then((allowed) => {
-            if (!allowed || listeners.size === 0) return;
+            if (!allowed || subscription !== session) return;
             epoch += 1;
             module.startBrowse(epoch);
           })

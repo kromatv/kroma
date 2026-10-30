@@ -278,6 +278,19 @@ describe('Android 13, where discovery moved behind a runtime permission', () => 
     expect(native.started).toEqual([]);
   });
 
+  it('starts one browse when a caller leaves and returns while the prompt is up', async () => {
+    env.os = 'android';
+    env.version = 33;
+    const lan = await load();
+
+    const stop = lan?.browse?.(() => undefined);
+    stop?.();
+    lan?.browse?.(() => undefined);
+    await settled();
+
+    expect(native.started).toHaveLength(1);
+  });
+
   it('treats a throwing permission request as a refusal', async () => {
     env.os = 'android';
     env.version = 33;
