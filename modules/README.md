@@ -204,7 +204,7 @@ topics on the `ServerModule` and handle them:
 
 ```rust
 fn events(&self) -> Vec<&'static str> {
-    vec!["item.added"]
+    vec!["item.updated"]
 }
 
 async fn on_event(&self, host: S, topic: String, payload: serde_json::Value) {
@@ -212,6 +212,28 @@ async fn on_event(&self, host: S, topic: String, payload: serde_json::Value) {
     // several topics dispatches on it.
 }
 ```
+
+A topic is matched as a string against an event's `type`, so a name nothing
+publishes is a subscription that never fires. These are the ones worth taking:
+
+| Topic | Payload | Fires when |
+| --- | --- | --- |
+| `scan.started` | — | a library scan begins |
+| `scan.completed` | `items`, `shows`, `libraries` | that scan finished syncing |
+| `library.updated` | — | the catalog changed |
+| `item.updated` | `id` | an item got its first probed file, or was re-matched or enriched |
+| `show.updated` | `id` | the same, for a show |
+| `probe.completed` | `total` | the probe pass finished |
+| `job.started` | `key`, `runId` | a job run begins, core or module |
+| `job.finished` | `key`, `runId`, `status` | that run ended |
+| `request.updated` | `id`, `status` | a request moved |
+| `report.updated` | `id`, `status` | a report moved |
+
+The full set is `ServerEvent` in
+[`kroma-engine/src/infra/events.rs`](../server/crates/kroma-engine/src/infra/events.rs);
+it also carries playback, cast and progress traffic, which is high-rate and
+rarely what a module wants. Another module's events arrive the same way, under
+whatever name it published (`download.completed`, `vpn.status`).
 
 The runtime registers them at boot and serves `/_event/{topic}`. The core reads
 its bus and POSTs each matching event to every subscriber. Three things to know:
