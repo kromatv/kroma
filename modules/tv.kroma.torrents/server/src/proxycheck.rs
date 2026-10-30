@@ -89,10 +89,10 @@ fn echo(check_url: &str, proxy: Option<&str>) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::Arc;
+    use std::sync::atomic::Ordering;
 
     use super::*;
+    use crate::test_support::{counting_http_echo, http_echo, socks5_echo, socks5_serving};
 
     #[test]
     fn sealed_logic() {
@@ -126,41 +126,9 @@ mod tests {
         assert_eq!(short_ip("   ".into()), None);
     }
 
-    use std::io::{Read, Write};
-    use std::net::TcpListener;
-
-    fn http_echo(body: &'static str) -> String {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let port = listener.local_addr().unwrap().port();
-        std::thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(mut stream) = stream else { break };
-                read_http_request(&mut stream);
-                write_http_response(&mut stream, body);
-            }
-        });
-        format!("http://127.0.0.1:{port}/ip")
-    }
-
-    fn counting_echo(body: &'static str) -> (String, Arc<AtomicUsize>) {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let port = listener.local_addr().unwrap().port();
-        let hits = Arc::new(AtomicUsize::new(0));
-        let counter = Arc::clone(&hits);
-        std::thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(mut stream) = stream else { break };
-                counter.fetch_add(1, Ordering::SeqCst);
-                read_http_request(&mut stream);
-                write_http_response(&mut stream, body);
-            }
-        });
-        (format!("http://127.0.0.1:{port}/ip"), hits)
-    }
-
     #[test]
     fn the_direct_route_is_asked_once_while_the_exit_stays_put() {
-        let (url, direct_hits) = counting_echo("203.0.113.7");
+        let (url, direct_hits) = counting_http_echo("203.0.113.7");
         let proxy = socks5_echo("198.51.100.9");
 
         let first = check(&proxy, &url);
@@ -174,73 +142,12 @@ mod tests {
 
     #[test]
     fn a_new_tunnel_exit_asks_the_direct_route_again() {
-        let (url, direct_hits) = counting_echo("203.0.113.7");
+        let (url, direct_hits) = counting_http_echo("203.0.113.7");
 
         check(&socks5_echo("198.51.100.9"), &url);
         check(&socks5_echo("198.51.100.10"), &url);
 
         assert_eq!(direct_hits.load(Ordering::SeqCst), 2);
-    }
-
-    fn socks5_echo(body: &'static str) -> String {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let port = listener.local_addr().unwrap().port();
-        std::thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(mut stream) = stream else { break };
-                if socks5_handshake(&mut stream).is_some() {
-                    read_http_request(&mut stream);
-                    write_http_response(&mut stream, body);
-                }
-            }
-        });
-        format!("127.0.0.1:{port}")
-    }
-
-    fn socks5_handshake(stream: &mut std::net::TcpStream) -> Option<()> {
-        let mut greeting = [0u8; 2];
-        stream.read_exact(&mut greeting).ok()?;
-        let mut methods = vec![0u8; greeting[1] as usize];
-        stream.read_exact(&mut methods).ok()?;
-        stream.write_all(&[0x05, 0x00]).ok()?;
-
-        let mut head = [0u8; 4];
-        stream.read_exact(&mut head).ok()?;
-        let addr_len = match head[3] {
-            0x01 => 4,
-            0x04 => 16,
-            _ => {
-                let mut len = [0u8; 1];
-                stream.read_exact(&mut len).ok()?;
-                len[0] as usize
-            }
-        };
-        let mut rest = vec![0u8; addr_len + 2];
-        stream.read_exact(&mut rest).ok()?;
-        stream
-            .write_all(&[0x05, 0, 0, 0x01, 0, 0, 0, 0, 0, 0])
-            .ok()?;
-        Some(())
-    }
-
-    fn read_http_request(stream: &mut std::net::TcpStream) {
-        let mut seen = Vec::new();
-        let mut byte = [0u8; 1];
-        while stream.read_exact(&mut byte).is_ok() {
-            seen.push(byte[0]);
-            if seen.ends_with(b"\r\n\r\n") {
-                break;
-            }
-        }
-    }
-
-    fn write_http_response(stream: &mut std::net::TcpStream, body: &str) {
-        let resp = format!(
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-            body.len()
-        );
-        let _ = stream.write_all(resp.as_bytes());
-        let _ = stream.flush();
     }
 
     #[test]
@@ -272,9 +179,13 @@ mod tests {
     #[test]
     fn the_proxy_is_given_the_hostname_to_resolve_rather_than_an_address_we_resolved() {
         let url = http_echo("203.0.113.7").replace("127.0.0.1", "localhost");
+        let (proxy, asked) = socks5_serving(b"198.51.100.9".to_vec());
 
-        let out = check(&socks5_echo("198.51.100.9"), &url);
+        let out = check(&proxy, &url);
 
+        let seen = asked.try_recv().unwrap();
+        assert!(seen.target.starts_with("localhost:"));
+        assert!(seen.request.starts_with("GET /ip "));
         assert_eq!(out.proxied_ip.as_deref(), Some("198.51.100.9"));
         assert_eq!(out.error, None);
         assert!(out.sealed());
