@@ -82,12 +82,14 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
   // report (a worker parked in a resolve, a listener torn down mid-flight) and
   // the event channel is shared, so a report is only ours if it names this one.
   let epoch = 0;
+  let nearby: Promise<boolean> | null = null;
+  const askNearby = () => (nearby ??= allowedNearby());
 
   return {
     publish(service) {
       const owner = Symbol('lan-beacon record');
       published = owner;
-      void allowedNearby()
+      void askNearby()
         .then((allowed) => {
           // Still ours by the time the answer came back?
           if (allowed && published === owner) module.publish(service.name, service.txt);
@@ -109,7 +111,7 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
           latest = event.services;
           for (const listener of listeners) listener(latest);
         });
-        void allowedNearby()
+        void askNearby()
           .then((allowed) => {
             if (!allowed || listeners.size === 0) return;
             epoch += 1;
