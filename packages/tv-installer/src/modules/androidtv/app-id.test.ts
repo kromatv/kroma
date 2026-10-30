@@ -22,12 +22,12 @@ describe('androidAppId', () => {
   });
 
   it('falls back to the published package on a checkout with no shell in it', () => {
-    expect(androidAppId()).toBe('tv.kroma.tv');
+    expect(androidAppId()).toBe('tv.kroma.app');
   });
 
   it('falls back to the published package when the config names none', () => {
     appJson.json = JSON.stringify({ expo: { ios: { bundleIdentifier: 'tv.kroma.app' } } });
 
-    expect(androidAppId()).toBe('tv.kroma.tv');
+    expect(androidAppId()).toBe('tv.kroma.app');
   });
 });

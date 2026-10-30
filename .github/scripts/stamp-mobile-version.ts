@@ -7,6 +7,7 @@
 // every leg of a run stamps the same number; alone, this script takes the clock.
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { androidVersionCode } from '../../clients/android-build/version.ts';
 
 const version = process.argv[2];
 if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) {
@@ -27,7 +28,7 @@ const path = 'clients/mobile/app.json';
 const config = JSON.parse(readFileSync(path, 'utf8'));
 config.expo.version = version;
 config.expo.ios = { ...config.expo.ios, buildNumber: String(build) };
-config.expo.android = { ...config.expo.android, versionCode: build };
+config.expo.android = { ...config.expo.android, versionCode: androidVersionCode(build, 'mobile') };
 writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`);
 
 console.log(`app.json stamped: version ${version}, build ${build}`);

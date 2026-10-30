@@ -1,0 +1,23 @@
+{
+  "name": "@kromatv/android-build",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Android release identity and signing for KROMA mobile and TV.",
+  "license": "AGPL-3.0-or-later",
+  "main": "version.ts",
+  "exports": {
+    ".": "./version.ts",
+    "./plugin": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo": "~58.0.16"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2"
+  }
+}
