@@ -10,11 +10,12 @@
 //! logical-id / edition [`ids`] derivation; this module owns the orchestration
 //! that aggregates them into the [`ScanData`] handed to [`crate::db::sync_all`].
 
+mod changed_shows;
 mod ids;
 mod index;
 pub mod walk;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use tracing::{info, warn};
@@ -24,6 +25,7 @@ use crate::services::settings::LibraryDef;
 
 use walk::scan_root;
 
+pub use changed_shows::note_changed_shows;
 pub use ids::{movie_logical_id, short_hash};
 
 /// Everything a phase-1 scan produces, ready to hand to [`crate::db::sync_all`].
@@ -41,6 +43,10 @@ pub struct ScanData {
     // overlapping scans (watcher rescan + `POST /api/scan`) can't steal each
     // other's entries.
     pub mtimes: HashMap<String, Option<i64>>,
+    /// Shows whose episode set this scan moved, filled by [`note_changed_shows`]
+    /// before the sync writes over what the database held. Empty until then, so
+    /// a caller that never asks enriches no show on episodes alone.
+    pub changed_shows: HashSet<String>,
 }
 
 /// Walk every configured library (each may span multiple folders) and build the
@@ -142,6 +148,7 @@ pub fn rescan_sync(state: &crate::state::SharedState) -> anyhow::Result<Scanned>
         info!("no libraries configured and scan is empty; seeding demo content");
         data = crate::services::demo::demo_data();
     }
+    note_changed_shows(&state.db, &mut data);
     crate::db::sync_all(
         &state.db,
         &data.libraries,
@@ -201,7 +208,7 @@ pub fn spawn_follow_ups(state: &crate::state::SharedState, data: &ScanData) {
         state.activity.clone(),
     );
     crate::services::search::spawn_reindex(state.clone());
-    crate::services::enrich::maybe_spawn(state, &data.items, &data.shows);
+    crate::services::enrich::maybe_spawn(state, data);
 }
 
 #[cfg(test)]

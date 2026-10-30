@@ -120,6 +120,7 @@ fn startup_scan(
         info!("no media dirs configured; seeding built-in demo content");
         data = services::demo::demo_data();
     }
+    services::scan::note_changed_shows(db, &mut data);
     db::sync_all(db, &data.libraries, &data.shows, &data.items, &data.mtimes)
         .context("failed to persist library")?;
     info!(
@@ -141,7 +142,7 @@ fn apply_startup_scan(state: &state::SharedState, data: &services::scan::ScanDat
         data.items.len(),
         services::scan::now_iso8601(),
     );
-    services::enrich::maybe_spawn(state, &data.items, &data.shows);
+    services::enrich::maybe_spawn(state, data);
     infra::watch::spawn(
         state.clone(),
         infra::watch::signature(&data.items, &data.mtimes),

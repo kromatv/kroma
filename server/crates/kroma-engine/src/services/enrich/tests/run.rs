@@ -220,9 +220,8 @@ fn maybe_spawn_enriches_in_the_background_and_announces_completion() {
     let state = test_state_enriching("key");
     crate::test_support::seed_movie(&state, MOVIE_ID);
     let mut events = state.events.subscribe();
-    let (items, shows) = catalog(&state);
 
-    maybe_spawn(&state, &items, &shows);
+    maybe_spawn(&state, &scanned(&state));
 
     loop {
         let event = events.blocking_recv().unwrap();
@@ -241,10 +240,10 @@ fn maybe_spawn_stays_idle_without_a_key_or_the_toggle() {
     let keyless = test_state();
     let toggled_off = state();
     crate::test_support::seed_movie(&toggled_off, MOVIE_ID);
-    let (items, shows) = catalog(&toggled_off);
+    let walked = scanned(&toggled_off);
 
-    maybe_spawn(&keyless, &items, &shows);
-    maybe_spawn(&toggled_off, &items, &shows);
+    maybe_spawn(&keyless, &walked);
+    maybe_spawn(&toggled_off, &walked);
 
     assert_eq!(tmdb_id_of_movie(&toggled_off), None);
 }
@@ -253,7 +252,7 @@ fn maybe_spawn_stays_idle_without_a_key_or_the_toggle() {
 fn maybe_spawn_with_an_empty_catalog_does_nothing() {
     let state = test_state_enriching("key");
 
-    maybe_spawn(&state, &[], &[]);
+    maybe_spawn(&state, &crate::services::scan::ScanData::default());
 
     assert_eq!(tmdb_id_of_movie(&state), None);
 }
