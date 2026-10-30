@@ -25,7 +25,7 @@ use crate::services::jobs::now_ms;
 
 // Returns full `User`s: the caller needs `language` to render for each
 // recipient, so re-fetching per id would be a query per notification.
-fn resolve<S: HostStorage>(audience: &Audience, state: &S) -> anyhow::Result<Vec<User>> {
+fn recipients_of<S: HostStorage>(audience: &Audience, state: &S) -> anyhow::Result<Vec<User>> {
     // The single-recipient case is by far the most common (a request approved,
     // a report triaged) and has an indexed lookup; only the set-valued audiences
     // need the whole account list.
@@ -59,7 +59,7 @@ fn resolve<S: HostStorage>(audience: &Audience, state: &S) -> anyhow::Result<Vec
 /// Failures are contained per recipient a notification is never the point of
 /// the operation that triggered it, so one bad row must not fail an approval.
 pub fn emit<S: HostStorage>(state: &S, audience: &Audience, spec: &NotificationSpec) -> usize {
-    let recipients = match resolve(audience, state) {
+    let recipients = match recipients_of(audience, state) {
         Ok(r) => r,
         Err(e) => {
             tracing::warn!(error = %e, event = spec.event.as_str(), "notify: cannot resolve audience");
@@ -128,8 +128,10 @@ fn deliver<S: HostStorage>(
     // The row we are about to write, kept in hand: rendering the push below needs
     // exactly this, and re-SELECTing it would be a query plus two JSON parses for
     // data already sitting here.
-    let stored = StoredNotification::from_spec(id.clone(), spec, now);
-    let unread = db::notifications::insert_notification(&conn, user.id.as_str(), &stored)?;
+    let mut stored = StoredNotification::from_spec(id, spec, now);
+    let written = db::notifications::insert_notification(&conn, user.id.as_str(), &stored)?;
+    stored.id = written.id.clone();
+    stored.count = written.count;
 
     // Wake this user's open clients. Addressed, so the bell on someone else's
     // browser does not tick for a notification that isn't theirs.
@@ -137,13 +139,13 @@ fn deliver<S: HostStorage>(
         &user.id,
         Event::new(
             "notification.created",
-            json!({ "id": id, "unread": unread }),
+            json!({ "id": stored.id, "unread": written.unread }),
         ),
     );
 
     // Then the device, best-effort: the row is already written, so a push
     // service being down costs a push, not the notification.
-    if push_allowed {
+    if push_allowed && db::notifications::claim_push(&conn, &stored.id, now)? {
         // Sized on the way out: the device fetches this URL itself, over its own
         // network, and a lock-screen thumbnail has no use for the master (see
         // `art`).
@@ -160,6 +162,31 @@ fn deliver<S: HostStorage>(
         push::deliver(state, push, &user.id, &rendered);
     }
     Ok(true)
+}
+
+/// Say that a subject no longer needs anyone: every row about it raised by
+/// `event` keeps its place and its words, loses its actions, and names who
+/// settled it. One write for every recipient, so the admin who did not act
+/// sees it too.
+///
+/// Returns how many rows moved. A failure is contained: settling is never the
+/// point of the operation that triggered it.
+pub fn resolve<S: HostStorage>(
+    state: &S,
+    subject: &kroma_domain::NotificationSubject,
+    event: kroma_domain::NotificationEvent,
+    by: Option<&str>,
+) -> usize {
+    let settled = state.db().get().and_then(|conn| {
+        db::notifications::resolve(&conn, subject, event, by, now_ms()).map_err(Into::into)
+    });
+    match settled {
+        Ok(moved) => moved,
+        Err(e) => {
+            tracing::warn!(error = %e, kind = %subject.kind, "notify: cannot settle a subject");
+            0
+        }
+    }
 }
 
 /// Tell a user's clients that their unread count moved (they read or deleted
@@ -336,6 +363,212 @@ mod tests {
         user(&host, "ana@t.dev", "Ana", &[]);
         assert_eq!(emit(&host, &Audience::user("ghost"), &spec()), 0);
         assert!(host.published().is_empty());
+    }
+
+    fn failing_job() -> NotificationSpec {
+        NotificationSpec::new(
+            NotificationEvent::SystemJobFailed,
+            "notifications.system.job.failed.title",
+            "notifications.system.job.failed.body",
+        )
+        .param_key("job", "jobs.library.scan.name")
+        .subject(kroma_domain::NotificationSubject::job("library.scan"))
+    }
+
+    fn rows(host: &RecordingHost, user: &str) -> Vec<kroma_db::notifications::StoredNotification> {
+        let conn = host.db().get().unwrap();
+        db::notifications::list_notifications(&conn, user, 50, false).unwrap()
+    }
+
+    #[test]
+    fn the_same_failure_twice_is_one_row_that_counts_them() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+
+        let inbox = rows(&host, &ana);
+        assert_eq!(inbox.len(), 1);
+        assert_eq!(inbox[0].count, 2);
+    }
+
+    #[test]
+    fn two_different_jobs_failing_are_two_rows() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        let other = failing_job()
+            .param_key("job", "jobs.library.rescan.name")
+            .subject(kroma_domain::NotificationSubject::job("library.rescan"));
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &other);
+
+        assert_eq!(rows(&host, &ana).len(), 2);
+    }
+
+    #[test]
+    fn a_folded_row_raises_one_banner_rather_than_one_per_repeat() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+
+        let conn = host.db().get().unwrap();
+        let pushed: Option<i64> = conn
+            .query_row(
+                "SELECT pushed_at FROM notifications WHERE user_id = ?1",
+                [&ana],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(pushed.is_some());
+        assert!(!db::notifications::claim_push(&conn, &rows(&host, &ana)[0].id, 0).unwrap());
+    }
+
+    #[test]
+    fn an_event_that_names_no_subject_never_folds() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+
+        emit(&host, &Audience::user(ana.clone()), &spec());
+        emit(&host, &Audience::user(ana.clone()), &spec());
+
+        assert_eq!(rows(&host, &ana).len(), 2);
+    }
+
+    fn asked_to_decide(request_id: &str) -> NotificationSpec {
+        NotificationSpec::new(
+            NotificationEvent::RequestSubmitted,
+            "notifications.request.submitted.title",
+            "notifications.request.submitted.body",
+        )
+        .param("title", "Dune")
+        .param("user", "Ana")
+        .subject(kroma_domain::NotificationSubject::request(request_id))
+        .action(kroma_domain::ActionSpec {
+            id: "approve".into(),
+            label_key: "notifications.action.approve".into(),
+            kind: kroma_domain::ActionKind::Api,
+            href: format!("/api/requests/{request_id}/approve"),
+            method: Some("POST".into()),
+            style: kroma_domain::ActionStyle::Primary,
+        })
+    }
+
+    #[test]
+    fn a_settled_row_stops_asking_every_admin_that_holds_it() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[Permission::RequestsManage]);
+        let bo = user(&host, "bo@t.dev", "Bo", &[Permission::RequestsManage]);
+        emit(
+            &host,
+            &Audience::permission(Permission::RequestsManage),
+            &asked_to_decide("req-7"),
+        );
+
+        resolve(
+            &host,
+            &kroma_domain::NotificationSubject::request("req-7"),
+            NotificationEvent::RequestSubmitted,
+            Some(&ana),
+        );
+
+        let conn = host.db().get().unwrap();
+        for who in [&ana, &bo] {
+            let row = &db::notifications::list_notifications(&conn, who, 10, false).unwrap()[0];
+            let rendered = render::render(row, "en", &subject::Subjects::default());
+            assert!(rendered.resolved);
+            assert!(rendered.actions.is_empty());
+        }
+    }
+
+    #[test]
+    fn a_subject_that_cannot_be_settled_settles_nothing_rather_than_failing() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[Permission::RequestsManage]);
+        emit(
+            &host,
+            &Audience::permission(Permission::RequestsManage),
+            &asked_to_decide("req-7"),
+        );
+        host.db()
+            .get()
+            .unwrap()
+            .execute("DROP TABLE notifications", [])
+            .unwrap();
+
+        let settled = resolve(
+            &host,
+            &kroma_domain::NotificationSubject::request("req-7"),
+            NotificationEvent::RequestSubmitted,
+            Some(&ana),
+        );
+
+        assert_eq!(settled, 0);
+    }
+
+    #[test]
+    fn the_host_callback_settles_through_the_same_path_a_producer_uses() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[Permission::RequestsManage]);
+        emit(
+            &host,
+            &Audience::permission(Permission::RequestsManage),
+            &asked_to_decide("req-7"),
+        );
+
+        let settled = kroma_module_host::HostCtx::resolve_notifications(
+            host.inner(),
+            &kroma_domain::NotificationSubject::request("req-7"),
+            NotificationEvent::RequestSubmitted,
+            Some(&ana),
+        );
+
+        assert_eq!(settled, 1);
+    }
+
+    #[test]
+    fn a_row_nobody_settled_keeps_its_buttons() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[Permission::RequestsManage]);
+        emit(
+            &host,
+            &Audience::permission(Permission::RequestsManage),
+            &asked_to_decide("req-7"),
+        );
+
+        let conn = host.db().get().unwrap();
+        let row = &db::notifications::list_notifications(&conn, &ana, 10, false).unwrap()[0];
+        let rendered = render::render(row, "en", &subject::Subjects::default());
+
+        assert!(!rendered.resolved);
+        assert_eq!(rendered.actions.len(), 1);
+    }
+
+    #[test]
+    fn a_settled_row_names_the_account_that_settled_it() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[Permission::RequestsManage]);
+        emit(
+            &host,
+            &Audience::permission(Permission::RequestsManage),
+            &asked_to_decide("req-7"),
+        );
+        resolve(
+            &host,
+            &kroma_domain::NotificationSubject::request("req-7"),
+            NotificationEvent::RequestSubmitted,
+            Some(&ana),
+        );
+
+        let conn = host.db().get().unwrap();
+        let rows = db::notifications::list_notifications(&conn, &ana, 10, false).unwrap();
+        let facts = db::notifications::subject_facts(&conn, &rows).unwrap();
+        let rendered = render::render(&rows[0], "en", &subject::Subjects::from(facts));
+
+        assert_eq!(rendered.resolved_by.map(|a| a.name), Some("Ana".to_string()));
     }
 
     #[test]

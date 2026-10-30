@@ -37,6 +37,11 @@ pub struct NotificationSpec {
     /// again. Leave it unset for an event worth repeating.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dedupe_key: Option<String>,
+    /// Which row a repeat folds into. Unset, it falls back to the dedupe key
+    /// and then to the event plus the subject; with neither there is nothing to
+    /// fold on and each emission is its own row. See [`NotificationSpec::group`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group_key: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -62,6 +67,7 @@ impl NotificationSpec {
             actor_id: None,
             data: None,
             dedupe_key: None,
+            group_key: None,
             link: None,
             image_url: None,
             actions: Vec::new(),
@@ -131,6 +137,32 @@ impl NotificationSpec {
     pub fn dedupe_key(mut self, key: impl Into<String>) -> Self {
         self.dedupe_key = Some(key.into());
         self
+    }
+
+    /// Overrides the group a repeat folds into. The default, event plus
+    /// subject, is right for almost everything; name one to fold two events
+    /// together or to fold an event that names no subject.
+    pub fn group_key(mut self, key: impl Into<String>) -> Self {
+        self.group_key = Some(key.into());
+        self
+    }
+
+    /// Which row a repeat of this folds into, `None` when nothing may fold:
+    /// without a subject there is no way to tell one occurrence from the next.
+    ///
+    /// A [`NotificationSpec::dedupe_key`] wins over the subject, because a
+    /// producer that named its emission has already said what makes two
+    /// tellings the same thing, and it is usually finer than the subject: two
+    /// statuses of one request are two pieces of news, not one said twice.
+    pub fn group(&self) -> Option<String> {
+        self.group_key
+            .clone()
+            .or_else(|| self.dedupe_key.clone())
+            .or_else(|| {
+                self.subject
+                    .as_ref()
+                    .map(|s| format!("{}:{}:{}", self.event.as_str(), s.kind, s.id))
+            })
     }
 
     /// Where the row points for a reader that knows no subject kind of its own,

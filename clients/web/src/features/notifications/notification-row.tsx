@@ -12,7 +12,7 @@
 // and a row holding only the left two thirds of the line cannot draw one.
 
 import type { Notification, NotificationId } from '@kromatv/client/notifications';
-import { type NotificationRun, sizedImageUrl } from '@kromatv/core';
+import { notificationUpdatedAt, sizedImageUrl } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
@@ -27,38 +27,35 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
 import { notificationLink } from '#web/features/notifications/notification-link';
-import {
-  useExactTime,
-  useRelativeTime,
-  useStandaloneTime,
-} from '#web/features/notifications/notification-time';
+import { useRelativeTime, useStandaloneTime } from '#web/features/notifications/notification-time';
 import { useReadState } from '#web/features/notifications/use-notifications';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
-// Items arrive newest-first, so the run started at the last of them. A burst
-// that fits inside one unit of the format reads "from 7 min ago to 7 min ago",
-// which says less than the count already does, so it says nothing.
 function foldLabels(
-  run: NotificationRun,
+  one: Notification,
   latest: string,
   relative: (at: number) => string,
   t: Translate,
 ): { span: string | null; repeat: string | null } {
-  const { head, items } = run;
-  if (items.length <= 1) return { span: null, repeat: null };
-  const oldest = relative(items.at(-1)?.createdAt ?? head.createdAt);
+  if (one.count <= 1) return { span: null, repeat: null };
+  const oldest = relative(one.createdAt);
   return {
     span: oldest === latest ? null : t('notifications.repeatSpan', { first: oldest, last: latest }),
-    repeat: t('notifications.repeatCount', { count: items.length }),
+    repeat: t('notifications.repeatCount', { count: one.count }),
   };
 }
 
+function settledLabel(one: Notification, t: Translate): string | null {
+  if (!one.resolved) return null;
+  const by = one.resolvedBy?.name;
+  return by ? t('notifications.resolvedBy', { user: by }) : t('notifications.resolved');
+}
+
 export function NotificationEntry({
-  run,
+  one,
   onNavigate,
-}: Readonly<{ run: NotificationRun; onNavigate: () => void }>) {
+}: Readonly<{ one: Notification; onNavigate: () => void }>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -66,17 +63,15 @@ export function NotificationEntry({
   const relative = useRelativeTime();
   const standalone = useStandaloneTime();
   const { markRead } = useReadState();
-  const [open, setOpen] = useState(false);
 
-  const { head, items } = run;
-  const folded = items.length > 1;
-  const unread = run.unread > 0;
-  const ids = items.map((n) => n.id);
-  const latest = relative(head.createdAt);
-  const { span, repeat } = foldLabels(run, latest, relative, t);
+  const unread = !one.read;
+  const at = notificationUpdatedAt(one);
+  const latest = relative(at);
+  const { span, repeat } = foldLabels(one, latest, relative, t);
+  const settled = settledLabel(one, t);
 
-  function go(one: Notification) {
-    markRead(ids);
+  function go() {
+    markRead([one.id]);
     const href = notificationLink(one);
     if (href) {
       onNavigate();
@@ -89,47 +84,37 @@ export function NotificationEntry({
       <Box>
         <ListRow.Root
           size="sm"
-          label={[head.title, repeat, span].filter(Boolean).join(' · ')}
-          expanded={folded ? open : undefined}
-          onPress={() => (folded ? setOpen(!open) : go(head))}
+          label={[one.title, repeat, settled, span].filter(Boolean).join(' · ')}
+          onPress={go}
           chevron={false}
           style={s.rowPad}
         >
           <NotificationCard
-            event={head.event}
-            src={head.imageUrl ? sizedImageUrl(head.imageUrl, 96) : null}
+            event={one.event}
+            src={one.imageUrl ? sizedImageUrl(one.imageUrl, 96) : null}
             unread={unread}
-            title={head.title}
+            title={one.title}
             titleTone={unread ? 'text' : 'textMuted'}
-            body={head.body}
+            body={one.body}
             repeat={repeat ? <Badge tone={unread ? 'warning' : 'neutral'}>{repeat}</Badge> : null}
             meta={
-              span ? (
+              settled || span ? (
                 <Text variant="meta" color="textDim" lines={1} mt={3}>
-                  {span}
+                  {[settled, span].filter(Boolean).join(' · ')}
                 </Text>
               ) : null
             }
             time={
-              <time
-                dateTime={new Date(head.createdAt).toISOString()}
-                className={classes(s.tabular)}
-              >
-                {standalone(head.createdAt)}
+              <time dateTime={new Date(at).toISOString()} className={classes(s.tabular)}>
+                {standalone(at)}
               </time>
             }
           />
-          {folded ? (
-            <ListRow.Trailing>
-              <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
-            </ListRow.Trailing>
-          ) : null}
         </ListRow.Root>
         <Box absolute right={6} top={0} bottom={0} justify="center">
-          <ReadToggle unread={unread} title={head.title} ids={ids} />
+          <ReadToggle unread={unread} title={one.title} ids={[one.id]} />
         </Box>
       </Box>
-      {folded && open ? <Occurrences items={items} onOpen={go} /> : null}
     </Box>
   );
 }
@@ -167,23 +152,4 @@ function ReadToggle({
 const sDefinition = styles({
   rowPad: { pl: 8, pr: 46 },
   tabular: { fontVariantNumeric: 'tabular-nums' },
-  occurrencePad: { pl: 30, pt: 4, pb: 4 },
 });
-
-function Occurrences({
-  items,
-  onOpen,
-}: Readonly<{ items: Notification[]; onOpen: (one: Notification) => void }>) {
-  const s = useStyles(sDefinition);
-
-  const exact = useExactTime();
-  return (
-    <Box pb={4}>
-      {items.map((one) => (
-        <ListRow.Root key={one.id} size="sm" onPress={() => onOpen(one)} style={s.occurrencePad}>
-          <ListRow.Label>{exact(one.createdAt)}</ListRow.Label>
-        </ListRow.Root>
-      ))}
-    </Box>
-  );
-}

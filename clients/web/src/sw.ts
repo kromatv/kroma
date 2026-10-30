@@ -34,6 +34,7 @@ const Payload = z.object({
   imageUrl: text,
   link: text,
   id: text,
+  groupKey: text,
   actions,
 });
 
@@ -70,9 +71,9 @@ self.addEventListener('push', (event) => {
     icon: '/apple-touch-icon.png',
     badge: '/favicon-32.png',
     image: data.imageUrl,
-    // Collapse a retried delivery instead of stacking duplicates.
-    tag: data.id,
-    renotify: Boolean(data.id),
+    // Collapse a repeat, and a retried delivery, instead of stacking them.
+    tag: data.groupKey ?? data.id,
+    renotify: Boolean(data.groupKey ?? data.id),
     data: { link: data.link, actions: data.actions },
     // Chrome shows at most two; the server orders them most-useful-first.
     actions: data.actions.slice(0, 2).map((a) => ({ action: a.id, title: a.label })),

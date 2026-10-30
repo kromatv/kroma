@@ -176,7 +176,7 @@ pub fn build_request(
         .unwrap_or_else(|_| "[]".into()));
     }
 
-    let android = json!({
+    let mut android = json!({
         "priority": match urgency {
             Urgency::Low => "normal",
             Urgency::Normal | Urgency::High => "high",
@@ -191,7 +191,12 @@ pub fn build_request(
     });
     // `thread_id` is deliberately NOT mapped onto Android's `tag` or
     // `collapse_key`: `tag` replaces the shade entry and `collapse_key` drops all
-    // but the most recent, so four episodes would arrive as one notification.
+    // but the most recent, so four episodes would arrive as one notification. A
+    // GROUP key is the opposite case: replacing the earlier banner is the point.
+    if let Some(key) = alert.collapse_key {
+        android["collapse_key"] = json!(key);
+        android["notification"]["tag"] = json!(key);
+    }
 
     let message = json!({
         "message": {
@@ -273,6 +278,7 @@ mod tests {
             title: "Ready to watch",
             body: "Dune is now in your library.",
             subject: Some(("movie", "ab12")),
+            collapse_key: Some("media.added:movie:ab12"),
             link: Some("/movie/ab12"),
             image_url: Some("https://img/p.jpg"),
             category: Some("media_available"),

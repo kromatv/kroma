@@ -118,6 +118,21 @@ impl HostCtx for RemoteHost {
             .unwrap_or(0) as usize
     }
 
+    fn resolve_notifications(
+        &self,
+        subject: &kroma_module_host::NotificationSubject,
+        event: kroma_module_host::NotificationEvent,
+        by: Option<&str>,
+    ) -> usize {
+        let body = serde_json::json!({ "subject": subject, "event": event, "by": by });
+        self.callback()
+            .post_json(&self.host_url("notify/resolve"), &body)
+            .ok()
+            .and_then(|r| r.json::<serde_json::Value>().ok())
+            .and_then(|v| v.get("resolved").and_then(serde_json::Value::as_u64))
+            .unwrap_or(0) as usize
+    }
+
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         let _ = self.callback().post_json(
             &self.host_url("job"),

@@ -35,7 +35,11 @@ pub fn subject_facts(
             .filter(|s| s.kind == SubjectKind::REQUEST)
             .map(|s| s.id.as_str())
     }));
-    let accounts: Vec<&str> = unique(rows.iter().filter_map(|row| row.actor_id.as_deref()));
+    let accounts: Vec<&str> = unique(
+        rows.iter()
+            .flat_map(|row| [row.actor_id.as_deref(), row.resolved_by.as_deref()])
+            .flatten(),
+    );
     Ok(SubjectFacts {
         titles: requested_titles(conn, &requests)?,
         actors: actors(conn, &accounts)?,
