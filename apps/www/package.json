@@ -20,8 +20,7 @@
     "preview": "vite preview --port 3100",
     "preview:edge": "bunx wrangler@4 dev",
     "deploy": "bun run build && bunx wrangler@4 deploy -c dist/server/wrangler.json",
-    "generate-routes": "tsr generate",
-    "typecheck": "bun run paraglide && tsr generate && tsc --noEmit",
+    "typecheck": "bun run paraglide && tsc --noEmit",
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
   },
   "dependencies": {
