@@ -16,7 +16,7 @@ The listing copy and uploadable PNGs use the Fastlane metadata layout under
 
 The three screenshots tell a sequence: movie collection, movie details,
 and the home screen. French exports have French marketing
-captions and the same English app captures. The metadata explains that KROMA
+captions and the app itself in French, from `captures/android-phone-fr`. The metadata explains that KROMA
 requires a compatible server and the user's own media.
 
 ## Rebuild
