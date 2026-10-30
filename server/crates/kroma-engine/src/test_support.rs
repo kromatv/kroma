@@ -18,6 +18,8 @@ use crate::point::Point;
 use crate::services::settings::Settings;
 use crate::state::{AppState, SharedState};
 
+pub(crate) mod recording_server;
+
 // Monotonic counter for seeded rows that must not collide across parallel tests.
 static SEQ: AtomicU32 = AtomicU32::new(0);
 

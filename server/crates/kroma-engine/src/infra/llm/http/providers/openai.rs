@@ -49,7 +49,7 @@ impl Provider for OpenAi {
         format!("{base}/models")
     }
     fn headers(&self, api_key: &str) -> Vec<(&'static str, String)> {
-        let mut h = vec![("content-type", "application/json".to_string())];
+        let mut h = Vec::new();
         if !api_key.is_empty() {
             h.push(("authorization", format!("Bearer {api_key}")));
         }
