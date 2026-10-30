@@ -393,7 +393,7 @@
   "privacy_head_title": "Privacy",
   "privacy_intro": "KROMA is free software you host yourself, and kroma.tv is a static marketing site. The site collects almost nothing. What the app does stays on your hardware.",
   "privacy_title": "Privacy policy",
-  "privacy_updated": "Last updated: August 26, 2026",
+  "privacy_updated": "Last updated: October 30, 2026",
   "site_description": "A self-hosted media server in one Rust binary. Direct-play HEVC on the web, on mobile and on every television. Indexers, downloads, VPN and AI install as modules.",
   "site_tagline": "Self-hosted media, never transcoded.",
   "stats_countries_none": "No server could be placed on the map yet.",
