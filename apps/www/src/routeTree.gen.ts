@@ -16,6 +16,7 @@ import { Route as ModulesRouteImport } from './routes/modules'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as BetaAndroidRouteImport } from './routes/beta.android'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as DownloadArchiveRouteImport } from './routes/download_.archive'
@@ -55,6 +56,11 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BetaAndroidRoute = BetaAndroidRouteImport.update({
+  id: '/beta/android',
+  path: '/beta/android',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/stats': typeof StatsRoute
   '/support': typeof SupportRoute
+  '/beta/android': typeof BetaAndroidRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/download/archive': typeof DownloadArchiveRoute
   '/blog/': typeof BlogIndexRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/stats': typeof StatsRoute
   '/support': typeof SupportRoute
+  '/beta/android': typeof BetaAndroidRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/download/archive': typeof DownloadArchiveRoute
   '/blog': typeof BlogIndexRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/stats': typeof StatsRoute
   '/support': typeof SupportRoute
+  '/beta/android': typeof BetaAndroidRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/download_/archive': typeof DownloadArchiveRoute
   '/blog/': typeof BlogIndexRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/stats'
     | '/support'
+    | '/beta/android'
     | '/blog/$slug'
     | '/download/archive'
     | '/blog/'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/stats'
     | '/support'
+    | '/beta/android'
     | '/blog/$slug'
     | '/download/archive'
     | '/blog'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/stats'
     | '/support'
+    | '/beta/android'
     | '/blog/$slug'
     | '/download_/archive'
     | '/blog/'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   StatsRoute: typeof StatsRoute
   SupportRoute: typeof SupportRoute
+  BetaAndroidRoute: typeof BetaAndroidRoute
   BlogSlugRoute: typeof BlogSlugRoute
   DownloadArchiveRoute: typeof DownloadArchiveRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beta/android': {
+      id: '/beta/android'
+      path: '/beta/android'
+      fullPath: '/beta/android'
+      preLoaderRoute: typeof BetaAndroidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   StatsRoute: StatsRoute,
   SupportRoute: SupportRoute,
+  BetaAndroidRoute: BetaAndroidRoute,
   BlogSlugRoute: BlogSlugRoute,
   DownloadArchiveRoute: DownloadArchiveRoute,
   BlogIndexRoute: BlogIndexRoute,

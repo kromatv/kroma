@@ -25,6 +25,7 @@ export * from './playback-buffer';
 export * from './playback-stall';
 export * from './playback-wait';
 export * from './player';
+export * from './progress-queue';
 export * from './push-labels';
 export * from './slug';
 export * from './subtitles';

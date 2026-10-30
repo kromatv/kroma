@@ -710,7 +710,7 @@ pub(crate) const FILE_COLS: &str = "id,rel_path,container,size,edition,probed,\
     v_hdr_format,v_dv_profile,v_color_primaries,v_color_transfer,v_color_matrix";
 
 /// Explicit column list for item SELECTs keeps [`crate::row_to_item`] index-stable.
-/// `metadata` is appended last (index 25).
+/// `metadata` is appended last (index 21).
 pub(crate) const ITEM_COLS: &str = "id,kind,title,year,duration_ms,container,\
-    v_codec,v_width,v_height,v_hdr,v_bit_depth,a_codec,a_channels,a_language,subtitles,\
+    v_bit_depth,a_codec,a_channels,a_language,subtitles,\
     library,show_id,show_title,season,episode,episode_end,episode_title,rel_path,abs_path,added_at,metadata";

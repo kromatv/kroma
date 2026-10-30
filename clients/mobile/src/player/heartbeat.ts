@@ -14,6 +14,7 @@ import { useStableCallback } from '@kromatv/ui/kit';
 import * as Device from 'expo-device';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import { useProgressQueue } from '#mobile/lib/progress';
 
 const PING_MS = 10_000;
 
@@ -32,6 +33,15 @@ export interface HeartbeatSnapshot {
   aac: boolean;
   audioLang?: string;
   subtitleLang?: string;
+}
+
+const END_OF_FILE_SEC = 5;
+
+/** Whether this playback ran the file out, within five seconds. A fact about
+ *  this device, not the account's watched verdict: that one stays the server's,
+ *  applied when the save lands. */
+export function reachedEnd(s: HeartbeatSnapshot): boolean {
+  return s.durationSec > 0 && s.positionSec >= s.durationSec - END_OF_FILE_SEC;
 }
 
 function pingState(s: HeartbeatSnapshot): 'buffering' | 'playing' | 'paused' {
@@ -87,7 +97,10 @@ export function useHeartbeat(
   onTerminated?: (message: string) => void,
 ): void {
   const owner = useId();
+  const progress = useProgressQueue();
   const sequence = useRef(0);
+  const rememberPosition = useStableCallback(progress.remember);
+  const settlePosition = useStableCallback(progress.settle);
   const readSnapshot = useStableCallback(snapshot);
   const notifyTerminated = useStableCallback((message: string) => onTerminated?.(message));
   const currentClient = useStableCallback(() => client);
@@ -113,9 +126,12 @@ export function useHeartbeat(
     const save = () => {
       const s = readSnapshot();
       if (s.positionSec <= 0) return;
+      const positionMs = Math.round(s.positionSec * 1000);
+      const durationMs = Math.round(s.durationSec * 1000) || null;
       void client.playback
-        .save(item.id, Math.round(s.positionSec * 1000), Math.round(s.durationSec * 1000) || null)
-        .catch(() => undefined);
+        .save(item.id, positionMs, durationMs)
+        .then(() => settlePosition(item.id))
+        .catch(() => rememberPosition(item.id, positionMs, durationMs, reachedEnd(s)));
     };
 
     const ping = () => {

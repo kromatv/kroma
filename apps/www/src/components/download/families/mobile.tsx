@@ -1,10 +1,10 @@
-import { IconArrowUpRight, IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
+import { IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
 import { useState, useSyncExternalStore } from 'react';
+import { AndroidBetaLink } from '#site/components/download/android-beta-link';
 import { DevicePicker } from '#site/components/download/device-picker';
 import { family } from '#site/components/download/families/meta';
 import { JoinButton } from '#site/components/download/join-button';
 import { join } from '#site/components/download/links';
-import { PlatformDownload } from '#site/components/download/platform-download';
 import { PlatformEntry } from '#site/components/download/platform-entry';
 import { PlatformFamily } from '#site/components/download/platform-family';
 import { StepList } from '#site/components/download/step-list';
@@ -61,30 +61,24 @@ export function MobileFamily() {
         <PlatformEntry
           icon={IconBrandAndroid}
           name="Android"
-          badge={m.download_ui_beta()}
+          badge={`${m.download_ui_beta()} · Google Play`}
           description={m.download_mobile_android_body()}
           help={
-            <div className="space-y-4">
-              <StepList
-                steps={[
-                  m.download_mobile_android_step_1(),
-                  m.download_mobile_android_step_2(),
-                  m.download_mobile_android_step_3(),
-                ]}
-              />
-              <a
-                href={join.firebase}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 text-xs text-accent-text hover:underline"
-              >
-                {m.download_mobile_firebase()}
-                <IconArrowUpRight size={12} aria-hidden />
-              </a>
-            </div>
+            <StepList
+              steps={[
+                m.download_mobile_android_step_1(),
+                m.download_mobile_android_step_2(),
+                m.download_mobile_android_step_3(),
+              ]}
+            />
           }
         >
-          <PlatformDownload target="android" label={m.download_android_apk()} />
+          <JoinButton
+            href={join.playGroup}
+            channel="Google Play"
+            label={m.android_beta_join_group()}
+          />
+          <AndroidBetaLink />
         </PlatformEntry>
       )}
     </PlatformFamily>

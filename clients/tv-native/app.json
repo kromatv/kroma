@@ -25,14 +25,16 @@
       }
     },
     "android": {
-      "package": "tv.kroma.tv",
+      "package": "tv.kroma.app",
       "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"]
     },
     "plugins": [
+      ["@kromatv/android-build/plugin", { "formFactor": "tv" }],
       [
         "@react-native-tvos/config-tv",
         {
           "isTV": true,
+          "androidTVRequired": true,
           "showVerboseWarnings": false,
           "androidTVBanner": "./assets/tv/android-tv-banner.png",
           "androidTVIcon": "./assets/tv/android-tv-icon.png",

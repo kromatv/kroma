@@ -67,4 +67,16 @@ describe('matchLanes', () => {
   it('puts the site in its own lane', () => {
     expect(matchLanes(['apps/www/src/routes/download.tsx'])).toEqual(only('code', 'fleet', 'site'));
   });
+
+  it('puts a spec chapter in the spec lane, where no other prose goes', () => {
+    expect(matchLanes(['docs/spec/accounts/notifications.md'])).toEqual(only('spec'));
+    expect(matchLanes(['docs/spec/requirements.json'])).toEqual(only('spec'));
+    expect(matchLanes(['docs/rfcs/441-notification-subjects.md'])).toEqual(only());
+  });
+
+  it('builds nothing for prose that lives inside a code tree', () => {
+    expect(matchLanes(['modules/README.md'])).toEqual(only());
+    expect(matchLanes(['server/README.md'])).toEqual(only());
+    expect(matchLanes(['packages/ui/src/components/README.md'])).toEqual(only());
+  });
 });

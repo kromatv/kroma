@@ -1,6 +1,6 @@
 //! The scan diff-sync: libraries, shows and items, then the orphans left behind.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use rusqlite::params;
@@ -12,6 +12,21 @@ use crate::{now_or_blank, Pool};
 
 use super::probe_result::recompute_all_representatives;
 use super::scanned_files::sync_files;
+
+/// The episode ids each show holds right now, for a scan that wants to know
+/// which shows its walk changed. Read BEFORE [`sync_all`] writes over them.
+pub fn episode_ids_by_show(pool: &Pool) -> Result<HashMap<String, HashSet<String>>> {
+    let conn = pool.get()?;
+    let mut stmt =
+        conn.prepare("SELECT show_id, id FROM items WHERE kind='episode' AND show_id IS NOT NULL")?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+    let mut held: HashMap<String, HashSet<String>> = HashMap::new();
+    for row in rows {
+        let (show_id, item_id) = row?;
+        held.entry(show_id).or_default().insert(item_id);
+    }
+    Ok(held)
+}
 
 /// Diff-syncs the scanned index into the DB in one transaction: preserves
 /// `items.metadata`/`shows.metadata` and a file's probed data when its

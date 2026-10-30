@@ -1,0 +1,4 @@
+ALTER TABLE items DROP COLUMN v_codec;
+ALTER TABLE items DROP COLUMN v_width;
+ALTER TABLE items DROP COLUMN v_height;
+ALTER TABLE items DROP COLUMN v_hdr;

@@ -29,8 +29,8 @@ name: Build & Release
 #   - Apple TV .ipa, to TestFlight. Its own called workflow rather than a fourth
 #     job in the TV one, because unlike the .ipk/.wgt/.apk it is not a file a
 #     tester can sideload.
-#   - Mobile .apk + .ipa, pushed to the two beta channels BETA.md points testers
-#     at (Firebase App Distribution, TestFlight).
+#   - Mobile .apk + .aab + .ipa: the bundle goes to Google Play as a draft, the
+#     .ipa to TestFlight.
 #
 # Module .kmod bundles are NOT in that set: they release independently from
 # .github/workflows/modules.yml.
@@ -45,7 +45,7 @@ name: Build & Release
 # synology.yml.
 #
 # Manual runs build artifacts without publishing a Release; `targets` scopes the
-# run (all | spk | desktop | tv | mobile).
+# run (all | spk | desktop | tv | mobile | android).
 #
 # The per-platform build jobs live in reusable workflows (_release-*.yml) that
 # this file calls; the calling job here carries the SAME gate as the jobs it
@@ -88,11 +88,11 @@ on:
       targets:
         description: 'What to build'
         type: choice
-        options: [all, spk, desktop, tv, mobile, tools]
+        options: [all, spk, desktop, tv, mobile, android, tools]
         default: all
         required: false
       distribute:
-        description: 'Also push the mobile/TV builds to TestFlight + Firebase'
+        description: 'Also distribute builds to TestFlight and prepare Google Play drafts'
         type: boolean
         default: false
         required: false
@@ -183,7 +183,7 @@ jobs:
   tv:
     name: TV
     needs: version
-    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-tv.yml
     permissions:
       contents: write # passed down to the called workflow
@@ -216,12 +216,12 @@ jobs:
 
   # ---------------------------------------------------------------- Mobile ---
 
-  # Firebase App Distribution + TestFlight. Present in the publish `needs` below:
+  # Google Play bundle + TestFlight. Present in the publish `needs` below:
   # a broken mobile build must not reach a tag.
   mobile:
     name: Mobile
     needs: version
-    if: ${{ (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile","android"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-mobile.yml
     permissions:
       contents: write # passed down to the called workflow
@@ -231,6 +231,26 @@ jobs:
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
       build: ${{ needs.version.outputs.build }}
+    secrets: inherit
+
+  # One Play app, after BOTH signed bundles exist. A new listing needs a first
+  # manual upload and form-factor setup before PLAY_STORE_READY can be enabled.
+  play:
+    name: Google Play
+    needs: [version, mobile, tv]
+    if: >-
+      !cancelled()
+      && needs.mobile.result == 'success'
+      && needs.tv.result == 'success'
+      && (needs.version.outputs.channel == 'stable'
+          || (needs.version.outputs.channel == 'candidate' && github.event_name == 'push')
+          || github.event.inputs.distribute == 'true')
+    uses: ./.github/workflows/_release-play.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      version: ${{ needs.version.outputs.version }}
     secrets: inherit
 
   # --------------------------------------------------------------- Desktop ---
@@ -294,6 +314,7 @@ jobs:
   sdk:
     name: Module SDK
     needs: version
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.targets != 'android'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -348,6 +369,7 @@ jobs:
   kit:
     name: Design system
     needs: version
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.targets != 'android'
     runs-on: ubuntu-latest
     permissions:
       contents: read

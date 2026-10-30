@@ -37,9 +37,14 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"]
+      "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"],
+      "blockedPermissions": [
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
+      ["@kromatv/android-build/plugin", { "formFactor": "mobile" }],
       "expo-router",
       "./plugins/with-cleartext-traffic",
       "@kesha-antonov/react-native-background-downloader",

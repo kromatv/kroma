@@ -51,13 +51,13 @@
 - **ACCT-42** (SHIPPED) - A row says what happened in the reader's own language, names the <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-43** (SHIPPED) - A row leads to the screen it is about, and opening it goes there. A <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-44** (SHIPPED) - A row may carry up to a few actions, such as approving a request or <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-45** (AGREED) - A row records **what it is about** (a request, a title, an episode, a <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-46** (AGREED) - A destination is never frozen into a stored row. Renaming a screen <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-47** (AGREED) - The person a row names is read when the row is read, so a renamed <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-45** (SHIPPED) - A row records **what it is about** (a request, a title, an episode, a <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-46** (SHIPPED) - A destination is never frozen into a stored row. Renaming a screen <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-47** (SHIPPED) - The person a row names is read when the row is read, so a renamed <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-48** (SHIPPED) - Repeats of one thing read as one row with a count, so a run of <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-49** (AGREED) - A repeat folds into the row the person already has: its count rises, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-50** (DRAFT) - A folded group raises a banner at most once an hour, and repeats in <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-51** (AGREED) - A second telling of something a person already holds is dropped <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-51** (SHIPPED) - A second telling of something a person already holds is dropped <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-52** (AGREED) - A notification that asked for a decision stops asking once the decision <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-53** (AGREED) - A settled row is not deleted behind the reader's back. It stays where <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-54** (DRAFT) - Whether settling a row also takes back a banner already delivered to a <sub>[notifications.md](accounts/notifications.md)</sub>

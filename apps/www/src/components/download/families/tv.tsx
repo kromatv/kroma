@@ -1,5 +1,6 @@
 import { IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
 import { useState } from 'react';
+import { AndroidBetaLink } from '#site/components/download/android-beta-link';
 import { DevicePicker } from '#site/components/download/device-picker';
 import { SamsungIcon } from '#site/components/download/samsung-icon';
 import { LgIcon } from '#site/components/download/lg-icon';
@@ -86,7 +87,7 @@ export function TvFamily() {
         <PlatformEntry
           icon={IconBrandAndroid}
           name="Android TV"
-          badge="Google TV · Chromecast · Shield"
+          badge="Google Play · Google TV · Shield"
           description={m.download_tv_android_body()}
           help={
             <StepList
@@ -98,10 +99,12 @@ export function TvFamily() {
             />
           }
         >
-          <PlatformDownload
-            target="androidtv"
-            label={m.download_for_chip({ chip: 'Android TV' })}
+          <JoinButton
+            href={join.playGroup}
+            channel="Google Play"
+            label={m.android_beta_join_group()}
           />
+          <AndroidBetaLink />
         </PlatformEntry>
       )}
       {selected === 'apple' && (

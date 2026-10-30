@@ -20,8 +20,13 @@ pub(super) const STEPS: &[Step] = &[
         rebuilds: false,
     },
     Step {
-        name: "0005_notification_deliveries",
-        run: Run::Sql(include_str!("steps/0005_notification_deliveries.sql")),
+        name: "0005_drop_item_probe_columns",
+        run: Run::Sql(include_str!("steps/0005_drop_item_probe_columns.sql")),
+        rebuilds: false,
+    },
+    Step {
+        name: "0006_notification_deliveries",
+        run: Run::Sql(include_str!("steps/0006_notification_deliveries.sql")),
         rebuilds: false,
     },
 ];

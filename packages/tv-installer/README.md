@@ -225,7 +225,7 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   certificate is already installed: delete its tile from the Apps panel
   (long-press > Delete) and install again.
 - **`INSTALL_FAILED_UPDATE_INCOMPATIBLE`.** The Android version of the same
-  thing: `adb uninstall tv.kroma.tv`, then install again.
+  thing: `adb uninstall tv.kroma.app`, then install again.
 - **`INSTALL_FAILED_VERSION_DOWNGRADE`.** The set already has a newer build.
   Uninstall it, or install a newer `.apk`.
 - **adb sees the TV as `unauthorized`.** The prompt is on the television. Accept

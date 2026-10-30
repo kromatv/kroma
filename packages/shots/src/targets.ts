@@ -74,7 +74,7 @@ export const TARGETS: readonly Target[] = [
     kind: 'android',
     routing: 'keys',
     avd: 'Television_4K',
-    appId: 'tv.kroma.tv',
+    appId: 'tv.kroma.app',
   },
 ];
 

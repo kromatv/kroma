@@ -13,14 +13,12 @@
 // app's identifier, it is the PRODUCT's: one App Store Connect record carries
 // both the iOS/iPadOS app and this one as two platforms of a single listing
 // (Apple calls it a universal purchase), and Apple requires every platform in one
-// record to share that record's bundle ID. So `clients/mobile` and
-// `clients/tv-native` both build `tv.kroma.app`, differing only in the SDK they
-// are built against, and one device only ever sees one of them. Android is
-// unaffected and stays `tv.kroma.tv`, because Play has no such notion and the
-// two APKs are two apps. Splitting them again means two separate App Store
-// listings, not a rename.
+// record to share that record's bundle ID. Android also shares `tv.kroma.app`:
+// one Play listing has a mobile track and a dedicated Android TV track, with
+// separate bundles, the same signing identity, and unique version codes.
 
 import path from 'node:path';
+import { androidVersionCode } from '@kromatv/android-build';
 import { collectBuildInfo, productVersion } from '@kromatv/build-info';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
@@ -39,11 +37,13 @@ export default function tvNativeAppConfig({ config }: ConfigContext): Partial<Ex
       // Monotonic across releases, supplied by the release workflow (minutes since
       // 2020). Play and `adb install -r` both refuse a build whose code did not
       // increase, so a local build keeps 1 and only CI mints real ones.
-      versionCode: Number(process.env.KROMA_VERSION_CODE) || 1,
+      versionCode: process.env.KROMA_VERSION_CODE
+        ? androidVersionCode(Number(process.env.KROMA_VERSION_CODE), 'tv')
+        : 1,
     },
     ios: {
       ...config.ios,
-      // The same number, for the same reason, spelled the way Apple spells it:
+      // Apple's original CI build number, without Android's form-factor suffix:
       // App Store Connect rejects a (version, build) pair it has already seen, so
       // a release that reuses one is refused AFTER the twenty minutes it took to
       // archive it. tvOS and iOS count separately - a record's platforms do not

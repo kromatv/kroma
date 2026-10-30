@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::Path;
 
 use crate::db::{self, Pool};
@@ -26,8 +27,8 @@ pub(super) struct Job {
 }
 
 impl Job {
-    pub(super) const fn fetches(&self) -> bool {
-        self.is_show || self.resolved_tmdb.is_none()
+    pub(super) fn fetches(&self, changed_shows: &HashSet<String>) -> bool {
+        self.resolved_tmdb.is_none() || (self.is_show && changed_shows.contains(&self.id))
     }
 }
 
@@ -233,7 +234,7 @@ mod tests {
 
         let jobs = build_jobs(&[movie_with("m1", 603)], &[], &Pins::default(), dir.path());
 
-        assert!(!jobs[0].fetches());
+        assert!(!jobs[0].fetches(&HashSet::new()));
     }
 
     #[test]
@@ -251,14 +252,16 @@ mod tests {
             dir.path(),
         );
 
-        assert!(jobs.iter().all(Job::fetches), "{}", jobs.len());
+        assert!(
+            jobs.iter().all(|job| job.fetches(&HashSet::new())),
+            "{}",
+            jobs.len()
+        );
     }
 
-    #[test]
-    fn a_show_is_always_fetched_so_a_season_added_since_gets_its_stills() {
-        let dir = data_dir();
-        let show = Show {
-            id: "s1".into(),
+    fn show_with(id: &str, tmdb: u64) -> Show {
+        Show {
+            id: id.into(),
             title: "Breaking Bad".into(),
             year: None,
             library: "lib".into(),
@@ -266,13 +269,37 @@ mod tests {
             episode_count: 1,
             video: None,
             added_at: String::new(),
-            metadata: movie_with("x", 1396).metadata,
+            metadata: movie_with("x", tmdb).metadata,
             progress: None,
-        };
+        }
+    }
 
-        let jobs = build_jobs(&[], &[show], &Pins::default(), dir.path());
+    #[test]
+    fn a_show_whose_episodes_the_scan_moved_is_fetched_so_they_get_their_stills() {
+        let dir = data_dir();
+        let moved = HashSet::from(["s1".to_string()]);
 
-        assert!(jobs[0].fetches());
+        let jobs = build_jobs(&[], &[show_with("s1", 1396)], &Pins::default(), dir.path());
+
+        assert!(jobs[0].fetches(&moved));
+    }
+
+    #[test]
+    fn a_show_the_scan_left_alone_is_left_to_the_nightly_sweep() {
+        let dir = data_dir();
+
+        let jobs = build_jobs(&[], &[show_with("s1", 1396)], &Pins::default(), dir.path());
+
+        assert!(!jobs[0].fetches(&HashSet::new()));
+    }
+
+    #[test]
+    fn a_show_that_never_matched_is_fetched_whether_or_not_its_episodes_moved() {
+        let dir = data_dir();
+
+        let jobs = build_jobs(&[], &[show_with("s1", 0)], &Pins::default(), dir.path());
+
+        assert!(jobs[0].fetches(&HashSet::new()));
     }
 
     #[test]
