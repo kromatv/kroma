@@ -168,7 +168,7 @@ pub fn build_request(
         // Collapse a repeat of the same notification instead of stacking it.
         (
             "apns-collapse-id".into(),
-            alert.id.chars().take(64).collect(),
+            alert.collapse_key.unwrap_or(alert.id).chars().take(64).collect(),
         ),
         ("content-type".into(), "application/json".into()),
     ];
@@ -259,6 +259,7 @@ mod tests {
             title: "Ready to watch",
             body: "Dune is now in your library.",
             subject: Some(("movie", "ab12")),
+            collapse_key: Some("media.added:movie:ab12"),
             link: Some("/movie/ab12"),
             image_url: Some("https://img/p.jpg"),
             category: Some("media_available"),

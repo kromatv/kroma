@@ -10,6 +10,7 @@ pub(super) fn notification(category: NotificationCategory) -> Notification {
         subject: None,
         actor: None,
         data: None,
+        group_key: None,
         link: Some("/movie/ab12".into()),
         image_url: Some("https://img/p.jpg".into()),
         actions: vec![NotificationAction {
@@ -22,6 +23,8 @@ pub(super) fn notification(category: NotificationCategory) -> Notification {
         }],
         push_category: None,
         read: false,
+        count: 1,
         created_at: 1_700_000_000_000,
+        updated_at: 1_700_000_000_000,
     }
 }

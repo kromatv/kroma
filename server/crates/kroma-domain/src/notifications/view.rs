@@ -24,6 +24,11 @@ pub struct Notification {
     pub actor: Option<NotificationActor>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<serde_json::Value>,
+    /// What a repeat of this row collapses onto, so a device replaces the
+    /// earlier banner instead of stacking beside it. `None` for a row nothing
+    /// may fold into.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -34,7 +39,13 @@ pub struct Notification {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub push_category: Option<PushCategory>,
     pub read: bool,
+    /// Emissions this row stands for. `1` for a row nothing folded into, which
+    /// is how a client built before folding reads every row.
+    pub count: u32,
     pub created_at: i64,
+    /// The latest emission. The inbox sorts by this, and with `created_at` it
+    /// gives the span a folded row reads as.
+    pub updated_at: i64,
 }
 
 /// `GET /api/notifications`.

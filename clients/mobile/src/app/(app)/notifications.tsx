@@ -12,11 +12,7 @@ import {
   useThemeVersion,
 } from '@kromatv/ui/kit';
 
-import {
-  groupNotificationsByDay,
-  groupNotificationRepeats,
-  NOTIFICATION_DAY_LABEL,
-} from '@kromatv/core';
+import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
 
 import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList } from 'react-native';
@@ -49,7 +45,7 @@ export default function NotificationsScreen() {
     () =>
       groupNotificationsByDay(unreadOnly ? rows.filter((row) => !row.read) : rows).map((g) => ({
         title: t(NOTIFICATION_DAY_LABEL[g.day]),
-        data: groupNotificationRepeats(g.items),
+        data: g.items,
       })),
     [rows, t, unreadOnly],
   );
@@ -89,7 +85,7 @@ export default function NotificationsScreen() {
     content = (
       <SectionList
         sections={sections}
-        keyExtractor={(run) => run.key}
+        keyExtractor={(row) => row.id}
         contentContainerStyle={s.list}
         stickySectionHeadersEnabled
         refreshControl={
@@ -100,7 +96,7 @@ export default function NotificationsScreen() {
           />
         }
         renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
-        renderItem={({ item }) => <NotificationRow run={item} onError={setError} />}
+        renderItem={({ item }) => <NotificationRow row={item} onError={setError} />}
       />
     );
 

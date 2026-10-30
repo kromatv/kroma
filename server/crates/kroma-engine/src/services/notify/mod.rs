@@ -128,8 +128,10 @@ fn deliver<S: HostStorage>(
     // The row we are about to write, kept in hand: rendering the push below needs
     // exactly this, and re-SELECTing it would be a query plus two JSON parses for
     // data already sitting here.
-    let stored = StoredNotification::from_spec(id.clone(), spec, now);
-    let unread = db::notifications::insert_notification(&conn, user.id.as_str(), &stored)?;
+    let mut stored = StoredNotification::from_spec(id, spec, now);
+    let written = db::notifications::insert_notification(&conn, user.id.as_str(), &stored)?;
+    stored.id = written.id.clone();
+    stored.count = written.count;
 
     // Wake this user's open clients. Addressed, so the bell on someone else's
     // browser does not tick for a notification that isn't theirs.
@@ -137,13 +139,13 @@ fn deliver<S: HostStorage>(
         &user.id,
         Event::new(
             "notification.created",
-            json!({ "id": id, "unread": unread }),
+            json!({ "id": stored.id, "unread": written.unread }),
         ),
     );
 
     // Then the device, best-effort: the row is already written, so a push
     // service being down costs a push, not the notification.
-    if push_allowed {
+    if push_allowed && db::notifications::claim_push(&conn, &stored.id, now)? {
         // Sized on the way out: the device fetches this URL itself, over its own
         // network, and a lock-screen thumbnail has no use for the master (see
         // `art`).
@@ -336,6 +338,79 @@ mod tests {
         user(&host, "ana@t.dev", "Ana", &[]);
         assert_eq!(emit(&host, &Audience::user("ghost"), &spec()), 0);
         assert!(host.published().is_empty());
+    }
+
+    fn failing_job() -> NotificationSpec {
+        NotificationSpec::new(
+            NotificationEvent::SystemJobFailed,
+            "notifications.system.job.failed.title",
+            "notifications.system.job.failed.body",
+        )
+        .param_key("job", "jobs.library.scan.name")
+        .subject(kroma_domain::NotificationSubject::job("library.scan"))
+    }
+
+    fn rows(host: &RecordingHost, user: &str) -> Vec<kroma_db::notifications::StoredNotification> {
+        let conn = host.db().get().unwrap();
+        db::notifications::list_notifications(&conn, user, 50, false).unwrap()
+    }
+
+    #[test]
+    fn the_same_failure_twice_is_one_row_that_counts_them() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+
+        let inbox = rows(&host, &ana);
+        assert_eq!(inbox.len(), 1);
+        assert_eq!(inbox[0].count, 2);
+    }
+
+    #[test]
+    fn two_different_jobs_failing_are_two_rows() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        let other = failing_job()
+            .param_key("job", "jobs.library.rescan.name")
+            .subject(kroma_domain::NotificationSubject::job("library.rescan"));
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &other);
+
+        assert_eq!(rows(&host, &ana).len(), 2);
+    }
+
+    #[test]
+    fn a_folded_row_raises_one_banner_rather_than_one_per_repeat() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+
+        let conn = host.db().get().unwrap();
+        let pushed: Option<i64> = conn
+            .query_row(
+                "SELECT pushed_at FROM notifications WHERE user_id = ?1",
+                [&ana],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(pushed.is_some());
+        assert!(!db::notifications::claim_push(&conn, &rows(&host, &ana)[0].id, 0).unwrap());
+    }
+
+    #[test]
+    fn an_event_that_names_no_subject_never_folds() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+
+        emit(&host, &Audience::user(ana.clone()), &spec());
+        emit(&host, &Audience::user(ana.clone()), &spec());
+
+        assert_eq!(rows(&host, &ana).len(), 2);
     }
 
     #[test]

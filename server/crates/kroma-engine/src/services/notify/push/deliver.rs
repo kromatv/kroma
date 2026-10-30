@@ -67,12 +67,15 @@ pub fn send_test<S: HostStorage>(state: &S, user: &User) -> anyhow::Result<usize
         subject: None,
         actor: None,
         data: None,
+        group_key: None,
         link: Some("/".into()),
         image_url: None,
         actions: Vec::new(),
         push_category: None,
         read: false,
+        count: 1,
         created_at: now_ms(),
+        updated_at: now_ms(),
     };
     Ok(deliver(state, &sender, &user.id, &notification))
 }

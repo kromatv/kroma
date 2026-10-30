@@ -1,5 +1,5 @@
 import type { Notification, NotificationEvent } from '@kromatv/client/notifications';
-import type { NotificationRun } from '@kromatv/core';
+import { notificationUpdatedAt } from '@kromatv/core';
 import {
   Box,
   radius as cornerRadius,
@@ -20,20 +20,19 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export function NotificationRow({
-  run,
+  row,
   onError,
-}: Readonly<{ run: NotificationRun; onError(message: string | null): void }>) {
+}: Readonly<{ row: Notification; onError(message: string | null): void }>) {
   const s = useStyles(sDefinition);
   const t = useT();
   const client = useClient();
   const router = useRouter();
   const refresh = useRefreshNotifications();
   const [busy, setBusy] = useState(false);
-  const row = run.head;
   const poster = client.media.artwork.resolve(row.imageUrl, 128);
   const route = destinationOf(row);
   const glyph = eventGlyph(row.event);
-  const unread = run.unread > 0;
+  const unread = !row.read;
 
   async function perform(action: () => Promise<unknown>) {
     setBusy(true);
@@ -49,7 +48,7 @@ export function NotificationRow({
   }
 
   function open() {
-    if (unread) void perform(() => client.notifications.markRead(run.items.map((item) => item.id)));
+    if (unread) void perform(() => client.notifications.markRead([row.id]));
     if (route) router.push(route as never);
   }
 
@@ -60,17 +59,14 @@ export function NotificationRow({
         onPress: () =>
           void perform(() =>
             unread
-              ? client.notifications.markRead(run.items.map((item) => item.id))
-              : client.notifications.markUnread(run.items.map((item) => item.id)),
+              ? client.notifications.markRead([row.id])
+              : client.notifications.markUnread([row.id]),
           ),
       },
       {
         text: t('common.delete'),
         style: 'destructive',
-        onPress: () =>
-          void perform(() =>
-            Promise.all(run.items.map((item) => client.notifications.delete(item.id))),
-          ),
+        onPress: () => void perform(() => client.notifications.delete(row.id)),
       },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
@@ -101,11 +97,9 @@ export function NotificationRow({
           </Text>
           <Box style={s.meta}>
             {unread ? <Box style={s.dot} /> : null}
-            <Text style={s.time}>{sinceLabel(t, row.createdAt)}</Text>
-            {run.items.length > 1 ? (
-              <Text style={s.repeat}>
-                {t('notifications.repeatCount', { count: run.items.length })}
-              </Text>
+            <Text style={s.time}>{sinceLabel(t, notificationUpdatedAt(row))}</Text>
+            {row.count > 1 ? (
+              <Text style={s.repeat}>{t('notifications.repeatCount', { count: row.count })}</Text>
             ) : null}
           </Box>
         </Box>

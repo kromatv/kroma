@@ -55,8 +55,8 @@
 - **ACCT-46** (SHIPPED) - A destination is never frozen into a stored row. Renaming a screen <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-47** (SHIPPED) - The person a row names is read when the row is read, so a renamed <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-48** (SHIPPED) - Repeats of one thing read as one row with a count, so a run of <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-49** (AGREED) - A repeat folds into the row the person already has: its count rises, <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-50** (DRAFT) - A folded group raises a banner at most once an hour, and repeats in <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-49** (SHIPPED) - A repeat folds into the row the person already has: its count rises, <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-50** (SHIPPED) - A folded group raises a banner at most once an hour, and repeats in <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-51** (SHIPPED) - A second telling of something a person already holds is dropped <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-52** (AGREED) - A notification that asked for a decision stops asking once the decision <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-53** (AGREED) - A settled row is not deleted behind the reader's back. It stays where <sub>[notifications.md](accounts/notifications.md)</sub>

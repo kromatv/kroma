@@ -24,4 +24,9 @@ pub(super) const STEPS: &[Step] = &[
         run: Run::Sql(include_str!("steps/0005_drop_item_probe_columns.sql")),
         rebuilds: false,
     },
+    Step {
+        name: "0006_notification_folding",
+        run: Run::Sql(include_str!("steps/0006_notification_folding.sql")),
+        rebuilds: false,
+    },
 ];

@@ -52,6 +52,7 @@ pub fn render(stored: &StoredNotification, locale: &str, subjects: &Subjects) ->
         subject: stored.subject.clone(),
         actor: subjects.actor(stored),
         data: stored.data.clone(),
+        group_key: stored.group_key.clone(),
         link: subjects.link(stored),
         image_url: stored.image_url.clone(),
         actions: stored
@@ -70,7 +71,9 @@ pub fn render(stored: &StoredNotification, locale: &str, subjects: &Subjects) ->
             .collect(),
         push_category: stored.push_category,
         read: stored.read,
+        count: stored.count,
         created_at: stored.created_at,
+        updated_at: stored.updated_at,
     }
 }
 
@@ -96,6 +99,9 @@ mod tests {
             actor_id: None,
             data: None,
             dedupe_key: None,
+            group_key: None,
+            count: 1,
+            updated_at: 1_700_000_000_000,
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: vec![ActionSpec {

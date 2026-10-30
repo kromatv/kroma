@@ -33,6 +33,9 @@ pub struct Alert<'a> {
     /// What the notification is about, as `(kind, id)`. A tap routes from this
     /// where the app knows the kind, and from `link` where it does not.
     pub subject: Option<(&'a str, &'a str)>,
+    /// What a repeat of this replaces on the device. `None` falls back to the
+    /// row's own id, which collapses a retried delivery and nothing else.
+    pub collapse_key: Option<&'a str>,
     pub link: Option<&'a str>,
     pub image_url: Option<&'a str>,
     pub category: Option<&'a str>,

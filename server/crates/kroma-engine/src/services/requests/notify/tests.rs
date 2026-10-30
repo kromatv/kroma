@@ -229,11 +229,12 @@ fn delivering_state() -> (crate::state::SharedState, String) {
     (state, user)
 }
 
-fn told(state: &crate::state::SharedState, user: &str) -> usize {
+fn told(
+    state: &crate::state::SharedState,
+    user: &str,
+) -> Vec<kroma_db::notifications::StoredNotification> {
     let conn = state.db.get().unwrap();
-    db::notifications::list_notifications(&conn, user, 50, false)
-        .unwrap()
-        .len()
+    db::notifications::list_notifications(&conn, user, 50, false).unwrap()
 }
 
 #[test]
@@ -251,7 +252,9 @@ fn a_request_flapping_between_partial_and_available_is_told_once_per_status() {
         notify_requester(&state, &req, status, "/requests");
     }
 
-    assert_eq!(told(&state, &user), 2);
+    let inbox = told(&state, &user);
+    assert_eq!(inbox.len(), 2);
+    assert!(inbox.iter().all(|row| row.count == 1));
 }
 
 #[test]
@@ -265,7 +268,7 @@ fn two_requests_reaching_the_same_status_are_two_pieces_of_news() {
     notify_requester(&state, &dune, RequestStatus::Available, "/requests");
     notify_requester(&state, &arrival, RequestStatus::Available, "/requests");
 
-    assert_eq!(told(&state, &user), 2);
+    assert_eq!(told(&state, &user).len(), 2);
 }
 
 #[test]

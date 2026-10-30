@@ -258,10 +258,9 @@ The spec chapter is #431.
 
 ## Unresolved
 
-Three points are left open, each with the value it ships with unless the maintainer says
+Two points are left open, each with the value it ships with unless the maintainer says
 otherwise in review. The spec chapter carries them as DRAFT requirements.
 
-- The push throttle window for a folded group. One hour is a starting point.
 - Whether a resolved row should also withdraw its push from the lock screen. APNs and FCM can
   replace a banner with a silent update, which costs a second push per resolve. Until it is
   decided, a resolve leaves a banner already delivered alone.

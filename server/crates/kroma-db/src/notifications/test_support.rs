@@ -33,6 +33,9 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
         actor_id: Some("mod-1".into()),
         data: Some(serde_json::json!({ "requestId": "req-1" })),
         dedupe_key: None,
+        group_key: None,
+        count: 1,
+        updated_at: created_at,
         link: Some("/movie/ab12".into()),
         image_url: Some("https://img/p.jpg".into()),
         actions: vec![ActionSpec {
@@ -51,5 +54,5 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
 
 pub(super) fn insert(p: &Pool, id: &str, user: &str, at: i64) -> u32 {
     let conn = p.get().unwrap();
-    insert_notification(&conn, user, &new(id, at)).unwrap()
+    insert_notification(&conn, user, &new(id, at)).unwrap().unread
 }

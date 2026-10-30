@@ -63,12 +63,15 @@ mod tests {
             subject: None,
             actor: None,
             data: None,
+            group_key: None,
             link: None,
             image_url: url.map(str::to_string),
             actions: Vec::new(),
             push_category: None,
             read: false,
+            count: 1,
             created_at: 0,
+            updated_at: 0,
         }
     }
 

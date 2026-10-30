@@ -167,6 +167,7 @@ fn alert<'a>(out: &'a Outgoing<'a>) -> kroma_push::Alert<'a> {
             .subject
             .as_ref()
             .map(|s| (s.kind.as_str(), s.id.as_str())),
+        collapse_key: n.group_key.as_deref(),
         link: n.link.as_deref(),
         image_url: out.native_image.as_deref(),
         category: push_category(n),
@@ -228,12 +229,15 @@ mod tests {
             subject: None,
             actor: None,
             data: None,
+            group_key: None,
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: Vec::new(),
             push_category: None,
             read: false,
+            count: 1,
             created_at: 0,
+            updated_at: 0,
         }
     }
 
