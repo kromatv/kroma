@@ -27,9 +27,13 @@ const captions = {
     featureBody: 'Your library, beautifully at home.',
     footer: 'FREE & OPEN SOURCE · BRING YOUR OWN SERVER',
     shots: [
-      ['01-movies', 'Your cinema.\nIn your pocket.', 'A beautiful home for your movies and shows.'],
+      ['01-movies', 'Your cinema.\nIn your pocket.', 'A beautiful home for your movies.'],
       ['02-detail', 'The story\nstarts here.', 'Artwork, cast and details, all in one place.'],
-      ['03-series', 'One more\nepisode?', 'Your series, organized by season.'],
+      [
+        '03-home',
+        'What’s on\ntonight?',
+        'Your list and latest additions, right on the home screen.',
+      ],
     ],
   },
   'fr-FR': {
@@ -37,13 +41,13 @@ const captions = {
     featureBody: 'Votre bibliothèque, chez vous.',
     footer: 'GRATUIT ET OPEN SOURCE · VOTRE PROPRE SERVEUR',
     shots: [
-      [
-        '01-movies',
-        'Votre cinéma.\nDans votre poche.',
-        'Vos films et séries ont trouvé leur place.',
-      ],
+      ['01-movies', 'Votre cinéma.\nDans votre poche.', 'Vos films ont trouvé leur place.'],
       ['02-detail', 'L’histoire\ncommence ici.', 'Affiches, distribution et détails réunis.'],
-      ['03-series', 'Encore\nun épisode ?', 'Vos séries, organisées par saison.'],
+      [
+        '03-home',
+        'On regarde\nquoi ce soir ?',
+        'Votre liste et vos derniers ajouts dès l’accueil.',
+      ],
     ],
   },
 } as const;
