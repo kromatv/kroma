@@ -1,18 +1,29 @@
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const helper = fileURLToPath(new URL('../../../.github/scripts/macos-staple.sh', import.meta.url));
 
 function run(script: string, ...args: string[]) {
-  return spawnSync(
-    'bash',
-    ['-c', `set -euo pipefail\nsource "$1"\n${script}`, 'test', helper, ...args],
-    {
-      encoding: 'utf8',
-      env: { ...process.env, GITHUB_STEP_SUMMARY: '/dev/stdout' },
-    },
-  );
+  const dir = mkdtempSync(join(tmpdir(), 'macos-staple-'));
+  const summaryFile = join(dir, 'summary.md');
+  writeFileSync(summaryFile, '');
+  try {
+    const result = spawnSync(
+      'bash',
+      ['-c', `set -euo pipefail\nsource "$1"\n${script}`, 'test', helper, ...args],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, GITHUB_STEP_SUMMARY: summaryFile },
+      },
+    );
+    return { ...result, summary: readFileSync(summaryFile, 'utf8') };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 function staple(failures: number, status = 68, validationStatus = 0, validationFailures = 8) {
@@ -43,6 +54,7 @@ describe('macOS ticket stapling', () => {
     expect(result.stdout).toContain('stapler|validate|a path/KROMA.app');
     expect(result.stdout).not.toContain('wait:');
     expect(result.stderr).not.toContain('::warning::');
+    expect(result.summary).toBe('');
   });
 
   it('recovers from ticket service failures', () => {
@@ -78,7 +90,7 @@ describe('macOS ticket stapling', () => {
     expect(result.stdout).not.toContain('validate');
     expect(result.stdout).toContain('complete');
     expect(result.stderr).toContain('::warning::a path/KROMA.app is notarized but UNSTAPLED');
-    expect(result.stdout).toContain('- a path/KROMA.app is notarized but UNSTAPLED');
+    expect(result.summary).toContain('- a path/KROMA.app is notarized but UNSTAPLED');
   });
 
   it('warns when the attached ticket can never be confirmed', () => {
@@ -88,6 +100,7 @@ describe('macOS ticket stapling', () => {
     expect(result.stdout.match(/stapler\|staple\|/g)).toHaveLength(1);
     expect(result.stdout).toContain('complete');
     expect(result.stderr).toContain('::warning::a path/KROMA.app has its ticket');
+    expect(result.summary).toContain('- a path/KROMA.app has its ticket');
   });
 
   it.each([64, 65, 66, 73, 77])('does not retry permanent exit %s', (status) => {
