@@ -10,3 +10,8 @@ license.workspace = true
 wasmtime = { version = "50.0.1", default-features = false, features = ["runtime", "cranelift", "component-model", "std"] }
 wasmtime-wasi = { version = "50.0.1", default-features = false, features = ["p2"] }
 thiserror = "2"
+
+[dev-dependencies]
+axum = { workspace = true }
+kroma-http = { workspace = true }
+tokio = { workspace = true }

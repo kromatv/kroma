@@ -2384,7 +2384,10 @@ dependencies = [
 name = "kroma-wasm-host"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "kroma-http",
  "thiserror 2.0.21",
+ "tokio",
  "wasmtime",
  "wasmtime-wasi",
 ]
