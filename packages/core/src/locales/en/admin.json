@@ -174,6 +174,8 @@
   "admin.deleteAccount": "Delete account",
   "admin.deleteAfter": "Delete files after playback",
   "admin.deleteFailed": "Couldn't delete",
+  "admin.deliveriesSub": "Every account's last attempts, and why a device did not ring.",
+  "admin.deliveriesTitle": "Recent pushes",
   "admin.directPlay": "Direct play",
   "admin.downloadsSub": "Live download queue, history and torrent clients.",
   "admin.downloadsTitle": "Downloads",

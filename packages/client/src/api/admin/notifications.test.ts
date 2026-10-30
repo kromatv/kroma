@@ -35,5 +35,11 @@ describe('the notification console endpoints', () => {
       method: 'GET',
       path: '/admin/notifications/images',
     },
+    {
+      name: 'deliveries',
+      call: (c) => c.admin.notifications.deliveries(),
+      method: 'GET',
+      path: '/admin/notifications/deliveries',
+    },
   ])('$name', checkEndpoint);
 });

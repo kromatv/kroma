@@ -19,7 +19,7 @@ use serde::Deserialize;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::model::{NotificationPrefs, NotificationsView, SubscribeBody};
+use crate::model::{DeliveriesView, NotificationPrefs, NotificationsView, SubscribeBody};
 use crate::services::auth::random_token;
 use crate::services::jobs::now_ms;
 use crate::services::notify;
@@ -33,6 +33,7 @@ const PAGE: usize = 50;
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/notifications", get(list))
+        .route("/notifications/deliveries", get(deliveries))
         .route("/notifications/read", post(read))
         .route("/notifications/unread", post(unread))
         .route("/notifications/{id}", axum::routing::delete(remove))
@@ -62,6 +63,27 @@ pub async fn list(
                 .map(|s| notify::render::render(s, &locale, &subjects))
                 .collect(),
             unread,
+        })
+    })
+    .await?;
+    Ok(Json(view).into_response())
+}
+
+/// `GET /api/notifications/deliveries` what became of the caller's own pushes,
+/// newest first, one record per attempt per device.
+///
+/// A record names the device by the label it chose and by the subscription it
+/// was sent to. The endpoint, the device token and the relay grant are
+/// credentials and are not in the answer.
+pub async fn deliveries(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    let uid = user.id.clone();
+    let view = query(&state.db, move |pool| {
+        let conn = pool.get()?;
+        Ok(DeliveriesView {
+            deliveries: db::notification_deliveries::deliveries_for_user(&conn, &uid, PAGE)?,
         })
     })
     .await?;

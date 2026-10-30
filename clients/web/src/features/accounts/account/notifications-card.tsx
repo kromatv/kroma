@@ -25,6 +25,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useSyncExternalStore } from 'react';
 
 import { pushBlocker, webPush } from '#web/shared/lib/push';
+import { DeliveryLog } from '#web/shared/ui/delivery-log';
 
 // The two channel columns must line up with the switches under them, and a
 // switch is one shell step wide.
@@ -37,7 +38,27 @@ export function NotificationsCard() {
     <>
       <PushPanel />
       <CategoryMatrix />
+      <DeliveriesPanel />
     </>
+  );
+}
+
+function DeliveriesPanel() {
+  const webRuntime = useWebRuntime();
+
+  const t = useT();
+  const { data, isPending } = useQuery(webRuntime.queries.userQueries.deliveries());
+
+  return (
+    <Surface elevated pad="none" p={22} radius="xl" border="border" gap={16}>
+      <Box gap={4}>
+        <Text variant="label">{t('notifications.deliveries')}</Text>
+        <Text variant="meta" color="textDim">
+          {t('notifications.deliveriesHint')}
+        </Text>
+      </Box>
+      <DeliveryLog deliveries={data?.deliveries ?? []} pending={isPending} />
+    </Surface>
   );
 }
 

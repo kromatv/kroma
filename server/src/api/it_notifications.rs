@@ -1076,3 +1076,162 @@ async fn the_bench_refuses_a_link_or_an_image_url_the_relay_would_reject() {
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
     assert_eq!(inbox["unread"], json!(0));
 }
+
+const ENDPOINT: &str = "https://push.example/wpush/v2/records";
+
+async fn one_failed_push(t: &TestApp, session: &str) {
+    send(
+        &t.app,
+        "POST",
+        "/api/push/subscribe",
+        Some(session),
+        Some(subscription(ENDPOINT)),
+    )
+    .await;
+    send(
+        &t.app,
+        "POST",
+        "/api/push/test",
+        Some(session),
+        Some(json!({})),
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn a_push_that_went_nowhere_is_on_the_record_with_the_reason() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "record1");
+    one_failed_push(&t, &ana).await;
+
+    let (status, body) = get(&t.app, "/api/notifications/deliveries", Some(&ana)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    let row = &body["deliveries"][0];
+    assert_eq!(row["status"], json!("failed"));
+    assert_eq!(row["device"], json!("Firefox on Mac"));
+    assert_eq!(row["transport"], json!("webpush"));
+    assert!(!row["error"].as_str().unwrap_or_default().is_empty());
+}
+
+#[tokio::test]
+async fn an_address_a_push_service_quoted_back_reaches_neither_view() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "record6");
+    one_failed_push(&t, &ana).await;
+    let sub = {
+        let conn = t.state.db.get().unwrap();
+        kroma_db::push_subs::find_by_endpoint(&conn, ENDPOINT)
+            .unwrap()
+            .unwrap()
+    };
+
+    crate::services::notify::record::attempt(
+        &t.state,
+        "n1",
+        &sub,
+        crate::model::DeliveryStatus::Failed,
+        Some(format!("BadDeviceToken: {ENDPOINT} is not registered")),
+    );
+
+    let (_, own) = get(&t.app, "/api/notifications/deliveries", Some(&ana)).await;
+    let (_, admin) = get(
+        &t.app,
+        "/api/admin/notifications/deliveries",
+        Some(&t.token),
+    )
+    .await;
+    for (whose, body) in [("the reader's", own), ("the admin's", admin)] {
+        let text = body.to_string();
+        assert!(
+            text.contains("BadDeviceToken"),
+            "{whose} view lost the reason"
+        );
+        assert!(
+            !text.contains(ENDPOINT),
+            "{whose} view carried the endpoint"
+        );
+        assert!(
+            !text.contains("/wpush/v2/records"),
+            "{whose} view carried its path"
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_delivery_record_names_the_device_and_never_its_address() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "record2");
+    one_failed_push(&t, &ana).await;
+
+    let (_, own) = get(&t.app, "/api/notifications/deliveries", Some(&ana)).await;
+    let (_, admin) = get(
+        &t.app,
+        "/api/admin/notifications/deliveries",
+        Some(&t.token),
+    )
+    .await;
+
+    let registered = subscription(ENDPOINT);
+    let credentials =
+        ["endpoint", "p256dh", "auth"].map(|field| registered[field].as_str().unwrap().to_string());
+    for (whose, body) in [("the reader's", own), ("the admin's", admin)] {
+        let text = body.to_string();
+        for credential in &credentials {
+            assert!(
+                !text.contains(credential),
+                "{whose} view carried a credential"
+            );
+        }
+        assert!(
+            text.contains("Firefox on Mac"),
+            "{whose} view named no device"
+        );
+    }
+}
+
+#[tokio::test]
+async fn the_record_is_scoped_to_the_caller_like_the_inbox_it_explains() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "record3");
+    let (_id2, bo) = member(&t, "record4");
+    one_failed_push(&t, &ana).await;
+
+    let (_, theirs) = get(&t.app, "/api/notifications/deliveries", Some(&bo)).await;
+
+    assert_eq!(theirs["deliveries"].as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn the_admin_sees_whose_device_each_attempt_was_and_a_member_sees_nothing() {
+    let t = test_app();
+    let (ana_id, ana) = member(&t, "record5");
+    one_failed_push(&t, &ana).await;
+
+    let (status, body) = get(
+        &t.app,
+        "/api/admin/notifications/deliveries",
+        Some(&t.token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["deliveries"][0]["account"]["id"], json!(ana_id));
+    assert_eq!(
+        body["deliveries"][0]["account"]["username"],
+        json!("record5")
+    );
+    let (refused, _) = get(&t.app, "/api/admin/notifications/deliveries", Some(&ana)).await;
+    assert_eq!(refused, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn the_record_requires_a_session() {
+    let t = test_app();
+
+    let (own, _) = get(&t.app, "/api/notifications/deliveries", None).await;
+    let (admin, _) = get(&t.app, "/api/admin/notifications/deliveries", None).await;
+
+    assert_eq!(own, StatusCode::UNAUTHORIZED);
+    assert_eq!(admin, StatusCode::UNAUTHORIZED);
+}

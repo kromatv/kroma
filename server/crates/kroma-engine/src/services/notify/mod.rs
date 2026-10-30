@@ -11,6 +11,7 @@
 pub mod art;
 pub mod digest;
 pub mod push;
+pub mod record;
 pub mod render;
 pub mod subject;
 
@@ -18,7 +19,7 @@ use kroma_db::notifications::StoredNotification;
 use kroma_module_host::{Event, HostStorage};
 use serde_json::json;
 
-use kroma_domain::{Audience, NotificationSpec, User};
+use kroma_domain::{Audience, DeliveryStatus, NotificationSpec, User};
 
 use crate::db;
 use crate::services::jobs::now_ms;
@@ -145,7 +146,10 @@ fn deliver<S: HostStorage>(
 
     // Then the device, best-effort: the row is already written, so a push
     // service being down costs a push, not the notification.
-    if push_allowed && db::notifications::claim_push(&conn, &stored.id, now)? {
+    if !push_allowed {
+        drop(conn);
+        record::withheld(state, &user.id, &stored.id, DeliveryStatus::SkippedMuted);
+    } else if db::notifications::claim_push(&conn, &stored.id, now)? {
         // Sized on the way out: the device fetches this URL itself, over its own
         // network, and a lock-screen thumbnail has no use for the master (see
         // `art`).
@@ -160,6 +164,9 @@ fn deliver<S: HostStorage>(
         ));
         drop(conn);
         push::deliver(state, push, &user.id, &rendered);
+    } else {
+        drop(conn);
+        record::withheld(state, &user.id, &stored.id, DeliveryStatus::Throttled);
     }
     Ok(true)
 }
@@ -358,11 +365,76 @@ mod tests {
     }
 
     #[test]
+    fn a_push_a_reader_muted_is_written_down_against_the_device_it_would_have_woken() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        register_device(&host, &ana);
+        db::notifications::set_prefs(
+            host.db(),
+            &ana,
+            &[kroma_domain::CategoryPref {
+                category: NotificationCategory::Requests,
+                in_app: true,
+                push: false,
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(emit(&host, &Audience::user(ana.clone()), &spec()), 1);
+
+        let conn = host.db().get().unwrap();
+        let written = db::notification_deliveries::deliveries_for_user(&conn, &ana, 10).unwrap();
+        assert_eq!(written.len(), 1);
+        assert_eq!(written[0].status, DeliveryStatus::SkippedMuted);
+        assert_eq!(written[0].device.as_deref(), Some("iPhone"));
+    }
+
+    #[test]
+    fn a_reader_with_no_device_registered_leaves_no_record_of_a_push_that_was_never_due() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        db::notifications::set_prefs(
+            host.db(),
+            &ana,
+            &[kroma_domain::CategoryPref {
+                category: NotificationCategory::Requests,
+                in_app: true,
+                push: false,
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(emit(&host, &Audience::user(ana.clone()), &spec()), 1);
+
+        let conn = host.db().get().unwrap();
+        assert!(db::notification_deliveries::deliveries_for_user(&conn, &ana, 10)
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
     fn an_unknown_user_id_notifies_nobody() {
         let host = recording_host();
         user(&host, "ana@t.dev", "Ana", &[]);
         assert_eq!(emit(&host, &Audience::user("ghost"), &spec()), 0);
         assert!(host.published().is_empty());
+    }
+
+    fn register_device(host: &RecordingHost, user_id: &str) {
+        db::push_subs::upsert_subscription(
+            host.db(),
+            &kroma_db::push_subs::NewSubscription {
+                id: "sub-1".into(),
+                user_id: user_id.to_string(),
+                transport: kroma_domain::PushTransport::WebPush,
+                endpoint: "https://push.example/1".into(),
+                p256dh: None,
+                auth: None,
+                device: Some("iPhone".into()),
+            },
+            1,
+        )
+        .unwrap();
     }
 
     fn failing_job() -> NotificationSpec {
@@ -425,6 +497,58 @@ mod tests {
             .unwrap();
         assert!(pushed.is_some());
         assert!(!db::notifications::claim_push(&conn, &rows(&host, &ana)[0].id, 0).unwrap());
+    }
+
+    #[test]
+    fn a_repeat_the_throttle_held_back_is_recorded_as_throttled_against_the_row_it_folded_into() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        register_device(&host, &ana);
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+
+        let row = rows(&host, &ana)[0].id.clone();
+        let conn = host.db().get().unwrap();
+        let written = db::notification_deliveries::deliveries_for_user(&conn, &ana, 10).unwrap();
+        let throttled: Vec<_> = written
+            .iter()
+            .filter(|d| d.status == DeliveryStatus::Throttled)
+            .collect();
+        assert_eq!(throttled.len(), 1);
+        assert_eq!(throttled[0].notification_id.as_deref(), Some(row.as_str()));
+        assert!(!written
+            .iter()
+            .any(|d| d.status == DeliveryStatus::SkippedMuted));
+    }
+
+    #[test]
+    fn a_muted_repeat_is_recorded_against_the_row_it_folded_into() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        register_device(&host, &ana);
+        db::notifications::set_prefs(
+            host.db(),
+            &ana,
+            &[kroma_domain::CategoryPref {
+                category: failing_job().category(),
+                in_app: true,
+                push: false,
+            }],
+        )
+        .unwrap();
+
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+        emit(&host, &Audience::user(ana.clone()), &failing_job());
+
+        let row = rows(&host, &ana)[0].id.clone();
+        let conn = host.db().get().unwrap();
+        let written = db::notification_deliveries::deliveries_for_user(&conn, &ana, 10).unwrap();
+        assert_eq!(written.len(), 2);
+        assert!(written.iter().all(|d| {
+            d.status == DeliveryStatus::SkippedMuted
+                && d.notification_id.as_deref() == Some(row.as_str())
+        }));
     }
 
     #[test]
