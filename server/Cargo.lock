@@ -2083,6 +2083,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "kroma-http",
+ "kroma-sandbox",
  "kroma-testing",
  "tokio",
 ]
@@ -2321,6 +2322,14 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "kroma-sandbox"
+version = "0.1.0"
+dependencies = [
+ "kroma-testing",
+ "libc",
 ]
 
 [[package]]

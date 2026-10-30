@@ -12,4 +12,5 @@ tokio = { workspace = true }
 kroma-http = { workspace = true }
 
 [dev-dependencies]
+kroma-sandbox = { workspace = true }
 kroma-testing = { workspace = true }

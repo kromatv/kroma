@@ -1,12 +1,12 @@
-//! Starting a sidecar with no network of its own: a fresh user and network
+//! Starting a process with no network of its own: a fresh user and network
 //! namespace that holds nothing but loopback, so the only way out is a Unix
-//! socket the core put on the filesystem. Linux only, and only where the
+//! socket the caller put on the filesystem. Linux only, and only where the
 //! kernel lets an unprivileged process create namespaces.
 
 use std::process::Command;
 use std::sync::OnceLock;
 
-/// Whether this machine can start a module with no network, probed once by
+/// Whether this machine can start a process with no network, probed once by
 /// starting `true` that way.
 pub fn network_isolation_available() -> bool {
     static AVAILABLE: OnceLock<bool> = OnceLock::new();
@@ -18,7 +18,10 @@ pub fn network_isolation_available() -> bool {
 }
 
 #[cfg(target_os = "linux")]
-pub(crate) fn isolate_network(command: &mut Command) {
+/// Make `command` start in a fresh user and network namespace that holds only
+/// loopback, keeping its uid and gid. The spawn fails when the kernel refuses;
+/// check [`network_isolation_available`] first.
+pub fn isolate_network(command: &mut Command) {
     use std::os::unix::process::CommandExt;
 
     // SAFETY: getuid and getgid cannot fail and touch no memory.
@@ -42,7 +45,7 @@ pub(crate) fn isolate_network(command: &mut Command) {
 }
 
 #[cfg(not(target_os = "linux"))]
-pub(crate) fn isolate_network(_command: &mut Command) {}
+pub fn isolate_network(_command: &mut Command) {}
 
 #[cfg(target_os = "linux")]
 unsafe fn write_proc(path: &std::ffi::CStr, contents: &[u8]) -> std::io::Result<()> {
