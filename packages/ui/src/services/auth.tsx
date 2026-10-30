@@ -81,7 +81,12 @@ function refreshExchange(
       saveSession({ ...active, user: res.user });
       return res.token;
     })
-    .catch(() => {
+    .catch((error: unknown) => {
+      // A restart, proxy 502, or offline connection says nothing about the
+      // access token. Keep the account active so live pages can reconnect.
+      if (!(error instanceof KromaApiError) || ![401, 403].includes(error.status)) {
+        return undefined;
+      }
       // The access token is dead (revoked/expired, or a PIN was added
       // elsewhere so no-PIN exchange 401s). Drop the session so the login
       // gate reappears instead of a zombie 'signed-in' state that 401s every
@@ -140,8 +145,12 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
         if (cancelled) return;
         adopt(active, res.token, res.user, res.mediaTicket);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return;
+        if (!(error instanceof KromaApiError) || ![401, 403].includes(error.status)) {
+          setSession(active);
+          return;
+        }
         // Can't silently resume (PIN required / token invalid): show the picker.
         client.setAuthToken();
         clearSession();

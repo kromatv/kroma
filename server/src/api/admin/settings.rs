@@ -60,9 +60,16 @@ pub async fn get_settings(
 pub async fn put_settings(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Json(patch): Json<BTreeMap<String, Value>>,
+    Json(mut patch): Json<BTreeMap<String, Value>>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
+    // Automatic installation requires discovery. Turning discovery off also
+    // revokes permission to install without a manual confirmation.
+    if patch.get("autoUpdate") == Some(&json!(false)) {
+        patch.insert("autoInstallUpdates".into(), json!(false));
+    } else if patch.get("autoInstallUpdates") == Some(&json!(true)) {
+        patch.insert("autoUpdate".into(), json!(true));
+    }
     let written = state.settings.set_patch(&state.db, patch);
     // The HLS engine caches its disk budget; refresh it so a new
     // `transcodeCacheLimit` takes effect live (next reaper sweep) without a restart.

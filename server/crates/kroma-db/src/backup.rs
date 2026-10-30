@@ -64,7 +64,12 @@ const TABLES: &[&str] = &[
 // `stats.lastSentAt` is the schedule of a machine that is not this one. The
 // `anonStats` switch itself DOES travel: it is an operator's objection, and an
 // objection that a restore throws away is not one.
-const NOT_PORTABLE: &[&str] = &["statsId", "stats.lastSentAt", "update.status"];
+const NOT_PORTABLE: &[&str] = &[
+    "statsId",
+    "stats.lastSentAt",
+    "update.status",
+    "update.operation",
+];
 
 fn not_portable_list() -> String {
     NOT_PORTABLE

@@ -329,7 +329,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           outputs: type=image,push=true,rewrite-timestamp=true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.kroma.package-version=${{ steps.payload.outputs.version }}
 
   # There is no attach-to-the-stable-release job here any more. This workflow
   # used to run on tags and upload the .spk itself, which had two costs. It

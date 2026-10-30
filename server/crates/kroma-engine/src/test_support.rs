@@ -472,6 +472,14 @@ pub(crate) fn test_state_with_releases(releases_url: &str) -> SharedState {
     })
 }
 
+pub(crate) fn test_state_with_updater(releases_url: &str) -> SharedState {
+    build_state_with(Point::absent("embedder"), None, Vec::new(), |config| {
+        config.releases_url = Some(releases_url.to_owned());
+        config.update_dir = Some(config.data_dir.join("update-bridge"));
+        config.install = crate::config::Install::Docker;
+    })
+}
+
 /// A fake TMDB, for the services that go through it.
 ///
 /// The base is a `#[cfg(test)]` override on `infra::metadata::client`, so the

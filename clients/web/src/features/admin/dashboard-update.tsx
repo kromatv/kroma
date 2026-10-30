@@ -1,6 +1,5 @@
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout } from '@kromatv/ui/kit';
-import { Linking } from 'react-native';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { RouteLink } from '#web/shared/ui/route-link';
@@ -27,12 +26,9 @@ export function UpdateCallout() {
           <Button variant="glass" size="sm" label={t('admin.updateBackup')} asChild>
             <RouteLink to="/admin/backup" />
           </Button>
-          <Button
-            variant="glass"
-            size="sm"
-            label={t('admin.updateNotes')}
-            onPress={() => void Linking.openURL(latest.url).catch(() => undefined)}
-          />
+          <Button variant="primary" size="sm" label={t('admin.updatesOpen')} asChild>
+            <RouteLink to="/admin/updates" />
+          </Button>
         </Callout.Actions>
       </Callout.Root>
     </Box>
