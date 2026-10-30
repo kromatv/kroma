@@ -2,7 +2,7 @@
 //! kept a few seconds per purpose, host and port so a burst asks once.
 
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use kroma_http::egress::{Decision, Outgoing, Ruling};
@@ -57,7 +57,7 @@ impl<A: Fn(&NetworkAsk) -> Asked> Gate<A> {
                 return Decision::Block("the core's network policy is unreachable".into()).into();
             }
         };
-        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
         if cache.len() >= MAX_CACHED {
             cache.clear();
         }
@@ -66,7 +66,7 @@ impl<A: Fn(&NetworkAsk) -> Asked> Gate<A> {
     }
 
     fn cached(&self, key: &Key) -> Option<Ruling> {
-        let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
         let (at, ruling) = cache.get(key)?;
         (at.elapsed() < RULING_TTL).then(|| ruling.clone())
     }

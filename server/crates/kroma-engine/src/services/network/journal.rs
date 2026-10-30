@@ -4,7 +4,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 use crate::db::network_flows::{self, FlowTally};
 use crate::db::Pool;
@@ -65,13 +65,13 @@ impl Journal {
             rule: report.rule.map(|r| clipped(&r, MAX_RULE_CHARS)),
         };
         self.tally(&flow);
-        let mut recent = self.recent.lock().unwrap_or_else(|e| e.into_inner());
+        let mut recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
         recent.push_front(flow);
         recent.truncate(RECENT_CAPACITY);
     }
 
     pub fn recent(&self, filter: &FlowFilter) -> Vec<Flow> {
-        let recent = self.recent.lock().unwrap_or_else(|e| e.into_inner());
+        let recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
         recent
             .iter()
             .filter(|flow| filter.admits(flow))
@@ -82,7 +82,7 @@ impl Journal {
 
     /// Every `(caller, purpose)` pair the in-memory journal holds.
     pub fn recent_purposes(&self) -> Vec<(String, String)> {
-        let recent = self.recent.lock().unwrap_or_else(|e| e.into_inner());
+        let recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
         recent
             .iter()
             .map(|flow| (flow.caller.clone(), flow.purpose.clone()))
@@ -92,7 +92,7 @@ impl Journal {
     /// Write the tallies gathered since the last flush. A failed write keeps
     /// them for the next one.
     pub fn flush(&self, pool: &Pool) -> anyhow::Result<()> {
-        let taken = std::mem::take(&mut *self.pending.lock().unwrap_or_else(|e| e.into_inner()));
+        let taken = std::mem::take(&mut *self.pending.lock().unwrap_or_else(PoisonError::into_inner));
         let deltas: Vec<FlowTally> = taken
             .iter()
             .map(|(key, tally)| FlowTally {
@@ -110,7 +110,7 @@ impl Journal {
             .collect();
         let written = network_flows::add(pool, &deltas);
         if written.is_err() {
-            let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+            let mut pending = self.pending.lock().unwrap_or_else(PoisonError::into_inner);
             for (key, tally) in taken {
                 merge(pending.entry(key).or_default(), tally);
             }
@@ -132,7 +132,7 @@ impl Journal {
             bytes_out: saturating_i64(flow.bytes_out),
             last_at: flow.at,
         };
-        let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        let mut pending = self.pending.lock().unwrap_or_else(PoisonError::into_inner);
         if pending.len() >= MAX_PENDING_TALLIES && !pending.contains_key(&key) {
             return;
         }
