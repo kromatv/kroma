@@ -31,7 +31,8 @@ pub fn install_script(data_dir: &Path, body: &str) -> PathBuf {
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, body).unwrap();
     std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
-    std::fs::write(provision::version_path(data_dir), provision::VERSION).unwrap();
+    let asset = provision::asset().expect("a pinned wireproxy build for the test platform");
+    std::fs::write(provision::sha256_path(data_dir), asset.sha256).unwrap();
     path
 }
 
