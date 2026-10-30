@@ -421,6 +421,9 @@ jobs:
         continue-on-error: true
       - run: bun run ci tools ffmpeg
       - run: bun run ci rust clippy --only "${{ join(matrix.shard.workspaces, ',') }}"
+      # kroma-wasm-host's tests build their guest component for this target.
+      - run: rustup target add wasm32-wasip2
+        if: matrix.shard.name == 'server'
       # The credentials reach this step alone, not the install before it.
       - run: bun run ci rust test --only "${{ join(matrix.shard.workspaces, ',') }}"
         env:
@@ -438,6 +441,34 @@ jobs:
           path: server/lcov.info
           retention-days: 1
           if-no-files-found: error
+
+  # The wasm host's suite on all three desktop systems, since its claim is that
+  # a component is isolated the same on each. Not required, and no cache: a
+  # spike's three cold builds should not cost the 10 GB budget or block main.
+  wasm-host:
+    name: Wasm host (${{ matrix.os }})
+    needs: lanes
+    if: needs.lanes.outputs.rust == 'true'
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - name: Install the pinned toolchain and the guest target
+        run: |
+          cargo --version
+          rustup target add wasm32-wasip2
+      - run: cargo test -p kroma-wasm-host
+        working-directory: server
 
   # The required check: green when every Rust job is, with their coverage in
   # one report for the scan. Skipped, like the jobs, when no Rust can be
