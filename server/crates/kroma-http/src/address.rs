@@ -15,7 +15,29 @@ impl WebTarget {
     pub fn literal(&self) -> Option<IpAddr> {
         self.host.parse().ok()
     }
+
+    /// Whether the host is on the local network rather than the internet: a
+    /// non-public address, or a name no public resolver answers for (a single
+    /// label, `localhost`, or a suffix reserved for local use). A VPN tunnel
+    /// cannot reach these, so they are the traffic that stays direct.
+    pub fn is_local(&self) -> bool {
+        if let Some(ip) = self.literal() {
+            return !is_public(ip);
+        }
+        let host = self.host.trim_end_matches('.').to_ascii_lowercase();
+        !host.contains('.') || LOCAL_SUFFIXES.iter().any(|suffix| host.ends_with(suffix))
+    }
 }
+
+const LOCAL_SUFFIXES: [&str; 7] = [
+    ".local",
+    ".lan",
+    ".home",
+    ".home.arpa",
+    ".internal",
+    ".localdomain",
+    ".localhost",
+];
 
 /// The target of an absolute `http` or `https` URL. `None` for any other
 /// scheme, a URL with no host, or one carrying credentials (`user@host`),
@@ -185,6 +207,28 @@ mod tests {
             web_target("https://[2001:db8::1]/").unwrap().literal(),
             Some("2001:db8::1".parse().unwrap())
         );
+    }
+
+    #[test]
+    fn a_host_the_internet_cannot_answer_for_is_local() {
+        for url in [
+            "http://192.168.1.20:9117/api",
+            "http://jackett:9117/",
+            "http://localhost:8191/v1",
+            "http://nas.local/",
+            "http://flaresolverr.home.arpa:8191/",
+            "http://box.lan./",
+            "http://[fd00::1]/",
+        ] {
+            assert!(web_target(url).unwrap().is_local(), "{url}");
+        }
+        for url in [
+            "https://tracker.example.org/announce",
+            "https://1.1.1.1/",
+            "https://jackett.example.com/",
+        ] {
+            assert!(!web_target(url).unwrap().is_local(), "{url}");
+        }
     }
 
     #[test]
