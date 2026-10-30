@@ -117,16 +117,18 @@ elif [[ -n "$APPLE_ID" && -n "$APPLE_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
 fi
 
 notarize() {
-  local submission="$1"
+  local submission="$1" result
   if [[ "$NOTARY" = api-key ]]; then
-    xcrun notarytool submit "$submission" \
+    result=$(xcrun notarytool submit "$submission" \
       --key "$WORK/AuthKey_${ASC_KEY_ID}.p8" --key-id "$ASC_KEY_ID" \
-      --issuer "$ASC_ISSUER_ID" --wait
+      --issuer "$ASC_ISSUER_ID" --wait --output-format json)
   else
-    xcrun notarytool submit "$submission" \
+    result=$(xcrun notarytool submit "$submission" \
       --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
-      --team-id "$APPLE_TEAM_ID" --wait
+      --team-id "$APPLE_TEAM_ID" --wait --output-format json)
   fi
+  echo "$result"
+  require_accepted "$submission" "$result"
 }
 
 can_notarize() {
@@ -163,7 +165,7 @@ if [[ "$SIGN" = "true" ]]; then
     ditto -c -k --keepParent "$APP" "$WORK/app.zip"
     notarize "$WORK/app.zip"
     staple_and_validate "$APP"
-    echo "Notarized + stapled: $APP"
+    echo "Notarized: $APP"
   else
     echo "::warning::No ASC_* API key nor APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID; signed but NOT notarized."
   fi
