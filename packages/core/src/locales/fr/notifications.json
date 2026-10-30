@@ -56,6 +56,8 @@
   "notifications.request.denied.title": "Demande refusée",
   "notifications.request.submitted.body": "{user} a demandé {title}.",
   "notifications.request.submitted.title": "Nouvelle demande",
+  "notifications.resolved": "Réglée",
+  "notifications.resolvedBy": "Réglée par {user}",
   "notifications.settings": "Réglages des notifications",
   "notifications.system.disk.low.body": "Il ne reste que {free} sur {path}.",
   "notifications.system.disk.low.title": "Stockage presque plein",

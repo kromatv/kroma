@@ -136,11 +136,31 @@ async fn transition(
                 id: report.id.clone(),
                 status: report.status.as_str().into(),
             });
+            settle_review(&state, &report).await;
             notify_reporter(&state, &report).await;
             Ok(Json(report).into_response())
         }
         None => Err(lerr(loc, StatusCode::NOT_FOUND, "error.reportNotFound")),
     }
+}
+
+async fn settle_review(state: &SharedState, report: &Report) {
+    if report.status == ReportStatus::Open {
+        return;
+    }
+    let state = state.clone();
+    let subject = NotificationSubject::report(&report.id);
+    let by = report.resolved_by.clone();
+    let _ = blocking(move || {
+        kroma_engine::services::notify::resolve(
+            &state,
+            &subject,
+            NotificationEvent::ReportSubmitted,
+            by.as_deref(),
+        );
+        Ok(())
+    })
+    .await;
 }
 
 // Only the two TERMINAL outcomes are worth a notification: a reopen is internal

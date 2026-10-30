@@ -5,7 +5,7 @@
 use rusqlite::OptionalExtension;
 
 use super::{params, Connection, Result};
-use kroma_domain::PushCategory;
+use kroma_domain::{NotificationEvent, NotificationSubject, PushCategory};
 
 mod digest;
 mod preferences;
@@ -177,6 +177,23 @@ pub fn list_notifications(
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map(params![user_id, limit as i64], row_to_notification)?;
     rows.collect()
+}
+
+/// Mark every row about `subject` raised by `event` as settled, whoever holds
+/// it, and report how many moved. `by` is the account that settled it, `None`
+/// when the server did.
+pub fn resolve(
+    conn: &Connection,
+    subject: &NotificationSubject,
+    event: NotificationEvent,
+    by: Option<&str>,
+    now: i64,
+) -> rusqlite::Result<usize> {
+    conn.execute(
+        "UPDATE notifications SET resolved_at = ?4, resolved_by = ?5 \
+         WHERE subject_kind = ?1 AND subject_id = ?2 AND event = ?3 AND resolved_at IS NULL",
+        params![subject.kind, subject.id, event.as_str(), now, by],
+    )
 }
 
 /// How long one folded group waits between banners. Repeats in between update
@@ -372,6 +389,79 @@ mod tests {
         assert!(claim_push(&conn, "n1", PUSH_THROTTLE_MS).unwrap());
         assert!(claim_push(&conn, "loose", 0).unwrap());
         assert!(claim_push(&conn, "loose", 1).unwrap());
+    }
+
+    #[test]
+    fn settling_a_subject_reaches_every_recipient_that_holds_it() {
+        let (p, u1, u2) = pool();
+        let conn = p.get().unwrap();
+        let about = kroma_domain::NotificationSubject::request("req-7");
+        let mut asked = new("n1", 1_000);
+        asked.subject = Some(about.clone());
+        asked.event = NotificationEvent::RequestSubmitted;
+        insert_notification(&conn, &u1, &asked).unwrap();
+        asked.id = "n2".into();
+        insert_notification(&conn, &u2, &asked).unwrap();
+
+        let moved = resolve(&conn, &about, NotificationEvent::RequestSubmitted, Some("mod-1"), 9).unwrap();
+
+        assert_eq!(moved, 2);
+        for user in [&u1, &u2] {
+            let row = &list_notifications(&conn, user, 50, false).unwrap()[0];
+            assert_eq!(row.resolved_at, Some(9));
+            assert_eq!(row.resolved_by.as_deref(), Some("mod-1"));
+        }
+    }
+
+    #[test]
+    fn settling_leaves_another_subject_and_another_event_alone() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        let mut asked = new("n1", 1_000);
+        asked.subject = Some(kroma_domain::NotificationSubject::request("req-7"));
+        asked.event = NotificationEvent::RequestSubmitted;
+        insert_notification(&conn, &u1, &asked).unwrap();
+
+        let other = resolve(
+            &conn,
+            &kroma_domain::NotificationSubject::request("req-8"),
+            NotificationEvent::RequestSubmitted,
+            None,
+            9,
+        )
+        .unwrap();
+        let wrong_event = resolve(
+            &conn,
+            &kroma_domain::NotificationSubject::request("req-7"),
+            NotificationEvent::RequestApproved,
+            None,
+            9,
+        )
+        .unwrap();
+
+        assert_eq!((other, wrong_event), (0, 0));
+        assert_eq!(
+            list_notifications(&conn, &u1, 50, false).unwrap()[0].resolved_at,
+            None
+        );
+    }
+
+    #[test]
+    fn a_row_settled_once_keeps_the_account_that_settled_it() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        let about = kroma_domain::NotificationSubject::request("req-7");
+        let mut asked = new("n1", 1_000);
+        asked.subject = Some(about.clone());
+        asked.event = NotificationEvent::RequestSubmitted;
+        insert_notification(&conn, &u1, &asked).unwrap();
+        resolve(&conn, &about, NotificationEvent::RequestSubmitted, Some("ana"), 9).unwrap();
+
+        let again = resolve(&conn, &about, NotificationEvent::RequestSubmitted, Some("bo"), 20).unwrap();
+
+        assert_eq!(again, 0);
+        let row = &list_notifications(&conn, &u1, 50, false).unwrap()[0];
+        assert_eq!(row.resolved_by.as_deref(), Some("ana"));
     }
 
     #[test]

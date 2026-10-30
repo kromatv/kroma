@@ -3,30 +3,23 @@
 
 use kroma_sqlite::{Run, Step};
 
-pub(super) const STEPS: &[Step] = &[
-    Step {
-        name: "0002_upgrade_tasks",
-        run: Run::Sql(include_str!("steps/0002_upgrade_tasks.sql")),
-        rebuilds: false,
-    },
-    Step {
-        name: "0003_notification_subjects",
-        run: Run::Sql(include_str!("steps/0003_notification_subjects.sql")),
-        rebuilds: false,
-    },
-    Step {
-        name: "0004_notification_dedupe",
-        run: Run::Sql(include_str!("steps/0004_notification_dedupe.sql")),
-        rebuilds: false,
-    },
-    Step {
-        name: "0005_drop_item_probe_columns",
-        run: Run::Sql(include_str!("steps/0005_drop_item_probe_columns.sql")),
-        rebuilds: false,
-    },
-    Step {
-        name: "0006_notification_folding",
-        run: Run::Sql(include_str!("steps/0006_notification_folding.sql")),
-        rebuilds: false,
-    },
+// One name for the step and its file, so the two cannot drift apart and a step
+// reads as the one line it is.
+macro_rules! sql_steps {
+    ($($name:literal),+ $(,)?) => {
+        &[$(Step {
+            name: $name,
+            run: Run::Sql(include_str!(concat!("steps/", $name, ".sql"))),
+            rebuilds: false,
+        }),+]
+    };
+}
+
+pub(super) const STEPS: &[Step] = sql_steps![
+    "0002_upgrade_tasks",
+    "0003_notification_subjects",
+    "0004_notification_dedupe",
+    "0005_drop_item_probe_columns",
+    "0006_notification_folding",
+    "0007_notification_resolve",
 ];

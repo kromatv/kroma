@@ -36,6 +36,8 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
         group_key: None,
         count: 1,
         updated_at: created_at,
+        resolved_at: None,
+        resolved_by: None,
         link: Some("/movie/ab12".into()),
         image_url: Some("https://img/p.jpg".into()),
         actions: vec![ActionSpec {

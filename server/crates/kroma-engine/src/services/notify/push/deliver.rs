@@ -73,6 +73,8 @@ pub fn send_test<S: HostStorage>(state: &S, user: &User) -> anyhow::Result<usize
         actions: Vec::new(),
         push_category: None,
         read: false,
+        resolved: false,
+        resolved_by: None,
         count: 1,
         created_at: now_ms(),
         updated_at: now_ms(),

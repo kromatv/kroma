@@ -101,6 +101,13 @@ export function NotificationRow({
             {row.count > 1 ? (
               <Text style={s.repeat}>{t('notifications.repeatCount', { count: row.count })}</Text>
             ) : null}
+            {row.resolved ? (
+              <Text style={s.repeat}>
+                {row.resolvedBy
+                  ? t('notifications.resolvedBy', { user: row.resolvedBy.name })
+                  : t('notifications.resolved')}
+              </Text>
+            ) : null}
           </Box>
         </Box>
       </Pressable>

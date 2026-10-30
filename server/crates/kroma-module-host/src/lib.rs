@@ -41,7 +41,7 @@ use axum::Json;
 pub use async_trait::async_trait;
 pub use kroma_module_wire::{
     ActionKind, ActionSpec, ActionStyle, Audience, NotificationCategory, NotificationEvent,
-    NotificationSpec, PushCategory,
+    NotificationSpec, NotificationSubject, PushCategory,
 };
 
 /// Build a JSON error response `{ "error": "<message>" }` with the given status.

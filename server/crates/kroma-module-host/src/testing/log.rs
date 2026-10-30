@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use kroma_module_wire::{Audience, NotificationSpec};
+use kroma_module_wire::{Audience, NotificationEvent, NotificationSpec, NotificationSubject};
 
 /// One thing that went onto the event bus: the addressee (`None` for a
 /// broadcast) and the event's topic.
@@ -37,6 +37,19 @@ macro_rules! records_into_log {
                 .push((audience.clone(), spec.clone()));
             1
         }
+        fn resolve_notifications(
+            &self,
+            subject: &kroma_module_wire::NotificationSubject,
+            event: kroma_module_wire::NotificationEvent,
+            by: Option<&str>,
+        ) -> usize {
+            self.log.resolved.lock().unwrap().push((
+                subject.clone(),
+                event,
+                by.map(str::to_string),
+            ));
+            1
+        }
     };
 }
 
@@ -48,6 +61,7 @@ pub(super) use records_into_log;
 pub(super) struct Log {
     pub(super) published: Mutex<Vec<Published>>,
     pub(super) notified: Mutex<Vec<(Audience, NotificationSpec)>>,
+    pub(super) resolved: Mutex<Vec<(NotificationSubject, NotificationEvent, Option<String>)>>,
     pub(super) jobs: Mutex<Vec<(&'static str, &'static str)>>,
     pub(super) settings_written: Mutex<Vec<BTreeMap<String, serde_json::Value>>>,
 }

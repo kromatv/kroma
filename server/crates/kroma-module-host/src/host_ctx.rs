@@ -9,7 +9,8 @@ use axum::http::StatusCode;
 use axum::response::Response;
 
 use kroma_module_wire::{
-    Audience, EpisodeInfo, MatchCandidate, NotificationSpec, Permission, User,
+    Audience, EpisodeInfo, MatchCandidate, NotificationEvent, NotificationSpec,
+    NotificationSubject, Permission, User,
 };
 
 use super::{Contribution, Event, LibraryFolders};
@@ -51,6 +52,15 @@ pub trait HostCtx: Send + Sync + 'static {
     // `NotificationSpec::custom`; the core resolves the audience and honours
     // each recipient's per-category preferences.
     fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize;
+    // Say that a subject no longer needs anyone: every row about it raised by
+    // `event` loses its actions and names who settled it, for every recipient.
+    // Returns how many rows moved.
+    fn resolve_notifications(
+        &self,
+        subject: &NotificationSubject,
+        event: NotificationEvent,
+        by: Option<&str>,
+    ) -> usize;
     // Trigger a background job by its key (e.g. `"acquisition.import"`). No-op if
     // the key is unknown or already running.
     fn trigger_job(&self, key: &'static str, reason: &'static str);
@@ -139,6 +149,14 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize {
         (**self).notify(audience, spec)
     }
+    fn resolve_notifications(
+        &self,
+        subject: &NotificationSubject,
+        event: NotificationEvent,
+        by: Option<&str>,
+    ) -> usize {
+        (**self).resolve_notifications(subject, event, by)
+    }
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         (**self).trigger_job(key, reason)
     }
@@ -200,6 +218,14 @@ mod tests {
             "notifications.request.approved.body",
         );
         assert_eq!(via_arc.notify(&Audience::user("ana"), &spec), 1);
+        assert_eq!(
+            via_arc.resolve_notifications(
+                &NotificationSubject::request("req-7"),
+                NotificationEvent::RequestSubmitted,
+                Some("ana"),
+            ),
+            1
+        );
 
         assert_eq!(
             host.published(),
@@ -270,6 +296,15 @@ mod tests {
         }
         fn notify(&self, _audience: &Audience, _spec: &NotificationSpec) -> usize {
             self.note("notify");
+            7
+        }
+        fn resolve_notifications(
+            &self,
+            _subject: &NotificationSubject,
+            _event: NotificationEvent,
+            _by: Option<&str>,
+        ) -> usize {
+            self.note("resolve_notifications");
             7
         }
         fn trigger_job(&self, key: &'static str, _reason: &'static str) {
