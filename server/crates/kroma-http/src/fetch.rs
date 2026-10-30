@@ -233,6 +233,9 @@ impl Fetch {
             // dual-stack host can otherwise resolve to an AAAA the tunnel can't route.
             config.push_str("ipv4\n");
             config.push_str(&option_line("socks5-hostname", proxy));
+            // An empty list overrides `NO_PROXY`, which would otherwise send
+            // every host it names around the tunnel, direct.
+            config.push_str(&option_line("noproxy", ""));
         }
         if let Some((user, password)) = &self.digest {
             config.push_str("digest\n");
@@ -290,6 +293,14 @@ mod tests {
             with_credentials.contains("socks5-hostname = \"kroma:secret@127.0.0.1:1080\"\n"),
             "{with_credentials}"
         );
+    }
+
+    #[test]
+    fn no_host_bypasses_the_proxy_whatever_no_proxy_says() {
+        let config = Fetch::new().socks5("127.0.0.1:25345").base_config();
+
+        assert!(config.contains("noproxy = \"\"\n"), "{config}");
+        assert!(!Fetch::new().base_config().contains("noproxy"));
     }
 
     #[test]
