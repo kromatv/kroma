@@ -2078,6 +2078,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-egress"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kroma-http",
+ "kroma-testing",
+ "tokio",
+]
+
+[[package]]
 name = "kroma-engine"
 version = "0.1.0"
 dependencies = [
