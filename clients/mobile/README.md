@@ -141,9 +141,9 @@ Files stay under 300 lines (repo-wide rule), which is why `downloads`, `session`
 ## In the release pipeline
 
 Every push to `main` runs `.github/workflows/release.yml`, whose `mobile` job
-calls `_release-mobile.yml` to build the `.apk` and `.ipa` and push them to the
-two beta channels [`BETA.md`](../../BETA.md) points testers at: Firebase App
-Distribution and TestFlight. The `.spk` is a different workflow
+calls `_release-mobile.yml` to build the `.apk`, `.aab` and `.ipa`. The beta
+channels [`BETA.md`](../../BETA.md) points testers at are Google Play (see
+[`docs/play-store.md`](../../docs/play-store.md)) and TestFlight. The `.spk` is a different workflow
 (`.github/workflows/synology.yml`).
 
 Local builds are still `bun run ios` / `bun run android`. `app.json`'s `version`

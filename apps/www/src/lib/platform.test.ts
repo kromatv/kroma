@@ -36,13 +36,13 @@ describe('guessPlatform', () => {
   });
 
   it('sends a television to its own package rather than to Android', () => {
-    expect(guessPlatform(UA.androidTv)).toMatchObject({ family: 'tv', targets: ['androidtv'] });
+    expect(guessPlatform(UA.androidTv)).toMatchObject({ family: 'tv', targets: [] });
     expect(guessPlatform(UA.tizen)).toMatchObject({ family: 'tv', targets: ['tizen'] });
     expect(guessPlatform(UA.webos)).toMatchObject({ family: 'tv', targets: ['webos'] });
   });
 
-  it('sends a phone to its family, and an iPhone to no file at all', () => {
-    expect(guessPlatform(UA.android)).toMatchObject({ family: 'mobile', targets: ['android'] });
+  it('sends a phone to its family and offers no file to install by hand', () => {
+    expect(guessPlatform(UA.android)).toMatchObject({ family: 'mobile', targets: [] });
     expect(guessPlatform(UA.iphone)).toMatchObject({ family: 'mobile', targets: [] });
   });
 

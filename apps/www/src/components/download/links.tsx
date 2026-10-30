@@ -10,10 +10,13 @@ export const docs = {
 /**
  * One TestFlight beta serves both Apple platforms: an Apple TV cannot open a
  * link, so a tester joins on a phone and the television offers the same app.
+ * Google Play's closed test takes two steps: the group grants access, the opt-in
+ * page turns it on for that Google account.
  */
 export const join = {
   testflight: 'https://testflight.apple.com/join/ZjgQdunW',
-  firebase: 'https://appdistribution.firebase.dev/i/3aa500cefb6aeb83',
+  playGroup: 'https://groups.google.com/g/kroma-android-beta',
+  playOptIn: 'https://play.google.com/apps/testing/tv.kroma.app',
 } as const;
 
 export interface ProseLinkProps {
