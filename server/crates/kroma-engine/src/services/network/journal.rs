@@ -3,11 +3,11 @@
 //! database on [`Journal::flush`] so it outlives a restart.
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 
-use crate::db::Pool;
 use crate::db::network_flows::{self, FlowTally};
+use crate::db::Pool;
 
 use super::flow::{Flow, FlowFilter, FlowReport, FlowRoute};
 

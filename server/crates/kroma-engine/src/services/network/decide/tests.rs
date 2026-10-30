@@ -1,10 +1,16 @@
 use super::*;
 
+const OWN_PORTS: [u16; 2] = [4040, 25345];
+
 fn target(host: &str) -> WebTarget {
+    target_at(host, 443)
+}
+
+fn target_at(host: &str, port: u16) -> WebTarget {
     WebTarget {
         https: true,
         host: host.to_string(),
-        port: 443,
+        port,
     }
 }
 
@@ -37,7 +43,7 @@ fn assert_verdict(
     (caller, purpose, host): (&str, &str, &str),
     expected: (Action, Option<&str>),
 ) {
-    let (action, rule) = decide(rules, caller, purpose, &target(host));
+    let (action, rule) = decide(rules, caller, purpose, &target(host), &OWN_PORTS);
     assert_eq!(
         (action, rule.as_deref()),
         expected,
@@ -106,7 +112,7 @@ fn a_rule_scoped_to_a_caller_leaves_every_other_caller_alone() {
 }
 
 #[test]
-fn a_suffix_pattern_matches_every_name_under_it_and_not_the_suffix_itself() {
+fn a_suffix_pattern_matches_the_domain_and_every_name_under_it() {
     let rules = policy(
         DefaultAction::Allow,
         vec![rule(
@@ -122,14 +128,14 @@ fn a_suffix_pattern_matches_every_name_under_it_and_not_the_suffix_itself() {
         ("cdn.ads.example", Action::Block),
         ("a.b.ads.example", Action::Block),
         ("CDN.Ads.Example.", Action::Block),
-        ("ads.example", Action::Direct),
+        ("ads.example", Action::Block),
         ("badads.example", Action::Direct),
         ("ads.example.org", Action::Direct),
     ];
 
     for (host, expected) in cases {
         assert_eq!(
-            decide(&rules, CORE, "artwork", &target(host)).0,
+            decide(&rules, CORE, "artwork", &target(host), &OWN_PORTS).0,
             expected,
             "{host}"
         );
@@ -195,7 +201,7 @@ fn a_link_local_address_is_refused_whatever_a_rule_says() {
 }
 
 #[test]
-fn loopback_is_refused_to_a_module_and_open_to_the_core() {
+fn this_servers_own_ports_are_refused_to_a_module_and_open_to_the_core() {
     let rules = policy(
         DefaultAction::Allow,
         vec![rule("allow-all", None, None, None, Action::Direct)],
@@ -207,16 +213,46 @@ fn loopback_is_refused_to_a_module_and_open_to_the_core() {
         "::1",
         "0.0.0.0",
         "::ffff:127.0.0.1",
+        "localhost",
+        "api.localhost.",
     ] {
-        assert_verdict(
-            &rules,
-            ("tv.kroma.engine.qbittorrent", "download-client", host),
-            (Action::Block, Some(GUARD_LOOPBACK)),
-        );
-        assert_verdict(
-            &rules,
-            (CORE, "push", host),
-            (Action::Direct, Some("allow-all")),
+        for port in OWN_PORTS {
+            let at = target_at(host, port);
+            assert_eq!(
+                decide(
+                    &rules,
+                    "tv.kroma.engine.qbittorrent",
+                    "download-client",
+                    &at,
+                    &OWN_PORTS
+                ),
+                (Action::Block, Some(GUARD_LOOPBACK.to_string())),
+                "{host}:{port}"
+            );
+            assert_eq!(
+                decide(&rules, CORE, "push", &at, &OWN_PORTS),
+                (Action::Direct, Some("allow-all".to_string())),
+                "{host}:{port}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_download_client_on_this_machine_stays_reachable() {
+    let rules = policy(DefaultAction::Allow, Vec::new());
+
+    for host in ["127.0.0.1", "localhost", "::1"] {
+        assert_eq!(
+            decide(
+                &rules,
+                "tv.kroma.engine.qbittorrent",
+                "download-client",
+                &target_at(host, 8080),
+                &OWN_PORTS
+            ),
+            (Action::Direct, None),
+            "{host}"
         );
     }
 }

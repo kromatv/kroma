@@ -6,8 +6,8 @@ use kroma_module_host::{
     NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkRoute,
 };
 
-use super::Network;
 use super::flow::{FlowReport, FlowRoute};
+use super::Network;
 
 impl NetworkPolicy for Network {
     fn decide(&self, caller: &str, ask: &NetworkAsk) -> NetworkAnswer {
