@@ -292,6 +292,7 @@ pub fn router(
     let host = kroma_module_supervisor::host_router::<SharedState>(
         supervisor.clone(),
         kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
+        kroma_module_host::NetworkPolicyOf(state.network.clone()),
     )
     .merge(host_jobs::routes())
     .merge(host_events::routes(

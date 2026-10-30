@@ -43,6 +43,10 @@ impl Caller {
         }
     }
 
+    pub(super) fn module(&self) -> Option<&str> {
+        self.module.as_deref()
+    }
+
     pub(super) fn name(&self) -> &str {
         self.module.as_deref().unwrap_or("an unnamed caller")
     }
