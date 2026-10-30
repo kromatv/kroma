@@ -15,7 +15,7 @@ The listing copy and uploadable PNGs use the Fastlane metadata layout under
 | Three TV screenshots | 1920 × 1080, 16:9 |
 
 The three screenshots tell a sequence: movie collection, movie details,
-and series with episodes. French exports have French marketing
+and the home screen. French exports have French marketing
 captions and the same English app captures. The metadata explains that KROMA
 requires a compatible server and the user's own media.
 
@@ -36,10 +36,12 @@ the fixed store canvases without a web server or an external design service.
 ## Native captures
 
 `captures/android-phone` contains original 1080 × 2400 PNGs from the current
-Android release build on an Android 14 emulator. The app connects to an isolated
-built-in demo catalogue and a fictional profile, with no household account or
-private library. The artwork is the demo catalogue's TMDB metadata; those titles
-are examples of a personal library and are not included with KROMA.
+Android release build on an Android 14 emulator. The app connects to a throwaway
+server whose library is only Blender open movies, with no household account or
+private library, so no commercial artwork reaches the listing. Do not recapture
+them against the built-in demo catalogue: it seeds commercial posters. Avoid
+detail pages with cast photos, so no real person appears on the listing. Spring
+and Big Buck Bunny have none.
 
 The export places each native capture in a simple frame and crops the Android
 system status/navigation bars. The app's interface and data are preserved.
