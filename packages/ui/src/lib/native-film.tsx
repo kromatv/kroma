@@ -2,16 +2,32 @@ import { styles, useStyles } from '#ui/core/styles';
 import { useInputGate } from '#ui/lib/input-gate';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, type HWEvent, StyleSheet, useTVEventHandler, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  type HWEvent,
+  StyleSheet,
+  useTVEventHandler,
+  View,
+} from 'react-native';
 import { EXIT_MS, SAFETY_SLACK_MS } from '#ui/lib/intro-timing';
 
 /** What `<NativeFilm>` takes. */
 export interface NativeFilmProps {
   videoSrc?: string;
+  /** Played instead of the landscape film when the window is taller than wide as
+   *  the film starts: a bundled asset (`require`) or a URL. */
+  portraitSrc?: number | string;
   onDone: () => void;
 }
 
 const FILM: number = require('../assets/kroma-intro-hevc-1080.mp4');
+
+function pickFilm(videoSrc?: string, portraitSrc?: number | string): number | string {
+  const { width, height } = Dimensions.get('window');
+  if (portraitSrc !== undefined && height > width) return portraitSrc;
+  return videoSrc ?? FILM;
+}
 
 const FALLBACK_HOLD_MS = 15_000;
 const AUDIO_FADE_STEPS = 8;
@@ -24,8 +40,8 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
   : () => {};
 
 /** The brand film over the app through the native video player; renders nothing in a browser, where `KromaIntro` plays it. */
-export function NativeFilm({ videoSrc, onDone }: Readonly<NativeFilmProps>) {
-  const source = videoSrc ?? FILM;
+export function NativeFilm({ videoSrc, portraitSrc, onDone }: Readonly<NativeFilmProps>) {
+  const [source] = useState(() => pickFilm(videoSrc, portraitSrc));
   const s = useStyles(sDefinition);
 
   const { holdInput } = useInputGate();
@@ -106,7 +122,7 @@ export function NativeFilm({ videoSrc, onDone }: Readonly<NativeFilmProps>) {
   });
 
   return (
-    <View style={s.stage}>
+    <View style={s.stage} onStartShouldSetResponder={() => true} onResponderRelease={exit}>
       <VideoView
         player={player}
         style={StyleSheet.absoluteFill}
