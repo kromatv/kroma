@@ -1,18 +1,27 @@
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, SegmentGroup } from '@kromatv/ui/kit';
+import { Box, SegmentGroup, useConfirm } from '@kromatv/ui/kit';
+import { useState } from 'react';
 import { NetworkConnections } from '#web/features/admin/network-connections';
 import { NetworkDestinations } from '#web/features/admin/network-destinations';
 import { NetworkListeners } from '#web/features/admin/network-listeners';
+import { RuleEditor } from '#web/features/admin/network-rule-editor';
 import { SettingsPage } from '#web/features/admin/settings';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 
-export const NETWORK_TABS = ['connections', 'destinations', 'listeners', 'settings'] as const;
+export const NETWORK_TABS = [
+  'connections',
+  'destinations',
+  'rules',
+  'listeners',
+  'settings',
+] as const;
 type NetworkTab = (typeof NETWORK_TABS)[number];
 
 const LABEL: Record<NetworkTab, MessageKey> = {
   connections: 'network.tabConnections',
   destinations: 'network.tabDestinations',
+  rules: 'network.tabRules',
   listeners: 'network.tabListeners',
   settings: 'network.tabSettings',
 };
@@ -33,9 +42,23 @@ export function NetworkPage(props: Readonly<NetworkPageProps>) {
 
 function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
   const t = useT();
+  const confirm = useConfirm();
+  const [rulesDirty, setRulesDirty] = useState(false);
 
-  const pick = (next: string) => {
-    if (isNetworkTab(next) && next !== tab) onTab(next);
+  const pick = async (next: string) => {
+    if (!isNetworkTab(next) || next === tab) return;
+    if (tab === 'rules' && rulesDirty) {
+      const leave = await confirm({
+        title: t('network.leaveTitle'),
+        message: t('network.leaveMessage'),
+        confirmLabel: t('network.discard'),
+        cancelLabel: t('network.stay'),
+        destructive: true,
+      });
+      if (!leave) return;
+      setRulesDirty(false);
+    }
+    onTab(next);
   };
 
   return (
@@ -45,7 +68,11 @@ function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
         <PageHeader.Subtitle>{t('network.pageSub')}</PageHeader.Subtitle>
       </PageHeader.Root>
       <Box mt={20} mb={20} align="flex-start">
-        <SegmentGroup.Root value={tab} onValueChange={pick} label={t('admin.pageNetwork')}>
+        <SegmentGroup.Root
+          value={tab}
+          onValueChange={(next) => void pick(next)}
+          label={t('admin.pageNetwork')}
+        >
           {NETWORK_TABS.map((one) => (
             <SegmentGroup.Item key={one} value={one}>
               <SegmentGroup.Label>{t(LABEL[one])}</SegmentGroup.Label>
@@ -55,6 +82,7 @@ function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
       </Box>
       {tab === 'connections' ? <NetworkConnections /> : null}
       {tab === 'destinations' ? <NetworkDestinations /> : null}
+      {tab === 'rules' ? <RuleEditor onDirtyChange={setRulesDirty} /> : null}
       {tab === 'listeners' ? <NetworkListeners /> : null}
       {tab === 'settings' ? (
         <SettingsPage
