@@ -5,7 +5,7 @@
 //! [`Network::install`] puts on `kroma_http`; a module sidecar asks over the
 //! host callback and reports its flows the same way.
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use kroma_http::address::WebTarget;
@@ -202,7 +202,7 @@ impl Network {
     }
 
     fn vpn_proxy(&self) -> Option<String> {
-        let cached = self.proxy.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let cached = self.proxy.lock().unwrap_or_else(PoisonError::into_inner).clone();
         if let Some((at, url)) = cached.as_ref() {
             if at.elapsed() < PROXY_TTL {
                 return url.clone();
@@ -213,7 +213,7 @@ impl Network {
             .call::<_, Option<String>>("url", &serde_json::json!({}))
             .flatten()
             .filter(|url| !url.trim().is_empty());
-        *self.proxy.lock().unwrap_or_else(|e| e.into_inner()) = Some((Instant::now(), url.clone()));
+        *self.proxy.lock().unwrap_or_else(PoisonError::into_inner) = Some((Instant::now(), url.clone()));
         url
     }
 }

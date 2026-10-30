@@ -3,7 +3,7 @@
 //! batch fills. The caller never waits on the send.
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::time::Duration;
 
 use kroma_http::egress::{Exchange, Route};
@@ -40,7 +40,7 @@ impl Reporter {
     }
 
     pub(crate) fn push(&self, exchange: Exchange) {
-        let mut buffer = self.buffer.lock().unwrap_or_else(|e| e.into_inner());
+        let mut buffer = self.buffer.lock().unwrap_or_else(PoisonError::into_inner);
         if buffer.len() >= MAX_BUFFERED {
             buffer.pop_front();
         }
@@ -51,11 +51,11 @@ impl Reporter {
     }
 
     fn next_batch(&self) -> Vec<NetworkFlow> {
-        let buffer = self.buffer.lock().unwrap_or_else(|e| e.into_inner());
+        let buffer = self.buffer.lock().unwrap_or_else(PoisonError::into_inner);
         let (mut buffer, _) = self
             .filled
             .wait_timeout_while(buffer, FLUSH_EVERY, |b| b.len() < BATCH)
-            .unwrap_or_else(|e| e.into_inner());
+            .unwrap_or_else(PoisonError::into_inner);
         let take = buffer.len().min(BATCH);
         buffer.drain(..take).collect()
     }
