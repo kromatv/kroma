@@ -2,6 +2,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Veil } from './veil';
+import { KitProvider } from '#ui/configure';
 import { parseRamps } from '#ui/lib/veil-bitmap';
 
 afterEach(() => {
@@ -72,5 +73,18 @@ describe('Veil on the browser targets', () => {
     const { container } = render(<Veil ramp="radial-gradient(black, white)" />);
     expect(container.querySelector('img')).toBeNull();
     expect(container.firstElementChild).not.toBeNull();
+  });
+
+  it('paints the ramp as CSS in a browser, where the page rasterizes on the GPU', () => {
+    const draw = vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL');
+
+    const { container } = render(
+      <KitProvider config={{ formFactor: 'browser' }}>
+        <Veil ramp={RAMP} />
+      </KitProvider>,
+    );
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(draw).not.toHaveBeenCalled();
   });
 });
