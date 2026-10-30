@@ -7,10 +7,16 @@
 # under packages/, and the web SPA lives under clients/):
 #     docker build -f server/Dockerfile -t kroma .
 #
-# `.git` is not in the build context, so the commit the admin page and the
-# anonymous heartbeat report comes from a build argument or not at all:
+# `.git` is not in the build context, so the commit the admin page, the anonymous
+# heartbeat and the web client's settings report comes from build arguments or not
+# at all:
 #     docker build -f server/Dockerfile \
-#       --build-arg KROMA_GIT_HASH="$(git rev-parse --short HEAD)" -t kroma .
+#       --build-arg KROMA_GIT_HASH="$(git rev-parse --short HEAD)" \
+#       --build-arg KROMA_GIT_HASH_FULL="$(git rev-parse HEAD)" \
+#       --build-arg KROMA_GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
+#       --build-arg KROMA_GIT_REMOTE="$(git config --get remote.origin.url)" \
+#       --build-arg KROMA_BUILD_DIRTY="$(test -z "$(git status --porcelain)" && echo 0 || echo 1)" \
+#       -t kroma .
 #
 # Run: a data volume + media bind-mounts, KROMA_MEDIA_DIRS pointing at them.
 # Mount media READ-WRITE if you use the built-in requests/downloads (the import
@@ -36,15 +42,19 @@ COPY . .
 # TanStack Start's SPA prerender spawns a render server on `localhost`; in a
 # container node resolves that to IPv6 (::1) while the crawler connects to IPv4
 # (127.0.0.1) -> ECONNREFUSED. Force IPv4 loopback so both agree.
-RUN bun install --frozen-lockfile \
-    && NODE_OPTIONS=--dns-result-order=ipv4first bun run build:web
+RUN bun install --frozen-lockfile
+ARG KROMA_GIT_HASH
+ARG KROMA_GIT_HASH_FULL
+ARG KROMA_GIT_BRANCH
+ARG KROMA_GIT_REMOTE
+ARG KROMA_BUILD_DIRTY
+RUN NODE_OPTIONS=--dns-result-order=ipv4first bun run build:web
 # → /app/clients/web/dist/client
 
 # ---- 2) Rust server --------------------------------------------------------
-FROM rust:1.96-bookworm AS builder
+FROM rust:1.98-bookworm AS builder
 WORKDIR /src
-# Warm the dependency cache (the default `whisper-local` feature pulls the candle
-# stack, which is slow) before copying sources so a code-only change reuses it.
+# Warm the dependency cache before copying sources so a code-only change reuses it.
 # The repo-root cargo config, BEFORE the warm-up build: it carries the
 # LIBSQLITE3_FLAGS every binary that links SQLite is built with, and cargo finds
 # it by walking up from /src/server. Missing here, the container would quietly
@@ -52,13 +62,8 @@ WORKDIR /src
 COPY .cargo ./.cargo
 COPY server/Cargo.toml server/Cargo.lock ./server/
 # The workspace members must be present for cargo to resolve the dependency
-# graph, otherwise the stub-main build below fails to solve. The server also
-# path-deps three modules across the workspace boundary (scene, whisper, vector
-# — see server/Cargo.toml), and each module include_str!s its module.json at
-# compile time, so copy the whole modules/ tree (its ui/ dirs are ignored by
-# cargo). It sits at the repo root now, not under server/.
+# graph, otherwise the stub-main build below fails to solve.
 COPY server/crates ./server/crates
-COPY modules ./modules
 # kroma-engine (a workspace member, so it's compiled by the warm-up build below)
 # embeds files from packages/ at compile time: the shared locale catalogs
 # (crates/kroma-engine/build.rs -> ../../../packages/core/src/locales/) and the
@@ -80,7 +85,7 @@ WORKDIR /src
 COPY packages ./packages
 COPY server ./server
 WORKDIR /src/server
-ARG KROMA_GIT_HASH=unknown
+ARG KROMA_GIT_HASH
 RUN touch src/main.rs && cargo build --locked --release
 # → /src/server/target/release/kroma-server
 
