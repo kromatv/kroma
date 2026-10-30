@@ -309,7 +309,12 @@ so a `unix:` transport is a new `Transport`, not a new seam.
 
 ### Declarations
 
-Manifest schema 3 adds a `network` block. A module that omits it gets no network at all.
+Manifest schema 3 adds a `permissions` block in the spirit of Deno's flags:
+`net`, `fs`, `run` and `env`, beside the `storage`, `settings` and point
+declarations that already exist. What is not declared is denied. The full
+model, and which tier enforces which permission, is in
+[module security](../module-security.md). The network part is what follows. A
+module that omits it gets no network at all.
 
 ```json
 "network": {
@@ -344,6 +349,39 @@ steered the same way.
 
 The install and update screens list a module's purposes and destinations in French before
 consent. An update that widens them asks again.
+
+### Networks and middleware
+
+A VPN is one case of a more general thing: a **network**, a named way out a
+module provides. A module answers the core-called point `network` with the
+networks it runs (a name, a SOCKS5 endpoint only the gateway can use, whether it
+carries UDP and DNS, its health). Rules name a network as their action, several
+networks can run at once, and a network can leave through another one by a rule
+on its own traffic. This replaces `tv.kroma.vpn/proxy` and lets an operator send
+the torrent engine through one country and the indexers through another.
+
+A module can also be **middleware** on the decision path, answering
+`network-policy/decide` after the guards and the rules. It can block a connection
+or move it to another network, never relax a decision, within 200 ms, seeing only
+caller, purpose, host and port. The contract for both points is in
+[network modules](../network-modules.md).
+
+### Analysing one module
+
+Every module can be analysed without the rest of the server. Its page under Admin
+→ Modules sets its declared permissions next to what the journal saw it do,
+refusals and undeclared attempts included. `kroma audit <module>` starts it alone
+in the sandbox behind a recording gateway and reports every connection and file
+access it attempted against its declaration. CI runs it on every first-party
+module.
+
+### Testing for leaks
+
+A leak suite starts a process in each tier and makes it try every way out: TCP
+and UDP to the internet and the LAN, IPv6, ICMP, DNS to the configured resolver,
+the host's loopback ports, abstract and pathname Unix sockets outside its own
+directory. Each attempt must fail and be recorded. It runs in CI wherever the
+runner offers namespaces, and says so where it does not.
 
 ### What the operator sees
 
@@ -386,6 +424,13 @@ Modules stop choosing their proxy.
 
 **Phase 3, contain.** Unix sockets for the module seam, the two strict tiers, the Watch
 scanner, manifest schema 3, the consent screen, and core-brokered module calls.
+
+**Phase 3b, permissions and audit.** The `permissions` block and its consent
+screen, filesystem and `run` enforcement in the namespace tier, `kroma audit`,
+the per-module view, and the leak suite in CI.
+
+**Phase 3c, networks and middleware.** The `network` and `network-policy`
+points, several networks at once, and the VPN module moved onto `network`.
 
 **Phase 4, UDP and inbound on a route.** A route that carries UDP, either a userspace
 WireGuard inside the gateway or a wireproxy replacement, so DHT and uTP can run sealed.

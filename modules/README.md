@@ -11,6 +11,13 @@ from a registry or by upload. A module is written the same way inside this
 repository (under `modules/`) and outside it (`bunx @kromatv/sdk create`, against the
 public `kroma` package).
 
+A module is contained: it reaches the network, the filesystem and the core only
+through what it declares. Read [module security](../docs/module-security.md) for
+the permissions it declares and how they are enforced,
+[networking](../docs/networking.md) for how its connections are decided and
+recorded, and [network modules](../docs/network-modules.md) to provide a network
+(a VPN, Tor) or to sit in the decision path as middleware.
+
 ## Layout
 
 Every module is one directory here, and its own cargo workspace: it builds
