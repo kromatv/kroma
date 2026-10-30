@@ -1,0 +1,168 @@
+//! One call, start to finish: the gate's ruling, curl, and the record the sink
+//! hears afterwards.
+
+use std::path::Path;
+use std::time::Instant;
+
+use anyhow::{bail, Result};
+
+use crate::address::{web_target, WebTarget};
+use crate::curl::run;
+use crate::egress::{self, Decision, Exchange, Outgoing, Route, Ruling, BLOCKED};
+use crate::pin::public_resolve_line;
+use crate::response::Response;
+
+use super::render::{bare_proxy, proxy_lines};
+use super::Fetch;
+
+const MAX_ERROR_CHARS: usize = 300;
+
+pub(super) struct Call<'a> {
+    method: &'static str,
+    bytes_out: u64,
+    output: Option<&'a Path>,
+}
+
+impl<'a> Call<'a> {
+    pub(super) fn get() -> Self {
+        Self {
+            method: "GET",
+            bytes_out: 0,
+            output: None,
+        }
+    }
+
+    pub(super) fn download(dest: &'a Path) -> Self {
+        Self {
+            output: Some(dest),
+            ..Self::get()
+        }
+    }
+
+    pub(super) fn post(bytes_out: u64) -> Self {
+        Self {
+            method: "POST",
+            bytes_out,
+            output: None,
+        }
+    }
+
+    fn bytes_in(&self, response: &Response) -> u64 {
+        match self.output {
+            Some(path) => std::fs::metadata(path).map_or(0, |meta| meta.len()),
+            None => response.body.len() as u64,
+        }
+    }
+}
+
+struct Sent<'a> {
+    call: Call<'a>,
+    target: Option<WebTarget>,
+    rule: Option<String>,
+    started: Instant,
+}
+
+impl Fetch {
+    pub(super) fn send(&self, call: Call<'_>, url: &str, mut config: String) -> Result<Response> {
+        let started = Instant::now();
+        let target = web_target(url);
+        let Ruling { decision, rule } = self.ruling(call.method, target.as_ref());
+        let sent = Sent {
+            call,
+            target,
+            rule,
+            started,
+        };
+        let proxy = match chosen_proxy(decision, self.socks5.as_deref()) {
+            Ok(proxy) => proxy,
+            Err(reason) => {
+                let refusal = anyhow::anyhow!("{BLOCKED}: {reason}");
+                self.report(sent, Route::Blocked, url, &Err(refusal));
+                bail!("{BLOCKED}: {reason}");
+            }
+        };
+        if let Some(proxy) = &proxy {
+            config.push_str(&proxy_lines(proxy));
+        }
+        let outcome = self.pinned(url, config).and_then(run);
+        let route = if proxy.is_some() {
+            Route::Proxy
+        } else {
+            Route::Direct
+        };
+        self.report(sent, route, url, &outcome);
+        outcome
+    }
+
+    fn ruling(&self, method: &'static str, target: Option<&WebTarget>) -> Ruling {
+        match target {
+            Some(target) => egress::decide(&Outgoing {
+                purpose: self.purpose,
+                method,
+                target: target.clone(),
+            }),
+            // A URL the gate cannot read (userinfo, another scheme) must not
+            // slip past it.
+            None if egress::gated() => {
+                Decision::Block("not a plain http or https URL".to_string()).into()
+            }
+            None => Decision::Direct.into(),
+        }
+    }
+
+    fn pinned(&self, url: &str, mut config: String) -> Result<String> {
+        if self.public_only {
+            config.push_str(&public_resolve_line(url)?);
+        }
+        Ok(config)
+    }
+
+    fn report(&self, sent: Sent<'_>, route: Route, url: &str, outcome: &Result<Response>) {
+        let (host, port) = sent
+            .target
+            .map_or((String::new(), 0), |target| (target.host, target.port));
+        let delivered = route != Route::Blocked;
+        egress::record(Exchange {
+            purpose: self.purpose,
+            method: sent.call.method,
+            status: outcome.as_ref().ok().map(|response| response.status),
+            bytes_in: outcome
+                .as_ref()
+                .map_or(0, |response| sent.call.bytes_in(response)),
+            bytes_out: if delivered { sent.call.bytes_out } else { 0 },
+            duration_ms: u64::try_from(sent.started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            error: outcome
+                .as_ref()
+                .err()
+                .map(|error| scrubbed(&format!("{error:#}"), url, &host)),
+            rule: sent.rule,
+            route,
+            host,
+            port,
+        });
+    }
+}
+
+pub(super) fn chosen_proxy(
+    decision: Decision,
+    own: Option<&str>,
+) -> Result<Option<String>, String> {
+    match decision {
+        Decision::Block(reason) => Err(reason),
+        Decision::Proxy(proxy) => bare_proxy(&proxy)
+            .map(Some)
+            .ok_or_else(|| "the network policy named an empty proxy".to_string()),
+        Decision::Direct => Ok(own.map(str::to_string)),
+    }
+}
+
+// The journal must never hold a URL's path, query or userinfo, and our own
+// errors (and some of curl's) quote the URL whole.
+pub(super) fn scrubbed(error: &str, url: &str, host: &str) -> String {
+    let scrubbed = if url.is_empty() {
+        error.to_string()
+    } else {
+        error.replace(url, host)
+    };
+    scrubbed.chars().take(MAX_ERROR_CHARS).collect()
+}
