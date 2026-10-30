@@ -130,13 +130,13 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
 
 /// Build a [`MediaItem`] base from a row selected with [`ITEM_COLS`]. The
 /// representative stream fields and `files[]` are filled in afterwards by
-/// [`attach_files`]; the legacy `items.v_*`/`a_*` columns are ignored (stream
-/// data now lives on `files`).
+/// [`attach_files`]; the legacy `items.v_bit_depth`/`a_*` columns are ignored
+/// (stream data lives on `files`).
 pub(crate) fn row_to_item(r: &Row) -> rusqlite::Result<MediaItem> {
-    let subs_json: String = r.get(14)?;
+    let subs_json: String = r.get(10)?;
     let subtitles: Vec<SubtitleTrack> = serde_json::from_str(&subs_json).unwrap_or_default();
 
-    let metadata = parse_metadata(r.get(25)?);
+    let metadata = parse_metadata(r.get(21)?);
 
     Ok(MediaItem {
         id: r.get(0)?,
@@ -149,16 +149,16 @@ pub(crate) fn row_to_item(r: &Row) -> rusqlite::Result<MediaItem> {
         audio: None,
         audio_tracks: Vec::new(),
         subtitles,
-        library: r.get(15)?,
-        show_id: r.get(16)?,
-        show_title: r.get(17)?,
-        season: r.get(18)?,
-        episode: r.get(19)?,
-        episode_end: r.get(20)?,
-        episode_title: r.get(21)?,
-        rel_path: r.get(22)?,
-        abs_path: r.get(23)?,
-        added_at: r.get(24)?,
+        library: r.get(11)?,
+        show_id: r.get(12)?,
+        show_title: r.get(13)?,
+        season: r.get(14)?,
+        episode: r.get(15)?,
+        episode_end: r.get(16)?,
+        episode_title: r.get(17)?,
+        rel_path: r.get(18)?,
+        abs_path: r.get(19)?,
+        added_at: r.get(20)?,
         metadata,
         files: Vec::new(),
         editions: Vec::new(),

@@ -184,6 +184,64 @@ mod tests {
         );
     }
 
+    fn item_columns(pool: &Pool) -> Vec<String> {
+        pool.get()
+            .unwrap()
+            .prepare("SELECT name FROM pragma_table_info('items')")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn init_takes_the_probe_columns_off_items_and_keeps_the_rows() {
+        let dir = kroma_testing::temp_dir("schema-item-probe");
+        let path = dir.path().join("kroma.db");
+        let old = legacy_database(&path);
+        old.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t');",
+                [],
+            )
+            .unwrap();
+        old.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at,v_codec,v_width) \
+                 VALUES ('m1','movie','Dune','mkv','lib','t','hevc',3840)",
+                [],
+            )
+            .unwrap();
+        drop(old);
+
+        let pool = init(&path).unwrap();
+
+        let gone = ["v_codec", "v_width", "v_height", "v_hdr"];
+        let left = item_columns(&pool);
+        assert!(
+            gone.iter().all(|name| !left.contains(&(*name).to_string())),
+            "{left:?}"
+        );
+        let title: String = pool
+            .get()
+            .unwrap()
+            .query_row("SELECT title FROM items WHERE id='m1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(title, "Dune");
+    }
+
+    #[test]
+    fn a_fresh_database_never_offers_the_probe_columns_on_items() {
+        let pool = crate::testing::temp_pool("schema-item-probe-fresh");
+
+        let left = item_columns(&pool);
+
+        assert!(!left.contains(&"v_codec".to_string()), "{left:?}");
+    }
+
     #[test]
     fn init_leaves_a_play_whose_title_has_left_the_catalog_blank() {
         let dir = kroma_testing::temp_dir("schema-history-gone");
