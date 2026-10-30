@@ -43,9 +43,8 @@ Other scripts (run with `bun run --filter '@kromatv/site' <script>`):
 | `build` | Prerender every page → `dist/client` (static) |
 | `preview` | Serve the built output locally |
 | `preview:edge` | Serve it through `wrangler dev` (the real edge runtime) |
-| `generate-routes` | `tsr generate` alone, when only the route tree changed |
 | `paraglide` | Recompile the message catalogs into `src/paraglide` |
-| `typecheck` | `paraglide` + `tsr generate` + `tsc --noEmit` |
+| `typecheck` | `paraglide` + `tsc --noEmit` |
 | `deploy` | Build, then `wrangler deploy` |
 
 The social cards are not a script: `ogPlugin()` redraws them during `build`.
