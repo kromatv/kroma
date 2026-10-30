@@ -44,12 +44,37 @@ fn a_pass_drops_expired_credentials_and_work_whose_subject_is_gone() {
         Tidied {
             sessions: 1,
             access_tokens: 1,
-            pipeline_tasks: 2
+            pipeline_tasks: 2,
+            deliveries: 0
         }
     );
     assert_eq!(count(&pool, "SELECT COUNT(*) FROM sessions"), 1);
     assert_eq!(count(&pool, "SELECT COUNT(*) FROM access_tokens"), 1);
     assert_eq!(count(&pool, "SELECT COUNT(*) FROM pipeline_tasks"), 2);
+}
+
+#[test]
+fn a_pass_drops_a_push_record_past_its_retention_and_keeps_a_recent_one() {
+    let pool = seeded();
+    let stale = NOW * 1_000 - (crate::notification_deliveries::RETENTION_DAYS + 1) * 86_400_000;
+    pool.get()
+        .unwrap()
+        .execute_batch(&format!(
+            "INSERT INTO notification_deliveries \
+                 (id, user_id, transport, status, created_at) VALUES
+                 ('old', 'u1', 'webpush', 'sent', {stale}),
+                 ('new', 'u1', 'webpush', 'sent', {now});",
+            now = NOW * 1_000,
+        ))
+        .unwrap();
+
+    let tidied = tidy(&pool, NOW).unwrap();
+
+    assert_eq!(tidied.deliveries, 1);
+    assert_eq!(
+        count(&pool, "SELECT COUNT(*) FROM notification_deliveries"),
+        1
+    );
 }
 
 #[test]

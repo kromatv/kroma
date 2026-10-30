@@ -42,6 +42,12 @@ describe('the notification-centre endpoints', () => {
       path: '/notifications/prefs',
     },
     {
+      name: 'deliveries',
+      call: (c) => c.notifications.deliveries(),
+      method: 'GET',
+      path: '/notifications/deliveries',
+    },
+    {
       name: 'setPrefs',
       call: (c) => c.notifications.setPrefs(PREFS),
       method: 'PUT',

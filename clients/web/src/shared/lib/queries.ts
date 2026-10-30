@@ -166,6 +166,10 @@ export function createQueries(client: QueryClient) {
     /** The per-category delivery matrix (for the /account settings section). */
     notificationPrefs: () => client.query.notifications.prefs(),
 
+    /** What became of this account's own pushes (for the /account settings
+     * section), so a device that never rang can say why. */
+    deliveries: () => client.query.notifications.deliveries(),
+
     /** The server's VAPID key + whether this account has a push endpoint. */
     pushKey: () => client.query.notifications.push.key(),
 

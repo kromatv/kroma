@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import type { RequestContext } from '../../core/http';
-import { Notification, NotificationImages, type SendNotificationBody } from '../notifications';
+import {
+  DeliveriesView,
+  Notification,
+  NotificationImages,
+  type SendNotificationBody,
+} from '../notifications';
 
 const Samples = z.object({ events: z.array(Notification) });
 const Delivered = z.object({ delivered: z.number() });
@@ -23,5 +28,9 @@ export function adminNotificationsApi(ctx: RequestContext) {
 
     /** Images previously uploaded for notifications, newest first. */
     images: () => ctx.get('/admin/notifications/images', NotificationImages),
+
+    /** Every account's recent push attempts, newest first, each naming whose
+     * device it was. No device address is in the answer. */
+    deliveries: () => ctx.get('/admin/notifications/deliveries', DeliveriesView),
   };
 }
