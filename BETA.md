@@ -16,8 +16,9 @@ testing someone else's server, ask them for its address (something like
 |---|---|
 | iPhone, iPad | [TestFlight](#iphone-and-ipad) |
 | Apple TV | [TestFlight](#apple-tv) |
-| Android phone or tablet | [Firebase](#android-phone-and-tablet) |
-| Beamer, Android TV, Google TV, Fire TV, Shield | [Manual install](#beamer-and-android-tv) |
+| Android phone or tablet | [Google Play](#android-phone-and-tablet) |
+| Android TV, Google TV, Shield | [Google Play](#android-tv-google-tv-and-shield) |
+| Fire TV, beamer without Google Play | [Manual install](#devices-without-google-play) |
 | Computer | Just open your server's address in a browser |
 
 ## iPhone and iPad
@@ -50,23 +51,30 @@ Updates work like on the phone: TestFlight offers each new version.
 
 ## Android phone and tablet
 
-1. Open this link on your phone:
-   **https://appdistribution.firebase.dev/i/3aa500cefb6aeb83**
-2. Enter your email address, then follow the instructions sent to you by email.
-3. Install the **App Tester** app that Firebase offers, then download KROMA
-   from inside it.
+1. Join the tester group with your Google account:
+   **https://groups.google.com/g/kroma-android-beta**
+2. Open the test page and choose **Become a tester**:
+   **https://play.google.com/apps/testing/tv.kroma.app**
+3. Install KROMA from Google Play.
 
-Android will ask you to allow installs from that source: accept. See
-[Allowing unknown sources](#allowing-unknown-sources).
+Google Play delivers each new version. A test build cannot be found by searching,
+so use the links above.
 
-## Beamer and Android TV
+## Android TV, Google TV and Shield
 
-This covers Android beamers, Android TV and Google TV sets, Fire TV devices and
-Nvidia Shield boxes.
+These install from Google Play too. A television cannot open a link, so step 1
+happens on a phone or computer.
 
-> **Important:** the Firebase App Tester app does not exist on Android TV, so on
-> a beamer or a TV you have to install the `.apk` file by hand. The three methods
-> below all do the same thing, so pick whichever suits you.
+1. Join the group and become a tester as above, using the **same Google account
+   as the television**.
+2. In a browser signed in with that account, open
+   **https://play.google.com/store/apps/details?id=tv.kroma.app**
+3. Choose the television in the device list, then install.
+
+## Devices without Google Play
+
+Fire TV and some beamers have no Google Play, so you install the `.apk` file by
+hand. The three methods below all do the same thing, so pick whichever suits you.
 
 ### Method 1: from your phone (easiest)
 
@@ -156,7 +164,7 @@ the main row automatically.
 
 - iPhone and iPad: the **Send Feedback** button in TestFlight, or a screenshot
   taken from inside the app.
-- Android: from the App Tester app.
+- Android: by email, or the private feedback form on the KROMA page in Google Play.
 - By email: beta@kroma.tv
 - Or open an issue at https://github.com/kromatv/kroma/issues.
 

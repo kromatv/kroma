@@ -87,7 +87,7 @@ export function TvFamily() {
         <PlatformEntry
           icon={IconBrandAndroid}
           name="Android TV"
-          badge="Google TV · Chromecast · Shield"
+          badge="Google Play · Google TV · Shield"
           description={m.download_tv_android_body()}
           help={
             <StepList
@@ -99,9 +99,10 @@ export function TvFamily() {
             />
           }
         >
-          <PlatformDownload
-            target="androidtv"
-            label={m.download_for_chip({ chip: 'Android TV' })}
+          <JoinButton
+            href={join.playGroup}
+            channel="Google Play"
+            label={m.android_beta_join_group()}
           />
           <AndroidBetaLink />
         </PlatformEntry>

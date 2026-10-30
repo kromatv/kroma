@@ -1,9 +1,9 @@
 name: Release mobile beta channels
 
-# The phone/tablet client goes to the two beta channels BETA.md points testers
-# at: Firebase App Distribution (Android) and TestFlight (iOS). Stable tags or
-# an explicit manual run - never an untagged build, which would burn a TestFlight build
-# number and spam every tester.
+# The phone/tablet client: a signed bundle for Google Play (uploaded by
+# _release-play.yml) and an .ipa for TestFlight. TestFlight takes stable tags or
+# an explicit manual run - never an untagged build, which would burn a TestFlight
+# build number and spam every tester.
 #
 # Both legs stamp the release version and a monotonic build number INTO
 # app.json before `expo prebuild`, because that is the only moment the values
@@ -157,41 +157,6 @@ jobs:
           path: out/*.aab
           if-no-files-found: error
           retention-days: 30
-
-      # Skipped (not failed) without the secrets, like every other optional
-      # signing/publishing step in this workflow: the APK is still built and
-      # attached to the Release, it just is not pushed to the testers.
-      # The secrets check lives INSIDE the script, not in `if:`: a step's own
-      # `env:` block is not readable from its `if:` (that context is evaluated
-      # first), and `secrets` is not available there at all. Same shape as the
-      # optional keystore step in the Android TV job.
-      - name: Distribute to Firebase App Distribution
-        # See the Apple TV job: candidates build, they do not distribute.
-        # `targets` says what to BUILD; it must not also mean "ship it".
-        # A dispatch with targets=mobile, run to time the archive, pushed a
-        # real build to TestFlight and burned a build number - distribution
-        # was riding on a selector that only ever meant scope. It now needs
-        # the explicit `distribute` input, so a build-only run stays one.
-        if: ${{ inputs.channel == 'stable' || github.event.inputs.distribute == 'true' }}
-        env:
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FIREBASE_TESTER_GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
-        run: |
-          set -euo pipefail
-          if [ -z "$FIREBASE_APP_ID" ] || [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "No FIREBASE_APP_ID / FIREBASE_SERVICE_ACCOUNT; the APK is built and"
-            echo "attached to the Release, but not pushed to the testers."
-            exit 0
-          fi
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
-          npx --yes firebase-tools appdistribution:distribute \
-            "out/KROMA-mobile-${{ inputs.version }}.apk" \
-            --app "$FIREBASE_APP_ID" \
-            --release-notes-file clients/mobile/distribution/release-notes.txt \
-            --groups "$FIREBASE_TESTER_GROUPS"
-          rm -f "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Attach to the Release
         # Only a STABLE release attaches here. A candidate build (push to main)
