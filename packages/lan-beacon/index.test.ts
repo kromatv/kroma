@@ -19,6 +19,7 @@ const env = vi.hoisted(() => ({
   version: 17 as number,
   permission: 'granted' as string,
   permissionThrows: false,
+  permissionRequests: 0,
   hasNative: true,
   nativeThrows: false,
 }));
@@ -74,6 +75,7 @@ vi.mock('react-native', () => ({
   },
   PermissionsAndroid: {
     request: async () => {
+      env.permissionRequests += 1;
       if (env.permissionThrows) throw new Error('no such permission');
       return env.permission;
     },
@@ -98,6 +100,7 @@ beforeEach(() => {
   env.version = 17;
   env.permission = 'granted';
   env.permissionThrows = false;
+  env.permissionRequests = 0;
   env.hasNative = true;
   env.nativeThrows = false;
   native.published = [];
@@ -255,6 +258,24 @@ describe('Android 13, where discovery moved behind a runtime permission', () => 
     await settled();
     expect(native.started).toEqual([]);
     expect(native.published).toEqual([]);
+  });
+
+  it('asks once, however many times a refused browse is restarted', async () => {
+    env.os = 'android';
+    env.version = 33;
+    env.permission = 'denied';
+    const lan = await load();
+
+    for (let restart = 0; restart < 3; restart += 1) {
+      const stop = lan?.browse?.(() => undefined);
+      await settled();
+      stop?.();
+    }
+    lan?.publish?.(SERVICE);
+    await settled();
+
+    expect(env.permissionRequests).toBe(1);
+    expect(native.started).toEqual([]);
   });
 
   it('treats a throwing permission request as a refusal', async () => {
