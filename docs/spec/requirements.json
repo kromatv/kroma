@@ -444,7 +444,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 45,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A row records **what it is about** (a request, a title, an episode, a",
     "file": "docs/spec/accounts/notifications.md",
     "line": 69
@@ -454,7 +454,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 46,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A destination is never frozen into a stored row. Renaming a screen",
     "file": "docs/spec/accounts/notifications.md",
     "line": 74
@@ -464,7 +464,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 47,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The person a row names is read when the row is read, so a renamed",
     "file": "docs/spec/accounts/notifications.md",
     "line": 79
@@ -477,7 +477,7 @@
     "status": "SHIPPED",
     "text": "Repeats of one thing read as one row with a count, so a run of",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 86
+    "line": 87
   },
   {
     "id": "ACCT-49",
@@ -487,7 +487,7 @@
     "status": "AGREED",
     "text": "A repeat folds into the row the person already has: its count rises,",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 90
+    "line": 91
   },
   {
     "id": "ACCT-50",
@@ -497,17 +497,17 @@
     "status": "DRAFT",
     "text": "A folded group raises a banner at most once an hour, and repeats in",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 94
+    "line": 95
   },
   {
     "id": "ACCT-51",
     "domain": "ACCT",
     "space": "accounts",
     "number": 51,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A second telling of something a person already holds is dropped",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 97
+    "line": 98
   },
   {
     "id": "ACCT-52",
@@ -517,7 +517,7 @@
     "status": "AGREED",
     "text": "A notification that asked for a decision stops asking once the decision",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 105
+    "line": 106
   },
   {
     "id": "ACCT-53",
@@ -527,7 +527,7 @@
     "status": "AGREED",
     "text": "A settled row is not deleted behind the reader's back. It stays where",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 110
+    "line": 111
   },
   {
     "id": "ACCT-54",
@@ -537,7 +537,7 @@
     "status": "DRAFT",
     "text": "Whether settling a row also takes back a banner already delivered to a",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 113
+    "line": 114
   },
   {
     "id": "ACCT-55",
@@ -547,7 +547,7 @@
     "status": "SHIPPED",
     "text": "The inbox opens from the bell on any screen, lists rows newest first",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 120
+    "line": 121
   },
   {
     "id": "ACCT-56",
@@ -557,7 +557,7 @@
     "status": "SHIPPED",
     "text": "Every open screen agrees on the badge within a moment of one of them",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 124
+    "line": 125
   },
   {
     "id": "ACCT-57",
@@ -567,7 +567,7 @@
     "status": "AGREED",
     "text": "The badge counts rows the person has **not seen**: opening the panel",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 127
+    "line": 128
   },
   {
     "id": "ACCT-58",
@@ -577,7 +577,7 @@
     "status": "AGREED",
     "text": "A reader **archives** a row rather than deleting it. An archived row",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 134
+    "line": 135
   },
   {
     "id": "ACCT-59",
@@ -587,7 +587,7 @@
     "status": "SHIPPED",
     "text": "An inbox holds two hundred rows per person. Beyond that the oldest go,",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 137
+    "line": 138
   },
   {
     "id": "ACCT-60",
@@ -597,7 +597,7 @@
     "status": "AGREED",
     "text": "What goes first is archived rows, then the oldest rows that were read.",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 140
+    "line": 141
   },
   {
     "id": "ACCT-61",
@@ -607,7 +607,7 @@
     "status": "SHIPPED",
     "text": "The inbox is on the web client and on the phone. The television has",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 144
+    "line": 145
   },
   {
     "id": "ACCT-62",
@@ -617,7 +617,7 @@
     "status": "DRAFT",
     "text": "Which kinds of subject a television would open, if it ever gains an",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 148
+    "line": 149
   },
   {
     "id": "ACCT-63",
@@ -627,7 +627,7 @@
     "status": "SHIPPED",
     "text": "Each person decides, per category (requests, media, reports,",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 155
+    "line": 156
   },
   {
     "id": "ACCT-64",
@@ -637,7 +637,7 @@
     "status": "SHIPPED",
     "text": "A category whose inbox switch is off writes no row at all. Muting is",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 159
+    "line": 160
   },
   {
     "id": "ACCT-65",
@@ -647,7 +647,7 @@
     "status": "AGREED",
     "text": "The same choice is available per notification type, a module's own",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 163
+    "line": 164
   },
   {
     "id": "ACCT-66",
@@ -657,7 +657,7 @@
     "status": "SHIPPED",
     "text": "A device asks to receive banners, and nothing is sent to a device that",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 171
+    "line": 172
   },
   {
     "id": "ACCT-67",
@@ -667,7 +667,7 @@
     "status": "SHIPPED",
     "text": "A banner that cannot be delivered costs the banner, never the",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 175
+    "line": 176
   },
   {
     "id": "ACCT-68",
@@ -677,7 +677,7 @@
     "status": "AGREED",
     "text": "Every delivery attempt is recorded with its outcome (delivered, failed,",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 178
+    "line": 179
   },
   {
     "id": "ACCT-69",
@@ -687,7 +687,7 @@
     "status": "SHIPPED",
     "text": "A module tells people through this same inbox rather than inventing",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 187
+    "line": 188
   },
   {
     "id": "ACCT-70",
@@ -697,7 +697,7 @@
     "status": "SHIPPED",
     "text": "A module addresses the audiences the core addresses and no others: one",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 191
+    "line": 192
   },
   {
     "id": "ACCT-71",
@@ -707,7 +707,7 @@
     "status": "AGREED",
     "text": "A module declares the kinds of notification it sends and ships their",
     "file": "docs/spec/accounts/notifications.md",
-    "line": 195
+    "line": 196
   },
   {
     "id": "ADMIN-1",

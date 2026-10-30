@@ -17,7 +17,8 @@ const INSTALL = ['bun.lock', 'package.json', 'patches/**', '.bun-version'];
  *
  * `code` stands in for the `paths-ignore` a required check cannot carry: a
  * skipped job reports success, so a docs-only pull request passes the gate
- * without building anything.
+ * without building anything. Every build lane excludes prose for the same
+ * reason, `spec` excepted, since that one exists for prose.
  */
 export const LANES = {
   code: { paths: ['**'], except: PROSE },
@@ -33,8 +34,9 @@ export const LANES = {
       'rust-toolchain.toml',
       ...INSTALL,
     ],
+    except: PROSE,
   },
-  android: { paths: ['clients/tv-native/**', ...INSTALL] },
+  android: { paths: ['clients/tv-native/**', ...INSTALL], except: PROSE },
   desktop: {
     paths: [
       'clients/desktop/**',
@@ -42,6 +44,7 @@ export const LANES = {
       'rust-toolchain.toml',
       ...INSTALL,
     ],
+    except: PROSE,
   },
   rust: {
     paths: [
@@ -51,6 +54,7 @@ export const LANES = {
       'packages/core/src/locales/**',
       'rust-toolchain.toml',
     ],
+    except: PROSE,
   },
   sdk: {
     paths: [
@@ -60,6 +64,7 @@ export const LANES = {
       'server/Cargo.toml',
       ...INSTALL,
     ],
+    except: PROSE,
   },
   synology: {
     paths: [
@@ -72,10 +77,13 @@ export const LANES = {
       'rust-toolchain.toml',
       ...INSTALL,
     ],
+    except: PROSE,
   },
   site: {
     paths: ['apps/www/**', 'packages/{bundler,registry,site-kit,site-meta,ui}/**', ...INSTALL],
+    except: PROSE,
   },
+  spec: { paths: ['docs/spec/**'] },
 } as const satisfies Record<string, Lane>;
 
 export type LaneName = keyof typeof LANES;

@@ -23,6 +23,7 @@ bun run ci sonar prepare                  the tree as the scanner wants it
 ```
 lanes ─┬─ checks (typecheck + lint)                     code
        ├─ test 1..4 ──── test-report (merge → lcov)     code
+       ├─ spec (the requirement index is in step)       spec
        ├─ build {web, site, tizen, webos, tv-native}    fleet
        ├─ android (Kotlin compile)                      android
        ├─ desktop (cargo check, Linux mpv path)         desktop
@@ -48,6 +49,18 @@ A change to `.github/workflows/ci.yml` or `packages/ci-tools` opens every lane;
 so does a push with no parent or a manual run. Another workflow, or a script
 only a release workflow calls, cannot change what CI checks: it is linted as
 code and builds nothing (`synology.yml` reaches the synology lane).
+
+Prose opens no lane, with one exception: `docs/spec/**` opens **spec**, which
+runs `bun run spec:check`. The requirement index is generated and committed, so
+a chapter edited without regenerating it is the one way a prose change can be
+wrong. The script imports nothing, so that job installs nothing and takes
+seconds.
+
+Every other lane excludes prose, including the markdown that lives inside a code
+tree. `modules/README.md` used to open the rust lane, where the shard list is
+computed from the cargo graph a file reaches: a README reaches none, the matrix
+came out empty, and the job that aggregates the shards read that as a failure.
+A docs change cannot build anything, so now it matches nothing either.
 
 `bun run typecheck` is `ci typecheck`: every workspace's own script, one per
 core at a time. `bun run --filter '*'` starts all thirty-seven at once, and

@@ -42,6 +42,7 @@ jobs:
       rust: ${{ steps.lanes.outputs.rust }}
       rust_shards: ${{ steps.lanes.outputs.rust_shards }}
       sdk: ${{ steps.lanes.outputs.sdk }}
+      spec: ${{ steps.lanes.outputs.spec }}
       sonar: ${{ steps.sonar.outputs.run }}
       sccache: ${{ steps.sccache.outputs.on }}
     steps:
@@ -162,6 +163,25 @@ jobs:
           no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun run ci test --audit
+
+  # The index is generated and committed, so a chapter edited without
+  # regenerating it is the one way a prose change can be wrong. The script
+  # imports nothing, which is why this job installs nothing.
+  spec:
+    name: Spec index
+    needs: lanes
+    if: needs.lanes.outputs.spec == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun run spec:check
 
   # One report from the four shards: the lcov Sonar reads and the summary the
   # run page shows. Required on main in place of the shards themselves, so a
@@ -444,7 +464,7 @@ jobs:
   # changes.
   required:
     name: Required
-    needs: [lanes, checks, test-report, audit, build, tv-native, sdk, desktop, rust]
+    needs: [lanes, checks, test-report, audit, spec, build, tv-native, sdk, desktop, rust]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -462,8 +482,8 @@ jobs:
           NEEDS: ${{ toJSON(needs) }}
           LANE_OF: >-
             {"checks": "code", "test-report": "code", "audit": "code",
-            "build": "fleet", "tv-native": "android", "sdk": "sdk",
-            "desktop": "desktop", "rust": "rust"}
+            "spec": "spec", "build": "fleet", "tv-native": "android",
+            "sdk": "sdk", "desktop": "desktop", "rust": "rust"}
 
   # The scan reads the coverage the gates above produced; nothing runs twice.
   # Rust coverage is absent on a change that touched no Rust, and the scan
