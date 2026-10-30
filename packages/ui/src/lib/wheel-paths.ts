@@ -26,5 +26,8 @@ export type WheelSpin = 'idle' | 'loading';
 
 export const WHEEL_SPIN_MS: Record<WheelSpin, number> = { idle: 9000, loading: 2600 };
 
+/** The outer ring's bounding square, in the segments' own units. */
+export const WHEEL_BOUNDS = { origin: 6, size: 88 } as const;
+
 // Cropped to the wheel's bounds, so `size` is the true diameter.
-export const WHEEL_VIEWBOX = '6 6 88 88';
+export const WHEEL_VIEWBOX = `${WHEEL_BOUNDS.origin} ${WHEEL_BOUNDS.origin} ${WHEEL_BOUNDS.size} ${WHEEL_BOUNDS.size}`;
