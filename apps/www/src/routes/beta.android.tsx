@@ -69,6 +69,11 @@ function AndroidBeta() {
                   channel="Google Play"
                   label={m.android_beta_join_play()}
                 />
+                <JoinButton
+                  href={join.playStore}
+                  channel="Google Play"
+                  label={m.android_beta_install_play()}
+                />
               </div>
             </article>
             <article className="flex flex-col rounded-3xl border border-border bg-surface-1 p-6 sm:p-8">
@@ -86,6 +91,23 @@ function AndroidBeta() {
                   m.android_beta_tv_step_3(),
                 ]}
               />
+              <div className="mt-auto space-y-3 pt-7">
+                <JoinButton
+                  href={join.playGroup}
+                  channel="Google Groups"
+                  label={m.android_beta_join_group()}
+                />
+                <JoinButton
+                  href={join.playOptIn}
+                  channel="Google Play"
+                  label={m.android_beta_join_play()}
+                />
+                <JoinButton
+                  href={join.playStore}
+                  channel="Google Play"
+                  label={m.android_beta_install_play()}
+                />
+              </div>
             </article>
           </div>
 

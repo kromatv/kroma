@@ -17,6 +17,7 @@ export const join = {
   testflight: 'https://testflight.apple.com/join/ZjgQdunW',
   playGroup: 'https://groups.google.com/g/kroma-android-beta',
   playOptIn: 'https://play.google.com/apps/testing/tv.kroma.app',
+  playStore: 'https://play.google.com/store/apps/details?id=tv.kroma.app',
 } as const;
 
 export interface ProseLinkProps {

@@ -505,6 +505,7 @@
   "android_beta_feedback_body": "Tell us your device model, KROMA version and what happened. Never include your password, server token or private media in a bug report.",
   "android_beta_join_group": "Join the tester group",
   "android_beta_join_play": "Become a tester",
+  "android_beta_install_play": "Install KROMA",
   "android_beta_tv_title": "Android TV",
   "android_beta_tv_step_1": "Join the tester group and become a tester, as for a phone.",
   "android_beta_tv_step_2": "Open KROMA on Google Play, signed in with the same account.",
