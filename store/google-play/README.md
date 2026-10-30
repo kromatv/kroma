@@ -12,6 +12,7 @@ The listing copy and uploadable PNGs use the Fastlane metadata layout under
 | Feature graphic | 1024 × 500 |
 | TV banner | 1280 × 720 |
 | Three phone screenshots | 1440 × 2560, 9:16 |
+| Three TV screenshots | 1920 × 1080, 16:9 |
 
 The three screenshots tell a sequence: movie collection, movie details,
 and series with episodes. French exports have French marketing
@@ -43,8 +44,11 @@ are examples of a personal library and are not included with KROMA.
 The export places each native capture in a simple frame and crops the Android
 system status/navigation bars. The app's interface and data are preserved.
 
-Android TV screenshots still need capture on a working TV device session. The
-Android TV banner is ready; the phone images belong only in the phone slots.
+`tvScreenshots` in each language holds three 1920 × 1080 captures from a release
+build on a Google TV emulator. They come from a throwaway server whose library
+is only Blender open movies, so no commercial artwork reaches the listing. Short
+test clips stand in for the films, with their runtimes set by hand. The phone
+images belong only in the phone slots.
 
 ## Console upload
 
