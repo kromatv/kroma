@@ -36,8 +36,9 @@ accelerate = ["local", "candle-core/accelerate", "candle-nn/accelerate", "candle
 
 [dependencies]
 # `storage`: the progress channel is a core table this module holds a grant on
-# (see `storage` in module.json).
-kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage"] }
+# (see `storage` in module.json). `transcode`: the ffmpeg input it decodes is named
+# through `media::input`.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "transcode"] }
 # The `.kmod` binary: the out-of-process runtime + axum for the transcription route.
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
 axum = { version = "0.8", features = ["macros", "ws"] }

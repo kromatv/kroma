@@ -15,9 +15,11 @@
 //! branches on, so what a first look exercises is the real path: 10-bit HDR HEVC,
 //! plain h264, and two audio languages with an embedded subtitle track.
 
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use kroma_media::input;
 use tracing::{info, warn};
 
 /// Seconds per title. Long enough for a storyboard (one tile every 2s) and for
@@ -193,7 +195,7 @@ fn partial(out: &Path) -> PathBuf {
     out.with_file_name(format!(".part-{name}"))
 }
 
-fn run(args: &[String]) -> anyhow::Result<()> {
+fn run(args: &[OsString]) -> anyhow::Result<()> {
     let status = Command::new("ffmpeg")
         .args(args)
         .stdout(std::process::Stdio::null())
@@ -205,24 +207,20 @@ fn run(args: &[String]) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn base_args(size: &str) -> Vec<String> {
-    vec![
-        "-hide_banner".into(),
-        "-loglevel".into(),
-        "error".into(),
-        "-y".into(),
-        "-f".into(),
-        "lavfi".into(),
-        "-i".into(),
-        format!("testsrc2=size={size}:rate=24:duration={SECONDS}"),
-        "-f".into(),
-        "lavfi".into(),
-        "-i".into(),
-        format!("sine=frequency=440:duration={SECONDS}"),
-    ]
+fn base_args(size: &str) -> Vec<OsString> {
+    let mut a = ["-hide_banner", "-loglevel", "error", "-y"]
+        .map(OsString::from)
+        .to_vec();
+    a.extend(input::generated(&format!(
+        "testsrc2=size={size}:rate=24:duration={SECONDS}"
+    )));
+    a.extend(input::generated(&format!(
+        "sine=frequency=440:duration={SECONDS}"
+    )));
+    a
 }
 
-fn plain_args(size: &str, out: &Path) -> Vec<String> {
+fn plain_args(size: &str, out: &Path) -> Vec<OsString> {
     let mut a = base_args(size);
     a.extend(
         [
@@ -245,13 +243,13 @@ fn plain_args(size: &str, out: &Path) -> Vec<String> {
             "-metadata:s:a:0",
             "language=eng",
         ]
-        .map(String::from),
+        .map(OsString::from),
     );
-    a.push(out.to_string_lossy().into_owned());
+    a.push(out.into());
     a
 }
 
-fn hdr_args(size: &str, out: &Path) -> Vec<String> {
+fn hdr_args(size: &str, out: &Path) -> Vec<OsString> {
     let mut a = base_args(size);
     a.extend(
         [
@@ -278,22 +276,18 @@ fn hdr_args(size: &str, out: &Path) -> Vec<String> {
             "-metadata:s:a:0",
             "language=eng",
         ]
-        .map(String::from),
+        .map(OsString::from),
     );
-    a.push(out.to_string_lossy().into_owned());
+    a.push(out.into());
     a
 }
 
-fn tracks_args(size: &str, srt: &Path, out: &Path) -> Vec<String> {
+fn tracks_args(size: &str, srt: &Path, out: &Path) -> Vec<OsString> {
     let mut a = base_args(size);
-    a.extend([
-        "-f".into(),
-        "lavfi".into(),
-        "-i".into(),
-        format!("sine=frequency=220:duration={SECONDS}"),
-        "-i".into(),
-        srt.to_string_lossy().into_owned(),
-    ]);
+    a.extend(input::generated(&format!(
+        "sine=frequency=220:duration={SECONDS}"
+    )));
+    a.extend(input::file(srt));
     a.extend(
         [
             "-map",
@@ -325,9 +319,9 @@ fn tracks_args(size: &str, srt: &Path, out: &Path) -> Vec<String> {
             "-metadata:s:s:0",
             "language=fra",
         ]
-        .map(String::from),
+        .map(OsString::from),
     );
-    a.push(out.to_string_lossy().into_owned());
+    a.push(out.into());
     a
 }
 
@@ -337,6 +331,13 @@ const CUES: &str = "1\n00:00:01,000 --> 00:00:05,000\nA demo subtitle track.\n\n
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn worded(args: &[OsString]) -> String {
+        args.iter()
+            .map(|a| a.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
 
     #[test]
     fn every_title_lands_in_a_library_and_reads_as_a_release() {
@@ -403,19 +404,23 @@ mod tests {
 
     #[test]
     fn an_hdr_title_asks_for_ten_bit_bt2020_and_a_plain_one_does_not() {
-        let hdr = hdr_args("1920x1080", Path::new("/tmp/x.mkv")).join(" ");
+        let hdr = worded(&hdr_args("1920x1080", Path::new("/tmp/x.mkv")));
         assert!(hdr.contains("yuv420p10le"), "{hdr}");
         assert!(hdr.contains("smpte2084"), "{hdr}");
         assert!(hdr.contains("libx265"), "{hdr}");
 
-        let plain = plain_args("1280x720", Path::new("/tmp/x.mp4")).join(" ");
+        let plain = worded(&plain_args("1280x720", Path::new("/tmp/x.mp4")));
         assert!(plain.contains("libx264"), "{plain}");
         assert!(!plain.contains("smpte2084"), "{plain}");
     }
 
     #[test]
     fn a_tracks_title_carries_two_languages_and_a_subtitle_stream() {
-        let a = tracks_args("1280x720", Path::new("/tmp/x.srt"), Path::new("/tmp/x.mkv")).join(" ");
+        let a = worded(&tracks_args(
+            "1280x720",
+            Path::new("/tmp/x.srt"),
+            Path::new("/tmp/x.mkv"),
+        ));
         assert!(a.contains("language=eng"), "{a}");
         assert!(a.contains("language=fra"), "{a}");
         assert!(a.contains("-c:s srt"), "{a}");
@@ -427,7 +432,7 @@ mod tests {
     fn the_output_path_is_always_the_last_argument() {
         // ffmpeg reads it positionally, so a flag appended after it would be
         // taken as another output.
-        let out = Path::new("/tmp/demo.mkv").to_string_lossy().into_owned();
+        let out = OsString::from("/tmp/demo.mkv");
         for args in [
             plain_args("1280x720", Path::new("/tmp/demo.mkv")),
             hdr_args("1280x720", Path::new("/tmp/demo.mkv")),

@@ -132,6 +132,8 @@ mod tests {
 
     use std::process::Command;
 
+    use kroma_media::input;
+
     #[test]
     #[ignore]
     fn storyboard_generates_a_consistent_sheet() {
@@ -139,15 +141,8 @@ mod tests {
         let tmp = scratch.path();
         let clip = tmp.join("clip.mp4");
         let ok = Command::new("ffmpeg")
-            .args([
-                "-y",
-                "-loglevel",
-                "error",
-                "-f",
-                "lavfi",
-                "-i",
-                "testsrc=size=640x360:rate=24:duration=30",
-            ])
+            .args(["-y", "-loglevel", "error"])
+            .args(input::generated("testsrc=size=640x360:rate=24:duration=30"))
             .args(["-c:v", "libx264", "-g", "48", "-pix_fmt", "yuv420p"])
             .arg(&clip)
             .status()
@@ -184,7 +179,7 @@ mod tests {
                 "-of",
                 "csv=p=0",
             ])
-            .arg(&sheet)
+            .args(input::file(&sheet))
             .output()
             .unwrap();
         let dims = String::from_utf8_lossy(&dims.stdout);

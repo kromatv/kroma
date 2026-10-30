@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
+use crate::input;
 use crate::tmp_file::{finalize, unique_tmp};
 
 const READ_BYTES_PER_SEC: u64 = 20 * 1024 * 1024;
@@ -67,7 +68,7 @@ pub fn extract_vtt(
 fn pass(input: &str, tracks: &[(usize, PathBuf)], tmps: &[PathBuf]) -> Command {
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-v", "error", "-nostdin", "-threads", "1", "-y"]);
-    cmd.arg("-i").arg(input);
+    cmd.args(input::file(input));
     for ((track, _), tmp) in tracks.iter().zip(tmps) {
         cmd.arg("-map").arg(format!("0:s:{track}"));
         cmd.args(["-f", "webvtt"]).arg(tmp);
