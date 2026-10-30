@@ -37,7 +37,7 @@ const flag = (name: string, fallback: number): number => {
 // build can be measured against another one on the same device - which is the
 // only honest comparison there is, hardware being the biggest variable here.
 const packageAt = args.indexOf('--package');
-const PACKAGE = packageAt === -1 ? 'tv.kroma.tv' : (args[packageAt + 1] ?? 'tv.kroma.tv');
+const PACKAGE = packageAt === -1 ? 'tv.kroma.app' : (args[packageAt + 1] ?? 'tv.kroma.app');
 const ITERATIONS = flag('iterations', 3);
 // Below this the walk is judged a failure. 0 disables the gate, which is the
 // default: a threshold is only meaningful once it is tied to known hardware.

@@ -187,8 +187,8 @@ jobs:
           files: clients/tizen/out/*.wgt
 
   tv-native:
-    name: Android TV .apk (native app)
-    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    name: Android TV (APK + Play bundle)
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # attach assets to the Release
@@ -229,13 +229,17 @@ jobs:
           export KROMA_VERSION_CODE=${{ inputs.build }}
           bun run --filter '@kromatv/tv-native' prebuild -- --platform android
 
-      # NOTE: this is signed with the Expo template's debug keystore, which is
-      # what its `release` buildType is wired to. That is installable via adb /
-      # Downloader for sideloading (the same fallback the previous WebView shell
-      # shipped when no keystore secret was set), but it is NOT a Play-uploadable
-      # artifact. Real release signing needs a config plugin to rewrite the
-      # generated signingConfig - the ANDROID_KEYSTORE* secrets are unused until
-      # then.
+      - name: Restore Android upload signing
+        id: android-signing
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bash .github/scripts/prepare-android-signing.sh
+
+      # One Play listing, separate mobile/TV tracks: the same package and upload
+      # identity, with a TV-specific version code and required leanback feature.
       # --build-cache reuses task OUTPUTS across runs, which the dependency cache
       # alone does not: setup-gradle persists ~/.gradle, but without this every
       # task still re-executes. The heap is raised because the generated
@@ -251,21 +255,41 @@ jobs:
       # x86_64 is KEPT so an Intel Mac can still run the APK in an emulator -
       # dropping that one too would halve the build again, but it is a real
       # capability rather than dead weight.
-      - name: Build APK
+      - name: Build APK and signed Play bundle
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
+          KROMA_ANDROID_KEYSTORE_PATH: ${{ steps.android-signing.outputs.keystore_path }}
+          KROMA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KROMA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KROMA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          SIGNING_READY: ${{ steps.android-signing.outputs.ready }}
         run: |
-          gradle -p clients/tv-native/android assembleRelease --build-cache \
+          tasks=(assembleRelease)
+          if [[ "$SIGNING_READY" = true ]]; then tasks+=(bundleRelease); fi
+          gradle -p clients/tv-native/android "${tasks[@]}" --build-cache \
             -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64
           mkdir -p out
           cp clients/tv-native/android/app/build/outputs/apk/release/app-release.apk \
             "out/KROMA-androidtv-${{ inputs.version }}.apk"
+          if [[ "$SIGNING_READY" = true ]]; then
+            cp clients/tv-native/android/app/build/outputs/bundle/release/app-release.aab \
+              "out/KROMA-androidtv-${{ inputs.version }}.aab"
+          fi
 
       - name: Upload .apk artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kroma-androidtv-apk
           path: out/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload signed Play bundle
+        if: steps.android-signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-androidtv-aab
+          path: out/*.aab
           if-no-files-found: error
           retention-days: 30
 
