@@ -1,7 +1,9 @@
 // The login gate, rendered as a full-screen overlay whenever no session is
 // active so the catalogue underneath stays unusable until an account is chosen.
 
+import type { AuthConfig } from '@kromatv/client/accounts';
 import { Box, classes, Logo, styles, useStyles } from '@kromatv/ui/kit';
+import { useEffect, useState } from 'react';
 import { GateBody } from '#web/features/accounts/gate-body';
 import { LoginBackdrop } from '#web/features/accounts/login-backdrop';
 import { LoginSettings } from '#web/features/accounts/login-settings';
@@ -32,22 +34,34 @@ const sDefinition = styles({
     py: 48,
     px: 24,
   },
-  centred: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    minHeight: '100vh',
-    backgroundImage: PAGE_RADIAL,
-  },
 });
+
+const UNREACHABLE_CONFIG: AuthConfig = { publicUserList: true, hasAccounts: true };
 
 export function LoginGate() {
   const s = useStyles(sDefinition);
 
-  const { ready } = useAuth();
+  const { ready, client } = useAuth();
+  const [config, setConfig] = useState<AuthConfig | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    client.accounts.config().then(
+      (loaded) => {
+        if (!cancelled) setConfig(loaded);
+      },
+      () => {
+        if (!cancelled) setConfig(UNREACHABLE_CONFIG);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [client]);
+
+  if (!(ready && config)) return null;
   return (
-    <div className={classes(s.gate)}>
+    <main className={classes(s.gate)}>
       <LoginBackdrop />
       <LoginSettings />
       {/* Centred via the child's auto margins, not justify-center: a centred
@@ -56,10 +70,10 @@ export function LoginGate() {
       <div className={classes(s.column)}>
         <Box my="auto" w="100%" align="center">
           <Brand />
-          {ready ? <GateBody /> : <Spinner />}
+          <GateBody config={config} />
         </Box>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -73,16 +87,4 @@ export function Brand() {
 
 export function Spinner() {
   return <Logo markOnly size={40} spin="loading" />;
-}
-
-/** Shown by authenticated layouts while the session hydrates or a redirect to
- * /login is in flight (see {@link useRequireAuth}). */
-export function GateLoading() {
-  const s = useStyles(sDefinition);
-
-  return (
-    <div className={classes(s.centred)}>
-      <Spinner />
-    </div>
-  );
 }

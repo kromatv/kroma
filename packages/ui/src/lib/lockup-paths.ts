@@ -2,6 +2,8 @@
 // (canvas 458x100, caps y 11..90.2). Outlines rather than webfont text, so the
 // lockup survives Google Fonts being unreachable on offline TVs.
 
+import { KROMA_WHEEL_COLORS, KROMA_WHEEL_SEGMENTS, WHEEL_BOUNDS } from '#ui/lib/wheel-paths';
+
 export const KROMA_KR_PATH =
   'M19.32 90.2H0V11H19.32V45.68C23.24 43.92 26.88 41.72 30.24 39.08C33.6 36.44 36.58 33.56 39.18 30.44C41.78 27.32 43.94 24.1 45.66 20.78C47.38 17.46 48.64 14.2 49.44 11H71.76C70.8 14.68 69.24 18.42 67.08 22.22C64.92 26.02 62.32 29.66 59.28 33.14C56.24 36.62 52.98 39.72 49.5 42.44C46.02 45.16 42.48 47.32 38.88 48.92V50.72C42.56 50.72 45.82 51.12 48.66 51.92C51.5 52.72 54.02 53.96 56.22 55.64C58.42 57.32 60.34 59.42 61.98 61.94C63.62 64.46 65.04 67.48 66.24 71L73.08 90.2H51.12L46.68 74.48C45.72 70.96 44.44 68.18 42.84 66.14C41.24 64.1 39.12 62.62 36.48 61.7C33.84 60.78 30.44 60.32 26.28 60.32H19.32V90.2ZM101.28 90.2H81.96V11H115.68C120.08 11 124.08 11.34 127.68 12.02C131.28 12.7 134.46 13.7 137.22 15.02C139.98 16.34 142.32 17.94 144.24 19.82C146.16 21.7 147.6 23.86 148.56 26.3C149.52 28.74 150 31.44 150 34.4C150 37.2 149.56 39.72 148.68 41.96C147.8 44.2 146.46 46.16 144.66 47.84C142.86 49.52 140.6 50.88 137.88 51.92C135.16 52.96 132 53.72 128.4 54.2V56C132.96 56.48 136.5 57.5 139.02 59.06C141.54 60.62 143.48 62.68 144.84 65.24C146.2 67.8 147.4 70.88 148.44 74.48L153 90.2H131.52L128.04 75.68C127.32 72.48 126.34 70 125.1 68.24C123.86 66.48 122.28 65.26 120.36 64.58C118.44 63.9 116.04 63.56 113.16 63.56H101.28V90.2ZM101.28 25.64V49.28H114.36C119.24 49.28 123.04 48.32 125.76 46.4C128.48 44.48 129.84 41.48 129.84 37.4C129.84 33.4 128.6 30.44 126.12 28.52C123.64 26.6 119.88 25.64 114.84 25.64H101.28Z';
 
@@ -18,3 +20,20 @@ export const KROMA_LOCKUP = {
   gapLeft: 6,
   gapRight: 10,
 } as const;
+
+/** The whole lockup as one standalone SVG document, its letters in `ink`: for an
+ * `<img>` that has to paint before any script runs. */
+export function lockupSvg(ink: string): string {
+  const { height, krWidth, maX, maWidth, gapLeft } = KROMA_LOCKUP;
+  const width = maX + maWidth;
+  const { origin, size } = WHEEL_BOUNDS;
+  const wheel = KROMA_WHEEL_SEGMENTS.map(
+    (d, i) => `<path d="${d}" fill="${KROMA_WHEEL_COLORS[i]}"/>`,
+  ).join('');
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<path d="${KROMA_KR_PATH}" fill="${ink}"/>` +
+    `<g transform="translate(${krWidth + gapLeft} 0) scale(${height / size}) translate(${-origin} ${-origin})">${wheel}</g>` +
+    `<path d="${KROMA_MA_PATH}" fill="${ink}"/></svg>`
+  );
+}
