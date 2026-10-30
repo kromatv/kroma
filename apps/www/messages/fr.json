@@ -393,7 +393,7 @@
   "privacy_head_title": "Confidentialité",
   "privacy_intro": "KROMA est un logiciel libre que vous hébergez vous-même, et kroma.tv est un site vitrine statique. Le site ne collecte presque rien. Ce que fait l’application reste sur votre matériel.",
   "privacy_title": "Politique de confidentialité",
-  "privacy_updated": "Dernière mise à jour : 26 août 2026",
+  "privacy_updated": "Dernière mise à jour : 30 octobre 2026",
   "site_description": "Un serveur multimédia auto-hébergé, en un seul binaire Rust. Direct-play HEVC sur le web, le mobile et toutes les télévisions. Indexeurs, téléchargement, VPN et IA s’installent en modules.",
   "site_tagline": "Auto-hébergé, jamais transcodé.",
   "stats_countries_none": "Aucun serveur n'a encore pu être placé sur la carte.",
