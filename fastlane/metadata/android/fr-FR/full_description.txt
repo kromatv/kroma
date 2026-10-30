@@ -1,0 +1,25 @@
+Votre bibliothèque mérite un bel écrin.
+
+KROMA réunit vos propres films et séries dans une application gratuite et open source pour téléphones, tablettes et Android TV. Connectez-vous à votre serveur KROMA et retrouvez le plaisir de votre prochaine séance.
+
+REDÉCOUVREZ VOTRE COLLECTION
+Parcourez vos films et séries avec leurs affiches, résumés et distributions. Retrouvez un favori avec la recherche et gardez vos prochaines séances dans votre liste personnelle.
+
+À L’AISE SUR CHAQUE ÉCRAN
+Profitez d’une interface pensée pour votre appareil : navigation tactile sur téléphone et tablette, navigation à la télécommande sur Android TV et Google TV.
+
+GARDEZ LE FIL
+Votre progression de lecture est enregistrée sur votre compte KROMA. Retrouvez votre place sur les appareils compatibles connectés au même serveur et au même compte.
+
+VOTRE BIBLIOTHÈQUE VOUS SUIT
+Sur téléphone et tablette, téléchargez les médias compatibles pour les regarder hors connexion. Les options de lecture dépendent de votre serveur, de vos médias et de votre appareil.
+
+GRATUIT ET OPEN SOURCE
+KROMA se construit au grand jour. Découvrez le projet, partagez vos retours ou contribuez sur https://github.com/kromatv/kroma.
+
+VOTRE SERVEUR, VOS MÉDIAS
+Cette application est un client pour un serveur multimédia KROMA. Vous devez avoir accès à un serveur KROMA compatible et à votre propre bibliothèque. KROMA ne fournit aucun film, aucune série, aucune chaîne TV ni aucun abonnement de streaming. Une connexion à votre serveur est nécessaire pour parcourir la bibliothèque et regarder vos médias en streaming. L’accès à distance dépend de la configuration de votre serveur.
+
+Bien démarrer : https://kroma.tv/fr/download
+Assistance : support@kroma.tv
+Confidentialité : https://kroma.tv/fr/privacy
