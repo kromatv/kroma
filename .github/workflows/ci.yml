@@ -420,10 +420,15 @@ jobs:
         working-directory: server
         continue-on-error: true
       - run: bun run ci tools ffmpeg
+      # The sandbox and leak tests start processes in unprivileged user and
+      # network namespaces, which Ubuntu's AppArmor refuses by default here.
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+        if: matrix.shard.name == 'server'
       - run: bun run ci rust clippy --only "${{ join(matrix.shard.workspaces, ',') }}"
       # The credentials reach this step alone, not the install before it.
       - run: bun run ci rust test --only "${{ join(matrix.shard.workspaces, ',') }}"
         env:
+          KROMA_REQUIRE_SANDBOX: ${{ matrix.shard.name == 'server' && '1' || '' }}
           RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
           SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
           SCCACHE_ENDPOINT: ${{ secrets.SCCACHE_R2_ENDPOINT }}

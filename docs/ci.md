@@ -86,6 +86,12 @@ groups of five, each with its own cache entry saved from `main` only
 --only <id,id>` runs the same on a laptop. The required **Rust** check waits for
 every job and joins their coverage into `server/lcov.info`.
 
+The server job lifts Ubuntu's AppArmor restriction on unprivileged user
+namespaces and sets `KROMA_REQUIRE_SANDBOX=1`, so the sandbox and leak tests
+(`kroma-sandbox`, `kroma-egress`) run there and fail rather than skip when the
+runner cannot start a process with no network. On a laptop that refuses
+namespaces they skip and say so.
+
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the
 quality gate scores new code, and such a change has no new Rust lines.
