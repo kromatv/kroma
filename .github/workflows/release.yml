@@ -29,8 +29,8 @@ name: Build & Release
 #   - Apple TV .ipa, to TestFlight. Its own called workflow rather than a fourth
 #     job in the TV one, because unlike the .ipk/.wgt/.apk it is not a file a
 #     tester can sideload.
-#   - Mobile .apk + .ipa, pushed to the two beta channels BETA.md points testers
-#     at (Firebase App Distribution, TestFlight).
+#   - Mobile .apk + .aab + .ipa: the bundle goes to Google Play as a draft, the
+#     .ipa to TestFlight.
 #
 # Module .kmod bundles are NOT in that set: they release independently from
 # .github/workflows/modules.yml.
@@ -92,7 +92,7 @@ on:
         default: all
         required: false
       distribute:
-        description: 'Also distribute builds to TestFlight/Firebase and prepare Google Play drafts'
+        description: 'Also distribute builds to TestFlight and prepare Google Play drafts'
         type: boolean
         default: false
         required: false
@@ -216,7 +216,7 @@ jobs:
 
   # ---------------------------------------------------------------- Mobile ---
 
-  # Firebase App Distribution + TestFlight. Present in the publish `needs` below:
+  # Google Play bundle + TestFlight. Present in the publish `needs` below:
   # a broken mobile build must not reach a tag.
   mobile:
     name: Mobile

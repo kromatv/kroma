@@ -21,13 +21,13 @@ const GUESSES: readonly (readonly [RegExp, Guess])[] = [
   // and one of these device tokens is all that separates them.
   [
     /\b(googletv|android tv|bravia|aft[mbtks]|crkey)\b/i,
-    { family: 'tv', targets: ['androidtv'], label: 'Android TV' },
+    { family: 'tv', targets: [], label: 'Android TV' },
   ],
 
   // The iPad reports itself as a Mac on iPadOS 13+, so touch is what tells them
   // apart. Both go to the same TestFlight, so a wrong guess costs nothing.
   [/\b(iphone|ipad|ipod)\b/i, { family: 'mobile', targets: [], label: 'iPhone / iPad' }],
-  [/\bandroid\b/i, { family: 'mobile', targets: ['android'], label: 'Android' }],
+  [/\bandroid\b/i, { family: 'mobile', targets: [], label: 'Android' }],
 
   // Every Mac browser says "Intel Mac OS X", Apple silicon included, so both
   // builds are offered, the one most Macs need first.

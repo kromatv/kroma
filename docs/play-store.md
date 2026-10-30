@@ -56,9 +56,23 @@ gh workflow run release.yml -R kromatv/kroma --ref <branch> -f targets=android -
    app-access instructions, content rating, Data safety and the production-access
    testing requirements shown for this account before requesting publication.
 
-For GitHub/Firebase distribution alongside Play, review Google's automatic
-installer protection choice when creating the app: its installer check prompts
-users of protected APKs from other sources to get the app from Google Play.
+The APKs on GitHub Releases remain for devices with no Play Store. Review
+Google's automatic installer protection choice when creating the app: its
+installer check prompts users of protected APKs from other sources to get the
+app from Google Play.
+
+## Beta enrolment
+
+Google Play is the only Android channel kroma.tv offers. A closed-test app cannot
+be found by searching, so a tester goes through two links:
+
+1. <https://groups.google.com/g/kroma-android-beta>, the group the closed track
+   grants access to.
+2. <https://play.google.com/apps/testing/tv.kroma.app>, the opt-in page, which
+   only works once the closed track is published.
+
+An Android TV tester signs up on a phone or computer with the television's Google
+account, then installs from the Play listing's device list.
 
 ## CI uploads
 

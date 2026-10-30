@@ -48,12 +48,9 @@ function AndroidBeta() {
           <div className="grid gap-5 sm:grid-cols-2">
             <article className="flex flex-col rounded-3xl border border-border-strong bg-surface-1 p-6 sm:p-8">
               <IconBrandAndroid size={28} className="mb-5 text-accent-text" aria-hidden />
-              <h2 className="font-display text-2xl font-bold text-text">
+              <h2 className="mb-6 font-display text-2xl font-bold text-text">
                 {m.android_beta_mobile_title()}
               </h2>
-              <p className="mb-6 mt-3 text-sm leading-relaxed text-muted">
-                {m.android_beta_mobile_body()}
-              </p>
               <StepList
                 steps={[
                   m.android_beta_mobile_step_1(),
@@ -61,30 +58,37 @@ function AndroidBeta() {
                   m.android_beta_mobile_step_3(),
                 ]}
               />
-              <div className="mt-auto pt-7">
+              <div className="mt-auto space-y-3 pt-7">
                 <JoinButton
-                  href={join.firebase}
-                  channel="Firebase App Distribution"
-                  label={m.android_beta_join_mobile()}
+                  href={join.playGroup}
+                  channel="Google Groups"
+                  label={m.android_beta_join_group()}
+                />
+                <JoinButton
+                  href={join.playOptIn}
+                  channel="Google Play"
+                  label={m.android_beta_join_play()}
                 />
               </div>
             </article>
             <article className="flex flex-col rounded-3xl border border-border bg-surface-1 p-6 sm:p-8">
               <IconDeviceTv size={28} className="mb-5 text-accent-text" aria-hidden />
-              <h2 className="font-display text-2xl font-bold text-text">Google Play</h2>
+              <h2 className="font-display text-2xl font-bold text-text">
+                {m.android_beta_tv_title()}
+              </h2>
               <p className="mt-3 text-sm font-semibold text-accent-text">
-                {m.android_beta_play_status()}
+                {m.android_beta_tv_status()}
               </p>
-              <p className="mt-4 text-sm leading-relaxed text-muted">
-                {m.android_beta_play_body()}
+              <p className="mb-6 mt-4 text-sm leading-relaxed text-muted">
+                {m.android_beta_tv_body()}
               </p>
-              <p className="mt-4 text-sm leading-relaxed text-muted">{m.android_beta_tv_body()}</p>
-              <L
-                to="/download"
-                className="mt-auto block pt-7 text-sm font-semibold text-accent-text underline underline-offset-4"
-              >
-                {m.android_beta_direct_download()}
-              </L>
+              <StepList
+                steps={[
+                  m.android_beta_tv_step_1(),
+                  m.android_beta_tv_step_2(),
+                  m.android_beta_tv_step_3(),
+                ]}
+              />
             </article>
           </div>
 
