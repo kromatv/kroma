@@ -1,7 +1,7 @@
-# RFC NNNN: one way out, a network firewall for the server and every module
+# RFC 480: one way out, a network firewall for the server and every module
 
 - Status: **DRAFT**
-- PR: #NNNN
+- PR: #480
 - Affects: `server/crates/kroma-http`, a new `server/crates/kroma-egress`,
   `kroma-module-supervisor`, `kroma-module-runtime`, `kroma-module-manifest` (manifest
   schema 3), `modules/tv.kroma.vpn`, `modules/tv.kroma.torrents`, `modules/tv.kroma.indexer`,

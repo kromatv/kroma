@@ -2,7 +2,7 @@
 
 How KROMA reaches the network: who may open a connection, which way it goes,
 what is recorded, and what keeps a module from going around it. The design and
-its reasoning are in [RFC NNNN](rfcs/NNNN-network-firewall.md). This page says
+its reasoning are in [RFC 480](rfcs/480-network-firewall.md). This page says
 how it works.
 
 Some of the pieces below are merged, some are in review, some are planned. The

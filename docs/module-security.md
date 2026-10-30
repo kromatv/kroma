@@ -2,7 +2,7 @@
 
 How KROMA contains a module: what a module may do, how it says so, and what
 stops it from doing more. Networking itself is in [networking](networking.md).
-The reasoning is in [RFC NNNN](rfcs/NNNN-network-firewall.md).
+The reasoning is in [RFC 480](rfcs/480-network-firewall.md).
 
 ## What we defend against
 
