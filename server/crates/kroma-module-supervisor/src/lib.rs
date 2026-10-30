@@ -17,6 +17,7 @@ mod origin;
 mod process;
 mod proxy;
 mod registry;
+mod sandbox;
 mod sidecar_env;
 mod tokens;
 mod watch;
@@ -24,6 +25,7 @@ mod watch;
 pub use host_api::host_router;
 pub use origin::{BinStamp, Origin, Source};
 pub use proxy::proxy_to;
+pub use sandbox::network_isolation_available;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
 
 use manifests::{check_manifest_schema, grant_json};
