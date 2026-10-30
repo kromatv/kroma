@@ -8,6 +8,7 @@ use kroma_module_sdk::host::HostCtx;
 
 use crate::process::{reap_stale, record_pid, spawn_child};
 use crate::provision;
+use crate::socks_auth;
 use crate::wireguard::ipv4_only_wg;
 
 pub struct Vpn {
@@ -19,6 +20,14 @@ pub struct Vpn {
     // Latched by `stop` so an `apply` racing the shutdown - a `PUT /vpn` still
     // draining while the process exits - can't bring the bridge back up.
     stopping: AtomicBool,
+}
+
+fn wireproxy_conf(wg_path: &std::path::Path, port: u16, password: &str) -> String {
+    format!(
+        "WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\nUsername = {}\nPassword = {password}\n",
+        wg_path.display(),
+        socks_auth::USER,
+    )
 }
 
 impl Vpn {
@@ -104,16 +113,18 @@ impl Vpn {
             let _ =
                 tokio::fs::set_permissions(&wg_path, std::fs::Permissions::from_mode(0o600)).await;
         }
+        let password =
+            socks_auth::password(&dir).map_err(|e| format!("mint the SOCKS password: {e}"))?;
         let conf_path = dir.join("wireproxy.conf");
-        tokio::fs::write(
-            &conf_path,
-            format!(
-                "WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\n",
-                wg_path.display()
-            ),
-        )
-        .await
-        .map_err(|e| format!("write wireproxy.conf: {e}"))?;
+        tokio::fs::write(&conf_path, wireproxy_conf(&wg_path, port, &password))
+            .await
+            .map_err(|e| format!("write wireproxy.conf: {e}"))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = tokio::fs::set_permissions(&conf_path, std::fs::Permissions::from_mode(0o600))
+                .await;
+        }
 
         let child = spawn_child(&bin, &conf_path)?;
         record_pid(&dir, &child);
@@ -165,6 +176,8 @@ mod tests {
         assert!(!wg.contains("2a07:b944"));
         let proxy = std::fs::read_to_string(vpn.dir().join("wireproxy.conf")).unwrap();
         assert!(proxy.contains("BindAddress = 127.0.0.1:25999"));
+        assert!(proxy.contains("\nUsername = kroma\n"), "{proxy}");
+        assert!(proxy.contains("\nPassword = "), "{proxy}");
         assert!(vpn.dir().join("wireproxy.pid").exists());
         vpn.stop().await;
     }

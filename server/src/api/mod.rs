@@ -181,17 +181,31 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
 
 // The host callback surface is for local sidecars only. A request from any
 // non-loopback peer is answered 404, so the surface is not advertised off-host.
+// A same-host reverse proxy or tunnel (cloudflared) also arrives from loopback,
+// carrying the visitor's address in a forwarding header no sidecar ever sends.
 async fn host_loopback_only(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     req: Request,
     next: Next,
 ) -> Response {
-    if addr.ip().to_canonical().is_loopback() {
+    let relayed = RELAY_HEADERS
+        .iter()
+        .any(|name| req.headers().contains_key(*name));
+    if addr.ip().to_canonical().is_loopback() && !relayed {
         next.run(req).await
     } else {
         json_error(StatusCode::NOT_FOUND, "not found")
     }
 }
+
+const RELAY_HEADERS: [&str; 6] = [
+    "forwarded",
+    "x-forwarded-for",
+    "x-forwarded-host",
+    "x-real-ip",
+    "cf-connecting-ip",
+    "cdn-loop",
+];
 
 // Reverse-proxies to the installed module's process; the module validates the
 // forwarded bearer itself against the shared DB.
@@ -279,9 +293,9 @@ pub fn router(
         supervisor.clone(),
         kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
     )
-    .merge(host_jobs::routes(supervisor.host_token().to_string()))
+    .merge(host_jobs::routes())
     .merge(host_events::routes(
-        supervisor.host_token().to_string(),
+        supervisor.clone(),
         subscriptions.clone(),
     ))
     .layer(from_fn(host_loopback_only));

@@ -61,10 +61,12 @@ impl Supervisor {
             }
         };
         let mut child = Command::new(&bin)
+            .env_clear()
+            .envs(crate::sidecar_env::inherited(std::env::vars_os()))
             .env("KROMA_MODULE_ID", id)
             .env("KROMA_MODULE_PORT", port.to_string())
             .env("KROMA_CORE_URL", &self.cfg.core_url)
-            .env("KROMA_HOST_TOKEN", &self.cfg.host_token)
+            .env("KROMA_HOST_TOKEN", self.port_token(id))
             // What a callback names its caller with. A module built before this
             // existed sends the fabric token above, which names none.
             .env("KROMA_MODULE_TOKEN", self.module_token(id))
