@@ -58,8 +58,8 @@ impl RemoteAccess {
     }
 
     // Resolution order: packaged next to the server executable, a copy cached
-    // under `<data_dir>/bin`, then `cloudflared` from `PATH` (dev fallback).
-    // Never an admin-configured path.
+    // under `<data_dir>/bin` by a verified download, then `cloudflared` from
+    // `PATH` (dev fallback). Never an admin-configured path.
     pub(crate) fn resolve_binary(&self) -> String {
         let name = provision::bin_name();
         if let Ok(exe) = std::env::current_exe() {
@@ -69,8 +69,7 @@ impl RemoteAccess {
                 }
             }
         }
-        let cached = provision::cached_path(&self.data_dir);
-        if cached.is_file() {
+        if let Some(cached) = provision::cached_binary(&self.data_dir) {
             return cached.to_string_lossy().into_owned();
         }
         name.to_string()
@@ -151,6 +150,18 @@ mod tests {
         let resolved = remote.resolve_binary();
 
         assert_eq!(resolved, cached.to_string_lossy());
+    }
+
+    #[test]
+    fn ignores_a_cached_copy_that_is_not_the_pinned_download() {
+        let host = host();
+        let remote = remote_for(&host);
+        install_script(host.data_dir(), RUNNING);
+        std::fs::remove_file(provision::sha256_path(host.data_dir())).unwrap();
+
+        let resolved = remote.resolve_binary();
+
+        assert_eq!(resolved, provision::bin_name());
     }
 
     #[test]

@@ -2033,6 +2033,7 @@ name = "kroma-primitives"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "kroma-testing",
  "sha2",
  "time",
 ]
