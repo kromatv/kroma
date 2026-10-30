@@ -6,6 +6,7 @@
 
 import { z } from 'zod';
 import { Contribution, PointDef, PointReq } from '../documents/v1.ts';
+import { Permissions } from './permissions.ts';
 
 // Any optional field may arrive as an explicit null.
 const DependencyMap = z.record(z.string(), z.string()).nullish();
@@ -161,6 +162,9 @@ export const Manifest = z.object({
     .describe('Admin-configurable settings this module exposes, rendered as a form.'),
   storage: Storage.nullish().describe(
     "This module's databases, and the capability itself: without a storage object the module gets no database and its binary does not link SQLite. Its presence alone grants it its own file at <data>/modules/<id>/module.sqlite, where its migrations run and which it owns outright.",
+  ),
+  permissions: Permissions.nullish().describe(
+    'What this module may do: network connections and listeners, filesystem roots, binaries it starts, environment variables. What it does not declare is denied. See docs/module-security.md.',
   ),
   settings: SettingsScope.nullish().describe(
     'The core settings keys this module reads and writes. Absent is not the same as empty: a manifest with no settings object predates the field, so it keeps every ordinary preference and reaches none of the credentials a module has to declare.',

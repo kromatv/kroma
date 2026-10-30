@@ -7,6 +7,7 @@ mod compat;
 mod embedded;
 mod event;
 mod manifest;
+mod permissions;
 mod registry;
 
 pub use compat::{
@@ -23,6 +24,9 @@ pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
     ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,
     SettingsScope, Storage, Version,
+};
+pub use permissions::{
+    Attempt, Connect, FsPermissions, FsRoot, Listen, NetPermissions, Permissions, Proto,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
 

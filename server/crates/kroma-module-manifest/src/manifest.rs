@@ -382,6 +382,9 @@ pub struct ModuleManifest {
     pub settings: Option<SettingsScope>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
+    /// Absent for a module that predates the field. See [`crate::Permissions`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<crate::Permissions>,
 }
 
 impl ModuleManifest {
@@ -409,6 +412,7 @@ impl ModuleManifest {
             storage: None,
             settings: None,
             library: false,
+            permissions: None,
         }
     }
 
