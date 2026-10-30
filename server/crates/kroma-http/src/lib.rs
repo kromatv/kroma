@@ -7,7 +7,8 @@
 //! (Transmission's `X-Transmission-Session-Id` rides a 409 response), which is
 //! also why requests never enable `fail`: callers read [`Response::status`]
 //! instead of losing the body on HTTP errors. Options reach curl through a
-//! config file on its stdin, never through argv.
+//! config file on its stdin, never through argv. Every call passes through
+//! the process's [`egress`] gate and sink, when they are installed.
 //!
 //! [`Loopback`] reaches a process KROMA started itself -- the core from a
 //! module, a module from the core. It holds no transport of its own: a
@@ -17,6 +18,7 @@ pub mod address;
 mod builder;
 mod config;
 mod curl;
+pub mod egress;
 mod fetch;
 pub mod loopback;
 mod multipart;
