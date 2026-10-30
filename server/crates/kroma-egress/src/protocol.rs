@@ -127,3 +127,6 @@ pub(crate) fn encode_short(value: &str) -> Result<Vec<u8>> {
     out.extend_from_slice(value.as_bytes());
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests;
