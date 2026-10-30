@@ -42,7 +42,10 @@ restart progress are shown as the page's main card, and survive a page reload.
    host**, e.g. `/opt/kroma-updater/`. Run it with the same Docker context and
    Compose project/environment as the original deployment.
 2. Create `/opt/kroma/update-bridge`, writable by KROMA's container UID and the
-   host updater, accessible only to those users. Bind mount it and set:
+   host updater, accessible only to those users. On POSIX hosts use a shared
+   group and setgid on this directory so new updater files inherit that group.
+   Shared status files use mode 0640; private host state remains mode 0600.
+   Bind mount it and set:
 
    ```yaml
    services:
@@ -98,7 +101,9 @@ Windows use Windows paths in JSON (escaped backslashes or forward slashes).
 Run the updater on DSM itself, independently of the package being replaced.
 Install Python 3.9+ and put the script in an administrator-owned location
 outside `/var/packages/kroma/target`. Create a private shared bridge, grant
-`sc-kroma` write access, and add to `/var/packages/kroma/var/kroma.conf`:
+`sc-kroma` write access through a shared group with setgid on the bridge so
+the package can read the updater's group-readable status files. Add to
+`/var/packages/kroma/var/kroma.conf`:
 
 ```sh
 export KROMA_UPDATE_DIR=/volume1/kroma-update-bridge
@@ -204,6 +209,10 @@ python3 -m unittest discover -s server/updater -v
 cd server && cargo test -p kroma-engine services::updates --lib
 cargo test -p kroma-server --features kroma-db/testing api::it_updates
 ```
+
+CI also runs these tests with the pinned `coverage` development tool, requires
+at least 95% line coverage, and imports the XML report into SonarCloud. The
+updater itself continues to need only the Python standard library.
 
 Docker/DSM commands are exercised with test doubles. Actual container replacement,
 DSM trust policies and a full migration/recovery drill require a deployment test;

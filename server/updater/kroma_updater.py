@@ -19,6 +19,7 @@ import urllib.request
 RELEASES = 'https://api.github.com/repos/kromatv/kroma/releases'
 IMAGE = 'ghcr.io/kromatv/kroma'
 ACTIVE = {'queued', 'preparing', 'waiting_idle', 'installing', 'restarting'}
+MAX_PACKAGE_BYTES = 2 * 1024**3
 
 
 def wait_until_idle(config):
@@ -47,15 +48,16 @@ def read_json(path):
         return json.loads(content)
 
 
-def write_json(path, value):
+def write_json(path, value, shared=False):
     # Unique, exclusive temporary files prevent symlink substitution in bridge.
     fd, temporary = tempfile.mkstemp(dir=path.parent, prefix='.updater-')
     try:
         with os.fdopen(fd, 'w') as stream:
+            if shared and os.name != 'nt':
+                os.fchmod(stream.fileno(), 0o640)
             json.dump(value, stream)
             stream.flush()
             os.fsync(stream.fileno())
-        os.chmod(temporary, 0o644)
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):
@@ -145,11 +147,11 @@ def synology_update(config, target, assets, before_apply=lambda: None):
                 if not chunk:
                     break
                 size += len(chunk)
-                if size > 2 * 1024**3:
+                if size > MAX_PACKAGE_BYTES:
                     raise ValueError('Package exceeds 2 GiB limit')
                 sha.update(chunk)
                 out.write(chunk)
-        if sha.hexdigest() != digest[7:]:
+        if not digest.endswith(sha.hexdigest()):
             raise ValueError('Package checksum mismatch')
         before_apply()
         run(['/usr/syno/bin/synopkg', 'install', str(package)])
@@ -182,7 +184,7 @@ def process(config):
     previous = read_json(journal) if journal.exists() else None
     if previous and previous['id'] == request['id']:
         if previous['phase'] not in ACTIVE:
-            write_json(bridge / 'result.json', previous)
+            write_json(bridge / 'result.json', previous, shared=True)
             return
         # Never replay an interrupted privileged install. Reconcile its health.
         request = previous
@@ -192,83 +194,108 @@ def process(config):
     def report(phase, message=None):
         request.update(phase=phase, message=message)
         write_json(journal, request)
-        write_json(bridge / 'result.json', request)
+        write_json(bridge / 'result.json', request, shared=True)
     try:
         if previous and previous['id'] == request['id']:
             wait_for_build(config, target, previous.get('instanceId'))
         else:
-            health = fetch_json(config['health_url'])
-            request['instanceId'] = health['instanceId']
-            report('preparing')
-            assets = release_for(target)
-            def before_apply():
-                if request.get('automatic'):
-                    report('waiting_idle')
-                    wait_until_idle(config)
-                report('installing')
-            if config['platform'] == 'docker':
-                docker_update(config, target, before_apply)
-            elif config['platform'] == 'synology':
-                synology_update(config, target, assets, before_apply)
-            else:
-                before_apply()
-                run(config['command'], input=json.dumps(request))
-            report('restarting')
-            wait_for_build(config, target, request['instanceId'])
+            install_request(config, request, target, report)
         report('complete')
     except Exception as error:
-        if isinstance(error, subprocess.CalledProcessError):
-            print('Host command failed:', error.cmd[0], error.stderr, flush=True)
-        # Commands may print private environment/config; never return stderr.
-        message = ('The host update command failed. Inspect the updater service log.'
-                   if isinstance(error, subprocess.SubprocessError) else str(error))
-        report('failed', message[:500])
+        report('failed', failure_message(error)[:500])
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', required=True)
-    parser.add_argument('--once', action='store_true', help='Process once, for DSM Task Scheduler')
-    args = parser.parse_args()
-    config = read_json(Path(args.config))
-    if config['platform'] not in ('docker', 'synology', 'binary', 'unknown'):
-        parser.error('Unsupported platform')
+def failure_message(error):
+    if isinstance(error, subprocess.CalledProcessError):
+        print('Host command failed:', error.cmd[0], error.stderr, flush=True)
+    # Commands may print private environment/config; never return stderr.
+    if isinstance(error, subprocess.SubprocessError):
+        return 'The host update command failed. Inspect the updater service log.'
+    return str(error)
+
+
+def install_request(config, request, target, report):
+    health = fetch_json(config['health_url'])
+    request['instanceId'] = health['instanceId']
+    report('preparing')
+    assets = release_for(target)
+
+    def before_apply():
+        if request.get('automatic'):
+            report('waiting_idle')
+            wait_until_idle(config)
+        report('installing')
+
+    if config['platform'] == 'docker':
+        docker_update(config, target, before_apply)
+    elif config['platform'] == 'synology':
+        synology_update(config, target, assets, before_apply)
+    else:
+        before_apply()
+        run(config['command'], input=json.dumps(request))
+    report('restarting')
+    wait_for_build(config, target, request['instanceId'])
+
+
+def load_config(path):
+    path = Path(path)
+    if not path.is_absolute():
+        raise ValueError('config must be an absolute path')
+    config = read_json(path)
     required = {'docker': ('project', 'service', 'compose_files'),
                 'synology': ('arch',), 'binary': ('command',), 'unknown': ('command',)}
+    if config['platform'] not in required:
+        raise ValueError('Unsupported platform')
     for key in ('bridge_dir', 'state_dir', 'health_url') + required[config['platform']]:
         if not config.get(key):
-            parser.error('Missing updater configuration: ' + key)
+            raise ValueError('Missing updater configuration: ' + key)
     if config['platform'] in ('binary', 'unknown') and (
             not isinstance(config['command'], list)
             or not all(isinstance(arg, str) for arg in config['command'])):
-        parser.error('command must be a nonempty argument array')
+        raise ValueError('command must be a nonempty argument array')
     for key in ('bridge_dir', 'state_dir'):
         if not Path(config[key]).is_absolute():
-            parser.error(key + ' must be an absolute path')
+            raise ValueError(key + ' must be an absolute path')
     state, bridge = Path(config['state_dir']).resolve(), Path(config['bridge_dir']).resolve()
     if state == bridge or bridge in state.parents:
-        parser.error('state_dir must be outside the shared bridge')
+        raise ValueError('state_dir must be outside the shared bridge')
+    if path.resolve() == bridge or bridge in path.resolve().parents:
+        raise ValueError('config must be outside the shared bridge')
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
     bridge.mkdir(parents=True, exist_ok=True, mode=0o770)
-    # Lock in the operator-owned directory; concurrent schedulers must not apply
-    # the same request twice. POSIX hosts use flock; Windows uses msvcrt.
+    return config
+
+
+def lock_state(state):
+    # The operator-owned lock survives service replacement. Closing releases it.
     lock = (state / 'lock').open('a+')
-    if os.name == 'nt':
-        import msvcrt
-        lock.write('0')
-        lock.flush()
-        lock.seek(0)
-        msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
-    else:
-        import fcntl
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            lock.write('0')
+            lock.flush()
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        lock.close()
+        raise
+    return lock
+
+
+def heartbeat(config, stop):
+    bridge = Path(config['bridge_dir'])
+    while not stop.is_set():
+        write_json(bridge / 'heartbeat.json', {'protocol': 1, 'platform': config['platform'],
+                                              'timestamp': int(time.time())}, shared=True)
+        stop.wait(15)
+
+
+def serve(config, once):
     stop = threading.Event()
-    def heartbeat():
-        while not stop.is_set():
-            write_json(bridge / 'heartbeat.json', {'protocol': 1, 'platform': config['platform'],
-                                                  'timestamp': int(time.time())})
-            stop.wait(15)
-    thread = threading.Thread(target=heartbeat, daemon=True)
+    thread = threading.Thread(target=heartbeat, args=(config, stop), daemon=True)
     thread.start()
     try:
         while True:
@@ -276,12 +303,25 @@ def main():
                 process(config)
             except (OSError, ValueError, KeyError) as error:
                 print('Invalid update request:', error, flush=True)
-            if args.once:
+            if once:
                 break
             stop.wait(2)
     finally:
         stop.set()
         thread.join()
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--config', required=True)
+    parser.add_argument('--once', action='store_true', help='Process once, for DSM Task Scheduler')
+    args = parser.parse_args(argv)
+    try:
+        config = load_config(args.config)
+    except (OSError, ValueError, KeyError) as error:
+        parser.error(str(error))
+    with lock_state(Path(config['state_dir'])):
+        serve(config, args.once)
 
 
 if __name__ == '__main__':

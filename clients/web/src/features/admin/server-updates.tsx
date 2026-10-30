@@ -38,8 +38,8 @@ function UpdatesContent() {
     try {
       await fn();
       await reload();
-    } catch (failure) {
-      setError(apiErrorBody(failure).error ?? t('admin.updatesActionFailed'));
+    } catch (error_) {
+      setError(apiErrorBody(error_).error ?? t('admin.updatesActionFailed'));
     } finally {
       setBusy(false);
     }

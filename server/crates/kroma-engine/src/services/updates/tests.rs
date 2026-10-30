@@ -416,3 +416,66 @@ fn a_backup_interrupted_by_restart_can_be_retried() {
     assert_eq!(status(&state).operation.unwrap().phase, "failed");
     assert!(install(&state, target()).is_ok());
 }
+
+#[test]
+fn a_backup_write_failure_never_reaches_the_host() {
+    let state = updater();
+    std::fs::write(state.config.data_dir.join("update-backups"), b"blocked").unwrap();
+
+    assert!(install(&state, target()).is_err());
+
+    let op = status(&state).operation.unwrap();
+    assert_eq!(op.phase, "failed");
+    assert!(op.message.unwrap().contains("could not be prepared"));
+    assert!(!state
+        .config
+        .update_dir
+        .as_ref()
+        .unwrap()
+        .join("request.json")
+        .exists());
+}
+
+#[test]
+fn a_request_publication_failure_is_persisted_for_manual_retry() {
+    let state = updater();
+    let dir = state.config.update_dir.as_ref().unwrap();
+    std::fs::create_dir(dir.join("request.tmp")).unwrap();
+
+    assert!(install(&state, target()).is_err());
+    assert_eq!(status(&state).operation.unwrap().phase, "failed");
+    assert!(!dir.join("request.json").exists());
+
+    std::fs::remove_dir(dir.join("request.tmp")).unwrap();
+    assert!(install(&state, target()).is_ok());
+}
+
+#[test]
+fn recovery_leaves_published_requests_to_the_host_but_fails_unpublished_ones() {
+    let state = updater();
+    let mut op = install(&state, target()).unwrap().operation.unwrap();
+    recover(&state).unwrap();
+    assert_eq!(status(&state).operation.unwrap().phase, "queued");
+
+    std::fs::remove_file(
+        state
+            .config
+            .update_dir
+            .as_ref()
+            .unwrap()
+            .join("request.json"),
+    )
+    .unwrap();
+    recover(&state).unwrap();
+    assert_eq!(status(&state).operation.unwrap().phase, "failed");
+
+    let build = crate::services::settings::build_info();
+    op.target.version = build.version;
+    op.target.build = build.number;
+    state
+        .settings
+        .set_internal(&state.db, OPERATION_KEY, json!(op))
+        .unwrap();
+    assert_eq!(status(&state).operation.unwrap().phase, "complete");
+    recover(&test_state()).unwrap();
+}

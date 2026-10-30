@@ -16,3 +16,15 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_scheduled_installer_does_nothing_without_explicit_opt_in() {
+        let state = crate::test_support::test_state();
+        run(&JobContext::for_test(state.clone())).unwrap();
+        assert!(updates::status(&state).operation.is_none());
+    }
+}

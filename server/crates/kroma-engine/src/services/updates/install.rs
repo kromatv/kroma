@@ -158,7 +158,9 @@ fn save_operation(state: &SharedState, op: &Operation) -> Result<()> {
 }
 
 fn install_with_policy(state: &SharedState, target: Target, automatic: bool) -> Result<Status> {
-    let _guard = INSTALL_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = INSTALL_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if !installer(state).ready {
         bail!("The host updater is offline or has not been configured.");
     }
