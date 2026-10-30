@@ -2,6 +2,47 @@
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
+/// What a web URL points at, read without resolving anything.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WebTarget {
+    pub https: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+impl WebTarget {
+    /// The host as an address, when the URL names one literally.
+    pub fn literal(&self) -> Option<IpAddr> {
+        self.host.parse().ok()
+    }
+}
+
+/// The target of an absolute `http` or `https` URL. `None` for any other
+/// scheme, a URL with no host, or one carrying credentials (`user@host`),
+/// which can disguise where a URL really goes.
+pub fn web_target(url: &str) -> Option<WebTarget> {
+    let uri: hyper::Uri = url.parse().ok()?;
+    let authority = uri.authority()?;
+    if authority.as_str().contains('@') {
+        return None;
+    }
+    let https = match uri.scheme_str()? {
+        "https" => true,
+        "http" => false,
+        _ => return None,
+    };
+    let port = uri.port_u16().unwrap_or(if https { 443 } else { 80 });
+    let host = authority
+        .host()
+        .trim_start_matches('[')
+        .trim_end_matches(']')
+        .to_string();
+    if host.is_empty() {
+        return None;
+    }
+    Some(WebTarget { https, host, port })
+}
+
 /// Whether `ip` is routable on the public internet: not loopback, private,
 /// shared (CGNAT), link-local, multicast, documentation, benchmarking or
 /// reserved space. An IPv6 address that embeds an IPv4 one (mapped, NAT64,
@@ -126,6 +167,37 @@ mod tests {
             "ff02::fb",
         ] {
             assert!(!public(ip), "{ip}");
+        }
+    }
+
+    #[test]
+    fn a_web_target_takes_its_port_from_the_scheme_when_none_is_written() {
+        assert_eq!(
+            web_target("https://push.example/v2"),
+            Some(WebTarget {
+                https: true,
+                host: "push.example".into(),
+                port: 443
+            })
+        );
+        assert_eq!(web_target("http://push.example:8080/").unwrap().port, 8080);
+        assert_eq!(
+            web_target("https://[2001:db8::1]/").unwrap().literal(),
+            Some("2001:db8::1".parse().unwrap())
+        );
+    }
+
+    #[test]
+    fn a_url_that_is_not_plainly_a_web_address_has_no_target() {
+        for url in [
+            "ftp://push.example/",
+            "file:///etc/passwd",
+            "https://user:pass@push.example/",
+            "https://push.example@127.0.0.1/",
+            "/relative/path",
+            "not a url",
+        ] {
+            assert_eq!(web_target(url), None, "{url}");
         }
     }
 

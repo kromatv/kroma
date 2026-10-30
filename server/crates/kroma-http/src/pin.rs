@@ -5,14 +5,15 @@ use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 
 use anyhow::{bail, Context, Result};
 
-use crate::address::is_public;
+use crate::address::{is_public, web_target, WebTarget};
 use crate::config::option_line;
 
 // Resolving here and handing curl the vetted address is what defeats DNS
 // rebinding: curl never asks the resolver again, so the name cannot point at
 // a private address between the check and the connect.
 pub(crate) fn public_resolve_line(url: &str) -> Result<String> {
-    let (host, port) = host_and_port(url)?;
+    let WebTarget { host, port, .. } =
+        web_target(url).with_context(|| format!("{url} is not a plain http or https URL"))?;
     if let Ok(literal) = host.parse::<IpAddr>() {
         ensure_public(&host, literal)?;
         return Ok(String::new());
@@ -39,23 +40,6 @@ fn ensure_public(host: &str, ip: IpAddr) -> Result<()> {
         bail!("{host} resolves to {ip}, which is not a public internet address");
     }
     Ok(())
-}
-
-fn host_and_port(url: &str) -> Result<(String, u16)> {
-    let uri: hyper::Uri = url.parse().with_context(|| format!("parse URL {url}"))?;
-    let port = match (uri.port_u16(), uri.scheme_str()) {
-        (Some(port), _) => port,
-        (None, Some("https")) => 443,
-        (None, Some("http")) => 80,
-        _ => bail!("{url} names no http or https scheme"),
-    };
-    let host = uri
-        .host()
-        .with_context(|| format!("{url} names no host"))?
-        .trim_start_matches('[')
-        .trim_end_matches(']')
-        .to_string();
-    Ok((host, port))
 }
 
 #[cfg(test)]
@@ -97,21 +81,5 @@ mod tests {
     fn a_url_without_a_web_scheme_is_refused() {
         assert!(public_resolve_line("ftp://example.com/x").is_err());
         assert!(public_resolve_line("not a url").is_err());
-    }
-
-    #[test]
-    fn the_port_defaults_from_the_scheme() {
-        assert_eq!(
-            host_and_port("https://push.example/v2").unwrap(),
-            ("push.example".to_string(), 443)
-        );
-        assert_eq!(
-            host_and_port("http://push.example:8080/").unwrap(),
-            ("push.example".to_string(), 8080)
-        );
-        assert_eq!(
-            host_and_port("https://[2001:db8::1]/").unwrap(),
-            ("2001:db8::1".to_string(), 443)
-        );
     }
 }
