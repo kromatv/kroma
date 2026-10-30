@@ -33,7 +33,7 @@ fn short_ip(body: String) -> Option<String> {
 pub fn check(proxy: &str, check_url: &str) -> VpnCheck {
     let proxied = kroma_module_sdk::http::Fetch::new()
         .max_time(12)
-        .socks5(proxy.trim().trim_start_matches("socks5://"))
+        .socks5(proxy)
         .get(check_url)
         .and_then(|r| r.ensure_ok())
         .map(|r| r.text());
