@@ -19,11 +19,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 
 use axum::http::StatusCode;
-use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_supervisor::Supervisor;
 
 use crate::state::SharedState;
@@ -62,16 +60,13 @@ impl Subscriptions {
     }
 }
 
-/// The `/_host/register-events` route, guarded by the shared host token the same
-/// way the other callbacks are.
-pub fn routes(host_token: String, subs: Arc<Subscriptions>) -> Router<SharedState> {
+/// The `/_host/register-events` route. A module registers for itself only: the
+/// bearer must be one the `supervisor` minted for the module the body names.
+pub fn routes(supervisor: Arc<Supervisor>, subs: Arc<Subscriptions>) -> Router<SharedState> {
     Router::new()
         .route("/_host/register-events", post(register))
-        .route_layer(from_fn_with_state(
-            HostToken(host_token),
-            require_host_token,
-        ))
         .layer(Extension(subs))
+        .layer(Extension(supervisor))
 }
 
 #[derive(serde::Deserialize)]
@@ -83,8 +78,13 @@ struct RegisterBody {
 
 async fn register(
     Extension(subs): Extension<Arc<Subscriptions>>,
+    Extension(supervisor): Extension<Arc<Supervisor>>,
+    headers: axum::http::HeaderMap,
     Json(body): Json<RegisterBody>,
 ) -> Response {
+    if !supervisor.request_speaks_for(&body.module_id, &headers) {
+        return (StatusCode::UNAUTHORIZED, "bad host token").into_response();
+    }
     let count = body.topics.len();
     subs.set(&body.module_id, body.topics.into_iter().collect());
     tracing::info!(module = %body.module_id, topics = count, "module subscribed to events");
@@ -145,7 +145,7 @@ fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payloa
         return;
     };
     let url = format!("http://127.0.0.1:{port}/_event/{topic}");
-    let token = supervisor.host_token().to_string();
+    let token = supervisor.port_token(module_id);
     let body = payload.to_string();
     // Off the bus task: one slow module must not hold up the next event, and the
     // sidecar answers before it does the work anyway.
@@ -164,9 +164,46 @@ fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payloa
 mod tests {
     use super::*;
 
+    fn supervisor_minting(fabric: &str) -> Arc<Supervisor> {
+        let data = kroma_testing::temp_dir("host-events");
+        Supervisor::new(kroma_module_supervisor::SupervisorConfig {
+            modules_dir: data.path().join("modules"),
+            core_url: "http://127.0.0.1:0".into(),
+            host_token: fabric.into(),
+            db_path: data.path().join("kroma.db"),
+            data_dir: data.path().to_path_buf(),
+            reserved_ids: Vec::new(),
+            server_version: "0.0.0-test".into(),
+            log_line: None,
+        })
+    }
+
+    #[tokio::test]
+    async fn a_module_cannot_subscribe_another_module_to_the_bus() {
+        let supervisor = supervisor_minting("host-token");
+        let intruder = supervisor.port_token("tv.kroma.intruder");
+        let subs = Arc::new(Subscriptions::default());
+        let app =
+            routes(supervisor, subs.clone()).with_state(crate::api::test_support::test_app().state);
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/_host/register-events")
+            .header("authorization", format!("Bearer {intruder}"))
+            .header("content-type", "application/json")
+            .body(axum::body::Body::from(
+                serde_json::json!({ "moduleId": "tv.kroma.notes", "topics": ["a"] }).to_string(),
+            ))
+            .unwrap();
+
+        let status = tower::ServiceExt::oneshot(app, req).await.unwrap().status();
+
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(subs.wanting("a").is_empty());
+    }
+
     // The callback a sidecar POSTs at boot, driven the way it drives it.
     async fn register_via_route(subs: Arc<Subscriptions>, body: serde_json::Value) -> StatusCode {
-        let app = routes("host-token".into(), subs)
+        let app = routes(supervisor_minting("host-token"), subs)
             .with_state(crate::api::test_support::test_app().state);
         let req = axum::http::Request::builder()
             .method("POST")
@@ -200,7 +237,7 @@ mod tests {
     #[tokio::test]
     async fn the_callback_refuses_a_caller_with_no_host_token() {
         let subs = Arc::new(Subscriptions::default());
-        let app = routes("host-token".into(), subs.clone())
+        let app = routes(supervisor_minting("host-token"), subs.clone())
             .with_state(crate::api::test_support::test_app().state);
         let req = axum::http::Request::builder()
             .method("POST")

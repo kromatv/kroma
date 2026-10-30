@@ -293,9 +293,9 @@ pub fn router(
         supervisor.clone(),
         kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
     )
-    .merge(host_jobs::routes(supervisor.host_token().to_string()))
+    .merge(host_jobs::routes())
     .merge(host_events::routes(
-        supervisor.host_token().to_string(),
+        supervisor.clone(),
         subscriptions.clone(),
     ))
     .layer(from_fn(host_loopback_only));

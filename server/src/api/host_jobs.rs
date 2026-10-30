@@ -9,27 +9,21 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_supervisor::Supervisor;
 
 use crate::model::Category;
 use crate::services::jobs::{Cron, JobContext, RemoteRun};
 use crate::state::SharedState;
 
-/// The `/_host/register-job` route, guarded by the shared host token the same way
-/// `host_router` guards its callbacks. Merge into the `/api` router (before the
-/// `Extension(supervisor)` layer, which this handler reads).
-pub fn routes(host_token: String) -> Router<SharedState> {
-    Router::new()
-        .route("/_host/register-job", post(register_job))
-        .route_layer(from_fn_with_state(
-            HostToken(host_token),
-            require_host_token,
-        ))
+/// The `/_host/register-job` route. A module registers its own jobs only: the
+/// bearer must be one the supervisor minted for the module the body names.
+/// Merge into the `/api` router (before the `Extension(supervisor)` layer, which
+/// this handler reads).
+pub fn routes() -> Router<SharedState> {
+    Router::new().route("/_host/register-job", post(register_job))
 }
 
 #[derive(serde::Deserialize)]
@@ -44,8 +38,12 @@ struct RegisterJobBody {
 async fn register_job(
     State(state): State<SharedState>,
     Extension(supervisor): Extension<Arc<Supervisor>>,
+    headers: axum::http::HeaderMap,
     Json(body): Json<RegisterJobBody>,
 ) -> Response {
+    if !supervisor.request_speaks_for(&body.module_id, &headers) {
+        return (StatusCode::UNAUTHORIZED, "bad host token").into_response();
+    }
     let Some(key) = leak_key(&body.key) else {
         tracing::warn!(module = %body.module_id, key = %body.key, "refusing job key");
         return (StatusCode::BAD_REQUEST, "unusable job key").into_response();
@@ -76,11 +74,11 @@ async fn register_job(
 }
 
 // On each trigger, resolves the module's current local port and blocking-POSTs
-// `/_job/run/{key}` with the shared host token, on the JobManager's blocking
+// `/_job/run/{key}` with that module's port token, on the JobManager's blocking
 // thread (a long import is fine). A non-2xx or unreachable sidecar fails the
 // run, recorded by the console with the error message.
 fn remote_run(supervisor: Arc<Supervisor>, module_id: String, key: String) -> RemoteRun {
-    let host_token = supervisor.host_token().to_string();
+    let host_token = supervisor.port_token(&module_id);
     Arc::new(move |_ctx: &JobContext| -> anyhow::Result<()> {
         // Module not running (disabled, or mid-respawn): a scheduled fire is a
         // no-op, not a failure. Returning Ok keeps the job history clean instead
