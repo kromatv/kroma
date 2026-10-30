@@ -76,9 +76,6 @@ function AndroidBeta() {
               <h2 className="font-display text-2xl font-bold text-text">
                 {m.android_beta_tv_title()}
               </h2>
-              <p className="mt-3 text-sm font-semibold text-accent-text">
-                {m.android_beta_tv_status()}
-              </p>
               <p className="mb-6 mt-4 text-sm leading-relaxed text-muted">
                 {m.android_beta_tv_body()}
               </p>
