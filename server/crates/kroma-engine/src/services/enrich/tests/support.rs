@@ -123,3 +123,14 @@ pub(super) fn catalog(
         db::list_shows(&state.db, None).unwrap(),
     )
 }
+
+pub(super) fn scanned(state: &SharedState) -> crate::services::scan::ScanData {
+    let (items, shows) = catalog(state);
+    let changed_shows = shows.iter().map(|s| s.id.clone()).collect();
+    crate::services::scan::ScanData {
+        items,
+        shows,
+        changed_shows,
+        ..crate::services::scan::ScanData::default()
+    }
+}
