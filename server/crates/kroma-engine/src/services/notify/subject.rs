@@ -32,6 +32,12 @@ impl Subjects {
         self.0.actors.get(id).cloned()
     }
 
+    /// Who settled the row, named as their account reads now.
+    pub fn resolver(&self, row: &StoredNotification) -> Option<NotificationActor> {
+        let id = row.resolved_by.as_deref()?;
+        self.0.actors.get(id).cloned()
+    }
+
     fn route(&self, subject: &NotificationSubject, event: NotificationEvent) -> Option<String> {
         let id = subject.id.as_str();
         match subject.kind.as_str() {
@@ -83,6 +89,11 @@ mod tests {
             actor_id: None,
             data: None,
             dedupe_key: None,
+            group_key: None,
+            resolved_at: None,
+            resolved_by: None,
+            count: 1,
+            updated_at: 0,
             link: Some("/admin/requests".into()),
             image_url: None,
             actions: Vec::new(),

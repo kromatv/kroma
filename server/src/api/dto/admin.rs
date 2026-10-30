@@ -17,6 +17,11 @@ pub struct Health {
     #[serde(rename = "instanceId")]
     pub instance_id: String,
     pub version: &'static str,
+    pub build: u64,
+    #[serde(rename = "activeStreams", skip_serializing_if = "Option::is_none")]
+    pub active_streams: Option<usize>,
+    #[serde(rename = "autoInstallUpdates", skip_serializing_if = "Option::is_none")]
+    pub auto_install_updates: Option<bool>,
     #[serde(rename = "updateChannel", skip_serializing_if = "Option::is_none")]
     pub update_channel: Option<crate::services::updates::Channel>,
     pub ffprobe: bool,

@@ -9,7 +9,7 @@ import { type MetricRange, MetricsSnapshot, StorageInfo, Transcodes } from './me
 import { adminNotificationsApi } from './notifications';
 import { SettingsView } from './settings';
 import { Activity, HistoryStats, MostWatched, PlaybackSession, PlaysPage, TopUser } from './stats';
-import { UpdateStatus } from './updates';
+import { UpdateStatus, type UpdateTarget } from './updates';
 import { AdminOverview, type AdminUserPatch, AdminUsers } from './users';
 
 const Sessions = z.object({ sessions: z.array(PlaybackSession) });
@@ -38,6 +38,9 @@ export default function adminApi(ctx: RequestContext) {
 
     /** Whether a newer server exists on the owner's update channel. */
     updates: () => ctx.get('/admin/updates', UpdateStatus),
+    checkUpdates: () => ctx.post('/admin/updates/check', UpdateStatus),
+    installUpdate: (target: UpdateTarget) =>
+      ctx.post('/admin/updates/install', UpdateStatus, { body: target }),
 
     /** Live scan / enrichment status snapshot. */
     status: () => ctx.get('/status', Activity),

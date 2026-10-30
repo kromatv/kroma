@@ -23,6 +23,9 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         }
         _ => ctx.info(format!("{} is current", status.version)),
     }
+    if updates::install_automatically(&ctx.state)?.is_some() {
+        ctx.info("automatic update prepared; progress is available in Server updates");
+    }
     Ok(())
 }
 

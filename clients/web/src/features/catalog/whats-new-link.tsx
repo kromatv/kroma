@@ -10,15 +10,17 @@ export function WhatsNewLink() {
   const webRuntime = useWebRuntime();
 
   const t = useT();
-  const { data } = useQuery(webRuntime.queries.userQueries.releases());
+  const { data } = useQuery({
+    ...webRuntime.queries.userQueries.releases(),
+    refetchOnWindowFocus: true,
+  });
+  if (!data?.unseen) return null;
   return (
     <SideNav.Item to="/whats-new" icon={IconSparkles}>
       <SideNav.Label>{t('releases.title')}</SideNav.Label>
-      {data?.unseen ? (
-        <SideNav.Trailing>
-          <Badge tone="warning">{data.current}</Badge>
-        </SideNav.Trailing>
-      ) : null}
+      <SideNav.Trailing>
+        <Badge tone="warning">{data.current}</Badge>
+      </SideNav.Trailing>
     </SideNav.Item>
   );
 }

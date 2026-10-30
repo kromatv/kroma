@@ -85,6 +85,8 @@
   "jobs.trigger.manual": "manuel",
   "jobs.trigger.schedule": "planifié",
   "jobs.trigger.watch": "changement de fichier",
-  "jobs.update.check.desc": "Demande à GitHub toutes les six heures si une version plus récente de KROMA est sortie sur le canal choisi dans Général, sauf si la vérification est désactivée. Elle ne fait que le signaler : rien n'est téléchargé ni installé.",
-  "jobs.update.check.name": "Recherche de mises à jour"
+  "jobs.update.check.desc": "Vérifie votre canal toutes les six heures. Annonce les versions et prépare une installation au repos uniquement si elle est activée.",
+  "jobs.update.check.name": "Recherche de mises à jour",
+  "jobs.update.install.name": "Mise à jour automatique du serveur",
+  "jobs.update.install.desc": "Toutes les dix minutes, installe une version disponible si l’installation automatique est activée, l’outil hôte connecté et aucune lecture active. Crée d’abord une sauvegarde."
 }

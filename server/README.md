@@ -546,9 +546,28 @@ The from-source build needs the repo root as context (the server embeds the
 shared locale catalogs from `packages/` and the web SPA from `clients/`):
 
 ```bash
-docker build -f server/Dockerfile -t kroma .
+docker build -f server/Dockerfile \
+  --build-arg KROMA_GIT_HASH="$(git rev-parse --short HEAD)" \
+  --build-arg KROMA_GIT_HASH_FULL="$(git rev-parse HEAD)" \
+  --build-arg KROMA_GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
+  --build-arg KROMA_GIT_REMOTE="$(git config --get remote.origin.url)" \
+  --build-arg KROMA_BUILD_DIRTY="$(test -z "$(git status --porcelain)" && echo 0 || echo 1)" \
+  -t kroma .
 ```
+
+`.git` is not in the build context, so these arguments are the only way the
+commit reaches the image: the server's admin page and heartbeat read
+`KROMA_GIT_HASH`, and the web client's settings read all of them. Each is
+optional, and one left out reads as `unknown`.
 
 It builds on either arch natively. Use `docker buildx build --platform
 linux/arm64` to cross-build. CI assembles the published image from prebuilt
 static payloads instead (see `server/Dockerfile.runtime`).
+
+## Server updates
+
+Admin → Server updates checks Stable or Canary and offers an owner-initiated
+update with a backup and restart notice. One-click installation uses a separate
+host updater for Docker Compose or Synology, with a command adapter for other
+deployments. See [setup and recovery](updater/README.md) and the
+[implementation plan](../docs/server-updates-plan.md).

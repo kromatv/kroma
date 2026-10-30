@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browsableRemote, collectBuildInfo, productVersion } from './index';
 
 const work = mkdtempSync(join(tmpdir(), 'kroma-build-info-'));
@@ -252,5 +252,79 @@ describe('collectBuildInfo', { timeout: 30_000 }, () => {
       remote: 'https://x-access-token:ghs_SECRET@github.com/owner/repo',
     });
     expect(collectBuildInfo(dir).repository).toBe('https://github.com/owner/repo');
+  });
+});
+
+describe('collectBuildInfo with declared git values', { timeout: 30_000 }, () => {
+  const hash = 'abc1234';
+  const full = 'abc1234def5678abc1234def5678abc1234def56';
+
+  function declareCommit(): void {
+    vi.stubEnv('KROMA_GIT_HASH', hash);
+    vi.stubEnv('KROMA_GIT_HASH_FULL', full);
+    vi.stubEnv('KROMA_GIT_BRANCH', 'fix/declared');
+    vi.stubEnv('KROMA_GIT_REMOTE', 'git@github.com:owner/declared.git');
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('reports what the build declared when there is no checkout to ask', () => {
+    const dir = project({ git: false });
+
+    declareCommit();
+
+    expect(collectBuildInfo(dir)).toMatchObject({
+      commit: hash,
+      commitFull: full,
+      branch: 'fix/declared',
+      repository: 'https://github.com/owner/declared',
+    });
+  });
+
+  it('believes the declaration over the checkout it runs in', () => {
+    const dir = project({ git: true, remote: 'git@github.com:owner/checkout.git' });
+
+    declareCommit();
+
+    expect(collectBuildInfo(dir)).toMatchObject({
+      commit: hash,
+      commitFull: full,
+      branch: 'fix/declared',
+      repository: 'https://github.com/owner/declared',
+    });
+  });
+
+  it('asks git when a declaration is blank, as an unset build arg can be', () => {
+    const dir = project({ git: true, remote: 'git@github.com:owner/checkout.git' });
+
+    vi.stubEnv('KROMA_GIT_HASH', '');
+    vi.stubEnv('KROMA_GIT_HASH_FULL', '   ');
+    vi.stubEnv('KROMA_GIT_BRANCH', '');
+    vi.stubEnv('KROMA_GIT_REMOTE', '');
+
+    const info = collectBuildInfo(dir);
+
+    expect(info.commit).toMatch(/^[0-9a-f]{7,}$/);
+    expect(info.commitFull).toMatch(/^[0-9a-f]{40}$/);
+    expect(info.branch).toBeTruthy();
+    expect(info.repository).toBe('https://github.com/owner/checkout');
+  });
+
+  it('drops a credential from a declared remote', () => {
+    const dir = project({ git: false });
+
+    vi.stubEnv('KROMA_GIT_REMOTE', 'https://x-access-token:ghs_SECRET@github.com/owner/repo');
+
+    expect(collectBuildInfo(dir).repository).toBe('https://github.com/owner/repo');
+  });
+
+  it('takes the short hash and the full hash independently', () => {
+    const dir = project({ git: false });
+
+    vi.stubEnv('KROMA_GIT_HASH', hash);
+
+    expect(collectBuildInfo(dir)).toMatchObject({ commit: hash, commitFull: null });
   });
 });

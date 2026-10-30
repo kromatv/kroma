@@ -9,8 +9,12 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Every git-derived field is nullable: a build made outside a checkout still
- * ships, it just has less to say. */
+/**
+ * Every git-derived field is nullable: a build made outside a checkout still
+ * ships, it just has less to say. `KROMA_GIT_HASH`, `KROMA_GIT_HASH_FULL`,
+ * `KROMA_GIT_BRANCH` and `KROMA_GIT_REMOTE` win over git when set, for a build
+ * that has no `.git` to ask, such as `server/Dockerfile`.
+ */
 export interface BuildInfo {
   version: string;
   commit: string | null;
@@ -30,6 +34,10 @@ function git(cmd: string, cwd: string): string | null {
   } catch {
     return null;
   }
+}
+
+function declared(key: string): string | null {
+  return process.env[key]?.trim() || null;
 }
 
 /**
@@ -114,11 +122,13 @@ export function collectBuildInfo(
       productVersion(repoRootOf(projectRoot)) ??
       packageVersion(projectRoot) ??
       '0.0.0',
-    commit: git('rev-parse --short HEAD', projectRoot),
-    commitFull: git('rev-parse HEAD', projectRoot),
-    branch: git('rev-parse --abbrev-ref HEAD', projectRoot),
+    commit: declared('KROMA_GIT_HASH') ?? git('rev-parse --short HEAD', projectRoot),
+    commitFull: declared('KROMA_GIT_HASH_FULL') ?? git('rev-parse HEAD', projectRoot),
+    branch: declared('KROMA_GIT_BRANCH') ?? git('rev-parse --abbrev-ref HEAD', projectRoot),
     dirty: treeIsDirty(projectRoot),
     buildDate: new Date().toISOString(),
-    repository: browsableRemote(git('config --get remote.origin.url', projectRoot)),
+    repository: browsableRemote(
+      declared('KROMA_GIT_REMOTE') ?? git('config --get remote.origin.url', projectRoot),
+    ),
   };
 }

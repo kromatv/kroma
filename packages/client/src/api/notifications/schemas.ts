@@ -83,7 +83,19 @@ export const Notification = z.object({
   imageUrl: z.string().optional(),
   actions: z.array(NotificationAction).default([]),
   read: z.boolean(),
+  /** Set once the subject no longer needs anyone. A settled row carries no
+   * actions and says who settled it. */
+  resolved: z.boolean().default(false),
+  resolvedBy: NotificationActor.optional(),
+  /** Emissions this row stands for. A server built before folding sends none,
+   * which reads as the `1` an unfolded row has. */
+  count: z.number().default(1),
   createdAt: z.number(),
+  /** The latest emission. With `createdAt` it gives the span a folded row
+   * reads as; absent, it is `createdAt`. */
+  updatedAt: z.number().optional(),
+  /** What a repeat of this row collapses onto on a device. */
+  groupKey: z.string().optional(),
 });
 export type Notification = z.infer<typeof Notification>;
 

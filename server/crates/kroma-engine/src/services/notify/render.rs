@@ -38,11 +38,12 @@ fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> 
 /// actor come from it, so a route rename or a renamed account shows on rows
 /// already written.
 pub fn render(stored: &StoredNotification, locale: &str, subjects: &Subjects) -> Notification {
-    let resolved = vars_for(stored, locale);
-    let vars: Vec<(&str, &str)> = resolved
+    let interpolated = vars_for(stored, locale);
+    let vars: Vec<(&str, &str)> = interpolated
         .iter()
         .map(|(k, v)| (k.as_str(), v.as_str()))
         .collect();
+    let settled = stored.resolved_at.is_some();
     Notification {
         id: stored.id.clone(),
         category: stored.category,
@@ -52,26 +53,41 @@ pub fn render(stored: &StoredNotification, locale: &str, subjects: &Subjects) ->
         subject: stored.subject.clone(),
         actor: subjects.actor(stored),
         data: stored.data.clone(),
+        group_key: stored.group_key.clone(),
         link: subjects.link(stored),
         image_url: stored.image_url.clone(),
-        actions: stored
-            .actions
-            .iter()
-            .map(|a| NotificationAction {
-                id: a.id.clone(),
-                // Action labels are keys too, so a button reads in the same
-                // language as the row it sits on.
-                label: i18n::t(locale, &a.label_key, &vars),
-                kind: a.kind,
-                href: a.href.clone(),
-                method: a.method.clone(),
-                style: a.style,
-            })
-            .collect(),
+        actions: if settled {
+            Vec::new()
+        } else {
+            rendered_actions(stored, locale, &vars)
+        },
         push_category: stored.push_category,
         read: stored.read,
+        resolved: settled,
+        resolved_by: subjects.resolver(stored),
+        count: stored.count,
         created_at: stored.created_at,
+        updated_at: stored.updated_at,
     }
+}
+
+fn rendered_actions(
+    stored: &StoredNotification,
+    locale: &str,
+    vars: &[(&str, &str)],
+) -> Vec<NotificationAction> {
+    stored
+        .actions
+        .iter()
+        .map(|a| NotificationAction {
+            id: a.id.clone(),
+            label: i18n::t(locale, &a.label_key, vars),
+            kind: a.kind,
+            href: a.href.clone(),
+            method: a.method.clone(),
+            style: a.style,
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -96,6 +112,11 @@ mod tests {
             actor_id: None,
             data: None,
             dedupe_key: None,
+            group_key: None,
+            resolved_at: None,
+            resolved_by: None,
+            count: 1,
+            updated_at: 1_700_000_000_000,
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: vec![ActionSpec {

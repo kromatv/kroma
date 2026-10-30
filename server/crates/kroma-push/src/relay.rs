@@ -34,6 +34,9 @@ pub fn build_request(grant: &str, alert: &Alert<'_>, urgency: Urgency) -> Result
         "body": alert.body,
         "urgency": urgency.as_str(),
     });
+    if let Some(key) = alert.collapse_key {
+        notification["collapseKey"] = json!(key);
+    }
     if let Some((kind, id)) = alert.subject {
         notification["subject"] = json!({ "kind": kind, "id": id });
     }
@@ -92,6 +95,7 @@ mod tests {
             title: "Ready to watch",
             body: "Dune is now in your library.",
             subject: Some(("movie", "ab12")),
+            collapse_key: Some("media.added:movie:ab12"),
             link: Some("/movie/ab12"),
             image_url: Some("https://img/p.jpg"),
             category: Some("media_available"),
@@ -141,6 +145,7 @@ mod tests {
             title: "Hello",
             body: "",
             subject: None,
+            collapse_key: None,
             link: None,
             image_url: None,
             category: None,

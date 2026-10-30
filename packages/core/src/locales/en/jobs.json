@@ -85,6 +85,8 @@
   "jobs.trigger.manual": "manual",
   "jobs.trigger.schedule": "scheduled",
   "jobs.trigger.watch": "file change",
-  "jobs.update.check.desc": "Asks GitHub every six hours whether a newer KROMA is out on the update channel chosen in General, unless update checks are off. It only reports: nothing is downloaded or installed.",
-  "jobs.update.check.name": "Update check"
+  "jobs.update.check.desc": "Checks your chosen release channel every six hours. Shows available updates and, only if opted in, prepares an automatic update when idle.",
+  "jobs.update.check.name": "Update check",
+  "jobs.update.install.name": "Automatic server update",
+  "jobs.update.install.desc": "Every ten minutes, installs an available update only when automatic installation is enabled, the host updater is online and no streams are active. A backup is saved first."
 }

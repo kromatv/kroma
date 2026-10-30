@@ -21,5 +21,13 @@
   "nav.settings": "Settings",
   "nav.thisDevice": "This device",
   "nav.versionClient": "Client",
-  "nav.versionServer": "Server"
+  "nav.versionServer": "Server",
+  "nav.discover": "Discover",
+  "nav.yourSpace": "Your space",
+  "nav.more": "More",
+  "nav.updateAvailable": "Update available",
+  "nav.serverUpdating": "Updating server",
+  "nav.updateReview": "Review",
+  "nav.updateProgress": "View",
+  "nav.updateInProgress": "Updating…"
 }

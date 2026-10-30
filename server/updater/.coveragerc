@@ -1,0 +1,12 @@
+[run]
+data_file = coverage/python/.coverage
+relative_files = True
+source = server/updater
+omit = server/updater/test_*.py
+
+[report]
+show_missing = True
+fail_under = 95
+
+[xml]
+output = coverage/python/coverage.xml
