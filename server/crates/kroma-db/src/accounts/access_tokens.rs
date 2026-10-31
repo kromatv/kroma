@@ -1,7 +1,7 @@
 //! The long-lived device credential a session is minted from.
 
 use anyhow::Result;
-use rusqlite::params;
+use rusqlite::{params, Connection};
 
 use kroma_domain::User;
 
@@ -162,8 +162,7 @@ pub fn access_token_user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
 /// Stamp a device credential as seen now, re-labelling it with whatever the
 /// caller sent this time; an absent header keeps the stored label rather than
 /// blanking it.
-pub fn touch_access_token(pool: &Pool, token: &str, hints: &DeviceHints) -> Result<()> {
-    let conn = pool.get()?;
+pub fn touch_access_token(conn: &Connection, token: &str, hints: &DeviceHints) -> Result<()> {
     conn.execute(
         "UPDATE access_tokens SET last_seen = ?2, user_agent = COALESCE(?3, user_agent), \
          language = COALESCE(?4, language) WHERE token = ?1",
@@ -256,8 +255,9 @@ mod tests {
         assert_eq!(rows[0].id, kroma_primitives::short_hash("at1"));
         assert_eq!(rows[0].user_agent.as_deref(), Some("Firefox"));
 
-        touch_access_token(&p, "at1", &ua("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")).unwrap();
-        touch_access_token(&p, "at1", &DeviceHints::default()).unwrap();
+        let conn = p.get().unwrap();
+        touch_access_token(&conn, "at1", &ua("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")).unwrap();
+        touch_access_token(&conn, "at1", &DeviceHints::default()).unwrap();
         let rows = list_access_tokens(&p, &u.id).unwrap();
         assert_eq!(
             rows[0].user_agent.as_deref(),

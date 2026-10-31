@@ -3,7 +3,7 @@
 
 use super::{now_or_blank, params, row_to_user, Permission, Pool, Result, Row, User};
 
-use rusqlite::OptionalExtension;
+use rusqlite::{Connection, OptionalExtension};
 
 mod metrics;
 mod play_history;
@@ -149,7 +149,10 @@ pub fn delete_user(pool: &Pool, id: &str) -> Result<()> {
 }
 
 pub fn touch_last_seen(pool: &Pool, id: &str) -> Result<()> {
-    let conn = pool.get()?;
+    mark_last_seen(&*pool.get()?, id)
+}
+
+pub(crate) fn mark_last_seen(conn: &Connection, id: &str) -> Result<()> {
     conn.execute(
         "UPDATE users SET last_seen = ?2 WHERE id = ?1",
         params![id, now_or_blank()],
