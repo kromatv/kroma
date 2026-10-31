@@ -271,6 +271,8 @@ uuid = { workspace = true, features = ["v5"] }
 # router in-process with `tower::ServiceExt::oneshot`.
 [dev-dependencies]
 tempfile = { workspace = true }
+# `test-util` gives the shutdown tests a clock they can pause.
+tokio = { workspace = true, features = ["test-util"] }
 # The scratch directory the TLS test writes its cert pair into.
 kroma-testing = { workspace = true }
 
