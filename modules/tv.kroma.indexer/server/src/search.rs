@@ -35,7 +35,8 @@ pub fn run<S: HostStorage>(
         });
     }
     let caps = admin::indexer_caps(host, host.store(), row)?;
-    let releases = peers::search(host, &row.kind, &admin::endpoint_of(row), query, &caps)?;
+    let endpoint = admin::endpoint_of(host, row)?;
+    let releases = peers::search(host, &row.kind, &endpoint, query, &caps)?;
     tracing::info!(indexer = %row.name, releases = releases.len(), "engine answered");
     Ok(SearchOutcome {
         releases,

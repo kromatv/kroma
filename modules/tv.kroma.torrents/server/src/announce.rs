@@ -1,31 +1,44 @@
-//! Self-managed tracker announce that feeds the embedded engine peers it can't
-//! get for itself behind the VPN. librqbit dials trackers through reqwest, whose
-//! SOCKS support can't traverse the WireGuard-to-SOCKS bridge (it fails
-//! "host unreachable"), so with a proxy configured the engine's OWN tracker
-//! announce yields nothing - fatal for a private, IPv6-only swarm (no DHT
-//! fallback). We announce ourselves over the bridge with `curl`
-//! (`--socks5-hostname`, which DOES traverse it), parse BOTH `peers` and
-//! `peers6`, and hand librqbit the result as `initial_peers`. Any parse or
-//! network failure yields an empty list and the engine falls back to its own
-//! discovery.
+//! Tracker announce over the VPN proxy with `curl`, whose proxy resolves the
+//! names: the engine's peer source besides peer exchange while its own
+//! trackers, DHT and LSD are off.
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 use sha1::{Digest, Sha1};
 
-/// Announce to every HTTP tracker in the `.torrent` and return the union of
-/// peers (IPv4 + IPv6), deduped.
-pub fn tracker_peers(torrent_bytes: &[u8], socks: Option<&str>) -> Vec<SocketAddr> {
+/// Announce through `proxy` to the HTTP trackers in the `.torrent` and return
+/// the union of peers (IPv4 + IPv6), deduped.
+pub fn tracker_peers(torrent_bytes: &[u8], proxy: &str, peer_id: &[u8; 20]) -> Vec<SocketAddr> {
     let Some(info_hash) = info_hash(torrent_bytes) else {
         return Vec::new();
     };
+    announce_all(&info_hash, announce_urls(torrent_bytes), proxy, peer_id)
+}
+
+/// The same for a magnet link, from its `xt` info hash and `tr` trackers.
+pub fn magnet_peers(magnet: &str, proxy: &str, peer_id: &[u8; 20]) -> Vec<SocketAddr> {
+    let Ok(parsed) = librqbit_core::magnet::Magnet::parse(magnet) else {
+        return Vec::new();
+    };
+    let Some(info_hash) = parsed.as_id20() else {
+        return Vec::new();
+    };
+    announce_all(&info_hash.0, parsed.trackers, proxy, peer_id)
+}
+
+fn announce_all(
+    info_hash: &[u8; 20],
+    trackers: Vec<String>,
+    proxy: &str,
+    peer_id: &[u8; 20],
+) -> Vec<SocketAddr> {
     let mut out = Vec::new();
     let mut seen = std::collections::HashSet::new();
-    for url in announce_urls(torrent_bytes).into_iter().take(4) {
-        if !(url.starts_with("http://") || url.starts_with("https://")) {
-            continue; // UDP trackers need a different protocol; skip.
-        }
-        for addr in announce_once(&url, &info_hash, socks) {
+    let http = trackers
+        .into_iter()
+        .filter(|url| url.starts_with("http://") || url.starts_with("https://"));
+    for url in http.take(4) {
+        for addr in announce_once(&url, info_hash, proxy, peer_id) {
             if seen.insert(addr) {
                 out.push(addr);
             }
@@ -34,25 +47,23 @@ pub fn tracker_peers(torrent_bytes: &[u8], socks: Option<&str>) -> Vec<SocketAdd
     out
 }
 
-fn announce_once(base: &str, info_hash: &[u8; 20], socks: Option<&str>) -> Vec<SocketAddr> {
-    let mut peer_id = *b"-LM0001-000000000000";
-    for (i, b) in info_hash.iter().take(6).enumerate() {
-        let hex = b"0123456789abcdef";
-        peer_id[8 + i * 2] = hex[(b >> 4) as usize];
-        peer_id[9 + i * 2] = hex[(b & 0xf) as usize];
-    }
+fn announce_once(
+    base: &str,
+    info_hash: &[u8; 20],
+    proxy: &str,
+    peer_id: &[u8; 20],
+) -> Vec<SocketAddr> {
     let q = format!(
         "info_hash={}&peer_id={}&port=6881&uploaded=0&downloaded=0&left=1&numwant=200&compact=1&supportcrypto=1&event=started",
         urlencode(info_hash),
-        urlencode(&peer_id),
+        urlencode(peer_id),
     );
     let sep = if base.contains('?') { '&' } else { '?' };
     let url = format!("{base}{sep}{q}");
 
-    let mut fetch = kroma_module_sdk::http::Fetch::new().max_time(20);
-    if let Some(proxy) = socks {
-        fetch = fetch.socks5(proxy.to_string());
-    }
+    let fetch = kroma_module_sdk::http::Fetch::new()
+        .max_time(20)
+        .socks5(proxy);
     match fetch.get(&url).and_then(|r| r.ensure_ok()) {
         Ok(resp) => parse_peers(&resp.body),
         Err(_) => Vec::new(),
@@ -219,6 +230,143 @@ fn top_dict_strings(b: &[u8]) -> Vec<(&[u8], &[u8])> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::socks5_serving;
+
+    const PEER_ID: &[u8; 20] = b"-KR0001-abcdefghijkl";
+    const HASH: &str = "0123456789abcdef0123456789abcdef01234567";
+    const HASH_ENCODED: &str = "%01%23Eg%89%AB%CD%EF%01%23Eg%89%AB%CD%EF%01%23Eg";
+
+    fn two_peers() -> Vec<u8> {
+        let mut v = b"d8:intervali1800e5:peers12:".to_vec();
+        v.extend_from_slice(&[198, 51, 100, 1, 0x1a, 0xe1, 198, 51, 100, 2, 0x1a, 0xe2]);
+        v.push(b'e');
+        v
+    }
+
+    fn magnet(trackers: &[&str]) -> String {
+        let mut m = format!("magnet:?xt=urn:btih:{HASH}");
+        for tr in trackers {
+            m.push_str("&tr=");
+            m.push_str(tr);
+        }
+        m
+    }
+
+    #[test]
+    fn a_magnet_is_announced_through_the_proxy_which_resolves_the_tracker_name() {
+        let (proxy, asked) = socks5_serving(two_peers());
+
+        let peers = magnet_peers(
+            &magnet(&["http%3A%2F%2Ftracker.invalid%3A6969%2Fannounce"]),
+            &proxy,
+            PEER_ID,
+        );
+
+        let seen = asked.try_recv().unwrap();
+        assert_eq!(
+            peers,
+            vec![
+                "198.51.100.1:6881".parse::<SocketAddr>().unwrap(),
+                "198.51.100.2:6882".parse().unwrap(),
+            ]
+        );
+        assert_eq!(seen.target, "tracker.invalid:6969");
+        assert!(seen.request.starts_with(&format!(
+            "GET /announce?info_hash={HASH_ENCODED}&peer_id=-KR0001-abcdefghijkl&"
+        )));
+    }
+
+    #[test]
+    fn udp_trackers_are_skipped_and_at_most_four_http_trackers_are_asked() {
+        let (proxy, asked) = socks5_serving(two_peers());
+        let trackers = [
+            "udp://open.invalid:1337/announce",
+            "http://t1.invalid/announce",
+            "http://t2.invalid/announce",
+            "http://t3.invalid/announce",
+            "http://t4.invalid/announce",
+            "http://t5.invalid/announce",
+        ];
+
+        magnet_peers(&magnet(&trackers), &proxy, PEER_ID);
+
+        let targets: Vec<String> = asked.try_iter().map(|a| a.target).collect();
+        assert_eq!(
+            targets,
+            [
+                "t1.invalid:80",
+                "t2.invalid:80",
+                "t3.invalid:80",
+                "t4.invalid:80"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_peer_two_trackers_return_is_handed_over_once() {
+        let (proxy, _asked) = socks5_serving(two_peers());
+
+        let peers = magnet_peers(
+            &magnet(&["http://t1.invalid/announce", "http://t2.invalid/announce"]),
+            &proxy,
+            PEER_ID,
+        );
+
+        assert_eq!(peers.len(), 2);
+    }
+
+    #[test]
+    fn a_torrent_file_is_announced_under_the_hash_of_its_info_dict_keeping_the_tracker_query() {
+        let (proxy, asked) = socks5_serving(two_peers());
+        let torrent =
+            b"d8:announce45:http://tracker.invalid/announce?passkey=abc124:infod3:foo3:baree";
+
+        let peers = tracker_peers(torrent, &proxy, PEER_ID);
+
+        let seen = asked.try_recv().unwrap();
+        assert_eq!(peers.len(), 2);
+        assert!(seen.request.starts_with(
+            "GET /announce?passkey=abc12&info_hash=m%22b%12o%EBn%C7%BD4d%93P%25%C8%C6%09%C0%11%9D&"
+        ));
+    }
+
+    #[test]
+    fn nothing_is_asked_without_a_v1_info_hash() {
+        let (proxy, asked) = socks5_serving(two_peers());
+        let v2_only = format!(
+            "magnet:?xt=urn:btmh:1220{}&tr=http://t1.invalid/announce",
+            "ab".repeat(32)
+        );
+
+        let from_v2 = magnet_peers(&v2_only, &proxy, PEER_ID);
+        let from_garbage = magnet_peers("not a magnet", &proxy, PEER_ID);
+        let from_no_info = tracker_peers(
+            b"d8:announce26:http://t1.invalid/announcee",
+            &proxy,
+            PEER_ID,
+        );
+
+        assert!(from_v2.is_empty() && from_garbage.is_empty() && from_no_info.is_empty());
+        assert!(asked.try_recv().is_err());
+    }
+
+    #[test]
+    fn a_tracker_behind_a_dead_proxy_yields_no_peers() {
+        let peers = magnet_peers(
+            &magnet(&["http://t1.invalid/announce"]),
+            "127.0.0.1:1",
+            PEER_ID,
+        );
+
+        assert!(peers.is_empty());
+    }
+
+    #[test]
+    fn every_tier_of_an_announce_list_is_read() {
+        let t = b"d8:announce3:url13:announce-listll4:url1el4:url24:url3ee4:infod3:foo3:baree";
+
+        assert_eq!(announce_urls(t), ["url", "url1", "url2", "url3"]);
+    }
 
     #[test]
     fn parses_v4_and_v6_peers() {

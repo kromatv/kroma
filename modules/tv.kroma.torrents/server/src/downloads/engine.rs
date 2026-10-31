@@ -167,16 +167,14 @@ impl DownloadManager {
         out
     }
 
-    /// Announce through the proxy ourselves (curl) and inject the peers, for
-    /// torrents stuck at 0 peers: librqbit dials trackers via reqwest, whose
-    /// SOCKS support cannot traverse the WireGuard-to-SOCKS bridge. Blocking.
+    /// Announce through the proxy ourselves and inject the peers, for torrents
+    /// stuck at 0 peers. Blocking.
     #[cfg(feature = "rqbit")]
-    pub fn reseed_stalled(&self, host: &dyn HostCtx) {
-        // No proxy => librqbit's own (direct) announce works; nothing to do.
-        let Some(proxy) = active_proxy_url(host) else {
-            return;
-        };
+    pub fn reseed_stalled(&self, _host: &dyn HostCtx) {
         let Some(engine) = self.rqbit() else { return };
+        if !engine.is_sealed() {
+            return;
+        }
         let client = engine.client();
         let session_dir = self.state_dir.join("session");
         let rows = match self
@@ -202,7 +200,7 @@ impl DownloadManager {
             let Ok(bytes) = std::fs::read(&path) else {
                 continue;
             };
-            let peers = crate::announce::tracker_peers(&bytes, Some(&proxy));
+            let peers = engine.proxied_peers(Some(&bytes), "");
             if peers.is_empty() {
                 continue;
             }

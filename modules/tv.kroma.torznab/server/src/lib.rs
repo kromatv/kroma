@@ -18,6 +18,9 @@ const MAX_TIME_SECS: u32 = 40;
 
 fn fetch_xml(endpoint: &IndexerEndpoint, params: &[(&str, String)]) -> anyhow::Result<Vec<u8>> {
     let mut req = kroma_module_sdk::http::Fetch::new().max_time(MAX_TIME_SECS);
+    if let Some(proxy) = &endpoint.proxy {
+        req = req.socks5(proxy.as_str());
+    }
     if !endpoint.api_key.is_empty() {
         req = req.query("apikey", endpoint.api_key.clone());
     }
@@ -464,6 +467,7 @@ mod tests {
                 url: self.url.clone(),
                 api_key: "secret-key".into(),
                 categories: vec![2000, 2040],
+                proxy: None,
             }
         }
 
@@ -622,8 +626,22 @@ mod tests {
             url: "http://127.0.0.1:1/api".into(),
             api_key: String::new(),
             categories: Vec::new(),
+            proxy: None,
         };
         assert!(caps(&endpoint).is_err());
+    }
+
+    #[test]
+    fn an_endpoint_routed_through_a_proxy_never_goes_out_directly() {
+        let jackett = FakeJackett::always(CAPS_XML);
+        let endpoint = IndexerEndpoint {
+            url: jackett.url.clone(),
+            proxy: Some("127.0.0.1:1".into()),
+            ..IndexerEndpoint::default()
+        };
+
+        assert!(caps(&endpoint).is_err());
+        assert!(jackett.queries().is_empty());
     }
 
     #[test]
@@ -635,6 +653,7 @@ mod tests {
             url: jackett.url.clone(),
             api_key: String::new(),
             categories: Vec::new(),
+            proxy: None,
         };
         caps(&endpoint).unwrap();
         assert!(

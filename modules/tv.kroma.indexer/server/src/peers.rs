@@ -12,6 +12,7 @@
 use serde::Serialize;
 
 use kroma_module_sdk::host::{call, call_raw, pinned_resolver, HostCtx, Resolver};
+use kroma_module_sdk::http::address::web_target;
 
 use crate::db::IndexerRow;
 use crate::{Caps, Query, Release};
@@ -24,9 +25,25 @@ pub const ENGINE: &str = "tv.kroma.indexer/engine";
 /// opted in. Answered by whichever module runs one.
 pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
 
-/// The bridge URL, or `None` when no module runs one, so a search goes out
-/// directly rather than through a dead proxy.
-pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
+const VPN_NOT_RUNNING: &str =
+    "indexers are set to go through the VPN, and no VPN is running: nothing is sent directly";
+
+/// The proxy a request to `url` must take: `None` when indexers are not routed
+/// through the VPN or the host is on the local network. An error when the VPN
+/// is asked for and not running, so a search never goes out directly.
+pub fn route_for(host: &dyn HostCtx, url: &str) -> anyhow::Result<Option<String>> {
+    if !host.setting_bool("acqIndexersUseVpn", false) {
+        return Ok(None);
+    }
+    if web_target(url).is_some_and(|target| target.is_local()) {
+        return Ok(None);
+    }
+    proxy_url(host)
+        .map(Some)
+        .ok_or_else(|| anyhow::anyhow!(VPN_NOT_RUNNING))
+}
+
+fn proxy_url(host: &dyn HostCtx) -> Option<String> {
     let resolve = pinned_resolver(host, VPN_PROXY, None)?;
     call_raw(
         &resolve,
@@ -43,15 +60,18 @@ pub struct Endpoint {
     pub url: String,
     pub api_key: String,
     pub categories: Vec<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proxy: Option<String>,
 }
 
-/// The endpoint fields of an indexer row.
-pub fn endpoint_of(row: &IndexerRow) -> Endpoint {
-    Endpoint {
+/// The endpoint fields of an indexer row, with the proxy [`route_for`] chose.
+pub fn endpoint_of(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Endpoint> {
+    Ok(Endpoint {
         url: row.url.clone(),
         api_key: row.api_key.clone(),
         categories: row.categories.clone(),
-    }
+        proxy: route_for(host, &row.url)?,
+    })
 }
 
 /// Probe an endpoint's capabilities, which is also the admin test-connection
@@ -156,13 +176,44 @@ fn wire_query(query: &Query) -> WireQuery<'_> {
 
 #[cfg(test)]
 mod tests {
+    use kroma_module_sdk::host::testing::StubHost;
+
     use super::*;
+
+    fn indexers_through_the_vpn() -> StubHost {
+        StubHost::new().with_setting("acqIndexersUseVpn", serde_json::json!(true))
+    }
+
+    #[test]
+    fn an_indexer_is_not_reached_directly_while_the_vpn_it_must_use_is_down() {
+        let err = route_for(&indexers_through_the_vpn(), "https://tracker.example.org/")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("no VPN is running"), "{err}");
+    }
+
+    #[test]
+    fn an_indexer_on_the_local_network_is_reached_directly_even_behind_the_vpn() {
+        let route = route_for(&indexers_through_the_vpn(), "http://192.168.1.20:9117/api");
+
+        assert_eq!(route.unwrap(), None);
+    }
+
+    #[test]
+    fn without_the_vpn_option_an_indexer_is_reached_directly() {
+        assert_eq!(
+            route_for(&StubHost::new(), "https://tracker.example.org/").unwrap(),
+            None
+        );
+    }
 
     fn endpoint() -> Endpoint {
         Endpoint {
             url: "http://jackett".into(),
             api_key: "k".into(),
             categories: vec![2000],
+            proxy: None,
         }
     }
 
