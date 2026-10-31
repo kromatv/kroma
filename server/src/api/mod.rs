@@ -390,8 +390,9 @@ fn accepts_html(headers: &axum::http::HeaderMap) -> bool {
         .is_some_and(|v| v.contains("text/html"))
 }
 
-// A Vite content-hashed asset (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`):
-// a `-<hash>` stem suffix of 8+ [A-Za-z0-9_] chars and a non-HTML extension.
+// A Vite content-hashed asset (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`,
+// `cast-B6-ecRbX.js`): a `-<hash>` stem suffix and a non-HTML extension. The hash
+// is base64url, so it may itself hold a `-`.
 fn is_hashed_asset(path: &str) -> bool {
     let name = path.rsplit('/').next().unwrap_or("");
     if name.ends_with(".html") {
@@ -400,9 +401,26 @@ fn is_hashed_asset(path: &str) -> bool {
     let Some((stem, _ext)) = name.rsplit_once('.') else {
         return false;
     };
-    stem.rsplit_once('-').is_some_and(|(_, h)| {
-        h.len() >= 8 && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
-    })
+    let plain = stem.rsplit_once('-').is_some_and(|(_, h)| {
+        h.len() >= HASH_LEN && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+    });
+    plain || ends_in_base64url_hash(stem.as_bytes())
+}
+
+const HASH_LEN: usize = 8;
+
+fn ends_in_base64url_hash(stem: &[u8]) -> bool {
+    let Some(sep) = stem.len().checked_sub(HASH_LEN + 1) else {
+        return false;
+    };
+    let hash = &stem[sep + 1..];
+    stem[sep] == b'-'
+        && hash
+            .iter()
+            .all(|&b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+        && hash
+            .iter()
+            .any(|&b| b.is_ascii_uppercase() || b.is_ascii_digit())
 }
 
 #[cfg(test)]
@@ -459,5 +477,15 @@ mod tests {
         assert!(!is_hashed_asset("/movies"));
         assert!(!is_hashed_asset("/favicon.ico"));
         assert!(!is_hashed_asset("/assets/logo-dark.svg"));
+    }
+
+    #[test]
+    fn a_hash_holding_a_dash_is_still_a_content_hash() {
+        assert!(is_hashed_asset("/assets/cast-B6-ecRbX.js"));
+        assert!(is_hashed_asset("/assets/ui-L_FT-_o-.js"));
+        assert!(is_hashed_asset("/assets/nav-UvXRyM2-.js"));
+        assert!(is_hashed_asset("/assets/use-focus-ring-DTxN-gJP.js"));
+        assert!(!is_hashed_asset("/assets/sun-and-moon.svg"));
+        assert!(!is_hashed_asset("/assets/x-ab.js"));
     }
 }
