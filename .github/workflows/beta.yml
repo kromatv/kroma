@@ -1,0 +1,34 @@
+name: Beta channels
+
+# Once a day, the newest candidate reaches the testers: TestFlight for the
+# iPhone and the Apple TV, Google Play drafts for mobile and Android TV. A push
+# to main builds and validates, and uploads nothing. A day with no new
+# candidate ships nothing (see _distribute.yml).
+#
+#   gh workflow run beta.yml                        the newest candidate, now
+#   gh workflow run beta.yml -f build_run_id=<id>   that run, whatever its branch
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: 'Build & Release run to ship. Empty: the newest candidate.'
+        required: false
+        type: string
+
+concurrency:
+  group: beta
+  cancel-in-progress: false
+
+jobs:
+  distribute:
+    name: Beta channels
+    uses: ./.github/workflows/_distribute.yml
+    permissions:
+      actions: read # passed down to the called workflow
+      contents: read
+    with:
+      build_run_id: ${{ inputs.build_run_id || '' }}
+    secrets: inherit

@@ -1,0 +1,175 @@
+name: Distribute to the beta channels
+
+# Ships the store bundles of one Build & Release run: the iPhone and Apple TV
+# .ipa files to TestFlight, the mobile and Android TV bundles to Google Play as
+# drafts. It builds nothing, so testers install the bytes that run gated.
+#
+# Two callers, and no other way onto a tester's device: beta.yml once a day,
+# deploy.yml with the run it promotes. A push to main used to upload its own
+# candidate, which was up to seventeen TestFlight builds a day, four emails
+# each, against an upload limit Apple does not publish.
+#
+# `ci beta pick` decides first. With no run id it takes the newest run on main
+# whose Candidate gate passed. Either way it ships only a build number past the
+# highest one App Store Connect holds: Google Play refuses a version code it
+# has seen, so a run already shipped by the other caller must not go again.
+
+on:
+  workflow_call:
+    inputs:
+      build_run_id:
+        description: 'The Build & Release run to ship. Empty: the newest candidate.'
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  pick:
+    name: Pick the run
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # read Build & Release runs and their version artifact
+      contents: read
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.pick.outputs.run }}
+      version: ${{ steps.pick.outputs.version }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        # 6811609753 is the one App Store Connect record, iOS and tvOS.
+        run: bun run ci beta pick --app 6811609753 --run "$BUILD_RUN_ID"
+
+  testflight:
+    name: TestFlight
+    needs: pick
+    if: needs.pick.outputs.run != ''
+    runs-on: macos-26 # xcrun altool
+    permissions:
+      actions: read # download the run's artifacts
+      contents: read
+    timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Collect the iPhone and Apple TV builds
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+          pattern: kroma-{mobile,appletv}-ipa
+          run-id: ${{ needs.pick.outputs.run }}
+          github-token: ${{ github.token }}
+
+      - name: Upload the iPhone build
+        env:
+          IPA: dist/KROMA-mobile-${{ needs.pick.outputs.version }}.ipa
+          PLATFORM: ios
+        run: .github/scripts/upload-to-testflight.sh
+
+      - name: Upload the Apple TV build
+        # `!cancelled()` so one platform's failure does not skip the other.
+        if: ${{ !cancelled() }}
+        env:
+          IPA: dist/KROMA-appletv-${{ needs.pick.outputs.version }}.ipa
+          PLATFORM: tvos
+        run: .github/scripts/upload-to-testflight.sh
+
+  # One listing, two form-factor tracks, uploaded one after the other:
+  # committing a Play edit invalidates every other open edit, hence the
+  # concurrency group across callers. Drafts, never automatic rollouts.
+  play:
+    name: Google Play
+    needs: pick
+    if: needs.pick.outputs.run != ''
+    runs-on: ubuntu-latest
+    concurrency:
+      group: google-play-tv-kroma-app
+      cancel-in-progress: false
+    permissions:
+      actions: read # download the run's artifacts
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - name: Check Play configuration
+        id: configuration
+        env:
+          PLAY_STORE_READY: ${{ vars.PLAY_STORE_READY }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_MOBILE_TRACK: ${{ vars.PLAY_MOBILE_TRACK }}
+          PLAY_TV_TRACK: ${{ vars.PLAY_TV_TRACK }}
+        run: |
+          if [[ "$PLAY_STORE_READY" != true ]]; then
+            echo 'Play uploads are not activated; signed bundles remain available as build artifacts.'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ -z "$PLAY_SERVICE_ACCOUNT_JSON" || -z "$PLAY_MOBILE_TRACK" || -z "$PLAY_TV_TRACK" ]]; then
+            echo '::error::Play uploads need the service account and both form-factor track IDs.'
+            exit 1
+          fi
+          # Never turn a default or an incorrectly configured variable into a
+          # production release. Set these from the app's testing-track IDs.
+          case "$PLAY_MOBILE_TRACK" in internal|qa|alpha|beta) ;; *) exit 1 ;; esac
+          case "$PLAY_TV_TRACK" in tv:internal|tv:qa|tv:alpha|tv:beta) ;; *) exit 1 ;; esac
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+
+      - name: Download mobile bundle
+        if: steps.configuration.outputs.ready == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: kroma-mobile-aab
+          path: play/mobile
+          run-id: ${{ needs.pick.outputs.run }}
+          github-token: ${{ github.token }}
+
+      - name: Download Android TV bundle
+        if: steps.configuration.outputs.ready == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: kroma-androidtv-aab
+          path: play/tv
+          run-id: ${{ needs.pick.outputs.run }}
+          github-token: ${{ github.token }}
+
+      - name: Prepare mobile draft
+        if: steps.configuration.outputs.ready == 'true'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: tv.kroma.app
+          releaseFiles: play/mobile/*.aab
+          releaseName: KROMA ${{ needs.pick.outputs.version }} mobile
+          tracks: ${{ vars.PLAY_MOBILE_TRACK }}
+          status: draft
+          changesNotSentForReview: true
+
+      - name: Prepare Android TV draft
+        if: steps.configuration.outputs.ready == 'true'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: tv.kroma.app
+          releaseFiles: play/tv/*.aab
+          releaseName: KROMA ${{ needs.pick.outputs.version }} Android TV
+          tracks: ${{ vars.PLAY_TV_TRACK }}
+          status: draft
+          changesNotSentForReview: true

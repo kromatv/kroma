@@ -20,9 +20,9 @@
 # attached to the Release, and a beta-channel hiccup should not fail a release
 # that has otherwise gone out.
 #
-# A build App Store Connect already holds is a success too: every push to main
-# uploads its candidate for the internal testers, so the promote step usually
-# sends a build number Apple has seen (ITMS-4238, Redundant Binary Upload).
+# A build App Store Connect already holds is a success too: re-running the
+# failed jobs of a distribution sends again the platform that already went
+# (ITMS-4238, Redundant Binary Upload).
 set -euo pipefail
 
 MODE="${MODE:-upload}"

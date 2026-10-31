@@ -26,11 +26,15 @@ name: Build & Release
 #     developer mode accept it)
 #   - Android TV .apk (release-signed when the keystore secrets are set, else
 #     debug-signed for sideloading)
-#   - Apple TV .ipa, to TestFlight. Its own called workflow rather than a fourth
+#   - Apple TV .ipa, for TestFlight. Its own called workflow rather than a fourth
 #     job in the TV one, because unlike the .ipk/.wgt/.apk it is not a file a
 #     tester can sideload.
-#   - Mobile .apk + .aab + .ipa: the bundle goes to Google Play as a draft, the
-#     .ipa to TestFlight.
+#   - Mobile .apk + .aab + .ipa: the bundle for Google Play, the .ipa for
+#     TestFlight.
+#
+# None of the store bundles leaves the run from here. beta.yml ships the newest
+# candidate to TestFlight and Google Play once a day, and deploy.yml ships the
+# run it promotes, both through _distribute.yml.
 #
 # Module .kmod bundles are NOT in that set: they release independently from
 # .github/workflows/modules.yml.
@@ -80,6 +84,8 @@ on:
       - '.github/workflows/desktop-preview.yml'
       - '.github/workflows/apple-signing-doctor.yml'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/beta.yml'
+      - '.github/workflows/_distribute.yml'
   workflow_dispatch:
     inputs:
       version:
@@ -90,11 +96,6 @@ on:
         type: choice
         options: [all, spk, desktop, tv, mobile, android, tools]
         default: all
-        required: false
-      distribute:
-        description: 'Also distribute builds to TestFlight and prepare Google Play drafts'
-        type: boolean
-        default: false
         required: false
 
 # Candidates supersede.
@@ -144,13 +145,18 @@ jobs:
           VERSION_INPUT: ${{ github.event.inputs.version }}
           GH_TOKEN: ${{ github.token }}
       # deploy.yml promotes the version this run stamped, read back from here
-      # rather than worked out again once other tags may exist.
+      # rather than worked out again once other tags may exist. beta.yml reads
+      # the build number to tell whether the stores already have this run.
       - name: Record the stamped version
-        run: echo "${{ steps.v.outputs.version }}" > candidate-version.txt
+        run: |
+          echo "${{ steps.v.outputs.version }}" > candidate-version.txt
+          echo "${{ steps.v.outputs.build }}" > candidate-build.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: candidate-version
-          path: candidate-version.txt
+          path: |
+            candidate-version.txt
+            candidate-build.txt
           retention-days: 90
 
   # NB: the Synology .spk + its GitHub Pages "package source" (stable + canary)
@@ -216,8 +222,8 @@ jobs:
 
   # ---------------------------------------------------------------- Mobile ---
 
-  # Google Play bundle + TestFlight. Present in the publish `needs` below:
-  # a broken mobile build must not reach a tag.
+  # The Google Play bundle and the iPhone .ipa. Present in the publish `needs`
+  # below: a broken mobile build must not reach a tag.
   mobile:
     name: Mobile
     needs: version
@@ -231,26 +237,6 @@ jobs:
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
       build: ${{ needs.version.outputs.build }}
-    secrets: inherit
-
-  # One Play app, after BOTH signed bundles exist. A new listing needs a first
-  # manual upload and form-factor setup before PLAY_STORE_READY can be enabled.
-  play:
-    name: Google Play
-    needs: [version, mobile, tv]
-    if: >-
-      !cancelled()
-      && needs.mobile.result == 'success'
-      && needs.tv.result == 'success'
-      && (needs.version.outputs.channel == 'stable'
-          || (needs.version.outputs.channel == 'candidate' && github.event_name == 'push')
-          || github.event.inputs.distribute == 'true')
-    uses: ./.github/workflows/_release-play.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      version: ${{ needs.version.outputs.version }}
     secrets: inherit
 
   # --------------------------------------------------------------- Desktop ---
