@@ -3,7 +3,7 @@
 //! proxy and a proxy that is not diverting traffic both read as "not sealed".
 
 use std::collections::HashMap;
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Default)]
@@ -57,16 +57,21 @@ struct DirectProbe {
 
 static DIRECT_PROBES: Mutex<Option<HashMap<String, DirectProbe>>> = Mutex::new(None);
 
+fn direct_probes() -> MutexGuard<'static, Option<HashMap<String, DirectProbe>>> {
+    DIRECT_PROBES.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
 fn direct_ip(check_url: &str, exit: Option<&str>) -> Option<String> {
-    let mut probes = DIRECT_PROBES.lock().unwrap_or_else(PoisonError::into_inner);
-    let probes = probes.get_or_insert_with(HashMap::new);
-    if let Some(kept) = probes.get(check_url) {
-        if kept.at.elapsed() < DIRECT_PROBE_EVERY && kept.exit.as_deref() == exit {
-            return kept.direct.clone();
-        }
+    let kept = direct_probes()
+        .get_or_insert_with(HashMap::new)
+        .get(check_url)
+        .filter(|kept| kept.at.elapsed() < DIRECT_PROBE_EVERY && kept.exit.as_deref() == exit)
+        .map(|kept| kept.direct.clone());
+    if let Some(direct) = kept {
+        return direct;
     }
     let direct = echo(check_url, None).ok().and_then(short_ip);
-    probes.insert(
+    direct_probes().get_or_insert_with(HashMap::new).insert(
         check_url.to_string(),
         DirectProbe {
             at: Instant::now(),
