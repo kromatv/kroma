@@ -111,7 +111,8 @@ fn is_payload(dir: &Path) -> bool {
 
 fn download(url: &str, to: &Path) -> Result<()> {
     let out = std::process::Command::new("curl")
-        .args(["--fail", "--silent", "--show-error", "--location"])
+        .args(["-q", "--fail", "--silent", "--show-error", "--location"])
+        .args(["--proto", "=http,https", "--proto-redir", "=http,https"])
         .args(["--max-time", "1800", "--max-filesize"])
         .arg(MAX_PACKAGE_BYTES.to_string())
         .arg("--output")
