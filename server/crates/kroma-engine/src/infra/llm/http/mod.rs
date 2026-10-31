@@ -1,5 +1,5 @@
-//! HTTP LLM backend over `curl` (no heavy HTTP dependency same approach as the
-//! TMDB client). The wire differences between vendors live behind one
+//! HTTP LLM backend over `kroma_http` (no heavy HTTP dependency, same approach
+//! as the TMDB client). The wire differences between vendors live behind one
 //! [`Provider`] trait, so [`HttpLlm`] is provider-agnostic and adding a new
 //! vendor is a single self-contained `impl` + one line in [`provider_for`].
 //!
@@ -9,8 +9,8 @@
 //!   * **Anthropic** `POST {base}/v1/messages` (`x-api-key` +
 //!     `anthropic-version`) Claude.
 
-mod curl;
 mod providers;
+mod request;
 
 use anyhow::{anyhow, bail, Result};
 use serde_json::{json, Value};
@@ -18,8 +18,8 @@ use serde_json::{json, Value};
 use super::tools::{ToolBox, ToolDef};
 use super::LlmClient;
 
-use curl::{check_error, curl_get, curl_post, resolve_base};
 use providers::{provider_for, Provider};
+use request::{check_error, get_json, post_json, resolve_base};
 
 /// A configured HTTP LLM endpoint (provider + resolved base + model + params).
 pub struct HttpLlm {
@@ -68,7 +68,7 @@ impl HttpLlm {
             reasoning,
         );
         let headers = self.provider.headers(&self.api_key);
-        let v = curl_post(&self.provider.chat_url(&self.base), &headers, &body)?;
+        let v = post_json(&self.provider.chat_url(&self.base), &headers, &body)?;
         check_error(&v)?;
         self.provider.parse_reply(&v)
     }
@@ -100,7 +100,7 @@ impl HttpLlm {
                 self.temperature,
                 reasoning,
             );
-            let v = curl_post(&url, &headers, &body)?;
+            let v = post_json(&url, &headers, &body)?;
             check_error(&v)?;
             let turn = self.provider.parse_turn(&v)?;
             if let Some(t) = &turn.text {
@@ -197,7 +197,7 @@ pub fn list_models(provider: &str, base_url: &str, api_key: &str) -> Result<Vec<
     let provider = provider_for(provider);
     let base = resolve_base(base_url, provider.default_base())
         .ok_or_else(|| anyhow!("a base URL is required to list models"))?;
-    let v = curl_get(
+    let v = get_json(
         &provider.models_url(&base),
         &provider.headers(api_key.trim()),
     )?;
