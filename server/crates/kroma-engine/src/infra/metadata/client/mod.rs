@@ -140,9 +140,8 @@ fn note_failure(reason: &str, detail: &str) {
     }
 }
 
-/// GET `url` with URL-encoded query params, parsed as JSON `T`. `Err(())` on
-/// any transport/HTTP-status/parse failure so the caller never caches a
-/// transient failure as a permanent miss.
+/// GET `url` with `params` as the query, parsed as JSON `T`. `Err(())` on any
+/// failure, so a transient one is never cached as a miss.
 pub(super) fn tmdb_json<T: DeserializeOwned>(
     url: &str,
     api_key: &str,
