@@ -56,7 +56,7 @@
   "network.pageSub": "The connections the server and its modules make, which way they go, and what is listening.",
   "network.pause": "Pause",
   "network.presetConfirm": "Replace",
-  "network.presetConfirmMessage": "The current rules will be replaced. Nothing changes until you save.",
+  "network.presetConfirmMessage": "{hint} The current rules will be replaced. Nothing changes until you save.",
   "network.presetConfirmTitle": "Apply \"{preset}\"?",
   "network.presetDownloads": "Downloads through the VPN",
   "network.presetDownloadsHint": "Every module goes through the VPN, KROMA keeps its direct connection.",

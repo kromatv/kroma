@@ -134,7 +134,7 @@ export function RuleEditor({
     if (current.rules.length > 0) {
       const ok = await confirm({
         title: t('network.presetConfirmTitle', { preset: t(entry.labelKey) }),
-        message: `${t(entry.hintKey)} ${t('network.presetConfirmMessage')}`,
+        message: t('network.presetConfirmMessage', { hint: t(entry.hintKey) }),
         confirmLabel: t('network.presetConfirm'),
         cancelLabel: t('common.cancel'),
       });
