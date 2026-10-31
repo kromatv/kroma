@@ -5,6 +5,7 @@ import { c, installHarness, run } from './queries.fixture';
 vi.mock('#web/shared/lib/api', () => ({
   kromaClient: () => c,
   toMovieView: (_c: unknown, m: { id: string }) => ({ ...m, mapped: 'movie' }),
+  toMovieCardView: (_c: unknown, m: { id: string }) => ({ ...m, mapped: 'card' }),
   toShowView: (_c: unknown, s: { id: string }) => ({ ...s, mapped: 'show' }),
 }));
 
@@ -23,7 +24,6 @@ describe('the cache keys', () => {
   });
 
   it('separate the queries that would otherwise collide', () => {
-    expect(catalogQueries.movies().queryKey).not.toEqual(catalogQueries.moviesView().queryKey);
     expect(catalogQueries.shows().queryKey).not.toEqual(catalogQueries.showsView().queryKey);
     expect(userQueries.notifications().queryKey).not.toEqual(
       userQueries.notificationPrefs().queryKey,
@@ -58,11 +58,11 @@ describe('the cache keys', () => {
 
 describe('the catalogue views', () => {
   it('map every row through the view mapper', async () => {
-    c.media.movies.mockResolvedValue([{ id: 'm1' }, { id: 'm2' }]);
+    c.media.movieCards.mockResolvedValue([{ id: 'm1' }, { id: 'm2' }]);
     const out = await run(catalogQueries.moviesView());
     expect(out).toEqual([
-      { id: 'm1', mapped: 'movie' },
-      { id: 'm2', mapped: 'movie' },
+      { id: 'm1', mapped: 'card' },
+      { id: 'm2', mapped: 'card' },
     ]);
 
     c.media.shows.mockResolvedValue([{ id: 's1' }]);
@@ -70,8 +70,8 @@ describe('the catalogue views', () => {
   });
 
   it('hands the raw lists back unmapped where the ids are all that is needed', async () => {
-    c.media.movies.mockResolvedValue([{ id: 'm1' }]);
-    expect(await run(catalogQueries.movies())).toEqual([{ id: 'm1' }]);
+    c.media.shows.mockResolvedValue([{ id: 's1' }]);
+    expect(await run(catalogQueries.shows())).toEqual([{ id: 's1' }]);
   });
 });
 

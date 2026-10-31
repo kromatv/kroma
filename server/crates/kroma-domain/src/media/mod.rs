@@ -1,16 +1,18 @@
 //! The media catalog's entities: kinds, files, items, shows and seasons.
 //! A track's own description is [`kroma_module_wire`]'s, because a module
 //! answers with one too; the edition level is in [`edition`], the loudness
-//! measurement in [`loudness`], and which of a title's files is preferred in
-//! [`preference`].
+//! measurement in [`loudness`], which of a title's files is preferred in
+//! [`preference`], and the slim shape a list draws in [`card`].
 //!
 //! The JSON shape here is a public contract web/TV clients depend on it, so
 //! field names and casing must not drift.
 
+mod card;
 mod edition;
 mod loudness;
 mod preference;
 
+pub use card::*;
 pub use edition::*;
 pub use kroma_module_wire::{AudioStream, ColorInfo, HdrFormat, SubtitleTrack, VideoStream};
 pub use loudness::*;

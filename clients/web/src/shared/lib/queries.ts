@@ -6,7 +6,13 @@ import type { ItemId, Show, ShowDetail, ShowId, UpNext } from '@kromatv/client/m
 import type { QueryClient } from '@kromatv/client/query';
 import { genreSlugs } from '@kromatv/core';
 import { queryOptions } from '@tanstack/react-query';
-import { type MovieView, type ShowView, toMovieView, toShowView } from '#web/shared/lib/api';
+import {
+  type MovieCardView,
+  type ShowView,
+  toMovieCardView,
+  toMovieView,
+  toShowView,
+} from '#web/shared/lib/api';
 
 /** Everything the show-detail page needs, in one cache entry. It's inherently
  * two-stage (the TMDB discover overlay keys off the show's tmdbId, known only
@@ -22,18 +28,18 @@ export interface ShowBundle {
 /** What the featured banner spotlights: the mapped hero (the server's daily pick
  * with art/stream URLs resolved, or the local movie fallback wrapped in the same
  * shape). The queries that can come up empty spell the `| null` themselves. */
-export type HeroEntry = { type: 'movie'; movie: MovieView } | { type: 'show'; show: ShowView };
+export type HeroEntry = { type: 'movie'; movie: MovieCardView } | { type: 'show'; show: ShowView };
 
 /** Query factories capture the API client owned by this router. */
 export function createQueries(client: QueryClient) {
   const catalogQueries = {
-    /** All movies, art/stream URLs pre-resolved. */
+    /** All movies as a grid draws them, art pre-resolved. */
     moviesView: () =>
       queryOptions({
         queryKey: ['movies', 'view'] as const,
-        queryFn: async (): Promise<MovieView[]> => {
+        queryFn: async (): Promise<MovieCardView[]> => {
           const c = client;
-          return (await c.media.movies()).map((m) => toMovieView(c, m));
+          return (await c.media.movieCards()).map((m) => toMovieCardView(c, m));
         },
       }),
 
@@ -62,9 +68,6 @@ export function createQueries(client: QueryClient) {
             : { type: 'show', show: toShowView(c, hero.show) };
         },
       }),
-
-    /** Raw movie list (unmapped) used where the id-only data is enough. */
-    movies: () => client.query.media.movies(),
 
     shows: () => client.query.media.shows(),
 
