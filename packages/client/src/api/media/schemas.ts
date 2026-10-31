@@ -69,6 +69,22 @@ export const MediaItem = CatalogEntry.extend(Tracks.shape).extend({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 
+/** A movie as a list draws it (`GET /api/movies?view=card`): what a grid sorts,
+ * filters and paints, without the files, tracks, cast and crew only its own page
+ * reads. Every `MediaItem` is one. */
+export const MediaCard = MediaItem.pick({
+  id: true,
+  title: true,
+  kind: true,
+  year: true,
+  durationMs: true,
+  video: true,
+  library: true,
+  addedAt: true,
+  metadata: true,
+});
+export type MediaCard = z.infer<typeof MediaCard>;
+
 /** An episode the provider lists that the library does not hold: enough to show
  * the gap with a title, a still and the day it airs. */
 export const ListedEpisode = z.object({

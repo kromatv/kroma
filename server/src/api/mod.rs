@@ -97,6 +97,8 @@ mod it_media_bearer;
 #[cfg(test)]
 mod it_media_ticket;
 #[cfg(test)]
+mod it_movie_cards;
+#[cfg(test)]
 mod it_member_reach;
 #[cfg(test)]
 mod it_monitoring;

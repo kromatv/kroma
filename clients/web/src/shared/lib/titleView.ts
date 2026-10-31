@@ -8,6 +8,7 @@ import type {
   CastMember,
   CrewMember,
   ListedEpisode,
+  MediaCard,
   MediaItem,
   Season,
   Show,
@@ -77,7 +78,7 @@ export interface TitleView {
 /** `discover` overlays availability + request state onto owned content; it is
  * null when unavailable or the viewer lacks permission. */
 export type TitleInput =
-  | { source: 'movie'; item: MediaItem; similar: MediaItem[]; discover: DiscoverDetail | null }
+  | { source: 'movie'; item: MediaItem; similar: MediaCard[]; discover: DiscoverDetail | null }
   | {
       source: 'show';
       detail: ShowDetail;

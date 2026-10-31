@@ -1,4 +1,4 @@
-import { ItemId } from '@kromatv/client/media';
+import { type MediaCard, type MediaItem, ItemId } from '@kromatv/client/media';
 import { genreSlugs } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -11,19 +11,23 @@ import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
 
+const ENOUGH_NEIGHBOURS = 3;
+const SIMILAR_COUNT = 12;
+
 export const Route = createFileRoute('/_app/movies/$id')({
   loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
     // Catalogue is auth-gated: a signed-out deep-link goes to the gate (the
     // AuthGate overlay covers /, and its loader is guarded too).
     if (!isAuthed()) throw redirect({ to: '/' });
-    // Warm the cache the component reads from (item + full list for the
-    // similar-items fallback + embedding neighbours).
     const id = ItemId.parse(params.id);
-    await Promise.all([
-      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.item(id)),
-      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.movies()),
-      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.similar(id)),
+    const { catalogQueries } = webRuntime.queries;
+    const [, neighbours] = await Promise.all([
+      queryClient.ensureQueryData(catalogQueries.item(id)),
+      queryClient.ensureQueryData(catalogQueries.similar(id)),
     ]);
+    if (neighbours.length < ENOUGH_NEIGHBOURS) {
+      await queryClient.ensureQueryData(catalogQueries.moviesView());
+    }
   },
   pendingComponent: DetailSkeleton,
   component: MovieDetailPage,
@@ -32,25 +36,31 @@ export const Route = createFileRoute('/_app/movies/$id')({
 function MovieDetailPage() {
   const webRuntime = useWebRuntime();
 
-  const t = useT();
-  const { client, user } = useAuth();
   const id = ItemId.parse(Route.useParams().id);
   // Re-enrichment (incl. a corrected TMDB match) lands via the event stream.
   useCatalogLiveRefresh('item', id);
   const { data: item } = useSuspenseQuery(webRuntime.queries.catalogQueries.item(id));
-  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.movies());
-  const { data: embed } = useSuspenseQuery(webRuntime.queries.catalogQueries.similar(id));
+  const { data: neighbours } = useSuspenseQuery(webRuntime.queries.catalogQueries.similar(id));
+  if (neighbours.length >= ENOUGH_NEIGHBOURS) {
+    return <MovieDetail item={item} similar={neighbours.slice(0, SIMILAR_COUNT)} />;
+  }
+  return <MovieDetailByGenre item={item} />;
+}
 
-  // "Titres similaires" prefers content-embedding neighbours, falling back to
-  // genre overlap, then any other movie.
+function MovieDetailByGenre({ item }: Readonly<{ item: MediaItem }>) {
+  const webRuntime = useWebRuntime();
+
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
   const genres = new Set(genreSlugs(item.metadata));
   const others = movies.filter((m) => m.id !== item.id);
   const related = others.filter((m) => genreSlugs(m.metadata).some((g) => genres.has(g)));
-  let pool = others;
-  if (embed.length >= 3) pool = embed;
-  else if (related.length >= 3) pool = related;
-  const similar = pool.slice(0, 12);
+  const pool = related.length >= ENOUGH_NEIGHBOURS ? related : others;
+  return <MovieDetail item={item} similar={pool.slice(0, SIMILAR_COUNT)} />;
+}
 
+function MovieDetail({ item, similar }: Readonly<{ item: MediaItem; similar: MediaCard[] }>) {
+  const t = useT();
+  const { client, user } = useAuth();
   const view = buildTitleView(client, t, user, { source: 'movie', item, similar, discover: null });
   return <TitleDetail key={item.id} initial={view} />;
 }
