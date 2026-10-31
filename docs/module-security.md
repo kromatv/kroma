@@ -2,7 +2,8 @@
 
 How KROMA contains a module: what a module may do, how it says so, and what
 stops it from doing more. Networking itself is in [networking](networking.md).
-The reasoning is in [RFC 480](rfcs/480-network-firewall.md).
+The reasoning is in [RFC 480](rfcs/480-network-firewall.md). Most of what follows
+is design: the [status table](#status) at the end says what is built.
 
 ## What we defend against
 
@@ -91,10 +92,9 @@ labelled native, and contained by the strongest OS tier the platform allows
 | `env` | always: the supervisor builds the environment from an allowlist | always | always |
 | `storage`, `settings`, points | always: checked by the core on every call | always | always |
 
-Watch is honest about what it is: it records and can stop a module that goes
-around the gateway, but it cannot prevent a connection that opens and closes
-between two scans. An operator can refuse to run third-party modules outside a
-strict tier.
+Watch records and can stop a module that goes around the gateway, but it cannot
+prevent a connection that opens and closes between two scans. An operator can
+refuse to run third-party modules outside a strict tier.
 
 ## Identity
 

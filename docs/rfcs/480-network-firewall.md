@@ -2,11 +2,12 @@
 
 - Status: **DRAFT**
 - PR: #480
-- Affects: `server/crates/kroma-http`, a new `server/crates/kroma-egress`,
-  `kroma-module-supervisor`, `kroma-module-runtime`, `kroma-module-manifest` (manifest
-  schema 3), `modules/tv.kroma.vpn`, `modules/tv.kroma.torrents`, `modules/tv.kroma.indexer`,
-  `modules/tv.kroma.torznab`, `modules/tv.kroma.remote`, Admin → Réseau in `clients/web`,
-  `docker-compose.yml`, `docs/module-plugin-model.md` ("Trust, stated honestly"). Areas
+- Affects: `docs/spec/modules/` (MOD-1, MOD-47), `server/crates/kroma-http`, a new
+  `server/crates/kroma-egress`, `kroma-module-supervisor`, `kroma-module-runtime`,
+  `kroma-module-manifest` (manifest schema 3), `modules/tv.kroma.vpn`,
+  `modules/tv.kroma.torrents`, `modules/tv.kroma.indexer`, `modules/tv.kroma.torznab`,
+  `modules/tv.kroma.remote`, Admin → Réseau in `clients/web`, `docker-compose.yml`,
+  `docs/module-plugin-model.md` ("Trust, stated honestly"). Areas
   `area/server`, `area/modules`, `area/web`, `area/synology`
 
 ## Summary
@@ -340,7 +341,7 @@ as components.
 
 Until the move is complete, a native sidecar is accepted from the official
 registry only, labelled native in the admin, and contained by the OS tier
-where one exists, as defense in depth. **A module from any other registry must be
+where one exists, as a second layer. **A module from any other registry must be
 a component.**
 
 ### East-west
@@ -404,13 +405,13 @@ consent. An update that widens them asks again.
 
 ### Networks and middleware
 
-A VPN is one case of a more general thing: a **network**, a named way out a
-module provides. A module answers the core-called point `network` with the
-networks it runs (a name, a SOCKS5 endpoint only the gateway can use, whether it
-carries UDP and DNS, its health). Rules name a network as their action, several
-networks can run at once, and a network can leave through another one by a rule
-on its own traffic. This replaces `tv.kroma.vpn/proxy` and lets an operator send
-the torrent engine through one country and the indexers through another.
+A VPN is one kind of **network**, a named way out that a module provides. A
+module answers the core-called point `network` with the networks it runs (a name,
+a SOCKS5 endpoint only the gateway can use, whether it carries UDP and DNS, its
+health). Rules name a network as their action, several networks can run at once,
+and a network can leave through another one by a rule on its own traffic. This
+replaces `tv.kroma.vpn/proxy` and lets an operator send the torrent engine
+through one country and the indexers through another.
 
 A module can also be **middleware** on the decision path, answering
 `network-policy/decide` after the guards and the rules. It can block a connection
@@ -532,13 +533,12 @@ Inbound peers through the provider's port forwarding.
 
 - **Per-OS sandboxes as the main line.** Namespaces, Seatbelt and AppContainer
   are each real, but they are three implementations with three sets of gaps. DSM
-  and Docker's default profile have none of them. They stay as defense in depth
+  and Docker's default profile have none of them. They stay as a second layer
   for native sidecars, not as the guarantee.
 - **A VM per module (Firecracker, libkrun).** Strong, but Linux-first, heavy on a
   NAS, and absent from Windows and DSM.
 - **A JavaScript runtime with permissions (Deno).** Portable, but every module is
   Rust today, and embedding V8 in the server costs more than wasmtime.
-
 - **Do nothing and keep per-call `.socks5()`.** Findings 1 to 3 show what that produces in
   first-party code. A third-party module would get the same freedom and less review.
 - **`HTTP_PROXY` and `ALL_PROXY` in the environment.** It only covers software that chooses
@@ -562,7 +562,7 @@ Inbound peers through the provider's port forwarding.
   database file itself today. Either the file becomes group-readable for granted modules,
   which weakens the tier, or granted access moves behind the host API. The module host
   maintainers decide this before Phase 3.
-- **LAN multicast.** `hostNetwork` is the honest first answer. A discovery broker in the core,
+- **LAN multicast.** `hostNetwork` is the first answer. A discovery broker in the core,
   which sends SSDP searches and registers mDNS records on a module's behalf, would remove
   it for `tv.kroma.roku` and `tv.kroma.mdns`. Not designed yet.
 - **cloudflared under a strict tier.** It does not dial its edge through a SOCKS proxy as far

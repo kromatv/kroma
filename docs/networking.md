@@ -5,9 +5,9 @@ what is recorded, and what keeps a module from going around it. The design and
 its reasoning are in [RFC 480](rfcs/480-network-firewall.md). This page says
 how it works.
 
-Some of the pieces below are merged, some are in review, some are planned. The
-[status table](#status) at the end says which is which. Nothing here describes a
-behaviour as shipped before it is.
+None of this is on `main` yet. The [status table](#status) at the end says which
+pieces are in review and which are planned, and the text below describes the
+design they build to.
 
 ## The rule
 
