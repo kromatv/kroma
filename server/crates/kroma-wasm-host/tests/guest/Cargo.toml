@@ -1,0 +1,16 @@
+[package]
+name = "kroma-wasm-host-guest"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "The component kroma-wasm-host's tests build for wasm32-wasip2: one escape probe per route."
+license = "AGPL-3.0-or-later"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { version = "0.63", default-features = false, features = ["macros", "realloc", "std"] }
+
+# Its own workspace: it builds for wasm32-wasip2 only, never as a member of server/.
+[workspace]

@@ -66,9 +66,10 @@ async fn main() -> anyhow::Result<()> {
     let bytes = tokio::fs::read(&torrent).await?;
     // Mirror the real engine's add-time seed: announce over the bridge (curl)
     // and hand librqbit the peers as initial_peers.
+    let peer_id = librqbit_core::peer_id::generate_azereus_style(*b"rQ", (9, 0, 0, 0)).0;
     let seed = socks
         .as_deref()
-        .map(|s| kroma_torrent::announce_peers(&bytes, Some(s)));
+        .map(|s| kroma_torrent::announce_peers(&bytes, s, &peer_id));
     if let Some(p) = &seed {
         println!(
             "add-time seed: {} peers ({} v6)",

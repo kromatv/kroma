@@ -2,23 +2,25 @@
 
 Status: **SHIPPED** overall. The out-of-process model, the `.kmod` bundle, the Store,
 install-by-id and by-upload, checksum verification, dependency resolution and the
-compatibility gate are all released. The trust posture and the abandonment story are decided
-but not yet built, and say so. Every section carries a status; the file-level label is the
-floor.
+compatibility gate are all released. The trust posture, the abandonment story and
+containment are decided but not yet built, and say so. Every section carries a status; the
+file-level label is the floor.
 
 **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and
 catalogue, meaning downloads, indexers, acquisition, VPN, transcription, embeddings, network
-discovery and remote access, arrives as an installable `.kmod` whose backend runs *out of the
-server process*, and every module is therefore uninstallable from Admin.
+discovery and remote access, arrives as an installable `.kmod` whose backend runs *isolated
+from the server*, and every module is therefore uninstallable from Admin. Today each backend
+is a separate process. [RFC 480](../../rfcs/480-network-firewall.md) moves it inside the
+server, contained as [MOD-83](#containment) states.
 
 That is the load-bearing decision of this domain, chosen for three reasons:
 
-- **Isolation.** A module is a separate program the server spawns and supervises. A
-  module that crashes, hangs or is incompatible takes down *itself*. The server keeps
-  serving, and every other module keeps running.
-- **Native dependencies a sandbox can't hold.** Modules carry real native code
-  (torrent engines, ML runtimes, native TLS, raw sockets) that no in-process sandbox can
-  host safely. Giving each its own process is the honest boundary.
+- **Isolation.** A module that crashes, hangs or is incompatible takes down *itself*. The
+  server keeps serving, and every other module keeps running.
+- **Containment that holds on every platform.** A module may be written by someone the
+  operator does not know, so it must reach only what it declared. Operating system
+  sandboxes differ on every platform the server runs on, and some have none. The server
+  hosts the module itself instead, and links in nothing but what the module declared.
 - **Runtime installability.** A capability is added or removed on a running server
   without rebuilding or replacing the server binary. The base build never grows.
 
@@ -221,6 +223,23 @@ This is the guarantee the whole architecture exists to make:
   has crashed surfaces on the Admin Modules surface with its state and its reason
   ([`admin/`](../admin/)).
 
+## Containment
+
+Status: **AGREED**
+
+[RFC 480](../../rfcs/480-network-firewall.md) decided how a module is contained: each
+module becomes a WebAssembly component the server runs. None of it is released yet.
+
+**MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the
+server provides for what its manifest declares. It has no socket, file, environment variable
+or process of its own, on any platform the server runs on.
+
+Work that needs the operating system, such as ffmpeg, inference, a VPN tunnel or LAN
+discovery, becomes a capability the server provides, never code inside the module.
+
+**MOD-84** (AGREED) - A module that still ships as a native program runs under the strongest
+containment the platform offers, and Admin says which.
+
 ## The compatibility promise
 
 Status: **SHIPPED**
@@ -288,8 +307,8 @@ are honest about being inferences rather than announcements.
 Status: **SHIPPED**
 
 **MOD-47** (SHIPPED) - Every capability below could have been core and is a module instead,
-for the same three reasons the base build ships empty, meaning isolation, unsandboxable native
-dependencies and runtime installability, plus one product reason: a server that only ever plays
+for the same three reasons the base build ships empty, meaning isolation, containment and
+runtime installability, plus one product reason: a server that only ever plays
 a curated library has no need to carry any of it.
 
 - **Downloads and acquisition** (`tv.kroma.torrents`, `tv.kroma.acquisition`,

@@ -3,7 +3,7 @@
 
 # Requirement index
 
-507 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+509 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -427,6 +427,8 @@
 - **MOD-80** (AGREED) - A release name says what it covers: one episode, a span of episodes, one <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
+- **MOD-84** (AGREED) - A module that still ships as a native program runs under the strongest <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

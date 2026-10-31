@@ -27,6 +27,7 @@ pub mod port;
 mod process;
 mod provision;
 pub mod routes;
+mod socks_auth;
 mod supervise;
 #[cfg(test)]
 mod test_support;

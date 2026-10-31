@@ -19,11 +19,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 
 use axum::http::StatusCode;
-use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_supervisor::Supervisor;
 
 use crate::state::SharedState;
@@ -62,16 +60,12 @@ impl Subscriptions {
     }
 }
 
-/// The `/_host/register-events` route, guarded by the shared host token the same
-/// way the other callbacks are.
-pub fn routes(host_token: String, subs: Arc<Subscriptions>) -> Router<SharedState> {
+/// The `/_host/register-events` route; a module subscribes itself only.
+pub fn routes(supervisor: Arc<Supervisor>, subs: Arc<Subscriptions>) -> Router<SharedState> {
     Router::new()
         .route("/_host/register-events", post(register))
-        .route_layer(from_fn_with_state(
-            HostToken(host_token),
-            require_host_token,
-        ))
         .layer(Extension(subs))
+        .layer(Extension(supervisor))
 }
 
 #[derive(serde::Deserialize)]
@@ -83,8 +77,13 @@ struct RegisterBody {
 
 async fn register(
     Extension(subs): Extension<Arc<Subscriptions>>,
+    Extension(supervisor): Extension<Arc<Supervisor>>,
+    headers: axum::http::HeaderMap,
     Json(body): Json<RegisterBody>,
 ) -> Response {
+    if !supervisor.request_speaks_for(&body.module_id, &headers) {
+        return (StatusCode::UNAUTHORIZED, "bad host token").into_response();
+    }
     let count = body.topics.len();
     subs.set(&body.module_id, body.topics.into_iter().collect());
     tracing::info!(module = %body.module_id, topics = count, "module subscribed to events");
@@ -145,7 +144,7 @@ fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payloa
         return;
     };
     let url = format!("http://127.0.0.1:{port}/_event/{topic}");
-    let token = supervisor.host_token().to_string();
+    let token = supervisor.port_token(module_id);
     let body = payload.to_string();
     // Off the bus task: one slow module must not hold up the next event, and the
     // sidecar answers before it does the work anyway.
@@ -164,14 +163,36 @@ fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payloa
 mod tests {
     use super::*;
 
-    // The callback a sidecar POSTs at boot, driven the way it drives it.
-    async fn register_via_route(subs: Arc<Subscriptions>, body: serde_json::Value) -> StatusCode {
-        let app = routes("host-token".into(), subs)
-            .with_state(crate::api::test_support::test_app().state);
+    #[tokio::test]
+    async fn a_module_cannot_subscribe_another_module_to_the_bus() {
+        let t = crate::api::test_support::test_app();
+        let intruder = t.supervisor.port_token("tv.kroma.intruder");
+        let subs = Arc::new(Subscriptions::default());
+        let app = routes(t.supervisor, subs.clone()).with_state(t.state);
         let req = axum::http::Request::builder()
             .method("POST")
             .uri("/_host/register-events")
-            .header("authorization", "Bearer host-token")
+            .header("authorization", format!("Bearer {intruder}"))
+            .header("content-type", "application/json")
+            .body(axum::body::Body::from(
+                serde_json::json!({ "moduleId": "tv.kroma.notes", "topics": ["a"] }).to_string(),
+            ))
+            .unwrap();
+
+        let status = tower::ServiceExt::oneshot(app, req).await.unwrap().status();
+
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(subs.wanting("a").is_empty());
+    }
+
+    // The callback a sidecar POSTs at boot, driven the way it drives it.
+    async fn register_via_route(subs: Arc<Subscriptions>, body: serde_json::Value) -> StatusCode {
+        let t = crate::api::test_support::test_app();
+        let app = routes(t.supervisor, subs).with_state(t.state);
+        let req = axum::http::Request::builder()
+            .method("POST")
+            .uri("/_host/register-events")
+            .header("authorization", "Bearer test-host-token")
             .header("content-type", "application/json")
             .body(axum::body::Body::from(body.to_string()))
             .unwrap();
@@ -195,13 +216,11 @@ mod tests {
         );
     }
 
-    // The token guard is the same one the rest of the callback API uses; without
-    // it any local process could subscribe itself to the bus.
     #[tokio::test]
     async fn the_callback_refuses_a_caller_with_no_host_token() {
         let subs = Arc::new(Subscriptions::default());
-        let app = routes("host-token".into(), subs.clone())
-            .with_state(crate::api::test_support::test_app().state);
+        let t = crate::api::test_support::test_app();
+        let app = routes(t.supervisor, subs.clone()).with_state(t.state);
         let req = axum::http::Request::builder()
             .method("POST")
             .uri("/_host/register-events")
