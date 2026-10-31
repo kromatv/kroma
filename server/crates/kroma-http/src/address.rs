@@ -11,15 +11,13 @@ pub struct WebTarget {
 }
 
 impl WebTarget {
-    /// The host as an address, when the URL names one literally.
     pub fn literal(&self) -> Option<IpAddr> {
         self.host.parse().ok()
     }
 
-    /// Whether the host is on the local network rather than the internet: a
-    /// non-public address, or a name no public resolver answers for (a single
-    /// label, `localhost`, or a suffix reserved for local use). A VPN tunnel
-    /// cannot reach these, so they are the traffic that stays direct.
+    /// Whether the host is a non-public address or a name no public resolver
+    /// answers for (a single label, or a suffix reserved for local use): the
+    /// traffic a VPN tunnel cannot reach.
     pub fn is_local(&self) -> bool {
         if let Some(ip) = self.literal() {
             return !is_public(ip);
@@ -39,9 +37,8 @@ const LOCAL_SUFFIXES: [&str; 7] = [
     ".localhost",
 ];
 
-/// The target of an absolute `http` or `https` URL. `None` for any other
-/// scheme, a URL with no host, or one carrying credentials (`user@host`),
-/// which can disguise where a URL really goes.
+/// The target of an absolute `http` or `https` URL. `None` for any other scheme,
+/// no host, or credentials (`user@host`), which can disguise where a URL goes.
 pub fn web_target(url: &str) -> Option<WebTarget> {
     let uri: hyper::Uri = url.parse().ok()?;
     let authority = uri.authority()?;
@@ -65,10 +62,8 @@ pub fn web_target(url: &str) -> Option<WebTarget> {
     Some(WebTarget { https, host, port })
 }
 
-/// Whether `ip` is routable on the public internet: not loopback, private,
-/// shared (CGNAT), link-local, multicast, documentation, benchmarking or
-/// reserved space. An IPv6 address that embeds an IPv4 one (mapped, NAT64,
-/// 6to4) is judged by the IPv4 address it reaches.
+/// Whether `ip` is routable on the public internet. An IPv6 address embedding an
+/// IPv4 one (mapped, NAT64, 6to4) is judged by the IPv4 address it reaches.
 pub fn is_public(ip: IpAddr) -> bool {
     match ip {
         IpAddr::V4(v4) => is_public_v4(v4),
@@ -203,10 +198,13 @@ mod tests {
             })
         );
         assert_eq!(web_target("http://push.example:8080/").unwrap().port, 8080);
-        assert_eq!(
-            web_target("https://[2001:db8::1]/").unwrap().literal(),
-            Some("2001:db8::1".parse().unwrap())
-        );
+    }
+
+    #[test]
+    fn a_bracketed_ipv6_host_is_a_literal_address() {
+        let target = web_target("https://[2001:db8::1]/").unwrap();
+
+        assert_eq!(target.literal(), Some("2001:db8::1".parse().unwrap()));
     }
 
     #[test]

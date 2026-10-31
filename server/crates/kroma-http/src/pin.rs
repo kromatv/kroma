@@ -5,20 +5,20 @@ use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 
 use anyhow::{bail, Context, Result};
 
-use crate::address::{is_public, web_target, WebTarget};
+use crate::address::{is_public, web_target};
 use crate::config::option_line;
 
-// Resolving here and handing curl the vetted address is what defeats DNS
-// rebinding: curl never asks the resolver again, so the name cannot point at
-// a private address between the check and the connect.
+// Curl is handed the vetted address and never asks the resolver again, so DNS
+// rebinding cannot swap in a private one between the check and the connect.
 pub(crate) fn public_resolve_line(url: &str) -> Result<String> {
-    let WebTarget { host, port, .. } =
+    let target =
         web_target(url).with_context(|| format!("{url} is not a plain http or https URL"))?;
-    if let Ok(literal) = host.parse::<IpAddr>() {
-        ensure_public(&host, literal)?;
+    let (host, port) = (target.host.as_str(), target.port);
+    if let Some(literal) = target.literal() {
+        ensure_public(host, literal)?;
         return Ok(String::new());
     }
-    let addrs: Vec<SocketAddr> = (host.as_str(), port)
+    let addrs: Vec<SocketAddr> = (host, port)
         .to_socket_addrs()
         .with_context(|| format!("resolve {host}"))?
         .collect();
@@ -26,7 +26,7 @@ pub(crate) fn public_resolve_line(url: &str) -> Result<String> {
         bail!("{host} resolved to no address");
     };
     for addr in &addrs {
-        ensure_public(&host, addr.ip())?;
+        ensure_public(host, addr.ip())?;
     }
     let pinned = match first.ip() {
         IpAddr::V4(v4) => v4.to_string(),
