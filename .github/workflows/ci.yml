@@ -420,8 +420,7 @@ jobs:
         working-directory: server
         continue-on-error: true
       - run: bun run ci tools ffmpeg
-      # The sandbox and leak tests start processes in unprivileged user and
-      # network namespaces, which Ubuntu's AppArmor refuses by default here.
+      # Ubuntu's AppArmor refuses the unprivileged namespaces the sandbox tests use.
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
         if: matrix.shard.name == 'server'
       - run: bun run ci rust clippy --only "${{ join(matrix.shard.workspaces, ',') }}"

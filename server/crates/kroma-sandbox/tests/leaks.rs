@@ -1,10 +1,7 @@
-//! Every way out a sandboxed process could try, tried from inside one. Each
-//! probe runs in a child of this test binary, started once in the sandbox
-//! (where it must fail) and, where the probe can succeed on this machine, once
-//! outside it as a control, so a probe that cannot detect anything fails too.
+#![cfg(target_os = "linux")]
 
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
+use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::process::Command;
 use std::time::Duration;
@@ -22,7 +19,7 @@ fn probe_entry() {
     let reached = match probe.split_once(':') {
         Some(("tcp", target)) => tcp(target),
         Some(("udp", target)) => udp(target),
-        Some(("dns", name)) => (name, 443).to_socket_addrs_ok(),
+        Some(("dns", name)) => resolves(name),
         Some(("abstract", name)) => abstract_unix(name),
         Some(("unix", path)) => UnixStream::connect(path).is_ok(),
         _ => panic!("unknown probe {probe}"),
@@ -30,14 +27,10 @@ fn probe_entry() {
     std::process::exit(if reached { REACHED } else { REFUSED });
 }
 
-trait Resolves {
-    fn to_socket_addrs_ok(self) -> bool;
-}
-
-impl Resolves for (&str, u16) {
-    fn to_socket_addrs_ok(self) -> bool {
-        std::net::ToSocketAddrs::to_socket_addrs(&self).is_ok_and(|mut a| a.next().is_some())
-    }
+fn resolves(name: &str) -> bool {
+    (name, 443)
+        .to_socket_addrs()
+        .is_ok_and(|mut addrs| addrs.next().is_some())
 }
 
 fn tcp(target: &str) -> bool {

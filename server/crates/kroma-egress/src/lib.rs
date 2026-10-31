@@ -1,8 +1,5 @@
-//! The one way out. Every connection a caller opens through the gateway names
-//! who is calling and why, is decided by a [`Policy`], is dialled directly or
-//! through an upstream SOCKS5 proxy (a VPN bridge), and is reported once it
-//! closes. The gateway knows hosts, ports and callers, never what a module is
-//! for.
+//! The one way out: a SOCKS5 gateway that names the caller of every connection,
+//! asks a [`Policy`] where it may go, and reports what crossed.
 
 mod gateway;
 mod protocol;
@@ -13,7 +10,6 @@ use std::time::Duration;
 
 pub use gateway::{serve_tcp, serve_unix};
 
-/// Where a caller asked to go, as it named it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Host {
     Name(String),
@@ -29,7 +25,6 @@ impl std::fmt::Display for Host {
     }
 }
 
-/// One connection a caller asked for.
 #[derive(Debug, Clone)]
 pub struct Request {
     pub caller: String,
@@ -38,12 +33,10 @@ pub struct Request {
     pub port: u16,
 }
 
-/// What the policy decided for a [`Request`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Verdict {
-    /// Dial it from this machine. Unless `private_allowed`, every address the
-    /// name resolves to must be on the public internet, checked after
-    /// resolution so a name cannot rebind to the LAN.
+    /// Unless `private_allowed`, every address the name resolves to must be
+    /// public.
     Direct {
         private_allowed: bool,
     },
@@ -65,7 +58,6 @@ pub enum Route {
     Blocked,
 }
 
-/// One connection once it closed: what was asked, how it went, what crossed.
 #[derive(Debug, Clone)]
 pub struct Flow {
     pub caller: String,

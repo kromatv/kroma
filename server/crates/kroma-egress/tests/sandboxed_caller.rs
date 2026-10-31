@@ -1,6 +1,3 @@
-//! A process with no network of its own reaches the outside through the
-//! gateway's Unix socket and nothing else, and the gateway records it.
-
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::process::Command;
