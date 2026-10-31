@@ -167,9 +167,8 @@ impl DownloadManager {
         out
     }
 
-    /// Announce through the proxy ourselves (curl) and inject the peers, for
-    /// torrents stuck at 0 peers: behind the VPN the session runs no trackers
-    /// and no DHT of its own. Blocking.
+    /// Announce through the proxy ourselves and inject the peers, for torrents
+    /// stuck at 0 peers. Blocking.
     #[cfg(feature = "rqbit")]
     pub fn reseed_stalled(&self, _host: &dyn HostCtx) {
         let Some(engine) = self.rqbit() else { return };

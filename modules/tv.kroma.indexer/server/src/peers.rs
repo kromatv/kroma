@@ -28,10 +28,9 @@ pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
 const VPN_NOT_RUNNING: &str =
     "indexers are set to go through the VPN, and no VPN is running: nothing is sent directly";
 
-/// The proxy a request to `url` must take. `None` when the admin did not route
-/// indexers through the VPN, or for a host on the local network the tunnel
-/// cannot reach. An error when the VPN was asked for and is not running, so a
-/// search never falls back to going out directly.
+/// The proxy a request to `url` must take: `None` when indexers are not routed
+/// through the VPN or the host is on the local network. An error when the VPN
+/// is asked for and not running, so a search never goes out directly.
 pub fn route_for(host: &dyn HostCtx, url: &str) -> anyhow::Result<Option<String>> {
     if !host.setting_bool("acqIndexersUseVpn", false) {
         return Ok(None);

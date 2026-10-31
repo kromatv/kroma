@@ -33,10 +33,9 @@ fn short_ip(body: String) -> Option<String> {
 }
 
 /// Probe `check_url` through `proxy` (`socks5://[user:pass@]host:port` or
-/// `host:port`) and compare with the direct route. The direct answer is reused
-/// for [`DIRECT_PROBE_EVERY`] unless the tunnel's exit moves: sent beside every
-/// proxied probe, it would tell the echo service which real address stands
-/// behind which exit, once a minute.
+/// `host:port`) and compare with the direct route, whose answer is kept while
+/// the tunnel's exit holds: asked every time, it would pair our real address
+/// with each exit for the echo service.
 pub fn check(proxy: &str, check_url: &str) -> VpnCheck {
     let proxied = echo(check_url, Some(proxy));
     let mut out = VpnCheck::default();
@@ -48,8 +47,7 @@ pub fn check(proxy: &str, check_url: &str) -> VpnCheck {
     out
 }
 
-/// How long a direct probe's answer stands for the same tunnel exit.
-pub const DIRECT_PROBE_EVERY: Duration = Duration::from_secs(6 * 60 * 60);
+const DIRECT_PROBE_EVERY: Duration = Duration::from_secs(6 * 60 * 60);
 
 struct DirectProbe {
     at: Instant,

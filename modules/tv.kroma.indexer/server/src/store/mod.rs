@@ -57,13 +57,11 @@ impl DefinitionStore {
         }
     }
 
-    /// Where the definition set is downloaded from.
     pub fn source(&self) -> &str {
         &self.source
     }
 
-    /// Download the definition set through this proxy, or refuse to download it
-    /// at all when the route is an error.
+    /// Sync through the route's proxy, or refuse to sync when it is an error.
     pub fn routed(mut self, route: anyhow::Result<Option<String>>) -> Self {
         self.route = route.map_err(|e| e.to_string());
         self

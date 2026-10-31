@@ -223,8 +223,7 @@ impl DownloadClient for RqbitClient {
     }
 }
 
-// librqbit fetches a `.torrent` URL with its own HTTP client, whose proxy
-// resolves the name locally, so behind the VPN only bytes or a magnet go in.
+// librqbit resolves a `.torrent` URL's name locally, outside the tunnel.
 fn refuse_unsealed_fetch(
     engine: &RqbitEngine,
     torrent_bytes: Option<&[u8]>,

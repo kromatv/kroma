@@ -136,10 +136,8 @@ fn flaresolverr_url(host: &dyn HostCtx, behind_vpn: bool) -> Option<String> {
     Some(url.to_string())
 }
 
-/// Build a live [`Session`] for a `builtin` indexer row: load its definition,
-/// seed config from the stored settings JSON + base link, and wire the proxy
-/// [`peers::route_for`] chose and FlareSolverr. Prefer [`builtin_session`]
-/// (cached) on hot paths.
+/// Build a live [`Session`] for a `builtin` indexer row, through `proxy` when
+/// given. Prefer [`builtin_session`] (cached) on hot paths.
 pub fn build_builtin_session(
     host: &dyn HostCtx,
     row: &IndexerRow,

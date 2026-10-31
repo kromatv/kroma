@@ -1,8 +1,6 @@
-//! Self-managed tracker announce for the embedded engine behind the VPN. With a
-//! proxy set, the engine's own trackers, DHT and LSD are off (they would leave
-//! from the real address or resolve names locally), so this is its peer source
-//! besides peer exchange: announce over the bridge with `curl`, whose proxy
-//! resolves the names, parse `peers` and `peers6`, and hand librqbit the result.
+//! Tracker announce over the VPN proxy with `curl`, whose proxy resolves the
+//! names: the engine's peer source besides peer exchange while its own
+//! trackers, DHT and LSD are off.
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 

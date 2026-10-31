@@ -43,8 +43,7 @@ pub struct RqbitEngine {
     // The VPN socks5 the session dials through (if any), reused for our own
     // tracker announces so recovered peers are reachable from the same network.
     socks_proxy: Option<String>,
-    // Our announces carry the id the session shakes hands with, fresh at each
-    // start, so a tracker cannot link this session to the previous one.
+    // Fresh at each start, so a tracker cannot link this session to the last.
     peer_id: [u8; 20],
 }
 
@@ -74,9 +73,8 @@ fn session_options(cfg: &RqbitConfig) -> SessionOptions {
             download_bps: cfg.download_bps.and_then(std::num::NonZeroU32::new),
             upload_bps: cfg.upload_bps.and_then(std::num::NonZeroU32::new),
         },
-        // Ephemeral port + no persistence: on a restart a fixed persisted port
-        // collides with the session still shutting down ("address already in
-        // use"). An ephemeral port re-bootstraps in a few seconds.
+        // Ephemeral port, no persistence: a persisted port collides with the
+        // session still shutting down on restart ("address already in use").
         dht: Some(DhtSessionConfig {
             bootstrap_addrs: None,
             port: None,
@@ -87,10 +85,8 @@ fn session_options(cfg: &RqbitConfig) -> SessionOptions {
     if cfg.socks_proxy_url.is_none() {
         return opts;
     }
-    // Behind the VPN only SOCKS-dialled TCP is sealed. DHT, UDP trackers and
-    // LSD would leave from the real address, librqbit's HTTP trackers resolve
-    // names locally, and a listener on the host's interfaces answers outside
-    // the tunnel, so all of them are off and `announce` feeds the peers.
+    // Only SOCKS-dialled TCP stays in the tunnel: DHT, UDP trackers, LSD, HTTP
+    // trackers and a host listener all leave it, so `announce` feeds the peers.
     SessionOptions {
         dht: None,
         listen: None,
