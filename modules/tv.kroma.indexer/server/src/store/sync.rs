@@ -22,9 +22,13 @@ impl DefinitionStore {
         let _ = std::fs::remove_dir_all(&tmp);
         std::fs::create_dir_all(&tmp).context("create sync tmp")?;
 
-        // curl, so the VPN proxy applies if one is set.
         let tarball = tmp.join("defs.tar.gz");
-        let bytes = kroma_module_sdk::http::Fetch::new()
+        let fetch = match &self.route {
+            Ok(Some(proxy)) => kroma_module_sdk::http::Fetch::new().socks5(proxy.as_str()),
+            Ok(None) => kroma_module_sdk::http::Fetch::new(),
+            Err(refusal) => bail!("{refusal}"),
+        };
+        let bytes = fetch
             .max_time(120)
             .get(&self.source)
             .context("download definitions")?
@@ -104,8 +108,27 @@ fn pick_version_dir(defs_root: &Path) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::test_support::{serve, store_for, tarball, tmpdir, DEMO_YML};
+    use std::sync::atomic::Ordering;
+
+    use super::super::test_support::{counted, serve, store_for, tarball, tmpdir, DEMO_YML};
     use super::*;
+
+    #[test]
+    fn a_sync_the_vpn_must_carry_is_refused_while_the_vpn_is_down() {
+        let archive = tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]);
+        let (source, served) = counted(200, archive);
+        let dir = tmpdir("vpn-down");
+        let store = DefinitionStore {
+            dir: dir.path().to_path_buf(),
+            source,
+            route: Err("no VPN is running".into()),
+        };
+
+        let err = store.sync().unwrap_err().to_string();
+
+        assert!(err.contains("no VPN is running"), "{err}");
+        assert_eq!(served.load(Ordering::SeqCst), 0);
+    }
 
     // The live end-to-end sync against the real upstream repo lives in
     // `tests/live_sync.rs`: it is `#[ignore]`d, so nothing here can run it.
@@ -245,6 +268,7 @@ mod tests {
         let store = DefinitionStore {
             dir: store.dir().to_path_buf(),
             source: serve(200, second),
+            route: Ok(None),
         };
         store.sync().unwrap();
 

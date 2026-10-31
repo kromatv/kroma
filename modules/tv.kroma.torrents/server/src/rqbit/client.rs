@@ -91,26 +91,21 @@ impl DownloadClient for RqbitClient {
 
     fn add(&self, req: &AddTorrentReq) -> Result<String> {
         let engine = &self.engine;
-        // Seed the swarm ourselves: behind the VPN, librqbit's reqwest tracker
-        // client can't traverse the SOCKS bridge, so its own announce finds
-        // nothing.
-        let initial_peers = req.torrent_bytes.map(|bytes| {
-            let peers = crate::announce::tracker_peers(bytes, engine.socks_proxy.as_deref());
-            if !peers.is_empty() {
-                let v6 = peers.iter().filter(|p| p.is_ipv6()).count();
-                tracing::info!(
-                    total = peers.len(),
-                    ipv6 = v6,
-                    "seeded torrent with peers from our proxied tracker announce"
-                );
-            }
-            peers
-        });
+        refuse_unsealed_fetch(engine, req.torrent_bytes, req.magnet_or_url)?;
+        let initial_peers = engine.proxied_peers(req.torrent_bytes, req.magnet_or_url);
+        if !initial_peers.is_empty() {
+            let v6 = initial_peers.iter().filter(|p| p.is_ipv6()).count();
+            tracing::info!(
+                total = initial_peers.len(),
+                ipv6 = v6,
+                "seeded torrent with peers from our proxied tracker announce"
+            );
+        }
         let opts = AddTorrentOptions {
             output_folder: req.download_dir.map(str::to_string),
             overwrite: true,
             only_files: req.only_files.map(<[usize]>::to_vec),
-            initial_peers: initial_peers.filter(|p| !p.is_empty()),
+            initial_peers: (!initial_peers.is_empty()).then_some(initial_peers),
             ..Default::default()
         };
         let magnet_or_url = req.magnet_or_url.to_string();
@@ -139,8 +134,11 @@ impl DownloadClient for RqbitClient {
         torrent_bytes: Option<&[u8]>,
     ) -> Result<Vec<crate::TorrentFileEntry>> {
         let engine = &self.engine;
+        refuse_unsealed_fetch(engine, torrent_bytes, magnet_or_url)?;
+        let initial_peers = engine.proxied_peers(torrent_bytes, magnet_or_url);
         let opts = AddTorrentOptions {
             list_only: true,
+            initial_peers: (!initial_peers.is_empty()).then_some(initial_peers),
             ..Default::default()
         };
         let url = magnet_or_url.to_string();
@@ -223,4 +221,16 @@ impl DownloadClient for RqbitClient {
             .handle
             .block_on(self.engine.session().delete(id, delete_data))
     }
+}
+
+// librqbit resolves a `.torrent` URL's name locally, outside the tunnel.
+fn refuse_unsealed_fetch(
+    engine: &RqbitEngine,
+    torrent_bytes: Option<&[u8]>,
+    magnet_or_url: &str,
+) -> Result<()> {
+    if engine.is_sealed() && torrent_bytes.is_none() && !magnet_or_url.starts_with("magnet:") {
+        bail!("behind the VPN the engine takes a .torrent file or a magnet, not a URL to fetch");
+    }
+    Ok(())
 }

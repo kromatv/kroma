@@ -123,6 +123,7 @@ pub(super) fn store_for(source: String) -> TempStore {
         store: DefinitionStore {
             dir: dir.path().to_path_buf(),
             source,
+            route: Ok(None),
         },
         _dir: dir,
     }
