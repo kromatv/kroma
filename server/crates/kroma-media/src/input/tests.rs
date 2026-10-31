@@ -52,10 +52,21 @@ fn ffprobe(input: impl IntoIterator<Item = OsString>) -> Output {
         .expect("run ffprobe")
 }
 
-fn list(dir: &Path, name: &str, body: &str) -> PathBuf {
+fn write_file(dir: &Path, name: &str, body: &str) -> PathBuf {
     let path = dir.join(name);
     std::fs::write(&path, body).unwrap();
     path
+}
+
+fn playlist_to(dir: &Path, bait: &Bait) -> PathBuf {
+    write_file(
+        dir,
+        "index.m3u8",
+        &format!(
+            "#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\n{}\n#EXT-X-ENDLIST\n",
+            bait.url()
+        ),
+    )
 }
 
 fn clip(dir: &Path) -> PathBuf {
@@ -111,14 +122,7 @@ fn ffmpeg_does_not_connect_to_a_url_named_as_the_input() {
 fn ffmpeg_does_not_follow_a_playlist_to_the_network() {
     let bait = Bait::bind();
     let dir = kroma_testing::temp_dir("input-playlist");
-    let playlist = list(
-        dir.path(),
-        "index.m3u8",
-        &format!(
-            "#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\n{}\n#EXT-X-ENDLIST\n",
-            bait.url()
-        ),
-    );
+    let playlist = playlist_to(dir.path(), &bait);
 
     let run = ffmpeg(file(&playlist));
 
@@ -130,7 +134,7 @@ fn ffmpeg_does_not_follow_a_playlist_to_the_network() {
 fn ffmpeg_does_not_follow_a_concat_list_to_the_network() {
     let bait = Bait::bind();
     let dir = kroma_testing::temp_dir("input-concat");
-    let concat = list(
+    let concat = write_file(
         dir.path(),
         "list.ffconcat",
         &format!("ffconcat version 1.0\nfile '{}'\n", bait.url()),
@@ -160,14 +164,7 @@ fn ffprobe_does_not_connect_to_a_url_named_as_the_input() {
 fn ffprobe_does_not_follow_a_playlist_to_the_network() {
     let bait = Bait::bind();
     let dir = kroma_testing::temp_dir("input-probe-playlist");
-    let playlist = list(
-        dir.path(),
-        "index.m3u8",
-        &format!(
-            "#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\n{}\n#EXT-X-ENDLIST\n",
-            bait.url()
-        ),
-    );
+    let playlist = playlist_to(dir.path(), &bait);
 
     let run = ffprobe(file(&playlist));
 

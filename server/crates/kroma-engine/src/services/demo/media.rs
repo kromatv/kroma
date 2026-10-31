@@ -19,12 +19,9 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use kroma_media::input;
 use tracing::{info, warn};
 
-/// Seconds per title. Long enough for a storyboard (one tile every 2s) and for
-/// a couple of HLS segments; short enough that the whole library is ~25 MB.
-const SECONDS: u32 = 12;
+mod ffmpeg_args;
 
 /// What a generated title looks like to a player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -166,14 +163,13 @@ fn write(title: &Title, out: &Path) -> anyhow::Result<()> {
     let tmp = partial(out);
     let _ = std::fs::remove_file(&tmp);
     let result = match title.shape {
-        Shape::Hdr => {
-            run(&hdr_args(title.size, &tmp)).or_else(|_| run(&plain_args(title.size, &tmp)))
-        }
-        Shape::Plain => run(&plain_args(title.size, &tmp)),
+        Shape::Hdr => run(&ffmpeg_args::hdr(title.size, &tmp))
+            .or_else(|_| run(&ffmpeg_args::plain(title.size, &tmp))),
+        Shape::Plain => run(&ffmpeg_args::plain(title.size, &tmp)),
         Shape::Tracks => {
             let srt = tmp.with_extension("srt");
             std::fs::write(&srt, CUES)?;
-            let out = run(&tracks_args(title.size, &srt, &tmp));
+            let out = run(&ffmpeg_args::tracks(title.size, &srt, &tmp));
             let _ = std::fs::remove_file(&srt);
             out
         }
@@ -207,137 +203,12 @@ fn run(args: &[OsString]) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn base_args(size: &str) -> Vec<OsString> {
-    let mut a = ["-hide_banner", "-loglevel", "error", "-y"]
-        .map(OsString::from)
-        .to_vec();
-    a.extend(input::generated(&format!(
-        "testsrc2=size={size}:rate=24:duration={SECONDS}"
-    )));
-    a.extend(input::generated(&format!(
-        "sine=frequency=440:duration={SECONDS}"
-    )));
-    a
-}
-
-fn plain_args(size: &str, out: &Path) -> Vec<OsString> {
-    let mut a = base_args(size);
-    a.extend(
-        [
-            "-map",
-            "0:v",
-            "-map",
-            "1:a",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-crf",
-            "32",
-            "-pix_fmt",
-            "yuv420p",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "64k",
-            "-metadata:s:a:0",
-            "language=eng",
-        ]
-        .map(OsString::from),
-    );
-    a.push(out.into());
-    a
-}
-
-fn hdr_args(size: &str, out: &Path) -> Vec<OsString> {
-    let mut a = base_args(size);
-    a.extend(
-        [
-            "-map",
-            "0:v",
-            "-map",
-            "1:a",
-            "-c:v",
-            "libx265",
-            "-preset",
-            "ultrafast",
-            "-crf",
-            "34",
-            "-pix_fmt",
-            "yuv420p10le",
-            "-x265-params",
-            "colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc:log-level=none",
-            "-tag:v",
-            "hvc1",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "64k",
-            "-metadata:s:a:0",
-            "language=eng",
-        ]
-        .map(OsString::from),
-    );
-    a.push(out.into());
-    a
-}
-
-fn tracks_args(size: &str, srt: &Path, out: &Path) -> Vec<OsString> {
-    let mut a = base_args(size);
-    a.extend(input::generated(&format!(
-        "sine=frequency=220:duration={SECONDS}"
-    )));
-    a.extend(input::file(srt));
-    a.extend(
-        [
-            "-map",
-            "0:v",
-            "-map",
-            "1:a",
-            "-map",
-            "2:a",
-            "-map",
-            "3:s",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-crf",
-            "32",
-            "-pix_fmt",
-            "yuv420p",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "64k",
-            "-c:s",
-            "srt",
-            "-metadata:s:a:0",
-            "language=eng",
-            "-metadata:s:a:1",
-            "language=fra",
-            "-metadata:s:s:0",
-            "language=fra",
-        ]
-        .map(OsString::from),
-    );
-    a.push(out.into());
-    a
-}
-
 const CUES: &str = "1\n00:00:01,000 --> 00:00:05,000\nA demo subtitle track.\n\n\
 2\n00:00:06,000 --> 00:00:11,000\nSecond cue, so the timing is visible.\n";
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn worded(args: &[OsString]) -> String {
-        args.iter()
-            .map(|a| a.to_string_lossy())
-            .collect::<Vec<_>>()
-            .join(" ")
-    }
 
     #[test]
     fn every_title_lands_in_a_library_and_reads_as_a_release() {
@@ -399,50 +270,6 @@ mod tests {
                 "{} escapes both roots",
                 t.rel
             );
-        }
-    }
-
-    #[test]
-    fn an_hdr_title_asks_for_ten_bit_bt2020_and_a_plain_one_does_not() {
-        let hdr = worded(&hdr_args("1920x1080", Path::new("/tmp/x.mkv")));
-        assert!(hdr.contains("yuv420p10le"), "{hdr}");
-        assert!(hdr.contains("smpte2084"), "{hdr}");
-        assert!(hdr.contains("libx265"), "{hdr}");
-
-        let plain = worded(&plain_args("1280x720", Path::new("/tmp/x.mp4")));
-        assert!(plain.contains("libx264"), "{plain}");
-        assert!(!plain.contains("smpte2084"), "{plain}");
-    }
-
-    #[test]
-    fn a_tracks_title_carries_two_languages_and_a_subtitle_stream() {
-        let a = worded(&tracks_args(
-            "1280x720",
-            Path::new("/tmp/x.srt"),
-            Path::new("/tmp/x.mkv"),
-        ));
-        assert!(a.contains("language=eng"), "{a}");
-        assert!(a.contains("language=fra"), "{a}");
-        assert!(a.contains("-c:s srt"), "{a}");
-        // Three inputs and four maps: video, two audio, one subtitle.
-        assert_eq!(a.matches("-map").count(), 4, "{a}");
-    }
-
-    #[test]
-    fn the_output_path_is_always_the_last_argument() {
-        // ffmpeg reads it positionally, so a flag appended after it would be
-        // taken as another output.
-        let out = OsString::from("/tmp/demo.mkv");
-        for args in [
-            plain_args("1280x720", Path::new("/tmp/demo.mkv")),
-            hdr_args("1280x720", Path::new("/tmp/demo.mkv")),
-            tracks_args(
-                "1280x720",
-                Path::new("/tmp/s.srt"),
-                Path::new("/tmp/demo.mkv"),
-            ),
-        ] {
-            assert_eq!(args.last().unwrap(), &out);
         }
     }
 

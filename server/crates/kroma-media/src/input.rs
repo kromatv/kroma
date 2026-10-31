@@ -4,10 +4,8 @@ use std::ffi::{OsStr, OsString};
 
 const LOCAL_PROTOCOLS: &str = "file";
 
-/// The arguments that make `path` the input. ffmpeg and ffprobe open whatever
-/// URL protocol an input names, and a playlist or container can point them at the
-/// network, so the whitelist is `file` alone. ffprobe takes the same arguments.
-/// A path that names a URL is refused, not fetched.
+/// The arguments that make `path` the input, for ffmpeg and ffprobe alike. Only
+/// the `file` protocol is whitelisted: a URL, or a playlist naming one, is refused.
 pub fn file(path: impl AsRef<OsStr>) -> [OsString; 4] {
     [
         "-protocol_whitelist".into(),
