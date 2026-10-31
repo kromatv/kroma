@@ -4,7 +4,7 @@ use crate::domain::metadata::CastMember;
 use crate::domain::DiscoverEpisode;
 
 use super::super::common::{build_cast, RawCredits};
-use super::{api, curl_json, IMG, MAX_CAST};
+use super::{api, tmdb_json, IMG, MAX_CAST};
 
 #[derive(Debug, Clone)]
 pub struct EpisodeArt {
@@ -44,7 +44,7 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
         ("language", language.to_string()),
         ("append_to_response", "credits".to_string()),
     ];
-    let resp: SeasonResp = match curl_json(
+    let resp: SeasonResp = match tmdb_json(
         &format!("{}/tv/{tv_id}/season/{season}", api()),
         api_key,
         &params,

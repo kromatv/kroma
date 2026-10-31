@@ -3,7 +3,7 @@ use crate::domain::metadata::Metadata;
 use super::super::common::{build_cast, build_crew};
 use super::certification::country_of;
 use super::details_json::{collect_keywords, pick_logo, Details};
-use super::{api, curl_json, Target, IMG, MAX_CAST, MAX_CREW};
+use super::{api, tmdb_json, Target, IMG, MAX_CAST, MAX_CREW};
 
 pub(super) fn fetch_details(
     api_key: &str,
@@ -24,7 +24,7 @@ pub(super) fn fetch_details(
         ),
         ("include_image_language", format!("{lang2},en,null")),
     ];
-    let d: Details = curl_json(
+    let d: Details = tmdb_json(
         &format!("{}/{}/{id}", api(), target.detail_path()),
         api_key,
         &detail_params,

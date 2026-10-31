@@ -1,12 +1,12 @@
 use crate::model::RequestKind;
 
-use super::super::client::{IMG, api, curl_json};
+use super::super::client::{IMG, api, tmdb_json};
 use super::wire::{PageResp, RawHit};
 use super::{DiscoverHit, DiscoverPage, DiscoverScope, year_of};
 
 /// Search TMDB. `All` uses multi-search (drops `person` hits); the scoped
 /// variants hit the movie/tv endpoints directly.
-// The `()` Err is the unit error threaded up from `curl_json` via `?`; callers only
+// The `()` Err is the unit error threaded up from `tmdb_json` via `?`; callers only
 // care ok/err, so a richer error type would add nothing here.
 #[allow(clippy::result_unit_err)]
 pub fn search(
@@ -27,14 +27,14 @@ pub fn search(
         DiscoverScope::Shows => "search/tv",
         DiscoverScope::All => "search/multi",
     };
-    let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
+    let resp: PageResp = tmdb_json(&format!("{}/{path}", api()), api_key, &params)?;
     Ok(map_page(resp, scope))
 }
 
 /// This week's trending titles. `All` (movies + shows, page 1) powers the
 /// discover empty-state rails; the scoped variants back the full "trending
 /// movies" / "trending shows" pages with real pagination.
-// The `()` Err is the unit error threaded up from `curl_json` via `?`; callers only
+// The `()` Err is the unit error threaded up from `tmdb_json` via `?`; callers only
 // care ok/err, so a richer error type would add nothing here.
 #[allow(clippy::result_unit_err)]
 pub fn trending(
@@ -52,7 +52,7 @@ pub fn trending(
         ("language", language.to_string()),
         ("page", page.max(1).to_string()),
     ];
-    let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
+    let resp: PageResp = tmdb_json(&format!("{}/{path}", api()), api_key, &params)?;
     Ok(map_page(resp, scope))
 }
 
