@@ -22,6 +22,31 @@ fn canary_feed() -> Release {
     }))
 }
 
+#[test]
+fn a_stable_update_never_takes_a_package_from_a_prerelease() {
+    let prerelease = release(json!({
+        "tag_name": "v0.1.40",
+        "html_url": "",
+        "prerelease": true,
+        "assets": [{
+            "name": "kroma-0.1.40.3600000-x86_64.spk",
+            "browser_download_url": "https://github.com/kromatv/kroma/releases/download/v0.1.40/kroma-0.1.40.3600000-x86_64.spk",
+            "digest": format!("sha256:{}", "a".repeat(64)),
+        }],
+    }));
+    let wanted = |channel| Target {
+        channel,
+        version: "0.1.40".into(),
+        build: 3_600_000,
+    };
+
+    let stable = feed::package(&prerelease, &wanted(Channel::Stable), "x86_64");
+    let canary = feed::package(&prerelease, &wanted(Channel::Canary), "x86_64");
+
+    assert!(stable.is_none());
+    assert!(canary.is_some());
+}
+
 fn latest(version: &str, build: Option<u64>) -> Latest {
     Latest {
         version: version.into(),

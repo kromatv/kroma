@@ -226,7 +226,7 @@ fn install_with_policy(state: &SharedState, target: Target, automatic: bool) -> 
     Ok(super::status(state))
 }
 
-fn prepare(state: &SharedState, op: &mut Operation) -> Result<()> {
+pub(super) fn prepare(state: &SharedState, op: &mut Operation) -> Result<()> {
     backup(state, &op.id)?;
     // A stream might have started while the backup was being written. Recheck
     // just before handing off to the host, including an opt-out made meanwhile.

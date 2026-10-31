@@ -22,28 +22,42 @@ pub const RESTART_EXIT_CODE: i32 = 75;
 const MAX_PACKAGE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 const OFFICIAL_DOWNLOADS: &str = "https://github.com/kromatv/kroma/releases/download/";
 
-static RESTARTING: AtomicBool = AtomicBool::new(false);
+#[derive(Default)]
+struct Restart {
+    requested: AtomicBool,
+    signal: Notify,
+}
 
-fn restart_signal() -> &'static Notify {
-    static SIGNAL: OnceLock<Notify> = OnceLock::new();
-    SIGNAL.get_or_init(Notify::new)
+impl Restart {
+    fn request(&self) {
+        self.requested.store(true, Ordering::SeqCst);
+        self.signal.notify_one();
+    }
+
+    fn requested(&self) -> bool {
+        self.requested.load(Ordering::SeqCst)
+    }
+
+    async fn wait(&self) {
+        if !self.requested() {
+            self.signal.notified().await;
+        }
+    }
+}
+
+fn restart() -> &'static Restart {
+    static RESTART: OnceLock<Restart> = OnceLock::new();
+    RESTART.get_or_init(Restart::default)
 }
 
 /// Whether an update asked this server to stop so its new payload starts.
 pub fn restart_requested() -> bool {
-    RESTARTING.load(Ordering::SeqCst)
+    restart().requested()
 }
 
 /// Resolves once an update asks this server to stop so its new payload starts.
 pub async fn wait_for_restart() {
-    if !restart_requested() {
-        restart_signal().notified().await;
-    }
-}
-
-fn request_restart() {
-    RESTARTING.store(true, Ordering::SeqCst);
-    restart_signal().notify_one();
+    restart().wait().await;
 }
 
 pub(super) fn ready(state: &SharedState) -> bool {
@@ -82,9 +96,7 @@ fn apply(state: &SharedState, op: &mut Operation) -> Result<()> {
     let payload = dir.join(op.target.build.to_string());
     if !is_payload(&payload) {
         let package = super::package_of(state, &op.target)?;
-        if state.config.releases_url.is_none() && !package.url.starts_with(OFFICIAL_DOWNLOADS) {
-            bail!("The package is not hosted by the official KROMA releases.");
-        }
+        official(state.config.releases_url.as_deref(), &package.url)?;
         let spk = dir.join(format!("{}.spk.partial", op.target.build));
         download(&package.url, &spk)?;
         let unpacked = verify(&spk, &package.sha256).and_then(|()| {
@@ -101,7 +113,14 @@ fn apply(state: &SharedState, op: &mut Operation) -> Result<()> {
     }
     op.phase = "restarting".into();
     save_operation(state, op)?;
-    request_restart();
+    restart().request();
+    Ok(())
+}
+
+fn official(feed: Option<&str>, url: &str) -> Result<()> {
+    if feed.is_none() && !url.starts_with(OFFICIAL_DOWNLOADS) {
+        bail!("The package is not hosted by the official KROMA releases.");
+    }
     Ok(())
 }
 
