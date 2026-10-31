@@ -5,6 +5,9 @@
 
 pub mod language;
 
+use std::fs::File;
+use std::path::Path;
+
 use sha2::{Digest, Sha256};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
@@ -26,6 +29,13 @@ pub fn short_hash(input: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
     hex::encode(hasher.finalize())[..16].to_string()
+}
+
+/// Lowercase hex SHA-256 of the file at `path`, streamed rather than read whole.
+pub fn sha256_file(path: &Path) -> std::io::Result<String> {
+    let mut hasher = Sha256::new();
+    std::io::copy(&mut File::open(path)?, &mut hasher)?;
+    Ok(hex::encode(hasher.finalize()))
 }
 
 /// `n` cryptographically-secure random bytes, read from the OS CSPRNG
@@ -80,6 +90,41 @@ pub fn clean_label(s: &str, max: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hashes_a_file_to_its_sha256_hex() {
+        let dir = kroma_testing::temp_dir("sha256-abc");
+        let file = dir.path().join("payload");
+        std::fs::write(&file, b"abc").unwrap();
+
+        let digest = sha256_file(&file).unwrap();
+
+        assert_eq!(
+            digest,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
+    fn hashes_a_file_larger_than_one_read_like_the_same_bytes_in_memory() {
+        let bytes = vec![7u8; 1 << 20];
+        let dir = kroma_testing::temp_dir("sha256-large");
+        let file = dir.path().join("payload");
+        std::fs::write(&file, &bytes).unwrap();
+
+        let digest = sha256_file(&file).unwrap();
+
+        assert_eq!(digest, hex::encode(Sha256::digest(&bytes)));
+    }
+
+    #[test]
+    fn reports_a_missing_file_as_an_error() {
+        let dir = kroma_testing::temp_dir("sha256-missing");
+
+        let result = sha256_file(&dir.path().join("absent"));
+
+        assert!(result.is_err());
+    }
 
     #[test]
     fn a_device_id_must_be_long_enough_and_plain_enough() {

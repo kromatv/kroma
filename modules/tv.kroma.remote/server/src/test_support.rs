@@ -51,6 +51,7 @@ pub fn install_script(data_dir: &Path, body: &str) -> PathBuf {
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, body).unwrap();
     std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    record_pinned_download(data_dir);
     path
 }
 
@@ -58,7 +59,13 @@ pub fn install_inert_file(data_dir: &Path) -> PathBuf {
     let path = provision::cached_path(data_dir);
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, "not a program").unwrap();
+    record_pinned_download(data_dir);
     path
+}
+
+fn record_pinned_download(data_dir: &Path) {
+    let asset = provision::pins::asset().expect("a pinned cloudflared build for the test platform");
+    std::fs::write(provision::sha256_path(data_dir), asset.sha256).unwrap();
 }
 
 pub async fn eventually<F, Fut>(mut probe: F)
