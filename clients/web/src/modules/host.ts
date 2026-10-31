@@ -29,7 +29,7 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
   const [owned] = useState(() => (provided ? null : createModuleRuntime(auth.client)));
   const runtime = provided ?? owned;
   if (!runtime) throw new Error('Module host requires its runtime');
-  const { registry: moduleRegistry, bus: appBus, remotes } = runtime;
+  const { registry: moduleRegistry, bus: appBus, remotes, listModules } = runtime;
   useEffect(() => runtime.retain(), [runtime]);
   const navigate = useNavigate();
   const t = useT();
@@ -79,7 +79,7 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
         if (!alive) return;
         let skip: Set<string> | undefined;
         try {
-          const listed = await apiGet<ModuleManifest[]>(latest.current.auth.client, '/modules');
+          const listed = await listModules();
           skip = new Set(listed.filter((m) => m.enabled === false).map((m) => m.id));
         } catch {
           skip = undefined; // enabled-state unavailable; set up everything
@@ -95,6 +95,6 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
     return () => {
       alive = false;
     };
-  }, [authed, revision, moduleRegistry, appBus, remotes]);
+  }, [authed, revision, moduleRegistry, appBus, remotes, listModules]);
   return host;
 }

@@ -1,78 +1,80 @@
-import { domainModules, type KromaClient } from '@kromatv/client';
+import type { KromaClient } from '@kromatv/client';
 import {
   depEntries,
   type KromaModule,
   type ModuleManifest,
   type ModuleRegistry,
   remoteEntryUrl,
-  SHARED_GLOBAL,
-  type SharedModule,
+  remoteSharedUrl,
 } from '@kromatv/module-sdk';
+import { queryOptions } from '@tanstack/react-query';
 import { apiBase } from '#web/shared/lib/api';
+import { EntryReads, installShared, provideEntryShared, provideShared } from './shared-scope';
 
 interface RemoteSpec {
   id: string;
   entry: string;
+  reads: string;
 }
 
-/** What the host hands a runtime-loaded module, by the specifier its source
- *  imported. Loaded on demand: a page with no module installed pays nothing.
- *  A workspace barrel goes through a one-line re-export in `scope/`: the app
- *  imports these barrels statically, and a namespace `import()` of a module
- *  the app also imports keeps every export of it alive in the app's own chunk,
- *  which put the whole kit and the player on first paint. */
-const PROVIDERS: Record<SharedModule, () => Promise<unknown>> = {
-  react: () => import('react'),
-  'react/jsx-runtime': () => import('react/jsx-runtime'),
-  'react/jsx-dev-runtime': () => import('react/jsx-dev-runtime'),
-  'react-dom': () => import('react-dom'),
-  'react-native': () => import('react-native'),
-  '@kromatv/module-sdk': () => import('#web/modules/scope/module-sdk'),
-  '@kromatv/ui': () => import('#web/modules/scope/ui'),
-  '@kromatv/ui/kit': () => import('#web/modules/scope/ui-kit'),
-  '@kromatv/ui/tokens': () => import('#web/modules/scope/ui-tokens'),
-  '@kromatv/core': () => import('#web/modules/scope/core'),
-  '@kromatv/core/react': () => import('#web/modules/scope/core-react'),
-  '@kromatv/client': () => import('#web/modules/scope/client'),
-  '@kromatv/client/query': () => import('#web/modules/scope/client-query'),
-  '@kromatv/i18n': () => import('#web/modules/scope/i18n'),
-  '@kromatv/i18n/react': () => import('#web/modules/scope/i18n-react'),
-  '@tanstack/react-query': () => import('@tanstack/react-query'),
-  '@tanstack/react-router': () => import('@tanstack/react-router'),
-  'react-call': () => import('react-call'),
-};
+const MAX_DECLARATION_BYTES = 64 * 1024;
 
-/** Everything a runtime module imports from the host, keyed by specifier. */
-export async function provideShared(): Promise<Record<string, unknown>> {
-  const loaded = await Promise.all(
-    Object.entries(PROVIDERS).map(async ([key, load]) => [key, await load()] as const),
-  );
-  const shared: Record<string, unknown> = Object.fromEntries(loaded);
-  for (const [domain, mod] of Object.entries(domainModules)) {
-    shared[`@kromatv/client/${domain}`] = mod;
-  }
-  return shared;
-}
-
-async function discoverRemotes(client?: KromaClient): Promise<RemoteSpec[]> {
+/** The installed modules, as `GET /api/modules` lists them. */
+export async function fetchModules(client?: KromaClient): Promise<ModuleManifest[]> {
   const res = await fetch(`${apiBase()}/api/modules`, {
     headers: client?.authHeaders() ?? {},
   });
-  if (!res.ok) return [];
-  const mods = (await res.json()) as ModuleManifest[];
-  return mods
+  if (!res.ok) throw new Error(`GET /api/modules failed (${res.status})`);
+  return (await res.json()) as ModuleManifest[];
+}
+
+/** One cache entry for the module list, so the remote loader, the host and the
+ *  nav read a single response per boot. */
+export const modulesQuery = (client?: KromaClient) =>
+  queryOptions({
+    queryKey: ['modules'],
+    queryFn: () => fetchModules(client),
+    staleTime: 60_000,
+  });
+
+function remotesOf(listed: readonly ModuleManifest[]): RemoteSpec[] {
+  return listed
     .filter((m) => m.feRemote != null && m.enabled !== false)
-    .map((m) => ({ id: m.id, entry: remoteEntryUrl(apiBase(), m.id) }));
+    .map((m) => ({
+      id: m.id,
+      entry: remoteEntryUrl(apiBase(), m.id),
+      reads: remoteSharedUrl(apiBase(), m.id),
+    }));
+}
+
+/** What a module's build declared its entry reads (`REMOTE_SHARED` at `url`),
+ *  or `null` when there is no usable declaration: absent, too large, not JSON,
+ *  or not the expected shape. */
+export async function readDeclaration(url: string): Promise<EntryReads | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (text.length > MAX_DECLARATION_BYTES) return null;
+    const parsed = EntryReads.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 /** The seams a test replaces: how the shared map is built, how an entry is imported. */
 export interface RemoteLoaders {
   provideShared: () => Promise<Record<string, unknown>>;
+  provideEntryShared: (reads: readonly EntryReads[]) => Promise<Record<string, unknown>>;
+  readDeclaration: (url: string) => Promise<EntryReads | null>;
   importRemote: (entry: string) => Promise<{ default?: KromaModule }>;
 }
 
 const DEFAULT_LOADERS: RemoteLoaders = {
   provideShared,
+  provideEntryShared,
+  readDeclaration,
   importRemote: (entry) => import(/* @vite-ignore */ entry),
 };
 
@@ -81,17 +83,20 @@ function unmet(registry: ModuleRegistry, m: KromaModule): string | null {
 }
 
 /** Remote loading state belongs to one mounted module host. */
-export function createRuntimeRemotes(client?: KromaClient) {
+export function createRuntimeRemotes(
+  client?: KromaClient,
+  listModules: () => Promise<ModuleManifest[]> = () => fetchModules(client),
+) {
   const loadedRemotes = new Set<string>();
+  let loaders = DEFAULT_LOADERS;
   let sharedReady: Promise<void> | null = null;
+  let gate: Promise<void> | null = null;
 
   let disposed = false;
-  function ensureShared(loaders: RemoteLoaders): Promise<void> {
+  function ensureShared(): Promise<void> {
     sharedReady ??= loaders
       .provideShared()
-      .then((shared) => {
-        Reflect.set(globalThis, SHARED_GLOBAL, shared);
-      })
+      .then((shared) => installShared(shared, true))
       .catch((e) => {
         sharedReady = null;
         throw e;
@@ -99,10 +104,25 @@ export function createRuntimeRemotes(client?: KromaClient) {
     return sharedReady;
   }
 
-  async function fetchRemote(
-    spec: RemoteSpec,
-    loaders: RemoteLoaders,
-  ): Promise<KromaModule | null> {
+  /** Settles once every shared module is on the global, loading them on the
+   *  first call, and returns the same promise every call after. It never
+   *  rejects: a module page that still cannot load fails on its own import. */
+  function ready(): Promise<void> {
+    gate ??= ensureShared().catch((e) => {
+      console.warn('[modules] shared modules failed to load', e);
+    });
+    return gate;
+  }
+
+  async function provideFor(specs: readonly RemoteSpec[]): Promise<void> {
+    if (sharedReady) return sharedReady;
+    const reads = await Promise.all(specs.map((s) => loaders.readDeclaration(s.reads)));
+    const declared = reads.filter((r): r is EntryReads => r !== null);
+    if (declared.length < reads.length) return ensureShared();
+    installShared(await loaders.provideEntryShared(declared), false);
+  }
+
+  async function fetchRemote(spec: RemoteSpec): Promise<KromaModule | null> {
     loadedRemotes.add(spec.id);
     try {
       const mod = (await loaders.importRemote(spec.entry)).default;
@@ -150,15 +170,18 @@ export function createRuntimeRemotes(client?: KromaClient) {
   }
 
   /** Load any not-yet-loaded frontend remotes into `registry` and return the ids
-   *  newly registered. Re-callable, best-effort, and a no-op during SSR. */
+   *  newly registered. Each entry is handed only what it declared it reads as it
+   *  loads; a module that runs code at start (`setup`, `exports`) gets the full
+   *  set first. Re-callable, best-effort, and a no-op during SSR. */
   async function loadRuntimeRemotes(
     registry: ModuleRegistry,
-    loaders: RemoteLoaders = DEFAULT_LOADERS,
+    given?: RemoteLoaders,
   ): Promise<string[]> {
+    if (given) loaders = given;
     if (disposed || typeof window === 'undefined') return [];
     let specs: RemoteSpec[];
     try {
-      specs = await discoverRemotes(client);
+      specs = remotesOf(await listModules());
     } catch (e) {
       console.warn('[modules] remote discovery failed', e);
       return [];
@@ -167,18 +190,18 @@ export function createRuntimeRemotes(client?: KromaClient) {
     const fresh = specs.filter((s) => !loadedRemotes.has(s.id));
     if (fresh.length === 0) return [];
     try {
-      await ensureShared(loaders);
+      await provideFor(fresh);
     } catch (e) {
       console.warn('[modules] shared modules failed to load', e);
       return [];
     }
     if (disposed) return [];
-    const loaded = await Promise.all(fresh.map((s) => fetchRemote(s, loaders)));
-    if (disposed) return [];
-    return settle(
-      registry,
-      loaded.filter((m): m is KromaModule => m !== null),
+    const loaded = (await Promise.all(fresh.map(fetchRemote))).filter(
+      (m): m is KromaModule => m !== null,
     );
+    if (loaded.some((m) => m.setup || m.exports)) await ready();
+    if (disposed) return [];
+    return settle(registry, loaded);
   }
 
   /** Whether this module's frontend was loaded as a runtime remote. */
@@ -194,6 +217,7 @@ export function createRuntimeRemotes(client?: KromaClient) {
 
   return {
     loadRuntimeRemotes,
+    ready,
     isLoadedRemote,
     forgetRemote,
     dispose() {

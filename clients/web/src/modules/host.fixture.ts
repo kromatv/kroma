@@ -23,6 +23,14 @@ export const auth = {
   },
 };
 
+export const listModules = vi.fn(async () => {
+  const res = await fetchMock(`${auth.client.baseUrl}/api/modules`, {
+    headers: auth.client.authHeaders(),
+  });
+  if (!res.ok) throw new Error(`GET /api/modules failed (${res.status})`);
+  return res.json();
+});
+
 export function base() {
   const call = registry.start.mock.calls.at(-1);
   if (!call) throw new Error('the registry was never started');

@@ -1,11 +1,12 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import type { TVars } from '@kromatv/i18n';
-import type {
-  KromaHost,
-  ModuleNav,
-  ModulePanel,
-  ModuleRegistry,
-  ModuleRoute,
+import {
+  type KromaHost,
+  type ModuleNav,
+  type ModulePanel,
+  type ModuleRegistry,
+  type ModuleRoute,
+  ModuleSharedProvider,
 } from '@kromatv/module-sdk';
 import { useScopedT, useT } from '@kromatv/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +14,7 @@ import { createContext, type ReactNode, useCallback, useContext, useMemo, useSta
 import { useModuleHost } from '#web/modules/host';
 import { hiddenModuleIds, type ModuleRouteMatch, moduleRouteAt } from '#web/modules/module-gating';
 import { createModuleRuntime } from '#web/modules/registry';
+import { modulesQuery } from '#web/modules/remotes';
 import { useAuth } from '#web/shared/lib/auth';
 
 /** A translator bound to one module's own catalogs, falling back to the core
@@ -46,20 +48,18 @@ const ModuleHostContext = createContext<ModuleHostValue>(EMPTY);
 
 export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client } = useAuth();
-  const [runtime] = useState(() => createModuleRuntime(client));
-  const { registry: moduleRegistry, remotes } = runtime;
   const queryClient = useQueryClient();
+  const [runtime] = useState(() =>
+    createModuleRuntime(client, () => queryClient.fetchQuery(modulesQuery(client))),
+  );
+  const { registry: moduleRegistry, remotes, listModules } = runtime;
   const [revision, setRevision] = useState(0);
   const host = useModuleHost(revision, runtime);
 
   // A module is visible only when the backend lists it AND it is enabled: a
-  // compile-time-bundled UI may have no installed backend at all. Keyed
-  // ['modules'] so it dedupes with the host's own fetch.
-  const { data: manifest } = useQuery({
-    queryKey: ['modules'],
-    queryFn: () => (host ? host.api.listModules() : Promise.resolve([])),
-    enabled: host != null,
-  });
+  // compile-time-bundled UI may have no installed backend at all. The same
+  // cache entry the runtime read the remotes from, so the list is fetched once.
+  const { data: manifest } = useQuery({ ...modulesQuery(client), enabled: host != null });
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- revision re-reads the registry ids after an install/uninstall
   const disabledIds = useMemo(
     () => hiddenModuleIds(manifest, moduleRegistry.ids()),
@@ -89,9 +89,10 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
   }, [host, revision, moduleRegistry]);
 
   const refresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['modules'] });
     await remotes.loadRuntimeRemotes(moduleRegistry);
     try {
-      const listed = host ? await host.api.listModules() : [];
+      const listed = host ? await listModules() : [];
       const present = new Set(listed.map((m) => m.id));
       for (const id of moduleRegistry.ids()) {
         if (!present.has(id) && remotes.isLoadedRemote(id)) {
@@ -102,10 +103,9 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
     } catch (e) {
       console.warn('[modules] refresh reconcile failed', e);
     }
-    await queryClient.invalidateQueries({ queryKey: ['modules'] });
     await queryClient.invalidateQueries({ queryKey: ['admin', 'modules'] });
     setRevision((r) => r + 1);
-  }, [host, queryClient, moduleRegistry, remotes]);
+  }, [host, queryClient, moduleRegistry, remotes, listModules]);
 
   const value = useMemo<ModuleHostValue>(
     () => ({
@@ -119,7 +119,11 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
     }),
     [host, contrib, disabledIds, refresh, moduleRegistry],
   );
-  return <ModuleHostContext.Provider value={value}>{children}</ModuleHostContext.Provider>;
+  return (
+    <ModuleHostContext.Provider value={value}>
+      <ModuleSharedProvider ready={remotes.ready}>{children}</ModuleSharedProvider>
+    </ModuleHostContext.Provider>
+  );
 }
 
 /** The wired module host, or null until modules finish starting. */

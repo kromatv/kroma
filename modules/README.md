@@ -295,6 +295,13 @@ declarations only, and a `@kromatv/*` import the host does not provide fails the
 build. Anything else a page imports (`zod`, an icon set) is bundled. Import
 components from `@kromatv/ui/kit`; a deeper kit path is folded onto it.
 
+Keep the entry to `defineModule` and `lazy()`. The build writes `fe/shared.json`
+beside `remoteEntry.js`, naming what the entry and the chunks it imports
+statically read from the host as they load, and the host hands over only that
+at boot. The rest, the kit included, arrives when a module page, slot or panel
+first renders. An entry that imports the kit at its top level makes every page
+of the app load it, whether or not the module shows anything there.
+
 ### Strings
 
 Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve

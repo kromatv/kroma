@@ -4,10 +4,10 @@
 // its controls in module-detail-actions.tsx.
 
 import type { StoreCatalog, StoreModule } from '@kromatv/client/modules';
-import { depEntries, moduleIconUrl } from '@kromatv/module-sdk';
+import { depEntries, ModuleScope, moduleIconUrl } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Badge, Box, Button, Callout, DataField, Grid, Progress, Row, Text } from '@kromatv/ui/kit';
-import type { ReactNode } from 'react';
+import { type ReactNode, Suspense } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { ModuleConfigForm } from '#web/features/admin/module-config-form';
 import { DepChip, depState, ModuleDeps } from '#web/features/admin/module-deps';
@@ -175,7 +175,11 @@ export function ModuleSettings({
           const Panel = p.component;
           return (
             <Box key={p.id} mb={12}>
-              <Panel host={host} />
+              <Suspense fallback={null}>
+                <ModuleScope id={module.id}>
+                  <Panel host={host} />
+                </ModuleScope>
+              </Suspense>
             </Box>
           );
         })}

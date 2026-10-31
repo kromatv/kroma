@@ -1,14 +1,17 @@
 import { dirname, relative } from 'node:path';
 import {
   REMOTE_ENTRY,
+  REMOTE_SHARED,
   REMOTE_STYLES,
   SHARED_GLOBAL,
   SHARED_MODULES,
   sharedKey,
+  WHOLE_NAMESPACE,
 } from '@kromatv/module-sdk/shared';
 import { init, parse } from 'es-module-lexer';
 import MagicString from 'magic-string';
-import type { Plugin } from 'vite';
+import type { Plugin, Rolldown } from 'vite';
+import { fieldsOf, namesTaken, takeBraces, takeNamespace } from './import-clause';
 
 export interface RemoteOptions {
   /** The file whose default export is the `KromaModule`. */
@@ -50,50 +53,10 @@ function clean(id: string): string {
   return id.split('?', 1)[0] ?? id;
 }
 
-/** `b as c` → `['b', 'c']`; `b` → `['b', undefined]`. */
-function splitAs(field: string): [string, string | undefined] {
-  const words = field.split(' ').filter(Boolean);
-  const as = words.indexOf('as');
-  if (as < 0) return [words.join(''), undefined];
-  return [words.slice(0, as).join(''), words.slice(as + 1).join('')];
-}
-
-function fieldsOf(braces: string): [string, string | undefined][] {
-  return braces
-    .slice(1, -1)
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map(splitAs);
-}
-
 /** `{ a, b as c }` → the destructuring pattern that reads it off a namespace. */
 function pattern(braces: string): string {
   const fields = fieldsOf(braces).map(([name, alias]) => (alias ? `${name}: ${alias}` : name));
   return `{ ${fields.join(', ')} }`;
-}
-
-/** The `{ ... }` group in an import clause, and the clause without it. */
-function takeBraces(clause: string): [string | null, string] {
-  const open = clause.indexOf('{');
-  const close = clause.indexOf('}');
-  if (open < 0 || close < open) return [null, clause];
-  return [clause.slice(open, close + 1), `${clause.slice(0, open)}${clause.slice(close + 1)}`];
-}
-
-/** The `* as ns` binding in an import clause, and the clause without it. */
-function takeNamespace(clause: string): [string | null, string] {
-  const star = clause.indexOf('*');
-  if (star < 0) return [null, clause];
-  const [, ns] = splitAs(clause.slice(star + 1).split(',')[0] ?? '');
-  const rest =
-    clause.slice(0, star) +
-    clause
-      .slice(star + 1)
-      .split(',')
-      .slice(1)
-      .join(',');
-  return [ns ?? null, rest];
 }
 
 function rewriteImport(statement: string, key: string, tmp: string): string {
@@ -127,15 +90,53 @@ function rewriteReexport(statement: string, key: string, tmp: string): string {
   return [take, ...fields].join(' ');
 }
 
+type Reads = Map<string, Set<string>>;
+
+function note(reads: Reads, key: string, names: string[]): void {
+  const into = reads.get(key) ?? new Set<string>();
+  for (const name of names) into.add(name);
+  reads.set(key, into);
+}
+
+function entryReads(
+  bundle: Rolldown.OutputBundle,
+  reads: Map<string, Reads>,
+): Record<string, string[]> {
+  const merged: Reads = new Map();
+  const seen = new Set<string>();
+  const queue = [REMOTE_ENTRY];
+  for (const file of queue) {
+    const chunk = bundle[file];
+    if (seen.has(file) || chunk?.type !== 'chunk') continue;
+    seen.add(file);
+    queue.push(...chunk.imports);
+    for (const id of chunk.moduleIds) {
+      for (const [key, names] of reads.get(id) ?? []) note(merged, key, [...names]);
+    }
+  }
+  return Object.fromEntries(
+    [...merged]
+      .sort(([a], [b]) => byCodeUnit(a, b))
+      .map(([key, names]) => [key, [...names].sort(byCodeUnit)]),
+  );
+}
+
+function byCodeUnit(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
 /**
  * The build half of the host contract: the plugins `kroma build` runs a module
  * frontend through. The first injects `module.json` and the locale catalogs into
  * the `defineModule({ ... })` call the way the compiled-in tier did. The second
  * rewrites every import of a package the host provides into a read from the
  * host's global, so the bundle carries none of them and one React, one design
- * system and one query cache live on the page.
+ * system and one query cache live on the page, and writes `REMOTE_SHARED`
+ * beside the entry: the part of that global the entry reads as it loads.
  */
 export function kromaRemote(options: RemoteOptions): Plugin[] {
+  const reads = new Map<string, Reads>();
   const entry = posix(options.entry);
   const manifestImport = relativeImport(options.entry, options.manifestPath);
   const localesGlob = `${relativeImport(options.entry, options.localesDir)}/*.json`;
@@ -191,6 +192,8 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
         this.error(`${file}: the module entry must \`export default defineModule({ ... })\``);
       }
       const s = new MagicString(code);
+      const taken: Reads = new Map();
+      reads.set(id, taken);
       let count = 0;
       for (const imp of imports) {
         if (!imp.specifier) continue;
@@ -198,6 +201,7 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
         if (!key) continue;
         const tmp = `__ks${count++}`;
         if (imp.type === 'dynamic') {
+          note(taken, key, [WHOLE_NAMESPACE]);
           s.overwrite(
             imp.importStart,
             imp.importEnd,
@@ -206,6 +210,7 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
           continue;
         }
         const statement = code.slice(imp.importStart, imp.importEnd);
+        note(taken, key, namesTaken(statement));
         const rewritten = statement.startsWith('export')
           ? rewriteReexport(statement, key, tmp)
           : rewriteImport(statement, key, tmp);
@@ -216,10 +221,14 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
       return { code: s.toString(), map: s.generateMap({ hires: true }) };
     },
     generateBundle(_options, bundle) {
-      if (!(REMOTE_STYLES in bundle)) return;
       const entry = bundle[REMOTE_ENTRY];
       if (entry?.type !== 'chunk') return;
-      entry.code = `${LINK_STYLES}\n${entry.code}`;
+      this.emitFile({
+        type: 'asset',
+        fileName: REMOTE_SHARED,
+        source: `${JSON.stringify(entryReads(bundle, reads), null, 2)}\n`,
+      });
+      if (REMOTE_STYLES in bundle) entry.code = `${LINK_STYLES}\n${entry.code}`;
     },
   };
 

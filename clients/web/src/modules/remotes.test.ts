@@ -23,6 +23,8 @@ function stubBrowserGlobals() {
 function loaders(overrides: Partial<RemoteLoaders> = {}): RemoteLoaders {
   return {
     provideShared: async () => ({ react: { version: '19' } }),
+    provideEntryShared: async () => ({}),
+    readDeclaration: async () => null,
     importRemote: vi.fn(async () => ({})),
     ...overrides,
   };

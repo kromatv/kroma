@@ -8,13 +8,40 @@
 
 import { type ModuleApi, ModuleId } from '@kromatv/client/modules';
 import { useScopedT } from '@kromatv/ui';
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
 import { useAdminHost } from './admin/context';
 
 const ModuleIdContext = createContext<ModuleId | null>(null);
+const GateContext = createContext<(() => void) | null>(null);
 
-/** Mounted by the host around a module's page, carrying that module's id. */
+function gate(ready: () => Promise<void>): () => void {
+  let open = false;
+  let pending: Promise<void> | null = null;
+  const opened = () => {
+    open = true;
+  };
+  return () => {
+    if (open) return;
+    pending ??= ready().then(opened, opened);
+    throw pending;
+  };
+}
+
+/** Mounted by a host that hands its modules the shared packages on demand:
+ *  every `ModuleScope` below suspends until `ready` settles, then renders the
+ *  module. `ready` is called once, by the first scope to render. */
+export function ModuleSharedProvider({
+  ready,
+  children,
+}: Readonly<{ ready: () => Promise<void>; children: ReactNode }>) {
+  const [wait] = useState(() => gate(ready));
+  return <GateContext.Provider value={wait}>{children}</GateContext.Provider>;
+}
+
+/** Mounted by the host around a module's page, slot or panel, carrying that
+ *  module's id. */
 export function ModuleScope({ id, children }: Readonly<{ id: string; children: ReactNode }>) {
+  useContext(GateContext)?.();
   return <ModuleIdContext.Provider value={ModuleId.parse(id)}>{children}</ModuleIdContext.Provider>;
 }
 
