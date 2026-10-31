@@ -168,6 +168,47 @@ the journal keeps two things, and neither for long:
 Reading the journal and its tallies, and reading or writing the rules, needs the
 `settings.manage` permission. No permission is specific to the network pages.
 
+## Nothing in the core goes around the gate
+
+The gate only hears from a call that asks it. In the server workspace, code
+that opens a connection another way fails CI:
+
+- `server/clippy.toml` bans the raw clients and sockets: `reqwest::Client`,
+  `reqwest::ClientBuilder` and `reqwest::get`, hyper-util's legacy client,
+  lettre's SMTP transports and connections, and the `std::net` and
+  `tokio::net` TCP connects and UDP sends. `bun run ci rust clippy` denies
+  `clippy::disallowed_types` and `clippy::disallowed_methods`, so the job fails
+  naming the lint, the line and the reason the file gives. A plain
+  `cargo clippy` shows them as warnings.
+- `kroma-http`'s `no_bypass` test fails with `file:line` on a
+  `Command::new("curl")` anywhere under `server/` or `modules/` outside
+  `kroma-http`.
+
+A client that is not `Fetch` and still asks the gate calls
+`kroma_http::egress::decide` (or `rule_url`) before it connects and
+`kroma_http::egress::record` after. It refuses a proxy route rather than
+going direct. The account emails do this with the purpose `email`, whether they
+leave by SMTP or through the kroma.tv relay.
+
+These are the allowed exceptions, and the only ones. Each carries an
+`#[expect]` whose `reason` says why, except `curl.rs`, which the curl test
+exempts:
+
+| Where | Opens | Why it may |
+|---|---|---|
+| `kroma-http/src/curl.rs` | `curl` | It is `Fetch`, which asks the gate before curl runs |
+| `kroma-http/src/loopback/tcp.rs` | hyper-util client | The loopback seam: it refuses any URL that is not plain http to a loopback address |
+| `kroma-module-supervisor/src/registry.rs` | reqwest client | The module registry client: it asks the gate before every request and records the exchange |
+| `kroma-module-supervisor/src/proxy.rs` | reqwest client | The reverse proxy into a sidecar, on `127.0.0.1` only |
+| `kroma-egress/src/gateway.rs`, `upstream.rs` | TCP connect | The gateway itself, dialling once the policy has routed the connection |
+| `kroma-engine/src/services/email/smtp.rs` | lettre SMTP transport | It asks the gate with the purpose `email` and records the exchange |
+| `kroma-engine/src/services/notify/push/deliver/tests.rs`, `kroma-module-runtime/tests/boot.rs` | TCP connect | Tests, to a server the test started on loopback |
+
+`server/clippy.toml` does not reach the module workspaces: clippy looks for it
+in the folders above the crate, and `modules/` is not under `server/`. A module
+is held to the gate at run time, by the gate in `kroma-module-runtime` and, once
+it is wired, the sandbox.
+
 ## Enforcement
 
 Deciding is not enough: something has to make the decision binding. The target
@@ -229,6 +270,7 @@ configured but down. The trade-off is fewer peers until a network can carry UDP.
 | Network middleware | planned (#493) |
 | A network that carries UDP | planned (#512, #494) |
 | ffmpeg and ffprobe open local inputs only | in review (#515) |
+| A call that skips the gate fails CI, and SMTP mail asks the gate as `email` | in review (#536) |
 | WebAssembly component host, the spike | in review (#523) |
 | Modules as WebAssembly components, the same isolation on every platform | planned (#510, #511, #514) |
 | Only components from registries other than the official one | planned (#513) |

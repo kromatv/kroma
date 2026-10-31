@@ -14,4 +14,5 @@ thiserror = "2"
 [dev-dependencies]
 axum = { workspace = true }
 kroma-http = { workspace = true }
+kroma-testing = { workspace = true }
 tokio = { workspace = true }

@@ -31,7 +31,7 @@ pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 pub const VPN_POINT: &str = "tv.kroma.vpn/proxy";
 
 pub const CORE_PURPOSES: &[&str] = &[
-    "ai", "artwork", "mail", "metadata", "push", "registry", "stats", "themes", "updates",
+    "ai", "artwork", "email", "metadata", "push", "registry", "stats", "themes", "updates",
 ];
 
 pub const VPN_DOWN: &str = "the VPN this rule asks for is not running";

@@ -1,6 +1,11 @@
 //! The registry client: fetching a catalog and an artifact under hard byte
 //! ceilings, and the URL and checksum rules a download is held to.
 
+#![expect(
+    clippy::disallowed_types,
+    reason = "the module registry client: fetch_bounded asks the egress gate before every request and records its exchange"
+)]
+
 use kroma_http::egress::{self, Decision, Exchange, Route, Ruling, BLOCKED};
 use serde_json::Value;
 
@@ -27,6 +32,14 @@ const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15
 /// Byte-progress callback for a bounded fetch: `(received, total)` where
 /// `total` is the advisory Content-Length when the server sent one.
 pub type FetchProgress<'a> = &'a (dyn Fn(u64, Option<u64>) + Send + Sync);
+
+// Built once each: constructing a client parses the whole root certificate
+// store, and the catalog path builds one per registry in the list.
+#[derive(Default)]
+pub(crate) struct Clients {
+    catalog: std::sync::OnceLock<reqwest::Client>,
+    artifact: std::sync::OnceLock<reqwest::Client>,
+}
 
 async fn fetch_bounded(
     client: &reqwest::Client,
@@ -179,7 +192,7 @@ impl Supervisor {
     }
 
     fn catalog_client(&self) -> &reqwest::Client {
-        self.catalog_client.get_or_init(|| {
+        self.registry_clients.catalog.get_or_init(|| {
             reqwest::Client::builder()
                 .timeout(CATALOG_TIMEOUT)
                 .redirect(no_downgrade())
@@ -191,7 +204,7 @@ impl Supervisor {
     // https_only: the artifact produces an executable, and a redirect from https
     // to http would otherwise undo the caller's scheme check.
     fn artifact_client(&self) -> &reqwest::Client {
-        self.artifact_client.get_or_init(|| {
+        self.registry_clients.artifact.get_or_init(|| {
             reqwest::Client::builder()
                 .timeout(ARTIFACT_TIMEOUT)
                 .https_only(true)

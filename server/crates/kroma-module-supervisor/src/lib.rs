@@ -59,10 +59,7 @@ pub struct Supervisor {
     // catalog view, the plan dialog (once per opt-in toggle) and the install
     // itself in quick succession; within the TTL they share one fetch.
     catalog_cache: RwLock<HashMap<String, (std::time::Instant, Value)>>,
-    // Built once each: constructing a client parses the whole root certificate
-    // store, and the catalog path builds one per registry in the list.
-    catalog_client: std::sync::OnceLock<reqwest::Client>,
-    artifact_client: std::sync::OnceLock<reqwest::Client>,
+    registry_clients: registry::Clients,
 }
 
 impl Supervisor {
@@ -74,8 +71,7 @@ impl Supervisor {
             port_tokens: RwLock::new(HashMap::new()),
             manifests_cache: RwLock::new(None),
             catalog_cache: RwLock::new(HashMap::new()),
-            catalog_client: std::sync::OnceLock::new(),
-            artifact_client: std::sync::OnceLock::new(),
+            registry_clients: registry::Clients::default(),
         })
     }
 

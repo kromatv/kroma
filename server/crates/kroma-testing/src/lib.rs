@@ -1,12 +1,17 @@
-//! Scratch directories and media fixtures for test harnesses.
+//! Scratch directories, media fixtures, source scans and nested cargo runs
+//! for test harnesses.
 //!
 //! A hand-built `env::temp_dir().join(pid)` is a path, not a resource: nothing
 //! removes it when the test ends, panics, or is killed. A [`TempDir`] goes when
 //! its holder drops, unwinding included.
 
+mod cargo;
 mod media;
+mod sources;
 
+pub use cargo::cargo;
 pub use media::clip;
+pub use sources::{findings, rust_sources, Finding};
 pub use tempfile::TempDir;
 
 /// A fresh, empty directory under `$TMPDIR`, named `kroma-<tag>-<random>` so a

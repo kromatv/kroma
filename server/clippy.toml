@@ -1,0 +1,21 @@
+disallowed-types = [
+  { path = "reqwest::Client", reason = "an HTTP call goes through kroma_http::Fetch, which asks the egress gate and records the exchange" },
+  { path = "reqwest::ClientBuilder", reason = "an HTTP call goes through kroma_http::Fetch, which asks the egress gate and records the exchange" },
+  { path = "hyper_util::client::legacy::Client", reason = "an HTTP call goes through kroma_http::Fetch, which asks the egress gate and records the exchange" },
+  { path = "lettre::AsyncSmtpTransport", reason = "mail leaves through services::email, which asks the egress gate and records the exchange" },
+  { path = "lettre::SmtpTransport", reason = "mail leaves through services::email, which asks the egress gate and records the exchange" },
+  { path = "lettre::transport::smtp::client::AsyncSmtpConnection", reason = "mail leaves through services::email, which asks the egress gate and records the exchange" },
+  { path = "lettre::transport::smtp::client::SmtpConnection", reason = "mail leaves through services::email, which asks the egress gate and records the exchange" },
+]
+
+disallowed-methods = [
+  { path = "reqwest::get", reason = "an HTTP call goes through kroma_http::Fetch, which asks the egress gate and records the exchange" },
+  { path = "std::net::TcpStream::connect", reason = "a raw connection skips the egress gate: use kroma_http::Fetch, or ask kroma_http::egress::decide and record the exchange" },
+  { path = "std::net::TcpStream::connect_timeout", reason = "a raw connection skips the egress gate: use kroma_http::Fetch, or ask kroma_http::egress::decide and record the exchange" },
+  { path = "std::net::UdpSocket::send", reason = "a raw datagram skips the egress gate: ask kroma_http::egress::decide and record the exchange" },
+  { path = "std::net::UdpSocket::send_to", reason = "a raw datagram skips the egress gate: ask kroma_http::egress::decide and record the exchange" },
+  { path = "tokio::net::TcpStream::connect", reason = "a raw connection skips the egress gate: use kroma_http::Fetch, or ask kroma_http::egress::decide and record the exchange" },
+  { path = "tokio::net::TcpSocket::connect", reason = "a raw connection skips the egress gate: use kroma_http::Fetch, or ask kroma_http::egress::decide and record the exchange" },
+  { path = "tokio::net::UdpSocket::send", reason = "a raw datagram skips the egress gate: ask kroma_http::egress::decide and record the exchange" },
+  { path = "tokio::net::UdpSocket::send_to", reason = "a raw datagram skips the egress gate: ask kroma_http::egress::decide and record the exchange" },
+]

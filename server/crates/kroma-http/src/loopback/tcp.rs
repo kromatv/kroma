@@ -2,6 +2,11 @@
 //! answering 302 is trying to move the core somewhere, and the only correct
 //! destination is the one the supervisor named.
 
+#![expect(
+    clippy::disallowed_types,
+    reason = "the loopback seam: send refuses any URL that is not plain http to a loopback address, so this client never leaves the machine"
+)]
+
 use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
