@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { addCatalogs } from '@kromatv/core';
 import { I18nProvider } from '@kromatv/ui';
-import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { act, render, screen } from '@testing-library/react';
+import { type ReactNode, Suspense } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ModuleScope, useT } from './scope';
+import { ModuleScope, ModuleSharedProvider, useT } from './scope';
 
 const MODULE_ID = 'tv.kroma.probe';
 
@@ -70,5 +70,29 @@ describe('useT inside a module', () => {
     mount(<Message messageKey="probe.own" />, 'tv.kroma.other');
 
     expect(screen.getByText('probe.own')).toBeTruthy();
+  });
+});
+
+describe('a module surface under a host that loads its packages on demand', () => {
+  it('waits for the shared packages, then renders the module', async () => {
+    let release = () => {};
+    const ready = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    render(
+      <ModuleSharedProvider ready={() => ready}>
+        <Suspense fallback={<span>waiting</span>}>
+          <ModuleScope id={MODULE_ID}>
+            <span>module page</span>
+          </ModuleScope>
+        </Suspense>
+      </ModuleSharedProvider>,
+    );
+
+    expect(screen.getByText('waiting')).toBeTruthy();
+
+    await act(async () => release());
+
+    expect(await screen.findByText('module page')).toBeTruthy();
   });
 });

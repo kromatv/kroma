@@ -5,6 +5,7 @@ const ENTRY = '/m/ui/src/module.tsx';
 
 interface Ctx {
   error: (message: string) => never;
+  emitFile: (file: unknown) => string;
 }
 
 type Resolved = string | { id: string; external: boolean } | null;
@@ -12,6 +13,8 @@ type Resolved = string | { id: string; external: boolean } | null;
 interface Chunk {
   type: string;
   code?: string;
+  imports?: string[];
+  moduleIds?: string[];
 }
 
 interface ManifestHooks {
@@ -33,6 +36,7 @@ const ctx: Ctx = {
   error(message) {
     throw new Error(message);
   },
+  emitFile: () => 'emitted',
 };
 
 function plugins(): [ManifestHooks, SharedHooks] {
@@ -190,7 +194,7 @@ describe('the stylesheet link', () => {
   it('is prepended to the remote entry when the build emitted one', () => {
     const bundle = {
       'style.css': { type: 'asset' },
-      'remoteEntry.js': { type: 'chunk', code: 'export default 1;' },
+      'remoteEntry.js': { type: 'chunk', code: 'export default 1;', imports: [], moduleIds: [] },
     };
 
     sharedPlugin().generateBundle.call(ctx, {}, bundle);
@@ -201,7 +205,9 @@ describe('the stylesheet link', () => {
   });
 
   it('is absent when the module has no styles of its own', () => {
-    const bundle = { 'remoteEntry.js': { type: 'chunk', code: 'export default 1;' } };
+    const bundle = {
+      'remoteEntry.js': { type: 'chunk', code: 'export default 1;', imports: [], moduleIds: [] },
+    };
 
     sharedPlugin().generateBundle.call(ctx, {}, bundle);
 

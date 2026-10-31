@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { SHARED_MODULES } from '@kromatv/module-sdk';
 import { describe, expect, it } from 'vitest';
-import { provideShared } from './remotes';
+import { provideEntryShared, provideShared } from './shared-scope';
 
 const SCOPES: Record<string, [() => Promise<object>, () => Promise<object>]> = {
   '@kromatv/ui': [() => import('./scope/ui'), () => import('@kromatv/ui')],
@@ -46,5 +46,32 @@ describe('the shared map the host builds', () => {
     }
     const kit = await import('@kromatv/ui/kit');
     expect(Reflect.get(Object(shared['@kromatv/ui/kit']), 'Box')).toBe(kit.Box);
+  });
+});
+
+describe('what an entry is handed before the full set', () => {
+  it('is a light SDK when the entry only defines itself', async () => {
+    const shared = await provideEntryShared([{ '@kromatv/module-sdk': ['defineModule'] }]);
+
+    const sdk = await import('@kromatv/module-sdk');
+    const given = Object(shared['@kromatv/module-sdk']);
+    expect(Reflect.get(given, 'defineModule')).toBe(sdk.defineModule);
+    expect(Reflect.get(given, 'Table')).toBeUndefined();
+  });
+
+  it('is the real SDK when the entry reads more of it', async () => {
+    const shared = await provideEntryShared([
+      { '@kromatv/module-sdk': ['defineModule'] },
+      { '@kromatv/module-sdk': ['Table'] },
+    ]);
+
+    const sdk = await import('@kromatv/module-sdk');
+    expect(Reflect.get(Object(shared['@kromatv/module-sdk']), 'Table')).toBe(sdk.Table);
+  });
+
+  it('leaves out a package the host does not provide', async () => {
+    const shared = await provideEntryShared([{ 'left-pad': ['default'] }]);
+
+    expect(shared).toEqual({});
   });
 });

@@ -10,6 +10,7 @@ import {
   fetchMock,
   hasPermission,
   installHarness,
+  listModules,
   loadRuntimeRemotes,
   locale,
   navigate,
@@ -30,6 +31,7 @@ vi.mock('#web/modules/registry', () => ({
     registry,
     bus: createEventBus(),
     remotes: { loadRuntimeRemotes },
+    listModules,
     retain: () => () => {},
   }),
 }));

@@ -64,7 +64,22 @@ export const SHARED_GLOBAL = '__KROMA_SHARED__';
 export const REMOTE_ENTRY = 'remoteEntry.js';
 export const REMOTE_STYLES = 'style.css';
 
+/** Beside the entry, written by the build: what the entry and every chunk it
+ *  imports statically read from the host as they evaluate, as
+ *  `{ [specifier]: names }`. A host hands over just those before it imports the
+ *  entry, and the rest when a page, slot or panel first renders. A bundle
+ *  without one is handed every shared module up front. */
+export const REMOTE_SHARED = 'shared.json';
+
+/** In `REMOTE_SHARED`, a read of the namespace as a whole rather than of names. */
+export const WHOLE_NAMESPACE = '*';
+
 /** Where the server serves a module's `fe/` from. */
 export function remoteEntryUrl(baseUrl: string, id: string): string {
   return `${baseUrl}/modules/${encodeURIComponent(id)}/${REMOTE_ENTRY}`;
+}
+
+/** Where the server serves a module's `REMOTE_SHARED`. */
+export function remoteSharedUrl(baseUrl: string, id: string): string {
+  return `${baseUrl}/modules/${encodeURIComponent(id)}/${REMOTE_SHARED}`;
 }

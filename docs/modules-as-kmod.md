@@ -64,7 +64,9 @@ it, supervises it, and reverse-proxies its HTTP.**
   `/modules/<id>/remoteEntry.js` and the web client imports it for every
   enabled module at boot. The bundle takes React, the design system, the SDK
   and the client from the host through one global (`SHARED_MODULES` in
-  `@kromatv/module-sdk`), so one React and one theme live on the page.
+  `@kromatv/module-sdk`), so one React and one theme live on the page. At boot
+  the host hands an entry only what `fe/shared.json` says it reads as it loads;
+  the rest arrives when a module page, slot or panel first renders.
 - **Registry + Store (shipped)**: `kroma registry` builds a catalog
   (schema 2: per-target `artifacts` with `sha256`, `contentHash`, `dependsOn`,
   `engines`) for a self-hosted directory; `kroma release` builds the
