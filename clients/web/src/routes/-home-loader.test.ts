@@ -10,7 +10,7 @@ import { Route } from './_app.index';
 
 const media = {
   featured: vi.fn(),
-  movies: vi.fn(async () => []),
+  movieCards: vi.fn(async () => []),
   shows: vi.fn(async () => []),
   artwork: { posterFor: () => '/poster', showPosterFor: () => '/poster', backdropFor: () => null },
   streamUrl: () => '/stream',
@@ -44,7 +44,7 @@ it('renders a featured pick without fetching the whole movie catalogue', async (
 
   const queryClient = await load();
 
-  expect(media.movies).not.toHaveBeenCalled();
+  expect(media.movieCards).not.toHaveBeenCalled();
   expect(queryClient.getQueryData(['featured'])).toMatchObject({ type: 'show' });
 });
 
@@ -62,6 +62,6 @@ it('falls back to the catalogue when the server has no pick', async () => {
 
   await load();
 
-  expect(media.movies).toHaveBeenCalledTimes(1);
+  expect(media.movieCards).toHaveBeenCalledTimes(1);
   expect(media.shows).toHaveBeenCalledTimes(1);
 });

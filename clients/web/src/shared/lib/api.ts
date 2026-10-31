@@ -5,7 +5,7 @@ import { makeQueryClient } from './query';
 
 import type { KromaClient } from '@kromatv/client';
 import { loadSession } from '@kromatv/client/accounts';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, MediaItem, Show } from '@kromatv/client/media';
 import { createQueryClient, type QueryClient } from '@kromatv/client/query';
 import type { SubtitleId } from '@kromatv/client/subtitles';
 import { deviceLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
@@ -101,6 +101,13 @@ export interface SubtitleView {
   provider?: string;
 }
 
+/** A movie as a grid draws it, with its art pre-resolved to absolute KROMA URLs.
+ *  Every `MovieView` is one. */
+export interface MovieCardView extends MediaCard {
+  poster: string;
+  backdrop: string | null;
+}
+
 /** A movie/episode with art + stream + subtitle URLs pre-resolved to absolute KROMA URLs. */
 export interface MovieView extends MediaItem {
   poster: string;
@@ -113,6 +120,14 @@ export interface MovieView extends MediaItem {
 export interface ShowView extends Show {
   poster: string;
   backdrop: string | null;
+}
+
+export function toMovieCardView(c: KromaClient, card: MediaCard): MovieCardView {
+  return {
+    ...card,
+    poster: c.media.artwork.posterFor(card),
+    backdrop: c.media.artwork.backdropFor(card),
+  };
 }
 
 export function toMovieView(c: KromaClient, item: MediaItem): MovieView {

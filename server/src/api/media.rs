@@ -15,6 +15,7 @@ use crate::api::util::{blocking, query};
 use crate::api::visibility;
 use crate::db;
 use crate::i18n::ReqLocale;
+use crate::model::MediaCard;
 use crate::state::SharedState;
 use axum::routing::{get, post};
 use axum::Router;
@@ -47,6 +48,18 @@ pub fn routes() -> Router<SharedState> {
 #[derive(Debug, Deserialize)]
 pub struct LibraryQuery {
     pub library: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ListView {
+    Card,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MovieListQuery {
+    pub library: Option<String>,
+    pub view: Option<ListView>,
 }
 
 /// `GET /api/splash` → `SplashEntry[]`: a random sample of backdrop art with
@@ -121,21 +134,30 @@ pub async fn list_items(
     Ok(Json(items).into_response())
 }
 
-/// `GET /api/movies` (optional `?library=`) → `MediaItem[]` (movies only).
+/// `GET /api/movies` (optional `?library=`) → `MediaItem[]` (movies only), or
+/// with `?view=card` → `MediaCard[]`: the slim shape a grid draws, without
+/// files, tracks, cast or crew.
 pub async fn list_movies(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
-    Query(q): Query<LibraryQuery>,
+    Query(q): Query<MovieListQuery>,
 ) -> Result<Response, Response> {
+    let library = q.library;
     let mut items = query(&state.db, move |pool| {
-        let mut items = db::list_movies(&pool, q.library.as_deref())?;
+        let mut items = db::list_movies(&pool, library.as_deref())?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
     .await?;
     visibility::keep_items(&user, &mut items);
-    Ok(Json(items).into_response())
+    Ok(match q.view {
+        Some(ListView::Card) => {
+            let cards: Vec<MediaCard> = items.into_iter().map(MediaCard::from).collect();
+            Json(cards).into_response()
+        }
+        None => Json(items).into_response(),
+    })
 }
 
 /// `GET /api/shows` (optional `?library=`) → `Show[]`. Personalises each show's
