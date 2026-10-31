@@ -58,8 +58,8 @@ impl RemoteAccess {
     }
 
     // Resolution order: packaged next to the server executable, a copy cached
-    // under `<data_dir>/bin` by a verified download, then `cloudflared` from
-    // `PATH` (dev fallback). Never an admin-configured path.
+    // under `<data_dir>/bin`, then `cloudflared` from `PATH` (dev fallback).
+    // Never an admin-configured path.
     pub(crate) fn resolve_binary(&self) -> String {
         let name = provision::bin_name();
         if let Ok(exe) = std::env::current_exe() {

@@ -8,7 +8,7 @@ pub(crate) struct Asset {
     pub(crate) sha256: &'static str,
 }
 
-pub(crate) const ASSETS: &[Asset] = &[
+const ASSETS: &[Asset] = &[
     Asset {
         os: "linux",
         arch: "x86_64",

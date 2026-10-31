@@ -77,8 +77,7 @@ async fn cached(data_dir: &Path, asset: &Asset) -> Option<PathBuf> {
     (dest.exists() && recorded.trim() == asset.sha256).then_some(dest)
 }
 
-/// Downloads the pinned release on first use, or whenever the cached binary
-/// was not unpacked from the verified pinned archive.
+/// Downloads the pinned release unless the cached binary was unpacked from it.
 pub async fn ensure(data_dir: &Path) -> Result<PathBuf, String> {
     let asset = asset().ok_or_else(|| {
         format!(

@@ -31,8 +31,7 @@ pub fn short_hash(input: &str) -> String {
     hex::encode(hasher.finalize())[..16].to_string()
 }
 
-/// Lowercase hex SHA-256 of the file at `path`, streamed so a multi-gigabyte
-/// download is never held in memory.
+/// Lowercase hex SHA-256 of the file at `path`, streamed rather than read whole.
 pub fn sha256_file(path: &Path) -> std::io::Result<String> {
     let mut hasher = Sha256::new();
     std::io::copy(&mut File::open(path)?, &mut hasher)?;

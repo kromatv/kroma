@@ -1,11 +1,9 @@
 //! Self-provisioning of the `cloudflared` binary the connector runs.
 //!
-//! On first enable the server downloads the pinned `cloudflared` release for its
-//! platform into `<data_dir>/bin` using `curl` (the same HTTP path as the rest of
-//! the server). The download is checked against the sha256 pinned in [`pins`]
-//! before it is unpacked or run, and validated by running `--version` before it
-//! is accepted. A cached copy is trusted only if it came from that pinned
-//! download.
+//! On first enable the server downloads the pinned release for its platform into
+//! `<data_dir>/bin` using `curl`. The download must match the sha256 in [`pins`]
+//! before it is unpacked or run, and pass `--version` before it is accepted. A
+//! cached copy is trusted only if it came from that download.
 
 pub(crate) mod pins;
 
@@ -58,8 +56,7 @@ async fn verify(download: &Path, asset: &Asset) -> Result<(), String> {
 }
 
 /// Download + install the pinned cloudflared into `<data_dir>/bin`, returning
-/// its path. The download must match its pinned sha256 and the result must run
-/// `--version`; otherwise it is rejected and removed.
+/// its path. A download that fails its sha256 or `--version` is removed.
 pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     let asset = pins::asset().ok_or_else(|| {
         format!(

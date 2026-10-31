@@ -78,8 +78,7 @@ fn curl(url: &str, dest: &Path) -> bool {
         .arg(dest)
         .arg(url)
         .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+        .is_ok_and(|status| status.success())
 }
 
 #[cfg(test)]
