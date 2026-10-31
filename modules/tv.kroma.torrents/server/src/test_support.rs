@@ -21,8 +21,9 @@ pub(crate) fn counting_http_echo(body: &'static str) -> (String, Arc<AtomicUsize
     std::thread::spawn(move || {
         for stream in listener.incoming() {
             let Ok(mut stream) = stream else { break };
-            counter.fetch_add(1, Ordering::SeqCst);
-            read_http_request(&mut stream);
+            if read_http_request(&mut stream).starts_with("GET /ip ") {
+                counter.fetch_add(1, Ordering::SeqCst);
+            }
             write_http_response(&mut stream, body.as_bytes());
         }
     });
@@ -54,6 +55,9 @@ pub(crate) fn socks5_serving(body: Vec<u8>) -> (String, Receiver<Asked>) {
 fn socks5_handshake(stream: &mut TcpStream) -> Option<String> {
     let mut greeting = [0u8; 2];
     stream.read_exact(&mut greeting).ok()?;
+    if greeting[0] != 0x05 {
+        return None;
+    }
     let mut methods = vec![0u8; greeting[1] as usize];
     stream.read_exact(&mut methods).ok()?;
     stream.write_all(&[0x05, 0x00]).ok()?;
