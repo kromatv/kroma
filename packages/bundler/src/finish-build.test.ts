@@ -59,6 +59,16 @@ describe('finishBuild', () => {
     }
   });
 
+  it('leaves a build with no client environment alone', async () => {
+    const { handler } = finishBuild({ precompress: true }).buildApp as {
+      handler: (b: unknown) => Promise<void>;
+    };
+
+    await handler.call(null, { environments: {} });
+
+    expect(await readFile(join(root, 'dist/client/_shell.html'), 'utf8')).toBe(SHELL);
+  });
+
   it('compresses the pages only when asked to', async () => {
     const shell = join(root, 'dist/client/_shell.html');
 
