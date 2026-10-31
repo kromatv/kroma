@@ -9,10 +9,11 @@ use crate::response::Response;
 
 // Every option travels on stdin: argv is world-readable through `ps`, and these
 // requests carry an indexer's API key in a header and the download client's
-// password in a form field.
+// password in a form field. `-q` must come first: it stops curl reading a
+// `~/.curlrc`, which any process running as this user could plant.
 fn curl_command() -> Command {
     let mut cmd = Command::new("curl");
-    cmd.arg("--config").arg("-");
+    cmd.arg("-q").arg("--config").arg("-");
     cmd
 }
 
@@ -126,6 +127,6 @@ mod tests {
             .get_args()
             .map(|a| a.to_string_lossy().into_owned())
             .collect();
-        assert_eq!(args, vec!["--config".to_string(), "-".to_string()]);
+        assert_eq!(args, ["-q", "--config", "-"]);
     }
 }
