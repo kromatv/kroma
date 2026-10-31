@@ -25,7 +25,16 @@ interface SpinnerProps {
 const SPIN_MS = 900;
 
 // Three faint quadrants leave one visible arc: the spinner is the turn.
-const sDefinition = styles({ ring: { radius: 'circle', borderColor: 'tint/14' } });
+const TRACK = 'tint/14';
+
+const sDefinition = styles({
+  ring: {
+    radius: 'circle',
+    borderRightColor: TRACK,
+    borderBottomColor: TRACK,
+    borderLeftColor: TRACK,
+  },
+});
 
 const turnOf = (size: number, arc: number, top: string, scope: StyleScope) =>
   sharedStyle(
