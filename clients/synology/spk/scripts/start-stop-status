@@ -8,9 +8,10 @@
 PKG="kroma"
 TARGET="/var/packages/${PKG}/target"
 VAR="/var/packages/${PKG}/var"
-BIN="${TARGET}/bin/kroma-server"
+RELEASES="${VAR}/releases"
 PID="${VAR}/kroma.pid"
 LOG="${VAR}/kroma.log"
+RESTART=75
 
 # shellcheck disable=SC1090
 [ -f "${VAR}/kroma.conf" ] && . "${VAR}/kroma.conf"
@@ -27,7 +28,7 @@ DATA_DIR="${KROMA_DATA_DIR:-}"
 # follow, and libva ignores the ones that are not there.
 va_drivers_path() {
     _p=""
-    for d in "${TARGET}/ffmpeg/dri" \
+    for d in "$1/ffmpeg/dri" \
              /var/packages/synocli-videodriver/target/lib \
              /usr/lib/dri /usr/lib/x86_64-linux-gnu/dri; do
         [ -d "$d" ] && _p="${_p:+$_p:}$d"
@@ -49,6 +50,62 @@ roll_log() {
     mv -f "${LOG}" "${LOG}.1" 2>/dev/null
 }
 
+installed_build() {
+    _v="${SYNOPKG_PKGVER:-$(sed -n 's/^version="\(.*\)"$/\1/p' "/var/packages/${PKG}/INFO" 2>/dev/null)}"
+    case "${_v##*.}" in
+        ''|*[!0-9]*) echo 0 ;;
+        *) echo "${_v##*.}" ;;
+    esac
+}
+
+newest_payload() {
+    _dir="${TARGET}"
+    _top=$(installed_build)
+    for d in "${RELEASES}"/*; do
+        _build="${d##*/}"
+        case "${_build}" in ''|*[!0-9]*) continue ;; esac
+        [ -x "${d}/bin/kroma-server" ] && [ "${_build}" -gt "${_top}" ] || continue
+        _top="${_build}"
+        _dir="${d}"
+    done
+    printf '%s' "${_dir}"
+}
+
+prune_releases() {
+    for d in "${RELEASES}"/*; do
+        [ -e "${d}" ] && [ "${d}" != "$1" ] && rm -rf "${d}"
+    done
+}
+
+serve() {
+    _child=""
+    trap '[ -n "${_child}" ] && kill "${_child}" 2>/dev/null; wait "${_child}" 2>/dev/null; exit 0' TERM INT
+    _operator_va="${LIBVA_DRIVERS_PATH:-}"
+    while :; do
+        _payload=$(newest_payload)
+        prune_releases "${_payload}"
+        # Only when something was found: an empty LIBVA_DRIVERS_PATH tells libva to
+        # search nowhere, which is worse than leaving it its own default.
+        _va="${_operator_va:-$(va_drivers_path "${_payload}")}"
+        if [ -n "${_va}" ]; then export LIBVA_DRIVERS_PATH="${_va}"; else unset LIBVA_DRIVERS_PATH; fi
+        PATH="${_payload}/ffmpeg/bin:${PATH}" \
+        KROMA_PORT="${KROMA_PORT:-4040}" \
+        KROMA_MOVIES_DIRS="${KROMA_MOVIES_DIRS}" \
+        KROMA_SERIES_DIRS="${KROMA_SERIES_DIRS}" \
+        KROMA_MEDIA_DIRS="${KROMA_MEDIA_DIRS}" \
+        KROMA_DATA_DIR="${DATA_DIR}" \
+        KROMA_WEB_DIR="${_payload}/web" \
+        KROMA_INSTALL="synology" \
+        KROMA_SELF_UPDATE_DIR="${RELEASES}" \
+        "${_payload}/bin/kroma-server" &
+        _child=$!
+        wait "${_child}"
+        _status=$?
+        _child=""
+        [ "${_status}" -eq "${RESTART}" ] || break
+    done
+}
+
 start_daemon() {
     roll_log
     mkdir -p "${DATA_DIR}" 2>/dev/null
@@ -56,25 +113,21 @@ start_daemon() {
         echo "$(date) data folder ${DATA_DIR} unavailable, using ${VAR}/data" >> "${LOG}"
         DATA_DIR="${VAR}/data"
     fi
-    mkdir -p "${DATA_DIR}"
-    # Only when something was found: an empty LIBVA_DRIVERS_PATH tells libva to
-    # search nowhere, which is worse than leaving it its own default.
-    _va="${LIBVA_DRIVERS_PATH:-$(va_drivers_path)}"
-    [ -n "${_va}" ] && export LIBVA_DRIVERS_PATH="${_va}"
-    PATH="${TARGET}/ffmpeg/bin:${PATH}" \
-    KROMA_PORT="${KROMA_PORT:-4040}" \
-    KROMA_MOVIES_DIRS="${KROMA_MOVIES_DIRS}" \
-    KROMA_SERIES_DIRS="${KROMA_SERIES_DIRS}" \
-    KROMA_MEDIA_DIRS="${KROMA_MEDIA_DIRS}" \
-    KROMA_DATA_DIR="${DATA_DIR}" \
-    KROMA_WEB_DIR="${TARGET}/web" \
-    KROMA_INSTALL="synology" \
-    "${BIN}" >> "${LOG}" 2>&1 &
+    mkdir -p "${DATA_DIR}" "${RELEASES}"
+    serve >> "${LOG}" 2>&1 &
     echo $! > "${PID}"
 }
 
 stop_daemon() {
-    [ -f "${PID}" ] && kill "$(cat "${PID}")" 2>/dev/null
+    if [ -f "${PID}" ]; then
+        _pid=$(cat "${PID}")
+        kill "${_pid}" 2>/dev/null
+        _waited=0
+        while kill -0 "${_pid}" 2>/dev/null && [ "${_waited}" -lt 30 ]; do
+            sleep 1
+            _waited=$((_waited + 1))
+        done
+    fi
     rm -f "${PID}"
 }
 

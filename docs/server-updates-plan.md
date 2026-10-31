@@ -5,7 +5,10 @@
 One update page across installations. Stable and Canary have independent release
 checks. Checks run every six hours when enabled; installation requires a manual
 confirmation or the owner's explicit opt-in to automatic installation when idle.
-Automatic installation is off by default and follows the chosen channel.
+Automatic installation follows the chosen channel. It is off by default, except
+in the Synology package, which installs updates by itself when idle until the
+owner turns that off. Until the owner chooses a channel, the server follows the
+channel its running build was published on.
 Switching channels does not downgrade. A
 restart warning and a portable local backup precede installation.
 

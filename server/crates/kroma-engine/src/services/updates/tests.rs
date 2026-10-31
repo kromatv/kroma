@@ -58,12 +58,35 @@ fn a_tag_that_is_not_a_version_is_no_release() {
 }
 
 #[test]
-fn the_canary_feed_is_the_newest_server_package() {
+fn the_canary_feed_is_the_newest_build_even_under_an_older_higher_version() {
     let found = feed::canary(canary_feed()).unwrap();
 
-    assert_eq!(found.version, "0.1.40");
-    assert_eq!(found.build, Some(3_571_174));
-    assert_eq!(found.published_at.as_deref(), Some("2026-10-20T10:00:00Z"));
+    assert_eq!(found.version, "0.1.39");
+    assert_eq!(found.build, Some(3_580_000));
+    assert_eq!(found.published_at.as_deref(), Some("2026-10-21T10:00:00Z"));
+}
+
+#[test]
+fn a_stable_release_ships_only_the_build_ci_promoted() {
+    let published = |extra: serde_json::Value| {
+        let mut body = json!({
+            "tag_name": "v0.1.39",
+            "html_url": "",
+            "assets": [{ "name": "kroma-0.1.39.3592000-x86_64.spk" }],
+        });
+        body.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        release(body)
+    };
+
+    assert!(feed::ships(published(json!({})), "0.1.39", 3_592_000));
+    assert!(!feed::ships(published(json!({})), "0.1.39", 3_592_322));
+    assert!(!feed::ships(
+        published(json!({ "prerelease": true })),
+        "0.1.39",
+        3_592_000
+    ));
 }
 
 #[test]

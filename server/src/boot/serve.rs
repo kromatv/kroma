@@ -74,14 +74,23 @@ pub async fn run(
         app
     };
 
+    let stopping = std::sync::Arc::new(tokio::sync::Notify::new());
+    let signalled = stopping.clone();
     // Connect-info so handlers can read the client address (LAN/WAN classification).
-    axum::serve(
+    let server = axum::serve(
         listener,
         http_app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .context("server error")?;
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        signalled.notify_one();
+    });
+    tokio::select! {
+        served = server => served.context("server error")?,
+        () = drain_deadline(&stopping) => {
+            info!("connections still open after the drain window; stopping anyway");
+        }
+    }
 
     https_handle.graceful_shutdown(Some(std::time::Duration::from_secs(3)));
 
@@ -113,6 +122,11 @@ fn spawn_module_auto_update(
     });
 }
 
+async fn drain_deadline(stopping: &tokio::sync::Notify) {
+    stopping.notified().await;
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+}
+
 async fn await_jobs_drained(state: &state::SharedState) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     while state.jobs.running_count() > 0 && std::time::Instant::now() < deadline {
@@ -138,6 +152,7 @@ pub(super) async fn shutdown_signal() {
     tokio::select! {
         () = ctrl_c => {}
         () = terminate => {}
+        () = kroma_engine::services::updates::wait_for_restart() => {}
     }
     info!("shutdown signal received");
 }
