@@ -1607,7 +1607,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 309
+    "line": 311
   },
   {
     "id": "ADMIN-91",
@@ -1617,7 +1617,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 313
+    "line": 315
   },
   {
     "id": "ADMIN-92",
@@ -1627,7 +1627,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 316
+    "line": 318
   },
   {
     "id": "ADMIN-93",
@@ -1637,7 +1637,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 321
+    "line": 323
   },
   {
     "id": "ADMIN-94",

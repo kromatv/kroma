@@ -23,4 +23,5 @@ pub(super) const STEPS: &[Step] = sql_steps![
     "0006_notification_folding",
     "0007_notification_resolve",
     "0008_notification_deliveries",
+    "0009_network_flows_daily",
 ];

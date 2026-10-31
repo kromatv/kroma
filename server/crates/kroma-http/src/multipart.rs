@@ -12,6 +12,15 @@ pub enum FormPart<'a> {
     File(&'a Path),
 }
 
+impl FormPart<'_> {
+    pub(crate) fn size(&self) -> u64 {
+        match self {
+            FormPart::Text(value) => value.len() as u64,
+            FormPart::File(path) => std::fs::metadata(path).map_or(0, |meta| meta.len()),
+        }
+    }
+}
+
 // `form` reads a leading `@` as a file path and a leading `<` as a file to take
 // the value from, so a literal value travels as `form-string`, which reads
 // neither. A file name is quoted because `form` splits an unquoted one on `,`

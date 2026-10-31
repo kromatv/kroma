@@ -83,7 +83,9 @@ fn direct_ip(check_url: &str, exit: Option<&str>) -> Option<String> {
 }
 
 fn echo(check_url: &str, proxy: Option<&str>) -> anyhow::Result<String> {
-    let mut fetch = kroma_module_sdk::http::Fetch::new().max_time(12);
+    let mut fetch = kroma_module_sdk::http::Fetch::new()
+        .purpose("seal-check")
+        .max_time(12);
     if let Some(proxy) = proxy {
         fetch = fetch.socks5(proxy);
     }

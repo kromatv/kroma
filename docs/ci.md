@@ -96,6 +96,12 @@ entries would push the 10 GB budget below over. It is not part of `required`,
 so the spike cannot block `main`. Locally, run `rustup target add
 wasm32-wasip2` once before `cargo test --workspace` in `server/`.
 
+The server job lifts Ubuntu's AppArmor restriction on unprivileged user
+namespaces and sets `KROMA_REQUIRE_SANDBOX=1`, so the sandbox and leak tests
+(`kroma-sandbox`, `kroma-egress`) run there and fail rather than skip when the
+runner cannot start a process with no network. On a laptop that refuses
+namespaces they skip and say so.
+
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the
 quality gate scores new code, and such a change has no new Rust lines.

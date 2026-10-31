@@ -2,10 +2,15 @@
 
 KROMA checks the selected Stable or Canary release every six hours and offers
 **Admin → Server updates**. A **New** badge in Admin navigation and a dashboard
-notice announce available releases. Automatic installation is off by default.
+notice announce available releases. Automatic installation is off by default,
+except in the Synology package (see [Synology DSM 7](#synology-dsm-7)).
 An owner can start an update, review the restart notice, and confirm, or opt in
 to **Install automatically when idle**. The server saves a portable
 backup before handing the exact reviewed version/build to a host updater.
+
+Until the owner chooses a channel, the server follows the channel its running
+build was published on. A build that a stable release ships follows Stable.
+Any other build, such as a canary `.spk` from kroma.tv, follows Canary.
 
 With automatic installation enabled, a discovery check can prepare a new
 release immediately if the server is idle; a separate job retries idle eligibility
@@ -97,6 +102,30 @@ substitution must resolve the same way as your normal Compose deployment. On
 Windows use Windows paths in JSON (escaped backslashes or forward slashes).
 
 ### Synology DSM 7
+
+The package updates itself, with no setup. DSM 7 runs a third-party package as
+its own user, and that user may not call the package manager. So the server
+downloads the reviewed `.spk` from the official release, requires GitHub's
+SHA-256 asset digest and verifies it, and unpacks the payload into
+`/var/packages/kroma/var/releases/<build>`. Then it stops cleanly, module
+sidecars included, and exits with status 75. The package's service script then
+starts the newest payload: the one in `releases/` or the one Package Center
+installed, whichever build is higher. It deletes the others.
+
+Automatic installation when idle is on by default here. Turn it off in
+**Admin → Server updates**. Package Center keeps showing the version it
+installed. The page shows the build that runs. The first package with this
+service script must be installed once through Package Center. Later updates
+replace only the server, the web app and ffmpeg. A change to the package scripts
+still needs an install through Package Center.
+
+A new build that does not start leaves the service stopped. The script does not
+go back to the previous build, because the new build may have migrated the
+database. To recover, install a later build through Package Center, or follow
+[Backup and recovery](#backup-and-recovery).
+
+The host updater below remains available. When `KROMA_UPDATE_DIR` is set, the
+server hands updates to it instead of updating itself.
 
 Run the updater on DSM itself, independently of the package being replaced.
 Install Python 3.9+ and put the script in an administrator-owned location

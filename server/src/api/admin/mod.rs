@@ -15,6 +15,7 @@ mod libraries;
 mod llm;
 mod logs;
 mod modules;
+mod network;
 mod notifications;
 mod pipeline;
 mod reports;
@@ -72,6 +73,7 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(jobs::routes())
         .merge(llm::routes())
         .merge(logs::routes())
+        .merge(network::routes())
         .merge(diagnostics::routes())
         .merge(modules::routes())
         .merge(notifications::routes())

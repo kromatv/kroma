@@ -183,14 +183,14 @@ fn send_to(
     request: &kroma_push::PushRequest,
 ) -> anyhow::Result<kroma_http::Response> {
     let fetch = match sub.transport {
-        PushTransport::WebPush => web_push_reach(kroma_http::Fetch::new()),
-        _ => kroma_http::Fetch::new(),
+        PushTransport::WebPush => web_push_reach(kroma_http::Fetch::new().purpose("push")),
+        _ => kroma_http::Fetch::new().purpose("push"),
     };
     post(fetch, request)
 }
 
 pub(super) fn send(request: &kroma_push::PushRequest) -> anyhow::Result<kroma_http::Response> {
-    post(kroma_http::Fetch::new(), request)
+    post(kroma_http::Fetch::new().purpose("push"), request)
 }
 
 // `http2` is not a preference: APNs refuses HTTP/1.1 outright.

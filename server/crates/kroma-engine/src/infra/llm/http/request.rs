@@ -27,7 +27,7 @@ pub(super) fn get_json(url: &str, headers: &[(&str, String)]) -> Result<Value> {
 
 fn fetch_with(headers: &[(&str, String)], max_time_secs: u32) -> Fetch {
     headers.iter().fold(
-        Fetch::new().max_time(max_time_secs).no_redirects(),
+        Fetch::new().purpose("ai").max_time(max_time_secs).no_redirects(),
         |fetch, (name, value)| fetch.header(name, value.as_str()),
     )
 }
