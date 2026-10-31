@@ -49,12 +49,22 @@ type EntryDefaults = Readonly<{ physicalKeyboard: boolean; size: ControlSize }>;
 const FORM_FACTOR: Readonly<
   Record<
     FormFactor,
-    { entry: EntryDefaults; surfaces: SurfacePresentation; frostLayerOnly?: boolean }
+    {
+      entry: EntryDefaults;
+      surfaces: SurfacePresentation;
+      frostLayerOnly?: boolean;
+      veilBitmap: boolean;
+    }
   >
 > = {
-  tv: { entry: { physicalKeyboard: false, size: 'tv' }, surfaces: 'auto', frostLayerOnly: true },
-  phone: { entry: { physicalKeyboard: true, size: 'md' }, surfaces: 'dialog' },
-  browser: { entry: { physicalKeyboard: true, size: 'sm' }, surfaces: 'auto' },
+  tv: {
+    entry: { physicalKeyboard: false, size: 'tv' },
+    surfaces: 'auto',
+    frostLayerOnly: true,
+    veilBitmap: true,
+  },
+  phone: { entry: { physicalKeyboard: true, size: 'md' }, surfaces: 'dialog', veilBitmap: false },
+  browser: { entry: { physicalKeyboard: true, size: 'sm' }, surfaces: 'auto', veilBitmap: false },
 };
 
 export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
@@ -66,6 +76,10 @@ export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   /** Frost drawn only by a `<FrostSource>`'s layer: anywhere else a frosted
    *  surface keeps its plain fill. Defaults to true for `tv`, false otherwise. */
   frostLayerOnly?: boolean;
+  /** Draw a veil's ramp once into a small bitmap the compositor stretches,
+   *  rather than as a CSS gradient the page rasterizes. Defaults to false for
+   *  `browser` and `phone`, true otherwise. */
+  veilBitmap?: boolean;
   /** Light the focus ring on what the pointer focuses, as a desktop window
    *  driven by a mouse wants. Default false: the ring follows keys only. */
   pointerShowsFocus?: boolean;
@@ -122,6 +136,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
       surfaces: config.surfaces ?? preset?.surfaces ?? parent.surfaces,
       frostEnabled: config.frostEnabled ?? parent.frostEnabled,
       frostLayerOnly: config.frostLayerOnly ?? preset?.frostLayerOnly ?? parent.frostLayerOnly,
+      veilBitmap: config.veilBitmap ?? preset?.veilBitmap ?? parent.veilBitmap,
       image: config.image ?? parent.image,
       frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
       frostHost: parent.frostHost ?? frostHost,

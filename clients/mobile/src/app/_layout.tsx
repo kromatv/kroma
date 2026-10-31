@@ -22,6 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BrandIntro } from '#mobile/components/BrandIntro';
 import { createDeviceStore } from '#mobile/lib/deviceStore';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
@@ -134,6 +135,7 @@ function Shell() {
                     />
                   </ThemeProvider>
                 </BottomSheetModalProvider>
+                <BrandIntro ready={status !== 'booting'} />
               </CastProvider>
             </DownloadsProvider>
           </ProgressQueueProvider>
