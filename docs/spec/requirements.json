@@ -3247,7 +3247,7 @@
     "status": "SHIPPED",
     "text": "A module is a self-contained capability with a reverse-DNS id",
     "file": "docs/spec/modules/README.md",
-    "line": 33
+    "line": 35
   },
   {
     "id": "MOD-3",
@@ -3257,7 +3257,7 @@
     "status": "SHIPPED",
     "text": "Within its own process a module has wide latitude: it registers",
     "file": "docs/spec/modules/README.md",
-    "line": 37
+    "line": 39
   },
   {
     "id": "MOD-4",
@@ -3267,7 +3267,7 @@
     "status": "SHIPPED",
     "text": "A database is a **declared capability**, not something every module",
     "file": "docs/spec/modules/README.md",
-    "line": 40
+    "line": 42
   },
   {
     "id": "MOD-5",
@@ -3277,7 +3277,7 @@
     "status": "SHIPPED",
     "text": "It may not reach into the server's process or another module's",
     "file": "docs/spec/modules/README.md",
-    "line": 46
+    "line": 48
   },
   {
     "id": "MOD-6",
@@ -3287,7 +3287,7 @@
     "status": "SHIPPED",
     "text": "It may not replace core. Playback, catalogue, accounts and the",
     "file": "docs/spec/modules/README.md",
-    "line": 50
+    "line": 52
   },
   {
     "id": "MOD-7",
@@ -3297,7 +3297,7 @@
     "status": "SHIPPED",
     "text": "It may not claim a first-party module id it does not own.",
     "file": "docs/spec/modules/README.md",
-    "line": 53
+    "line": 55
   },
   {
     "id": "MOD-8",
@@ -3307,7 +3307,7 @@
     "status": "SHIPPED",
     "text": "It may not assume it is present. Because any module is uninstallable,",
     "file": "docs/spec/modules/README.md",
-    "line": 54
+    "line": 56
   },
   {
     "id": "MOD-9",
@@ -3317,7 +3317,7 @@
     "status": "SHIPPED",
     "text": "A module *may* depend on another module, hard or optional, and that",
     "file": "docs/spec/modules/README.md",
-    "line": 70
+    "line": 72
   },
   {
     "id": "MOD-10",
@@ -3327,7 +3327,7 @@
     "status": "SHIPPED",
     "text": "A module ships as a single `.kmod` file: a manifest, the native",
     "file": "docs/spec/modules/README.md",
-    "line": 77
+    "line": 79
   },
   {
     "id": "MOD-11",
@@ -3337,7 +3337,7 @@
     "status": "SHIPPED",
     "text": "**Identity and version.** The reverse-DNS id and a hand-set version.",
     "file": "docs/spec/modules/README.md",
-    "line": 83
+    "line": 85
   },
   {
     "id": "MOD-12",
@@ -3347,7 +3347,7 @@
     "status": "SHIPPED",
     "text": "The release process refuses to publish changed bytes under an",
     "file": "docs/spec/modules/README.md",
-    "line": 85
+    "line": 87
   },
   {
     "id": "MOD-13",
@@ -3357,7 +3357,7 @@
     "status": "SHIPPED",
     "text": "**`minServer`, the compatibility floor.** The minimum server version",
     "file": "docs/spec/modules/README.md",
-    "line": 88
+    "line": 90
   },
   {
     "id": "MOD-14",
@@ -3367,7 +3367,7 @@
     "status": "SHIPPED",
     "text": "**Dependencies.** Hard ones that must be installed alongside it, and",
     "file": "docs/spec/modules/README.md",
-    "line": 90
+    "line": 92
   },
   {
     "id": "MOD-15",
@@ -3377,7 +3377,7 @@
     "status": "SHIPPED",
     "text": "**Target.** Which platform the backend was built for. A library-only",
     "file": "docs/spec/modules/README.md",
-    "line": 92
+    "line": 94
   },
   {
     "id": "MOD-16",
@@ -3387,7 +3387,7 @@
     "status": "SHIPPED",
     "text": "The server checks the bytes it downloads against a published SHA-256",
     "file": "docs/spec/modules/README.md",
-    "line": 96
+    "line": 98
   },
   {
     "id": "MOD-17",
@@ -3397,7 +3397,7 @@
     "status": "SHIPPED",
     "text": "Integrity is not safety: a matching checksum proves the bytes are the",
     "file": "docs/spec/modules/README.md",
-    "line": 99
+    "line": 101
   },
   {
     "id": "MOD-18",
@@ -3407,7 +3407,7 @@
     "status": "SHIPPED",
     "text": "**From the Store**, by id. The server resolves hard dependencies",
     "file": "docs/spec/modules/README.md",
-    "line": 109
+    "line": 111
   },
   {
     "id": "MOD-19",
@@ -3417,7 +3417,7 @@
     "status": "SHIPPED",
     "text": "**By upload**, handing the server a `.kmod` by hand: same unpack,",
     "file": "docs/spec/modules/README.md",
-    "line": 113
+    "line": 115
   },
   {
     "id": "MOD-20",
@@ -3427,7 +3427,7 @@
     "status": "SHIPPED",
     "text": "Both are admin actions on the [`admin/`](../admin/) surface.",
     "file": "docs/spec/modules/README.md",
-    "line": 117
+    "line": 119
   },
   {
     "id": "MOD-21",
@@ -3437,7 +3437,7 @@
     "status": "SHIPPED",
     "text": "The Store (Admin → Modules) is the in-app browser over the configured",
     "file": "docs/spec/modules/README.md",
-    "line": 123
+    "line": 125
   },
   {
     "id": "MOD-22",
@@ -3447,7 +3447,7 @@
     "status": "SHIPPED",
     "text": "The official registry is pinned first and cannot be removed; operators",
     "file": "docs/spec/modules/README.md",
-    "line": 126
+    "line": 128
   },
   {
     "id": "MOD-23",
@@ -3457,7 +3457,7 @@
     "status": "SHIPPED",
     "text": "For each module the Store shows **this server's verdict**, not just the",
     "file": "docs/spec/modules/README.md",
-    "line": 129
+    "line": 131
   },
   {
     "id": "MOD-24",
@@ -3467,7 +3467,7 @@
     "status": "AGREED",
     "text": "**First-party is trusted by default.** The official registry is",
     "file": "docs/spec/modules/README.md",
-    "line": 147
+    "line": 149
   },
   {
     "id": "MOD-25",
@@ -3477,7 +3477,7 @@
     "status": "AGREED",
     "text": "**A third-party registry is an explicit operator opt-in.** Adding one",
     "file": "docs/spec/modules/README.md",
-    "line": 149
+    "line": 151
   },
   {
     "id": "MOD-26",
@@ -3487,7 +3487,7 @@
     "status": "AGREED",
     "text": "The operator is told, in plain terms, that a module is a native binary",
     "file": "docs/spec/modules/README.md",
-    "line": 151
+    "line": 153
   },
   {
     "id": "MOD-27",
@@ -3497,7 +3497,7 @@
     "status": "AGREED",
     "text": "**Checksums guarantee integrity, never safety**, and the server says so",
     "file": "docs/spec/modules/README.md",
-    "line": 154
+    "line": 156
   },
   {
     "id": "MOD-28",
@@ -3507,7 +3507,7 @@
     "status": "SHIPPED",
     "text": "**Enable.** The server spawns the sidecar and the module's routes,",
     "file": "docs/spec/modules/README.md",
-    "line": 183
+    "line": 185
   },
   {
     "id": "MOD-29",
@@ -3517,7 +3517,7 @@
     "status": "SHIPPED",
     "text": "**Disable.** The sidecar is stopped, the module stops running, and",
     "file": "docs/spec/modules/README.md",
-    "line": 186
+    "line": 188
   },
   {
     "id": "MOD-30",
@@ -3527,7 +3527,7 @@
     "status": "SHIPPED",
     "text": "**Update.** A newer version replaces the bundle and the sidecar is",
     "file": "docs/spec/modules/README.md",
-    "line": 189
+    "line": 191
   },
   {
     "id": "MOD-31",
@@ -3537,7 +3537,7 @@
     "status": "SHIPPED",
     "text": "`minServer` is re-checked on update, so an update that outgrows the",
     "file": "docs/spec/modules/README.md",
-    "line": 192
+    "line": 194
   },
   {
     "id": "MOD-32",
@@ -3547,7 +3547,7 @@
     "status": "SHIPPED",
     "text": "**Uninstall.** The module is removed entirely. It is the one",
     "file": "docs/spec/modules/README.md",
-    "line": 194
+    "line": 196
   },
   {
     "id": "MOD-33",
@@ -3557,7 +3557,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to uninstall a module another enabled module still",
     "file": "docs/spec/modules/README.md",
-    "line": 197
+    "line": 199
   },
   {
     "id": "MOD-34",
@@ -3567,7 +3567,7 @@
     "status": "SHIPPED",
     "text": "Uninstalling a module never touches media on disk. A downloads module",
     "file": "docs/spec/modules/README.md",
-    "line": 204
+    "line": 206
   },
   {
     "id": "MOD-35",
@@ -3577,7 +3577,7 @@
     "status": "SHIPPED",
     "text": "**A crashed module cannot take down the server.** The sidecar is a",
     "file": "docs/spec/modules/README.md",
-    "line": 214
+    "line": 216
   },
   {
     "id": "MOD-36",
@@ -3587,7 +3587,7 @@
     "status": "SHIPPED",
     "text": "**An incompatible module never runs by accident.** `minServer` is",
     "file": "docs/spec/modules/README.md",
-    "line": 217
+    "line": 219
   },
   {
     "id": "MOD-37",
@@ -3597,7 +3597,7 @@
     "status": "SHIPPED",
     "text": "**Failure is visible, not silent.** A module that will not start or",
     "file": "docs/spec/modules/README.md",
-    "line": 220
+    "line": 222
   },
   {
     "id": "MOD-38",
@@ -3607,7 +3607,7 @@
     "status": "SHIPPED",
     "text": "The server is forward-compatible with older modules. A module declares",
     "file": "docs/spec/modules/README.md",
-    "line": 228
+    "line": 247
   },
   {
     "id": "MOD-39",
@@ -3617,7 +3617,7 @@
     "status": "SHIPPED",
     "text": "A module installed today keeps working as the server is updated,",
     "file": "docs/spec/modules/README.md",
-    "line": 231
+    "line": 250
   },
   {
     "id": "MOD-40",
@@ -3627,7 +3627,7 @@
     "status": "SHIPPED",
     "text": "A *newer* module may raise its `minServer`, and the Store says so",
     "file": "docs/spec/modules/README.md",
-    "line": 234
+    "line": 253
   },
   {
     "id": "MOD-41",
@@ -3637,7 +3637,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 242
+    "line": 261
   },
   {
     "id": "MOD-42",
@@ -3647,7 +3647,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 246
+    "line": 265
   },
   {
     "id": "MOD-43",
@@ -3657,7 +3657,7 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 249
+    "line": 268
   },
   {
     "id": "MOD-44",
@@ -3667,7 +3667,7 @@
     "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 263
+    "line": 282
   },
   {
     "id": "MOD-45",
@@ -3677,7 +3677,7 @@
     "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 267
+    "line": 286
   },
   {
     "id": "MOD-46",
@@ -3687,7 +3687,7 @@
     "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 270
+    "line": 289
   },
   {
     "id": "MOD-47",
@@ -3697,7 +3697,7 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 290
+    "line": 309
   },
   {
     "id": "MOD-48",
@@ -3707,7 +3707,7 @@
     "status": "AGREED",
     "text": "The Store names the registry every module came from, on the listing and",
     "file": "docs/spec/modules/README.md",
-    "line": 157
+    "line": 159
   },
   {
     "id": "MOD-49",
@@ -3717,7 +3717,7 @@
     "status": "AGREED",
     "text": "Installing from a registry the operator added is gated once, per",
     "file": "docs/spec/modules/README.md",
-    "line": 160
+    "line": 162
   },
   {
     "id": "MOD-50",
@@ -3727,7 +3727,7 @@
     "status": "AGREED",
     "text": "A module that has disappeared from every configured registry is flagged",
     "file": "docs/spec/modules/README.md",
-    "line": 275
+    "line": 294
   },
   {
     "id": "MOD-51",
@@ -3737,7 +3737,7 @@
     "status": "SHIPPED",
     "text": "It may not read or write the server's own credentials. A settings key",
     "file": "docs/spec/modules/README.md",
-    "line": 57
+    "line": 59
   },
   {
     "id": "MOD-52",
@@ -3747,7 +3747,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to **update** a module past the range an enabled",
     "file": "docs/spec/modules/README.md",
-    "line": 199
+    "line": 201
   },
   {
     "id": "MOD-53",
@@ -3757,7 +3757,7 @@
     "status": "SHIPPED",
     "text": "A credential whose consumer *is* a module reaches the module that",
     "file": "docs/spec/modules/README.md",
-    "line": 64
+    "line": 66
   },
   {
     "id": "MOD-54",
@@ -4048,6 +4048,26 @@
     "text": "A term that is empty, or an expression that does not compile, refuses",
     "file": "docs/spec/modules/acquisition.md",
     "line": 55
+  },
+  {
+    "id": "MOD-83",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 83,
+    "status": "AGREED",
+    "text": "A module runs inside the server and can call nothing but what the",
+    "file": "docs/spec/modules/README.md",
+    "line": 233
+  },
+  {
+    "id": "MOD-84",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 84,
+    "status": "AGREED",
+    "text": "A module that still ships as a native program runs under the strongest",
+    "file": "docs/spec/modules/README.md",
+    "line": 240
   },
   {
     "id": "PLAY-1",
