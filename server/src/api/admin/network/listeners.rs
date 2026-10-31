@@ -13,11 +13,10 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::api::extract::AuthUser;
+use crate::boot::https::https_port;
 use crate::model::Permission;
 use crate::services::network::CORE;
 use crate::state::SharedState;
-
-const DEFAULT_HTTPS_PORT: i64 = 4443;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -72,26 +71,6 @@ pub(super) async fn list(
         }),
     );
     Ok(Json(json!({ "listeners": listeners })).into_response())
-}
-
-fn https_port(state: &SharedState) -> Option<u16> {
-    let enabled = state
-        .config
-        .https_override
-        .unwrap_or_else(|| state.settings.get_bool("httpsEnabled", false));
-    if !enabled {
-        return None;
-    }
-    let configured = state
-        .settings
-        .get_i64("httpsPort", DEFAULT_HTTPS_PORT)
-        .clamp(1, 65535);
-    Some(
-        state
-            .config
-            .https_port_override
-            .unwrap_or_else(|| u16::try_from(configured).unwrap_or(443)),
-    )
 }
 
 fn exposure_of(ip: IpAddr) -> Exposure {
