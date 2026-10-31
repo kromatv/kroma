@@ -432,6 +432,16 @@ fn write_json_reply(stream: &mut std::net::TcpStream, status: u16, reply: &serde
 pub(crate) fn serve_json(
     route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
 ) -> (String, Arc<std::sync::Mutex<Vec<String>>>) {
+    serve_bytes(move |path| {
+        let (status, body) = route(path);
+        (status, body.to_string().into_bytes())
+    })
+}
+
+/// Like [`serve_json`], but answering with the raw bytes `route(path)` returns.
+pub(crate) fn serve_bytes(
+    route: impl Fn(&str) -> (u16, Vec<u8>) + Send + 'static,
+) -> (String, Arc<std::sync::Mutex<Vec<String>>>) {
     use std::io::Write;
 
     let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
@@ -449,14 +459,13 @@ pub(crate) fn serve_json(
             let path = full.split('?').next().unwrap_or("").to_string();
             log.lock().unwrap().push(full);
 
-            let (status, body) = route(&path);
-            let payload = body.to_string();
+            let (status, payload) = route(&path);
             let head = format!(
                 "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
                 payload.len()
             );
             let _ = stream.write_all(head.as_bytes());
-            let _ = stream.write_all(payload.as_bytes());
+            let _ = stream.write_all(&payload);
             let _ = stream.flush();
         }
     });
@@ -477,6 +486,18 @@ pub(crate) fn test_state_with_updater(releases_url: &str) -> SharedState {
         config.releases_url = Some(releases_url.to_owned());
         config.update_dir = Some(config.data_dir.join("update-bridge"));
         config.install = crate::config::Install::Docker;
+    })
+}
+
+/// Like [`test_state`], but installed as the Synology package, which replaces
+/// its own payload with the builds the feed at `releases_url` publishes.
+pub(crate) fn test_state_as_package(releases_url: &str) -> SharedState {
+    build_state_with(Point::absent("embedder"), None, Vec::new(), |config| {
+        config.releases_url = Some(releases_url.to_owned());
+        let releases = config.data_dir.join("releases");
+        std::fs::create_dir_all(&releases).unwrap();
+        config.self_update_dir = Some(releases);
+        config.install = crate::config::Install::Synology;
     })
 }
 

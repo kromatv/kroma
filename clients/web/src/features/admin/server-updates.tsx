@@ -128,7 +128,12 @@ function UpdatesContent() {
           width="md"
           onClose={() => !busy && setConfirm(null)}
         >
-          <Text>{t('admin.updatesConfirmHint', { version: confirm.version })}</Text>
+          <Text>
+            {t('admin.updatesConfirmHint', {
+              version: confirm.version,
+              build: String(confirm.build),
+            })}
+          </Text>
           <Text variant="meta" color="textDim" mt={12}>
             {t('admin.updatesBackupHint')}
           </Text>
