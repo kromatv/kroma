@@ -1,5 +1,5 @@
 //! Local MP3 cache for TV theme songs, from the community "tvthemes" archive
-//! (`http://tvthemes.plexapp.com/<tvdb>.mp3`, keyed by TheTVDB series id).
+//! (`https://tvthemes.plexapp.com/<tvdb>.mp3`, keyed by TheTVDB series id).
 //! Best-effort: a 404, no network or no `curl` leaves `theme_url` unset.
 
 use std::path::{Path, PathBuf};
@@ -10,7 +10,7 @@ use crate::model::Metadata;
 
 pub const PUBLIC_PREFIX: &str = "/api/themes/";
 
-const ARCHIVE: &str = "http://tvthemes.plexapp.com";
+const ARCHIVE: &str = "https://tvthemes.plexapp.com";
 
 // Anything smaller is an error body, not a theme.
 const MIN_BYTES: u64 = 8 * 1024;
@@ -58,12 +58,12 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
         .args([
             "-sf",
             "-L",
-            // A MITM on this plaintext archive could 30x-redirect the fetch at
-            // an internal host; keep redirects to web protocols, few, and short.
+            // Plain HTTP would expose the library's series ids and let a
+            // redirect aim the fetch at an internal host.
             "--proto",
-            "=http,https",
+            "=https",
             "--proto-redir",
-            "=http,https",
+            "=https",
             "--max-redirs",
             "2",
             "--max-time",
