@@ -94,7 +94,14 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
 
   return (
     <div className={classes(s.hero)}>
-      <Image src={media.backdrop} fit="cover" position="center 18%" background={gradient} fill />
+      <Image
+        src={media.backdrop}
+        fit="cover"
+        position="center 18%"
+        background={gradient}
+        fill
+        priority
+      />
       <Box style={s.breathe} />
       <Box fill pointerEvents="none" style={s.scrim} />
 
