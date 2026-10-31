@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { colors, lightColors } from '../src/core/tokens/colors';
 import { WASH_ALPHA } from '../src/core/tokens/effects';
 import { kromaTokens } from './stylesheet';
-import { fontsCss, kromaCss, SOURCE_ROOTS, themeCss, tokensCss } from './tokens';
+import { fontsCss, kromaCss, pageCss, SOURCE_ROOTS, themeCss, tokensCss } from './tokens';
 
 // The first call walks every source root in the repo. Paid once here, so no test
 // carries a 1.3s scan against the runner's 5s default.
@@ -176,6 +176,21 @@ describe('fontsCss', () => {
     )?.code;
 
     expect(css).toContain('font-display: optional;');
+  });
+});
+
+const selectorDeclaring = (css: string, declaration: string) =>
+  css.slice(0, css.indexOf(declaration)).split('}').at(-1) ?? '';
+
+describe('pageCss', () => {
+  it('steps the gutter inside every styling root, which restates the TV default it inherits', () => {
+    const css = pageCss();
+
+    const selectors = ['16px', '24px', '40px', '56px'].map((width) =>
+      selectorDeclaring(css, `--gutter-web: ${width};`),
+    );
+
+    for (const selector of selectors) expect(selector).toContain('[data-kroma-theme]');
   });
 });
 
