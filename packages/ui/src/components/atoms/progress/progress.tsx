@@ -31,8 +31,8 @@ interface ProgressProps {
    *  reports where it stands. Ignored under `indeterminate`, which has no
    *  position to keep. */
   waiting?: boolean;
-  /** Names the bar to assistive tech. Leave it out inside a control that
-   *  already carries the name (a rail tile's resume bar). */
+  /** Names the bar to assistive tech. Pass it inside a named tile too: an
+   *  unnamed `progressbar` fails the accessibility audit. */
   label?: string;
 }
 

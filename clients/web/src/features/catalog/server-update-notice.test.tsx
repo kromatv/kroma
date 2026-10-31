@@ -80,10 +80,11 @@ function show() {
 
 it('shows the release outside Admin and both controls link to its update page', async () => {
   show();
-  const links = await screen.findAllByRole('link', { name: 'KROMA 0.1.42 is available' });
-  expect(links).toHaveLength(2);
+  const links = [
+    await screen.findByRole('link', { name: 'Update available Review' }),
+    screen.getByRole('link', { name: 'KROMA 0.1.42 is available' }),
+  ];
   for (const link of links) expect(link.getAttribute('href')).toBe('/admin/updates');
-  expect(screen.getByText('Update available')).toBeTruthy();
   expect(screen.getAllByTitle('KROMA 0.1.42 is available')).toHaveLength(2);
   expect(mocks.updates).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByText('Review'));
@@ -132,7 +133,7 @@ it('shows an update already in progress instead of offering a new update', async
     },
   });
   show();
-  expect(await screen.findAllByRole('link', { name: 'Updating server' })).toHaveLength(2);
-  expect(screen.getByText('View')).toBeTruthy();
+  expect(await screen.findByRole('link', { name: 'Updating… View' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Updating server' })).toBeTruthy();
   expect(screen.queryByText('Update available')).toBeNull();
 });

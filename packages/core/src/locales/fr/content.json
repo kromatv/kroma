@@ -51,6 +51,7 @@
   "content.myListSoon": "Ma liste bientôt",
   "content.openShow": "Voir la série",
   "content.play": "Lecture",
+  "content.progressWatched": "Vu à {percent} %",
   "content.quickActions": "Actions rapides",
   "content.recentlyAdded": "Ajoutés récemment",
   "content.removeFromContinue": "Retirer de « Reprendre la lecture »",
