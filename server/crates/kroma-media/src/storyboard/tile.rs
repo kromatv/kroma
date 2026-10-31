@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use tracing::info;
 
 use crate::ffmpeg_run::{run_capturing, run_capturing_cancellable, Cancel};
+use crate::input;
 
 use super::{Plan, TILE_H, TILE_W};
 
@@ -153,19 +154,12 @@ pub fn fill_gaps(scratch: &Path, count: u32) {
     }
     let black = scratch.join("black.png");
     let mut cmd = Command::new("ffmpeg");
-    cmd.args([
-        "-v",
-        "error",
-        "-nostdin",
-        "-y",
-        "-f",
-        "lavfi",
-        "-i",
-        &format!("color=c=black:s={TILE_W}x{TILE_H}"),
-        "-frames:v",
-        "1",
-    ])
-    .arg(&black);
+    cmd.args(["-v", "error", "-nostdin", "-y"])
+        .args(input::generated(&format!(
+            "color=c=black:s={TILE_W}x{TILE_H}"
+        )))
+        .args(["-frames:v", "1"])
+        .arg(&black);
     if run_capturing(cmd, TILE_TIMEOUT).is_ok() && black.exists() {
         for index in missing {
             let _ = std::fs::copy(&black, scratch.join(name_of(index)));
@@ -207,8 +201,8 @@ fn extract_one(
     cmd.args(["-v", "error", "-nostdin", "-threads", "2"]);
     cmd.args(decode.args());
     cmd.args(["-ss", &at_s.to_string()])
-        .args(["-noaccurate_seek", "-i"])
-        .arg(input)
+        .arg("-noaccurate_seek")
+        .args(input::file(input))
         .args(["-an", "-sn", "-dn", "-frames:v", "1"])
         .args(["-vf", &filter])
         // A ten bit source writes 16 bits a channel, and ffmpeg 8.1 laid a

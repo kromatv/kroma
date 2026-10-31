@@ -55,10 +55,11 @@ pub fn transcribe(
 // Mono 16 kHz f32 PCM is Whisper's input format.
 #[cfg(feature = "local")]
 fn extract_pcm(input: &Path, track: u32) -> Option<Vec<f32>> {
+    use kroma_module_sdk::media::input;
     use std::process::Command;
     let out = Command::new("ffmpeg")
-        .args(["-v", "error", "-nostdin", "-i"])
-        .arg(input)
+        .args(["-v", "error", "-nostdin"])
+        .args(input::file(input))
         .arg("-vn")
         .arg("-map")
         .arg(format!("0:a:{track}"))
