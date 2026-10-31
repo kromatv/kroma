@@ -8,8 +8,7 @@ pub struct FetchCall {
     pub url: String,
 }
 
-/// What the policy decided for one [`FetchCall`]. The spike has no gateway, so
-/// an allowed call is answered with the response the policy supplies and
+/// An allowed call is answered with the response the policy supplies and
 /// nothing leaves the host; a blocked one reaches the module as its error.
 #[derive(Debug, Clone)]
 pub enum Verdict {

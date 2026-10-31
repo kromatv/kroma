@@ -8,17 +8,15 @@ use crate::limits::CeilingReached;
 use crate::state::State;
 use crate::{FetchRecord, HostError, Limits, NetPolicy, Request, Response, Settings};
 
-/// Everything one instance is allowed: where its fetches are decided, the
-/// settings it declared, and what it may consume.
+/// Everything one instance is allowed.
 pub struct Grant {
     pub policy: Arc<dyn NetPolicy>,
     pub settings: Settings,
     pub limits: Limits,
 }
 
-/// One running module, in its own store. A call that traps or runs past a
-/// limit stops the instance: later calls return [`HostError::Stopped`], and a
-/// fresh instance comes from the [`ModuleComponent`] again.
+/// A call that traps or runs past a limit stops the instance: later calls
+/// return [`HostError::Stopped`], and a fresh one comes from the [`ModuleComponent`].
 pub struct ModuleInstance {
     store: Store<State>,
     module: Module,

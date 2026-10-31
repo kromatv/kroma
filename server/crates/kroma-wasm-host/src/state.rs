@@ -62,16 +62,12 @@ impl net::Host for State {
             method,
             url,
         };
-        let verdict = self.policy.decide(&call);
-        let outcome = match &verdict {
-            Verdict::Allow(_) => Outcome::Allowed,
-            Verdict::Block(reason) => Outcome::Blocked(reason.clone()),
+        let (outcome, answer) = match self.policy.decide(&call) {
+            Verdict::Allow(response) => (Outcome::Allowed, Ok(response)),
+            Verdict::Block(reason) => (Outcome::Blocked(reason.clone()), Err(reason)),
         };
         self.fetches.push(FetchRecord { call, outcome });
-        match verdict {
-            Verdict::Allow(response) => Ok(response),
-            Verdict::Block(reason) => Err(reason),
-        }
+        answer
     }
 }
 

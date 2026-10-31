@@ -1,8 +1,6 @@
-//! Runs a module as a WebAssembly component inside the core: the spike for
-//! RFC 480's "same isolation on every platform". A component reaches nothing
-//! but what [`WasmHost`] links into it: WASI with an empty context, a network
-//! import every call of which goes through a [`NetPolicy`], and the settings
-//! its [`Grant`] declares.
+//! Runs a module as a WebAssembly component that reaches nothing but what
+//! [`WasmHost`] links into it: an empty WASI context, a [`NetPolicy`] that
+//! decides every fetch, and the settings its [`Grant`] declares.
 
 mod bindings;
 mod error;
