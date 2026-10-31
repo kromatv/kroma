@@ -45,6 +45,8 @@ walkdir = { workspace = true }
 jwalk = { workspace = true }
 chacha20poly1305 = { workspace = true }
 zip = { workspace = true }
+tar = "0.4"
+lzma-rust2 = { version = "0.24", default-features = false, features = ["std", "xz"] }
 notify = { workspace = true }
 sysinfo = { workspace = true }
 tantivy = { workspace = true }
@@ -60,3 +62,5 @@ kroma-testing = { workspace = true }
 # `test-util` gives the runtime a clock a test can advance, so the loops that
 # sleep between sweeps are reachable without waiting out their interval.
 tokio = { workspace = true, features = ["test-util"] }
+# The encoder builds the xz payload of a test server package.
+lzma-rust2 = { version = "0.24", default-features = false, features = ["std", "xz", "encoder"] }

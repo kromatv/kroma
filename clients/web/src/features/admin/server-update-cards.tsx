@@ -264,7 +264,7 @@ export function InstallMethod({ data }: Readonly<{ data: UpdateStatus }>) {
             {t(hints[platform])}
           </Text>
         ) : null}
-        {!data.installer?.ready ? (
+        {!data.installer?.ready && platform !== 'synology' ? (
           <Text variant="meta" color="textMuted">
             {t('admin.updatesSetupHint')}
           </Text>

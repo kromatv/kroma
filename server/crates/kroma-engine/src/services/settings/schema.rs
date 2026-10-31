@@ -217,7 +217,7 @@ pub fn groups(
                         Some(t("admin.updateChannelHint")),
                         "select",
                         &["Stable", "Canary"],
-                        g("updateChannel"),
+                        json!(crate::services::updates::channel(settings)),
                         true,
                     ),
                     row(

@@ -119,6 +119,7 @@ Environment variables carry all configuration:
 | `KROMA_MAIL_RELAY_URL` | `https://mail.kroma.tv` | The mail relay account email goes through when Admin → Email chooses `relay`. Only for an operator running their own copy of `packages/mail-relay`. |
 | `KROMA_WEB_DIR`    | *(empty)*   | Built SPA served as the fallback route. Ignored unless it holds `_shell.html`, which is why dev leaves it unset. |
 | `KROMA_INSTALL`    | `unknown`   | How this server was installed: `docker`, `synology` or `binary`. The Docker images and the Synology package set their own; `binary` is for an operator running the built server directly, and an unset value reports `unknown` rather than guessing. Reported only with the anonymous statistics. See [`docs/anonymous-stats.md`](../docs/anonymous-stats.md). |
+| `KROMA_SELF_UPDATE_DIR` | *(empty)* | Set by the Synology package's service script: the folder where the server unpacks the builds it downloads for itself. The script starts the newest one. See [Server updates](updater/README.md#synology-dsm-7). |
 | `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Inherited by the module sidecars. |
 | `KROMA_MODULE_LOG` | *(empty)*   | Overrides `RUST_LOG` for the module sidecars only, e.g. `kroma_indexer=debug`. Their output is drained into the core's log and Admin → Modules → *module* → Journaux. |
 | `KROMA_HWACCEL`    | *(probed)*  | Pins the re-encode pipeline: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, or `software` to rule hardware out of a problem. See [Hardware transcoding](#hardware-transcoding). |
@@ -568,7 +569,8 @@ static payloads instead (see `server/Dockerfile.runtime`).
 ## Server updates
 
 Admin → Server updates checks Stable or Canary and offers an owner-initiated
-update with a backup and restart notice. One-click installation uses a separate
-host updater for Docker Compose or Synology, with a command adapter for other
+update with a backup and restart notice. The Synology package installs updates
+by itself, and by default does so automatically when no one is watching. Docker
+Compose uses a separate host updater, with a command adapter for other
 deployments. See [setup and recovery](updater/README.md) and the
 [implementation plan](../docs/server-updates-plan.md).

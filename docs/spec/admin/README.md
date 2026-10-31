@@ -299,7 +299,9 @@ Status: **AGREED**
 saying so, quietly, in Admin. Checking alone never grants permission to install.
 The default is a passive notice and a manual update confirmation. The owner may
 explicitly enable automatic installation when idle for the chosen Stable/Canary
-channel. Playing and paused sessions defer automatic installation; the host
+channel. The Synology package is the exception: it installs updates by itself
+when idle until the owner turns that off. Until the owner chooses a channel, the
+server follows the channel its running build was published on. Playing and paused sessions defer automatic installation; the host
 rechecks playback immediately before replacing the service. Every installation
 saves a portable backup and exposes its progress in Admin. An automatic failure
 requires a manual retry rather than an unattended retry loop.
