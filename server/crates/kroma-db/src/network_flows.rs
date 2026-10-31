@@ -3,7 +3,6 @@
 
 use super::{Pool, Result, params};
 
-/// How long a day's tally is kept.
 pub const RETENTION_DAYS: i64 = 30;
 
 const DAY_MS: i64 = 86_400_000;
@@ -103,7 +102,6 @@ pub struct FlowTotals {
     pub bytes_out: i64,
 }
 
-/// The sums over every tally from `since_day` on.
 pub fn totals_since(pool: &Pool, since_day: i64) -> Result<FlowTotals> {
     let conn = pool.get()?;
     Ok(conn.query_row(

@@ -7,20 +7,15 @@ use kroma_http::address::WebTarget;
 
 use super::rules::{Action, DefaultAction, NetworkRules, Rule};
 
-/// The caller name the core's own calls carry.
 pub const CORE: &str = "core";
 
-/// The rule id a refusal by the link-local guard carries.
 pub const GUARD_LINK_LOCAL: &str = "guard:link-local";
 
-/// The rule id a refusal by the loopback guard carries.
 pub const GUARD_LOOPBACK: &str = "guard:loopback";
 
-/// The action for one call, and the id of the rule (or guard) that chose it;
-/// `None` when the default did. A guard cannot be overridden by any rule. A
-/// `vpn` rule for a host on the local network resolves to `direct`, since the
-/// tunnel cannot reach it. `own_ports` are the ports this server listens on
-/// itself, which no module may reach on this machine.
+/// The action for one call and the id of the rule or guard that chose it,
+/// `None` for the default. No rule overrides a guard, and a `vpn` rule for a
+/// local host goes `direct` since the tunnel cannot reach it.
 pub fn decide(
     rules: &NetworkRules,
     caller: &str,
@@ -50,9 +45,8 @@ pub fn decide(
     (action, Some(rule.id.clone()))
 }
 
-// A download client or FlareSolverr on this machine is a legitimate
-// destination; this server's own listeners are not, since a module reaches
-// the core and its peers through the host API, which checks who is asking.
+// A download client on this machine is a legitimate destination; this server's
+// own ports are not, since a module reaches the core only through the host API.
 fn guard(caller: &str, target: &WebTarget, own_ports: &[u16]) -> Option<&'static str> {
     if target.literal().map(unmapped).is_some_and(is_link_local) {
         return Some(GUARD_LINK_LOCAL);

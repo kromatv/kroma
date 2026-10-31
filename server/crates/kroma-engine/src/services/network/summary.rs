@@ -5,7 +5,6 @@ use serde::Serialize;
 use crate::db::network_flows::{self, FlowTally, FlowTotals};
 use crate::db::Pool;
 
-/// The widest window a summary covers, which is also how long a tally is kept.
 pub const MAX_DAYS: u32 = network_flows::RETENTION_DAYS as u32;
 
 const MAX_ROWS: usize = 500;

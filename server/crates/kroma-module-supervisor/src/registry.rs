@@ -28,11 +28,6 @@ const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15
 /// `total` is the advisory Content-Length when the server sent one.
 pub type FetchProgress<'a> = &'a (dyn Fn(u64, Option<u64>) + Send + Sync);
 
-/// Read a response body with a hard ceiling, enforced as it arrives, once the
-/// process's network gate allows the call; the journal hears how it went.
-///
-/// Content-Length is advisory (absent under chunked encoding), so the header
-/// check is only an early exit; the running total is what actually bounds it.
 async fn fetch_bounded(
     client: &reqwest::Client,
     url: &str,
@@ -77,6 +72,10 @@ async fn fetch_bounded(
     outcome
 }
 
+/// Read a response body with a hard ceiling, enforced as it arrives.
+///
+/// Content-Length is advisory (absent under chunked encoding), so the header
+/// check is only an early exit; the running total is what actually bounds it.
 async fn read_bounded(
     client: &reqwest::Client,
     url: &str,

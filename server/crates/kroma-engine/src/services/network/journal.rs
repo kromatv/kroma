@@ -11,7 +11,6 @@ use crate::db::Pool;
 
 use super::flow::{Flow, FlowFilter, FlowReport, FlowRoute};
 
-/// How many flows the in-memory journal keeps.
 pub const RECENT_CAPACITY: usize = 5000;
 
 const MAX_PENDING_TALLIES: usize = 10_000;

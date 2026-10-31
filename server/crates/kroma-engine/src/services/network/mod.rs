@@ -1,9 +1,6 @@
 //! The network policy every outbound call is ruled by, and the journal of
-//! where those calls went.
-//!
-//! The core's own calls are ruled in-process through the gate and sink
-//! [`Network::install`] puts on `kroma_http`; a module sidecar asks over the
-//! host callback and reports its flows the same way.
+//! where those calls went. The core's own calls are ruled in-process through
+//! [`Network::install`]; a module sidecar asks over the host callback.
 
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
@@ -31,20 +28,14 @@ pub use rules::{
 };
 pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 
-/// The point a `vpn` rule takes its SOCKS5 URL from.
 pub const VPN_POINT: &str = "tv.kroma.vpn/proxy";
 
-/// What the core's own calls are for, listed so the rules page can offer a
-/// purpose before the journal has seen it.
 pub const CORE_PURPOSES: &[&str] = &[
     "ai", "artwork", "mail", "metadata", "push", "registry", "stats", "themes", "updates",
 ];
 
-/// The refusal a `vpn` rule gives while no VPN answers: it never falls back to
-/// direct.
 pub const VPN_DOWN: &str = "the VPN this rule asks for is not running";
 
-/// How often the daily tallies reach the database.
 pub const FLUSH_EVERY: Duration = Duration::from_secs(30);
 
 const PROXY_TTL: Duration = Duration::from_secs(5);
@@ -55,7 +46,6 @@ pub struct CallerPurpose {
     pub purpose: String,
 }
 
-/// Why a rules write did not land.
 #[derive(Debug)]
 pub enum RulesWriteError {
     Invalid(RulesError),

@@ -54,10 +54,8 @@ fn cache(data_dir: &Path, tvdb_id: u64) -> Option<String> {
 fn download(tvdb_id: u64, out: &Path) -> bool {
     let url = format!("{ARCHIVE}/{tvdb_id}.mp3");
     let tmp = unique_tmp(out);
-    // The archive 404s for unknown shows; the time and size bounds stop a bad
-    // URL stalling or ballooning the pass. https only, redirects included: in
-    // plain HTTP the series ids of the library travel readable, and a redirect
-    // could aim the fetch at an internal host.
+    // https only, redirects included: in plain HTTP the library's series ids
+    // travel readable, and a redirect could aim the fetch at an internal host.
     let fetched = kroma_http::Fetch::new()
         .purpose("themes")
         .https_only()
