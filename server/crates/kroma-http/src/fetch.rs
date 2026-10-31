@@ -8,6 +8,7 @@ use serde::de::DeserializeOwned;
 use crate::config::{header_line, option_line};
 use crate::curl::run;
 use crate::multipart::{part_line, FormPart};
+use crate::pin::public_resolve_line;
 use crate::response::Response;
 
 /// A prepared request: builder-style options, then one of the executors
@@ -22,6 +23,8 @@ pub struct Fetch {
     max_time_secs: u32,
     max_bytes: Option<u64>,
     http2: bool,
+    follow_redirects: bool,
+    public_only: bool,
 }
 
 impl Default for Fetch {
@@ -35,6 +38,8 @@ impl Default for Fetch {
             max_time_secs: 30,
             max_bytes: None,
             http2: false,
+            follow_redirects: true,
+            public_only: false,
         }
     }
 }
@@ -45,14 +50,35 @@ crate::builder::request_builder!(
 );
 
 impl Fetch {
-    /// Route this request through a SOCKS5 proxy (`host:port` or a full
-    /// `socks5://user:pass@host:port` URL). Uses `--socks5-hostname` so DNS
-    /// resolves on the proxy side too (no local DNS leak).
+    /// Route this request through a SOCKS5 proxy (`host:port`, or a URL such as
+    /// `socks5://user:pass@host:port`). Any scheme is dropped so the proxy always
+    /// resolves the name: curl reads `socks5://` as "resolve locally" even under
+    /// `--socks5-hostname`.
     pub fn socks5(mut self, proxy: impl Into<String>) -> Self {
-        let p = proxy.into();
-        if !p.trim().is_empty() {
-            self.socks5 = Some(p);
+        let proxy = proxy.into();
+        let bare = proxy
+            .trim()
+            .split_once("://")
+            .map_or(proxy.trim(), |(_, rest)| rest);
+        if !bare.is_empty() {
+            self.socks5 = Some(bare.to_string());
         }
+        self
+    }
+
+    /// Answer a redirect with the redirect itself instead of following it, for a
+    /// URL that came from someone the server should not let steer it elsewhere.
+    pub fn no_redirects(mut self) -> Self {
+        self.follow_redirects = false;
+        self
+    }
+
+    /// Refuse the request unless its host resolves only to public internet
+    /// addresses, and pin curl to the one that was checked. Implies
+    /// [`Fetch::no_redirects`]. For a URL any account can choose.
+    pub fn public_only(mut self) -> Self {
+        self.public_only = true;
+        self.follow_redirects = false;
         self
     }
 
@@ -96,7 +122,7 @@ impl Fetch {
             }
         }
         config.push_str(&option_line("url", url));
-        run(config)
+        self.send(url, config)
     }
 
     pub fn post_json(&self, url: &str, body: &serde_json::Value) -> Result<Response> {
@@ -104,7 +130,7 @@ impl Fetch {
         config.push_str(&header_line("content-type", "application/json"));
         config.push_str(&option_line("data-binary", &serde_json::to_string(body)?));
         config.push_str(&option_line("url", url));
-        run(config)
+        self.send(url, config)
     }
 
     /// POST a raw byte body (Web Push's `aes128gcm` ciphertext).
@@ -130,20 +156,20 @@ impl Fetch {
             &format!("@{}", file.path().display()),
         ));
         config.push_str(&option_line("url", url));
-        run(config)
+        self.send(url, config)
     }
 
     /// `application/x-www-form-urlencoded` POST (qBittorrent login/actions).
     /// With no fields it is a POST with an empty body rather than a GET, which
     /// is what Roku's ECP wants: the arguments in the query string, nothing else.
     pub fn post_form(&self, url: &str, fields: &[(&str, &str)]) -> Result<Response> {
-        run(self.form_config(url, fields))
+        self.send(url, self.form_config(url, fields))
     }
 
     /// `multipart/form-data` POST (Roku's developer installer takes the channel
     /// zip this way).
     pub fn post_multipart(&self, url: &str, parts: &[(&str, FormPart<'_>)]) -> Result<Response> {
-        run(self.multipart_config(url, parts))
+        self.send(url, self.multipart_config(url, parts))
     }
 
     /// GET expecting a 2xx JSON body; the common happy path in one call.
@@ -176,10 +202,23 @@ impl Fetch {
         config
     }
 
+    fn send(&self, url: &str, mut config: String) -> Result<Response> {
+        if self.public_only {
+            config.push_str(&public_resolve_line(url)?);
+        }
+        run(config)
+    }
+
     fn base_config(&self) -> String {
         // location: indexer download links commonly redirect. No fail: we surface
         // the status ourselves so error bodies (and 409 handshakes) stay readable.
-        let mut config = String::from("silent\nshow-error\nlocation\n");
+        // proto: a URL from an indexer or a catalog must not reach `file://`.
+        let mut config = String::from("silent\nshow-error\n");
+        config.push_str(&option_line("proto", "=http,https"));
+        config.push_str(&option_line("proto-redir", "=http,https"));
+        if self.follow_redirects {
+            config.push_str("location\n");
+        }
         config.push_str(&option_line("max-time", &self.max_time_secs.to_string()));
         if let Some(bytes) = self.max_bytes {
             config.push_str(&option_line("max-filesize", &bytes.to_string()));
@@ -192,6 +231,9 @@ impl Fetch {
             // dual-stack host can otherwise resolve to an AAAA the tunnel can't route.
             config.push_str("ipv4\n");
             config.push_str(&option_line("socks5-hostname", proxy));
+            // An empty list overrides `NO_PROXY`, which would send its hosts
+            // around the tunnel.
+            config.push_str(&option_line("noproxy", ""));
         }
         if let Some((user, password)) = &self.digest {
             config.push_str("digest\n");
@@ -223,15 +265,79 @@ mod tests {
 
     #[test]
     fn socks5_forces_ipv4() {
-        let config = Fetch::new()
-            .socks5("socks5://127.0.0.1:25345")
-            .base_config();
+        let config = Fetch::new().socks5("127.0.0.1:25345").base_config();
         assert!(config.contains("\nipv4\n"), "{config}");
+        assert!(!Fetch::new().base_config().contains("ipv4"), "{config}");
+    }
+
+    #[test]
+    fn the_proxy_resolves_names_whatever_scheme_the_caller_wrote() {
+        for proxy in [
+            "socks5://127.0.0.1:25345",
+            "socks5h://127.0.0.1:25345",
+            "127.0.0.1:25345",
+        ] {
+            let config = Fetch::new().socks5(proxy).base_config();
+
+            assert!(
+                config.contains("socks5-hostname = \"127.0.0.1:25345\"\n"),
+                "{proxy}: {config}"
+            );
+        }
+        let with_credentials = Fetch::new()
+            .socks5("socks5://kroma:secret@127.0.0.1:1080")
+            .base_config();
         assert!(
-            config.contains(r#"socks5-hostname = "socks5://127.0.0.1:25345""#),
+            with_credentials.contains("socks5-hostname = \"kroma:secret@127.0.0.1:1080\"\n"),
+            "{with_credentials}"
+        );
+    }
+
+    #[test]
+    fn no_host_bypasses_the_proxy_whatever_no_proxy_says() {
+        let config = Fetch::new().socks5("127.0.0.1:25345").base_config();
+
+        assert!(config.contains("noproxy = \"\"\n"), "{config}");
+        assert!(!Fetch::new().base_config().contains("noproxy"));
+    }
+
+    #[test]
+    fn redirects_are_followed_unless_refused() {
+        assert!(Fetch::new().base_config().contains("\nlocation\n"));
+        assert!(!Fetch::new()
+            .no_redirects()
+            .base_config()
+            .contains("location"));
+        assert!(!Fetch::new()
+            .public_only()
+            .base_config()
+            .contains("location"));
+    }
+
+    #[test]
+    fn only_web_protocols_are_reachable_even_through_a_redirect() {
+        let config = Fetch::new().base_config();
+
+        assert!(config.contains("proto = \"=http,https\"\n"), "{config}");
+        assert!(
+            config.contains("proto-redir = \"=http,https\"\n"),
             "{config}"
         );
-        assert!(!Fetch::new().base_config().contains("ipv4"), "{config}");
+    }
+
+    #[test]
+    fn a_public_only_request_to_a_private_address_never_reaches_curl() {
+        let err = Fetch::new()
+            .public_only()
+            .post_bytes(
+                "http://127.0.0.1:4040/api/_host/settings",
+                "text/plain",
+                b"x",
+            )
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("not a public internet address"), "{err}");
     }
 
     #[test]
@@ -268,12 +374,12 @@ mod tests {
         let config = Fetch::new().header("X-Api-Key", smuggled).base_config();
 
         let options: Vec<&str> = config.lines().collect();
-        assert_eq!(options.len(), 5, "one line per option: {config}");
+        assert_eq!(options.len(), 7, "one line per option: {config}");
         assert!(
-            options[4].starts_with(r#"header = "X-Api-Key: k\""#),
+            options[6].starts_with(r#"header = "X-Api-Key: k\""#),
             "{config}"
         );
-        assert!(options[4].ends_with(r#"X-Injected: 1\\""#), "{config}");
+        assert!(options[6].ends_with(r#"X-Injected: 1\\""#), "{config}");
     }
 
     #[test]
@@ -303,15 +409,15 @@ mod tests {
 
         let options: Vec<&str> = config.lines().collect();
         assert_eq!(
-            options[4], r#"form-string = "mysubmit=Replace""#,
+            options[6], r#"form-string = "mysubmit=Replace""#,
             "{config}"
         );
         assert_eq!(
-            options[5], r#"form = "archive=@\"/data/channel.zip\"""#,
+            options[7], r#"form = "archive=@\"/data/channel.zip\"""#,
             "{config}"
         );
         assert_eq!(
-            options[6], r#"url = "http://box/plugin_install""#,
+            options[8], r#"url = "http://box/plugin_install""#,
             "{config}"
         );
     }
@@ -322,10 +428,10 @@ mod tests {
         let config = Fetch::new().digest("rokudev", smuggled).base_config();
 
         let options: Vec<&str> = config.lines().collect();
-        assert_eq!(options.len(), 6, "one line per option: {config}");
-        assert_eq!(options[4], "digest", "{config}");
+        assert_eq!(options.len(), 8, "one line per option: {config}");
+        assert_eq!(options[6], "digest", "{config}");
         assert!(
-            options[5].starts_with(r#"user = "rokudev:pa\"ss\nurl"#),
+            options[7].starts_with(r#"user = "rokudev:pa\"ss\nurl"#),
             "{config}"
         );
         assert!(!Fetch::new().base_config().contains("digest"));
