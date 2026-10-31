@@ -13,12 +13,14 @@
 //! module, a module from the core. It holds no transport of its own: a
 //! [`Transport`] is chosen per URL.
 
+pub mod address;
 mod builder;
 mod config;
 mod curl;
 mod fetch;
 pub mod loopback;
 mod multipart;
+mod pin;
 mod response;
 
 pub use fetch::Fetch;

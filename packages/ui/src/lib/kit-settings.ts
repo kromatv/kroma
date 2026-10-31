@@ -15,6 +15,7 @@ interface KitSettings {
   entry: Readonly<{ physicalKeyboard: boolean; size: ControlSize }>;
   frostEnabled: boolean;
   frostLayerOnly: boolean;
+  veilBitmap: boolean;
   surfaces: SurfacePresentation;
   image: ImageBackend | null;
   frost: ComponentType<FrostBackdropProps> | null;
@@ -28,6 +29,7 @@ const DEFAULTS: KitSettings = Object.freeze({
   surfaces: 'auto',
   frostEnabled: true,
   frostLayerOnly: false,
+  veilBitmap: true,
   image: null,
   frost: null,
   frostHost: null,
