@@ -52,6 +52,8 @@
   "network.leaveMessage": "Your rule changes are not saved.",
   "network.leaveTitle": "Discard your changes?",
   "network.listenersEmpty": "Nothing is listening yet",
+  "network.loadFailed": "This could not be loaded",
+  "network.loadFailedHint": "The server did not answer as expected. The page keeps trying.",
   "network.notePlaceholder": "Optional",
   "network.pageSub": "The connections the server and its modules make, which way they go, and what is listening.",
   "network.pause": "Pause",

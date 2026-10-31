@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FlowsView, ListenersView, NetworkSummary, RulesView } from './schemas';
 
 const FLOW = {
-  id: 'f-1029',
+  id: 1029,
   at: 1_761_820_800_000,
   caller: 'tv.kroma.torrents',
   purpose: 'trackers',

@@ -6,6 +6,7 @@ import { Badge, EmptyState, Table, type TableColumn, Text } from '@kromatv/ui/ki
 import { usePoll } from '#web/features/admin/hooks';
 import { useCallerName } from '#web/features/admin/network-callers';
 import { destination } from '#web/features/admin/network-format';
+import { NetworkLoadFailed } from '#web/features/admin/network-load-failed';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -36,12 +37,13 @@ export function NetworkListeners() {
   const t = useT();
   const { client } = useAuth();
   const callerName = useCallerName();
-  const { data } = usePoll(
+  const { data, failed, error } = usePoll(
     ['admin', 'network', 'listeners'],
     () => client.network.listeners(),
     LISTENERS_POLL_MS,
   );
 
+  if (failed && data === null) return <NetworkLoadFailed error={error} />;
   if (data === null) return <TableSkeleton rows={4} />;
   if (data.listeners.length === 0) {
     return (

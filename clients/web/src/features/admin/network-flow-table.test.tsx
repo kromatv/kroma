@@ -42,7 +42,7 @@ const cells = (row: number) =>
 
 describe('the connection journal', () => {
   it('names a module by the name its manifest gives and the server as KROMA', async () => {
-    mount([flowOf({ id: 'a', caller: 'tv.kroma.torrents' }), flowOf({ id: 'b' })]);
+    mount([flowOf({ id: 1, caller: 'tv.kroma.torrents' }), flowOf({ id: 2 })]);
 
     expect(await screen.findByText('Torrent downloads')).toBeTruthy();
     expect(screen.getByText('KROMA')).toBeTruthy();

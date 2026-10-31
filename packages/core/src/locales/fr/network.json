@@ -52,6 +52,8 @@
   "network.leaveMessage": "Vos changements de règles ne sont pas enregistrés.",
   "network.leaveTitle": "Abandonner les changements ?",
   "network.listenersEmpty": "Rien n'écoute pour l'instant",
+  "network.loadFailed": "Impossible de charger ces données",
+  "network.loadFailedHint": "Le serveur n'a pas répondu comme prévu. La page réessaie toute seule.",
   "network.notePlaceholder": "Facultatif",
   "network.pageSub": "Les connexions du serveur et de ses modules, par où elles passent, et ce qui écoute.",
   "network.pause": "Mettre en pause",

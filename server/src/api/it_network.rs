@@ -160,6 +160,7 @@ async fn a_core_call_the_rules_block_shows_up_in_the_journal_and_the_summary() {
     let (status, body) = get(&t.app, uri, Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     let flow = &body["flows"][0];
+    assert!(flow["id"].is_u64(), "{flow}");
     assert_eq!(flow["caller"], json!("core"));
     assert_eq!(flow["host"], json!("tracker.example"));
     assert_eq!(flow["port"], json!(443));
