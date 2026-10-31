@@ -328,6 +328,10 @@ the build on anything a legacy engine cannot parse.
 - **Secrets never live in the server or the app**: the server's source is public and
   self-hosted, so anything Apple or Google issued to the published app lives in the
   relay Worker's secrets (`packages/push-relay/`).
+- **An image in a PR or issue is a GitHub attachment.** `bun run shots:attach
+  <file...>` uploads it with the gh CLI's token and prints the markdown (see
+  [`packages/shots/README.md`](packages/shots/README.md#attaching-any-image)).
+  Never commit an image, push a branch or create a release to host one.
 - **English for code, comments, identifiers and commit messages.** User-facing copy
   is French. That is content, not code. No emoji in the product.
 - Every user-visible string is a translation key. The core catalogs are one
