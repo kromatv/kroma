@@ -34,8 +34,8 @@ pub enum DefaultAction {
 }
 
 /// One rule. Each of `caller`, `purpose` and `host` must match when set; `host`
-/// is an exact name or address, or `*.suffix` for every name under the suffix
-/// (and not the suffix itself).
+/// is an exact name or address, or `*.suffix` for the suffix and every name
+/// under it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rule {
