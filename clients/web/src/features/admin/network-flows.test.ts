@@ -40,16 +40,16 @@ describe('the journal request', () => {
 
 describe('the host search', () => {
   const flows = [
-    flow({ id: 'a', host: 'api.themoviedb.org' }),
-    flow({ id: 'b', host: 'tracker.opentrackr.org', port: 1337 }),
+    flow({ id: 1, host: 'api.themoviedb.org' }),
+    flow({ id: 2, host: 'tracker.opentrackr.org', port: 1337 }),
   ];
 
   it('keeps the connections whose host holds the text, whatever its case', () => {
-    expect(matchingHost(flows, ' TRACKR ').map((one) => one.id)).toEqual(['b']);
+    expect(matchingHost(flows, ' TRACKR ').map((one) => one.id)).toEqual([2]);
   });
 
   it('matches the port written after the host', () => {
-    expect(matchingHost(flows, 'org:1337').map((one) => one.id)).toEqual(['b']);
+    expect(matchingHost(flows, 'org:1337').map((one) => one.id)).toEqual([2]);
   });
 
   it('keeps every connection while the search is empty', () => {

@@ -11,6 +11,7 @@ import {
   type SummaryWindow,
 } from '#web/features/admin/network-host-groups';
 import { useHostRule } from '#web/features/admin/network-host-rule';
+import { NetworkLoadFailed } from '#web/features/admin/network-load-failed';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -54,7 +55,7 @@ export function NetworkDestinations() {
   const t = useT();
   const { client } = useAuth();
   const [days, setDays] = useState<SummaryWindow>(7);
-  const { data } = usePoll(
+  const { data, failed, error } = usePoll(
     ['admin', 'network', 'summary', days],
     () => client.network.summary(days),
     SUMMARY_POLL_MS,
@@ -84,8 +85,9 @@ export function NetworkDestinations() {
           <Callout.Title>{hostRule.error}</Callout.Title>
         </Callout.Root>
       ) : null}
+      {failed ? <NetworkLoadFailed error={error} /> : null}
       {data ? <Totals summary={data} /> : null}
-      {data === null ? <TableSkeleton rows={6} /> : null}
+      {data === null && !failed ? <TableSkeleton rows={6} /> : null}
       {data && groups.length === 0 ? (
         <EmptyState.Root icon="world">
           <EmptyState.Title>{t('network.destinationsEmpty')}</EmptyState.Title>

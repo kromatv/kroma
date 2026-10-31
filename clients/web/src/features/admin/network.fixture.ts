@@ -3,7 +3,7 @@ import type { Flow, Rule, RulesView, SummaryRow } from '@kromatv/client/network'
 /** A connection the server let out directly, with `fields` laid over it. */
 export function flowOf(fields: Partial<Flow> = {}): Flow {
   return {
-    id: 'f-1',
+    id: 1,
     at: 1_761_820_800_000,
     caller: 'core',
     purpose: 'metadata',

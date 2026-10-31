@@ -13,6 +13,7 @@ import {
   NO_FLOW_FILTERS,
   purposeChoices,
 } from '#web/features/admin/network-flows';
+import { NetworkLoadFailed } from '#web/features/admin/network-load-failed';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -34,7 +35,7 @@ export function NetworkConnections() {
   const [live, setLive] = useState(true);
   const query = flowQuery(filters);
 
-  const { data } = usePoll(
+  const { data, failed, error } = usePoll(
     // Outside ['admin']: the console's event refresh would otherwise tick a paused journal.
     ['network', 'flows', query],
     () => client.network.flows(query),
@@ -61,7 +62,8 @@ export function NetworkConnections() {
         live={live}
         onLiveChange={setLive}
       />
-      {data === null ? <TableSkeleton rows={8} /> : null}
+      {failed ? <NetworkLoadFailed error={error} /> : null}
+      {data === null && !failed ? <TableSkeleton rows={8} /> : null}
       {data && shown.length === 0 ? (
         <EmptyState.Root icon="world">
           <EmptyState.Title>

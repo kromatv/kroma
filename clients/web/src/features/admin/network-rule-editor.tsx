@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useAsyncAction, usePoll } from '#web/features/admin/hooks';
 import { useCallerName } from '#web/features/admin/network-callers';
 import { DefaultActionCard } from '#web/features/admin/network-default-action-card';
+import { NetworkLoadFailed } from '#web/features/admin/network-load-failed';
 import { PresetMenu } from '#web/features/admin/network-preset-menu';
 import { RULE_PRESETS, type RulePreset, presetRules } from '#web/features/admin/network-presets';
 import { RuleDialog } from '#web/features/admin/network-rule-dialog';
@@ -36,11 +37,12 @@ export function RuleEditor({
   const confirm = useConfirm();
   const { client } = useAuth();
   const callerName = useCallerName();
-  const { data, reload } = usePoll(
-    ['admin', 'network', 'rules'],
-    () => client.network.rules(),
-    RULES_POLL_MS,
-  );
+  const {
+    data,
+    failed,
+    error: loadError,
+    reload,
+  } = usePoll(['admin', 'network', 'rules'], () => client.network.rules(), RULES_POLL_MS);
   const [draft, setDraft] = useState<RulesUpdate | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [saved, setSaved] = useState(false);
@@ -55,6 +57,7 @@ export function RuleEditor({
 
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
 
+  if (!current && failed) return <NetworkLoadFailed error={loadError} />;
   if (!current) return <CardSkeleton fields={4} />;
 
   const change = (next: RulesUpdate) => {

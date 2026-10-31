@@ -9,11 +9,12 @@ export type FlowRoute = z.infer<typeof FlowRoute>;
 export const FlowVerdict = z.enum(['allowed', 'blocked']);
 export type FlowVerdict = z.infer<typeof FlowVerdict>;
 
-/** One outbound connection the server or a module opened. `caller` is `core`
- * or a module id, `at` is epoch milliseconds, `rule` is the id of the rule that
- * matched (null when the default action decided). */
+/** One outbound connection the server or a module opened. `id` is the
+ * journal's counter, `caller` is `core` or a module id, `at` is epoch
+ * milliseconds, `rule` is the id of the rule that matched (null when the
+ * default action decided). */
 export const Flow = z.object({
-  id: z.string(),
+  id: z.number().int().nonnegative(),
   at: z.number(),
   caller: z.string(),
   purpose: z.string(),
