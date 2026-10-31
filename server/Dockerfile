@@ -32,9 +32,9 @@
 #       -e KROMA_TLS_SANS=192.168.1.50 ghcr.io/kromatv/kroma:latest
 
 # ---- 1) Web SPA (node + bun) -----------------------------------------------
-# Node base (not the bun-only image): the TanStack Start prerender spawns a `node`
-# render server and the `build:web` script's precompress step calls `node`, both
-# absent from oven/bun. bun does the workspace install + runs the scripts.
+# Node base (not the bun-only image): `vite build` runs on `node`, and the
+# TanStack Start prerender spawns a `node` render server, both absent from
+# oven/bun. bun does the workspace install + runs the scripts.
 FROM node:22-bookworm-slim AS web
 RUN npm install -g bun@1.4.0
 WORKDIR /app
