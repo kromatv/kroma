@@ -43,7 +43,7 @@ describe('linkedCrates', () => {
       },
     };
 
-    expect(linkedCrates(metadata).map((crate) => crate.name)).toEqual([
+    expect(linkedCrates([metadata]).map((crate) => crate.name)).toEqual([
       'serde',
       'serde_derive',
       'libc',
@@ -53,6 +53,23 @@ describe('linkedCrates', () => {
   it('lists nothing for a manifest with no root', () => {
     const metadata: Metadata = { packages: [pkg('serde')], resolve: { root: null, nodes: [] } };
 
-    expect(linkedCrates(metadata)).toEqual([]);
+    expect(linkedCrates([metadata])).toEqual([]);
+  });
+
+  it('lists each crate once across the graphs of several targets', () => {
+    const graph = (...crates: string[]): Metadata => ({
+      packages: [pkg('app', null), ...crates.map((id) => pkg(id))],
+      resolve: {
+        root: 'app',
+        nodes: [
+          { id: 'app', deps: crates.map((id) => dep(id, null)) },
+          ...crates.map((id) => ({ id, deps: [] })),
+        ],
+      },
+    });
+
+    const crates = linkedCrates([graph('serde', 'zip'), graph('serde', 'nix')]);
+
+    expect(crates.map((crate) => crate.name)).toEqual(['serde', 'zip', 'nix']);
   });
 });
