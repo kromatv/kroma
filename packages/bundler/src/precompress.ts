@@ -1,5 +1,4 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { availableParallelism } from 'node:os';
 import { extname } from 'node:path';
 import { promisify } from 'node:util';
 import { brotliCompress, constants, gzip } from 'node:zlib';
@@ -37,19 +36,9 @@ async function compress(file: string): Promise<number> {
 export async function precompress(
   files: readonly string[],
 ): Promise<{ assets: number; saved: number }> {
-  const queue = files.filter((file) => COMPRESSIBLE.has(extname(file)));
-  let assets = 0;
-  let saved = 0;
-  let next = 0;
-  const work = async () => {
-    for (let file = queue[next++]; file !== undefined; file = queue[next++]) {
-      const gain = await compress(file);
-      if (gain > 0) {
-        assets += 1;
-        saved += gain;
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(availableParallelism(), queue.length) }, work));
-  return { assets, saved };
+  const gains = await Promise.all(
+    files.filter((file) => COMPRESSIBLE.has(extname(file))).map(compress),
+  );
+  const shrunk = gains.filter((gain) => gain > 0);
+  return { assets: shrunk.length, saved: shrunk.reduce((sum, gain) => sum + gain, 0) };
 }
