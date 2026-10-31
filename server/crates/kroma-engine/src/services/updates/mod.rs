@@ -154,6 +154,7 @@ fn releases(state: &SharedState) -> &str {
 fn get(base: &str, path: &str) -> Result<kroma_http::Response> {
     let url = format!("{}/{path}", base.trim_end_matches('/'));
     kroma_http::Fetch::new()
+        .purpose("updates")
         .max_time(15)
         .max_bytes(MAX_FEED_BYTES)
         .header("Accept", "application/vnd.github+json")

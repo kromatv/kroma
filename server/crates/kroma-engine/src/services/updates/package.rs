@@ -129,23 +129,13 @@ fn is_payload(dir: &Path) -> bool {
 }
 
 fn download(url: &str, to: &Path) -> Result<()> {
-    let out = std::process::Command::new("curl")
-        .args(["-q", "--fail", "--silent", "--show-error", "--location"])
-        .args(["--proto", "=http,https", "--proto-redir", "=http,https"])
-        .args(["--max-time", "1800", "--max-filesize"])
-        .arg(MAX_PACKAGE_BYTES.to_string())
-        .arg("--output")
-        .arg(to)
-        .arg("--url")
-        .arg(url)
-        .output()
-        .context("spawn curl")?;
-    if !out.status.success() {
-        bail!(
-            "the download failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
-    }
+    kroma_http::Fetch::new()
+        .purpose("updates")
+        .max_time(1800)
+        .max_bytes(MAX_PACKAGE_BYTES)
+        .download(url, to)
+        .and_then(kroma_http::Response::ensure_ok)
+        .context("the download failed")?;
     Ok(())
 }
 

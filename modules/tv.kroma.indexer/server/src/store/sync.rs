@@ -6,6 +6,8 @@ use anyhow::{bail, Context as _, Result};
 use super::heal::gate;
 use super::{is_yml, DefinitionStore, SyncReport};
 
+const PURPOSE: &str = "indexer-definitions";
+
 impl DefinitionStore {
     /// Downloads and extracts the current definition set, replacing the cache
     /// (extract to a temp dir, then swap the yml files in). Waits for any sync
@@ -24,8 +26,10 @@ impl DefinitionStore {
 
         let tarball = tmp.join("defs.tar.gz");
         let fetch = match &self.route {
-            Ok(Some(proxy)) => kroma_module_sdk::http::Fetch::new().socks5(proxy.as_str()),
-            Ok(None) => kroma_module_sdk::http::Fetch::new(),
+            Ok(Some(proxy)) => kroma_module_sdk::http::Fetch::new()
+                .purpose(PURPOSE)
+                .socks5(proxy.as_str()),
+            Ok(None) => kroma_module_sdk::http::Fetch::new().purpose(PURPOSE),
             Err(refusal) => bail!("{refusal}"),
         };
         let bytes = fetch
