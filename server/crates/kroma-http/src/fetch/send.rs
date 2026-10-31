@@ -4,7 +4,7 @@
 use std::path::Path;
 use std::time::Instant;
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, Result};
 
 use crate::address::WebTarget;
 use crate::curl::run;
@@ -73,9 +73,9 @@ impl Fetch {
         let proxy = match chosen_proxy(decision, self.socks5.as_deref()) {
             Ok(proxy) => proxy,
             Err(reason) => {
-                let refusal = anyhow::anyhow!("{BLOCKED}: {reason}");
-                self.report(sent, Route::Blocked, url, &Err(refusal));
-                bail!("{BLOCKED}: {reason}");
+                let refused = Err(anyhow!("{BLOCKED}: {reason}"));
+                self.report(sent, Route::Blocked, url, &refused);
+                return refused;
             }
         };
         if let Some(proxy) = &proxy {
