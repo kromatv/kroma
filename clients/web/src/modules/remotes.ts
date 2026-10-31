@@ -47,7 +47,10 @@ function remotesOf(listed: readonly ModuleManifest[]): RemoteSpec[] {
     }));
 }
 
-async function readDeclaration(url: string): Promise<EntryReads | null> {
+/** What a module's build declared its entry reads (`REMOTE_SHARED` at `url`),
+ *  or `null` when there is no usable declaration: absent, too large, not JSON,
+ *  or not the expected shape. */
+export async function readDeclaration(url: string): Promise<EntryReads | null> {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
