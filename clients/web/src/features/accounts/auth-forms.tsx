@@ -71,10 +71,9 @@ export function LoginForm({
           </Box>
         ) : null}
 
-        {/* `size="md"` against the app's `sm` default (see router.tsx): the gate
-            is a full-screen front door rather than a console page, and <Button>
-            is `md` whatever the entries are - left alone, the form would stack a
-            40px field under a 50px button. */}
+        {/* `size="md"` against the browser's `sm` default: the gate is a
+            full-screen front door rather than a console page, and its fields and
+            buttons step up together so they share one height and one corner. */}
         {profile ? null : (
           <Field.Root
             w="100%"
@@ -119,6 +118,7 @@ export function LoginForm({
         <input type="submit" hidden />
         <Button
           block
+          size="md"
           label={busy ? t('auth.loggingIn') : t('auth.login')}
           loading={busy}
           disabled={busy || !password}
@@ -130,6 +130,7 @@ export function LoginForm({
         {canUsePasskey && onPasskey ? (
           <Button
             block
+            size="md"
             variant="glass"
             icon="key"
             label={t('auth.passkeyLogin')}
@@ -219,6 +220,7 @@ export function ForgotForm({
             <input type="submit" hidden />
             <Button
               block
+              size="md"
               label={busy ? t('common.loading') : t('auth.forgotSubmit')}
               loading={busy}
               disabled={busy || !identifier.trim()}
@@ -287,6 +289,7 @@ export function RegisterForm({
 
         <Button
           block
+          size="md"
           label={busy ? t('auth.creating') : t('auth.createAccount')}
           onPress={() => {
             if (valid) onSubmit(email.trim(), username.trim(), password, avatar);

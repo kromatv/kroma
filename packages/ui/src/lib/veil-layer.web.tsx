@@ -2,6 +2,7 @@ import { sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { classes } from './classed';
 import { gradient } from './css';
+import { useKitSettings } from './kit-settings';
 import { StaticView } from './static-view';
 import { veilBitmap } from './veil-bitmap';
 
@@ -16,11 +17,13 @@ const sDefinition = styles({
   },
 });
 
-/** The ramp drawn once into a small bitmap stretched over the box, or as CSS where it cannot be drawn. */
+/** The ramp drawn once into a small bitmap stretched over the box when the kit's
+ * `veilBitmap` asks for one, or as CSS otherwise and where it cannot be drawn. */
 export function VeilLayer({ ramp }: Readonly<{ ramp: string }>) {
   const scope = useStyleScope();
   const s = useStyles(sDefinition);
-  const bitmap = veilBitmap(ramp);
+  const { veilBitmap: drawsBitmap } = useKitSettings();
+  const bitmap = drawsBitmap ? veilBitmap(ramp) : null;
   if (!bitmap) {
     return <StaticView style={[s.layer, sharedStyle(`veil:${ramp}`, gradient(ramp), scope)]} />;
   }

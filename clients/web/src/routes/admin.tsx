@@ -2,7 +2,6 @@ import { hasPermission } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import { Box, classes, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { GateLoading } from '#web/features/accounts/auth-gate';
 import { AdminLayout } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
@@ -21,7 +20,7 @@ function AdminRoute() {
   const { ready } = useRequireAuth();
   // `useRequireAuth` redirects signed-out users; the `user` check also narrows
   // it non-null for the checks below.
-  if (!ready || !user) return <GateLoading />;
+  if (!ready || !user) return null;
 
   const allowed =
     hasPermission(user, 'users.manage') ||

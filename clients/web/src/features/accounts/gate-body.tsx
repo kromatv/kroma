@@ -1,5 +1,5 @@
 import { apiErrorText, KromaApiError } from '@kromatv/client';
-import type { PublicUser, StoredSession } from '@kromatv/client/accounts';
+import type { AuthConfig, PublicUser, StoredSession } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
@@ -15,38 +15,42 @@ type Mode =
   | { kind: 'forgot'; identifier: string }
   | { kind: 'pin'; account: StoredSession };
 
-export function GateBody() {
+function entryMode(config: AuthConfig, accounts: readonly StoredSession[]): Mode {
+  if (!config.hasAccounts) return { kind: 'register' };
+  if (config.publicUserList || accounts.length > 0) return { kind: 'pick' };
+  return { kind: 'login', user: null };
+}
+
+export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   const t = useT();
   const { client, accounts, login, loginPasskey, register, activate, forget } = useAuth();
   const [profiles, setProfiles] = useState<PublicUser[]>([]);
-  const [mode, setMode] = useState<Mode>({ kind: 'pick' });
-  const [canPick, setCanPick] = useState(true);
+  const [mode, setMode] = useState<Mode>(() => entryMode(config, accounts));
+  const [entryAccounts, setEntryAccounts] = useState(accounts);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [forgotSent, setForgotSent] = useState(false);
+  const canPick = config.publicUserList;
+  const listsProfiles = config.hasAccounts && config.publicUserList;
+
+  if (entryAccounts !== accounts) {
+    setEntryAccounts(accounts);
+    if (!listsProfiles) setMode(entryMode(config, accounts));
+  }
 
   useEffect(() => {
+    if (!listsProfiles) return;
     let cancelled = false;
-    const load = async () => {
-      const cfg = await client.accounts.config();
-      if (cancelled) return;
-      setCanPick(cfg.publicUserList);
-      if (!cfg.hasAccounts) {
-        setMode({ kind: 'register' });
-        return;
-      }
-      if (!cfg.publicUserList) {
-        setMode(accounts.length > 0 ? { kind: 'pick' } : { kind: 'login', user: null });
-        return;
-      }
-      const users = await client.accounts.users();
-      if (!cancelled) setProfiles(users);
-    };
-    load().catch(() => undefined);
+    client.accounts.users().then(
+      (users) => {
+        if (!cancelled) setProfiles(users);
+      },
+      () => undefined,
+    );
     return () => {
       cancelled = true;
     };
-  }, [client, accounts]);
+  }, [client, listsProfiles]);
 
   function fail(e: unknown, fallback: string) {
     setError(
