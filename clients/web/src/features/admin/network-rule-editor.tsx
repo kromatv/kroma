@@ -1,22 +1,12 @@
 import { apiErrorText } from '@kromatv/client';
-import type { DefaultAction, DeclaredPurpose, Rule, RulesUpdate } from '@kromatv/client/network';
+import type { DeclaredPurpose, Rule, RulesUpdate } from '@kromatv/client/network';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  Button,
-  Callout,
-  EmptyState,
-  Menu,
-  Row,
-  SegmentGroup,
-  Spacer,
-  Surface,
-  Text,
-  useConfirm,
-} from '@kromatv/ui/kit';
+import { Box, Button, Callout, EmptyState, Row, Spacer, Text, useConfirm } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { useAsyncAction, usePoll } from '#web/features/admin/hooks';
 import { useCallerName } from '#web/features/admin/network-callers';
+import { DefaultActionCard } from '#web/features/admin/network-default-action-card';
+import { PresetMenu } from '#web/features/admin/network-preset-menu';
 import { RULE_PRESETS, type RulePreset, presetRules } from '#web/features/admin/network-presets';
 import { RuleDialog } from '#web/features/admin/network-rule-dialog';
 import { RuleTable } from '#web/features/admin/network-rule-table';
@@ -37,61 +27,6 @@ interface Editing {
   index: number | null;
   id: string;
   draft: RuleDraft;
-}
-
-function DefaultActionCard({
-  value,
-  onChange,
-}: Readonly<{ value: DefaultAction; onChange: (next: DefaultAction) => void }>) {
-  const t = useT();
-  return (
-    <Surface>
-      <Row wrap gap={16} align="center">
-        <Box flex minW={220} gap={3}>
-          <Text variant="title">{t('network.defaultTitle')}</Text>
-          <Text variant="meta" color="textDim">
-            {t('network.defaultHint')}
-          </Text>
-        </Box>
-        <SegmentGroup.Root<DefaultAction>
-          label={t('network.defaultTitle')}
-          value={value}
-          onValueChange={onChange}
-        >
-          <SegmentGroup.Item value="allow">
-            <SegmentGroup.Label>{t('network.defaultAllow')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-          <SegmentGroup.Item value="block">
-            <SegmentGroup.Label>{t('network.defaultBlock')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-        </SegmentGroup.Root>
-      </Row>
-    </Surface>
-  );
-}
-
-function PresetMenu({ onPick }: Readonly<{ onPick: (preset: RulePreset) => void }>) {
-  const t = useT();
-  return (
-    <Menu.Root label={t('network.presets')} align="end">
-      <Menu.Trigger
-        render={(bind) => (
-          <Button
-            ref={bind.ref}
-            variant="outline"
-            icon="wand"
-            label={t('network.presets')}
-            onPress={bind.onPress}
-          />
-        )}
-      />
-      {RULE_PRESETS.map((one) => (
-        <Menu.Item key={one.preset} onSelect={() => onPick(one.preset)}>
-          {t(one.labelKey)}
-        </Menu.Item>
-      ))}
-    </Menu.Root>
-  );
 }
 
 export function RuleEditor({
