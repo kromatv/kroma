@@ -1,4 +1,5 @@
 import { FlowRoute, type SummaryRow } from '@kromatv/client/network';
+import { distinctSorted } from '#web/features/admin/network-flows';
 
 export const SUMMARY_WINDOWS = [1, 7, 30] as const;
 export type SummaryWindow = (typeof SUMMARY_WINDOWS)[number];
@@ -15,16 +16,12 @@ export interface DestinationGroup {
   lastAt: number;
 }
 
-function sortedUnique(values: readonly string[]): string[] {
-  return [...new Set(values)].sort((a, b) => a.localeCompare(b));
-}
-
 function fold(host: string, rows: readonly SummaryRow[]): DestinationGroup {
   const seenRoutes = new Set(rows.map((row) => row.route));
   return {
     host,
-    callers: sortedUnique(rows.map((row) => row.caller)),
-    purposes: sortedUnique(rows.map((row) => row.purpose)),
+    callers: distinctSorted(rows.map((row) => row.caller)),
+    purposes: distinctSorted(rows.map((row) => row.purpose)),
     routes: FlowRoute.options.filter((route) => seenRoutes.has(route)),
     count: rows.reduce((sum, row) => sum + row.count, 0),
     blocked: rows.reduce((sum, row) => sum + (row.verdict === 'blocked' ? row.count : 0), 0),

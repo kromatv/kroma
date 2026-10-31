@@ -1,9 +1,8 @@
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Button, Field, Row, SegmentGroup, Select, Spacer } from '@kromatv/ui/kit';
+import { Button, Field, Row, SegmentGroup, Spacer } from '@kromatv/ui/kit';
+import { ChoiceSelect } from '#web/features/admin/network-choice-select';
 import type { FlowFilters, VerdictFilter } from '#web/features/admin/network-flows';
-
-const ANY = '*';
 
 const VERDICTS: readonly { value: VerdictFilter; labelKey: MessageKey }[] = [
   { value: 'all', labelKey: 'network.verdictAll' },
@@ -32,32 +31,24 @@ export function FlowFiltersBar({
 }: Readonly<FlowFiltersBarProps>) {
   const t = useT();
   const narrow = (patch: Partial<FlowFilters>) => onFiltersChange({ ...filters, ...patch });
-  const picked = (value: string) => (value === ANY ? null : value);
 
   return (
     <Row wrap gap={12} mb={16}>
-      <Select.Root
+      <ChoiceSelect
         label={t('network.colCaller')}
-        value={filters.caller ?? ANY}
-        onValueChange={(value) => narrow({ caller: picked(value), purpose: null })}
-      >
-        <Select.Trigger />
-        <Select.Item value={ANY} label={t('network.anyCaller')} />
-        {callers.map((caller) => (
-          <Select.Item key={caller} value={caller} label={callerName(caller)} />
-        ))}
-      </Select.Root>
-      <Select.Root
+        anyLabel={t('network.anyCaller')}
+        value={filters.caller}
+        choices={callers}
+        nameOf={callerName}
+        onValueChange={(caller) => narrow({ caller, purpose: null })}
+      />
+      <ChoiceSelect
         label={t('network.colPurpose')}
-        value={filters.purpose ?? ANY}
-        onValueChange={(value) => narrow({ purpose: picked(value) })}
-      >
-        <Select.Trigger />
-        <Select.Item value={ANY} label={t('network.anyPurpose')} />
-        {purposes.map((purpose) => (
-          <Select.Item key={purpose} value={purpose} label={purpose} />
-        ))}
-      </Select.Root>
+        anyLabel={t('network.anyPurpose')}
+        value={filters.purpose}
+        choices={purposes}
+        onValueChange={(purpose) => narrow({ purpose })}
+      />
       <SegmentGroup.Root<VerdictFilter>
         label={t('network.verdictLabel')}
         value={filters.verdict}

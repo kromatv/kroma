@@ -1,6 +1,7 @@
 import type { DeclaredPurpose, Rule, RulesUpdate } from '@kromatv/client/network';
 import type { MessageKey } from '@kromatv/i18n';
 import { CORE_CALLER } from '#web/features/admin/network-callers';
+import { distinctSorted } from '#web/features/admin/network-flows';
 
 export type RulePreset = 'downloadsVpn' | 'everythingVpn' | 'bareMinimum';
 
@@ -33,9 +34,9 @@ function numbered(matchers: readonly Matcher[]): Rule[] {
 }
 
 function moduleCallers(purposes: readonly DeclaredPurpose[]): string[] {
-  const callers = new Set(purposes.map((declared) => declared.caller));
-  callers.delete(CORE_CALLER);
-  return [...callers].sort((a, b) => a.localeCompare(b));
+  return distinctSorted(
+    purposes.map((declared) => declared.caller).filter((caller) => caller !== CORE_CALLER),
+  );
 }
 
 /** The whole list a preset stands for, built from the purposes the server

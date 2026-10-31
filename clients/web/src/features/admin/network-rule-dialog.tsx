@@ -1,12 +1,11 @@
 import type { DeclaredPurpose, Rule, RuleAction } from '@kromatv/client/network';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Dialog, Field, SegmentGroup, Select } from '@kromatv/ui/kit';
+import { Dialog, Field, SegmentGroup } from '@kromatv/ui/kit';
 import { useState } from 'react';
+import { ChoiceSelect } from '#web/features/admin/network-choice-select';
 import { callerChoices, purposeChoices } from '#web/features/admin/network-flows';
 import { type RuleDraft, ruleFromDraft } from '#web/features/admin/network-rules';
-
-const ANY = '*';
 
 const RULE_ACTIONS: readonly { action: RuleAction; labelKey: MessageKey }[] = [
   { action: 'direct', labelKey: 'network.actionDirect' },
@@ -38,7 +37,6 @@ export function RuleDialog({
   const [touched, setTouched] = useState(false);
   const result = ruleFromDraft(draft, id);
   const edit = (patch: Partial<RuleDraft>) => setDraft((previous) => ({ ...previous, ...patch }));
-  const picked = (value: string) => (value === ANY ? null : value);
 
   const confirm = () => {
     setTouched(true);
@@ -53,30 +51,25 @@ export function RuleDialog({
       onClose={onCancel}
     >
       <Field.Root label={t('network.colCaller')}>
-        <Select.Root
+        <ChoiceSelect
+          block
           label={t('network.colCaller')}
-          value={draft.caller ?? ANY}
-          onValueChange={(value) => edit({ caller: picked(value), purpose: null })}
-        >
-          <Select.Trigger block />
-          <Select.Item value={ANY} label={t('network.anyCaller')} />
-          {callerChoices(purposes, [], draft.caller).map((caller) => (
-            <Select.Item key={caller} value={caller} label={callerName(caller)} />
-          ))}
-        </Select.Root>
+          anyLabel={t('network.anyCaller')}
+          value={draft.caller}
+          choices={callerChoices(purposes, [], draft.caller)}
+          nameOf={callerName}
+          onValueChange={(caller) => edit({ caller, purpose: null })}
+        />
       </Field.Root>
       <Field.Root label={t('network.colPurpose')}>
-        <Select.Root
+        <ChoiceSelect
+          block
           label={t('network.colPurpose')}
-          value={draft.purpose ?? ANY}
-          onValueChange={(value) => edit({ purpose: picked(value) })}
-        >
-          <Select.Trigger block />
-          <Select.Item value={ANY} label={t('network.anyPurpose')} />
-          {purposeChoices(purposes, [], draft.caller, draft.purpose).map((purpose) => (
-            <Select.Item key={purpose} value={purpose} label={purpose} />
-          ))}
-        </Select.Root>
+          anyLabel={t('network.anyPurpose')}
+          value={draft.purpose}
+          choices={purposeChoices(purposes, [], draft.caller, draft.purpose)}
+          onValueChange={(purpose) => edit({ purpose })}
+        />
       </Field.Root>
       <Field.Root
         label={t('network.colHost')}

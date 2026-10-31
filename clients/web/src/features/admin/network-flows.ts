@@ -37,7 +37,7 @@ export function matchingHost(flows: readonly Flow[], search: string): readonly F
   return flows.filter((flow) => destination(flow.host, flow.port).toLowerCase().includes(needle));
 }
 
-function distinctSorted(values: Iterable<string>): string[] {
+export function distinctSorted(values: Iterable<string>): string[] {
   return [...new Set(values)].sort((a, b) => a.localeCompare(b));
 }
 
