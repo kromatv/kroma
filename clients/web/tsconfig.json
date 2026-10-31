@@ -4,6 +4,6 @@
     "noEmit": true,
     "types": ["node", "react", "react-dom", "vite/client"]
   },
-  "include": ["src", "vite.config.ts", "raise-entry-preload.ts"],
+  "include": ["src", "vite.config.ts"],
   "exclude": [".nitro", ".output", ".tanstack", "dist", "src/sw.ts"]
 }

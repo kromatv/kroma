@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { raiseEntryPreload } from './raise-entry-preload';
+import { raiseEntryPreload } from './entry-preload';
 
 const shell = (
   head: string,

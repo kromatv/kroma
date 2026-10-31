@@ -13,7 +13,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build && bun raise-entry-preload.ts dist/client/_shell.html && bun scripts/precompress.ts dist/client",
+    "build": "vite build",
     "preview": "vite preview --port 3000",
     "generate-routes": "tsr generate",
     "typecheck": "tsr generate && tsc --noEmit && tsc -p tsconfig.sw.json"

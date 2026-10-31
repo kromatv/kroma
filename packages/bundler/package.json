@@ -17,6 +17,7 @@
     "./deep-tier": "./src/deep-tier.ts",
     "./deps-without-maps": "./src/deps-without-maps.ts",
     "./exit-after-build": "./src/exit-after-build.ts",
+    "./finish-build": "./src/finish-build.ts",
     "./git-history": "./src/git-history.ts",
     "./legacy-css": "./src/legacy-css.ts",
     "./legacy-finalize": "./src/legacy-finalize.ts",
