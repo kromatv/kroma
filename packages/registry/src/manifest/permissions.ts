@@ -1,7 +1,5 @@
-// What a module may do, as its manifest declares it. Strict objects: a
-// misspelt permission is refused rather than ignored, because an ignored one is
-// either a module that silently gets nothing or a reviewer who reads a grant
-// that is not there. Mirrors `Permissions` in `kroma-module-manifest`.
+// Strict objects: a misspelt permission is refused, not ignored. Mirrors
+// `Permissions` in `kroma-module-manifest`.
 
 import { z } from 'zod';
 
