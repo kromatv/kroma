@@ -16,10 +16,14 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
+use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::model::{DeliveriesView, NotificationPrefs, NotificationsView, SubscribeBody};
+use crate::i18n;
+use crate::model::{
+    DeliveriesView, NotificationPrefs, NotificationsView, PushTransport, SubscribeBody,
+};
 use crate::services::auth::random_token;
 use crate::services::jobs::now_ms;
 use crate::services::notify;
@@ -230,6 +234,15 @@ pub async fn subscribe(
     AuthUser(user): AuthUser,
     Json(body): Json<SubscribeBody>,
 ) -> Result<Response, Response> {
+    if body.transport == PushTransport::WebPush
+        && !notify::push::accepts_web_push_endpoint(&body.endpoint)
+    {
+        return Err(lerr(
+            i18n::user_locale(&user),
+            StatusCode::BAD_REQUEST,
+            "error.pushBadEndpoint",
+        ));
+    }
     let uid = user.id.clone();
     query(&state.db, move |pool| {
         let id = short_hash(&format!("push|{uid}|{}|{}", body.endpoint, random_token()));
