@@ -63,7 +63,7 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
         .max_time(MAX_TIME_SECS)
         .max_bytes(MAX_THEME_BYTES)
         .download(&url, &tmp);
-    let ok = fetched.is_ok_and(|response| (200..300).contains(&response.status))
+    let ok = fetched.is_ok_and(|response| response.ensure_ok().is_ok())
         && std::fs::metadata(&tmp)
             .map(|m| m.len() >= MIN_BYTES)
             .unwrap_or(false)

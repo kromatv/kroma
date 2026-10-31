@@ -132,9 +132,10 @@ async fn fetch_release(url: String, dest: PathBuf) -> bool {
             .purpose("binary-download")
             .max_time(DOWNLOAD_MAX_SECS)
             .download(&url, &dest)
+            .is_ok_and(|response| response.ensure_ok().is_ok())
     })
     .await
-    .is_ok_and(|fetched| fetched.is_ok_and(|response| (200..300).contains(&response.status)))
+    .unwrap_or(false)
 }
 
 #[cfg(test)]
