@@ -77,11 +77,7 @@ pub async fn health(
     Ok(Json(super::dto::Health {
         build: crate::services::settings::build_info().number,
         active_streams: is_lan.then(|| state.playback.list().len()),
-        auto_install_updates: is_lan.then(|| {
-            state
-                .settings
-                .get_bool(crate::services::updates::AUTO_INSTALL_KEY, false)
-        }),
+        auto_install_updates: is_lan.then(|| crate::services::updates::auto_install(&state)),
         status: "ok",
         name: is_lan.then(|| crate::services::settings::server_name(&state.settings)),
         instance_id: state.instance_id.clone(),

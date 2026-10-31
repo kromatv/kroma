@@ -35,6 +35,9 @@ pub struct Config {
     pub releases_url: Option<String>,
     /// Private directory shared with the separately supervised host updater.
     pub update_dir: Option<PathBuf>,
+    /// Where the Synology package keeps the server payloads the server
+    /// downloads for itself. The package's service script starts the newest.
+    pub self_update_dir: Option<PathBuf>,
     pub web_dir: Option<PathBuf>,
     // Every `*_override` is `None` = defer to the stored admin setting, `Some` =
     // env pins it and wins over the toggle.
@@ -176,6 +179,11 @@ impl Config {
             .filter(|s| !s.trim().is_empty())
             .map(PathBuf::from);
 
+        let self_update_dir = env::var("KROMA_SELF_UPDATE_DIR")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from);
+
         let https_override = env::var("KROMA_HTTPS")
             .ok()
             .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off" | ""));
@@ -228,6 +236,7 @@ impl Config {
             mail_relay_url,
             releases_url,
             update_dir,
+            self_update_dir,
             web_dir,
             https_override,
             https_port_override,
@@ -378,6 +387,7 @@ mod tests {
         "KROMA_MAIL_RELAY_URL",
         "KROMA_RELEASES_URL",
         "KROMA_UPDATE_DIR",
+        "KROMA_SELF_UPDATE_DIR",
         "KROMA_WEB_DIR",
         "KROMA_TRUSTED_PROXIES",
         "KROMA_ALLOWED_ORIGINS",
@@ -514,6 +524,7 @@ mod tests {
         env::set_var("KROMA_WEB_URL", "https://kroma.example/");
         env::set_var("KROMA_MAIL_RELAY_URL", "http://127.0.0.1:9/");
         env::set_var("KROMA_RELEASES_URL", "http://127.0.0.1:8/releases/");
+        env::set_var("KROMA_SELF_UPDATE_DIR", "/var/packages/kroma/var/releases");
         env::set_var("KROMA_WEB_DIR", web.path().to_str().unwrap());
 
         let c = Config::from_env();
@@ -534,6 +545,10 @@ mod tests {
         assert_eq!(
             c.releases_url.as_deref(),
             Some("http://127.0.0.1:8/releases")
+        );
+        assert_eq!(
+            c.self_update_dir,
+            Some(PathBuf::from("/var/packages/kroma/var/releases"))
         );
         assert_eq!(c.web_dir.as_deref(), Some(web.path()));
 

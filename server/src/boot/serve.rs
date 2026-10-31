@@ -74,14 +74,20 @@ pub async fn run(
         app
     };
 
+    let stopping = std::sync::Arc::new(tokio::sync::Notify::new());
+    let signalled = stopping.clone();
     // Connect-info so handlers can read the client address (LAN/WAN classification).
-    axum::serve(
+    let server = axum::serve(
         listener,
         http_app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .context("server error")?;
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        signalled.notify_one();
+    });
+    until_drained(server, &stopping)
+        .await
+        .context("server error")?;
 
     https_handle.graceful_shutdown(Some(std::time::Duration::from_secs(3)));
 
@@ -117,6 +123,23 @@ fn spawn_module_auto_update(
     });
 }
 
+async fn until_drained(
+    server: impl std::future::IntoFuture<Output = std::io::Result<()>>,
+    stopping: &tokio::sync::Notify,
+) -> std::io::Result<()> {
+    let window = async {
+        stopping.notified().await;
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+    };
+    tokio::select! {
+        served = server => served,
+        () = window => {
+            info!("connections still open after the drain window; stopping anyway");
+            Ok(())
+        }
+    }
+}
+
 async fn await_jobs_drained(state: &state::SharedState) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     while state.jobs.running_count() > 0 && std::time::Instant::now() < deadline {
@@ -142,6 +165,55 @@ pub(super) async fn shutdown_signal() {
     tokio::select! {
         () = ctrl_c => {}
         () = terminate => {}
+        () = kroma_engine::services::updates::wait_for_restart() => {}
     }
     info!("shutdown signal received");
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use tokio::sync::Notify;
+    use tokio::time::Instant;
+
+    use super::until_drained;
+
+    fn never_drains() -> std::future::Pending<std::io::Result<()>> {
+        std::future::pending()
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn an_open_connection_holds_a_stop_for_ten_seconds_at_most() {
+        let stopping = Notify::new();
+        stopping.notify_one();
+        let started = Instant::now();
+
+        let stopped = until_drained(never_drains(), &stopping).await;
+
+        assert!(stopped.is_ok());
+        assert_eq!(started.elapsed(), Duration::from_secs(10));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_server_that_drains_in_time_stops_without_waiting() {
+        let stopping = Notify::new();
+        stopping.notify_one();
+        let started = Instant::now();
+
+        let stopped = until_drained(std::future::ready(Ok(())), &stopping).await;
+
+        assert!(stopped.is_ok());
+        assert_eq!(started.elapsed(), Duration::ZERO);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn the_window_opens_only_once_the_stop_is_signalled() {
+        let stopping = Notify::new();
+        let serving = until_drained(never_drains(), &stopping);
+
+        let waited = tokio::time::timeout(Duration::from_secs(3600), serving).await;
+
+        assert!(waited.is_err());
+    }
 }

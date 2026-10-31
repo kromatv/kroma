@@ -80,8 +80,8 @@ fn declared() -> Declared {
     m.public("tmdbLanguage", json!(super::TMDB_LANGUAGE_AUTO));
     m.public("timezone", json!("Europe/Zurich (UTC+1)"));
     m.public("autoUpdate", json!(true));
-    m.public("autoInstallUpdates", json!(false));
-    m.public("updateChannel", json!("Stable"));
+    m.public("autoInstallUpdates", json!(null));
+    m.public("updateChannel", json!(null));
     // Periodic re-scan cadence, the only path that catches NAS/SMB edits (they
     // emit no FS events). `-1` = `KROMA_WATCH_INTERVAL` or 300s, `0` = FS events only.
     m.public("watchAutoScan", json!(true));
