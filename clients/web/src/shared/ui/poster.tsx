@@ -179,6 +179,7 @@ export function Poster({
                   thickness={5}
                   trackColor="white/20"
                   rounded={false}
+                  label={t('content.progressWatched', { percent: Math.round(progress) })}
                 />
               </Box>
             ) : null}
