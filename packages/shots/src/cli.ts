@@ -12,6 +12,7 @@
 import { join } from 'node:path';
 import { captureAndroid } from './android';
 import { captureApple } from './apple';
+import { DEFAULT_REPO } from './attach';
 import { captureDom } from './dom';
 import { DEFAULT_METRO_PORT } from './metro';
 import { markdown, publish } from './publish';
@@ -19,7 +20,6 @@ import { assertPng, assetName, outDirFor, type Screen, type Shot } from './shot'
 import { DEFAULT_TARGETS, type Target, targetsFrom } from './targets';
 
 const REPO_DIR = new URL('../../..', import.meta.url).pathname;
-const DEFAULT_REPO = 'kromatv/kroma';
 const DEFAULT_SETTLE_MS = 600;
 
 const USAGE = `usage: bun run shots:pr <slug> [options]
@@ -33,7 +33,7 @@ const USAGE = `usage: bun run shots:pr <slug> [options]
   --seed <file>      JSON of localStorage entries for a signed-in session
   --port <n>         Override the dev-server port (one dom target at a time)
   --metro-port <n>   Metro port for the native targets (default: ${DEFAULT_METRO_PORT})
-  --publish          Upload to the issue-assets release and print the published markdown
+  --publish          Upload as GitHub attachments and print the published markdown
   --repo <owner/name>`;
 
 async function main(argv: string[]): Promise<void> {
@@ -72,7 +72,10 @@ async function main(argv: string[]): Promise<void> {
 
   const repo = flags.repo ?? DEFAULT_REPO;
   console.log(`\n${'-'.repeat(60)}\n`);
-  console.log(flags.publish === '' ? publish(repo, shots, slug) : markdown(repo, shots, slug));
+  const local = shots.map((shot) => shot.file);
+  console.log(
+    flags.publish === '' ? await publish(repo, shots, slug) : markdown(shots, local, slug),
+  );
   if (flags.publish !== '') {
     console.log('\n(local only - pass --publish to upload and get working links)');
   }
