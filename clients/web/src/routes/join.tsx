@@ -114,6 +114,7 @@ function JoinPage() {
 
             <Button
               block
+              size="md"
               label={busy ? t('auth.creating') : t('auth.createMyAccount')}
               onPress={() => void submit()}
               loading={busy}

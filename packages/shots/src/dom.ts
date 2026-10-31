@@ -5,8 +5,8 @@ import type { Target } from './targets';
 
 // The brand intro plays on a cold launch and is an OVERLAY over an app tree that
 // is already mounted, so a run that skips this photographs the splash while the
-// DOM underneath reports the right screen. sessionStorage, in both the TV shells
-// (BrandIntro.web.tsx) and the web client (features/catalog/intro.tsx).
+// DOM underneath reports the right screen. sessionStorage, in the TV shells
+// (BrandIntro.web.tsx).
 const INTRO_SEEN_KEY = 'kroma:intro-seen';
 
 // Mirrored by the TV router on every navigation while `import.meta.env.DEV`,

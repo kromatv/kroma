@@ -145,11 +145,13 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum::extract::{ConnectInfo, Path, Request, State};
+use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
 use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
+use tower::ServiceExt;
 use tower_http::compression::predicate::{NotForContentType, Predicate};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
 use tower_http::services::{ServeDir, ServeFile};
@@ -301,21 +303,27 @@ pub fn router(
     app = app.merge(plugin::asset_routes());
 
     // Single-binary deploy: serve the built web SPA on the same origin as the API,
-    // falling back to the SPA shell for client-side routes (e.g. /movies). Skipped
+    // falling back to the SPA shell for a page navigation to a client-side route
+    // (e.g. /movies); any other miss (/robots.txt, a stale chunk) is a 404. Skipped
     // in dev (no KROMA_WEB_DIR), where the web runs on its own Vite server.
     // `precompressed_*` serves the build's `.br`/`.gz` siblings so static assets
     // cost the NAS zero compression CPU; files without one hit CompressionLayer.
     if let Some(web_dir) = state.config.web_dir.clone() {
-        let shell = web_dir.join("_shell.html");
+        let shell = ServeFile::new(web_dir.join("_shell.html"))
+            .precompressed_br()
+            .precompressed_gzip();
+        let navigation_only = move |req: Request| async move {
+            if accepts_html(req.headers()) {
+                shell.oneshot(req).await.into_response()
+            } else {
+                StatusCode::NOT_FOUND.into_response()
+            }
+        };
         app = app.fallback_service(
             ServeDir::new(web_dir)
                 .precompressed_br()
                 .precompressed_gzip()
-                .fallback(
-                    ServeFile::new(shell)
-                        .precompressed_br()
-                        .precompressed_gzip(),
-                ),
+                .fallback(navigation_only.into_service()),
         );
     }
 
@@ -361,6 +369,13 @@ async fn spa_cache_headers(
     res
 }
 
+fn accepts_html(headers: &axum::http::HeaderMap) -> bool {
+    headers
+        .get(axum::http::header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.contains("text/html"))
+}
+
 // A Vite content-hashed asset (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`):
 // a `-<hash>` stem suffix of 8+ [A-Za-z0-9_] chars and a non-HTML extension.
 fn is_hashed_asset(path: &str) -> bool {
@@ -378,10 +393,12 @@ fn is_hashed_asset(path: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::header::CACHE_CONTROL;
+    use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 
     use super::*;
-    use crate::api::test_support::{raw, test_app_with_web, text};
+    use crate::api::test_support::{raw, test_app_with_web};
+
+    const NAVIGATION: &[(&str, &str)] = &[("accept", "text/html,application/xhtml+xml,*/*;q=0.8")];
 
     #[tokio::test]
     async fn a_client_side_route_falls_back_to_the_spa_shell_without_shadowing_the_api() {
@@ -398,15 +415,25 @@ mod tests {
             "public, max-age=31536000, immutable"
         );
 
-        let (status, shell) = text(&t.app, "GET", "/movies", None, None).await;
+        let (status, headers, _) = raw(&t.app, "GET", "/movies", None, None, NAVIGATION).await;
         assert_eq!(status, StatusCode::OK);
-        assert!(shell.contains("<title>KROMA</title>"), "{shell}");
-        let (_, headers, _) = raw(&t.app, "GET", "/movies", None, None, &[]).await;
+        assert_eq!(headers[CONTENT_TYPE], "text/html");
         assert_eq!(headers[CACHE_CONTROL], "no-cache");
 
         let (status, body) = crate::api::test_support::get(&t.app, "/api/auth/config", None).await;
         assert_eq!(status, StatusCode::OK);
         assert!(body.get("hasAccounts").is_some(), "{body}");
+    }
+
+    #[tokio::test]
+    async fn a_missing_file_that_is_not_a_page_navigation_is_not_found() {
+        let t = test_app_with_web(&[("_shell.html", "<!doctype html><title>KROMA</title>")]);
+
+        for path in ["/robots.txt", "/llms.txt", "/.well-known/ard.json", "/assets/gone-DXQwrN_7.js"] {
+            let (status, _, _) = raw(&t.app, "GET", path, None, None, &[("accept", "*/*")]).await;
+
+            assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+        }
     }
 
     #[test]
