@@ -58,9 +58,8 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
         .args([
             "-sf",
             "-L",
-            // https only, redirects included: in plain HTTP the series ids of
-            // the library travel readable, and a redirect could aim the fetch
-            // at an internal host.
+            // Plain HTTP would expose the library's series ids and let a
+            // redirect aim the fetch at an internal host.
             "--proto",
             "=https",
             "--proto-redir",
