@@ -1,0 +1,37 @@
+package kroma:module@0.1.0;
+
+interface types {
+  record request {
+    method: string,
+    path: string,
+    body: list<u8>,
+  }
+
+  record response {
+    status: u16,
+    body: list<u8>,
+  }
+}
+
+interface net {
+  use types.{response};
+
+  fetch: func(purpose: string, method: string, url: string, body: list<u8>) -> result<response, string>;
+}
+
+interface settings {
+  get: func(key: string) -> option<string>;
+}
+
+interface route {
+  use types.{request, response};
+
+  handle: func(request: request) -> response;
+}
+
+world module {
+  import net;
+  import settings;
+
+  export route;
+}

@@ -36,6 +36,13 @@ impl Caller {
         self.declaration().is_none()
     }
 
+    pub(super) fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {
+        match &self.module {
+            Some(module) => self.supervisor.contributions_for(module, point),
+            None => self.supervisor.contributions(point),
+        }
+    }
+
     pub(super) fn name(&self) -> &str {
         self.module.as_deref().unwrap_or("an unnamed caller")
     }

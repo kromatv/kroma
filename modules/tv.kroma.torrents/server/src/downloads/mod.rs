@@ -129,7 +129,7 @@ impl DownloadManager {
     /// Metadata only, no download: the admin selects files before grabbing.
     pub fn list_files(
         &self,
-        _host: &dyn HostCtx,
+        host: &dyn HostCtx,
         magnet_or_url: &str,
     ) -> Result<Vec<crate::TorrentFileEntry>> {
         let conn = self.store().get()?;
@@ -137,11 +137,10 @@ impl DownloadManager {
             .ok_or_else(|| anyhow!("no enabled download client"))?;
         drop(conn);
         let cached = self.cached_metadata(magnet_or_url);
-        // Direct, bypassing the VPN: a LAN indexer is unreachable via the tunnel.
         let fetched: Option<Vec<u8>> = match cached {
             Some(_) => None,
             None => (client.kind == "rqbit" && magnet_or_url.starts_with("http"))
-                .then(|| fetch_torrent_file(magnet_or_url))
+                .then(|| fetch_torrent_file(host, magnet_or_url))
                 .transpose()?,
         };
         let bytes = cached.as_deref().or(fetched.as_deref());

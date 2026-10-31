@@ -29,8 +29,9 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ desktop (cargo check, Linux mpv path)         desktop
        ├─ rust (server) ┐                               rust
        ├─ rust (modules n) ┴─ rust (one lcov)           rust
+       ├─ wasm host {ubuntu, macos, windows}            rust
        ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
-       └─ required ◄── lanes + every job above but sonar
+       └─ required ◄── lanes + every job above but wasm host and sonar
 ```
 
 The one required check on `main` is **Required** (`bun run ci required`). A
@@ -85,6 +86,15 @@ groups of five, each with its own cache entry saved from `main` only
 (`CARGO_PROFILE_DEV_DEBUG=0` keeps each near 1.7 GB). `bun run ci rust test
 --only <id,id>` runs the same on a laptop. The required **Rust** check waits for
 every job and joins their coverage into `server/lcov.info`.
+
+`Wasm host` runs `cargo test -p kroma-wasm-host` on Ubuntu, macOS and Windows,
+because that crate's claim (RFC 480) is that a WebAssembly component is
+isolated the same way on each. Its tests build a guest component for
+`wasm32-wasip2`, so the job and the server's Rust shard both install that
+target. The job runs on the rust lane and keeps no cache, since three more
+entries would push the 10 GB budget below over. It is not part of `required`,
+so the spike cannot block `main`. Locally, run `rustup target add
+wasm32-wasip2` once before `cargo test --workspace` in `server/`.
 
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the

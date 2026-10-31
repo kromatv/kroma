@@ -7,14 +7,25 @@ pub fn wg_configured(host: &dyn HostCtx) -> bool {
     !host.setting_str("vpnWgConfig", "").trim().is_empty()
 }
 
-/// The local SOCKS5 URL this module's bridge exposes, derived from settings, and
-/// what [`port::VPN_PROXY`] answers with. `None` when no WireGuard config is
-/// stored, so a consumer routes directly rather than through a dead bridge.
+/// The local SOCKS5 URL this module's bridge exposes, with the credentials it
+/// asks for, and what [`port::VPN_PROXY`] answers with. `None` when no
+/// WireGuard config is stored.
 pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
-    wg_configured(host).then(|| {
-        let port = host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535);
-        format!("socks5://127.0.0.1:{port}")
-    })
+    if !wg_configured(host) {
+        return None;
+    }
+    let port = host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535);
+    let password = match crate::socks_auth::password(&host.data_dir().join("vpn")) {
+        Ok(password) => password,
+        Err(error) => {
+            tracing::warn!(%error, "could not read the bridge's SOCKS password");
+            return None;
+        }
+    };
+    Some(format!(
+        "socks5://{}:{password}@127.0.0.1:{port}",
+        crate::socks_auth::USER
+    ))
 }
 
 /// `GET /vpn` the VPN configuration card's state. VPN routing is
@@ -71,19 +82,25 @@ mod tests {
             .with_setting("vpnLocalPort", serde_json::json!(26000));
 
         assert!(wg_configured(&host));
-        assert_eq!(
-            proxy_url(&host).as_deref(),
-            Some("socks5://127.0.0.1:26000")
-        );
+        let url = proxy_url(&host).unwrap();
+        assert!(url.starts_with("socks5://kroma:"), "{url}");
+        assert!(url.ends_with("@127.0.0.1:26000"), "{url}");
+    }
+
+    #[test]
+    fn the_url_carries_the_password_the_bridge_was_configured_with() {
+        let host = StubHost::new().with_setting("vpnWgConfig", serde_json::json!("[Interface]"));
+
+        let url = proxy_url(&host).unwrap();
+        let password = crate::socks_auth::password(&host.data_dir().join("vpn")).unwrap();
+
+        assert!(url.contains(&format!(":{password}@")), "{url}");
     }
 
     #[test]
     fn the_default_port_applies_when_none_is_stored() {
         let host = StubHost::new().with_setting("vpnWgConfig", serde_json::json!("[Interface]"));
 
-        assert_eq!(
-            proxy_url(&host).as_deref(),
-            Some("socks5://127.0.0.1:25345")
-        );
+        assert!(proxy_url(&host).unwrap().ends_with("@127.0.0.1:25345"));
     }
 }

@@ -7,7 +7,7 @@
 use crate::domain::metadata::{CastMember, CrewMember};
 use crate::model::RequestKind;
 
-use super::client::{api, curl_json, IMG};
+use super::client::{api, tmdb_json, IMG};
 use super::common::{build_cast, build_crew};
 
 mod hits;
@@ -108,7 +108,7 @@ pub enum DiscoverScope {
 }
 
 /// Fetch one title's detail (+ external ids for the wanted ledger).
-// The `()` Err is the unit error threaded up from `curl_json` via `?`; callers only
+// The `()` Err is the unit error threaded up from `tmdb_json` via `?`; callers only
 // care ok/err, so a richer error type would add nothing here.
 #[allow(clippy::result_unit_err)]
 pub fn detail(
@@ -134,9 +134,9 @@ pub fn detail(
         ("append_to_response", append.to_string()),
     ];
     let mut d: DetailResp =
-        match curl_json(&format!("{}/{path}/{tmdb_id}", api()), api_key, &params) {
+        match tmdb_json(&format!("{}/{path}/{tmdb_id}", api()), api_key, &params) {
             Ok(d) => d,
-            // curl -f turns TMDB 404s into exit 22; treat any failure on the detail
+            // TMDB 404s arrive as an HTTP error status; treat any failure on the detail
             // endpoint as "not found" only when the id namespace mismatched is
             // indistinguishable, so callers surface a uniform not-found.
             Err(()) => return Err(()),

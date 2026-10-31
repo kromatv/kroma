@@ -1,13 +1,16 @@
 use kroma_db::push_subs::{self, PushSubscription};
 use kroma_module_host::HostStorage;
 
-use kroma_domain::{DeliveryStatus, Notification, NotificationCategory, NotificationEvent, User};
+use kroma_domain::{
+    DeliveryStatus, Notification, NotificationCategory, NotificationEvent, PushTransport, User,
+};
 
 use crate::services::jobs::now_ms;
 use crate::services::notify::art;
 use crate::services::notify::record;
 
 use super::credentials::sender;
+use super::endpoint::web_push_reach;
 use super::transports;
 use super::{payload_of, public_url_of, urgency_of, Sender};
 
@@ -127,14 +130,14 @@ fn send_one<S: HostStorage>(
     let Some(mut request) = built else {
         return Attempt::failed("no credentials for this transport on this server");
     };
-    let mut response = match send(&request) {
+    let mut response = match send_to(sub, &request) {
         Ok(response) => response,
         Err(e) => return Attempt::failed(format!("{e:#}")),
     };
 
     if transports::retry(sub, &mut request, response.status, &response.text()) {
         tracing::debug!(endpoint = %sub.endpoint, "retrying push after an adjustable rejection");
-        response = match send(&request) {
+        response = match send_to(sub, &request) {
             Ok(response) => response,
             Err(e) => return Attempt::failed(format!("{e:#}")),
         };
@@ -175,9 +178,27 @@ fn is_transient(status: u16) -> bool {
     status == 408 || status == 429 || (500..600).contains(&status)
 }
 
-// `http2` is not a preference: APNs refuses HTTP/1.1 outright.
+fn send_to(
+    sub: &PushSubscription,
+    request: &kroma_push::PushRequest,
+) -> anyhow::Result<kroma_http::Response> {
+    let fetch = match sub.transport {
+        PushTransport::WebPush => web_push_reach(kroma_http::Fetch::new()),
+        _ => kroma_http::Fetch::new(),
+    };
+    post(fetch, request)
+}
+
 pub(super) fn send(request: &kroma_push::PushRequest) -> anyhow::Result<kroma_http::Response> {
-    let mut fetch = kroma_http::Fetch::new().max_time(15);
+    post(kroma_http::Fetch::new(), request)
+}
+
+// `http2` is not a preference: APNs refuses HTTP/1.1 outright.
+fn post(
+    fetch: kroma_http::Fetch,
+    request: &kroma_push::PushRequest,
+) -> anyhow::Result<kroma_http::Response> {
+    let mut fetch = fetch.max_time(15);
     if request.http2 {
         fetch = fetch.http2();
     }

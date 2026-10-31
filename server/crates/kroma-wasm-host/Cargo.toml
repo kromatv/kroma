@@ -1,0 +1,17 @@
+[package]
+name = "kroma-wasm-host"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.97"
+description = "The spike for running a module as a WebAssembly component: wasmtime, a small WIT world, an empty WASI context, and a memory ceiling and CPU budget per instance."
+license.workspace = true
+
+[dependencies]
+wasmtime = { version = "50.0.1", default-features = false, features = ["runtime", "cranelift", "component-model", "std"] }
+wasmtime-wasi = { version = "50.0.1", default-features = false, features = ["p2"] }
+thiserror = "2"
+
+[dev-dependencies]
+axum = { workspace = true }
+kroma-http = { workspace = true }
+tokio = { workspace = true }

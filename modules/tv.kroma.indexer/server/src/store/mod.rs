@@ -44,6 +44,7 @@ pub struct SyncReport {
 pub struct DefinitionStore {
     dir: PathBuf,
     source: String,
+    route: Result<Option<String>, String>,
 }
 
 impl DefinitionStore {
@@ -52,7 +53,18 @@ impl DefinitionStore {
         DefinitionStore {
             dir: data_dir.join("indexer-defs"),
             source: DEFAULT_SOURCE.to_string(),
+            route: Ok(None),
         }
+    }
+
+    pub fn source(&self) -> &str {
+        &self.source
+    }
+
+    /// Sync through the route's proxy, or refuse to sync when it is an error.
+    pub fn routed(mut self, route: anyhow::Result<Option<String>>) -> Self {
+        self.route = route.map_err(|e| e.to_string());
+        self
     }
 
     pub fn dir(&self) -> &Path {
@@ -268,6 +280,7 @@ links:
         let store = DefinitionStore {
             dir: empty.path().join("never-created"),
             source: String::new(),
+            route: Ok(None),
         };
         assert!(store.list().unwrap().is_empty());
         assert!(!store.is_populated());
