@@ -80,7 +80,7 @@ fn download(remote_url: &str, dest: &Path) -> bool {
         .max_time(MAX_TIME_SECS)
         .max_bytes(MAX_ARTWORK_BYTES)
         .download(remote_url, dest)
-        .is_ok_and(|response| (200..300).contains(&response.status))
+        .is_ok_and(|response| response.ensure_ok().is_ok())
         && dest.exists()
 }
 

@@ -79,7 +79,7 @@ fn download(url: &str, dest: &Path) -> bool {
         .purpose("model-download")
         .max_time(MAX_DOWNLOAD_SECS)
         .download(url, dest)
-        .is_ok_and(|response| (200..300).contains(&response.status))
+        .is_ok_and(|response| response.ensure_ok().is_ok())
 }
 
 #[cfg(test)]
