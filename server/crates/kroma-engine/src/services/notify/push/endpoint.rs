@@ -5,10 +5,9 @@ use kroma_http::Fetch;
 
 const MAX_ENDPOINT_LEN: usize = 2048;
 
-/// Whether a browser-supplied Web Push endpoint is one the server may POST to:
-/// an `https` URL naming a host, or a public address, and no credentials. Any
-/// signed-in account chooses this URL, so it is checked again at send time,
-/// once the name has resolved.
+/// Whether a browser-supplied Web Push endpoint may be POSTed to: `https`, no
+/// credentials, no non-public address. A name is checked again at send time,
+/// once it has resolved.
 pub fn accepts_web_push_endpoint(endpoint: &str) -> bool {
     if endpoint.len() > MAX_ENDPOINT_LEN {
         return false;
