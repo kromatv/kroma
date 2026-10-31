@@ -1,8 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
 
 /// The settings store a module reads through `settings.get`, narrowed to the
 /// keys its manifest declared: any other key reads as absent, stored or not.
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Settings {
     declared: BTreeSet<String>,
     values: BTreeMap<String, String>,
@@ -31,5 +32,29 @@ impl Settings {
             return None;
         }
         self.values.get(key).cloned()
+    }
+}
+
+impl fmt::Debug for Settings {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Settings")
+            .field("declared", &self.declared)
+            .finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Settings;
+
+    #[test]
+    fn a_debug_print_names_the_declared_keys_and_never_a_value() {
+        let settings = Settings::new(["token"], [("token", "s3cret")]);
+
+        let printed = format!("{settings:?}");
+
+        assert!(printed.contains("token"));
+        assert!(!printed.contains("s3cret"));
     }
 }
