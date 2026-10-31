@@ -127,6 +127,19 @@ impl Supervisor {
         self.procs.read().unwrap().get(id).map(|p| p.port)
     }
 
+    /// Every running module and the loopback port it serves on, by id.
+    pub fn running(&self) -> Vec<(String, u16)> {
+        let mut running: Vec<(String, u16)> = self
+            .procs
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(id, proc)| (id.clone(), proc.port))
+            .collect();
+        running.sort();
+        running
+    }
+
     /// Every running module that contributes `point`, found by reading the
     /// installed manifests. Resolved per call, so a contributor that was just
     /// installed, restarted, or moved to a different localhost port is picked up

@@ -1,0 +1,13 @@
+[package]
+name = "kroma-sandbox"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Starting a process with no network of its own: a fresh user and network namespace holding only loopback"
+license.workspace = true
+
+[dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+kroma-testing = { workspace = true }

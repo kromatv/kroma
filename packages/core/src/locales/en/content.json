@@ -51,6 +51,7 @@
   "content.myListSoon": "My list coming soon",
   "content.openShow": "Go to series",
   "content.play": "Play",
+  "content.progressWatched": "{percent}% watched",
   "content.quickActions": "Quick actions",
   "content.recentlyAdded": "Recently added",
   "content.removeFromContinue": "Remove from Continue watching",

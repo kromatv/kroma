@@ -26,6 +26,12 @@ describe('the media endpoints', () => {
       method: 'GET',
       path: '/movies?library=lib1',
     },
+    {
+      name: 'movieCards',
+      call: (c) => c.media.movieCards(),
+      method: 'GET',
+      path: '/movies?view=card',
+    },
     { name: 'shows', call: (c) => c.media.shows(), method: 'GET', path: '/shows' },
     { name: 'show', call: (c) => c.media.show(show), method: 'GET', path: '/shows/s1' },
     { name: 'item', call: (c) => c.media.item(spaced), method: 'GET', path: '/items/i%201' },

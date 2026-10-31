@@ -1,10 +1,15 @@
-//! Channel-aware discovery and owner-initiated updates through a host bridge.
+//! Channel-aware discovery and owner-initiated updates through a host bridge,
+//! or, in the Synology package, by the server itself.
 
+mod channel;
 mod feed;
 mod install;
+mod package;
+pub use channel::channel;
 pub use install::{install, install_automatically, recover, Installer, Operation, Target};
+pub use package::{restart_requested, wait_for_restart, RESTART_EXIT_CODE};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -18,6 +23,7 @@ pub const AUTO_KEY: &str = "autoUpdate";
 pub const AUTO_INSTALL_KEY: &str = "autoInstallUpdates";
 pub const OPERATION_KEY: &str = "update.operation";
 pub const STATUS_KEY: &str = "update.status";
+pub const DETECTED_KEY: &str = "update.detectedChannel";
 
 const RELEASES_URL: &str = "https://api.github.com/repos/kromatv/kroma/releases";
 const MAX_FEED_BYTES: u64 = 4 * 1024 * 1024;
@@ -29,16 +35,16 @@ pub enum Channel {
     Canary,
 }
 
-/// The channel the owner chose in Admin -> General.
-pub fn channel(settings: &Settings) -> Channel {
-    if settings
-        .get_str(CHANNEL_KEY, "Stable")
-        .eq_ignore_ascii_case("canary")
-    {
-        Channel::Canary
-    } else {
-        Channel::Stable
-    }
+/// Whether a new release installs itself while the server is idle: the
+/// owner's choice or, until they make one, whether this server can replace
+/// itself without a host updater.
+pub fn auto_install(state: &SharedState) -> bool {
+    state.settings.get_bool(AUTO_KEY, true)
+        && state
+            .settings
+            .get(AUTO_INSTALL_KEY)
+            .as_bool()
+            .unwrap_or_else(|| package::ready(state))
 }
 
 /// What the last check found, as stored between checks.
@@ -89,7 +95,7 @@ pub fn status(state: &SharedState) -> Status {
         build: build.number,
         channel,
         auto: state.settings.get_bool(AUTO_KEY, true),
-        auto_install: state.settings.get_bool(AUTO_INSTALL_KEY, false),
+        auto_install: auto_install(state),
         latest,
         checked_at: checked.as_ref().map(|c| c.checked_at.clone()),
         error: checked.and_then(|c| c.error),
@@ -102,8 +108,10 @@ pub fn status(state: &SharedState) -> Status {
 /// channel gave and records the error beside it, and an answer for a channel
 /// the owner left while the request was out is dropped.
 pub fn check(state: &SharedState) -> Result<Status> {
+    let base = releases(state);
+    let build = build_info();
+    channel::detect(state, base, &build.version, build.number);
     let asked = channel(&state.settings);
-    let base = state.config.releases_url.as_deref().unwrap_or(RELEASES_URL);
     let fetched = fetch(base, asked);
     if channel(&state.settings) != asked {
         return Ok(status(state));
@@ -127,18 +135,39 @@ pub fn check(state: &SharedState) -> Result<Status> {
     Ok(status(state))
 }
 
+fn package_of(state: &SharedState, target: &Target) -> Result<feed::Package> {
+    let tag = match target.channel {
+        Channel::Stable => format!("tags/v{}", target.version),
+        Channel::Canary => "tags/canary".to_owned(),
+    };
+    let release = get(releases(state), &tag)?
+        .ensure_ok()?
+        .json::<feed::Release>()?;
+    feed::package(&release, target, std::env::consts::ARCH)
+        .context("This server build is not published for this machine.")
+}
+
+fn releases(state: &SharedState) -> &str {
+    state.config.releases_url.as_deref().unwrap_or(RELEASES_URL)
+}
+
+fn get(base: &str, path: &str) -> Result<kroma_http::Response> {
+    let url = format!("{}/{path}", base.trim_end_matches('/'));
+    kroma_http::Fetch::new()
+        .purpose("updates")
+        .max_time(15)
+        .max_bytes(MAX_FEED_BYTES)
+        .header("Accept", "application/vnd.github+json")
+        .header("User-Agent", format!("KROMA/{}", build_info().version))
+        .get(&url)
+}
+
 fn fetch(base: &str, channel: Channel) -> Result<Option<Latest>> {
     let path = match channel {
         Channel::Stable => "latest",
         Channel::Canary => "tags/canary",
     };
-    let url = format!("{}/{path}", base.trim_end_matches('/'));
-    let res = kroma_http::Fetch::new()
-        .max_time(15)
-        .max_bytes(MAX_FEED_BYTES)
-        .header("Accept", "application/vnd.github+json")
-        .header("User-Agent", format!("KROMA/{}", build_info().version))
-        .get(&url)?;
+    let res = get(base, path)?;
     if res.status == 404 {
         return Ok(None);
     }

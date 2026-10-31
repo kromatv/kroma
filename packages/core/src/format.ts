@@ -112,7 +112,7 @@ export function playerSubtitle(item: MediaItem): string {
 }
 
 /** Terse dot-separated metadata line, e.g. "2024 · 2h08 · H.265 · 4K". */
-export function metaLine(item: MediaItem): string {
+export function metaLine(item: Pick<MediaItem, 'year' | 'durationMs' | 'video'>): string {
   const parts: string[] = [];
   if (item.year) parts.push(String(item.year));
   const rt = formatRuntime(item.durationMs);

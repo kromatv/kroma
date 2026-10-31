@@ -42,7 +42,7 @@ pub mod domain {
 }
 
 /// Reading and re-encoding one media input. Behind the `transcode` feature,
-/// which brings no database and no catalog with it: an input is a path or a URL,
+/// which brings no database and no catalog with it: an input is a local file,
 /// and a module tells the engine which directory it may write its sessions in.
 #[cfg(feature = "transcode")]
 pub mod media {

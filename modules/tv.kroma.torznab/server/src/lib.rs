@@ -17,7 +17,9 @@ mod xml;
 const MAX_TIME_SECS: u32 = 40;
 
 fn fetch_xml(endpoint: &IndexerEndpoint, params: &[(&str, String)]) -> anyhow::Result<Vec<u8>> {
-    let mut req = kroma_module_sdk::http::Fetch::new().max_time(MAX_TIME_SECS);
+    let mut req = kroma_module_sdk::http::Fetch::new()
+        .purpose("torznab")
+        .max_time(MAX_TIME_SECS);
     if let Some(proxy) = &endpoint.proxy {
         req = req.socks5(proxy.as_str());
     }

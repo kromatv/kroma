@@ -58,6 +58,7 @@ pub async fn serve(
     let env = Env::from_process()?;
     let host = RemoteHost::new(&env)?;
     tracing::info!(module = %env.module_id, port = env.port, "module process starting");
+    crate::egress::install(&host);
 
     apply_module_migrations(&host, &modules)?;
     // Shared from here on: the event delivery route dispatches to a module at

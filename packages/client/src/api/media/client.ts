@@ -6,6 +6,7 @@ import { rematchApi } from './rematch';
 import {
   Health,
   Library,
+  MediaCard,
   MediaItem,
   Section,
   SectionItem,
@@ -85,6 +86,13 @@ export default function mediaApi(ctx: RequestContext) {
     /** Movies only (excludes episodes). */
     movies: (library?: LibraryId) =>
       ctx.get('/movies', MediaItem.array(), { query: { library }, concurrency: 'share' }),
+
+    /** Every movie as a list draws it: a fraction of `movies()`, for grids. */
+    movieCards: (library?: LibraryId) =>
+      ctx.get('/movies', MediaCard.array(), {
+        query: { library, view: 'card' },
+        concurrency: 'share',
+      }),
 
     /** TV shows (aggregates). */
     shows: (library?: LibraryId) =>

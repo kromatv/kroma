@@ -8,6 +8,7 @@
 //! feature does not link SQLite at all, which is most of the size of a sidecar
 //! that never had a table.
 
+mod egress;
 mod env;
 mod events;
 mod host_ctx;

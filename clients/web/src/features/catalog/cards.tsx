@@ -4,7 +4,7 @@ import { useT } from '@kromatv/ui';
 import { Badge, Box, Button, classes, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { VirtualTileGrid } from '#web/features/catalog/virtual-tile-grid';
-import type { MovieView, ShowView } from '#web/shared/lib/api';
+import type { MovieCardView, ShowView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import type { HeroEntry } from '#web/shared/lib/queries';
@@ -14,7 +14,7 @@ import { RouteLink } from '#web/shared/ui/route-link';
 
 type HeroBadge = '4K' | 'HDR' | 'H.265';
 
-function heroBadges(v: MovieView['video']): HeroBadge[] {
+function heroBadges(v: MovieCardView['video']): HeroBadge[] {
   if (!v) return [];
   const out: HeroBadge[] = [];
   if ((v.width ?? 0) >= 3840) out.push('4K');
@@ -94,7 +94,14 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
 
   return (
     <div className={classes(s.hero)}>
-      <Image src={media.backdrop} fit="cover" position="center 18%" background={gradient} fill />
+      <Image
+        src={media.backdrop}
+        fit="cover"
+        position="center 18%"
+        background={gradient}
+        fill
+        priority
+      />
       <Box style={s.breathe} />
       <Box fill pointerEvents="none" style={s.scrim} />
 
@@ -150,7 +157,7 @@ export const MoviePoster = memo(function MoviePoster({
   item,
   width,
   caption,
-}: Readonly<{ item: MovieView; width?: number; caption?: boolean }>) {
+}: Readonly<{ item: MovieCardView; width?: number; caption?: boolean }>) {
   const t = useT();
   const { isWatched, toggleWatched } = useWatched();
   const { inList, toggle: toggleList } = useMyList();
@@ -267,7 +274,7 @@ export function ShowRail({ title, shows }: Readonly<{ title: string; shows: Show
   );
 }
 
-export function MovieGrid({ movies }: Readonly<{ movies: MovieView[] }>) {
+export function MovieGrid({ movies }: Readonly<{ movies: MovieCardView[] }>) {
   return (
     <VirtualTileGrid
       data={movies}
@@ -289,7 +296,9 @@ export function ShowGrid({ shows }: Readonly<{ shows: ShowView[] }>) {
 
 /** A movie or a show, tagged so a mixed list (e.g. one person's filmography)
  * renders each tile with the right poster + navigation. */
-export type CatalogEntry = { kind: 'movie'; movie: MovieView } | { kind: 'show'; show: ShowView };
+export type CatalogEntry =
+  | { kind: 'movie'; movie: MovieCardView }
+  | { kind: 'show'; show: ShowView };
 
 /** A grid mixing movies and shows in the given order (server-ranked). */
 export function CatalogGrid({ entries }: Readonly<{ entries: CatalogEntry[] }>) {

@@ -7,7 +7,7 @@ const BASE_URL = 'http://kroma.test';
 
 const domains = {
   media: {
-    movies: endpoint(),
+    movieCards: endpoint(),
     shows: endpoint(),
     show: endpoint(),
     item: endpoint(),

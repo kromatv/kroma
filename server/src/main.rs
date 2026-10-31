@@ -44,7 +44,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 async fn main() -> anyhow::Result<()> {
     let config = Config::from_env();
     // Held for the whole process so buffered log lines flush to disk.
-    let _log_guard = boot::tracing::init_tracing(&config.logs_dir());
+    let log_guard = boot::tracing::init_tracing(&config.logs_dir());
     let ffprobe_available = boot::startup::announce(&config);
 
     let db = boot::startup::open_db(&config)?;
@@ -64,7 +64,12 @@ async fn main() -> anyhow::Result<()> {
     plan.deferred(&state);
 
     #[cfg(feature = "hotpatch")]
-    return boot::hot::run(state, supervisor, addr).await;
+    let served = boot::hot::run(state, supervisor, addr).await;
     #[cfg(not(feature = "hotpatch"))]
-    boot::serve::run(state, supervisor, addr).await
+    let served = boot::serve::run(state, supervisor, addr).await;
+    if served.is_ok() && services::updates::restart_requested() {
+        drop(log_guard);
+        std::process::exit(services::updates::RESTART_EXIT_CODE);
+    }
+    served
 }
