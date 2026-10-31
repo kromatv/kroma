@@ -74,7 +74,7 @@ const subscribeNever = () => () => {};
 const CORNER_LEFT = { base: 16, md: 32 } as const;
 const CORNER_TOP = { base: 16, md: 26 } as const;
 const HERO_GAP = { base: 24, md: 40 } as const;
-const HERO_PAD_TOP = { base: 48, md: 90 } as const;
+const HERO_PAD_TOP = { base: 72, md: 90 } as const;
 const POSTER_W = { base: 192, lg: 240 } as const;
 
 export interface DetailHeroProps {

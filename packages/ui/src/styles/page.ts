@@ -2,6 +2,8 @@ import { cssRef } from '../core/tokens/css-var.ts';
 import { breakpoint } from '../core/tokens/layout.ts';
 import { atMedia, rule, type SheetEntry } from './sheet.ts';
 
+const STYLING_ROOTS = [':root', '[data-kroma-theme]'];
+
 export const PAGE: readonly SheetEntry[] = [
   rule(['html', 'body', '#root'], { height: '100%' }),
   // The root, not just the body: the overscroll gutter and the canvas behind a
@@ -31,13 +33,13 @@ export const PAGE: readonly SheetEntry[] = [
   // `PAGE_GUTTER` a page frame pads with: an element that bleeds to the content
   // edge cancels that padding with a negative margin, so the two have to be the
   // same number at every width or the bleed overhangs the frame.
-  rule(':root', {
+  rule(STYLING_ROOTS, {
     '--gutter-web': '16px',
     '--card-w': 'clamp(8.25rem, 30vw, 13rem)',
   }),
-  atMedia(`(min-width: ${breakpoint.md}px)`, [rule(':root', { '--gutter-web': '24px' })]),
-  atMedia(`(min-width: ${breakpoint.lg}px)`, [rule(':root', { '--gutter-web': '40px' })]),
-  atMedia(`(min-width: ${breakpoint.tv}px)`, [rule(':root', { '--gutter-web': '56px' })]),
+  atMedia(`(min-width: ${breakpoint.md}px)`, [rule(STYLING_ROOTS, { '--gutter-web': '24px' })]),
+  atMedia(`(min-width: ${breakpoint.lg}px)`, [rule(STYLING_ROOTS, { '--gutter-web': '40px' })]),
+  atMedia(`(min-width: ${breakpoint.tv}px)`, [rule(STYLING_ROOTS, { '--gutter-web': '56px' })]),
   rule('*', {
     scrollbarColor: `${cssRef('borderStrong')} transparent`,
     scrollbarWidth: 'thin',
