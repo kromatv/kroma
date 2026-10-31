@@ -57,7 +57,7 @@ export function ServerUpdateNotice() {
   return (
     <Box mt={8}>
       <span title={label}>
-        <Focusable sv={noticeStyle} role="link" label={label} asChild>
+        <Focusable sv={noticeStyle} role="link" asChild>
           <RouteLink to="/admin/updates">
             <Icon name={notice.updating ? 'refresh' : 'download'} size={16} color="textMuted" />
             <Text variant="meta" color="text" flex lines={1}>
