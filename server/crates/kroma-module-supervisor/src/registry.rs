@@ -1,9 +1,15 @@
 //! The registry client: fetching a catalog and an artifact under hard byte
 //! ceilings, and the URL and checksum rules a download is held to.
 
+use kroma_http::egress::{self, Decision, Exchange, Route, Ruling, BLOCKED};
 use serde_json::Value;
 
 use super::Supervisor;
+
+const PURPOSE: &str = "registry";
+// This client has no SOCKS support, and a call the rules send through the VPN
+// must never go direct instead.
+const NO_PROXY: &str = "the module registry cannot be reached through a proxy";
 
 // A registry catalog is a small JSON index (the first-party one is a few kB);
 // anything approaching this is a misconfigured or hostile host, not a catalog.
@@ -22,17 +28,64 @@ const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15
 /// `total` is the advisory Content-Length when the server sent one.
 pub type FetchProgress<'a> = &'a (dyn Fn(u64, Option<u64>) + Send + Sync);
 
-/// Read a response body with a hard ceiling, enforced as it arrives.
-///
-/// Content-Length is advisory (absent under chunked encoding), so the header
-/// check is only an early exit; the running total is what actually bounds it.
 async fn fetch_bounded(
     client: &reqwest::Client,
     url: &str,
     max_bytes: u64,
     on_progress: Option<FetchProgress<'_>>,
 ) -> anyhow::Result<Vec<u8>> {
-    let mut response = client.get(url).send().await?.error_for_status()?;
+    let started = std::time::Instant::now();
+    let (target, Ruling { decision, rule }) = egress::rule_url(PURPOSE, "GET", url);
+    let (host, port) = target.map_or((String::new(), 0), |t| (t.host, t.port));
+    let mut exchange = Exchange {
+        purpose: PURPOSE,
+        method: "GET",
+        host,
+        port,
+        route: Route::Direct,
+        status: None,
+        bytes_in: 0,
+        bytes_out: 0,
+        duration_ms: 0,
+        error: None,
+        rule,
+    };
+    let refusal = match decision {
+        Decision::Direct => None,
+        Decision::Block(reason) => Some(reason),
+        Decision::Proxy(_) => Some(NO_PROXY.to_string()),
+    };
+    let outcome = match refusal {
+        Some(reason) => {
+            exchange.route = Route::Blocked;
+            Err(anyhow::anyhow!("{BLOCKED}: {reason}"))
+        }
+        None => read_bounded(client, url, max_bytes, on_progress, &mut exchange.status).await,
+    };
+    exchange.bytes_in = outcome.as_ref().map_or(0, |body| body.len() as u64);
+    exchange.duration_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+    exchange.error = outcome
+        .as_ref()
+        .err()
+        .map(|e| egress::scrubbed(&format!("{e:#}"), url, &exchange.host));
+    egress::record(exchange);
+    outcome
+}
+
+/// Read a response body with a hard ceiling, enforced as it arrives.
+///
+/// Content-Length is advisory (absent under chunked encoding), so the header
+/// check is only an early exit; the running total is what actually bounds it.
+async fn read_bounded(
+    client: &reqwest::Client,
+    url: &str,
+    max_bytes: u64,
+    on_progress: Option<FetchProgress<'_>>,
+    status: &mut Option<u16>,
+) -> anyhow::Result<Vec<u8>> {
+    let response = client.get(url).send().await?;
+    *status = Some(response.status().as_u16());
+    let mut response = response.error_for_status()?;
     let total = response.content_length();
     if let Some(len) = total {
         if len > max_bytes {

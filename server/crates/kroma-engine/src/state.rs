@@ -61,6 +61,7 @@ pub struct AppState {
     pub cast: crate::services::cast::Registry,
     pub metrics: Metrics,
     pub embedder: crate::point::Point,
+    pub network: Arc<crate::services::network::Network>,
     pub search: Arc<SearchEngine>,
     pub vectors: Arc<VectorCache>,
     pub jobs: Arc<JobManager>,
@@ -141,6 +142,12 @@ impl AppState {
         let _ = crate::db::reconcile_running_runs(&db);
         crate::services::pipeline::recover_on_boot(&db);
         let metrics = Metrics::new(db.clone());
+        let network = Arc::new(crate::services::network::Network::new(
+            db.clone(),
+            settings.clone(),
+            crate::point::Point::new(crate::services::network::VPN_POINT, contributions.clone()),
+        )
+        .with_core_ports(config.port, config.https_port_override));
         Arc::new_cyclic(|weak| AppState {
             config,
             ffprobe_available,
@@ -159,6 +166,7 @@ impl AppState {
             cast: crate::services::cast::Registry::new(),
             metrics,
             embedder,
+            network,
             search: Arc::new(SearchEngine::new().expect("init search index")),
             vectors: Arc::new(VectorCache::new()),
             jobs: Arc::new(jobs),

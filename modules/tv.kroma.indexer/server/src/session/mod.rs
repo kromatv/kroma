@@ -97,6 +97,7 @@ impl Session {
 
     fn base_fetch(&self) -> kroma_module_sdk::http::Fetch {
         let mut f = kroma_module_sdk::http::Fetch::new()
+            .purpose("indexer")
             .max_time(MAX_TIME_SECS)
             .cookie_jar(&self.cookie_jar)
             .header("User-Agent", USER_AGENT);
@@ -164,7 +165,11 @@ impl Session {
     /// private-tracker links resolve. Fails on a non-2xx or a clearly-HTML body.
     pub fn fetch_torrent(&self, url: &str) -> Result<Vec<u8>> {
         self.throttle();
-        let resp = self.base_fetch().get(url)?.ensure_ok()?;
+        let resp = self
+            .base_fetch()
+            .purpose("torrent-file")
+            .get(url)?
+            .ensure_ok()?;
         let body = resp.body;
         if body.starts_with(b"<!DOCTYPE") || body.starts_with(b"<html") {
             bail!("expected a .torrent, got an HTML page (login/session issue?)");
@@ -183,6 +188,7 @@ impl Session {
         let body = flaresolverr_body(cmd, url, post_data);
         let resp: serde_json::Value = self
             .base_fetch()
+            .purpose("flaresolverr")
             .post_json(&format!("{base}/v1"), &body)?
             .ensure_ok()?
             .json()?;

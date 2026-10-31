@@ -5,7 +5,7 @@
 use anyhow::{Context, Result};
 use serde_json::Value;
 
-use kroma_module_sdk::http::Fetch;
+use kroma_module_sdk::http::Loopback;
 
 #[derive(Clone)]
 pub struct Core {
@@ -24,7 +24,7 @@ impl Core {
 
     pub async fn get(&self, path: &str) -> Result<Value> {
         let url = format!("{}/api{path}", self.base);
-        let fetch = Fetch::new().header("Authorization", format!("Bearer {}", self.bearer));
+        let fetch = Loopback::new().header("Authorization", format!("Bearer {}", self.bearer));
         tokio::task::spawn_blocking(move || fetch.get_json::<Value>(&url))
             .await
             .context("core call")?

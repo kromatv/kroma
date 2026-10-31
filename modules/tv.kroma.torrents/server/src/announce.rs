@@ -64,6 +64,7 @@ fn announce_once(
     let url = format!("{base}{sep}{q}");
 
     let fetch = kroma_module_sdk::http::Fetch::new()
+        .purpose("peers-announce")
         .max_time(20)
         .socks5(proxy);
     match fetch.get(&url).and_then(|r| r.ensure_ok()) {

@@ -101,6 +101,8 @@ mod it_member_reach;
 #[cfg(test)]
 mod it_monitoring;
 #[cfg(test)]
+mod it_network;
+#[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
@@ -292,6 +294,7 @@ pub fn router(
     let host = kroma_module_supervisor::host_router::<SharedState>(
         supervisor.clone(),
         kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
+        kroma_module_host::NetworkPolicyOf(state.network.clone()),
     )
     .merge(host_jobs::routes())
     .merge(host_events::routes(

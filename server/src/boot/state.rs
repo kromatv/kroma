@@ -85,6 +85,9 @@ pub fn build(
             official_modules,
         },
     );
+    if let Err(e) = state.network.install() {
+        tracing::error!("the network policy could not be installed: {e:#}");
+    }
     (state, supervisor)
 }
 

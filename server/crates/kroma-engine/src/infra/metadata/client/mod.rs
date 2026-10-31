@@ -148,7 +148,9 @@ pub(super) fn tmdb_json<T: DeserializeOwned>(
     api_key: &str,
     params: &[(&str, String)],
 ) -> Result<T, ()> {
-    let mut request = Fetch::new().max_time(REQUEST_MAX_TIME_SECS);
+    let mut request = Fetch::new()
+        .purpose("metadata")
+        .max_time(REQUEST_MAX_TIME_SECS);
     request = if is_bearer_token(api_key) {
         request.header("Authorization", format!("Bearer {api_key}"))
     } else {
