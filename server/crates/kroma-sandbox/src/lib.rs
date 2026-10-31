@@ -12,9 +12,11 @@ use std::sync::OnceLock;
 pub fn network_isolation_available() -> bool {
     static AVAILABLE: OnceLock<bool> = OnceLock::new();
     *AVAILABLE.get_or_init(|| {
-        let mut probe = Command::new("true");
-        isolate_network(&mut probe);
-        probe.status().is_ok_and(|status| status.success())
+        cfg!(target_os = "linux") && {
+            let mut probe = Command::new("true");
+            isolate_network(&mut probe);
+            probe.status().is_ok_and(|status| status.success())
+        }
     })
 }
 
@@ -97,5 +99,13 @@ mod tests {
         );
 
         assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "refused");
+    }
+}
+
+#[cfg(all(test, not(target_os = "linux")))]
+mod off_linux_tests {
+    #[test]
+    fn no_isolation_is_reported_where_the_kernel_has_none() {
+        assert!(!super::network_isolation_available());
     }
 }
