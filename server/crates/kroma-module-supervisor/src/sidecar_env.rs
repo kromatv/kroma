@@ -38,8 +38,6 @@ const PASSTHROUGH_VAR: &str = "KROMA_MODULE_ENV";
 
 const MODULE_SETTINGS: [&str; 1] = ["KROMA_EMBED_MODEL_DIR"];
 
-// A third-party module is a separate program: the server's secrets and
-// settings stay in the server, and the module gets what the host API hands it.
 pub(crate) fn inherited<I>(parent: I) -> Vec<(OsString, OsString)>
 where
     I: IntoIterator<Item = (OsString, OsString)>,

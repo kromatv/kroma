@@ -1,71 +1,59 @@
-//! The tokens a module process holds, and what each one lets it do. Two per
-//! module, never shared: the one it calls back into the core with, which names
-//! it, and the one its own routes accept, which the core hands only to whoever
-//! consumes what it serves.
+//! The two tokens a module process holds: the one it calls the core back with,
+//! which names it, and the one its own routes accept.
+
+use std::collections::HashMap;
+use std::sync::RwLock;
 
 use kroma_module_host::host_token::ct_eq;
 
 use super::Supervisor;
 
+fn minted(tokens: &RwLock<HashMap<String, String>>, id: &str) -> String {
+    if let Some(token) = tokens.read().unwrap().get(id) {
+        return token.clone();
+    }
+    tokens
+        .write()
+        .unwrap()
+        .entry(id.to_string())
+        .or_insert_with(kroma_primitives::random_token)
+        .clone()
+}
+
+fn minted_for(tokens: &RwLock<HashMap<String, String>>, module_id: &str, bearer: &str) -> bool {
+    tokens
+        .read()
+        .unwrap()
+        .get(module_id)
+        .is_some_and(|token| ct_eq(token.as_bytes(), bearer.as_bytes()))
+}
+
 impl Supervisor {
-    /// The token `id`'s process calls back with, minted on first ask and then
-    /// stable for the life of this server. It names its holder, which is what lets
-    /// a callback answer for the module that made it rather than for "a module".
+    /// The token `id`'s process calls back with: minted on first ask, stable for
+    /// the life of this server, and naming its holder.
     pub fn module_token(&self, id: &str) -> String {
-        if let Some(token) = self.module_tokens.read().unwrap().get(id) {
-            return token.clone();
-        }
-        let mut tokens = self.module_tokens.write().unwrap();
-        tokens
-            .entry(id.to_string())
-            .or_insert_with(kroma_primitives::random_token)
-            .clone()
+        minted(&self.module_tokens, id)
     }
 
     /// The module `token` was minted for, or `None` for the fabric token and for
-    /// anything else: a caller the callback cannot name holds no declaration, so it
-    /// reaches nothing that wants one.
+    /// anything else.
     pub fn module_of_token(&self, token: &str) -> Option<String> {
         self.module_tokens
             .read()
             .unwrap()
             .iter()
-            .find(|(_, minted)| ct_eq(minted.as_bytes(), token.as_bytes()))
+            .find(|(_, token_minted)| ct_eq(token_minted.as_bytes(), token.as_bytes()))
             .map(|(id, _)| id.clone())
     }
 
     /// The token `id`'s own routes accept, handed to its process as
-    /// `KROMA_HOST_TOKEN`. The core calls the module with it, and gives it to a
-    /// peer only through [`Self::contributions_for`]: one module's token opens
-    /// no other module's routes, and authenticates no callback.
+    /// `KROMA_HOST_TOKEN`. A peer gets it only through [`Self::contributions_for`].
     pub fn port_token(&self, id: &str) -> String {
-        if let Some(token) = self.port_tokens.read().unwrap().get(id) {
-            return token.clone();
-        }
-        let mut tokens = self.port_tokens.write().unwrap();
-        tokens
-            .entry(id.to_string())
-            .or_insert_with(kroma_primitives::random_token)
-            .clone()
+        minted(&self.port_tokens, id)
     }
 
-    /// Whether `bearer` may act for `module_id` when that module registers its
-    /// jobs or its event subscriptions: the fabric token, or one of the two
-    /// tokens minted for that module and no other.
-    pub fn speaks_for(&self, module_id: &str, bearer: &str) -> bool {
-        let minted_for = |tokens: &std::sync::RwLock<std::collections::HashMap<String, String>>| {
-            tokens
-                .read()
-                .unwrap()
-                .get(module_id)
-                .is_some_and(|minted| ct_eq(minted.as_bytes(), bearer.as_bytes()))
-        };
-        ct_eq(self.cfg.host_token.as_bytes(), bearer.as_bytes())
-            || minted_for(&self.module_tokens)
-            || minted_for(&self.port_tokens)
-    }
-
-    /// [`Self::speaks_for`] with the bearer read off a request's headers.
+    /// Whether the bearer in `headers` may register `module_id`'s jobs or event
+    /// subscriptions: the fabric token, or either token minted for that module.
     pub fn request_speaks_for(&self, module_id: &str, headers: &axum::http::HeaderMap) -> bool {
         headers
             .get(axum::http::header::AUTHORIZATION)
@@ -74,10 +62,14 @@ impl Supervisor {
             .is_some_and(|bearer| self.speaks_for(module_id, bearer))
     }
 
+    fn speaks_for(&self, module_id: &str, bearer: &str) -> bool {
+        ct_eq(self.cfg.host_token.as_bytes(), bearer.as_bytes())
+            || minted_for(&self.module_tokens, module_id, bearer)
+            || minted_for(&self.port_tokens, module_id, bearer)
+    }
+
     /// The answers to `point` that `caller` may reach: none unless its manifest
-    /// consumes the point or defines it. Asking for a point it never declared is
-    /// said on the caller's own log, since it is either a missing declaration or
-    /// a module looking around.
+    /// consumes or defines the point. A refused ask is said on the caller's log.
     pub fn contributions_for(
         &self,
         caller: &str,

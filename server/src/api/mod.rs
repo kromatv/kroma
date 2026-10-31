@@ -181,8 +181,8 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
 
 // The host callback surface is for local sidecars only. A request from any
 // non-loopback peer is answered 404, so the surface is not advertised off-host.
-// A same-host reverse proxy or tunnel (cloudflared) also arrives from loopback,
-// carrying the visitor's address in a forwarding header no sidecar ever sends.
+// A same-host tunnel (cloudflared) arrives from loopback too, with a forwarding
+// header.
 async fn host_loopback_only(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     req: Request,

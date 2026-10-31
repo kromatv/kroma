@@ -1,6 +1,5 @@
-//! The credentials the bridge's SOCKS5 port asks for. Without them any process
-//! on the machine could send its traffic through the tunnel; with them only a
-//! consumer this module handed its URL to can.
+//! The credentials the bridge's SOCKS5 port asks for, so only a consumer this
+//! module handed its URL to can send traffic through the tunnel.
 
 use std::io::Write;
 use std::path::Path;

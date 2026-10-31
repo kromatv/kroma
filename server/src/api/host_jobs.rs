@@ -18,10 +18,9 @@ use crate::model::Category;
 use crate::services::jobs::{Cron, JobContext, RemoteRun};
 use crate::state::SharedState;
 
-/// The `/_host/register-job` route. A module registers its own jobs only: the
-/// bearer must be one the supervisor minted for the module the body names.
-/// Merge into the `/api` router (before the `Extension(supervisor)` layer, which
-/// this handler reads).
+/// The `/_host/register-job` route; a module registers its own jobs only. Merge
+/// into the `/api` router before the `Extension(supervisor)` layer, which this
+/// handler reads.
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/_host/register-job", post(register_job))
 }
