@@ -7,7 +7,7 @@ is design: the [status table](#status) at the end says what is built.
 
 ## What we defend against
 
-A module is a native program written by someone else and installed by the
+A module is a program written by someone else and installed by the
 operator. It may be malicious, or become malicious in an update. KROMA's users
 include people for whom a leaked address, a leaked tracker name or a list of what
 they watch is a real danger, so the bar is: **a module can do what it declared and
@@ -20,8 +20,9 @@ Out of scope: root on the host, a compromised core binary, kernel exploits.
 
 A module declares everything it needs in `module.json`, the way a Deno program
 is started with `--allow-net` or `--allow-read`. What is not declared is denied.
-The install screen lists every permission in plain words before the operator
-accepts, and an update that asks for more asks again.
+The block is an optional field of manifest schema 2 (#508). Enforcing it, and
+the install screen that lists every permission in plain words before the
+operator accepts, and asks again when an update wants more, are planned (#487).
 
 ```json
 "permissions": {
@@ -58,7 +59,8 @@ These sit beside the declarations that already exist and keep working:
 - `consumes`, `contributes`, `definesPoints`: the points it may call and the ones
   it answers.
 
-A denied operation fails with an error that names the missing permission
+Once #487 enforces the block, a denied operation fails with an error that names
+the missing permission
 (`net.connect: tracker.example.org:443 for purpose "indexer" is not declared`)
 and is recorded, so a module author sees what to declare and an operator sees what
 was attempted.
@@ -80,8 +82,12 @@ Docker and Synology, because the operating system is not what enforces it. See
 | `env` | only the declared variables exist |
 | CPU, memory | a ceiling per module |
 
-Native sidecars remain while modules move over: official registry only,
-labelled native, and contained by the strongest OS tier the platform allows
+A module from any registry other than the official one must be a component.
+That is the target, and #513 makes the install refuse a native bundle from
+anywhere else. Until #513 lands, a third-party native sidecar runs under the
+strongest OS tier the platform offers, and the install screen says which.
+Native sidecars from the official registry remain while modules move over,
+labelled native and contained the same way
 (see [networking](networking.md#enforcement)):
 
 | | Strict, namespace | Strict, one user | Watch |
@@ -92,23 +98,24 @@ labelled native, and contained by the strongest OS tier the platform allows
 | `env` | always: the supervisor builds the environment from an allowlist | always | always |
 | `storage`, `settings`, points | always: checked by the core on every call | always | always |
 
-Watch records and can stop a module that goes around the gateway, but it cannot
-prevent a connection that opens and closes between two scans. An operator can
-refuse to run third-party modules outside a strict tier.
+None of the three tiers is wired into the supervisor yet (#486, #489, #490).
+Watch is to record and be able to stop a module that goes around the gateway,
+but it cannot prevent a connection that opens and closes between two scans. An
+operator setting is to refuse third-party modules outside a strict tier (#486).
 
 ## Identity
 
 A module never chooses who it is. The supervisor mints, per module, per server
-run:
+run (#503):
 
 - a **module token**, which the module presents when it calls back into the core
   (`KROMA_MODULE_TOKEN`). It names the module, and every host API answer is
   scoped by that name: its settings declaration, its points, its storage grant.
 - a **port token**, which the module's own routes accept (`KROMA_HOST_TOKEN`). The
   core calls the module with it, and hands it to another module only when that
-  module consumes a point this one serves. A port token authenticates no
-  callback, so holding another module's port token does not let you act as that
-  module.
+  module's manifest consumes or defines a point this one answers. A port token
+  authenticates no callback, so holding another module's port token does not let
+  you act as that module.
 
 The core's own fabric token is never given to a module. A module that asks the
 core for a point it neither consumes nor defines gets nothing, and the request is
@@ -118,25 +125,26 @@ written on its log.
 
 - Host API callbacks (`/api/_host/*`) answer only a loopback peer, refuse any
   request carrying a forwarding header (a tunnel or a reverse proxy on the same
-  machine adds one), and require a token the supervisor minted.
+  machine adds one), and require a token the supervisor minted (#503).
 - Registering a job or an event subscription requires a token minted for the
-  module the request names.
-- Under strict enforcement the seam moves to Unix sockets in a directory only the
-  core and that module can reach, so there is no port to steal while a module
-  restarts.
+  module the request names (#503).
+- Under strict enforcement the seam is to move to Unix sockets in a directory
+  only the core and that module can reach, so there is no port to steal while a
+  module restarts (planned, #485).
 
 ## Auditing a module on its own
 
-Every module can be analysed without the rest of the server:
+Both tools are planned. Once they ship, every module can be analysed without the
+rest of the server:
 
-- **In the dashboard**, Admin → Modules → a module shows its declared permissions
-  next to what it actually did: its connections, destinations, refusals, and
-  anything it attempted outside its declaration.
-- **From the command line**, `kroma audit <module>` starts the module alone, in the
-  sandbox, behind a recording gateway, drives its routes and jobs, and prints
-  every connection and file access it attempted against what it declared. CI runs
-  it on every first-party module, and a third-party author runs it before
-  publishing.
+- **In the dashboard** (#496), Admin → Modules → a module shows its declared
+  permissions next to what it actually did: its connections, destinations,
+  refusals, and anything it attempted outside its declaration.
+- **From the command line** (#495), `kroma audit <module>` starts the module
+  alone, in the sandbox, behind a recording gateway, drives its routes and jobs,
+  and prints every connection and file access it attempted against what it
+  declared. CI runs it on every first-party module, and a third-party author runs
+  it before publishing.
 
 ## Testing that nothing leaks
 
@@ -145,20 +153,27 @@ and has it try every way out it can: TCP and UDP to the internet and the LAN,
 IPv6, ICMP, DNS straight to the configured resolver, the host's loopback ports
 (the core, the VPN bridge), abstract and pathname Unix sockets outside its own
 directory. Each attempt must fail and be recorded. The suite runs in CI wherever
-the runner offers namespaces, and the build says so when it does not.
+the runner offers namespaces, and the build says so when it does not. The
+namespace tier's suite is in review (#507); the other tiers are planned (#497).
 
 ## Status
 
 | Piece | State |
 |---|---|
-| Per-module module and port tokens, declared-only point resolution | in review |
-| Environment allowlist for sidecars | in review |
-| Host API refuses relayed traffic | in review |
-| Network namespace primitive | in review, not yet wired |
+| Per-module module and port tokens, declared-only point resolution | in review (#503) |
+| Environment allowlist for sidecars | in review (#503) |
+| Host API refuses relayed traffic | in review (#503) |
+| Network namespace primitive, not yet wired | in review (#507) |
 | `permissions` in the manifest | in review (#508) |
-| Consent screen, denial errors, enforcement of `permissions` | planned |
-| Strict tiers wired into the supervisor, Watch scanner | planned |
-| Filesystem and `run` enforcement | planned |
-| `kroma audit`, per-module network view | planned |
-| Leak test suite in CI | in review (namespace tier) |
-| WebAssembly components on every platform | planned |
+| Consent screen, denial errors, enforcement of `permissions` | planned (#487) |
+| Sidecars started in the sandbox, strict tier by uid | planned (#486, #489) |
+| Watch scanner | planned (#490) |
+| Module seam on Unix sockets | planned (#485) |
+| Filesystem and `run` enforcement | planned (#488) |
+| Per-module network view | planned (#496) |
+| `kroma audit` | planned (#495) |
+| Leak test suite in CI, namespace tier | in review (#507) |
+| Leak test suite in CI, the other tiers | planned (#497) |
+| WebAssembly component host, the spike | in review (#523) |
+| Modules as WebAssembly components on every platform | planned (#510, #511, #514) |
+| Only components from registries other than the official one | planned (#513) |

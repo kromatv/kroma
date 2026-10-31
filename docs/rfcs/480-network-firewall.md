@@ -1,10 +1,11 @@
 # RFC 480: one way out, a network firewall for the server and every module
 
-- Status: **DRAFT**
+- Status: **ACCEPTED**
 - PR: #480
 - Affects: `docs/spec/modules/` (MOD-1, MOD-47), `server/crates/kroma-http`, a new
-  `server/crates/kroma-egress`, `kroma-module-supervisor`, `kroma-module-runtime`,
-  `kroma-module-manifest` (manifest schema 3), `modules/tv.kroma.vpn`,
+  `server/crates/kroma-egress`, a new `server/crates/kroma-wasm-host`,
+  `kroma-module-supervisor`, `kroma-module-runtime`,
+  `kroma-module-manifest` (the `permissions` block), `modules/tv.kroma.vpn`,
   `modules/tv.kroma.torrents`, `modules/tv.kroma.indexer`, `modules/tv.kroma.torznab`,
   `modules/tv.kroma.remote`, Admin → Réseau in `clients/web`, `docker-compose.yml`,
   `docs/module-plugin-model.md` ("Trust, stated honestly"). Areas
@@ -14,11 +15,16 @@
 
 Every connection the server makes, or a module makes, leaves through one gateway in the
 core. The gateway knows who is calling and for what purpose. It resolves the name itself,
-applies the operator's rules (direct, through a VPN, or blocked) and writes one journal line
-per connection. On the platforms that allow it, the operating system enforces this: a module
-process has no route to the network except the gateway, so a third-party module cannot
-bypass it by opening its own socket. Where the platform cannot isolate a process, the server
-says so, watches module sockets and reports any connection that bypasses the gateway.
+applies the operator's rules and writes one journal line per connection. The rules pick the
+route: direct, a network a module provides (a VPN is one), or block.
+
+A module runs as a WebAssembly component inside the core. It cannot make a system call, so
+its only network is the import the host links into it, and every call on that import goes
+through the policy. That is the guarantee, and it holds the same on Linux, macOS, Windows,
+Docker and Synology. While native sidecars remain, the operating system adds a second layer
+where it can: a sidecar has no route to the network except the gateway. Where the platform
+cannot isolate a process, the server says so, watches module sockets and reports any
+connection that bypasses the gateway.
 
 ## Motivation
 
@@ -195,13 +201,14 @@ ports and routes, and never what a torrent or an indexer is.
   redirect opens a new connection, so the rules apply again at every hop.
 - The caller's identity comes from the socket, never from what the caller claims. See
   "Enforcement" for how.
-- The purpose travels as the SOCKS5 username, for example `peers`, `indexers` or
-  `catalog-sync`. It must be a purpose the caller declared. An undeclared purpose is
+- The purpose travels as the SOCKS5 username, for example `peers`, `indexer` or
+  `indexer-definitions`. It must be a purpose the caller declared. An undeclared purpose is
   refused.
-- One journal line per connection: time, caller, purpose, protocol, hostname, address,
-  port, route, the rule that decided, bytes in each direction, duration and error. Query
-  strings, URL paths and userinfo are never recorded, because that is where passkeys and
-  API keys live.
+- One journal line per connection, naming the caller, purpose, host, port, route and the
+  rule that decided. Query strings, URL paths and userinfo are never recorded, because that
+  is where passkeys and API keys live. What a line holds, how long it is kept and who may
+  read it are stated once, in
+  [networking](../networking.md#what-is-recorded-and-what-never-is).
 
 `kroma_http::Fetch` keeps its API. Its executors send through the gateway, and `.socks5()`
 goes away: a call names its purpose instead of picking its route. The core's own
@@ -215,17 +222,22 @@ default.
 
 The guards cannot be relaxed by a rule, only by a declaration the operator accepted:
 
-- No loopback destination. The gateway itself is the only way to reach the core or another
-  module (see "East-west").
+- A module never reaches this server's own listeners on this machine: its HTTP and HTTPS
+  ports and the VPN bridge. It reaches the core and the other modules through the host API
+  (see "East-west"). A download client or FlareSolverr on another local port stays
+  reachable.
 - No link-local destination (`169.254.0.0/16`, `fe80::/10`), and with it no cloud metadata
   address.
 - LAN destinations (the existing `localNetworks` setting, plus RFC 1918, `fc00::/7` and
-  `100.64.0.0/10`) only for a purpose declared `lan`. This closes finding 6 without a
+  `100.64.0.0/10`) only for a purpose whose `net.connect` entry covers them: `lan`, or a
+  `setting:<key>` the operator pointed at a LAN host. This closes finding 6 without a
   special case for Web Push.
 
-A rule matches on any of caller (core or a module id), purpose, destination (an exact host,
-a `*.` suffix, a CIDR, or `public` or `lan`), port range and protocol. Its action is
-`direct`, `route:<name>` or `block`.
+A rule matches on any of caller (`core` or a module id), purpose and host (exact, or
+`*.example.org` for the domain and its subdomains), and later on a CIDR, `public` or `lan`,
+a port range and the protocol. Its action is the route: `direct`, the name of a network, or
+`block`. Until the `network` point lands the one network is `vpn`, so a rule #516 stores
+says `direct`, `vpn` or `block`.
 
 The default is `block` for modules under strict enforcement and `allow and flag` otherwise.
 A flagged connection appears under "À examiner" in Admin → Réseau, with "Autoriser" and
@@ -237,22 +249,22 @@ intent and fixes its leaks. "Tout par le VPN" routes everything except LAN purpo
 
 ### Routes
 
-`direct` and `block` are built in. Every other route is contributed. The core calls a new
-bare point, `route`, alongside `acquisition`, `transcriber` and `embedder`. A module that
-answers it describes a route: its name, how to dial it (a SOCKS5 upstream first), whether
-it carries UDP, and its health with the exit address.
+A **route** is the decision for one connection: `direct`, a named network, or `block`. A
+**network** is a named way out that a module provides, and a VPN is one. `direct` and
+`block` are built in. Every network is contributed (see "Networks and middleware").
 
-`tv.kroma.vpn` stops answering `tv.kroma.vpn/proxy` and answers `route` instead. Consumers
-stop resolving the proxy. They declare purposes, and the operator's rules decide.
+The first step has one network. A rule whose action is `vpn` resolves the VPN module's
+`tv.kroma.vpn/proxy` point and sends the call through the bridge it answers (#516).
+Consumers stop resolving the proxy. They declare purposes, and the operator's rules decide.
 
-A route never falls back to `direct`. If it is unhealthy, its connections are refused at
-once and the journal says why. This replaces the two-probe kill switch and its default-off
-setting. A purpose that needs UDP on a route that does not carry it is refused, and the
-page says so ("Le VPN ne transporte pas l'UDP : DHT désactivé"). The torrents module then
-runs without DHT behind the VPN, which is correct until Phase 4.
+A route to a network never falls back to `direct`. If the network is down, every
+connection sent to it is refused at once and the journal says why. This replaces the
+two-probe kill switch and its default-off setting. A purpose that needs UDP on a network that does not carry it is
+refused, and the page says so ("Le VPN ne transporte pas l'UDP : DHT désactivé"). The
+torrents module then runs without DHT behind the VPN, which is correct until Phase 4.
 
-The gateway is the only client of a route's upstream. wireproxy gets a SOCKS username and
-password, or a Unix socket, which closes finding 12.
+The gateway is the only client of a network's endpoint. wireproxy gets a SOCKS username and
+password (#503), or a Unix socket, which closes finding 12.
 
 ### Enforcement
 
@@ -309,9 +321,9 @@ module is a WebAssembly component (WASI 0.2), run by wasmtime inside the core.**
   clocks and processes do not exist unless the host provides them. There is
   nothing to escape through, on any platform.
 - **Permissions are the linker.** `net` links a KROMA network import whose every
-  call goes through the policy and the gateway. HTTP and stream dial and listen
-  go to direct, a network or blocked, and are journaled. `fs` preopens the
-  declared roots only, read-only where declared. `env` passes the declared
+  call goes through the policy and the gateway. Each HTTP call, dial and listen
+  takes a route and is journaled. `fs` preopens the declared roots only,
+  read-only where declared. `env` passes the declared
   variables only. `run` does not exist: what a module used to start (ffmpeg, an
   inference runtime) becomes a host capability with fixed operations
   (`wasi-nn` for the Whisper and embedding models).
@@ -339,10 +351,12 @@ native module:
 The VPN, mDNS, Roku and remote modules keep their configuration and their pages,
 as components.
 
-Until the move is complete, a native sidecar is accepted from the official
-registry only, labelled native in the admin, and contained by the OS tier
-where one exists, as a second layer. **A module from any other registry must be
-a component.**
+**A module from any registry other than the official one must be a
+component.** That is the target, and #513 makes the install refuse a native
+bundle from anywhere else. Until #513 lands, a third-party native sidecar runs
+under the strongest OS tier the platform offers, and the install screen says
+which. A native sidecar from the official registry is labelled native in the
+admin and contained the same way, as a second layer, until it moves.
 
 ### East-west
 
@@ -352,47 +366,55 @@ so a `unix:` transport is a new `Transport`, not a new seam.
 - Each sidecar serves on `<data>/run/modules/<id>.sock`, created by the supervisor before
   the spawn. This closes finding 5: there is no port left to steal.
 - `/api/_host/*` moves to `<data>/run/host.sock` and leaves the TCP listener, which closes
-  finding 7.
-- The shared `KROMA_HOST_TOKEN` stops being handed to modules. A module calls a peer through
-  the core, which checks the caller's `consumes` against the callee's `contributes` and
-  `definesPoints`. The callee only accepts the core. This closes finding 4, and gives
-  internal module-to-module traffic the same journal as everything else.
-- The supervisor builds each sidecar's environment from an allowlist (`env_clear`, then
-  the `KROMA_MODULE_*` variables), which closes finding 10.
+  finding 7. Until then it refuses any request carrying a forwarding header, which a tunnel
+  or a same-host reverse proxy adds and no sidecar sends (#503).
+- Each module gets a port token of its own as `KROMA_HOST_TOKEN`, the token its routes
+  accept, and the core's fabric token is no longer handed to any module (#503). The core
+  hands a provider's port token only to a module whose manifest consumes the point that
+  provider answers, or defines it, and writes any other ask on the caller's log
+  (`Supervisor::contributions_for`). This closes finding 4.
+- A peer call still goes straight to the callee. Brokering it through the core, so that
+  module-to-module traffic gets the same journal as everything else, comes in Phase 3.
+- The supervisor starts each sidecar from an allowlist of variables, plus the names
+  `KROMA_MODULE_ENV` lists, so `KROMA_TMDB_API_KEY` and the rest of the server's own
+  environment no longer reach modules (#503). This closes finding 10.
 
 ### Declarations
 
-Manifest schema 3 adds a `permissions` block in the spirit of Deno's flags:
-`net`, `fs`, `run` and `env`, beside the `storage`, `settings` and point
-declarations that already exist. What is not declared is denied. The full
-model, and which tier enforces which permission, is in
-[module security](../module-security.md). The network part is what follows. A
-module that omits it gets no network at all.
+The manifest gains a `permissions` block in the spirit of Deno's flags (#508). It is an
+optional field of manifest schema 2, so no schema bump is needed. It declares `net.connect`,
+`net.listen`, `net.host`, `fs.read`, `fs.write`, `run` and `env`, beside the `storage`,
+`settings` and point declarations that already exist. What is not declared is denied. The
+full model, and which tier enforces which permission, is in
+[module security](../module-security.md). The network part is what follows. A module whose
+block declares no `net` gets no network at all.
 
 ```json
-"network": {
-  "egress": [
-    { "purpose": "indexers", "to": "setting:indexerUrls", "ports": [80, 443] },
-    { "purpose": "flaresolverr", "to": "setting:acqFlaresolverrUrl", "lan": true },
-    { "purpose": "peers", "to": "public", "proto": ["tcp", "udp"], "route": "vpn" },
-    { "purpose": "download-client", "to": "lan", "ports": "any" }
-  ],
-  "listen": [
-    { "purpose": "peers", "proto": ["tcp"], "port": "setting:rqbitPort", "route": "vpn" }
-  ],
-  "hostNetwork": false
+"permissions": {
+  "net": {
+    "connect": [
+      { "purpose": "indexer", "to": ["setting:indexerUrls"], "ports": [80, 443] },
+      { "purpose": "flaresolverr", "to": ["setting:acqFlaresolverrUrl"] },
+      { "purpose": "peers", "to": ["public"], "proto": ["tcp", "udp"] },
+      { "purpose": "download-client", "to": ["lan"] }
+    ],
+    "listen": [{ "purpose": "peers", "proto": ["tcp"], "port": "setting:rqbitPort" }],
+    "host": false
+  }
 }
 ```
 
-- `to` is a hostname pattern, `public`, `lan`, or `setting:<key>`. The last form makes the
-  operator's own configuration the allowlist. A torznab module may reach the Jackett URL the
-  operator typed, and nothing else.
-- `route` is a default the operator can override. It is not a promise.
-- `listen` replaces binding host interfaces. The gateway owns the listening socket on the
-  host side, or on the route when the route supports port forwarding. It hands accepted
-  connections to the module and journals the peer address. This closes the `[::]` half of
-  finding 1.
-- `hostNetwork: true` exempts a module from containment. LAN multicast needs it today:
+- `to` lists destinations: `public`, `lan`, a host (`*.` for a domain and its subdomains),
+  or `setting:<key>`. The last form makes the operator's own configuration the allowlist. A
+  torznab module may reach the Jackett URL the operator typed, and nothing else. No `ports`
+  means any port, and no `proto` means TCP.
+- A declaration names no route. Which way a purpose goes is the operator's rules, never the
+  module's.
+- `net.listen` replaces binding host interfaces. The gateway owns the listening socket on
+  the host side, or on the network when the network supports port forwarding. It hands
+  accepted connections to the module and journals the peer address. This closes the `[::]`
+  half of finding 1.
+- `net.host: true` exempts a native sidecar from containment. LAN multicast needs it today:
   `tv.kroma.mdns`, the SSDP half of `tv.kroma.roku`, and LSD. The install screen shows it in
   red, and by default only the official registry may ship it.
 
@@ -400,20 +422,20 @@ The core keeps the same table for its own flows (`metadata`, `artwork`, `themes`
 `push`, `mail`, `stats`, `updates`, `registry`), so the core and modules are listed and
 steered the same way.
 
-The install and update screens list a module's purposes and destinations in French before
-consent. An update that widens them asks again.
+With #487, the install and update screens list a module's purposes and destinations in
+French before consent, and an update that widens them asks again. Neither screen exists yet.
 
 ### Networks and middleware
 
 A VPN is one kind of **network**, a named way out that a module provides. A
-module answers the core-called point `network` with the networks it runs (a name,
-a SOCKS5 endpoint only the gateway can use, whether it carries UDP and DNS, its
-health). Rules name a network as their action, several networks can run at once,
-and a network can leave through another one by a rule on its own traffic. This
-replaces `tv.kroma.vpn/proxy` and lets an operator send the torrent engine
-through one country and the indexers through another.
+module answers the core-called point `network` (#491) with the networks it runs
+(a name, a SOCKS5 endpoint only the gateway can use, whether it carries UDP and
+DNS, its health). Rules name a network as their action, several networks can run
+at once, and a network can leave through another one by a rule on its own
+traffic. This replaces `tv.kroma.vpn/proxy` and lets an operator send the
+torrent engine through one country and the indexers through another.
 
-A module can also be **middleware** on the decision path, answering
+A module can also be **middleware** on the decision path (#493), answering
 `network-policy/decide` after the guards and the rules. It can block a connection
 or move it to another network, never relax a decision, within 200 ms, seeing only
 caller, purpose, host and port. The contract for both points is in
@@ -423,10 +445,10 @@ caller, purpose, host and port. The contract for both points is in
 
 Every module can be analysed without the rest of the server. Its page under Admin
 → Modules sets its declared permissions next to what the journal saw it do,
-refusals and undeclared attempts included. `kroma audit <module>` starts it alone
-in the sandbox behind a recording gateway and reports every connection and file
-access it attempted against its declaration. CI runs it on every first-party
-module.
+refusals and undeclared attempts included (planned, #496). `kroma audit <module>`
+starts it alone in the sandbox behind a recording gateway and reports every
+connection and file access it attempted against its declaration. CI runs it on
+every first-party module (planned, #495).
 
 ### Testing for leaks
 
@@ -434,22 +456,23 @@ A leak suite starts a process in each tier and makes it try every way out: TCP
 and UDP to the internet and the LAN, IPv6, ICMP, DNS to the configured resolver,
 the host's loopback ports, abstract and pathname Unix sockets outside its own
 directory. Each attempt must fail and be recorded. It runs in CI wherever the
-runner offers namespaces, and says so where it does not.
+runner offers namespaces, and says so where it does not. The namespace tier's
+suite is in review in #507, and the other tiers are planned in #497.
 
 ### What the operator sees
 
 Admin → Réseau gains four tabs, next to today's settings:
 
 - **Connexions.** The live journal: qui, pour quoi, vers, par, verdict, volume. It can be
-  filtered by module, purpose and verdict. The page needs its own admin permission, because
-  hostnames reveal what the household downloads.
+  filtered by module, purpose and verdict. Hostnames reveal what the household downloads,
+  so the page is gated on an admin permission.
 - **Règles.** One row per purpose, with Direct, VPN or Bloqué, and the presets.
 - **À examiner.** Connections refused or flagged, with one click to allow or block.
-- **Protection.** The enforcement tier, the listening sockets with their exposure, the routes
-  with their health and exit address.
+- **Protection.** The enforcement tier, the listening sockets with their exposure, the
+  networks with their health and exit address.
 
-The journal keeps rows for 7 days and daily aggregates per caller, purpose, host and route
-for 30. `database_tidy` prunes it, as it prunes `notification_deliveries`.
+How long the journal keeps what, and which permission reads it, is in
+[networking](../networking.md#what-is-recorded-and-what-never-is).
 
 ### Phases
 
@@ -468,35 +491,39 @@ for 30. `database_tidy` prunes it, as it prunes `notification_deliveries`.
 - `env_clear` for sidecars, `-q` for curl, `https` or opt-in for theme songs
 - SOCKS credentials on wireproxy, `-protocol_whitelist` on ffmpeg
 
-**Phase 1, observe.** `kroma-egress` with the journal only. Every first-party flow goes
-through it, the SDK points modules at it, and nothing is blocked. Admin → Réseau →
-Connexions ships. This alone answers "what does my server talk to".
+**Phase 1, observe.** `kroma-egress` with the journal only (#482, #484). Every first-party
+flow goes through it, the SDK points modules at it, and nothing is blocked. Admin → Réseau →
+Connexions ships (#483). This alone answers "what does my server talk to".
 
-**Phase 2, steer.** Rules, presets and the `route` point. The VPN becomes a route.
-Modules stop choosing their proxy.
+**Phase 2, steer.** Rules and presets, with `vpn` as the one network (#516). Modules stop
+choosing their proxy.
 
-**Phase 3, contain.** Unix sockets for the module seam, the two strict tiers, the Watch
-scanner, manifest schema 3, the consent screen, and core-brokered module calls.
+**Phase 3, contain.** Unix sockets for the module seam (#485), the two strict tiers (#486,
+#489), the Watch scanner (#490), and core-brokered module calls.
 
-**Phase 3b, permissions and audit.** The `permissions` block and its consent
-screen, filesystem and `run` enforcement in the namespace tier, `kroma audit`,
-the per-module view, and the leak suite in CI.
+**Phase 3b, permissions and audit.** The `permissions` block (#508) and its consent
+screen (#487), filesystem and `run` enforcement in the namespace tier (#488), `kroma
+audit` (#495), the per-module view (#496), and the leak suite in CI (#497).
 
 **Phase 3c, networks and middleware.** The `network` and `network-policy`
-points, several networks at once, and the VPN module moved onto `network`.
+points, several networks at once, and the VPN module moved onto `network` (#491,
+#492, #493).
 
 **Phase 3d, WebAssembly components.** In order:
 
-1. A wasmtime host with a minimal WIT world, tested on Linux, macOS and Windows runners.
-2. The full host API as WIT, behind the same SDK traits, so a module's code does not change.
-3. The HTTP-only modules move first.
-4. The userspace WireGuard network and the discovery capability.
-5. The torrent engine, last, behind its benchmark.
-6. Third-party modules are accepted as components only.
+1. A wasmtime host with a minimal WIT world, tested on Linux, macOS and Windows runners
+   (#509, in review in #523).
+2. The full host API as WIT, behind the same SDK traits, so a module's code does not
+   change (#510).
+3. The HTTP-only modules move first (#511).
+4. The userspace WireGuard network (#512) and the discovery capability.
+5. The torrent engine, last, behind its benchmark (#514).
+6. A module from any registry other than the official one is accepted as a component
+   only (#513).
 
-**Phase 4, UDP and inbound on a route.** A route that carries UDP, either a userspace
-WireGuard inside the gateway or a wireproxy replacement, so DHT and uTP can run sealed.
-Inbound peers through the provider's port forwarding.
+**Phase 4, UDP and inbound on a network.** A network that carries UDP, either a userspace
+WireGuard inside the gateway (#512) or a wireproxy replacement, so DHT and uTP can run
+sealed (#494). Inbound peers through the provider's port forwarding.
 
 ## What this costs
 
@@ -504,30 +531,41 @@ Inbound peers through the provider's port forwarding.
   local relay. On Linux `splice` keeps the copy in the kernel, but throughput on a small NAS
   has to be measured before Phase 2 ships. The SOCKS parser faces hostile modules, so it
   needs fuzzing from its first commit.
-- **A breaking change for every module.** Unix sockets, schema 3 and the loss of the shared
-  host token mean a new `engines.server` floor and a rebuild of every first-party module.
-  Third-party modules built against schema 2 run in Watch only, with a banner, until they
-  are rebuilt.
+- **Every module moves to WebAssembly.** The guarantee is the component host: wasmtime in
+  the core, the whole host API as WIT, and every module rebuilt as a component. What a
+  module used to start natively (ffmpeg, inference, WireGuard, LAN discovery) becomes a
+  host capability the core maintains. The torrent engine moves last, behind a throughput
+  benchmark it must pass. Until the last native sidecar is gone, the OS tiers below stay as
+  a second layer, so the project carries two containment models at once.
+- **A breaking change for every module.** Unix sockets, the `permissions` block and the
+  loss of the shared host token mean a new `engines.server` floor and a rebuild of every
+  first-party module. A third-party module that predates the `permissions` block declares
+  nothing, so a strict tier denies it the network until it is rebuilt, and the admin shows
+  a banner meanwhile.
 - **An extra capability in Docker.** `cap_add: [NET_ADMIN]` goes into `docker-compose.yml`
   and `INSTALL.md`. Operators who leave it out stay in Watch.
-- **Synology stays in Watch.** The package runs as its own unprivileged user and the
-  kernel may not offer user namespaces. Synology operators who want the strict tier run
-  the Docker image under Container Manager.
+- **Synology stays in Watch for native sidecars.** The package runs as its own unprivileged
+  user and the kernel may not offer user namespaces. Synology operators who want the strict
+  tier run the Docker image under Container Manager.
 - **A per-module uid owns its files.** `<data>/modules/<id>` changes owner on the first
   boot under the new tier, and a module can no longer read another module's data.
-- **The journal is sensitive data.** It needs its own permission, short retention and no
-  URL paths.
+- **The journal is sensitive data.** It records no URL paths, keeps single connections in
+  memory only and is gated on an admin permission. The exact retention and permission are
+  in [networking](../networking.md#what-is-recorded-and-what-never-is).
 
 ## Compatibility
 
 - Paired devices and older clients: nothing changes on the wire to clients.
-- Installed modules: schema 2 modules keep working in Watch. They lose direct
-  module-to-module calls in Phase 3, when the shared host token stops being issued. Every
-  first-party module moves in the same release.
+- Installed modules: the shared host token is no longer issued (#503). A module reaches a
+  peer only through a point its manifest consumes or defines, and a module built before
+  per-module module tokens can no longer call the core back. A third-party module that
+  predates the `permissions` block runs under the strongest tier the platform offers, like
+  every third-party native sidecar, and is denied what it did not declare. Every first-party
+  module moves in the same release.
 - Operators who route the whole container through a VPN container today (`network_mode:
   service:gluetun`) keep working. The gateway sees that VPN as `direct`.
-- `vpnKillSwitch`, `acqIndexersUseVpn` and `vpnCheckUrl` migrate to rules and a route health
-  check in Phase 2, then disappear.
+- `vpnKillSwitch`, `acqIndexersUseVpn` and `vpnCheckUrl` migrate to rules and a network
+  health check in Phase 2, then disappear.
 
 ## Alternatives
 
@@ -562,13 +600,15 @@ Inbound peers through the provider's port forwarding.
   database file itself today. Either the file becomes group-readable for granted modules,
   which weakens the tier, or granted access moves behind the host API. The module host
   maintainers decide this before Phase 3.
-- **LAN multicast.** `hostNetwork` is the first answer. A discovery broker in the core,
+- **LAN multicast.** `net.host` is the first answer. A discovery broker in the core,
   which sends SSDP searches and registers mDNS records on a module's behalf, would remove
   it for `tv.kroma.roku` and `tv.kroma.mdns`. Not designed yet.
 - **cloudflared under a strict tier.** It does not dial its edge through a SOCKS proxy as far
-  as this RFC's author knows. The remote module may need `hostNetwork`, or an nftables
+  as this RFC's author knows. The remote module may need `net.host`, or an nftables
   allowance limited to port 7844, until that is checked.
-- **Who may edit rules.** A new admin permission, or the existing module-management
-  permission. This decision belongs to the accounts spec.
+- **Whether the journal and the rules get a permission of their own.** #516 gates both on
+  an existing admin permission (see
+  [networking](../networking.md#what-is-recorded-and-what-never-is)). A dedicated one is
+  for the accounts spec to decide.
 - **How each core feature degrades when its purpose is blocked.** Blocking `metadata` must
   show "métadonnées désactivées" and not leave enrichment retrying forever.

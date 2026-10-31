@@ -62,10 +62,10 @@ provides (a VPN, for example), or `block`.
   relays the bytes, and reports the connection when it closes.
 - **The policy** (`services/network` in the engine) holds the operator's rules
   and the guards no rule can relax.
-- **The journal** keeps the last 5,000 connections in memory and a daily
-  aggregate in SQLite for 30 days.
-- **The sandbox** starts a module with no network of its own, so the gateway is
-  the only way out. See [module security](module-security.md).
+- **The journal** records every connection. See
+  [what is recorded](#what-is-recorded-and-what-never-is).
+- **The sandbox** (planned, #486) starts a module with no network of its own, so
+  the gateway is the only way out. See [module security](module-security.md).
 
 ## Deciding a connection
 
@@ -85,8 +85,9 @@ The policy evaluates, in order:
      resolves to direct.
 2. **Rules**, first match wins. A rule matches on any of: caller, purpose, host
    (exact, or `*.example.org` for the domain and its subdomains), and, as the
-   network work lands, address range and port. Its action is `direct`, a network
-   name, or `block`.
+   network work lands, address range and port. Its action is the route:
+   `direct`, a network's name, or `block`. Until the `network` point lands the
+   one network is `vpn`, so a rule's action is `direct`, `vpn` or `block`.
 3. **The default action**: `allow` (direct) or `block`.
 
 Then, depending on the decision:
@@ -127,6 +128,8 @@ A **network** is a way out that a module provides: a VPN tunnel, Tor, a
 corporate proxy, a second VPN in another country. The core does not know what a
 network is made of. It knows a name, how to dial it, and whether it is up.
 
+The `network` point is planned (#491, #492). Once it lands:
+
 - A module provides networks by answering the core-called point `network`. For
   each network it describes a name, a SOCKS5 endpoint the gateway dials (a Unix
   socket, or a loopback port with credentials), whether it carries UDP, and its
@@ -138,20 +141,32 @@ network is made of. It knows a name, how to dial it, and whether it is up.
 - A network can carry another one: a Tor module can dial its entry nodes through
   the VPN network. That is a rule on the Tor module's own traffic, nothing more.
 
-Today the VPN module answers `tv.kroma.vpn/proxy` with its bridge URL, and the
-torrent and indexer modules choose to use it. The `network` point replaces that:
-the module that consumes a network no longer picks it, the rules do. See
-[network modules](network-modules.md) for how to write one.
+Until then the one network is `vpn`. The VPN module answers
+`tv.kroma.vpn/proxy` with its bridge URL, the core resolves that point for a rule
+whose action is `vpn` (#516), and the torrent and indexer modules still resolve it
+themselves for the traffic that does not go through `Fetch`. The `network` point
+replaces `tv.kroma.vpn/proxy`: the module that consumes a network no longer picks
+it, the rules do. See [network modules](network-modules.md) for how to write one.
 
 ## What is recorded, and what never is
 
-A journal row holds: time, caller, purpose, method, host, port, route, the
-deciding rule, status, bytes in each direction, duration and error.
+A journal row holds: time, caller, purpose, method, host, port, route (`direct`,
+`vpn` or `blocked`), the deciding rule, status, bytes in each direction, duration
+and error.
 
 It never holds a URL path, a query string or credentials. That is where passkeys,
-API keys and search terms live. Host names are sensitive too, because they tell
-what a household downloads, so the journal and the rules need the
-`settings.manage` permission, and rows are kept 7 days.
+API keys and search terms live.
+
+Host names are sensitive too, because they tell what a household downloads. So
+the journal keeps two things, and neither for long:
+
+- **Single connections.** The last 5,000, in memory only. A restart clears them.
+- **Daily tallies.** One row per day, caller, purpose, host, route and verdict,
+  with a count and the bytes each way. They are written to the database every
+  30 seconds and kept 30 days. The database tidy job drops older days.
+
+Reading the journal and its tallies, and reading or writing the rules, needs the
+`settings.manage` permission. No permission is specific to the network pages.
 
 ## Enforcement
 
@@ -161,8 +176,9 @@ their own: their only network import is the policy itself. See
 [module security](module-security.md#how-each-permission-is-enforced).
 
 A native sidecar, while one remains, is a program that can open its own socket
-unless the operating system stops it. For those, the server picks the strongest
-tier the platform allows and shows it under Admin → Réseau:
+unless the operating system stops it. For those, the server is to pick the
+strongest tier the platform allows and show it under Admin → Réseau. None of
+the tiers is wired yet (#486, #489, #490):
 
 | Tier | Where | A module that ignores the gateway |
 |---|---|---|
@@ -200,13 +216,19 @@ configured but down. The trade-off is fewer peers until a network can carry UDP.
 | Torrent engine and indexers sealed behind the VPN, fail closed | in review (#501) |
 | VPN bridge requires credentials | in review (#503) |
 | Per-module tokens, declared-only module calls, environment allowlist | in review (#503) |
-| Egress gate, purposes, policy, journal, admin API | in review (#516) |
+| Egress gate, purposes, policy, rules with `direct`, `vpn` or `block`, journal, admin API | in review (#516) |
 | Admin → Réseau dashboard | in review (#517) |
-| `kroma-egress` gateway | in review, not yet wired (#507) |
-| Network namespace sandbox primitive and leak suite | in review, not yet wired (#507) |
-| Module seam on Unix sockets, sandbox wiring | planned |
-| `network` point and several networks | planned |
-| Network middleware | planned |
-| A network that carries UDP | planned |
+| `kroma-egress` gateway, not yet wired | in review (#507) |
+| Network namespace sandbox primitive and its leak suite, not yet wired | in review (#507) |
+| Gateway wired into the core for module traffic | planned (#484) |
+| Module seam on Unix sockets | planned (#485) |
+| Sidecars started in the sandbox | planned (#486) |
+| Strict tier by uid and nftables under Docker | planned (#489) |
+| Watch scanner | planned (#490) |
+| `network` point and several networks | planned (#491, #492) |
+| Network middleware | planned (#493) |
+| A network that carries UDP | planned (#512, #494) |
 | ffmpeg and ffprobe open local inputs only | in review (#515) |
-| Modules as WebAssembly components, the same isolation on every platform | planned (#509) |
+| WebAssembly component host, the spike | in review (#523) |
+| Modules as WebAssembly components, the same isolation on every platform | planned (#510, #511, #514) |
+| Only components from registries other than the official one | planned (#513) |

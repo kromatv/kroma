@@ -7,8 +7,9 @@ modules reached over points, like everything else (see
 [modules/README.md](../modules/README.md#calling-another-module)). How routing
 works is in [networking](networking.md).
 
-Both points are planned: this page is the contract they are being built to. The
-VPN module answers `tv.kroma.vpn/proxy` until `network` lands.
+Both points are planned, `network` in #491 and `network-policy` in #493: this
+page is the contract they are being built to. Until `network` lands the one
+network is `vpn`, which the VPN module answers on `tv.kroma.vpn/proxy`.
 
 ## Providing a network
 
@@ -65,8 +66,7 @@ rule for the Tor module's own traffic (`caller: "tv.kroma.tor"`, `action:
 
 Middleware sees every decision before it is applied. It is how a module adds
 behaviour the core does not have: a tracker blocklist, routing by the
-destination's country, a rule that sends one user's requests through a different
-network, an alert on a new destination.
+destination's country, an alert on a new destination.
 
 ```json
 "contributes": [{ "point": "network-policy" }]
@@ -86,17 +86,17 @@ order the operator set in Admin → Réseau.
   "purpose": "indexer",
   "host": "tracker.example.org",
   "port": 443,
-  "proto": "tcp",
-  "decision": { "action": "network", "network": "vpn-ch", "rule": "indexers" }
+  "decision": { "action": "vpn-ch", "rule": "indexers" }
 }
 ```
 
-It answers one of:
+`decision.action` is the route the guards and rules chose, spelled as a rule's
+action: `direct`, a network's name, or `block`. The middleware answers one of:
 
 ```json
 { "verdict": "keep" }
 { "verdict": "block", "reason": "on the blocklist" }
-{ "verdict": "route", "network": "vpn-se", "reason": "Swedish exit for Swedish trackers" }
+{ "verdict": "network", "network": "vpn-se", "reason": "Swedish exit for Swedish trackers" }
 ```
 
 The rules a middleware lives by:
@@ -108,8 +108,8 @@ The rules a middleware lives by:
 - **It is on the hot path**, so it has 200 ms. A middleware that does not answer
   in time is skipped and the skip is recorded. A middleware the operator marked as
   required blocks the connection instead, which is what a blocklist should do.
-- **It sees what the journal sees and nothing more**: caller, purpose, host, port.
-  Never a URL path, a query string or a credential.
+- **It sees caller, purpose, host and port**, plus the decision it may tighten.
+  Never a URL path, a query string, a credential or the account behind the call.
 - **Its answers are cached** for the same caller, purpose, host and port for a few
   seconds, so a burst of connections is one question.
 
@@ -126,5 +126,5 @@ anything from there.
 - Never log or forward a URL path, a query string or a credential you were given.
 - Fail closed: a network you cannot keep up says `up: false`, a check you cannot
   make answers `block` if you are required.
-- Run `kroma audit` on your module before you publish it, and read what it says
-  you attempted.
+- Once `kroma audit` ships (#495), run it on your module before you publish it,
+  and read what it says you attempted.
