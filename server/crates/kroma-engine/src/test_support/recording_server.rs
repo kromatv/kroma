@@ -25,6 +25,14 @@ pub(crate) struct RecordingServer {
 
 impl RecordingServer {
     pub(crate) fn replying(status: u16, body: &str) -> Self {
+        Self::serving(status, None, body)
+    }
+
+    pub(crate) fn redirecting_to(location: &str) -> Self {
+        Self::serving(307, Some(location.to_string()), "")
+    }
+
+    fn serving(status: u16, location: Option<String>, body: &str) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
         let port = listener.local_addr().unwrap().port();
         let seen = Arc::new(Mutex::new(Vec::new()));
@@ -38,7 +46,7 @@ impl RecordingServer {
                     continue;
                 };
                 log.lock().unwrap().push(request);
-                write_reply(&mut stream, status, &body);
+                write_reply(&mut stream, status, location.as_deref(), &body);
             }
         });
 
@@ -90,9 +98,10 @@ fn read_request(stream: &TcpStream) -> Option<RecordedRequest> {
     })
 }
 
-fn write_reply(stream: &mut TcpStream, status: u16, body: &str) {
+fn write_reply(stream: &mut TcpStream, status: u16, location: Option<&str>, body: &str) {
+    let location = location.map_or(String::new(), |to| format!("Location: {to}\r\n"));
     let head = format!(
-        "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 {status} X\r\n{location}Content-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
         body.len()
     );
     let _ = stream.write_all(head.as_bytes());

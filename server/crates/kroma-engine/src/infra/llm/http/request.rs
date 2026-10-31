@@ -27,7 +27,7 @@ pub(super) fn get_json(url: &str, headers: &[(&str, String)]) -> Result<Value> {
 
 fn fetch_with(headers: &[(&str, String)], max_time_secs: u32) -> Fetch {
     headers.iter().fold(
-        Fetch::new().max_time(max_time_secs),
+        Fetch::new().max_time(max_time_secs).no_redirects(),
         |fetch, (name, value)| fetch.header(name, value.as_str()),
     )
 }
@@ -98,6 +98,23 @@ mod tests {
         assert_eq!(sent[0].header("x-api-key"), Some("sk-live-1"));
         assert_eq!(sent[0].header("content-type"), Some("application/json"));
         assert_eq!(sent[0].body, r#"{"model":"m"}"#);
+    }
+
+    #[test]
+    fn a_redirect_is_answered_rather_than_followed_so_the_key_stays_with_the_provider() {
+        let elsewhere = RecordingServer::replying(200, r#"{"ok":true}"#);
+        let provider =
+            RecordingServer::redirecting_to(&format!("{}/v1/messages", elsewhere.base()));
+        let headers = [("x-api-key", "sk-live-1".to_string())];
+
+        let reply = post_json(
+            &format!("{}/v1/messages", provider.base()),
+            &headers,
+            &json!({ "model": "m" }),
+        );
+
+        assert!(reply.is_err());
+        assert!(elsewhere.requests().is_empty());
     }
 
     #[test]
