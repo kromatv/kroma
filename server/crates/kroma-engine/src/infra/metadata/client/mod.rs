@@ -1,5 +1,6 @@
 //! TMDB HTTP client: search for the best match, fetch its details + external
-//! IDs / credits / images via `curl`, and map the JSON into a [`Metadata`].
+//! IDs / credits / images through [`kroma_http::Fetch`], and map the JSON into
+//! a [`Metadata`].
 
 mod certification;
 mod details;
@@ -13,8 +14,11 @@ pub use seasons::{season_episodes, season_episodes_multi, EpisodeArt, SeasonData
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use serde::Deserialize;
+use kroma_http::Fetch;
+use serde::de::DeserializeOwned;
 use tracing::{debug, warn};
+
+const REQUEST_MAX_TIME_SECS: u32 = 10;
 
 pub(super) const API: &str = "https://api.themoviedb.org/3";
 
@@ -122,7 +126,7 @@ pub fn curl_available() -> bool {
 // enrichment pass.
 static FAILURE_WARNED: AtomicBool = AtomicBool::new(false);
 
-fn note_curl_failure(reason: &str, detail: &str) {
+fn note_failure(reason: &str, detail: &str) {
     let detail = detail.trim();
     if FAILURE_WARNED.swap(true, Ordering::Relaxed) {
         debug!(reason, detail, "TMDB request failed");
@@ -136,49 +140,30 @@ fn note_curl_failure(reason: &str, detail: &str) {
     }
 }
 
-/// GET `url` with URL-encoded query params via `curl`, parsed as JSON `T`.
-/// `Err(())` on any transport/HTTP-status/parse failure so the caller never
-/// caches a transient failure as a permanent miss. `-S` keeps curl's error
-/// message on stderr even under `-s`; curl exit 22 = HTTP >= 400 (e.g. 401 bad
-/// key), 28 = timeout, 6/7 = DNS/connect.
-pub(super) fn curl_json<T: for<'de> Deserialize<'de>>(
+/// GET `url` with `params` as the query, parsed as JSON `T`. `Err(())` on any
+/// failure, so a transient one is never cached as a miss.
+pub(super) fn tmdb_json<T: DeserializeOwned>(
     url: &str,
     api_key: &str,
     params: &[(&str, String)],
 ) -> Result<T, ()> {
-    let mut cmd = Command::new("curl");
-    cmd.args(["-s", "-S", "-f", "-G", "--max-time", "10"]);
-    // TMDB accepts a v3 key as the `api_key` query param, or a v4 read token
-    // (a JWT: header.payload.signature) as a Bearer header. Pick by shape.
-    if is_bearer_token(api_key) {
-        cmd.arg("-H")
-            .arg(format!("Authorization: Bearer {api_key}"));
+    let mut request = Fetch::new().max_time(REQUEST_MAX_TIME_SECS);
+    request = if is_bearer_token(api_key) {
+        request.header("Authorization", format!("Bearer {api_key}"))
     } else {
-        cmd.arg("--data-urlencode")
-            .arg(format!("api_key={api_key}"));
-    }
-    for (k, v) in params {
-        cmd.arg("--data-urlencode").arg(format!("{k}={v}"));
-    }
-    cmd.arg("--").arg(url);
-    let out = match cmd.output() {
-        Ok(out) => out,
-        Err(e) => {
-            note_curl_failure("spawn", &e.to_string());
-            return Err(());
-        }
+        request.query("api_key", api_key)
     };
-    if !out.status.success() {
-        let code = out.status.code().unwrap_or(-1);
-        note_curl_failure(
-            &format!("curl_exit_{code}"),
-            &String::from_utf8_lossy(&out.stderr),
-        );
-        return Err(());
+    for (name, value) in params {
+        request = request.query(name, value.as_str());
     }
-    serde_json::from_slice(&out.stdout).map_err(|e| {
-        note_curl_failure("parse", &e.to_string());
-    })
+    let response = request
+        .get(url)
+        .map_err(|e| note_failure("transport", &format!("{e:#}")))?
+        .ensure_ok()
+        .map_err(|e| note_failure("http_status", &e.to_string()))?;
+    response
+        .json()
+        .map_err(|e| note_failure("parse", &e.to_string()))
 }
 
 // A TMDB v4 read token is a JWT (`header.payload.signature`); v3 keys are
@@ -186,3 +171,6 @@ pub(super) fn curl_json<T: for<'de> Deserialize<'de>>(
 fn is_bearer_token(key: &str) -> bool {
     key.split('.').count() == 3
 }
+
+#[cfg(test)]
+mod tests;

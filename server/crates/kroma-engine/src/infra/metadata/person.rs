@@ -18,7 +18,7 @@ use serde::Deserialize;
 
 use kroma_domain::PersonDetail;
 
-use super::client::{api, curl_json, IMG};
+use super::client::{api, tmdb_json, IMG};
 
 /// A single TMDB credit for the filmography fallback.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -131,7 +131,7 @@ fn resolve_credits(
         return Vec::new();
     };
     let params = [("language", language.to_string())];
-    let Ok(raw) = curl_json::<CombinedCredits>(
+    let Ok(raw) = tmdb_json::<CombinedCredits>(
         &format!("{}/person/{id}/combined_credits", api()),
         api_key,
         &params,
@@ -217,7 +217,7 @@ fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
         ("query", name.to_string()),
         ("include_adult", "false".to_string()),
     ];
-    let page: SearchResp = curl_json(&format!("{}/search/person", api()), api_key, &params).ok()?;
+    let page: SearchResp = tmdb_json(&format!("{}/search/person", api()), api_key, &params).ok()?;
     let exact = page
         .results
         .iter()
@@ -229,7 +229,7 @@ fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
 // `None` here rather than at every call site.
 fn profile(api_key: &str, language: &str, id: u64) -> Option<PersonDetail> {
     let params = [("language", language.to_string())];
-    let raw: RawPerson = curl_json(&format!("{}/person/{id}", api()), api_key, &params).ok()?;
+    let raw: RawPerson = tmdb_json(&format!("{}/person/{id}", api()), api_key, &params).ok()?;
     Some(PersonDetail {
         tmdb_id: raw.id,
         name: raw.name,
