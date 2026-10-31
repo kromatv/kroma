@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use kroma_media::input;
+
 use crate::services::markers::video::{HEIGHT, WIDTH};
 
 const EVERY_FRAME_A_KEYFRAME: [&str; 2] = ["-g", "1"];
@@ -8,7 +10,7 @@ const EVERY_FRAME_A_KEYFRAME: [&str; 2] = ["-g", "1"];
 fn render(at: &Path, source: &str) -> PathBuf {
     let status = Command::new("ffmpeg")
         .args(["-v", "error", "-nostdin", "-y"])
-        .args(["-f", "lavfi", "-i", source])
+        .args(input::generated(source))
         .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
         .args(EVERY_FRAME_A_KEYFRAME)
         .arg(at)
