@@ -5,6 +5,7 @@ import { createWebRuntime } from '#web/shared/lib/api';
 
 export function getRouter() {
   const runtime = createWebRuntime();
+  void runtime.ensureSession();
   return createTanStackRouter({
     routeTree,
     scrollRestoration: true,
