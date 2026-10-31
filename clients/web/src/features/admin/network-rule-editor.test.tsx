@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { KromaApiError } from '@kromatv/client';
+import type { RulesUpdate } from '@kromatv/client/network';
 import { ConfirmHost, KitProvider } from '@kromatv/ui/kit';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -50,7 +51,7 @@ const press = (name: string) => {
   fireEvent.click(screen.getByRole('button', { name }));
 };
 
-const ids = (call: unknown) => (call as { rules: { id: string }[] }).rules.map((rule) => rule.id);
+const ids = (update: RulesUpdate) => update.rules.map((rule) => rule.id);
 
 async function mount(onDirtyChange = vi.fn()) {
   render(<RuleEditor onDirtyChange={onDirtyChange} />, { wrapper: Providers });
