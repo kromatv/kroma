@@ -34,3 +34,4 @@ export {
   Storage,
   speaksCurrentSchema,
 } from './v2.ts';
+export { Permissions } from './permissions.ts';
