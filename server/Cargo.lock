@@ -2095,6 +2095,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-egress"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kroma-http",
+ "kroma-sandbox",
+ "kroma-testing",
+ "tokio",
+]
+
+[[package]]
 name = "kroma-engine"
 version = "0.1.0"
 dependencies = [
@@ -2330,6 +2341,14 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "kroma-sandbox"
+version = "0.1.0"
+dependencies = [
+ "kroma-testing",
+ "libc",
 ]
 
 [[package]]

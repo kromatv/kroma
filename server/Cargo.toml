@@ -143,6 +143,8 @@ kroma-i18n = { path = "crates/kroma-i18n" }
 kroma-media = { path = "crates/kroma-media" }
 kroma-db = { path = "crates/kroma-db" }
 kroma-http = { path = "crates/kroma-http" }
+kroma-sandbox = { path = "crates/kroma-sandbox" }
+kroma-egress = { path = "crates/kroma-egress" }
 kroma-module-host = { path = "crates/kroma-module-host" }
 # The server-side module kernel: the compile-time composition root (registers
 # every module's manifest + collects their ServerModule behaviors).
