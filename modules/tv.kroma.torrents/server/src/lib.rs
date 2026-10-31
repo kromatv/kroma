@@ -23,6 +23,8 @@ mod rqbit;
 mod rqbit;
 #[cfg(feature = "rqbit")]
 mod rqbit_session;
+#[cfg(test)]
+pub(crate) mod test_support;
 pub mod torrent_file;
 pub(crate) mod zero_as_none;
 

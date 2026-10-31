@@ -21,6 +21,7 @@ pub struct IndexerEndpoint {
     pub url: String,
     pub api_key: String,
     pub categories: Vec<u32>,
+    pub proxy: Option<String>,
 }
 
 /// One search request. Externally tagged, so the variant name is part of the
