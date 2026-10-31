@@ -16,8 +16,8 @@ pub(super) fn proxy_lines(proxy: &str) -> String {
     // dual-stack host can otherwise resolve to an AAAA the tunnel can't route.
     let mut lines = String::from("ipv4\n");
     lines.push_str(&option_line("socks5-hostname", proxy));
-    // An empty list overrides `NO_PROXY`, which would otherwise send every host
-    // it names around the tunnel, direct.
+    // An empty list overrides `NO_PROXY`, which would send its hosts around the
+    // tunnel.
     lines.push_str(&option_line("noproxy", ""));
     lines
 }

@@ -68,10 +68,9 @@ impl Fetch {
     }
 
     /// Route this request through a SOCKS5 proxy (`host:port`, or a URL such as
-    /// `socks5://user:pass@host:port`). The proxy always resolves the name: any
-    /// scheme is dropped, because curl reads `socks5://` as "resolve locally"
-    /// even under `--socks5-hostname`, which would leak every hostname to the
-    /// local resolver. A proxy the gate names replaces this one.
+    /// `socks5://user:pass@host:port`). Any scheme is dropped so the proxy always
+    /// resolves the name: curl reads `socks5://` as "resolve locally" even under
+    /// `--socks5-hostname`. A proxy the gate names replaces this one.
     pub fn socks5(mut self, proxy: impl Into<String>) -> Self {
         self.socks5 = render::bare_proxy(&proxy.into());
         self
@@ -89,10 +88,9 @@ impl Fetch {
         self
     }
 
-    /// Refuse the request unless its host is, and resolves only to, public
-    /// internet addresses, and pin curl to the address that was checked. Implies
-    /// [`Fetch::no_redirects`], since each hop would need checking again. For a
-    /// URL any account can choose, such as a Web Push endpoint.
+    /// Refuse the request unless its host resolves only to public internet
+    /// addresses, and pin curl to the one that was checked. Implies
+    /// [`Fetch::no_redirects`]. For a URL any account can choose.
     pub fn public_only(mut self) -> Self {
         self.public_only = true;
         self.follow_redirects = false;
