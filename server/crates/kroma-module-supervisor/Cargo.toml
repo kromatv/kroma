@@ -22,6 +22,7 @@ tokio = { workspace = true }
 # Async client: reverse-proxy to module processes on localhost + fetch .kmod /
 # catalog.json from a registry over https (rustls keeps the musl build C-free).
 reqwest = { workspace = true, features = ["json", "rustls-tls", "stream"] }
+kroma-http = { workspace = true }
 futures-util = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

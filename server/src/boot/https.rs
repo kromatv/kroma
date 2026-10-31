@@ -92,12 +92,7 @@ pub async fn build_https(
     std::net::SocketAddr,
 )> {
     let config = &state.config;
-    let enabled = config
-        .https_override
-        .unwrap_or_else(|| state.settings.get_bool("httpsEnabled", false));
-    if !enabled {
-        return None;
-    }
+    let port = https_port(state)?;
 
     // The rustls crypto provider must be installed before any TLS config is built.
     tls::install_crypto_provider();
@@ -121,9 +116,22 @@ pub async fn build_https(
             }
         };
 
-    let port = config
-        .https_port_override
-        .unwrap_or_else(|| state.settings.get_i64("httpsPort", 4443).clamp(1, 65535) as u16);
     let socket = tls::https_addr(&config.host, port);
     Some((paths.cert_pem, rustls_config, socket))
+}
+
+/// The port the HTTPS listener binds, `None` while HTTPS is off.
+pub fn https_port(state: &state::SharedState) -> Option<u16> {
+    let config = &state.config;
+    let enabled = config
+        .https_override
+        .unwrap_or_else(|| state.settings.get_bool("httpsEnabled", false));
+    if !enabled {
+        return None;
+    }
+    Some(
+        config
+            .https_port_override
+            .unwrap_or_else(|| state.settings.get_i64("httpsPort", 4443).clamp(1, 65535) as u16),
+    )
 }

@@ -7,6 +7,8 @@ use kroma_module_sdk::http::Fetch;
 use super::gate::{active_proxy_url, vpn_sealed_expected};
 use crate::db;
 
+const PURPOSE: &str = "torrent-file";
+
 pub(super) fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
     // Trackers behind Cloudflare intermittently drop the TLS connection
     // (`curl (35) SSL_ERROR_ZERO_RETURN`, reset, timeout) and a fresh attempt
@@ -69,15 +71,15 @@ pub(super) fn fetch_torrent_file(host: &dyn HostCtx, url: &str) -> Result<Vec<u8
 fn route(host: &dyn HostCtx, url: &str) -> Result<Fetch> {
     let target = web_target(url).ok_or_else(|| anyhow!("not an http or https link"))?;
     if target.is_local() {
-        return Ok(Fetch::new());
+        return Ok(Fetch::new().purpose(PURPOSE));
     }
     match active_proxy_url(host) {
-        Some(proxy) => Ok(Fetch::new().socks5(proxy)),
+        Some(proxy) => Ok(Fetch::new().purpose(PURPOSE).socks5(proxy)),
         None if vpn_sealed_expected(host) => bail!(
             "the VPN is configured but not running, so {} is not fetched directly",
             target.host
         ),
-        None => Ok(Fetch::new()),
+        None => Ok(Fetch::new().purpose(PURPOSE)),
     }
 }
 

@@ -109,6 +109,7 @@ pub fn outcome(status: u16, body: &str) -> Result<Value, RelayError> {
 async fn post(url: String, body: Value) -> Result<Value, RelayError> {
     let response = tokio::task::spawn_blocking(move || {
         kroma_http::Fetch::new()
+            .purpose("mail")
             .max_time(MAX_TIME_SECS)
             .post_json(&url, &body)
     })
