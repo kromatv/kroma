@@ -106,6 +106,9 @@ pub(super) fn check_manifest_schema(id: &str, manifest: &ModuleManifest) -> anyh
          the current SDK",
         kroma_module_manifest::MODULE_SCHEMA_VERSION,
     );
+    if let Some(problem) = manifest.permissions.as_ref().and_then(|p| p.problem()) {
+        anyhow::bail!("'{id}' declares a permission this server cannot grant: {problem}");
+    }
     Ok(())
 }
 
@@ -122,7 +125,24 @@ pub(super) fn grant_json(storage: Option<&kroma_module_manifest::Storage>) -> St
 #[cfg(test)]
 mod tests {
     use super::super::{Supervisor, SupervisorConfig};
-    use super::grant_json;
+    use super::{check_manifest_schema, grant_json};
+
+    #[test]
+    fn a_module_declaring_a_permission_no_server_could_grant_is_refused() {
+        let manifest: kroma_module_manifest::ModuleManifest =
+            serde_json::from_value(serde_json::json!({
+                "schemaVersion": kroma_module_manifest::MODULE_SCHEMA_VERSION,
+                "id": "com.example.shell", "name": "Shell", "version": "1.0.0",
+                "permissions": { "run": ["/bin/sh"] }
+            }))
+            .unwrap();
+
+        let refusal = check_manifest_schema("com.example.shell", &manifest)
+            .unwrap_err()
+            .to_string();
+
+        assert!(refusal.contains("bare binary name"), "{refusal}");
+    }
 
     #[test]
     fn the_grant_a_module_is_spawned_with_is_the_one_its_manifest_declares() {
