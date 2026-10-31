@@ -50,7 +50,6 @@ export function summaryRowOf(fields: Partial<SummaryRow> = {}): SummaryRow {
   };
 }
 
-/** A stored list: the downloads module through the VPN, an ad domain blocked. */
 export const RULES_VIEW: RulesView = {
   defaultAction: 'allow',
   rules: [

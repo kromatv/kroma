@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** The caller the server reports for its own connections. */
 export const CORE_CALLER = 'core';
 
 /** Names a caller for a reader: the server by name, a module by the name its
