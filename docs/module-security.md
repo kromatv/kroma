@@ -99,9 +99,10 @@ labelled native and contained the same way
 | `storage`, `settings`, points | always: checked by the core on every call | always | always |
 
 None of the three tiers is wired into the supervisor yet (#486, #489, #490).
-Watch is to record and be able to stop a module that goes around the gateway,
-but it cannot prevent a connection that opens and closes between two scans. An
-operator setting is to refuse third-party modules outside a strict tier (#486).
+Once they are, Watch records and can stop a module that goes around the
+gateway, but it cannot prevent a connection that opens and closes between two
+scans, and an operator setting refuses third-party modules outside a strict
+tier.
 
 ## Identity
 
