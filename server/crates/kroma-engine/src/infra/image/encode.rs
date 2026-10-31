@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::process::Command;
 
+use kroma_media::input;
+
 // 80/6 keeps posters crisp at a fraction of JPEG's size.
 const WEBP_QUALITY: &str = "80";
 const WEBP_EFFORT: &str = "6";
@@ -44,7 +46,7 @@ pub(super) fn probe_width(src: &Path) -> Option<u32> {
             "-of",
             "csv=p=0",
         ])
-        .arg(src)
+        .args(input::file(src))
         .output()
         .ok()?;
     String::from_utf8_lossy(&out.stdout)
@@ -78,8 +80,8 @@ pub(crate) fn encode_webp_quality(src: &Path, out: &Path, quality: &str) -> bool
 fn ffmpeg_webp(src: &Path, out: &Path, quality: &str, vf: Option<&str>) -> bool {
     let mut ffmpeg = Command::new("ffmpeg");
     ffmpeg
-        .args(["-y", "-loglevel", "error", "-threads", "1", "-i"])
-        .arg(src);
+        .args(["-y", "-loglevel", "error", "-threads", "1"])
+        .args(input::file(src));
     if let Some(vf) = vf {
         ffmpeg.args(["-vf", vf]);
     }
@@ -102,8 +104,9 @@ mod tests {
         let low = dir.path().join("low.webp");
         let high = dir.path().join("high.webp");
         let drawn = Command::new("ffmpeg")
-            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i"])
-            .args(["testsrc2=size=320x180:rate=1", "-frames:v", "1"])
+            .args(["-y", "-loglevel", "error"])
+            .args(input::generated("testsrc2=size=320x180:rate=1"))
+            .args(["-frames:v", "1"])
             .arg(&src)
             .status();
         if !matches!(drawn, Ok(s) if s.success()) || !ffmpeg_webp(&src, &low, "20", None) {
