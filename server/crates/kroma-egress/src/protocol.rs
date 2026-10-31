@@ -32,8 +32,8 @@ pub(crate) struct Credentials {
     pub(crate) password: String,
 }
 
-// A caller that offers no username/password method is refused before it can
-// name a destination: an anonymous connection has no caller to decide for.
+// An anonymous connection has no caller to decide for, so it is refused before
+// it names a destination.
 pub(crate) async fn accept_credentials<S>(stream: &mut S) -> Result<Credentials>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -71,7 +71,6 @@ pub(crate) async fn answer_credentials<S: AsyncWrite + Unpin>(
     Ok(())
 }
 
-/// The destination of a CONNECT, or the reply to refuse anything else with.
 pub(crate) async fn read_connect<S>(
     stream: &mut S,
 ) -> Result<std::result::Result<(Host, u16), Reply>>

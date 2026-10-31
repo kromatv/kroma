@@ -16,7 +16,6 @@ use crate::{upstream, Flow, Host, Policy, Request, Route, Verdict};
 
 const HANDSHAKE_BUDGET: Duration = Duration::from_secs(10);
 const CONNECT_BUDGET: Duration = Duration::from_secs(15);
-// Large enough that a torrent piece crosses in a few reads, not hundreds.
 const RELAY_BUFFER: usize = 64 * 1024;
 
 /// Serve callers on a Unix socket until the listener fails. The socket is how
@@ -144,9 +143,8 @@ where
     }
 }
 
-// Every address the name resolves to is checked, not only the one dialled:
-// a resolver answering one public and one private address is a rebinding
-// attempt, and which one a later connection picks is not ours to bet on.
+// Every resolved address is checked, not only the one dialled: a resolver
+// answering one public and one private address is a rebinding attempt.
 async fn dial_direct(
     host: &Host,
     port: u16,
@@ -191,8 +189,7 @@ async fn dial_direct(
     ))
 }
 
-// Link-local is never reachable, whatever the policy says: it is where cloud
-// metadata services answer.
+// Link-local is never reachable: cloud metadata services answer there.
 fn reachable(ip: IpAddr, private_allowed: bool) -> bool {
     let link_local = match ip.to_canonical() {
         IpAddr::V4(v4) => v4.is_link_local(),

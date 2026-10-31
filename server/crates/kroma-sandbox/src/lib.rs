@@ -1,7 +1,6 @@
 //! Starting a process with no network of its own: a fresh user and network
-//! namespace that holds nothing but loopback, so the only way out is a Unix
-//! socket the caller put on the filesystem. Linux only, and only where the
-//! kernel lets an unprivileged process create namespaces.
+//! namespace holding only loopback. Linux only, where the kernel allows
+//! unprivileged namespaces.
 
 #[cfg(target_os = "linux")]
 mod child;
@@ -9,8 +8,7 @@ mod child;
 use std::process::Command;
 use std::sync::OnceLock;
 
-/// Whether this machine can start a process with no network, probed once by
-/// starting `true` that way.
+/// Whether this machine can start a process with no network, probed once.
 pub fn network_isolation_available() -> bool {
     static AVAILABLE: OnceLock<bool> = OnceLock::new();
     *AVAILABLE.get_or_init(|| {
@@ -20,10 +18,10 @@ pub fn network_isolation_available() -> bool {
     })
 }
 
+/// Starts `command` in a fresh user and network namespace holding only
+/// loopback, keeping its uid and gid. The spawn fails where
+/// [`network_isolation_available`] is false.
 #[cfg(target_os = "linux")]
-/// Make `command` start in a fresh user and network namespace that holds only
-/// loopback, keeping its uid and gid. The spawn fails when the kernel refuses;
-/// check [`network_isolation_available`] first.
 pub fn isolate_network(command: &mut Command) {
     use std::os::unix::process::CommandExt;
 

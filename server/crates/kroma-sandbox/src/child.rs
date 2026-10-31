@@ -21,8 +21,7 @@ unsafe fn write_proc(path: &std::ffi::CStr, contents: &[u8]) -> std::io::Result<
     Ok(())
 }
 
-// A new network namespace starts with `lo` down, and a module's own
-// loopback forwarders (for libraries that cannot dial a Unix socket) need it.
+// A new network namespace starts with `lo` down; loopback forwarders need it up.
 unsafe fn loopback_up() -> std::io::Result<()> {
     let fd = libc::socket(libc::AF_INET, libc::SOCK_DGRAM | libc::SOCK_CLOEXEC, 0);
     if fd < 0 {
