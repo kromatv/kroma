@@ -32,13 +32,7 @@ export function parseHostPattern(input: string): HostPattern {
 }
 
 /** A rule as the editor holds it: free text where the wire has a nullable. */
-export interface RuleDraft {
-  caller: string | null;
-  purpose: string | null;
-  host: string;
-  action: RuleAction;
-  note: string;
-}
+export type RuleDraft = Omit<Rule, 'id' | 'host' | 'note'> & { host: string; note: string };
 
 export function draftOf(rule: Rule): RuleDraft {
   return { ...rule, host: rule.host ?? '', note: rule.note ?? '' };
