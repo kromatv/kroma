@@ -130,6 +130,7 @@ Environment variables carry all configuration:
 | `KROMA_WALK_THREADS`| *(cores × 4, 8..32)* | Threads walking the library roots. Raise it for remote mounts. |
 | `KROMA_WATCH_INTERVAL`| `300`     | Seconds between periodic rescans, `0` for none (filesystem events still fire). The `watchIntervalSecs` admin setting wins over it. |
 | `KROMA_MODULE_HOT_RELOAD`| *(empty)* | Set to `1` so a changed sidecar binary restarts its process. A dev loop only: it polls the filesystem. |
+| `KROMA_MODULE_ENV`| *(empty)* | Comma-separated variable names a module sidecar inherits. A sidecar starts from an allowlist (`PATH`, locale, temp dir, CA bundle, proxy variables, `LIBVA_*`, logging) and never sees the server's own variables, secrets included. |
 
 A fork shipping its own published app also reads `KROMA_APNS_KEY_P8`,
 `KROMA_APNS_KEY_ID`, `KROMA_APNS_TEAM_ID`, `KROMA_APNS_TOPIC` and

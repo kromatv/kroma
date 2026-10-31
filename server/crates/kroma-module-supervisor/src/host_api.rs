@@ -49,7 +49,7 @@ where
         .route("/_host/session", post(session_user::<S>))
         // How a module reaches a peer: it asks for a CONTRACT and the core
         // answers with whoever serves it. No module id crosses this wire.
-        .route("/_host/contributions", get(contributions::<S>))
+        .route("/_host/contributions", get(contributions))
         .route_layer(from_fn_with_state(supervisor, resolve_caller))
         .layer(Extension(reach))
 }
@@ -78,11 +78,11 @@ struct PointQuery {
     point: String,
 }
 
-async fn contributions<S: HostCtx>(
-    State(host): State<S>,
+async fn contributions(
+    Extension(caller): Extension<Caller>,
     axum::extract::Query(q): axum::extract::Query<PointQuery>,
 ) -> Json<Vec<kroma_module_host::Contribution>> {
-    Json(host.contributions(&q.point))
+    Json(caller.contributions(&q.point))
 }
 
 #[derive(serde::Deserialize)]
