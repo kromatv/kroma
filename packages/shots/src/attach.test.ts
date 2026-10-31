@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -5,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { attach, type AttachContext } from './attach';
 
 const ASSET = 'https://github.com/user-attachments/assets/2b1e0c4e-5f0a-4c55-9d8e-3c1f4a6b7d90';
+
+const BEARER = randomUUID();
 
 function fixture(name: string): string {
   const file = join(mkdtempSync(join(tmpdir(), 'kroma-attach-')), name);
@@ -15,7 +18,7 @@ function fixture(name: string): string {
 function contextAnswering(status: number, body: unknown, seen: Request[] = []): AttachContext {
   return {
     repositoryId: '1282571532',
-    token: 'gho_test',
+    token: BEARER,
     fetch: async (url, init) => {
       seen.push(new Request(url, init));
       return Response.json(body, { status });
@@ -38,7 +41,7 @@ describe('attach', () => {
     expect(query.get('name')).toBe('hero before.png');
     expect(query.get('content_type')).toBe('image/png');
     expect(query.get('repository_id')).toBe('1282571532');
-    expect(request?.headers.get('authorization')).toBe('Bearer gho_test');
+    expect(request?.headers.get('authorization')).toBe(`Bearer ${BEARER}`);
     expect(request?.headers.get('content-type')).toBe('image/png');
   });
 
@@ -50,12 +53,20 @@ describe('attach', () => {
     );
   });
 
-  it('names the status GitHub refused with', async () => {
+  it('names the status GitHub refused with and what it means', async () => {
     const file = fixture('shot.png');
 
     await expect(attach(file, contextAnswering(404, { message: 'Not Found' }))).rejects.toThrow(
-      /404/,
+      /404.*push access/,
     );
+  });
+
+  it('never repeats the body of a refusal', async () => {
+    const file = fixture('shot.png');
+
+    await expect(
+      attach(file, contextAnswering(500, { message: 'line one\nforged line' })),
+    ).rejects.toThrow(/^(?!.*forged)/s);
   });
 
   it('rejects an answer that carries no attachment url', async () => {

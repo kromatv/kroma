@@ -19,6 +19,11 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = {
   '.webm': 'video/webm',
 };
 
+const REFUSALS: Readonly<Record<number, string>> = {
+  404: 'the token has no push access to the repository, or it does not exist',
+  422: 'GitHub attaches images and video only',
+};
+
 const Attached = z.object({ url: z.url() });
 
 /** What an upload needs from GitHub: the numeric id of the repository the
@@ -62,7 +67,8 @@ export async function attach(file: string, context: AttachContext): Promise<stri
     body: readFileSync(file),
   });
   if (response.status !== 201) {
-    throw new Error(`${file}: GitHub answered ${response.status} ${await response.text()}`);
+    const reason = REFUSALS[response.status] ?? 'an unexpected answer';
+    throw new Error(`${file}: GitHub answered ${response.status}, ${reason}`);
   }
   return Attached.parse(await response.json()).url;
 }
