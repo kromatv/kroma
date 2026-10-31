@@ -84,7 +84,6 @@ impl Fetch {
         self
     }
 
-    /// Follow at most `hops` redirects.
     pub fn max_redirects(mut self, hops: u8) -> Self {
         self.max_redirects = Some(hops);
         self

@@ -1,5 +1,3 @@
-//! A one-request HTTP server on loopback, for the tests that drive real curl.
-
 pub fn read_request(stream: &mut std::net::TcpStream) -> Vec<u8> {
     use std::io::Read;
     let mut head = Vec::new();

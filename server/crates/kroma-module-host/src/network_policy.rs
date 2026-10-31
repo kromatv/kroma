@@ -12,7 +12,6 @@ pub trait NetworkPolicy: Send + Sync {
     fn record_flows(&self, caller: &str, flows: Vec<NetworkFlow>);
 }
 
-/// The policy the supervisor hands each module's network callback to. It
-/// carries the policy and decides nothing itself.
+/// The policy the supervisor hands each module's network callback to.
 #[derive(Clone)]
 pub struct NetworkPolicyOf(pub Arc<dyn NetworkPolicy>);

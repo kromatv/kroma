@@ -8,7 +8,6 @@ use serde_json::Value;
 /// endpoint writes: only [`super::Network::set_rules`] does, after validation.
 pub const SETTING_KEY: &str = "networkRules";
 
-/// The largest JSON body a rules write may carry.
 pub const MAX_BODY_BYTES: usize = 64 * 1024;
 
 const MAX_RULES: usize = 200;

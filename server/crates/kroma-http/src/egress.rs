@@ -70,8 +70,6 @@ pub struct Exchange {
 pub type Gate = Arc<dyn Fn(&Outgoing) -> Ruling + Send + Sync>;
 pub type Sink = Arc<dyn Fn(Exchange) + Send + Sync>;
 
-/// The phrase every refusal by the gate carries, so a caller can tell a policy
-/// refusal from a network failure.
 pub const BLOCKED: &str = "blocked by the network policy";
 
 const MAX_ERROR_CHARS: usize = 300;
