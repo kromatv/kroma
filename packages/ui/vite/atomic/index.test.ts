@@ -16,6 +16,68 @@ function plugin(command: 'serve' | 'build' = 'build') {
 
 const context = () => ({ info: vi.fn(), warn: vi.fn() });
 
+describe('the name of the token stylesheet', () => {
+  const PATTERN = 'assets/[name]-[hash][extname]';
+  const TOKENS = ':root{--kroma-bg:#0a0a0c}';
+
+  function compiled(opacity: number) {
+    const atomic = plugin();
+    atomic.transform.call(
+      context(),
+      `import { styles } from '#ui/core';\nexport const s = styles({ a: { opacity: ${opacity} } });`,
+      `${REPO}/packages/ui/src/probe.ts`,
+    );
+    return atomic;
+  }
+
+  const nameOf = (atomic: ReturnType<typeof plugin>, source: unknown = TOKENS) =>
+    atomic.outputOptions({ assetFileNames: PATTERN }).assetFileNames({ source });
+
+  it('changes with the rules that land in it, which its own hash never sees', () => {
+    expect(nameOf(compiled(0.5))).not.toBe(nameOf(compiled(0.6)));
+  });
+
+  it('stays the same for the same rules, so a release that adds none costs no download', () => {
+    expect(nameOf(compiled(0.5))).toBe(nameOf(compiled(0.5)));
+  });
+
+  it('keeps the hash at the end, where a server reads it as a hashed asset', () => {
+    expect(nameOf(compiled(0.5))).toMatch(/^assets\/\[name\]-[\w-]+-\[hash\]\[extname\]$/);
+  });
+
+  it('reads a stylesheet that arrives minified, as bytes', () => {
+    const bytes = new TextEncoder().encode(TOKENS);
+
+    expect(nameOf(compiled(0.5), bytes)).toBe(nameOf(compiled(0.5)));
+  });
+
+  it('leaves every other asset the name it was given', () => {
+    expect(nameOf(compiled(0.5), '.x{}')).toBe(PATTERN);
+  });
+
+  it('leaves the name alone with no rules to land', () => {
+    expect(nameOf(plugin())).toBe(PATTERN);
+  });
+
+  it('follows a pattern written as a function', () => {
+    const named = compiled(0.5).outputOptions({ assetFileNames: () => 'css/[hash].css' });
+
+    expect(named.assetFileNames({ source: TOKENS })).toMatch(/^css\/[\w-]+-\[hash\]\.css$/);
+  });
+
+  it('follows the bundler’s own pattern when none is given', () => {
+    const named = compiled(0.5).outputOptions({});
+
+    expect(named.assetFileNames({ source: '.x{}' })).toBe(PATTERN);
+  });
+
+  it('keeps the other output options', () => {
+    const options = { assetFileNames: PATTERN, format: 'es' };
+
+    expect(plugin().outputOptions(options)).toMatchObject({ format: 'es' });
+  });
+});
+
 describe('kromaAtomic', () => {
   it('compiles a workspace source module and nothing else', () => {
     const atomic = plugin();
