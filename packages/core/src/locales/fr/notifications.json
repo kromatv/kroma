@@ -10,6 +10,7 @@
   "notifications.category.reports": "Signalements",
   "notifications.category.requests": "Demandes",
   "notifications.category.system": "État du serveur",
+  "notifications.categoryHint": "Chaque type ci-dessous suit ce réglage tant que vous ne le réglez pas à part.",
   "notifications.channelInApp": "Dans l'app",
   "notifications.channelPush": "Push",
   "notifications.custom.body": "{body}",

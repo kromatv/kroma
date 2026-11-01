@@ -384,6 +384,8 @@ pub struct ModuleManifest {
     pub library: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permissions: Option<crate::Permissions>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notifications: Vec<kroma_module_wire::NotificationType>,
 }
 
 impl ModuleManifest {
@@ -412,6 +414,7 @@ impl ModuleManifest {
             settings: None,
             library: false,
             permissions: None,
+            notifications: Vec::new(),
         }
     }
 

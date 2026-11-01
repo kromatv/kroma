@@ -56,9 +56,10 @@ it, supervises it, and reverse-proxies its HTTP.**
   `/api/module/<id>/*` reverse proxy.
 - **`kroma build`** (`packages/cli`, shipped inside the public `kroma` package) builds a
   module's native binary, bundles its frontend into `fe/`, and stages
-  `module.json` + `module` (the binary) + `icon` + `fe/` into a zstd `.kmod`
-  (per-target via `--target`; sidecar bundles are suffixed with the triple)
-  plus a `.sha256` sidecar. `kroma dev` uploads a debug build to a running
+  `module.json` + `module` (the binary) + `icon` + `fe/` + `locales/` into a
+  zstd `.kmod` (per-target via `--target`; sidecar bundles are suffixed with
+  the triple) plus a `.sha256` sidecar. The server reads `locales/` to render
+  the notification types the module declares in each reader's language. `kroma dev` uploads a debug build to a running
   server and again on every save.
 - **The frontend tier**: `fe/remoteEntry.js` is served at
   `/modules/<id>/remoteEntry.js` and the web client imports it for every

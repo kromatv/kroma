@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use axum::http::StatusCode;
 use kroma_module_host::{Audience, Event, HostCtx, NotificationSpec};
 use kroma_module_wire::Permission;
-use support::{sidecar, user, EVENTS, HOST_TOKEN};
+use support::{sidecar, user, EVENTS, HOST_TOKEN, UNDECLARED};
 
 #[test]
 fn settings_are_asked_of_the_core_by_kind() {
@@ -65,6 +65,17 @@ fn a_notification_returns_how_many_the_core_sent() {
     let sent = sidecar.host.notify(&Audience::Everyone, &spec);
 
     assert_eq!(sent, 3);
+}
+
+#[test]
+fn a_type_the_core_refuses_tells_nobody() {
+    let sidecar = sidecar();
+
+    let sent = sidecar
+        .host
+        .notify(&Audience::Everyone, &NotificationSpec::declared(UNDECLARED));
+
+    assert_eq!(sent, 0);
 }
 
 #[test]

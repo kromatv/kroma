@@ -60,6 +60,19 @@ describe('packBundle', () => {
     ]);
   });
 
+  it('carries the module’s catalogs, which the server renders its notifications from', () => {
+    const input = fixture();
+    mkdirSync(join(input.project.dir, 'locales'));
+    writeFileSync(join(input.project.dir, 'locales', 'en.json'), '{}');
+    writeFileSync(join(input.project.dir, 'locales', 'notes.md'), 'draft');
+
+    const packed = packBundle(input);
+
+    const names = tarNames(toTar(bytesOf(packed.path)));
+    expect(names).toContain('locales/en.json');
+    expect(names).not.toContain('locales/notes.md');
+  });
+
   it('leaves nothing staged in the module directory', () => {
     const input = fixture();
 

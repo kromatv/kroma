@@ -7,6 +7,7 @@ import {
   type NotificationAction,
   NotificationPrefs,
   NotificationsView,
+  type PrefsUpdate,
 } from './schemas';
 
 const Unread = z.object({ unread: z.number() });
@@ -36,11 +37,13 @@ export default function notificationsApi(ctx: RequestContext) {
 
     delete: (id: NotificationId) => ctx.delete('/notifications/:id', { params: { id } }),
 
-    /** The full per-category delivery matrix, defaults filled in. */
+    /** The full delivery matrix, every category and every kind under them,
+     * defaults filled in. */
     prefs: () => ctx.get('/notifications/prefs', NotificationPrefs),
 
-    setPrefs: (prefs: NotificationPrefs) =>
-      ctx.put('/notifications/prefs', NotificationPrefs, { body: prefs }),
+    /** Writes what changed and answers the matrix it leaves. */
+    setPrefs: (update: PrefsUpdate) =>
+      ctx.put('/notifications/prefs', NotificationPrefs, { body: update }),
 
     /** Run a notification's `api` action (approve or deny straight from the row).
      * `href` is already API-absolute, so the `/api` the transport adds back is

@@ -18,7 +18,9 @@ use super::subject::NotificationSubject;
 #[serde(rename_all = "camelCase")]
 pub struct NotificationSpec {
     pub event: NotificationEvent,
+    #[serde(default)]
     pub title_key: String,
+    #[serde(default)]
     pub body_key: String,
     #[serde(default)]
     pub params: BTreeMap<String, ParamValue>,
@@ -42,6 +44,8 @@ pub struct NotificationSpec {
     /// fold on and each emission is its own row. See [`NotificationSpec::group`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub group_key: Option<String>,
+    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
+    pub module_type: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -68,6 +72,7 @@ impl NotificationSpec {
             data: None,
             dedupe_key: None,
             group_key: None,
+            module_type: None,
             link: None,
             image_url: None,
             actions: Vec::new(),
@@ -76,9 +81,20 @@ impl NotificationSpec {
         }
     }
 
+    /// One of the types the calling module declared in its `module.json`. The
+    /// host fills in its category and its keys from that declaration, so the
+    /// row reads in each reader's language, and refuses a type the module did
+    /// not declare.
+    pub fn declared(module_type: impl Into<String>) -> Self {
+        Self {
+            module_type: Some(module_type.into()),
+            ..Self::new(NotificationEvent::Custom, "", "")
+        }
+    }
+
     /// Text a module supplies itself, rather than a key the core can translate.
-    /// The server-side renderer does not load module catalogs, so the module's
-    /// wording rides in as params through a passthrough key.
+    /// Every reader gets these words whatever their language, which is what
+    /// [`NotificationSpec::declared`] is for.
     pub fn custom(
         category: NotificationCategory,
         title: impl Into<String>,
@@ -159,9 +175,10 @@ impl NotificationSpec {
             .clone()
             .or_else(|| self.dedupe_key.clone())
             .or_else(|| {
+                let raised = self.module_type.as_deref().unwrap_or(self.event.as_str());
                 self.subject
                     .as_ref()
-                    .map(|s| format!("{}:{}:{}", self.event.as_str(), s.kind, s.id))
+                    .map(|s| format!("{raised}:{}:{}", s.kind, s.id))
             })
     }
 
@@ -277,6 +294,48 @@ mod tests {
         assert_eq!(spec.actor_id, None);
         assert_eq!(spec.data, None);
         assert_eq!(spec.dedupe_key, None);
+    }
+
+    #[test]
+    fn a_declared_type_crosses_the_wire_as_type_and_leaves_its_keys_to_the_host() {
+        let spec = NotificationSpec::declared("tv.kroma.torrents/download.completed")
+            .param("title", "Dune.2021.2160p");
+
+        let json = serde_json::to_value(&spec).unwrap();
+        let back: NotificationSpec = serde_json::from_value(json.clone()).unwrap();
+
+        assert_eq!(json["type"], "tv.kroma.torrents/download.completed");
+        assert_eq!(json["event"], "custom");
+        assert_eq!(
+            back.module_type.as_deref(),
+            Some("tv.kroma.torrents/download.completed")
+        );
+        assert!(back.title_key.is_empty());
+    }
+
+    #[test]
+    fn a_spec_that_names_only_its_type_parses_without_keys() {
+        let raw = r#"{"event":"custom","type":"tv.kroma.torrents/download.completed"}"#;
+
+        let spec: NotificationSpec = serde_json::from_str(raw).unwrap();
+
+        assert_eq!(spec.title_key, "");
+        assert_eq!(spec.body_key, "");
+    }
+
+    #[test]
+    fn two_declared_types_about_one_subject_fold_apart() {
+        let subject = NotificationSubject::new("tv.kroma.torrents/download", "d1");
+        let done = NotificationSpec::declared("tv.kroma.torrents/download.completed")
+            .subject(subject.clone());
+        let stalled =
+            NotificationSpec::declared("tv.kroma.torrents/download.stalled").subject(subject);
+
+        assert_eq!(
+            done.group().as_deref(),
+            Some("tv.kroma.torrents/download.completed:tv.kroma.torrents/download:d1")
+        );
+        assert_ne!(done.group(), stalled.group());
     }
 
     #[test]

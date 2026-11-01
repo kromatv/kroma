@@ -56,6 +56,14 @@ function stage(input: PackInput): { staging: string; entries: string[] } {
     cpSync(feDir, join(staging, 'fe'), { recursive: true });
     entries.push('fe');
   }
+  const catalogs = join(project.dir, 'locales');
+  if (existsSync(catalogs)) {
+    cpSync(catalogs, join(staging, 'locales'), {
+      recursive: true,
+      filter: (path) => path === catalogs || path.endsWith('.json'),
+    });
+    entries.push('locales');
+  }
   return { staging, entries };
 }
 

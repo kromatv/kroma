@@ -9,6 +9,7 @@ license.workspace = true
 [dependencies]
 # The embedded_module!() proc-macro, re-exported for the below-facade modules.
 kroma-module-macros = { workspace = true }
+kroma-module-wire = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 # Semver range checks for versioned module dependencies (dependsOn version reqs).

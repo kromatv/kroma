@@ -3,7 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkCommand, importProblems, specifierOf, unsatisfiableRanges } from './check';
+import {
+  checkCommand,
+  importProblems,
+  notificationProblems,
+  specifierOf,
+  unsatisfiableRanges,
+} from './check';
 
 const PROJECT = '/modules/tv.acme.notes';
 const FILE = join(PROJECT, 'ui/src/page.tsx');
@@ -113,6 +119,31 @@ describe('checkCommand', () => {
     expect(said()).toContain('notes-fork');
   });
 
+  it('reads the catalogs beside a module that declares notification types', async () => {
+    modules();
+    moduleAt('notes', 'tv.acme.notes');
+    const at = join(dir, 'modules', 'notes');
+    writeFileSync(
+      join(at, 'module.json'),
+      JSON.stringify({
+        schemaVersion: MODULE_SCHEMA_VERSION,
+        id: 'tv.acme.notes',
+        name: 'Notes',
+        version: '0.1.0',
+        notifications: [
+          { type: 'tv.acme.notes/note.shared', category: 'media', titleKey: 't', bodyKey: 'b' },
+        ],
+      }),
+    );
+    mkdirSync(join(at, 'locales'));
+    writeFileSync(join(at, 'locales', 'en.json'), JSON.stringify({ t: 'Shared' }));
+
+    const code = await checkCommand({ dirs: [], rust: false, ts: false, cwd: dir });
+
+    expect(code).toBe(1);
+    expect(said()).toContain('names "b", which locales/en.json lacks');
+  });
+
   it('reports a frontend with no tsconfig beside it, and its imports all the same', async () => {
     modules();
     moduleAt('notes', 'tv.acme.notes', "import { Button } from '#ui/atoms/button';\n");
@@ -122,6 +153,65 @@ describe('checkCommand', () => {
     expect(code).toBe(1);
     expect(said()).toContain('no tsconfig.json beside the frontend');
     expect(said()).toContain("is the kit's private alias");
+  });
+});
+
+describe('notificationProblems', () => {
+  const finished = {
+    type: 'tv.acme.notes/note.shared',
+    category: 'media' as const,
+    titleKey: 'shared.title',
+    bodyKey: 'shared.body',
+  };
+  const declaring = (...notifications: (typeof finished)[]) => ({
+    schemaVersion: MODULE_SCHEMA_VERSION,
+    id: 'tv.acme.notes',
+    name: 'Notes',
+    version: '0.1.0',
+    notifications,
+  });
+  const worded = { 'shared.title': 'Shared', 'shared.body': '{title}' };
+
+  it('accepts a type worded in every catalog the module ships', () => {
+    expect(notificationProblems(declaring(finished), { en: worded, fr: worded })).toEqual([]);
+  });
+
+  it('names the key a catalog has no words for, and which catalog', () => {
+    const found = notificationProblems(declaring(finished), {
+      en: worded,
+      fr: { 'shared.title': 'Partagée' },
+    });
+
+    expect(found).toEqual([
+      'tv.acme.notes: tv.acme.notes/note.shared names "shared.body", which locales/fr.json lacks',
+    ]);
+  });
+
+  it('takes a key the catalog only holds in its plural forms', () => {
+    const plural = { 'shared.title_one': 'One', 'shared.title_other': 'Many', 'shared.body': '' };
+
+    expect(notificationProblems(declaring(finished), { en: plural })).toEqual([]);
+  });
+
+  it('refuses a type outside the module’s namespace and one declared twice', () => {
+    const stray = { ...finished, type: 'tv.acme.other/note.shared' };
+
+    expect(notificationProblems(declaring(stray), { en: worded })[0]).toContain(
+      'write tv.acme.notes/<name>',
+    );
+    expect(notificationProblems(declaring(finished, finished), { en: worded })[0]).toContain(
+      'declared twice',
+    );
+  });
+
+  it('says a module that declares types but ships no catalog has nothing to word them with', () => {
+    expect(notificationProblems(declaring(finished), {})).toEqual([
+      'tv.acme.notes: declares notifications but ships no locales',
+    ]);
+  });
+
+  it('says nothing about a module that declares no types', () => {
+    expect(notificationProblems({ ...declaring(), notifications: undefined }, {})).toEqual([]);
   });
 });
 

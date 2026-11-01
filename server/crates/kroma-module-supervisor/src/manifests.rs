@@ -69,6 +69,7 @@ impl Supervisor {
 
     pub(crate) fn invalidate_manifests(&self) {
         *self.manifests_cache.write().unwrap() = None;
+        *self.notifications_cache.write().unwrap() = None;
     }
 
     /// The ids of every runtime-installed (`.kmod`) module — not the ones
@@ -109,6 +110,9 @@ pub(super) fn check_manifest_schema(id: &str, manifest: &ModuleManifest) -> anyh
     if let Some(problem) = manifest.permissions.as_ref().and_then(|p| p.problem()) {
         anyhow::bail!("'{id}' declares a permission this server cannot grant: {problem}");
     }
+    if let Some(problem) = manifest.notifications_problem() {
+        anyhow::bail!("'{id}' declares a notification type this server cannot send: {problem}");
+    }
     Ok(())
 }
 
@@ -142,6 +146,26 @@ mod tests {
             .to_string();
 
         assert!(refusal.contains("bare binary name"), "{refusal}");
+    }
+
+    #[test]
+    fn a_module_declaring_a_notification_type_outside_its_namespace_is_refused() {
+        let manifest: kroma_module_manifest::ModuleManifest =
+            serde_json::from_value(serde_json::json!({
+                "schemaVersion": kroma_module_manifest::MODULE_SCHEMA_VERSION,
+                "id": "com.example.loud", "name": "Loud", "version": "1.0.0",
+                "notifications": [{
+                    "type": "tv.kroma.torrents/download.completed", "category": "downloads",
+                    "titleKey": "t", "bodyKey": "b"
+                }]
+            }))
+            .unwrap();
+
+        let refusal = check_manifest_schema("com.example.loud", &manifest)
+            .unwrap_err()
+            .to_string();
+
+        assert!(refusal.contains("com.example.loud/<name>"), "{refusal}");
     }
 
     #[test]

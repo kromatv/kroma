@@ -6,6 +6,7 @@
 
 import { z } from 'zod';
 import { Contribution, PointDef, PointReq } from '../documents/v1.ts';
+import { NotificationType } from './notifications.ts';
 import { Permissions } from './permissions.ts';
 
 // Any optional field may arrive as an explicit null.
@@ -166,6 +167,12 @@ export const Manifest = z.object({
   permissions: Permissions.nullish().describe(
     'What this module may do: network connections and listeners, filesystem roots, binaries it starts, environment variables. What it does not declare is denied. See docs/module-security.md.',
   ),
+  notifications: z
+    .array(NotificationType)
+    .nullish()
+    .describe(
+      "The kinds of notification this module sends, each with its wording in this module's locales/<code>.json. The server renders them in each reader's language and refuses a type a module did not declare. Absent for a module that sends none, or that still sends its own words.",
+    ),
   settings: SettingsScope.nullish().describe(
     'The core settings keys this module reads and writes. Absent is not the same as empty: a manifest with no settings object predates the field, so it keeps every ordinary preference and reaches none of the credentials a module has to declare.',
   ),

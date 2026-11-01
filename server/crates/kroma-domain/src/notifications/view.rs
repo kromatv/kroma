@@ -1,4 +1,4 @@
-//! One notification as a client sees it, plus the per-category delivery matrix.
+//! One notification as a client sees it, plus the delivery matrix.
 
 use serde::{Deserialize, Serialize};
 
@@ -71,9 +71,45 @@ pub struct CategoryPref {
     pub push: bool,
 }
 
-/// `GET`/`PUT /api/notifications/prefs`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// One notification type's row in the delivery matrix, labelled in its
+/// reader's language and carrying the switches it ends up with: its own where
+/// the reader chose, its category's elsewhere.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypePref {
+    #[serde(rename = "type")]
+    pub name: String,
+    pub category: NotificationCategory,
+    pub label: String,
+    pub in_app: bool,
+    pub push: bool,
+}
+
+/// `GET /api/notifications/prefs`, and what a `PUT` answers.
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationPrefs {
     pub categories: Vec<CategoryPref>,
+    pub types: Vec<TypePref>,
+}
+
+/// The switches a reader set on one notification type.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypeSwitches {
+    #[serde(rename = "type")]
+    pub name: String,
+    pub in_app: bool,
+    pub push: bool,
+}
+
+/// `PUT /api/notifications/prefs`. Each list may be left out, which is what a
+/// client built before per-type choice does with `types`.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrefsUpdate {
+    #[serde(default)]
+    pub categories: Vec<CategoryPref>,
+    #[serde(default)]
+    pub types: Vec<TypeSwitches>,
 }

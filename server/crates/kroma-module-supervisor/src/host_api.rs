@@ -7,6 +7,7 @@ use std::sync::Arc;
 use axum::extract::{DefaultBodyLimit, State};
 use axum::http::StatusCode;
 use axum::middleware::from_fn_with_state;
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use kroma_module_host::{Event, HostCtx, NetworkPolicyOf, SettingReachOf};
@@ -147,9 +148,22 @@ struct NotifyBody {
 
 // The core owns audience resolution and preference filtering, so a module can't
 // reach past a user's settings.
-async fn notify<S: HostCtx>(State(host): State<S>, Json(body): Json<NotifyBody>) -> Json<Value> {
+async fn notify<S: HostCtx>(
+    State(host): State<S>,
+    Extension(caller): Extension<Caller>,
+    Json(body): Json<NotifyBody>,
+) -> Response {
+    if let Some(name) = body.spec.module_type.as_deref() {
+        if !caller.declares_notification(name) {
+            let refusal = format!(
+                "{} sent the notification type \"{name}\", which its module.json does not declare",
+                caller.name()
+            );
+            return kroma_module_host::json_error(StatusCode::FORBIDDEN, &refusal);
+        }
+    }
     let sent = host.notify(&body.audience, &body.spec);
-    Json(json!({ "sent": sent }))
+    Json(json!({ "sent": sent })).into_response()
 }
 
 #[derive(serde::Deserialize)]

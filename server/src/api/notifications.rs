@@ -21,9 +21,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n;
-use crate::model::{
-    DeliveriesView, NotificationPrefs, NotificationsView, PushTransport, SubscribeBody,
-};
+use crate::model::{DeliveriesView, NotificationsView, PrefsUpdate, PushTransport, SubscribeBody};
 use crate::services::auth::random_token;
 use crate::services::jobs::now_ms;
 use crate::services::notify;
@@ -55,6 +53,7 @@ pub async fn list(
 ) -> Result<Response, Response> {
     let locale = notify::render::locale_of(&user).to_string();
     let uid = user.id.clone();
+    let types = notify::types::types_of(&state);
     let view = query(&state.db, move |pool| {
         let conn = pool.get()?;
         let stored = db::notifications::list_notifications(&conn, &uid, PAGE, false)?;
@@ -64,7 +63,7 @@ pub async fn list(
         Ok(NotificationsView {
             notifications: stored
                 .iter()
-                .map(|s| notify::render::render(s, &locale, &subjects))
+                .map(|s| notify::render::render(s, &locale, &subjects, &types))
                 .collect(),
             unread,
         })
@@ -175,36 +174,43 @@ pub async fn remove(
     Ok(axum::http::StatusCode::NO_CONTENT.into_response())
 }
 
-/// `GET /api/notifications/prefs` the full per-category matrix, defaults
-/// filled in, so the settings screen can render every switch without knowing
-/// which ones were explicitly set.
+/// `GET /api/notifications/prefs` the full matrix, every category and every
+/// kind of notification under them, defaults filled in, so the settings screen
+/// can render every switch without knowing which ones were explicitly set.
 pub async fn get_prefs(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
+    let locale = notify::render::locale_of(&user);
     let uid = user.id.clone();
-    let categories = query(&state.db, move |pool| {
-        let conn = pool.get()?;
-        db::notifications::prefs(&conn, &uid).map_err(Into::into)
+    let types = notify::types::types_of(&state);
+    let host = state.clone();
+    let prefs = query(&state.db, move |pool| {
+        let enabled = |id: &str| kroma_engine::modules::module_enabled(&host.settings, id);
+        notify::preferences::matrix(&pool.get()?, &uid, &types, enabled, locale)
     })
     .await?;
-    Ok(Json(NotificationPrefs { categories }).into_response())
+    Ok(Json(prefs).into_response())
 }
 
-/// `PUT /api/notifications/prefs` replace the caller's matrix.
+/// `PUT /api/notifications/prefs` write what the caller changed. A client
+/// built before per-type choice sends categories alone, and its reader's
+/// types keep what they had.
 pub async fn put_prefs(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Json(body): Json<NotificationPrefs>,
+    Json(body): Json<PrefsUpdate>,
 ) -> Result<Response, Response> {
+    let locale = notify::render::locale_of(&user);
     let uid = user.id.clone();
-    let categories = query(&state.db, move |pool| {
-        db::notifications::set_prefs(&pool, &uid, &body.categories)?;
-        let conn = pool.get()?;
-        db::notifications::prefs(&conn, &uid).map_err(Into::into)
+    let types = notify::types::types_of(&state);
+    let host = state.clone();
+    let prefs = query(&state.db, move |pool| {
+        let enabled = |id: &str| kroma_engine::modules::module_enabled(&host.settings, id);
+        notify::preferences::save(&pool, &uid, &body, &types, enabled, locale)
     })
     .await?;
-    Ok(Json(NotificationPrefs { categories }).into_response())
+    Ok(Json(prefs).into_response())
 }
 
 /// `GET /api/push/key` the server's VAPID public key (`applicationServerKey`),

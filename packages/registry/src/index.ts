@@ -38,6 +38,7 @@ export {
   MANIFEST_SCHEMAS,
   Manifest,
   MODULE_SCHEMA_VERSION,
+  notificationsProblem,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
   Storage,

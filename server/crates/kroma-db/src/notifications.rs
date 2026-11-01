@@ -67,9 +67,9 @@ pub fn insert_notification(
         "INSERT INTO notifications \
          (id, user_id, category, event, title_key, body_key, params, link, image_url, actions, \
           push_category, created_at, subject_kind, subject_id, actor_id, data, dedupe_key, \
-          group_key, updated_at) \
+          group_key, updated_at, module_type) \
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, \
-          ?18, ?12)",
+          ?18, ?12, ?19)",
         params![
             n.id,
             user_id,
@@ -90,7 +90,8 @@ pub fn insert_notification(
             n.actor_id,
             data_column(n),
             n.dedupe_key,
-            n.group_key
+            n.group_key,
+            n.module_type
         ],
     )?;
     prune(conn, user_id)?;
@@ -272,6 +273,24 @@ mod tests {
         );
         assert_eq!(n.actor_id.as_deref(), Some("mod-1"));
         assert_eq!(n.data, Some(serde_json::json!({ "requestId": "req-1" })));
+    }
+
+    #[test]
+    fn a_row_a_module_raised_remembers_the_type_it_declared() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        let raised = StoredNotification {
+            module_type: Some("tv.kroma.torrents/download.completed".into()),
+            ..new("n1", 1_000)
+        };
+
+        insert_notification(&conn, &u1, &raised).unwrap();
+
+        let n = &list_notifications(&conn, &u1, 50, false).unwrap()[0];
+        assert_eq!(
+            n.module_type.as_deref(),
+            Some("tv.kroma.torrents/download.completed")
+        );
     }
 
     #[test]

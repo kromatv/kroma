@@ -71,13 +71,13 @@
 - **ACCT-62** (AGREED) - The television routes no subject kinds. It gains them with the inbox, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-64** (SHIPPED) - A category whose inbox switch is off writes no row at all. Muting is <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-65** (AGREED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-65** (SHIPPED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-66** (SHIPPED) - A device asks to receive banners, and nothing is sent to a device that <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-67** (SHIPPED) - A banner that cannot be delivered costs the banner, never the <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-68** (AGREED) - Every delivery attempt is recorded with its outcome (delivered, failed, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-70** (SHIPPED) - A module addresses the audiences the core addresses and no others: one <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-71** (AGREED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-71** (SHIPPED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
 
 ## ADMIN - [admin](admin/)
 

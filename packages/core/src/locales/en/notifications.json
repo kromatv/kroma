@@ -10,6 +10,7 @@
   "notifications.category.reports": "Problem reports",
   "notifications.category.requests": "Requests",
   "notifications.category.system": "Server health",
+  "notifications.categoryHint": "Each kind below follows this until you set it on its own.",
   "notifications.channelInApp": "In the app",
   "notifications.channelPush": "Push",
   "notifications.custom.body": "{body}",

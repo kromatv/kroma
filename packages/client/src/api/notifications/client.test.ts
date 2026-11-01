@@ -4,6 +4,7 @@ import { NotificationId } from './ids';
 
 const notification = NotificationId.parse('n 1');
 const PREFS = { categories: [{ category: 'requests' as const, inApp: true, push: false }] };
+const TYPE_CHOICE = { types: [{ type: 'system.job.failed', inApp: false, push: false }] };
 
 describe('the notification-centre endpoints', () => {
   it.each<Endpoint>([
@@ -53,6 +54,13 @@ describe('the notification-centre endpoints', () => {
       method: 'PUT',
       path: '/notifications/prefs',
       body: PREFS,
+    },
+    {
+      name: 'setPrefs, with one kind and no category',
+      call: (c) => c.notifications.setPrefs(TYPE_CHOICE),
+      method: 'PUT',
+      path: '/notifications/prefs',
+      body: TYPE_CHOICE,
     },
   ])('$name', checkEndpoint);
 });

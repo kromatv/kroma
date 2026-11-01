@@ -390,6 +390,7 @@ mod tests {
                 in_app: false,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
 

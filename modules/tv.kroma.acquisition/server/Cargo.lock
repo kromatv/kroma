@@ -1425,6 +1425,7 @@ name = "kroma-module-manifest"
 version = "0.1.0"
 dependencies = [
  "kroma-module-macros",
+ "kroma-module-wire",
  "semver",
  "serde",
  "serde_json",

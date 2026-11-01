@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DeliveriesView, NotificationDelivery } from './schemas';
+import { DeliveriesView, NotificationDelivery, NotificationPrefs } from './schemas';
 
 const SENT = {
   id: 'd1',
@@ -48,5 +48,33 @@ describe('a delivery record', () => {
 
   it('reads an empty view rather than treating it as absent', () => {
     expect(DeliveriesView.parse({ deliveries: [] }).deliveries).toEqual([]);
+  });
+});
+
+const CATEGORIES = [{ category: 'system', inApp: true, push: true }];
+
+describe('the delivery matrix', () => {
+  it('reads every kind with its category, its label and its switches', () => {
+    const parsed = NotificationPrefs.parse({
+      categories: CATEGORIES,
+      types: [
+        {
+          type: 'tv.kroma.torrents/download.completed',
+          category: 'downloads',
+          label: 'Téléchargements terminés',
+          inApp: true,
+          push: false,
+        },
+      ],
+    });
+
+    expect(parsed.types[0]?.label).toBe('Téléchargements terminés');
+    expect(parsed.types[0]?.push).toBe(false);
+  });
+
+  it('reads a server built before per-type choice as one with no kinds', () => {
+    const parsed = NotificationPrefs.parse({ categories: CATEGORIES });
+
+    expect(parsed.types).toEqual([]);
   });
 });

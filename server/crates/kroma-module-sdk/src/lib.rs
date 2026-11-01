@@ -67,19 +67,7 @@ pub mod i18n {
     /// ships none at all is an error rather than an engine answering every key
     /// with itself.
     pub fn engine(catalogs: &[(&str, &str)]) -> Result<I18n, BuildError> {
-        let fallback = catalogs
-            .iter()
-            .map(|(code, _)| *code)
-            .find(|code| *code == FALLBACK_LOCALE)
-            .or_else(|| catalogs.first().map(|(code, _)| *code))
-            .unwrap_or(FALLBACK_LOCALE);
-        catalogs
-            .iter()
-            .fold(
-                I18n::builder().default_locale(fallback).plural_rule(cldr),
-                |builder, (code, json)| builder.catalog_json(*code, *json),
-            )
-            .build()
+        from_catalogs(FALLBACK_LOCALE, catalogs)
     }
 
     #[cfg(test)]

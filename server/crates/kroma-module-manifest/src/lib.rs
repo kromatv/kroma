@@ -7,6 +7,7 @@ mod compat;
 mod embedded;
 mod event;
 mod manifest;
+mod notifications;
 mod permissions;
 mod registry;
 
@@ -20,6 +21,7 @@ pub use event::ModuleEvent;
 /// `kroma_module_sdk`) so the modules that sit below the SDK facade (e.g. scene)
 /// can use it without depending on the facade.
 pub use kroma_module_macros::embedded_module;
+pub use kroma_module_wire::NotificationType;
 pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
     ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,

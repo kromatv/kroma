@@ -644,7 +644,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 65,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The same choice is available per notification type, a module's own",
     "file": "docs/spec/accounts/notifications.md",
     "line": 163
@@ -704,7 +704,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 71,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A module declares the kinds of notification it sends and ships their",
     "file": "docs/spec/accounts/notifications.md",
     "line": 195
