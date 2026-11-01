@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 
 use super::identity::{b64url, RelayIdentity};
 use super::render::LOGO_PNG;
-use super::Rendered;
+use super::{Rendered, PURPOSE};
 
 /// Where every KROMA server registers and sends unless `KROMA_MAIL_RELAY_URL`
 /// names an operator's own copy of the Worker.
@@ -109,7 +109,7 @@ pub fn outcome(status: u16, body: &str) -> Result<Value, RelayError> {
 async fn post(url: String, body: Value) -> Result<Value, RelayError> {
     let response = tokio::task::spawn_blocking(move || {
         kroma_http::Fetch::new()
-            .purpose("mail")
+            .purpose(PURPOSE)
             .max_time(MAX_TIME_SECS)
             .post_json(&url, &body)
     })

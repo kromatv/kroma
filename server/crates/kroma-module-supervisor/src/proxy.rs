@@ -1,6 +1,11 @@
 //! The reverse proxy in front of a running sidecar: one shared client, and the
 //! header handling a hop-by-hop-aware relay owes its two ends.
 
+#![expect(
+    clippy::disallowed_types,
+    reason = "the reverse proxy into a sidecar: proxy_to only builds http://127.0.0.1 URLs, so this client never leaves the machine"
+)]
+
 use std::time::Duration;
 
 use axum::body::Body;

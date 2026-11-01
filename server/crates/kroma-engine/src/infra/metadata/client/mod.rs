@@ -11,7 +11,6 @@ mod seasons;
 pub use lookup::{lookup, lookup_all, lookup_all_by_id};
 pub use seasons::{season_episodes, season_episodes_multi, EpisodeArt, SeasonData};
 
-use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use kroma_http::Fetch;
@@ -112,14 +111,6 @@ const MAX_CREW: usize = 8;
 
 // TMDB returns keywords unordered; this bounds how much feeds the embedding doc.
 const MAX_KEYWORDS: usize = 20;
-
-pub fn curl_available() -> bool {
-    Command::new("curl")
-        .arg("--version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
-}
 
 // First TMDB failure logs at WARN (so a bad `KROMA_TMDB_API_KEY` or dead
 // network is visible); later ones drop to DEBUG to avoid spamming a bulk

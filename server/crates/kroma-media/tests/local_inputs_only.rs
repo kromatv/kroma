@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use walkdir::WalkDir;
+use kroma_testing::{findings, rust_sources, Finding};
 
 const RAW_INPUT_FLAG: &str = "\"-i\"";
 const RAW_WHITELIST_FLAG: &str = "protocol_whitelist";
@@ -9,7 +9,6 @@ const HELPER_CALL: &str = "input::";
 const NO_INPUT_FLAG: &str = "\"-version\"";
 
 const SCANNED_ROOTS: [&str; 2] = ["server", "modules"];
-const SKIPPED_DIRECTORIES: [&str; 3] = ["target", "node_modules", ".git"];
 const EXEMPT: [&str; 4] = [
     "server/crates/kroma-media/src/input.rs",
     "server/crates/kroma-media/src/input/",
@@ -17,12 +16,7 @@ const EXEMPT: [&str; 4] = [
     "server/crates/kroma-testing/",
 ];
 
-struct Violation {
-    line: usize,
-    reason: &'static str,
-}
-
-fn violations(source: &str) -> Vec<Violation> {
+fn violations(source: &str) -> Vec<Finding> {
     let by_line = source.lines().enumerate().flat_map(|(index, text)| {
         [
             (RAW_INPUT_FLAG, "spells the input flag by hand"),
@@ -30,7 +24,7 @@ fn violations(source: &str) -> Vec<Violation> {
         ]
         .into_iter()
         .filter(|(needle, _)| text.contains(needle))
-        .map(move |(_, reason)| Violation {
+        .map(move |(_, reason)| Finding {
             line: index + 1,
             reason,
         })
@@ -41,7 +35,7 @@ fn violations(source: &str) -> Vec<Violation> {
             let statement = source[*at..].split(';').next().unwrap_or_default();
             !statement.contains(HELPER_CALL) && !statement.contains(NO_INPUT_FLAG)
         })
-        .map(|(at, _)| Violation {
+        .map(|(at, _)| Finding {
             line: source[..at].matches('\n').count() + 1,
             reason: "runs ffprobe without naming the input through kroma_media::input",
         });
@@ -56,47 +50,9 @@ fn repo_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn rust_sources(root: &Path) -> Vec<PathBuf> {
-    SCANNED_ROOTS
-        .iter()
-        .flat_map(|top| {
-            WalkDir::new(root.join(top))
-                .into_iter()
-                .filter_entry(|entry| {
-                    !SKIPPED_DIRECTORIES.contains(&entry.file_name().to_string_lossy().as_ref())
-                })
-                .filter_map(Result::ok)
-                .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "rs"))
-                .map(|entry| entry.into_path())
-        })
-        .collect()
-}
-
 #[test]
 fn every_ffmpeg_and_ffprobe_input_goes_through_the_input_helper() {
-    let root = repo_root();
-
-    let found: Vec<String> = rust_sources(&root)
-        .into_iter()
-        .filter_map(|path| {
-            let relative = path
-                .strip_prefix(&root)
-                .ok()?
-                .to_string_lossy()
-                .replace('\\', "/");
-            if EXEMPT.iter().any(|exempt| relative.starts_with(exempt)) {
-                return None;
-            }
-            let source = std::fs::read_to_string(&path).ok()?;
-            Some(
-                violations(&source)
-                    .into_iter()
-                    .map(|v| format!("{relative}:{}: {}", v.line, v.reason))
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .flatten()
-        .collect();
+    let found = findings(&repo_root(), &SCANNED_ROOTS, &EXEMPT, violations);
 
     assert!(found.is_empty(), "\n{}\n", found.join("\n"));
 }
@@ -105,7 +61,10 @@ fn every_ffmpeg_and_ffprobe_input_goes_through_the_input_helper() {
 fn the_scan_covers_the_server_and_the_modules() {
     let root = repo_root();
 
-    let sources = rust_sources(&root);
+    let sources: Vec<PathBuf> = SCANNED_ROOTS
+        .iter()
+        .flat_map(|top| rust_sources(&root.join(top)))
+        .collect();
 
     let reaches = |part: &str| sources.iter().any(|p| p.to_string_lossy().contains(part));
     assert!(reaches("server/src/api/stream.rs"));

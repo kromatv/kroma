@@ -7,6 +7,14 @@ use anyhow::{bail, Context, Result};
 use crate::config::option_line;
 use crate::response::Response;
 
+/// Whether the `curl` binary every [`crate::Fetch`] runs is installed and answers.
+pub fn curl_available() -> bool {
+    Command::new("curl")
+        .arg("--version")
+        .output()
+        .is_ok_and(|output| output.status.success())
+}
+
 // Every option travels on stdin: argv is world-readable through `ps`, and these
 // requests carry an indexer's API key in a header and the download client's
 // password in a form field. `-q` must come first: it stops curl reading a

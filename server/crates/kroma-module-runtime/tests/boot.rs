@@ -11,6 +11,10 @@ fn free_port() -> u16 {
     listener.local_addr().expect("addr").port()
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test's client for the sidecar it booted on loopback"
+)]
 fn get(port: u16, path: &str) -> Option<String> {
     let mut stream = TcpStream::connect(("127.0.0.1", port)).ok()?;
     stream

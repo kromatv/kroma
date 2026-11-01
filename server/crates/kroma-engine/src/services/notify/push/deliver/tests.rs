@@ -388,6 +388,10 @@ fn endpoints_without_a_usable_key_are_skipped_rather_than_re_keyed() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "opens and drops one connection to the test's own fake service on loopback"
+)]
 fn a_caller_that_says_nothing_is_not_counted_as_a_push() {
     let service = FakeService::answering(201);
     let addr = service.endpoint.trim_start_matches("http://");
