@@ -135,7 +135,7 @@ jobs:
           # The release .dmg DOES bundle libmpv; bringing it here is a follow-up.
           # The .app only: tauri's own dmg skips its Finder styling under CI
           # (--skip-jenkins), so the styled dmg is packaged after the build.
-          - os: macos-14
+          - os: macos-15
             bundles: app
             extra_args: '-- --no-default-features'
           # The Intel Macs, from the last Intel image GitHub runs.
