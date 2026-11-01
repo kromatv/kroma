@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { webDocument } from '#ui/lib/dom';
 import { type CommandAction, type CommandItem, matchingActions, stepTo } from './command-list';
 
@@ -17,36 +17,37 @@ function useActionPanel(item: CommandItem | undefined) {
   const shown = useMemo(() => matchingActions(all, query), [all, query]);
   const at = Math.min(cursor, Math.max(0, shown.length - 1));
 
-  const reset = useCallback(() => {
-    setQuery('');
-    setCursor(0);
-  }, []);
+  const available = all.length > 0;
 
-  return {
-    open,
-    query,
-    shown,
-    cursor: shown[at],
-    available: all.length > 0,
-    show: useCallback(() => {
-      opener.current = (webDocument()?.activeElement as HTMLElement | null) ?? null;
-      reset();
-      setOpen(true);
-    }, [reset]),
-    hide: useCallback(() => {
-      setOpen(false);
-      opener.current?.focus();
-    }, []),
-    filter: useCallback((next: string) => {
-      setQuery(next);
-      setCursor(0);
-    }, []),
-    step: (rows: number) => setCursor((prev) => stepTo(prev, rows, shown.length)),
-    point: (action: CommandAction) => {
-      const row = shown.indexOf(action);
-      if (row >= 0) setCursor(row);
-    },
-  };
+  return useMemo(
+    () => ({
+      open,
+      query,
+      shown,
+      cursor: shown[at],
+      available,
+      show: () => {
+        opener.current = (webDocument()?.activeElement as HTMLElement | null) ?? null;
+        setQuery('');
+        setCursor(0);
+        setOpen(true);
+      },
+      hide: () => {
+        setOpen(false);
+        opener.current?.focus();
+      },
+      filter: (next: string) => {
+        setQuery(next);
+        setCursor(0);
+      },
+      step: (rows: number) => setCursor((prev) => stepTo(prev, rows, shown.length)),
+      point: (action: CommandAction) => {
+        const row = shown.indexOf(action);
+        if (row >= 0) setCursor(row);
+      },
+    }),
+    [open, query, shown, at, available],
+  );
 }
 
 export { useActionPanel };

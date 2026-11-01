@@ -118,7 +118,7 @@ function onWord(term: string, word: Word): Found | null {
     };
   }
   const budget = typoBudget(term);
-  if (budget === 0 || term[0] !== word.text[0]) return null;
+  if (budget === 0 || !word.text.startsWith(term.charAt(0))) return null;
   const distance =
     term.length < STILL_TYPING
       ? editDistance(term, word.text)
@@ -158,7 +158,7 @@ function onInitials(needle: string, words: readonly Word[]): Found | null {
   const ranges: (readonly [number, number])[] = [];
   let at = 0;
   for (const word of words) {
-    if (word.text[0] === needle[at]) {
+    if (word.text.startsWith(needle.charAt(at))) {
       ranges.push([word.start, word.start + 1]);
       at += 1;
       if (at === needle.length) return { score: INITIALS, ranges };
@@ -194,7 +194,7 @@ function onScattered(
   if (needle.length < SHORTEST_SCATTER) return null;
   let best: Found | null = null;
   for (const word of words) {
-    if (word.text[0] !== needle[0]) continue;
+    if (!word.text.startsWith(needle.charAt(0))) continue;
     const hits: number[] = [word.start];
     let from = word.start + 1;
     for (const char of needle.slice(1)) {

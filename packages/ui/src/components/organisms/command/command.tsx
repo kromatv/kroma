@@ -103,9 +103,12 @@ function Root({
     [run],
   );
 
-  const chooseAction = (action: CommandAction) => {
-    if (current) run(current, action);
-  };
+  const chooseAction = useCallback(
+    (action: CommandAction) => {
+      if (current) run(current, action);
+    },
+    [current, run],
+  );
 
   const chooseSecondary = () => {
     const second = current?.actions?.[1];
@@ -139,25 +142,43 @@ function Root({
     else onClose();
   }, modal);
 
-  const state: CommandState = {
-    shown: flat.length,
-    total: items.length,
-    query,
-    current,
-    sections,
-    cursor: cursorId,
-    selected,
-    setQuery: (next: string) => {
-      setQueryValue(next);
-      setCursor(0);
-    },
-    point,
-    choose,
-    chooseAction,
-    actions,
-    close: onClose,
-    scroll: (offset, viewport) => scrollTo(sections, at, offset, viewport),
-  };
+  const state = useMemo<CommandState>(
+    () => ({
+      shown: flat.length,
+      total: items.length,
+      query,
+      current,
+      sections,
+      cursor: cursorId,
+      selected,
+      setQuery: (next: string) => {
+        setQueryValue(next);
+        setCursor(0);
+      },
+      point,
+      choose,
+      chooseAction,
+      actions,
+      close: onClose,
+      scroll: (offset, viewport) => scrollTo(sections, at, offset, viewport),
+    }),
+    [
+      flat.length,
+      items.length,
+      query,
+      current,
+      sections,
+      cursorId,
+      selected,
+      setQueryValue,
+      point,
+      choose,
+      chooseAction,
+      actions,
+      onClose,
+      at,
+    ],
+  );
 
   const palette = (
     <CommandContext.Provider value={state}>
