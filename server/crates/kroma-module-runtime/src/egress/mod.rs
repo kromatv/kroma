@@ -30,7 +30,7 @@ pub(crate) fn install(host: &RemoteHost) {
     let reporting = host.clone();
     let reporter = Reporter::start(move |flows| report_to_core(&reporting, &flows));
     if let Err(error) =
-        kroma_http::egress::set_sink(Arc::new(move |exchange| reporter.push(exchange)))
+        kroma_http::egress::set_sink(Arc::new(move |exchange, _| reporter.push(exchange)))
     {
         tracing::warn!(%error, "the network sink was not installed");
     }
