@@ -50,6 +50,13 @@ describe('openProject', () => {
     expect(() => openProject(dir)).toThrow(/dependsOn/);
   });
 
+  it('refuses a permission the schema does not declare, and says where it is', () => {
+    const permissions = { net: { conect: [] } };
+    const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, permissions }) });
+
+    expect(() => openProject(dir)).toThrow(/permissions\.net: .*conect/);
+  });
+
   it('names the field a manifest got wrong', () => {
     const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, version: 1 }) });
 

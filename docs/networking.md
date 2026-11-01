@@ -69,7 +69,10 @@ provides (a VPN, for example), or `block`.
 
 ## Deciding a connection
 
-The policy evaluates, in order:
+The policy evaluates, in order. A module's call meets its own declaration
+first: when it declares `permissions` and its `net.connect` does not cover the
+call, the call is refused with the rule `permission:net.connect`, and no rule
+can allow it.
 
 1. **Guards.** Fixed. A rule cannot relax them.
    - A link-local address (`169.254.0.0/16`, `fe80::/10`, IPv4-mapped forms
@@ -264,7 +267,7 @@ Behind the VPN, only peer TCP dialled through the bridge is sealed. Everything
 else a BitTorrent client does by default leaves from the real address. So when a
 VPN is configured the engine runs with:
 
-- no DHT, no UDP trackers, no Local Service Discovery, no uTP;
+- no DHT, no UDP trackers, no uTP;
 - no listener on the host's interfaces;
 - none of librqbit's own tracker clients, whose proxy resolves names locally;
 - IPv4 only, because the bridge is.
@@ -274,6 +277,10 @@ the proxy resolving the names, from magnet trackers too, under the session's own
 peer id (fresh at each start), plus peer exchange. A `.torrent` link goes
 through the tunnel unless its host is on the LAN, and is refused while the VPN is
 configured but down. The trade-off is fewer peers until a network can carry UDP.
+
+Local Service Discovery is off in every session, VPN or not. It is LAN
+multicast, which only the host's network carries, and it would make the module
+declare `net.host`, which exempts it from containment.
 
 ## Status
 

@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.whisper",
   "name": "Whisper transcription",
-  "version": "0.3.18",
+  "version": "0.3.19",
   "description": "In-process Whisper subtitle transcription (candle).",
   "engines": {
     "server": ">=0.1.39"
@@ -18,5 +18,21 @@
       "read": ["whisper_jobs"],
       "write": ["whisper_jobs"]
     }
+  },
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "model-download",
+          "to": ["huggingface.co"],
+          "ports": [443]
+        }
+      ]
+    },
+    "fs": {
+      "read": ["module", "media"],
+      "write": ["module"]
+    },
+    "run": ["ffmpeg"]
   }
 }

@@ -292,6 +292,7 @@ mod gate_tests {
                 jobs: &[],
                 contributions: Arc::new(|_| Vec::new()),
                 official_modules: Arc::new(Vec::new),
+                permissions: Arc::new(|_| None),
             },
         );
         (state, dir)

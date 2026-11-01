@@ -39,10 +39,16 @@ describe('Permissions', () => {
       Permissions.parse({ net: { connect: [{ purpose: 'p', to: ['anywhere'] }] } }),
     ).toThrow();
     expect(() => Permissions.parse({ net: { connect: [{ purpose: 'p', to: [] }] } })).toThrow();
+    const tooLong = `${'a'.repeat(250)}.org`;
+    expect(() =>
+      Permissions.parse({ net: { connect: [{ purpose: 'p', to: [tooLong] }] } }),
+    ).toThrow();
   });
 
   it('refuses a binary given as a path and a variable that is not a name', () => {
     expect(() => Permissions.parse({ run: ['/usr/bin/curl'] })).toThrow();
+    expect(() => Permissions.parse({ run: ['..'] })).toThrow();
+    expect(() => Permissions.parse({ run: ['.'] })).toThrow();
     expect(() => Permissions.parse({ env: ['path'] })).toThrow();
   });
 

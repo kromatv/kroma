@@ -3,12 +3,17 @@
   "schemaVersion": 2,
   "id": "tv.kroma.mdns",
   "name": "mDNS discovery",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "description": "mDNS / DNS-SD advertising so LAN clients find the server automatically.",
   "engines": {
     "server": ">=0.1.39"
   },
   "settings": {
     "read": ["localDiscovery"]
+  },
+  "permissions": {
+    "net": {
+      "host": true
+    }
   }
 }

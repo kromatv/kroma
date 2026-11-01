@@ -80,18 +80,18 @@ fn session_options(cfg: &RqbitConfig) -> SessionOptions {
             port: None,
             persistence: None,
         }),
+        disable_local_service_discovery: true,
         ..Default::default()
     };
     if cfg.socks_proxy_url.is_none() {
         return opts;
     }
-    // Only SOCKS-dialled TCP stays in the tunnel: DHT, UDP trackers, LSD, HTTP
+    // Only SOCKS-dialled TCP stays in the tunnel: DHT, UDP trackers, HTTP
     // trackers and a host listener all leave it, so `announce` feeds the peers.
     SessionOptions {
         dht: None,
         listen: None,
         disable_trackers: true,
-        disable_local_service_discovery: true,
         ipv4_only: true,
         ..opts
     }
@@ -238,13 +238,19 @@ mod tests {
     }
 
     #[test]
-    fn without_a_vpn_the_engine_keeps_every_peer_source() {
+    fn without_a_vpn_the_engine_keeps_its_dht_trackers_and_listener() {
         let opts = session_options(&RqbitConfig::default());
 
         assert!(opts.dht.is_some());
         assert!(opts.listen.is_some());
         assert!(!opts.disable_trackers);
-        assert!(!opts.disable_local_service_discovery);
         assert!(opts.connect.unwrap().proxy_url.is_none());
+    }
+
+    #[test]
+    fn without_a_vpn_local_service_discovery_stays_off() {
+        let opts = session_options(&RqbitConfig::default());
+
+        assert!(opts.disable_local_service_discovery);
     }
 }

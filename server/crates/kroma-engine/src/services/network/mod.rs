@@ -18,6 +18,7 @@ mod flow;
 mod host_policy;
 mod inbound;
 mod journal;
+mod permissions;
 mod rules;
 mod summary;
 
@@ -25,6 +26,7 @@ pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK};
 pub use flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute, Verdict};
 pub use inbound::{via_of, Arrival, InboundJournal, InboundSummary, Via};
 pub use journal::{Journal, RECENT_CAPACITY};
+pub use permissions::{DeclaredPermissions, PERMISSION_NET_CONNECT};
 pub use rules::{
     Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
 };
@@ -63,6 +65,7 @@ pub struct Network {
     proxy: Mutex<Option<(Instant, Option<String>)>>,
     core_port: Option<u16>,
     https_port: Option<u16>,
+    declared: DeclaredPermissions,
 }
 
 impl Network {
@@ -78,7 +81,15 @@ impl Network {
             proxy: Mutex::new(None),
             core_port: None,
             https_port: None,
+            declared: Arc::new(|_| None),
         }
+    }
+
+    /// The `permissions` block each module declares, which its calls must stay
+    /// within. Without it every module counts as declaring none.
+    pub fn with_declared(mut self, declared: DeclaredPermissions) -> Self {
+        self.declared = declared;
+        self
     }
 
     /// The core's own HTTP port, and its HTTPS port when the environment pins

@@ -13,9 +13,14 @@ const Purpose = z
 const SettingRef = /^setting:[A-Za-z0-9._]+$/;
 const HostPattern = /^(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
+const MAX_HOST_CHARS = 253;
+
+const isHost = (to: string) =>
+  HostPattern.test(to) && to.replace(/^\*\./, '').length <= MAX_HOST_CHARS;
+
 const Destination = z
   .string()
-  .refine((to) => to === 'public' || to === 'lan' || SettingRef.test(to) || HostPattern.test(to), {
+  .refine((to) => to === 'public' || to === 'lan' || SettingRef.test(to) || isHost(to), {
     message: 'a destination is "public", "lan", a host, "*.domain" or "setting:<key>"',
   })
   .describe(
@@ -81,7 +86,7 @@ export const Permissions = z
       .strict()
       .optional(),
     run: z
-      .array(z.string().regex(/^[^/]+$/))
+      .array(z.string().regex(/^(?!\.{1,2}$)[^/]+$/))
       .optional()
       .describe('Binaries this module may start, by bare name. They inherit its sandbox.'),
     env: z

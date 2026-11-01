@@ -20,9 +20,12 @@ Out of scope: root on the host, a compromised core binary, kernel exploits.
 
 A module declares everything it needs in `module.json`, the way a Deno program
 is started with `--allow-net` or `--allow-read`. What is not declared is denied.
-The block is an optional field of manifest schema 2 (#508). Enforcing it, and
-the install screen that lists every permission in plain words before the
-operator accepts, and asks again when an update wants more, are planned (#487).
+The block is an optional field of manifest schema 2 (#508), and every
+first-party module declares one. The core enforces `net.connect` on every call a
+module asks it to decide (#487). A module with no block, third-party or built
+before #508, keeps the behaviour it had. The install screen that lists every
+permission in plain words before the operator accepts, and asks again when an
+update wants more, is planned (#487).
 
 ```json
 "permissions": {
@@ -45,8 +48,8 @@ operator accepts, and asks again when an update wants more, are planned (#487).
 |---|---|---|
 | `net.connect` | connections for a purpose to a set of destinations | `to` is `public`, `lan`, a host pattern, or `setting:<key>`, which makes the operator's own configuration the allowlist |
 | `net.listen` | a listening socket the gateway opens on the module's behalf | the module never binds a host interface itself |
-| `net.host` | the host's network, outside the sandbox | for LAN multicast (mDNS, SSDP) and for a network provider's own tunnel. Shown in red, official registry only by default |
-| `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only), `downloads`, `temp` |
+| `net.host` | the host's network, outside the sandbox | for LAN multicast (mDNS, SSDP), a network provider's own tunnel, and a tunnel binary that cannot dial through the gateway (cloudflared). Shown in red, official registry only by default |
+| `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only unless `fs.write` names it, as an importer's does), `downloads`, `temp` |
 | `run` | binaries it may start | anything it starts inherits its sandbox and its permissions |
 | `env` | environment variables beyond the allowlist | the server's own variables, secrets included, are never passed |
 
@@ -59,11 +62,14 @@ These sit beside the declarations that already exist and keep working:
 - `consumes`, `contributes`, `definesPoints`: the points it may call and the ones
   it answers.
 
-Once #487 enforces the block, a denied operation fails with an error that names
-the missing permission
+A call that a module's `net.connect` does not cover fails with an error that
+names the missing permission
 (`net.connect: tracker.example.org:443 for purpose "indexer" is not declared`)
-and is recorded, so a module author sees what to declare and an operator sees what
-was attempted.
+and the rule `permission:net.connect`. The module's report of the refusal puts
+it in the journal like any other blocked call, so a module author sees what to
+declare and an operator sees what was attempted. A destination
+`setting:<key>` names is read from that setting each time: a URL, or a list of
+them. The other permissions are declared but not yet enforced (#486, #488).
 
 ## How each permission is enforced
 
@@ -183,7 +189,8 @@ namespace tier's suite is in review (#507); the other tiers are planned (#497).
 | Host API refuses relayed traffic | in review (#503) |
 | Network namespace primitive, not yet wired | in review (#507) |
 | `permissions` in the manifest | in review (#508) |
-| Consent screen, denial errors, enforcement of `permissions` | planned (#487) |
+| Every first-party module declares its `permissions`; `net.connect` enforced on a module's calls, naming the missing permission | in review (#487) |
+| Consent and re-consent screens, a banner on a module that declares nothing | planned (#487) |
 | Sidecars started in the sandbox, strict tier by uid | planned (#486, #489) |
 | Watch scanner | planned (#490) |
 | Module seam on Unix sockets, legacy TCP seam for older bundles | in review (#485) |
