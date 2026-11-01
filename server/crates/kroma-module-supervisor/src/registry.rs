@@ -33,8 +33,6 @@ const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15
 /// `total` is the advisory Content-Length when the server sent one.
 pub type FetchProgress<'a> = &'a (dyn Fn(u64, Option<u64>) + Send + Sync);
 
-// Built once each: constructing a client parses the whole root certificate
-// store, and the catalog path builds one per registry in the list.
 #[derive(Default)]
 pub(crate) struct Clients {
     catalog: std::sync::OnceLock<reqwest::Client>,

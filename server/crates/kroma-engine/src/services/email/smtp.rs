@@ -34,11 +34,7 @@ pub(super) async fn send_smtp(
         "image/png".parse().map_err(|e| format!("logo mime: {e}"))?,
     );
     let msg = Message::builder()
-        .from(
-            smtp_from(settings)?
-                .parse()
-                .map_err(|e| format!("from: {e}"))?,
-        )
+        .from(smtp_from(settings)?.parse().map_err(|e| format!("from: {e}"))?)
         .to(to.parse().map_err(|e| format!("to: {e}"))?)
         .subject(rendered.subject.clone())
         .multipart(
@@ -58,14 +54,14 @@ pub(super) async fn send_smtp(
 /// not the template.
 pub async fn send_test(settings: &Settings, to: &str, locale: &str) -> Result<(), String> {
     let msg = Message::builder()
-        .from(
-            smtp_from(settings)?
-                .parse()
-                .map_err(|e| format!("from: {e}"))?,
-        )
+        .from(smtp_from(settings)?.parse().map_err(|e| format!("from: {e}"))?)
         .to(to.parse().map_err(|e| format!("to: {e}"))?)
         .subject(i18n::t(locale, "email.test.subject", &[]))
-        .singlepart(SinglePart::plain(i18n::t(locale, "email.test.text", &[])))
+        .singlepart(SinglePart::plain(i18n::t(
+            locale,
+            "email.test.text",
+            &[],
+        )))
         .map_err(|e| e.to_string())?;
 
     deliver(settings, msg).await

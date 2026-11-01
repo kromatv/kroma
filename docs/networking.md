@@ -203,6 +203,10 @@ exempts:
 | `kroma-egress/src/gateway.rs`, `upstream.rs` | TCP connect | The gateway itself, dialling once the policy has routed the connection |
 | `kroma-engine/src/services/email/smtp.rs` | lettre SMTP transport | It asks the gate with the purpose `email` and records the exchange |
 | `kroma-engine/src/services/notify/push/deliver/tests.rs`, `kroma-module-runtime/tests/boot.rs` | TCP connect | Tests, to a server the test started on loopback |
+| `kroma-sandbox/tests/leaks.rs` | TCP connect, UDP send | The sandbox leak suite: each probe opens a raw socket from inside the sandbox to prove the sandbox refuses it |
+
+Code behind `cfg(target_os = "linux")`, such as the leak suite, is only linted
+where it compiles. Clippy on macOS does not see it, and CI's Linux job does.
 
 `server/clippy.toml` does not reach the module workspaces: clippy looks for it
 in the folders above the crate, and `modules/` is not under `server/`. A module

@@ -1,4 +1,8 @@
 #![cfg(target_os = "linux")]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "the sandbox leak suite: each probe opens a raw socket from inside the sandbox to prove the sandbox refuses it"
+)]
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
