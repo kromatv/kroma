@@ -13,6 +13,7 @@ bun run ci rust clippy | test             every cargo workspace; `test` runs und
 bun run ci build <target> [--slice]       a fleet build, with its dist path as a step output
 bun run ci version                        version, triplet, channel, build number, canary name
 bun run ci canary publish [--rename] ...  files onto the rolling `canary` prerelease, with retention
+bun run ci beta pick --app <id> [--run N] the run the beta channels ship, if the stores lack it
 bun run ci cache prune --prefix X         retire older Actions cache entries under a key prefix
 bun run ci tools ffmpeg | tauri-deps      apt installs with retries
 bun run ci sonar prepare                  the tree as the scanner wants it
@@ -168,8 +169,8 @@ is retired. That window stays above the seven-day stale copy
 older, count-based retention hand out 404s.
 
 The two `.ipa` bundles are not on the channel: TestFlight is the only way onto
-an Apple device. The channel is not a gate either: a failed upload does not
-make a candidate unpromotable.
+an Apple device (see the beta channels below). The channel is not a gate
+either: a failed upload does not make a candidate unpromotable.
 
 Samsung ships as four files from one build (`clients/tizen/scripts/package-all.ts`):
 `KROMA-tizen-<v>.wgt` with every engine tier for the Store, and one package
@@ -178,6 +179,35 @@ per Tizen version for sideloading (`KROMA-tizen8-`, `KROMA-tizen4to7-`,
 `release-targets.ts` matches `KROMA-tizen-` only, so the per-version files are
 on the tag and in the candidate but not yet on the page: offering them there
 is the channel-switch work below.
+
+### The beta channels: TestFlight and Google Play
+
+A candidate builds the iPhone and Apple TV `.ipa` files and the mobile and
+Android TV `.aab` bundles, validates the `.ipa` files against the App Store,
+and uploads none of them. `_distribute.yml` is the one path to the stores: the
+`.ipa` files to TestFlight, the bundles to Google Play as drafts. Two
+workflows call it:
+
+- `beta.yml`, every day at 04:00 UTC and by hand, with the newest run on
+  `main` whose Candidate gate passed.
+- `deploy.yml`, after the approval, with the run it promotes.
+
+`bun run ci beta pick` decides first. It ships a run only when its build
+number (recorded beside its version, in the `candidate-version` artifact) is
+past the highest build App Store Connect holds. A day with no new candidate
+ships nothing, and a run that one caller shipped does not go again from the
+other: Google Play refuses a version code it has seen.
+
+Every push used to upload its own candidate. On 30 October 2026 that was 17
+TestFlight builds in one day, and two emails for each build. Apple
+also limits uploads per account per day (`409 Upload limit reached`) and does
+not publish the limit. One build a day keeps every channel well below it, so a
+deploy is never refused for a limit that the candidates used up.
+
+```sh
+gh workflow run beta.yml                        # the newest candidate, now
+gh workflow run beta.yml -f build_run_id=<id>   # that run, a branch build too
+```
 
 ### How the site reads the channels
 
