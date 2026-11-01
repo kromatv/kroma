@@ -1,6 +1,3 @@
-// Mirrors `NotificationType` in `kroma-module-wire` and the namespace check in
-// `kroma-module-manifest`.
-
 import { z } from 'zod';
 
 const MessageKey = z.string().min(1);
