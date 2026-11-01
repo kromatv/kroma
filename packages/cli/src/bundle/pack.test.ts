@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { Project } from '../project';
-import { bundleName, type PackInput, packBundle, packForDev } from './pack';
-import { tarNames, toTar } from './tar';
+import { bundleName, type PackInput, packBundle, packForDev, SEAM } from './pack';
+import { tarNames, tarRead, toTar } from './tar';
 
 const work = mkdtempSync(join(tmpdir(), 'kroma-pack-'));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
@@ -32,6 +32,8 @@ function fixture(): PackInput {
 }
 
 const bytesOf = (path: string) => new Uint8Array(readFileSync(path));
+const bundledManifest = (path: string): Record<string, unknown> =>
+  JSON.parse(Buffer.from(tarRead(toTar(bytesOf(path)), 'module.json') ?? []).toString('utf8'));
 const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 describe('bundleName', () => {
@@ -71,6 +73,29 @@ describe('packBundle', () => {
     const names = tarNames(toTar(bytesOf(packed.path)));
     expect(names).toContain('locales/en.json');
     expect(names).not.toContain('locales/notes.md');
+  });
+
+  it('records in the manifest that the sidecar speaks the socket seam', () => {
+    const input = fixture();
+
+    const packed = packBundle(input);
+
+    expect(bundledManifest(packed.path)).toEqual({
+      schemaVersion: 2,
+      id: 'tv.kroma.notes',
+      name: 'Notes',
+      version: '1.2.0',
+      seam: SEAM,
+    });
+  });
+
+  it('leaves the manifest of a library module as it was written', () => {
+    const input = fixture();
+
+    const packed = packBundle({ ...input, binPath: null });
+
+    expect(bundledManifest(packed.path).seam).toBeUndefined();
+    expect(readFileSync(join(input.project.dir, 'module.json'), 'utf8')).not.toContain('seam');
   });
 
   it('leaves nothing staged in the module directory', () => {

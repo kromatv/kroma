@@ -231,8 +231,11 @@ the tiers is wired yet (#486, #489, #490):
 | Strict, one user per module | Docker (the image runs as root) with `NET_ADMIN` | is dropped by nftables, matched on its uid |
 | Watch | Synology DSM, Docker without `NET_ADMIN`, macOS dev | is detected from `/proc` and reported, and can be stopped |
 
-The details, and what each tier cannot do, are in
-[module security](module-security.md).
+The core and a module already reach each other over Unix sockets under
+`<data>/run` (#485), so a sidecar with no network of its own keeps its seam. A
+module built before the socket seam runs on a loopback port, is labelled legacy
+seam, and is never given a strict tier. The details, and what each tier cannot
+do, are in [module security](module-security.md).
 
 ## The VPN and BitTorrent
 
@@ -266,7 +269,7 @@ configured but down. The trade-off is fewer peers until a network can carry UDP.
 | `kroma-egress` gateway, not yet wired | in review (#507) |
 | Network namespace sandbox primitive and its leak suite, not yet wired | in review (#507) |
 | Gateway wired into the core for module traffic | planned (#484) |
-| Module seam on Unix sockets | planned (#485) |
+| Module seam on Unix sockets, legacy TCP seam for older bundles | in review (#485) |
 | Sidecars started in the sandbox | planned (#486) |
 | Strict tier by uid and nftables under Docker | planned (#489) |
 | Watch scanner | planned (#490) |

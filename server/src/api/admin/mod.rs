@@ -107,10 +107,10 @@ async fn admin_module_proxy(
     require_any_admin(&user)?;
     let tail = uri.path().strip_prefix("/api/admin/m/").unwrap_or_default();
     let (id, rest) = tail.split_once('/').unwrap_or((tail, ""));
-    match sup.port_of(id) {
-        Some(port) => {
+    match sup.endpoint_of(id) {
+        Some(endpoint) => {
             let query = uri.query().map(|q| format!("?{q}")).unwrap_or_default();
-            Ok(kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await)
+            Ok(kroma_module_supervisor::proxy_to(&endpoint, &format!("/{rest}{query}"), req).await)
         }
         None => Ok((StatusCode::NOT_FOUND, "not found").into_response()),
     }

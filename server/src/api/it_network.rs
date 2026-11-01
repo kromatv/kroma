@@ -281,3 +281,21 @@ async fn the_listeners_name_the_cores_own_socket_and_its_exposure() {
         })
     );
 }
+
+#[cfg(unix)]
+#[tokio::test]
+async fn the_socket_modules_call_back_on_is_listed_as_this_machine_only() {
+    let t = test_app();
+
+    let (status, body) = get(&t.app, "/api/admin/network/listeners", Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body["listeners"].as_array().unwrap().contains(&json!({
+            "owner": "core", "protocol": "unix",
+            "address": t.supervisor.host_socket().display().to_string(),
+            "purpose": "seam", "exposure": "loopback"
+        })),
+        "{body}"
+    );
+}

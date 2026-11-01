@@ -11,7 +11,8 @@ export const AuthoredManifest = Manifest.strict()
   .refine((m) => m.schemaVersion === MODULE_SCHEMA_VERSION, {
     message: `schemaVersion must be ${MODULE_SCHEMA_VERSION}`,
   })
-  .refine((m) => REVERSE_DNS_ID.test(m.id), { message: 'id must be reverse-DNS, lowercase' });
+  .refine((m) => REVERSE_DNS_ID.test(m.id), { message: 'id must be reverse-DNS, lowercase' })
+  .refine((m) => m.seam == null, { message: 'seam is written by kroma build, never by hand' });
 
 const CargoManifest = z.object({
   package: z.object({

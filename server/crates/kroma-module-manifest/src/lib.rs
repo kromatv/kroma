@@ -10,6 +10,7 @@ mod manifest;
 mod notifications;
 mod permissions;
 mod registry;
+mod seam;
 
 pub use compat::{
     engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
@@ -31,6 +32,7 @@ pub use permissions::{
     Attempt, Connect, FsPermissions, FsRoot, Listen, NetPermissions, Permissions, Proto,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
+pub use seam::Seam;
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the
 /// module's `module.json`, embedded at build time via `include_bytes!` and

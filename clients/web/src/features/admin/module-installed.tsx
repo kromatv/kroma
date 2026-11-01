@@ -91,6 +91,13 @@ function InstalledRow({
               <Text variant="label" lines={1}>
                 {m.name}
               </Text>
+              {m.legacySeam && (
+                <Tooltip label={t('admin.modulesLegacySeamHint')}>
+                  <Pill ink="accentText" bg="accentSoft" variant="overline">
+                    {t('admin.modulesLegacySeam')}
+                  </Pill>
+                </Tooltip>
+              )}
               {localBuild && (
                 <Tooltip label={t('admin.modulesLocalBuildHint')}>
                   <Pill ink="danger" bg="danger/13" variant="overline">

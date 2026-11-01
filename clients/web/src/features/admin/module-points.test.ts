@@ -18,6 +18,7 @@ function mod(over: Partial<AdminModule> & { id: string }): AdminModule {
     removable: true,
     running: true,
     hasSidecar: true,
+    legacySeam: false,
     ...over,
   } as AdminModule;
 }
@@ -112,6 +113,7 @@ describe('pointGraph', () => {
       mod({
         id: 'scene',
         hasSidecar: false,
+        legacySeam: false,
         running: false,
         contributes: [{ point: 'p', id: 'a' }],
       }),

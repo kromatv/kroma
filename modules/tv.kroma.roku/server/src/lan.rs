@@ -4,18 +4,13 @@
 use std::net::{IpAddr, UdpSocket};
 
 pub fn server_url() -> Option<String> {
-    let port = core_port(&std::env::var("KROMA_CORE_URL").ok()?)?;
+    let port = core_port(&std::env::var("KROMA_CORE_PORT").ok()?)?;
     let ip = primary_lan_ip()?;
     Some(format!("http://{ip}:{port}"))
 }
 
-pub fn core_port(core_url: &str) -> Option<u16> {
-    core_url
-        .trim_end_matches('/')
-        .rsplit(':')
-        .next()?
-        .parse()
-        .ok()
+pub fn core_port(named: &str) -> Option<u16> {
+    named.trim().parse().ok()
 }
 
 pub fn primary_lan_ip() -> Option<IpAddr> {
@@ -30,10 +25,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_port_is_read_off_the_core_url_with_or_without_a_trailing_slash() {
-        assert_eq!(core_port("http://127.0.0.1:4040"), Some(4040));
-        assert_eq!(core_port("http://127.0.0.1:4040/"), Some(4040));
+    fn the_port_is_the_one_the_server_names_and_never_a_guess() {
+        assert_eq!(core_port("4040"), Some(4040));
         assert_eq!(core_port("http://kroma.local"), None);
+        assert_eq!(core_port(""), None);
     }
 
     #[test]

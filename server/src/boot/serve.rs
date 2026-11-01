@@ -1,6 +1,6 @@
-//! Serving, and stopping: the HTTP listener (plus the optional HTTPS one), and
-//! the shutdown that must outlive the process — sidecars survive their parent,
-//! so failing to stop them orphans them.
+//! Serving, and stopping: the HTTP listener (plus the optional HTTPS one), the
+//! socket modules call back on, and the shutdown that must outlive the process —
+//! sidecars survive their parent, so failing to stop them orphans them.
 
 use anyhow::Context;
 use kroma_engine::state;
@@ -10,6 +10,7 @@ use crate::api;
 use crate::boot::https::{
     build_https, cert_download_route, https_redirect_router, spawn_https_listener,
 };
+use crate::boot::seam::{SeamSocket, Served};
 
 /// Serve until a shutdown signal, then stop the jobs and every module process.
 /// Takes ownership of both: nothing outlives this call.
@@ -23,7 +24,7 @@ pub async fn run(
     // spawn anything, and this outlives it.
     let subscriptions = std::sync::Arc::new(api::host_events::Subscriptions::default());
     api::host_events::deliver(state.clone(), supervisor.clone(), subscriptions.clone());
-    let mut app = api::router(state.clone(), supervisor.clone(), subscriptions);
+    let mut app = api::router(state.clone(), supervisor.clone(), subscriptions.clone());
 
     // Built before serving so the cert-download route can be merged into the router.
     let https = build_https(&state).await;
@@ -57,6 +58,7 @@ pub async fn run(
         info!("KROMA listening on http://{addr}  (API under /api)");
     }
 
+    let seam = open_seam(&state, &supervisor, subscriptions);
     supervisor.spawn_enabled(&*state);
     supervisor.spawn_watchdog();
     supervisor.spawn_hot_reload();
@@ -96,11 +98,26 @@ pub async fn run(
     await_jobs_drained(&state).await;
     // Blocking: each sidecar gets a grace period to run its own shutdown hooks.
     let _ = tokio::task::spawn_blocking(move || supervisor.stop_all()).await;
+    drop(seam);
     let network = state.network.clone();
     if let Ok(Err(e)) = tokio::task::spawn_blocking(move || network.flush()).await {
         tracing::warn!("the last network tallies could not be written: {e:#}");
     }
     Ok(())
+}
+
+fn open_seam(
+    state: &state::SharedState,
+    supervisor: &std::sync::Arc<kroma_module_supervisor::Supervisor>,
+    subscriptions: std::sync::Arc<api::host_events::Subscriptions>,
+) -> (SeamSocket, Option<Served>) {
+    let socket = SeamSocket::bind(supervisor);
+    let served = socket.serve(api::seam::router(
+        state.clone(),
+        supervisor.clone(),
+        subscriptions,
+    ));
+    (socket, served)
 }
 
 fn spawn_module_auto_update(
@@ -215,5 +232,36 @@ mod tests {
         let waited = tokio::time::timeout(Duration::from_secs(3600), serving).await;
 
         assert!(waited.is_err());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_module_reaches_the_host_callbacks_on_the_cores_socket_and_no_route_a_client_reaches()
+    {
+        let t = crate::api::test_support::test_app();
+        let socket = t.supervisor.host_socket();
+        let base = kroma_http::loopback::unix_url(&socket);
+        let seam = super::open_seam(&t.state, &t.supervisor, std::sync::Arc::default());
+
+        let (callback, client_route) = tokio::task::spawn_blocking(move || {
+            let callback = kroma_http::Loopback::new()
+                .header("authorization", "Bearer test-host-token")
+                .get(&format!(
+                    "{base}/api/_host/setting?key=serverName&kind=str&default="
+                ))
+                .map(|resp| resp.status);
+            let client_route = kroma_http::Loopback::new()
+                .get(&format!("{base}/api/auth/config"))
+                .map(|resp| resp.status);
+            (callback.unwrap(), client_route.unwrap())
+        })
+        .await
+        .unwrap();
+        drop(seam);
+
+        assert_eq!(callback, 200);
+        assert_eq!(client_route, 404);
+        assert!(!socket.exists(), "the socket goes when the server stops");
+        let _ = std::fs::remove_dir(socket.parent().unwrap());
     }
 }

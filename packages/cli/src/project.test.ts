@@ -62,6 +62,12 @@ describe('openProject', () => {
     expect(() => openProject(dir)).toThrow(/reverse-DNS/);
   });
 
+  it('refuses a seam written by hand, which only the build may record', () => {
+    const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, seam: 'unix' }) });
+
+    expect(() => openProject(dir)).toThrow(/seam is written by kroma build/);
+  });
+
   it('refuses a manifest written against another schema version', () => {
     const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, schemaVersion: 1 }) });
 

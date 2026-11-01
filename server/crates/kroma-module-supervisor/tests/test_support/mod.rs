@@ -58,7 +58,7 @@ impl Modules {
         let dir = kroma_testing::temp_dir(tag);
         let supervisor = Supervisor::new(SupervisorConfig {
             modules_dir: dir.path().to_path_buf(),
-            core_url: "http://127.0.0.1:0".into(),
+            core_port: 0,
             host_token: FABRIC.into(),
             db_path: dir.path().join("kroma.db"),
             data_dir: dir.path().to_path_buf(),

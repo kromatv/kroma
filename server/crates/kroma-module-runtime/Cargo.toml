@@ -3,7 +3,7 @@ name = "kroma-module-runtime"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "The out-of-process module runtime: each module ships as its own native binary that opens the shared SQLite, serves its routes on a local port, and reaches the host over a small IPC. `serve(...)` is the whole main()."
+description = "The out-of-process module runtime: each module ships as its own native binary that opens the shared SQLite, serves its routes on the Unix socket the supervisor names, and reaches the host over a small IPC. `serve(...)` is the whole main()."
 license.workspace = true
 
 [features]

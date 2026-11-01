@@ -457,7 +457,7 @@ mod gate_tests {
             let supervisor = kroma_module_supervisor::Supervisor::new(
                 kroma_module_supervisor::SupervisorConfig {
                     modules_dir,
-                    core_url: "http://127.0.0.1:0".into(),
+                    core_port: 0,
                     host_token: "token".into(),
                     db_path: data_dir.join("kroma.db"),
                     data_dir: data_dir.to_path_buf(),

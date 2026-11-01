@@ -128,6 +128,7 @@ impl Supervisor {
     pub fn uninstall(&self, id: &str) -> anyhow::Result<()> {
         validate_id(id)?;
         self.stop(id);
+        self.run.forget_module(id);
         std::fs::remove_dir_all(self.dir(id))?;
         self.invalidate_manifests();
         Ok(())

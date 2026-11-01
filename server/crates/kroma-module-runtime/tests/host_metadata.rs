@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 
@@ -57,24 +59,27 @@ async fn episodes(State(asked): State<Asked>, uri: Uri) -> Json<Vec<EpisodeInfo>
     Json(vec![winter_is_coming()])
 }
 
-fn start_core(asked: Asked) -> u16 {
+fn start_core(asked: Asked, socket: &std::path::Path) {
     support::serve(
         Router::new()
             .route("/api/_host/metadata-search", get(search))
             .route("/api/_host/metadata-episodes", get(episodes))
             .with_state(asked),
-    )
+        socket,
+    );
 }
 
 #[test]
 fn a_sidecar_asks_the_core_what_a_title_and_its_episodes_are_called() {
-    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("host-metadata");
-    std::fs::create_dir_all(&dir).expect("tmp dir");
+    let dir = support::scratch("host-metadata");
     let asked = Asked::default();
-    let core = start_core(asked.clone());
+    let core = dir.join("core.sock");
+    start_core(asked.clone(), &core);
+    let socket = dir.join("module.sock");
+    let _ = std::fs::remove_file(&socket);
     std::env::set_var("KROMA_MODULE_ID", "tv.kroma.metadata-test");
-    std::env::set_var("KROMA_MODULE_PORT", support::free_port().to_string());
-    std::env::set_var("KROMA_CORE_URL", format!("http://127.0.0.1:{core}/"));
+    std::env::set_var("KROMA_MODULE_SOCKET", &socket);
+    std::env::set_var("KROMA_CORE_URL", kroma_http::loopback::unix_url(&core));
     std::env::set_var("KROMA_HOST_TOKEN", "host-token");
     std::env::set_var("KROMA_DB_PATH", dir.join("core.db").display().to_string());
     std::env::set_var("KROMA_DATA_DIR", dir.display().to_string());

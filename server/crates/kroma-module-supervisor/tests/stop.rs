@@ -17,7 +17,7 @@ fn temp_modules_dir(tag: &str) -> kroma_testing::TempDir {
 fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
     Supervisor::new(SupervisorConfig {
         modules_dir: dir.to_path_buf(),
-        core_url: "http://127.0.0.1:0".into(),
+        core_port: 0,
         host_token: "t".into(),
         db_path: dir.join("db.sqlite"),
         data_dir: dir.to_path_buf(),
@@ -88,7 +88,7 @@ fn stop_lets_a_module_shut_down_before_killing_it() {
         "the module was killed without a chance to shut down"
     );
     assert!(
-        sup.port_of("com.example.stub").is_none(),
+        !sup.is_running("com.example.stub"),
         "a stopped module must be untracked"
     );
 }

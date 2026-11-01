@@ -54,7 +54,7 @@ async fn a_stored_operator_credential_never_reaches_a_sidecar() {
         ("moduleRegistryUrl", "https://mine.test"),
     ] {
         let uri = format!("/api/_host/setting?key={key}&kind=str&default=");
-        let (status, body) = get(&t.app, &uri, Some(HOST_TOKEN)).await;
+        let (status, body) = get(&t.seam, &uri, Some(HOST_TOKEN)).await;
 
         assert_eq!(status, StatusCode::OK, "{key}");
         assert_eq!(body, json!({ "value": "" }), "{key} leaked");
@@ -69,7 +69,7 @@ async fn the_key_that_signs_a_media_ticket_never_reaches_a_sidecar() {
     let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
 
     let uri = format!("/api/_host/setting?key={key}&kind=str&default=");
-    let (status, body) = get(&t.app, &uri, Some(HOST_TOKEN)).await;
+    let (status, body) = get(&t.seam, &uri, Some(HOST_TOKEN)).await;
 
     assert!(!minted.is_empty(), "the key is minted at boot");
     assert_eq!(status, StatusCode::OK);
@@ -87,7 +87,7 @@ async fn a_sidecar_cannot_put_a_signing_key_of_its_own_choosing_in_place() {
     let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
 
     let (status, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/settings",
         Some(HOST_TOKEN),
@@ -113,19 +113,19 @@ async fn the_settings_a_module_runs_on_still_come_back_stored() {
     );
 
     let (acq_status, acq) = get(
-        &t.app,
+        &t.seam,
         "/api/_host/setting?key=acqEnabled&kind=bool&default=false",
         Some(&token),
     )
     .await;
     let (wg_status, wg) = get(
-        &t.app,
+        &t.seam,
         "/api/_host/setting?key=vpnWgConfig&kind=str&default=",
         Some(&token),
     )
     .await;
     let (tunnel_status, tunnel) = get(
-        &t.app,
+        &t.seam,
         "/api/_host/setting?key=remoteAccessToken&kind=str&default=",
         Some(&token),
     )
@@ -149,13 +149,13 @@ async fn an_operator_credential_reaches_no_module_but_the_one_that_declared_it()
     );
 
     let (declared_elsewhere, by_bridge) = get(
-        &t.app,
+        &t.seam,
         "/api/_host/setting?key=vpnWgConfig&kind=str&default=",
         Some(&token),
     )
     .await;
     let (unnamed, by_fabric) = get(
-        &t.app,
+        &t.seam,
         "/api/_host/setting?key=vpnWgConfig&kind=str&default=",
         Some(HOST_TOKEN),
     )
@@ -177,7 +177,7 @@ async fn a_sidecar_cannot_write_a_credential_or_retarget_the_registries() {
     let t = test_app();
 
     let (password, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/settings",
         Some(HOST_TOKEN),
@@ -185,7 +185,7 @@ async fn a_sidecar_cannot_write_a_credential_or_retarget_the_registries() {
     )
     .await;
     let (registries, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/settings",
         Some(HOST_TOKEN),
@@ -213,7 +213,7 @@ async fn a_sidecar_still_saves_the_settings_it_owns() {
     let token = bridge_declaring(&t, r#"{ "write": ["vpnWgConfig"] }"#);
 
     let (status, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/settings",
         Some(&token),
@@ -232,7 +232,7 @@ async fn a_sidecar_cannot_write_a_credential_it_did_not_declare() {
     let token = bridge_declaring(&t, r#"{ "read": ["vpnWgConfig"] }"#);
 
     let (status, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/settings",
         Some(&token),
@@ -257,7 +257,7 @@ async fn an_identity_the_server_minted_for_itself_never_reaches_a_sidecar() {
     let mut answers = Vec::new();
     for key in ["instanceId", crate::services::stats::ID_KEY] {
         let uri = format!("/api/_host/setting?key={key}&kind=str&default=");
-        answers.push(get(&t.app, &uri, Some(HOST_TOKEN)).await);
+        answers.push(get(&t.seam, &uri, Some(HOST_TOKEN)).await);
     }
 
     assert!(!instance.is_empty() && !stats.is_empty(), "both are minted");
@@ -278,13 +278,13 @@ async fn a_key_no_declaration_names_is_withheld_in_both_directions() {
         .unwrap();
 
     let (read_status, read) = get(
-        &t.app,
+        &t.seam,
         "/api/_host/setting?key=undeclaredSecret&kind=str&default=",
         Some(HOST_TOKEN),
     )
     .await;
     let (write_status, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/settings",
         Some(HOST_TOKEN),
@@ -301,62 +301,110 @@ async fn a_key_no_declaration_names_is_withheld_in_both_directions() {
     );
 }
 
-#[tokio::test]
-async fn a_host_callback_from_off_host_is_refused() {
-    use axum::body::Body;
-    use axum::extract::ConnectInfo;
-    use axum::http::Request;
-    use tower::ServiceExt;
+fn installed(t: &TestApp, id: &str, extra: &str) -> String {
+    let dir = t.state.config.data_dir.join("modules").join(id);
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(
+        dir.join("module.json"),
+        format!(
+            r#"{{ "schemaVersion": {}, "id": "{id}", "name": "Stub", "version": "1.0.0" {extra} }}"#,
+            kroma_module_manifest::MODULE_SCHEMA_VERSION,
+        ),
+    )
+    .unwrap();
+    t.supervisor.module_token(id)
+}
 
-    let t = test_app();
-
-    let mut req = Request::builder()
+fn tcp_callback(
+    token: &str,
+    peer: [u8; 4],
+    relay: Option<(&str, &str)>,
+) -> axum::http::Request<axum::body::Body> {
+    let mut req = axum::http::Request::builder()
         .method("GET")
         .uri("/api/_host/setting?key=serverName&kind=str&default=")
-        .header("authorization", format!("Bearer {HOST_TOKEN}"))
-        .body(Body::empty())
-        .unwrap();
-    req.extensions_mut().insert(ConnectInfo(std::net::SocketAddr::from((
-        [203, 0, 113, 9],
-        50000,
-    ))));
-    let resp = t.app.clone().oneshot(req).await.unwrap();
+        .header("authorization", format!("Bearer {token}"));
+    if let Some((name, value)) = relay {
+        req = req.header(name, value);
+    }
+    let mut req = req.body(axum::body::Body::empty()).unwrap();
+    req.extensions_mut()
+        .insert(axum::extract::ConnectInfo(std::net::SocketAddr::from((
+            peer, 50000,
+        ))));
+    req
+}
 
-    assert_eq!(resp.status(), axum::http::StatusCode::NOT_FOUND);
+#[tokio::test]
+async fn a_host_callback_from_off_host_is_refused() {
+    use tower::ServiceExt;
+    let t = test_app();
+    let legacy = installed(&t, "com.example.legacy", "");
+
+    let resp = t
+        .app
+        .clone()
+        .oneshot(tcp_callback(&legacy, [203, 0, 113, 9], None))
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn a_host_callback_relayed_by_a_tunnel_on_this_machine_is_refused() {
-    use axum::body::Body;
-    use axum::extract::ConnectInfo;
-    use axum::http::Request;
     use tower::ServiceExt;
-
     let t = test_app();
-    let callback = |relay: Option<(&str, &str)>| {
-        let mut req = Request::builder()
-            .method("GET")
-            .uri("/api/_host/setting?key=serverName&kind=str&default=")
-            .header("authorization", format!("Bearer {HOST_TOKEN}"));
-        if let Some((name, value)) = relay {
-            req = req.header(name, value);
-        }
-        let mut req = req.body(Body::empty()).unwrap();
-        req.extensions_mut().insert(ConnectInfo(std::net::SocketAddr::from((
-            [127, 0, 0, 1],
-            50000,
-        ))));
-        req
-    };
+    let legacy = installed(&t, "com.example.legacy", "");
 
     for relay in [
         ("cf-connecting-ip", "203.0.113.9"),
         ("x-forwarded-for", "203.0.113.9"),
         ("forwarded", "for=203.0.113.9"),
     ] {
-        let resp = t.app.clone().oneshot(callback(Some(relay))).await.unwrap();
-        assert_eq!(resp.status(), axum::http::StatusCode::NOT_FOUND, "{relay:?}");
+        let resp = t
+            .app
+            .clone()
+            .oneshot(tcp_callback(&legacy, [127, 0, 0, 1], Some(relay)))
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND, "{relay:?}");
     }
-    let direct = t.app.clone().oneshot(callback(None)).await.unwrap();
-    assert_eq!(direct.status(), axum::http::StatusCode::OK);
+    let direct = t
+        .app
+        .clone()
+        .oneshot(tcp_callback(&legacy, [127, 0, 0, 1], None))
+        .await
+        .unwrap();
+    assert_eq!(direct.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_module_on_the_socket_seam_is_answered_on_the_socket_and_never_over_tcp() {
+    use tower::ServiceExt;
+    let t = test_app();
+    let current = installed(&t, "com.example.current", r#", "seam": "unix""#);
+
+    let over_tcp = t
+        .app
+        .clone()
+        .oneshot(tcp_callback(&current, [127, 0, 0, 1], None))
+        .await
+        .unwrap();
+    let fabric_over_tcp = t
+        .app
+        .clone()
+        .oneshot(tcp_callback(HOST_TOKEN, [127, 0, 0, 1], None))
+        .await
+        .unwrap();
+    let (on_socket, _) = get(
+        &t.seam,
+        "/api/_host/setting?key=serverName&kind=str&default=",
+        Some(&current),
+    )
+    .await;
+
+    assert_eq!(over_tcp.status(), StatusCode::NOT_FOUND);
+    assert_eq!(fabric_over_tcp.status(), StatusCode::NOT_FOUND);
+    assert_eq!(on_socket, StatusCode::OK);
 }

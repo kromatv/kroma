@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 mod support;
 
 use std::time::{Duration, Instant};

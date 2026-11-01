@@ -45,6 +45,7 @@ struct AdminModule {
     /// code is co-linked into another sidecar: it is never "running", and
     /// reporting it as stopped would be a false alarm.
     has_sidecar: bool,
+    legacy_seam: bool,
     /// Points this module `consumes` that no ENABLED module answers, as `point` or
     /// `point#id`. A module with entries here is installed, running and inert,
     /// which is otherwise silent: it answers nothing useful and nothing says why.
@@ -83,8 +84,10 @@ async fn list_modules(
                 })
                 .collect();
             let origin = removable.then(|| supervisor.origin(&m.id));
-            let running = supervisor.port_of(&m.id).is_some();
+            let running = supervisor.is_running(&m.id);
             let has_sidecar = removable && supervisor.has_binary(&m.id);
+            let legacy_seam =
+                has_sidecar && supervisor.seam_of(&m.id) == Some(kroma_module_manifest::Seam::Tcp);
             AdminModule {
                 manifest: m,
                 enabled,
@@ -93,6 +96,7 @@ async fn list_modules(
                 origin,
                 running,
                 has_sidecar,
+                legacy_seam,
                 unmet,
             }
         })
@@ -200,7 +204,7 @@ async fn restart_module(
     .map_err(|_| bad("restart task panicked"))?;
     match started {
         Ok(id) => {
-            let running = supervisor.port_of(&id).is_some();
+            let running = supervisor.is_running(&id);
             Ok(Json(json!({ "restarted": true, "running": running })).into_response())
         }
         Err(e) => Err(bad(&format!("restart failed: {e:#}"))),
@@ -231,7 +235,7 @@ async fn reinstall_module(
     let installed = super::store::install::reinstall(&state, &supervisor, &id)
         .await
         .map_err(|e| bad(&format!("reinstall failed: {e:#}")))?;
-    let running = supervisor.port_of(&id).is_some();
+    let running = supervisor.is_running(&id);
     Ok(
         Json(json!({ "reinstalled": true, "running": running, "module": installed }))
             .into_response(),

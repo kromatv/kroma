@@ -1,6 +1,6 @@
-//! The core's HTTP API, called back with the channel's own bearer: the
-//! sidecar shapes what the Roku shows, and the core decides what that
-//! account may see.
+//! The core's HTTP API, called back with the channel's own bearer on the
+//! core's web listener, the door every client uses: the sidecar shapes what
+//! the Roku shows, and the core decides what that account may see.
 
 use anyhow::{Context, Result};
 use serde_json::Value;
@@ -15,9 +15,10 @@ pub struct Core {
 
 impl Core {
     pub fn from_env(bearer: String) -> Result<Self> {
-        let base = std::env::var("KROMA_CORE_URL").context("KROMA_CORE_URL not set")?;
+        let named = std::env::var("KROMA_CORE_PORT").context("KROMA_CORE_PORT not set")?;
+        let port = crate::lan::core_port(&named).context("KROMA_CORE_PORT is not a port")?;
         Ok(Self {
-            base: base.trim_end_matches('/').to_string(),
+            base: format!("http://127.0.0.1:{port}"),
             bearer,
         })
     }
@@ -32,5 +33,25 @@ impl Core {
 
     pub async fn get_or_null(&self, path: &str) -> Value {
         self.get(path).await.unwrap_or(Value::Null)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_core_is_reached_on_the_port_the_server_names_and_never_on_a_guess() {
+        std::env::set_var("KROMA_CORE_PORT", "4040");
+        let named = Core::from_env("channel".into()).map(|core| core.base);
+        std::env::remove_var("KROMA_CORE_PORT");
+        let unnamed = Core::from_env("channel".into()).map(|core| core.base);
+
+        assert_eq!(named.unwrap(), "http://127.0.0.1:4040");
+        assert!(unnamed.is_err());
+        assert!(
+            crate::lan::server_url().is_none(),
+            "no port, no address for the Roku"
+        );
     }
 }

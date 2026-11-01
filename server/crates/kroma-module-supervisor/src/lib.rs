@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use kroma_module_host::Contribution;
-use kroma_module_manifest::ModuleManifest;
+use kroma_module_manifest::{ModuleManifest, Seam};
 use serde_json::Value;
 
 mod adopt;
@@ -18,6 +18,8 @@ mod origin;
 mod process;
 mod proxy;
 mod registry;
+mod run_dir;
+mod seam;
 mod sidecar_env;
 mod tokens;
 mod watch;
@@ -26,9 +28,11 @@ pub use host_api::host_router;
 pub use origin::{BinStamp, Origin, Source};
 pub use proxy::proxy_to;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
+pub use seam::Endpoint;
 
 use manifests::{check_manifest_schema, grant_json};
 use process::Proc;
+use run_dir::RunDir;
 
 pub const MODULE_BIN: &str = "module";
 pub const MODULE_STORE: &str = "module.sqlite";
@@ -42,7 +46,7 @@ pub type LogSink = Arc<dyn Fn(&str, &str) + Send + Sync>;
 #[derive(Clone)]
 pub struct SupervisorConfig {
     pub modules_dir: PathBuf,
-    pub core_url: String,
+    pub core_port: u16,
     pub host_token: String,
     pub db_path: PathBuf,
     pub data_dir: PathBuf,
@@ -53,6 +57,7 @@ pub struct SupervisorConfig {
 
 pub struct Supervisor {
     cfg: SupervisorConfig,
+    run: RunDir,
     procs: RwLock<HashMap<String, Proc>>,
     module_tokens: RwLock<HashMap<String, String>>,
     port_tokens: RwLock<HashMap<String, String>>,
@@ -68,6 +73,7 @@ pub struct Supervisor {
 impl Supervisor {
     pub fn new(cfg: SupervisorConfig) -> Arc<Self> {
         Arc::new(Self {
+            run: RunDir::for_data_dir(&cfg.data_dir),
             cfg,
             procs: RwLock::new(HashMap::new()),
             module_tokens: RwLock::new(HashMap::new()),
@@ -123,27 +129,36 @@ impl Supervisor {
         }
     }
 
-    pub fn port_of(&self, id: &str) -> Option<u16> {
-        self.procs.read().unwrap().get(id).map(|p| p.port)
+    /// Where `id`'s process answers, while it runs.
+    pub fn endpoint_of(&self, id: &str) -> Option<Endpoint> {
+        self.procs
+            .read()
+            .unwrap()
+            .get(id)
+            .map(|p| p.endpoint.clone())
     }
 
-    /// Every running module and the loopback port it serves on, by id.
-    pub fn running(&self) -> Vec<(String, u16)> {
-        let mut running: Vec<(String, u16)> = self
+    pub fn is_running(&self, id: &str) -> bool {
+        self.procs.read().unwrap().contains_key(id)
+    }
+
+    /// Every running module and where it answers, by id.
+    pub fn running(&self) -> Vec<(String, Endpoint)> {
+        let mut running: Vec<(String, Endpoint)> = self
             .procs
             .read()
             .unwrap()
             .iter()
-            .map(|(id, proc)| (id.clone(), proc.port))
+            .map(|(id, proc)| (id.clone(), proc.endpoint.clone()))
             .collect();
-        running.sort();
+        running.sort_by(|a, b| a.0.cmp(&b.0));
         running
     }
 
     /// Every running module that contributes `point`, found by reading the
-    /// installed manifests. Resolved per call, so a contributor that was just
-    /// installed, restarted, or moved to a different localhost port is picked up
-    /// with nothing re-wired, and no caller anywhere names a module id.
+    /// installed manifests, as the core reaches it. Resolved per call, so a
+    /// contributor that was just installed or restarted is picked up with
+    /// nothing re-wired, and no caller anywhere names a module id.
     ///
     /// A manifest that declares the point but whose module is not running is
     /// passed over rather than answered with, so a second contributor still
@@ -154,6 +169,10 @@ impl Supervisor {
     /// failing a request an hour later. The definer is found from the point's own
     /// name, which is why a point carries one.
     pub fn contributions(&self, point: &str) -> Vec<Contribution> {
+        self.answers(point, Seam::Unix)
+    }
+
+    fn answers(&self, point: &str, caller: Seam) -> Vec<Contribution> {
         let installed = self.installed_manifests();
         let defined_at = point_major(&installed, point);
         let mut out = Vec::new();
@@ -163,10 +182,10 @@ impl Supervisor {
             if answers.is_empty() {
                 continue;
             }
-            let Some(live) = self.port_of(&m.id) else {
+            let Some(live) = self.endpoint_of(&m.id) else {
                 continue;
             };
-            let base = format!("http://127.0.0.1:{live}");
+            let base = self.peer_base(&m.id, &live, caller);
             for answer in answers {
                 if defined_at.is_some_and(|major| answer.version != major) {
                     self.say(

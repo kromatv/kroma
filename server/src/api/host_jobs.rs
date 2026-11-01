@@ -72,21 +72,17 @@ async fn register_job(
     StatusCode::NO_CONTENT.into_response()
 }
 
-// On each trigger, resolves the module's current local port and blocking-POSTs
-// `/_job/run/{key}` with that module's port token, on the JobManager's blocking
-// thread (a long import is fine). A non-2xx or unreachable sidecar fails the
-// run, recorded by the console with the error message.
 fn remote_run(supervisor: Arc<Supervisor>, module_id: String, key: String) -> RemoteRun {
     let host_token = supervisor.port_token(&module_id);
     Arc::new(move |_ctx: &JobContext| -> anyhow::Result<()> {
         // Module not running (disabled, or mid-respawn): a scheduled fire is a
         // no-op, not a failure. Returning Ok keeps the job history clean instead
         // of recording an error every tick while the module is down.
-        let Some(port) = supervisor.port_of(&module_id) else {
+        let Some(endpoint) = supervisor.endpoint_of(&module_id) else {
             tracing::debug!(module = %module_id, "remote job skipped: module not running");
             return Ok(());
         };
-        let url = format!("http://127.0.0.1:{port}/_job/run/{key}");
+        let url = endpoint.url(&format!("/_job/run/{key}"));
         let resp = kroma_http::Loopback::new()
             .header("authorization", format!("Bearer {host_token}"))
             // Imports move whole files across disks; allow up to 30 minutes.
@@ -187,7 +183,7 @@ mod tests {
         });
 
         let (status, _) = send(
-            &t.app,
+            &t.seam,
             "POST",
             "/api/_host/register-job",
             Some("test-host-token"),
@@ -210,7 +206,7 @@ mod tests {
         });
 
         let (status, _) = send(
-            &t.app,
+            &t.seam,
             "POST",
             "/api/_host/register-job",
             Some("test-host-token"),

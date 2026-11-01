@@ -31,6 +31,7 @@ export interface AdminModule extends ModuleManifest {
    *  code is co-linked into another sidecar: it is never running, and showing
    *  it as stopped would be a false alarm. */
   hasSidecar: boolean;
+  legacySeam: boolean;
   /** Points this module needs that no enabled module answers, as
    *  `point` or `point#id`. Absent when there are none. Entries mean the module is
    *  installed and running and INERT, which is otherwise invisible. */

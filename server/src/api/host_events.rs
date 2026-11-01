@@ -140,10 +140,10 @@ fn topic_of(payload: &str) -> Option<String> {
 fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payload: &str) {
     // Not running (disabled, or mid-respawn): dropped, not queued. The module
     // reconciles on its next job rather than replaying a backlog it cannot bound.
-    let Some(port) = supervisor.port_of(module_id) else {
+    let Some(endpoint) = supervisor.endpoint_of(module_id) else {
         return;
     };
-    let url = format!("http://127.0.0.1:{port}/_event/{topic}");
+    let url = endpoint.url(&format!("/_event/{topic}"));
     let token = supervisor.port_token(module_id);
     let body = payload.to_string();
     // Off the bus task: one slow module must not hold up the next event, and the
