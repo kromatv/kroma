@@ -78,13 +78,7 @@ pub struct MdnsModule {
 // The core's port, not this helper process's: the advertised `.local` address
 // has to point at the server.
 fn core_port() -> Option<u16> {
-    std::env::var("KROMA_CORE_URL")
-        .ok()?
-        .rsplit(':')
-        .next()?
-        .trim_end_matches('/')
-        .parse()
-        .ok()
+    std::env::var("KROMA_CORE_PORT").ok()?.parse().ok()
 }
 
 #[async_trait]
@@ -99,7 +93,7 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for MdnsModule 
             return;
         }
         let Some(port) = core_port() else {
-            tracing::warn!("mDNS: no KROMA_CORE_URL port; not advertising");
+            tracing::warn!("mDNS: no KROMA_CORE_PORT; not advertising");
             return;
         };
         match advertise(port, "KROMA") {
@@ -126,10 +120,10 @@ mod tests {
 
     use super::*;
 
-    static CORE_URL: Mutex<()> = Mutex::new(());
+    static CORE_PORT: Mutex<()> = Mutex::new(());
 
-    fn with_core_url<T>(f: impl FnOnce() -> T) -> T {
-        let _held = CORE_URL
+    fn with_core_port<T>(f: impl FnOnce() -> T) -> T {
+        let _held = CORE_PORT
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         f()
@@ -213,19 +207,13 @@ mod tests {
     }
 
     #[test]
-    fn the_advertised_port_is_read_off_the_core_url_not_this_sidecars_own() {
-        with_core_url(|| {
-            std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040");
+    fn the_advertised_port_is_the_cores_not_this_sidecars_own() {
+        with_core_port(|| {
+            std::env::set_var("KROMA_CORE_PORT", "4040");
             assert_eq!(core_port(), Some(4040));
-            std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040/");
-            assert_eq!(core_port(), Some(4040));
-            std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
-            assert_eq!(
-                core_port(),
-                None,
-                "a URL with no port must not advertise a guess"
-            );
-            std::env::remove_var("KROMA_CORE_URL");
+            std::env::set_var("KROMA_CORE_PORT", "http://kroma.local");
+            assert_eq!(core_port(), None, "never a guessed port");
+            std::env::remove_var("KROMA_CORE_PORT");
             assert_eq!(core_port(), None);
         });
     }
@@ -254,12 +242,11 @@ mod tests {
     }
 
     #[test]
-    fn a_core_url_carrying_no_port_advertises_nothing_rather_than_a_guessed_one() {
-        with_core_url(|| {
-            std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
+    fn a_server_that_names_no_port_gets_nothing_advertised_rather_than_a_guessed_one() {
+        with_core_port(|| {
+            std::env::remove_var("KROMA_CORE_PORT");
             let module = MdnsModule::default();
             block_on(ServerModule::on_enable(&module, StubHost::new()));
-            std::env::remove_var("KROMA_CORE_URL");
 
             assert!(module.daemon.lock().unwrap().is_none());
         });

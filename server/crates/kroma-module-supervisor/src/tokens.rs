@@ -62,6 +62,25 @@ impl Supervisor {
             .is_some_and(|bearer| self.speaks_for(module_id, bearer))
     }
 
+    /// Whether `bearer` is a token minted for a module on the legacy TCP seam:
+    /// the only caller the core's TCP listener answers a host callback for,
+    /// because every other module reaches the core on its socket.
+    pub fn legacy_caller(&self, bearer: &str) -> bool {
+        self.minted_to(bearer)
+            .is_some_and(|id| self.seam_of(&id) == Some(kroma_module_manifest::Seam::Tcp))
+    }
+
+    fn minted_to(&self, bearer: &str) -> Option<String> {
+        self.module_of_token(bearer).or_else(|| {
+            self.port_tokens
+                .read()
+                .unwrap()
+                .iter()
+                .find(|(_, token)| ct_eq(token.as_bytes(), bearer.as_bytes()))
+                .map(|(id, _)| id.clone())
+        })
+    }
+
     fn speaks_for(&self, module_id: &str, bearer: &str) -> bool {
         ct_eq(self.cfg.host_token.as_bytes(), bearer.as_bytes())
             || minted_for(&self.module_tokens, module_id, bearer)
@@ -89,7 +108,7 @@ impl Supervisor {
             );
             return Vec::new();
         }
-        self.contributions(point)
+        self.answers(point, self.seam_of(caller).unwrap_or_default())
     }
 }
 
@@ -103,7 +122,7 @@ mod tests {
     fn supervisor(dir: &std::path::Path, said: Arc<Mutex<Vec<String>>>) -> Arc<Supervisor> {
         Supervisor::new(SupervisorConfig {
             modules_dir: dir.to_path_buf(),
-            core_url: "http://127.0.0.1:0".into(),
+            core_port: 0,
             host_token: "fabric".into(),
             db_path: dir.join("db.sqlite"),
             data_dir: dir.to_path_buf(),

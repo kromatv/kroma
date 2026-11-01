@@ -6,16 +6,16 @@ use kroma_module_manifest::ModuleManifest;
 use super::{Supervisor, MODULE_BIN, STAGING_PREFIX};
 
 impl Supervisor {
-    /// What `id` declared under `storage`, or `None` when it declared none -- in
-    /// which case it holds no database capability at all.
+    /// `id`'s manifest as it is on disk, which is what its process is spawned
+    /// from: the storage grant, and the seam.
     ///
     /// Read off disk rather than out of [`installed_manifests`](Self::installed_manifests),
-    /// which is cached: this is what a module's grant is built from, and a grant
-    /// one version out of date is not a stale listing, it is a module that gets
-    /// the wrong answer to every query. One small file, read once per spawn.
-    pub(crate) fn storage_of(&self, id: &str) -> Option<kroma_module_manifest::Storage> {
+    /// which is cached: a grant one version out of date is not a stale listing,
+    /// it is a module that gets the wrong answer to every query. One small file,
+    /// read once per spawn.
+    pub(crate) fn manifest_on_disk(&self, id: &str) -> Option<ModuleManifest> {
         let text = std::fs::read_to_string(self.dir(id).join("module.json")).ok()?;
-        serde_json::from_str::<ModuleManifest>(&text).ok()?.storage
+        serde_json::from_str::<ModuleManifest>(&text).ok()
     }
 
     /// Whether this module ships a sidecar binary at all. A library module (the
@@ -204,7 +204,7 @@ mod tests {
         let dir = kroma_testing::temp_dir("module-tokens");
         let sup = Supervisor::new(SupervisorConfig {
             modules_dir: dir.path().to_path_buf(),
-            core_url: "http://127.0.0.1:0".into(),
+            core_port: 0,
             host_token: "fabric".into(),
             db_path: dir.path().join("db.sqlite"),
             data_dir: dir.path().to_path_buf(),
@@ -241,7 +241,7 @@ mod tests {
         let dir = kroma_testing::temp_dir("settings-scope");
         let sup = Supervisor::new(SupervisorConfig {
             modules_dir: dir.path().to_path_buf(),
-            core_url: "http://127.0.0.1:0".into(),
+            core_port: 0,
             host_token: "fabric".into(),
             db_path: dir.path().join("db.sqlite"),
             data_dir: dir.path().to_path_buf(),
@@ -285,7 +285,7 @@ mod tests {
         let dir = kroma_testing::temp_dir("grant-stale-cache");
         let sup = Supervisor::new(SupervisorConfig {
             modules_dir: dir.path().to_path_buf(),
-            core_url: "http://127.0.0.1:0".into(),
+            core_port: 0,
             host_token: "t".into(),
             db_path: dir.path().join("db.sqlite"),
             data_dir: dir.path().to_path_buf(),
@@ -305,7 +305,10 @@ mod tests {
             r#"{{ "schemaVersion": {v}, "id": "com.example.demo", "name": "D", "version": "1.0.0" }}"#
         ));
         assert_eq!(sup.installed_manifests().len(), 1);
-        assert!(sup.storage_of("com.example.demo").is_none());
+        assert!(sup
+            .manifest_on_disk("com.example.demo")
+            .and_then(|m| m.storage)
+            .is_none());
 
         // The cache is deliberately NOT invalidated here: this is the window
         // `install` spawns in.
@@ -320,7 +323,8 @@ mod tests {
         );
 
         let storage = sup
-            .storage_of("com.example.demo")
+            .manifest_on_disk("com.example.demo")
+            .and_then(|m| m.storage)
             .expect("the grant comes off disk");
         assert_eq!(storage.core.read, ["requests"]);
         assert_eq!(storage.core.write, ["wanted"]);
@@ -340,7 +344,7 @@ mod tests {
         std::fs::write(dir.path().join("outside/icon.svg"), "<svg/>").unwrap();
         let sup = Supervisor::new(SupervisorConfig {
             modules_dir: modules,
-            core_url: "http://127.0.0.1:0".into(),
+            core_port: 0,
             host_token: "fabric".into(),
             db_path: dir.path().join("db.sqlite"),
             data_dir: dir.path().to_path_buf(),

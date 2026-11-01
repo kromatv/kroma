@@ -32,8 +32,11 @@ static SEQ: AtomicU32 = AtomicU32::new(0);
 const FUTURE: i64 = 9_999_999_999;
 
 /// A fully wired app under test plus the handles a test needs to drive + assert.
+/// `app` is the TCP listener's router, `seam` the one on the core's own socket
+/// that modules on the socket seam call back on.
 pub struct TestApp {
     pub app: Router,
+    pub seam: Router,
     pub state: SharedState,
     pub token: String,
     pub user_id: String,
@@ -66,7 +69,7 @@ fn test_config(data_dir: PathBuf) -> Config {
 fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> {
     kroma_module_supervisor::Supervisor::new(kroma_module_supervisor::SupervisorConfig {
         modules_dir: data_dir.join("modules"),
-        core_url: "http://127.0.0.1:0".into(),
+        core_port: 0,
         host_token: "test-host-token".into(),
         db_path: data_dir.join("kroma.db"),
         data_dir: data_dir.to_path_buf(),
@@ -173,11 +176,13 @@ fn build_app_with(
     // No delivery task: a handler test publishes nothing a module would hear, and
     // spawning one would need a runtime the plain `#[test]` cases do not have.
     let subscriptions = std::sync::Arc::new(crate::api::host_events::Subscriptions::default());
-    let app = crate::api::router(state.clone(), supervisor.clone(), subscriptions);
+    let app = crate::api::router(state.clone(), supervisor.clone(), subscriptions.clone());
+    let seam = crate::api::seam::router(state.clone(), supervisor.clone(), subscriptions);
 
     let (user_id, token) = seed_session(&state, "owner@test.dev", "owner", &Permission::all());
     TestApp {
         app,
+        seam,
         state,
         token,
         user_id,

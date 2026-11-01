@@ -1,8 +1,10 @@
 //! The transport for the internal seam: the core and its module sidecars
 //! calling each other on this machine.
 
+mod exchange;
 mod tcp;
 mod transport;
+mod unix;
 
 use std::sync::{Arc, OnceLock, RwLock};
 use std::time::Duration;
@@ -10,14 +12,25 @@ use std::time::Duration;
 use anyhow::{bail, Result};
 
 use crate::response::Response;
-pub use tcp::{Tcp, MAX_BODY_BYTES};
+pub use exchange::MAX_BODY_BYTES;
+pub use tcp::Tcp;
 pub use transport::{Method, Request, Transport};
+pub use unix::unix_url;
+#[cfg(unix)]
+pub use unix::Unix;
 
 const DEFAULT_MAX_TIME_SECS: u32 = 30;
 
 fn registry() -> &'static RwLock<Vec<Arc<dyn Transport>>> {
     static REGISTRY: OnceLock<RwLock<Vec<Arc<dyn Transport>>>> = OnceLock::new();
-    REGISTRY.get_or_init(|| RwLock::new(vec![Arc::new(Tcp)]))
+    REGISTRY.get_or_init(|| RwLock::new(built_in()))
+}
+
+fn built_in() -> Vec<Arc<dyn Transport>> {
+    let mut transports: Vec<Arc<dyn Transport>> = vec![Arc::new(Tcp)];
+    #[cfg(unix)]
+    transports.push(Arc::new(Unix));
+    transports
 }
 
 /// Add a transport ahead of the built-in ones, for the URLs its

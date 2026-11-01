@@ -99,6 +99,8 @@ labelled native and contained the same way
 | `storage`, `settings`, points | always: checked by the core on every call | always | always |
 
 None of the three tiers is wired into the supervisor yet (#486, #489, #490).
+A module on the legacy TCP seam stays outside every tier: it is reached on a
+loopback port, which a module in its own network namespace cannot serve.
 Once they are, Watch records and can stop a module that goes around the
 gateway, but it cannot prevent a connection that opens and closes between two
 scans, and an operator setting refuses third-party modules outside a strict
@@ -124,14 +126,29 @@ written on its log.
 
 ## The seam between the core and a module
 
-- Host API callbacks (`/api/_host/*`) answer only a loopback peer, refuse any
-  request carrying a forwarding header (a tunnel or a reverse proxy on the same
-  machine adds one), and require a token the supervisor minted (#503).
+- The seam is Unix sockets under `<data>/run`, never a TCP port (#485). A
+  module serves on `modules/<id>/module.sock`, in a directory only the server's
+  user can open, and calls the core back on `host.sock`. No module binds a
+  port, so there is none to steal while a module restarts, and a module in an
+  empty network namespace can still reach the core through the filesystem.
+  `host.sock` serves the host callbacks and the proxy to a peer module and
+  nothing else, so a module there is never answered as a local client of the
+  server (pairing, handoff, the origin and same-network checks).
+- Host API callbacks (`/api/_host/*`) require a token the supervisor minted
+  (#503). On the core's TCP listener they answer only a module on the legacy
+  seam (below), only from a loopback peer, and never a request carrying a
+  forwarding header (a tunnel or a reverse proxy on the same machine adds one).
+  Anything else is answered 404, the fabric token included.
 - Registering a job or an event subscription requires a token minted for the
   module the request names (#503).
-- Under strict enforcement the seam is to move to Unix sockets in a directory
-  only the core and that module can reach, so there is no port to steal while a
-  module restarts (planned, #485).
+- `kroma build` records the seam in the bundle (`"seam": "unix"` in its
+  manifest). A bundle built against an SDK that predates the socket seam
+  records none: it still runs, on a loopback port, and is labelled **legacy
+  seam** in the admin. It can never be given a sandbox tier, because a module
+  with no network cannot reach a port. It reaches a peer on a socket through
+  the core's reverse proxy, with the same port token.
+- Other processes of the server's own user can still open those directories
+  until the filesystem is contained per module (#488, #489).
 
 ## Auditing a module on its own
 
@@ -169,7 +186,7 @@ namespace tier's suite is in review (#507); the other tiers are planned (#497).
 | Consent screen, denial errors, enforcement of `permissions` | planned (#487) |
 | Sidecars started in the sandbox, strict tier by uid | planned (#486, #489) |
 | Watch scanner | planned (#490) |
-| Module seam on Unix sockets | planned (#485) |
+| Module seam on Unix sockets, legacy TCP seam for older bundles | in review (#485) |
 | Filesystem and `run` enforcement | planned (#488) |
 | Per-module network view | planned (#496) |
 | `kroma audit` | planned (#495) |

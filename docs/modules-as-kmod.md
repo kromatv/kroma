@@ -20,9 +20,9 @@ it, supervises it, and reverse-proxies its HTTP.**
   `RemoteHost` (the out-of-process `HostCtx`), applies the module's migrations to
   the module's OWN database, calls `wire` with the live host (which registers the
   module's services and hands back its extra routes), runs `on_enable`, and
-  serves the module's `admin_routes` + a `/_health` probe on the assigned local
-  port. Settings, events, jobs and session lookup go to the core over a small
-  callback API; everything else is local.
+  serves the module's `admin_routes` + a `/_health` probe on the Unix socket the
+  supervisor assigned. Settings, events, jobs and session lookup go to the core
+  over a small callback API on the core's own socket; everything else is local.
 - **Storage is a capability, not part of the runtime.** A module that declares no
   `storage` in its manifest neither links SQLite nor can reach a row; the eight
   first-party modules in that position are about half the size they were. One
@@ -38,9 +38,13 @@ it, supervises it, and reverse-proxies its HTTP.**
   through the SDK.
 - **`kroma-module-supervisor`** is the core side. `Supervisor` scans
   `<data>/modules/*`, spawns each enabled module's `module` binary with the
-  runtime env (id, free localhost port, core URL, a per-process callback token,
-  DB path, data dir, and the module's declared storage grant), tracks
-  `id -> port`, and stop/spawns them. Before spawning it moves any table the
+  runtime env (id, the socket it serves on, the core's socket, a per-process
+  callback token, DB path, data dir, and the module's declared storage grant),
+  tracks `id -> endpoint`, and stop/spawns them. The sockets live under
+  `<data>/run`: the core's `host.sock`, and `modules/<id>/module.sock` in a
+  directory only the server's user can open. A bundle whose manifest records no
+  `seam` predates the socket seam and runs on a free loopback port instead, as
+  the legacy seam (see `modules/README.md#runtime-contract`). Before spawning it moves any table the
   module declared under `storage.adopt` out of the core database and into the
   module's own file -- the core does it, because the module no longer holds the
   rights to. `proxy_to` reverse-proxies a request to a module process.
@@ -53,13 +57,17 @@ it, supervises it, and reverse-proxies its HTTP.**
   goes to the module whose `settings` block named it and no other.
 - **Core integration**: `main.rs` builds the supervisor and `spawn_enabled`s
   installed modules at boot; `api/mod.rs` mounts the callback API and a
-  `/api/module/<id>/*` reverse proxy.
+  `/api/module/<id>/*` reverse proxy, and `boot/serve.rs` serves the host
+  callbacks and that proxy, and nothing else, on `<data>/run/host.sock`, where a
+  module on the socket seam calls back.
 - **`kroma build`** (`packages/cli`, shipped inside the public `kroma` package) builds a
   module's native binary, bundles its frontend into `fe/`, and stages
   `module.json` + `module` (the binary) + `icon` + `fe/` + `locales/` into a
   zstd `.kmod` (per-target via `--target`; sidecar bundles are suffixed with
   the triple) plus a `.sha256` sidecar. The server reads `locales/` to render
-  the notification types the module declares in each reader's language. `kroma dev` uploads a debug build to a running
+  the notification types the module declares in each reader's language. It
+  records `"seam": "unix"` in a sidecar bundle's manifest, because the runtime
+  it links serves on a Unix socket. `kroma dev` uploads a debug build to a running
   server and again on every save.
 - **The frontend tier**: `fe/remoteEntry.js` is served at
   `/modules/<id>/remoteEntry.js` and the web client imports it for every
@@ -206,6 +214,6 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
   `kroma-engine`, so a naive per-module binary duplicates a lot of code (large
   artifacts, slow builds). Making this lean needs splitting the SDK's engine
   surface into a thin client, a prerequisite for "optimized".
-- Cross-module calls that were direct trait calls become localhost HTTP; hot paths
+- Cross-module calls that were direct trait calls become HTTP over a Unix socket; hot paths
   (e.g. acquisition scoring releases via the scene parser) must stay in-process
   (shared lib) or they get slower, not faster.

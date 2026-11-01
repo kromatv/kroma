@@ -173,6 +173,12 @@ export const Manifest = z.object({
     .describe(
       "The kinds of notification this module sends, each with its wording in this module's locales/<code>.json. The server renders them in each reader's language and refuses a type a module did not declare. Absent for a module that sends none, or that still sends its own words.",
     ),
+  seam: z
+    .enum(['tcp', 'unix'])
+    .nullish()
+    .describe(
+      'Written by kroma build, not by hand: how the core reaches the bundled binary. "unix" is a Unix socket under the server\'s run directory. A bundle that records none was built before the socket seam, runs on a loopback port, and is never given a sandbox.',
+    ),
   settings: SettingsScope.nullish().describe(
     'The core settings keys this module reads and writes. Absent is not the same as empty: a manifest with no settings object predates the field, so it keeps every ordinary preference and reaches none of the credentials a module has to declare.',
   ),

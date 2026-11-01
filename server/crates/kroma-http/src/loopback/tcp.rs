@@ -11,17 +11,14 @@ use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
 use bytes::Bytes;
-use http_body_util::{BodyExt, Full, Limited};
+use http_body_util::Full;
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
 
+use super::exchange::{exchange, prepared};
 use super::transport::{Request, Transport};
 use crate::response::Response;
-
-/// Memory guard on a response body: what one wrong peer may make this process
-/// allocate, not a size any real payload on the seam approaches.
-pub const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
 /// Pooled HTTP/1.1 to another process on this machine.
 #[derive(Debug, Default)]
@@ -38,55 +35,12 @@ impl Transport for Tcp {
 
     fn send(&self, request: &Request<'_>) -> Result<Response> {
         ensure_loopback(request.url)?;
-        let mut prepared = hyper::Request::builder()
-            .method(request.method.as_str())
-            .uri(request.url);
-        for (name, value) in request.headers {
-            prepared = prepared.header(name, value);
-        }
-        let body = match request.body {
-            Some((content_type, bytes)) => {
-                prepared = prepared.header("content-type", content_type);
-                Bytes::copy_from_slice(bytes)
-            }
-            None => Bytes::new(),
-        };
-        let prepared = prepared
-            .body(Full::new(body))
-            .context("build the loopback request")?;
-        let timeout = request.timeout;
-        block_on(async move {
-            // The budget covers the body too: a peer that answers its head and
-            // then stalls mid-body would otherwise hold this thread for as long
-            // as it likes.
-            tokio::time::timeout(timeout, async move {
-                let response = client()
-                    .request(prepared)
-                    .await
-                    .context("send the loopback request")?;
-                let status = response.status().as_u16();
-                let headers = response
-                    .headers()
-                    .iter()
-                    .map(|(name, value)| {
-                        (
-                            name.as_str().to_string(),
-                            String::from_utf8_lossy(value.as_bytes()).into_owned(),
-                        )
-                    })
-                    .collect();
-                let body = Limited::new(response.into_body(), MAX_BODY_BYTES)
-                    .collect()
-                    .await
-                    .map_err(|e| anyhow::anyhow!("read the loopback response body: {e}"))?;
-                Ok(Response {
-                    status,
-                    headers,
-                    body: body.to_bytes().to_vec(),
-                })
-            })
-            .await
-            .context("the loopback peer did not answer in time")?
+        let prepared = prepared(request, request.url)?;
+        exchange(request.timeout, async move {
+            client()
+                .request(prepared)
+                .await
+                .context("send the loopback request")
         })
     }
 }
@@ -94,37 +48,6 @@ impl Transport for Tcp {
 fn client() -> &'static Client<HttpConnector, Full<Bytes>> {
     static CLIENT: OnceLock<Client<HttpConnector, Full<Bytes>>> = OnceLock::new();
     CLIENT.get_or_init(|| Client::builder(TokioExecutor::new()).build_http())
-}
-
-// `Handle::block_on` panics on a worker thread and `spawn_blocking` threads still
-// carry the ambient handle, so the work goes to a runtime that is not the
-// caller's.
-fn runtime() -> &'static tokio::runtime::Runtime {
-    static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
-    RUNTIME.get_or_init(|| {
-        tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .thread_name("kroma-loopback")
-            .enable_all()
-            .build()
-            .expect("build the loopback runtime")
-    })
-}
-
-// A sidecar builds with `panic = "abort"`, so a panic here would take the whole
-// module process down where the caller expects a recoverable error.
-fn block_on<T>(future: impl std::future::Future<Output = Result<T>> + Send + 'static) -> Result<T>
-where
-    T: Send + 'static,
-{
-    let (tx, rx) = std::sync::mpsc::sync_channel(1);
-    runtime().spawn(async move {
-        let _ = tx.send(future.await);
-    });
-    match rx.recv() {
-        Ok(outcome) => outcome,
-        Err(_) => bail!("the loopback exchange ended without a response"),
-    }
 }
 
 fn is_loopback(url: &str) -> Result<bool> {

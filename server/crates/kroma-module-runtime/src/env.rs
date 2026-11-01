@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
+use crate::listen::Listen;
+
 pub(crate) struct Env {
     pub(crate) module_id: String,
-    pub(crate) port: u16,
+    pub(crate) listen: Listen,
     pub(crate) core_url: String,
     pub(crate) host_token: String,
     pub(crate) module_token: String,
@@ -18,7 +20,7 @@ impl Env {
         let get = |k: &str| std::env::var(k).map_err(|_| anyhow::anyhow!("{k} not set"));
         Ok(Self {
             module_id: get("KROMA_MODULE_ID")?,
-            port: get("KROMA_MODULE_PORT")?.parse()?,
+            listen: Listen::from_process()?,
             core_url: get("KROMA_CORE_URL")?,
             host_token: get("KROMA_HOST_TOKEN")?,
             // A host that predates per-module tokens sends none, and the fabric

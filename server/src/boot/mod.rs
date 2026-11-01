@@ -6,6 +6,7 @@ pub mod background;
 pub mod hot;
 pub mod https;
 pub mod scan;
+pub mod seam;
 pub mod serve;
 pub mod startup;
 pub mod state;

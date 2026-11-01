@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -8,6 +9,7 @@ use axum::extract::State;
 use axum::http::Uri;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
+use kroma_http::loopback::unix_url;
 use kroma_http::Loopback;
 use kroma_module_host::{async_trait, ModuleJob, ServerModule};
 use kroma_module_runtime::RemoteHost;
@@ -48,14 +50,14 @@ impl CoreLog {
 }
 
 pub struct Sidecar {
-    pub port: u16,
+    pub socket: PathBuf,
     pub core: CoreLog,
     pub host: RemoteHost,
 }
 
 impl Sidecar {
     pub fn url(&self, path: &str) -> String {
-        format!("http://127.0.0.1:{}{path}", self.port)
+        format!("{}{path}", unix_url(&self.socket))
     }
 
     pub fn post(&self, path: &str, token: &str, body: serde_json::Value) -> u16 {
@@ -190,46 +192,47 @@ async fn core_fallback(State(log): State<CoreLog>, uri: Uri, body: Bytes) -> imp
     (axum::http::StatusCode::OK, Json(reply))
 }
 
-fn start_core(log: CoreLog) -> u16 {
-    serve(Router::new().fallback(core_fallback).with_state(log))
+fn start_core(log: CoreLog, socket: &Path) {
+    serve(
+        Router::new().fallback(core_fallback).with_state(log),
+        socket,
+    );
 }
 
-pub fn serve(app: Router) -> u16 {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+pub fn serve(app: Router, socket: &Path) {
+    let _ = std::fs::remove_file(socket);
+    let listener = std::os::unix::net::UnixListener::bind(socket).expect("bind");
     listener.set_nonblocking(true).expect("non-blocking");
-    let port = listener.local_addr().expect("addr").port();
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("runtime");
         rt.block_on(async move {
-            let listener = tokio::net::TcpListener::from_std(listener).expect("listener");
+            let listener = tokio::net::UnixListener::from_std(listener).expect("listener");
             axum::serve(listener, app).await.expect("serve");
         });
     });
-    port
 }
 
-pub fn free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("bind")
-        .local_addr()
-        .expect("addr")
-        .port()
+pub fn scratch(name: &str) -> PathBuf {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
+    std::fs::create_dir_all(&dir).expect("tmp dir");
+    dir
 }
 
 pub fn sidecar() -> &'static Sidecar {
     static BOOTED: OnceLock<Sidecar> = OnceLock::new();
     BOOTED.get_or_init(|| {
-        let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sidecar");
-        std::fs::create_dir_all(&dir).expect("tmp dir");
+        let dir = scratch("sidecar");
         let core = CoreLog::default();
-        let core_port = start_core(core.clone());
-        let port = free_port();
+        let core_socket = dir.join("core.sock");
+        start_core(core.clone(), &core_socket);
+        let socket = dir.join("module.sock");
+        let _ = std::fs::remove_file(&socket);
         std::env::set_var("KROMA_MODULE_ID", "tv.kroma.demo");
-        std::env::set_var("KROMA_MODULE_PORT", port.to_string());
-        std::env::set_var("KROMA_CORE_URL", format!("http://127.0.0.1:{core_port}/"));
+        std::env::set_var("KROMA_MODULE_SOCKET", &socket);
+        std::env::set_var("KROMA_CORE_URL", format!("{}/", unix_url(&core_socket)));
         std::env::set_var("KROMA_HOST_TOKEN", HOST_TOKEN);
         std::env::set_var("KROMA_DB_PATH", dir.join("core.db").display().to_string());
         std::env::set_var("KROMA_DATA_DIR", dir.display().to_string());
@@ -247,7 +250,7 @@ pub fn sidecar() -> &'static Sidecar {
                 .expect("serve");
         });
         let host = rx.recv_timeout(Duration::from_secs(30)).expect("booted");
-        let sidecar = Sidecar { port, core, host };
+        let sidecar = Sidecar { socket, core, host };
         let deadline = Instant::now() + Duration::from_secs(10);
         while Loopback::new().get(&sidecar.url("/_health")).is_err() {
             assert!(Instant::now() < deadline, "module never came up");

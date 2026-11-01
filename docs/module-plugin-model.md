@@ -191,11 +191,15 @@ opinion about any of it.
 ## The wire
 
 ```
-POST http://127.0.0.1:<port>/_port/<point>/<method>
-Authorization: Bearer <the fabric host token>
+POST /_port/<point>/<method>         on the answering module's Unix socket
+Authorization: Bearer <that module's port token>
 { ...request json... }
 ->  { "Ok": ...json... } | { "Err": "message" }
 ```
+
+The caller never builds the address. `/_host/contributions` hands it a base URL
+and a token: `http+unix://...` for the answering module's socket, or, for a caller
+on the legacy TCP seam, the core's `/api/module/<id>` reverse proxy.
 
 Each side declares its own structs for the JSON it reads or writes. There is no
 shared type, and that is deliberate: the two ends ship on separate tags at

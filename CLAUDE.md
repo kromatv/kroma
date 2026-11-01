@@ -165,9 +165,11 @@ first-party module ships as an installable `.kmod` (a zstd bundle of
 `module.json` + a native `module` binary + icon + `fe/`, the frontend the web
 client loads at runtime).
 `kroma-module-supervisor` scans `<data>/modules/*`, spawns each enabled module as
-its own process on a free localhost port, and reverse-proxies
+its own process serving on a Unix socket under `<data>/run`, and reverse-proxies
 `/api/module/<id>/*` to it; modules call back into the core over the token-authed
-`/api/_host/*` API for settings/events/jobs/session. A database is a **declared
+`/api/_host/*` API, on the core's own `<data>/run/host.sock`, for
+settings/events/jobs/session. A bundle built before the socket seam runs on a
+loopback port as the legacy seam (`modules/README.md#runtime-contract`). A database is a **declared
 capability**, not something every sidecar gets: a module with no `storage` in its
 `module.json` does not link SQLite at all, and one that has it gets its own file
 plus whatever slice of the core database it declared, enforced per connection by

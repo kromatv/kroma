@@ -41,6 +41,7 @@ mod releases;
 mod rematch;
 mod reports;
 mod requests;
+pub mod seam;
 mod search;
 mod stream;
 mod suggest;
@@ -145,15 +146,14 @@ mod it_updates;
 #[cfg(test)]
 mod it_verify_email;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 
-use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::extract::{ConnectInfo, Path, Request, State};
+use axum::extract::{Path, Request, State};
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
-use axum::middleware::{from_fn, from_fn_with_state, Next};
+use axum::middleware::{from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
@@ -187,34 +187,6 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
     }
 }
 
-// The host callback surface is for local sidecars only. A request from any
-// non-loopback peer is answered 404, so the surface is not advertised off-host.
-// A same-host tunnel (cloudflared) arrives from loopback too, with a forwarding
-// header.
-async fn host_loopback_only(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    req: Request,
-    next: Next,
-) -> Response {
-    let relayed = RELAY_HEADERS
-        .iter()
-        .any(|name| req.headers().contains_key(*name));
-    if addr.ip().to_canonical().is_loopback() && !relayed {
-        next.run(req).await
-    } else {
-        json_error(StatusCode::NOT_FOUND, "not found")
-    }
-}
-
-const RELAY_HEADERS: [&str; 6] = [
-    "forwarded",
-    "x-forwarded-for",
-    "x-forwarded-host",
-    "x-real-ip",
-    "cf-connecting-ip",
-    "cdn-loop",
-];
-
 // Reverse-proxies to the installed module's process; the module validates the
 // forwarded bearer itself against the shared DB.
 async fn module_proxy(
@@ -222,14 +194,14 @@ async fn module_proxy(
     Path((id, rest)): Path<(String, String)>,
     req: Request,
 ) -> Response {
-    match sup.port_of(&id) {
-        Some(port) => {
+    match sup.endpoint_of(&id) {
+        Some(endpoint) => {
             let query = req
                 .uri()
                 .query()
                 .map(|q| format!("?{q}"))
                 .unwrap_or_default();
-            kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await
+            kroma_module_supervisor::proxy_to(&endpoint, &format!("/{rest}{query}"), req).await
         }
         None => (StatusCode::NOT_FOUND, "module not running").into_response(),
     }
@@ -294,20 +266,7 @@ pub fn router(
 
     // The admin subtree self-gates per-handler (permission checks), so it lives
     // outside the blanket content layer.
-    // The sidecar callbacks always come from a module process on 127.0.0.1
-    // (KROMA_CORE_URL is loopback), so they are refused from any other peer:
-    // the shared host token is then the second line, not the only one.
-    let host = kroma_module_supervisor::host_router::<SharedState>(
-        supervisor.clone(),
-        kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
-        kroma_module_host::NetworkPolicyOf(state.network.clone()),
-    )
-    .merge(host_jobs::routes())
-    .merge(host_events::routes(
-        supervisor.clone(),
-        subscriptions.clone(),
-    ))
-    .layer(from_fn(host_loopback_only));
+    let host = seam::tcp_host_routes(&state, &supervisor, &subscriptions);
 
     let api = public
         .merge(content)

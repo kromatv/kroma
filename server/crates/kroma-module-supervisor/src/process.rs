@@ -1,13 +1,13 @@
-//! The module process lifecycle: spawning a sidecar on a free port, draining
-//! its logs, and stopping it cleanly.
+//! The module process lifecycle: spawning a sidecar on the seam its bundle
+//! speaks, draining its logs, and stopping it cleanly.
 
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
-use super::{check_manifest_schema, grant_json, LogSink, Supervisor, MODULE_BIN};
+use super::{check_manifest_schema, grant_json, Endpoint, LogSink, Supervisor, MODULE_BIN};
 
 pub(crate) struct Proc {
-    pub(crate) port: u16,
+    pub(crate) endpoint: Endpoint,
     child: Child,
 }
 
@@ -36,21 +36,25 @@ impl Supervisor {
         dead
     }
 
-    /// Spawn a module process on a free localhost port; a no-op if already
-    /// running, an error if the module ships no binary.
-    pub fn spawn(&self, id: &str) -> anyhow::Result<u16> {
+    /// Spawn a module process on the seam its bundle speaks: a Unix socket under
+    /// the run directory, or a free loopback port for a bundle built before the
+    /// socket seam. A no-op if already running, an error if the module ships no
+    /// binary.
+    pub fn spawn(&self, id: &str) -> anyhow::Result<Endpoint> {
         // Before the already-running shortcut: an entry whose process is gone
         // would otherwise answer "running" forever.
         self.reap_exited();
         if let Some(p) = self.procs.read().unwrap().get(id) {
-            return Ok(p.port);
+            return Ok(p.endpoint.clone());
         }
         let bin = self.dir(id).join(MODULE_BIN);
         if !bin.exists() {
             anyhow::bail!("module binary missing: {}", bin.display());
         }
-        let port = free_port()?;
-        let storage = self.storage_of(id);
+        let manifest = self.manifest_on_disk(id);
+        let storage = manifest.as_ref().and_then(|m| m.storage.clone());
+        let seam = manifest.map(|m| m.seam).unwrap_or_default();
+        let endpoint = self.assign_endpoint(id, seam)?;
         self.adopt_declared_tables(id, storage.as_ref());
         let piped = self.cfg.log_line.is_some();
         let stdio = || {
@@ -60,12 +64,11 @@ impl Supervisor {
                 Stdio::inherit()
             }
         };
-        let mut child = Command::new(&bin)
+        let mut command = Command::new(&bin);
+        command
             .env_clear()
             .envs(crate::sidecar_env::inherited(std::env::vars_os()))
             .env("KROMA_MODULE_ID", id)
-            .env("KROMA_MODULE_PORT", port.to_string())
-            .env("KROMA_CORE_URL", &self.cfg.core_url)
             .env("KROMA_HOST_TOKEN", self.port_token(id))
             .env("KROMA_MODULE_TOKEN", self.module_token(id))
             .env("KROMA_DB_PATH", &self.cfg.db_path)
@@ -76,29 +79,33 @@ impl Supervisor {
             // everything" from "an older host that sent no grant at all".
             .env("KROMA_MODULE_GRANT", grant_json(storage.as_ref()))
             .stdout(stdio())
-            .stderr(stdio())
-            .spawn()?;
+            .stderr(stdio());
+        self.point_at_core(&mut command, &endpoint);
+        let mut child = command.spawn()?;
         if let Some(log_line) = &self.cfg.log_line {
             Self::drain_logs(&mut child, id, log_line);
         }
-        // The check above cannot hold its lock across the spawn, so two callers
-        // (the watchdog and an admin toggle) can both get here. Whoever loses
-        // the insert takes its own child back down rather than overwriting the
-        // entry, which would leave a process nobody can stop holding a port.
         let mut procs = self.procs.write().unwrap();
         if let Some(winner) = procs.get(id) {
-            let winner_port = winner.port;
+            let winner_endpoint = winner.endpoint.clone();
             drop(procs);
             ask_to_stop(id, &mut child);
             reap(id, &mut child, Instant::now() + STOP_GRACE);
-            return Ok(winner_port);
+            return Ok(winner_endpoint);
         }
         let pid = child.id();
-        procs.insert(id.to_string(), Proc { port, child });
+        let at = describe(&endpoint);
+        procs.insert(
+            id.to_string(),
+            Proc {
+                endpoint: endpoint.clone(),
+                child,
+            },
+        );
         drop(procs);
-        self.say(id, &format!("INFO starting module process on port {port}"));
-        tracing::info!(module = %id, port, pid, "spawned module process");
-        Ok(port)
+        self.say(id, &format!("INFO starting module process on {at}"));
+        tracing::info!(module = %id, at = %at, pid, "spawned module process");
+        Ok(endpoint)
     }
 
     fn drain_logs(child: &mut Child, id: &str, log_line: &LogSink) {
@@ -225,7 +232,9 @@ fn reap(id: &str, child: &mut Child, deadline: Instant) {
     let _ = child.wait();
 }
 
-fn free_port() -> anyhow::Result<u16> {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-    Ok(listener.local_addr()?.port())
+fn describe(endpoint: &Endpoint) -> String {
+    match endpoint {
+        Endpoint::Unix(socket) => format!("socket {}", socket.display()),
+        Endpoint::Tcp(port) => format!("port {port} (legacy seam)"),
+    }
 }

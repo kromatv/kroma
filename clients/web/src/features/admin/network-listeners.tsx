@@ -29,8 +29,14 @@ const EXPOSURE: Record<ListenerExposure, { tone: 'warning' | 'neutral'; labelKey
   loopback: { tone: 'neutral', labelKey: 'network.exposureLoopback' },
 };
 
+function where(listener: Listener): string {
+  return listener.port === undefined
+    ? listener.address
+    : destination(listener.address, listener.port);
+}
+
 function listenerKey(listener: Listener): string {
-  return `${listener.protocol}:${destination(listener.address, listener.port)}`;
+  return `${listener.protocol}:${where(listener)}`;
 }
 
 export function NetworkListeners() {
@@ -78,7 +84,7 @@ export function NetworkListeners() {
               </Table.Cell>
               <Table.Cell>
                 <Text variant="meta" style={TABULAR} lines={1}>
-                  {destination(listener.address, listener.port)}
+                  {where(listener)}
                 </Text>
               </Table.Cell>
               <Table.Cell>

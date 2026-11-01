@@ -10,7 +10,7 @@ use kroma_module_supervisor::{Supervisor, SupervisorConfig};
 fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
     Supervisor::new(SupervisorConfig {
         modules_dir: dir.to_path_buf(),
-        core_url: "http://127.0.0.1:0".into(),
+        core_port: 0,
         host_token: "t".into(),
         db_path: dir.join("db.sqlite"),
         data_dir: dir.to_path_buf(),

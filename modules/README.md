@@ -116,9 +116,9 @@ pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
 A sidecar's whole `main()` is one `serve_one` call: the runtime builds the
 out-of-process host, applies the module's migrations to its own database, runs
-`on_enable` and serves the module's admin routes on the port the supervisor
-assigned. The closure takes the live host and wires the process's own services
-into it:
+`on_enable` and serves the module's admin routes on the Unix socket the
+supervisor assigned. The closure takes the live host and wires the process's own
+services into it:
 
 ```rust
 #[tokio::main]
@@ -393,10 +393,33 @@ declared types. Every reader gets those words whatever their language.
 ## Runtime contract
 
 The supervisor scans `<data>/modules/*`, spawns each enabled module as its own
-process on a free localhost port, and reverse-proxies `/api/module/<id>/*` to it.
-A module calls back into the core over the token-authed `/api/_host/*` API for
-settings, events, jobs and session lookup (`AuthUser` resolves through the
-host, so authenticating a caller costs no database).
+process, and reverse-proxies `/api/module/<id>/*` to it. A module calls back into
+the core over the token-authed `/api/_host/*` API for settings, events, jobs and
+session lookup (`AuthUser` resolves through the host, so authenticating a caller
+costs no database).
+
+The core and a module talk over Unix sockets, never a TCP port:
+
+| Variable | What it is |
+| --- | --- |
+| `KROMA_MODULE_SOCKET` | where the module serves: `<run>/modules/<id>/module.sock`, in a directory only the server's user can open |
+| `KROMA_CORE_URL` | where the module calls the core back: `<run>/host.sock`, as an `http+unix://` URL `Loopback` dials. It serves `/api/_host/*` and the `/api/module/<id>/*` proxy, and no route a client of the server reaches |
+| `KROMA_CORE_PORT` | the port the core's web listener answers on: what a device on the LAN dials, and where a module calls the API every client calls, with a user's bearer (`http://127.0.0.1:<port>/api/...`) |
+
+`<run>` is `<data>/run`. When `<data>` is too deep for a socket path to fit
+(`sun_path` holds 108 bytes on Linux, 104 on macOS), it is a short private
+directory under `/tmp` named after the data directory, and the server logs
+which one at boot. The runtime does all of this: a module never binds a port or
+reads these variables unless it has a reason of its own.
+
+`kroma build` records the seam in the bundled manifest (`"seam": "unix"`); never
+write it by hand, `kroma check` refuses it. A bundle built against an SDK that
+predates the socket seam records none. The server still runs it on a loopback
+port (`KROMA_MODULE_PORT`, `KROMA_CORE_URL` over TCP), shows it as **legacy
+seam** in Admin → Modules and Admin → Réseau, answers its host callbacks on the
+TCP listener and nobody else's, and never gives it a sandbox, because a module
+with no network cannot reach a port. It reaches a peer on a socket through the
+core's reverse proxy. Rebuild it to leave the legacy seam.
 
 The settings callback reads and writes the operator's preferences, **not the
 core's own credentials**. A key reaches you only when the core declared that it

@@ -42,9 +42,10 @@ fn init_tracing() {
 
 /// Run a module process: `wire` builds the process's own services and port
 /// providers against the live host and hands back whatever extra routes it
-/// serves, each module's `admin_routes` are mounted beside them on the assigned
-/// port, and every module's `on_enable` runs. A process may host several modules
-/// or none (a port-provider-only process).
+/// serves, each module's `admin_routes` are mounted beside them on the Unix
+/// socket the supervisor named (a loopback port, under a server that predates
+/// the socket seam), and every module's `on_enable` runs. A process may host
+/// several modules or none (a port-provider-only process).
 ///
 /// `wire` takes the host rather than running before it, because a provider that
 /// answers out of a database has to be built holding that database: the port
@@ -57,7 +58,7 @@ pub async fn serve(
     init_tracing();
     let env = Env::from_process()?;
     let host = RemoteHost::new(&env)?;
-    tracing::info!(module = %env.module_id, port = env.port, "module process starting");
+    tracing::info!(module = %env.module_id, at = %env.listen, "module process starting");
     crate::egress::install(&host);
 
     apply_module_migrations(&host, &modules)?;
@@ -102,15 +103,14 @@ pub async fn serve(
     let shutdown_host = host.clone();
     let app = app.with_state(host);
 
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], env.port));
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    tracing::info!(%addr, "module listening");
+    let listener = env.listen.bind().await?;
+    tracing::info!(at = %env.listen, "module listening");
 
     announce_to_core(&env, job_specs, &topics);
 
     let module_id = env.module_id.clone();
-    axum::serve(listener, app)
-        .with_graceful_shutdown(async move {
+    listener
+        .serve(app, async move {
             stop_signal().await;
             // The hooks run BEFORE the connection drain, not after: draining can
             // take as long as the slowest in-flight request, and the supervisor

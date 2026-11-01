@@ -114,12 +114,13 @@ export type RulesUpdate = z.infer<typeof RulesUpdate>;
 export const ListenerExposure = z.enum(['network', 'loopback']);
 export type ListenerExposure = z.infer<typeof ListenerExposure>;
 
-/** One socket the server or a module is listening on. */
+/** One socket the server or a module is listening on. A Unix socket's
+ *  `address` is its path, and it has no `port`. */
 export const Listener = z.object({
   owner: z.string(),
-  protocol: z.enum(['tcp', 'udp']),
+  protocol: z.enum(['tcp', 'udp', 'unix']),
   address: z.string(),
-  port: z.number().int(),
+  port: z.number().int().optional(),
   purpose: z.string(),
   exposure: ListenerExposure,
 });

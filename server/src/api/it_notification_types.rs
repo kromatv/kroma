@@ -163,7 +163,7 @@ async fn a_type_a_module_declared_reaches_its_reader_in_their_own_language() {
     let (_, ana) = admin(&t, "ana");
 
     let (status, body) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/notify",
         Some(&token),
@@ -186,7 +186,7 @@ async fn a_type_the_calling_module_did_not_declare_is_refused_by_name() {
     let token = install_declaring_module(&t);
 
     let (status, body) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/notify",
         Some(&token),
@@ -209,7 +209,7 @@ async fn a_caller_no_token_names_cannot_send_a_declared_type() {
     install_declaring_module(&t);
 
     let (status, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/notify",
         Some(HOST_TOKEN),
@@ -235,7 +235,7 @@ async fn a_module_built_before_declared_types_still_sends_its_own_words() {
     });
 
     let (status, _) = send(
-        &t.app,
+        &t.seam,
         "POST",
         "/api/_host/notify",
         Some(&token),

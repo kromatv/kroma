@@ -12,7 +12,8 @@
 //!
 //! [`Loopback`] reaches a process KROMA started itself -- the core from a
 //! module, a module from the core. It holds no transport of its own: a
-//! [`Transport`] is chosen per URL.
+//! [`Transport`] is chosen per URL, loopback TCP for `http://127.0.0.1:<port>`
+//! and a Unix socket for a URL built by [`loopback::unix_url`].
 
 pub mod address;
 mod builder;

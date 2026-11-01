@@ -116,7 +116,7 @@ fn point(resolve: &state::Contributions, name: &'static str) -> kroma_module_hos
 fn supervisor_config(config: &Config, host_token: String) -> SupervisorConfig {
     SupervisorConfig {
         modules_dir: config.data_dir.join("modules"),
-        core_url: format!("http://127.0.0.1:{}", config.port),
+        core_port: config.port,
         host_token,
         db_path: config.db_path(),
         data_dir: config.data_dir.clone(),

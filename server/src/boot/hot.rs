@@ -19,6 +19,7 @@ struct Serving {
     supervisor: Arc<Supervisor>,
     subscriptions: Arc<api::host_events::Subscriptions>,
     socket: Arc<std::net::TcpListener>,
+    seam: Arc<super::seam::SeamSocket>,
 }
 
 /// Serve until the process is signalled, re-entering `serve_once` on each patch.
@@ -36,6 +37,7 @@ pub async fn run(
         std::net::TcpListener::bind(addr).with_context(|| format!("failed to bind {addr}"))?;
     socket.set_nonblocking(true)?;
 
+    let seam = Arc::new(super::seam::SeamSocket::bind(&supervisor));
     supervisor.spawn_enabled(&*state);
     supervisor.spawn_watchdog();
     supervisor.spawn_hot_reload();
@@ -47,6 +49,7 @@ pub async fn run(
         supervisor,
         subscriptions,
         socket: Arc::new(socket),
+        seam,
     };
     spawn_teardown(serving.clone());
 
@@ -61,6 +64,12 @@ async fn serve_once(s: Serving) {
         s.supervisor.clone(),
         s.subscriptions.clone(),
     );
+    let seam = api::seam::router(
+        s.state.clone(),
+        s.supervisor.clone(),
+        s.subscriptions.clone(),
+    );
+    let _seam = s.seam.serve(seam);
     let Ok(socket) = s.socket.try_clone() else {
         return;
     };

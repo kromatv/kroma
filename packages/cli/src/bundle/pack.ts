@@ -35,13 +35,25 @@ export function bundleName(id: string, hasBinary: boolean, target: string | null
   return `${id}${suffix}.kmod`;
 }
 
+/** The seam this SDK's runtime serves on. The build records it in the bundled
+ *  manifest, and a server reaches a bundle that records none over a loopback
+ *  port, as a module built before the socket seam. */
+export const SEAM = 'unix';
+
+function stagedManifest(project: Project, hasBinary: boolean): string {
+  const authored = readFileSync(join(project.dir, 'module.json'), 'utf8');
+  if (!hasBinary) return authored;
+  const manifest: Record<string, unknown> = JSON.parse(authored);
+  return `${JSON.stringify({ ...manifest, seam: SEAM }, null, 2)}\n`;
+}
+
 function stage(input: PackInput): { staging: string; entries: string[] } {
   const { project, binPath, feDir } = input;
   const staging = join(project.dir, '.bundle');
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(staging, { recursive: true });
   const entries = ['module.json'];
-  copyFileSync(join(project.dir, 'module.json'), join(staging, 'module.json'));
+  writeFileSync(join(staging, 'module.json'), stagedManifest(project, binPath !== null));
   if (binPath) {
     copyFileSync(binPath, join(staging, 'module'));
     entries.push('module');

@@ -148,7 +148,19 @@ describe('the listening sockets', () => {
     expect(ListenersView.parse(LISTENERS)).toEqual(LISTENERS);
   });
 
-  it('refuses a protocol other than tcp or udp', () => {
+  it('reads a module socket by its path, with no port', () => {
+    const socket = {
+      owner: 'tv.kroma.vpn',
+      protocol: 'unix',
+      address: '/data/run/modules/tv.kroma.vpn/module.sock',
+      purpose: 'sidecar',
+      exposure: 'loopback',
+    };
+
+    expect(ListenersView.parse({ listeners: [socket] })).toEqual({ listeners: [socket] });
+  });
+
+  it('refuses a protocol other than tcp, udp or unix', () => {
     const listener = { ...LISTENERS.listeners[0], protocol: 'sctp' };
 
     expect(() => ListenersView.parse({ listeners: [listener] })).toThrow();

@@ -113,5 +113,9 @@ export function metaRowsFor(
     rows.push([engine === 'server' ? t('admin.modulesMinServer') : engine, readableRange(range)]);
   }
   if (entry?.target) rows.push([t('admin.modulesPlatform'), entry.target]);
+  if (installed?.hasSidecar) {
+    const seam = installed.legacySeam ? 'admin.modulesSeamTcp' : 'admin.modulesSeamUnix';
+    rows.push([t('admin.modulesSeam'), t(seam)]);
+  }
   return rows;
 }
