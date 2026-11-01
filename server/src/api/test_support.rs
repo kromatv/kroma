@@ -166,6 +166,7 @@ fn build_app_with(
             jobs: &[],
             contributions: std::sync::Arc::new(|_| Vec::new()),
             official_modules: std::sync::Arc::new(Vec::new),
+            permissions: std::sync::Arc::new(|_| None),
         },
     );
 

@@ -7,7 +7,7 @@ use kroma_module_host::{
 };
 
 use super::flow::{FlowReport, FlowRoute};
-use super::Network;
+use super::{Network, PERMISSION_NET_CONNECT};
 
 impl NetworkPolicy for Network {
     fn decide(&self, caller: &str, ask: &NetworkAsk) -> NetworkAnswer {
@@ -16,6 +16,14 @@ impl NetworkPolicy for Network {
             host: ask.host.clone(),
             port: ask.port,
         };
+        if let Some(missing) = self.missing_permission(caller, &ask.purpose, &target) {
+            return NetworkAnswer {
+                action: NetworkAction::Block,
+                proxy: None,
+                rule: Some(PERMISSION_NET_CONNECT.to_string()),
+                reason: Some(missing),
+            };
+        }
         let ruling = self.rule_on(caller, &ask.purpose, &target);
         let (action, proxy, reason) = match ruling.decision {
             Decision::Direct => (NetworkAction::Direct, None, None),

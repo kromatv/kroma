@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.4.30",
+  "version": "0.4.31",
   "description": "Native Cardigann indexer engine: searches trackers from community YAML definitions, no external Torznab aggregator.",
   "engines": {
     "server": ">=0.1.39"
@@ -60,5 +60,33 @@
   ],
   "storage": {
     "adopt": ["indexers"]
+  },
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "indexer",
+          "to": ["public", "lan"]
+        },
+        {
+          "purpose": "flaresolverr",
+          "to": ["setting:acqFlaresolverrUrl"]
+        },
+        {
+          "purpose": "torrent-file",
+          "to": ["public", "lan"]
+        },
+        {
+          "purpose": "indexer-definitions",
+          "to": ["codeload.github.com"],
+          "ports": [443]
+        }
+      ]
+    },
+    "fs": {
+      "read": ["module"],
+      "write": ["module"]
+    },
+    "run": ["tar"]
   }
 }

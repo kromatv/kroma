@@ -15,6 +15,7 @@ mod install;
 mod manifests;
 mod notifications;
 mod origin;
+mod permissions;
 mod process;
 mod proxy;
 mod registry;

@@ -67,6 +67,11 @@ pub fn build(
         })
     };
 
+    let permissions: kroma_engine::services::network::DeclaredPermissions = {
+        let supervisor = supervisor.clone();
+        Arc::new(move |id: &str| supervisor.permissions_of(id))
+    };
+
     // Transcription is long-running and rides a DB row for progress, so the core
     // holds a client for it. The embedder needs none: the state builds that point
     // from the same resolver.
@@ -88,6 +93,7 @@ pub fn build(
             jobs: &[],
             contributions,
             official_modules,
+            permissions,
         },
     );
     if let Err(e) = state.network.install() {

@@ -2122,6 +2122,7 @@ dependencies = [
  "kroma-i18n",
  "kroma-media",
  "kroma-module-host",
+ "kroma-module-manifest",
  "kroma-primitives",
  "kroma-push",
  "kroma-testing",
