@@ -103,15 +103,17 @@ impl Network {
     }
 
     /// Put this policy and journal on every `kroma_http::Fetch` call this
-    /// process makes, as the caller [`CORE`]. Once per process.
+    /// process makes, as the caller [`CORE`]. Once per process. The calls made
+    /// before it are journaled at the time they finished.
     pub fn install(self: &Arc<Self>) -> anyhow::Result<()> {
         let gate = Arc::clone(self);
         kroma_http::egress::set_gate(Arc::new(move |outgoing: &Outgoing| {
             gate.rule_on(CORE, outgoing.purpose, &outgoing.target)
         }))?;
         let sink = Arc::clone(self);
-        kroma_http::egress::set_sink(Arc::new(move |exchange| {
-            sink.record(CORE, exchange.into());
+        kroma_http::egress::set_sink(Arc::new(move |exchange, at| {
+            sink.journal
+                .record(CORE, exchange.into(), kroma_primitives::epoch_ms(at));
         }))
     }
 

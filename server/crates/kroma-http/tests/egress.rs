@@ -27,7 +27,7 @@ fn install_hooks() {
     static INSTALLED: OnceLock<()> = OnceLock::new();
     INSTALLED.get_or_init(|| {
         egress::set_gate(Arc::new(rule_for)).unwrap();
-        egress::set_sink(Arc::new(|exchange| {
+        egress::set_sink(Arc::new(|exchange, _| {
             recorded().lock().unwrap().push(exchange)
         }))
         .unwrap();

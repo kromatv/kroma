@@ -213,6 +213,25 @@ in the folders above the crate, and `modules/` is not under `server/`. A module
 is held to the gate at run time, by the gate in `kroma-module-runtime` and, once
 it is wired, the sandbox.
 
+## Before the gate is installed
+
+Boot installs the network policy when it builds the app state, before the
+supervisor starts a module and before any background job runs. With no gate,
+`kroma_http` lets a call go where its builder says, so in the server a call
+made earlier would go direct and leave no journal row. It does not:
+
+- The server binary calls `kroma_http::egress::require_gate` first thing in
+  `main`. Until the gate is installed, every call that asks it (`Fetch`, the
+  registry client, SMTP) is refused with "blocked by the network policy: it is
+  not installed yet", and nothing is sent.
+- An exchange recorded before the journal exists is kept, the first 256 of
+  them, and journaled once the journal starts, at the time the call finished.
+  A refusal of this kind shows the route `blocked`, no rule, and that error.
+
+A module sidecar and a test never call `require_gate`, so there a call with no
+gate still goes where its builder says. A module's runtime installs its gate
+when the module starts serving.
+
 ## Enforcement
 
 Deciding is not enough: something has to make the decision binding. The target
@@ -278,6 +297,7 @@ configured but down. The trade-off is fewer peers until a network can carry UDP.
 | A network that carries UDP | planned (#512, #494) |
 | ffmpeg and ffprobe open local inputs only | in review (#515) |
 | A call that skips the gate fails CI, and SMTP mail asks the gate as `email` | in review (#536) |
+| A call made before boot installs the gate is refused, and journaled once the journal starts | in review (#542) |
 | WebAssembly component host, the spike | in review (#523) |
 | Modules as WebAssembly components, the same isolation on every platform | planned (#510, #511, #514) |
 | Only components from registries other than the official one | planned (#513) |

@@ -7,6 +7,7 @@ pub mod language;
 
 use std::fs::File;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use sha2::{Digest, Sha256};
 use time::format_description::well_known::Rfc3339;
@@ -15,6 +16,14 @@ use time::OffsetDateTime;
 /// Current time as epoch milliseconds (UTC instant).
 pub fn now_ms() -> i64 {
     (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000) as i64
+}
+
+/// `at` as epoch milliseconds, the unit [`now_ms`] counts in. A time before the
+/// epoch is 0.
+pub fn epoch_ms(at: SystemTime) -> i64 {
+    at.duration_since(UNIX_EPOCH).map_or(0, |since| {
+        i64::try_from(since.as_millis()).unwrap_or(i64::MAX)
+    })
 }
 
 /// Current time as an RFC3339 / ISO8601 string (UTC).
@@ -89,7 +98,23 @@ pub fn clean_label(s: &str, max: usize) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
+
+    #[test]
+    fn a_time_reads_as_the_epoch_milliseconds_now_ms_counts_in() {
+        let at = UNIX_EPOCH + Duration::from_millis(1_700_000_000_123);
+
+        assert_eq!(epoch_ms(at), 1_700_000_000_123);
+    }
+
+    #[test]
+    fn a_time_before_the_epoch_reads_as_zero() {
+        let at = UNIX_EPOCH - Duration::from_secs(1);
+
+        assert_eq!(epoch_ms(at), 0);
+    }
 
     #[test]
     fn hashes_a_file_to_its_sha256_hex() {
