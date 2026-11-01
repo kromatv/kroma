@@ -15,6 +15,7 @@ import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row
 import { epKey } from '#web/features/catalog/episode-selection';
 import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar';
 import { SeasonRequestCard } from '#web/features/catalog/season-card';
+import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 
 import type { TitleSeason } from '#web/shared/lib/titleView';
 
@@ -34,10 +35,6 @@ const sDefinition = styles({
   },
   section: { mt: 40 },
 });
-
-/** Where the hero's "ask for it" button sends a show: the season list is where
- * the choice actually happens. */
-export const EPISODES_ANCHOR = 'episodes';
 
 function SeasonSwitcher({
   seasons,
@@ -62,6 +59,7 @@ function SeasonSwitcher({
 }
 export function SeasonSection({
   seasons,
+  openOn,
   discoverTmdbId,
   fallbackCast,
   isWatched,
@@ -79,6 +77,7 @@ export function SeasonSection({
   requestBusy,
 }: Readonly<{
   seasons: TitleSeason[];
+  openOn?: number;
   discoverTmdbId: number | null;
   fallbackCast: CastMember[];
   isWatched: (id: SubjectId) => boolean;
@@ -100,7 +99,7 @@ export function SeasonSection({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const [season, setSeason] = useState(seasons[0]?.number ?? 1);
+  const [season, setSeason] = useState(openOn ?? seasons[0]?.number ?? 1);
   const { data: listing } = useQuery({
     ...webRuntime.queries.discoverQueries.season(discoverTmdbId ?? 0, season),
     enabled: discoverTmdbId != null,

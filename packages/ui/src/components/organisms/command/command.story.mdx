@@ -14,21 +14,29 @@ export const story = defineStory({
   render: () => <Palette />,
 });
 
-The search-and-jump overlay: one field, a ranked and grouped list, and Enter to open. Render it while it is open and unmount it to close.
+The search-and-jump overlay: one field, a grouped list that a query turns into one ranked run, and Enter to open. Render it while it is open and unmount it to close.
 
-**Ranked, not filtered.** A query is matched as a subsequence and scored (`lib/fuzzy-search`, the same matcher the icon browser uses), so `iconb` finds **IconButton** and the best rows rise to the top. A hit on what a row *says* always outranks a hit on what it is *filed under*.
+**Ranked, not filtered.** `lib/text-match` tries the strongest reading of a query first: the whole text, then each word landing on a word in any order (whole, by prefix, inside one, or with a typo), then initials, then scattered letters that start on a word. So `resaeu` finds **Réseau**, `jour mises` finds **Mises à jour**, `mj` finds it too, and `iconb` finds **IconButton**. Case and accents never matter. What a row *says* counts for more than what it is *filed under*, and what a row does not show has to contain the query, since scattered letters there would explain nothing. While searching there are no headings, since one would hold a row above a better one, and a row names its `group` at its end instead. Pass `boost` to add what you know that the text does not, such as what the viewer chose before.
+
+**Letters that matched are marked** on the label, so a reader sees why a row is listed. Every row's `icon` sits in the same square `IconWell`, and an `image` with `imageShape: 'tile'` fills that square, so art and glyphs line up. Any other `image` is a poster, as wide as the well and taller. Only a poster draws its row taller: a `subtitle` fits in a plain row, so a list keeps one rhythm. A `status` draws a badge at the end of the row. A row marked `always` stays listed whatever is typed, below what matched.
 
 **The rows are data**, which is DESIGN.md §3 tests T2 and T5: the cursor is arithmetic over one flat order, and no arrangement of nested children keeps that true when there is no DOM to ask. Everything else is a part (the field, the list, the empty face and the footer), so a caller decides what the sheet holds.
 
-On the web the arrows drive a cursor the pointer shares; on a television there is no keyboard, so the spatial navigator walks the rows and the palette draws no cursor of its own.
+**A row can do several things.** Give an item `actions`, likeliest first: Enter runs the first, Command or Ctrl with Enter the second, and Command or Ctrl with K opens `Command.Actions`, a panel with a field of its own. In the footer, `Command.Primary` says what Enter and a press do right now and does it when pressed, and `Command.Trigger` is the way to the panel. Both draw nothing for a row with nothing to offer. An action marked `danger` is set apart at the end. `onSelect` is handed the row and the action.
+
+On the web the arrows drive a cursor the pointer shares, once the pointer has really moved: a row that slides under a mouse at rest does not take the cursor, so Enter opens what was typed for. On a television there is no keyboard, so the spatial navigator walks the rows and the palette draws no cursor of its own.
+
+**Over a whole app**, pass `modal`: it draws above everything, holds the focus and the page's scroll, and gives the focus back when it closes. `useCommandKey(toggle)` binds the key that opens it, `⌘K` on Apple hardware and `Ctrl+K` on Windows and Linux, and `<CommandKeys />` draws that key.
 
 ```tsx
-<Command.Root items={rows} selected={open} onSelect={go} onClose={shut}>
+useCommandKey(toggle);
+
+<Command.Root modal items={rows} selected={open} onSelect={go} onClose={shut}>
   <Command.Input label="Search" placeholder="Search…" />
   <Command.List />
   <Command.Empty>No results.</Command.Empty>
   <Command.Footer>
-    <Kbd>↵</Kbd>
+    <Kbd icon="corner-down-left" />
     <Text variant="meta" color="textDim">open</Text>
   </Command.Footer>
 </Command.Root>

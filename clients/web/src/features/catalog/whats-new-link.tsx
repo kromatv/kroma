@@ -1,6 +1,5 @@
 import { useT } from '@kromatv/ui';
 import { Badge } from '@kromatv/ui/kit';
-import { IconSparkles } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -16,7 +15,7 @@ export function WhatsNewLink() {
   });
   if (!data?.unseen) return null;
   return (
-    <SideNav.Item to="/whats-new" icon={IconSparkles}>
+    <SideNav.Item to="/whats-new" icon="sparkles">
       <SideNav.Label>{t('releases.title')}</SideNav.Label>
       <SideNav.Trailing>
         <Badge tone="warning">{data.current}</Badge>

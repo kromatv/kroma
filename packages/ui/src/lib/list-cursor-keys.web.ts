@@ -21,19 +21,26 @@ function useListCursorKeys<T>({
   cursor,
 }: ListCursorKeysOptions<T>): T | undefined {
   const onKey = useEffectEvent((event: KeyboardEvent) => {
-    if (!(event.key in STEP)) return;
+    if (event.isComposing || !(event.key in STEP)) return;
     event.preventDefault();
     event.stopPropagation();
     if (event.key === 'Escape') return onClose();
-    if (event.key === 'Enter') return onChoose();
+    if (event.key === 'Enter') return onChoose(event.metaKey || event.ctrlKey);
     onStep(STEP[event.key] as number);
   });
 
   useEffect(() => {
     const document = webDocument();
     if (!document) return;
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') event.stopPropagation();
+    };
     document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
+    document.addEventListener('keyup', onKeyUp, true);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('keyup', onKeyUp, true);
+    };
   }, []);
 
   return cursor;

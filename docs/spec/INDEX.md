@@ -3,7 +3,7 @@
 
 # Requirement index
 
-509 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+512 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -537,3 +537,6 @@
 - **SURF-47** (SHIPPED) - The input model is the one thing a surface may *not* copy from web,
 - **SURF-48** (SHIPPED) - A download is a single progressive file: the raw original when the
 - **SURF-49** (SHIPPED) - A remote, a gamepad and a keyboard's arrow keys are the same input
+- **SURF-50** (SHIPPED) - From anywhere on web, one key combination (Command+K on a Mac,
+- **SURF-51** (SHIPPED) - A row in the command menu says what Enter will do, and can offer
+- **SURF-52** (SHIPPED) - The command menu forgives typos, word order and missing accents,

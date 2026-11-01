@@ -1,23 +1,10 @@
 import { hasPermission } from '@kromatv/client/accounts';
-import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, classes, Drawer, Logo, Row, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
-import {
-  IconBookmark,
-  IconCategory,
-  IconDeviceDesktop,
-  IconDeviceTv,
-  IconHome,
-  IconInbox,
-  IconMovie,
-  IconSearch,
-  IconSettings,
-  IconUserPlus,
-  type TablerIcon,
-} from '@tabler/icons-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
+import { CATALOG_NAV } from '#web/features/catalog/catalog-nav';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
 import {
   ServerUpdateIndicator,
@@ -29,7 +16,6 @@ import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { useNavActions } from '#web/shared/ui/nav-actions';
 import { NavMenuButton } from '#web/shared/ui/nav-menu-button';
-import type { RoutePath } from '#web/shared/ui/route-link';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
@@ -79,14 +65,6 @@ const sDefinition = styles({
 
 // `env()` has no React Native spelling, so the sheet's own insets stay CSS.
 
-const NAV: { labelKey: MessageKey; to: RoutePath; icon: TablerIcon; exact?: boolean }[] = [
-  { labelKey: 'nav.home', to: '/', icon: IconHome, exact: true },
-  { labelKey: 'nav.search', to: '/search', icon: IconSearch },
-  { labelKey: 'nav.films', to: '/movies', icon: IconMovie },
-  { labelKey: 'nav.series', to: '/shows', icon: IconDeviceTv },
-  { labelKey: 'nav.genres', to: '/genres', icon: IconCategory },
-];
-
 export function Sidebar() {
   const s = useStyles(sDefinition);
 
@@ -119,14 +97,14 @@ function SidebarNav() {
   return (
     <SideNav.Root>
       <SideNav.Group label={t('nav.discover')}>
-        {NAV.map((item) => (
+        {CATALOG_NAV.map((item) => (
           <SideNav.Item key={item.to} to={item.to} exact={item.exact} icon={item.icon}>
             <SideNav.Label>{t(item.labelKey)}</SideNav.Label>
           </SideNav.Item>
         ))}
       </SideNav.Group>
       <SideNav.Group label={t('nav.yourSpace')}>
-        <SideNav.Item to="/my-list" icon={IconBookmark}>
+        <SideNav.Item to="/my-list" icon="bookmark">
           <SideNav.Label>{t('nav.myList')}</SideNav.Label>
         </SideNav.Item>
         <RequestsLink />
@@ -136,7 +114,7 @@ function SidebarNav() {
         <ServerUpdateNotice />
         <SideNav.Group label={t('nav.more')}>
           <InviteLink />
-          <SideNav.Item to="/connect" icon={IconDeviceDesktop}>
+          <SideNav.Item to="/connect" icon="device-desktop">
             <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
           </SideNav.Item>
           <AdminLink />
@@ -209,7 +187,7 @@ function RequestsLink() {
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
   return (
-    <SideNav.Item to="/requests" icon={IconInbox}>
+    <SideNav.Item to="/requests" icon="inbox">
       <SideNav.Label>{t('nav.requests')}</SideNav.Label>
     </SideNav.Item>
   );
@@ -220,7 +198,7 @@ function InviteLink() {
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'users.manage')) return null;
   return (
-    <SideNav.Item to="/invite" icon={IconUserPlus}>
+    <SideNav.Item to="/invite" icon="user-plus">
       <SideNav.Label>{t('nav.inviteUser')}</SideNav.Label>
     </SideNav.Item>
   );
@@ -237,7 +215,7 @@ function AdminLink() {
       hasPermission(user, 'requests.manage'));
   if (!isAdmin) return null;
   return (
-    <SideNav.Item to="/admin" icon={IconSettings}>
+    <SideNav.Item to="/admin" icon="settings">
       <SideNav.Label>{t('nav.server')}</SideNav.Label>
     </SideNav.Item>
   );

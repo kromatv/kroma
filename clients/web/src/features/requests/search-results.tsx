@@ -13,6 +13,7 @@ import type { DiscoverSearchState } from '#web/features/requests/use-discover-se
 import { useAuth } from '#web/shared/lib/auth';
 import { SkeletonRow } from '#web/shared/ui';
 import { Poster } from '#web/shared/ui/poster';
+import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 import { RouteLink } from '#web/shared/ui/route-link';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
@@ -80,7 +81,12 @@ function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
       width={width}
       asChild
     >
-      <RouteLink to={to} params={{ id: episode ?? item.id }} />
+      <RouteLink
+        to={to}
+        params={{ id: episode ?? item.id }}
+        search={episode && item.season !== null ? { season: item.season } : {}}
+        hash={episode ? EPISODES_ANCHOR : undefined}
+      />
     </Poster>
   );
 }

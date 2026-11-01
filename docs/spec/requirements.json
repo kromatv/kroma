@@ -4837,7 +4837,7 @@
     "status": "SHIPPED",
     "text": "**Touch**, on mobile, means targets sized for a thumb, gestures for",
     "file": "docs/spec/surfaces/README.md",
-    "line": 166
+    "line": 177
   },
   {
     "id": "SURF-25",
@@ -4847,7 +4847,7 @@
     "status": "SHIPPED",
     "text": "**Directional, 10-foot**, on every television and on desktop, is a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 169
+    "line": 180
   },
   {
     "id": "SURF-26",
@@ -4857,7 +4857,7 @@
     "status": "SHIPPED",
     "text": "A television signs in through the pairing handshake precisely",
     "file": "docs/spec/surfaces/README.md",
-    "line": 175
+    "line": 186
   },
   {
     "id": "SURF-27",
@@ -4867,7 +4867,7 @@
     "status": "AGREED",
     "text": "A television build that ships a pointer-shaped screen has not met",
     "file": "docs/spec/surfaces/README.md",
-    "line": 177
+    "line": 188
   },
   {
     "id": "SURF-28",
@@ -4877,7 +4877,7 @@
     "status": "AGREED",
     "text": "A surface serving more than one model, such as a tablet with a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 179
+    "line": 190
   },
   {
     "id": "SURF-29",
@@ -4887,7 +4887,7 @@
     "status": "SHIPPED",
     "text": "**Only mobile is offline.** Web, desktop and every television hold no",
     "file": "docs/spec/surfaces/README.md",
-    "line": 186
+    "line": 197
   },
   {
     "id": "SURF-30",
@@ -4897,7 +4897,7 @@
     "status": "SHIPPED",
     "text": "A downloaded title plays with no server connection.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 193
+    "line": 204
   },
   {
     "id": "SURF-31",
@@ -4907,7 +4907,7 @@
     "status": "SHIPPED",
     "text": "Downloads survive backgrounding and app kills, and are re-adopted",
     "file": "docs/spec/surfaces/README.md",
-    "line": 197
+    "line": 208
   },
   {
     "id": "SURF-32",
@@ -4917,7 +4917,7 @@
     "status": "SHIPPED",
     "text": "Progress reports that could not be sent queue on the device and",
     "file": "docs/spec/surfaces/README.md",
-    "line": 199
+    "line": 210
   },
   {
     "id": "SURF-33",
@@ -4927,7 +4927,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Per-title rows in the OS storage manager, deletable",
     "file": "docs/spec/surfaces/README.md",
-    "line": 207
+    "line": 218
   },
   {
     "id": "SURF-34",
@@ -4937,7 +4937,7 @@
     "status": "AGREED",
     "text": "A surface stays current without asking a person to babysit it.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 225
+    "line": 236
   },
   {
     "id": "SURF-35",
@@ -4947,7 +4947,7 @@
     "status": "SHIPPED",
     "text": "**Web.** The server serves the web surface itself. There is no",
     "file": "docs/spec/surfaces/README.md",
-    "line": 227
+    "line": 238
   },
   {
     "id": "SURF-36",
@@ -4957,7 +4957,7 @@
     "status": "SHIPPED",
     "text": "**Desktop.** The app checks for, fetches and applies updates in the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 230
+    "line": 241
   },
   {
     "id": "SURF-37",
@@ -4967,7 +4967,7 @@
     "status": "AGREED",
     "text": "**Mobile.** The app updates on the store's cadence, so a server",
     "file": "docs/spec/surfaces/README.md",
-    "line": 232
+    "line": 243
   },
   {
     "id": "SURF-38",
@@ -4977,7 +4977,7 @@
     "status": "AGREED",
     "text": "**Televisions.** Each television updates through its own platform's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 235
+    "line": 246
   },
   {
     "id": "SURF-39",
@@ -4987,7 +4987,7 @@
     "status": "AGREED",
     "text": "**NAS.** The Synology package installs and updates through Package",
     "file": "docs/spec/surfaces/README.md",
-    "line": 237
+    "line": 248
   },
   {
     "id": "SURF-40",
@@ -4997,7 +4997,7 @@
     "status": "AGREED",
     "text": "A surface is dropped when its host platform can no longer meet the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 246
+    "line": 257
   },
   {
     "id": "SURF-41",
@@ -5007,7 +5007,7 @@
     "status": "AGREED",
     "text": "**Notice first.** A surface entering deprecation tells its users *in",
     "file": "docs/spec/surfaces/README.md",
-    "line": 251
+    "line": 262
   },
   {
     "id": "SURF-42",
@@ -5017,7 +5017,7 @@
     "status": "AGREED",
     "text": "**Sessions survive the app.** A deprecated surface's sessions are",
     "file": "docs/spec/surfaces/README.md",
-    "line": 254
+    "line": 265
   },
   {
     "id": "SURF-43",
@@ -5027,7 +5027,7 @@
     "status": "AGREED",
     "text": "**The library outlives any surface.** Nothing about a person's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 258
+    "line": 269
   },
   {
     "id": "SURF-44",
@@ -5077,7 +5077,7 @@
     "status": "SHIPPED",
     "text": "A download is a single progressive file: the raw original when the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 194
+    "line": 205
   },
   {
     "id": "SURF-49",
@@ -5087,6 +5087,36 @@
     "status": "SHIPPED",
     "text": "A remote, a gamepad and a keyboard's arrow keys are the same input",
     "file": "docs/spec/surfaces/README.md",
-    "line": 172
+    "line": 183
+  },
+  {
+    "id": "SURF-50",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 50,
+    "status": "SHIPPED",
+    "text": "From anywhere on web, one key combination (Command+K on a Mac,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 166
+  },
+  {
+    "id": "SURF-51",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 51,
+    "status": "SHIPPED",
+    "text": "A row in the command menu says what Enter will do, and can offer",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 171
+  },
+  {
+    "id": "SURF-52",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 52,
+    "status": "SHIPPED",
+    "text": "The command menu forgives typos, word order and missing accents,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 175
   }
 ]

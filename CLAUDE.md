@@ -28,6 +28,8 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   `asChild` means here (`<Slot>`, with a written-down merge). Read it before
   adding a component or changing one's props.
 - [`modules/README.md`](modules/README.md) for authoring a module.
+- [`docs/command-menu.md`](docs/command-menu.md) for adding a page or an action to the
+  web client's `⌘K` / `Ctrl+K` menu.
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) for the three roads a television
   takes to an account, what "the same network" means, and which shells can hear
   a television on the link rather than being told about it.

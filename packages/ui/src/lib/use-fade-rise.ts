@@ -72,10 +72,10 @@ function useMounted(shown: boolean, ms: number): boolean {
  * motion. `mounted` stays true through the exit, so a caller stops drawing once it
  * is false rather than holding an invisible surface over the stage.
  */
-export function useFadeRise(shown: boolean): FadeRise {
+export function useFadeRise(shown: boolean, distance: number = RISE): FadeRise {
   const reduced = useReducedMotion();
   const ms = reduced ? 0 : FADE_MS;
-  const rise = reduced ? 0 : RISE;
+  const rise = reduced ? 0 : distance;
   const settled = useSettled(shown);
   const native = useNativeStyle(shown, ms, rise);
   const mounted = useMounted(shown, ms);

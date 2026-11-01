@@ -15,11 +15,14 @@ One keycap: the mark a shortcut is written with, in prose, in a menu row, or und
 
 It is a **face**, never a control. A picture of a key does nothing when it is pressed, and on a television it must not take a D-pad stop away from the control it describes.
 
+Every cap is the same height, and square when it holds one symbol, so a run of them lines up.
+
 ```tsx
 <Kbd>esc</Kbd>
+<Kbd icon="corner-down-left" />
 
-<Box row align="center" gap={5}>
-  <Kbd>⌘</Kbd>
+<Box row align="center" gap={3}>
+  <Kbd icon="command" />
   <Kbd>K</Kbd>
   <Text variant="meta" color="textDim">search</Text>
 </Box>
@@ -29,18 +32,30 @@ It is a **face**, never a control. A picture of a key does nothing when it is pr
   One cap per key. The label beside them is ordinary text: a cap is the key, never the sentence.
 
   <Box row align="center" gap={14}>
-    <Chord keys={['⌘', 'K']} label="search" />
-    <Chord keys={['↑', '↓']} label="navigate" />
-    <Chord keys={['↵']} label="select" />
+    <Chord label="search">
+      <Kbd icon="command" />
+      <Kbd>K</Kbd>
+    </Chord>
+    <Chord label="navigate">
+      <Kbd icon="arrow-up" />
+      <Kbd icon="arrow-down" />
+    </Chord>
+    <Chord label="select">
+      <Kbd icon="corner-down-left" />
+    </Chord>
+    <Chord label="close">
+      <Kbd>esc</Kbd>
+    </Chord>
   </Box>
 </Scene>
 
 <Do>
-- Print the key as the reader sees it on the keyboard: `esc`, `⌘`, `Ctrl`, `↵`.
+- Draw a key that has a symbol with `icon`, and spell the rest as the keyboard does: `esc`, `Ctrl`, `K`.
 - Put one cap per key, so a chord reads as the two keys it is.
 </Do>
 
 <Dont>
+- Type a symbol such as `⌘` or `↵` as text: it sits low and small, in whichever fallback font the platform picks.
 - Make one pressable. The shortcut is the affordance, the cap is only its label.
 - Show a keyboard shortcut on a screen that is driven only by a remote.
 </Dont>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { type ReactNode, StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { layout, onScreen } from '#ui/testing';
@@ -60,10 +60,178 @@ const key = (name: string) => fireEvent.keyDown(document, { key: name });
 const sections = sectionsOf(ITEMS, '');
 
 describe('Command', () => {
+  it('draws a modal palette as a dialog holding its field', () => {
+    render(
+      onScreen(
+        <Command.Root modal items={ITEMS} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.Input label="Search the list" />
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    const dialog = screen.getByRole('dialog');
+
+    expect(within(dialog).getByLabelText('Search the list')).toBeTruthy();
+  });
+
+  it('holds the dialog role and the focus under StrictMode', async () => {
+    render(
+      <StrictMode>
+        {onScreen(
+          <Command.Root modal items={ITEMS} onSelect={vi.fn()} onClose={vi.fn()}>
+            <Command.Input label="Search the list" />
+          </Command.Root>,
+        )}
+      </StrictMode>,
+    );
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(document.activeElement).toBe(within(dialog).getByLabelText('Search the list'));
+  });
+
+  it('draws an item’s artwork, and its icon when there is no artwork to load', () => {
+    const items: CommandItem[] = [
+      { id: 'dune', label: 'Dune', icon: 'movie', image: 'https://example.test/dune.jpg' },
+    ];
+    render(
+      onScreen(
+        <Command.Root items={items} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(row('Dune').querySelector('img')?.getAttribute('src')).toBe(
+      'https://example.test/dune.jpg',
+    );
+  });
+
+  it('draws a tile’s art and an icon’s glyph in wells of one size', () => {
+    const items: CommandItem[] = [
+      {
+        id: 'tile',
+        label: 'Tile',
+        icon: 'puzzle',
+        image: 'https://example.test/a.svg',
+        imageShape: 'tile',
+      },
+      { id: 'glyph', label: 'Glyph', icon: 'puzzle' },
+    ];
+    render(
+      onScreen(
+        <Command.Root items={items} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    const wellOf = (name: string) => row(name).firstElementChild as HTMLElement;
+
+    expect(wellOf('Tile').className).toBe(wellOf('Glyph').className);
+    expect(row('Tile').querySelector('img')?.getAttribute('src')).toBe(
+      'https://example.test/a.svg',
+    );
+  });
+
+  it('draws a row’s status as a badge', () => {
+    const items: CommandItem[] = [
+      { id: 'roku', label: 'Roku', status: { label: 'Stopped', tone: 'danger' } },
+    ];
+    render(
+      onScreen(
+        <Command.Root items={items} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(within(row('Roku')).getByText('Stopped')).toBeTruthy();
+  });
+
+  it('names a row’s section at its end while searching, as no heading is drawn', () => {
+    render(
+      onScreen(
+        <Command.Root items={ITEMS} defaultQuery="chi" onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(within(row('Chip')).getByText('Actions')).toBeTruthy();
+  });
+
+  it('marks the letters of a label that the query matched', () => {
+    render(
+      onScreen(
+        <Command.Root items={ITEMS} defaultQuery="chi" onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(within(row('Chip')).getByText('Chi')).toBeTruthy();
+  });
+
+  it('opens the first row on Enter when a row merely arrived under a resting pointer', () => {
+    const { onSelect } = show();
+
+    fireEvent.pointerEnter(row('Chip'));
+    key('Enter');
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'colors' }), undefined);
+  });
+
+  it('moves the cursor to the row a moving pointer is on', () => {
+    const { onSelect } = show();
+
+    fireEvent.mouseMove(document);
+    fireEvent.pointerEnter(row('Chip'));
+    key('Enter');
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'chip' }), undefined);
+  });
+
+  it('gives the focus back to what held it when a modal palette closes', async () => {
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const { unmount } = render(
+      onScreen(
+        <Command.Root modal items={ITEMS} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.Input label="Search the list" />
+        </Command.Root>,
+      ),
+    );
+    await screen.findByRole('dialog');
+
+    unmount();
+    const refocused = document.activeElement === opener;
+    opener.remove();
+
+    expect(refocused).toBe(true);
+  });
+
+  it('closes a modal palette on Escape', () => {
+    const onClose = vi.fn();
+    render(
+      onScreen(
+        <Command.Root modal items={ITEMS} onSelect={vi.fn()} onClose={onClose}>
+          <Command.Input label="Search the list" />
+        </Command.Root>,
+      ),
+    );
+
+    key('Escape');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('opens the row that was pressed, and closes behind it', () => {
     const { onSelect, onClose } = show();
     fireEvent.click(row('Chip'));
-    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'chip' }));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'chip' }), undefined);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -71,7 +239,7 @@ describe('Command', () => {
     const { onSelect } = show();
     key('ArrowDown');
     key('Enter');
-    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'spacing' }));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'spacing' }), undefined);
   });
 
   it('closes on Escape without opening anything', () => {
