@@ -35,7 +35,7 @@ pub fn announce(config: &Config) -> bool {
         warn!("ffprobe not found: metadata will be inferred from file extensions");
     }
     if config.tmdb_api_key.is_some() {
-        if infra::metadata::curl_available() {
+        if kroma_http::curl_available() {
             info!(language = %config.tmdb_language, "TMDB enrichment enabled");
         } else {
             warn!("KROMA_TMDB_API_KEY is set but `curl` was not found; TMDB enrichment disabled");

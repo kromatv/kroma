@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 
-use std::ffi::OsStr;
 use std::path::Path;
-use std::process::Command;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
@@ -79,20 +77,14 @@ pub fn text(response: &Response) -> String {
 fn build_guest() -> Vec<u8> {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/guest/Cargo.toml");
     let target_dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("wasm-guest");
-    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let mut command = Command::new(cargo);
-    command
+    let output = kroma_testing::cargo()
         .args(["build", "--release", "--locked", "--target", GUEST_TARGET])
         .arg("--manifest-path")
         .arg(&manifest)
         .arg("--target-dir")
-        .arg(&target_dir);
-    for (key, _) in std::env::vars_os() {
-        if is_host_build_setting(&key) {
-            command.env_remove(key);
-        }
-    }
-    let output = command.output().expect("run cargo to build the test guest");
+        .arg(&target_dir)
+        .output()
+        .expect("run cargo to build the test guest");
     assert!(
         output.status.success(),
         "building the test guest failed; is the target installed (`rustup target add {GUEST_TARGET}`)?\n{}",
@@ -100,22 +92,4 @@ fn build_guest() -> Vec<u8> {
     );
     let wasm = target_dir.join(format!("{GUEST_TARGET}/release/kroma_wasm_host_guest.wasm"));
     std::fs::read(&wasm).expect("read the built test guest")
-}
-
-fn is_host_build_setting(key: &OsStr) -> bool {
-    let Some(key) = key.to_str() else {
-        return false;
-    };
-    key.ends_with("RUSTFLAGS")
-        || key.ends_with("RUSTDOCFLAGS")
-        || key.starts_with("CARGO_LLVM_COV")
-        || matches!(
-            key,
-            "RUSTC_WRAPPER"
-                | "RUSTC_WORKSPACE_WRAPPER"
-                | "CARGO_TARGET_DIR"
-                | "CARGO_BUILD_TARGET_DIR"
-                | "CARGO_BUILD_TARGET"
-                | "LLVM_PROFILE_FILE"
-        )
 }

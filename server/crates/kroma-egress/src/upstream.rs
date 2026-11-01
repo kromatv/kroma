@@ -12,6 +12,10 @@ use crate::{Host, Upstream};
 
 const NO_AUTH: u8 = 0x00;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the egress gateway dials the upstream network the policy routed this connection to"
+)]
 pub(crate) async fn connect(upstream: &Upstream, host: &Host, port: u16) -> Result<TcpStream> {
     let mut stream = TcpStream::connect(&upstream.address)
         .await

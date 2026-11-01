@@ -145,6 +145,10 @@ where
 
 // Every resolved address is checked, not only the one dialled: a resolver
 // answering one public and one private address is a rebinding attempt.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the egress gateway dials once the policy routed this connection direct and every resolved address passed the guards"
+)]
 async fn dial_direct(
     host: &Host,
     port: u16,

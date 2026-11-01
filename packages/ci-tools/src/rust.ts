@@ -29,11 +29,13 @@ async function each(
 
 const scope = (ws: Workspace) => (ws === SERVER ? ['--workspace'] : []);
 
+const DENIED = ['-D', 'clippy::disallowed_methods', '-D', 'clippy::disallowed_types'];
+
 async function clippy(list: Workspace[]): Promise<void> {
-  await each('clippy', (ws) => ['clippy', ...scope(ws), '--all-targets'], list);
+  await each('clippy', (ws) => ['clippy', ...scope(ws), '--all-targets', '--', ...DENIED], list);
   await each(
     'clippy with features',
-    (ws) => ['clippy', ...scope(ws), '--all-targets', ...on(ws)],
+    (ws) => ['clippy', ...scope(ws), '--all-targets', ...on(ws), '--', ...DENIED],
     withFeatures(list),
   );
 }

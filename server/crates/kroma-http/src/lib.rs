@@ -25,6 +25,7 @@ mod multipart;
 mod pin;
 mod response;
 
+pub use curl::curl_available;
 pub use fetch::Fetch;
 pub use loopback::{Loopback, Method, Request, Transport, MAX_BODY_BYTES};
 pub use multipart::FormPart;
