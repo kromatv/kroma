@@ -36,7 +36,8 @@ pub fn tidy(pool: &Pool, now: i64) -> Result<Tidied> {
     )?;
     drop(conn);
     let deliveries = crate::notification_deliveries::prune(pool, now * 1_000)?;
-    let flow_tallies = crate::network_flows::prune(pool, now * 1_000)?;
+    let flow_tallies = crate::network_flows::prune(pool, now * 1_000)?
+        + crate::network_inbound::prune(pool, now * 1_000)?;
     Ok(Tidied {
         sessions,
         access_tokens,

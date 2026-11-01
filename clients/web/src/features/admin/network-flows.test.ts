@@ -2,9 +2,11 @@ import type { DeclaredPurpose } from '@kromatv/client/network';
 import { describe, expect, it } from 'vitest';
 import {
   callerChoices,
-  FLOW_LIMIT,
+  FIRST_FLOW_PAGE,
+  FLOW_PAGE_SIZE,
+  flowPageCount,
+  flowPositionAt,
   flowQuery,
-  matchingHost,
   NO_FLOW_FILTERS,
   purposeChoices,
 } from '#web/features/admin/network-flows';
@@ -17,43 +19,55 @@ const PURPOSES: readonly DeclaredPurpose[] = [
 ];
 
 describe('the journal request', () => {
-  it('asks for the newest connections with no filter by default', () => {
-    expect(flowQuery(NO_FLOW_FILTERS)).toEqual({ limit: FLOW_LIMIT });
+  it('asks for the newest page with no filter by default', () => {
+    expect(flowQuery(NO_FLOW_FILTERS, FIRST_FLOW_PAGE)).toEqual({ limit: FLOW_PAGE_SIZE });
   });
 
-  it('hands the caller, the purpose and the verdict to the server', () => {
+  it('hands every filter to the server, the host search included', () => {
     const filters = {
       caller: 'core',
       purpose: 'metadata',
       verdict: 'blocked',
-      host: 'tmdb',
+      host: ' tmdb ',
     } as const;
 
-    expect(flowQuery(filters)).toEqual({
-      limit: FLOW_LIMIT,
+    expect(flowQuery(filters, FIRST_FLOW_PAGE)).toEqual({
+      limit: FLOW_PAGE_SIZE,
       caller: 'core',
       purpose: 'metadata',
       verdict: 'blocked',
+      host: 'tmdb',
+    });
+  });
+
+  it('asks past the first page from the id the pages were anchored on', () => {
+    expect(flowQuery(NO_FLOW_FILTERS, { page: 3, before: 4183 })).toEqual({
+      limit: FLOW_PAGE_SIZE,
+      offset: 2 * FLOW_PAGE_SIZE,
+      before: 4183,
     });
   });
 });
 
-describe('the host search', () => {
-  const flows = [
-    flow({ id: 1, host: 'api.themoviedb.org' }),
-    flow({ id: 2, host: 'tracker.opentrackr.org', port: 1337 }),
-  ];
+describe('moving through the pages', () => {
+  const shown = [flow({ id: 4182 }), flow({ id: 4181 })];
 
-  it('keeps the connections whose host holds the text, whatever its case', () => {
-    expect(matchingHost(flows, ' TRACKR ').map((one) => one.id)).toEqual([2]);
+  it('anchors on the newest connection on screen when leaving the first page', () => {
+    expect(flowPositionAt(2, FIRST_FLOW_PAGE, shown)).toEqual({ page: 2, before: 4183 });
   });
 
-  it('matches the port written after the host', () => {
-    expect(matchingHost(flows, 'org:1337').map((one) => one.id)).toEqual([2]);
+  it('keeps its anchor from one page to the next', () => {
+    expect(flowPositionAt(3, { page: 2, before: 900 }, shown)).toEqual({ page: 3, before: 900 });
   });
 
-  it('keeps every connection while the search is empty', () => {
-    expect(matchingHost(flows, '')).toBe(flows);
+  it('goes live again back on the first page', () => {
+    expect(flowPositionAt(1, { page: 3, before: 900 }, shown)).toEqual(FIRST_FLOW_PAGE);
+  });
+
+  it('counts the pages a total fills, and at least one', () => {
+    expect(flowPageCount(0)).toBe(1);
+    expect(flowPageCount(FLOW_PAGE_SIZE)).toBe(1);
+    expect(flowPageCount(FLOW_PAGE_SIZE + 1)).toBe(2);
   });
 });
 

@@ -31,16 +31,25 @@ export const Flow = z.object({
 });
 export type Flow = z.infer<typeof Flow>;
 
-/** `GET /api/admin/network/flows`, newest first. */
-export const FlowsView = z.object({ flows: z.array(Flow) });
+/** `GET /api/admin/network/flows`, newest first: one page, and how many
+ * connections match across every page. */
+export const FlowsView = z.object({
+  flows: z.array(Flow),
+  total: z.number().int().nonnegative(),
+});
 export type FlowsView = z.infer<typeof FlowsView>;
 
-/** The journal's server-side filters; an absent one matches everything. */
+/** The journal's server-side filters; an absent one matches everything. `before`
+ * keeps out every connection from that id on, so pages taken from it stay put
+ * while new ones arrive. `host` is a case-blind search in `host:port`. */
 export type FlowQuery = {
   limit?: number;
+  offset?: number;
+  before?: number;
   caller?: string;
   purpose?: string;
   verdict?: FlowVerdict;
+  host?: string;
 };
 
 /** One (caller, purpose, host, route) group of connections over the window. */
@@ -73,6 +82,39 @@ export const NetworkSummary = z.object({
   rows: z.array(SummaryRow),
 });
 export type NetworkSummary = z.infer<typeof NetworkSummary>;
+
+/** The road a client took to reach the server. */
+export const InboundVia = z.enum(['lan', 'vpn', 'tunnel', 'internet']);
+export type InboundVia = z.infer<typeof InboundVia>;
+
+/** One (address, road, User-Agent) group of requests over the window. */
+export const InboundRow = z.object({
+  address: z.string(),
+  via: InboundVia,
+  userAgent: z.string(),
+  count: z.number().int().nonnegative(),
+  bytesIn: z.number().nonnegative(),
+  bytesOut: z.number().nonnegative(),
+  lastAt: z.number(),
+});
+export type InboundRow = z.infer<typeof InboundRow>;
+
+export const InboundTotals = z.object({
+  requests: z.number().int().nonnegative(),
+  addresses: z.number().int().nonnegative(),
+  bytesIn: z.number().nonnegative(),
+  bytesOut: z.number().nonnegative(),
+});
+export type InboundTotals = z.infer<typeof InboundTotals>;
+
+/** `GET /api/admin/network/inbound`: every client request since `since` (epoch
+ * milliseconds), totalled and grouped, the most recently seen first. */
+export const InboundSummary = z.object({
+  since: z.number(),
+  totals: InboundTotals,
+  rows: z.array(InboundRow),
+});
+export type InboundSummary = z.infer<typeof InboundSummary>;
 
 /** What a matching rule does with a connection. */
 export const RuleAction = z.enum(['direct', 'vpn', 'block']);

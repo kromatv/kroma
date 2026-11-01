@@ -45,6 +45,7 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
         ("append_to_response", "credits".to_string()),
     ];
     let resp: SeasonResp = match tmdb_json(
+        "metadata.season",
         &format!("{}/tv/{tv_id}/season/{season}", api()),
         api_key,
         &params,

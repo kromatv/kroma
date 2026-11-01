@@ -84,6 +84,14 @@ impl From<Exchange> for FlowReport {
     }
 }
 
+/// Whether a rule or a filter naming `named` covers `purpose`: the purpose itself
+/// or one of its dotted children, so `metadata` still reaches `metadata.search`.
+pub fn purpose_covers(named: &str, purpose: &str) -> bool {
+    purpose
+        .strip_prefix(named)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+}
+
 /// One journal entry, as the admin API serves it. `at` is epoch milliseconds.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -104,20 +112,41 @@ pub struct Flow {
     pub rule: Option<String>,
 }
 
-/// Which recent flows to list, newest first: at most `limit`, and only those
-/// matching every filter set.
+/// Which recent flows to list, newest first: at most `limit` after skipping
+/// `offset`, and only those matching every filter set. `before` keeps out every
+/// flow from that id on, so pages taken from it stay put while new flows arrive;
+/// `host` is a lowercase needle in `host:port`.
 #[derive(Debug, Clone, Default)]
 pub struct FlowFilter {
     pub limit: usize,
+    pub offset: usize,
+    pub before: Option<u64>,
     pub caller: Option<String>,
     pub purpose: Option<String>,
     pub verdict: Option<Verdict>,
+    pub host: Option<String>,
+}
+
+/// One page of the journal, and how many flows match across every page.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct FlowPage {
+    pub flows: Vec<Flow>,
+    pub total: usize,
 }
 
 impl FlowFilter {
     pub(super) fn admits(&self, flow: &Flow) -> bool {
         self.caller.as_deref().is_none_or(|c| c == flow.caller)
-            && self.purpose.as_deref().is_none_or(|p| p == flow.purpose)
+            && self
+                .purpose
+                .as_deref()
+                .is_none_or(|p| purpose_covers(p, &flow.purpose))
             && self.verdict.is_none_or(|v| v == flow.route.verdict())
+            && self.before.is_none_or(|before| flow.id < before)
+            && self.host.as_deref().is_none_or(|needle| {
+                format!("{}:{}", flow.host, flow.port)
+                    .to_lowercase()
+                    .contains(needle)
+            })
     }
 }

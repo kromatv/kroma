@@ -2365,6 +2365,7 @@ dependencies = [
  "fontdue",
  "hex",
  "hostname",
+ "http-body-util",
  "jobserver",
  "jpeg-encoder",
  "kroma-config",

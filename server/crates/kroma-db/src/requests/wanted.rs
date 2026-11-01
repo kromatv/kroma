@@ -1,5 +1,7 @@
 //! The wanted ledger: one row per monitored unit, a movie or an episode.
 
+use std::collections::HashSet;
+
 use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 
@@ -316,6 +318,14 @@ pub fn wanted_for_title(
     ))?;
     let rows = stmt.query_map(params![unit_kind(kind), tmdb_id as i64], row_to_wanted)?;
     rows.collect()
+}
+
+/// The films already on disk: nothing TMDB could say changes what happens to them.
+pub fn available_movies(conn: &Connection) -> rusqlite::Result<HashSet<u64>> {
+    let mut stmt =
+        conn.prepare("SELECT tmdb_id FROM wanted WHERE kind = 'movie' AND status = 'available'")?;
+    let rows = stmt.query_map([], |r| r.get::<_, i64>(0))?;
+    rows.map(|row| row.map(|id| id as u64)).collect()
 }
 
 /// Removes rows by id, which unmonitors those units.

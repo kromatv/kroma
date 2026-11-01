@@ -9,11 +9,11 @@ use std::sync::{Mutex, PoisonError};
 use crate::db::network_flows::{self, FlowTally};
 use crate::db::Pool;
 
-use super::flow::{Flow, FlowFilter, FlowReport, FlowRoute};
+use super::flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute};
 
 pub const RECENT_CAPACITY: usize = 5000;
 
-const MAX_PENDING_TALLIES: usize = 10_000;
+pub(super) const MAX_PENDING_TALLIES: usize = 10_000;
 const MAX_PURPOSE_CHARS: usize = 64;
 const MAX_METHOD_CHARS: usize = 16;
 const MAX_HOST_CHARS: usize = 253;
@@ -30,11 +30,11 @@ struct TallyKey {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-struct Tally {
-    count: i64,
-    bytes_in: i64,
-    bytes_out: i64,
-    last_at: i64,
+pub(super) struct Tally {
+    pub(super) count: i64,
+    pub(super) bytes_in: i64,
+    pub(super) bytes_out: i64,
+    pub(super) last_at: i64,
 }
 
 #[derive(Default)]
@@ -47,8 +47,8 @@ pub struct Journal {
 impl Journal {
     /// File one flow `caller` reported at `at_ms` (epoch milliseconds).
     pub fn record(&self, caller: &str, report: FlowReport, at_ms: i64) {
-        let flow = Flow {
-            id: self.next_id.fetch_add(1, Ordering::Relaxed) + 1,
+        let mut flow = Flow {
+            id: 0,
             at: at_ms,
             caller: clipped(caller, MAX_HOST_CHARS),
             purpose: clipped(&report.purpose, MAX_PURPOSE_CHARS),
@@ -65,18 +65,22 @@ impl Journal {
         };
         self.tally(&flow);
         let mut recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
+        flow.id = self.next_id.fetch_add(1, Ordering::Relaxed) + 1;
         recent.push_front(flow);
         recent.truncate(RECENT_CAPACITY);
     }
 
-    pub fn recent(&self, filter: &FlowFilter) -> Vec<Flow> {
+    pub fn page(&self, filter: &FlowFilter) -> FlowPage {
         let recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
-        recent
-            .iter()
-            .filter(|flow| filter.admits(flow))
-            .take(filter.limit)
-            .cloned()
-            .collect()
+        let mut flows = Vec::new();
+        let mut total = 0;
+        for flow in recent.iter().filter(|flow| filter.admits(flow)) {
+            if total >= filter.offset && flows.len() < filter.limit {
+                flows.push(flow.clone());
+            }
+            total += 1;
+        }
+        FlowPage { flows, total }
     }
 
     /// Every `(caller, purpose)` pair the in-memory journal holds.
@@ -139,18 +143,18 @@ impl Journal {
     }
 }
 
-fn merge(into: &mut Tally, delta: Tally) {
+pub(super) fn merge(into: &mut Tally, delta: Tally) {
     into.count += delta.count;
     into.bytes_in = into.bytes_in.saturating_add(delta.bytes_in);
     into.bytes_out = into.bytes_out.saturating_add(delta.bytes_out);
     into.last_at = into.last_at.max(delta.last_at);
 }
 
-fn saturating_i64(value: u64) -> i64 {
+pub(super) fn saturating_i64(value: u64) -> i64 {
     i64::try_from(value).unwrap_or(i64::MAX)
 }
 
-fn clipped(value: &str, max_chars: usize) -> String {
+pub(super) fn clipped(value: &str, max_chars: usize) -> String {
     value.chars().take(max_chars).collect()
 }
 

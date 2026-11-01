@@ -8,6 +8,7 @@ const V4_TOKEN: &str = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ4In0.c2lnbmF0dXJl";
 
 fn ask(server: &RecordingServer, api_key: &str) -> Result<Value, ()> {
     tmdb_json(
+        "metadata",
         &format!("{}/movie/603", server.base()),
         api_key,
         &[("language", "fr-FR".to_string())],

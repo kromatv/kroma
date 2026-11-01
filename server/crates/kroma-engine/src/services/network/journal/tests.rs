@@ -26,13 +26,98 @@ fn everything(limit: usize) -> FlowFilter {
     }
 }
 
+fn numbered(journal: &Journal, count: i64) {
+    for n in 0..count {
+        journal.record("core", report("metadata", FlowRoute::Direct), AT_MS + n);
+    }
+}
+
+fn ids(page: &FlowPage) -> Vec<u64> {
+    page.flows.iter().map(|flow| flow.id).collect()
+}
+
+#[test]
+fn a_page_skips_its_offset_and_counts_every_match() {
+    let journal = Journal::default();
+    numbered(&journal, 5);
+
+    let page = journal.page(&FlowFilter {
+        limit: 2,
+        offset: 2,
+        ..FlowFilter::default()
+    });
+
+    assert_eq!(ids(&page), [3, 2]);
+    assert_eq!(page.total, 5);
+}
+
+#[test]
+fn pages_taken_from_an_anchor_stay_put_when_new_flows_arrive() {
+    let journal = Journal::default();
+    numbered(&journal, 4);
+    let second_page = FlowFilter {
+        limit: 2,
+        offset: 2,
+        before: Some(5),
+        ..FlowFilter::default()
+    };
+    let before = journal.page(&second_page);
+
+    numbered(&journal, 3);
+
+    let after = journal.page(&second_page);
+    assert_eq!(ids(&after), ids(&before));
+    assert_eq!(after.total, 4);
+}
+
+#[test]
+fn a_host_search_finds_a_flow_by_its_name_or_its_port() {
+    let journal = Journal::default();
+    let mut tracker = report("indexer", FlowRoute::Direct);
+    tracker.host = "Tracker.example.org".to_string();
+    tracker.port = 1337;
+    journal.record("tv.kroma.indexer", tracker, AT_MS);
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS);
+
+    let by_name = journal.page(&FlowFilter {
+        limit: 10,
+        host: Some("tracker".to_string()),
+        ..FlowFilter::default()
+    });
+    let by_port = journal.page(&FlowFilter {
+        limit: 10,
+        host: Some("org:1337".to_string()),
+        ..FlowFilter::default()
+    });
+
+    assert_eq!(by_name.total, 1);
+    assert_eq!(by_port.total, 1);
+    assert_eq!(by_name.flows[0].caller, "tv.kroma.indexer");
+}
+
+#[test]
+fn a_purpose_filter_reaches_the_purposes_named_under_it() {
+    let journal = Journal::default();
+    journal.record("core", report("metadata.search", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("metadatas", FlowRoute::Direct), AT_MS);
+
+    let page = journal.page(&FlowFilter {
+        limit: 10,
+        purpose: Some("metadata".to_string()),
+        ..FlowFilter::default()
+    });
+
+    assert_eq!(page.total, 2);
+}
+
 #[test]
 fn the_newest_flow_comes_first() {
     let journal = Journal::default();
     journal.record("core", report("first", FlowRoute::Direct), AT_MS);
     journal.record("core", report("second", FlowRoute::Direct), AT_MS + 1);
 
-    let flows = journal.recent(&everything(10));
+    let flows = journal.page(&everything(10)).flows;
 
     let purposes: Vec<&str> = flows.iter().map(|f| f.purpose.as_str()).collect();
     assert_eq!(purposes, ["second", "first"]);
@@ -50,7 +135,7 @@ fn the_oldest_flows_fall_off_past_capacity() {
         );
     }
 
-    let flows = journal.recent(&everything(usize::MAX));
+    let flows = journal.page(&everything(usize::MAX)).flows;
 
     assert_eq!(flows.len(), RECENT_CAPACITY);
     assert_eq!(flows.last().unwrap().at, AT_MS + 1);
@@ -71,9 +156,10 @@ fn every_filter_set_must_match() {
         caller: Some("core".to_string()),
         purpose: Some("metadata".to_string()),
         verdict: Some(Verdict::Blocked),
+        ..FlowFilter::default()
     };
 
-    let flows = journal.recent(&filter);
+    let flows = journal.page(&filter).flows;
 
     assert_eq!(flows.len(), 1);
     assert_eq!(flows[0].route, FlowRoute::Blocked);
@@ -90,7 +176,7 @@ fn a_long_field_a_module_reports_is_clipped() {
 
     journal.record("tv.kroma.indexer", long, AT_MS);
 
-    let flow = &journal.recent(&everything(1))[0];
+    let flow = &journal.page(&everything(1)).flows[0];
     assert_eq!(flow.purpose.len(), MAX_PURPOSE_CHARS);
     assert_eq!(flow.host.len(), MAX_HOST_CHARS);
     assert_eq!(flow.error.as_ref().unwrap().len(), MAX_ERROR_CHARS);

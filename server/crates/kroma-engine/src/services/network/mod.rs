@@ -16,12 +16,14 @@ use crate::services::settings::Settings;
 mod decide;
 mod flow;
 mod host_policy;
+mod inbound;
 mod journal;
 mod rules;
 mod summary;
 
 pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK};
-pub use flow::{Flow, FlowFilter, FlowReport, FlowRoute, Verdict};
+pub use flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute, Verdict};
+pub use inbound::{via_of, Arrival, InboundJournal, InboundSummary, Via};
 pub use journal::{Journal, RECENT_CAPACITY};
 pub use rules::{
     Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
@@ -57,6 +59,7 @@ pub struct Network {
     settings: Settings,
     vpn: Point,
     journal: Journal,
+    inbound: InboundJournal,
     proxy: Mutex<Option<(Instant, Option<String>)>>,
     core_port: Option<u16>,
     https_port: Option<u16>,
@@ -71,6 +74,7 @@ impl Network {
             settings,
             vpn,
             journal: Journal::default(),
+            inbound: InboundJournal::default(),
             proxy: Mutex::new(None),
             core_port: None,
             https_port: None,
@@ -142,8 +146,19 @@ impl Network {
             .record(caller, report, kroma_primitives::now_ms());
     }
 
-    pub fn flows(&self, filter: &FlowFilter) -> Vec<Flow> {
-        self.journal.recent(filter)
+    pub fn flows(&self, filter: &FlowFilter) -> FlowPage {
+        self.journal.page(filter)
+    }
+
+    /// File one request a client made of this server.
+    pub fn record_arrival(&self, arrival: Arrival) {
+        self.inbound.record(arrival, kroma_primitives::now_ms());
+    }
+
+    /// The last `days` days of incoming tallies, flushing what is pending first.
+    pub fn inbound(&self, days: u32) -> anyhow::Result<InboundSummary> {
+        self.flush()?;
+        inbound::summarize(&self.db, days, kroma_primitives::now_ms())
     }
 
     /// The last `days` days of tallies, flushing what is pending first so the
@@ -173,7 +188,9 @@ impl Network {
     }
 
     pub fn flush(&self) -> anyhow::Result<()> {
-        self.journal.flush(&self.db)
+        let outbound = self.journal.flush(&self.db);
+        self.inbound.flush(&self.db)?;
+        outbound
     }
 
     /// Write the pending tallies every [`FLUSH_EVERY`] for the life of the

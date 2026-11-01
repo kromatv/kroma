@@ -7,18 +7,8 @@ import { hasPermission } from '@kromatv/client/accounts';
 import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
 import type { SearchHit } from '@kromatv/client/media';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-
 import { useAuth } from '#web/shared/lib/auth';
-
-function useDebouncedValue<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const h = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(h);
-  }, [value, ms]);
-  return debounced;
-}
+import { useDebouncedValue } from '#web/shared/lib/use-debounced-value';
 
 export interface DiscoverSearchState {
   loading: boolean;

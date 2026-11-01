@@ -1,12 +1,13 @@
 use axum::http::StatusCode;
 use serde_json::{Value, json};
 
-use crate::api::test_support::{get, seed_session, send, test_app};
+use crate::api::test_support::{get, raw, seed_session, send, test_app};
 use crate::model::Permission;
 
-const READS: [&str; 4] = [
+const READS: [&str; 5] = [
     "/api/admin/network/flows",
     "/api/admin/network/summary",
+    "/api/admin/network/inbound",
     "/api/admin/network/rules",
     "/api/admin/network/listeners",
 ];
@@ -177,6 +178,92 @@ async fn a_core_call_the_rules_block_shows_up_in_the_journal_and_the_summary() {
             .any(|row| row["purpose"] == json!("it-network-blocked")
                 && row["verdict"] == json!("blocked"))
     );
+}
+
+fn phone_on_the_tunnel() -> [(&'static str, &'static str); 4] {
+    [
+        ("x-forwarded-for", "203.0.113.9"),
+        ("cf-connecting-ip", "203.0.113.9"),
+        ("cf-ray", "8f00000000000000-ZRH"),
+        ("user-agent", "Kroma/1.0 (iPhone 17 Pro; iOS 26.0)"),
+    ]
+}
+
+#[tokio::test]
+async fn a_client_on_the_tunnel_is_tallied_with_its_address_and_device() {
+    let t = test_app();
+
+    raw(&t.app, "GET", "/api/health", None, None, &phone_on_the_tunnel()).await;
+
+    let (status, body) = get(&t.app, "/api/admin/network/inbound?days=1", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let row = &body["rows"][0];
+    assert_eq!(row["address"], json!("203.0.113.9"));
+    assert_eq!(row["via"], json!("tunnel"));
+    assert_eq!(row["userAgent"], json!("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)"));
+    assert_eq!(row["count"], json!(1));
+    assert!(row["bytesOut"].as_i64().unwrap() > 0, "{row}");
+}
+
+#[tokio::test]
+async fn this_machine_talking_to_itself_is_not_a_client() {
+    let t = test_app();
+
+    get(&t.app, "/api/health", None).await;
+
+    let (_, body) = get(&t.app, "/api/admin/network/inbound?days=1", Some(&t.token)).await;
+    assert_eq!(body["totals"]["requests"], json!(0));
+}
+
+#[tokio::test]
+async fn a_cf_ray_from_an_untrusted_peer_says_nothing_about_a_tunnel() {
+    let t = test_app();
+    let mut req = axum::http::Request::builder()
+        .uri("/api/health")
+        .header("cf-ray", "forged")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    req.extensions_mut()
+        .insert(axum::extract::ConnectInfo(std::net::SocketAddr::from((
+            [192, 168, 1, 20],
+            40000,
+        ))));
+
+    tower::ServiceExt::oneshot(t.app.clone(), req).await.unwrap();
+
+    let (_, body) = get(&t.app, "/api/admin/network/inbound?days=1", Some(&t.token)).await;
+    assert_eq!(body["rows"][0]["via"], json!("lan"));
+}
+
+#[tokio::test]
+async fn the_flows_route_pages_through_the_journal_and_counts_every_match() {
+    let t = test_app();
+    for n in 0..3 {
+        t.state.network.record(
+            "core",
+            crate::services::network::FlowReport {
+                purpose: "it-network-paged".to_string(),
+                method: "GET".to_string(),
+                host: format!("host-{n}.example"),
+                port: 443,
+                route: crate::services::network::FlowRoute::Direct,
+                status: Some(200),
+                bytes_in: 0,
+                bytes_out: 0,
+                duration_ms: 0,
+                error: None,
+                rule: None,
+            },
+        );
+    }
+
+    let uri = "/api/admin/network/flows?purpose=it-network-paged&limit=1&offset=1";
+    let (status, body) = get(&t.app, uri, Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["total"], json!(3));
+    assert_eq!(body["flows"].as_array().unwrap().len(), 1);
+    assert_eq!(body["flows"][0]["host"], json!("host-1.example"));
 }
 
 #[tokio::test]
