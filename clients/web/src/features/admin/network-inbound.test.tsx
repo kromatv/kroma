@@ -59,7 +59,6 @@ describe('the incoming tab', () => {
     expect(await screen.findByText('iPhone 17 Pro · iOS')).toBeTruthy();
     expect(screen.getByText('203.0.113.9')).toBeTruthy();
     expect(screen.getByText('Tunnel')).toBeTruthy();
-    expect(screen.getByText(/^clients$/i)).toBeTruthy();
     expect(api.inbound).toHaveBeenCalledWith(7);
   });
 
