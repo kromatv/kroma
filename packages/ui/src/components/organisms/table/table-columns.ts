@@ -7,7 +7,8 @@ interface TableColumn {
   /** The name this column answers to in the Root's `sort`. Without one it is
    *  not a sort control. */
   column?: string;
-  /** Fixed px. A column stating one neither grows nor shrinks. */
+  /** Fixed px, the cell's 12 of padding either side included. A column stating
+   *  one neither grows nor shrinks, and clips what does not fit. */
   width?: number;
   /** Share of the width the fixed columns leave, defaulting to 1. */
   flex?: number;

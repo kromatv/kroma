@@ -164,7 +164,7 @@ export function PipelinePage() {
       />
 
       <Table.Root
-        columns={[{}, { width: 150, from: 'md' }, { width: 132, from: 'md' }, { width: 46 }]}
+        columns={[{}, { width: 198, from: 'md' }, { width: 132, from: 'md' }, { width: 64 }]}
       >
         <Table.Header>
           <Table.Column>{t('pipeline.colElement')}</Table.Column>

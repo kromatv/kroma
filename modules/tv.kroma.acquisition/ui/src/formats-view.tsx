@@ -20,7 +20,7 @@ import { FormatEditor } from './format-editor';
 import { RowMenuTrigger } from './row-menu-trigger';
 import type { Condition, CustomFormat, RulesView } from './rules-schemas';
 
-const COLUMNS: TableColumn[] = [{ min: 200 }, { width: 44 }];
+const COLUMNS: TableColumn[] = [{ min: 200 }, { width: 64 }];
 const MAX_CHIPS = 4;
 
 const CHIP_INK = {

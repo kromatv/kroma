@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isCommandKey, onAppleHardware, useCommandKey } from './command-key';
+import { commandKeyLabel, isCommandKey, onAppleHardware, useCommandKey } from './command-key';
 
 const APPLE = true;
 const NOT_APPLE = false;
@@ -22,6 +22,16 @@ function pretendToBe(userAgent: string): void {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+});
+
+describe('commandKeyLabel', () => {
+  it('spells the chord as an Apple keyboard prints it', () => {
+    expect(commandKeyLabel(APPLE)).toBe('⌘K');
+  });
+
+  it('spells the chord as any other keyboard prints it', () => {
+    expect(commandKeyLabel(NOT_APPLE)).toBe('Ctrl+K');
+  });
 });
 
 describe('isCommandKey', () => {

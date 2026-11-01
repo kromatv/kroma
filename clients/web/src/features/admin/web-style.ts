@@ -1,7 +1,7 @@
 import { styles } from '@kromatv/ui/kit';
 import { safeAreaTop } from '#web/shared/lib/safe-area';
 
-export const ADMIN_RAIL_WIDTH = 256;
+export const ADMIN_RAIL_WIDTH = 280;
 
 const sDefinition = styles({
   scroller: { flex: true, minWidth: 0 },

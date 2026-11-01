@@ -1,7 +1,6 @@
 import { Box, Focusable, Icon, type IconName, Text } from '@kromatv/ui/kit';
 import { useMatchRoute } from '@tanstack/react-router';
 import { createContext, type ReactNode, useContext } from 'react';
-import { CommandMenuField } from '#web/shared/ui/command-menu-button';
 import { useNavActions } from '#web/shared/ui/nav-actions';
 import { RouteLink } from '#web/shared/ui/route-link';
 import {
@@ -19,14 +18,19 @@ const RowContext = createContext<RowSlots | null>(null);
 function Header({ children }: Readonly<{ children: ReactNode }>) {
   const actions = useNavActions();
   return (
-    <Box shrink={0} pb={8}>
-      <Box row align="center" between gap={8} px={SIDE_NAV_BAND_X} pt={24} pb={16}>
-        {children}
-        {actions}
-      </Box>
-      <Box px={SIDE_NAV_GUTTER}>
-        <CommandMenuField />
-      </Box>
+    <Box
+      shrink={0}
+      row
+      align="center"
+      between
+      gap={8}
+      pl={SIDE_NAV_BAND_X}
+      pr={SIDE_NAV_GUTTER}
+      pt={24}
+      pb={16}
+    >
+      {children}
+      {actions}
     </Box>
   );
 }

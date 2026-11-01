@@ -21,7 +21,7 @@ export const story = defineStory({
   ),
 });
 
-A short label over its child on hover or keyboard focus, after a beat. A pointer pattern: the bubble is `role="tooltip"` and named to the child through `aria-describedby` while it shows. On a television it renders nothing. There is no hover at three metres, so the ten-foot design says things in place instead, and the child keeps its own accessible label everywhere.
+A short label over its child on hover or keyboard focus, after a beat, or under it when the child sits at the top of the window. A pointer pattern: the bubble is `role="tooltip"` and named to the child through `aria-describedby` while it shows. On a television it renders nothing. There is no hover at three metres, so the ten-foot design says things in place instead, and the child keeps its own accessible label everywhere.
 
 ```tsx
 <Tooltip label={t('common.detection', { source })}>

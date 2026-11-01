@@ -9,7 +9,7 @@ import { RowMenuTrigger } from './row-menu-trigger';
 import type { QualityProfile, RulesView } from './rules-schemas';
 import { useQualityLabel } from './use-quality-label';
 
-const COLUMNS: TableColumn[] = [{ min: 200 }, { width: 150, from: 'md' }, { width: 44 }];
+const COLUMNS: TableColumn[] = [{ min: 200 }, { width: 150, from: 'md' }, { width: 64 }];
 
 interface Editing {
   profile: QualityProfile;
