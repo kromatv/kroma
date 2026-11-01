@@ -24,7 +24,7 @@ jobs:
     if: >-
       contains(github.event.pull_request.labels.*.name, 'preview:mac')
       && (github.event.action != 'labeled' || github.event.label.name == 'preview:mac')
-    runs-on: macos-14
+    runs-on: macos-15
     permissions:
       contents: read
       pull-requests: write # the comment linking the dmg

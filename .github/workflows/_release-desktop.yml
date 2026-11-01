@@ -31,7 +31,7 @@ jobs:
       matrix:
         include:
           # Apple Silicon .dmg (+ .app).
-          - os: macos-14
+          - os: macos-15
             label: 'macOS (.dmg)'
             bundles: app
             artifact: kroma-desktop-macos

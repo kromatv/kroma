@@ -98,7 +98,7 @@ jobs:
             runner: ubuntu-latest
             image: messense/rust-musl-cross:aarch64-musl@sha256:ecae5dd62d1c938c14f8071d36c16fa699860aace03bfb5284fb1216474d2643
           - target: aarch64-apple-darwin
-            runner: macos-14
+            runner: macos-15
             image: ''
     env:
       KMOD_TARGET: ${{ matrix.target }}
