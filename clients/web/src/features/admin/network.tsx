@@ -5,6 +5,7 @@ import { useBlocker } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NetworkConnections } from '#web/features/admin/network-connections';
 import { NetworkDestinations } from '#web/features/admin/network-destinations';
+import { NetworkInbound } from '#web/features/admin/network-inbound';
 import { NetworkListeners } from '#web/features/admin/network-listeners';
 import { RuleEditor } from '#web/features/admin/network-rule-editor';
 import { SettingsPage } from '#web/features/admin/settings';
@@ -13,6 +14,7 @@ import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 export const NETWORK_TABS = [
   'connections',
   'destinations',
+  'inbound',
   'rules',
   'listeners',
   'settings',
@@ -22,6 +24,7 @@ type NetworkTab = (typeof NETWORK_TABS)[number];
 const LABEL: Record<NetworkTab, MessageKey> = {
   connections: 'network.tabConnections',
   destinations: 'network.tabDestinations',
+  inbound: 'network.tabInbound',
   rules: 'network.tabRules',
   listeners: 'network.tabListeners',
   settings: 'network.tabSettings',
@@ -94,6 +97,7 @@ function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
       </Box>
       {tab === 'connections' ? <NetworkConnections /> : null}
       {tab === 'destinations' ? <NetworkDestinations /> : null}
+      {tab === 'inbound' ? <NetworkInbound /> : null}
       {tab === 'rules' ? <RuleEditor onDirtyChange={setRulesDirty} /> : null}
       {tab === 'listeners' ? <NetworkListeners /> : null}
       {tab === 'settings' ? (

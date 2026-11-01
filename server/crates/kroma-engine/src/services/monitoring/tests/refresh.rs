@@ -162,6 +162,89 @@ fn a_film_whose_home_release_appears_is_searched_from_it() {
 }
 
 #[test]
+fn a_film_already_on_disk_is_not_read_again() {
+    let host = host();
+    {
+        let _tmdb = tmdb();
+        monitor(
+            &host,
+            RequestKind::Movie,
+            CINEMA_MOVIE,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
+    }
+    age(&host);
+    exec(&host, "UPDATE wanted SET status = 'available'");
+    let _later = FakeTmdb::start(|_| (500, json!({})));
+
+    assert_eq!(refresh_pass(&host).unwrap(), 0);
+}
+
+#[test]
+fn a_film_still_wanted_is_read_again() {
+    let host = host();
+    {
+        let _tmdb = tmdb();
+        monitor(
+            &host,
+            RequestKind::Movie,
+            CINEMA_MOVIE,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
+    }
+    age(&host);
+    let _later = FakeTmdb::start(|path| match path {
+        "/movie/604" => (200, in_cinemas(None)),
+        _ => (404, json!({})),
+    });
+
+    assert_eq!(refresh_pass(&host).unwrap(), 1);
+}
+
+#[test]
+fn a_season_counting_the_episodes_already_known_is_not_read_again() {
+    let host = host();
+    {
+        let _tmdb = tmdb();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
+    }
+    age(&host);
+    let known = monitored(&host, RequestKind::Show, SHOW).unwrap().known_episodes;
+    let seasons: Vec<serde_json::Value> = known
+        .iter()
+        .map(|(season, last)| json!({ "season_number": season, "episode_count": last }))
+        .collect();
+    let reread = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counted = reread.clone();
+    let _later = FakeTmdb::start(move |path| {
+        if path == "/tv/77" {
+            return (
+                200,
+                json!({ "name": "Show", "status": "Returning Series", "seasons": seasons }),
+            );
+        }
+        counted.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        (200, json!({ "episodes": [] }))
+    });
+
+    let refreshed = refresh_pass(&host).unwrap();
+
+    assert_eq!(refreshed, 1);
+    assert_eq!(reread.load(std::sync::atomic::Ordering::Relaxed), 0);
+}
+
+#[test]
 fn a_title_refreshed_recently_is_left_alone() {
     let host = host();
     let _tmdb = tmdb();

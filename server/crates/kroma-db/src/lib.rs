@@ -39,6 +39,7 @@ mod rows;
 pub mod audio_analysis;
 mod curated;
 pub mod network_flows;
+pub mod network_inbound;
 pub mod notification_deliveries;
 pub mod notifications;
 pub mod pipeline;

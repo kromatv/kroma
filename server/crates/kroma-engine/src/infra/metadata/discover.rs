@@ -134,7 +134,12 @@ pub fn detail(
         ("append_to_response", append.to_string()),
     ];
     let mut d: DetailResp =
-        match tmdb_json(&format!("{}/{path}/{tmdb_id}", api()), api_key, &params) {
+        match tmdb_json(
+            "metadata.discover",
+            &format!("{}/{path}/{tmdb_id}", api()),
+            api_key,
+            &params,
+        ) {
             Ok(d) => d,
             // TMDB 404s arrive as an HTTP error status; treat any failure on the detail
             // endpoint as "not found" only when the id namespace mismatched is

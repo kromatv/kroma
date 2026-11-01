@@ -1,6 +1,6 @@
 //! Network admin API (`/api/admin/network/*`): the journal of outbound flows,
-//! their daily summary, the rules that route them, and the sockets this server
-//! listens on. Hostnames say what the household downloads, so every route
+//! their daily summary, the rules that route them, the sockets this server
+//! listens on, and the clients that reach it. Hostnames say what the household downloads, so every route
 //! needs the settings capability rather than any admin one.
 
 use axum::body::Bytes;
@@ -30,6 +30,7 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/network/flows", get(list_flows))
         .route("/network/summary", get(summary))
+        .route("/network/inbound", get(inbound))
         .route(
             "/network/rules",
             get(get_rules)
@@ -42,9 +43,12 @@ pub fn routes() -> Router<SharedState> {
 #[derive(Deserialize)]
 struct FlowsQuery {
     limit: Option<usize>,
+    offset: Option<usize>,
+    before: Option<u64>,
     caller: Option<String>,
     purpose: Option<String>,
     verdict: Option<Verdict>,
+    host: Option<String>,
 }
 
 async fn list_flows(
@@ -55,11 +59,17 @@ async fn list_flows(
     super::require(&user, Permission::SettingsManage)?;
     let filter = FlowFilter {
         limit: query.limit.unwrap_or(DEFAULT_FLOWS).min(RECENT_CAPACITY),
+        offset: query.offset.unwrap_or(0),
+        before: query.before,
         caller: query.caller.filter(|c| !c.is_empty()),
         purpose: query.purpose.filter(|p| !p.is_empty()),
         verdict: query.verdict,
+        host: query
+            .host
+            .map(|host| host.trim().to_lowercase())
+            .filter(|host| !host.is_empty()),
     };
-    Ok(Json(json!({ "flows": state.network.flows(&filter) })).into_response())
+    Ok(Json(state.network.flows(&filter)).into_response())
 }
 
 #[derive(Deserialize)]
@@ -75,6 +85,17 @@ async fn summary(
     super::require(&user, Permission::SettingsManage)?;
     let days = query.days.unwrap_or(DEFAULT_SUMMARY_DAYS);
     let summary = blocking(move || state.network.summary(days)).await?;
+    Ok(Json(summary).into_response())
+}
+
+async fn inbound(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Query(query): Query<SummaryQuery>,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let days = query.days.unwrap_or(DEFAULT_SUMMARY_DAYS);
+    let summary = blocking(move || state.network.inbound(days)).await?;
     Ok(Json(summary).into_response())
 }
 

@@ -130,11 +130,13 @@ fn a_recorded_flow_reaches_the_journal_and_the_summary() {
 
     let summary = network.summary(7).unwrap();
 
-    let blocked = network.flows(&FlowFilter {
-        limit: 10,
-        verdict: Some(Verdict::Blocked),
-        ..FlowFilter::default()
-    });
+    let blocked = network
+        .flows(&FlowFilter {
+            limit: 10,
+            verdict: Some(Verdict::Blocked),
+            ..FlowFilter::default()
+        })
+        .flows;
     assert_eq!(blocked.len(), 1);
     assert_eq!(blocked[0].caller, "tv.kroma.indexer");
     assert_eq!(
@@ -250,10 +252,12 @@ fn flows_a_module_reports_are_journaled_under_that_module() {
 
     network.record_flows("tv.kroma.torznab", vec![flow]);
 
-    let flows = network.flows(&FlowFilter {
-        limit: 10,
-        ..FlowFilter::default()
-    });
+    let flows = network
+        .flows(&FlowFilter {
+            limit: 10,
+            ..FlowFilter::default()
+        })
+        .flows;
     assert_eq!(flows[0].caller, "tv.kroma.torznab");
     assert_eq!(flows[0].route, FlowRoute::Vpn);
 }

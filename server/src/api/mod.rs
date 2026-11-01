@@ -21,6 +21,7 @@ mod home;
 pub mod host_events;
 mod host_jobs;
 mod images;
+mod inbound;
 mod invites;
 mod mail;
 mod media;
@@ -361,6 +362,7 @@ pub fn router(
 
     app.layer(origin::cors(&state.config.allowed_origins))
         .layer(compression)
+        .layer(from_fn_with_state(state.clone(), inbound::tally))
         .layer(axum::middleware::from_fn(spa_cache_headers))
         .layer(TraceLayer::new_for_http())
         .with_state(state)

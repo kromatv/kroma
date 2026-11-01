@@ -102,6 +102,9 @@ fn scan_one<S: HostStorage>(
     let mut gaps: Vec<Gap> = Vec::new();
     // `detail.seasons` already excludes specials (season 0).
     for s in &detail.seasons {
+        if season_on_disk(s.season, s.episode_count, &present) {
+            continue;
+        }
         let data = metadata::season_episodes(key, lang, tmdb_id, s.season);
         for ep in data.episodes {
             let aired = ep.air_date.as_deref().is_some_and(|d| d <= today);
@@ -111,6 +114,10 @@ fn scan_one<S: HostStorage>(
         }
     }
     Ok((detail.poster_url, gaps))
+}
+
+fn season_on_disk(season: u32, episode_count: u32, present: &HashSet<(u32, u32)>) -> bool {
+    episode_count > 0 && (1..=episode_count).all(|episode| present.contains(&(season, episode)))
 }
 
 #[cfg(test)]
@@ -308,6 +315,53 @@ mod tests {
         assert_eq!(summary.shows, 1);
         assert_eq!(summary.with_gaps, 1);
         assert_eq!(summary.episodes, 1);
+        assert_eq!(gaps(&state), [(1, 2)]);
+    }
+
+    #[test]
+    fn a_season_whose_files_cover_its_episode_count_is_not_fetched() {
+        let state = test_state_with_tmdb("test-key");
+        let (show, _ep) = seed_show_episode(&state, "shw-1", "ep-s1e1");
+        link_to_tmdb(&state, &show, 1396);
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (
+                200,
+                serde_json::json!({
+                    "name": "Show",
+                    "seasons": [{ "season_number": 1, "episode_count": 1 }],
+                }),
+            ),
+            _ => (500, serde_json::json!({})),
+        });
+
+        let summary = scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
+
+        assert_eq!(summary.shows, 1);
+        assert_eq!(summary.episodes, 0);
+    }
+
+    #[test]
+    fn a_season_missing_a_file_is_still_fetched() {
+        let state = test_state_with_tmdb("test-key");
+        let (show, _ep) = seed_show_episode(&state, "shw-1", "ep-s1e1");
+        link_to_tmdb(&state, &show, 1396);
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (
+                200,
+                serde_json::json!({
+                    "name": "Show",
+                    "seasons": [{ "season_number": 1, "episode_count": 2 }],
+                }),
+            ),
+            "/tv/1396/season/1" => (
+                200,
+                tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))]),
+            ),
+            _ => (404, serde_json::json!({})),
+        });
+
+        scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
+
         assert_eq!(gaps(&state), [(1, 2)]);
     }
 

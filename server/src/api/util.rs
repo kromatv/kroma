@@ -131,6 +131,12 @@ pub(crate) fn client_ip(headers: &HeaderMap, addr: &SocketAddr, list: &[String])
     addr.ip().to_string()
 }
 
+/// Whether a Cloudflare tunnel carried this request: its edge stamps `CF-Ray`, and
+/// only a peer worth believing can pass that along.
+pub(crate) fn tunnelled(headers: &HeaderMap, addr: &SocketAddr, list: &[String]) -> bool {
+    trusted(addr.ip(), list) && headers.contains_key("cf-ray")
+}
+
 /// Delete the tokens minted for a pairing request nobody will ever collect.
 /// Best-effort cleanup: no caller waits on the outcome, and every store touched
 /// by a handler hands its lapsed grants back this way.

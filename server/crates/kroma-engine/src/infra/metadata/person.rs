@@ -132,6 +132,7 @@ fn resolve_credits(
     };
     let params = [("language", language.to_string())];
     let Ok(raw) = tmdb_json::<CombinedCredits>(
+        "metadata.person",
         &format!("{}/person/{id}/combined_credits", api()),
         api_key,
         &params,
@@ -217,7 +218,13 @@ fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
         ("query", name.to_string()),
         ("include_adult", "false".to_string()),
     ];
-    let page: SearchResp = tmdb_json(&format!("{}/search/person", api()), api_key, &params).ok()?;
+    let page: SearchResp = tmdb_json(
+        "metadata.person",
+        &format!("{}/search/person", api()),
+        api_key,
+        &params,
+    )
+    .ok()?;
     let exact = page
         .results
         .iter()
@@ -229,7 +236,13 @@ fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
 // `None` here rather than at every call site.
 fn profile(api_key: &str, language: &str, id: u64) -> Option<PersonDetail> {
     let params = [("language", language.to_string())];
-    let raw: RawPerson = tmdb_json(&format!("{}/person/{id}", api()), api_key, &params).ok()?;
+    let raw: RawPerson = tmdb_json(
+        "metadata.person",
+        &format!("{}/person/{id}", api()),
+        api_key,
+        &params,
+    )
+    .ok()?;
     Some(PersonDetail {
         tmdb_id: raw.id,
         name: raw.name,

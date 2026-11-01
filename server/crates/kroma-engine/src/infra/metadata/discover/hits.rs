@@ -27,7 +27,12 @@ pub fn search(
         DiscoverScope::Shows => "search/tv",
         DiscoverScope::All => "search/multi",
     };
-    let resp: PageResp = tmdb_json(&format!("{}/{path}", api()), api_key, &params)?;
+    let resp: PageResp = tmdb_json(
+        "metadata.discover",
+        &format!("{}/{path}", api()),
+        api_key,
+        &params,
+    )?;
     Ok(map_page(resp, scope))
 }
 
@@ -52,7 +57,12 @@ pub fn trending(
         ("language", language.to_string()),
         ("page", page.max(1).to_string()),
     ];
-    let resp: PageResp = tmdb_json(&format!("{}/{path}", api()), api_key, &params)?;
+    let resp: PageResp = tmdb_json(
+        "metadata.discover",
+        &format!("{}/{path}", api()),
+        api_key,
+        &params,
+    )?;
     Ok(map_page(resp, scope))
 }
 

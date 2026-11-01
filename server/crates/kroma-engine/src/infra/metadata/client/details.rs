@@ -25,6 +25,7 @@ pub(super) fn fetch_details(
         ("include_image_language", format!("{lang2},en,null")),
     ];
     let d: Details = tmdb_json(
+        "metadata.details",
         &format!("{}/{}/{id}", api(), target.detail_path()),
         api_key,
         &detail_params,

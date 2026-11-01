@@ -5,6 +5,7 @@ use std::net::IpAddr;
 
 use kroma_http::address::WebTarget;
 
+use super::flow::purpose_covers;
 use super::rules::{Action, DefaultAction, NetworkRules, Rule};
 
 pub const CORE: &str = "core";
@@ -84,7 +85,7 @@ fn is_link_local(ip: IpAddr) -> bool {
 
 fn matches(rule: &Rule, caller: &str, purpose: &str, host: &str) -> bool {
     rule.caller.as_deref().is_none_or(|c| c == caller)
-        && rule.purpose.as_deref().is_none_or(|p| p == purpose)
+        && rule.purpose.as_deref().is_none_or(|p| purpose_covers(p, purpose))
         && rule
             .host
             .as_deref()

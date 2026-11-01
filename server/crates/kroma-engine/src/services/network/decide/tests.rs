@@ -295,3 +295,28 @@ fn a_block_rule_still_refuses_a_local_host() {
         (Action::Block, Some("no-lan")),
     );
 }
+
+#[test]
+fn a_rule_naming_a_purpose_reaches_the_purposes_named_under_it() {
+    let rules = policy(
+        DefaultAction::Allow,
+        vec![rule(
+            "no-metadata",
+            Some("core"),
+            Some("metadata"),
+            None,
+            Action::Block,
+        )],
+    );
+
+    assert_verdict(
+        &rules,
+        ("core", "metadata.search", "api.themoviedb.org"),
+        (Action::Block, Some("no-metadata")),
+    );
+    assert_verdict(
+        &rules,
+        ("core", "metadatas", "api.themoviedb.org"),
+        (Action::Direct, None),
+    );
+}

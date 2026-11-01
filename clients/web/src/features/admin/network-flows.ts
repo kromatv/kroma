@@ -1,8 +1,7 @@
 import type { DeclaredPurpose, Flow, FlowQuery, FlowVerdict } from '@kromatv/client/network';
 import { CORE_CALLER } from '#web/features/admin/network-callers';
-import { destination } from '#web/features/admin/network-format';
 
-export const FLOW_LIMIT = 500;
+export const FLOW_PAGE_SIZE = 50;
 
 export type VerdictFilter = 'all' | FlowVerdict;
 
@@ -20,21 +19,45 @@ export const NO_FLOW_FILTERS: FlowFilters = {
   host: '',
 };
 
-/** The server's half of the filters; the host search runs on the page. */
-export function flowQuery(filters: FlowFilters): FlowQuery {
+/** Which page of the journal is showing. `before` is null on the live first
+ * page; past it, the id the pages were taken from, so they hold still. */
+export interface FlowPosition {
+  page: number;
+  before: number | null;
+}
+
+export const FIRST_FLOW_PAGE: FlowPosition = { page: 1, before: null };
+
+/** The request for one page of the journal under `filters`. */
+export function flowQuery(filters: FlowFilters, { page, before }: FlowPosition): FlowQuery {
+  const host = filters.host.trim();
   return {
-    limit: FLOW_LIMIT,
+    limit: FLOW_PAGE_SIZE,
+    ...(page > 1 ? { offset: (page - 1) * FLOW_PAGE_SIZE } : {}),
+    ...(before === null ? {} : { before }),
     ...(filters.caller ? { caller: filters.caller } : {}),
     ...(filters.purpose ? { purpose: filters.purpose } : {}),
     ...(filters.verdict === 'all' ? {} : { verdict: filters.verdict }),
+    ...(host ? { host } : {}),
   };
 }
 
-/** The connections whose `host:port` holds `search`, case aside. */
-export function matchingHost(flows: readonly Flow[], search: string): readonly Flow[] {
-  const needle = search.trim().toLowerCase();
-  if (!needle) return flows;
-  return flows.filter((flow) => destination(flow.host, flow.port).toLowerCase().includes(needle));
+/** Where a jump to `page` lands. Leaving the first page anchors on the newest
+ * connection on screen; coming back to it goes live again. */
+export function flowPositionAt(
+  page: number,
+  current: FlowPosition,
+  shown: readonly Flow[],
+): FlowPosition {
+  if (page === 1) return FIRST_FLOW_PAGE;
+  const newest = shown[0]?.id;
+  const anchored = newest === undefined ? null : newest + 1;
+  return { page, before: current.before ?? anchored };
+}
+
+/** How many pages `total` connections fill; never fewer than one. */
+export function flowPageCount(total: number): number {
+  return Math.max(1, Math.ceil(total / FLOW_PAGE_SIZE));
 }
 
 export function distinctSorted(values: Iterable<string>): string[] {

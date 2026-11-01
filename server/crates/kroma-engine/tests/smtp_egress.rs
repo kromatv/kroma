@@ -66,6 +66,7 @@ fn journalled(host: &str, port: u16) -> Flow {
     };
     network()
         .flows(&filter)
+        .flows
         .into_iter()
         .find(|flow| flow.host == host && flow.port == port)
         .expect("a journal row for the mail")

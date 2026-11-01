@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FlowsView, ListenersView, NetworkSummary, RulesView } from './schemas';
+import { FlowsView, InboundSummary, ListenersView, NetworkSummary, RulesView } from './schemas';
 
 const FLOW = {
   id: 1029,
@@ -85,29 +85,31 @@ const LISTENERS = {
 
 describe('the connection journal', () => {
   it('reads a connection the VPN carried', () => {
-    expect(FlowsView.parse({ flows: [FLOW] })).toEqual({ flows: [FLOW] });
+    expect(FlowsView.parse({ flows: [FLOW], total: 1 })).toEqual({ flows: [FLOW], total: 1 });
   });
 
   it('reads a refused connection that never got a status', () => {
     const refused = { ...FLOW, route: 'blocked', status: null, bytesIn: 0, error: 'refused' };
 
-    expect(FlowsView.parse({ flows: [refused] }).flows[0]).toMatchObject({ status: null });
+    expect(FlowsView.parse({ flows: [refused], total: 1 }).flows[0]).toMatchObject({
+      status: null,
+    });
   });
 
   it('drops fields this build does not know rather than failing', () => {
-    const parsed = FlowsView.parse({ flows: [{ ...FLOW, tlsVersion: '1.3' }] });
+    const parsed = FlowsView.parse({ flows: [{ ...FLOW, tlsVersion: '1.3' }], total: 1 });
 
     expect(parsed.flows[0]).not.toHaveProperty('tlsVersion');
   });
 
   it('refuses a route the page cannot draw', () => {
-    expect(() => FlowsView.parse({ flows: [{ ...FLOW, route: 'tor' }] })).toThrow();
+    expect(() => FlowsView.parse({ flows: [{ ...FLOW, route: 'tor' }], total: 1 })).toThrow();
   });
 
   it('refuses a connection with no destination port', () => {
     const { port: _port, ...portless } = FLOW;
 
-    expect(() => FlowsView.parse({ flows: [portless] })).toThrow();
+    expect(() => FlowsView.parse({ flows: [portless], total: 1 })).toThrow();
   });
 });
 
@@ -152,5 +154,32 @@ describe('the listening sockets', () => {
     const listener = { ...LISTENERS.listeners[0], protocol: 'sctp' };
 
     expect(() => ListenersView.parse({ listeners: [listener] })).toThrow();
+  });
+});
+
+describe('the incoming tally', () => {
+  const ROW = {
+    address: '203.0.113.9',
+    via: 'tunnel',
+    userAgent: 'Kroma/1.0 (iPhone 17 Pro; iOS 26.0)',
+    count: 12,
+    bytesIn: 1024,
+    bytesOut: 1_048_576,
+    lastAt: 1_761_820_800_000,
+  };
+  const SUMMARY = {
+    since: 1_761_782_400_000,
+    totals: { requests: 12, addresses: 1, bytesIn: 1024, bytesOut: 1_048_576 },
+    rows: [ROW],
+  };
+
+  it('reads a client that came over the tunnel', () => {
+    expect(InboundSummary.parse(SUMMARY)).toEqual(SUMMARY);
+  });
+
+  it('refuses a road it does not know', () => {
+    const rows = [{ ...ROW, via: 'carrier-pigeon' }];
+
+    expect(() => InboundSummary.parse({ ...SUMMARY, rows })).toThrow();
   });
 });

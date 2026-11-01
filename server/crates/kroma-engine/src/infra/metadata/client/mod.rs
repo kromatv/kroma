@@ -134,12 +134,13 @@ fn note_failure(reason: &str, detail: &str) {
 /// GET `url` with `params` as the query, parsed as JSON `T`. `Err(())` on any
 /// failure, so a transient one is never cached as a miss.
 pub(super) fn tmdb_json<T: DeserializeOwned>(
+    purpose: &'static str,
     url: &str,
     api_key: &str,
     params: &[(&str, String)],
 ) -> Result<T, ()> {
     let mut request = Fetch::new()
-        .purpose("metadata")
+        .purpose(purpose)
         .max_time(REQUEST_MAX_TIME_SECS);
     request = if is_bearer_token(api_key) {
         request.header("Authorization", format!("Bearer {api_key}"))

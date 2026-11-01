@@ -69,6 +69,7 @@ fn search_page(
         params.push((target.year_param(), y.to_string()));
     }
     let resp: SearchResp = tmdb_json(
+        "metadata.search",
         &format!("{}/{}", api(), target.search_path()),
         api_key,
         &params,
