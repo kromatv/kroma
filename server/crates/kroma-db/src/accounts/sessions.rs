@@ -1,10 +1,12 @@
 //! A signed-in session, and revoking the ones that are not this device.
 
 use anyhow::Result;
-use rusqlite::{params, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
 
 use kroma_domain::User;
 
+use super::access_tokens::{touch_access_token, DeviceHints};
+use crate::admin::mark_last_seen;
 use crate::rows::row_to_user;
 use crate::{now_or_blank, Pool};
 
@@ -18,7 +20,37 @@ pub fn create_session(
     expires_at: i64,
     access_token: Option<&str>,
 ) -> Result<()> {
-    let conn = pool.get()?;
+    insert_session(&*pool.get()?, token, user_id, expires_at, access_token)
+}
+
+/// A device trading its credential for a fresh session, in one IMMEDIATE
+/// transaction so the exchange waits on a single commit: the account and the
+/// device are stamped as seen, the device takes the labels `hints` carry, and
+/// the session is stored as [`create_session`] stores it.
+pub fn renew_session(
+    pool: &Pool,
+    token: &str,
+    user_id: &str,
+    expires_at: i64,
+    access_token: &str,
+    hints: &DeviceHints,
+) -> Result<()> {
+    let mut conn = pool.get()?;
+    let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    mark_last_seen(&tx, user_id)?;
+    touch_access_token(&tx, access_token, hints)?;
+    insert_session(&tx, token, user_id, expires_at, Some(access_token))?;
+    tx.commit()?;
+    Ok(())
+}
+
+fn insert_session(
+    conn: &Connection,
+    token: &str,
+    user_id: &str,
+    expires_at: i64,
+    access_token: Option<&str>,
+) -> Result<()> {
     conn.execute(
         "DELETE FROM sessions WHERE user_id = ?1 AND expires_at <= ?2",
         params![user_id, time::OffsetDateTime::now_utc().unix_timestamp()],
@@ -116,6 +148,7 @@ mod tests {
     use super::*;
     use crate::accounts::test_support::*;
     use crate::accounts::{access_token_user, create_access_token, list_access_tokens};
+    use crate::admin_users;
 
     #[test]
     fn sessions_resolve_and_expire() {
@@ -157,6 +190,52 @@ mod tests {
             .collect::<rusqlite::Result<_>>()
             .unwrap();
         assert_eq!(tokens, ["live", "renewed", "theirs"]);
+    }
+
+    #[test]
+    fn renewing_stamps_the_account_and_relabels_the_device_beside_the_new_session() {
+        let p = pool();
+        let user = mk_user(&p, "a@b.c", "alice");
+        create_access_token(&p, "dev", &user.id, FUTURE, true, &ua("Firefox")).unwrap();
+        create_session(&p, "expired", &user.id, 1, Some("dev")).unwrap();
+
+        renew_session(
+            &p,
+            "renewed",
+            &user.id,
+            FUTURE,
+            "dev",
+            &ua("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)"),
+        )
+        .unwrap();
+
+        assert_eq!(session_user(&p, "renewed").unwrap().unwrap().id, user.id);
+        assert_eq!(
+            session_device_id(&p, "renewed").unwrap(),
+            Some(kroma_primitives::short_hash("dev"))
+        );
+        let device = &list_access_tokens(&p, &user.id).unwrap()[0];
+        assert_eq!(
+            device.user_agent.as_deref(),
+            Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")
+        );
+        assert!(device.last_seen.is_some());
+        let account = admin_users(&p)
+            .unwrap()
+            .into_iter()
+            .find(|u| u.id == user.id)
+            .unwrap();
+        assert!(account.last_seen.is_some());
+        let left: i64 = p
+            .get()
+            .unwrap()
+            .query_row(
+                "SELECT COUNT(*) FROM sessions WHERE token = 'expired'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(left, 0);
     }
 
     #[test]
