@@ -8,11 +8,10 @@ import { isAnyAdmin } from '#web/features/admin/hooks';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { useModuleActions } from '#web/features/admin/use-module-actions';
 import { useModuleNavAll } from '#web/modules/ModuleHostProvider';
-import { resolveModuleIcon } from '#web/modules/module-icons';
+import { modulePageCommand } from '#web/modules/module-page-command';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { type CommandDef, useCommandQuery, useCommands } from '#web/shared/lib/command-menu';
-import type { RoutePath } from '#web/shared/ui/route-link';
 
 function moduleStatus({ enabled, hasSidecar, running, unmet }: AdminModule) {
   if (!enabled) return { key: 'admin.modulesDisabled', tone: 'neutral' } as const;
@@ -52,9 +51,10 @@ export function useAdminCommands(): void {
     (cap) => !cap || (!!user && hasPermission(user, cap)),
   );
 
-  const pageRow = ({ moduleId, label, icon, to }: ModuleNav, group: string): CommandDef => {
+  const pageRow = (page: ModuleNav, group: string): CommandDef => {
+    const { moduleId, label } = page;
     const module = modules.find((candidate) => candidate.id === moduleId);
-    const row = { label, group, icon: resolveModuleIcon(icon), to: to as RoutePath };
+    const row = { ...modulePageCommand(page), group };
     if (!module) return { ...row, actions: [] };
     return {
       ...row,
@@ -88,7 +88,6 @@ export function useAdminCommands(): void {
     const { libraries } = await client.library.list();
     await Promise.all(libraries.map(({ id }) => client.library.scan(id)));
     void queryClient.invalidateQueries({ queryKey: ['admin', 'libraries'] });
-    toast({ message: t('commands.scanStarted'), tone: 'success' });
   };
 
   useCommands(
@@ -126,6 +125,7 @@ export function useAdminCommands(): void {
             icon: 'refresh',
             keywords: 'scan rescan analyser bibliotheque library',
             cap: 'library.manage',
+            done: t('commands.scanStarted'),
             run: scanLibraries,
           },
           {

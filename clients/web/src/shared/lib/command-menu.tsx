@@ -189,24 +189,32 @@ export function CommandMenuProvider({
 /**
  * Lists rows in the command menu for as long as the calling component is mounted. A
  * falsy entry is skipped, so a row that only sometimes applies is written `can && {…}`.
+ * `shared` is what every row has in common, and a row's own value wins, so a hook with
+ * several headings makes one call per heading.
  *
  * ```tsx
- * useCommands([
- *   { label: t('content.play'), icon: 'player-play', run: play },
- *   owned && { label: t('content.delete'), icon: 'trash', run: remove },
- * ]);
+ * useCommands(
+ *   [
+ *     { label: t('content.play'), icon: 'player-play', run: play },
+ *     owned && { label: t('content.delete'), icon: 'trash', run: remove },
+ *   ],
+ *   { meta: title },
+ * );
  * ```
  */
-export function useCommands(commands: readonly (CommandDef | Skipped)[]): void {
+export function useCommands(
+  commands: readonly (CommandDef | Skipped)[],
+  shared?: Pick<CommandDef, 'group' | 'meta' | 'cap' | 'primaryLabel'>,
+): void {
   const store = useContext(CommandStore);
   const owner = useId();
 
   useEffect(() => {
     store?.contribute(
       owner,
-      commands.filter((row): row is CommandDef => Boolean(row)),
+      commands.flatMap((row) => (row ? [{ ...shared, ...row }] : [])),
     );
-  }, [store, owner, commands]);
+  }, [store, owner, commands, shared]);
 
   useEffect(() => () => store?.withdraw(owner), [store, owner]);
 }

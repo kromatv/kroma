@@ -1,24 +1,25 @@
 // @vitest-environment jsdom
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CommandDef } from '#web/shared/lib/command-menu';
+import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
 import { useAccountCommands } from './use-account-commands';
 
-const mocks = vi.hoisted(() => ({ commands: [] as readonly CommandDef[], logout: vi.fn() }));
+const mocks = vi.hoisted(() => ({ logout: vi.fn() }));
 vi.mock('@kromatv/ui', () => ({ useT: () => (key: string) => key }));
 vi.mock('@tanstack/react-router', () => ({
   useRouterState: () => '/movies?sort=recent',
 }));
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ logout: mocks.logout }) }));
-vi.mock('#web/shared/lib/command-menu', () => ({
-  useCommands: (commands: readonly CommandDef[]) => {
-    mocks.commands = commands;
-  },
+vi.mock('#web/shared/lib/command-menu', async () => ({
+  useCommands: (await import('#web/shared/lib/command-menu.fixture')).useFakeCommands,
 }));
 
-const row = (label: string) => mocks.commands.find((command) => command.label === label);
+const row = (label: string) => listedCommands().find((command) => command.label === label);
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  forgetCommands();
+});
 
 describe('the account in the command menu', () => {
   it('brings the viewer back here after switching profile', () => {
@@ -28,6 +29,12 @@ describe('the account in the command menu', () => {
       to: '/login',
       search: { redirect: '/movies?sort=recent' },
     });
+  });
+
+  it('files every row under the account', () => {
+    renderHook(() => useAccountCommands());
+
+    expect(listedCommands().every((command) => command.group === 'nav.account')).toBe(true);
   });
 
   it('signs the viewer out', () => {

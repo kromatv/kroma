@@ -32,13 +32,19 @@ async function chord(): Promise<boolean> {
 
 const isOpen = () => screen.queryByText('the menu') !== null;
 
-function Contributes({ commands }: Readonly<{ commands: Parameters<typeof useCommands>[0] }>) {
-  useCommands(commands);
+function Contributes({
+  commands,
+  shared,
+}: Readonly<{
+  commands: Parameters<typeof useCommands>[0];
+  shared?: Parameters<typeof useCommands>[1];
+}>) {
+  useCommands(commands, shared);
   return null;
 }
 
 function Listed() {
-  const ids = useContributedCommands().map(({ id }) => id);
+  const ids = useContributedCommands().map(({ id, group }) => (group ? `${group}/${id}` : id));
   return <output>{ids.join(',')}</output>;
 }
 
@@ -285,6 +291,51 @@ describe('useCommands', () => {
     );
 
     expect(listed()).toBe('kept');
+  });
+
+  it('gives every row what they share', () => {
+    render(
+      provider(
+        <>
+          <Contributes commands={[command('a'), command('b')]} shared={{ group: 'More' }} />
+          <Listed />
+        </>,
+      ),
+    );
+
+    expect(listed()).toBe('More/a,More/b');
+  });
+
+  it('lets a row keep its own value over what they share', () => {
+    const own = { ...command('a'), group: 'Own' };
+    render(
+      provider(
+        <>
+          <Contributes commands={[own, command('b')]} shared={{ group: 'More' }} />
+          <Listed />
+        </>,
+      ),
+    );
+
+    expect(listed()).toBe('Own/a,More/b');
+  });
+
+  it('lists two calls in the order they were made, so one hook can make one per heading', () => {
+    function TwoHeadings() {
+      useCommands([command('a')], { group: 'First' });
+      useCommands([command('b')], { group: 'Second' });
+      return null;
+    }
+    render(
+      provider(
+        <>
+          <TwoHeadings />
+          <Listed />
+        </>,
+      ),
+    );
+
+    expect(listed()).toBe('First/a,Second/b');
   });
 
   it('takes them away when the screen goes', () => {

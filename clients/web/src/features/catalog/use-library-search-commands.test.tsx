@@ -3,11 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CommandDef } from '#web/shared/lib/command-menu';
+import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
 import { useLibrarySearchCommands } from './use-library-search-commands';
 
 const mocks = vi.hoisted(() => ({
-  commands: [] as readonly CommandDef[],
   query: '',
   watched: [] as string[],
   listed: [] as string[],
@@ -38,11 +37,9 @@ vi.mock('#web/shared/lib/mylist', () => ({
     toggle: mocks.toggleList,
   }),
 }));
-vi.mock('#web/shared/lib/command-menu', () => ({
+vi.mock('#web/shared/lib/command-menu', async () => ({
   useCommandQuery: () => mocks.query,
-  useCommands: (commands: readonly (CommandDef | false | null | undefined | '')[]) => {
-    mocks.commands = commands.filter((row): row is CommandDef => Boolean(row));
-  },
+  useCommands: (await import('#web/shared/lib/command-menu.fixture')).useFakeCommands,
 }));
 
 const MOVIE = {
@@ -77,11 +74,11 @@ async function typing(query: string, ...results: unknown[]) {
   await waitFor(() => expect(titles()).toHaveLength(results.length));
 }
 
-const titles = () => mocks.commands.filter((row) => row.group === 'commands.groupTitles');
-const wayOut = () => mocks.commands.find((row) => row.to === '/search');
+const titles = () => listedCommands().filter((row) => row.group === 'commands.groupTitles');
+const wayOut = () => listedCommands().find((row) => row.to === '/search');
 
 beforeEach(() => {
-  mocks.commands = [];
+  forgetCommands();
   mocks.watched = [];
   mocks.listed = [];
   vi.clearAllMocks();
@@ -95,7 +92,7 @@ describe('useLibrarySearchCommands', () => {
 
     renderHook(() => useLibrarySearchCommands(), { wrapper });
 
-    expect(mocks.commands).toEqual([]);
+    expect(listedCommands()).toEqual([]);
   });
 
   it('does not ask the server about a single letter', async () => {

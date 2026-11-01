@@ -27,12 +27,29 @@ useCommands([
 ]);
 ```
 
-For a row that belongs everywhere, add it to the hook of its feature, such as
-`features/admin/use-admin-commands.ts`:
+What every row has in common goes in the second argument, and a row's own value wins.
+A hook with several headings makes one call per heading, and they are listed in that
+order:
 
-```ts
-{ label: t('admin.updatesCheck'), group, icon: 'refresh', cap: 'settings.manage', run: checkForUpdates },
-{ label: t('nav.myList'), group, icon: 'bookmark', to: '/my-list' },
+```tsx
+useCommands(
+  [
+    { label: t('nav.myList'), icon: 'bookmark', to: '/my-list' },
+    { label: t('nav.requests'), icon: 'inbox', cap: 'requests.create', to: '/requests' },
+  ],
+  { group: t('nav.yourSpace') },
+);
+```
+
+For a row that belongs everywhere, add it to the hook of its feature, such as
+`features/catalog/use-catalog-commands.ts`. An action used in more than one place is a
+function that returns it, such as `list` and `watched` from
+`features/catalog/use-title-actions.ts`, which fit as a row or in a row's `actions`:
+
+```tsx
+const { list, watched } = useTitleActions();
+
+useCommands([id && list(id), id && watched(id)], { meta: view.title });
 ```
 
 `to` opens a route, `run` calls a function, and a rejection becomes a toast with the

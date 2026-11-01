@@ -1,5 +1,6 @@
 {
   "content.addToList": "Add to my list",
+  "content.addedToList": "Added to my list.",
   "content.aiSuggestions": "AI suggestions",
   "content.aiSuggestionsLoading": "Preparing AI suggestions…",
   "content.audioHighDynamics": "High dynamics",
@@ -43,6 +44,8 @@
   "content.loadingEpisodes": "Loading episodes…",
   "content.markUnwatched": "Mark as unwatched",
   "content.markWatched": "Mark as watched",
+  "content.markedUnwatched": "Marked as unwatched.",
+  "content.markedWatched": "Marked as watched.",
   "content.moreActions": "More actions",
   "content.moreInfo": "More info",
   "content.muteTheme": "Mute theme music",
@@ -56,6 +59,7 @@
   "content.recentlyAdded": "Recently added",
   "content.removeFromContinue": "Remove from Continue watching",
   "content.removeFromList": "Remove from my list",
+  "content.removedFromList": "Removed from my list.",
   "content.season": "Season {number}",
   "content.seasonCount": "{count} seasons",
   "content.seasonCount_one": "{count} season",

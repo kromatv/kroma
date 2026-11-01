@@ -204,7 +204,7 @@ export function TitleDetail({
     }
     navigate({ to: '/watch/$id', params: { id } });
   };
-  useTitleCommands(view, owned, localId, play);
+  useTitleCommands(view, play);
 
   const fallbackOverlineKey = view.kind === 'show' ? 'content.series' : 'content.film';
   const overline = view.genres.length

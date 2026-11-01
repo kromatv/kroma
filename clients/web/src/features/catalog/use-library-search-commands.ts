@@ -3,6 +3,7 @@ import { episodeTag, formatRuntime } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { matchText } from '@kromatv/ui/kit';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useTitleActions } from '#web/features/catalog/use-title-actions';
 import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 import { useAuth } from '#web/shared/lib/auth';
 import {
@@ -11,7 +12,6 @@ import {
   useCommandQuery,
   useCommands,
 } from '#web/shared/lib/command-menu';
-import { useMyList } from '#web/shared/lib/mylist';
 import { useDebouncedValue } from '#web/shared/lib/use-debounced-value';
 import { useWatched } from '#web/shared/lib/watched';
 
@@ -22,13 +22,10 @@ const POSTER_WIDTH = 60;
 const SHORTEST_RUNTIME_MS = 30_000;
 
 interface TitleContext {
-  group: string;
   t: ReturnType<typeof useT>;
   artwork: ReturnType<typeof useAuth>['client']['media']['artwork'];
   isWatched: (id: SubjectId) => boolean;
-  toggleWatched: (id: SubjectId) => void;
-  inList: (id: SubjectId) => boolean;
-  toggleList: (id: SubjectId) => void;
+  actions: ReturnType<typeof useTitleActions>;
 }
 
 const line = (...parts: readonly (string | null | undefined)[]) =>
@@ -38,37 +35,13 @@ function yearOf({ year, metadata }: Pick<Show, 'year' | 'metadata'>): string | u
   return year?.toString() ?? metadata?.releaseDate?.slice(0, 4);
 }
 
-function watchedAction(id: SubjectId, context: TitleContext): CommandActionDef {
-  const { t, isWatched, toggleWatched } = context;
-  const seen = isWatched(id);
-  return {
-    label: t(seen ? 'content.markUnwatched' : 'content.markWatched'),
-    icon: seen ? 'eye-off' : 'eye',
-    done: t(seen ? 'commands.markedUnwatched' : 'commands.markedWatched'),
-    run: () => toggleWatched(id),
-  };
-}
-
-function listAction(id: SubjectId, context: TitleContext): CommandActionDef {
-  const { t, inList, toggleList } = context;
-  const listed = inList(id);
-  return {
-    label: t(listed ? 'content.removeFromList' : 'content.addToList'),
-    icon: listed ? 'bookmark-off' : 'bookmark',
-    done: t(listed ? 'commands.removedFromList' : 'commands.addedToList'),
-    run: () => toggleList(id),
-  };
-}
-
 function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
-  const { group, t, artwork, isWatched } = context;
-  const shared = { group, primaryLabel: t('commands.actionOpenTitle') };
+  const { t, artwork, isWatched, actions } = context;
   const seen = (id: SubjectId) => (isWatched(id) ? t('content.watched') : undefined);
 
   if (hit.type === 'show') {
     const { show } = hit;
     return {
-      ...shared,
       id: `title:${show.id}`,
       label: show.title,
       subtitle: line(
@@ -81,7 +54,7 @@ function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
       image: artwork.showPosterFor(show, POSTER_WIDTH),
       to: '/shows/$id',
       params: { id: show.id },
-      actions: [listAction(show.id, context), watchedAction(show.id, context)],
+      actions: [actions.list(show.id), actions.watched(show.id)],
     };
   }
 
@@ -93,7 +66,6 @@ function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
     params: { id: item.id },
   };
   const common = {
-    ...shared,
     id: `title:${item.id}`,
     meta: seen(item.id),
     image: artwork.posterFor(item, POSTER_WIDTH),
@@ -104,7 +76,7 @@ function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
       label: item.episodeTitle ?? item.title,
       subtitle: line(item.showTitle, episodeTag(item)),
       icon: 'device-tv',
-      actions: [play, watchedAction(item.id, context)],
+      actions: [play, actions.watched(item.id)],
       ...(item.showId
         ? {
             primaryLabel: t('commands.actionOpenShow'),
@@ -127,7 +99,7 @@ function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
     icon: 'movie',
     to: '/movies/$id',
     params: { id: item.id },
-    actions: [play, listAction(item.id, context), watchedAction(item.id, context)],
+    actions: [play, actions.list(item.id), actions.watched(item.id)],
   };
 }
 
@@ -139,8 +111,8 @@ function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
 export function useLibrarySearchCommands(): void {
   const t = useT();
   const { client } = useAuth();
-  const { isWatched, toggleWatched } = useWatched();
-  const { inList, toggle: toggleList } = useMyList();
+  const { isWatched } = useWatched();
+  const actions = useTitleActions();
   const typed = useCommandQuery().trim();
   const settled = useDebouncedValue(typed, DEBOUNCE_MS);
   const { data = [] } = useQuery({
@@ -149,21 +121,17 @@ export function useLibrarySearchCommands(): void {
     placeholderData: keepPreviousData,
     queryFn: async () => (await client.media.search(settled, { limit: LIMIT })).results,
   });
-  const context: TitleContext = {
-    group: t('commands.groupTitles'),
-    t,
-    artwork: client.media.artwork,
-    isWatched,
-    toggleWatched,
-    inList,
-    toggleList,
-  };
+  const context: TitleContext = { t, artwork: client.media.artwork, isWatched, actions };
 
   const rows = typed.length >= MIN_LENGTH ? data.map((hit) => titleCommand(hit, context)) : [];
   const named = rows.some((row) => matchText(row.label, typed) !== null);
 
+  useCommands(
+    rows.map((row) => ({ ...row, always: !named })),
+    { group: t('commands.groupTitles'), primaryLabel: t('commands.actionOpenTitle') },
+  );
+
   useCommands([
-    ...rows.map((row) => ({ ...row, always: !named })),
     typed && {
       label: t('commands.searchEverywhere'),
       group: t('nav.search'),

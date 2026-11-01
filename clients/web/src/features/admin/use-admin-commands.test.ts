@@ -357,7 +357,7 @@ describe('the console’s actions', () => {
     );
   });
 
-  it('scans every library, then says it started', async () => {
+  it('scans every library', async () => {
     const scan = vi.fn().mockResolvedValue(undefined);
     const list = vi.fn().mockResolvedValue({ libraries: [{ id: 'films' }, { id: 'series' }] });
     mocks.client = { library: { list, scan } };
@@ -365,8 +365,11 @@ describe('the console’s actions', () => {
     await action(offeredTo('library.manage'), 'commands.scanLibraries')?.run?.();
 
     expect(scan.mock.calls).toEqual([['films'], ['series']]);
-    expect(mocks.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'commands.scanStarted' }),
+  });
+
+  it('says the scan started', () => {
+    expect(action(offeredTo('library.manage'), 'commands.scanLibraries')?.done).toBe(
+      'commands.scanStarted',
     );
   });
 
