@@ -1,4 +1,4 @@
-import { CONTROL, type StyleDecl, styles, svFor, typeSpec } from '@kromatv/ui/kit';
+import { CONTROL, type StyleDecl, styles, sv, svFor, typeSpec } from '@kromatv/ui/kit';
 import { safeAreaBottom } from '#web/shared/lib/safe-area';
 
 const SHELL = CONTROL.sm;
@@ -52,6 +52,23 @@ export const sideNavRow = svFor<{
     },
   },
   defaults: { current: false },
+});
+
+/** The command menu's way in: a button dressed as the field it opens. */
+export const sideNavField = sv({
+  base: {
+    row: true,
+    align: 'center',
+    gap: SHELL.gap,
+    minH: SHELL.height,
+    px: SHELL.px,
+    radius: SHELL.radius,
+    bg: 'surface2',
+    border: 'border',
+    borderWidth: 1,
+    _hover: { bg: 'surface3' },
+    _focus: { border: 'borderStrong' },
+  },
 });
 
 const sDefinition = styles({ frame: { flex: true, minHeight: 0 }, safeBottom: safeAreaBottom(28) });

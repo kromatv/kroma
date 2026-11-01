@@ -163,6 +163,17 @@ web is where the pointer model lives.
 - **SURF-23** (SHIPPED) - **Pointer**, on web, is the reference model: dense layouts, hover
   affordances, a visible cursor, right-click and keyboard shortcuts. Every other model is a
   deliberate departure from it. Web is the only pointer surface.
+- **SURF-50** (SHIPPED) - From anywhere on web, one key combination (Command+K on a Mac,
+  Ctrl+K on Windows and Linux) opens a command menu that reaches every page and action the
+  viewer is allowed, and finds titles in the library. It offers nothing the viewer's
+  permissions would refuse once chosen, and it gives way to fullscreen playback and to any
+  dialog already waiting for an answer.
+- **SURF-51** (SHIPPED) - A row in the command menu says what Enter will do, and can offer
+  more than that one action: Enter runs the first, Command+Enter or Ctrl+Enter the second,
+  and the menu's key lists them all. An admin can turn a module off, restart it or uninstall
+  it from its row, and a destructive action asks first.
+- **SURF-52** (SHIPPED) - The command menu forgives typos, word order and missing accents,
+  and puts first what this profile chose before on this device for the same letters.
 - **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
   scrub and dismiss, no hover state to depend on, and layouts that reflow to a held phone.
   Anything that only works with a cursor is redesigned, not shrunk.

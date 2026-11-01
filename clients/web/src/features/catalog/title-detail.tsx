@@ -12,6 +12,7 @@ import { CastRail, type SimilarItem, SimilarRail } from '#web/features/catalog/d
 import { SeasonSection } from '#web/features/catalog/episode-list';
 import { TitleHero } from '#web/features/catalog/title-hero';
 import { TreatmentsPanel } from '#web/features/catalog/treatments-panel';
+import { useTitleCommands } from '#web/features/catalog/use-title-commands';
 import { useTitleRequest } from '#web/features/catalog/use-title-request';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
@@ -81,6 +82,7 @@ function TitleBody({
   onToggleEpisode,
   onRequestSelected,
   onRequestSeason,
+  season,
   onRequestAll,
   onClearSelection,
 }: Readonly<{
@@ -99,6 +101,7 @@ function TitleBody({
   onToggleEpisode: (season: number, episode: number) => void;
   onRequestSelected: () => void;
   onRequestSeason: (season: number) => void;
+  season: number | undefined;
   onRequestAll: () => void;
   onClearSelection: () => void;
 }>) {
@@ -127,7 +130,9 @@ function TitleBody({
         <CastRail cast={view.cast} />
       ) : (
         <SeasonSection
+          key={season}
           seasons={view.seasons}
+          openOn={season}
           discoverTmdbId={owned ? null : view.tmdbId}
           fallbackCast={view.cast}
           isWatched={isWatched}
@@ -153,7 +158,10 @@ function TitleBody({
   );
 }
 
-export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
+export function TitleDetail({
+  initial,
+  season,
+}: Readonly<{ initial: TitleView; season?: number }>) {
   const webRuntime = useWebRuntime();
 
   const s = useStyles(sDefinition);
@@ -196,6 +204,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
     }
     navigate({ to: '/watch/$id', params: { id } });
   };
+  useTitleCommands(view, owned, localId, play);
 
   const fallbackOverlineKey = view.kind === 'show' ? 'content.series' : 'content.film';
   const overline = view.genres.length
@@ -243,6 +252,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
         onToggleEpisode={toggleEpisode}
         onRequestSelected={requestSelected}
         onRequestSeason={requestSeason}
+        season={season}
         onRequestAll={requestAllSeasons}
         onClearSelection={clearSelection}
       />

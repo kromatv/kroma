@@ -18,7 +18,10 @@ The leading mark of a row: a glyph sunk into a rounded, tinted square. A well ra
 ```tsx
 <IconWell name="server-2" />
 <IconWell name="plus" tone="accent" size="sm" />
+<IconWell name="puzzle" size="xs" src={moduleIcon} />
 ```
+
+Pass `src` for art that fills the well, such as a module's icon: it takes the same square as a glyph, so a column mixing the two still lines up, and the glyph stays as what shows while it loads and if it fails.
 
 <Scene name="A column of rows">
   Five different drawings, one optical weight.

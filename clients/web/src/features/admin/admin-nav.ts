@@ -1,27 +1,7 @@
 import type { Permission } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import type { ModuleNav } from '@kromatv/module-sdk';
-import {
-  IconApps,
-  IconArchive,
-  IconBell,
-  IconClockBolt,
-  IconDatabase,
-  IconDownload,
-  IconFlag,
-  IconHistory,
-  IconLayoutDashboard,
-  IconLibrary,
-  IconRadar,
-  IconSettings,
-  IconSitemap,
-  IconSparkles,
-  IconTerminal2,
-  IconTransform,
-  IconUsers,
-  IconWorld,
-  type TablerIcon,
-} from '@tabler/icons-react';
+import type { IconName } from '@kromatv/ui/kit';
 import type { RoutePath } from '#web/shared/ui/route-link';
 
 /** One console page. `cap: null` is visible to any admin (the read-only
@@ -31,9 +11,10 @@ export interface AdminNavItem {
   to: RoutePath;
   labelKey: MessageKey;
   cap: Permission | readonly Permission[] | null;
-  icon: TablerIcon;
+  icon: IconName;
   /** Whether only the exact path reads as the current page. */
   exact?: boolean;
+  keywords?: string;
 }
 
 /** A named run of console pages. `section` is what a module's own nav entry
@@ -54,20 +35,26 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         labelKey: 'admin.dashboard',
         exact: true,
         cap: null,
-        icon: IconLayoutDashboard,
+        icon: 'layout-dashboard',
       },
-      { to: '/admin/users', labelKey: 'admin.navUsers', cap: 'users.manage', icon: IconUsers },
+      {
+        to: '/admin/users',
+        labelKey: 'admin.navUsers',
+        cap: 'users.manage',
+        icon: 'users',
+        keywords: 'accounts comptes utilisateurs permissions',
+      },
       {
         to: '/admin/history',
         labelKey: 'admin.historyScreen',
         cap: 'users.manage',
-        icon: IconHistory,
+        icon: 'history',
       },
       {
         to: '/admin/reports',
         labelKey: 'admin.navReports',
         cap: 'reports.manage',
-        icon: IconFlag,
+        icon: 'flag',
       },
     ],
   },
@@ -79,21 +66,21 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         to: '/admin/monitoring',
         labelKey: 'admin.navMonitoring',
         cap: ['library.manage', 'requests.manage'],
-        icon: IconRadar,
+        icon: 'radar',
       },
       {
         to: '/admin/libraries',
         labelKey: 'admin.navLibraries',
         cap: 'library.manage',
-        icon: IconLibrary,
+        icon: 'library',
       },
       {
         to: '/admin/transcoder',
         labelKey: 'admin.navTranscoder',
         cap: 'settings.manage',
-        icon: IconTransform,
+        icon: 'transform',
       },
-      { to: '/admin/ai', labelKey: 'admin.navAi', cap: 'settings.manage', icon: IconSparkles },
+      { to: '/admin/ai', labelKey: 'admin.navAi', cap: 'settings.manage', icon: 'sparkles' },
     ],
   },
   {
@@ -111,25 +98,27 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         to: '/admin/modules',
         labelKey: 'admin.navModules',
         cap: 'settings.manage',
-        icon: IconApps,
+        icon: 'apps',
+        keywords: 'plugins extensions store',
       },
       {
         to: '/admin/general',
         labelKey: 'admin.navGeneral',
         cap: 'settings.manage',
-        icon: IconSettings,
+        icon: 'settings',
       },
       {
         to: '/admin/network',
         labelKey: 'admin.navNetwork',
         cap: 'settings.manage',
-        icon: IconWorld,
+        icon: 'world',
+        keywords: 'vpn firewall pare-feu proxy rules',
       },
       {
         to: '/admin/notifications',
         labelKey: 'admin.navNotifications',
         cap: 'settings.manage',
-        icon: IconBell,
+        icon: 'bell',
       },
     ],
   },
@@ -141,22 +130,23 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         to: '/admin/updates',
         labelKey: 'admin.updatesTitle',
         cap: 'settings.manage',
-        icon: IconDownload,
+        icon: 'download',
       },
-      { to: '/admin/jobs', labelKey: 'admin.navJobs', cap: 'settings.manage', icon: IconClockBolt },
+      { to: '/admin/jobs', labelKey: 'admin.navJobs', cap: 'settings.manage', icon: 'clock-bolt' },
       {
         to: '/admin/pipeline',
         labelKey: 'admin.navPipeline',
         cap: 'settings.manage',
-        icon: IconSitemap,
+        icon: 'sitemap',
       },
-      { to: '/admin/storage', labelKey: 'admin.navStorage', cap: null, icon: IconDatabase },
-      { to: '/admin/logs', labelKey: 'admin.navLogs', cap: null, icon: IconTerminal2 },
+      { to: '/admin/storage', labelKey: 'admin.navStorage', cap: null, icon: 'database' },
+      { to: '/admin/logs', labelKey: 'admin.navLogs', cap: null, icon: 'terminal-2' },
       {
         to: '/admin/backup',
         labelKey: 'admin.navBackup',
         cap: 'settings.manage',
-        icon: IconArchive,
+        icon: 'archive',
+        keywords: 'export restore sauvegarde',
       },
     ],
   },

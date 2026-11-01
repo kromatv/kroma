@@ -7,24 +7,27 @@
 // children that keeps that true, nor any DOM to ask the way cmdk does.
 
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { Box } from '#ui/components/atoms/box';
-import { Focusable } from '#ui/components/atoms/focusable';
-import { styles } from '#ui/core';
-import { useStyles } from '#ui/core/styles';
+import { useCommandKey } from '#ui/lib/command-key';
+import { useDeliberateHover } from '#ui/lib/deliberate-hover';
 import { useListCursorKeys } from '#ui/lib/list-cursor-keys';
-import { useStableCallback } from '#ui/lib/stable-callback';
 import { useControllable } from '#ui/lib/use-controllable';
+import { Actions, Primary, Trigger } from './command-actions';
 import { CommandContext, type CommandState } from './command-context';
-import { type CommandItem, flatten, scrollTo, sectionsOf, stepTo } from './command-list';
+import { CommandLayer, CommandModal } from './command-layer';
+import {
+  type CommandAction,
+  type CommandBoost,
+  type CommandItem,
+  flatten,
+  scrollTo,
+  sectionsOf,
+  stepTo,
+} from './command-list';
 import { Empty, Footer, Input, List } from './command-parts';
+import { useActionPanel } from './use-action-panel';
 
 // A television moves the spatial navigator's own focus, and a second highlight
 // following a keyboard it does not have would be a lie there.
-
-// Wide enough for a row of prose and no wider: a palette that spans a desk
-// makes the reader's eyes travel from the query to the results.
-const SHEET = 640;
-const MARGIN = 16;
 
 interface CommandRootProps {
   /** Every row the palette can reach, in the order they should be listed with
@@ -32,14 +35,22 @@ interface CommandRootProps {
   items: readonly CommandItem[];
   /** The id already open behind the palette, marked in the list. */
   selected?: string;
-  onSelect: (item: CommandItem) => void;
+  /** What to add to a row's score for a query, such as what the viewer chose before. */
+  boost?: CommandBoost;
+  /** A row was chosen. `action` is which of its actions, when it has any. */
+  onSelect: (item: CommandItem, action?: CommandAction) => void;
   /** Escape, the scrim, and choosing a row all come through here. */
   onClose: () => void;
   query?: string;
   defaultQuery?: string;
   onQueryChange?: (next: string) => void;
-  /** `<Command.Input>`, `<Command.List>`, `<Command.Empty>` and
-   *  `<Command.Footer>`, in the order they should be stacked. */
+  /** Draw over the whole window, holding the focus and the page's scroll, rather
+   *  than over the nearest positioned ancestor. */
+  modal?: boolean;
+  /** The accessible name of the scrim, which closes the palette. */
+  closeLabel?: string;
+  /** `<Command.Input>`, `<Command.List>`, `<Command.Empty>`, `<Command.Footer>` and
+   *  `<Command.Actions>`, in the order they should be stacked. */
   children?: ReactNode;
 }
 
@@ -58,119 +69,112 @@ interface CommandRootProps {
 function Root({
   items,
   selected,
+  boost,
   onSelect,
   onClose,
   query: queryProp,
   defaultQuery = '',
   onQueryChange,
+  modal = false,
+  closeLabel = 'Close search',
   children,
 }: Readonly<CommandRootProps>) {
-  const s = useStyles(sDefinition);
-
   const [query, setQueryValue] = useControllable(queryProp, defaultQuery, onQueryChange);
   const [cursor, setCursor] = useState(0);
-  const sections = useMemo(() => sectionsOf(items, query), [items, query]);
+  const sections = useMemo(() => sectionsOf(items, query, boost), [items, query, boost]);
   const flat = useMemo(() => flatten(sections), [sections]);
   const at = Math.min(cursor, Math.max(0, flat.length - 1));
 
-  const choose = useCallback(
-    (item: CommandItem | undefined) => {
-      if (!item) return;
-      onSelect(item);
+  const current = flat[at];
+  const actions = useActionPanel(current);
+
+  const run = useCallback(
+    (item: CommandItem, action: CommandAction | undefined) => {
+      onSelect(item, action);
       onClose();
     },
     [onSelect, onClose],
   );
 
+  const choose = useCallback(
+    (item: CommandItem | undefined) => {
+      if (item) run(item, item.actions?.[0]);
+    },
+    [run],
+  );
+
+  const chooseAction = (action: CommandAction) => {
+    if (current) run(current, action);
+  };
+
+  const chooseSecondary = () => {
+    const second = current?.actions?.[1];
+    if (current && second) run(current, second);
+  };
+
   // Stable, because it is a prop on every row: rebuilt with the rest of the
   // context it would re-render the whole list on a keystroke that only moved
   // the cursor.
-  const point = useStableCallback((item: CommandItem) => setCursor(flat.indexOf(item)));
-
-  const cursorId = useListCursorKeys({
-    cursor: flat[at]?.id,
-    onStep: (rows) => setCursor((prev) => stepTo(prev, rows, flat.length)),
-    onChoose: () => choose(flat[at]),
-    onClose,
+  const point = useDeliberateHover((item: CommandItem) => {
+    const row = flat.indexOf(item);
+    if (row >= 0) setCursor(row);
   });
 
-  const state = useMemo<CommandState>(
-    () => ({
-      shown: flat.length,
-      total: items.length,
-      query,
-      sections,
-      cursor: cursorId,
-      selected,
-      setQuery: (next: string) => {
-        setQueryValue(next);
-        setCursor(0);
-      },
-      point,
-      choose,
-      close: onClose,
-      scroll: (offset, viewport) => scrollTo(sections, at, offset, viewport),
-    }),
-    [
-      flat,
-      items.length,
-      query,
-      sections,
-      at,
-      cursorId,
-      selected,
-      setQueryValue,
-      point,
-      choose,
-      onClose,
-    ],
-  );
+  const cursorId = useListCursorKeys({
+    cursor: current?.id,
+    onStep: (rows) =>
+      actions.open ? actions.step(rows) : setCursor((prev) => stepTo(prev, rows, flat.length)),
+    onChoose: (secondary) => {
+      if (actions.open) {
+        if (actions.cursor) chooseAction(actions.cursor);
+      } else if (secondary) chooseSecondary();
+      else choose(current);
+    },
+    onClose: actions.open ? actions.hide : onClose,
+  });
 
-  return (
+  useCommandKey(() => {
+    if (actions.open) actions.hide();
+    else if (actions.available) actions.show();
+    else onClose();
+  }, modal);
+
+  const state: CommandState = {
+    shown: flat.length,
+    total: items.length,
+    query,
+    current,
+    sections,
+    cursor: cursorId,
+    selected,
+    setQuery: (next: string) => {
+      setQueryValue(next);
+      setCursor(0);
+    },
+    point,
+    choose,
+    chooseAction,
+    actions,
+    close: onClose,
+    scroll: (offset, viewport) => scrollTo(sections, at, offset, viewport),
+  };
+
+  const palette = (
     <CommandContext.Provider value={state}>
-      <Box absolute top={0} right={0} bottom={0} left={0} z={40} align="center" style={s.scrim}>
-        {/* The catcher fills the layer BEHIND the sheet rather than under it as
-            a sibling in flow: without the inset box and the sheet's own `z`,
-            it takes every press meant for a row and the palette closes on a
-            click instead of opening what was clicked. */}
-        <Focusable
-          label="Close search"
-          ring={false}
-          onPress={onClose}
-          style={s.catcher}
-          focusScale={1}
-        />
-        <Box
-          z={1}
-          w={SHEET}
-          maxW="100%"
-          mx={MARGIN}
-          mt={96}
-          bg="surface2"
-          radius="xl"
-          border="borderStrong"
-          borderWidth={1}
-          overflow="hidden"
-        >
-          {children}
-        </Box>
-      </Box>
+      <CommandLayer closeLabel={closeLabel} onClose={onClose} animated={modal}>
+        {children}
+      </CommandLayer>
     </CommandContext.Provider>
   );
+  return modal ? <CommandModal onClose={onClose}>{palette}</CommandModal> : palette;
 }
 
-const sDefinition = styles({
-  scrim: { bg: 'bg/72' },
-  // Absolute rather than `flex: 1`: a flex sibling would push the sheet down
-  // the column, and the catcher has to sit UNDER the whole layer.
-  catcher: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
-});
-
 /**
- * A search-and-jump overlay: one field, a ranked and grouped list, a cursor the
- * arrows and the pointer share, and Enter to open.
+ * A search-and-jump overlay: one field, a list a query ranks, a cursor the
+ * arrows and the pointer share, Enter to open, and an action panel for everything
+ * else a row can do.
  */
-const Command = { Root, Input, List, Empty, Footer };
+const Command = { Root, Input, List, Empty, Footer, Primary, Trigger, Actions };
 
 export type { CommandRootProps };
 export { Command };

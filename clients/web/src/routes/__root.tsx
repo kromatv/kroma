@@ -1,5 +1,13 @@
 import appCss from '@kromatv/ui/css?url';
-import { ConfirmHost, classes, KitProvider, styles, Toaster, useStyles } from '@kromatv/ui/kit';
+import {
+  ConfirmHost,
+  classes,
+  KitProvider,
+  Row,
+  styles,
+  Toaster,
+  useStyles,
+} from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,11 +20,13 @@ import { ModuleHostProvider } from '#web/modules/ModuleHostProvider';
 import type { WebRuntime } from '#web/shared/lib/api';
 import { AuthProvider } from '#web/shared/lib/auth';
 import { BlurPreferenceProvider } from '#web/shared/lib/blur-pref';
+import { CommandMenuProvider } from '#web/shared/lib/command-menu';
 import { LocaleProvider } from '#web/shared/lib/locale';
 import { MyListProvider } from '#web/shared/lib/mylist';
 import { WatchedProvider } from '#web/shared/lib/watched';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { BOOT_SCREEN_CSS, BootScreen } from '#web/shared/ui/boot-screen';
+import { CommandMenuButton } from '#web/shared/ui/command-menu-button';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
 
 // Dev-only: lazy so the devtools bundle never ships in the packaged SPA.
@@ -25,6 +35,15 @@ const ReactQueryDevtools = import.meta.env.DEV
       import('@tanstack/react-query-devtools').then((m) => ({ default: m.ReactQueryDevtools })),
     )
   : () => null;
+
+const NAV_ACTIONS = (
+  <Row gap={2}>
+    <CommandMenuButton />
+    <NotificationBell />
+  </Row>
+);
+
+const loadCommandMenu = () => import('#web/command-menu').then((menu) => menu.CommandMenu);
 
 const BROWSER_KIT = { formFactor: 'browser', ground: 'dark' } as const;
 
@@ -99,11 +118,13 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                     <WatchedProvider>
                       <MyListProvider>
                         <LocaleProvider>
-                          <NavActionsProvider actions={<NotificationBell />}>
-                            <ModuleHostProvider>
-                              <BootScreen>{children}</BootScreen>
-                            </ModuleHostProvider>
-                          </NavActionsProvider>
+                          <ModuleHostProvider>
+                            <CommandMenuProvider load={loadCommandMenu}>
+                              <NavActionsProvider actions={NAV_ACTIONS}>
+                                <BootScreen>{children}</BootScreen>
+                              </NavActionsProvider>
+                            </CommandMenuProvider>
+                          </ModuleHostProvider>
                         </LocaleProvider>
                       </MyListProvider>
                     </WatchedProvider>

@@ -4,8 +4,8 @@ export interface ListCursorKeysOptions<T> {
   cursor: T;
   /** Rows to move the cursor by: one for an arrow, a page for PageUp/PageDown. */
   onStep: (rows: number) => void;
-  /** Enter: open whatever the cursor is on. */
-  onChoose: () => void;
+  /** Enter: open whatever the cursor is on. `secondary` when Command or Ctrl is held. */
+  onChoose: (secondary: boolean) => void;
   onClose: () => void;
 }
 

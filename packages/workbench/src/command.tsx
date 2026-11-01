@@ -8,12 +8,12 @@ import {
   Command,
   type CommandItem,
   Kbd,
+  Row,
   Text,
   useCommandResults,
   webDocument,
-  webWindow,
 } from '@kromatv/ui/kit';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import type { StoryEntry } from './entry';
 import type { Page } from './page';
 import { glyphFor } from './registry';
@@ -50,19 +50,8 @@ function isPage(pages: readonly Page[] | undefined, id: string): boolean {
   return (pages ?? []).some((page) => page.id === id);
 }
 
-function isMac(): boolean {
-  const agent = webWindow()?.navigator?.userAgent ?? '';
-  return /Mac|iPhone|iPad|iPod/.test(agent);
-}
-
-/** `⌘ K` on a Mac, `Ctrl K` everywhere else. */
-function commandHint(): string {
-  return isMac() ? '⌘ K' : 'Ctrl K';
-}
-
 // Capture phase: react-native-web's TextInput stops propagation on keydown, so a
-// bubbling listener is deaf while a field is focused. The event is swallowed too,
-// to beat the browser's own ⌘K.
+// bubbling listener is deaf while a field is focused.
 function useCaptureKey(match: (event: KeyboardEvent) => boolean, onKey: () => void): void {
   useEffect(() => {
     const document = webDocument();
@@ -78,14 +67,7 @@ function useCaptureKey(match: (event: KeyboardEvent) => boolean, onKey: () => vo
   }, [match, onKey]);
 }
 
-const isCommandK = (event: KeyboardEvent): boolean =>
-  (event.key === 'k' || event.key === 'K') && (event.metaKey || event.ctrlKey);
-
 const isEscape = (event: KeyboardEvent): boolean => event.key === 'Escape';
-
-function useCommandKey(onOpen: () => void): void {
-  useCaptureKey(isCommandK, onOpen);
-}
 
 function useEscapeKey(onClose: () => void): void {
   useCaptureKey(isEscape, onClose);
@@ -121,25 +103,30 @@ function CommandPalette({
       <Command.List />
       <Command.Empty>No components found.</Command.Empty>
       <Command.Footer>
-        <Hint keys={['↑', '↓']} label="navigate" />
-        <Hint keys={['↵']} label="select" />
-        <Hint keys={['esc']} label="close" />
+        <Hint label="navigate">
+          <Kbd icon="arrow-up" />
+          <Kbd icon="arrow-down" />
+        </Hint>
+        <Hint label="select">
+          <Kbd icon="corner-down-left" />
+        </Hint>
+        <Hint label="close">
+          <Kbd>esc</Kbd>
+        </Hint>
         <Tally />
       </Command.Footer>
     </Command.Root>
   );
 }
 
-function Hint({ keys, label }: Readonly<{ keys: readonly string[]; label: string }>) {
+function Hint({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
-    <>
-      {keys.map((key) => (
-        <Kbd key={key}>{key}</Kbd>
-      ))}
+    <Row gap={3}>
+      {children}
       <Text variant="meta" color="textDim" style={HINT}>
         {label}
       </Text>
-    </>
+    </Row>
   );
 }
 
@@ -152,9 +139,7 @@ function Tally() {
   );
 }
 
-// Negative margins against the footer's own gap: a hint is a run of caps and
-// one word, and the gap belongs between hints rather than inside one.
-const HINT = { fontSize: 11.5, marginLeft: -9 } as const;
+const HINT = { fontSize: 11.5, marginLeft: 3 } as const;
 const TALLY = { fontSize: 11.5, marginLeft: 'auto' } as const;
 
-export { CommandPalette, commandHint, entriesOf, isPage, useCommandKey, useEscapeKey };
+export { CommandPalette, entriesOf, isPage, useEscapeKey };

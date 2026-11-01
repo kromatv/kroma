@@ -75,6 +75,9 @@ export {
   useTriggerFocus,
 } from './lib/anchored-panel';
 export { classes } from './lib/classed';
+export { useCommandKey } from './lib/command-key';
+export type { TextMatch, TextMatchOptions, TextRun } from './lib/text-match';
+export { matchText, textRuns } from './lib/text-match';
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';

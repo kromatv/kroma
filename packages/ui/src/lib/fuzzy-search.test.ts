@@ -27,6 +27,10 @@ describe('fuzzyQuery', () => {
   it('reads a query that is nothing but separators as empty', () => {
     expect(fuzzyQuery(' - ')).toBe('');
   });
+
+  it('reads a query without its accents', () => {
+    expect(fuzzyQuery('Réseau Général')).toBe('reseaugeneral');
+  });
 });
 
 describe('fuzzyScore', () => {
@@ -37,6 +41,11 @@ describe('fuzzyScore', () => {
 
   it('scores a match without caring about case on either side', () => {
     expect(fuzzyScore('Chevron-Right', 'CHEVRON')).toBe(fuzzyScore('chevron-right', 'chevron'));
+  });
+
+  it('scores a match without caring about accents on either side', () => {
+    expect(fuzzyScore('Réseau', 'reseau')).toBe(fuzzyScore('Reseau', 'reseau'));
+    expect(fuzzyScore('Reseau', 'réseau')).toBe(fuzzyScore('Reseau', 'reseau'));
   });
 
   it('scores every text the same for an empty query', () => {
@@ -55,6 +64,10 @@ describe('fuzzyScore', () => {
 });
 
 describe('fuzzySearch', () => {
+  it('finds a name that carries an accent the query does not', () => {
+    expect(ranked(['Paramètres', 'Réseau'], 'parametres')).toEqual(['Paramètres']);
+  });
+
   it('finds a name the query has dropped a letter from', () => {
     expect(ranked(GLYPHS, 'chevrn')).toEqual(['chevron-down', 'chevron-right', 'chevrons-right']);
   });
