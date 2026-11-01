@@ -220,5 +220,8 @@
   "naming.seriesFolder": "Dossier des séries",
   "naming.tokens": "Jetons",
   "naming.tokensTitle": "Jetons de nom de fichier",
-  "nav.downloads": "Téléchargements"
+  "nav.downloads": "Téléchargements",
+  "notifications.completed.body": "{title} a fini de télécharger.",
+  "notifications.completed.label": "Téléchargements terminés",
+  "notifications.completed.title": "Téléchargement terminé"
 }

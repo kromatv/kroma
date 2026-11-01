@@ -110,10 +110,16 @@ impl HostCtx for RemoteHost {
     ) -> usize {
         // The core resolves, filters, persists and pushes; this only ships the intent.
         let body = serde_json::json!({ "audience": audience, "spec": spec });
-        self.callback()
-            .post_json(&self.host_url("notify"), &body)
+        let Ok(answer) = self.callback().post_json(&self.host_url("notify"), &body) else {
+            return 0;
+        };
+        if answer.status == 403 {
+            tracing::error!(refusal = %answer.text(), "the host refused a notification");
+            return 0;
+        }
+        answer
+            .json::<serde_json::Value>()
             .ok()
-            .and_then(|r| r.json::<serde_json::Value>().ok())
             .and_then(|v| v.get("sent").and_then(serde_json::Value::as_u64))
             .unwrap_or(0) as usize
     }

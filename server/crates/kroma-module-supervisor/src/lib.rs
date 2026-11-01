@@ -13,6 +13,7 @@ mod adopt;
 mod host_api;
 mod install;
 mod manifests;
+mod notifications;
 mod origin;
 mod process;
 mod proxy;
@@ -31,6 +32,7 @@ use process::Proc;
 
 pub const MODULE_BIN: &str = "module";
 pub const MODULE_STORE: &str = "module.sqlite";
+const LOCALES_DIR: &str = "locales";
 const STAGING_PREFIX: &str = ".staging-";
 
 /// Where a module's own log lines go, as `(module_id, line)`. `None` leaves the
@@ -55,6 +57,7 @@ pub struct Supervisor {
     module_tokens: RwLock<HashMap<String, String>>,
     port_tokens: RwLock<HashMap<String, String>>,
     manifests_cache: RwLock<Option<Vec<ModuleManifest>>>,
+    notifications_cache: RwLock<Option<Arc<Vec<kroma_module_host::ModuleNotifications>>>>,
     // Short-TTL catalog cache: the admin flow sweeps EVERY registry from the
     // catalog view, the plan dialog (once per opt-in toggle) and the install
     // itself in quick succession; within the TTL they share one fetch.
@@ -73,6 +76,7 @@ impl Supervisor {
             module_tokens: RwLock::new(HashMap::new()),
             port_tokens: RwLock::new(HashMap::new()),
             manifests_cache: RwLock::new(None),
+            notifications_cache: RwLock::new(None),
             catalog_cache: RwLock::new(HashMap::new()),
             catalog_client: std::sync::OnceLock::new(),
             artifact_client: std::sync::OnceLock::new(),

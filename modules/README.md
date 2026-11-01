@@ -336,6 +336,60 @@ A module whose strings also have to reach something that is not the web
 frontend or the sidecar, a device channel it installs, ships the same JSON
 there rather than restating it in that language.
 
+### Notifications
+
+A module tells people through the core's inbox, never one of its own. Declare
+each kind it sends in `module.json`, in its own namespace, with the keys of its
+wording in `locales/{en,fr}.json`:
+
+```jsonc
+"notifications": [
+  {
+    "type": "tv.kroma.torrents/download.completed",
+    "category": "downloads",
+    "push": false,
+    "labelKey": "notifications.completed.label",
+    "titleKey": "notifications.completed.title",
+    "bodyKey": "notifications.completed.body"
+  }
+]
+```
+
+Then raise it by type. The host fills in the category and the keys from the
+declaration:
+
+```rust
+host.notify(
+    &Audience::permission(Permission::LibraryManage),
+    &NotificationSpec::declared("tv.kroma.torrents/download.completed")
+        .param("title", &row.release_title)
+        .subject(NotificationSubject::new("tv.kroma.torrents/download", &row.id))
+        .dedupe_key(format!("tv.kroma.torrents/download.completed:{}", row.id)),
+);
+```
+
+- **`type`** is `<module id>/<name>`, and it is what a reader mutes in their
+  settings. The host answers `403` to a type the calling module did not
+  declare, and `kroma check` refuses one outside the namespace.
+- **`category`** is one of `requests`, `media`, `reports`, `downloads` and
+  `system`. The type is listed under it, and follows the reader's switch for it
+  until they set the type on its own.
+- **`push`** defaults to true. `false` keeps the type off a reader's devices
+  until they turn it on.
+- **`labelKey`** names the type in the reader's settings and defaults to the
+  title, which suits a title with no `{param}` in it.
+- The bundle carries `locales/`, and the server renders every key in the
+  reader's language from the module's catalog first, then the core's. `kroma
+  check` refuses a key that a catalog the module ships has no words for.
+- **`subject`** says what the row is about. A repeat about the same subject
+  folds into the row the reader already has; `group_key` names another fold,
+  and `dedupe_key` drops a repeat the reader still holds.
+  `host.resolve_notifications(&subject, NotificationEvent::Custom, by)` settles
+  every row of the module about that subject, for every reader.
+
+`NotificationSpec::custom` still takes literal text, for a module built before
+declared types. Every reader gets those words whatever their language.
+
 ## Runtime contract
 
 The supervisor scans `<data>/modules/*`, spawns each enabled module as its own

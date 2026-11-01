@@ -150,7 +150,7 @@ if it ever gets one.
 
 ## Preferences
 
-Status: **SHIPPED**, with per-type choice **AGREED**.
+Status: **SHIPPED**
 
 **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports,
 downloads, server), whether it reaches their inbox and whether it reaches their devices.
@@ -160,7 +160,7 @@ Everything starts on, so a new category needs no visit to the settings to work.
 not a filter over a pile that was kept anyway: what a person muted was never recorded against
 their account.
 
-**ACCT-65** (AGREED) - The same choice is available per notification type, a module's own
+**ACCT-65** (SHIPPED) - The same choice is available per notification type, a module's own
 types included, listed under their category. A type the person never touched follows its
 category, so nothing changes for someone who never opens the setting.
 
@@ -182,7 +182,7 @@ exposes a device's address.
 
 ## What a module may send
 
-Status: **SHIPPED** in part; each requirement carries its own.
+Status: **SHIPPED**
 
 **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing
 one. Its notifications obey the reader's preferences, reach their devices on the same terms,
@@ -192,6 +192,6 @@ and sit in the list beside the core's ([`modules/`](../modules/)).
 account, everyone, the holders of a permission, or a show's followers. It cannot invent a
 reach of its own.
 
-**ACCT-71** (AGREED) - A module declares the kinds of notification it sends and ships their
+**ACCT-71** (SHIPPED) - A module declares the kinds of notification it sends and ships their
 wording in each language it supports, so a module's row reads in the reader's language like a
 core one. A kind it did not declare is refused rather than sent as raw text.

@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use kroma_config::Config;
 use kroma_db as db;
+use kroma_engine::services::notify::types::DeclaredTypes;
 use kroma_engine::services::settings::Settings;
 use kroma_engine::{infra, state};
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
@@ -38,6 +39,10 @@ pub fn build(
     services.insert(
         std::any::TypeId::of::<Supervisor>(),
         supervisor.clone() as Arc<dyn std::any::Any + Send + Sync>,
+    );
+    services.insert(
+        std::any::TypeId::of::<DeclaredTypes>(),
+        Arc::new(declared_types(&supervisor)),
     );
 
     // The first of the two things the core knows about modules: how to reach
@@ -89,6 +94,13 @@ pub fn build(
         tracing::error!("the network policy could not be installed: {e:#}");
     }
     (state, supervisor)
+}
+
+/// The notification types installed modules declare, read off the supervisor's
+/// listing on every ask so an install or an upgrade is picked up unwired.
+pub(crate) fn declared_types(supervisor: &Arc<Supervisor>) -> DeclaredTypes {
+    let supervisor = supervisor.clone();
+    DeclaredTypes::new(move || supervisor.notification_types())
 }
 
 /// A resolver for one point name. It re-asks on every call, so a module installed

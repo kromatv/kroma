@@ -11,7 +11,7 @@ mod view;
 pub use data::*;
 pub use kroma_module_wire::{
     ActionKind, ActionSpec, ActionStyle, NotificationAction, NotificationActor,
-    NotificationCategory, NotificationEvent, NotificationSpec, NotificationSubject, ParamValue,
-    SubjectKind,
+    NotificationCategory, NotificationEvent, NotificationSpec, NotificationSubject,
+    NotificationType, ParamValue, SubjectKind,
 };
 pub use view::*;

@@ -16,6 +16,7 @@ export * from './lang';
 export * from './master-fetch';
 export * from './match';
 export * from './notification-labels';
+export * from './notification-prefs';
 export * from './people';
 export * from './permissions';
 export * from './person-facts';

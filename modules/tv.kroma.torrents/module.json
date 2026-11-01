@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.6.28",
+  "version": "0.6.29",
   "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
     "server": ">=0.1.39"
@@ -91,6 +91,16 @@
     {
       "point": "tv.kroma.vpn/proxy",
       "optional": true
+    }
+  ],
+  "notifications": [
+    {
+      "type": "tv.kroma.torrents/download.completed",
+      "category": "downloads",
+      "push": false,
+      "labelKey": "notifications.completed.label",
+      "titleKey": "notifications.completed.title",
+      "bodyKey": "notifications.completed.body"
     }
   ],
   "storage": {

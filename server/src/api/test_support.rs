@@ -146,6 +146,12 @@ fn build_app_with(
         config.web_dir = Some(web_dir);
     }
     let settings = Settings::load(&db);
+    let supervisor = test_supervisor(&data_dir);
+    let services: HashMap<std::any::TypeId, Arc<dyn std::any::Any + Send + Sync>> =
+        HashMap::from([(
+            std::any::TypeId::of::<kroma_engine::services::notify::types::DeclaredTypes>(),
+            Arc::new(crate::boot::state::declared_types(&supervisor)) as Arc<_>,
+        )]);
     let state = AppState::new(
         config,
         false,
@@ -153,7 +159,7 @@ fn build_app_with(
         settings,
         kroma_engine::point::Point::absent("embedder"),
         kroma_engine::state::ModuleWiring {
-            services: HashMap::new(),
+            services,
             jobs: &[],
             contributions: std::sync::Arc::new(|_| Vec::new()),
             official_modules: std::sync::Arc::new(Vec::new),
@@ -164,7 +170,6 @@ fn build_app_with(
     db::sync_all(&db, &data.libraries, &data.shows, &data.items, &data.mtimes).expect("seed demo");
     state.search.reindex_from_db(&db).expect("reindex search");
 
-    let supervisor = test_supervisor(&data_dir);
     // No delivery task: a handler test publishes nothing a module would hear, and
     // spawning one would need a runtime the plain `#[test]` cases do not have.
     let subscriptions = std::sync::Arc::new(crate::api::host_events::Subscriptions::default());

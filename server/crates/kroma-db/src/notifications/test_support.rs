@@ -34,6 +34,7 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
         data: Some(serde_json::json!({ "requestId": "req-1" })),
         dedupe_key: None,
         group_key: None,
+        module_type: None,
         count: 1,
         updated_at: created_at,
         resolved_at: None,

@@ -11,6 +11,7 @@ use serde_json::json;
 
 use super::DownloadManager;
 
+mod notice;
 mod status;
 
 const ACTIVE_TICK: Duration = Duration::from_secs(5);

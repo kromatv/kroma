@@ -1,43 +1,24 @@
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The push opt-in for this device, plus the per-account delivery matrix.
 
-import {
-  type CategoryPref,
-  disablePush,
-  enablePush,
-  type NotificationCategory,
-} from '@kromatv/client/notifications';
-import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
+import { disablePush, enablePush } from '@kromatv/client/notifications';
+import { blockerOf, PUSH_BLOCKER_LABEL } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  Button,
-  Callout,
-  Icon,
-  ListRow,
-  Row,
-  Skeleton,
-  Surface,
-  Switch,
-  Text,
-} from '@kromatv/ui/kit';
+import { Box, Button, Callout, Icon, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useSyncExternalStore } from 'react';
 
 import { pushBlocker, webPush } from '#web/shared/lib/push';
 import { DeliveryLog } from '#web/shared/ui/delivery-log';
+import { NotificationMatrix } from '#web/features/accounts/account/notification-matrix';
 
-// The two channel columns must line up with the switches under them, and a
-// switch is one shell step wide.
 const subscribeNever = () => () => {};
-
-const CHANNEL_COLUMN = 46;
 
 export function NotificationsCard() {
   return (
     <>
       <PushPanel />
-      <CategoryMatrix />
+      <NotificationMatrix />
       <DeliveriesPanel />
     </>
   );
@@ -152,80 +133,5 @@ function PushPanel() {
         </Row>
       ) : null}
     </Surface>
-  );
-}
-
-function CategoryMatrix() {
-  const webRuntime = useWebRuntime();
-
-  const t = useT();
-  const qc = useQueryClient();
-  const { data, isPending } = useQuery(webRuntime.queries.userQueries.notificationPrefs());
-  const [saving, setSaving] = useState<NotificationCategory | null>(null);
-
-  const update = async (category: NotificationCategory, patch: Partial<CategoryPref>) => {
-    if (!data) return;
-    setSaving(category);
-    try {
-      const categories = data.categories.map((c) =>
-        c.category === category ? { ...c, ...patch } : c,
-      );
-      const saved = await webRuntime.client.notifications.setPrefs({ categories });
-      qc.setQueryData(webRuntime.queries.userQueries.notificationPrefs().queryKey, saved);
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  if (isPending || !data) {
-    return (
-      <Surface elevated pad="none" p={22} radius="xl" border="border">
-        <Skeleton h={128} radius="sm" />
-      </Surface>
-    );
-  }
-
-  return (
-    <ListRow.Group size="md">
-      <ListRow.Root>
-        <ListRow.Label>{t('notifications.settings')}</ListRow.Label>
-        <ListRow.Trailing>
-          <ChannelHead label={t('notifications.channelInApp')} />
-          <ChannelHead label={t('notifications.channelPush')} />
-        </ListRow.Trailing>
-      </ListRow.Root>
-      {data.categories.map((pref) => {
-        const name = t(NOTIFICATION_CATEGORY_LABEL[pref.category]);
-        return (
-          <ListRow.Root key={pref.category}>
-            <ListRow.Label>{name}</ListRow.Label>
-            <ListRow.Trailing>
-              <Switch
-                label={`${name} · ${t('notifications.channelInApp')}`}
-                checked={pref.inApp}
-                disabled={saving === pref.category}
-                onCheckedChange={(inApp) => update(pref.category, { inApp })}
-              />
-              <Switch
-                label={`${name} · ${t('notifications.channelPush')}`}
-                checked={pref.push}
-                disabled={saving === pref.category}
-                onCheckedChange={(push) => update(pref.category, { push })}
-              />
-            </ListRow.Trailing>
-          </ListRow.Root>
-        );
-      })}
-    </ListRow.Group>
-  );
-}
-
-function ChannelHead({ label }: Readonly<{ label: string }>) {
-  return (
-    <Box w={CHANNEL_COLUMN} align="center">
-      <Text variant="overline" color="textDim" textAlign="center">
-        {label}
-      </Text>
-    </Box>
   );
 }

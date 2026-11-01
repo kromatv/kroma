@@ -57,6 +57,18 @@ fn build_state_with(
     official: Vec<String>,
     adjust: impl FnOnce(&mut Config),
 ) -> SharedState {
+    build_state_serving(embedder, tmdb_api_key, official, HashMap::new(), adjust)
+}
+
+type Services = HashMap<std::any::TypeId, Arc<dyn std::any::Any + Send + Sync>>;
+
+fn build_state_serving(
+    embedder: Point,
+    tmdb_api_key: Option<&str>,
+    official: Vec<String>,
+    services: Services,
+    adjust: impl FnOnce(&mut Config),
+) -> SharedState {
     let scratch = kroma_testing::temp_dir("engine-test");
     let db = db::init(&scratch.path().join("kroma.db")).expect("init db");
     let mut config = test_config(scratch.path().to_path_buf());
@@ -64,7 +76,7 @@ fn build_state_with(
     adjust(&mut config);
     let settings = Settings::load(&db);
     let wiring = crate::state::ModuleWiring {
-        services: HashMap::new(),
+        services,
         jobs: &[],
         contributions: Arc::new(|_| Vec::new()),
         official_modules: Arc::new(move || official.clone()),
@@ -72,6 +84,21 @@ fn build_state_with(
     let state = AppState::new(config, false, db, settings, embedder, wiring);
     state.own_scratch_dir(scratch);
     state
+}
+
+/// Like [`test_state`], with `service` registered for `service::<T>()` to find.
+pub(crate) fn test_state_with_service<T: std::any::Any + Send + Sync>(service: T) -> SharedState {
+    let services: Services = HashMap::from([(
+        std::any::TypeId::of::<T>(),
+        Arc::new(service) as Arc<dyn std::any::Any + Send + Sync>,
+    )]);
+    build_state_serving(
+        Point::absent("embedder"),
+        None,
+        Vec::new(),
+        services,
+        |_| (),
+    )
 }
 
 /// Like [`test_state`], but with the supervisor reporting `ids` as installed

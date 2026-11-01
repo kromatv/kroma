@@ -220,5 +220,8 @@
   "naming.seriesFolder": "Series folder",
   "naming.tokens": "Tokens",
   "naming.tokensTitle": "Filename tokens",
-  "nav.downloads": "Downloads"
+  "nav.downloads": "Downloads",
+  "notifications.completed.body": "{title} finished downloading.",
+  "notifications.completed.label": "Finished downloads",
+  "notifications.completed.title": "Download finished"
 }

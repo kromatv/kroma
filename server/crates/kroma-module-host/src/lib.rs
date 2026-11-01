@@ -26,6 +26,7 @@ mod auth;
 mod host_ctx;
 mod module;
 mod network_policy;
+mod notifications;
 mod port;
 mod setting_reach;
 
@@ -33,6 +34,7 @@ pub use auth::*;
 pub use host_ctx::*;
 pub use module::*;
 pub use network_policy::*;
+pub use notifications::*;
 pub use port::*;
 pub use setting_reach::*;
 
@@ -44,7 +46,7 @@ pub use async_trait::async_trait;
 pub use kroma_module_wire::{
     ActionKind, ActionSpec, ActionStyle, Audience, NetworkAction, NetworkAnswer, NetworkAsk,
     NetworkFlow, NetworkRoute, NotificationCategory, NotificationEvent, NotificationSpec,
-    NotificationSubject, PushCategory,
+    NotificationSubject, NotificationType, PushCategory,
 };
 
 /// Build a JSON error response `{ "error": "<message>" }` with the given status.

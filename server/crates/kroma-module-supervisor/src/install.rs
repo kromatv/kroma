@@ -8,7 +8,9 @@ use kroma_module_manifest::ModuleManifest;
 
 use super::registry::MAX_BUNDLE_BYTES;
 
-use super::{check_manifest_schema, Supervisor, MODULE_BIN, MODULE_STORE, STAGING_PREFIX};
+use super::{
+    check_manifest_schema, Supervisor, LOCALES_DIR, MODULE_BIN, MODULE_STORE, STAGING_PREFIX,
+};
 
 impl Supervisor {
     fn staged_manifest(
@@ -163,8 +165,16 @@ fn sanitized_entry(raw: &std::path::Path) -> Option<PathBuf> {
     let allowed = matches!(
         rel.as_ref(),
         "module.json" | "module" | "icon.svg" | "icon.png"
-    ) || rel.starts_with("fe/");
+    ) || rel.starts_with("fe/")
+        || is_catalog(&rel);
     allowed.then_some(safe)
+}
+
+fn is_catalog(rel: &str) -> bool {
+    rel.strip_prefix(LOCALES_DIR)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .and_then(|file| file.strip_suffix(".json"))
+        .is_some_and(|code| !code.is_empty() && !code.contains('/'))
 }
 
 // `.kmod` is a zstd tar; gzip (legacy) and raw tar are also accepted,
@@ -223,7 +233,19 @@ fn unpack_validated(tar_bytes: &[u8], dest: &std::path::Path) -> anyhow::Result<
 
 #[cfg(test)]
 mod tests {
-    use super::read_bounded;
+    use std::path::Path;
+
+    use super::{read_bounded, sanitized_entry};
+
+    #[test]
+    fn a_bundle_may_carry_its_catalogs_and_nothing_else_beside_them() {
+        assert!(sanitized_entry(Path::new("locales/fr.json")).is_some());
+        assert!(sanitized_entry(Path::new("locales/en.json")).is_some());
+        assert!(sanitized_entry(Path::new("locales/fr.txt")).is_none());
+        assert!(sanitized_entry(Path::new("locales/nested/fr.json")).is_none());
+        assert!(sanitized_entry(Path::new("locales/.json")).is_none());
+        assert!(sanitized_entry(Path::new("locales")).is_none());
+    }
 
     #[test]
     fn a_stream_that_expands_past_the_ceiling_is_refused_rather_than_read() {

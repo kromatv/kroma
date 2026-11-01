@@ -113,9 +113,39 @@ export const CategoryPref = z.object({
 });
 export type CategoryPref = z.infer<typeof CategoryPref>;
 
-/** `GET`/`PUT /api/notifications/prefs`. */
-export const NotificationPrefs = z.object({ categories: z.array(CategoryPref) });
+/** One kind of notification in the matrix, labelled in the reader's language.
+ * Its switches are its own where the reader chose and its category's elsewhere,
+ * so a kind nobody touched moves with its category. `type` is a core event
+ * (`system.job.failed`) or a type a module declared
+ * (`tv.kroma.torrents/download.completed`). */
+export const TypePref = z.object({
+  type: z.string(),
+  category: NotificationCategory,
+  label: z.string(),
+  inApp: z.boolean(),
+  push: z.boolean(),
+});
+export type TypePref = z.infer<typeof TypePref>;
+
+/** `GET /api/notifications/prefs`, and what a `PUT` answers. A server built
+ * before per-type choice sends no `types`. */
+export const NotificationPrefs = z.object({
+  categories: z.array(CategoryPref),
+  types: z.array(TypePref).default([]),
+});
 export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
+
+/** The switches a reader set on one kind. A switch set back to what its
+ * category gives follows the category again. */
+export const TypeSwitches = TypePref.pick({ type: true, inApp: true, push: true });
+export type TypeSwitches = z.infer<typeof TypeSwitches>;
+
+/** `PUT /api/notifications/prefs`: only what changed. */
+export const PrefsUpdate = z.object({
+  categories: z.array(CategoryPref).optional(),
+  types: z.array(TypeSwitches).optional(),
+});
+export type PrefsUpdate = z.infer<typeof PrefsUpdate>;
 
 /**
  * How a push subscription reaches its device. `webpush` signs with the server's

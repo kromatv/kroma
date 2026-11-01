@@ -32,6 +32,12 @@ impl Caller {
         self.declaration().is_some_and(|scope| scope.writes(key))
     }
 
+    pub(super) fn declares_notification(&self, name: &str) -> bool {
+        self.module
+            .as_deref()
+            .is_some_and(|module| self.supervisor.declares_notification(module, name))
+    }
+
     pub(super) fn declares_nothing(&self) -> bool {
         self.declaration().is_none()
     }

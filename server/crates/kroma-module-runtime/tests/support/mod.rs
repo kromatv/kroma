@@ -171,15 +171,23 @@ pub fn user(permissions: &[&str]) -> kroma_module_wire::User {
     .expect("a user")
 }
 
+pub const UNDECLARED: &str = "tv.kroma.demo/undeclared";
+
 async fn core_fallback(State(log): State<CoreLog>, uri: Uri, body: Bytes) -> impl IntoResponse {
     let query = uri.query().unwrap_or_default().to_string();
     let reply = answer(uri.path(), &query);
+    let body = String::from_utf8_lossy(&body).into_owned();
+    let refused = uri.path() == "/api/_host/notify" && body.contains(UNDECLARED);
     log.0.lock().unwrap().push(Call {
         path: uri.path().to_string(),
         query,
-        body: String::from_utf8_lossy(&body).into_owned(),
+        body,
     });
-    Json(reply)
+    if refused {
+        let refusal = serde_json::json!({ "error": "not declared" });
+        return (axum::http::StatusCode::FORBIDDEN, Json(refusal));
+    }
+    (axum::http::StatusCode::OK, Json(reply))
 }
 
 fn start_core(log: CoreLog) -> u16 {

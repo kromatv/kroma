@@ -400,6 +400,7 @@ mod tests {
                 in_app: false,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
         assert_eq!(HostCtx::notify(&*state, &Audience::user(ana), &spec), 0);
