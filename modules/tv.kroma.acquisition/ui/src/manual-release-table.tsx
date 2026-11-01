@@ -13,7 +13,7 @@ const COLUMNS: TableColumn[] = [
   { width: 150, from: 'md' },
   { width: 92, from: 'md' },
   { width: 84, from: 'md' },
-  { width: 44 },
+  { width: 64 },
 ];
 
 export function ManualReleaseTable({

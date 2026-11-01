@@ -103,7 +103,7 @@ function UsersPageInner() {
             { flex: 1, from: 'md' },
             { flex: 1.3, from: 'md' },
             { flex: 1.2, from: 'md' },
-            { width: 44 },
+            { width: 64 },
           ]}
         >
           <Table.Header>

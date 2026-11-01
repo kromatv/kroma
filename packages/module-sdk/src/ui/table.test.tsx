@@ -45,6 +45,30 @@ describe('Table.Column', () => {
   });
 });
 
+function cell(props: Parameters<typeof Table.Cell>[0]) {
+  return render(
+    <Table.Root columns={[{}]}>
+      <Table.Row>
+        <Table.Cell testID="cell" {...props} />
+      </Table.Row>
+    </Table.Root>,
+  );
+}
+
+describe('Table.Cell', () => {
+  it('centres a row of content across the row', () => {
+    cell({ row: true });
+
+    expect(getComputedStyle(screen.getByTestId('cell')).alignItems).toBe('center');
+  });
+
+  it('keeps the alignment a row cell asks for', () => {
+    cell({ row: true, align: 'flex-start' });
+
+    expect(getComputedStyle(screen.getByTestId('cell')).alignItems).toBe('flex-start');
+  });
+});
+
 describe('Table.Row', () => {
   it('presses as one control and keeps its cells', () => {
     const onPress = vi.fn();

@@ -152,11 +152,13 @@ export function ElementRowView({
     <Table.Row onPress={onOpen}>
       <Table.Cell row gap={14}>
         <Poster id={el.id} kind={el.kind} seed={el.title} poster={el.poster} />
-        <Box minW={0}>
+        <Box flex minW={0}>
           <Row gap={10}>
-            <Text variant="label" lines={1}>
-              {el.title}
-            </Text>
+            <Box shrink={1} minW={0}>
+              <Text variant="label" lines={1}>
+                {el.title}
+              </Text>
+            </Box>
             <Pill ink={km.color} bg={km.bg} variant="overline">
               {t(`pipeline.type.${km.typeKey}` as MessageKey)}
             </Pill>

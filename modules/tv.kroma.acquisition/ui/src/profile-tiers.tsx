@@ -4,7 +4,7 @@ import { allowedQualities, moveTier, setTierAllowed } from './profile-draft';
 import type { QualityId, QualityProfile, QualityTier } from './rules-schemas';
 import { useQualityLabel } from './use-quality-label';
 
-const COLUMNS: TableColumn[] = [{ width: 52 }, { min: 180 }, { width: 44 }, { width: 44 }];
+const COLUMNS: TableColumn[] = [{ width: 52 }, { min: 180 }, { width: 64 }, { width: 64 }];
 
 export function ProfileTiers({
   profile,

@@ -14,6 +14,12 @@ function onAppleHardware(): boolean {
   return APPLE.test(webWindow()?.navigator?.userAgent ?? '');
 }
 
+/** The chord that opens a palette as this machine's keyboard prints it, for a label
+ *  that cannot draw <CommandKeys />. */
+function commandKeyLabel(apple = onAppleHardware()): string {
+  return apple ? '⌘K' : 'Ctrl+K';
+}
+
 /**
  * Whether a press is the chord that opens a palette: Command+K on Apple hardware,
  * Ctrl+K on Windows and Linux. The letter is read by what the layout types, so a
@@ -48,4 +54,4 @@ function useCommandKey(onPress: () => void, enabled = true): void {
   }, [enabled]);
 }
 
-export { isCommandKey, onAppleHardware, useCommandKey };
+export { commandKeyLabel, isCommandKey, onAppleHardware, useCommandKey };

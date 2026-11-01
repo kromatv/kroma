@@ -145,7 +145,7 @@ export function RequestsQueue() {
           { width: 190, from: 'md' },
           { width: 110, from: 'md' },
           { width: 132, from: 'md' },
-          { width: 76 },
+          { width: 110 },
         ]}
       >
         <Table.Header>

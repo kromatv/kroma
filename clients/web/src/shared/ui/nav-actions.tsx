@@ -4,7 +4,7 @@ const NavActionsContext = createContext<ReactNode>(null);
 
 /**
  * The controls every navigation band pins to its far end, the catalogue's and
- * the console's alike: the notification bell today.
+ * the console's alike: the command menu and the notification bell.
  *
  * Stated once by the shell that sits above both, because a navigation living in
  * `shared/` must not reach into a feature for them and neither sidebar may
