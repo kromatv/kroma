@@ -232,7 +232,6 @@ fn write_snapshot(conn: &Connection, _source: &Path, target: &Path) -> rusqlite:
     conn.snapshot_to(target)
 }
 
-// A connection of its own: the authorizer on a module's file refuses VACUUM INTO.
 #[cfg(not(target_family = "wasm"))]
 fn write_snapshot(_conn: &Connection, source: &Path, target: &Path) -> rusqlite::Result<()> {
     Connection::open(source)?
