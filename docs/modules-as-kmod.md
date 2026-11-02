@@ -20,15 +20,16 @@ process per module is only as contained as each platform's sandbox, which on DSM
 is nothing.
 
 What a component cannot do with what the host gives it, an upstream program does
-beside it: `wireproxy`, `cloudflared`, `rqbit`, `curl` and `ffmpeg`. Those are
-host processes, declared in the manifest. See
+beside it: `wireproxy`, `cloudflared`, `rqbit` and `curl`. Those are host
+processes, declared in the manifest. See
 [what the component does not contain](module-security.md#what-the-component-does-not-contain).
 
 ## The pieces (built)
 
 - **`kroma-wasm-host`** is wasmtime and the WIT world in
   `wit/module.wit`. A component exports `route` (`handle`, `tick`, `stop`) and
-  imports `net`, `host-api`, `settings`, `sql`, `process`, `files` and `lan`.
+  imports `net`, `host-api`, `settings`, `sql`, `process`, `files`, `media` and
+  `lan`.
   Each instance starts from an empty WASI context and has a memory ceiling and a
   CPU budget.
 - **`kroma-module-runtime`** is what a module links. `module_main!(wire,

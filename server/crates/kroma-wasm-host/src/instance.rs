@@ -25,6 +25,7 @@ pub struct Grant {
     pub processes: Option<Arc<dyn crate::Processes>>,
     pub lan: Option<Arc<dyn crate::Lan>>,
     pub files: Option<Arc<dyn crate::Files>>,
+    pub media: Option<Arc<dyn crate::Media>>,
 }
 
 /// A call that traps or runs past a limit stops the instance: later calls

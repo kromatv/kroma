@@ -6,7 +6,7 @@ use kroma_module_wire::{Role, ROLE_ENV};
 use kroma_wasm_host::{Grant, Limits, ModuleComponent, ModuleInstance, Preopen, Request, Settings};
 use tokio::sync::Semaphore;
 
-use super::{database, files, lan, outside, programs};
+use super::{database, files, lan, media, outside, programs};
 
 const TICK_EVERY: Duration = Duration::from_millis(100);
 const STOP_WAIT: Duration = Duration::from_secs(10);
@@ -45,6 +45,7 @@ pub(crate) struct Pool {
     pub(super) databases: Option<Arc<database::ModuleDatabases>>,
     pub(super) programs: Arc<programs::Programs>,
     pub(super) lan: Option<Arc<lan::ModuleLan>>,
+    pub(super) media: Option<Arc<media::ModuleMedia>>,
     pub(super) files: Arc<files::ModuleFiles>,
     pub(super) idle: Mutex<Vec<Parked>>,
     pub(super) slots: Arc<Semaphore>,
@@ -112,6 +113,7 @@ impl Pool {
                 processes: Some(programs.clone()),
                 lan: self.lan.clone().map(|lan| lan as _),
                 files: Some(self.files.clone()),
+                media: self.media.clone().map(|media| media as _),
             })
             .map_err(|error| error.to_string())?;
         Ok(Parked {
@@ -221,6 +223,9 @@ impl Pool {
     // Every slot is taken first, so no call and no tick still holds an instance
     // that would miss its `stop`, and the pool is closed so none starts after.
     pub(crate) fn shut_down(&self) {
+        if let Some(media) = &self.media {
+            media.stop();
+        }
         let deadline = Instant::now() + STOP_WAIT;
         let held = loop {
             match self.slots.try_acquire_many(self.capacity.load(Ordering::Acquire)) {

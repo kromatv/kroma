@@ -24,6 +24,7 @@ storage = ["dep:kroma-sqlite"]
 
 [dependencies]
 kroma-module-wire = { workspace = true }
+kroma-primitives = { workspace = true }
 kroma-sqlite = { workspace = true, optional = true }
 kroma-http = { workspace = true }
 kroma-testing = { workspace = true, optional = true }

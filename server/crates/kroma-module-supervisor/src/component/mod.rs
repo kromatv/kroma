@@ -6,6 +6,7 @@ mod answer;
 mod database;
 mod files;
 mod lan;
+mod media;
 mod outside;
 mod pool;
 mod programs;
@@ -23,7 +24,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use kroma_http::egress::Gateway;
-use kroma_module_manifest::{ComponentNeeds, FsRoot, ModuleManifest};
+use kroma_module_manifest::{ComponentNeeds, FsRoot, MediaTool, ModuleManifest};
 use kroma_wasm_host::{Limits, Readied, WasmHost};
 use sha2::Digest;
 use tokio::net::{TcpListener, UnixListener};
@@ -150,6 +151,11 @@ impl Supervisor {
         let lan = net
             .filter(|net| !net.discovery.is_empty())
             .map(|net| Arc::new(lan::ModuleLan::new(id, &net.discovery)));
+        let media_tools = manifest
+            .permissions
+            .as_ref()
+            .filter(|p| p.media.contains(&MediaTool::Decode))
+            .map(|_| Arc::new(media::ModuleMedia::new(roots.clone())));
         let programs = Arc::new(programs::Programs::new(
             id,
             self.dir(id),
@@ -201,6 +207,7 @@ impl Supervisor {
             databases,
             programs,
             lan,
+            media: media_tools,
             idle: Mutex::new(Vec::new()),
             slots: Arc::new(Semaphore::new(1)),
             capacity: AtomicU32::new(1),

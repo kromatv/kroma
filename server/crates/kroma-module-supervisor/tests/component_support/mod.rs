@@ -21,6 +21,7 @@ pub const FIRST_PARTY: &str = r#"{"kind":"registry","installedAt":0,"official":t
 pub const THIRD_PARTY: &str = r#"{"kind":"upload","installedAt":0}"#;
 pub const DECLARES: &str = r#", "storage": {}, "permissions": { "net": { "connect": [{ "purpose": "probe", "to": ["lan"] }] } }"#;
 pub const STORES: &str = r#", "storage": { "core": { "read": ["granted"] } }"#;
+const LIBRARY: &str = "library";
 
 pub struct Ruled {
     answer: NetworkAnswer,
@@ -105,6 +106,17 @@ impl Server {
             answer: answer(action),
             flows: Mutex::default(),
         });
+        let library = dir.path().join(LIBRARY);
+        std::fs::create_dir_all(&library).unwrap();
+        let media = folders.media.clone();
+        let folders = FolderRoots {
+            media: Arc::new(move || {
+                let mut roots = media();
+                roots.push(library.clone());
+                roots
+            }),
+            ..folders
+        };
         supervisor.serve_gateways(
             NetworkPolicyOf(network.clone()),
             runtime.handle().clone(),
@@ -165,6 +177,14 @@ impl Server {
         std::fs::write(module.join("origin.json"), FIRST_PARTY).unwrap();
         std::fs::write(module.join(MODULE_COMPONENT), component).unwrap();
         self.supervisor.spawn(id).unwrap()
+    }
+
+    pub fn library(&self) -> std::path::PathBuf {
+        self.dir.path().join(LIBRARY)
+    }
+
+    pub fn module_dir(&self, id: &str) -> std::path::PathBuf {
+        self.dir.path().join("modules").join(id)
     }
 
     pub fn get(&self, endpoint: &Endpoint, path: &str) -> kroma_http::Response {

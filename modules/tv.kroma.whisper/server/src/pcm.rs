@@ -2,31 +2,27 @@
 
 use std::fs::File;
 use std::path::Path;
-use std::time::Duration;
 
-use kroma_module_sdk::host::process::Command;
-use kroma_module_sdk::primitives::{input, random_token};
+use kroma_module_sdk::host::media::{self, Pcm, SampleFormat};
+use kroma_module_sdk::primitives::random_token;
 
-const EXTRACT_TIMEOUT: Duration = Duration::from_secs(3600);
+const WHISPER_READS: Pcm = Pcm {
+    sample_rate: 16_000,
+    channels: 1,
+    format: SampleFormat::F32le,
+};
 
-/// Audio track `track` of `source`, decoded by the host's ffmpeg into a file under
+/// Audio track `track` of `source`, decoded by the core's ffmpeg into a file under
 /// `scratch`. The file is already unlinked when this answers, so nothing is left
 /// behind whatever happens to the call afterwards.
 pub(crate) fn extract(source: &Path, track: u32, scratch: &Path) -> Option<File> {
     std::fs::create_dir_all(scratch).ok()?;
     let path = scratch.join(format!("pcm-{}.f32le", random_token()));
-    let named = input::file(source).map(|arg| arg.to_string_lossy().into_owned());
-    let out = Command::new("ffmpeg")
-        .args(["-v", "error", "-nostdin", "-y"])
-        .args(named)
-        .args(["-vn", "-map"])
-        .arg(format!("0:a:{track}"))
-        .args(["-ac", "1", "-ar", "16000", "-f", "f32le"])
-        .arg(path.to_string_lossy())
-        .output(EXTRACT_TIMEOUT);
+    let decoded = media::decode_audio(source, track, WHISPER_READS, &path);
     let file = File::open(&path);
     let _ = std::fs::remove_file(&path);
-    if out.ok()?.code != 0 {
+    if let Err(reason) = decoded {
+        tracing::warn!(error = %reason, "whisper: the audio track did not decode");
         return None;
     }
     let file = file.ok()?;
@@ -36,7 +32,9 @@ pub(crate) fn extract(source: &Path, track: u32, scratch: &Path) -> Option<File>
 #[cfg(test)]
 mod tests {
     use std::io::Read;
+    use std::process::Command;
 
+    use kroma_module_sdk::primitives::input;
     use kroma_module_sdk::testing::temp_dir;
 
     use super::*;
@@ -49,11 +47,11 @@ mod tests {
         let graph = input::generated("sine=frequency=440:duration=1:sample_rate=44100");
         let made = Command::new("ffmpeg")
             .args(["-v", "error", "-nostdin", "-y"])
-            .args(graph.map(|arg| arg.to_string_lossy().into_owned()))
-            .arg(path.to_string_lossy())
-            .output(Duration::from_secs(30))
+            .args(graph)
+            .arg(&path)
+            .output()
             .unwrap();
-        assert_eq!(made.code, 0, "{}", String::from_utf8_lossy(&made.stderr));
+        assert!(made.status.success(), "{}", String::from_utf8_lossy(&made.stderr));
         path
     }
 

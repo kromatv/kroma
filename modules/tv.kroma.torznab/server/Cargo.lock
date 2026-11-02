@@ -449,6 +449,7 @@ dependencies = [
  "axum",
  "kroma-http",
  "kroma-module-wire",
+ "kroma-primitives",
  "serde",
  "serde_json",
  "tokio",

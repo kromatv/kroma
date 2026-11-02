@@ -51,5 +51,6 @@ export function permissionLines(permissions: ModulePermissions, t: Translate): P
   }
   if (permissions.run?.length) say('admin.permissionRun', { programs: permissions.run.join(', ') });
   if (permissions.env?.length) say('admin.permissionEnv', { names: permissions.env.join(', ') });
+  if (permissions.media?.includes('decode')) say('admin.permissionMediaDecode');
   return lines;
 }

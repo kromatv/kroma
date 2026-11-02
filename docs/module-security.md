@@ -43,7 +43,8 @@ and an install fails when it does not.
     "host": false
   },
   "fs": { "read": ["media", "downloads"], "write": ["module", "downloads"] },
-  "run": ["ffmpeg"],
+  "run": ["rqbit"],
+  "media": ["decode"],
   "env": ["KROMA_EMBED_MODEL_DIR"]
 }
 ```
@@ -57,6 +58,7 @@ and an install fails when it does not.
 | `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only unless `fs.write` names it, as an importer's does, and always read-only when one holds a folder of the server's own), `downloads` (the [download folders](#the-download-folders), first-party only), `temp` (every module gets a private `/tmp`) |
 | `run` | programs it may start, by name | first-party modules only. What starts is a process of the host, see [below](#what-the-component-does-not-contain) |
 | `env` | environment variables beyond the allowlist | the server's own variables, secrets included, are never passed |
+| `media` | the core's media tools, by name: `decode` turns an audio track into raw PCM | the core's ffmpeg runs it under its budget, on a file the module holds and cannot write |
 
 These sit beside the declarations that already exist and keep working:
 
@@ -107,6 +109,7 @@ what enforces it. See
 | `fs` | WASI preopens: only the declared roots, read-only where declared |
 | `run` | `process` starts only what `run` names, for a first-party module |
 | `env` | only the declared variables exist |
+| `media` | `media.decode-audio` checks both paths against the module's folders, then runs the core's ffmpeg |
 | `storage` | the host holds both databases; the component has no SQLite |
 | CPU, memory | a ceiling per instance |
 
@@ -148,6 +151,15 @@ Which folders a module holds comes from settings no module may write:
 `libraries` and `downloadFolders` reach no module, and `acqRecycleBin` reaches
 only one that declares it. A module whose library or download folders change is
 restarted within half a minute.
+
+**Media.** `media.decode-audio` writes one audio track of a file as raw PCM, at
+the sample rate, channel count and sample format the module asks for, for a module
+that declares `media: ["decode"]`. The host checks the source against the module's
+folders and refuses one in a folder the module may write, because ffmpeg parses
+what it reads with the server's rights. The output goes to a folder the module may
+write, its private `/tmp` included, and appears only once the whole track is in it.
+The pass draws on the core's ffmpeg budget, gets at least an hour, and stops when
+the module does.
 
 **Programs.** `process` starts only a program `run` names, and only for a
 first-party module: a third-party module never starts one. A program pinned under
@@ -199,7 +211,6 @@ wasm holds none of them:
 | `tv.kroma.remote` | `cloudflared` | the remote tunnel, which dials Cloudflare's edge from the host |
 | `tv.kroma.torrents` | `rqbit` | the torrent engine. Its TCP peers go through the gateway, its SOCKS proxy. When it must stay behind a network, DHT, rqbit's own trackers and uTP are off, and the module announces through the gateway itself |
 | `tv.kroma.torrents` | `curl` | rqbit's own API on loopback, for an add that waits on metadata |
-| `tv.kroma.whisper` | `ffmpeg` | decoding an audio track to PCM |
 
 Each is declared in `run`, pinned under `helpers` where it is downloaded, and
 shown at consent. Only a first-party module may start one. WireGuard inside the
@@ -262,8 +273,8 @@ suites run components under the real supervisor: a call goes through the gateway
 the journal, a component with no `permissions` has no network, one reads only the
 core tables it declared, a third-party one starts no program, even one it
 declared, a downloads module opens its download folders and the libraries but
-none of the server's own files, and a helper changed after its fetch does not
-start.
+none of the server's own files, a helper changed after its fetch does not
+start, and the host decodes only a file a component holds and cannot write.
 
 ## Status
 
@@ -285,7 +296,7 @@ start.
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |
 | Remote tunnel | a `cloudflared` helper the host runs, not a host capability (#553) |
-| ffmpeg and inference | inference runs inside the component; whisper starts `ffmpeg` as a program (#554) |
+| ffmpeg and inference | inference runs inside the component (#554); whisper decodes its audio through the host's `media` capability and starts no program |
 | WireGuard inside the gateway | not done: `wireproxy` stands in for it (#512) |
 | Torrent engine as a component at full speed | not done: `rqbit` stands in for it (#514) |
 | Strict tier by uid, Watch scanner | dropped: no module is a native process (#489, #490) |

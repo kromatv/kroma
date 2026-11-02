@@ -26,6 +26,7 @@ mod auth;
 pub mod files;
 mod host_ctx;
 pub mod lan;
+pub mod media;
 mod module;
 mod network_policy;
 mod notifications;

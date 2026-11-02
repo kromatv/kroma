@@ -57,4 +57,10 @@ describe('permissionLines', () => {
       'admin.permissionEnv {"names":"KROMA_X"}',
     ]);
   });
+
+  it('says when the server decodes audio for the module', () => {
+    const said = lines({ media: ['decode'] });
+
+    expect(said).toEqual([{ text: 'admin.permissionMediaDecode', danger: false }]);
+  });
 });

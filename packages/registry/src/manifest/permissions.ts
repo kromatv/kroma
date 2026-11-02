@@ -97,6 +97,12 @@ export const Permissions = z
       .describe(
         'Programs this module may start, by bare name: a helper it pins, or one on the server PATH. Only a module the official registry shipped may start any, and what it starts runs outside the component.',
       ),
+    media: z
+      .array(z.enum(['decode']))
+      .optional()
+      .describe(
+        'The server\'s own media tools this module may have run on files it holds, under the server\'s ffmpeg budget: "decode" turns an audio track into raw PCM.',
+      ),
     env: z
       .array(z.string().regex(/^[A-Z_][A-Z0-9_]*$/))
       .optional()

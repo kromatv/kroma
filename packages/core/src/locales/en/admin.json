@@ -457,6 +457,7 @@
   "admin.permissionDiscovery": "Search and publish on the local network through the server: {kinds}",
   "admin.permissionHostNetwork": "Let the programs it starts use this machine's network directly",
   "admin.permissionListen": "Listen for incoming connections for {purpose}",
+  "admin.permissionMediaDecode": "Decode audio tracks of files it can read, with the server's ffmpeg",
   "admin.permissionNone": "It asks for nothing.",
   "admin.permissionRead": "Read {roots}",
   "admin.permissionRootDownloads": "your downloads",

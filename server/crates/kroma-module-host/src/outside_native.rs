@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use crate::outside::{CommandSpec, LanReply, LanService, Outside};
+use crate::outside::{CommandSpec, DecodeSpec, LanReply, LanService, Outside};
 
 const POLL: Duration = Duration::from_millis(10);
 const DRAIN_GRACE: Duration = Duration::from_millis(500);
@@ -159,5 +159,22 @@ impl Outside for TheMachine {
 
     fn copy(&self, source: &str, destination: &str) -> Result<u64, String> {
         std::fs::copy(source, destination).map_err(|error| error.to_string())
+    }
+
+    fn decode_audio(&self, spec: DecodeSpec) -> Result<u64, String> {
+        let destination = std::path::Path::new(&spec.destination);
+        let source = std::path::Path::new(&spec.source);
+        let ran = Command::new("ffmpeg")
+            .args(kroma_primitives::pcm::decode_args(source, spec.track, spec.pcm, destination))
+            .stdin(Stdio::null())
+            .output()
+            .map_err(|error| format!("spawn ffmpeg: {error}"))?;
+        if !ran.status.success() {
+            let _ = std::fs::remove_file(destination);
+            return Err(String::from_utf8_lossy(&ran.stderr).trim().to_string());
+        }
+        std::fs::metadata(destination)
+            .map(|meta| meta.len())
+            .map_err(|error| error.to_string())
     }
 }

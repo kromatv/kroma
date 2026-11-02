@@ -140,10 +140,19 @@ fn a_misspelt_permission_is_refused_rather_than_ignored() {
     assert!(parse(json!({ "network": {} })).is_err());
     assert!(parse(json!({ "net": { "conect": [] } })).is_err());
     assert!(parse(json!({ "fs": { "read": ["/etc"] } })).is_err());
+    assert!(parse(json!({ "media": ["transcode"] })).is_err());
     assert!(parse(
         json!({ "net": { "connect": [{ "purpose": "p", "to": ["public"], "proto": ["icmp"] }] } })
     )
     .is_err());
+}
+
+#[test]
+fn a_media_tool_is_read_by_its_name() {
+    let p = parse(json!({ "media": ["decode"] })).unwrap();
+
+    assert_eq!(p.media, [MediaTool::Decode]);
+    assert_eq!(serde_json::to_value(&p).unwrap(), json!({ "net": {}, "fs": {}, "media": ["decode"] }));
 }
 
 #[test]
@@ -279,7 +288,7 @@ fn a_new_protocol_widens_the_block() {
 }
 
 #[test]
-fn the_host_network_a_listener_a_root_a_program_and_a_variable_each_widen_it() {
+fn the_host_network_a_listener_a_root_a_program_a_media_tool_and_a_variable_each_widen_it() {
     let before = Permissions::default();
 
     for after in [
@@ -288,6 +297,7 @@ fn the_host_network_a_listener_a_root_a_program_and_a_variable_each_widen_it() {
         json!({ "fs": { "read": ["media"] } }),
         json!({ "fs": { "write": ["media"] } }),
         json!({ "run": ["ffmpeg"] }),
+        json!({ "media": ["decode"] }),
         json!({ "env": ["X"] }),
     ] {
         assert!(block(after.clone()).widens(&before), "{after}");

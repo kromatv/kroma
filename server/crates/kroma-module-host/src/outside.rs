@@ -1,10 +1,12 @@
 //! What a module asks of the machine beyond its routes: programs, the local
-//! network, and what WASI has no call for on files. A component's runtime connects
-//! this to its host, which rules each call. Anywhere else, in a test, it is the
-//! machine itself.
+//! network, the core's media tools, and what WASI has no call for on files. A
+//! component's runtime connects this to its host, which rules each call. Anywhere
+//! else, in a test, it is the machine itself.
 
 use std::sync::OnceLock;
 use std::time::Duration;
+
+use kroma_primitives::pcm::Pcm;
 
 /// A program to start.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -13,6 +15,15 @@ pub struct CommandSpec {
     pub args: Vec<String>,
     pub env: Vec<(String, String)>,
     pub cwd: Option<String>,
+}
+
+/// An audio track to decode, and where its PCM goes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DecodeSpec {
+    pub source: String,
+    pub track: u32,
+    pub pcm: Pcm,
+    pub destination: String,
 }
 
 /// A service to publish on the local network.
@@ -48,6 +59,7 @@ pub trait Outside: Send + Sync {
     fn addresses(&self) -> Vec<String>;
     fn canonical(&self, path: &str) -> Option<String>;
     fn copy(&self, source: &str, destination: &str) -> Result<u64, String>;
+    fn decode_audio(&self, spec: DecodeSpec) -> Result<u64, String>;
 }
 
 static OUTSIDE: OnceLock<&'static dyn Outside> = OnceLock::new();

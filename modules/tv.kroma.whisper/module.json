@@ -39,6 +39,6 @@
       "read": ["module", "media"],
       "write": ["module"]
     },
-    "run": ["ffmpeg"]
+    "media": ["decode"]
   }
 }

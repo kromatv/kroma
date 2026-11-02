@@ -1,5 +1,5 @@
 //! What a module may do, as it declares it: the network, the filesystem, the
-//! binaries it starts and the environment it reads. What is not declared is
+//! binaries it starts, the core's media tools and the environment it reads. What is not declared is
 //! denied. See `docs/module-security.md` for how each tier enforces it.
 
 mod validation;
@@ -19,6 +19,8 @@ pub struct Permissions {
     pub fs: FsPermissions,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub run: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub media: Vec<MediaTool>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub env: Vec<String>,
 }
@@ -78,6 +80,15 @@ pub struct Listen {
 pub enum Proto {
     Tcp,
     Udp,
+}
+
+/// What the host runs for a module with the core's own media tools, under the
+/// core's ffmpeg budget, on files the module holds. `decode` turns an audio
+/// track into raw PCM.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MediaTool {
+    Decode,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -142,6 +153,7 @@ impl Permissions {
             || roots_beyond(&self.fs.read, &before.fs.read)
             || roots_beyond(&self.fs.write, &before.fs.write)
             || beyond(&self.run, &before.run)
+            || self.media.iter().any(|tool| !before.media.contains(tool))
             || beyond(&self.env, &before.env)
     }
 
