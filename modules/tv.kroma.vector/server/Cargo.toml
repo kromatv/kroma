@@ -25,7 +25,7 @@ features = ["semantic"]
 [features]
 # Off by default: the dependency-free lexical embedder is the default backend.
 # `semantic` pulls in the MiniLM sentence-transformer via candle.
-semantic = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers"]
+semantic = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers", "dep:kroma-weights"]
 
 [dependencies]
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
@@ -39,6 +39,7 @@ candle-core = { version = "0.11", default-features = false, optional = true }
 candle-nn = { version = "0.11", default-features = false, optional = true }
 candle-transformers = { version = "0.11", default-features = false, optional = true }
 tokenizers = { version = "0.23", default-features = false, features = ["fancy-regex"], optional = true }
+kroma-weights = { path = "../../lib/weights", optional = true }
 
 # Metal for a native macOS build (the tests); inert until `semantic` pulls candle
 # in, and the published bundle is a component, which never has it.
@@ -48,7 +49,7 @@ candle-nn = { version = "0.11", default-features = false, features = ["metal"], 
 candle-transformers = { version = "0.11", default-features = false, features = ["metal"], optional = true }
 
 [dev-dependencies]
-# `testing::temp_dir`, the scratch dir the weights tests write in.
+# `testing::temp_dir`, the scratch dir the model tests write in.
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 # `oneshot`, to drive the embedder routes without binding a port.
 tower = "0.5"

@@ -25,7 +25,7 @@ features = ["local"]
 [features]
 # Off by default: the public `transcribe()` compiles to a stub returning None.
 # `local` pulls in the candle inference graph (the only real backend).
-local = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers", "dep:tracing"]
+local = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers", "dep:tracing", "dep:kroma-weights"]
 
 # GPU acceleration for a native build (never the component). Each widens what the
 # CPU pure-Rust `local` build CAN use; the engine picks the device at runtime and
@@ -49,6 +49,7 @@ candle-core = { version = "0.11", default-features = false, optional = true }
 candle-nn = { version = "0.11", default-features = false, optional = true }
 candle-transformers = { version = "0.11", default-features = false, optional = true }
 tokenizers = { version = "0.23", default-features = false, features = ["fancy-regex"], optional = true }
+kroma-weights = { path = "../../lib/weights", optional = true }
 
 # A native macOS build (the tests) lights up the Metal GPU automatically: gated on
 # the target OS so a component never pulls it in. Inert until `local` pulls candle.

@@ -124,13 +124,13 @@ impl SimpleBackend for Weights {
 }
 
 /// A [`VarBuilder`] over the safetensors file at `path`.
-pub(crate) fn var_builder(path: &Path, dtype: DType, device: &Device) -> Result<VarBuilder<'static>> {
+pub fn var_builder(path: &Path, dtype: DType, device: &Device) -> Result<VarBuilder<'static>> {
     Ok(VarBuilder::from_backend(Box::new(Weights::open(path)?), dtype, device.clone()))
 }
 
 #[cfg(test)]
 mod tests {
-    use kroma_module_sdk::testing::temp_dir;
+    use kroma_testing::temp_dir;
 
     use super::*;
 

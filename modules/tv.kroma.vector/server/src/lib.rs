@@ -29,8 +29,6 @@ mod candle;
 mod model;
 #[cfg(feature = "semantic")]
 mod semantic;
-#[cfg(feature = "semantic")]
-mod weights;
 
 /// Produces a fixed-dimension, **L2-normalized** vector for a text document.
 /// Normalization is part of the contract: it lets the search layer treat cosine

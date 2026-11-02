@@ -1,0 +1,16 @@
+[package]
+name = "kroma-weights"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Model weights read off a safetensors file one tensor at a time, as a candle VarBuilder."
+license.workspace = true
+
+[dependencies]
+candle-core = { version = "0.11", default-features = false }
+candle-nn = { version = "0.11", default-features = false }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+kroma-testing = { path = "../../../server/crates/kroma-testing" }
