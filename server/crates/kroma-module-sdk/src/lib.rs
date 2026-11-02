@@ -5,10 +5,38 @@
 
 pub use kroma_module_manifest::*;
 
+#[doc(hidden)]
+pub use kroma_module_macros::embedded_module as __embedded_module;
+
 /// `embedded_module!()` builds a module's `MODULE` const by discovering its
 /// `module.json` + `icon.<ext>` at compile time. Write
 /// `pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();`.
-pub use kroma_module_macros::embedded_module;
+/// Under the `testing` feature it also links the hook that holds the crate's
+/// tests to that manifest (see [`testing`]).
+#[macro_export]
+macro_rules! embedded_module {
+    () => {{
+        $crate::__link_test_hook!();
+        $crate::__embedded_module!()
+    }};
+}
+
+#[cfg(feature = "testing")]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __link_test_hook {
+    () => {
+        #[used]
+        static LINKED_TEST_HOOK: fn() = $crate::testing::hook::hold_this_test_binary_to_its_module;
+    };
+}
+
+#[cfg(not(feature = "testing"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __link_test_hook {
+    () => {};
+}
 
 /// `embedded_locales!()` collects a module's `locales/<code>.json` at compile
 /// time into the `&[(code, json)]` [`i18n::engine`] takes. Write
@@ -141,8 +169,9 @@ pub mod primitives {
 /// on a real socket for a test that drives both ends, and `TempDir` / `temp_dir`
 /// are the self-deleting scratch dir. The `StubHost` double is
 /// `host::testing::StubHost`, and a throwaway pool is `db::testing::temp_pool`.
+///
+/// Every test binary built with the feature holds its module's code to the
+/// purposes its `module.json` declares ([`testing::DeclaredPurposes`]), and as a
+/// WebAssembly component it reaches its host the way a running module does.
 #[cfg(any(test, feature = "testing"))]
-pub mod testing {
-    pub use kroma_module_host::test_serve::*;
-    pub use kroma_testing::*;
-}
+pub mod testing;

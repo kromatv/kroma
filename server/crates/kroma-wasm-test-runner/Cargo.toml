@@ -1,0 +1,17 @@
+[package]
+name = "kroma-wasm-test-runner"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.97"
+description = "Cargo's runner for wasm32-wasip2: runs a module's test binary as a component on the host every module runs on, with the folders, imports and limits production gives one."
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+kroma-sqlite = { workspace = true }
+kroma-testing = { workspace = true }
+kroma-wasm-host = { path = "../kroma-wasm-host" }
+rusqlite = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

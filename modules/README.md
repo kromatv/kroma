@@ -658,8 +658,28 @@ versions, so a silent republish reaches nobody. `bun run kroma release
 ```bash
 bun run modules:check      # every manifest valid, every frontend typed, clippy clean
 bun run modules:test       # cargo test in every module workspace
+bun run modules:test:wasm  # the same tests built for wasm32-wasip2, each one a component
 bun run modules:clippy     # cargo clippy --all-targets in every module workspace
 ```
+
+`modules:test:wasm` runs every test the way the module runs: as a component on
+the server's own host, in an instance of its own, with one thread, no socket,
+a real database behind `sql`, and each folder at its own path (WASI refuses an
+absolute symlink that a native build follows). `testing::serve` answers
+in-process there, so a point's round-trip test still runs. A test that cannot
+run in a component says why, and the reason shows in the report:
+
+```rust
+#[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+fn every_call_carries_the_credential() {}
+```
+
+Every test binary built with the SDK's `testing` feature is also held to its
+module's `module.json`: a `Fetch` made for a purpose that no
+`permissions.net.connect` entry declares panics where it is made, naming the
+purpose, because the host refuses every such call. Only the purpose is
+compared, since a test server on loopback never matches a declared host.
 
 `id` must be reverse-DNS (`^[a-z0-9]+(?:\.[a-z0-9-]+)+$`) and unique, and
 `version` semver: `kroma check` refuses a manifest that is not, and `kroma

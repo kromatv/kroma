@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wasmtime::{Store, Trap};
+use wasmtime::{Engine, Store, Trap};
 
 use crate::bindings::Module;
 use crate::host::{EpochTicker, ModuleComponent};
@@ -38,23 +38,28 @@ pub struct ModuleInstance {
     _ticker: Arc<EpochTicker>,
 }
 
+pub(crate) fn limited_store(engine: &Engine, state: State) -> Store<State> {
+    let mut store = Store::new(engine, state);
+    store.limiter(|state| &mut state.ceiling);
+    // The epoch only says when to look: what counts is the CPU this thread has
+    // spent, so a call waiting on an import or a sleep spends nothing.
+    store.epoch_deadline_callback(|store| {
+        let state = store.data();
+        let spent = thread_cpu_time().saturating_sub(state.cpu_at_start);
+        if spent < state.cpu_budget {
+            Ok(wasmtime::UpdateDeadline::Continue(TICKS_BETWEEN_CHECKS))
+        } else {
+            Err(Trap::Interrupt.into())
+        }
+    });
+    store
+}
+
 impl ModuleComponent {
     pub fn instantiate(&self, grant: Grant) -> Result<ModuleInstance, HostError> {
         let limits = grant.limits;
-        let state = State::new(grant)?;
-        let mut store = Store::new(self.pre.engine(), state);
-        store.limiter(|state| &mut state.ceiling);
-        // The epoch only says when to look: what counts is the CPU this thread has
-        // spent, so a call waiting on an import or a sleep spends nothing.
-        store.epoch_deadline_callback(|store| {
-            let state = store.data();
-            let spent = thread_cpu_time().saturating_sub(state.cpu_at_start);
-            if spent < state.cpu_budget {
-                Ok(wasmtime::UpdateDeadline::Continue(TICKS_BETWEEN_CHECKS))
-            } else {
-                Err(Trap::Interrupt.into())
-            }
-        });
+        let state = State::new(grant, &[])?;
+        let mut store = limited_store(self.pre.engine(), state);
         begin_call(&mut store);
         let module = self
             .pre
@@ -124,12 +129,12 @@ impl ModuleInstance {
     }
 }
 
-fn begin_call(store: &mut Store<State>) {
+pub(crate) fn begin_call(store: &mut Store<State>) {
     store.data_mut().cpu_at_start = thread_cpu_time();
     store.set_epoch_deadline(TICKS_BETWEEN_CHECKS);
 }
 
-fn classify(
+pub(crate) fn classify(
     error: wasmtime::Error,
     limits: &Limits,
     otherwise: fn(wasmtime::Error) -> HostError,

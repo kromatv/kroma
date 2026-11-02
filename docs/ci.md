@@ -29,6 +29,7 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ desktop (cargo check, Linux mpv path)         desktop
        ├─ rust (server) ┐                               rust
        ├─ rust (modules n) ┴─ rust (one lcov)           rust
+       ├─ rust (modules as components)                  rust
        ├─ wasm host {ubuntu, macos, windows}            rust
        ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
        └─ required ◄── lanes + every job above but wasm host and sonar
@@ -95,6 +96,22 @@ target. The job runs on the rust lane and keeps no cache, since three more
 entries would push the 10 GB budget below over. It is not part of `required`.
 Locally, run `rustup target add wasm32-wasip2` once before `cargo test
 --workspace` in `server/`.
+
+`Rust (modules as components)` runs the tests of every module a change can
+reach a second time, built for `wasm32-wasip2` with the features each bundle
+ships: `bun run ci rust wasm-test --only <id,id>`, or `bun run
+modules:test:wasm` for all of them. `.cargo/config.toml` names
+`kroma-wasm-test-runner` as that target's runner, so cargo hands it each test
+binary. It compiles the binary as a component on `kroma-wasm-host`'s linker
+and runs every test in an instance of its own, in parallel: a scratch dir and
+the module's folder each at its own path, a real SQLite behind the `sql`
+import, every other import refused, one thread and no socket. A native build
+follows an absolute symlink and starts threads where a component cannot, and
+this job is where that difference fails a test. The runner builds once per
+run. The job keeps no cache, since the module shards' entries already hold the
+budget below, and takes its compiles from the sccache bucket when it is set.
+On a warm laptop the whole run takes about two minutes. It is part of
+`required`.
 
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the

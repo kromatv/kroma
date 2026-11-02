@@ -98,6 +98,7 @@ mod tests {
     const SOMETHING_ELSE: &str = "Indexers-master/definitions/v11/other.yml";
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_definition_the_cache_lost_is_restored_by_one_sync() {
         let (source, requests) = counted(200, tarball(&[(DEMO, DEMO_YML)]));
         let store = store_for(source);
@@ -109,6 +110,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn loads_racing_on_a_missing_definition_share_one_sync() {
         let (source, requests) = counted(200, tarball(&[(DEMO, DEMO_YML)]));
         let store = store_for(source);
@@ -129,6 +131,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_definition_the_sync_did_not_bring_is_not_downloaded_again() {
         let (source, requests) = counted(200, tarball(&[(SOMETHING_ELSE, DEMO_YML)]));
         let store = store_for(source);
@@ -142,6 +145,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_instance_does_not_download_what_another_instance_already_found_missing() {
         let (source, requests) = counted(200, tarball(&[(SOMETHING_ELSE, DEMO_YML)]));
         let one_instance = store_for(source.clone());
@@ -160,6 +164,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn instances_racing_on_a_missing_definition_share_one_sync() {
         let (source, requests) = counted(200, tarball(&[(DEMO, DEMO_YML)]));
         let first = store_for(source.clone());
@@ -188,6 +193,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_heal_whose_sync_failed_says_that_rather_than_that_the_definition_is_unknown() {
         let (source, _) = counted(404, b"not found".to_vec());
         let store = store_for(source);

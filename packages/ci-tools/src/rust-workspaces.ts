@@ -36,6 +36,13 @@ function shippedFeatures(ws: Workspace): string[] {
 
 export const SERVER: Workspace = { id: 'server', dir: join(root, 'server'), targetDir: undefined };
 
+/** The environment cargo runs in for `ws`: no debug info, and its own target dir. */
+export const cargoEnv = (ws: Workspace) => ({
+  ...process.env,
+  CARGO_PROFILE_DEV_DEBUG: '0',
+  ...(ws.targetDir ? { CARGO_TARGET_DIR: ws.targetDir } : {}),
+});
+
 export function workspaces(): Workspace[] {
   const modules = join(root, 'modules');
   const out = [SERVER];

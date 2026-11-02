@@ -16,3 +16,8 @@
 # undefines them. `force` because a stale value in a developer's shell would
 # otherwise silently produce a differently-built SQLite than CI.
 LIBSQLITE3_FLAGS = { value = "-USQLITE_ENABLE_FTS3 -USQLITE_ENABLE_FTS3_PARENTHESIS -USQLITE_ENABLE_FTS5 -USQLITE_ENABLE_RTREE", force = true }
+
+# `cargo test --target wasm32-wasip2` runs each test binary as a module runs:
+# a component on the server's own host. Built on first use.
+[target.wasm32-wasip2]
+runner = "server/crates/kroma-wasm-test-runner/runner.sh"

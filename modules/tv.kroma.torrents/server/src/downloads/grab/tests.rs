@@ -23,6 +23,7 @@ fn status_of(manager: &crate::DownloadManager, id: &str) -> db::DownloadRow {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_being_added_leaves_its_row_queued_and_it_goes_live_when_the_add_lands() {
     let (host, manager) = manager_over("grab-magnet", &[queued_magnet("d1")]);
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
@@ -47,6 +48,7 @@ fn a_magnet_being_added_leaves_its_row_queued_and_it_goes_live_when_the_add_land
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_rqbit_refuses_fails_its_row_with_the_reason() {
     let (host, manager) = manager_over("grab-refused", &[queued_magnet("d1")]);
     let stub = StubApi::serving(&[(
@@ -70,6 +72,7 @@ fn a_magnet_rqbit_refuses_fails_its_row_with_the_reason() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn pausing_a_row_still_being_added_stops_the_add() {
     let (host, manager) = manager_over("grab-paused", &[queued_magnet("d1")]);
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
@@ -85,6 +88,7 @@ fn pausing_a_row_still_being_added_stops_the_add() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_row_paused_before_it_reached_the_engine_resumes_into_the_queue() {
     let (host, manager) = manager_over("grab-resumed", &[queued_magnet("d1")]);
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
@@ -99,6 +103,7 @@ fn a_row_paused_before_it_reached_the_engine_resumes_into_the_queue() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn removing_a_row_still_being_added_drops_the_add_with_it() {
     let (host, manager) = manager_over("grab-removed", &[queued_magnet("d1")]);
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);

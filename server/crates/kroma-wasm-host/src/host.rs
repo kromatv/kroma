@@ -18,9 +18,9 @@ pub(crate) const EPOCH_TICK: Duration = Duration::from_millis(10);
 /// The engine every module runs on, with WASI and the KROMA imports linked
 /// once. Holding it keeps a thread ticking the epoch that CPU budgets count.
 pub struct WasmHost {
-    engine: Engine,
-    linker: Linker<State>,
-    ticker: Arc<EpochTicker>,
+    pub(crate) engine: Engine,
+    pub(crate) linker: Linker<State>,
+    pub(crate) ticker: Arc<EpochTicker>,
 }
 
 impl WasmHost {

@@ -53,6 +53,7 @@ fn answer_to_add(client: &dyn DownloadClient, req: &AddTorrentReq) -> Result<Str
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn every_state_rqbit_reports_reads_as_the_state_the_ledger_knows() {
     for (stats, expected) in [
         (r#"{"state":"initializing"}"#, TorrentState::Queued),
@@ -80,6 +81,7 @@ fn every_state_rqbit_reports_reads_as_the_state_the_ledger_knows() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_status_carries_progress_speed_peers_and_files() {
     let status = status_when(
         r#"{"state":"live","progress_bytes":25,"uploaded_bytes":7,"total_bytes":100,"finished":false,
@@ -102,6 +104,7 @@ fn a_status_carries_progress_speed_peers_and_files() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_torrent_with_no_length_yet_is_at_no_progress_rather_than_a_division_by_zero() {
     let status = status_when(r#"{"state":"initializing","progress_bytes":0,"total_bytes":0}"#);
 
@@ -109,6 +112,7 @@ fn a_torrent_with_no_length_yet_is_at_no_progress_rather_than_a_division_by_zero
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_torrent_the_engine_does_not_hold_is_none_rather_than_an_error() {
     let stub = StubApi::serving(&[(LIST, 200, r#"{"torrents":[]}"#)]);
 
@@ -116,6 +120,7 @@ fn a_torrent_the_engine_does_not_hold_is_none_rather_than_an_error() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn an_engine_that_cannot_answer_is_an_error_so_the_row_is_not_failed_for_it() {
     let stub = StubApi::serving(&[(LIST, 500, "{}")]);
 
@@ -123,6 +128,7 @@ fn an_engine_that_cannot_answer_is_an_error_so_the_row_is_not_failed_for_it() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn every_download_on_one_tick_shares_one_listing_and_a_file_list_is_asked_once() {
     let body = listed(r#"{"state":"live"}"#);
     let stub = StubApi::serving(&[(LIST, 200, &body), (DETAILS, 200, FILES)]);
@@ -136,6 +142,7 @@ fn every_download_on_one_tick_shares_one_listing_and_a_file_list_is_asked_once()
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn every_call_carries_the_credential_and_the_password_never_reaches_a_url() {
     let body = listed(r#"{"state":"live"}"#);
     let stub = StubApi::serving(&[(LIST, 200, &body), (DETAILS, 200, FILES)]);
@@ -152,6 +159,7 @@ fn every_call_carries_the_credential_and_the_password_never_reaches_a_url() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_listing_asks_for_no_add_and_numbers_the_files_in_order() {
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
 
@@ -194,16 +202,19 @@ fn removal_asks_for(delete_data: bool) -> (usize, usize) {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn removing_with_the_data_deletes_it() {
     assert_eq!(removal_asks_for(true), (1, 0));
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn removing_without_the_data_only_forgets_the_torrent() {
     assert_eq!(removal_asks_for(false), (0, 1));
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_pause_reaches_the_torrent_it_names() {
     let pause = format!("POST /torrents/{HASH}/pause");
     let stub = StubApi::serving(&[(pause.as_str(), 200, "{}")]);
@@ -214,6 +225,7 @@ fn a_pause_reaches_the_torrent_it_names() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_resume_starts_the_torrent_it_names() {
     let start = format!("POST /torrents/{HASH}/start");
     let stub = StubApi::serving(&[(start.as_str(), 200, "{}")]);
@@ -239,16 +251,19 @@ fn reannounce_when(state: &str) -> (usize, usize) {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_reannounce_cycles_a_running_torrent() {
     assert_eq!(reannounce_when("live"), (1, 1));
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_reannounce_leaves_a_paused_torrent_paused() {
     assert_eq!(reannounce_when("paused"), (0, 0));
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_test_of_the_engine_names_the_helper_and_its_version() {
     let stub = StubApi::serving(&[]);
 

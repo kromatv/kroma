@@ -4,6 +4,7 @@
 
 mod bindings;
 mod capabilities;
+mod command;
 mod error;
 mod host;
 mod instance;
@@ -20,6 +21,7 @@ pub use capabilities::{
     AudioDecode, Command, Databases, Files, Lan, Media, Output, Preopen, Processes, Reply, SampleFormat, Service,
     SqlConnection, SqlFailure, SqlOutcome, SqlValue,
 };
+pub use command::CommandComponent;
 pub use error::HostError;
 pub use host::{ModuleComponent, Readied, WasmHost};
 pub use instance::{Grant, ModuleInstance};

@@ -31,6 +31,10 @@ kroma-sqlite = { workspace = true, optional = true }
 kroma-primitives = { workspace = true }
 # `testing::{TempDir, temp_dir}`, the scratch dir every module test writes in.
 kroma-testing = { workspace = true, optional = true }
+# Under `testing`: the hook every test binary runs before main, and the runtime
+# it connects a test component to its host with.
+ctor = { version = "1", optional = true }
+kroma-module-runtime = { workspace = true, optional = true, features = ["storage"] }
 # The port contract types derive serde and return anyhow::Result.
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -48,7 +52,7 @@ tokio = { package = "tokio", version = "1", default-features = false, features =
 [features]
 # Everything a module's tests reach: the `StubHost` double, `test_serve`, a
 # throwaway pool and a self-deleting scratch dir.
-testing = ["kroma-module-host/testing", "storage", "kroma-sqlite/testing", "kroma-db?/testing", "dep:kroma-testing"]
+testing = ["kroma-module-host/testing", "storage", "kroma-sqlite/testing", "kroma-db?/testing", "dep:kroma-testing", "dep:ctor", "dep:kroma-module-runtime"]
 # The `storage` capability: `host::HostStorage` and the `db` facade. A module
 # enables it when its `module.json` declares `storage`. In a component the SQL
 # runs in the host, so it links rusqlite's API and no SQLite.

@@ -183,7 +183,7 @@ async fn wanting_dune(fakes: &Fakes) -> StubHost {
     host
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_release_of_a_missing_film_is_grabbed_for_its_row() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = wanting_dune(&fakes).await;
@@ -202,7 +202,7 @@ async fn a_release_of_a_missing_film_is_grabbed_for_its_row() {
     assert_eq!(fakes.grabbed_rows(), [["m1"]]);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn of_two_releases_for_one_row_only_the_better_is_grabbed() {
     let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
     let host = wanting_dune(&fakes).await;
@@ -213,7 +213,7 @@ async fn of_two_releases_for_one_row_only_the_better_is_grabbed() {
     assert_eq!(fakes.grabbed_titles(), [DUNE_1080]);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_better_release_listed_first_is_not_displaced_by_a_worse_one() {
     let fakes = Fakes::new().offering(&[DUNE_1080, DUNE_720]);
     let host = wanting_dune(&fakes).await;
@@ -223,7 +223,7 @@ async fn a_better_release_listed_first_is_not_displaced_by_a_worse_one() {
     assert_eq!(fakes.grabbed_titles(), [DUNE_1080]);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_release_of_nothing_monitored_is_counted_and_left() {
     let fakes = Fakes::new().offering(&["Arrival.2016.1080p.BluRay.x264-GRP"]);
     let host = wanting_dune(&fakes).await;
@@ -241,7 +241,7 @@ async fn a_release_of_nothing_monitored_is_counted_and_left() {
     assert!(fakes.grabbed_titles().is_empty());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_film_already_grabbed_is_not_grabbed_again() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = host(&fakes).await;
@@ -255,7 +255,7 @@ async fn a_film_already_grabbed_is_not_grabbed_again() {
     assert_eq!(summary.grabbed, 0);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_film_the_library_already_holds_at_the_cutoff_is_left_alone() {
     let fakes = Fakes::new().offering(&[DUNE_720]);
     let host = host(&fakes).await;
@@ -275,7 +275,7 @@ async fn a_film_the_library_already_holds_at_the_cutoff_is_left_alone() {
     assert_eq!(summary.grabbed, 0);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_blocked_release_is_not_grabbed() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = wanting_dune(&fakes).await;
@@ -300,7 +300,7 @@ async fn a_blocked_release_is_not_grabbed() {
     assert!(fakes.grabbed_titles().is_empty());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_release_with_no_link_is_not_grabbed() {
     let mut fakes = Fakes::new().offering(&[DUNE_1080]);
     fakes.releases[0]["magnet"] = json!(null);
@@ -311,7 +311,7 @@ async fn a_release_with_no_link_is_not_grabbed() {
     assert_eq!(summary.grabbed, 0);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_release_the_rules_refuse_is_not_grabbed() {
     let mut fakes = Fakes::new().offering(&[DUNE_1080]);
     fakes.releases[0]["seeders"] = json!(0);
@@ -322,7 +322,7 @@ async fn a_release_the_rules_refuse_is_not_grabbed() {
     assert_eq!(summary.grabbed, 0);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_failed_grab_is_logged_and_not_counted() {
     let mut fakes = Fakes::new().offering(&[DUNE_1080]);
     fakes.grab_error = Some("engine down".into());
@@ -334,7 +334,7 @@ async fn a_failed_grab_is_logged_and_not_counted() {
     assert!(logs.iter().any(|l| l.starts_with("rss: grab failed")), "{logs:?}");
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn an_indexer_that_does_not_answer_is_logged_and_skipped() {
     let mut fakes = Fakes::new().offering(&[DUNE_1080]);
     fakes.search_error = Some("timed out".into());
@@ -346,7 +346,7 @@ async fn an_indexer_that_does_not_answer_is_logged_and_skipped() {
     assert!(logs.iter().any(|l| l.contains("Tracker did not answer")), "{logs:?}");
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_pass_inside_the_interval_reads_nothing() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = wanting_dune(&fakes).await;
@@ -358,7 +358,7 @@ async fn a_pass_inside_the_interval_reads_nothing() {
     assert_eq!(fakes.grabbed_titles().len(), 1);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_zero_interval_turns_the_pass_off() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = wanting_dune(&fakes).await.with_setting("acqRssMinutes", json!(0));
@@ -368,7 +368,7 @@ async fn a_zero_interval_turns_the_pass_off() {
     assert_eq!(summary, RssSummary::default());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_server_with_acquisition_off_reads_nothing() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = wanting_dune(&fakes)
@@ -380,7 +380,7 @@ async fn a_server_with_acquisition_off_reads_nothing() {
     assert_eq!(summary, RssSummary::default());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_closed_kill_switch_reads_nothing() {
     let mut fakes = Fakes::new().offering(&[DUNE_1080]);
     fakes.gate = false;
@@ -391,7 +391,7 @@ async fn a_closed_kill_switch_reads_nothing() {
     assert_eq!(summary, RssSummary::default());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_season_pack_is_grabbed_for_every_row_of_its_season() {
     let fakes = Fakes::new().offering(&["Show.S01.1080p.BluRay.x264-GRP"]);
     let host = host(&fakes).await;
@@ -434,7 +434,7 @@ fn a_pack_of_a_season_nobody_monitors_is_not_a_target() {
     assert!(target_for(&show, &parsed, &[row("a", Some(1), Some(1))]).is_none());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_release_of_a_title_with_no_row_to_fill_is_not_grabbed() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = host(&fakes).await;
@@ -446,7 +446,7 @@ async fn a_release_of_a_title_with_no_row_to_fill_is_not_grabbed() {
     assert_eq!(summary.grabbed, 0);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_release_better_than_the_copy_held_is_grabbed_as_an_upgrade() {
     let fakes = Fakes::new().offering(&[DUNE_1080]);
     let host = host(&fakes).await;

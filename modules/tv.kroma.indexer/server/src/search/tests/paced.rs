@@ -34,6 +34,7 @@ fn paced_pool() -> TempPool {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_tracker_that_answers_429_is_left_alone_by_the_next_instance_too() {
     let pool = paced_pool();
     let host = DbHost::with_store((*pool).clone());
@@ -61,6 +62,7 @@ fn a_tracker_that_answers_429_is_left_alone_by_the_next_instance_too() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn two_instances_keep_a_trackers_request_delay_between_them() {
     let pool = paced_pool();
     let host = DbHost::with_store((*pool).clone());

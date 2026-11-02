@@ -132,6 +132,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn the_direct_route_is_asked_once_while_the_exit_stays_put() {
         let (url, direct_hits) = counting_http_echo("203.0.113.7");
         let proxy = socks5_echo("198.51.100.9");
@@ -146,6 +147,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_new_tunnel_exit_asks_the_direct_route_again() {
         let (url, direct_hits) = counting_http_echo("203.0.113.7");
 
@@ -156,6 +158,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_proxy_whose_exit_differs_from_the_direct_route_is_sealed() {
         let out = check(&socks5_echo("198.51.100.9"), &http_echo("203.0.113.7"));
         assert_eq!(out.proxied_ip.as_deref(), Some("198.51.100.9"));
@@ -165,6 +168,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_socks5_url_is_accepted_as_well_as_a_bare_host_port() {
         let proxy = format!("socks5://{}", socks5_echo("198.51.100.9"));
         let out = check(&proxy, &http_echo("203.0.113.7"));
@@ -173,6 +177,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_dead_proxy_records_the_reason_and_is_never_sealed() {
         let out = check("127.0.0.1:1", &http_echo("203.0.113.7"));
         assert_eq!(out.proxied_ip, None);
@@ -182,6 +187,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn the_proxy_is_given_the_hostname_to_resolve_rather_than_an_address_we_resolved() {
         let url = http_echo("203.0.113.7").replace("127.0.0.1", "localhost");
         let (proxy, asked) = socks5_serving(b"198.51.100.9".to_vec());

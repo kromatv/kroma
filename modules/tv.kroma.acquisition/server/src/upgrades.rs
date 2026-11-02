@@ -214,7 +214,7 @@ mod tests {
         assert!(!upgrades(Verdict::Fill));
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_film_held_below_its_cutoff_is_upgraded_from_a_better_release() {
         let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
         let host = held_720(&fakes).await;
@@ -226,7 +226,7 @@ mod tests {
         assert_eq!(fakes.grabbed_rows(), [["m1"]]);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_film_with_no_better_release_on_offer_is_searched_and_left() {
         let fakes = Fakes::new().offering(&[DUNE_720]);
         let host = held_720(&fakes).await;
@@ -237,7 +237,7 @@ mod tests {
         assert!(fakes.grabbed_titles().is_empty());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_film_already_at_its_cutoff_spends_no_search() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = host(&fakes).await;
@@ -251,7 +251,7 @@ mod tests {
         assert_eq!(summary.targets, 0);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_title_with_nothing_on_disk_is_not_an_upgrade_candidate() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = host(&fakes).await;
@@ -264,7 +264,7 @@ mod tests {
         assert_eq!(summary.targets, 0);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_scheduled_pass_waits_out_a_title_it_just_searched() {
         let fakes = Fakes::new().offering(&[DUNE_720]);
         let host = held_720(&fakes).await;
@@ -275,7 +275,7 @@ mod tests {
         assert_eq!(second.targets, 0);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_search_now_pass_ignores_the_wait() {
         let fakes = Fakes::new().offering(&[DUNE_720]);
         let host = held_720(&fakes).await;
@@ -286,7 +286,7 @@ mod tests {
         assert_eq!(second.targets, 1);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_cancelled_pass_searches_nothing() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = held_720(&fakes).await;
@@ -297,7 +297,7 @@ mod tests {
         assert!(fakes.grabbed_titles().is_empty());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_failed_upgrade_grab_is_reported_not_counted() {
         let mut fakes = Fakes::new().offering(&[DUNE_1080]);
         fakes.grab_error = Some("engine down".into());
@@ -310,7 +310,7 @@ mod tests {
         assert!(summary.errors[0].starts_with("upgrade grab failed"), "{:?}", summary.errors);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_season_held_below_its_cutoff_is_upgraded_by_its_pack() {
         let fakes = Fakes::new().offering(&["Show.S01.1080p.BluRay.x264-GRP"]);
         let host = host(&fakes).await;
@@ -332,7 +332,7 @@ mod tests {
         assert_eq!(fakes.grabbed_rows(), [["a", "b"]]);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_title_whose_search_breaks_is_reported_and_the_pass_goes_on() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = held_720(&fakes).await;
@@ -344,7 +344,7 @@ mod tests {
         assert!(summary.errors[0].starts_with("upgrade search failed for Dune"), "{:?}", summary.errors);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_title_stops_at_the_pass_target_budget() {
         let fakes = Fakes::new().offering(&["Show.S01E01.1080p.BluRay.x264-GRP"]);
         let host = host(&fakes).await;

@@ -22,6 +22,7 @@ fn magnet(trackers: &[&str]) -> String {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_is_announced_through_the_proxy_which_resolves_the_tracker_name() {
     let (proxy, asked) = socks5_serving(two_peers());
 
@@ -46,6 +47,7 @@ fn a_magnet_is_announced_through_the_proxy_which_resolves_the_tracker_name() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn udp_trackers_are_skipped_and_at_most_four_http_trackers_are_asked() {
     let (proxy, asked) = socks5_serving(two_peers());
     let trackers = [
@@ -72,6 +74,7 @@ fn udp_trackers_are_skipped_and_at_most_four_http_trackers_are_asked() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_peer_two_trackers_return_is_handed_over_once() {
     let (proxy, _asked) = socks5_serving(two_peers());
 
@@ -85,6 +88,7 @@ fn a_peer_two_trackers_return_is_handed_over_once() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_torrent_file_is_announced_under_the_hash_of_its_info_dict_keeping_the_tracker_query() {
     let (proxy, asked) = socks5_serving(two_peers());
     let torrent = b"d8:announce45:http://tracker.invalid/announce?passkey=abc124:infod3:foo3:baree";
@@ -99,6 +103,7 @@ fn a_torrent_file_is_announced_under_the_hash_of_its_info_dict_keeping_the_track
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn nothing_is_asked_without_a_v1_info_hash() {
     let (proxy, asked) = socks5_serving(two_peers());
     let v2_only = format!(

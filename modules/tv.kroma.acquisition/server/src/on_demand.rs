@@ -299,7 +299,7 @@ mod tests {
         .await
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_queued_title_is_searched_and_its_missing_film_grabbed() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = wanting_dune(&fakes).await;
@@ -311,7 +311,7 @@ mod tests {
         assert_eq!(fakes.grabbed_rows(), [["m1"]]);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn an_empty_queue_says_nothing_is_waiting() {
         let fakes = Fakes::new();
         let host = host(&fakes).await;
@@ -322,7 +322,7 @@ mod tests {
         assert_eq!(lines, ["no title is waiting to be searched"]);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_title_with_nothing_missing_is_reported_and_not_searched() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = host(&fakes).await;
@@ -335,7 +335,7 @@ mod tests {
         assert!(lines.iter().any(|l| l == "nothing is missing on title 2"), "{lines:?}");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_queue_drained_with_no_indexer_says_to_configure_one() {
         let mut fakes = Fakes::new();
         fakes.indexers.clear();
@@ -348,7 +348,7 @@ mod tests {
         assert!(lines.iter().any(|l| l.starts_with("no enabled indexer")), "{lines:?}");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_queue_drained_with_no_indexer_module_says_none_answered() {
         let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-od"));
         crate::rules::schema::install(host.store());
@@ -359,7 +359,7 @@ mod tests {
         assert!(lines.iter().any(|l| l.starts_with("no indexer answered")), "{lines:?}");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_drain_started_while_another_search_runs_does_nothing() {
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = wanting_dune(&fakes).await;
@@ -375,7 +375,7 @@ mod tests {
         assert_eq!(lines, ["another search is already running"]);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_cutoff_sweep_upgrades_a_title_held_below_its_cutoff() {
         let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
         let host = host(&fakes).await;
@@ -391,7 +391,7 @@ mod tests {
         assert_eq!(lines.last().unwrap(), "1 target(s) searched, 1 upgrade(s)");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_cutoff_sweep_with_no_indexer_searches_nothing() {
         let mut fakes = Fakes::new();
         fakes.indexers.clear();
@@ -402,7 +402,7 @@ mod tests {
         assert_eq!(summary.targets, 0);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_cutoff_sweep_started_while_another_runs_does_nothing() {
         let fakes = Fakes::new();
         let host = host(&fakes).await;
@@ -416,7 +416,7 @@ mod tests {
         assert_eq!(lines, ["another search is already running"]);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn the_missing_units_of_a_title_are_those_a_page_can_still_ask_for() {
         let fakes = Fakes::new();
         let host = host(&fakes).await;

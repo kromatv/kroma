@@ -4,13 +4,15 @@ import { $ } from 'bun';
 import { summary } from './actions';
 import { root } from './root';
 import { parseArgs } from 'node:util';
-import { featured, on, SERVER, type Workspace, workspaces } from './rust-workspaces';
-
-const env = (ws: Workspace) => ({
-  ...process.env,
-  CARGO_PROFILE_DEV_DEBUG: '0',
-  ...(ws.targetDir ? { CARGO_TARGET_DIR: ws.targetDir } : {}),
-});
+import { type ComponentRun, componentTable } from './rust-components';
+import {
+  cargoEnv as env,
+  featured,
+  on,
+  SERVER,
+  type Workspace,
+  workspaces,
+} from './rust-workspaces';
 
 async function each(
   verb: string,
@@ -29,6 +31,10 @@ async function each(
 
 const scope = (ws: Workspace) => (ws === SERVER ? ['--workspace'] : []);
 
+const COMPONENT = 'wasm32-wasip2';
+const RUNNER_CRATE = join(root, 'server/crates/kroma-wasm-test-runner');
+const RUNNER_TARGET_DIR = join(root, 'target/wasm-test-runner');
+
 const DENIED = ['-D', 'clippy::disallowed_methods', '-D', 'clippy::disallowed_types'];
 
 async function clippy(list: Workspace[]): Promise<void> {
@@ -45,7 +51,7 @@ const withFeatures = (list: Workspace[]) =>
 
 function chosen(only: string | undefined): Workspace[] {
   const all = workspaces();
-  if (!only) return all;
+  if (only === undefined) return all;
   const ids = only
     .split(',')
     .map((id) => id.trim())
@@ -82,6 +88,38 @@ async function test(list: Workspace[]): Promise<void> {
   summary(`### Rust tests\n\n${measured.length} run(s) measured, lcov: ${records.length} files`);
 }
 
+async function buildRunner(): Promise<void> {
+  console.log('\n=== kroma-wasm-test-runner');
+  const built = await $`cargo build --profile wasm-test-runner --target-dir ${RUNNER_TARGET_DIR}`
+    .cwd(RUNNER_CRATE)
+    .nothrow();
+  if (built.exitCode !== 0) throw new Error('the wasm test runner did not build');
+}
+
+async function componentTests(list: Workspace[]): Promise<void> {
+  const modules = list.filter((ws) => ws.id !== SERVER.id);
+  if (modules.length === 0) {
+    console.log('no module workspace to run as a component');
+    return;
+  }
+  await buildRunner();
+  const runs: ComponentRun[] = [];
+  for (const ws of modules) {
+    const args = ['test', '--target', COMPONENT, '--no-fail-fast', ...on(ws)];
+    console.log(`\n=== ${ws.id}: cargo ${args.join(' ')}`);
+    const started = performance.now();
+    const result = await $`cargo ${args}`.cwd(ws.dir).env(env(ws)).nothrow();
+    runs.push({
+      id: ws.id,
+      seconds: (performance.now() - started) / 1000,
+      passed: result.exitCode === 0,
+    });
+  }
+  summary(`### Module tests as components\n\n${componentTable(runs)}`);
+  const failed = runs.filter((run) => !run.passed).map((run) => run.id);
+  if (failed.length > 0) throw new Error(`the component run failed in: ${failed.join(', ')}`);
+}
+
 export async function main(argv: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args: argv,
@@ -92,5 +130,6 @@ export async function main(argv: string[]): Promise<void> {
   const list = chosen(values.only);
   if (verb === 'clippy') return clippy(list);
   if (verb === 'test') return test(list);
-  throw new Error(`usage: bun run ci rust <clippy|test> [--only id,id]`);
+  if (verb === 'wasm-test') return componentTests(list);
+  throw new Error(`usage: bun run ci rust <clippy|test|wasm-test> [--only id,id]`);
 }

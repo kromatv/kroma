@@ -34,6 +34,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_ceiling_re_asserted_unchanged_is_not_pushed_again() {
         let api = stub();
         let engine = engine_over(
@@ -50,6 +51,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_ceiling_that_moved_is_pushed_through() {
         let api = stub();
         let engine = engine_over(&api, RqbitConfig::default());
@@ -63,6 +65,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_ceiling_pushed_once_is_not_pushed_a_second_time() {
         let api = stub();
         let engine = engine_over(&api, RqbitConfig::default());
@@ -74,6 +77,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_ceiling_rqbit_refused_is_tried_again_next_time() {
         let api = StubApi::serving(&[(LIMITS, 500, "{}")]);
         let engine = engine_over(&api, RqbitConfig::default());

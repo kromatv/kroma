@@ -34,8 +34,8 @@ pub(crate) struct State {
 }
 
 impl State {
-    pub(crate) fn new(grant: Grant) -> Result<Self, HostError> {
-        let wasi = wasi_of(&grant.env, grant.log, &grant.preopens)?;
+    pub(crate) fn new(grant: Grant, args: &[String]) -> Result<Self, HostError> {
+        let wasi = wasi_of(&grant.env, args, grant.log, &grant.preopens)?;
         Ok(Self {
             wasi,
             table: ResourceTable::new(),
@@ -73,12 +73,14 @@ impl State {
 
 fn wasi_of(
     env: &[(String, String)],
+    args: &[String],
     log: Option<crate::LogSink>,
     preopens: &[Preopen],
 ) -> Result<WasiCtx, HostError> {
     let mut builder = WasiCtx::builder();
     builder
         .envs(env)
+        .args(args)
         .allow_tcp(false)
         .allow_udp(false)
         .allow_ip_name_lookup(false);

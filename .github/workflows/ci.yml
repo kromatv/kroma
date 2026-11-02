@@ -41,6 +41,7 @@ jobs:
       desktop: ${{ steps.lanes.outputs.desktop }}
       rust: ${{ steps.lanes.outputs.rust }}
       rust_shards: ${{ steps.lanes.outputs.rust_shards }}
+      rust_modules: ${{ steps.lanes.outputs.rust_modules }}
       sdk: ${{ steps.lanes.outputs.sdk }}
       spec: ${{ steps.lanes.outputs.spec }}
       sonar: ${{ steps.sonar.outputs.run }}
@@ -470,6 +471,41 @@ jobs:
       - run: cargo test -p kroma-wasm-host
         working-directory: server
 
+  # The module tests a change can reach, run again as wasm32-wasip2: each test
+  # binary is a component on the server's own host, with the folders, imports
+  # and single thread a running module gets. The runner builds once. No cache:
+  # the module shards' entries already hold that budget, and sccache keeps the
+  # compiles when its bucket is set.
+  rust-components:
+    name: Rust (modules as components)
+    needs: lanes
+    if: needs.lanes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        if: needs.lanes.outputs.sccache == 'true'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: rustup target add wasm32-wasip2
+      - run: bun run ci rust wasm-test --only "${{ needs.lanes.outputs.rust_modules }}"
+        env:
+          RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
+          SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
+          SCCACHE_ENDPOINT: ${{ secrets.SCCACHE_R2_ENDPOINT }}
+          SCCACHE_REGION: auto
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCCACHE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_R2_SECRET_ACCESS_KEY }}
+      - run: sccache --show-stats
+        if: needs.lanes.outputs.sccache == 'true'
+
   # The required check: green when every Rust job is, with their coverage in
   # one report for the scan. Skipped, like the jobs, when no Rust can be
   # reached.
@@ -510,7 +546,7 @@ jobs:
   # changes.
   required:
     name: Required
-    needs: [lanes, checks, test-report, audit, spec, build, tv-native, sdk, desktop, rust]
+    needs: [lanes, checks, test-report, audit, spec, build, tv-native, sdk, desktop, rust, rust-components]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -529,7 +565,8 @@ jobs:
           LANE_OF: >-
             {"checks": "code", "test-report": "code", "audit": "code",
             "spec": "spec", "build": "fleet", "tv-native": "android",
-            "sdk": "sdk", "desktop": "desktop", "rust": "rust"}
+            "sdk": "sdk", "desktop": "desktop", "rust": "rust",
+            "rust-components": "rust"}
 
   # The scan reads the coverage the gates above produced; nothing runs twice.
   # Rust coverage is absent on a change that touched no Rust, and the scan
