@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   commands: [] as readonly CommandDef[],
   moduleNav: [] as ModuleNav[],
   installed: [] as object[],
+  updates: undefined as { restartable: boolean } | undefined,
   query: '',
   user: { permissions: [] as string[] } as { permissions: string[] } | null,
   client: {} as object,
@@ -30,7 +31,9 @@ vi.mock('@kromatv/ui/kit', async (original) => ({
 vi.mock('@tanstack/react-query', async (original) => ({
   ...(await original<typeof import('@tanstack/react-query')>()),
   useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
-  useQuery: () => ({ data: mocks.installed }),
+  useQuery: ({ queryKey }: { queryKey: readonly string[] }) => ({
+    data: queryKey[1] === 'updates' ? mocks.updates : mocks.installed,
+  }),
 }));
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ user: mocks.user, client: mocks.client }),
@@ -44,8 +47,8 @@ vi.mock('#web/shared/lib/web-runtime', () => ({
 }));
 vi.mock('#web/shared/lib/command-menu', () => ({
   useCommandQuery: () => mocks.query,
-  useCommands: (commands: readonly CommandDef[]) => {
-    mocks.commands = commands;
+  useCommands: (commands: readonly (CommandDef | false | undefined)[]) => {
+    mocks.commands = commands.filter((command) => !!command);
   },
 }));
 
@@ -73,6 +76,7 @@ const action = (commands: readonly CommandDef[], label: string) =>
 beforeEach(() => {
   mocks.moduleNav = [];
   mocks.installed = [];
+  mocks.updates = undefined;
   mocks.query = '';
   mocks.client = {};
   vi.clearAllMocks();
@@ -391,5 +395,23 @@ describe('the console’s actions', () => {
     expect(mocks.toast).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'admin.updatesCurrent' }),
     );
+  });
+
+  it('offers to restart a server that can restart itself, on the page that asks first', () => {
+    mocks.updates = { restartable: true };
+
+    const restart = action(offeredTo('settings.manage'), 'admin.serverRestart');
+
+    expect(restart).toMatchObject({
+      to: '/admin/updates',
+      search: { restart: true },
+      cap: 'settings.manage',
+    });
+  });
+
+  it('offers no restart where nothing would start the server again', () => {
+    mocks.updates = { restartable: false };
+
+    expect(action(offeredTo('settings.manage'), 'admin.serverRestart')).toBeUndefined();
   });
 });

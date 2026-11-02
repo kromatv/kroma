@@ -54,5 +54,6 @@ export const UpdateStatus = z.object({
     .object({ platform: z.enum(['docker', 'synology', 'binary', 'unknown']), ready: z.boolean() })
     .optional(),
   operation: UpdateOperation.nullish(),
+  restartable: z.boolean().default(false),
 });
 export type UpdateStatus = z.infer<typeof UpdateStatus>;

@@ -92,7 +92,20 @@ pub fn test_app_with_mail_relay(relay_url: &str) -> TestApp {
 /// Like [`test_app`] but reading releases from `releases_url`, a stub a test
 /// runs on a local port.
 pub fn test_app_with_releases(releases_url: &str) -> TestApp {
-    build_app_with(None, &[], None, Some(releases_url))
+    build_app_with(None, &[], |config| {
+        config.releases_url = Some(releases_url.to_string());
+    })
+}
+
+/// Like [`test_app`] but installed as the Synology package, whose service
+/// script starts the server again when it exits to restart.
+pub fn test_app_as_package() -> TestApp {
+    build_app_with(None, &[], |config| {
+        let releases = config.data_dir.join("releases");
+        std::fs::create_dir_all(&releases).expect("releases dir");
+        config.self_update_dir = Some(releases);
+        config.install = crate::config::Install::Synology;
+    })
 }
 
 /// Like [`test_app`] but with a fake TMDB key, so handlers clear their
@@ -109,14 +122,17 @@ pub fn test_app_with_web(files: &[(&str, &str)]) -> TestApp {
 }
 
 fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option<&str>) -> TestApp {
-    build_app_with(tmdb_api_key, web, relay_url, None)
+    build_app_with(tmdb_api_key, web, |config| {
+        if let Some(url) = relay_url {
+            config.mail_relay_url = Some(url.to_string());
+        }
+    })
 }
 
 fn build_app_with(
     tmdb_api_key: Option<&str>,
     web: &[(&str, &str)],
-    relay_url: Option<&str>,
-    releases_url: Option<&str>,
+    configure: impl FnOnce(&mut Config),
 ) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
@@ -133,12 +149,7 @@ fn build_app_with(
 
     let mut config = test_config(data_dir.clone());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
-    if let Some(url) = relay_url {
-        config.mail_relay_url = Some(url.to_string());
-    }
-    if let Some(url) = releases_url {
-        config.releases_url = Some(url.to_string());
-    }
+    configure(&mut config);
     if !web.is_empty() {
         let web_dir = data_dir.join("web");
         for (name, contents) in web {

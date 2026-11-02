@@ -41,6 +41,10 @@ export default function adminApi(ctx: RequestContext) {
     checkUpdates: () => ctx.post('/admin/updates/check', UpdateStatus),
     installUpdate: (target: UpdateTarget) =>
       ctx.post('/admin/updates/install', UpdateStatus, { body: target }),
+    /** Answers before the server stops, then it exits for its packaging to start
+     * it again. Refused where `UpdateStatus.restartable` is false, and while an
+     * update is being applied. */
+    restartServer: () => ctx.post('/admin/server/restart'),
 
     /** Live scan / enrichment status snapshot. */
     status: () => ctx.get('/status', Activity),

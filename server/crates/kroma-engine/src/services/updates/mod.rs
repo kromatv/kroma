@@ -5,9 +5,12 @@ mod channel;
 mod feed;
 mod install;
 mod package;
+mod restart;
 pub use channel::channel;
 pub use install::{install, install_automatically, recover, Installer, Operation, Target};
-pub use package::{restart_requested, wait_for_restart, RESTART_EXIT_CODE};
+pub use restart::{
+    restart, restart_requested, restartable, wait_for_restart, Refusal, RESTART_EXIT_CODE,
+};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -72,6 +75,7 @@ pub struct Status {
     pub error: Option<String>,
     pub installer: Installer,
     pub operation: Option<Operation>,
+    pub restartable: bool,
 }
 
 fn stored(settings: &Settings, channel: Channel) -> Option<Checked> {
@@ -101,6 +105,7 @@ pub fn status(state: &SharedState) -> Status {
         error: checked.and_then(|c| c.error),
         installer: install::installer(state),
         operation: install::operation(state),
+        restartable: restartable(state),
     }
 }
 

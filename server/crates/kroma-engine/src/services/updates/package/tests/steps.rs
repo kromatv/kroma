@@ -1,6 +1,3 @@
-use std::sync::Arc;
-use std::time::Duration;
-
 use sha2::{Digest, Sha256};
 
 use super::super::*;
@@ -85,25 +82,4 @@ fn only_the_official_releases_host_a_package_from_the_official_feed() {
     assert!(elsewhere.unwrap_err().to_string().contains("official"));
     assert!(published.is_ok());
     assert!(own_feed.is_ok());
-}
-
-#[tokio::test]
-async fn a_restart_wakes_whoever_waits_for_it_and_whoever_comes_later() {
-    let restart = Arc::new(Restart::default());
-    let waiting = tokio::spawn({
-        let restart = Arc::clone(&restart);
-        async move { restart.wait().await }
-    });
-    tokio::task::yield_now().await;
-
-    restart.request();
-
-    tokio::time::timeout(Duration::from_secs(5), waiting)
-        .await
-        .unwrap()
-        .unwrap();
-    tokio::time::timeout(Duration::from_secs(5), restart.wait())
-        .await
-        .unwrap();
-    assert!(restart.requested());
 }

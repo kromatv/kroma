@@ -86,6 +86,16 @@ fn settled(op: &Operation) -> bool {
     matches!(op.phase.as_str(), "complete" | "failed" | "deferred")
 }
 
+pub(super) fn in_progress(state: &SharedState) -> bool {
+    operation(state).is_some_and(|op| !settled(&op))
+}
+
+pub(super) fn exclusive() -> std::sync::MutexGuard<'static, ()> {
+    INSTALL_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 fn stored(state: &SharedState) -> Option<Operation> {
     serde_json::from_value(state.settings.get(super::OPERATION_KEY)).ok()
 }
@@ -186,13 +196,11 @@ pub(super) fn idle_for(state: &SharedState, op: &Operation) -> bool {
 }
 
 fn install_with_policy(state: &SharedState, target: Target, automatic: bool) -> Result<Status> {
-    let _guard = INSTALL_LOCK
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _guard = exclusive();
     if !installer(state).ready {
         bail!("The host updater is offline or has not been configured.");
     }
-    if operation(state).is_some_and(|op| !settled(&op)) {
+    if in_progress(state) {
         bail!("An update is already in progress.");
     }
     if automatic && (!super::auto_install(state) || !state.playback.list().is_empty()) {

@@ -89,6 +89,7 @@ pub async fn health(
     );
     Ok(Json(super::dto::Health {
         build: crate::services::settings::build_info().number,
+        boot_id: kroma_engine::boot_id(),
         active_streams: is_lan.then(|| state.playback.list().len()),
         auto_install_updates: is_lan.then(|| crate::services::updates::auto_install(&state)),
         status: "ok",
