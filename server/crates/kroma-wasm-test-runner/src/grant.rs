@@ -78,6 +78,7 @@ impl TestWorld {
             processes: None,
             lan: None,
             files: None,
+            media: None,
         }
     }
 }
