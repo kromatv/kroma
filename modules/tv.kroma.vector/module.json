@@ -20,6 +20,19 @@
   ],
   "dataDirs": ["models"],
   "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "model-download",
+          "to": ["huggingface.co", "*.huggingface.co", "*.hf.co"],
+          "ports": [443]
+        }
+      ]
+    },
+    "fs": {
+      "read": ["module"],
+      "write": ["module"]
+    },
     "env": ["KROMA_EMBED_MODEL_DIR"]
   }
 }

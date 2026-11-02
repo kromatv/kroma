@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::OnceLock;
 
 pub fn build(crate_dir: &Path, binary: &str) -> Vec<u8> {
@@ -8,7 +7,7 @@ pub fn build(crate_dir: &Path, binary: &str) -> Vec<u8> {
 
 pub fn build_with(crate_dir: &Path, binary: &str, features: &str) -> Vec<u8> {
     let target_dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("components");
-    let out = Command::new(env!("CARGO"))
+    let out = kroma_testing::cargo()
         .args([
             "build",
             "--release",

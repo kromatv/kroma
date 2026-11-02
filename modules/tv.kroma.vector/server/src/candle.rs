@@ -1,8 +1,8 @@
 //! Multilingual semantic-embedding backend Cargo feature `semantic`.
 //!
 //! Loads a BERT-architecture sentence model (config.json + tokenizer.json +
-//! model.safetensors) from `$KROMA_EMBED_MODEL_DIR` (default `./models/ml-minilm`)
-//! and mean-pools its token embeddings into a 384-d vector. CPU only.
+//! model.safetensors) from the folder `crate::model` places it in, and
+//! mean-pools its token embeddings into a 384-d vector. CPU only.
 //!
 //! Chosen model: **`paraphrase-multilingual-MiniLM-L12-v2`** (384-d, 12 layers,
 //! ~470 MB). Libraries are often non-English (ours has French overviews), and an
@@ -16,7 +16,7 @@
 //! cuda) and `tokenizers` on `fancy-regex`, since a component holds no C. Any
 //! BERT-arch sentence model in the dir works, but `dim()` assumes 384-d output.
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use candle_core::{Device, Tensor};
@@ -32,18 +32,9 @@ pub struct MiniLmEmbedder {
 }
 
 impl MiniLmEmbedder {
-    /// Load the model from disk once: `$KROMA_EMBED_MODEL_DIR`, or
-    /// `<data>/models/ml-minilm`.
-    pub fn load() -> Result<Self> {
-        let dir = std::env::var("KROMA_EMBED_MODEL_DIR")
-            .map(PathBuf::from)
-            .ok()
-            .or_else(|| {
-                let in_data = PathBuf::from(std::env::var_os("KROMA_DATA_DIR")?)
-                    .join("models/ml-minilm");
-                in_data.is_dir().then_some(in_data)
-            })
-            .unwrap_or_else(|| PathBuf::from("models/ml-minilm"));
+    /// Load the model from `dir`, which holds `config.json`, `tokenizer.json`
+    /// and `model.safetensors`.
+    pub fn load(dir: &Path) -> Result<Self> {
         let device = Device::Cpu;
 
         let config: Config = serde_json::from_str(
@@ -124,7 +115,7 @@ mod tests {
     #[test]
     #[ignore = "needs the MiniLM model files (models/minilm) on disk"]
     fn minilm_embeds_and_ranks_by_meaning() {
-        let e = MiniLmEmbedder::load().expect("load MiniLM model");
+        let e = MiniLmEmbedder::load(&crate::model::place().dir).expect("load MiniLM model");
         assert_eq!(e.dim(), 384);
 
         let christmas = e.embed("a heartwarming christmas movie about santa and family");

@@ -1,6 +1,7 @@
 //! `recommendations.reembed` manual-only: re-embed every title from its **stored**
 //! metadata with the active embedder after an embedder switch, without re-hitting
-//! TMDB. Recommendations stay empty until a dimension change is reconciled here.
+//! TMDB. The hourly `pipeline.embed` pass reconciles a dimension change too; this
+//! does it at once.
 
 use super::prelude::*;
 use crate::services::embeddings;

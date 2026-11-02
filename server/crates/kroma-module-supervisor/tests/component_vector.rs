@@ -39,8 +39,8 @@ fn embedded(server: &Server, endpoint: &Endpoint, texts: &[&str]) -> Vec<Vec<f32
 }
 
 #[test]
-fn the_real_vector_module_embeds_with_the_lexical_backend_when_no_model_is_on_disk() {
-    let server = Server::new("component-vector", NetworkAction::Direct);
+fn the_real_vector_module_embeds_with_the_lexical_backend_while_its_model_cannot_be_fetched() {
+    let server = Server::new("component-vector", NetworkAction::Block);
     let endpoint = server.installed_as_shipped(VECTOR, vector_component());
     let body = serde_json::json!({ "texts": ["a heist thriller"] });
 

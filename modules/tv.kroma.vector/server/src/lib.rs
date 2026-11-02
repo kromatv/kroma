@@ -26,6 +26,10 @@ pub use serve::embedder_routes;
 #[cfg(feature = "semantic")]
 mod candle;
 #[cfg(feature = "semantic")]
+mod model;
+#[cfg(feature = "semantic")]
+mod semantic;
+#[cfg(feature = "semantic")]
 mod weights;
 
 /// Produces a fixed-dimension, **L2-normalized** vector for a text document.
@@ -45,17 +49,19 @@ pub trait Embedder: Send + Sync {
     fn relevance_floor(&self) -> f32;
 }
 
-/// Pick the compiled-in backend: MiniLM when the `semantic` feature is on (falling
-/// back to lexical if the model files can't be loaded), else the dependency-free
-/// lexical embedder.
+/// Pick the compiled-in backend: under the `semantic` feature, MiniLM once its
+/// model is on disk, and the lexical embedder until then; else the lexical
+/// embedder alone.
 ///
-/// The MiniLM path loads the model on the first embedding or `meta` asked of it, so
-/// an instance that only ever answers `/_health` never holds one. Build this once
-/// (e.g. into shared state) rather than per request.
+/// Under a host, a missing model is downloaded into `<data>/models/ml-minilm` in
+/// the background, pinned by sha256, and the embedder switches to it once it
+/// lands. `KROMA_EMBED_MODEL_DIR` names an operator's own copy instead, which is
+/// never downloaded into. Build this once (e.g. into shared state) rather than
+/// per request.
 pub fn default_embedder() -> Arc<dyn Embedder> {
     #[cfg(feature = "semantic")]
     {
-        Arc::new(OnFirstUse::new(semantic_or_lexical))
+        Arc::new(semantic::Semantic::new(model::place()))
     }
     #[cfg(not(feature = "semantic"))]
     {
@@ -64,55 +70,6 @@ pub fn default_embedder() -> Arc<dyn Embedder> {
 }
 
 const LEXICAL_DIMENSIONS: usize = 256;
-
-#[cfg(feature = "semantic")]
-fn semantic_or_lexical() -> Arc<dyn Embedder> {
-    match candle::MiniLmEmbedder::load() {
-        Ok(minilm) => Arc::new(minilm),
-        Err(err) => {
-            tracing::warn!(
-                error = %err,
-                "MiniLM load failed; falling back to the lexical embedder"
-            );
-            Arc::new(LexicalEmbedder::new(LEXICAL_DIMENSIONS))
-        }
-    }
-}
-
-#[cfg(feature = "semantic")]
-struct OnFirstUse {
-    build: fn() -> Arc<dyn Embedder>,
-    built: std::sync::OnceLock<Arc<dyn Embedder>>,
-}
-
-#[cfg(feature = "semantic")]
-impl OnFirstUse {
-    fn new(build: fn() -> Arc<dyn Embedder>) -> Self {
-        Self {
-            build,
-            built: std::sync::OnceLock::new(),
-        }
-    }
-
-    fn backend(&self) -> &dyn Embedder {
-        self.built.get_or_init(self.build).as_ref()
-    }
-}
-
-#[cfg(feature = "semantic")]
-impl Embedder for OnFirstUse {
-    fn dim(&self) -> usize {
-        self.backend().dim()
-    }
-
-    fn embed(&self, text: &str) -> Vec<f32> {
-        self.backend().embed(text)
-    }
-
-    fn relevance_floor(&self) -> f32 {
-        self.backend().relevance_floor()
-    }
-}
 
 // L2-normalize in place; a no-op for the zero vector. Shared by both backends
 // (a private parent item, visible to the `lexical`/`candle` submodules).
@@ -157,32 +114,5 @@ mod tests {
             (v[0] - 0.6).abs() < 1e-6 && (v[1] - 0.8).abs() < 1e-6,
             "{v:?}"
         );
-    }
-
-    #[cfg(feature = "semantic")]
-    mod on_first_use {
-        use std::sync::atomic::{AtomicUsize, Ordering};
-
-        use super::*;
-
-        static BUILDS: AtomicUsize = AtomicUsize::new(0);
-
-        fn counted() -> Arc<dyn Embedder> {
-            BUILDS.fetch_add(1, Ordering::SeqCst);
-            Arc::new(LexicalEmbedder::new(LEXICAL_DIMENSIONS))
-        }
-
-        #[test]
-        fn the_backend_is_built_once_and_only_when_something_is_asked_of_it() {
-            let embedder = OnFirstUse::new(counted);
-            let before = BUILDS.load(Ordering::SeqCst);
-            let dim = embedder.dim();
-            let vector = embedder.embed("a heist thriller");
-
-            assert_eq!(before, 0);
-            assert_eq!(BUILDS.load(Ordering::SeqCst), 1);
-            assert_eq!(dim, LEXICAL_DIMENSIONS);
-            assert_eq!(vector.len(), LEXICAL_DIMENSIONS);
-        }
     }
 }

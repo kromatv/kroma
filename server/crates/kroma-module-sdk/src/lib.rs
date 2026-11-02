@@ -128,6 +128,10 @@ pub mod db {
     pub use kroma_db::testing;
 }
 
+/// Files a module downloads once and keeps, each pinned by the sha256 of its
+/// bytes: model weights, a dataset, anything too large to ship in the bundle.
+pub mod pinned;
+
 /// Small shared primitives (`now_ms`, ...).
 pub mod primitives {
     pub use kroma_primitives::*;
