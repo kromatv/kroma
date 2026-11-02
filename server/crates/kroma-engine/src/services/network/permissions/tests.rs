@@ -85,6 +85,28 @@ fn a_call_its_block_covers_is_still_ruled_by_the_operator() {
 }
 
 #[test]
+fn a_call_for_a_dotted_child_of_a_declared_purpose_is_covered_and_ruled_as_that_purpose() {
+    let block = json!({ "net": { "connect": [{ "purpose": "metadata", "to": ["api.themoviedb.org"], "ports": [443] }] } });
+    let (network, _pool) = network("permissions-dotted", Some(block));
+    let blocking: NetworkRules = serde_json::from_value(
+        json!({ "defaultAction": "allow", "rules": [{ "id": "no-metadata", "purpose": "metadata", "action": "block" }] }),
+    )
+    .unwrap();
+    let tmdb = |purpose: &str| ask(purpose, "api.themoviedb.org", 443);
+
+    let child = NetworkPolicy::decide(&network, MODULE, &tmdb("metadata.discover"));
+    let sibling = NetworkPolicy::decide(&network, MODULE, &tmdb("metadatax"));
+    network.set_rules(blocking).unwrap();
+    let ruled = NetworkPolicy::decide(&network, MODULE, &tmdb("metadata.discover"));
+
+    assert_eq!(child.action, NetworkAction::Direct);
+    assert_eq!(sibling.action, NetworkAction::Block);
+    assert_eq!(sibling.rule.as_deref(), Some(PERMISSION_NET_CONNECT));
+    assert_eq!(ruled.action, NetworkAction::Block);
+    assert_eq!(ruled.rule.as_deref(), Some("no-metadata"));
+}
+
+#[test]
 fn a_setting_destination_allows_the_hosts_its_urls_name_and_no_other() {
     let block = json!({ "net": { "connect": [{ "purpose": "flaresolverr", "to": ["setting:acqFlaresolverrUrl"] }] } });
     let (network, pool) = network("permissions-setting", Some(block));

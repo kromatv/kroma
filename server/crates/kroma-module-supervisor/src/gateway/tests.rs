@@ -1,4 +1,5 @@
 use kroma_egress::Host;
+use kroma_module_manifest::{Attempt, Permissions, Proto};
 
 use super::*;
 
@@ -19,6 +20,15 @@ fn a_username_is_its_purpose_and_its_flags() {
     assert_eq!(asked.purpose, "peers");
     assert!(asked.public_only);
     assert!(asked.sealed);
+}
+
+#[test]
+fn a_dotted_purpose_stays_whole_and_only_its_trailing_flags_are_read() {
+    let asked = Username::parse("metadata.discover.public");
+
+    assert_eq!(asked.purpose, "metadata.discover");
+    assert!(asked.public_only);
+    assert!(!asked.sealed);
 }
 
 #[test]
@@ -168,4 +178,54 @@ fn the_policy_is_asked_for_the_purpose_and_the_flags_the_username_carries() {
             private_allowed: false
         }
     );
+}
+
+struct Declares(Permissions);
+
+impl NetworkPolicy for Declares {
+    fn decide(&self, _caller: &str, ask: &NetworkAsk) -> NetworkAnswer {
+        let attempt = Attempt {
+            purpose: &ask.purpose,
+            host: &ask.host,
+            host_is_local: false,
+            port: ask.port,
+            proto: Proto::Tcp,
+        };
+        let covered = self.0.allows_connect(&attempt, &|_| Vec::new());
+        answer(if covered {
+            NetworkAction::Direct
+        } else {
+            NetworkAction::Block
+        })
+    }
+
+    fn record_flows(&self, _caller: &str, _flows: Vec<NetworkFlow>) {}
+}
+
+#[test]
+fn a_dotted_child_of_a_declared_purpose_passes_the_gateway_as_the_manifest_allows_it() {
+    let declared: Permissions = serde_json::from_value(serde_json::json!({ "net": { "connect": [
+        { "purpose": "metadata", "to": ["api.themoviedb.org"], "ports": [443] }
+    ] } }))
+    .unwrap();
+    let policy = ruled_by(Arc::new(Declares(declared)));
+    let dial = |purpose: &str| {
+        policy.decide(&Request {
+            caller: "tv.example.peer".into(),
+            purpose: purpose.into(),
+            host: Host::Name("api.themoviedb.org".into()),
+            port: 443,
+        })
+    };
+
+    let child = dial("metadata.discover.public");
+    let sibling = dial("metadatax");
+
+    assert_eq!(
+        child.verdict,
+        Verdict::Direct {
+            private_allowed: false
+        }
+    );
+    assert!(matches!(sibling.verdict, Verdict::Block(_)));
 }

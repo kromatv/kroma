@@ -22,7 +22,8 @@ Three questions are asked of every connection, in this order:
 1. **Who is calling?** The core, or a module id. This always comes from a
    credential the server minted, never from anything the caller says.
 2. **Why?** A purpose the caller declared, such as `metadata`, `peers` or
-   `indexer`.
+   `indexer`. A purpose covers its dotted children: whatever names `metadata`
+   also reaches `metadata.discover`, never `metadatax`.
 3. **Where to?** A host name or an address, and a port.
 
 The answers pick a **route**: `direct`, one of the **networks** a module
@@ -236,9 +237,10 @@ supervisor starts no module before the gate is installed.
 
 Every module gets its own gateway: a SOCKS5 endpoint the core serves on a
 loopback port (#484). It answers only that module's token, sent as the SOCKS5
-password, which the component never holds. The username is the purpose, with
-`.public` when every address must be public and `.vpn` when the connection must
-take the VPN or fail.
+password, which the component never holds. The username is the purpose, dotted
+children included, then `.public` when every address must be public and `.vpn`
+when the connection must take the VPN or fail. The gateway reads only those
+trailing flags, so `metadata.discover.vpn` is ruled as `metadata.discover`.
 
 The gateway asks the same policy as the gate, so a connection is ruled by the
 module's `net.connect` and then by the operator's rules. A `direct` route dials

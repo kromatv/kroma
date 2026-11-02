@@ -7,6 +7,7 @@ mod compat;
 mod embedded;
 mod event;
 mod manifest;
+mod matching;
 mod notifications;
 mod permissions;
 mod registry;
@@ -27,6 +28,7 @@ pub use manifest::{
     ComponentNeeds, ConfigField, Contribution, CoreScope, Dependency, FeRemote, Helper, HelperAsset, ModuleManifest, PointDef, PointReq,
     SettingsScope, Storage, Version,
 };
+pub use matching::{host_matches, purpose_covers};
 pub use permissions::{
     Attempt, Connect, Discovery, FsPermissions, FsRoot, Listen, NetPermissions, Permissions, Proto, Reach,
 };

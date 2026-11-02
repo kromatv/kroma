@@ -120,6 +120,22 @@ fn a_domain_pattern_covers_the_domain_and_its_subdomains_only() {
 }
 
 #[test]
+fn a_declared_purpose_covers_a_call_made_for_one_of_its_dotted_children() {
+    let p = parse(json!({ "net": { "connect": [
+        { "purpose": "metadata", "to": ["api.themoviedb.org"], "ports": [443] }
+    ] } }))
+    .unwrap();
+    let for_purpose = |purpose: &str| {
+        let tmdb = attempt(purpose, "api.themoviedb.org", false, 443, Proto::Tcp);
+        p.allows_connect(&tmdb, &no_settings)
+    };
+
+    assert!(for_purpose("metadata"));
+    assert!(for_purpose("metadata.discover"));
+    assert!(!for_purpose("metadatax"));
+}
+
+#[test]
 fn a_misspelt_permission_is_refused_rather_than_ignored() {
     assert!(parse(json!({ "network": {} })).is_err());
     assert!(parse(json!({ "net": { "conect": [] } })).is_err());

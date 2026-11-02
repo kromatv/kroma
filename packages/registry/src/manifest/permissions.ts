@@ -7,7 +7,7 @@ const Purpose = z
   .string()
   .regex(/^[a-z][a-z0-9-]{0,31}$/)
   .describe(
-    'Why the connection is made, e.g. "peers" or "metadata". The journal and the rules name it.',
+    'Why the connection is made, e.g. "peers" or "metadata". The journal and the rules name it. It covers a call made for itself or a dotted child of it: "metadata" covers "metadata.discover", never "metadatax".',
   );
 
 const SettingRef = /^setting:[A-Za-z0-9._]+$/;

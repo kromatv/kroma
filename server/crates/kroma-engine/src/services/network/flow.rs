@@ -1,6 +1,7 @@
 //! One outbound flow: as a caller reports it, and as the journal serves it.
 
 use kroma_http::egress::{Exchange, Route};
+use kroma_module_manifest::purpose_covers;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -82,14 +83,6 @@ impl From<Exchange> for FlowReport {
             rule: exchange.rule,
         }
     }
-}
-
-/// Whether a rule or a filter naming `named` covers `purpose`: the purpose itself
-/// or one of its dotted children, so `metadata` still reaches `metadata.search`.
-pub fn purpose_covers(named: &str, purpose: &str) -> bool {
-    purpose
-        .strip_prefix(named)
-        .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
 }
 
 /// One journal entry, as the admin API serves it. `at` is epoch milliseconds.
