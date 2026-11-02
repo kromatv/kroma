@@ -38,6 +38,29 @@ impl Content {
     }
 }
 
+#[derive(Debug)]
+pub(super) struct FilesGone(pub(super) String);
+
+impl std::fmt::Display for FilesGone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "the downloaded files are gone, {} no longer exists",
+            self.0
+        )
+    }
+}
+
+impl std::error::Error for FilesGone {}
+
+pub(super) fn is_gone(save_path: &Path) -> bool {
+    let absent = matches!(save_path.try_exists(), Ok(false));
+    absent
+        && save_path
+            .parent()
+            .is_some_and(|parent| matches!(parent.try_exists(), Ok(true)))
+}
+
 pub(super) fn largest(files: &[PathBuf]) -> Option<&Path> {
     files
         .iter()
@@ -183,6 +206,33 @@ mod tests {
             largest(&content.videos()),
             Some(scratch.path().join("feature.mkv").as_path())
         );
+    }
+
+    #[test]
+    fn a_download_folder_removed_from_a_folder_still_there_is_gone() {
+        let downloads = kroma_module_sdk::testing::temp_dir("content-gone");
+
+        let gone = is_gone(&downloads.path().join("68165ad60353d090"));
+
+        assert!(gone);
+    }
+
+    #[test]
+    fn a_download_folder_whose_whole_drive_is_missing_is_not_called_gone() {
+        let downloads = kroma_module_sdk::testing::temp_dir("content-offline");
+
+        let gone = is_gone(&downloads.path().join("unmounted/68165ad60353d090"));
+
+        assert!(!gone);
+    }
+
+    #[test]
+    fn an_empty_download_folder_is_not_gone() {
+        let downloads = kroma_module_sdk::testing::temp_dir("content-empty");
+
+        let gone = is_gone(downloads.path());
+
+        assert!(!gone);
     }
 
     #[test]

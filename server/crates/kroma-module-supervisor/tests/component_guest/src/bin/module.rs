@@ -24,6 +24,7 @@ fn routes() -> Router<RemoteHost> {
         .route("/own", get(own_database))
         .route("/core/{table}", get(core_table))
         .route("/keep", get(keep_a_file))
+        .route("/downloads/{id}", get(list_a_download))
         .route("/run/{program}", get(run_a_program))
         .route("/background", get(start_background))
         .route("/background/count", get(background_count))
@@ -77,6 +78,21 @@ async fn keep_a_file(State(host): State<RemoteHost>) -> String {
     let path = module_dir(&host).join("kept.txt");
     let written = std::fs::write(&path, "kept").and_then(|()| std::fs::read_to_string(&path));
     format!("{written:?}")
+}
+
+async fn list_a_download(State(host): State<RemoteHost>, Path(id): Path<String>) -> String {
+    let folder = host.data_dir().join("torrents/downloads").join(id);
+    let listed = std::fs::read_dir(folder).and_then(|entries| {
+        let mut files = Vec::new();
+        for entry in entries {
+            let entry = entry?;
+            if entry.file_type()?.is_file() {
+                files.push(entry.file_name().to_string_lossy().into_owned());
+            }
+        }
+        Ok(files)
+    });
+    format!("{:?}", listed.map_err(|e| e.kind()))
 }
 
 async fn run_a_program(Path(program): Path<String>) -> String {

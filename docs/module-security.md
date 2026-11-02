@@ -123,7 +123,10 @@ module's own folder, its `dataDirs` (first-party only), the media roots when it
 declares `media`, and a private `/tmp`. A directory an absolute path in a
 `permissions.env` variable names is preopened read-only. A first-party module
 that declares `downloads` holds `/`, because a download client reports where a
-torrent landed and nobody can list those paths ahead of time. `files.canonical`
+torrent landed and nobody can list those paths ahead of time. It also holds the
+data folder and the media roots at their own paths: WASI refuses a symlink whose
+target is absolute even under `/`, and Synology's `/var/packages/kroma/var` is
+one. `files.canonical`
 and `files.copy` (a reflink where the filesystem has one) cover what WASI lacks,
 inside the same folders.
 
