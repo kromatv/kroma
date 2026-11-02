@@ -8,7 +8,12 @@ use super::{TestApp, get, send};
 /// Install a stub module `id` whose `module.json` ends with `extra` (`""`, or
 /// `, "settings": {...}`), and the token its callbacks carry.
 pub fn installed_module(t: &TestApp, id: &str, extra: &str) -> String {
-    let dir = t.state.config.data_dir.join("modules").join(id);
+    let dir = t
+        .state
+        .config
+        .data_dir
+        .join(kroma_module_supervisor::INSTALLED_DIR)
+        .join(id);
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(
         dir.join("module.json"),

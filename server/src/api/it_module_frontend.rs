@@ -7,7 +7,8 @@ fn install_frontend(t: &crate::api::test_support::TestApp) {
         .state
         .config
         .data_dir
-        .join("modules/tv.kroma.notes/fe/assets");
+        .join(kroma_module_supervisor::INSTALLED_DIR)
+        .join("tv.kroma.notes/fe/assets");
     std::fs::create_dir_all(&fe).unwrap();
     std::fs::write(fe.join("../remoteEntry.js"), "export const get = 1;").unwrap();
     std::fs::write(fe.join("Notes-BKMFTghM.js"), "export default 1;").unwrap();

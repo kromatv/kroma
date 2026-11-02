@@ -6,10 +6,7 @@ use std::path::Path;
 use kroma_module_manifest::{ModuleManifest, Permissions};
 
 use super::lifecycle::native_build;
-use super::{
-    check_manifest_schema, Accept, AsksForMore, Supervisor, MODULE_STORE, NATIVE_BINARY,
-    STAGING_PREFIX,
-};
+use super::{check_manifest_schema, Accept, AsksForMore, Supervisor, NATIVE_BINARY, STAGING_PREFIX};
 
 mod bundle;
 
@@ -49,32 +46,9 @@ impl Supervisor {
         Ok((id, manifest))
     }
 
-    // A module's own database sits INSIDE the directory a new bundle replaces,
-    // so it moves into staging and rides the rename across. Without this an
-    // upgrade deleted every row the module owned, adopted tables included.
-    fn carry_store(&self, id: &str, staging: &Path) {
-        let installed = self.dir(id);
-        for suffix in ["", "-wal", "-shm"] {
-            let name = format!("{MODULE_STORE}{suffix}");
-            let from = installed.join(&name);
-            if !from.exists() {
-                continue;
-            }
-            if let Err(error) = std::fs::rename(&from, staging.join(&name)) {
-                tracing::error!(
-                    module = %id, file = %name, %error,
-                    "could not carry this module's database across the upgrade",
-                );
-                self.say(
-                    id,
-                    "ERROR this module's database could not be kept across the upgrade",
-                );
-            }
-        }
-    }
-
-    /// Unpack a `.kmod` bundle under `<modules_dir>/<id>/` and spawn it,
-    /// returning the module's manifest JSON.
+    /// Unpack a `.kmod` bundle under `<data>/installed/<id>/` and spawn it,
+    /// returning the module's manifest JSON. The module's own data in
+    /// `<modules_dir>/<id>/` is left as it is.
     ///
     /// `expected_id` must be set whenever the bundle was chosen through a
     /// catalog: the id inside the bundle decides which directory is REPLACED,
@@ -91,25 +65,21 @@ impl Supervisor {
     ) -> anyhow::Result<ModuleManifest> {
         let tar_bytes = decompressed_tar(bytes)?;
 
-        let staging = self
-            .cfg
-            .modules_dir
-            .join(format!("{STAGING_PREFIX}{}", rand::random::<u32>()));
+        let staging = self.staging_dir();
         std::fs::create_dir_all(&staging)?;
         let result = (|| {
             unpack_validated(&tar_bytes, &staging)?;
             let (id, manifest) = self.staged_manifest(&staging, expected_id)?;
             self.check_accepted(&id, &manifest, origin.accept)?;
             self.stop(&id);
-            let dest = self.dir(&id);
-            self.carry_store(&id, &staging);
+            let dest = self.installed_dir(&id);
             let _ = std::fs::remove_dir_all(&dest);
             std::fs::rename(&staging, &dest)?;
             // Before `spawn` below, which reads the manifest again to build the
             // module's storage grant: from the cache it would build the grant
             // the PREVIOUS version declared.
             self.invalidate_manifests();
-            self.write_origin(&id, origin);
+            self.write_origin(&id, origin)?;
             if self.has_component(&id) {
                 self.spawn(&id)?;
             } else {
@@ -128,10 +98,7 @@ impl Supervisor {
     /// reasons an install would be.
     pub fn inspect(&self, bytes: &[u8]) -> anyhow::Result<ModuleManifest> {
         let tar_bytes = decompressed_tar(bytes)?;
-        let staging = self
-            .cfg
-            .modules_dir
-            .join(format!("{STAGING_PREFIX}{}", rand::random::<u32>()));
+        let staging = self.staging_dir();
         std::fs::create_dir_all(&staging)?;
         let read = unpack_validated(&tar_bytes, &staging)
             .and_then(|()| self.staged_manifest(&staging, None));
@@ -163,13 +130,23 @@ impl Supervisor {
         }
     }
 
+    /// Stop `id` and delete it: its own data first, then what the host installed.
     pub fn uninstall(&self, id: &str) -> anyhow::Result<()> {
         validate_id(id)?;
         self.stop(id);
         self.run.forget_module(id);
-        std::fs::remove_dir_all(self.dir(id))?;
+        match std::fs::remove_dir_all(self.own_dir(id)) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error.into()),
+            _ => {}
+        }
+        std::fs::remove_dir_all(self.installed_dir(id))?;
         self.invalidate_manifests();
         Ok(())
+    }
+
+    fn staging_dir(&self) -> std::path::PathBuf {
+        self.installed_root()
+            .join(format!("{STAGING_PREFIX}{}", rand::random::<u32>()))
     }
 }
 

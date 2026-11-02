@@ -70,7 +70,9 @@ These sit beside the declarations that already exist and keep working:
 - `consumes`, `contributes`, `definesPoints`: the points it may call and the ones
   it answers.
 - `helpers`: the pinned upstream build, per `<os>-<arch>`, of a program `run`
-  names: a `url`, its `sha256`, and the `member` to take from a `.tar.gz`.
+  names: a `url`, its `sha256`, and the `member` to take from a `.tar.gz`. A
+  helper's name is letters, digits, `-` and `_`, and a manifest that pins one
+  under any other name is refused.
 - `component`: `instances` answering at once (default 1, and they share no
   memory), `memoryMib` one may grow to (default 512) and `cpuSeconds` one call
   may spend (default 60).
@@ -161,10 +163,11 @@ The server's own folders are the data folder, the modules folder, the release
 folder the Synology package starts from, the folder of the running binary, the
 web client and the updater's folder. No module holds one of them or a folder
 above one, except a library folder, which is then read-only. Under the data
-folder, `modules`, `run`, `logs`, `backups` and `helpers` keep each module's
-database and manifest, its socket, and the programs the host runs beside each
-component's compiled copy: a module holds its own folder there and nothing else,
-and no library, download or `permissions.env` folder is taken from inside them.
+folder, `modules`, `installed`, `run`, `logs`, `backups` and `helpers` keep each
+module's own data, what the host installed of it, its socket, and the programs
+the host runs for it: a module holds its own folder in `modules` and nothing
+else, and no library, download or `permissions.env` folder is taken from inside
+them.
 Which folders a module holds comes from settings no module may write:
 `libraries` and `downloadFolders` reach no module, and `acqRecycleBin` reaches
 only one that declares it. A module whose library or download folders change is
@@ -179,11 +182,40 @@ write, its private `/tmp` included, and appears only once the whole track is in 
 The pass draws on the core's ffmpeg budget, gets at least an hour, and stops when
 the module does.
 
+**What the host installed.** The files the host reads to decide what a module
+may do are in `<data>/installed/<id>/`, a folder no module holds: `module.json`,
+`origin.json` (where the module came from, and whether the official catalog
+served it), `module.wasm`, the compiled copy of it, and the frontend, icon and
+catalogs the bundle carried. `<data>/modules/<id>/` holds only the module's own
+data, its database and the files it writes, and is the only one of the two a
+module may hold, read-write when it declares `storage` or `fs.write: module`. An
+install or an update replaces the first and leaves the second as it is; an
+uninstall deletes both.
+
+The host records the component's `sha256` in `origin.json` when it installs it,
+and hashes the component against it before every start: one that does not match
+does not start, and the module's log says to install it again. The compiled copy
+is kept with the `sha256` of its own bytes beside it, and a copy that does not
+match is not loaded: the component is compiled again, and the module's log says
+so. With `KROMA_MODULE_HOT_RELOAD=1`, a dev setting, a component dropped into
+the folder is recorded as a local build before it starts.
+
+A server laid out before this kept everything in `<data>/modules/<id>/`. The
+first start of a server that keeps them apart copies each module's manifest,
+origin record, component, frontend, icon and catalogs into
+`<data>/installed/<id>/`, before any module starts, records the component's
+`sha256`, and removes those files from the module's own folder. The database and
+the module's other files stay where they are. A link in the old folder is not
+followed and each file is copied rather than moved, so nothing in the module's
+folder remains attached to what the host reads. This happens once: after it, no
+file in a module's own folder is read as part of its install.
+
 **Programs.** `process` starts only a program `run` names, and only for a
 first-party module: a third-party module never starts one. A program pinned under
 `helpers` is fetched by the host, through the gateway under the purpose
 `binary-download`, checked against its `sha256`, and kept in
-`<data>/helpers/<id>/`, a folder no module holds. The file is hashed against the
+`<data>/helpers/<id>/`, a folder no module holds and that holds nothing else of
+the module's. The file is hashed against the
 manifest's `sha256` again before every start, so a binary changed after the fetch
 does not run: starting refuses it, and `ensure` fetches the pinned build again.
 Only `ensure` downloads; starting never does. An argument holding
@@ -293,6 +325,12 @@ core tables it declared, a third-party one starts no program, even one it
 declared, a downloads module opens its download folders and the libraries but
 none of the server's own files, a helper changed after its fetch does not
 start, and the host decodes only a file a component holds and cannot write.
+`component_installed.rs` there has a module holding its own folder
+read-write fail to read or write its manifest, origin record, component and
+compiled copy, refuses a component changed after its install, compiles again
+over a changed compiled copy, and starts a module installed the old way with its
+database. `layout.rs` checks that move file by file, that it happens once, and
+that a link or a hard link in the old folder is not carried over.
 `host_settings.rs` there and the server's `it_host_settings.rs` refuse a read or
 a write of a key the module did not declare, and of a key the core keeps even
 when declared, and `install_accept.rs` holds back an unattended update that
@@ -315,6 +353,7 @@ writes a new key.
 | Filesystem and `run` held by the component host; programs for first-party modules only | on `main` (#488) |
 | A downloads module holds its download folders, not `/`; a helper is hashed against its pin before every start | in review (#569) |
 | A module reads and writes only the settings it declares; an update that writes a new one waits for the operator | in review (#574) |
+| What the host reads to decide what a module may do is kept where no module reaches; the component is hashed against its install record before every start; a helper's name is never one of the host's files | in review |
 | Storage grants enforced in the host; the component holds no database file | on `main` (#555) |
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |

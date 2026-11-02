@@ -4,11 +4,12 @@
 use std::path::Path;
 
 use kroma_module_manifest::Permissions;
+use sha2::Digest;
 
 use super::{Supervisor, MODULE_COMPONENT};
 
 /// Written beside a module at install time; not part of the `.kmod` itself.
-const ORIGIN_FILE: &str = "origin.json";
+pub(crate) const ORIGIN_FILE: &str = "origin.json";
 
 /// Where an installed module came from.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -37,6 +38,10 @@ pub struct Origin {
     /// existed, which reads as "not known to be official".
     #[serde(default)]
     pub official: bool,
+    /// The sha256 of the component the host installed, which it must match to
+    /// start.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_sha256: Option<String>,
 }
 
 /// Where a module being installed came from, as the caller knows it.
@@ -96,7 +101,7 @@ pub struct BinStamp {
 }
 
 impl Origin {
-    fn unknown() -> Self {
+    pub(crate) fn unknown() -> Self {
         Self {
             kind: "unknown".into(),
             url: None,
@@ -104,6 +109,7 @@ impl Origin {
             bin: None,
             local_build: false,
             official: false,
+            component_sha256: None,
         }
     }
 }
@@ -112,6 +118,10 @@ fn unix_secs(t: std::time::SystemTime) -> u64 {
     t.duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0)
+}
+
+pub(crate) fn sha256_hex(bytes: &[u8]) -> String {
+    hex::encode(sha2::Sha256::digest(bytes))
 }
 
 fn stamp_of(path: &Path) -> Option<BinStamp> {
@@ -127,11 +137,8 @@ impl Supervisor {
     /// swapped since. Read from the `origin.json` written at install time;
     /// modules installed before that existed report `Origin::unknown()`.
     pub fn origin(&self, id: &str) -> Origin {
-        let dir = self.dir(id);
-        let mut origin = std::fs::read_to_string(dir.join(ORIGIN_FILE))
-            .ok()
-            .and_then(|s| serde_json::from_str::<Origin>(&s).ok())
-            .unwrap_or_else(Origin::unknown);
+        let dir = self.installed_dir(id);
+        let mut origin = read_origin(&dir).unwrap_or_else(Origin::unknown);
         // A component that is not the one recorded at install is one a dev loop
         // swapped in, so the module is not running the artifact it was installed
         // from.
@@ -143,17 +150,55 @@ impl Supervisor {
         origin
     }
 
-    pub(crate) fn write_origin(&self, id: &str, source: Source<'_>) {
+    pub(crate) fn write_origin(&self, id: &str, source: Source<'_>) -> std::io::Result<()> {
+        let dir = self.installed_dir(id);
+        let component = dir.join(MODULE_COMPONENT);
         let origin = Origin {
             kind: source.kind.to_string(),
             url: source.url.map(str::to_string),
             installed_at: unix_secs(std::time::SystemTime::now()),
-            bin: stamp_of(&self.dir(id).join(MODULE_COMPONENT)),
+            bin: stamp_of(&component),
             local_build: false,
             official: source.official,
+            component_sha256: std::fs::read(&component).ok().map(|wasm| sha256_hex(&wasm)),
         };
-        if let Ok(body) = serde_json::to_string(&origin) {
-            let _ = std::fs::write(self.dir(id).join(ORIGIN_FILE), body);
+        write_origin_to(&dir, &origin)
+    }
+
+    /// `id`'s component, as long as it is the one the host installed: its sha256
+    /// must be the one recorded at install.
+    pub(crate) fn verified_component(&self, id: &str) -> anyhow::Result<(Vec<u8>, String)> {
+        let dir = self.installed_dir(id);
+        let wasm = std::fs::read(dir.join(MODULE_COMPONENT))
+            .map_err(|error| anyhow::anyhow!("read '{id}'s component: {error}"))?;
+        let actual = sha256_hex(&wasm);
+        match read_origin(&dir).and_then(|origin| origin.component_sha256) {
+            Some(recorded) if recorded == actual => Ok((wasm, actual)),
+            Some(_) => anyhow::bail!(
+                "'{id}'s component does not match the sha256 recorded when it was installed, so it was not \
+                 started; install it again"
+            ),
+            None => anyhow::bail!(
+                "'{id}' has no sha256 recorded for its component, so it was not started; install it again"
+            ),
         }
     }
+
+    pub(crate) fn accept_local_build(&self, id: &str) -> std::io::Result<()> {
+        let dir = self.installed_dir(id);
+        let wasm = std::fs::read(dir.join(MODULE_COMPONENT))?;
+        let mut origin = read_origin(&dir).unwrap_or_else(Origin::unknown);
+        origin.component_sha256 = Some(sha256_hex(&wasm));
+        write_origin_to(&dir, &origin)
+    }
+}
+
+pub(crate) fn read_origin(dir: &Path) -> Option<Origin> {
+    let text = std::fs::read_to_string(dir.join(ORIGIN_FILE)).ok()?;
+    serde_json::from_str(&text).ok()
+}
+
+pub(crate) fn write_origin_to(dir: &Path, origin: &Origin) -> std::io::Result<()> {
+    let body = serde_json::to_string(origin).map_err(std::io::Error::other)?;
+    std::fs::write(dir.join(ORIGIN_FILE), body)
 }

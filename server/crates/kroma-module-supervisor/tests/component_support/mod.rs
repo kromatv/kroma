@@ -11,8 +11,9 @@ use kroma_module_host::{
     NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkPolicyOf,
 };
 use kroma_module_supervisor::{
-    Endpoint, FolderRoots, MODULE_COMPONENT, Supervisor, SupervisorConfig,
+    Endpoint, FolderRoots, INSTALLED_DIR, MODULE_COMPONENT, Supervisor, SupervisorConfig,
 };
+use sha2::Digest;
 
 pub mod wasm;
 
@@ -62,6 +63,13 @@ impl Server {
         let dir = kroma_testing::temp_dir(tag);
         let data_dir = dir.path().to_path_buf();
         Self::at(dir, data_dir, action, FolderRoots::none())
+    }
+
+    pub fn laid_out(tag: &str, lay_out: impl FnOnce(&Path)) -> Self {
+        let dir = kroma_testing::temp_dir(tag);
+        let data_dir = dir.path().to_path_buf();
+        lay_out(&data_dir);
+        Self::at(dir, data_dir, NetworkAction::Direct, FolderRoots::none())
     }
 
     pub fn holding(tag: &str, folders: impl FnOnce(&Path) -> FolderRoots) -> Self {
@@ -144,16 +152,24 @@ impl Server {
         origin: &str,
     ) -> Endpoint {
         let module = self.installed(id, permissions, origin);
-        std::fs::write(module.join(MODULE_COMPONENT), component).unwrap();
+        place_component(&module, component, origin);
         self.supervisor.spawn(id).unwrap()
+    }
+
+    pub fn installed_dir(&self, id: &str) -> PathBuf {
+        self.data_dir.join(INSTALLED_DIR).join(id)
+    }
+
+    pub fn own_dir(&self, id: &str) -> PathBuf {
+        self.data_dir.join("modules").join(id)
     }
 
     pub fn installed_beside(&self, id: &str, permissions: &str) {
         self.installed(id, permissions, FIRST_PARTY);
     }
 
-    fn installed(&self, id: &str, permissions: &str, origin: &str) -> PathBuf {
-        let module = self.data_dir.join("modules").join(id);
+    pub fn installed(&self, id: &str, permissions: &str, origin: &str) -> PathBuf {
+        let module = self.installed_dir(id);
         std::fs::create_dir_all(&module).unwrap();
         std::fs::write(
             module.join("module.json"),
@@ -168,14 +184,13 @@ impl Server {
     }
 
     pub fn installed_as_shipped(&self, id: &str, component: &[u8]) -> Endpoint {
-        let module = self.data_dir.join("modules").join(id);
+        let module = self.installed_dir(id);
         std::fs::create_dir_all(&module).unwrap();
         let shipped = std::fs::read(wasm::module_source(id).join("module.json")).unwrap();
         let mut manifest: serde_json::Value = serde_json::from_slice(&shipped).unwrap();
         manifest["engines"] = serde_json::json!({});
         std::fs::write(module.join("module.json"), manifest.to_string()).unwrap();
-        std::fs::write(module.join("origin.json"), FIRST_PARTY).unwrap();
-        std::fs::write(module.join(MODULE_COMPONENT), component).unwrap();
+        place_component(&module, component, FIRST_PARTY);
         self.supervisor.spawn(id).unwrap()
     }
 
@@ -239,6 +254,13 @@ impl Drop for Server {
             let _ = std::fs::remove_dir_all(run);
         }
     }
+}
+
+pub fn place_component(module: &Path, component: &[u8], origin: &str) {
+    let mut recorded: serde_json::Value = serde_json::from_str(origin).unwrap();
+    recorded["componentSha256"] = hex::encode(sha2::Sha256::digest(component)).into();
+    std::fs::write(module.join("origin.json"), recorded.to_string()).unwrap();
+    std::fs::write(module.join(MODULE_COMPONENT), component).unwrap();
 }
 
 pub fn http_server(body: &'static str) -> (u16, Arc<AtomicUsize>) {

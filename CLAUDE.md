@@ -174,7 +174,7 @@ Nothing is compiled into the server: this is the zero-module base build. Every
 first-party module ships as an installable `.kmod` (a zstd bundle of
 `module.json`, `module.wasm`, the icon, `locales/` and `fe/`, the frontend the
 web client loads at runtime), built once for `wasm32-wasip2`: one bundle for
-every platform. `kroma-module-supervisor` scans `<data>/modules/*`, runs each enabled
+every platform. `kroma-module-supervisor` scans `<data>/installed/*`, runs each enabled
 module as a component inside the server (wasmtime, `kroma-wasm-host`), serves it
 on a Unix socket under `<data>/run`, and reverse-proxies `/api/module/<id>/*` to
 it. A component reaches the core's token-authed `/api/_host/*` API

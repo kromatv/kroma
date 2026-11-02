@@ -7,6 +7,7 @@ mod compat;
 mod consent;
 mod embedded;
 mod event;
+mod helpers;
 mod manifest;
 mod matching;
 mod notifications;

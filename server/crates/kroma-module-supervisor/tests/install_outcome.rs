@@ -1,7 +1,7 @@
 mod install_support;
 
 use install_support::{current, supervisor, tar_with_manifest, temp_modules_dir, uploaded};
-use kroma_module_supervisor::{Accept, Source};
+use kroma_module_supervisor::{Accept, Source, INSTALLED_DIR};
 
 #[test]
 fn upgrading_a_module_keeps_the_database_it_owns() {
@@ -17,6 +17,7 @@ fn upgrading_a_module_keeps_the_database_it_owns() {
 
     sup.install(&bundle("1.0.0"), None, uploaded()).unwrap();
     let store = dir.join("com.example.demo").join("module.sqlite");
+    std::fs::create_dir_all(store.parent().unwrap()).unwrap();
     std::fs::write(&store, b"the module's own rows").unwrap();
     sup.install(&bundle("2.0.0"), None, uploaded()).unwrap();
 
@@ -86,6 +87,7 @@ fn an_installed_frontend_is_dated_by_the_install_rather_than_by_the_bundle() {
     sup.install(&bundle, None, uploaded()).unwrap();
 
     let entry = dir
+        .join(INSTALLED_DIR)
         .join("com.example.demo")
         .join("fe")
         .join("remoteEntry.js");

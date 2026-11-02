@@ -440,18 +440,19 @@ mod gate_tests {
     fn state_with_installed_modules() -> (SharedState, kroma_testing::TempDir) {
         state_with_services(|data_dir| {
             let modules_dir = data_dir.join("modules");
+            let installed = data_dir.join(kroma_module_supervisor::INSTALLED_DIR);
             install_module(
-                &modules_dir,
+                &installed,
                 "tv.kroma.notes",
                 r#"{ "id": "tv.kroma.notes", "name": "Notes", "version": "1.2.3" }"#,
             );
             install_module(
-                &modules_dir,
+                &installed,
                 "tv.kroma.broken",
                 r#"{ "name": "no id, no version" }"#,
             );
             std::fs::write(
-                modules_dir.join("tv.kroma.notes").join("icon.svg"),
+                installed.join("tv.kroma.notes").join("icon.svg"),
                 b"<svg/>",
             )
             .unwrap();

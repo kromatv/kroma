@@ -255,7 +255,7 @@ part of the server. The indexer, Torznab, VPN, Transmission, qBittorrent, mdns,
 scene and remote modules each live in their own cargo workspace under `modules/`,
 and none is a dependency of the `kroma-server` binary. The core reaches a module
 by the point name it answers and names none of them. A module installs as a
-`.kmod`, a WebAssembly component the server runs, into `<data>/modules/`, and
+`.kmod`, a WebAssembly component the server runs, into `<data>/installed/`, and
 nothing installs one by default, so a stock server does no indexing or
 downloading until an operator installs them. See
 [`docs/modules-as-kmod.md`](../../docs/modules-as-kmod.md).

@@ -5,7 +5,7 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use kroma_module_supervisor::{Supervisor, SupervisorConfig, MODULE_COMPONENT};
+use kroma_module_supervisor::{INSTALLED_DIR, MODULE_COMPONENT, Supervisor, SupervisorConfig};
 
 fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
     Supervisor::new(SupervisorConfig {
@@ -23,7 +23,7 @@ fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
 // A module directory as an install leaves it: manifest, component, and an origin
 // record stamped with THAT component, which is what a real install writes.
 fn install_module(dir: &Path, id: &str, kind: Option<&str>) {
-    let module_dir = dir.join(id);
+    let module_dir = dir.join(INSTALLED_DIR).join(id);
     std::fs::create_dir_all(&module_dir).unwrap();
     std::fs::write(
         module_dir.join("module.json"),
@@ -87,7 +87,10 @@ fn a_component_swapped_after_the_install_is_flagged_as_a_local_build() {
     install_module(dir.path(), "tv.example.dev", Some("registry"));
     // What `modules watch` does: a different component, written in place.
     std::fs::write(
-        dir.path().join("tv.example.dev").join(MODULE_COMPONENT),
+        dir.path()
+            .join(INSTALLED_DIR)
+            .join("tv.example.dev")
+            .join(MODULE_COMPONENT),
         b"\0asm component, rebuilt",
     )
     .unwrap();

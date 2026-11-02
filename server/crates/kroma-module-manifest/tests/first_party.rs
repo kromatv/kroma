@@ -58,3 +58,13 @@ fn the_scan_reads_the_first_party_modules() {
     assert!(ids.iter().any(|id| id == "tv.kroma.torrents"), "{ids:?}");
     assert!(ids.iter().any(|id| id == "tv.kroma.scene"), "{ids:?}");
 }
+
+#[test]
+fn every_helper_a_first_party_module_pins_is_one_the_server_fetches() {
+    let refused: Vec<String> = first_party()
+        .into_iter()
+        .filter_map(|(id, manifest)| Some(format!("{id}: {}", manifest.helpers_problem()?)))
+        .collect();
+
+    assert!(refused.is_empty(), "{refused:#?}");
+}

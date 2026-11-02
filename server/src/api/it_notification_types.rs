@@ -9,7 +9,12 @@ const MODULE: &str = "tv.kroma.torrents";
 const COMPLETED: &str = "tv.kroma.torrents/download.completed";
 
 fn install_declaring_module(t: &TestApp) -> String {
-    let dir = t.state.config.data_dir.join("modules").join(MODULE);
+    let dir = t
+        .state
+        .config
+        .data_dir
+        .join(kroma_module_supervisor::INSTALLED_DIR)
+        .join(MODULE);
     std::fs::create_dir_all(dir.join("locales")).unwrap();
     std::fs::write(
         dir.join("module.json"),

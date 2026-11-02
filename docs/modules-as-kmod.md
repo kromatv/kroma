@@ -50,8 +50,9 @@ processes, declared in the manifest. See
   to the host's `sql` import, which opens both files and enforces the grant. See
   `modules/README.md#storage`.
 - **`kroma-module-supervisor`** is the core side (`src/component/`). `Supervisor`
-  scans `<data>/modules/*`, compiles each enabled module's `module.wasm` and keeps
-  the machine code at `<data>/helpers/<id>/module.cwasm`, so a restart reuses it.
+  scans `<data>/installed/*`, hashes each enabled module's `module.wasm` against
+  the `sha256` recorded when it was installed, compiles it and keeps the machine
+  code beside it at `<data>/installed/<id>/module.cwasm`, so a restart reuses it.
   It serves the module on `modules/<id>/module.sock` under `<data>/run`, in a
   directory only the server's user can open, and `proxy_to` reverse-proxies a
   request there. The first instance is the primary, and it starts as soon as the
@@ -87,6 +88,14 @@ processes, declared in the manifest. See
   `locales/` to render the notification types the module declares in each
   reader's language. `kroma dev` uploads a debug build to a running server and
   again on every save.
+- **Two folders per module.** What the host installed and reads to decide what
+  a module may do (`module.json`, `origin.json`, `module.wasm` and its compiled
+  copy, `fe/`, the icon and `locales/`) is in `<data>/installed/<id>/`, which no
+  module holds. The module's own data, its database and the files it writes, is
+  in `<data>/modules/<id>/`, the folder it may hold. An update replaces the first
+  and leaves the second; an uninstall deletes both. A server that kept both in
+  `<data>/modules/<id>/` moves them apart on its first start. See
+  [what the host installed](module-security.md#how-each-permission-is-enforced).
 - **What a server refuses.** A bundle whose manifest schema is not 3, and a
   bundle that carries a native `module` binary, from every registry and from an
   upload. A native module an older server left on disk is never started: its
@@ -221,7 +230,7 @@ A restart starts from the compiled copy in about 60 ms instead of compiling.
 
 1. ~~**Install path**~~ shipped: `/api/admin/store/install` (upload) and
    the Store's install-by-id both unpack a `.kmod` under
-   `<data>/modules/<id>/` via the supervisor and start it.
+   `<data>/installed/<id>/` via the supervisor and start it.
 2. ~~**The coupled cluster**~~ shipped: every one of the nine cross-module ports
    is HTTP now, provider at `/_port/<point>/<method>` and consumer resolving by
    point name. Each side declares the JSON it reads or writes, so no crate sits

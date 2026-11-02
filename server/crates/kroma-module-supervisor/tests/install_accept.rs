@@ -1,7 +1,7 @@
 mod install_support;
 
 use install_support::{current, supervisor, tar_with_manifest, temp_modules_dir, uploaded};
-use kroma_module_supervisor::{Accept, AsksForMore, Source};
+use kroma_module_supervisor::{Accept, AsksForMore, Source, INSTALLED_DIR};
 
 fn declaring(version: &str, permissions: &str) -> Vec<u8> {
     tar_with_manifest(&current(&format!(
@@ -131,6 +131,8 @@ fn inspecting_a_bundle_reads_what_it_declares_and_installs_nothing() {
     assert_eq!(read.id, "com.example.demo");
     assert!(read.permissions.is_some());
     assert!(sup.installed_manifests().is_empty());
-    let left: Vec<_> = std::fs::read_dir(scratch.path()).unwrap().collect();
+    let left: Vec<_> = std::fs::read_dir(scratch.path().join(INSTALLED_DIR))
+        .unwrap()
+        .collect();
     assert!(left.is_empty());
 }

@@ -1,5 +1,5 @@
 //! Installed-module frontend assets: serves an installed module's Module
-//! Federation remote (`remoteEntry.js` + chunks) from `<data>/modules/:id/fe/*`,
+//! Federation remote (`remoteEntry.js` + chunks) from `<data>/installed/:id/fe/*`,
 //! public like the icon route.
 
 use std::path::{Component, PathBuf};
@@ -42,7 +42,7 @@ async fn serve_fe(
     let file = state
         .config
         .data_dir
-        .join("modules")
+        .join(kroma_module_supervisor::INSTALLED_DIR)
         .join(id)
         .join("fe")
         .join(&rel);

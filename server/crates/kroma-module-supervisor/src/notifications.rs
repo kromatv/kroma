@@ -23,7 +23,7 @@ impl Supervisor {
                 .into_iter()
                 .filter(|m| !m.notifications.is_empty())
                 .map(|m| ModuleNotifications {
-                    catalogs: catalogs_in(&self.dir(&m.id).join(LOCALES_DIR)),
+                    catalogs: catalogs_in(&self.installed_dir(&m.id).join(LOCALES_DIR)),
                     module_id: m.id,
                     types: m.notifications,
                 })
@@ -71,7 +71,7 @@ fn catalog(path: &Path) -> Option<(String, String)> {
 mod tests {
     use std::sync::Arc;
 
-    use super::super::{Supervisor, SupervisorConfig};
+    use super::super::{Supervisor, SupervisorConfig, INSTALLED_DIR};
 
     fn supervisor(dir: &std::path::Path) -> Arc<Supervisor> {
         Supervisor::new(SupervisorConfig {
@@ -87,7 +87,7 @@ mod tests {
     }
 
     fn install(dir: &std::path::Path, id: &str, notifications: &str, catalogs: &[(&str, &str)]) {
-        let module = dir.join(id);
+        let module = dir.join(INSTALLED_DIR).join(id);
         std::fs::create_dir_all(module.join("locales")).unwrap();
         std::fs::write(
             module.join("module.json"),

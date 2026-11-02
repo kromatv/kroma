@@ -23,6 +23,11 @@ pub struct WasmHost {
     pub(crate) ticker: Arc<EpochTicker>,
 }
 
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    hex::encode(sha2::Sha256::digest(bytes))
+}
+
 impl WasmHost {
     pub fn new() -> Result<Self, HostError> {
         let mut config = Config::new();
@@ -49,7 +54,9 @@ impl WasmHost {
 
     /// [`Self::compile`], keeping the machine code at `copy` so the next start of
     /// the same `key` skips it. `key` names the component's bytes. The caller keeps
-    /// `copy` where no module can write: it runs as native code.
+    /// `copy` where no module can write: it runs as native code. A copy whose bytes
+    /// are not the ones recorded beside it is not loaded, and the component is
+    /// compiled again.
     pub fn compile_keeping(
         &self,
         wasm: &[u8],
@@ -58,25 +65,43 @@ impl WasmHost {
     ) -> Result<(ModuleComponent, Readied), HostError> {
         let stamp = copy.with_extension("stamp");
         let expected = self.stamp_for(key);
-        if std::fs::read_to_string(&stamp).is_ok_and(|found| found == expected) {
-            // SAFETY: this host wrote `copy` under this stamp, which names the
-            // component and this engine's compatibility, in a folder no module holds.
-            if let Ok(component) = unsafe { Component::deserialize_file(&self.engine, copy) } {
-                return Ok((self.linked(&component)?, Readied::FromCache));
-            }
-        }
+        let readied = match self.kept(copy, &stamp, &expected) {
+            Kept::Loaded(component) => return Ok((self.linked(&component)?, Readied::FromCache)),
+            Kept::Changed => Readied::CopyRefused,
+            Kept::Absent => Readied::Compiled,
+        };
         let machine_code = self.engine.precompile_component(wasm).map_err(HostError::Compile)?;
         let kept = copy
             .parent()
             .map_or(Ok(()), std::fs::create_dir_all)
             .and_then(|()| std::fs::write(copy, &machine_code))
-            .and_then(|()| std::fs::write(&stamp, &expected));
+            .and_then(|()| std::fs::write(&stamp, format!("{expected}-{}", sha256_hex(&machine_code))));
         if let Err(error) = kept {
             tracing::warn!(%error, "the compiled component was not kept");
         }
         // SAFETY: `machine_code` was produced by this engine a moment ago.
         let component = unsafe { Component::deserialize(&self.engine, &machine_code) }.map_err(HostError::Compile)?;
-        Ok((self.linked(&component)?, Readied::Compiled))
+        Ok((self.linked(&component)?, readied))
+    }
+
+    fn kept(&self, copy: &Path, stamp: &Path, expected: &str) -> Kept {
+        let recorded = std::fs::read_to_string(stamp)
+            .ok()
+            .and_then(|found| found.strip_prefix(&format!("{expected}-")).map(str::to_string));
+        let (Some(recorded), Ok(machine_code)) = (recorded, std::fs::read(copy)) else {
+            return Kept::Absent;
+        };
+        if sha256_hex(&machine_code) != recorded {
+            tracing::warn!(copy = %copy.display(), "a compiled copy is not the one recorded beside it");
+            return Kept::Changed;
+        }
+        // SAFETY: this host wrote these bytes under this stamp, which names the
+        // component, this engine's compatibility and the bytes' own sha256, in a
+        // folder no module holds.
+        match unsafe { Component::deserialize(&self.engine, &machine_code) } {
+            Ok(component) => Kept::Loaded(component),
+            Err(_) => Kept::Absent,
+        }
     }
 
     fn stamp_for(&self, key: &str) -> String {
@@ -98,11 +123,19 @@ impl WasmHost {
     }
 }
 
-/// How a component came to be ready: compiled now, or read from an earlier compile.
+/// How a component came to be ready: compiled now, read from an earlier compile,
+/// or compiled again because that compile's copy was not the one recorded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Readied {
     Compiled,
     FromCache,
+    CopyRefused,
+}
+
+enum Kept {
+    Loaded(Component),
+    Changed,
+    Absent,
 }
 
 /// A compiled, linked component, ready to instantiate any number of times.
