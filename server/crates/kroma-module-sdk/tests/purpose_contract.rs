@@ -19,12 +19,16 @@ fn a_module_test_that_calls_out_for_an_undeclared_purpose_fails_and_names_it() {
     let report = String::from_utf8_lossy(&out.stdout);
     assert!(!out.status.success(), "{report}");
     assert!(
-        report.contains("discover_leaves_for_a_purpose_the_manifest_does_not_declare ... FAILED"),
+        report.contains("artwork_leaves_for_a_purpose_the_manifest_does_not_declare ... FAILED"),
         "{report}"
     );
     assert!(
         report.contains("details_leave_for_the_declared_purpose ... ok"),
         "{report}"
     );
-    assert!(report.contains("purpose `metadata.discover`"), "{report}");
+    assert!(
+        report.contains("discover_leaves_for_a_child_of_the_declared_purpose ... ok"),
+        "{report}"
+    );
+    assert!(report.contains("purpose `artwork`"), "{report}");
 }

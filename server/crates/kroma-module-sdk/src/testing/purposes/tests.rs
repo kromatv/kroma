@@ -24,11 +24,16 @@ fn a_purpose_the_manifest_declares_passes() {
 }
 
 #[test]
-fn a_narrower_purpose_than_the_declared_one_is_refused_by_name() {
-    let refusal = tmdb_only().check("metadata.discover").unwrap_err();
+fn a_dotted_child_of_the_declared_purpose_passes() {
+    assert_eq!(tmdb_only().check("metadata.discover"), Ok(()));
+}
+
+#[test]
+fn a_purpose_the_declaration_does_not_cover_is_refused_by_name() {
+    let refusal = tmdb_only().check("metadatax").unwrap_err();
 
     assert!(refusal.contains("tv.kroma.fixture"), "{refusal}");
-    assert!(refusal.contains("`metadata.discover`"), "{refusal}");
+    assert!(refusal.contains("`metadatax`"), "{refusal}");
 }
 
 #[test]
