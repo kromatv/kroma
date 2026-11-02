@@ -1,23 +1,15 @@
 //! What installing a version asks for beyond the one installed, which an update
 //! nobody is looking at may not take.
 
-use crate::ModuleManifest;
+use crate::{Declared, ModuleManifest};
 
 impl ModuleManifest {
     /// Whether installing this over `installed` asks for more than it was
-    /// granted: a wider `permissions` block, or a key in `settings.write` it did
-    /// not declare. An installed module that declared no `permissions` has none
-    /// to widen.
+    /// granted: a wider `permissions` block, a table or column of the core
+    /// database, or a key in `settings.write` it did not declare. An installed
+    /// module that declared no `permissions` has none to widen.
     pub fn asks_more_than(&self, installed: &ModuleManifest) -> bool {
-        let wider_permissions = match (&self.permissions, &installed.permissions) {
-            (Some(offered), Some(granted)) => offered.widens(granted),
-            _ => false,
-        };
-        wider_permissions
-            || self
-                .settings
-                .as_ref()
-                .is_some_and(|offered| offered.writes_beyond(installed.settings.as_ref()))
+        Declared::of(self).widens(installed)
     }
 }
 

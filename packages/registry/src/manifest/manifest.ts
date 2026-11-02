@@ -22,15 +22,15 @@ export const MODULE_SCHEMA_VERSION = 3;
  *  current one moves on. */
 export const MANIFEST_SCHEMAS: Record<number, z.ZodType> = { 2: V2, 3: V3 };
 
+export { Helpers } from './helpers.ts';
+export { SettingsScope } from './settings-scope.ts';
+export { CoreScope, Storage } from './storage.ts';
 export {
   ArtifactRef,
   ConfigField,
-  CoreScope,
   dependenciesOf,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
-  SettingsScope,
-  Storage,
 } from './v2.ts';
 export { DescribedModule, Manifest, speaksCurrentSchema } from './v3.ts';
 export { notificationsProblem } from './notifications.ts';

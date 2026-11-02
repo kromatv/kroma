@@ -205,3 +205,90 @@ fn a_record_built_for_another_contract_is_listed_but_not_offered() {
     );
     assert!(refusal.reason().contains("manifest schema v0"));
 }
+
+fn torrents_row() -> Value {
+    json!({
+        "id": "tv.kroma.torrents", "name": "Torrents", "version": "0.6.33",
+        "permissions": { "run": ["rqbit", "curl"] },
+        "storage": { "core": { "read": ["downloads", "users.email"], "write": ["downloads"] } },
+        "settings": { "read": ["rqbitPort"], "write": ["rqbitPort"] },
+        "helpers": { "rqbit": { "assets": { "linux-x86_64": {
+            "url": "https://github.com/ikatson/rqbit/releases/download/v8/rqbit-linux",
+            "sha256": "ab".repeat(32)
+        } } } },
+        "artifacts": []
+    })
+}
+
+#[test]
+fn a_row_carries_the_storage_settings_and_helpers_its_manifest_declares() {
+    let m = parse_module(&torrents_row()).unwrap();
+
+    let storage = m.storage.as_ref().unwrap();
+    assert_eq!(storage.core.read, ["downloads", "users.email"]);
+    assert_eq!(m.settings.as_ref().unwrap().write, ["rqbitPort"]);
+    assert!(m.helpers.as_ref().unwrap().contains_key("rqbit"));
+}
+
+#[test]
+fn a_row_from_a_catalog_that_predates_them_reads_as_not_saying() {
+    let older = json!({
+        "id": "tv.kroma.torrents", "name": "Torrents", "version": "0.6.33",
+        "permissions": { "run": ["rqbit"] }, "artifacts": []
+    });
+
+    let m = parse_module(&older).unwrap();
+
+    assert!(m.permissions.is_some());
+    assert!(m.storage.is_none());
+    assert!(m.settings.is_none());
+    assert!(m.helpers.is_none());
+}
+
+#[test]
+fn a_declaration_this_server_cannot_read_is_dropped_rather_than_guessed() {
+    let mut row = torrents_row();
+    row["helpers"] = json!({ "rqbit": { "assets": {}, "extra": true } });
+    row["settings"] = json!({ "read": "rqbitPort" });
+
+    let m = parse_module(&row).unwrap();
+
+    assert!(m.helpers.is_none());
+    assert!(m.settings.is_none());
+    assert!(m.storage.is_some());
+}
+
+#[test]
+fn every_store_row_names_what_the_module_reaches() {
+    let m = parse_module(&torrents_row()).unwrap();
+
+    let brief = crate::api::admin::store::plan::entry_brief(&m);
+
+    assert_eq!(brief["storage"]["core"]["read"][1], "users.email");
+    assert_eq!(brief["settings"]["read"][0], "rqbitPort");
+    assert_eq!(
+        brief["helpers"]["rqbit"]["assets"]["linux-x86_64"]["sha256"],
+        "ab".repeat(32)
+    );
+    assert_eq!(brief["permissions"]["run"][1], "curl");
+}
+
+#[test]
+fn an_update_that_reads_more_account_data_widens_what_was_granted() {
+    let installed: ModuleManifest = serde_json::from_value(json!({
+        "id": "tv.kroma.torrents", "name": "Torrents", "version": "0.6.32",
+        "permissions": { "run": ["rqbit", "curl"] },
+        "storage": { "core": { "read": ["downloads"], "write": ["downloads"] } },
+        "settings": { "read": ["rqbitPort"], "write": ["rqbitPort"] }
+    }))
+    .unwrap();
+    let offered = parse_module(&torrents_row()).unwrap();
+    let silent = CatalogModule {
+        storage: None,
+        ..parse_module(&torrents_row()).unwrap()
+    };
+
+    assert!(widens_access(&offered, Some(&installed)));
+    assert!(!widens_access(&silent, Some(&installed)));
+    assert!(!widens_access(&offered, None));
+}

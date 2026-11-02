@@ -8,6 +8,9 @@
 //! offer modules with their dependencies and checksums quietly missing.
 
 use kroma_module_host::HostCtx;
+use kroma_module_manifest::{
+    Declared, Helper, ModuleManifest, Permissions, SettingsScope, Storage,
+};
 use serde_json::{json, Value};
 
 use super::refusal::Refusal;
@@ -51,9 +54,12 @@ pub struct CatalogModule {
     // the install planner suggests providers for the unsatisfied ones.
     pub consumes: Vec<(String, Option<String>)>,
     pub artifacts: Vec<Artifact>,
-    /// What this version declares it may do. `None` when the registry does not
-    /// say, or says something this server cannot read.
-    pub permissions: Option<kroma_module_manifest::Permissions>,
+    /// What this version declares it may do and reach. Each is `None` when the
+    /// registry does not say, or says something this server cannot read.
+    pub permissions: Option<Permissions>,
+    pub storage: Option<Storage>,
+    pub settings: Option<SettingsScope>,
+    pub helpers: Option<std::collections::BTreeMap<String, Helper>>,
     /// Whether the registry this row came from is the official one. Set when
     /// the fetched registries are merged, and recorded at install time so a
     /// module's provenance is a fact rather than something re-derived later
@@ -119,12 +125,7 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
         .iter()
         .map(|m| (m.id.clone(), m.version.clone()))
         .collect();
-    let granted = |id: &str| {
-        manifests
-            .iter()
-            .find(|m| m.id == id)
-            .and_then(|m| m.permissions.as_ref())
-    };
+    let granted = |id: &str| manifests.iter().find(|m| m.id == id);
     let entries: Vec<Value> = fetched
         .iter()
         .flat_map(|f| f.modules.iter().map(move |m| (m, f.registry.name.as_str())))
@@ -134,7 +135,7 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
             let refusal = compat_verdict(m).err();
             let newer = installed_version
                 .is_some_and(|current| kroma_module_manifest::is_newer(&m.version, current));
-            json!({
+            let mut row = json!({
                 "schemaVersion": m.schema_version,
                 "id": m.id,
                 "name": m.name,
@@ -157,10 +158,13 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "reason": refusal.as_ref().map(Refusal::reason),
                 "refusal": refusal,
                 "source": source,
-                "permissions": m.permissions,
-                "widensPermissions": widens_permissions(m, granted(&m.id)),
+                "widensPermissions": widens_access(m, granted(&m.id)),
                 "official": m.official,
-            })
+            });
+            if let Value::Object(fields) = &mut row {
+                fields.extend(declared_fields(m));
+            }
+            row
         })
         .collect();
     let official = fetched.iter().find(|f| f.registry.official);
@@ -194,19 +198,37 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         consumes: Vec::new(),
         artifacts: Vec::new(),
         permissions: None,
+        storage: None,
+        settings: None,
+        helpers: None,
     }
 }
 
-/// Whether taking this entry asks for more than `installed` was granted. A module
-/// that declared nothing has nothing to widen.
-pub fn widens_permissions(
-    entry: &CatalogModule,
-    installed: Option<&kroma_module_manifest::Permissions>,
-) -> bool {
-    match (&entry.permissions, installed) {
-        (Some(offered), Some(installed)) => offered.widens(installed),
-        _ => false,
+impl CatalogModule {
+    pub fn declared(&self) -> Declared<'_> {
+        Declared {
+            permissions: self.permissions.as_ref(),
+            storage: self.storage.as_ref(),
+            settings: self.settings.as_ref(),
+        }
     }
+}
+
+/// What a row declares it may do and reach, under the keys every store response
+/// that names a module carries, so a consent can show it before install.
+pub fn declared_fields(m: &CatalogModule) -> [(String, Value); 4] {
+    [
+        ("permissions".into(), json!(m.permissions)),
+        ("storage".into(), json!(m.storage)),
+        ("settings".into(), json!(m.settings)),
+        ("helpers".into(), json!(m.helpers)),
+    ]
+}
+
+/// Whether taking this entry asks for more than `installed` was granted. What
+/// the row does not say widens nothing.
+pub fn widens_access(entry: &CatalogModule, installed: Option<&ModuleManifest>) -> bool {
+    installed.is_some_and(|installed| entry.declared().widens(installed))
 }
 
 #[cfg(test)]

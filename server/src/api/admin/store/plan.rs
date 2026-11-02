@@ -33,7 +33,7 @@ pub(super) struct Planned<'a> {
 pub(super) struct Planner<'a> {
     by_id: HashMap<&'a str, &'a CatalogModule>,
     present: HashMap<String, String>,
-    granted: HashMap<String, kroma_module_manifest::Permissions>,
+    granted: HashMap<String, kroma_module_manifest::ModuleManifest>,
     // `(point, instance)` the present modules answer, for `consumes`
     // satisfaction. Disabled modules count: the admin can enable them.
     present_answers: Vec<(String, Option<String>)>,
@@ -55,11 +55,11 @@ impl<'a> Planner<'a> {
                     .map(|c| (c.point.clone(), c.id.clone()))
             })
             .collect();
-        let granted = manifests
+        let present = manifests
             .iter()
-            .filter_map(|m| Some((m.id.clone(), m.permissions.clone()?)))
+            .map(|m| (m.id.clone(), m.version.clone()))
             .collect();
-        let present = manifests.into_iter().map(|m| (m.id, m.version)).collect();
+        let granted = manifests.into_iter().map(|m| (m.id.clone(), m)).collect();
         let mut planner = Self::with_present(modules, present, present_answers);
         planner.granted = granted;
         planner
@@ -141,7 +141,7 @@ impl<'a> Planner<'a> {
             entry,
             installed: self.present.get(id).cloned(),
             requested: is_root,
-            widens: catalog::widens_permissions(entry, self.granted.get(id)),
+            widens: catalog::widens_access(entry, self.granted.get(id)),
         });
         Ok(())
     }
@@ -276,7 +276,7 @@ fn row_base(entry: &CatalogModule) -> Map<String, Value> {
     row.insert("name".into(), json!(entry.name));
     row.insert("version".into(), json!(entry.version));
     row.insert("size".into(), json!(entry_size(entry)));
-    row.insert("permissions".into(), json!(entry.permissions));
+    row.extend(catalog::declared_fields(entry));
     row.insert("official".into(), json!(entry.official));
     row
 }

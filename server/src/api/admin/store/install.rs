@@ -268,7 +268,7 @@ pub async fn update_all(
         if !takes_update(entry, cur) {
             continue;
         }
-        if catalog::widens_permissions(entry, manifest.permissions.as_ref()) {
+        if catalog::widens_access(entry, Some(manifest)) {
             outcome.needs_consent.push(id.to_string());
             continue;
         }

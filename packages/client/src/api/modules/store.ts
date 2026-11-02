@@ -1,8 +1,26 @@
-import { Contribution, Permissions, PointReq } from '@kromatv/registry';
+import {
+  Contribution,
+  Helpers,
+  Permissions,
+  PointReq,
+  SettingsScope,
+  Storage,
+} from '@kromatv/registry';
 import { z } from 'zod';
 import { ModuleId } from './ids';
 
 const DependencyMap = z.record(z.string(), z.string());
+
+/** What a module declares it may do and reach, as its catalog row or its bundle
+ *  says. Each part is null when the source does not say, or says something this
+ *  client cannot read. */
+export const DeclaredAccess = z.object({
+  permissions: Permissions.nullish().catch(null),
+  storage: Storage.nullish().catch(null),
+  settings: SettingsScope.nullish().catch(null),
+  helpers: Helpers.nullish().catch(null),
+});
+export type DeclaredAccess = z.infer<typeof DeclaredAccess>;
 
 /** Why this server cannot take a catalog entry, for the client to word. */
 export const StoreRefusal = z.discriminatedUnion('kind', [
@@ -21,7 +39,7 @@ export type StoreRefusal = z.infer<typeof StoreRefusal>;
 /** One catalog entry, enriched server-side (`GET /api/admin/store/catalog`):
  * the picked artifact, installed/update state, and the compatibility verdict
  * with its reason. */
-export const StoreModule = z.object({
+export const StoreModule = DeclaredAccess.extend({
   id: ModuleId,
   name: z.string(),
   version: z.string(),
@@ -44,8 +62,6 @@ export const StoreModule = z.object({
   refusal: StoreRefusal.nullish().catch(null),
   /** Name of the registry this entry came from. */
   source: z.string(),
-  /** What this version may do. Absent when the registry does not say. */
-  permissions: Permissions.nullish().catch(null),
   /** This update asks for more than the installed version, so an operator has
    * to accept it: no batch or automatic update takes it. */
   widensPermissions: z.boolean().default(false),
@@ -86,14 +102,13 @@ export type StoreCatalog = z.infer<typeof StoreCatalog>;
 
 /** One resolved row of an install plan, dependencies first. `requested` is
  * false for a module that rides along as a dependency. */
-export const StorePlanModule = z.object({
+export const StorePlanModule = DeclaredAccess.extend({
   id: ModuleId,
   name: z.string(),
   version: z.string(),
   size: z.number().nullish(),
   installedVersion: z.string().nullish(),
   requested: z.boolean(),
-  permissions: Permissions.nullish().catch(null),
   widensPermissions: z.boolean().default(false),
   official: z.boolean().default(false),
 });
@@ -162,11 +177,10 @@ export type StoreUpdateResult = z.infer<typeof StoreUpdateResult>;
 
 /** `POST /api/admin/store/inspect`: what a `.kmod` declares, read before it is
  * installed so an operator can accept it. */
-export const StoreBundleInspection = z.object({
+export const StoreBundleInspection = DeclaredAccess.extend({
   id: z.string(),
   name: z.string(),
   version: z.string(),
-  permissions: Permissions.nullish().catch(null),
   installedVersion: z.string().nullish(),
   widensPermissions: z.boolean().default(false),
 });

@@ -1,4 +1,4 @@
-import type { ModulePermissions, StoreCatalog, StoreModule } from '@kromatv/client/modules';
+import type { DeclaredAccess, StoreCatalog, StoreModule } from '@kromatv/client/modules';
 import type { AdminModule } from '#web/features/admin/module-api';
 import type {
   Access,
@@ -51,12 +51,13 @@ export function fromOfficialRegistry(catalog: StoreCatalog, entry: StoreModule):
 
 /** What a catalog row, a plan row or an uploaded bundle declares: null when it
  *  does not say what the module may do. */
-export function declaredSource(declared: {
-  permissions?: ModulePermissions | null;
-  official?: boolean;
-}): PermissionSource | null {
-  const { permissions, official } = declared;
-  return permissions ? { permissions, official: official ?? false } : null;
+export function declaredSource(
+  declared: DeclaredAccess & { official?: boolean },
+): PermissionSource | null {
+  const { permissions, storage, settings, helpers, official } = declared;
+  return permissions
+    ? { permissions, storage, settings, helpers, official: official ?? false }
+    : null;
 }
 
 /** Everything several modules declare, as if one module declared it all. */
@@ -115,10 +116,9 @@ export function addedAccess(next: PermissionSource, before: PermissionSource): P
   };
 }
 
-interface ConsentRow {
+interface ConsentRow extends DeclaredAccess {
   id: string;
   name: string;
-  permissions?: ModulePermissions | null;
   official?: boolean;
   installedVersion?: string | null;
 }

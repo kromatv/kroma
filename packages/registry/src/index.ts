@@ -35,6 +35,7 @@ export {
   CoreScope,
   DescribedModule,
   dependenciesOf,
+  Helpers,
   MANIFEST_SCHEMAS,
   Manifest,
   Permissions,
@@ -42,6 +43,7 @@ export {
   notificationsProblem,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
+  SettingsScope,
   Storage,
   speaksCurrentSchema,
 } from './manifest/index.ts';

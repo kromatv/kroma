@@ -270,6 +270,9 @@ async fn inspect_upload(
         "name": manifest.name,
         "version": manifest.version,
         "permissions": manifest.permissions,
+        "storage": manifest.storage,
+        "settings": manifest.settings,
+        "helpers": manifest.helpers,
         "installedVersion": installed.map(|m| m.version),
         "widensPermissions": widens,
     }))
