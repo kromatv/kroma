@@ -27,9 +27,10 @@ export interface GlobeProps {
 // a label above a pin near the top.
 const CAMERA = { position: [0, 0, 3.7] as [number, number, number], fov: 35 };
 
-// Every country gets a pin; only the heaviest get a pill, or a full map reads
-// as a wall of names. The collector sorts them heaviest first.
-const MAX_LABELS = 12;
+// Every country gets a pill with its flag; only the heaviest also carry their
+// name, or a full map reads as a wall of names. The collector sorts them
+// heaviest first.
+const MAX_NAMES = 12;
 
 function place(pins: readonly GlobePin[]): PlacedPin[] {
   return pins.map((pin) => ({ ...pin, position: toVector(pin.lat, pin.lng, PIN_ALTITUDE) }));
@@ -51,7 +52,6 @@ export function Globe({ pins, ground, label }: Readonly<GlobeProps>) {
   const { handlers, dragging } = useDrag(motion, () => invalidate.current());
   const palette = globePalette(ground);
   const placed = place(pins);
-  const labelled = placed.slice(0, MAX_LABELS);
   const tour = tourOf(placed);
 
   return (
@@ -85,9 +85,9 @@ export function Globe({ pins, ground, label }: Readonly<GlobeProps>) {
           <LandDots color={palette.dots} />
           <Pins pins={placed} color={palette.pin} pulse={!reduced} />
         </Rotating>
-        <LabelProjector pins={labelled} nodes={nodes} group={group} />
+        <LabelProjector pins={placed} nodes={nodes} group={group} />
       </Canvas>
-      <Labels pins={labelled} nodes={nodes} />
+      <Labels pins={placed} named={MAX_NAMES} nodes={nodes} />
     </div>
   );
 }
