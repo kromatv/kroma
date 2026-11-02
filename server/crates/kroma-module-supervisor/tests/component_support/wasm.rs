@@ -51,3 +51,13 @@ pub fn guest_component() -> &'static [u8] {
         )
     })
 }
+
+pub fn lifecycle_component() -> &'static [u8] {
+    static BUILT: OnceLock<Vec<u8>> = OnceLock::new();
+    BUILT.get_or_init(|| {
+        build(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/component_guest"),
+            "lifecycle",
+        )
+    })
+}

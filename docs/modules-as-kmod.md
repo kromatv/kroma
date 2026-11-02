@@ -33,12 +33,13 @@ host processes, declared in the manifest. See
   CPU budget.
 - **`kroma-module-runtime`** is what a module links. `module_main!(wire,
   modules)` is the whole `main`: it builds a `RemoteHost` (the `HostCtx` that
-  asks the core through `host-api`), applies the module's migrations to its OWN
-  database, calls `wire` with the live host (which registers the module's
-  services and hands back its extra routes), runs `on_enable`, and answers the
-  module's `admin_routes` and a `/_health` probe through `route.handle`. Built for
-  any other target the module still compiles, so its tests run natively, but it
-  refuses to start.
+  asks the core through `host-api`), calls `wire` with the live host (which
+  registers the module's services and hands back its extra routes), runs
+  `on_enable` on the primary instance, and answers the module's `admin_routes`
+  and a `/_health` probe through `route.handle`. Before any of that it answers
+  the host's `/_lifecycle`: the schema, jobs and event topics its modules
+  declare. Built for any other target the module still compiles, so its tests
+  run natively, but it refuses to start.
 - **Storage is a capability, not part of the runtime.** A module that declares no
   `storage` in its manifest reaches no row. One that does gets two databases:
   its own file at `<data>/modules/<id>/module.sqlite`, and the shared core
@@ -52,12 +53,15 @@ host processes, declared in the manifest. See
   the machine code at `<data>/helpers/<id>/module.cwasm`, so a restart reuses it.
   It serves the module on `modules/<id>/module.sock` under `<data>/run`, in a
   directory only the server's user can open, and `proxy_to` reverse-proxies a
-  request there. An instance starts as soon as the module does, so `on_enable`
-  runs without waiting for a first call. Every 100 ms each instance not answering
-  a call gets a turn, so background tasks advance. An instance holds its slot
-  until its call ends, even when the caller has given up, so a module never runs
-  more instances than it declares, and one lost to a trap takes the programs it
-  started with it. Stopping runs `on_disable` through `stop`, then stops the
+  request there. The first instance is the primary, and it starts as soon as the
+  module does: the supervisor reads its `/_lifecycle`, applies the migrations to
+  the module's own file, registers the jobs and topics with the core, and only
+  then opens the module's other slots to workers, which never run `on_enable`.
+  A bundle that predates `/_lifecycle` runs its own startup and gets one
+  instance. Every 100 ms each instance not answering a call gets a turn, so
+  background tasks advance. An instance holds its slot until its call ends, even
+  when the caller has given up, so a module never runs more instances than it
+  declares, and one lost to a trap takes the programs it started with it. Stopping runs `on_disable` through `stop`, then stops the
   programs the module started. Before starting a module the supervisor moves any
   table it declared under `storage.adopt` out of the core database and into the
   module's own file.

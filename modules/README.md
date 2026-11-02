@@ -109,11 +109,13 @@ use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 ```
 
-A module's whole `main` is one `module_main!`: the runtime builds the host,
-applies the module's migrations to its own database, runs `on_enable` and answers
-the module's admin routes through the component's `route` export. The closure
-takes the live host, wires the module's own services into it, and returns an
-`axum::Router` of its own, mounted beside every module's `admin_routes`:
+A module's whole `main` is one `module_main!`: the runtime builds the host, runs
+`on_enable` and answers the module's admin routes through the component's `route`
+export. The host applies the module's migrations to its own database and
+registers its jobs and event topics first, once, however many instances it runs
+(see [Instances](#instances)). The closure takes the live host, wires the
+module's own services into it, and returns an `axum::Router` of its own, mounted
+beside every module's `admin_routes`:
 
 ```rust
 kroma_module_runtime::module_main!(
@@ -240,8 +242,9 @@ it also carries playback, cast and progress traffic, which is high-rate and
 rarely what a module wants. Another module's events arrive the same way, under
 whatever name it published (`download.completed`, `vpn.status`).
 
-The runtime registers them at boot and serves `/_event/{topic}`. The core reads
-its bus and POSTs each matching event to every subscriber. Three things to know:
+The host registers them once when the module starts, and the runtime serves
+`/_event/{topic}`. The core reads its bus and POSTs each matching event to every
+subscriber. Three things to know:
 
 - **Opt in one topic at a time.** The bus carries high-rate traffic (playback
   progress) and each delivery is an HTTP call into the module.
@@ -418,15 +421,17 @@ The component's environment holds only what the host puts there:
 | `KROMA_DB_PATH` | `/kroma/core.sqlite`, the name the `sql` import answers for the core database. The runtime reads it only with `storage` |
 | `TMPDIR` | `/tmp`, the module's private scratch folder |
 | `KROMA_MODULE_LOG`, `RUST_LOG` | the server's log filters, when it has them |
+| `KROMA_MODULE_ROLE` | `primary` or `worker`, see [Instances](#instances). A runtime that finds none runs its whole startup itself, as a server from before roles expects |
 
 and each variable `permissions.env` names, when the server has it. The runtime
 reads these: a module never does unless it has a reason of its own.
 
-An instance starts when the module does, so `on_enable` runs without waiting for
-a first call. Work a module leaves running advances on a 100 ms tick between
-calls. Stopping runs `on_disable`, then stops every program the module started.
-An instance lost to a panic or a limit takes the programs it started with it, and
-the fresh one that replaces it runs `on_enable` again.
+The primary instance starts when the module does, so `on_enable` runs without
+waiting for a first call. Work a module leaves running advances on a 100 ms tick
+between calls. Stopping runs `on_disable`, then stops every program the module
+started. An instance lost to a panic or a limit takes the programs it started
+with it. When that was the primary, the next call starts a new one, which runs
+`on_enable` again.
 
 The settings callback reads and writes the operator's preferences, **not the
 core's own credentials**. A key reaches you only when the core declared that it
@@ -470,13 +475,41 @@ the reach that will be refused when it is.
   predates the field and keeps the reach it had.
 - **`component`** is what one module asks of the host: `instances` answering at
   once (default 1; they share no memory, so more than one suits a module whose
-  state is in its database), `memoryMib` one may grow to (default 512) and
-  `cpuSeconds` one call may spend (default 60, its own CPU time, not the time it
-  waits on the host).
+  state is in its database, see [Instances](#instances)), `memoryMib` one may
+  grow to (default 512) and `cpuSeconds` one call may spend (default 60, its own
+  CPU time, not the time it waits on the host).
 - **`helpers`** pins the upstream build of a program `permissions.run` names, per
   `<os>-<arch>`: a `url`, its `sha256`, and the `member` to take out of a
   `.tar.gz`. The host fetches and checks it. Only a first-party module starts a
   program at all; see [module security](../docs/module-security.md#what-the-component-does-not-contain).
+
+### Instances
+
+`component.instances` above 1 lets a module answer that many calls at once. The
+first instance is the **primary**. The others are **workers**, started when a
+call finds every instance busy.
+
+- Before the primary starts, the host asks the module what it declares
+  (`migrations()` and `steps()`, `jobs()`, `events()`), applies the migrations to
+  the module's own database, keeps one copy of the file before an upgrade, and
+  registers the jobs and topics with the core. This happens once per start,
+  however many instances the module runs, and no worker starts before it is done.
+- `on_enable` and `on_disable` run on the primary only. A worker runs `wire` and
+  serves every route, jobs and events included.
+- **Memory is per instance.** What `on_enable` starts or fills lives on the
+  primary: a bridge, a download engine, an advertisement, a service it reaches
+  through `register_service`. A worker builds the same services in `wire`, and
+  they stay as `wire` left them, enabled by no one. Any instance may answer any
+  call. The host hands a call to the primary when it is free, which is a
+  preference, not a promise. So a module that keeps state in memory declares one
+  instance, and a module that declares more keeps everything a call must see in
+  its database.
+- An idle worker that grew past 64 MiB is dropped after five minutes. The
+  primary is kept.
+
+A bundle built against an SDK from before this runs its whole startup itself, in
+every instance. The host runs one instance of it until it is rebuilt, and says
+so in the module's log.
 
 ## Storage
 
@@ -541,11 +574,14 @@ fn steps(&self) -> &'static [Step] {
 }
 ```
 
-`Step` and `Run` come from `kroma_module_sdk::db`. A store written before the
-module had steps runs its baseline once more and then takes them. A step that
-has shipped is never edited, and a store a newer version of the module wrote is
-refused at startup instead of read with the wrong shape. The core database
-works the same way; see [`docs/database-migrations.md`](../docs/database-migrations.md).
+`Step` and `Run` come from `kroma_module_sdk::db`. The host applies them, through
+the same guard as every other statement on the file. It is handed SQL, so a
+`Run::Code` step cannot reach it: a module with one does not start, and its log
+names the step. A store written before the module had steps runs its baseline
+once more and then takes them. A step that has shipped is never edited, and a
+store a newer version of the module wrote is refused at startup instead of read
+with the wrong shape. The core database works the same way; see
+[`docs/database-migrations.md`](../docs/database-migrations.md).
 
 Two rules about a grant come from SQLite rather than from us, and both have bitten:
 a column named in a `WHERE` is reached as much as one that is projected, and a

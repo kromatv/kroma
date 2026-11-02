@@ -6,13 +6,15 @@ use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Mutex, OnceLock, PoisonError};
 
-use kroma_sqlite::{Grant, Pool};
+use kroma_module_wire::Migrations;
+use kroma_sqlite::{Grant, Migrated, Pool, SqlStep};
 use kroma_wasm_host::{Databases, SqlConnection, SqlFailure};
 
 mod connection;
 
 use connection::HostConnection;
 
+const OWN_FILE: &str = "module.sqlite";
 const SQLITE_ERROR: i32 = 1;
 const SQLITE_AUTH: i32 = 23;
 
@@ -73,6 +75,22 @@ impl ModuleDatabases {
         let pool = kroma_sqlite::open_guarded(path, &self.module).map_err(|error| failure_of_any(&error))?;
         own.insert(path.to_path_buf(), pool.clone());
         Ok(pool)
+    }
+
+    pub(super) fn migrate_own(&self, migrations: &Migrations) -> anyhow::Result<Migrated> {
+        let pool = self
+            .own_pool(&self.own_dir.join(OWN_FILE))
+            .map_err(|failure| anyhow::anyhow!(failure.message))?;
+        let steps: Vec<SqlStep> = migrations
+            .steps
+            .iter()
+            .map(|step| SqlStep {
+                name: &step.name,
+                sql: &step.sql,
+                rebuilds: step.rebuilds,
+            })
+            .collect();
+        kroma_sqlite::migrate_store_sql(&pool, &self.module, &migrations.baseline, &steps)
     }
 
     fn is_own(&self, path: &Path) -> bool {

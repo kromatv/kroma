@@ -1,6 +1,30 @@
 use std::path::PathBuf;
 
+use kroma_module_wire::Role;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Startup {
+    Own,
+    Run(Role),
+}
+
+impl Startup {
+    pub(crate) fn of(role: Option<&str>) -> anyhow::Result<Self> {
+        let Some(role) = role else {
+            return Ok(Self::Own);
+        };
+        Role::parse(role).map(Self::Run).ok_or_else(|| {
+            anyhow::anyhow!("the host gave this instance a role it does not know: {role}")
+        })
+    }
+
+    pub(crate) fn enables(self) -> bool {
+        self != Self::Run(Role::Worker)
+    }
+}
+
 pub(crate) struct Env {
+    pub(crate) startup: Startup,
     pub(crate) module_id: String,
     pub(crate) core_url: String,
     pub(crate) host_token: String,
@@ -17,6 +41,7 @@ impl Env {
     pub(crate) fn from_process() -> anyhow::Result<Self> {
         let get = |k: &str| std::env::var(k).map_err(|_| anyhow::anyhow!("{k} not set"));
         Ok(Self {
+            startup: Startup::of(std::env::var(kroma_module_wire::ROLE_ENV).ok().as_deref())?,
             module_id: get("KROMA_MODULE_ID")?,
             core_url: get("KROMA_CORE_URL")?,
             host_token: get("KROMA_HOST_TOKEN")?,

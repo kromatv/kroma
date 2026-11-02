@@ -6,11 +6,11 @@ use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::ServerModule;
 
 #[cfg(any(target_family = "wasm", test))]
-use crate::env::Env;
+use crate::env::{Env, Startup};
 #[cfg(any(target_family = "wasm", test))]
 use crate::events::{event_router, register_events, wanted_topics, Subscribers};
 #[cfg(any(target_family = "wasm", test))]
-use crate::jobs::{collect_jobs, job_router, register_jobs, JobSpec};
+use crate::jobs::{collect_jobs, job_router, register_jobs};
 #[cfg(any(target_family = "wasm", test))]
 use crate::migrations::apply_module_migrations;
 use crate::remote_host::RemoteHost;
@@ -36,9 +36,11 @@ pub async fn serve_one(
 }
 
 /// Run a module: `wire` builds its own services and port providers against the
-/// live host and hands back whatever extra routes it serves, each module's
-/// `admin_routes` are mounted beside them, and every module's `on_enable` runs.
-/// A component may host several modules or none (a port-provider-only one).
+/// live host and hands back whatever extra routes it serves, and each module's
+/// `admin_routes` are mounted beside them. Every module's `on_enable` runs on the
+/// host's primary instance only, and the host has applied the migrations and
+/// registered the jobs and topics before it starts one. A component may host
+/// several modules or none (a port-provider-only one).
 ///
 /// `wire` takes the host rather than running before it, because a provider that
 /// answers out of a database has to be built holding that database: the port
@@ -53,17 +55,21 @@ pub async fn serve(
 ) -> anyhow::Result<()> {
     #[cfg(target_family = "wasm")]
     {
-        let (app, modules, host) = started(Env::from_process()?, wire, modules).await?;
+        let env = Env::from_process()?;
+        let enables = env.startup.enables();
+        let (app, modules, host) = started(env, wire, modules).await?;
         crate::guest::install_router(app);
-        crate::guest::on_stop(move || {
-            let modules = modules.clone();
-            let host = host.clone();
-            Box::pin(async move {
-                for module in modules.iter() {
-                    module.on_disable(host.clone()).await;
-                }
-            })
-        });
+        if enables {
+            crate::guest::on_stop(move || {
+                let modules = modules.clone();
+                let host = host.clone();
+                Box::pin(async move {
+                    for module in modules.iter() {
+                        module.on_disable(host.clone()).await;
+                    }
+                })
+            });
+        }
         Ok(())
     }
 
@@ -108,14 +114,18 @@ pub(crate) async fn started(
     init_tracing();
     let host = RemoteHost::new(&env)?;
 
-    apply_module_migrations(&host, &modules)?;
+    if env.startup == Startup::Own {
+        apply_module_migrations(&host, &modules)?;
+    }
     // Shared from here on: the event delivery route dispatches to a module at
     // request time, so the set has to outlive this function.
     let modules = Arc::new(modules);
     let extra = wire(&host);
 
-    for module in modules.iter() {
-        module.on_enable(host.clone()).await;
+    if env.startup.enables() {
+        for module in modules.iter() {
+            module.on_enable(host.clone()).await;
+        }
     }
 
     let (job_fns, job_specs) = collect_jobs(&modules);
@@ -149,12 +159,14 @@ pub(crate) async fn started(
     }
     let app = app.with_state(host.clone());
 
-    announce_to_core(&env, job_specs, &topics);
+    if env.startup == Startup::Own {
+        announce_to_core(&env, job_specs, &topics);
+    }
     Ok((app, modules, host))
 }
 
 #[cfg(any(target_family = "wasm", test))]
-fn announce_to_core(env: &Env, job_specs: Vec<JobSpec>, topics: &[String]) {
+fn announce_to_core(env: &Env, job_specs: Vec<kroma_module_wire::JobSpec>, topics: &[String]) {
     let host_url = |path: &str| format!("{}/api/_host/{path}", env.core_url.trim_end_matches('/'));
     if !job_specs.is_empty() {
         let url = host_url("register-job");

@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::ServerModule;
+use kroma_module_wire::JobSpec;
 
 use crate::remote_host::RemoteHost;
 
@@ -29,12 +30,6 @@ pub(crate) fn collect_jobs(
 }
 
 pub(crate) type JobFn = fn(&RemoteHost) -> anyhow::Result<()>;
-
-pub(crate) struct JobSpec {
-    pub(crate) key: String,
-    pub(crate) category: String,
-    pub(crate) schedule: Option<String>,
-}
 
 pub(crate) fn job_router(
     job_fns: HashMap<&'static str, JobFn>,

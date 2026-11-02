@@ -45,6 +45,7 @@ libc = "0.2"
 kroma-egress = { workspace = true }
 kroma-wasm-host = { path = "../kroma-wasm-host" }
 kroma-sqlite = { workspace = true }
+kroma-module-wire = { workspace = true }
 mdns-sd = "0.21"
 
 [dev-dependencies]

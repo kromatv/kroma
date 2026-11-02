@@ -298,10 +298,10 @@ Four gaps stand between that and "a module can do whatever we want":
   name answers `None` rather than a different secret.
 
 Two of the four gaps this list used to name were wrong, and checking them is what
-found it. **Jobs already work**: the runtime registers a module's `jobs()` with
-the core scheduler over `/api/_host/register-job`, and the core fires them by
-POSTing `/_job/run/{key}`, so they appear in the admin job list like an in-core
-one. And **events are two-way now** — see below.
+found it. **Jobs already work**: the host registers a module's `jobs()` with
+the core scheduler over `/api/_host/register-job` when the module starts, and
+the core fires them by POSTing `/_job/run/{key}`, so they appear in the admin
+job list like an in-core one. And **events are two-way now**, see below.
 
 ## Extending a module's frontend
 
@@ -397,11 +397,11 @@ payload would have broken every external search: a shared type had been hiding
 that, since the two modules release on separate tags.
 
 5. **Events are two-way.** A module declares topics on its `ServerModule` and
-   handles them in `on_event`; the runtime registers them at boot and serves
-   `/_event/{topic}`, and the core reads its own bus, matches each event's `type`
-   against what modules asked for, and POSTs it to each subscriber. Before this a
-   module could publish onto the bus and never hear it, so it could be called BY
-   another module but never react to one.
+   handles them in `on_event`; the host registers them when the module starts,
+   the runtime serves `/_event/{topic}`, and the core reads its own bus, matches
+   each event's `type` against what modules asked for, and POSTs it to each
+   subscriber. Before this a module could publish onto the bus and never hear
+   it, so it could be called BY another module but never react to one.
 
    Push rather than a stream a module holds open, for the same reason jobs are
    push: the supervisor already knows every module's socket, a restarted module

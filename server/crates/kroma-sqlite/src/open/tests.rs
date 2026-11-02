@@ -61,3 +61,31 @@ fn a_broken_step_names_the_module_and_the_step() {
         "{err:#}"
     );
 }
+
+#[test]
+fn a_schema_read_at_run_time_migrates_like_a_compiled_one() {
+    let (_dir, pool) = store("store-sql");
+    let steps = [SqlStep {
+        name: "0002_notes_pinned",
+        sql: "ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0",
+        rebuilds: false,
+    }];
+
+    let first = migrate_store_sql(&pool, "tv.kroma.notes", NOTES, &steps).unwrap();
+    let second = migrate_store(&pool, "tv.kroma.notes", NOTES, PINNED).unwrap();
+
+    assert_eq!((first, second), (Migrated::Created, Migrated::Current));
+}
+
+#[test]
+fn a_guarded_store_keeps_a_copy_before_its_upgrade() {
+    let dir = kroma_testing::temp_dir("store-guarded");
+    let file = dir.path().join("module.sqlite");
+    let pool = crate::open_guarded(&file, "tv.kroma.notes").unwrap();
+    migrate_store(&pool, "tv.kroma.notes", NOTES, &[]).unwrap();
+
+    let upgraded = migrate_store(&pool, "tv.kroma.notes", NOTES, PINNED).unwrap();
+
+    assert_eq!(upgraded, Migrated::Upgraded { from: 1, to: 2 });
+    assert!(dir.path().join("module.sqlite.pre-v1").exists());
+}

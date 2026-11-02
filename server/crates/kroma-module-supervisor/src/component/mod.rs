@@ -10,13 +10,14 @@ mod outside;
 mod pool;
 mod programs;
 mod roots;
+mod startup;
 
 use answer::answer;
 pub(crate) use pool::Pool;
 use pool::tick_forever;
 pub use roots::MediaRoots;
 
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -146,9 +147,10 @@ impl Supervisor {
             first_party,
         ));
         programs.reap_all_stale();
+        let port_token = self.port_token(id);
         let mut env = vec![
             ("KROMA_MODULE_ID".to_string(), id.to_string()),
-            ("KROMA_HOST_TOKEN".to_string(), self.port_token(id)),
+            ("KROMA_HOST_TOKEN".to_string(), port_token.clone()),
             ("KROMA_CORE_URL".to_string(), "http://core".to_string()),
             ("KROMA_CORE_PORT".to_string(), self.cfg.core_port.to_string()),
             ("KROMA_DB_PATH".to_string(), CORE_DATABASE.to_string()),
@@ -166,7 +168,7 @@ impl Supervisor {
             }
         }
         let needs = manifest.component;
-        let instances = needs.instances.unwrap_or(1).clamp(1, MAX_INSTANCES) as usize;
+        let instances = needs.instances.unwrap_or(1).clamp(1, MAX_INSTANCES);
         let pool = Arc::new(Pool {
             module: id.to_string(),
             component,
@@ -187,8 +189,12 @@ impl Supervisor {
             programs,
             lan,
             idle: Mutex::new(Vec::new()),
-            slots: Arc::new(Semaphore::new(instances)),
-            capacity: u32::try_from(instances).unwrap_or(1),
+            slots: Arc::new(Semaphore::new(1)),
+            capacity: AtomicU32::new(1),
+            instances,
+            port_token,
+            started_up: AtomicBool::new(false),
+            primary_up: AtomicBool::new(false),
             awake: AtomicBool::new(true),
             say,
         });
