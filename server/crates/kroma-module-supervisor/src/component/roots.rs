@@ -76,9 +76,6 @@ impl Supervisor {
         }
         // A download client reports where a torrent landed, a path nobody can list
         // ahead of time, so an official module that declares it keeps the machine.
-        // WASI refuses a symlink whose target is absolute even under `/` (DSM's
-        // `/var/packages/<id>/var` is one), so the folders the server names are
-        // also held at their own path, opened by the host.
         if first_party && declares(FsRoot::Downloads) {
             let writable = fs.write.contains(&FsRoot::Downloads);
             roots.push(Preopen {
