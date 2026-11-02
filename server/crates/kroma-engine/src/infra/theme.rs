@@ -3,7 +3,8 @@
 //! Best-effort: a 404, no network or no `curl` leaves `theme_url` unset.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+
+use kroma_media::tmp_file::unique_tmp;
 
 use crate::model::Metadata;
 
@@ -16,8 +17,6 @@ const MIN_BYTES: u64 = 8 * 1024;
 const MAX_THEME_BYTES: u64 = 30 * 1024 * 1024;
 const MAX_TIME_SECS: u32 = 25;
 const MAX_REDIRECTS: u8 = 2;
-
-static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 pub fn themes_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("themes")
@@ -89,15 +88,6 @@ fn looks_like_audio(path: &Path) -> bool {
         return false;
     };
     bytes.starts_with(b"ID3") || bytes.starts_with(&[0xff, 0xfb]) || bytes.starts_with(&[0xff, 0xf3])
-}
-
-fn unique_tmp(out: &Path) -> PathBuf {
-    let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let base = out
-        .file_name()
-        .and_then(std::ffi::OsStr::to_str)
-        .unwrap_or("theme.mp3");
-    out.with_file_name(format!("{base}.{}.{seq}.tmp.mp3", std::process::id()))
 }
 
 #[cfg(test)]

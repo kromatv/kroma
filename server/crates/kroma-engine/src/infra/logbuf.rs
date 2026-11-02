@@ -6,6 +6,8 @@ use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, Mutex};
 
+use kroma_primitives::now_ms;
+
 const CAPACITY: usize = 5000;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -159,13 +161,6 @@ fn strip_ansi(s: &str) -> String {
         out.push(c);
     }
     out
-}
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
 }
 
 #[cfg(test)]

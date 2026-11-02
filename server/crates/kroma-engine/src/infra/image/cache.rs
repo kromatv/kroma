@@ -1,9 +1,10 @@
 use std::path::Path;
 
+use kroma_media::tmp_file::unique_tmp;
 use kroma_primitives::short_hash;
 
 use super::encode::encode_webp;
-use super::scratch::{finalize, unique_tmp};
+use super::scratch::finalize;
 use super::{images_dir, PUBLIC_PREFIX};
 
 const MAX_TIME_SECS: u32 = 25;
