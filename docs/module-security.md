@@ -389,7 +389,7 @@ writes a new key.
 | A downloads module holds its download folders, not `/`; a helper is hashed against its pin before every start | in review (#569) |
 | A module reads and writes only the settings it declares; an update that writes a new one waits for the operator | in review (#574) |
 | What the host reads to decide what a module may do is kept where no module reaches; the component is hashed against its install record before every start; a helper's name is never one of the host's files | in review (#576) |
-| A module's databases are kept where no module reaches and opened following no link; the folders the host creates for a module are open to the server's user alone | in review |
+| A module's databases are kept where no module reaches and opened following no link; the folders the host creates for a module are open to the server's user alone | in review (#577) |
 | Storage grants enforced in the host; the component holds no database file | on `main` (#555) |
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |
