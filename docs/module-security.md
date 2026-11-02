@@ -28,8 +28,9 @@ no block has no network and starts no program, and the admin marks it.
 The install screen lists every permission in plain words before the operator
 accepts, from the catalog row or, for an upload, from the bundle itself. An update
 that asks for more waits: no automatic or batch update takes it, and the operator
-accepts it from the install plan. A bundle must declare what its catalog row showed,
-and an install fails when it does not.
+accepts it from the install plan. Asking for more is a wider `permissions` block or
+a key in `settings.write` the installed version did not declare. A bundle must
+declare what its catalog row showed, and an install fails when it does not.
 
 ```json
 "permissions": {
@@ -64,8 +65,8 @@ These sit beside the declarations that already exist and keep working:
 
 - `storage`: the slice of the core database a module may touch, enforced per
   connection by SQLite's authorizer, in the host.
-- `settings.read` / `settings.write`: the settings keys it may read or write
-  through the host API.
+- `settings.read` / `settings.write`: the core settings keys it may read or
+  write through the host API, and no others. See [settings](#settings).
 - `consumes`, `contributes`, `definesPoints`: the points it may call and the ones
   it answers.
 - `helpers`: the pinned upstream build, per `<os>-<arch>`, of a program `run`
@@ -111,6 +112,7 @@ what enforces it. See
 | `env` | only the declared variables exist |
 | `media` | `media.decode-audio` checks both paths against the module's folders, then runs the core's ffmpeg |
 | `storage` | the host holds both databases; the component has no SQLite |
+| `settings` | the host API answers only a declared key, and never one the core keeps |
 | CPU, memory | a ceiling per instance |
 
 **Network.** A component that declares no `permissions` has no network. The
@@ -121,6 +123,22 @@ carried through the module's gateway, which rules again on every redirect hop. S
 **Host API.** `host-api` reaches the core's `/api/_host/*` and a peer's
 `/api/module/<id>/*`, and nothing else. The host adds the module token on the way
 out, so the component never holds it.
+
+**Settings.** A component reaches the core's settings only through `host-api`
+(`GET /_host/setting`, `POST /_host/settings`), and one check answers both: the
+key must be in the module's `settings.read` to be read and in its
+`settings.write` to be written. A module that declares no `settings` reaches no
+setting. A key the core keeps to itself is refused even when declared: the mail,
+LLM and push credentials, the key that signs a media ticket, the registry list,
+the library and download folders, every module's state and the identities the
+server mints. A refusal is a `403` whose error names the key and what to declare
+(`settings.write: "namingMovieFolder" is not declared; add it to settings.write in
+module.json`), and it goes on the module's log. A write naming one refused key
+writes none of the batch. Settings shape what other modules and the core do (the
+naming templates, the download limits, the VPN config, the recycle bin), so a
+module that changes one does it in the open: the key is on its manifest, and an
+update that adds one to `settings.write` waits for the operator. The component's
+`settings` import answers nothing; it is not a second way in.
 
 **Database.** The component has no SQLite. `kroma-sqlite-guest` gives it
 rusqlite's API and sends every statement to the `sql` import. The host holds the
@@ -275,6 +293,10 @@ core tables it declared, a third-party one starts no program, even one it
 declared, a downloads module opens its download folders and the libraries but
 none of the server's own files, a helper changed after its fetch does not
 start, and the host decodes only a file a component holds and cannot write.
+`host_settings.rs` there and the server's `it_host_settings.rs` refuse a read or
+a write of a key the module did not declare, and of a key the core keeps even
+when declared, and `install_accept.rs` holds back an unattended update that
+writes a new key.
 
 ## Status
 
@@ -292,6 +314,7 @@ start, and the host decodes only a file a component holds and cannot write.
 | A native bundle refused from every registry and from an upload | on `main` (#513) |
 | Filesystem and `run` held by the component host; programs for first-party modules only | on `main` (#488) |
 | A downloads module holds its download folders, not `/`; a helper is hashed against its pin before every start | in review (#569) |
+| A module reads and writes only the settings it declares; an update that writes a new one waits for the operator | in review (#574) |
 | Storage grants enforced in the host; the component holds no database file | on `main` (#555) |
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |

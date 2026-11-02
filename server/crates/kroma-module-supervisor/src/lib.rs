@@ -34,7 +34,7 @@ mod watch;
 pub use component::{FolderRoots, Folders};
 pub use endpoint::Endpoint;
 pub use host_api::host_router;
-pub use origin::{Accept, BinStamp, Origin, Source};
+pub use origin::{Accept, AsksForMore, BinStamp, Origin, Source};
 pub use proxy::proxy_to;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
 
@@ -229,8 +229,8 @@ impl Supervisor {
         &self.cfg.host_token
     }
 
-    /// What `id` declared under `settings`, or `None` when its manifest predates
-    /// the field, which is a module that keeps the reach it had.
+    /// What `id` declared under `settings`, or `None` when it declared nothing,
+    /// which reaches no setting.
     pub fn settings_scope(&self, id: &str) -> Option<kroma_module_manifest::SettingsScope> {
         self.installed_manifests()
             .into_iter()

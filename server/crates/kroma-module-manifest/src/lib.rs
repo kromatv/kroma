@@ -4,6 +4,7 @@
 //! `@kromatv/module-sdk` mirrors.
 
 mod compat;
+mod consent;
 mod embedded;
 mod event;
 mod manifest;
@@ -11,6 +12,7 @@ mod matching;
 mod notifications;
 mod permissions;
 mod registry;
+mod settings_scope;
 
 pub use compat::{
     engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
@@ -26,7 +28,7 @@ pub use kroma_module_wire::NotificationType;
 pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
     ComponentNeeds, ConfigField, Contribution, CoreScope, Dependency, FeRemote, Helper, HelperAsset, ModuleManifest, PointDef, PointReq,
-    SettingsScope, Storage, Version,
+    Storage, Version,
 };
 pub use matching::{host_matches, purpose_covers};
 pub use permissions::{
@@ -34,6 +36,7 @@ pub use permissions::{
     Reach,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
+pub use settings_scope::SettingsScope;
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the
 /// module's `module.json`, embedded at build time via `include_bytes!` and

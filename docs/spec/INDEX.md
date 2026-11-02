@@ -397,7 +397,7 @@
 - **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged <sub>[README.md](modules/README.md)</sub>
 - **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. A settings key <sub>[README.md](modules/README.md)</sub>
 - **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled <sub>[README.md](modules/README.md)</sub>
-- **MOD-53** (SHIPPED) - A credential whose consumer *is* a module reaches the module that <sub>[README.md](modules/README.md)</sub>
+- **MOD-53** (SHIPPED) - A module reads and writes only the core settings it declared. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-54** (AGREED) - An admin can change every rule below while the server runs: qualities and <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-55** (AGREED) - A **quality** is a source at a resolution, from a fixed vocabulary: cam, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-56** (AGREED) - Each quality has a size range in megabytes per minute of runtime, <sub>[acquisition.md](modules/acquisition.md)</sub>

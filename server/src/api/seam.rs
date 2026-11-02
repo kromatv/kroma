@@ -86,7 +86,7 @@ mod tests {
         let (callback, _, _) = raw(
             &t.seam,
             "GET",
-            "/api/_host/setting?key=serverName&kind=str&default=",
+            "/api/_host/enabled?id=tv.kroma.vpn",
             Some("test-host-token"),
             None,
             &[],

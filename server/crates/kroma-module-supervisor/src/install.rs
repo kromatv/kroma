@@ -3,11 +3,12 @@
 
 use std::path::Path;
 
-use kroma_module_manifest::ModuleManifest;
+use kroma_module_manifest::{ModuleManifest, Permissions};
 
 use super::lifecycle::native_build;
 use super::{
-    check_manifest_schema, Accept, Supervisor, MODULE_STORE, NATIVE_BINARY, STAGING_PREFIX,
+    check_manifest_schema, Accept, AsksForMore, Supervisor, MODULE_STORE, NATIVE_BINARY,
+    STAGING_PREFIX,
 };
 
 mod bundle;
@@ -146,16 +147,19 @@ impl Supervisor {
     ) -> anyhow::Result<()> {
         match accept {
             Accept::Anything => Ok(()),
-            Accept::Exactly(declared) if manifest.permissions.as_ref() == Some(declared) => Ok(()),
-            Accept::Exactly(_) => anyhow::bail!(
-                "the bundle for '{id}' declares other permissions than its catalog row says"
-            ),
-            Accept::NoWider => match (&manifest.permissions, self.permissions_of(id)) {
-                (Some(offered), Some(installed)) if offered.widens(&installed) => anyhow::bail!(
-                    "'{id}' asks for more than the installed version; accept it from the install plan"
-                ),
-                _ => Ok(()),
-            },
+            Accept::Exactly(declared) => says_what_its_row_showed(id, manifest, declared),
+            Accept::NoWider(declared) => {
+                if let Some(declared) = declared {
+                    says_what_its_row_showed(id, manifest, declared)?;
+                }
+                let installed = self.installed_manifests().into_iter().find(|m| m.id == id);
+                match installed {
+                    Some(installed) if manifest.asks_more_than(&installed) => {
+                        Err(AsksForMore { id: id.to_string() }.into())
+                    }
+                    _ => Ok(()),
+                }
+            }
         }
     }
 
@@ -167,6 +171,17 @@ impl Supervisor {
         self.invalidate_manifests();
         Ok(())
     }
+}
+
+fn says_what_its_row_showed(
+    id: &str,
+    manifest: &ModuleManifest,
+    declared: &Permissions,
+) -> anyhow::Result<()> {
+    if manifest.permissions.as_ref() == Some(declared) {
+        return Ok(());
+    }
+    anyhow::bail!("the bundle for '{id}' declares other permissions than its catalog row says")
 }
 
 // A module id must be a safe directory name: it becomes `<modules>/<id>/`.

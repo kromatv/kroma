@@ -60,9 +60,31 @@ pub enum Accept<'a> {
     /// They read this declaration on its catalog row, so the bundle must say the
     /// same.
     Exactly(&'a Permissions),
-    /// Nobody is looking, so the bundle may ask for no more than what is installed.
-    NoWider,
+    /// Nobody is looking, so the bundle may ask for no more than what is
+    /// installed: no wider `permissions`, no key in `settings.write` the installed
+    /// version did not declare, and the same `permissions` as its catalog row when
+    /// it has one. Refused with [`AsksForMore`].
+    NoWider(Option<&'a Permissions>),
 }
+
+/// An install nobody is looking at, refused because the bundle asks for more
+/// than the installed version was granted. Only the install plan takes it.
+#[derive(Debug)]
+pub struct AsksForMore {
+    pub id: String,
+}
+
+impl std::fmt::Display for AsksForMore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "'{}' asks for more than the installed version; accept it from the install plan",
+            self.id
+        )
+    }
+}
+
+impl std::error::Error for AsksForMore {}
 
 /// Identity of an installed component, enough to notice it was replaced.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

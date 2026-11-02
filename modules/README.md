@@ -433,20 +433,11 @@ started. An instance lost to a panic or a limit takes the programs it started
 with it. When that was the primary, the next call starts a new one, which runs
 `on_enable` again.
 
-The settings callback reads and writes the operator's preferences, **not the
-core's own credentials**. A key reaches you only when the core declared that it
-may: the mail password, the LLM API key, the Web Push / APNs / FCM private
-material and the registry list the Store installs from are the core's alone, and
-so is every key no declaration mentions, which is what an identity the server
-minted for itself is. A read answers the default you asked with, and a patch
-naming one is refused whole with a `403`. For a vendor credential the operator
-configured, ask `GET /_host/secret?name=` by name.
-
-A credential a module is the thing that uses (the WireGuard config the bridge
-brings up, the tunnel token the connector runs on) reaches **the module that
-declared it**, because the core knows which module is calling: the host adds the
-module's own token to every callback and the core resolves it. Declare yours in
-`module.json`:
+The settings callback reads and writes the operator's preferences, and only
+**the ones your manifest declares**. The core knows which module is calling (the
+host adds the module's own token to every callback), so it answers a read of a key
+in your `settings.read` and a write of a key in your `settings.write`, and refuses
+everything else:
 
 ```jsonc
 "settings": {
@@ -455,11 +446,27 @@ module's own token to every callback and the core resolves it. Declare yours in
 }
 ```
 
-A read declaration is not a write declaration, and a bundle that declares nothing
-keeps every ordinary preference and reaches none of these credentials. Ordinary
-preferences are not scoped by the declaration yet, so write down the full truth
-today: reaching a key you did not declare logs a line at `debug` level, which is
-the reach that will be refused when it is.
+A read declaration is not a write declaration, and a module that declares no
+`settings` reaches no setting. There is no namespace of your own that skips the
+list: every key you touch is a core key, so every one is on it. A refusal is a
+`403` whose error names the key and what to add
+(`settings.read: "smtpHost" is not declared; add it to settings.read in
+module.json`), and it goes on your module's log. `setting_str` and its siblings
+then answer the default you passed, and `set_settings` writes nothing: a patch
+naming one refused key is refused whole.
+
+Some keys are the core's alone and are refused even when declared: the mail
+password, the LLM API key, the Web Push / APNs / FCM private material, the key
+that signs a media ticket, the registry list the Store installs from, the library
+and download folders, every module's state and the identities the server mints
+for itself. For a vendor credential the operator configured, ask
+`GET /_host/secret?name=` by name. A credential a module is the thing that uses
+(the WireGuard config the bridge brings up, the tunnel token the connector runs
+on) is an ordinary declared key, and reaches the module that declares it.
+
+An update that adds a key to `settings.write` asks for more, like one that widens
+`permissions`: no automatic update takes it, and the operator accepts it from the
+install plan.
 
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   The backend enforces it, and the Store installs missing ones automatically.
@@ -471,8 +478,8 @@ the reach that will be refused when it is.
   enforced at install **and** at spawn, so a stale bundle fails with a clear
   message instead of proxy errors.
 - **`settings`** is the core settings keys you read and write, as
-  `{ "read": [...], "write": [...] }`. Absent is not empty: a manifest without it
-  predates the field and keeps the reach it had.
+  `{ "read": [...], "write": [...] }`. Absent is the same as empty: a module
+  without it reaches no setting.
 - **`component`** is what one module asks of the host: `instances` answering at
   once (default 1; they share no memory, so more than one suits a module whose
   state is in its database, see [Instances](#instances)), `memoryMib` one may

@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
 use kroma_module_manifest::Permissions;
-use kroma_module_supervisor::{Accept, Supervisor};
+use kroma_module_supervisor::{Accept, AsksForMore, Supervisor};
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -54,8 +54,8 @@ enum Unattended {
 // nothing wider than what is installed when nobody is looking.
 fn accepting(declared: Option<&Permissions>, unattended: Unattended) -> Accept<'_> {
     match (declared, unattended) {
-        (Some(declared), _) => Accept::Exactly(declared),
-        (None, Unattended::Yes) => Accept::NoWider,
+        (declared, Unattended::Yes) => Accept::NoWider(declared),
+        (Some(declared), Unattended::No) => Accept::Exactly(declared),
         (None, Unattended::No) => Accept::Anything,
     }
 }
@@ -103,7 +103,7 @@ async fn run_plan(
             })
             .await
             .map_err(|_| anyhow!("install task panicked"))?
-            .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
+            .map_err(|e| e.context(format!("installing '{}' failed", entry.id)))?
         };
         op.done(&entry.id, &entry.version);
         installed.push(installed_row(&manifest));
@@ -174,7 +174,7 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
                     kind: "registry",
                     url: Some(&url),
                     official,
-                    accept: Accept::NoWider,
+                    accept: Accept::NoWider(None),
                 },
             )
         })
@@ -315,6 +315,9 @@ pub async fn update_all(
                 from,
                 to: entry.version.clone(),
             }),
+            Err(e) if e.downcast_ref::<AsksForMore>().is_some() => {
+                outcome.needs_consent.push(entry.id.clone());
+            }
             Err(e) => outcome.failed.push(FailedUpdate {
                 id: entry.id.clone(),
                 error: format!("{e:#}"),

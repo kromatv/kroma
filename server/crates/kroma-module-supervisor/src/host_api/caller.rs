@@ -1,5 +1,5 @@
 //! Which module made a callback, resolved from the token it presented, and what
-//! that module declared about the settings it reads.
+//! that module declared about the settings it reads and writes.
 
 use std::sync::Arc;
 
@@ -38,10 +38,6 @@ impl Caller {
             .is_some_and(|module| self.supervisor.declares_notification(module, name))
     }
 
-    pub(super) fn declares_nothing(&self) -> bool {
-        self.declaration().is_none()
-    }
-
     pub(super) fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {
         match &self.module {
             Some(module) => self.supervisor.contributions_for(module, point),
@@ -55,6 +51,12 @@ impl Caller {
 
     pub(super) fn name(&self) -> &str {
         self.module.as_deref().unwrap_or("an unnamed caller")
+    }
+
+    pub(super) fn say(&self, line: &str) {
+        if let Some(module) = &self.module {
+            self.supervisor.say(module, line);
+        }
     }
 
     fn declaration(&self) -> Option<kroma_module_manifest::SettingsScope> {
