@@ -141,3 +141,23 @@ fn checksum_verification_accepts_match_and_rejects_mismatch() {
     let err = verify_sha256(bytes, "deadbeef").unwrap_err().to_string();
     assert!(err.contains("checksum mismatch"), "unexpected error: {err}");
 }
+
+#[test]
+fn install_refuses_a_helper_named_like_a_file_the_host_keeps() {
+    let scratch = temp_modules_dir("helper-name");
+    let sup = supervisor(scratch.path(), "0.1.4");
+    let bundle = tar_with_manifest(&current(
+        r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0", "library": true,
+             "permissions": { "run": ["module.cwasm"] },
+             "helpers": { "module.cwasm": { "assets": { "linux-x86_64": {
+                 "url": "https://example.org/x", "sha256": "00" } } } }"#,
+    ));
+
+    let refused = sup
+        .install(&bundle, None, uploaded())
+        .unwrap_err()
+        .to_string();
+
+    assert!(refused.contains(r#"helpers: "module.cwasm" is not a helper name"#), "{refused}");
+    assert!(sup.installed_ids().is_empty());
+}

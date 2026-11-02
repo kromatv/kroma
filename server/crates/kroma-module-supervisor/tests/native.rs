@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::{Accept, Source, Supervisor, SupervisorConfig};
+use kroma_module_supervisor::{Accept, Source, Supervisor, SupervisorConfig, INSTALLED_DIR};
 
 const ID: &str = "tv.example.native";
 const REFUSAL: &str =
@@ -38,7 +38,7 @@ impl Server {
     }
 
     fn installed_natively(&self) {
-        let module = self.dir.path().join("modules").join(ID);
+        let module = self.dir.path().join(INSTALLED_DIR).join(ID);
         std::fs::create_dir_all(&module).unwrap();
         std::fs::write(
             module.join("module.json"),

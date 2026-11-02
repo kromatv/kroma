@@ -13,7 +13,7 @@ impl Supervisor {
     /// it is a module that gets the wrong answer to every query. One small file,
     /// read once per start.
     pub(crate) fn manifest_on_disk(&self, id: &str) -> Option<ModuleManifest> {
-        let text = std::fs::read_to_string(self.dir(id).join("module.json")).ok()?;
+        let text = std::fs::read_to_string(self.installed_dir(id).join("module.json")).ok()?;
         serde_json::from_str::<ModuleManifest>(&text).ok()
     }
 
@@ -22,7 +22,7 @@ impl Supervisor {
     /// component, so it has none of its own: "not running" is its normal state,
     /// not a fault, and nothing should report it as one.
     pub fn has_component(&self, id: &str) -> bool {
-        self.dir(id).join(MODULE_COMPONENT).exists()
+        self.installed_dir(id).join(MODULE_COMPONENT).exists()
     }
 
     /// Every installed module's `module.json`, cached until the next install or
@@ -38,7 +38,7 @@ impl Supervisor {
     }
 
     fn scan_manifests(&self) -> Vec<ModuleManifest> {
-        let Ok(entries) = std::fs::read_dir(&self.cfg.modules_dir) else {
+        let Ok(entries) = std::fs::read_dir(self.installed_root()) else {
             return Vec::new();
         };
         entries
@@ -83,7 +83,7 @@ impl Supervisor {
     /// A runtime-installed module's packaged icon bytes, svg preferred over png.
     pub fn icon(&self, id: &str) -> Option<(&'static str, Vec<u8>)> {
         super::install::validate_id(id).ok()?;
-        let dir = self.dir(id);
+        let dir = self.installed_dir(id);
         if let Ok(bytes) = std::fs::read(dir.join("icon.svg")) {
             return Some(("image/svg+xml", bytes));
         }
@@ -108,6 +108,9 @@ pub(super) fn check_manifest_schema(id: &str, manifest: &ModuleManifest) -> anyh
     );
     if let Some(problem) = manifest.permissions.as_ref().and_then(|p| p.problem()) {
         anyhow::bail!("'{id}' declares a permission this server cannot grant: {problem}");
+    }
+    if let Some(problem) = manifest.helpers_problem() {
+        anyhow::bail!("'{id}' pins a helper this server cannot fetch: {problem}");
     }
     if let Some(problem) = manifest.notifications_problem() {
         anyhow::bail!("'{id}' declares a notification type this server cannot send: {problem}");

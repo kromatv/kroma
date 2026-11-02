@@ -18,6 +18,7 @@ mod endpoint;
 mod gateway;
 mod host_api;
 mod install;
+mod layout;
 mod lifecycle;
 mod manifests;
 mod notifications;
@@ -44,7 +45,13 @@ use run_dir::RunDir;
 
 pub const MODULE_COMPONENT: &str = "module.wasm";
 pub const MODULE_STORE: &str = "module.sqlite";
+/// Under the data directory, what the host installed of each module and reads to
+/// decide what it may do: its manifest, origin record, component and compiled
+/// copy, frontend, icon and catalogs. No module holds it. A module's own data
+/// stays in `modules/<id>`.
+pub const INSTALLED_DIR: &str = "installed";
 const NATIVE_BINARY: &str = "module";
+const HELPERS_DIR: &str = "helpers";
 const LOCALES_DIR: &str = "locales";
 const STAGING_PREFIX: &str = ".staging-";
 
@@ -83,8 +90,10 @@ pub struct Supervisor {
 }
 
 impl Supervisor {
+    /// Builds the supervisor, first moving an install laid out before the host
+    /// kept its own files apart from each module's data.
     pub fn new(cfg: SupervisorConfig) -> Arc<Self> {
-        Arc::new(Self {
+        let supervisor = Arc::new(Self {
             run: RunDir::for_data_dir(&cfg.data_dir),
             cfg,
             procs: RwLock::new(HashMap::new()),
@@ -98,11 +107,21 @@ impl Supervisor {
             gateway: gateway::Slot::new(),
             #[cfg(unix)]
             wasm: std::sync::OnceLock::new(),
-        })
+        });
+        supervisor.keep_installs_apart();
+        supervisor
     }
 
-    fn dir(&self, id: &str) -> PathBuf {
+    fn own_dir(&self, id: &str) -> PathBuf {
         self.cfg.modules_dir.join(id)
+    }
+
+    fn installed_root(&self) -> PathBuf {
+        self.cfg.data_dir.join(INSTALLED_DIR)
+    }
+
+    fn installed_dir(&self, id: &str) -> PathBuf {
+        self.installed_root().join(id)
     }
 
     /// Move any table `id` declared as its own out of the core database and into
@@ -116,7 +135,7 @@ impl Supervisor {
         else {
             return;
         };
-        let store = self.dir(id).join(MODULE_STORE);
+        let store = self.own_dir(id).join(MODULE_STORE);
         let moved = kroma_db::init(&self.cfg.db_path)
             .and_then(|pool| pool.get())
             .and_then(|conn| adopt::adopt_tables(&conn, &store, tables));

@@ -39,7 +39,7 @@ impl FolderRoots {
 }
 
 const TMP: &str = "/tmp";
-const RESERVED_DATA_DIRS: [&str; 5] = ["modules", "run", "logs", "backups", "helpers"];
+const RESERVED_DATA_DIRS: [&str; 6] = ["modules", "installed", "run", "logs", "backups", "helpers"];
 
 fn is_data_dir_name(name: &str) -> bool {
     !name.is_empty()
@@ -99,7 +99,7 @@ impl Supervisor {
         });
 
         let own_writable = fs.write.contains(&FsRoot::Module) || manifest.storage.is_some();
-        roots.push(held(self.dir(id), own_writable));
+        roots.push(held(self.own_dir(id), own_writable));
         if first_party {
             for name in manifest.data_dirs.iter().filter(|name| is_data_dir_name(name)) {
                 let dir = self.cfg.data_dir.join(name);

@@ -1,4 +1,4 @@
-use super::super::{Supervisor, SupervisorConfig};
+use super::super::{Supervisor, SupervisorConfig, INSTALLED_DIR};
 use super::check_manifest_schema;
 
 #[test]
@@ -90,7 +90,7 @@ fn a_modules_settings_declaration_is_what_its_manifest_says() {
     });
     let v = kroma_module_manifest::MODULE_SCHEMA_VERSION;
     let write = |id: &str, body: &str| {
-        let d = dir.path().join(id);
+        let d = dir.path().join(INSTALLED_DIR).join(id);
         std::fs::create_dir_all(&d).unwrap();
         std::fs::write(d.join("module.json"), body).unwrap();
     };
@@ -134,7 +134,7 @@ fn a_modules_grant_comes_off_disk_even_when_the_listing_cache_is_stale() {
     });
 
     let write = |body: &str| {
-        let d = dir.path().join("com.example.demo");
+        let d = dir.path().join(INSTALLED_DIR).join("com.example.demo");
         std::fs::create_dir_all(&d).unwrap();
         std::fs::write(d.join("module.json"), body).unwrap();
     };
@@ -172,13 +172,13 @@ fn a_modules_grant_comes_off_disk_even_when_the_listing_cache_is_stale() {
 #[test]
 fn an_icon_is_never_read_from_outside_the_modules_dir() {
     let dir = kroma_testing::temp_dir("module-icon");
-    let modules = dir.path().join("modules");
-    std::fs::create_dir_all(modules.join("com.example.one")).unwrap();
-    std::fs::write(modules.join("com.example.one/icon.svg"), "<svg/>").unwrap();
+    let installed = dir.path().join(INSTALLED_DIR);
+    std::fs::create_dir_all(installed.join("com.example.one")).unwrap();
+    std::fs::write(installed.join("com.example.one/icon.svg"), "<svg/>").unwrap();
     std::fs::create_dir_all(dir.path().join("outside")).unwrap();
     std::fs::write(dir.path().join("outside/icon.svg"), "<svg/>").unwrap();
     let sup = Supervisor::new(SupervisorConfig {
-        modules_dir: modules,
+        modules_dir: dir.path().join("modules"),
         core_port: 0,
         host_token: "fabric".into(),
         db_path: dir.path().join("db.sqlite"),

@@ -100,11 +100,7 @@ fn a_peer_is_reached_through_the_core_by_a_module_and_directly_by_the_core() {
         guest_component(),
         r#", "storage": {}, "contributes": [{ "point": "tv.example.guest/run" }]"#,
     );
-    let consumer = server
-        .dir
-        .path()
-        .join("modules")
-        .join("tv.example.consumer");
+    let consumer = server.installed_dir("tv.example.consumer");
     std::fs::create_dir_all(&consumer).unwrap();
     std::fs::write(
         consumer.join("module.json"),

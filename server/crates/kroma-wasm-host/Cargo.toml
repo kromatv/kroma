@@ -11,6 +11,8 @@ wasmtime = { version = "50.0.1", default-features = false, features = ["runtime"
 wasmtime-wasi = { version = "50.0.1", default-features = false, features = ["p2"] }
 thiserror = "2"
 tracing = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
 tokio = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]

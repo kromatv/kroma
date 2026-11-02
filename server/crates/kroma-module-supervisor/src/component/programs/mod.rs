@@ -25,9 +25,6 @@ use kroma_wasm_host::{Command as Asked, Output, Processes};
 use capture::{capture, drained, Captured};
 pub(in crate::component) use instance_programs::InstancePrograms;
 
-/// Under the data directory, and listed as reserved so no module can ask for it.
-pub(crate) const HELPERS_DIR: &str = "helpers";
-
 const POLL: Duration = Duration::from_millis(20);
 const STOP_GRACE: Duration = Duration::from_secs(3);
 const GATEWAY_PLACEHOLDER: &str = "{gateway:";

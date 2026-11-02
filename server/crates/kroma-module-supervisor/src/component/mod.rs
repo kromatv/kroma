@@ -26,13 +26,12 @@ use anyhow::Context;
 use kroma_http::egress::Gateway;
 use kroma_module_manifest::{ComponentNeeds, FsRoot, MediaTool, ModuleManifest};
 use kroma_wasm_host::{Limits, Readied, WasmHost};
-use sha2::Digest;
 use tokio::net::{TcpListener, UnixListener};
 use tokio::sync::Semaphore;
 
 use super::gateway::{ModulePolicy, Running};
 use super::lifecycle::Proc;
-use super::{Endpoint, Supervisor, MODULE_COMPONENT};
+use super::{Endpoint, Supervisor, HELPERS_DIR};
 
 const DEFAULT_MEMORY_MIB: u32 = 512;
 const DEFAULT_CPU_SECONDS: u32 = 60;
@@ -64,14 +63,20 @@ impl Supervisor {
             .get()
             .ok_or_else(|| anyhow::anyhow!("'{id}' is a component, and no gateway is running"))?;
         let started = Instant::now();
-        let wasm = std::fs::read(self.dir(id).join(MODULE_COMPONENT))
-            .with_context(|| format!("read '{id}'s component"))?;
-        let helpers_dir = self.cfg.data_dir.join(programs::HELPERS_DIR).join(id);
-        let key = hex::encode(sha2::Sha256::digest(&wasm));
+        let (wasm, key) = self.verified_component(id)?;
+        let helpers_dir = self.cfg.data_dir.join(HELPERS_DIR).join(id);
         let (component, readied) = self
             .wasm_host()?
-            .compile_keeping(&wasm, &helpers_dir.join(COMPILED_COPY), &key)
+            .compile_keeping(&wasm, &self.installed_dir(id).join(COMPILED_COPY), &key)
             .map_err(|error| anyhow::anyhow!("compile '{id}': {error}"))?;
+        if readied == Readied::CopyRefused {
+            self.say(
+                id,
+                "WARN the compiled copy of this component is not the one recorded beside it; compiled again",
+            );
+        }
+        let own_dir = self.own_dir(id);
+        std::fs::create_dir_all(&own_dir).with_context(|| format!("create '{id}'s own folder"))?;
         let manifest: ModuleManifest = self
             .manifest_on_disk(id)
             .ok_or_else(|| anyhow::anyhow!("'{id}' has no readable manifest"))?;
@@ -140,7 +145,7 @@ impl Supervisor {
                 id,
                 self.cfg.db_path.clone(),
                 CORE_DATABASE,
-                self.dir(id),
+                own_dir.clone(),
                 kroma_sqlite::Grant {
                     read: storage.core.read,
                     write: storage.core.write,
@@ -158,7 +163,7 @@ impl Supervisor {
             .map(|_| Arc::new(media::ModuleMedia::new(roots.clone())));
         let programs = Arc::new(programs::Programs::new(
             id,
-            self.dir(id),
+            own_dir,
             helpers_dir,
             manifest.permissions.as_ref().map(|p| p.run.clone()).unwrap_or_default(),
             manifest.helpers.clone(),
@@ -243,7 +248,7 @@ impl Supervisor {
             &format!(
                 "INFO contained: a WebAssembly component, {} in {} ms",
                 match readied {
-                    Readied::Compiled => "compiled",
+                    Readied::Compiled | Readied::CopyRefused => "compiled",
                     Readied::FromCache => "ready from its compiled copy",
                 },
                 started.elapsed().as_millis()

@@ -23,7 +23,7 @@ impl Supervisor {
     /// Whether `id` is installed as a native binary with no component beside it.
     /// Such a module never starts: its update from a registry is a component.
     pub fn is_native_build(&self, id: &str) -> bool {
-        let dir = self.dir(id);
+        let dir = self.installed_dir(id);
         dir.join(NATIVE_BINARY).exists() && !dir.join(MODULE_COMPONENT).exists()
     }
 
@@ -36,7 +36,7 @@ impl Supervisor {
         if self.is_native_build(id) {
             return Err(native_build(id));
         }
-        let component = self.dir(id).join(MODULE_COMPONENT);
+        let component = self.installed_dir(id).join(MODULE_COMPONENT);
         if !component.exists() {
             anyhow::bail!(
                 "'{id}' ships no component: {} is missing",

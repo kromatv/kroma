@@ -9,7 +9,7 @@ use kroma_module_host::{
     NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkPolicyOf,
     SettingReach, SettingReachOf,
 };
-use kroma_module_supervisor::{Supervisor, SupervisorConfig};
+use kroma_module_supervisor::{INSTALLED_DIR, Supervisor, SupervisorConfig};
 use tower::ServiceExt;
 
 pub mod settings;
@@ -85,7 +85,7 @@ impl Modules {
     /// Install `id` with the `settings` block it declares, as JSON, or `None` for a
     /// manifest that declares none.
     pub fn declaring(self, id: &str, settings: Option<&str>) -> Self {
-        let dir = self.dir.path().join(id);
+        let dir = self.dir.path().join(INSTALLED_DIR).join(id);
         std::fs::create_dir_all(&dir).unwrap();
         let settings = settings.map_or(String::new(), |s| format!(r#", "settings": {s}"#));
         std::fs::write(

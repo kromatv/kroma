@@ -392,7 +392,7 @@ declared types. Every reader gets those words whatever their language.
 
 ## Runtime contract
 
-The supervisor scans `<data>/modules/*`, runs each enabled module's
+The supervisor scans `<data>/installed/*`, runs each enabled module's
 `module.wasm` as a component inside the server, and reverse-proxies
 `/api/module/<id>/*` to it. A module calls back into the core over the
 token-authed `/api/_host/*` API for settings, events, jobs and session lookup

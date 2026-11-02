@@ -21,8 +21,9 @@ impl Supervisor {
     ///
     /// This is the module half of `cargo watch`: a dev loop rebuilds a module
     /// and drops its `module.wasm` in, and the component running the old code is
-    /// swapped for one running the new. Off unless `KROMA_MODULE_HOT_RELOAD=1`,
-    /// so a production server never polls the filesystem for this.
+    /// swapped for one running the new, recorded as a local build. Off unless
+    /// `KROMA_MODULE_HOT_RELOAD=1`, so a production server never polls the
+    /// filesystem for this, and starts only the component it installed.
     pub fn spawn_hot_reload(self: &Arc<Self>) {
         if std::env::var("KROMA_MODULE_HOT_RELOAD").as_deref() != Ok("1") {
             return;
@@ -75,8 +76,8 @@ impl Supervisor {
         seen: &mut HashMap<String, std::time::SystemTime>,
         down: &mut std::collections::HashSet<String>,
     ) {
-        let Ok(stamp) =
-            std::fs::metadata(self.dir(id).join(MODULE_COMPONENT)).and_then(|m| m.modified())
+        let Ok(stamp) = std::fs::metadata(self.installed_dir(id).join(MODULE_COMPONENT))
+            .and_then(|m| m.modified())
         else {
             return;
         };
@@ -87,6 +88,9 @@ impl Supervisor {
         }
         tracing::info!(module = %id, "component changed; restarting the module");
         self.stop(id);
+        if let Err(error) = self.accept_local_build(id) {
+            self.say(id, &format!("ERROR the rebuilt component could not be recorded: {error}"));
+        }
         if let Err(e) = self.start_installed(id) {
             tracing::error!(
                 module = %id,
