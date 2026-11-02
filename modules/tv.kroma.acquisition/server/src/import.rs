@@ -23,7 +23,7 @@ mod subtitles;
 
 pub use recycle::empty_recycle_bin;
 
-use content::{largest, Content};
+use content::{is_gone, largest, Content, FilesGone};
 use ledger::{until_it_lands, BUSY_BACKOFF};
 use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
 use place::{ext_of, Placement};
@@ -114,10 +114,15 @@ pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Im
                     row.release_title
                 ));
                 summary.failed += 1;
+                let status = if e.is::<FilesGone>() {
+                    "removed"
+                } else {
+                    "completed"
+                };
                 crate::peers::downloads::set_status(
                     state,
                     &row.id,
-                    "completed",
+                    status,
                     Some(&format!("import: {e:#}")),
                 )?;
             }
@@ -130,12 +135,15 @@ pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Im
 }
 
 fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String>> {
-    let meta = resolve_meta(state, row)?;
-
     let save_path = row
         .save_path
         .as_deref()
         .ok_or_else(|| anyhow!("download folder unknown (external client did not report it)"))?;
+    if is_gone(Path::new(save_path)) {
+        return Err(FilesGone(save_path.to_string()).into());
+    }
+    let meta = resolve_meta(state, row)?;
+
     let content = Content::under(Path::new(save_path), &row.content_rel_paths);
     let videos = content.videos();
     let Some(largest_video) = largest(&videos) else {
@@ -251,3 +259,6 @@ fn target_library_def<S: HostStorage>(state: &S, kind: RequestKind) -> Result<Li
         .ok_or_else(|| anyhow!("no library configured"))?;
     Ok(def.clone())
 }
+
+#[cfg(test)]
+mod tests;

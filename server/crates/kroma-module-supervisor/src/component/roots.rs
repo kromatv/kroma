@@ -77,11 +77,18 @@ impl Supervisor {
         // A download client reports where a torrent landed, a path nobody can list
         // ahead of time, so an official module that declares it keeps the machine.
         if first_party && declares(FsRoot::Downloads) {
+            let writable = fs.write.contains(&FsRoot::Downloads);
             roots.push(Preopen {
                 host: PathBuf::from(ROOT),
                 guest: ROOT.to_string(),
-                writable: fs.write.contains(&FsRoot::Downloads),
+                writable,
             });
+            roots.extend(
+                std::iter::once(self.cfg.data_dir.clone())
+                    .chain(media())
+                    .filter(|dir| dir.is_dir())
+                    .map(|dir| held(dir, writable)),
+            );
             return Ok(roots);
         }
         if declares(FsRoot::Media) {

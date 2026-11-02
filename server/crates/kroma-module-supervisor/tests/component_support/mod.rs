@@ -2,6 +2,7 @@
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -49,21 +50,36 @@ pub struct Server {
     pub network: Arc<Ruled>,
     pub said: Arc<Mutex<Vec<String>>>,
     pub dir: kroma_testing::TempDir,
+    pub data_dir: PathBuf,
     pub runtime: tokio::runtime::Runtime,
 }
 
 impl Server {
     pub fn new(tag: &str, action: NetworkAction) -> Self {
         let dir = kroma_testing::temp_dir(tag);
+        let data_dir = dir.path().to_path_buf();
+        Self::at(dir, data_dir, action)
+    }
+
+    pub fn behind_an_absolute_link(tag: &str, action: NetworkAction) -> Self {
+        let dir = kroma_testing::temp_dir(tag);
+        let volume = dir.path().join("volume");
+        std::fs::create_dir_all(volume.join("data")).unwrap();
+        let link = dir.path().join("var");
+        std::os::unix::fs::symlink(&volume, &link).unwrap();
+        Self::at(dir, link.join("data"), action)
+    }
+
+    fn at(dir: kroma_testing::TempDir, data_dir: PathBuf, action: NetworkAction) -> Self {
         let runtime = tokio::runtime::Runtime::new().unwrap();
         let said: Arc<Mutex<Vec<String>>> = Arc::default();
         let log = said.clone();
         let supervisor = Supervisor::new(SupervisorConfig {
-            modules_dir: dir.path().join("modules"),
+            modules_dir: data_dir.join("modules"),
             core_port: 0,
             host_token: "fabric".into(),
-            db_path: dir.path().join("kroma.db"),
-            data_dir: dir.path().to_path_buf(),
+            db_path: data_dir.join("kroma.db"),
+            data_dir: data_dir.clone(),
             reserved_ids: Vec::new(),
             server_version: "0.1.4".into(),
             log_line: Some(Arc::new(move |_, line| {
@@ -84,6 +100,7 @@ impl Server {
             network,
             said,
             dir,
+            data_dir,
             runtime,
         }
     }
@@ -99,7 +116,7 @@ impl Server {
         permissions: &str,
         origin: &str,
     ) -> Endpoint {
-        let module = self.dir.path().join("modules").join(id);
+        let module = self.data_dir.join("modules").join(id);
         std::fs::create_dir_all(&module).unwrap();
         std::fs::write(
             module.join("module.json"),
@@ -115,7 +132,7 @@ impl Server {
     }
 
     pub fn installed_as_shipped(&self, id: &str, component: &[u8]) -> Endpoint {
-        let module = self.dir.path().join("modules").join(id);
+        let module = self.data_dir.join("modules").join(id);
         std::fs::create_dir_all(&module).unwrap();
         let shipped = std::fs::read(wasm::module_source(id).join("module.json")).unwrap();
         let mut manifest: serde_json::Value = serde_json::from_slice(&shipped).unwrap();
@@ -138,7 +155,7 @@ impl Server {
     }
 
     pub fn core_database(&self) -> rusqlite::Connection {
-        rusqlite::Connection::open(self.dir.path().join("kroma.db")).unwrap()
+        rusqlite::Connection::open(self.data_dir.join("kroma.db")).unwrap()
     }
 }
 

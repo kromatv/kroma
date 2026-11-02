@@ -125,7 +125,7 @@ fn classify_token(
         mark(first_marker, i);
         return;
     }
-    if let Some(marker) = parse_episode_marker(&t) {
+    if let Some(marker) = parse_episode_marker(&t, tokens.get(i + 1).map(String::as_str)) {
         out.season = out.season.or(Some(marker.season));
         out.season_end = out.season_end.or(marker.season_end);
         if let Some(episode) = marker.episode {
