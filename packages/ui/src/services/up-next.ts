@@ -2,14 +2,14 @@ import type { KromaClient } from '@kromatv/client';
 import { ItemId, type MediaItem } from '@kromatv/client/media';
 import { formatRuntime, genreLabels, metaLine } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
+import { useEffect, useMemo, useState } from 'react';
 import {
   POST_PLAY_ART_W,
   type PostPlayItem,
   UP_NEXT_ART_W,
   type UpNextData,
   type UpNextItem,
-} from '@kromatv/ui';
-import { useEffect, useMemo, useState } from 'react';
+} from '#ui/components/organisms/player';
 
 function toCard(client: KromaClient, t: Translate, item: MediaItem): UpNextItem {
   const isEp = item.season != null && item.episode != null;
@@ -41,7 +41,7 @@ function toOffer(client: KromaClient, item: MediaItem): PostPlayItem {
   };
 }
 
-export interface TvUpNext {
+export interface UpNext {
   data: UpNextData;
   byId: Map<string, MediaItem>;
   /** The one film the end of this one offers, or null with nothing to offer. */
@@ -51,15 +51,15 @@ export interface TvUpNext {
 // A stable reference, so the memo below does not recompute for a movie.
 const NO_EPISODES: MediaItem[] = [];
 
-/** Up-next data for the TV player: upcoming episodes and recommendations, with an
+/** Up-next data for a player: upcoming episodes and recommendations, with an
  * id -> item map so a chosen card can be handed to the router, and the nearest
  * neighbour as the film the end of this one offers. */
-export function useTvUpNext(
+export function useUpNext(
   client: KromaClient,
   t: Translate,
   item: MediaItem,
   following: MediaItem[] = NO_EPISODES,
-): TvUpNext {
+): UpNext {
   const [similar, setSimilar] = useState<MediaItem[]>([]);
   // Episodes carry no embedding of their own, so recommend against the show.
   const recoId = item.showId ?? item.id;

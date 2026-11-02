@@ -43,3 +43,4 @@ export type {
 export { useSubtitleGenerations } from './services/subtitleGenerations';
 export type { ThemeAudio } from './services/themeAudio';
 export { useThemeAudio } from './services/themeAudio';
+export { type UpNext, useUpNext } from './services/up-next';

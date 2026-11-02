@@ -5,6 +5,7 @@ import {
   useCast,
   useSubtitleAppearance,
   useT,
+  useUpNext,
   WEB_FLAGS,
 } from '@kromatv/ui';
 import {
@@ -22,7 +23,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
 import { useWebController } from '#web/features/playback/use-web-controller';
-import { useWebUpNext } from '#web/features/playback/use-web-upnext';
 import type { MovieView } from '#web/shared/lib/api';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
@@ -62,7 +62,7 @@ export function Player({
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);
-  const upNext = useWebUpNext(t, item, following);
+  const upNext = useUpNext(webRuntime.client, t, item, following);
   const flags = useMemo(() => ({ ...WEB_FLAGS, cast: cast.available }), [cast.available]);
 
   const position = useMemo(() => ({ getPosition: pb.getPosition }), [pb.getPosition]);
