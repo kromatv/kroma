@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use kroma_module_sdk::host::NetworkSeal;
+use kroma_module_sdk::host::testing::StubHost;
 
 use super::*;
 use crate::RqbitConfig;
@@ -47,7 +48,10 @@ fn a_helper_that_is_running_is_left_alone() {
 }
 
 fn engine_started(sealed: bool, seal: NetworkSeal, tag: &str) -> bool {
-    let host = host_over(tag, &[]).with_network_seal(seal);
+    on_the_wrong_side(sealed, host_over(tag, &[]).with_network_seal(seal))
+}
+
+fn on_the_wrong_side(sealed: bool, host: StubHost) -> bool {
     let manager = restarted(&host);
     let stub = StubApi::serving(&[]);
     let cfg = RqbitConfig {
@@ -74,6 +78,14 @@ fn a_sealed_helper_is_on_the_wrong_side_only_once_no_network_is_on_offer() {
     assert!(!engine_started(true, NetworkSeal::Up, "side-sealed-up"));
     assert!(!engine_started(true, NetworkSeal::Down, "side-sealed-down"));
     assert!(!engine_started(false, NetworkSeal::None, "side-open"));
+}
+
+#[test]
+fn a_helper_started_in_the_open_is_on_the_wrong_side_once_the_kill_switch_is_on() {
+    let host = host_over("side-kill-switch", &[])
+        .with_setting("vpnKillSwitch", serde_json::json!(true));
+
+    assert!(on_the_wrong_side(false, host));
 }
 
 #[test]

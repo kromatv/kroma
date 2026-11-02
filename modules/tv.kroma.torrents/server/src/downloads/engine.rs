@@ -63,11 +63,15 @@ impl DownloadManager {
         }
         let proxy = active_proxy_url(host);
         if proxy.is_none() && vpn_sealed_expected(host) {
-            tracing::warn!(
-                "VPN is configured but its proxy is not resolvable; embedded engine start deferred (never runs unsealed)"
-            );
+            if !self.start_deferred.swap(true, Ordering::Relaxed) {
+                tracing::warn!(
+                    "no network is up to carry the peers, and the VPN or the kill switch forbids \
+                     going direct; embedded engine start deferred (never runs unsealed)"
+                );
+            }
             return;
         }
+        self.start_deferred.store(false, Ordering::Relaxed);
         let sealed = proxy.is_some();
         let chosen = ports::chosen(&self.state_dir);
         let cfg = RqbitConfig {
@@ -166,58 +170,6 @@ impl DownloadManager {
             }
         }
         out
-    }
-
-    /// Announce through the gateway ourselves and hand one stalled torrent the
-    /// peers, each in its turn across passes, since an announce takes the module's
-    /// one instance for its whole length. Blocking.
-    pub fn reseed_stalled(&self, _host: &dyn HostCtx) {
-        let Some(engine) = self.rqbit() else { return };
-        if !engine.is_sealed() {
-            return;
-        }
-        let client = engine.client();
-        let rows = match self
-            .core()
-            .get()
-            .and_then(|c| Ok(db::active_downloads(&c)?))
-        {
-            Ok(rows) => rows,
-            Err(_) => return,
-        };
-        let stalled: Vec<db::DownloadRow> = rows
-            .into_iter()
-            .filter(|row| row.client_id == db::EMBEDDED_CLIENT_ID && !row.client_ref.is_empty())
-            .filter(|row| {
-                matches!(client.status(&row.client_ref), Ok(Some(status)) if status.is_stalled_at_start())
-            })
-            .collect();
-        if stalled.is_empty() {
-            return;
-        }
-        let turn = self.reseed_turn.fetch_add(1, Ordering::Relaxed) % stalled.len();
-        let row = &stalled[turn];
-        let path = self
-            .state_dir
-            .join("session")
-            .join(format!("{}.torrent", row.client_ref));
-        let Ok(bytes) = std::fs::read(&path) else {
-            return;
-        };
-        let peers = engine.proxied_peers(Some(&bytes), "");
-        if peers.is_empty() {
-            return;
-        }
-        match engine.add_peers(&row.client_ref, &peers) {
-            Ok(added) => tracing::info!(
-                id = %row.id,
-                added,
-                "handed a stalled torrent peers from our proxied tracker announce"
-            ),
-            Err(e) => {
-                tracing::warn!(id = %row.id, error = %format!("{e:#}"), "torrent re-seed failed")
-            }
-        }
     }
 
     /// Ends the helper: no download, no seed, no DHT. Idempotent.

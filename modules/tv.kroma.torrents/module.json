@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.6.33",
+  "version": "0.6.34",
   "description": "The rqbit download engine, run as a pinned helper, + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
     "server": ">=0.1.39"

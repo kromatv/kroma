@@ -3,9 +3,11 @@
 
 pub mod monitor;
 
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
+use std::time::Instant;
 
 use crate::{ClientDef, DownloadClient, RqbitEngine};
 use anyhow::{anyhow, Result};
@@ -25,6 +27,7 @@ mod gate;
 mod grab;
 mod ledger;
 pub mod matching;
+mod reseed;
 mod supervise;
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -53,7 +56,8 @@ pub struct DownloadManager {
     engine_gate: tokio::sync::Mutex<()>,
     retiring: Mutex<Option<Arc<RqbitEngine>>>,
     start_failures: AtomicU32,
-    reseed_turn: AtomicUsize,
+    start_deferred: AtomicBool,
+    announced: Mutex<HashMap<String, Instant>>,
     helper: String,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
@@ -94,7 +98,8 @@ impl DownloadManager {
             engine_gate: tokio::sync::Mutex::new(()),
             retiring: Mutex::new(None),
             start_failures: AtomicU32::new(0),
-            reseed_turn: AtomicUsize::new(0),
+            start_deferred: AtomicBool::new(false),
+            announced: Mutex::new(HashMap::new()),
             helper,
             downloads_dir: state_dir.join("downloads"),
             state_dir,
