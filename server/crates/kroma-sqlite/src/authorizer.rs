@@ -185,6 +185,10 @@ impl Scope {
         }
     }
 
+    pub(crate) fn is_own_file(&self) -> bool {
+        matches!(self.rule, Rule::OwnFile)
+    }
+
     pub(crate) fn install(&self, conn: &Connection) -> Result<()> {
         let module_id = self.module_id.clone();
         match &self.rule {

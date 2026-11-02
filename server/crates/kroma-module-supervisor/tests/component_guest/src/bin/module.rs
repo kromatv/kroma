@@ -28,6 +28,7 @@ fn routes() -> Router<RemoteHost> {
         .route("/own", get(own_database))
         .route("/core/{table}", get(core_table))
         .route("/keep", get(keep_a_file))
+        .route("/plant/{name}", get(plant_a_link))
         .route("/downloads/{id}", get(list_a_download))
         .route("/run/{program}", get(run_a_program))
         .route("/background", get(start_background))
@@ -95,6 +96,20 @@ async fn keep_a_file(State(host): State<RemoteHost>) -> String {
     let path = module_dir(&host).join("kept.txt");
     let written = std::fs::write(&path, "kept").and_then(|()| std::fs::read_to_string(&path));
     format!("{written:?}")
+}
+
+async fn plant_a_link(
+    State(host): State<RemoteHost>,
+    Path(name): Path<String>,
+    RawQuery(target): RawQuery,
+) -> String {
+    let _ = std::fs::remove_file(module_dir(&host).join(&name));
+    let own = module_dir(&host).to_string_lossy().into_owned();
+    let planted = wasip2::filesystem::preopens::get_directories()
+        .into_iter()
+        .find(|(_, guest)| *guest == own)
+        .map(|(dir, _)| dir.symlink_at(&target.unwrap_or_default(), &name).map_err(|e| e.name()));
+    format!("{planted:?}")
 }
 
 async fn list_a_download(State(host): State<RemoteHost>, Path(id): Path<String>) -> String {

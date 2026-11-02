@@ -53,7 +53,6 @@ impl Env {
         })
     }
 
-    /// The module's own database, beside the files the core unpacked it into.
     #[cfg(feature = "storage")]
     pub(crate) fn store_path(&self) -> PathBuf {
         self.data_dir

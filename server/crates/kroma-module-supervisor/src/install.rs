@@ -135,10 +135,9 @@ impl Supervisor {
         validate_id(id)?;
         self.stop(id);
         self.run.forget_module(id);
-        match std::fs::remove_dir_all(self.own_dir(id)) {
-            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error.into()),
-            _ => {}
-        }
+        remove_if_present(&self.own_dir(id))?;
+        #[cfg(unix)]
+        remove_if_present(&self.databases_dir(id))?;
         std::fs::remove_dir_all(self.installed_dir(id))?;
         self.invalidate_manifests();
         Ok(())
@@ -147,6 +146,13 @@ impl Supervisor {
     fn staging_dir(&self) -> std::path::PathBuf {
         self.installed_root()
             .join(format!("{STAGING_PREFIX}{}", rand::random::<u32>()))
+    }
+}
+
+fn remove_if_present(dir: &std::path::Path) -> std::io::Result<()> {
+    match std::fs::remove_dir_all(dir) {
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
+        _ => Ok(()),
     }
 }
 

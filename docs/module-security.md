@@ -113,7 +113,7 @@ what enforces it. See
 | `run` | `process` starts only what `run` names, for a first-party module |
 | `env` | only the declared variables exist |
 | `media` | `media.decode-audio` checks both paths against the module's folders, then runs the core's ffmpeg |
-| `storage` | the host holds both databases; the component has no SQLite |
+| `storage` | the host holds both databases, the module's own in a folder no module holds; the component has no SQLite |
 | `settings` | the host API answers only a declared key, and never one the core keeps |
 | CPU, memory | a ceiling per instance |
 
@@ -144,10 +144,20 @@ update that adds one to `settings.write` waits for the operator. The component's
 
 **Database.** The component has no SQLite. `kroma-sqlite-guest` gives it
 rusqlite's API and sends every statement to the `sql` import. The host holds the
-module's own `module.sqlite`, which refuses `ATTACH` and every `PRAGMA` but a short
+module's own databases, which refuse `ATTACH` and every `PRAGMA` but a short
 allowlist, and the slice of the core database `storage.core` grants, enforced by
 SQLite's authorizer in the host. A module that declares no `storage` has no database:
 the host refuses every `sql.open`.
+
+A module names its own database and never says where it is. `sql.open` takes a
+file name, `module.sqlite` or that name under the module's own folder as the
+runtime asks for it, and the host opens it in `<data>/databases/<id>/`, a folder
+it creates open to the server's user alone and that no module holds. A name is
+one file of letters, digits, `.`, `_` and `-`, and never a journal's. The file,
+and the `-wal`, `-shm` and `-journal` SQLite keeps beside it, must each be a
+regular file with a single link, and SQLite opens it following no link. The copy
+a schema upgrade takes lands in the same folder, and the host keeps the last two.
+A backup exports and restores a module's database from there, the same way.
 
 **Files.** The host preopens folders at the same paths they have on the host: the
 module's own folder, its `dataDirs` (first-party only), the media roots when it
@@ -163,11 +173,15 @@ The server's own folders are the data folder, the modules folder, the release
 folder the Synology package starts from, the folder of the running binary, the
 web client and the updater's folder. No module holds one of them or a folder
 above one, except a library folder, which is then read-only. Under the data
-folder, `modules`, `installed`, `run`, `logs`, `backups` and `helpers` keep each
-module's own data, what the host installed of it, its socket, and the programs
-the host runs for it: a module holds its own folder in `modules` and nothing
-else, and no library, download or `permissions.env` folder is taken from inside
-them.
+folder, `modules`, `installed`, `databases`, `run`, `logs`, `backups` and
+`helpers` keep each module's own data, what the host installed of it, its
+databases, its socket, and the programs the host runs for it: a module holds its
+own folder in `modules` and nothing else, and no library, download or
+`permissions.env` folder is taken from inside them. Each folder the host creates
+for a module (its own folder, its `dataDirs`, its `/tmp` and the folder of its
+databases) is open to the server's user alone, `0700` on Unix, and one that is
+already there is closed to other users when the module starts. A link the
+operator put in place of a data folder is left as it is.
 Which folders a module holds comes from settings no module may write:
 `libraries` and `downloadFolders` reach no module, and `acqRecycleBin` reaches
 only one that declares it. A module whose library or download folders change is
@@ -186,11 +200,11 @@ the module does.
 may do are in `<data>/installed/<id>/`, a folder no module holds: `module.json`,
 `origin.json` (where the module came from, and whether the official catalog
 served it), `module.wasm`, the compiled copy of it, and the frontend, icon and
-catalogs the bundle carried. `<data>/modules/<id>/` holds only the module's own
-data, its database and the files it writes, and is the only one of the two a
-module may hold, read-write when it declares `storage` or `fs.write: module`. An
-install or an update replaces the first and leaves the second as it is; an
-uninstall deletes both.
+catalogs the bundle carried. `<data>/modules/<id>/` holds only the files the
+module writes, and is the only one of the two a module may hold, read-write when
+it declares `storage` or `fs.write: module`. An install or an update replaces the
+first and leaves the second and the module's databases as they are; an uninstall
+deletes all three.
 
 The host records the component's `sha256` in `origin.json` when it installs it,
 and hashes the component against it before every start: one that does not match
@@ -204,11 +218,23 @@ A server laid out before this kept everything in `<data>/modules/<id>/`. The
 first start of a server that keeps them apart copies each module's manifest,
 origin record, component, frontend, icon and catalogs into
 `<data>/installed/<id>/`, before any module starts, records the component's
-`sha256`, and removes those files from the module's own folder. The database and
-the module's other files stay where they are. A link in the old folder is not
-followed and each file is copied rather than moved, so nothing in the module's
-folder remains attached to what the host reads. This happens once: after it, no
-file in a module's own folder is read as part of its install.
+`sha256`, and removes those files from the module's own folder. The module's
+other files stay where they are, and its databases move at its own next start, as
+below. A link in the old folder is not followed and each file is copied rather
+than moved, so nothing in the module's folder remains attached to what the host
+reads. This happens once: after it, no file in a module's own folder is read as
+part of its install.
+
+A server laid out before the host kept the databases apart had them in
+`<data>/modules/<id>/` too. The first start of a module with `storage` and no
+`<data>/databases/<id>/` copies, by content, each database at the top of its own
+folder into a staging folder beside that one: a regular file with a single link
+that begins as an SQLite file does, with the `-wal` and `-journal` beside it when
+those are regular files too. A link is neither followed nor carried. Each copy
+takes in its journal and is checked whole (`PRAGMA quick_check`), the staging
+folder is renamed into place, and only then are the old files removed. A copy
+that fails leaves every old file as it was, and the module does not start: its
+log says why, and its next start tries again. This happens once per module.
 
 **Programs.** `process` starts only a program `run` names, and only for a
 first-party module: a third-party module never starts one. A program pinned under
@@ -331,6 +357,15 @@ compiled copy, refuses a component changed after its install, compiles again
 over a changed compiled copy, and starts a module installed the old way with its
 database. `layout.rs` checks that move file by file, that it happens once, and
 that a link or a hard link in the old folder is not carried over.
+`component_databases.rs` checks that a link a module makes in its own folder,
+under its database's name or a journal's, leaves the core database and every
+other file as they were across a restart, that the module reaches none of the
+files its databases are kept in, and that its folders are `0700`. The
+supervisor's `databases` tests move a database with rows still in its journal,
+leave a link, a second link and a file that is not a database behind, move once,
+and keep every old file when a move fails and try it again. `kroma-sqlite`'s
+own-file tests refuse a link or a second link at the file or at a journal, and
+the backup's tests export and restore through no link.
 `host_settings.rs` there and the server's `it_host_settings.rs` refuse a read or
 a write of a key the module did not declare, and of a key the core keeps even
 when declared, and `install_accept.rs` holds back an unattended update that
@@ -354,6 +389,7 @@ writes a new key.
 | A downloads module holds its download folders, not `/`; a helper is hashed against its pin before every start | in review (#569) |
 | A module reads and writes only the settings it declares; an update that writes a new one waits for the operator | in review (#574) |
 | What the host reads to decide what a module may do is kept where no module reaches; the component is hashed against its install record before every start; a helper's name is never one of the host's files | in review (#576) |
+| A module's databases are kept where no module reaches and opened following no link; the folders the host creates for a module are open to the server's user alone | in review |
 | Storage grants enforced in the host; the component holds no database file | on `main` (#555) |
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |

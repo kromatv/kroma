@@ -24,12 +24,7 @@ fn a_component_answers_on_the_modules_socket_like_any_other() {
 fn a_component_starts_without_waiting_for_a_first_call() {
     let server = Server::new("component-eager", NetworkAction::Direct);
     seed_core(&server);
-    let own = server
-        .dir
-        .path()
-        .join("modules")
-        .join(GUEST)
-        .join("module.sqlite");
+    let own = server.databases_dir(GUEST).join("module.sqlite");
 
     server.started(GUEST, guest_component(), STORES);
 

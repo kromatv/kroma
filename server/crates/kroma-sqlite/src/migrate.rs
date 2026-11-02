@@ -257,7 +257,7 @@ fn snapshot_path(path: &Path, version: u32) -> PathBuf {
     path.with_file_name(name)
 }
 
-fn prune_snapshots(path: &Path) {
+pub fn prune_snapshots(path: &Path) {
     let Some(dir) = path.parent() else { return };
     let prefix = format!(
         "{}.pre-v",

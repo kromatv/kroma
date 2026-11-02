@@ -305,8 +305,8 @@ pub const MODULE_SCHEMA_VERSION: u32 = 3;
 /// `storage` object gets no database at all, and the module built for it does
 /// not link SQLite.
 ///
-/// Presence alone grants the module its own file
-/// (`<data>/modules/<id>/module.sqlite`), which it owns outright. Reaching the
+/// Presence alone grants the module its own database, which the host keeps in
+/// `<data>/databases/<id>/` and the module owns outright. Reaching the
 /// SHARED core database is separate and narrower: only what [`core`](Self::core)
 /// lists, enforced per connection by SQLite's authorizer.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
