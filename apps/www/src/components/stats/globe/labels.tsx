@@ -17,6 +17,7 @@ export interface LabelNode {
 
 export interface LabelsProps {
   pins: readonly PlacedPin[];
+  named: number;
   nodes: RefObject<Map<string, LabelNode>>;
 }
 
@@ -26,9 +27,9 @@ function measure(node: HTMLElement): LabelNode | null {
   return { node, pill, stem, width: pill.offsetWidth, height: pill.offsetHeight };
 }
 
-/** The pills naming each pinned country, laid over the canvas. Positioned by
+/** The pill over each pinned country, laid over the canvas. Positioned by
  * `LabelProjector`; until its first frame each one is invisible at the origin. */
-export function Labels({ pins, nodes }: Readonly<LabelsProps>) {
+export function Labels({ pins, named, nodes }: Readonly<LabelsProps>) {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
       {pins.map((pin, i) => (
@@ -45,7 +46,7 @@ export function Labels({ pins, nodes }: Readonly<LabelsProps>) {
           className="absolute left-0 top-0 flex flex-col items-center will-change-transform"
           style={{ zIndex: pins.length - i, opacity: 0 }}
         >
-          <span className="flex items-center whitespace-nowrap rounded-full border border-border bg-surface-1/95 py-1 pr-2.5 pl-2 font-sans text-xs font-semibold text-text shadow-pop backdrop-blur-sm">
+          <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-surface-1/95 py-1 pr-2.5 pl-2 font-sans text-xs font-semibold text-text shadow-pop backdrop-blur-sm">
             {pin.flag && (
               <img
                 src={pin.flag}
@@ -53,11 +54,11 @@ export function Labels({ pins, nodes }: Readonly<LabelsProps>) {
                 aria-hidden
                 width={18}
                 height={12}
-                className="mr-1.5 h-3 w-[18px] rounded-[2px] object-cover"
+                className="h-3 w-[18px] rounded-[2px] object-cover"
               />
             )}
-            {pin.label}
-            <span className="ml-1.5 font-medium text-dim tabular-nums">{pin.n}</span>
+            {(i < named || !pin.flag) && pin.label}
+            <span className="font-medium text-dim tabular-nums">{pin.n}</span>
           </span>
           <span className="w-px bg-border-strong" style={{ height: STEM_PX }} />
         </div>
