@@ -83,6 +83,14 @@ other blocked call, so a module author sees what to declare and an operator sees
 what was attempted. A destination `setting:<key>` names is read from that setting
 each time: a URL, or a list of them.
 
+A purpose covers itself and its dotted children, and nothing else: an entry for
+`metadata` covers a call made for `metadata` or `metadata.discover`, never one for
+`metadatax`. A host pattern names that host only, or with `*.` a domain and every
+name under it. The `net.connect` check, the operator's rules, the journal's filter
+and the gateway all decide with these two rules, `purpose_covers` and
+`host_matches` in `kroma-module-manifest`, so a call one of them allows is never
+refused by another for its purpose or its host.
+
 ## How each permission is enforced
 
 A module is a WebAssembly component run by wasmtime inside the server. It cannot

@@ -154,19 +154,18 @@ struct Username<'a> {
 
 impl<'a> Username<'a> {
     fn parse(username: &'a str) -> Self {
-        let mut parts = username.split('.');
-        let purpose = parts.next().unwrap_or_default();
         let mut parsed = Self {
-            purpose,
+            purpose: username,
             public_only: false,
             sealed: false,
         };
-        for flag in parts {
+        while let Some((purpose, flag)) = parsed.purpose.rsplit_once('.') {
             match flag {
                 "public" => parsed.public_only = true,
                 "vpn" => parsed.sealed = true,
-                _ => {}
+                _ => break,
             }
+            parsed.purpose = purpose;
         }
         parsed
     }

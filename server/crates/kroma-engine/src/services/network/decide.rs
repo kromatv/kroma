@@ -4,8 +4,8 @@
 use std::net::IpAddr;
 
 use kroma_http::address::WebTarget;
+use kroma_module_manifest::{host_matches, purpose_covers};
 
-use super::flow::purpose_covers;
 use super::rules::{address_range, Action, DefaultAction, NetworkRules, Rule};
 
 pub const CORE: &str = "core";
@@ -27,11 +27,10 @@ pub fn decide(
     if let Some(guard) = guard(caller, target, own_ports) {
         return (Action::Block, Some(guard.to_string()));
     }
-    let host = target.host.trim_end_matches('.').to_ascii_lowercase();
     let Some(rule) = rules
         .rules
         .iter()
-        .find(|rule| matches(rule, caller, purpose, &host, target))
+        .find(|rule| matches(rule, caller, purpose, target))
     else {
         let action = match rules.default_action {
             DefaultAction::Allow => Action::Direct,
@@ -83,13 +82,13 @@ fn is_link_local(ip: IpAddr) -> bool {
     }
 }
 
-fn matches(rule: &Rule, caller: &str, purpose: &str, host: &str, target: &WebTarget) -> bool {
+fn matches(rule: &Rule, caller: &str, purpose: &str, target: &WebTarget) -> bool {
     rule.caller.as_deref().is_none_or(|c| c == caller)
         && rule.purpose.as_deref().is_none_or(|p| purpose_covers(p, purpose))
         && rule
             .host
             .as_deref()
-            .is_none_or(|pattern| host_matches(pattern, host))
+            .is_none_or(|pattern| host_matches(pattern, &target.host))
         && rule.port.is_none_or(|port| port == target.port)
         && rule
             .address
@@ -118,18 +117,6 @@ fn in_range(ip: IpAddr, range: &str) -> bool {
 fn prefix_matches(ip: u128, network: u128, width: u32, bits: u32) -> bool {
     let unmasked = width - bits;
     bits == 0 || ip >> unmasked == network >> unmasked
-}
-
-fn host_matches(pattern: &str, host: &str) -> bool {
-    match pattern.strip_prefix("*.") {
-        Some(suffix) => {
-            host == suffix
-                || host
-                    .strip_suffix(suffix)
-                    .is_some_and(|label| label.len() > 1 && label.ends_with('.'))
-        }
-        None => pattern == host,
-    }
 }
 
 #[cfg(test)]

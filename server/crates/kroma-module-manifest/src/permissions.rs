@@ -6,6 +6,8 @@ mod validation;
 
 use serde::{Deserialize, Serialize};
 
+use crate::matching::{host_matches, purpose_covers};
+
 /// The `permissions` block of a manifest. Unknown keys are refused, not
 /// ignored: a misspelt permission would silently grant nothing.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -118,8 +120,9 @@ pub enum Reach {
 }
 
 impl Permissions {
-    /// Whether some `net.connect` entry covers `attempt`. `setting` answers the
-    /// hosts a `setting:<key>` destination currently names.
+    /// Whether some `net.connect` entry covers `attempt`, its purpose matched by
+    /// [`purpose_covers`]. `setting` answers the hosts a `setting:<key>`
+    /// destination currently names.
     pub fn allows_connect(
         &self,
         attempt: &Attempt<'_>,
@@ -145,7 +148,7 @@ impl Permissions {
     fn covers(&self, asked: &Connect) -> bool {
         asked.to.iter().all(|to| {
             self.net.connect.iter().any(|granted| {
-                granted.purpose == asked.purpose
+                purpose_covers(&granted.purpose, &asked.purpose)
                     && granted.to.contains(to)
                     && (granted.ports.is_empty()
                         || (!asked.ports.is_empty()
@@ -167,7 +170,7 @@ impl Permissions {
     ) -> Option<Reach> {
         let mut covered = None;
         for entry in &self.net.connect {
-            let applies = entry.purpose == attempt.purpose
+            let applies = purpose_covers(&entry.purpose, attempt.purpose)
                 && (entry.ports.is_empty() || entry.ports.contains(&attempt.port))
                 && entry.protocols().contains(&attempt.proto);
             if !applies {
@@ -210,14 +213,6 @@ fn destination_matches(
                 .any(|host| host.eq_ignore_ascii_case(attempt.host)),
             None => host_matches(to, attempt.host),
         },
-    }
-}
-
-fn host_matches(pattern: &str, host: &str) -> bool {
-    let host = host.trim_end_matches('.').to_ascii_lowercase();
-    match pattern.strip_prefix("*.") {
-        Some(domain) => host == domain || host.ends_with(&format!(".{domain}")),
-        None => host == pattern,
     }
 }
 
