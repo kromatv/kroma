@@ -157,11 +157,9 @@ fn declared() -> Declared {
     m.public("acqDeleteAfterImport", json!(false));
     m.public("acqReplaceOnUpgrade", json!(true));
     // A file an upgrade replaces moves here instead of being deleted ("" =
-    // delete at once), and is cleared after `acqRecycleDays`. A module that
-    // declares `downloads` holds it, so only one that declares it may write it.
+    // delete at once), and is cleared after `acqRecycleDays`.
     m.module_declared("acqRecycleBin", json!(""));
     // Folders an external download client saves into, comma or line separated.
-    // A module that declares `downloads` holds them, so no module may write it.
     m.core_only("downloadFolders", json!(""));
     m.public("acqRecycleDays", json!(30));
     // A download still unfinished this many hours after its grab has failed
@@ -219,7 +217,6 @@ fn declared() -> Declared {
     // Seeded from the flat `llm*` keys above on first read when empty.
     m.public("llmProviders", json!([]));
     m.public("llmDefaultProvider", json!(""));
-    // A module that declares `media` holds these folders, so no module may write it.
     m.core_only("libraries", json!(null));
     // ISO-8601 `items.added_at` the digest has reported up to. Empty = never run:
     // the first pass adopts the current library as its baseline and stays silent.
