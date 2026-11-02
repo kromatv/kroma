@@ -85,6 +85,7 @@ fn a_sealed_helper_is_on_the_wrong_side_only_once_no_network_is_on_offer() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_helper_started_in_the_open_is_on_the_wrong_side_once_the_kill_switch_is_on() {
     let host = host_over("side-kill-switch", &[])
         .with_setting("vpnKillSwitch", serde_json::json!(true));

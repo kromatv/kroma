@@ -56,12 +56,13 @@ fn a_declared_connection_is_allowed() {
 }
 
 #[test]
-fn a_purpose_is_declared_only_by_an_entry_named_for_it_exactly() {
+fn a_purpose_is_declared_by_an_entry_named_for_it_or_for_its_dotted_parent() {
     let p = torrents();
 
-    let declared = ["peers", "peers.announce", "torrent", "seal-check"].map(|purpose| p.declares_purpose(purpose));
+    let declared = ["peers", "peers.announce", "peersx", "torrent", "seal-check"]
+        .map(|purpose| p.declares_purpose(purpose));
 
-    assert_eq!(declared, [true, false, false, true]);
+    assert_eq!(declared, [true, true, false, false, true]);
 }
 
 #[test]
