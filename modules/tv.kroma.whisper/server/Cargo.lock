@@ -1282,6 +1282,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-weights"
+version = "0.1.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "kroma-whisper"
 version = "0.1.0"
 dependencies = [
@@ -1292,6 +1302,7 @@ dependencies = [
  "candle-transformers",
  "kroma-module-runtime",
  "kroma-module-sdk",
+ "kroma-weights",
  "serde",
  "serde_json",
  "tokenizers",

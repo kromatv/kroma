@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, Mutex};
 
 use kroma_domain::{CrashRecord, CrashReportBody};
+use kroma_primitives::now_ms;
 
 const CAPACITY: usize = 200;
 const MAX_MESSAGE: usize = 2_000;
@@ -95,13 +96,6 @@ fn clamp(body: CrashReportBody, seq: u64, received_at: i64) -> CrashRecord {
 
 fn cap(value: String, max: usize) -> String {
     value.chars().take(max).collect()
-}
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
 }
 
 #[cfg(test)]

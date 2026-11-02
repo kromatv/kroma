@@ -34,6 +34,7 @@ pub mod online_subs;
 mod origin;
 mod passkeys;
 mod people;
+mod permission;
 mod pin;
 mod plugin;
 mod point;

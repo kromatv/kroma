@@ -12,6 +12,7 @@ use serde_json::json;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::{blocking, query, service};
 use crate::db;
 use crate::i18n;
@@ -44,18 +45,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/requests/{id}/search", get(interactive_search))
         .route("/requests/{id}/auto-search", post(auto_search_one))
         .route("/requests/{id}/grab", post(grab))
-}
-
-fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        Err(lerr(
-            i18n::user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 fn list_scope(user: &User, params: &ListParams) -> Result<(bool, String), Response> {

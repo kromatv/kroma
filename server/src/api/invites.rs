@@ -9,12 +9,11 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::query;
 use crate::db;
-use crate::i18n;
-use crate::model::{Permission, User};
+use crate::model::Permission;
 use crate::services::auth;
 use crate::state::SharedState;
 use axum::routing::{get, post};
@@ -27,19 +26,6 @@ pub fn routes() -> Router<SharedState> {
 }
 
 const INVITE_TTL_DAYS_DEFAULT: i64 = 7;
-
-fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        let loc = user
-            .language
-            .as_deref()
-            .and_then(i18n::normalize)
-            .unwrap_or(i18n::DEFAULT_LOCALE);
-        Err(lerr(loc, StatusCode::FORBIDDEN, "error.permissionDenied"))
-    }
-}
 
 #[derive(Debug, Deserialize)]
 pub struct CreateInviteBody {

@@ -23,24 +23,12 @@ pub(super) fn truncate(s: &str, max_bytes: i32) -> String {
     }
 }
 
-fn floor_char_boundary(s: &str, mut idx: usize) -> usize {
-    if idx >= s.len() {
-        return s.len();
-    }
-    while idx > 0 && !s.is_char_boundary(idx) {
-        idx -= 1;
-    }
-    idx
+fn floor_char_boundary(s: &str, idx: usize) -> usize {
+    (0..=idx).rev().find(|&i| s.is_char_boundary(i)).unwrap_or_default()
 }
 
-fn ceil_char_boundary(s: &str, mut idx: usize) -> usize {
-    if idx >= s.len() {
-        return s.len();
-    }
-    while idx < s.len() && !s.is_char_boundary(idx) {
-        idx += 1;
-    }
-    idx
+fn ceil_char_boundary(s: &str, idx: usize) -> usize {
+    (idx..=s.len()).find(|&i| s.is_char_boundary(i)).unwrap_or(s.len())
 }
 
 #[cfg(test)]
@@ -81,5 +69,17 @@ mod tests {
         assert_eq!(head, "日...");
         let tail = truncate(title, -8);
         assert_eq!(tail, "...画");
+    }
+
+    #[test]
+    fn a_string_exactly_as_long_as_its_budget_is_kept_whole() {
+        assert_eq!(truncate("Short", 5), "Short");
+        assert_eq!(truncate("Short", -5), "Short");
+    }
+
+    #[test]
+    fn a_budget_that_ends_inside_the_first_character_keeps_only_the_ellipsis() {
+        assert_eq!(truncate("éclair au chocolat", 4), "...");
+        assert_eq!(truncate("chocolat éclairé", -4), "...");
     }
 }

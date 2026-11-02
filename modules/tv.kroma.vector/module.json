@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.vector",
   "name": "Embeddings",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Content embeddings for recommendations and semantic search.",
   "component": {
     "instances": 2,

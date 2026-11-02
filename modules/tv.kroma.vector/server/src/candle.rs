@@ -45,7 +45,7 @@ impl MiniLmEmbedder {
         let tokenizer = Tokenizer::from_file(dir.join("tokenizer.json"))
             .map_err(|e| anyhow::anyhow!("load tokenizer.json: {e}"))?;
 
-        let vb = crate::weights::var_builder(&dir.join("model.safetensors"), DTYPE, &device)
+        let vb = kroma_weights::var_builder(&dir.join("model.safetensors"), DTYPE, &device)
             .context("read safetensors")?;
         let model = BertModel::load(vb, &config).context("build BERT")?;
 

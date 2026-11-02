@@ -8,6 +8,7 @@ import {
   type UpNextItem,
   useSubtitleAppearance,
   useT,
+  useUpNext,
 } from '@kromatv/ui';
 import { Box, Button, radius as cornerRadius, Icon, style, Text } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,7 +23,6 @@ import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
 import { useTvController } from '#tv/features/playback/use-tv-controller';
 import { useDockedPlayer } from '#tv/features/playback/use-docked-player';
 import { useTvPip } from '#tv/features/playback/use-tv-pip';
-import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
 const PREVIEW_W = 256;
 
@@ -80,7 +80,7 @@ export function TvPlayer() {
     };
   }, [client, item.id]);
   const next = following[0] ?? null;
-  const up = useTvUpNext(client, t, item, following);
+  const up = useUpNext(client, t, item, following);
 
   const goNext = useCallback(() => {
     if (advancedRef.current || !next) return;

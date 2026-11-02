@@ -132,7 +132,7 @@ server/
     kroma-wasm-host   wasmtime and the WIT world every module is built against
     kroma-sqlite-guest  rusqlite's API for a component; the host runs each statement
 modules/<id>/       NOT in this workspace, see below
-modules/lib/        shared Rust libraries, not modules: naming (and scene, in its own dir)
+modules/lib/        shared Rust libraries, not modules: naming, weights (and scene, in its own dir)
 ```
 
 A module links a strict subset: `kroma-module-{sdk,runtime,host,manifest,

@@ -69,7 +69,7 @@ fn run(
     let tokenizer =
         Tokenizer::from_file(model_dir.join("tokenizer.json")).map_err(|e| anyhow!("{e}"))?;
     let mut model = {
-        let vb = crate::weights::var_builder(&model_dir.join("model.safetensors"), DType::F32, &device)?;
+        let vb = kroma_weights::var_builder(&model_dir.join("model.safetensors"), DType::F32, &device)?;
         w::model::Whisper::load(&vb, cfg.clone())?
     };
 

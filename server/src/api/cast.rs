@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::i18n;
@@ -31,18 +32,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/cast/receivers", get(list))
         .route("/cast/receivers/{id}", delete(unregister))
         .route("/cast/receivers/{id}/command", post(command::command))
-}
-
-fn require_playback(user: &User) -> Result<(), Response> {
-    if user.can(Permission::Playback) {
-        Ok(())
-    } else {
-        Err(lerr(
-            i18n::user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 fn bad_id(user: &User) -> Response {
@@ -85,7 +74,7 @@ pub async fn announce(
     headers: HeaderMap,
     Json(body): Json<AnnounceBody>,
 ) -> Result<Response, Response> {
-    require_playback(&user)?;
+    require(&user, Permission::Playback)?;
     if !valid_receiver_id(&body.receiver_id) {
         return Err(bad_id(&user));
     }
@@ -181,7 +170,7 @@ pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
-    require_playback(&user)?;
+    require(&user, Permission::Playback)?;
     Ok(Json(state.cast.list(&user.id)).into_response())
 }
 
@@ -193,7 +182,7 @@ pub async fn unregister(
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    require_playback(&user)?;
+    require(&user, Permission::Playback)?;
     if state.cast.remove_owned(&id, &user.id) {
         state
             .events

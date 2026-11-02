@@ -1,7 +1,9 @@
 use std::path::Path;
 
+use kroma_media::tmp_file::unique_tmp;
+
 use super::encode::{encode_webp, encode_webp_capped};
-use super::scratch::{finalize, unique_tmp};
+use super::scratch::finalize;
 use super::{images_dir, PUBLIC_PREFIX};
 
 /// Stores an uploaded image as a content-addressed WebP, returning its public

@@ -8,8 +8,6 @@ mod engine;
 mod mel;
 #[cfg(feature = "local")]
 mod pcm;
-#[cfg(feature = "local")]
-mod weights;
 
 #[cfg_attr(not(feature = "local"), allow(dead_code))]
 mod model;
