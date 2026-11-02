@@ -96,7 +96,6 @@ fn what_an_earlier_server_left_of_a_helper_is_stopped_and_what_this_one_runs_is_
     std::fs::copy(on_path("sleep").unwrap(), &script).unwrap();
     make_executable(&script).unwrap();
     let sha = sha256_of(&script).unwrap();
-    std::fs::write(helpers_dir.join("stand-in.sha256"), &sha).unwrap();
     let mut helpers = BTreeMap::new();
     helpers.insert(
         "stand-in".to_string(),

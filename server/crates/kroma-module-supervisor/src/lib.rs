@@ -31,7 +31,7 @@ mod tokens;
 mod watch;
 
 #[cfg(unix)]
-pub use component::MediaRoots;
+pub use component::{FolderRoots, Folders};
 pub use endpoint::Endpoint;
 pub use host_api::host_router;
 pub use origin::{Accept, BinStamp, Origin, Source};

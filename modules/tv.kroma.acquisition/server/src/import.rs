@@ -23,7 +23,7 @@ mod subtitles;
 
 pub use recycle::empty_recycle_bin;
 
-use content::{is_gone, largest, Content, FilesGone};
+use content::{is_gone, is_held, largest, Content, FilesGone};
 use ledger::{until_it_lands, BUSY_BACKOFF};
 use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
 use place::{ext_of, Placement};
@@ -139,6 +139,11 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         .save_path
         .as_deref()
         .ok_or_else(|| anyhow!("download folder unknown (external client did not report it)"))?;
+    if !is_held(Path::new(save_path)) {
+        bail!(
+            "{save_path} is in no folder the download modules may open: add it to Download folders under Admin > Acquisition, or mount its drive if it is listed there already"
+        );
+    }
     if is_gone(Path::new(save_path)) {
         return Err(FilesGone(save_path.to_string()).into());
     }

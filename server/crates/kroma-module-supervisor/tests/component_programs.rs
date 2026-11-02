@@ -164,3 +164,22 @@ fn a_component_that_traps_takes_the_programs_it_started_with_it() {
     assert!(alive_before);
     assert!(!is_alive(&pid));
 }
+
+#[test]
+fn a_helper_changed_after_it_was_fetched_is_refused_at_start_and_fetched_again() {
+    let server = Server::new("component-helper-changed", NetworkAction::Direct);
+    let (port, _) = http_server(STAND_IN);
+    let manifest = manifest_with_helper(port, &sha256_of(STAND_IN.as_bytes()));
+    let endpoint = server.started(GUEST, guest_component(), &manifest);
+    server.get(&endpoint, "/ensure/stand-in");
+    let helper = server.dir.path().join("helpers").join(GUEST).join("stand-in");
+    std::fs::write(&helper, "#!/bin/sh\necho changed\n").unwrap();
+
+    let changed = server.get(&endpoint, "/run/stand-in");
+    let fetched = server.get(&endpoint, "/ensure/stand-in");
+    let after = server.get(&endpoint, "/run/stand-in");
+
+    assert!(changed.text().contains("no longer matches"), "{}", changed.text());
+    assert_eq!(fetched.text(), "Ok(())");
+    assert_eq!(after.text(), "0 from the helper\n");
+}

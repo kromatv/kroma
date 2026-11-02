@@ -8,6 +8,8 @@ pub(crate) struct Proc {
     #[cfg(unix)]
     pub(crate) media: Option<Vec<std::path::PathBuf>>,
     #[cfg(unix)]
+    pub(crate) downloads: Option<Vec<std::path::PathBuf>>,
+    #[cfg(unix)]
     pub(crate) component: std::sync::Arc<super::component::Pool>,
     #[cfg(unix)]
     pub(crate) _gateway: super::gateway::Running,

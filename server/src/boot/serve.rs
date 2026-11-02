@@ -61,7 +61,7 @@ pub async fn run(
     supervisor.serve_gateways(
         kroma_module_host::NetworkPolicyOf(state.network.clone()),
         tokio::runtime::Handle::current(),
-        media_roots(&state),
+        crate::boot::folders::folder_roots(&state),
     );
     let seam = open_seam(&state, &supervisor, subscriptions);
     supervisor.spawn_enabled(&*state);
@@ -109,22 +109,6 @@ pub async fn run(
         tracing::warn!("the last network tallies could not be written: {e:#}");
     }
     Ok(())
-}
-
-#[cfg(unix)]
-fn media_roots(state: &state::SharedState) -> kroma_module_supervisor::MediaRoots {
-    use kroma_module_host::HostCtx;
-    let state = state.clone();
-    std::sync::Arc::new(move || {
-        let mut roots: Vec<std::path::PathBuf> = HostCtx::library_folders(&*state)
-            .into_iter()
-            .flat_map(|library| library.folders)
-            .map(std::path::PathBuf::from)
-            .collect();
-        roots.sort();
-        roots.dedup();
-        roots
-    })
 }
 
 fn open_seam(

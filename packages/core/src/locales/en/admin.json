@@ -790,5 +790,7 @@
   "admin.updatesStep": "Step {step} of {total}",
   "admin.updatesStages": "Update stages completed",
   "admin.updatesNow": "Now",
-  "admin.updatesCompleteHint": "Your server is ready. Your library and watch history are right where you left them."
+  "admin.updatesCompleteHint": "Your server is ready. Your library and watch history are right where you left them.",
+  "admin.downloadFolders": "Download folders",
+  "admin.downloadFoldersHint": "Where an external download client saves its files, as this server sees them. Separate folders with commas."
 }

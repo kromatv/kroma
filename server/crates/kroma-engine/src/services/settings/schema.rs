@@ -501,6 +501,15 @@ pub fn groups(
                             true,
                         ),
                         row(
+                            "downloadFolders",
+                            t("admin.downloadFolders"),
+                            Some(t("admin.downloadFoldersHint")),
+                            "text",
+                            &[],
+                            g("downloadFolders"),
+                            true,
+                        ),
+                        row(
                             "acqRecycleBin",
                             t("admin.acqRecycleBin"),
                             Some(t("admin.acqRecycleBinHint")),

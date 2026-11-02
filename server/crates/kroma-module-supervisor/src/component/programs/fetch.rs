@@ -35,6 +35,10 @@ pub(super) fn sha256_of(path: &Path) -> std::io::Result<String> {
     }
 }
 
+fn matches_pin(path: &Path, asset: &HelperAsset) -> bool {
+    path.is_file() && sha256_of(path).is_ok_and(|actual| actual == asset.sha256)
+}
+
 fn take_member(archive: &Path, member: &str, destination: &Path) -> Result<(), String> {
     let file = std::fs::File::open(archive).map_err(|error| error.to_string())?;
     let mut entries = tar::Archive::new(flate2::read::GzDecoder::new(file));
@@ -63,10 +67,8 @@ pub(super) fn make_executable(path: &Path) -> std::io::Result<()> {
 impl Programs {
     pub(super) fn fetch_helper(&self, program: &str, asset: &HelperAsset) -> Result<PathBuf, String> {
         let destination = self.helpers_dir.join(program);
-        let pin = self.helpers_dir.join(format!("{program}.sha256"));
         let _one_at_a_time = self.fetching.lock().unwrap_or_else(PoisonError::into_inner);
-        let recorded = std::fs::read_to_string(&pin).unwrap_or_default();
-        if destination.is_file() && recorded.trim() == asset.sha256 {
+        if matches_pin(&destination, asset) {
             return Ok(destination);
         }
         std::fs::create_dir_all(&self.helpers_dir).map_err(|error| error.to_string())?;
@@ -91,7 +93,6 @@ impl Programs {
             None => std::fs::rename(&download, &destination).map_err(|error| error.to_string())?,
         }
         make_executable(&destination).map_err(|error| error.to_string())?;
-        std::fs::write(&pin, &asset.sha256).map_err(|error| error.to_string())?;
         Ok(destination)
     }
 
@@ -111,10 +112,15 @@ impl Programs {
         };
         let asset = self.asset_for(program, helper)?;
         let destination = self.helpers_dir.join(program);
-        let pin = std::fs::read_to_string(self.helpers_dir.join(format!("{program}.sha256"))).unwrap_or_default();
-        if destination.is_file() && pin.trim() == asset.sha256 {
-            return Ok(destination);
+        if !destination.is_file() {
+            return Err(format!("{program} has not been fetched yet"));
         }
-        Err(format!("{program} has not been fetched yet"))
+        if !matches_pin(&destination, asset) {
+            tracing::warn!(module = %self.module, program, "a helper no longer matches its pinned sha256 and was not started");
+            return Err(format!(
+                "{program} no longer matches the sha256 its manifest pins, so it was not started; ensuring it fetches the pinned build again"
+            ));
+        }
+        Ok(destination)
     }
 }
