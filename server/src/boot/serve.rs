@@ -251,9 +251,7 @@ mod tests {
         let (callback, client_route) = tokio::task::spawn_blocking(move || {
             let callback = kroma_http::Loopback::new()
                 .header("authorization", "Bearer test-host-token")
-                .get(&format!(
-                    "{base}/api/_host/setting?key=serverName&kind=str&default="
-                ))
+                .get(&format!("{base}/api/_host/enabled?id=tv.kroma.vpn"))
                 .map(|resp| resp.status);
             let client_route = kroma_http::Loopback::new()
                 .get(&format!("{base}/api/auth/config"))

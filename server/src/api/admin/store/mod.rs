@@ -262,10 +262,9 @@ async fn inspect_upload(
         .installed_manifests()
         .into_iter()
         .find(|m| m.id == manifest.id);
-    let widens = match (&manifest.permissions, installed.as_ref().and_then(|m| m.permissions.as_ref())) {
-        (Some(offered), Some(granted)) => offered.widens(granted),
-        _ => false,
-    };
+    let widens = installed
+        .as_ref()
+        .is_some_and(|installed| manifest.asks_more_than(installed));
     Ok(Json(json!({
         "id": manifest.id,
         "name": manifest.name,

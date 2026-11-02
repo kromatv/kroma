@@ -39,16 +39,8 @@ impl Declared {
         }
     }
 
-    fn public(&mut self, key: &'static str, value: Value) {
-        self.declare(key, SettingReach::Any, value);
-    }
-
     fn core_only(&mut self, key: &'static str, value: Value) {
         self.declare(key, SettingReach::CoreOnly, value);
-    }
-
-    fn module_credential(&mut self, key: &'static str, value: Value) {
-        self.declare(key, SettingReach::Declared, value);
     }
 
     fn module_declared(&mut self, key: &'static str, value: Value) {
@@ -67,7 +59,7 @@ impl Declared {
 
 fn declared() -> Declared {
     let mut m = Declared::new();
-    m.public("serverName", json!("KROMA"));
+    m.module_declared("serverName", json!("KROMA"));
     m.minted("instanceId");
     // One key for the whole blob: `{ "<id>": { "enabled": bool, "config": {..} } }`.
     m.core_only("moduleStates", json!({}));
@@ -79,151 +71,151 @@ fn declared() -> Declared {
     // api/admin/store/registries.rs): the list is operator input pointing at
     // third-party catalogs of native code.
     m.core_only("moduleRegistries", json!([]));
-    m.public("uiLanguage", json!("Français"));
+    m.module_declared("uiLanguage", json!("Français"));
     // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
-    m.public("tmdbLanguage", json!(super::TMDB_LANGUAGE_AUTO));
-    m.public("timezone", json!("Europe/Zurich (UTC+1)"));
-    m.public("autoUpdate", json!(true));
-    m.public("autoInstallUpdates", json!(null));
-    m.public("updateChannel", json!(null));
+    m.module_declared("tmdbLanguage", json!(super::TMDB_LANGUAGE_AUTO));
+    m.module_declared("timezone", json!("Europe/Zurich (UTC+1)"));
+    m.module_declared("autoUpdate", json!(true));
+    m.module_declared("autoInstallUpdates", json!(null));
+    m.module_declared("updateChannel", json!(null));
     // Periodic re-scan cadence, the only path that catches NAS/SMB edits (they
     // emit no FS events). `-1` = `KROMA_WATCH_INTERVAL` or 300s, `0` = FS events only.
-    m.public("watchAutoScan", json!(true));
-    m.public("watchIntervalSecs", json!(-1));
+    m.module_declared("watchAutoScan", json!(true));
+    m.module_declared("watchIntervalSecs", json!(-1));
     // On, and an operator turns it off in Admin -> General -> Privacy. What it
     // sends, and why this is legitimate interest rather than consent, is
     // docs/anonymous-stats-gdpr.md. The two below are the detail blocks the base
     // switch carries, each droppable on its own and each silent without it.
-    m.public("anonStats", json!(true));
-    m.public("anonStatsUsage", json!(true));
-    m.public("anonStatsStatistics", json!(true));
+    m.module_declared("anonStats", json!(true));
+    m.module_declared("anonStatsUsage", json!(true));
+    m.module_declared("anonStatsStatistics", json!(true));
     m.minted("statsId");
     m.minted("stats.lastSentAt");
     m.minted("update.status");
     m.minted("update.operation");
     m.minted(crate::services::network::SETTING_KEY);
-    m.public("showRecentHome", json!(true));
+    m.module_declared("showRecentHome", json!(true));
     // Security: exposes the account roster on the login screen. Off by default so
     // knowing the server URL does not reveal who has an account; when off,
     // `GET /api/users` returns an empty list.
-    m.public("publicUserList", json!(false));
-    m.public("themeSongs", json!(false));
+    m.module_declared("publicUserList", json!(false));
+    m.module_declared("themeSongs", json!(false));
     // off | chapters (free, from embedded chapters) | fingerprint (heavy audio job).
-    m.public("introDetection", json!("chapters"));
-    m.public(
+    m.module_declared("introDetection", json!("chapters"));
+    m.module_declared(
         "playedThreshold",
         json!(kroma_domain::DEFAULT_PLAYED_PERCENT.to_string()),
     );
-    m.public("theme", json!("Sombre (Kroma)"));
-    m.public("dateFormat", json!("JJ/MM/AAAA"));
-    m.public("moduleAutoUpdate", json!(true));
-    m.public("remoteAccess", json!(false));
-    m.public("remoteUrl", json!(""));
+    m.module_declared("theme", json!("Sombre (Kroma)"));
+    m.module_declared("dateFormat", json!("JJ/MM/AAAA"));
+    m.module_declared("moduleAutoUpdate", json!(true));
+    m.module_declared("remoteAccess", json!(false));
+    m.module_declared("remoteUrl", json!(""));
     // Cloudflare Tunnel token for the `cloudflared` child the remote-access
     // module supervises. Never returned to clients.
-    m.module_credential("remoteAccessToken", json!(""));
-    m.public("upLimit", json!("Illimité"));
-    m.public("https", json!("Préférées"));
+    m.module_declared("remoteAccessToken", json!(""));
+    m.module_declared("upLimit", json!("Illimité"));
+    m.module_declared("https", json!("Préférées"));
     // Self-signed HTTPS listener: browsers only expose Web Crypto (passkeys) on a
     // secure origin. Applied at boot, so a change needs a restart; `KROMA_HTTPS` /
     // `KROMA_HTTPS_PORT` override the stored values. See src/tls.rs.
-    m.public("httpsEnabled", json!(false));
-    m.public("httpsPort", json!("4443"));
-    m.public("httpsRedirect", json!(false));
-    m.public("ipv6", json!(false));
-    m.public("localDiscovery", json!(true));
-    m.public(
+    m.module_declared("httpsEnabled", json!(false));
+    m.module_declared("httpsPort", json!("4443"));
+    m.module_declared("httpsRedirect", json!(false));
+    m.module_declared("ipv6", json!(false));
+    m.module_declared("localDiscovery", json!(true));
+    m.module_declared(
         "localNetworks",
         json!("192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12"),
     );
-    m.public("hwAccel", json!(false));
-    m.public("hwDevice", json!("Auto"));
-    m.public("hevcEncode", json!(false));
-    m.public("transcoderSpeed", json!("Automatique"));
-    m.public("bgQuality", json!("Préférer la vitesse"));
-    m.public("maxConcurrent", json!("8"));
+    m.module_declared("hwAccel", json!(false));
+    m.module_declared("hwDevice", json!("Auto"));
+    m.module_declared("hevcEncode", json!(false));
+    m.module_declared("transcoderSpeed", json!("Automatique"));
+    m.module_declared("bgQuality", json!("Préférer la vitesse"));
+    m.module_declared("maxConcurrent", json!("8"));
     // Concurrent CPU-heavy background ffmpeg passes; "0" = auto (cores - 1).
-    m.public("mediaConcurrency", json!("0"));
-    m.public("pipelinePaused", json!(false));
-    m.public("deleteAfter", json!(true));
-    m.public("cacheLimit", json!("80 Go"));
-    m.public("transcodeCacheLimit", json!("20 Go"));
+    m.module_declared("mediaConcurrency", json!("0"));
+    m.module_declared("pipelinePaused", json!(false));
+    m.module_declared("deleteAfter", json!(true));
+    m.module_declared("cacheLimit", json!("80 Go"));
+    m.module_declared("transcodeCacheLimit", json!("20 Go"));
     // Scheduler timezone offset in minutes from UTC (60 = UTC+1, -300 = UTC-5).
-    m.public("jobsUtcOffset", json!(0));
-    m.public("acqIndexersUseVpn", json!(false));
-    m.public("acqFlaresolverrUrl", json!(""));
-    m.public("acqEnabled", json!(false));
-    m.public("acqAutoApprove", json!(false));
-    m.public("acqDeleteAfterImport", json!(false));
-    m.public("acqReplaceOnUpgrade", json!(true));
+    m.module_declared("jobsUtcOffset", json!(0));
+    m.module_declared("acqIndexersUseVpn", json!(false));
+    m.module_declared("acqFlaresolverrUrl", json!(""));
+    m.module_declared("acqEnabled", json!(false));
+    m.module_declared("acqAutoApprove", json!(false));
+    m.module_declared("acqDeleteAfterImport", json!(false));
+    m.module_declared("acqReplaceOnUpgrade", json!(true));
     // A file an upgrade replaces moves here instead of being deleted ("" =
     // delete at once), and is cleared after `acqRecycleDays`.
     m.module_declared("acqRecycleBin", json!(""));
     // Folders an external download client saves into, comma or line separated.
     m.core_only("downloadFolders", json!(""));
-    m.public("acqRecycleDays", json!(30));
+    m.module_declared("acqRecycleDays", json!(30));
     // A download still unfinished this many hours after its grab has failed
     // (0 = never).
-    m.public("acqStallHours", json!(72));
+    m.module_declared("acqStallHours", json!(72));
     // How often the indexers' latest releases are read for monitored titles,
     // in minutes (0 = never).
-    m.public("acqRssMinutes", json!(15));
-    m.public("acqResolution", json!("1080p"));
-    m.public("acqPreferHevc", json!(true));
-    m.public("acqMinSeeders", json!(2));
-    m.public("acqMaxSizeGbMovie", json!(15));
-    m.public("acqMaxSizeGbEpisode", json!(3));
-    m.public("acqRequiredKeywords", json!(""));
-    m.public(
+    m.module_declared("acqRssMinutes", json!(15));
+    m.module_declared("acqResolution", json!("1080p"));
+    m.module_declared("acqPreferHevc", json!(true));
+    m.module_declared("acqMinSeeders", json!(2));
+    m.module_declared("acqMaxSizeGbMovie", json!(15));
+    m.module_declared("acqMaxSizeGbEpisode", json!(3));
+    m.module_declared("acqRequiredKeywords", json!(""));
+    m.module_declared(
         "acqForbiddenKeywords",
         json!("cam, hdcam, ts, telesync, telecine, screener, dvdscr, workprint"),
     );
     // Embedded torrent engine knobs (0 = ephemeral port / unlimited rate).
-    m.public("rqbitPort", json!(0));
-    m.public("rqbitDownKbps", json!(0));
-    m.public("rqbitUpKbps", json!(0));
+    m.module_declared("rqbitPort", json!(0));
+    m.module_declared("rqbitDownKbps", json!(0));
+    m.module_declared("rqbitUpKbps", json!(0));
     // How many downloads may hold an engine slot at once (0 = no cap); the rest
     // wait in the queue.
-    m.public("torrentMaxActive", json!(0));
+    m.module_declared("torrentMaxActive", json!(0));
     // The WireGuard tunnel the VPN module brings up. Never returned in a
     // settings view.
-    m.module_credential("vpnWgConfig", json!(""));
-    m.public("vpnLocalPort", json!(25345));
-    m.public("vpnKillSwitch", json!(false));
-    m.public("vpnCheckUrl", json!("https://api.ipify.org"));
+    m.module_declared("vpnWgConfig", json!(""));
+    m.module_declared("vpnLocalPort", json!(25345));
+    m.module_declared("vpnKillSwitch", json!(false));
+    m.module_declared("vpnCheckUrl", json!("https://api.ipify.org"));
     // Library new downloads land in, by name; "Auto" = first of the matching kind.
-    m.public("acqMovieLibrary", json!("Auto"));
-    m.public("acqSeriesLibrary", json!("Auto"));
+    m.module_declared("acqMovieLibrary", json!("Auto"));
+    m.module_declared("acqSeriesLibrary", json!("Auto"));
     // Sonarr/Radarr-style tokens; see kroma_torrent::organize::naming.
-    m.public("namingMovieFolder", json!("{Title} ({Year})"));
-    m.public("namingMovieFile", json!("{Title} ({Year}) {Quality Full}"));
-    m.public("namingSeriesFolder", json!("{Title} ({Year})"));
-    m.public("namingSeasonFolder", json!("Season {season:00}"));
-    m.public(
+    m.module_declared("namingMovieFolder", json!("{Title} ({Year})"));
+    m.module_declared("namingMovieFile", json!("{Title} ({Year}) {Quality Full}"));
+    m.module_declared("namingSeriesFolder", json!("{Title} ({Year})"));
+    m.module_declared("namingSeasonFolder", json!("Season {season:00}"));
+    m.module_declared(
         "namingEpisodeFile",
         json!("{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}"),
     );
-    m.public("namingCase", json!("default"));
+    m.module_declared("namingCase", json!("default"));
     // openai = any OpenAI-compatible server (Ollama, llama.cpp, LM Studio, …);
     // anthropic = Claude.
-    m.public("llmEnabled", json!(true));
-    m.public("llmProvider", json!("openai"));
-    m.public("llmBaseUrl", json!(""));
-    m.public("llmModel", json!(""));
+    m.module_declared("llmEnabled", json!(true));
+    m.module_declared("llmProvider", json!("openai"));
+    m.module_declared("llmBaseUrl", json!(""));
+    m.module_declared("llmModel", json!(""));
     m.core_only("llmApiKey", json!(""));
-    m.public("llmTemperature", json!(0.7));
-    m.public("llmMaxTokens", json!(900));
-    m.public("llmReasoning", json!(false));
+    m.module_declared("llmTemperature", json!(0.7));
+    m.module_declared("llmMaxTokens", json!(900));
+    m.module_declared("llmReasoning", json!(false));
     // Seeded from the flat `llm*` keys above on first read when empty.
-    m.public("llmProviders", json!([]));
-    m.public("llmDefaultProvider", json!(""));
+    m.module_declared("llmProviders", json!([]));
+    m.module_declared("llmDefaultProvider", json!(""));
     m.core_only("libraries", json!(null));
     // ISO-8601 `items.added_at` the digest has reported up to. Empty = never run:
     // the first pass adopts the current library as its baseline and stays silent.
-    m.public("notifications.digest.since", json!(""));
+    m.module_declared("notifications.digest.since", json!(""));
     // Web Push (RFC 8292) VAPID identity, minted on the first subscription and
     // then left alone: rotating it invalidates every subscribed browser.
-    m.public("notifications.vapid.publicKey", json!(""));
+    m.module_declared("notifications.vapid.publicKey", json!(""));
     m.core_only("notifications.vapid.privateKey", json!(""));
     // Apple/Google only accept keys they issued to whoever PUBLISHES the app, so
     // these normally arrive with the build (`KROMA_APNS_*` /
@@ -239,18 +231,18 @@ fn declared() -> Declared {
     m.core_only("mediaTicketKey", json!(""));
     // How account email leaves: `manual` | `smtp` | `relay`. Empty defers to the
     // older `smtpEnabled` toggle (see `email_delivery`).
-    m.public("emailDelivery", json!(""));
+    m.module_declared("emailDelivery", json!(""));
     // This server at the mail relay: the P-256 key that signs every call, the
     // sealed instance the relay answered with, and the origin it was minted
     // for. Minted and written by the server itself; a module never sees them.
     m.core_only("mailRelay.identityKey", json!(""));
     m.core_only("mailRelay.instance", json!(""));
     m.core_only("mailRelay.instanceOrigin", json!(""));
-    m.public("smtpEnabled", json!(false));
-    m.public("smtpHost", json!(""));
-    m.public("smtpPort", json!(587));
-    m.public("smtpUsername", json!(""));
-    m.public("smtpFrom", json!(""));
+    m.module_declared("smtpEnabled", json!(false));
+    m.module_declared("smtpHost", json!(""));
+    m.module_declared("smtpPort", json!(587));
+    m.module_declared("smtpUsername", json!(""));
+    m.module_declared("smtpFrom", json!(""));
     m.core_only("smtpPassword", json!(""));
     m
 }

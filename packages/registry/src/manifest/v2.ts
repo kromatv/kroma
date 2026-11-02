@@ -63,13 +63,13 @@ export const SettingsScope = z.object({
     .array(SettingKey)
     .nullish()
     .describe(
-      'Core settings keys this module reads through the host callback. A key the server hands only to the module that consumes it reaches a module that named it here and no other.',
+      'Core settings keys this module reads through the host callback. A key this list omits is refused, and so is one the server keeps to itself.',
     ),
   write: z
     .array(SettingKey)
     .nullish()
     .describe(
-      'Core settings keys this module writes. A read declaration is not a write declaration, and a patch naming a key this list omits is refused whole.',
+      'Core settings keys this module writes. A read declaration is not a write declaration, a patch naming a key this list omits is refused whole, and an update that adds a key here waits for the operator.',
     ),
 });
 export type SettingsScope = z.infer<typeof SettingsScope>;
@@ -180,7 +180,7 @@ export const Manifest = z.object({
       'Written by kroma build, not by hand: how the core reaches the bundled binary. "unix" is a Unix socket under the server\'s run directory. A bundle that records none was built before the socket seam, runs on a loopback port, and is never given a sandbox.',
     ),
   settings: SettingsScope.nullish().describe(
-    'The core settings keys this module reads and writes. Absent is not the same as empty: a manifest with no settings object predates the field, so it keeps every ordinary preference and reaches none of the credentials a module has to declare.',
+    'The core settings keys this module reads and writes. A manifest with no settings object reaches no setting, the same as an empty one.',
   ),
   feRemote: z
     .object({ module: z.string() })

@@ -6,6 +6,7 @@
 //! [`tower::ServiceExt::oneshot`]: no socket, no network, no module.
 
 mod media;
+mod modules;
 mod requests;
 
 use std::collections::HashMap;
@@ -25,6 +26,7 @@ use crate::state::{AppState, SharedState};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
+pub use modules::{installed_module, read_setting, store_settings, write_settings};
 pub use requests::{get, raw, send, text};
 
 static SEQ: AtomicU32 = AtomicU32::new(0);

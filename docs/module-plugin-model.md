@@ -254,33 +254,32 @@ under `/api/module/<id>/*`, a frontend remote.
 
 **The settings callback is not a way into the operator's credentials.** A key is
 reachable on `/_host/setting{,s}` only when the core declared that a module may
-reach it, beside the key's default. Anything else is withheld on both directions:
-a read answers the caller's own default, a patch naming one is refused. So the
-keys only the core consumes (mail, LLM, the push private material, the ticket
-signing key) and the registry list the Store installs from are withheld because
-they say so, and an identity the server mints for itself is withheld because
-nothing hands it out. A key nothing declares at all is withheld too, and said so
-at `debug` rather than as a warning, because it is a typo or a feature that left
-rather than something an operator has to act on. The core owns that decision; the supervisor only asks, so
-it still knows nothing about what any module is for.
+reach it, beside the key's default. Anything else is refused on both directions.
+So the keys only the core consumes (mail, LLM, the push private material, the
+ticket signing key, the library and download folders) and the registry list the
+Store installs from are refused because they say so, and an identity the server
+mints for itself is refused because nothing hands it out. The core owns that
+decision; the supervisor only asks, so it still knows nothing about what any
+module is for.
 
-A credential whose consumer IS a module is the third case, and it reaches **the
-module that declared it**. The supervisor mints every module its own token, which
-the host adds to the module's callbacks, so a callback names its caller, and `settings: { read, write }`
-in that module's manifest says which core keys it uses. The WireGuard config goes
-to the module that brings the tunnel up and to the one that has to know whether
-the tunnel is up, because both named it, and to nothing else installed. A caller
-the core cannot name holds no declaration and reaches none of these, which is what
-a bundle built before the field is: it keeps every ordinary preference and loses
-the credentials. Preferences are not scoped by the declaration yet; reaching one
-a manifest omits logs it, and that log is the migration for when they are.
+**A module reaches only the keys it declared.** The supervisor mints every module
+its own token, which the host adds to the module's callbacks, so a callback names
+its caller, and `settings: { read, write }` in that module's manifest says which
+core keys it uses. A key the core hands out reaches a module that named it for
+that use and no other, whether it is a preference (the naming templates, the
+download limits) or a credential whose consumer is a module (the WireGuard config
+goes to the module that brings the tunnel up, and to nothing else installed). A
+caller the core cannot name, and a manifest with no `settings`, holds no
+declaration and reaches nothing. A refusal is a `403` naming the key and the
+declaration to add, and it is said on the module's log. An update that adds a key
+to `settings.write` waits for the operator like one that widens `permissions`.
 
 Withholding by default is what makes this survive the next key. The guard used to
 be a deny-list plus a test that swept key NAMES for `password`, `token`, `secret`
 and `credential`, and `mediaTicketKey` carries none of those words: it shipped
 readable until review caught it. The name sweep is still there, now checking that
-a credential-shaped name is never declared reachable, but it is the second net
-rather than the only one.
+a credential-shaped name is the core's unless a module runs on it, but it is the
+second net rather than the only one.
 
 Four gaps stand between that and "a module can do whatever we want":
 

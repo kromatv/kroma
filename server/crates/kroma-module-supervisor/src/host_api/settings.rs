@@ -1,11 +1,13 @@
-//! The settings half of the callback API: one typed read, one batched write, and
-//! the two declarations that decide which of the core's keys the caller gets.
+//! The settings half of the callback API: one typed read and one batched write,
+//! each answered only for a key the core hands out and the calling module
+//! declared for that use.
 
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
-use kroma_module_host::{HostCtx, SettingReach, SettingReachOf};
-use serde_json::{json, Value};
+use kroma_module_host::{HostCtx, SettingReach, SettingReachOf, json_error};
+use serde_json::{Value, json};
 
 use super::Caller;
 
@@ -13,6 +15,15 @@ use super::Caller;
 enum Use {
     Read,
     Write,
+}
+
+impl Use {
+    fn declaration(self) -> &'static str {
+        match self {
+            Use::Read => "settings.read",
+            Use::Write => "settings.write",
+        }
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -27,14 +38,6 @@ pub(super) struct SettingsPatch {
     patch: std::collections::BTreeMap<String, Value>,
 }
 
-fn asked_with(q: &SettingQuery) -> Value {
-    match q.kind.as_str() {
-        "bool" => json!(q.default == "true"),
-        "i64" => json!(q.default.parse::<i64>().unwrap_or(0)),
-        _ => json!(q.default),
-    }
-}
-
 fn declares(caller: &Caller, key: &str, how: Use) -> bool {
     match how {
         Use::Read => caller.declares_read(key),
@@ -42,40 +45,26 @@ fn declares(caller: &Caller, key: &str, how: Use) -> bool {
     }
 }
 
-fn may_reach(reach: SettingReach, caller: &Caller, key: &str, how: Use) -> bool {
+fn refusal(reach: SettingReach, caller: &Caller, key: &str, how: Use) -> Option<String> {
+    let declaration = how.declaration();
     match reach {
-        SettingReach::Unknown | SettingReach::CoreOnly => false,
-        SettingReach::Declared => declares(caller, key, how),
-        SettingReach::Any => true,
+        SettingReach::Unknown => Some(format!(
+            "{declaration}: \"{key}\" is not a setting of this server"
+        )),
+        SettingReach::CoreOnly => Some(format!(
+            "{declaration}: \"{key}\" is the core's own and reaches no module, declared or not"
+        )),
+        SettingReach::Declared if declares(caller, key, how) => None,
+        SettingReach::Declared => Some(format!(
+            "{declaration}: \"{key}\" is not declared; add it to {declaration} in module.json"
+        )),
     }
 }
 
-fn log_a_refusal(reach: SettingReach, caller: &Caller, key: &str) {
-    if reach == SettingReach::Unknown {
-        tracing::debug!(
-            module = %caller.name(),
-            key = %key,
-            "a module reached for a setting the core does not have",
-        );
-        return;
-    }
-    tracing::warn!(
-        module = %caller.name(),
-        key = %key,
-        "a module reached for a setting it may not have",
-    );
-}
-
-fn log_a_reach_the_declaration_omits(caller: &Caller, key: &str, how: Use) {
-    if caller.declares_nothing() || declares(caller, key, how) {
-        return;
-    }
-    tracing::debug!(
-        module = %caller.name(),
-        key = %key,
-        write = how == Use::Write,
-        "a module reached a setting its manifest does not declare",
-    );
+fn refused(caller: &Caller, refusal: &str) -> Response {
+    tracing::warn!(module = %caller.name(), refusal = %refusal, "a module reached for a setting");
+    caller.say(&format!("WARN {refusal}"));
+    json_error(StatusCode::FORBIDDEN, refusal)
 }
 
 pub(super) async fn get_setting<S: HostCtx>(
@@ -83,19 +72,16 @@ pub(super) async fn get_setting<S: HostCtx>(
     Extension(SettingReachOf(reach)): Extension<SettingReachOf>,
     Extension(caller): Extension<Caller>,
     Query(q): Query<SettingQuery>,
-) -> Json<Value> {
-    let asked_for = reach(&q.key);
-    if !may_reach(asked_for, &caller, &q.key, Use::Read) {
-        log_a_refusal(asked_for, &caller, &q.key);
-        return Json(json!({ "value": asked_with(&q) }));
+) -> Response {
+    if let Some(refusal) = refusal(reach(&q.key), &caller, &q.key, Use::Read) {
+        return refused(&caller, &refusal);
     }
-    log_a_reach_the_declaration_omits(&caller, &q.key, Use::Read);
     let value = match q.kind.as_str() {
         "bool" => json!(host.setting_bool(&q.key, q.default == "true")),
         "i64" => json!(host.setting_i64(&q.key, q.default.parse().unwrap_or(0))),
         _ => json!(host.setting_str(&q.key, &q.default)),
     };
-    Json(json!({ "value": value }))
+    Json(json!({ "value": value })).into_response()
 }
 
 pub(super) async fn set_settings<S: HostCtx>(
@@ -103,40 +89,14 @@ pub(super) async fn set_settings<S: HostCtx>(
     Extension(SettingReachOf(reach)): Extension<SettingReachOf>,
     Extension(caller): Extension<Caller>,
     Json(body): Json<SettingsPatch>,
-) -> StatusCode {
-    if let Some(key) = body
+) -> Response {
+    if let Some(refusal) = body
         .patch
         .keys()
-        .find(|key| !may_reach(reach(key), &caller, key, Use::Write))
+        .find_map(|key| refusal(reach(key), &caller, key, Use::Write))
     {
-        log_a_refusal(reach(key), &caller, key);
-        return StatusCode::FORBIDDEN;
-    }
-    for key in body.patch.keys() {
-        log_a_reach_the_declaration_omits(&caller, key, Use::Write);
+        return refused(&caller, &refusal);
     }
     host.set_settings(body.patch);
-    StatusCode::NO_CONTENT
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn query(kind: &str, default: &str) -> SettingQuery {
-        SettingQuery {
-            key: "anything".to_string(),
-            kind: kind.to_string(),
-            default: default.to_string(),
-        }
-    }
-
-    #[test]
-    fn a_withheld_key_answers_in_the_type_the_caller_asked_with() {
-        assert_eq!(asked_with(&query("bool", "true")), json!(true));
-        assert_eq!(asked_with(&query("bool", "nope")), json!(false));
-        assert_eq!(asked_with(&query("i64", "42")), json!(42));
-        assert_eq!(asked_with(&query("i64", "not a number")), json!(0));
-        assert_eq!(asked_with(&query("str", "fallback")), json!("fallback"));
-    }
+    StatusCode::NO_CONTENT.into_response()
 }

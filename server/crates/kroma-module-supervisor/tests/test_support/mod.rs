@@ -12,16 +12,19 @@ use kroma_module_host::{
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
 use tower::ServiceExt;
 
+pub mod settings;
+
 /// The token every module shares, which authenticates a caller without naming it.
 pub const FABRIC: &str = "fabric-host-token";
 
-pub const NOTHING_WITHHELD: SettingReachOf = SettingReachOf(|_| SettingReach::Any);
+pub const NOTHING_WITHHELD: SettingReachOf = SettingReachOf(|_| SettingReach::Declared);
 
 /// A supervisor over a modules directory that removes itself, so a test can put a
 /// manifest where the callback reads declarations from.
 pub struct Modules {
     pub supervisor: Arc<Supervisor>,
     pub network: Arc<RecordingPolicy>,
+    pub said: Arc<Mutex<Vec<String>>>,
     dir: kroma_testing::TempDir,
 }
 
@@ -57,6 +60,8 @@ impl NetworkPolicy for RecordingPolicy {
 impl Modules {
     pub fn new(tag: &str) -> Self {
         let dir = kroma_testing::temp_dir(tag);
+        let said: Arc<Mutex<Vec<String>>> = Arc::default();
+        let log = said.clone();
         let supervisor = Supervisor::new(SupervisorConfig {
             modules_dir: dir.path().to_path_buf(),
             core_port: 0,
@@ -65,17 +70,20 @@ impl Modules {
             data_dir: dir.path().to_path_buf(),
             reserved_ids: Vec::new(),
             server_version: "0.0.0-test".into(),
-            log_line: None,
+            log_line: Some(Arc::new(move |id: &str, line: &str| {
+                log.lock().unwrap().push(format!("{id}: {line}"));
+            })),
         });
         Self {
             supervisor,
             network: Arc::default(),
+            said,
             dir,
         }
     }
 
     /// Install `id` with the `settings` block it declares, as JSON, or `None` for a
-    /// manifest predating the field.
+    /// manifest that declares none.
     pub fn declaring(self, id: &str, settings: Option<&str>) -> Self {
         let dir = self.dir.path().join(id);
         std::fs::create_dir_all(&dir).unwrap();
