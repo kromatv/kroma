@@ -241,6 +241,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "candle's reference spectrogram starts threads, and a component has only one")]
     fn matches_candle_on_a_clip_shorter_than_a_chunk() {
         let samples = tone(12_345);
 
@@ -250,6 +251,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "candle's reference spectrogram starts threads, and a component has only one")]
     fn matches_candle_on_a_clip_that_ends_on_a_frame_boundary() {
         let samples = tone(HOP * PADDING_FRAMES);
 
@@ -267,6 +269,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "candle's reference spectrogram starts threads, and a component has only one")]
     fn reads_a_source_that_answers_a_few_bytes_at_a_time() {
         struct Trickle<'a>(&'a [u8]);
 

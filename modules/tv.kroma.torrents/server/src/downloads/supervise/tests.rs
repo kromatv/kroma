@@ -9,6 +9,7 @@ use crate::downloads::test_support::{added, host_over, restarted};
 use crate::rqbit::test_support::{StubApi, engine_over};
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_helper_that_ended_is_let_go_so_the_monitor_starts_another() {
     let host = host_over("engine-died", &[added("d1")]);
     let manager = restarted(&host);
@@ -32,6 +33,7 @@ fn a_helper_that_ended_is_let_go_so_the_monitor_starts_another() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_helper_that_is_running_is_left_alone() {
     let host = host_over("engine-alive", &[]);
     let manager = restarted(&host);
@@ -67,12 +69,14 @@ fn on_the_wrong_side(sealed: bool, host: StubHost) -> bool {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_helper_started_in_the_open_is_on_the_wrong_side_of_a_network_that_appeared() {
     assert!(engine_started(false, NetworkSeal::Up, "side-up"));
     assert!(engine_started(false, NetworkSeal::Down, "side-down"));
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sealed_helper_is_on_the_wrong_side_only_once_no_network_is_on_offer() {
     assert!(engine_started(true, NetworkSeal::None, "side-gone"));
     assert!(!engine_started(true, NetworkSeal::Up, "side-sealed-up"));
@@ -81,6 +85,7 @@ fn a_sealed_helper_is_on_the_wrong_side_only_once_no_network_is_on_offer() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_helper_started_in_the_open_is_on_the_wrong_side_once_the_kill_switch_is_on() {
     let host = host_over("side-kill-switch", &[])
         .with_setting("vpnKillSwitch", serde_json::json!(true));

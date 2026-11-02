@@ -142,7 +142,7 @@ async fn indexer_host() -> StubHost {
         .with_point(INDEXER_SEARCH, None, &base, &token)
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn the_sweep_gets_the_indexers_it_orders_on() {
     let host = indexer_host().await;
 
@@ -157,7 +157,7 @@ async fn the_sweep_gets_the_indexers_it_orders_on() {
     assert_eq!(live[1].kind, KIND_BUILTIN);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn one_indexer_by_id_or_none_when_it_is_gone() {
     let host = indexer_host().await;
 
@@ -170,7 +170,7 @@ async fn one_indexer_by_id_or_none_when_it_is_gone() {
     assert!(missing.is_none());
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_search_names_the_indexer_by_id_and_keeps_both_halves_of_the_answer() {
     let host = indexer_host().await;
 
@@ -194,7 +194,7 @@ async fn a_search_names_the_indexer_by_id_and_keeps_both_halves_of_the_answer() 
     assert_eq!(outcome.errors, vec!["one indexer timed out".to_string()]);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_resolved_download_yields_the_link_and_a_note_lands() {
     let host = indexer_host().await;
 
@@ -229,7 +229,7 @@ fn any_query() -> Query {
     }
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn every_indexer_asked_at_once_answers_for_itself_in_the_order_it_was_asked() {
     let host = search_host(Router::new().route(
         "/_port/tv.kroma.indexer/search/search",
@@ -255,7 +255,7 @@ async fn every_indexer_asked_at_once_answers_for_itself_in_the_order_it_was_aske
     assert_eq!(b.unwrap().releases[0].title, "b");
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn no_indexer_waits_on_another_to_be_asked() {
     let both_here = std::sync::Arc::new(tokio::sync::Barrier::new(2));
     let host = search_host(Router::new().route(

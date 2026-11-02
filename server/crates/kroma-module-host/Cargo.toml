@@ -14,7 +14,7 @@ testing = ["dep:kroma-testing", "storage", "test-serve", "kroma-sqlite/testing"]
 # `test_serve::{serve, blocking}` alone: an axum router on an ephemeral localhost
 # port. Separate from `testing` because a port contract's round-trip test needs
 # the wire and not a database.
-test-serve = []
+test-serve = ["dep:tower"]
 # The `storage` capability: `HostStorage`, the two pools, and the `query` helper.
 # Off by default, and that default is the point -- a module that declares no
 # storage must not link SQLite, whose bundled amalgamation is 1.5 MB of machine
@@ -41,6 +41,9 @@ tokio = { workspace = true }
 [target.'cfg(target_family = "wasm")'.dependencies]
 axum = { package = "axum", version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
 tokio = { package = "tokio", version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+# Under `test-serve`: a provider's routes answered in-process, a component having
+# no socket to serve them on.
+tower = { version = "0.5", features = ["util"], optional = true }
 [dev-dependencies]
 # `oneshot`, to drive the host-token guard without binding a port.
 tower = { workspace = true }

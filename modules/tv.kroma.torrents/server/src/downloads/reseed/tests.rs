@@ -62,6 +62,7 @@ fn sealed_session(tag: &str, live_peers: u32) -> Session {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_torrent_that_holds_data_but_no_live_peer_is_handed_the_peers_of_our_announce() {
     let session = sealed_session("reseed-partial", 0);
 
@@ -75,6 +76,7 @@ fn a_torrent_that_holds_data_but_no_live_peer_is_handed_the_peers_of_our_announc
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_torrent_just_announced_for_is_not_announced_for_again_on_the_next_pass() {
     let session = sealed_session("reseed-again", 0);
 
@@ -87,6 +89,7 @@ fn a_torrent_just_announced_for_is_not_announced_for_again_on_the_next_pass() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_torrent_with_a_live_peer_is_left_to_it() {
     let session = sealed_session("reseed-connected", 1);
 

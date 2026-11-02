@@ -274,7 +274,7 @@ mod tests {
         assert!(reports[0].error.is_some());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_release_the_provider_offers_comes_back_judged_against_the_target_it_was_asked_for() {
         let fakes = Fakes::new().offering(&["Show.S01E01.1080p.WEB-DL.x265-GRP"]);
         let host = host(&fakes).await;

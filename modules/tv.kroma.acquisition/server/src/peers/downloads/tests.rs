@@ -133,7 +133,7 @@ async fn ledger_host() -> StubHost {
         .with_point(DOWNLOAD_DB, None, &base, &token)
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_grab_crosses_and_the_row_comes_back() {
     let host = ledger_host().await;
 
@@ -159,7 +159,7 @@ async fn a_grab_crosses_and_the_row_comes_back() {
     assert_eq!(row.status, "grabbed");
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn the_gate_and_the_file_listing_answer() {
     let host = ledger_host().await;
 
@@ -175,7 +175,7 @@ async fn the_gate_and_the_file_listing_answer() {
     assert_eq!(files[0].size_bytes, 42);
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn the_import_pass_reads_and_writes_the_ledger() {
     let host = ledger_host().await;
 
@@ -197,7 +197,7 @@ async fn the_import_pass_reads_and_writes_the_ledger() {
 
 // Best effort by design: the row is already in the ledger, so a lifecycle call
 // that cannot be delivered must not propagate.
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn the_lifecycle_calls_never_propagate_a_failure() {
     let host = ledger_host().await;
 

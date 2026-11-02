@@ -88,6 +88,7 @@ fn the_grant_covers_the_ledger_this_module_owns_in_the_core_database() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_reaches_neither_accounts_nor_the_client_credentials_that_moved_out() {
     let (_core, scoped) = scoped();
     let conn = scoped.get().unwrap();

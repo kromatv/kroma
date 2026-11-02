@@ -142,6 +142,12 @@ impl Permissions {
         self.connect_reach(attempt, setting).is_some()
     }
 
+    /// Whether some `net.connect` entry is for `purpose`, the first thing the host
+    /// compares before it looks at where a call goes.
+    pub fn declares_purpose(&self, purpose: &str) -> bool {
+        self.net.connect.iter().any(|entry| entry.is_for(purpose))
+    }
+
     /// Whether this block asks for anything `before` does not grant.
     pub fn widens(&self, before: &Permissions) -> bool {
         let beyond = |asked: &[String], granted: &[String]| asked.iter().any(|a| !granted.contains(a));
@@ -182,7 +188,7 @@ impl Permissions {
     ) -> Option<Reach> {
         let mut covered = None;
         for entry in &self.net.connect {
-            let applies = purpose_covers(&entry.purpose, attempt.purpose)
+            let applies = entry.is_for(attempt.purpose)
                 && (entry.ports.is_empty() || entry.ports.contains(&attempt.port))
                 && entry.protocols().contains(&attempt.proto);
             if !applies {
@@ -202,6 +208,10 @@ impl Permissions {
 }
 
 impl Connect {
+    fn is_for(&self, purpose: &str) -> bool {
+        purpose_covers(&self.purpose, purpose)
+    }
+
     fn protocols(&self) -> &[Proto] {
         if self.proto.is_empty() {
             &[Proto::Tcp]

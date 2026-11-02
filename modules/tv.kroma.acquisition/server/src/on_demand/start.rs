@@ -157,7 +157,7 @@ mod tests {
         assert!(json["reason"].is_null());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_search_an_admin_asked_for_runs_with_background_acquisition_off() {
         let host = host_with(true, one_indexer()).await;
 
@@ -169,7 +169,7 @@ mod tests {
         assert_eq!(answer.units, Some(0));
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_search_with_no_indexer_configured_says_which_one_is_missing() {
         let host = host_with(true, Vec::new()).await;
 
@@ -178,7 +178,7 @@ mod tests {
         assert_eq!(answer.reason, Some(NotStarted::NoIndexer));
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_search_behind_a_closed_kill_switch_says_so_rather_than_grabbing() {
         let host = host_with(false, one_indexer()).await;
 
@@ -187,7 +187,7 @@ mod tests {
         assert_eq!(answer.reason, Some(NotStarted::VpnClosed));
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_search_asked_for_while_one_runs_says_it_is_busy() {
         let host = host_with(true, one_indexer()).await;
         let held = lease::claim(host.store(), now_ms())

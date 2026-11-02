@@ -166,8 +166,8 @@ fn path_of(url: &str) -> String {
     }
 }
 
-/// Connect this component's HTTP clients to its host. Runs once, before `start`.
-pub(crate) fn connect_to_host() {
+/// Connect this component's clients to its host, once: before `start`, or before a test's `main`.
+pub fn connect_to_host() {
     register(Arc::new(ThroughTheHost));
     kroma_http::set_guest_fetcher(fetch_through_the_host, download_through_the_host);
     kroma_module_host::outside::connect(&outside::THROUGH_THE_HOST);

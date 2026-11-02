@@ -29,6 +29,7 @@ async fn blocking_work_that_fails_answers_a_bad_request_with_the_chain() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "a component aborts on a panic instead of unwinding it")]
 async fn blocking_work_that_panics_answers_a_server_error() {
     let out: Result<(), Response> = run(|| panic!("boom")).await;
 

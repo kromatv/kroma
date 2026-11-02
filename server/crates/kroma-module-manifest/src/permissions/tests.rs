@@ -56,6 +56,16 @@ fn a_declared_connection_is_allowed() {
 }
 
 #[test]
+fn a_purpose_is_declared_by_an_entry_named_for_it_or_for_its_dotted_parent() {
+    let p = torrents();
+
+    let declared = ["peers", "peers.announce", "peersx", "torrent", "seal-check"]
+        .map(|purpose| p.declares_purpose(purpose));
+
+    assert_eq!(declared, [true, true, false, false, true]);
+}
+
+#[test]
 fn anything_the_declaration_does_not_cover_is_denied() {
     let p = torrents();
 

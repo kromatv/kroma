@@ -36,6 +36,7 @@ fn world(tag: &str, host: StubHost) -> (StubHost, StubApi, Arc<DownloadManager>,
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn with_no_network_on_offer_the_helper_keeps_dht_and_trackers_and_dials_through_the_gateway()
 {
     let (host, _stub, manager, dump) = world("engine-open", host_over("engine-open", &[]));
@@ -56,6 +57,7 @@ async fn with_no_network_on_offer_the_helper_keeps_dht_and_trackers_and_dials_th
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn behind_a_network_that_is_up_only_tunnelled_tcp_is_left_on() {
     let base = host_over("engine-sealed", &[]).with_network_seal(NetworkSeal::Up);
     let (host, _stub, manager, dump) = world("engine-sealed", base);
@@ -77,6 +79,7 @@ async fn behind_a_network_that_is_up_only_tunnelled_tcp_is_left_on() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn while_a_network_must_carry_the_peers_and_is_down_the_helper_does_not_start() {
     let base = host_over("engine-deferred", &[]).with_network_seal(NetworkSeal::Down);
     let (host, _stub, manager, dump) = world("engine-deferred", base);
@@ -88,6 +91,7 @@ async fn while_a_network_must_carry_the_peers_and_is_down_the_helper_does_not_st
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn with_the_kill_switch_on_and_no_network_on_offer_the_helper_does_not_start() {
     let base = host_over("engine-kill-switch", &[])
         .with_setting("vpnKillSwitch", serde_json::json!(true));
@@ -100,6 +104,7 @@ async fn with_the_kill_switch_on_and_no_network_on_offer_the_helper_does_not_sta
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn while_the_embedded_client_is_disabled_the_helper_does_not_start() {
     let (host, _stub, manager, dump) = world("engine-off", host_over("engine-off", &[]));
     crate::db::update_download_client(
@@ -121,6 +126,7 @@ async fn while_the_embedded_client_is_disabled_the_helper_does_not_start() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn a_port_the_operator_named_wins_over_the_one_chosen_for_the_helper() {
     let base = host_over("engine-named", &[]).with_setting("rqbitPort", serde_json::json!(51413));
     let (host, _stub, manager, dump) = world("engine-named", base);

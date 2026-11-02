@@ -2,6 +2,7 @@ use super::*;
 use crate::test_support::socks5_serving;
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn torrent_bytes_are_added_at_once_with_their_folder_and_selection() {
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
 
@@ -34,6 +35,7 @@ fn torrent_bytes_are_added_at_once_with_their_folder_and_selection() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_refused_torrent_says_what_rqbit_said() {
     let stub = StubApi::serving(&[(ADD, 400, r#"{"human_readable":"error decoding torrent"}"#)]);
 
@@ -46,6 +48,7 @@ fn a_refused_torrent_says_what_rqbit_said() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_is_handed_over_and_answers_later_with_its_hash() {
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
     let client = client_over(&stub);
@@ -76,6 +79,7 @@ fn a_magnet_is_handed_over_and_answers_later_with_its_hash() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_the_engine_already_holds_answers_without_being_handed_over() {
     let stub = StubApi::serving(&[(DETAILS, 200, FILES)]);
 
@@ -86,6 +90,7 @@ fn a_magnet_the_engine_already_holds_answers_without_being_handed_over() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_rqbit_refused_says_what_rqbit_said_and_may_be_tried_again() {
     let stub = StubApi::serving(&[(
         ADD,
@@ -106,6 +111,7 @@ fn a_magnet_rqbit_refused_says_what_rqbit_said_and_may_be_tried_again() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_magnet_whose_add_landed_as_its_row_went_is_dropped_with_its_data() {
     let delete = format!("POST /torrents/{HASH}/delete");
     let stub = StubApi::serving(&[(ADD, 200, ADDED), (delete.as_str(), 200, "{}")]);
@@ -124,6 +130,7 @@ fn a_magnet_whose_add_landed_as_its_row_went_is_dropped_with_its_data() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn nothing_is_left_on_disk_of_an_add_that_finished() {
     let work = kroma_module_sdk::testing::temp_dir("adding-scrubbed");
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
@@ -143,6 +150,7 @@ fn nothing_is_left_on_disk_of_an_add_that_finished() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_url_is_handed_over_like_a_magnet_when_no_network_must_carry_it() {
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
     let client = client_over(&stub);
@@ -174,6 +182,7 @@ fn peers_answer() -> Vec<u8> {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn behind_a_network_a_url_to_fetch_is_refused_rather_than_resolved_outside_the_tunnel() {
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
     let client = sealed_over(&stub, "127.0.0.1:1".into());
@@ -192,6 +201,7 @@ fn behind_a_network_a_url_to_fetch_is_refused_rather_than_resolved_outside_the_t
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn behind_a_network_torrent_bytes_are_added_with_the_peers_of_our_own_announce() {
     let (proxy, asked) = socks5_serving(peers_answer());
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);
@@ -213,6 +223,7 @@ fn behind_a_network_torrent_bytes_are_added_with_the_peers_of_our_own_announce()
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn behind_a_network_a_magnet_is_handed_over_with_the_peers_of_our_own_announce() {
     let (proxy, _asked) = socks5_serving(peers_answer());
     let stub = StubApi::serving(&[(ADD, 200, ADDED)]);

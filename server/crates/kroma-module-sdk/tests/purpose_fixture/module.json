@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 3,
+  "id": "tv.kroma.fixture.purposes",
+  "name": "Purpose fixture",
+  "version": "0.1.0",
+  "description": "Calls TMDB for a purpose its manifest does not declare.",
+  "permissions": {
+    "net": {
+      "connect": [{ "purpose": "metadata", "to": ["api.themoviedb.org"], "ports": [443] }]
+    }
+  }
+}

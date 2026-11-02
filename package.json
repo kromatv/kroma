@@ -21,6 +21,7 @@
     "modules:build": "bun run kroma build",
     "modules:check": "bun run kroma check",
     "modules:test": "bun run kroma cargo test",
+    "modules:test:wasm": "bun run ci rust wasm-test",
     "modules:clippy": "bun run kroma cargo clippy --all-targets",
     "tv": "bun packages/tv-installer/src/cli.ts",
     "tv:probe": "bun packages/tv-probe/src/cli.ts",

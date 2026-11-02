@@ -26,6 +26,7 @@ fn behind_a_dead_tunnel(tag: &str) -> (StubHost, std::sync::Arc<DownloadManager>
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn one_failed_probe_does_not_close_the_gate() {
     let (host, manager, stub) = behind_a_dead_tunnel("gate-blip");
 
@@ -37,6 +38,7 @@ fn one_failed_probe_does_not_close_the_gate() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sustained_failure_with_the_kill_switch_on_pauses_the_torrent_and_refuses_new_grabs() {
     let (host, manager, stub) = behind_a_dead_tunnel("gate-closed");
 
@@ -58,6 +60,7 @@ fn a_sustained_failure_with_the_kill_switch_on_pauses_the_torrent_and_refuses_ne
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn with_the_kill_switch_off_a_failure_is_reported_and_nothing_is_paused() {
     let (host, manager, stub) = behind_a_dead_tunnel("gate-off");
     let host = host.with_setting("vpnKillSwitch", json!(false));

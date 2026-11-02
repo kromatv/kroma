@@ -298,6 +298,13 @@ lto = true
 codegen-units = 1
 strip = true
 
+# The runner cargo starts for every wasm32-wasip2 test binary: optimised, since
+# a debug Cranelift takes minutes to compile one, and without the release LTO.
+[profile.wasm-test-runner]
+inherits = "release"
+lto = false
+codegen-units = 16
+
 [profile.dev]
 # No debug info. On macOS any level keeps every codegen unit's object file in
 # debug/deps, and they piled up past 20 GB a day. A panic still names its

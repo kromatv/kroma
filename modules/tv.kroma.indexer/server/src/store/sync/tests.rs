@@ -4,6 +4,7 @@ use super::super::test_support::{counted, serve, store_for, tarball, tmpdir, DEM
 use super::*;
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sync_the_vpn_must_carry_is_refused_while_the_vpn_is_down() {
     let archive = tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]);
     let (source, served) = counted(200, archive);
@@ -61,6 +62,7 @@ fn version_dir_none_when_no_versioned_subdir() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_new_schema_folder_holding_almost_nothing_does_not_replace_the_full_one() {
     let bytes = tarball(&[
         ("Indexers-master/definitions/v11/demo.yml", DEMO_YML),
@@ -76,6 +78,7 @@ fn a_new_schema_folder_holding_almost_nothing_does_not_replace_the_full_one() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sync_extracts_the_highest_schema_version_and_nothing_else() {
     let bytes = tarball(&[
         ("Indexers-master/definitions/v1/ancient.yml", DEMO_YML),
@@ -112,6 +115,7 @@ fn a_sync_extracts_the_highest_schema_version_and_nothing_else() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sync_brings_every_definition_however_many_there_are() {
     let names: Vec<String> = (0..600)
         .map(|n| format!("Indexers-master/definitions/v11/t{n}.yml"))
@@ -130,6 +134,7 @@ fn a_sync_brings_every_definition_however_many_there_are() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_synced_definition_can_be_listed_and_loaded() {
     let bytes = tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]);
     let store = store_for(serve(200, bytes));
@@ -147,6 +152,7 @@ fn a_synced_definition_can_be_listed_and_loaded() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_definition_whose_filename_differs_from_its_internal_id_is_keyed_by_the_file() {
     let bytes = tarball(&[("Indexers-master/definitions/v9/demo-api.yml", DEMO_YML)]);
     let store = store_for(serve(200, bytes));
@@ -162,6 +168,7 @@ fn a_definition_whose_filename_differs_from_its_internal_id_is_keyed_by_the_file
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn an_archive_that_already_is_the_definitions_directory_still_works() {
     let bytes = tarball(&[("definitions/v9/demo.yml", DEMO_YML)]);
     let store = store_for(serve(200, bytes));
@@ -169,6 +176,7 @@ fn an_archive_that_already_is_the_definitions_directory_still_works() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sync_replaces_what_was_cached_before() {
     let first = tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]);
     let store = store_for(serve(200, first));
@@ -190,6 +198,7 @@ fn a_sync_replaces_what_was_cached_before() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn every_way_a_sync_can_fail_says_which_one_it_was() {
     let unreachable = store_for("http://127.0.0.1:1/nope.tar.gz".into());
     assert!(unreachable.sync().is_err(), "an unreachable source");

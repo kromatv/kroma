@@ -6,6 +6,7 @@ use crate::fake_transmission::{add_req, FakeTransmission, Reply};
 use crate::{KIND, STATUS_FIELDS};
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn status_maps_a_live_torrent_onto_the_port_shape() {
     let fake = FakeTransmission::start(|method, args, _| {
         assert_eq!(method, "torrent-get");
@@ -46,6 +47,7 @@ fn status_maps_a_live_torrent_onto_the_port_shape() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn status_asks_for_every_field_it_reads() {
     // The RPC only returns what it is asked for, so a field dropped from
     // STATUS_FIELDS silently becomes a default in the UI.
@@ -65,6 +67,7 @@ fn status_asks_for_every_field_it_reads() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn status_is_none_for_a_hash_the_server_does_not_know() {
     // A torrent removed out of band is a normal state, not an error.
     let fake = FakeTransmission::start(|_, _, _| Reply::ok(json!({ "torrents": [] })));
@@ -72,6 +75,7 @@ fn status_is_none_for_a_hash_the_server_does_not_know() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_sparse_torrent_falls_back_to_zeroes_rather_than_failing() {
     // Older servers omit fields they have no value for; the row still has to
     // render.
@@ -90,6 +94,7 @@ fn a_sparse_torrent_falls_back_to_zeroes_rather_than_failing() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn state_follows_the_transmission_status_codes() {
     // The client_ref doubles as the fixture: "<status>@<percentDone>".
     let fake = FakeTransmission::start(|_, args, _| {
@@ -119,6 +124,7 @@ fn state_follows_the_transmission_status_codes() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn an_errored_torrent_carries_its_state_as_the_error() {
     // The error outranks the status code: a tracker failure on a torrent
     // still marked "seeding" must not read as healthy.
@@ -140,6 +146,7 @@ fn an_errored_torrent_carries_its_state_as_the_error() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn add_returns_the_hash_the_server_assigned() {
     let fake = FakeTransmission::start(|method, args, _| {
         assert_eq!(method, "torrent-add");
@@ -156,6 +163,7 @@ fn add_returns_the_hash_the_server_assigned() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn adding_a_torrent_the_server_already_has_succeeds() {
     // Transmission answers `torrent-duplicate` instead of `torrent-added`.
     // Treating that as a failure would break every re-grab of a download the
@@ -171,6 +179,7 @@ fn adding_a_torrent_the_server_already_has_succeeds() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn add_retries_without_labels_when_the_server_rejects_them() {
     // Transmission < 4 has no `labels` argument and refuses the whole call.
     let fake = FakeTransmission::start(|_, _, n| match n {
@@ -197,6 +206,7 @@ fn add_retries_without_labels_when_the_server_rejects_them() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_label_free_request_never_sends_the_argument() {
     let fake = FakeTransmission::start(|_, _, _| {
         Reply::ok(json!({ "torrent-added": { "hashString": "deadbeef" } }))
@@ -208,6 +218,7 @@ fn a_label_free_request_never_sends_the_argument() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn add_fails_loudly_when_the_reply_carries_no_hash() {
     // Without a hash there is nothing to track the download by, so returning
     // Ok would leave the ledger pointing at a torrent nobody can find again.
@@ -224,6 +235,7 @@ fn add_fails_loudly_when_the_reply_carries_no_hash() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn the_lifecycle_verbs_hit_their_methods() {
     let fake = FakeTransmission::start(|_, _, _| Reply::ok(json!({})));
     let client = fake.client();
@@ -259,6 +271,7 @@ fn the_lifecycle_verbs_hit_their_methods() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_failing_verb_is_not_swallowed() {
     // Each verb maps its result to `()`, which is exactly where an error can
     // get lost.

@@ -42,7 +42,7 @@ fn ledger(rows: Vec<Value>) -> axum::Router<Moves> {
         .route("/_port/tv.kroma.torrents/db/set-status", post(set_status))
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn a_download_whose_folder_is_gone_is_marked_removed_and_says_why() {
     let downloads = kroma_module_sdk::testing::temp_dir("import-gone");
     let empty = downloads.path().join("54ed71fbe0318163");

@@ -63,6 +63,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "starts a program, which a component asks its host to do")]
     fn decodes_a_track_to_16_khz_floats_and_leaves_no_file_behind() {
         let media = temp_dir("whisper-media");
         let scratch = temp_dir("whisper-scratch");
@@ -77,6 +78,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "starts a program, which a component asks its host to do")]
     fn answers_nothing_for_a_track_the_file_does_not_hold() {
         let media = temp_dir("whisper-media");
         let scratch = temp_dir("whisper-scratch");

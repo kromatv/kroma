@@ -51,6 +51,7 @@ mod tests {
     use crate::fake_transmission::{FakeTransmission, Reply};
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn test_reports_the_server_version() {
         let fake = FakeTransmission::start(|method, _, _| match method {
             "session-get" => Reply::ok(json!({ "version": "4.0.5" })),
@@ -60,6 +61,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_server_that_hides_its_version_still_counts_as_reachable() {
         // The point of `test` is "can I talk to it", so a missing version field
         // is not a failure - reporting reachability matters more than the number.
@@ -68,6 +70,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn the_409_handshake_is_replayed_once_and_then_remembered() {
         // Transmission answers the FIRST request of a session with 409 + a fresh
         // session id. Failing to cache it would mean every call costs two round
@@ -100,6 +103,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_409_without_the_session_header_is_an_error() {
         // Nothing to replay with, so retrying would just loop.
         let fake = FakeTransmission::start(|_, _, _| Reply::raw(409, "Conflict"));
@@ -108,6 +112,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_401_names_the_credentials_and_the_request_carried_basic_auth() {
         let fake = FakeTransmission::start(|_, _, _| Reply::raw(401, "Unauthorized"));
         let err = fake.client().test().unwrap_err().to_string();
@@ -121,6 +126,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_client_without_credentials_sends_no_authorization_header() {
         // Sending `Basic Og==` (":") to an open server is a needless 401 risk.
         let fake = FakeTransmission::start(|_, _, _| Reply::ok(json!({ "version": "3.0" })));
@@ -129,6 +135,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_refusal_is_surfaced_verbatim_despite_the_200() {
         // Transmission reports most errors as 200 + result != "success", so the
         // status alone never decides.
@@ -139,6 +146,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_reply_without_a_result_field_is_malformed() {
         // Typically a reverse proxy's own JSON, not Transmission's.
         let fake = FakeTransmission::start(|_, _, _| Reply::raw(200, r#"{"ok":true}"#));

@@ -171,6 +171,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(target_family = "wasm", ignore = "starts a program, which a component asks its host to do")]
     async fn drains_every_line_a_program_writes_into_the_log() {
         let host = crate::test_support::host();
         let remote = crate::test_support::remote_for(&host);

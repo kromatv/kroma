@@ -148,6 +148,7 @@ pub(super) fn builtin_row(id: &str, definition_id: &str, url: String) -> db::Ind
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_builtin_search_runs_the_definition_and_hands_back_the_rows_it_parsed() {
     let pool = db_pool();
     let host = DbHost::with_store(pool.clone());
@@ -169,6 +170,7 @@ fn a_builtin_search_runs_the_definition_and_hands_back_the_rows_it_parsed() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_details_page_that_only_carries_a_magnet_resolves_to_that_magnet() {
     let pool = db_pool();
     let host = DbHost::with_store(pool.clone());
@@ -216,6 +218,7 @@ fn a_definition_with_no_download_rule_hands_the_url_back_untouched() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_builtin_grab_goes_out_through_the_indexers_own_session() {
     let pool = db_pool();
     let base = serve(b"d8:announce9:udp://x:0e", "application/x-bittorrent");

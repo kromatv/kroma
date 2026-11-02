@@ -43,16 +43,23 @@ pub fn enabled(host: StubHost) -> StubHost {
         .with_setting("remoteAccessToken", serde_json::json!(TOKEN))
 }
 
-#[cfg(unix)]
 pub fn install_script(data_dir: &Path, body: &str) -> PathBuf {
-    use std::os::unix::fs::PermissionsExt;
-
     let path = provision::cached_path(data_dir);
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, body).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    make_runnable(&path);
     path
 }
+
+#[cfg(unix)]
+fn make_runnable(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+}
+
+#[cfg(not(unix))]
+fn make_runnable(_path: &Path) {}
 
 pub fn install_inert_file(data_dir: &Path) -> PathBuf {
     let path = provision::cached_path(data_dir);

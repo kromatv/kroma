@@ -41,6 +41,7 @@ fn seed(pool: &Pool) {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_covers_every_core_query_this_module_makes() {
     let (core, scoped) = scoped();
     seed(&core);
@@ -70,6 +71,7 @@ fn the_grant_covers_every_core_query_this_module_makes() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_covers_what_the_request_and_monitoring_passes_write() {
     let (core, scoped) = scoped();
     seed(&core);
@@ -111,6 +113,7 @@ fn the_grant_covers_what_the_request_and_monitoring_passes_write() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_stops_at_the_tables_this_module_has_no_business_in() {
     // The point of declaring one. A module used to be handed the whole database
     // ambiently, session token hashes included.

@@ -424,7 +424,7 @@ mod tests {
         (host, base)
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn the_client_row_reaches_the_engine_with_every_call() {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
@@ -438,7 +438,7 @@ mod tests {
         assert_eq!(reported, "engine at http://nas:8080 as u");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn an_add_sends_the_link_the_directory_and_the_label_and_nothing_else() {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
@@ -458,7 +458,7 @@ mod tests {
         assert_eq!(reference, "magnet:?xt=urn:btih:AB|/downloads|kroma");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_status_crosses_field_for_field() {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
@@ -484,7 +484,7 @@ mod tests {
 
     // A torrent the engine has forgotten is `None`, not an error: the queue
     // reconciles it, and an error here would fail the whole monitor tick.
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_torrent_the_engine_forgot_is_none_rather_than_an_error() {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
@@ -496,7 +496,7 @@ mod tests {
         assert!(status.is_none());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn the_lifecycle_calls_reach_the_engine_and_a_refusal_comes_back() {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
@@ -522,7 +522,7 @@ mod tests {
 
     // Resolution is by INSTANCE, so an engine answering under another kind must
     // not be handed this client's downloads.
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_client_whose_kind_nothing_answers_does_not_reach_the_engine_that_is_up() {
         let (host, _) = engine_on("transmission").await;
 
@@ -530,7 +530,7 @@ mod tests {
         assert!(RemoteEngine::new(&host, def("transmission")).is_some());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn an_engine_that_stopped_answering_fails_the_call_rather_than_hanging() {
         // Resolved while it was up, then pointed at a port with nothing on it.
         let host = StubHost::new().with_point(

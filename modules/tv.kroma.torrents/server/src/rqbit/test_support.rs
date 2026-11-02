@@ -164,12 +164,19 @@ pub(crate) fn read_dump(dump: &std::path::Path) -> String {
 }
 
 /// A shell script in `dir` standing in for the helper.
-#[cfg(unix)]
 pub(crate) fn helper_script(dir: &std::path::Path, body: &str) -> std::path::PathBuf {
-    use std::os::unix::fs::PermissionsExt;
-
     let path = dir.join("fake-rqbit");
     std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    make_runnable(&path);
     path
 }
+
+#[cfg(unix)]
+fn make_runnable(path: &std::path::Path) {
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+}
+
+#[cfg(not(unix))]
+fn make_runnable(_path: &std::path::Path) {}

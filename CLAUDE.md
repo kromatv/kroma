@@ -45,6 +45,7 @@ bun run test             # vitest (two projects: web + native)
 bun run check            # oxlint + oxfmt  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
+bun run modules:test:wasm  # every module's tests again, each one a component
 ```
 
 `bun run ci <command>` is `packages/ci-tools`, the CLI every workflow step

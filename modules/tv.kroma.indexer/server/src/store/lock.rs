@@ -55,6 +55,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "starts a thread, and a component has only one")]
     fn a_second_taker_waits_until_the_first_lets_go() {
         let dir = tmpdir("lock-wait");
         let first = SyncLock::take(dir.path()).unwrap();

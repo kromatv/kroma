@@ -18,6 +18,7 @@ fn config_for(helper: &std::path::Path, stub_port: u16, dir: &std::path::Path) -
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn a_start_ends_once_the_api_answers_and_names_the_version() {
     let dir = kroma_module_sdk::testing::temp_dir("rqbit-start");
     let stub = StubApi::serving(&[(ROOT, 200, ANSWERS)]);
@@ -34,6 +35,7 @@ async fn a_start_ends_once_the_api_answers_and_names_the_version() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn a_helper_that_exits_before_answering_fails_the_start_with_what_it_said() {
     let dir = kroma_module_sdk::testing::temp_dir("rqbit-exit");
     let stub = StubApi::serving(&[]);
@@ -50,6 +52,7 @@ async fn a_helper_that_exits_before_answering_fails_the_start_with_what_it_said(
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn a_helper_that_cannot_start_fails_the_start_rather_than_waiting() {
     let dir = kroma_module_sdk::testing::temp_dir("rqbit-absent");
     let stub = StubApi::serving(&[]);
@@ -61,6 +64,7 @@ async fn a_helper_that_cannot_start_fails_the_start_rather_than_waiting() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn the_password_travels_in_the_environment_and_the_proxy_with_it() {
     let dir = kroma_module_sdk::testing::temp_dir("rqbit-env");
     let stub = StubApi::serving(&[(ROOT, 200, ANSWERS)]);
@@ -91,6 +95,7 @@ async fn the_password_travels_in_the_environment_and_the_proxy_with_it() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn a_start_clears_a_persisted_torrent_that_cannot_restore_first() {
     let dir = kroma_module_sdk::testing::temp_dir("rqbit-prune");
     let session = dir.path().join("session");
@@ -113,6 +118,7 @@ async fn a_start_clears_a_persisted_torrent_that_cannot_restore_first() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 async fn a_shutdown_waits_for_the_helper_to_end() {
     let stub = StubApi::serving(&[]);
     let engine = engine_over(&stub, RqbitConfig::default());
@@ -123,6 +129,7 @@ async fn a_shutdown_waits_for_the_helper_to_end() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
 fn a_dead_helper_reads_as_exited() {
     let stub = StubApi::serving(&[]);
     let engine = engine_over(&stub, RqbitConfig::default());

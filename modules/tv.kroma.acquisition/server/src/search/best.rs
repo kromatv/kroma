@@ -170,7 +170,7 @@ mod tests {
         .await
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn the_higher_ranked_release_of_a_sweep_wins() {
         let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
 
@@ -181,7 +181,7 @@ mod tests {
         assert!(errors.is_empty());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_blocked_release_is_never_the_best() {
         let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
 
@@ -190,7 +190,7 @@ mod tests {
         assert_eq!(out.best.unwrap().view.title, DUNE_720);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_release_nobody_can_download_is_skipped() {
         let mut fakes = Fakes::new().offering(&[DUNE_1080]);
         fakes.releases[0]["magnet"] = serde_json::Value::Null;
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(out.seen, 1);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_release_under_the_link_alone_is_still_grabbable() {
         let mut fakes = Fakes::new().offering(&[DUNE_1080]);
         fakes.releases[0]["magnet"] = serde_json::Value::Null;
@@ -212,7 +212,7 @@ mod tests {
         assert_eq!(out.best.unwrap().magnet_or_url, "http://t/dune.torrent");
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn a_sweep_nothing_fits_says_what_the_first_refusal_was() {
         let fakes = Fakes::new().offering(&["Arrival.2016.1080p.BluRay.x264-GRP"]);
 
@@ -222,7 +222,7 @@ mod tests {
         assert!(out.top_reject.is_some());
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn an_indexer_that_fails_is_reported_and_the_sweep_goes_on() {
         let mut fakes = Fakes::new().offering(&[DUNE_1080]);
         fakes.search_error = Some("timed out".into());

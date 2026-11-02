@@ -9,6 +9,7 @@
 use kroma_module_sdk::db;
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_covers_both_ends_of_the_progress_channel() {
     let core = db::testing::temp_pool("whisper-grant");
     let grant = db::testing::grant_from_manifest(include_str!("../../module.json"));
