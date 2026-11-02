@@ -110,7 +110,6 @@ describe('download clients', () => {
   it('never exposes the stored password, only whether there is one', () => {
     const view = DownloadClientsView.parse({
       clients: [{ ...client, password: 'hunter2' }],
-      rqbitCompiled: false,
     });
     expect(view.clients[0]).not.toHaveProperty('password');
     expect(view.clients[0]?.hasPassword).toBe(true);

@@ -35,7 +35,7 @@ fn a_granted_table_reads_and_an_ungranted_one_does_not() {
         .unwrap();
     assert_eq!(title, "The Matrix");
 
-    // The session tokens and account rows a VPN sidecar used to be able to
+    // The session tokens and account rows a VPN module used to be able to
     // read for free are exactly what an undeclared table now costs, and the
     // refusal names what it refused.
     let err = conn

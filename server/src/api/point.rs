@@ -1,7 +1,7 @@
 //! Forwarding a core route to whichever module answers a point.
 //!
 //! Some core routes exist for a feature that lives in a module: the URL is
-//! stable and the client knows it, but the work happens in a sidecar. What the
+//! stable and the client knows it, but the work happens in a module. What the
 //! core holds for one of those is a point NAME and opaque JSON in both
 //! directions. It holds no type describing what the point is for, no trait, and
 //! no dependency on the module that answers, which is what lets a module type

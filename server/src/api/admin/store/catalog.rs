@@ -1,5 +1,5 @@
-//! Registry catalog: read an RFC 110 registry into one module list, pick the
-//! artifact for this build target, enrich with installed/update state.
+//! Registry catalog: read an RFC 110 registry into one module list, pick each
+//! module's component artifact, enrich with installed/update state.
 //!
 //! One shape, not three. A registry URL is either the `registry.json` descriptor
 //! (followed to the `index.json` beside it) or that index directly. The older
@@ -8,19 +8,19 @@
 //! offer modules with their dependencies and checksums quietly missing.
 
 use kroma_module_host::HostCtx;
-use kroma_module_supervisor::Supervisor;
 use serde_json::{json, Value};
 
 use super::refusal::Refusal;
 use crate::state::SharedState;
 
-/// The Rust target this server was built for: what a sidecar bundle must match.
-pub const BUILD_TARGET: &str = env!("KROMA_BUILD_TARGET");
+mod parse;
+
+pub use parse::fetch;
 
 const SERVER_VERSION: &str = crate::VERSION;
 
-/// One downloadable `.kmod` build. `target = None` means the bundle is
-/// platform-independent (a library module: manifest + FE only).
+/// One downloadable `.kmod` build. `target = None` is a WebAssembly component or a
+/// library module, the same on every platform; a `target` names a native build.
 pub struct Artifact {
     pub target: Option<String>,
     pub url: String,
@@ -51,6 +51,9 @@ pub struct CatalogModule {
     // the install planner suggests providers for the unsatisfied ones.
     pub consumes: Vec<(String, Option<String>)>,
     pub artifacts: Vec<Artifact>,
+    /// What this version declares it may do. `None` when the registry does not
+    /// say, or says something this server cannot read.
+    pub permissions: Option<kroma_module_manifest::Permissions>,
     /// Whether the registry this row came from is the official one. Set when
     /// the fetched registries are merged, and recorded at install time so a
     /// module's provenance is a fact rather than something re-derived later
@@ -68,179 +71,10 @@ pub fn registry_url(state: &SharedState) -> String {
     }
 }
 
-/// The registry contract this server speaks. A document declaring a higher one
-/// is refused rather than half-read: an unknown major means fields this build
-/// would silently ignore.
-const REGISTRY_API_VERSION: u64 = 1;
-
-/// The one-request module list an RFC 110 descriptor fronts, resolved against
-/// the URL the descriptor was actually FETCHED from rather than the `url` it
-/// declares - a registry does not get to redirect a client somewhere else by
-/// describing itself as living there.
-fn index_url(descriptor: &Value, fetched_from: &str) -> anyhow::Result<Option<String>> {
-    let Some(schema_version) = descriptor.get("apiVersion").and_then(Value::as_u64) else {
-        return Ok(None);
-    };
-    // `modules` holds ids in a descriptor and records in a catalog.
-    let ids_only = descriptor
-        .get("modules")
-        .and_then(Value::as_array)
-        .is_some_and(|m| m.iter().all(Value::is_string));
-    if !ids_only {
-        return Ok(None);
-    }
-    anyhow::ensure!(
-        schema_version <= REGISTRY_API_VERSION,
-        "registry speaks apiVersion {schema_version}; this server speaks {REGISTRY_API_VERSION}",
-    );
-    Ok(Some(kroma_module_supervisor::sibling_url(
-        fetched_from,
-        "index.json",
-    )?))
-}
-
-pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Vec<CatalogModule>> {
-    let mut raw = sup.fetch_catalog(url).await?;
-    if let Some(index) = index_url(&raw, url)? {
-        raw = sup.fetch_catalog(&index).await?;
-    }
-    let Value::Array(entries) = &raw else {
-        anyhow::bail!("not an RFC 110 registry: expected a descriptor or a module index");
-    };
-    Ok(entries.iter().filter_map(parse_module).collect())
-}
-
-fn parse_module(m: &Value) -> Option<CatalogModule> {
-    let id = m.get("id")?.as_str()?.to_string();
-    let str_of = |k: &str| {
-        m.get(k)
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string()
-    };
-    let artifacts: Vec<Artifact> = m
-        .get("artifacts")
-        .and_then(Value::as_array)
-        .map(|list| list.iter().filter_map(parse_artifact).collect())
-        .unwrap_or_default();
-    let dependencies = parse_deps(m, "dependencies");
-    let optional_dependencies = parse_deps(m, "optionalDependencies");
-    let contributes = parse_points(m, "contributes");
-    let consumes = parse_points(m, "consumes");
-    // Only an inline data image of a sane size may reach the admin page's
-    // <img>; anything else from a third-party catalog is dropped.
-    let icon = m
-        .get("icon")
-        .and_then(Value::as_str)
-        .filter(|s| s.starts_with("data:image/") && s.len() <= 128 * 1024)
-        .map(str::to_string);
-    Some(CatalogModule {
-        official: false,
-        schema_version: m.get("schemaVersion").and_then(Value::as_u64).unwrap_or(0),
-        id,
-        name: str_of("name"),
-        version: str_of("version"),
-        description: str_of("description"),
-        engines: m
-            .get("engines")
-            .and_then(Value::as_object)
-            .map(|e| {
-                e.iter()
-                    .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
-                    .collect()
-            })
-            .unwrap_or_default(),
-        library: m.get("library").and_then(Value::as_bool).unwrap_or(false),
-        icon,
-        dependencies,
-        optional_dependencies,
-        contributes,
-        consumes,
-        artifacts,
-    })
-}
-
-// `contributes` and `consumes` are the same shape on the wire: a point, and an
-// optional instance. An entry naming no point is not addressable and is dropped
-// rather than guessed at.
-fn parse_points(m: &Value, key: &str) -> Vec<(String, Option<String>)> {
-    m.get(key)
-        .and_then(Value::as_array)
-        .map(|list| {
-            list.iter()
-                .filter_map(|e| {
-                    Some((
-                        e.get("point")?.as_str()?.to_string(),
-                        e.get("id").and_then(Value::as_str).map(str::to_string),
-                    ))
-                })
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-// A `{ "<id>": "<range>" }` dependency map; `"*"`/blank ranges normalize away.
-fn parse_deps(m: &Value, key: &str) -> Vec<(String, Option<String>)> {
-    let Some(deps) = m.get(key).and_then(Value::as_object) else {
-        return Vec::new();
-    };
-    deps.iter()
-        .map(|(dep_id, range)| {
-            let range = range
-                .as_str()
-                .map(str::trim)
-                .filter(|r| !r.is_empty() && *r != "*")
-                .map(str::to_string);
-            (dep_id.clone(), range)
-        })
-        .collect()
-}
-
-/// A Subresource-Integrity string (`sha256-<base64>`, RFC 110's mandatory
-/// artifact checksum) as the hex digest the installer compares against, or
-/// `None` when it is not one this server can check.
-pub fn sha256_from_sri(integrity: &str) -> Option<String> {
-    use base64::Engine as _;
-    let encoded = integrity.trim().strip_prefix("sha256-")?;
-    let raw = base64::engine::general_purpose::STANDARD
-        .decode(encoded)
-        .ok()?;
-    (raw.len() == 32).then(|| hex::encode(raw))
-}
-
-fn parse_artifact(a: &Value) -> Option<Artifact> {
-    let integrity = a
-        .get("integrity")
-        .and_then(Value::as_str)
-        .and_then(sha256_from_sri);
-    Some(Artifact {
-        target: a.get("target").and_then(Value::as_str).map(str::to_string),
-        url: a.get("url")?.as_str()?.to_string(),
-        size: a.get("size").and_then(Value::as_u64),
-        sha256: integrity.or_else(|| a.get("sha256").and_then(Value::as_str).map(str::to_string)),
-    })
-}
-
-/// Preference order: exact build-target match, then a platform-independent
-/// bundle, then a musl build of the same arch (static, so it runs on glibc too).
+/// The one artifact this server takes: the build that names no target. A module
+/// published only with targets is a native build, which no server runs any more.
 pub fn pick_artifact(m: &CatalogModule) -> Option<&Artifact> {
-    pick_for(&m.artifacts, BUILD_TARGET)
-}
-
-fn pick_for<'a>(artifacts: &'a [Artifact], host: &str) -> Option<&'a Artifact> {
-    if let Some(a) = artifacts.iter().find(|a| a.target.as_deref() == Some(host)) {
-        return Some(a);
-    }
-    if let Some(a) = artifacts.iter().find(|a| a.target.is_none()) {
-        return Some(a);
-    }
-    let musl = host.replace("-gnu", "-musl");
-    if musl != host {
-        return artifacts
-            .iter()
-            .find(|a| a.target.as_deref() == Some(musl.as_str()));
-    }
-    None
+    m.artifacts.iter().find(|a| a.target.is_none())
 }
 
 // The `{ id: range }` map a manifest and a registry record both use; a declared
@@ -271,9 +105,7 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
     }
     kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION).map_err(Refusal::from)?;
     if pick_artifact(m).is_none() {
-        return Err(Refusal::Platform {
-            target: BUILD_TARGET.to_owned(),
-        });
+        return Err(Refusal::Native);
     }
     Ok(())
 }
@@ -282,11 +114,17 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
 /// registry. `registryUrl` and the top-level `error` describe the OFFICIAL
 /// registry, which is the only one an older client knew about.
 pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> Value {
-    let installed: std::collections::HashMap<String, String> =
-        kroma_module_kernel::manifests(state)
-            .into_iter()
-            .map(|m| (m.id, m.version))
-            .collect();
+    let manifests = kroma_module_kernel::manifests(state);
+    let installed: std::collections::HashMap<String, String> = manifests
+        .iter()
+        .map(|m| (m.id.clone(), m.version.clone()))
+        .collect();
+    let granted = |id: &str| {
+        manifests
+            .iter()
+            .find(|m| m.id == id)
+            .and_then(|m| m.permissions.as_ref())
+    };
     let entries: Vec<Value> = fetched
         .iter()
         .flat_map(|f| f.modules.iter().map(move |m| (m, f.registry.name.as_str())))
@@ -309,7 +147,6 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "optionalDependencies": dep_map(&m.optional_dependencies),
                 "contributes": point_rows(&m.contributes),
                 "consumes": point_rows(&m.consumes),
-                "target": artifact.and_then(|a| a.target.clone()),
                 "url": artifact.map(|a| a.url.clone()),
                 "size": artifact.and_then(|a| a.size),
                 "sha256": artifact.and_then(|a| a.sha256.clone()),
@@ -320,6 +157,9 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "reason": refusal.as_ref().map(Refusal::reason),
                 "refusal": refusal,
                 "source": source,
+                "permissions": m.permissions,
+                "widensPermissions": widens_permissions(m, granted(&m.id)),
+                "official": m.official,
             })
         })
         .collect();
@@ -327,7 +167,6 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
     json!({
         "schema": 2,
         "serverVersion": SERVER_VERSION,
-        "target": BUILD_TARGET,
         "registryUrl": official.map(|f| f.registry.url.as_str()).unwrap_or_default(),
         "error": official.and_then(|f| f.error.clone()),
         "registries": super::registries::status(fetched),
@@ -354,193 +193,21 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         contributes: Vec::new(),
         consumes: Vec::new(),
         artifacts: Vec::new(),
+        permissions: None,
+    }
+}
+
+/// Whether taking this entry asks for more than `installed` was granted. A module
+/// that declared nothing has nothing to widen.
+pub fn widens_permissions(
+    entry: &CatalogModule,
+    installed: Option<&kroma_module_manifest::Permissions>,
+) -> bool {
+    match (&entry.permissions, installed) {
+        (Some(offered), Some(installed)) => offered.widens(installed),
+        _ => false,
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn base64_of(hex: &str) -> String {
-        use base64::Engine as _;
-        base64::engine::general_purpose::STANDARD.encode(hex::decode(hex).unwrap())
-    }
-
-    fn artifact(target: Option<&str>) -> Artifact {
-        Artifact {
-            target: target.map(str::to_string),
-            url: format!("https://x/{}.kmod", target.unwrap_or("universal")),
-            size: Some(1),
-            sha256: Some("00".into()),
-        }
-    }
-
-    #[test]
-    fn pick_prefers_exact_target_then_universal_then_musl() {
-        let arts = vec![
-            artifact(Some("x86_64-unknown-linux-musl")),
-            artifact(Some("aarch64-unknown-linux-musl")),
-        ];
-        let picked = pick_for(&arts, "x86_64-unknown-linux-musl").unwrap();
-        assert_eq!(picked.target.as_deref(), Some("x86_64-unknown-linux-musl"));
-        let picked = pick_for(&arts, "x86_64-unknown-linux-gnu").unwrap();
-        assert_eq!(picked.target.as_deref(), Some("x86_64-unknown-linux-musl"));
-        assert!(pick_for(&arts, "aarch64-apple-darwin").is_none());
-        let with_universal = vec![artifact(Some("x86_64-unknown-linux-musl")), artifact(None)];
-        let picked = pick_for(&with_universal, "aarch64-apple-darwin").unwrap();
-        assert!(picked.target.is_none());
-    }
-
-    #[test]
-    fn an_sri_checksum_becomes_the_hex_digest_the_installer_compares() {
-        let hex = "ab".repeat(32);
-        let sri = format!("sha256-{}", base64_of(&hex));
-        assert_eq!(sha256_from_sri(&sri).as_deref(), Some(hex.as_str()));
-        assert_eq!(
-            sha256_from_sri(&format!("  {sri}  ")).as_deref(),
-            Some(hex.as_str())
-        );
-    }
-
-    #[test]
-    fn an_integrity_this_server_cannot_check_is_refused_rather_than_trusted() {
-        assert!(sha256_from_sri("md5-abc").is_none());
-        assert!(sha256_from_sri("nonsense").is_none());
-        assert!(sha256_from_sri("sha256-!!!").is_none());
-        // Right prefix, wrong digest length: a truncated hash must not pass.
-        assert!(sha256_from_sri("sha256-3q2+7w==").is_none());
-    }
-
-    #[test]
-    fn parse_reads_an_rfc_110_record() {
-        let rfc: Value = serde_json::from_str(&format!(
-            r#"{{ "id": "a.b", "name": "AB", "version": "0.2.0", "engines": {{ "server": ">=0.1.4" }},
-                  "dependencies": {{ "c.d": "^0.1.0" }},
-                  "optionalDependencies": {{ "g.h": "^0.2.0" }},
-                  "artifacts": [{{ "target": "x86_64-unknown-linux-musl",
-                                   "url": "https://x/a.b.kmod", "size": 5,
-                                   "integrity": "sha256-{}" }}] }}"#,
-            base64_of(&"cd".repeat(32)),
-        ))
-        .unwrap();
-        let m = parse_module(&rfc).unwrap();
-        assert_eq!(
-            m.dependencies,
-            vec![("c.d".to_string(), Some("^0.1.0".to_string()))]
-        );
-        assert_eq!(
-            m.optional_dependencies,
-            vec![("g.h".to_string(), Some("^0.2.0".to_string()))]
-        );
-        assert_eq!(
-            m.artifacts[0].sha256.as_deref(),
-            Some("cd".repeat(32).as_str())
-        );
-    }
-
-    #[test]
-    fn a_descriptor_is_followed_to_the_index_beside_it_and_a_catalog_is_not() {
-        let descriptor: Value = serde_json::from_str(
-            r#"{ "apiVersion": 1, "name": "R", "url": "https://elsewhere.example",
-                 "modules": ["a.b", "c.d"] }"#,
-        )
-        .unwrap();
-        assert_eq!(
-            index_url(&descriptor, "https://r.example/registry.json")
-                .unwrap()
-                .as_deref(),
-            // Resolved against where it was fetched, NOT the `url` it declares.
-            Some("https://r.example/index.json"),
-        );
-
-        let catalog: Value =
-            serde_json::from_str(r#"{ "schema": 2, "modules": [{ "id": "a.b" }] }"#).unwrap();
-        assert!(index_url(&catalog, "https://r.example/modules.json")
-            .unwrap()
-            .is_none());
-    }
-
-    #[test]
-    fn a_registry_speaking_a_newer_contract_is_refused() {
-        let future: Value =
-            serde_json::from_str(r#"{ "apiVersion": 2, "modules": ["a.b"] }"#).unwrap();
-        let err = index_url(&future, "https://r.example/registry.json").unwrap_err();
-        assert!(err.to_string().contains("apiVersion 2"), "{err}");
-    }
-
-    #[test]
-    fn parse_reads_a_full_record() {
-        let entry: Value = serde_json::from_str(
-            r#"{ "schemaVersion": 2, "id": "a.b", "name": "AB", "version": "0.2.0",
-                 "engines": { "server": ">=0.1.4" }, "library": false,
-                 "dependencies": { "c.d": "^0.1.0", "e.f": "*" },
-                 "optionalDependencies": { "g.h": "^0.2.0" },
-                 "contributes": [{ "point": "tv.kroma.torrents/download-client", "id": "qbittorrent", "label": "qBittorrent" }],
-                 "consumes": [{ "point": "tv.kroma.indexer/search" }, { "point": "tv.kroma.torrents/download-client", "id": "rqbit" }],
-                 "artifacts": [{ "target": "x86_64-unknown-linux-musl",
-                                 "url": "https://x/a.b-x86_64-unknown-linux-musl.kmod",
-                                 "size": 5, "sha256": "ab" }] }"#,
-        )
-        .unwrap();
-        let m = parse_module(&entry).unwrap();
-        assert_eq!(m.schema_version, 2);
-        assert_eq!(m.version, "0.2.0");
-        assert_eq!(m.engines.get("server").map(String::as_str), Some(">=0.1.4"));
-        // A "*" range normalizes away, so the planner sees "no constraint".
-        assert_eq!(
-            m.dependencies,
-            vec![
-                ("c.d".to_string(), Some("^0.1.0".to_string())),
-                ("e.f".to_string(), None)
-            ]
-        );
-        assert_eq!(
-            m.optional_dependencies,
-            vec![("g.h".to_string(), Some("^0.2.0".to_string()))]
-        );
-        assert_eq!(
-            m.contributes,
-            vec![(
-                "tv.kroma.torrents/download-client".to_string(),
-                Some("qbittorrent".to_string())
-            )]
-        );
-        assert_eq!(
-            m.consumes,
-            vec![
-                ("tv.kroma.indexer/search".to_string(), None),
-                (
-                    "tv.kroma.torrents/download-client".to_string(),
-                    Some("rqbit".to_string())
-                ),
-            ]
-        );
-        assert_eq!(m.artifacts.len(), 1);
-        assert_eq!(
-            m.artifacts[0].target.as_deref(),
-            Some("x86_64-unknown-linux-musl")
-        );
-    }
-
-    #[test]
-    fn a_record_built_for_another_contract_is_listed_but_not_offered() {
-        // Not dropped: the Store shows it with the reason, which is more use than
-        // a module silently missing from the shelf.
-        let old: Value = serde_json::from_str(
-            r#"{ "id": "a.b", "name": "AB", "version": "0.1.0",
-                 "artifacts": [{ "target": null, "url": "https://x/a.b.kmod" }] }"#,
-        )
-        .unwrap();
-        let m = parse_module(&old).unwrap();
-        assert_eq!(m.schema_version, 0);
-        let refusal = compat_verdict(&m).unwrap_err();
-        assert_eq!(
-            refusal,
-            Refusal::Schema {
-                built: 0,
-                speaks: u64::from(kroma_module_manifest::MODULE_SCHEMA_VERSION)
-            }
-        );
-        assert!(refusal.reason().contains("manifest schema v0"));
-    }
-}
+mod tests;

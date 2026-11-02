@@ -8,7 +8,7 @@ mod upstream;
 use std::net::IpAddr;
 use std::time::Duration;
 
-pub use gateway::{serve_tcp, serve_unix};
+pub use gateway::serve_tcp;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Host {
@@ -44,6 +44,22 @@ pub enum Verdict {
     Block(String),
 }
 
+/// A [`Verdict`] and the rule that chose it, which the [`Flow`] then records.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ruling {
+    pub verdict: Verdict,
+    pub rule: Option<String>,
+}
+
+impl From<Verdict> for Ruling {
+    fn from(verdict: Verdict) -> Self {
+        Self {
+            verdict,
+            rule: None,
+        }
+    }
+}
+
 /// A SOCKS5 proxy to chain through, which then resolves the name itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Upstream {
@@ -69,6 +85,7 @@ pub struct Flow {
     pub bytes_down: u64,
     pub duration: Duration,
     pub error: Option<String>,
+    pub rule: Option<String>,
 }
 
 /// The gateway's questions. The credential is the SOCKS5 password a caller
@@ -78,7 +95,7 @@ pub trait Policy: Send + Sync + 'static {
     fn caller_of(&self, credential: &str) -> Option<String>;
 
     /// Where `request` may go. Called on a blocking thread.
-    fn decide(&self, request: &Request) -> Verdict;
+    fn decide(&self, request: &Request) -> Ruling;
 
     /// Called once per connection, refused ones included.
     fn record(&self, flow: Flow);

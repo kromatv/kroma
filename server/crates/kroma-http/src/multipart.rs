@@ -1,4 +1,5 @@
 //! How one `multipart/form-data` part is spelled for curl.
+#![cfg_attr(target_family = "wasm", allow(dead_code))]
 
 use std::path::Path;
 

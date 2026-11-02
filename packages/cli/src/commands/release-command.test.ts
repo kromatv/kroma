@@ -14,7 +14,7 @@ let dir: string;
 function pack(id: string, version: string, icon?: string): void {
   const project = join(dir, 'modules', id);
   mkdirSync(project, { recursive: true });
-  const manifest = { schemaVersion: 2, id, name: id, version, library: true };
+  const manifest = { schemaVersion: 3, id, name: id, version, library: true };
   writeFileSync(join(project, 'module.json'), JSON.stringify(manifest));
   if (icon) writeFileSync(join(project, 'icon.svg'), icon);
   packBundle({
@@ -22,7 +22,6 @@ function pack(id: string, version: string, icon?: string): void {
     binPath: null,
     feDir: null,
     outDir: join(dir, 'dist', 'modules'),
-    target: null,
   });
 }
 

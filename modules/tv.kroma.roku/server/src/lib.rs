@@ -57,7 +57,7 @@ pub fn server_module<S: HostCtx + Clone + Send + Sync + 'static>() -> Box<dyn Se
     Box::new(RokuModule)
 }
 
-/// This sidecar's own directory under the data dir: the channel zip it hands
+/// This module's own directory under the data dir: the channel zip it hands
 /// to a box and the developer password it keeps.
 pub fn module_dir(data_dir: &std::path::Path) -> std::path::PathBuf {
     data_dir.join("modules").join(MODULE_ID)
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn the_sidecar_keeps_its_files_in_its_own_install_directory() {
+    fn the_module_keeps_its_files_in_its_own_install_directory() {
         assert_eq!(
             module_dir(std::path::Path::new("/data")),
             std::path::PathBuf::from("/data/modules/tv.kroma.roku")

@@ -99,16 +99,17 @@ independently of the server.
 | Remote access | a public HTTPS share URL, optionally through a managed tunnel |
 | mDNS | the server advertises itself on the LAN |
 
-A module runs as its own process next to the server, and the server checks its
-sha256 before unpacking it. The official catalog is
+A module runs inside the server as a WebAssembly component that reaches only what
+it declared, and the server checks its sha256 before unpacking it. The official catalog is
 [modules.kroma.tv](https://modules.kroma.tv). Operators can add their own.
 
 ### Write one
 
 Everything a module needs is one npm package,
 [`@kromatv/sdk`](https://www.npmjs.com/package/@kromatv/sdk): the SDK and the
-design system as types, the Rust crates a sidecar links, and the `kroma` CLI.
-Bun 1.4 and a Rust toolchain are the only requirements.
+design system as types, the Rust crates a module links, and the `kroma` CLI.
+Bun 1.4 and a Rust toolchain with the `wasm32-wasip2` target are the only
+requirements.
 
 ```bash
 bunx @kromatv/sdk create            # a few questions, then a project ready to run
@@ -120,7 +121,7 @@ bunx kroma build                    # dist/modules/tv.acme.notes.kmod
 ```
 
 `module.json` is the manifest, `ui/src/module.tsx` the page the KROMA app
-renders with its own design system, `server/` the sidecar the server spawns.
+renders with its own design system, `server/` the component the server runs.
 The page's runtime is the app's, injected when the module loads, so the
 package holds types only; `kroma build` refuses an import the app does not
 provide. `kroma dev` uploads a debug build to whichever server you signed in
@@ -137,7 +138,7 @@ bun run dev          # server on :4040, web on :3000, Samsung shell on :5174
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers prerequisites, the checks CI runs and
 how to open a pull request. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the
-repository is shaped: a layered Rust server, out-of-process modules, one
+repository is shaped: a layered Rust server, modules as WebAssembly components, one
 component library and thin shells. Each package and client carries its own
 README.
 

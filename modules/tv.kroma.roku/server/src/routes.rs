@@ -1,4 +1,4 @@
-//! The two faces of this sidecar: the console's device list and installer,
+//! The two faces of this module: the console's device list and installer,
 //! and the screens the channel on the box asks for.
 
 use std::sync::Arc;

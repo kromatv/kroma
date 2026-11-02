@@ -46,13 +46,16 @@ pub fn routes() -> Router<SharedState> {
             "/store/install",
             post(install_upload).layer(DefaultBodyLimit::max(MAX_BUNDLE_BYTES)),
         )
+        .route(
+            "/store/inspect",
+            post(inspect_upload).layer(DefaultBodyLimit::max(MAX_BUNDLE_BYTES)),
+        )
         .route("/store/install-url", post(install_url))
         .route("/store/install-id", post(install_id))
         .route("/store/plan", post(plan))
         .route("/store/update", post(update))
         .route("/store/registry-preview", post(registry_preview))
         .route("/store/catalog", get(catalog_view))
-        .route("/store/platform", get(platform))
         .route("/store/{id}", delete(uninstall))
 }
 
@@ -86,6 +89,7 @@ async fn install_url(
                     kind: "url",
                     url: Some(&url),
                     official: false,
+                    accept: kroma_module_supervisor::Accept::Anything,
                 },
             )
         })
@@ -206,17 +210,6 @@ async fn catalog_view(
     Ok(Json(catalog::enriched(&state, &fetched)).into_response())
 }
 
-/// `GET /api/admin/store/platform`: the target a `.kmod` must be built for and
-/// the server version, so `kroma install` refuses a mismatch before uploading.
-async fn platform(AuthUser(user): AuthUser) -> Result<Response, Response> {
-    super::require(&user, Permission::SettingsManage)?;
-    Ok(Json(json!({
-        "target": catalog::BUILD_TARGET,
-        "serverVersion": crate::VERSION,
-    }))
-    .into_response())
-}
-
 // The manual escape hatch: no registry, no checksum to verify against - the
 // upload IS the source.
 async fn install_upload(
@@ -237,6 +230,7 @@ async fn install_upload(
                 kind: "upload",
                 url: None,
                 official: false,
+                accept: kroma_module_supervisor::Accept::Anything,
             },
         )
     })
@@ -244,6 +238,43 @@ async fn install_upload(
     .map_err(|_| bad("install task panicked"))?
     .map_err(|e| bad(&format!("install failed: {e:#}")))?;
     Ok(installed_json(&manifest).into_response())
+}
+
+// Read before the upload is installed, so the operator accepts what it declares.
+async fn inspect_upload(
+    Extension(sup): Extension<Arc<Supervisor>>,
+    AuthUser(user): AuthUser,
+    body: Bytes,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    if body.is_empty() {
+        return Err(bad("empty bundle"));
+    }
+    let inspected = {
+        let sup = sup.clone();
+        tokio::task::spawn_blocking(move || sup.inspect(&body))
+    };
+    let manifest = inspected
+        .await
+        .map_err(|_| bad("inspect task panicked"))?
+        .map_err(|e| bad(&format!("inspect failed: {e:#}")))?;
+    let installed = sup
+        .installed_manifests()
+        .into_iter()
+        .find(|m| m.id == manifest.id);
+    let widens = match (&manifest.permissions, installed.as_ref().and_then(|m| m.permissions.as_ref())) {
+        (Some(offered), Some(granted)) => offered.widens(granted),
+        _ => false,
+    };
+    Ok(Json(json!({
+        "id": manifest.id,
+        "name": manifest.name,
+        "version": manifest.version,
+        "permissions": manifest.permissions,
+        "installedVersion": installed.map(|m| m.version),
+        "widensPermissions": widens,
+    }))
+    .into_response())
 }
 
 #[derive(serde::Deserialize, Default)]

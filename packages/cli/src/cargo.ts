@@ -5,6 +5,9 @@ import type { Project } from './project';
 
 export type Profile = 'release-kmod' | 'dev';
 
+/** The one target every module is built for, whatever the machine. */
+export const COMPONENT_TARGET = 'wasm32-wasip2';
+
 export interface CargoBuild {
   args: string[];
   binPath: string;
@@ -24,24 +27,22 @@ export function targetDir(cwd: string, projects: readonly Project[]): string {
 }
 
 /**
- * The `cargo build` arguments for a sidecar, and where cargo will leave the
- * binary. Bare feature names and no `-p`: a module is its own single-package
- * workspace, so `pkg/feat` would name a dependency.
+ * The `cargo build` arguments for a module's component, and where cargo will
+ * leave the `.wasm`. Bare feature names and no `-p`: a module is its own
+ * single-package workspace, so `pkg/feat` would name a dependency.
  */
 export function cargoBuild(
   bin: string,
   features: readonly string[],
-  target: string | null,
   profile: Profile,
   dir: string,
 ): CargoBuild {
   const args = ['build', '--bin', bin];
   if (profile === 'release-kmod') args.push('--profile', 'release-kmod');
   if (features.length) args.push('--features', features.join(','));
-  if (target) args.push('--target', target);
+  args.push('--target', COMPONENT_TARGET);
   const outDir = profile === 'release-kmod' ? 'release-kmod' : 'debug';
-  const binPath = target ? join(dir, target, outDir, bin) : join(dir, outDir, bin);
-  return { args, binPath };
+  return { args, binPath: join(dir, COMPONENT_TARGET, outDir, `${bin}.wasm`) };
 }
 
 /** Runs one cargo subcommand in a module's server crate. */
@@ -59,38 +60,25 @@ export async function cargo(
   return result.exitCode;
 }
 
-export interface BuildOptions {
-  target: string | null;
-  profile: Profile;
-  /** The binary was built out of band (CI's cross container); only locate it. */
-  skipBuild?: boolean;
-}
-
-/** Builds a project's sidecar and returns the binary, or `null` for a library module. */
-export async function buildSidecar(
+/** Builds a project's component and returns the `.wasm`, or `null` for a module
+ *  with no server crate and for a library module. */
+export async function buildComponent(
   project: Project,
   dir: string,
-  options: BuildOptions,
+  profile: Profile,
 ): Promise<string | null> {
   const server = project.server;
-  if (!server?.bin) return null;
-  const { args, binPath } = cargoBuild(
-    server.bin,
-    server.features,
-    options.target,
-    options.profile,
-    dir,
-  );
-  if (!options.skipBuild) {
-    const code = await cargo(server.dir, args, dir);
-    if (code !== 0) throw new Error(`${project.manifest.id}: cargo build failed`);
-  }
-  if (!existsSync(binPath)) {
+  const id = project.manifest.id;
+  if (!server) return null;
+  if (!server.bin) {
+    if (project.manifest.library) return null;
     throw new Error(
-      options.skipBuild
-        ? `KMOD_SKIP_BUILD is set but there is no prebuilt binary at ${binPath}`
-        : `${project.manifest.id}: cargo built no binary at ${binPath}`,
+      `${id}: server/Cargo.toml declares no [[bin]], so no component is built; a module without one is "library": true`,
     );
   }
+  const { args, binPath } = cargoBuild(server.bin, server.features, profile, dir);
+  const code = await cargo(server.dir, args, dir);
+  if (code !== 0) throw new Error(`${id}: cargo build failed`);
+  if (!existsSync(binPath)) throw new Error(`${id}: cargo built no component at ${binPath}`);
   return binPath;
 }

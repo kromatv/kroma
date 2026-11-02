@@ -1,5 +1,5 @@
 //! Server-log admin API (`/api/admin/logs`): the in-memory ring of recent log
-//! lines (core tracing events + every module sidecar's piped output), backing
+//! lines (core tracing events + every module's log lines), backing
 //! the admin "Journaux" page. Read-only; needs any admin capability.
 
 use axum::extract::State;

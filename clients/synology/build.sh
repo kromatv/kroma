@@ -77,7 +77,7 @@ BIN="$ROOT/server/target/$TARGET/release/kroma-server"
 if [ "${SKIP_RUST:-}" != "1" ]; then
   command -v docker >/dev/null || { echo "Docker required for the musl cross-build (or set SKIP_RUST=1 after a manual build)"; exit 1; }
   say "Cross-compiling kroma-server → $TARGET (Docker: $RUST_IMAGE)"
-  # No feature flags: transcription is the whisper sidecar's, and its `.kmod`
+  # No feature flags: transcription is the whisper module's, and its `.kmod`
   # picks the candle backend itself.
   # The WHOLE repo is mounted, not server/ alone: i18n.rs `include_str!`s the
   # shared locale catalogs at ../../packages/core/src/locales/*.json, and the

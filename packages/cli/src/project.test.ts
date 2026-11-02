@@ -7,7 +7,7 @@ import { findProjects, isDirectory, isModuleSet, moduleDirs, openProject } from 
 const work = mkdtempSync(join(tmpdir(), 'kroma-project-'));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
 
-const MANIFEST = { schemaVersion: 2, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' };
+const MANIFEST = { schemaVersion: 3, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' };
 const MANIFEST_JSON = JSON.stringify(MANIFEST);
 
 const CARGO = [
@@ -69,10 +69,10 @@ describe('openProject', () => {
     expect(() => openProject(dir)).toThrow(/reverse-DNS/);
   });
 
-  it('refuses a seam written by hand, which only the build may record', () => {
+  it('refuses the seam a native module recorded, which no component has', () => {
     const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, seam: 'unix' }) });
 
-    expect(() => openProject(dir)).toThrow(/seam is written by kroma build/);
+    expect(() => openProject(dir)).toThrow(/seam/);
   });
 
   it('refuses a manifest written against another schema version', () => {

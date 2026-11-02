@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use kroma_module_sdk::db::{self, WantedRow};
-use kroma_module_sdk::engine::model::MonitoredTitle;
-use kroma_module_sdk::engine::services::jobs::now_ms;
+use kroma_module_sdk::domain::MonitoredTitle;
+use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::Verdict;
 
@@ -120,6 +120,7 @@ fn upgrade_title<S: HostStorage>(
             break;
         }
         summary.targets += 1;
+        (pass.searching)();
         let aim = Aim {
             target: st,
             judge: &judge,
@@ -156,7 +157,7 @@ fn upgrade_title<S: HostStorage>(
 
 #[cfg(test)]
 mod tests {
-    use kroma_module_sdk::engine::model::RequestKind;
+    use kroma_module_sdk::domain::RequestKind;
     use kroma_module_sdk::host::testing::StubHost;
     use kroma_module_sdk::testing::blocking;
 
@@ -198,6 +199,7 @@ mod tests {
                 book: &book,
                 log: &log,
                 cancelled: &stop,
+                searching: &|| {},
             };
             upgrade_pass(&pass, &mut summary, sweep).unwrap();
             summary

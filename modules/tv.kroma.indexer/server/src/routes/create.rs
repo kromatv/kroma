@@ -1,10 +1,13 @@
+use std::collections::hash_map::RandomState;
+use std::hash::BuildHasher;
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use kroma_module_sdk::domain::Permission;
 use kroma_module_sdk::host::{blocking, json_error, query, AuthUser, HostStorage};
-use kroma_module_sdk::primitives::{now_ms, random_token, short_hash};
+use kroma_module_sdk::primitives::{now_ms, short_hash};
 
 use super::indexers::view_of;
 use crate::admin::{definition_store, KIND_BUILTIN};
@@ -134,7 +137,8 @@ async fn build_builtin_row<S: HostStorage + Clone>(
 }
 
 fn new_indexer_id(seed: &str) -> String {
-    short_hash(&format!("indexer|{seed}|{}", random_token()))
+    let salt = RandomState::new().hash_one(now_ms());
+    short_hash(&format!("indexer|{seed}|{salt:x}"))
 }
 
 fn default_cats() -> Vec<u32> {

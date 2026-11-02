@@ -4,6 +4,7 @@ import {
   FlowsView,
   InboundSummary,
   ListenersView,
+  NetworksView,
   NetworkSummary,
   RulesView,
   type RulesUpdate,
@@ -29,6 +30,8 @@ export default function networkApi(ctx: RequestContext) {
     saveRules: (update: RulesUpdate) => ctx.put('/admin/network/rules', { body: update }),
 
     listeners: () => ctx.get('/admin/network/listeners', ListenersView),
+
+    networks: () => ctx.get('/admin/network/networks', NetworksView),
   };
 }
 

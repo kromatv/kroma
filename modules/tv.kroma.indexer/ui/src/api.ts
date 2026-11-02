@@ -1,4 +1,4 @@
-// This module's own admin API, served by its sidecar under the mount the host
+// This module's own admin API, served by the module under the mount the host
 // derives from its id; `moduleApiHook` binds it, so the id is never repeated
 // here.
 

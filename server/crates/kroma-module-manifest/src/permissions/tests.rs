@@ -173,3 +173,107 @@ fn a_manifest_without_permissions_still_parses() {
 
     assert_eq!(manifest.permissions, None);
 }
+
+#[test]
+fn a_connection_only_public_covers_reaches_public_addresses_only() {
+    let reach = torrents().connect_reach(
+        &attempt("peers", "tracker.example", false, 6881, Proto::Tcp),
+        &|_| Vec::new(),
+    );
+
+    assert_eq!(reach, Some(Reach::PublicOnly));
+}
+
+#[test]
+fn a_connection_to_the_lan_reaches_private_addresses() {
+    let reach = torrents().connect_reach(
+        &attempt("torrent-file", "nas", true, 80, Proto::Tcp),
+        &|_| Vec::new(),
+    );
+
+    assert_eq!(reach, Some(Reach::Named));
+}
+
+#[test]
+fn a_connection_to_a_host_a_setting_names_reaches_private_addresses() {
+    let reach = torrents().connect_reach(
+        &attempt("seal-check", "check.example", false, 443, Proto::Tcp),
+        &|_| vec!["check.example".to_string()],
+    );
+
+    assert_eq!(reach, Some(Reach::Named));
+}
+
+#[test]
+fn a_connection_nothing_covers_has_no_reach() {
+    let reach = torrents().connect_reach(
+        &attempt("analytics", "tracker.example", false, 443, Proto::Tcp),
+        &|_| Vec::new(),
+    );
+
+    assert_eq!(reach, None);
+}
+
+fn block(value: serde_json::Value) -> Permissions {
+    parse(value).unwrap()
+}
+
+#[test]
+fn the_same_block_does_not_widen_itself() {
+    assert!(!torrents().widens(&torrents()));
+}
+
+#[test]
+fn an_empty_block_widens_nothing() {
+    assert!(!Permissions::default().widens(&torrents()));
+}
+
+#[test]
+fn a_new_destination_widens_the_block() {
+    let before = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["public"] }] } }));
+    let after = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["public", "lan"] }] } }));
+
+    assert!(after.widens(&before));
+    assert!(!before.widens(&after));
+}
+
+#[test]
+fn a_new_purpose_widens_the_block() {
+    let before = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["public"] }] } }));
+    let after = block(json!({ "net": { "connect": [{ "purpose": "b", "to": ["public"] }] } }));
+
+    assert!(after.widens(&before));
+}
+
+#[test]
+fn losing_a_port_limit_widens_the_block() {
+    let before = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["x.example"], "ports": [443] }] } }));
+    let after = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["x.example"] }] } }));
+
+    assert!(after.widens(&before));
+    assert!(!before.widens(&after));
+}
+
+#[test]
+fn a_new_protocol_widens_the_block() {
+    let before = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["public"] }] } }));
+    let after = block(json!({ "net": { "connect": [{ "purpose": "a", "to": ["public"], "proto": ["tcp", "udp"] }] } }));
+
+    assert!(after.widens(&before));
+}
+
+#[test]
+fn the_host_network_a_listener_a_root_a_program_and_a_variable_each_widen_it() {
+    let before = Permissions::default();
+
+    for after in [
+        json!({ "net": { "host": true } }),
+        json!({ "net": { "listen": [{ "purpose": "a", "port": 1 }] } }),
+        json!({ "fs": { "read": ["media"] } }),
+        json!({ "fs": { "write": ["media"] } }),
+        json!({ "run": ["ffmpeg"] }),
+        json!({ "env": ["X"] }),
+    ] {
+        assert!(block(after.clone()).widens(&before), "{after}");
+    }
+}

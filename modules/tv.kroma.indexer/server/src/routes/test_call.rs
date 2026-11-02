@@ -29,7 +29,7 @@ pub async fn test<S: HostStorage + Clone>(
         let caps = any_indexer_caps(&host, host.store(), &row);
         let reachable = if row.kind == KIND_BUILTIN {
             // Verify the session (drives a login for private trackers).
-            builtin_session(&host, &row)
+            builtin_session(&host, host.store(), &row)
                 .and_then(|s| s.test())
                 .map(|_| ())
         } else {

@@ -26,6 +26,8 @@ fn rule(
         caller: caller.map(str::to_string),
         purpose: purpose.map(str::to_string),
         host: host.map(str::to_string),
+        port: None,
+        address: None,
         action,
         note: None,
     }
@@ -56,7 +58,7 @@ fn the_first_matching_rule_wins() {
     let rules = policy(
         DefaultAction::Allow,
         vec![
-            rule("vpn-peers", None, Some("peers-announce"), None, Action::Vpn),
+            rule("vpn-peers", None, Some("peers-announce"), None, Action::Network("vpn".to_string())),
             rule("block-all", None, None, None, Action::Block),
         ],
     );
@@ -66,7 +68,7 @@ fn the_first_matching_rule_wins() {
             "tv.kroma.torrents",
             "peers-announce",
             "tracker.example",
-            (Action::Vpn, Some("vpn-peers")),
+            (Action::Network("vpn".to_string()), Some("vpn-peers")),
         ),
         (
             "tv.kroma.torrents",
@@ -96,12 +98,12 @@ fn a_rule_scoped_to_a_caller_leaves_every_other_caller_alone() {
             Some("tv.kroma.indexer"),
             None,
             None,
-            Action::Vpn,
+            Action::Network("vpn".to_string()),
         )],
     );
 
     let cases = [
-        ("tv.kroma.indexer", (Action::Vpn, Some("indexer-vpn"))),
+        ("tv.kroma.indexer", (Action::Network("vpn".to_string()), Some("indexer-vpn"))),
         ("tv.kroma.torznab", (Action::Direct, None)),
         (CORE, (Action::Direct, None)),
     ];
@@ -261,14 +263,14 @@ fn a_download_client_on_this_machine_stays_reachable() {
 fn a_vpn_rule_for_a_local_host_goes_direct() {
     let rules = policy(
         DefaultAction::Allow,
-        vec![rule("all-vpn", None, None, None, Action::Vpn)],
+        vec![rule("all-vpn", None, None, None, Action::Network("vpn".to_string()))],
     );
 
     let cases = [
         ("192.168.1.20", (Action::Direct, Some("all-vpn"))),
         ("nas.local", (Action::Direct, Some("all-vpn"))),
         ("qbittorrent", (Action::Direct, Some("all-vpn"))),
-        ("tracker.example", (Action::Vpn, Some("all-vpn"))),
+        ("tracker.example", (Action::Network("vpn".to_string()), Some("all-vpn"))),
     ];
 
     for (host, expected) in cases {

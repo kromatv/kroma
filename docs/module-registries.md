@@ -38,18 +38,21 @@ trust grant. Every install still goes through the same gate:
 - the artifact URL must be **https**,
 - the registry must publish an **`integrity`**, and the downloaded bytes must
   match it; a module with no checksum is refused,
-- the bundle declares `apiVersion` and it must be the one this server speaks;
+- the bundle's manifest declares `schemaVersion` 3, the one this server speaks;
   anything else is refused at install **and** at spawn, because a bundle built
   against an older manifest contract loses fields silently rather than loudly,
+- the bundle carries a `module.wasm` and no native `module` binary, whatever
+  registry it came from and for an upload too,
 - the module's `engines` are enforced at install **and** at spawn, and an engine
   the server cannot check is refused rather than ignored,
 - the catalog fetch is bounded by a timeout and a size cap, and an entry's
   `icon` is only accepted as a small inline `data:` image.
 
-That said, a module is a **native binary that the server executes**. Adding a
-registry you do not control is equivalent to trusting its operator with code
-execution on the host. The list is admin-only (`settings.manage`) for that
-reason.
+That said, a module is **code the server runs**. As a WebAssembly component it
+reaches only what its manifest declares and the operator accepted at install, and
+a module from an added registry starts no program. What it declares can still be
+a lot, such as the network or the media folders, so the list is admin-only
+(`settings.manage`).
 
 One unreachable registry does not blank the Store: its failure is reported on
 its own row and the others still contribute.
@@ -103,7 +106,7 @@ later contract is a new document beside the old one, never an edit to the URL
 someone already pinned. A `module.json` points at its own with
 
 ```json
-{ "$schema": "https://modules.kroma.tv/schemas/2/manifest.json" }
+{ "$schema": "https://modules.kroma.tv/schemas/3/manifest.json" }
 ```
 
 which is what gives an editor completion and inline docs while authoring one.
@@ -116,7 +119,7 @@ uncompressed tar — not something an installer verifies.
 
 ```json
 {
-  "apiVersion": 2,
+  "schemaVersion": 3,
   "id": "tv.kroma.notes",
   "name": "Notes",
   "version": "0.2.0",
@@ -131,8 +134,7 @@ uncompressed tar — not something an installer verifies.
   "requires": [{ "kind": "indexer-engine" }],
   "artifacts": [
     {
-      "target": "x86_64-unknown-linux-musl",
-      "url": "https://example.org/tv.kroma.notes-x86_64-unknown-linux-musl.kmod",
+      "url": "https://example.org/tv.kroma.notes.kmod",
       "size": 8123456,
       "integrity": "sha256-…",
       "contentHash": "sha256-…"
@@ -142,7 +144,7 @@ uncompressed tar — not something an installer verifies.
 ```
 
 `tags` defaults to the local half of every point the module contributes, so a
-store can filter by `client` or `engine` without hand-authored tags. `apiVersion` is the
+store can filter by `client` or `engine` without hand-authored tags. `schemaVersion` is the
 manifest contract the bundle was built against, copied out of its `module.json`;
 a module declaring another one is listed with the reason and never offered.
 
@@ -163,7 +165,7 @@ Two sources, and the split matters:
   `<id>@<version>` **GitHub Releases themselves** — the ground truth the merged
   catalog is only a current-row projection of. Each asset carries a `digest`
   GitHub computed, which becomes `integrity` directly, so the published
-  `.sha256` sidecars never have to be fetched to trust a bundle.
+  `.sha256` files never have to be fetched to trust a bundle.
 
 A historical version therefore carries its artifacts and their integrity but not
 its manifest metadata: that lives inside the `.kmod`, and only the current row is
@@ -206,10 +208,10 @@ one the registry offered, and `engines` are enforced from the **bundle**. A
 registry that understates either to make a module look installable is refused at
 unpack time, and a wrong `integrity` fails when the downloaded bytes are hashed.
 
-`target` is the Rust triple the binary was built for; omit it only for a library
-module (manifest + frontend, no native binary), which runs anywhere. The server
-picks an exact target match first, then a platform-independent bundle, then a
-musl build of the same architecture, which is static, so it also runs on glibc.
+A version has one artifact, the same bundle on every platform, and it names no
+`target`. The server takes the artifact that names none and passes over any that
+does, so a module published only as native builds is listed with the reason and
+never offered.
 
 Host the documents and the `.kmod` files anywhere that serves them over https
 (GitHub Releases, GitHub Pages, an S3 bucket, a NAS), then add the URL under
@@ -223,3 +225,10 @@ a reverse-DNS prefix map (`com.acme` → some host) would let any module drag in
 registry the operator never approved, which is the opposite of what the list is
 for. A build-time tool may map prefixes to registries for its own resolution;
 the wire format does not depend on it.
+
+## Permissions
+
+An `index.json` row and a module record carry each version's `permissions` block, as
+its manifest declares it, so an install screen can show it before anything is
+downloaded. A row with no block reads as "does not say", and the screen says so. A
+bundle whose own block differs from its row is refused at install.

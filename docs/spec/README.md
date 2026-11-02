@@ -30,7 +30,7 @@ same folder. Learn the vocabulary once, use it everywhere.
 | [`playback/`](playback/) | Direct play, fallbacks, resume, continue watching | `area/server` `area/tv` |
 | [`accounts/`](accounts/) | Accounts, sessions, profiles, who may see what | `area/server` |
 | [`discovery/`](discovery/) | Finding a server on the network, pairing a television | `area/tv` |
-| [`modules/`](modules/) | `.kmod` bundles, the Store, out-of-process sidecars | `area/modules` |
+| [`modules/`](modules/) | `.kmod` bundles, the Store, modules as WebAssembly components | `area/modules` |
 | [`admin/`](admin/) | Running a server: settings, users, jobs, diagnostics | `area/server` |
 | [`surfaces/`](surfaces/) | What each client must do, and what it is allowed not to do | all client areas |
 

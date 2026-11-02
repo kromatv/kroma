@@ -356,7 +356,7 @@ while media is playing. If a change is not safe to make live, it is not a runtim
 Status: **AGREED**
 
 - **Roles, sessions, device binding and account deletion** are [`accounts/`](../accounts/).
-- **Module lifecycle, the Store and sidecar failure** are [`modules/`](../modules/).
+- **Module lifecycle, the Store and module failure** are [`modules/`](../modules/).
 - **Scan and refresh behaviour** is [`library/`](../library/); Admin only starts, shows and
   cancels those jobs.
 - **Per-platform packaging and the update delivery vehicle** are [`surfaces/`](../surfaces/).

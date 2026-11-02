@@ -10,7 +10,7 @@ function first(points: readonly Point[]): Point {
 
 function mod(over: Partial<AdminModule> & { id: string }): AdminModule {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     name: over.id,
     version: '1.0.0',
     enabled: true,
@@ -18,7 +18,6 @@ function mod(over: Partial<AdminModule> & { id: string }): AdminModule {
     removable: true,
     running: true,
     hasSidecar: true,
-    legacySeam: false,
     ...over,
   } as AdminModule;
 }
@@ -113,7 +112,6 @@ describe('pointGraph', () => {
       mod({
         id: 'scene',
         hasSidecar: false,
-        legacySeam: false,
         running: false,
         contributes: [{ point: 'p', id: 'a' }],
       }),

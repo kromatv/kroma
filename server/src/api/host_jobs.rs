@@ -1,7 +1,7 @@
-//! The `/_host/register-job` callback a sidecar module POSTs to so its scheduled
+//! The `/_host/register-job` callback a module POSTs to so its scheduled
 //! jobs join the core `JobManager` (admin Tâches, cron, run-now, history) like an
 //! in-core job. On each trigger, the registered closure resolves the module's
-//! current local port and blocking-POSTs `/_job/run/{key}`. Mounted on `/api`
+//! current endpoint and blocking-POSTs `/_job/run/{key}`. Mounted on `/api`
 //! next to `host_router`, guarded by the same shared host token.
 
 use std::collections::HashMap;
@@ -66,7 +66,7 @@ async fn register_job(
     state.jobs.register_remote(key, category, schedule, run);
     // register_remote seeds only the module's default schedule; overlay any
     // persisted admin override now that the key exists in the schedules map (the
-    // startup load_schedules ran before this sidecar was up, so it skipped it).
+    // startup load_schedules ran before this module was up, so it skipped it).
     state.jobs.load_schedules(&state.db);
     tracing::info!(module = %body.module_id, key, "registered remote job");
     StatusCode::NO_CONTENT.into_response()
@@ -91,7 +91,7 @@ fn remote_run(supervisor: Arc<Supervisor>, module_id: String, key: String) -> Re
         if (200..300).contains(&resp.status) {
             Ok(())
         } else {
-            anyhow::bail!("sidecar returned HTTP {}: {}", resp.status, resp.text());
+            anyhow::bail!("the module answered HTTP {}: {}", resp.status, resp.text());
         }
     })
 }

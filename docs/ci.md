@@ -92,15 +92,9 @@ because that crate's claim (RFC 480) is that a WebAssembly component is
 isolated the same way on each. Its tests build a guest component for
 `wasm32-wasip2`, so the job and the server's Rust shard both install that
 target. The job runs on the rust lane and keeps no cache, since three more
-entries would push the 10 GB budget below over. It is not part of `required`,
-so the spike cannot block `main`. Locally, run `rustup target add
-wasm32-wasip2` once before `cargo test --workspace` in `server/`.
-
-The server job lifts Ubuntu's AppArmor restriction on unprivileged user
-namespaces and sets `KROMA_REQUIRE_SANDBOX=1`, so the sandbox and leak tests
-(`kroma-sandbox`, `kroma-egress`) run there and fail rather than skip when the
-runner cannot start a process with no network. On a laptop that refuses
-namespaces they skip and say so.
+entries would push the 10 GB budget below over. It is not part of `required`.
+Locally, run `rustup target add wasm32-wasip2` once before `cargo test
+--workspace` in `server/`.
 
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the
@@ -251,6 +245,27 @@ on the pull request links the newest. A pull request from this repository is
 signed and notarized; a fork's run has no secrets, so it gets an unsigned dmg
 and no comment. It reads the release build's Rust cache and never writes one.
 
+## modules.yml: the module train
+
+Every module is a WebAssembly component, so one job on `ubuntu-latest` builds
+all of them: it adds the `wasm32-wasip2` target to the pinned toolchain, runs
+`bun run kroma build`, and uploads `dist/modules`, one `<id>.kmod` and its
+`.sha256` per module. The bundle is the same on every platform a server runs
+on, so nothing is built twice.
+
+`publish` then runs `kroma release` against the live catalog at
+`modules.kroma.tv`. A module whose version moved publishes on its own
+`<id>@<version>` prerelease; one whose bytes are identical is left as it is;
+one whose bytes moved under the same version is named in the run and left out,
+while the others still ship. `publish-modules.sh` cuts the releases, then
+refreshes the rolling `modules` prerelease that holds `modules.json`. A manual
+run with `dry_run` prints the plan and publishes nothing.
+
+The workflow runs on a push to `main` that touches `modules/`, the module
+crates under `server/crates`, `packages/cli`, `packages/module-sdk` or the
+toolchain pin. No lane reaches it: like the other release workflows, a change
+to it is linted as code in `ci.yml` and builds nothing there.
+
 ## Caches and the 10 GB budget
 
 | entry | size | written by |
@@ -262,7 +277,7 @@ and no comment. It reads the release build's Rust cache and never writes one.
 | `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
 | `synology-v3`, `synology-arm64-v2` | ~0.8 GB | synology.yml |
-| `kmod-*` x3 targets | ~0.35 GB | modules.yml |
+| `kmod` (wasm32-wasip2) | ~0.1 GB | modules.yml |
 
 About 9 GB with every entry warm, down from 11.9 GB, and the run that used
 to evict the Rust tree no longer does. Half of what is left is two pairs

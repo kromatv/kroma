@@ -36,6 +36,13 @@ pub(super) async fn decide(
     }
 }
 
+pub(super) async fn seal(Extension(policy): Extension<NetworkPolicyOf>) -> Response {
+    match tokio::task::spawn_blocking(move || policy.0.seal()).await {
+        Ok(seal) => Json(seal).into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
 pub(super) async fn flows(
     Extension(caller): Extension<Caller>,
     Extension(policy): Extension<NetworkPolicyOf>,

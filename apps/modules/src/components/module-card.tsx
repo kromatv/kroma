@@ -5,13 +5,12 @@ import { Divider } from '@kromatv/ui/kit/atoms/divider';
 import { Icon, type IconName } from '@kromatv/ui/kit/atoms/icon';
 import { Img } from '@kromatv/ui/kit/atoms/img';
 import { Text } from '@kromatv/ui/kit/atoms/text';
-import { CopyButton } from '@kromatv/ui/kit/molecules/copy-button';
 import type { ReactNode } from 'react';
 import type { ModuleEntry } from '#site/catalog';
-import { ModuleDownload, useDownloadPick } from '#site/components/module-download';
-import { downloads } from '#site/lib/artifacts';
+import { ModuleChecksum } from '#site/components/module-checksum';
+import { ModuleDownload } from '#site/components/module-download';
+import { download } from '#site/lib/artifacts';
 import { type Dependency, depEntries } from '#site/lib/deps';
-import { shortHash } from '#site/lib/ui';
 
 const ICON = 60;
 const ICON_RADIUS = 15;
@@ -55,19 +54,7 @@ function Requirements({
 function Footer({ id, sha256 }: Readonly<{ id: string; sha256: string | null }>) {
   return (
     <Row gap={8} mt="auto">
-      {sha256 ? (
-        <>
-          <Icon name="fingerprint" size={14} color="textDim" />
-          <Box shrink={1} minW={0}>
-            <Text color="textDim" variant="meta" font="mono" lines={1}>
-              sha256 {shortHash(sha256)}
-            </Text>
-          </Box>
-          <Box shrink={0}>
-            <CopyButton value={sha256} label="Copy hash" iconOnly />
-          </Box>
-        </>
-      ) : null}
+      {sha256 ? <ModuleChecksum sha256={sha256} /> : null}
       <Box shrink={0} ml="auto">
         <Button
           variant="ghost"
@@ -83,8 +70,7 @@ function Footer({ id, sha256 }: Readonly<{ id: string; sha256: string | null }>)
 }
 
 export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
-  const files = downloads(m);
-  const { picked, pick } = useDownloadPick(files);
+  const file = download(m);
   const deps = depEntries(m);
   const requires = Object.keys(m.engines ?? {}).length > 0 || deps.length > 0;
 
@@ -131,12 +117,12 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
             </Text>
           ) : null}
         </Column>
-        {picked ? <ModuleDownload files={files} picked={picked} onPick={pick} /> : null}
+        {file ? <ModuleDownload file={file} /> : null}
       </Row>
 
       <Divider />
       {requires ? <Requirements engines={m.engines} deps={deps} /> : null}
-      <Footer id={m.id} sha256={picked?.sha256 ?? null} />
+      <Footer id={m.id} sha256={file?.sha256 ?? null} />
     </Box>
   );
 }

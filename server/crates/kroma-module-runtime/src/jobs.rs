@@ -60,7 +60,7 @@ async fn run_job(
     };
     tracing::info!(job = %key, "job starting");
     let started = std::time::Instant::now();
-    let outcome = tokio::task::spawn_blocking(move || run(&host)).await;
+    let outcome = kroma_module_host::run_blocking(move || run(&host)).await;
     let elapsed_ms = started.elapsed().as_millis();
     match outcome {
         Ok(Ok(())) => {

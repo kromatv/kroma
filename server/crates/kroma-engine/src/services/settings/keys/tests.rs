@@ -38,7 +38,7 @@ fn every_key_that_carries_a_default_declares_who_may_reach_it() {
     assert!(
         undeclared.is_empty(),
         "a key reaches the store through one of public(), core_only() and \
-         sidecar_credential(), each of which declares a reach: {undeclared:?}"
+         module_credential(), each of which declares a reach: {undeclared:?}"
     );
 }
 
@@ -56,7 +56,7 @@ fn a_key_that_reads_like_a_credential_is_never_reachable_by_any_module() {
     assert!(
         served.is_empty(),
         "a credential is the core's alone unless the module that uses it declared \
-         it; declare these with core_only() or sidecar_credential(): {served:?}"
+         it; declare these with core_only() or module_credential(): {served:?}"
     );
 }
 
@@ -137,7 +137,7 @@ fn the_identities_the_server_mints_for_itself_are_declared_and_withheld() {
 }
 
 #[test]
-fn a_credential_the_sidecar_that_uses_it_configures_wants_a_declaration() {
+fn a_credential_the_module_that_uses_it_configures_wants_a_declaration() {
     assert_eq!(reach_of_setting("vpnWgConfig"), SettingReach::Declared);
     assert_eq!(
         reach_of_setting("remoteAccessToken"),

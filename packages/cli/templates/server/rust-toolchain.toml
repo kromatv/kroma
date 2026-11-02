@@ -1,3 +1,4 @@
 [toolchain]
 channel = "__RUST_CHANNEL__"
 components = ["clippy", "rustfmt"]
+targets = ["wasm32-wasip2"]

@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use axum::Json;
 use axum::routing::post;
 use kroma_module_sdk::db::{self, WantedRow};
-use kroma_module_sdk::engine::model::{MonitoredTitle, RequestKind};
+use kroma_module_sdk::domain::{MonitoredTitle, RequestKind};
 use kroma_module_sdk::host::testing::StubHost;
 use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::testing::serve;
@@ -139,11 +139,7 @@ pub(crate) async fn host(fakes: &Fakes) -> StubHost {
         .with_point(DOWNLOAD_GRAB, None, &base, &token)
         .with_point(INDEXER_DB, None, &base, &token)
         .with_point(INDEXER_SEARCH, None, &base, &token);
-    db::apply_migrations(
-        &host.store().get().unwrap(),
-        crate::rules::schema::MIGRATIONS,
-    )
-    .unwrap();
+    crate::rules::schema::install(host.store());
     host
 }
 

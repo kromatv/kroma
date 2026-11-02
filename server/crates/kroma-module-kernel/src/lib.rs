@@ -155,10 +155,10 @@ pub async fn apply_enabled_states(state: &SharedState) {
 /// The admin routers of every backend module, each behind its enabled-gate and
 /// nested under `/m/<id>`, merged into one router for the `/api/admin` subtree.
 ///
-/// The mount is the module's id for the same reason the out-of-process proxy
-/// uses it: a module declares no paths, so it can neither collide with a core
-/// route nor shadow another module, and an in-process module and a sidecar are
-/// reachable at the same URL.
+/// The mount is the module's id for the same reason the module proxy uses it:
+/// a module declares no paths, so it can neither collide with a core route nor
+/// shadow another module, and a module linked in-process and an installed one
+/// are reachable at the same URL.
 pub fn mount_admin(state: SharedState) -> Router<SharedState> {
     let mut router = Router::new();
     for module in &registry().servers {
@@ -293,6 +293,7 @@ mod gate_tests {
                 contributions: Arc::new(|_| Vec::new()),
                 official_modules: Arc::new(Vec::new),
                 permissions: Arc::new(|_| None),
+                network_providers: Arc::new(Vec::new),
             },
         );
         (state, dir)

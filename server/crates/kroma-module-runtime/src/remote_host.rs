@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
+#[cfg(any(target_family = "wasm", test))]
 use crate::env::Env;
 
-/// The out-of-process [`HostCtx`]: settings, events, sessions and jobs go to the
-/// core over the callback API; the databases (behind `storage`) are opened here,
-/// because SQLite in WAL mode is multi-process and a query has no business
-/// becoming an HTTP round-trip.
+/// The [`HostCtx`](kroma_module_host::HostCtx) a module runs against: settings,
+/// events, sessions and jobs go to the core over the callback API, and the
+/// databases (behind `storage`) are opened through the host, which holds the
+/// files and applies the grant the module's manifest declared.
 #[derive(Clone)]
 pub struct RemoteHost {
     pub(crate) inner: Arc<Inner>,
@@ -30,6 +31,7 @@ pub(crate) struct Inner {
 }
 
 impl RemoteHost {
+    #[cfg(any(target_family = "wasm", test))]
     pub(crate) fn new(env: &Env) -> anyhow::Result<Self> {
         Ok(Self {
             inner: Arc::new(Inner {
@@ -40,7 +42,11 @@ impl RemoteHost {
                 #[cfg(feature = "storage")]
                 store: kroma_sqlite::open(&env.store_path())?,
                 #[cfg(feature = "storage")]
-                core: kroma_sqlite::init_scoped(&env.db_path, &env.module_id, &env.grant())?,
+                core: kroma_sqlite::init_scoped(
+                    &env.db_path,
+                    &env.module_id,
+                    &kroma_sqlite::Grant::none(),
+                )?,
                 core_url: env.core_url.clone(),
                 module_token: env.module_token.clone(),
                 services: RwLock::new(HashMap::new()),

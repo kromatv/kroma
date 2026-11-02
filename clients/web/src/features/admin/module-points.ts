@@ -38,8 +38,8 @@ export interface Point {
   unanswered: boolean;
 }
 
-// A module with no process of its own is never "running": its code is co-linked
-// into another sidecar, so treating it as down would be a false alarm.
+// A library module is never "running": its code is co-linked into another
+// module, so treating it as down would be a false alarm.
 function isLive(m: AdminModule): boolean {
   return m.enabled && (!m.hasSidecar || m.running);
 }

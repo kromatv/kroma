@@ -35,10 +35,10 @@ export interface CreateOptions {
 const KINDS: { value: Kind; label: string; hint: string }[] = [
   {
     value: 'full',
-    label: 'A page and a sidecar',
-    hint: 'a React page in the admin, a Rust process behind it',
+    label: 'A page and a component',
+    hint: 'a React page in the admin, a Rust component behind it',
   },
-  { value: 'server', label: 'A sidecar only', hint: 'a Rust process, no page' },
+  { value: 'server', label: 'A component only', hint: 'Rust built to WebAssembly, no page' },
   { value: 'ui', label: 'A page only', hint: 'a React page over the core API' },
 ];
 
@@ -103,7 +103,7 @@ async function ask(options: CreateOptions, cwd: string): Promise<Answers> {
       : (options.storage ??
         answer(
           await p.confirm({
-            message: 'Does the sidecar keep its own database?',
+            message: 'Does the component keep its own database?',
             initialValue: false,
           }),
         ));

@@ -38,4 +38,10 @@ pub trait Transport: Send + Sync + 'static {
     fn accepts(&self, url: &str) -> bool;
 
     fn send(&self, request: &Request<'_>) -> Result<Response>;
+
+    /// Send each of `requests`, none of them waiting on another where the
+    /// transport can do that. Answers in the same order.
+    fn send_all(&self, requests: &[Request<'_>]) -> Vec<Result<Response>> {
+        requests.iter().map(|request| self.send(request)).collect()
+    }
 }

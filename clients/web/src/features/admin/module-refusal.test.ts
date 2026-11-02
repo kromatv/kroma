@@ -11,6 +11,8 @@ const entry = (over: Partial<StoreModule>): StoreModule => ({
   version: '0.4.1',
   description: '',
   library: false,
+  widensPermissions: false,
+  official: true,
   engines: {},
   dependencies: {},
   optionalDependencies: {},
@@ -55,12 +57,12 @@ describe('refusalText', () => {
     expect(refusalText(bare, t)).toContain('"range":"≥ 0.1.40"');
   });
 
-  it('words the schema, platform and unknown-engine refusals', () => {
+  it('words the schema, native and unknown-engine refusals', () => {
     expect(refusalText(entry({ refusal: { kind: 'schema', built: 1, speaks: 2 } }), t)).toBe(
       'admin.modulesRefusalSchema',
     );
-    expect(refusalText(entry({ refusal: { kind: 'platform', target: 'x' } }), t)).toBe(
-      'admin.modulesRefusalPlatform',
+    expect(refusalText(entry({ refusal: { kind: 'native' } }), t)).toBe(
+      'admin.modulesRefusalNative',
     );
     expect(refusalText(entry({ refusal: { kind: 'unknownEngine', engine: 'ffmpeg' } }), t)).toBe(
       'admin.modulesRefusalUnknownEngine {"engine":"ffmpeg"}',
@@ -85,8 +87,8 @@ describe('refusalText', () => {
     const blocked = (refusal: StoreModule['refusal']) =>
       entry({ installedVersion: '0.3.13', updateBlocked: true, refusal });
 
-    expect(refusalText(blocked({ kind: 'platform', target: 'x' }), t)).toBe(
-      'admin.modulesRefusalUpdatePlatform {"version":"0.4.1"}',
+    expect(refusalText(blocked({ kind: 'native' }), t)).toBe(
+      'admin.modulesRefusalUpdateNative {"version":"0.4.1"}',
     );
     expect(refusalText(blocked({ kind: 'schema', built: 1, speaks: 2 }), t)).toBe(
       'admin.modulesRefusalUpdateSchema {"version":"0.4.1"}',

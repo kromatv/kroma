@@ -15,11 +15,11 @@
 //! enabling never stalls the request on a multi-MB download.
 //!
 //! The connector must never outlive the module. Stopping this module (the admin
-//! toggle, an uninstall, a server shutdown) SIGTERMs the sidecar, which runs
-//! [`RemoteModule::on_disable`] → [`RemoteAccess::shutdown`]: the reconcile loop
-//! is latched off and the child is killed before the process exits. A generation
-//! that missed that window (SIGKILL, a crash) leaves an untracked `cloudflared`
-//! still serving the tunnel, so the next start sweeps for one before reconciling.
+//! toggle, an uninstall, a server shutdown) runs [`RemoteModule::on_disable`] →
+//! [`RemoteAccess::shutdown`]: the reconcile loop is latched off and the child
+//! is killed before the module stops. A generation that missed that window
+//! (SIGKILL, a crash) leaves an untracked `cloudflared` still serving the
+//! tunnel, so the next start sweeps for one before reconciling.
 
 #![allow(clippy::result_large_err)]
 

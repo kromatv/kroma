@@ -26,9 +26,9 @@ pub const DEFAULT_EPISODE_FILE: &str =
 impl NamingTemplates {
     /// Read the templates through whatever settings seam the caller holds:
     /// `setting` is `(key, default) -> value`, which is the shape of both the
-    /// core's `Settings::get_str` and a sidecar's `HostCtx::setting_str`. One
+    /// core's `Settings::get_str` and a module's `HostCtx::setting_str`. One
     /// reader rather than one per seam, because two would drift and the same file
-    /// would then be named differently depending on which process imported it.
+    /// would then be named differently depending on which side imported it.
     ///
     /// A template an admin blanked falls back to its default: an empty template
     /// renders empty, so every import would land on one path and overwrite the

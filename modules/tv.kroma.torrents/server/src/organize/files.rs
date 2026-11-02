@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use kroma_module_sdk::engine::model::MediaFile;
+use kroma_module_sdk::domain::MediaFile;
 
 pub(super) fn current_abs(file: &MediaFile) -> Option<PathBuf> {
     file.abs_path

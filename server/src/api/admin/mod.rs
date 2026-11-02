@@ -82,8 +82,8 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(backup::routes())
         .merge(updates::routes());
     router = router.merge(kroma_module_kernel::mount_admin(state.clone()));
-    // Out-of-process modules with admin routes: `/api/admin/m/<id>/*` is
-    // reverse-proxied to that module's sidecar. The mount is the module's id, so
+    // Installed modules with admin routes: `/api/admin/m/<id>/*` is
+    // reverse-proxied to that module. The mount is the module's id, so
     // it needs no declaration and two modules cannot claim the same path.
     // Explicit wildcard routes rather than a `.fallback`: axum 0.8's `nest`
     // drops the nested router's fallback, and its matchit allows a param route
@@ -93,10 +93,10 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .route("/m/{id}/{*rest}", axum::routing::any(admin_module_proxy))
 }
 
-// Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`'s sidecar; 404 when no
-// such module is running. The sidecar sees the path below its own mount, so it
+// Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`; 404 when no
+// such module is running. The module sees the path below its own mount, so it
 // serves the same routes whether or not the core still proxies to it. The
-// sidecar gates the specific capability itself; the floor is applied here so an
+// module gates the specific capability itself; the floor is applied here so an
 // unauthenticated caller never reaches one that forgot to.
 async fn admin_module_proxy(
     Extension(sup): Extension<Arc<Supervisor>>,

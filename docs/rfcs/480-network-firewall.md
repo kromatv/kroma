@@ -423,7 +423,7 @@ The core keeps the same table for its own flows (`metadata`, `artwork`, `themes`
 steered the same way.
 
 With #487, the install and update screens list a module's purposes and destinations in
-French before consent, and an update that widens them asks again. Neither screen exists yet.
+French before consent, and an update that widens them asks again.
 
 ### Networks and middleware
 
@@ -499,7 +499,9 @@ Connexions ships (#483). This alone answers "what does my server talk to".
 choosing their proxy.
 
 **Phase 3, contain.** Unix sockets for the module seam (#485), the two strict tiers (#486,
-#489), the Watch scanner (#490), and core-brokered module calls.
+#489), the Watch scanner (#490), and core-brokered module calls. Status: the seam and the
+brokered calls are built. The OS tiers are not needed once every module is a component
+(Phase 3d): the namespace tier is gone, and the uid tier and Watch are dropped.
 
 **Phase 3b, permissions and audit.** The `permissions` block (#508) and its consent
 screen (#487), filesystem and `run` enforcement in the namespace tier (#488), `kroma
@@ -512,14 +514,23 @@ points, several networks at once, and the VPN module moved onto `network` (#491,
 **Phase 3d, WebAssembly components.** In order:
 
 1. A wasmtime host with a minimal WIT world, tested on Linux, macOS and Windows runners
-   (#509, in review in #523).
+   (#509, merged in #523).
 2. The full host API as WIT, behind the same SDK traits, so a module's code does not
-   change (#510).
-3. The HTTP-only modules move first (#511).
-4. The userspace WireGuard network (#512) and the discovery capability.
-5. The torrent engine, last, behind its benchmark (#514).
+   change (#510). Built.
+3. The modules that only need the host API move first (#511). Acquisition and torrents
+   stop linking the core engine before they move (#551). Built: every module is a
+   component, and the request workflows live in `kroma-requests`.
+4. The userspace WireGuard network (#512), the discovery capability (#552), the remote
+   tunnel (#553), and ffmpeg operations and inference (#554). Discovery is built. The
+   others are not built as written: the VPN module runs `wireproxy`, the remote module
+   runs `cloudflared`, and whisper runs `ffmpeg`, as helper programs the host starts.
+   Inference runs inside the component, several times slower than native.
+5. The torrent engine, last, behind its benchmark (#514). Not built as written: the
+   torrents module runs `rqbit` as a helper, its peers through the gateway at 379 to
+   398 MiB/s on loopback, the same as before.
 6. A module from any registry other than the official one is accepted as a component
-   only (#513).
+   only (#513). Built, and wider: a server refuses a native bundle from every registry
+   and from an upload.
 
 **Phase 4, UDP and inbound on a network.** A network that carries UDP, either a userspace
 WireGuard inside the gateway (#512) or a wireproxy replacement, so DHT and uTP can run
@@ -596,16 +607,15 @@ sealed (#494). Inbound peers through the provider's port forwarding.
 
 ## Unresolved
 
-- **The storage grant under per-module uids.** A module with `storage` opens the core
-  database file itself today. Either the file becomes group-readable for granted modules,
-  which weakens the tier, or granted access moves behind the host API. The module host
-  maintainers decide this before Phase 3.
-- **LAN multicast.** `net.host` is the first answer. A discovery broker in the core,
-  which sends SSDP searches and registers mDNS records on a module's behalf, would remove
-  it for `tv.kroma.roku` and `tv.kroma.mdns`. Not designed yet.
-- **cloudflared under a strict tier.** It does not dial its edge through a SOCKS proxy as far
-  as this RFC's author knows. The remote module may need `net.host`, or an nftables
-  allowance limited to port 7844, until that is checked.
+- **The storage grant.** Answered (#555): the component has no SQLite. The host holds the
+  module's own file and the core database, and enforces the grant with SQLite's authorizer.
+- **LAN multicast.** Answered (#552): discovery is a host capability. A module declares
+  `net.discovery` (`mdns`, `ssdp`), and the host's `lan` import publishes records and sends
+  searches for it. `tv.kroma.mdns` and `tv.kroma.roku` declare no `net.host`.
+- **cloudflared.** Answered (#553): the tunnel is `cloudflared`, a helper program the host
+  runs for `tv.kroma.remote`, pinned by sha256 in its manifest. It dials Cloudflare's edge
+  from the host, which the module's `net.host` declares, and does not go through the
+  gateway.
 - **Whether the journal and the rules get a permission of their own.** #516 gates both on
   an existing admin permission (see
   [networking](../networking.md#what-is-recorded-and-what-never-is)). A dedicated one is

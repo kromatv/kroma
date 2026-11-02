@@ -68,7 +68,7 @@ rusqlite = { version = "0.40", features = ["bundled", "hooks"] }
 # and the binary (router + handlers).
 axum = { version = "0.8", features = ["macros", "ws"] }
 # The loopback transport's pooled client. hyper rather than a batteries-included
-# client because kroma-http reaches every sidecar and axum already puts these
+# client because kroma-http reaches every module and axum already puts these
 # three there: on tv.kroma.mdns, reqwest cost 666 KB of binary against hyper's
 # 304 KB, for TLS, proxy and redirect machinery a call to 127.0.0.1 never uses.
 hyper = { version = "1", features = ["client", "http1"] }
@@ -76,7 +76,7 @@ hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
 http-body-util = "0.1"
 bytes = "1"
 # The supervisor's own client: it fetches a `.kmod` over https, so it carries the
-# TLS stack no sidecar has to.
+# TLS stack no module has to.
 reqwest = { version = "0.12", default-features = false }
 # SMTP for operator-owned credential-reset email. rustls, never native-tls: the
 # TLS stack is already rustls everywhere above.
@@ -125,6 +125,8 @@ kroma-module-runtime = { path = "crates/kroma-module-runtime" }
 kroma-module-supervisor = { path = "crates/kroma-module-supervisor" }
 # Push transports: Web Push (self-hosted), APNs and FCM.
 kroma-push = { path = "crates/kroma-push" }
+# The request and monitoring workflows, below the engine so a module runs them too.
+kroma-requests = { path = "crates/kroma-requests" }
 # The module SDK facade (ABOVE engine): the single crate every module depends on.
 # Re-exports the manifest layer + the engine/host/domain/http surface modules use.
 kroma-module-sdk = { path = "crates/kroma-module-sdk" }
@@ -133,17 +135,17 @@ kroma-primitives = { path = "crates/kroma-primitives" }
 # Dev-only leaf: the `TempDir` every test harness scratches in.
 kroma-testing = { path = "crates/kroma-testing" }
 kroma-domain = { path = "crates/kroma-domain" }
-# The JSON a module and the host exchange; what kroma-domain re-exports of itself to a sidecar.
+# The JSON a module and the host exchange; what kroma-domain re-exports of itself to a module.
 kroma-module-wire = { path = "crates/kroma-module-wire" }
 # The SQLite pool and the storage grant, the one piece of kroma-db a module links.
 kroma-sqlite = { path = "crates/kroma-sqlite" }
+kroma-sqlite-guest = { path = "crates/kroma-sqlite-guest" }
 kroma-i18n = { path = "crates/kroma-i18n" }
 # Reading and re-encoding one media input, below the engine. No database, so a
 # module links it without the core's forty tables.
 kroma-media = { path = "crates/kroma-media" }
 kroma-db = { path = "crates/kroma-db" }
 kroma-http = { path = "crates/kroma-http" }
-kroma-sandbox = { path = "crates/kroma-sandbox" }
 kroma-egress = { path = "crates/kroma-egress" }
 kroma-module-host = { path = "crates/kroma-module-host" }
 # The server-side module kernel: the compile-time composition root (registers
@@ -162,7 +164,7 @@ hotpatch = ["dep:dioxus-devtools"]
 default = []
 
 # NB: there is no `torrent-rqbit` knob here any more. The download engine is a
-# SIDECAR (tv.kroma.torrents), and its `.kmod` turns librqbit on through its own
+# module (tv.kroma.torrents), and its `.kmod` turns librqbit on through its own
 # `[package.metadata.kmod] features = ["rqbit"]`, which modules:pack forwards to
 # cargo. The core forwarding the same feature only pulled librqbit into the
 # server binary's dependency graph for code nothing in `src/` reaches.
@@ -170,9 +172,9 @@ default = []
 # `semantic-embeddings` and `whisper-local` / `-metal` / `-cuda` / `-accelerate`
 # are gone. They forwarded into the vector and whisper module crates, which
 # compiled candle into THIS binary for code no file under `src/` reaches: both are
-# reached over a point, and each sidecar's `.kmod` selects its own backend through
+# reached over a point, and each module's `.kmod` selects its own backend through
 # its `[package.metadata.kmod] features`. A build flag here could not change what
-# a separately packed sidecar links, so the flags only cost build time and bytes.
+# a separately packed module links, so the flags only cost build time and bytes.
 
 [dependencies]
 # The binary is now a thin HTTP shell: the router + handlers (src/api) over the
@@ -214,9 +216,9 @@ base64 = { workspace = true }
 walkdir = { workspace = true }
 sysinfo = { workspace = true }
 # NB: kroma-torrent and kroma-acquisition are deliberately NOT deps of the binary.
-# Both verticals moved out of process - the core reaches them through the port
+# Both verticals moved into modules - the core reaches them through the port
 # clients in main.rs (`AcquisitionSearchClient`, `TorrentFetchClient`, resolved to
-# their sidecars), so `src/` names neither crate. They stayed listed here after the
+# their modules), so `src/` names neither crate. They stayed listed here after the
 # cutover and dragged librqbit into the binary's dependency graph for nothing.
 # The module kernel (composition root): registers every compile-time module's
 # `MODULE` const, collects their ServerModules, and drives the enable/disable +
@@ -278,6 +280,7 @@ tempfile = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 # The scratch directory the TLS test writes its cert pair into.
 kroma-testing = { workspace = true }
+kroma-db = { workspace = true, features = ["testing"] }
 
 # musl's malloc serializes under our thread mix (tokio + rayon + candle + tantivy);
 # mimalloc removes that contention. Linux-only; macOS dev keeps the system

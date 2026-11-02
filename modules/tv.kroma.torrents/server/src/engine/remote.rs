@@ -216,7 +216,7 @@ async fn status_h<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'st
     axum::extract::State(host): axum::extract::State<S>,
     axum::Json(call): axum::Json<Call>,
 ) -> axum::Json<Option<TorrentStatus>> {
-    let found = tokio::task::spawn_blocking(move || {
+    let found = kroma_module_sdk::host::run_blocking(move || {
         embedded(&host)
             .ok()?
             .status(&call.args.client_ref)

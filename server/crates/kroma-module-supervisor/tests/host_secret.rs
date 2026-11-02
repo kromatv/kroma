@@ -1,4 +1,4 @@
-//! The `/_host/secret` callback: how a sidecar gets a credential the operator
+//! The `/_host/secret` callback: how a module gets a credential the operator
 //! configured, by name.
 //!
 //! It replaced `HostCtx::tmdb_api_key()`. The point of naming it is that the host

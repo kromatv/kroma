@@ -19,7 +19,7 @@ pub const TTL_SECS: i64 = 12 * 3600;
 
 /// Where the signing key is persisted. Declared `core_only` in
 /// [`super::settings::keys`], which is what keeps the module host callback from
-/// handing it to a sidecar: anyone holding it forges a ticket for any device.
+/// handing it to a module: anyone holding it forges a ticket for any device.
 pub const SIGNING_KEY_SETTING: &str = "mediaTicketKey";
 
 const SIG_HEX_LEN: usize = 32;

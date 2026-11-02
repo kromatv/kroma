@@ -10,7 +10,7 @@ const NO_INPUT_FLAG: &str = "\"-version\"";
 
 const SCANNED_ROOTS: [&str; 2] = ["server", "modules"];
 const EXEMPT: [&str; 4] = [
-    "server/crates/kroma-media/src/input.rs",
+    "server/crates/kroma-primitives/src/input.rs",
     "server/crates/kroma-media/src/input/",
     "server/crates/kroma-media/tests/",
     "server/crates/kroma-testing/",

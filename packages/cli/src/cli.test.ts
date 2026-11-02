@@ -21,7 +21,6 @@ describe('cli', () => {
       'check',
       'install',
       'login',
-      'plan',
       'cargo',
       'registry',
       'serve',

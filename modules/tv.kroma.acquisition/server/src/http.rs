@@ -15,7 +15,7 @@ where
     F: FnOnce() -> anyhow::Result<T> + Send + 'static,
     T: Send + 'static,
 {
-    match tokio::task::spawn_blocking(f).await {
+    match kroma_module_sdk::host::run_blocking(f).await {
         Ok(Ok(v)) => Ok(v),
         Ok(Err(e)) => Err(bad(format!("{e:#}"))),
         Err(_) => Err(json_error(

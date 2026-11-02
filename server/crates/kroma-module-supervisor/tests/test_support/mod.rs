@@ -12,7 +12,7 @@ use kroma_module_host::{
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
 use tower::ServiceExt;
 
-/// The token every sidecar shares, which authenticates a caller without naming it.
+/// The token every module shares, which authenticates a caller without naming it.
 pub const FABRIC: &str = "fabric-host-token";
 
 pub const NOTHING_WITHHELD: SettingReachOf = SettingReachOf(|_| SettingReach::Any);
@@ -44,6 +44,7 @@ impl NetworkPolicy for RecordingPolicy {
             proxy: None,
             rule: Some("stub".into()),
             reason: None,
+            private_allowed: false,
         }
     }
 

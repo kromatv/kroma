@@ -59,11 +59,7 @@ pub async fn run(
 }
 
 async fn serve_once(s: Serving) {
-    let app = api::router(
-        s.state.clone(),
-        s.supervisor.clone(),
-        s.subscriptions.clone(),
-    );
+    let app = api::router(s.state.clone(), s.supervisor.clone());
     let seam = api::seam::router(
         s.state.clone(),
         s.supervisor.clone(),
@@ -84,7 +80,8 @@ async fn serve_once(s: Serving) {
 }
 
 // A patch drops the serving future, so the shutdown path cannot live inside it:
-// sidecars survive their parent, and failing to stop them orphans them.
+// the programs a module starts outlive the server, and failing to stop them
+// orphans them.
 fn spawn_teardown(s: Serving) {
     tokio::spawn(async move {
         super::serve::shutdown_signal().await;

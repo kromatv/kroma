@@ -22,11 +22,6 @@ kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features 
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
 # The module now owns its admin orchestration + routes (over the HostCtx seam):
 # it needs the DB rows, wire DTOs, shared helpers, the Torznab engine, and axum.
-# The module owns its `indexers` table now (schema + typed queries), so it talks
-# to SQLite directly through the pool kroma-db hands out.
-rusqlite = { version = "0.40", features = ["bundled"] }
-axum = { version = "0.8", features = ["macros", "ws"] }
-tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 tracing = "0.1"
 serde = { version = "1", features = ["derive"] }
@@ -37,10 +32,8 @@ quick-xml = "0.42"
 regex = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 indexmap = { version = "2", features = ["serde"] }
-# XPath selectors (libxml2, C). A minority of definitions use `selector`s in
-# XPath; the engine falls back to a clear error when they are hit without this
-# feature, so the default build stays pure-Rust and musl-friendly.
-libxml = { version = "0.3", optional = true }
+tar = { version = "0.4", default-features = false }
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 
 [features]
 default = []
@@ -52,11 +45,29 @@ kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features 
 # `oneshot`, to drive the point's routes without binding a port.
 tower = { version = "0.5", features = ["util"] }
 
-# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
-# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
-# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
-# process and the supervisor respawns it. Defined per module because a profile is
-# only honoured at a workspace root, and each module is now its own workspace.
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+# The module owns its `indexers` table now (schema + typed queries), so it talks
+# to SQLite directly through the pool kroma-db hands out.
+rusqlite = { version = "0.40", features = ["bundled"] }
+# XPath selectors (libxml2, C). A minority of definitions use `selector`s in
+# XPath; the engine falls back to a clear error when they are hit without this
+# feature, so the default build stays pure-Rust and musl-friendly.
+libxml = { version = "0.3", optional = true }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+# The same `rusqlite` API with no SQLite in the component: every statement goes
+# to the host. `lib.rs` names it `rusqlite` on this target.
+kroma-sqlite-guest = { path = "../../../server/crates/kroma-sqlite-guest" }
+
+# The profile `kroma build` builds this component with: release + `panic =
+# "abort"`, which drops the unwinding tables at no speed cost (opt-level stays
+# 3). Safe for a component: a panic traps its instance, and the host starts a
+# fresh one. Defined per module because a profile is only honoured at a
+# workspace root, and each module is its own workspace.
 # Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
 # workspace root, and this module is its own workspace, so `inherits = "release"`
 # below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen

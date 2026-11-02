@@ -4,17 +4,6 @@ export const mb = (n?: number | null) => {
   return `${(n / 1048576).toFixed(1)} MB`;
 };
 
-const PLATFORMS: Record<string, string> = {
-  'aarch64-apple-darwin': 'macOS arm64',
-  'x86_64-apple-darwin': 'macOS x64',
-  'aarch64-unknown-linux-musl': 'Linux arm64',
-  'x86_64-unknown-linux-musl': 'Linux x64',
-};
-
-/** A build target triple as the platform a reader recognises. */
-export const platformLabel = (target?: string | null) =>
-  target ? (PLATFORMS[target] ?? target) : 'Universal';
-
 /** The first and last eight hex characters, which is how a checksum is compared
  *  by eye. */
 export const shortHash = (hash: string) =>

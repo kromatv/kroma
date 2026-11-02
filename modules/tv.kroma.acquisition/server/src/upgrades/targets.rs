@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use kroma_module_sdk::db::WantedRow;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_scene::QualityProfile;
 
 use crate::rules::files::{JudgedFile, unit_below_target};

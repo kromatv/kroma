@@ -1,3 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::path::Path;
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -41,9 +44,51 @@ impl WasmHost {
     /// import the host does not provide fails here rather than on first call.
     pub fn compile(&self, wasm: &[u8]) -> Result<ModuleComponent, HostError> {
         let component = Component::new(&self.engine, wasm).map_err(HostError::Compile)?;
+        self.linked(&component)
+    }
+
+    /// [`Self::compile`], keeping the machine code at `copy` so the next start of
+    /// the same `key` skips it. `key` names the component's bytes. The caller keeps
+    /// `copy` where no module can write: it runs as native code.
+    pub fn compile_keeping(
+        &self,
+        wasm: &[u8],
+        copy: &Path,
+        key: &str,
+    ) -> Result<(ModuleComponent, Readied), HostError> {
+        let stamp = copy.with_extension("stamp");
+        let expected = self.stamp_for(key);
+        if std::fs::read_to_string(&stamp).is_ok_and(|found| found == expected) {
+            // SAFETY: this host wrote `copy` under this stamp, which names the
+            // component and this engine's compatibility, in a folder no module holds.
+            if let Ok(component) = unsafe { Component::deserialize_file(&self.engine, copy) } {
+                return Ok((self.linked(&component)?, Readied::FromCache));
+            }
+        }
+        let machine_code = self.engine.precompile_component(wasm).map_err(HostError::Compile)?;
+        let kept = copy
+            .parent()
+            .map_or(Ok(()), std::fs::create_dir_all)
+            .and_then(|()| std::fs::write(copy, &machine_code))
+            .and_then(|()| std::fs::write(&stamp, &expected));
+        if let Err(error) = kept {
+            tracing::warn!(%error, "the compiled component was not kept");
+        }
+        // SAFETY: `machine_code` was produced by this engine a moment ago.
+        let component = unsafe { Component::deserialize(&self.engine, &machine_code) }.map_err(HostError::Compile)?;
+        Ok((self.linked(&component)?, Readied::Compiled))
+    }
+
+    fn stamp_for(&self, key: &str) -> String {
+        let mut hasher = DefaultHasher::new();
+        self.engine.precompile_compatibility_hash().hash(&mut hasher);
+        format!("{key}-{:x}", hasher.finish())
+    }
+
+    fn linked(&self, component: &Component) -> Result<ModuleComponent, HostError> {
         let pre = self
             .linker
-            .instantiate_pre(&component)
+            .instantiate_pre(component)
             .map_err(HostError::Instantiate)?;
         let pre = ModulePre::new(pre).map_err(HostError::Instantiate)?;
         Ok(ModuleComponent {
@@ -51,6 +96,13 @@ impl WasmHost {
             ticker: Arc::clone(&self.ticker),
         })
     }
+}
+
+/// How a component came to be ready: compiled now, or read from an earlier compile.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Readied {
+    Compiled,
+    FromCache,
 }
 
 /// A compiled, linked component, ready to instantiate any number of times.

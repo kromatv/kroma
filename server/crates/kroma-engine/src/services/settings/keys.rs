@@ -47,7 +47,7 @@ impl Declared {
         self.declare(key, SettingReach::CoreOnly, value);
     }
 
-    fn sidecar_credential(&mut self, key: &'static str, value: Value) {
+    fn module_credential(&mut self, key: &'static str, value: Value) {
         self.declare(key, SettingReach::Declared, value);
     }
 
@@ -116,8 +116,8 @@ fn declared() -> Declared {
     m.public("remoteAccess", json!(false));
     m.public("remoteUrl", json!(""));
     // Cloudflare Tunnel token for the `cloudflared` child the remote-access
-    // sidecar supervises. Never returned to clients.
-    m.sidecar_credential("remoteAccessToken", json!(""));
+    // module supervises. Never returned to clients.
+    m.module_credential("remoteAccessToken", json!(""));
     m.public("upLimit", json!("Illimité"));
     m.public("https", json!("Préférées"));
     // Self-signed HTTPS listener: browsers only expose Web Crypto (passkeys) on a
@@ -179,9 +179,9 @@ fn declared() -> Declared {
     // How many downloads may hold an engine slot at once (0 = no cap); the rest
     // wait in the queue.
     m.public("torrentMaxActive", json!(0));
-    // The WireGuard tunnel the bridge sidecar brings up. Never returned in a
+    // The WireGuard tunnel the VPN module brings up. Never returned in a
     // settings view.
-    m.sidecar_credential("vpnWgConfig", json!(""));
+    m.module_credential("vpnWgConfig", json!(""));
     m.public("vpnLocalPort", json!(25345));
     m.public("vpnKillSwitch", json!(false));
     m.public("vpnCheckUrl", json!("https://api.ipify.org"));
@@ -228,7 +228,7 @@ fn declared() -> Declared {
     m.core_only("notifications.apns.teamId", json!(""));
     m.core_only("notifications.fcm.serviceAccount", json!(""));
     // Signs the media tickets the byte routes accept in a URL (ACCT-35). Minted on
-    // first boot, and the core's alone: a sidecar holding it forges a ticket for
+    // first boot, and the core's alone: a module holding it forges a ticket for
     // any device and reads any library.
     m.core_only("mediaTicketKey", json!(""));
     // How account email leaves: `manual` | `smtp` | `relay`. Empty defers to the
@@ -236,7 +236,7 @@ fn declared() -> Declared {
     m.public("emailDelivery", json!(""));
     // This server at the mail relay: the P-256 key that signs every call, the
     // sealed instance the relay answered with, and the origin it was minted
-    // for. Minted and written by the server itself; a sidecar never sees them.
+    // for. Minted and written by the server itself; a module never sees them.
     m.core_only("mailRelay.identityKey", json!(""));
     m.core_only("mailRelay.instance", json!(""));
     m.core_only("mailRelay.instanceOrigin", json!(""));

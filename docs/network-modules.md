@@ -7,9 +7,8 @@ modules reached over points, like everything else (see
 [modules/README.md](../modules/README.md#calling-another-module)). How routing
 works is in [networking](networking.md).
 
-Both points are planned, `network` in #491 and `network-policy` in #493: this
-page is the contract they are being built to. Until `network` lands the one
-network is `vpn`, which the VPN module answers on `tv.kroma.vpn/proxy`.
+`network` is on `main` (#491). `network-policy` is planned (#493), and this
+page is the contract it is being built to.
 
 ## Providing a network
 
@@ -19,41 +18,41 @@ core-called point `network`:
 
 ```json
 "contributes": [{ "point": "network" }],
-"permissions": { "net": { "host": true } }
+"permissions": { "net": { "host": true }, "run": ["wireproxy"] }
 ```
 
-`net.host` is needed because the tunnel itself has to reach the internet from the
-host. It is the permission the install screen shows in red, so a network module
-should do nothing else.
+A component cannot listen on a socket, so the tunnel is a program the module
+starts: named in `run`, pinned under `helpers`, and started by the host. Only a
+first-party module may start one. `net.host` says that program reaches the
+internet from the host. It is the permission the install screen shows in red, so
+a network module should do nothing else.
 
 ### `network/list`
 
-The core asks every provider what it offers, and asks again when a provider says
-its networks changed (an event on the bus) or every 30 seconds.
+The core asks every provider what it offers, at most every 5 seconds.
 
 ```json
 [
   {
     "name": "vpn-ch",
     "label": "WireGuard, Zurich",
-    "endpoint": { "socket": "/data/run/modules/tv.kroma.vpn/vpn-ch.sock" },
+    "endpoint": { "address": "127.0.0.1:25345", "username": "kroma", "password": "..." },
     "carries": { "tcp": true, "udp": false, "dns": true },
-    "health": { "up": true, "exit": "185.x.x.x", "checkedAt": 1793356800000 }
+    "health": { "up": true, "exit": "185.x.x.x" }
   }
 ]
 ```
 
 - `name` is what rules refer to. It is unique across providers; a clash is
   reported and the second one is ignored.
-- `endpoint` is a SOCKS5 server the gateway dials: a Unix socket the supervisor
-  created in the module's own run directory, or `{ "address": "127.0.0.1:25345",
-  "username": "...", "password": "..." }`. It must require credentials or live
-  where only the core can reach it. The gateway is its only client.
+- `endpoint` is a SOCKS5 server the gateway dials. It must require credentials,
+  because the gateway is its only client and other processes share loopback.
 - `carries.dns` means the network resolves names itself when handed one, which is
-  what keeps DNS inside the tunnel. A network that cannot is handed addresses the
-  gateway resolved, and the journal says so.
+  what keeps DNS inside the tunnel.
 - `health.up: false` makes every connection routed to the network fail at once.
-  Nothing falls back to direct.
+  Nothing falls back to direct. A provider that is enabled and does not answer
+  counts the same for a module that must never go direct: it is told the seal is
+  broken, never that there is no network.
 
 ### Chaining
 

@@ -13,11 +13,6 @@ export const dev = defineCommand({
       required: false,
       description: 'The module directory (default: here)',
     },
-    target: {
-      type: 'string',
-      valueHint: 'triple',
-      description: 'Cross-compile the sidecar for the server',
-    },
     ...serverArgs,
   },
   run: ({ args }) =>
@@ -25,7 +20,6 @@ export const dev = defineCommand({
       import('../commands/dev').then((m) =>
         m.devCommand({
           dir: text(args.dir),
-          target: text(args.target),
           server: text(args.server),
           token: text(args.token),
         }),

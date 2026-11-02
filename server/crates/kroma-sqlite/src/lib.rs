@@ -1,8 +1,20 @@
 //! A module's window onto SQLite: the WAL pool, the grant that scopes it to the
 //! core tables a manifest declares, and the versioned migrations every database
-//! takes, the core's and a module's own. The mechanism and nothing of the schema, so a sidecar links this
+//! takes, the core's and a module's own. The mechanism and nothing of the schema, so a module links this
 //! and never `kroma-db`.
 
+#[cfg(target_family = "wasm")]
+extern crate kroma_sqlite_guest as rusqlite;
+
+/// What a component's runtime connects its databases through.
+#[cfg(target_family = "wasm")]
+pub mod guest {
+    pub use kroma_sqlite_guest::types::Value;
+    pub use kroma_sqlite_guest::{set_backend, Backend, Failure, Outcome};
+}
+
+#[cfg(not(target_family = "wasm"))]
+mod authorizer;
 mod grant;
 mod migrate;
 mod open;
@@ -11,6 +23,8 @@ mod pool;
 pub mod testing;
 
 pub use grant::{init_scoped, Grant};
+#[cfg(not(target_family = "wasm"))]
+pub use grant::open_guarded;
 pub use migrate::{migrate, user_version, Legacy, Migrated, Run, Schema, Step, KEPT_SNAPSHOTS};
 pub use open::{apply_migrations, migrate_store, open, open_with};
 pub use pool::{Pool, PoolInner, PooledConn};

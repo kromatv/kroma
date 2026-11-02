@@ -77,10 +77,6 @@ pub(super) async fn host(releases: &[&str]) -> StubHost {
         .with_point(DOWNLOAD_GRAB, None, &base, &token)
         .with_point(INDEXER_DB, None, &base, &token)
         .with_point(INDEXER_SEARCH, None, &base, &token);
-    db::apply_migrations(
-        &host.store().get().unwrap(),
-        crate::rules::schema::MIGRATIONS,
-    )
-    .unwrap();
+    crate::rules::schema::install(host.store());
     host
 }

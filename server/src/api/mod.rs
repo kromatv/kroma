@@ -209,13 +209,10 @@ async fn module_proxy(
 }
 
 /// Build the application router: `/api` route groups (public + session-gated),
-/// the module reverse proxy and host callbacks, static module/SPA assets, then
-/// CORS, compression and tracing layers.
-pub fn router(
-    state: SharedState,
-    supervisor: Arc<Supervisor>,
-    subscriptions: Arc<host_events::Subscriptions>,
-) -> Router {
+/// the module reverse proxy, static module/SPA assets, then CORS, compression
+/// and tracing layers. The host callbacks are on the core's own socket only
+/// ([`seam::router`]).
+pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // Public endpoints reachable before (or without) a session: the auth
     // handshake + roster + invites, uploaded avatars/art, liveness, and the media
     // byte streams. The byte routes sit outside this middleware because a
@@ -267,11 +264,8 @@ pub fn router(
 
     // The admin subtree self-gates per-handler (permission checks), so it lives
     // outside the blanket content layer.
-    let host = seam::tcp_host_routes(&state, &supervisor, &subscriptions);
-
     let api = public
         .merge(content)
-        .merge(host)
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
         .nest("/admin", admin::routes(state.clone()))
         .layer(Extension(supervisor));

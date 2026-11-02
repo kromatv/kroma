@@ -1,4 +1,4 @@
-//! Built on hyper's own client, which cannot follow a redirect: a sidecar
+//! Built on hyper's own client, which cannot follow a redirect: a module
 //! answering 302 is trying to move the core somewhere, and the only correct
 //! destination is the one the supervisor named.
 

@@ -3,7 +3,7 @@
 //! [`test_app`] builds the real application router over a fresh temp-file
 //! SQLite DB, seeds the demo catalogue + search index, and mints an
 //! all-permissions owner session. Requests run in-process via
-//! [`tower::ServiceExt::oneshot`]: no socket, no network, no module sidecar.
+//! [`tower::ServiceExt::oneshot`]: no socket, no network, no module.
 
 mod media;
 mod requests;
@@ -167,6 +167,7 @@ fn build_app_with(
             contributions: std::sync::Arc::new(|_| Vec::new()),
             official_modules: std::sync::Arc::new(Vec::new),
             permissions: std::sync::Arc::new(|_| None),
+            network_providers: std::sync::Arc::new(Vec::new),
         },
     );
 
@@ -177,7 +178,7 @@ fn build_app_with(
     // No delivery task: a handler test publishes nothing a module would hear, and
     // spawning one would need a runtime the plain `#[test]` cases do not have.
     let subscriptions = std::sync::Arc::new(crate::api::host_events::Subscriptions::default());
-    let app = crate::api::router(state.clone(), supervisor.clone(), subscriptions.clone());
+    let app = crate::api::router(state.clone(), supervisor.clone());
     let seam = crate::api::seam::router(state.clone(), supervisor.clone(), subscriptions);
 
     let (user_id, token) = seed_session(&state, "owner@test.dev", "owner", &Permission::all());

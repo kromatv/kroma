@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use kroma_module_wire::{NetworkAnswer, NetworkAsk, NetworkFlow};
+use kroma_module_wire::{NetworkAnswer, NetworkAsk, NetworkFlow, NetworkSeal};
 
 /// Rules a module's outbound call and files the flows a module reports.
 /// `caller` is always the module the callback's token names, never what the
@@ -10,6 +10,16 @@ use kroma_module_wire::{NetworkAnswer, NetworkAsk, NetworkFlow};
 pub trait NetworkPolicy: Send + Sync {
     fn decide(&self, caller: &str, ask: &NetworkAsk) -> NetworkAnswer;
     fn record_flows(&self, caller: &str, flows: Vec<NetworkFlow>);
+
+    /// Whether a module that must never go direct can leave right now.
+    fn seal(&self) -> NetworkSeal {
+        NetworkSeal::None
+    }
+
+    /// The port a `setting:<key>` names for a module's `net.listen`.
+    fn setting_port(&self, _key: &str) -> Option<u16> {
+        None
+    }
 }
 
 /// The policy the supervisor hands each module's network callback to.

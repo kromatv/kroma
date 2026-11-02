@@ -11,8 +11,7 @@ export const AuthoredManifest = Manifest.strict()
   .refine((m) => m.schemaVersion === MODULE_SCHEMA_VERSION, {
     message: `schemaVersion must be ${MODULE_SCHEMA_VERSION}`,
   })
-  .refine((m) => REVERSE_DNS_ID.test(m.id), { message: 'id must be reverse-DNS, lowercase' })
-  .refine((m) => m.seam == null, { message: 'seam is written by kroma build, never by hand' });
+  .refine((m) => REVERSE_DNS_ID.test(m.id), { message: 'id must be reverse-DNS, lowercase' });
 
 const CargoManifest = z.object({
   package: z.object({
@@ -27,7 +26,7 @@ const CargoManifest = z.object({
 export interface ServerCrate {
   dir: string;
   crate: string;
-  /** The sidecar's binary name; `null` for a library module, which spawns nothing. */
+  /** The component's binary name; `null` for a library module, which runs nothing. */
   bin: string | null;
   /** Cargo features the `.kmod` build enables (`[package.metadata.kmod] features`). */
   features: string[];

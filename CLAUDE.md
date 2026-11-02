@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # KROMA
 
-Self-hosted, direct-play media stack: a Rust server (axum + SQLite + out-of-process
-module sidecars) and a Bun workspace monorepo of web, TV, mobile and desktop clients
+Self-hosted, direct-play media stack: a Rust server (axum + SQLite + modules run
+as WebAssembly components) and a Bun workspace monorepo of web, TV, mobile and desktop clients
 sharing one universal component library.
 
 See [`README.md`](README.md) for the product overview, [`ARCHITECTURE.md`](ARCHITECTURE.md)
@@ -73,7 +73,7 @@ bun run dev:tizen        # :5174   Samsung   (arrow keys + Enter act as the remo
 bun run dev:webos        # :5175   LG
 bun run dev:kit          # design-system workbench
 bun run server           # cargo run  (no feature flags: the ML backends are the
-                         # whisper and vector sidecars' own build choice)
+                         # whisper and vector modules' own build choice)
 ```
 
 With no media configured the server seeds demo titles. Point it at real files with
@@ -122,26 +122,33 @@ server/
     kroma-media       ffprobe · the ffmpeg budget · the HLS engine and the
                       per-request program over it. No db, no domain, so the
                       published SDK carries it and a module transcodes too
-    kroma-http kroma-i18n kroma-push
+    kroma-requests    the request and monitoring workflows, with no engine
+                      under them, so the acquisition component runs them
+    kroma-http kroma-i18n kroma-push kroma-egress
     kroma-module-*    the module host: kernel, manifest, macros, sdk, runtime,
                       host, supervisor, wire. It carries the
                       MECHANISM and never the meaning: nothing here names a
                       module's domain (see docs/module-plugin-model.md)
+    kroma-wasm-host   wasmtime and the WIT world every module is built against
+    kroma-sqlite-guest  rusqlite's API for a component; the host runs each statement
 modules/<id>/       NOT in this workspace, see below
 modules/lib/        shared Rust libraries, not modules: naming (and scene, in its own dir)
 ```
 
-A sidecar links a strict subset: `kroma-module-{sdk,runtime,host,manifest,
+A module links a strict subset: `kroma-module-{sdk,runtime,host,manifest,
 macros,wire}`, `kroma-sqlite`, `kroma-http`, `kroma-primitives`,
-`kroma-testing`. It never links `kroma-db` or `kroma-domain`, which is why the
-JSON both sides exchange lives in `kroma-module-wire` and the pool in
-`kroma-sqlite`, each re-exported by the crate that used to own it.
+`kroma-testing`. A first-party module may go further through the SDK's in-repo
+features: `core` and `domain` link `kroma-db` and `kroma-domain`, which build for
+wasm, and `requests` links `kroma-requests`. `engine` (all of `kroma-engine`)
+exists and no module enables it. The published SDK carries none of these, which
+is why the JSON both sides exchange lives in `kroma-module-wire` and the pool in
+`kroma-sqlite`, and the core crates re-export both.
 
 `api/` translates HTTP↔services and holds no business logic; `main.rs` and the
 engine's `state.rs` are the only composition points. Integration tests live beside
 the handlers as `src/api/it_*.rs`.
 
-### Modules are out-of-process sidecars
+### Modules are WebAssembly components
 
 KROMA's core is playback + catalog; everything else (downloads, indexers,
 acquisition, VPN, whisper, vector, mDNS, remote, scene) is a **module** with a
@@ -155,27 +162,31 @@ separate tags.
 
 A point is named by whoever defines it: a module writes `definesPoints` for what
 it invents (`<its id>/<local name>`), `contributes` for what it answers, and
-`consumes` for what it calls. The three the CORE calls are bare — `acquisition`,
-`transcriber`, `embedder` — because the core has no manifest to define one in and
-nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
+`consumes` for what it calls. The four the CORE calls, `acquisition`,
+`transcriber`, `embedder` and `network`, are bare because the core has no manifest
+to define one in and nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
 for the model and what is still missing from it, and
 [`modules/README.md`](modules/README.md#calling-another-module) for how to write
 one end.
 
 Nothing is compiled into the server: this is the zero-module base build. Every
 first-party module ships as an installable `.kmod` (a zstd bundle of
-`module.json` + a native `module` binary + icon + `fe/`, the frontend the web
-client loads at runtime).
-`kroma-module-supervisor` scans `<data>/modules/*`, spawns each enabled module as
-its own process serving on a Unix socket under `<data>/run`, and reverse-proxies
-`/api/module/<id>/*` to it; modules call back into the core over the token-authed
-`/api/_host/*` API, on the core's own `<data>/run/host.sock`, for
-settings/events/jobs/session. A bundle built before the socket seam runs on a
-loopback port as the legacy seam (`modules/README.md#runtime-contract`). A database is a **declared
-capability**, not something every sidecar gets: a module with no `storage` in its
-`module.json` does not link SQLite at all, and one that has it gets its own file
-plus whatever slice of the core database it declared, enforced per connection by
-SQLite's authorizer. See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md) and
+`module.json`, `module.wasm`, the icon, `locales/` and `fe/`, the frontend the
+web client loads at runtime), built once for `wasm32-wasip2`: one bundle for
+every platform. `kroma-module-supervisor` scans `<data>/modules/*`, runs each enabled
+module as a component inside the server (wasmtime, `kroma-wasm-host`), serves it
+on a Unix socket under `<data>/run`, and reverse-proxies `/api/module/<id>/*` to
+it. A component reaches the core's token-authed `/api/_host/*` API
+(settings/events/jobs/session) and its peers only through its `host-api` import,
+on `<data>/run/host.sock`, and the network, files and programs only through the
+host imports its `permissions` grant (see
+[`docs/module-security.md`](docs/module-security.md)). A server refuses a bundle
+whose manifest schema is not 3 or that carries a native `module` binary. A
+database is a **declared capability**, not something every module gets: a module
+with no `storage` in its `module.json` has none, and one that has it gets its own
+file plus whatever slice of the core database it declared, both held by the host,
+the slice enforced per connection by SQLite's authorizer. See
+[`docs/modules-as-kmod.md`](docs/modules-as-kmod.md) and
 [`modules/README.md`](modules/README.md#storage).
 
 Modules release **independently of the server**, each on its own tag
@@ -189,14 +200,13 @@ by comparing versions, so a silent republish reaches nobody).
 metadata, its own `Cargo.lock`, its own `release-kmod` profile), so it builds and
 tests standalone (`cd modules/<id>/server && cargo build`). Cargo members must be
 hierarchically below their workspace root, which is exactly why modules cannot be
-members of `server/`. The server reaches the only three it still links (scene via
-the SDK, whisper and vector behind their features) as path deps across the
-workspace boundary, which cargo *does* allow.
+members of `server/`. A module reaches the server's crates as path deps across
+the workspace boundary, which cargo *does* allow, and the server links no module.
 
 Consequences worth knowing: features are **bare** (`--features local`, never
 `kroma-whisper/local`, inside its own single-package workspace that names a
-dependency); one `cargo build` can no longer select every module, so
-`bun run kroma plan` emits one per module against a shared
+dependency); one `cargo build` cannot select every module, so
+`bun run kroma build` runs one per module for `wasm32-wasip2` against a shared
 `CARGO_TARGET_DIR` (`target/kmod`); and any container that builds the server or a
 module must mount the **whole repo**, not `server/`.
 

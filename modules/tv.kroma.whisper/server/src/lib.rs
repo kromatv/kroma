@@ -4,6 +4,12 @@
 
 #[cfg(feature = "local")]
 mod engine;
+#[cfg(feature = "local")]
+mod mel;
+#[cfg(feature = "local")]
+mod pcm;
+#[cfg(feature = "local")]
+mod weights;
 
 #[cfg_attr(not(feature = "local"), allow(dead_code))]
 mod model;
@@ -11,14 +17,12 @@ mod serve;
 pub use serve::whisper_routes;
 
 use std::path::Path;
-use std::sync::atomic::AtomicBool;
-#[cfg(feature = "local")]
-use std::sync::atomic::Ordering;
 
 /// Transcribe audio track `track` of `input` to WebVTT. `model_spec` is a local
 /// dir or one of the pinned `openai/whisper-*` repo ids, whose files must match
 /// their sha256; `lang` forces the spoken language (ISO 639-1) instead of
-/// auto-detecting. `None` on failure, cancellation, or with the feature off.
+/// auto-detecting; `cancelled` is asked between steps. `None` on failure,
+/// cancellation, or with the feature off.
 #[allow(clippy::too_many_arguments)]
 #[allow(unused_variables)]
 pub fn transcribe(
@@ -29,22 +33,22 @@ pub fn transcribe(
     lang: Option<&str>,
     on_stage: &dyn Fn(&str),
     on_progress: &dyn Fn(usize, usize),
-    cancel: &AtomicBool,
+    cancelled: &dyn Fn() -> bool,
 ) -> Option<String> {
     #[cfg(feature = "local")]
     {
         on_stage("model");
         let dir = model::resolve(data_dir, model_spec)?;
-        if cancel.load(Ordering::Relaxed) {
+        if cancelled() {
             return None;
         }
         on_stage("extract");
-        let pcm = extract_pcm(input, track)?;
-        if cancel.load(Ordering::Relaxed) {
+        let pcm = pcm::extract(input, track, &data_dir.join("modules").join(MODULE_ID))?;
+        if cancelled() {
             return None;
         }
         on_stage("transcribe");
-        engine::transcribe(&dir, &pcm, lang, on_progress, cancel)
+        engine::transcribe(&dir, pcm, lang, on_progress, cancelled)
     }
     #[cfg(not(feature = "local"))]
     {
@@ -52,30 +56,8 @@ pub fn transcribe(
     }
 }
 
-// Mono 16 kHz f32 PCM is Whisper's input format.
 #[cfg(feature = "local")]
-fn extract_pcm(input: &Path, track: u32) -> Option<Vec<f32>> {
-    use kroma_module_sdk::media::input;
-    use std::process::Command;
-    let out = Command::new("ffmpeg")
-        .args(["-v", "error", "-nostdin"])
-        .args(input::file(input))
-        .arg("-vn")
-        .arg("-map")
-        .arg(format!("0:a:{track}"))
-        .args(["-ac", "1", "-ar", "16000", "-f", "f32le", "-"])
-        .output()
-        .ok()?;
-    if !out.status.success() || out.stdout.is_empty() {
-        return None;
-    }
-    Some(
-        out.stdout
-            .chunks_exact(4)
-            .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
-            .collect(),
-    )
-}
+const MODULE_ID: &str = "tv.kroma.whisper";
 
 pub mod module;
 pub use module::MODULE;

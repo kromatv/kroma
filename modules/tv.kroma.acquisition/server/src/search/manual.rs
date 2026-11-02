@@ -63,12 +63,10 @@ pub fn manual_search<S: HostStorage>(
     }
 
     let query = query_for(body, q);
-    let (found, reports) = crate::search::sweep::sweep(&indexers, |indexer| {
-        Ok(crate::search_indexer(state, indexer, &query)?
-            .into_iter()
-            .map(|r| to_view(&r, &indexer.id, &indexer.name))
-            .collect())
-    });
+    let (found, reports) =
+        crate::search::sweep::sweep_queries(state, &indexers, &[&query], |indexer, _, release| {
+            to_view(&release, &indexer.id, &indexer.name)
+        });
 
     let mut seen: HashSet<(String, String)> = HashSet::new();
     let mut releases: Vec<ManualReleaseView> = found

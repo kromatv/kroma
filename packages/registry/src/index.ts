@@ -37,6 +37,7 @@ export {
   dependenciesOf,
   MANIFEST_SCHEMAS,
   Manifest,
+  Permissions,
   MODULE_SCHEMA_VERSION,
   notificationsProblem,
   optionalDependenciesOf,

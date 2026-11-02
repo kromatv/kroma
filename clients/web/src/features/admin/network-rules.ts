@@ -1,4 +1,4 @@
-import type { Rule, RuleAction, RulesUpdate } from '@kromatv/client/network';
+import type { Rule, RuleAction, RulesUpdate, NetworkView } from '@kromatv/client/network';
 
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const IPV6 = /^[0-9a-f:.]+$/;
@@ -32,10 +32,21 @@ export function parseHostPattern(input: string): HostPattern {
 }
 
 /** A rule as the editor holds it: free text where the wire has a nullable. */
-export type RuleDraft = Omit<Rule, 'id' | 'host' | 'note'> & { host: string; note: string };
+export type RuleDraft = Omit<Rule, 'id' | 'host' | 'note' | 'port' | 'address'> & {
+  host: string;
+  note: string;
+  port: string;
+  address: string;
+};
 
 export function draftOf(rule: Rule): RuleDraft {
-  return { ...rule, host: rule.host ?? '', note: rule.note ?? '' };
+  return {
+    ...rule,
+    host: rule.host ?? '',
+    note: rule.note ?? '',
+    port: rule.port ? String(rule.port) : '',
+    address: rule.address ?? '',
+  };
 }
 
 export const EMPTY_DRAFT: RuleDraft = {
@@ -44,15 +55,42 @@ export const EMPTY_DRAFT: RuleDraft = {
   host: '',
   action: 'block',
   note: '',
+  port: '',
+  address: '',
 };
 
-/** The rule a draft stands for, refused while its host is not a valid pattern. */
+const ADDRESS_RANGE = /^[0-9a-fA-F:.]+\/\d{1,3}$/;
+
+// `null` for an empty field, `undefined` for one that is not a port.
+function parsePort(input: string): number | null | undefined {
+  const text = input.trim();
+  if (!text) return null;
+  const port = Number(text);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : undefined;
+}
+
+/** The networks a rule can name: every one on offer, and the one it already names,
+ *  which may be down or gone. */
+export function actionNetworks(
+  networks: readonly NetworkView[],
+  current: string,
+): readonly string[] {
+  const names = networks.map((network) => network.name);
+  const named = current !== 'direct' && current !== 'block' && !names.includes(current);
+  return named ? [...names, current] : names;
+}
+
+/** The rule a draft stands for, refused while one of its fields is not valid. */
 export function ruleFromDraft(
   draft: RuleDraft,
   id: string,
-): { ok: true; rule: Rule } | { ok: false } {
+): { ok: true; rule: Rule } | { ok: false; field: 'host' | 'port' | 'address' } {
   const host = parseHostPattern(draft.host);
-  if (!host.ok) return host;
+  if (!host.ok) return { ok: false, field: 'host' };
+  const port = parsePort(draft.port);
+  if (port === undefined) return { ok: false, field: 'port' };
+  const address = draft.address.trim();
+  if (address && !ADDRESS_RANGE.test(address)) return { ok: false, field: 'address' };
   const note = draft.note.trim().slice(0, NOTE_MAX);
   return {
     ok: true,
@@ -61,6 +99,8 @@ export function ruleFromDraft(
       caller: draft.caller,
       purpose: draft.purpose,
       host: host.host,
+      port,
+      address: address || null,
       action: draft.action,
       note: note || null,
     },

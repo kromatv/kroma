@@ -5,7 +5,8 @@ import { dirsArg, list } from './args';
 export const check = defineCommand({
   meta: {
     name: 'check',
-    description: 'Validate the manifest, type-check the frontend, clippy the sidecar.',
+    description:
+      'Validate the manifest, type-check the frontend, clippy the crate and its component.',
   },
   args: {
     dirs: dirsArg,

@@ -204,3 +204,53 @@ fn a_flush_writes_one_tally_per_day_caller_purpose_host_and_route() {
     );
     assert_eq!(tallies[0].last_at, AT_MS + 5);
 }
+
+fn connection(host: &str) -> FlowReport {
+    FlowReport {
+        host: host.to_string(),
+        method: CARRIED_METHOD.to_string(),
+        status: None,
+        ..report("peers", FlowRoute::Direct)
+    }
+}
+
+fn tallied_hosts(journal: &Journal) -> Vec<String> {
+    let mut hosts: Vec<String> = journal
+        .pending
+        .lock()
+        .unwrap()
+        .keys()
+        .map(|key| key.host.clone())
+        .collect();
+    hosts.sort();
+    hosts
+}
+
+#[test]
+fn public_addresses_are_tallied_as_one_host() {
+    let journal = Journal::default();
+
+    journal.record("tv.kroma.torrents", connection("1.1.1.1"), 1);
+    journal.record("tv.kroma.torrents", connection("8.8.8.8"), 2);
+
+    assert_eq!(tallied_hosts(&journal), [TALLIED_PUBLIC_ADDRESS]);
+}
+
+#[test]
+fn a_name_and_a_private_address_are_tallied_as_themselves() {
+    let journal = Journal::default();
+
+    journal.record("tv.kroma.torrents", connection("tracker.example"), 1);
+    journal.record("tv.kroma.torrents", connection("192.168.1.2"), 2);
+
+    assert_eq!(tallied_hosts(&journal), ["192.168.1.2", "tracker.example"]);
+}
+
+#[test]
+fn a_recent_connection_keeps_its_address() {
+    let journal = Journal::default();
+
+    journal.record("tv.kroma.torrents", connection("1.1.1.1"), 1);
+
+    assert_eq!(journal.page(&everything(1)).flows[0].host, "1.1.1.1");
+}

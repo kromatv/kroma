@@ -1,5 +1,5 @@
 //! The core's HTTP API, called back with the channel's own bearer on the
-//! core's web listener, the door every client uses: the sidecar shapes what
+//! core's web listener, the door every client uses: the module shapes what
 //! the Roku shows, and the core decides what that account may see.
 
 use anyhow::{Context, Result};
@@ -26,7 +26,7 @@ impl Core {
     pub async fn get(&self, path: &str) -> Result<Value> {
         let url = format!("{}/api{path}", self.base);
         let fetch = Loopback::new().header("Authorization", format!("Bearer {}", self.bearer));
-        tokio::task::spawn_blocking(move || fetch.get_json::<Value>(&url))
+        kroma_module_sdk::host::run_blocking(move || fetch.get_json::<Value>(&url))
             .await
             .context("core call")?
     }

@@ -9,8 +9,8 @@ use anyhow::{anyhow, bail, Result};
 
 use crate::peers::downloads::DownloadRow;
 use kroma_module_sdk::db;
-use kroma_module_sdk::engine::model::RequestKind;
-use kroma_module_sdk::engine::services::jobs::now_ms;
+use kroma_module_sdk::domain::RequestKind;
+use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::host::{HostStorage, LibraryFolders};
 
 mod content;
@@ -38,7 +38,7 @@ pub struct ImportSummary {
 }
 
 fn finalize_import<S: HostStorage>(state: &S, row: &DownloadRow, written: &[String]) {
-    use kroma_module_sdk::engine::services::requests::{on_download_imported, Imported};
+    use kroma_module_sdk::requests::lifecycle::{on_download_imported, Imported};
     if row.tmdb_id != 0 {
         let imported = Imported {
             kind: crate::auto::title_kind(&row.kind),
@@ -70,9 +70,7 @@ fn record_releases<S: HostStorage>(state: &S, release_title: &str, written: &[St
 }
 
 fn canonical(path: &str) -> String {
-    std::fs::canonicalize(path)
-        .map(|p| p.to_string_lossy().into_owned())
-        .unwrap_or_else(|_| path.to_string())
+    kroma_module_sdk::host::files::canonical(path).unwrap_or_else(|| path.to_string())
 }
 
 fn record_file_tmdb<S: HostStorage>(state: &S, tmdb_id: u64, written: &[String]) {

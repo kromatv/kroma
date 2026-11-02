@@ -25,7 +25,7 @@ fn bridge_declaring(t: &TestApp, settings: &str) -> String {
 }
 
 #[tokio::test]
-async fn a_stored_operator_credential_never_reaches_a_sidecar() {
+async fn a_stored_operator_credential_never_reaches_a_module() {
     let t = test_app();
     t.state.settings.set_patch(
         &t.state.db,
@@ -63,7 +63,7 @@ async fn a_stored_operator_credential_never_reaches_a_sidecar() {
 }
 
 #[tokio::test]
-async fn the_key_that_signs_a_media_ticket_never_reaches_a_sidecar() {
+async fn the_key_that_signs_a_media_ticket_never_reaches_a_module() {
     let t = test_app();
     let minted = t.state.media_ticket_key.clone();
     let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
@@ -76,12 +76,12 @@ async fn the_key_that_signs_a_media_ticket_never_reaches_a_sidecar() {
     assert_eq!(body, json!({ "value": "" }));
     assert!(
         !body.to_string().contains(&minted),
-        "a sidecar holding it forges a ticket for any device"
+        "a module holding it forges a ticket for any device"
     );
 }
 
 #[tokio::test]
-async fn a_sidecar_cannot_put_a_signing_key_of_its_own_choosing_in_place() {
+async fn a_module_cannot_put_a_signing_key_of_its_own_choosing_in_place() {
     let t = test_app();
     let minted = t.state.media_ticket_key.clone();
     let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
@@ -173,7 +173,7 @@ async fn an_operator_credential_reaches_no_module_but_the_one_that_declared_it()
 }
 
 #[tokio::test]
-async fn a_sidecar_cannot_write_a_credential_or_retarget_the_registries() {
+async fn a_module_cannot_write_a_credential_or_retarget_the_registries() {
     let t = test_app();
 
     let (password, _) = send(
@@ -208,7 +208,7 @@ async fn a_sidecar_cannot_write_a_credential_or_retarget_the_registries() {
 }
 
 #[tokio::test]
-async fn a_sidecar_still_saves_the_settings_it_owns() {
+async fn a_module_still_saves_the_settings_it_owns() {
     let t = test_app();
     let token = bridge_declaring(&t, r#"{ "write": ["vpnWgConfig"] }"#);
 
@@ -227,7 +227,7 @@ async fn a_sidecar_still_saves_the_settings_it_owns() {
 }
 
 #[tokio::test]
-async fn a_sidecar_cannot_write_a_credential_it_did_not_declare() {
+async fn a_module_cannot_write_a_credential_it_did_not_declare() {
     let t = test_app();
     let token = bridge_declaring(&t, r#"{ "read": ["vpnWgConfig"] }"#);
 
@@ -249,7 +249,7 @@ async fn a_sidecar_cannot_write_a_credential_it_did_not_declare() {
 }
 
 #[tokio::test]
-async fn an_identity_the_server_minted_for_itself_never_reaches_a_sidecar() {
+async fn an_identity_the_server_minted_for_itself_never_reaches_a_module() {
     let t = test_app();
     let instance = crate::services::settings::ensure_instance_id(&t.state.settings, &t.state.db);
     let stats = crate::services::settings::stats::ensure_identity(&t.state.settings, &t.state.db);
@@ -301,13 +301,13 @@ async fn a_key_no_declaration_names_is_withheld_in_both_directions() {
     );
 }
 
-fn installed(t: &TestApp, id: &str, extra: &str) -> String {
+fn installed(t: &TestApp, id: &str) -> String {
     let dir = t.state.config.data_dir.join("modules").join(id);
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(
         dir.join("module.json"),
         format!(
-            r#"{{ "schemaVersion": {}, "id": "{id}", "name": "Stub", "version": "1.0.0" {extra} }}"#,
+            r#"{{ "schemaVersion": {}, "id": "{id}", "name": "Stub", "version": "1.0.0" }}"#,
             kroma_module_manifest::MODULE_SCHEMA_VERSION,
         ),
     )
@@ -315,19 +315,13 @@ fn installed(t: &TestApp, id: &str, extra: &str) -> String {
     t.supervisor.module_token(id)
 }
 
-fn tcp_callback(
-    token: &str,
-    peer: [u8; 4],
-    relay: Option<(&str, &str)>,
-) -> axum::http::Request<axum::body::Body> {
+fn tcp_callback(token: &str, peer: [u8; 4]) -> axum::http::Request<axum::body::Body> {
     let mut req = axum::http::Request::builder()
         .method("GET")
         .uri("/api/_host/setting?key=serverName&kind=str&default=")
-        .header("authorization", format!("Bearer {token}"));
-    if let Some((name, value)) = relay {
-        req = req.header(name, value);
-    }
-    let mut req = req.body(axum::body::Body::empty()).unwrap();
+        .header("authorization", format!("Bearer {token}"))
+        .body(axum::body::Body::empty())
+        .unwrap();
     req.extensions_mut()
         .insert(axum::extract::ConnectInfo(std::net::SocketAddr::from((
             peer, 50000,
@@ -336,65 +330,21 @@ fn tcp_callback(
 }
 
 #[tokio::test]
-async fn a_host_callback_from_off_host_is_refused() {
+async fn a_module_is_answered_on_the_socket_and_never_over_tcp() {
     use tower::ServiceExt;
     let t = test_app();
-    let legacy = installed(&t, "com.example.legacy", "");
-
-    let resp = t
-        .app
-        .clone()
-        .oneshot(tcp_callback(&legacy, [203, 0, 113, 9], None))
-        .await
-        .unwrap();
-
-    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-}
-
-#[tokio::test]
-async fn a_host_callback_relayed_by_a_tunnel_on_this_machine_is_refused() {
-    use tower::ServiceExt;
-    let t = test_app();
-    let legacy = installed(&t, "com.example.legacy", "");
-
-    for relay in [
-        ("cf-connecting-ip", "203.0.113.9"),
-        ("x-forwarded-for", "203.0.113.9"),
-        ("forwarded", "for=203.0.113.9"),
-    ] {
-        let resp = t
-            .app
-            .clone()
-            .oneshot(tcp_callback(&legacy, [127, 0, 0, 1], Some(relay)))
-            .await
-            .unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND, "{relay:?}");
-    }
-    let direct = t
-        .app
-        .clone()
-        .oneshot(tcp_callback(&legacy, [127, 0, 0, 1], None))
-        .await
-        .unwrap();
-    assert_eq!(direct.status(), StatusCode::OK);
-}
-
-#[tokio::test]
-async fn a_module_on_the_socket_seam_is_answered_on_the_socket_and_never_over_tcp() {
-    use tower::ServiceExt;
-    let t = test_app();
-    let current = installed(&t, "com.example.current", r#", "seam": "unix""#);
+    let current = installed(&t, "com.example.current");
 
     let over_tcp = t
         .app
         .clone()
-        .oneshot(tcp_callback(&current, [127, 0, 0, 1], None))
+        .oneshot(tcp_callback(&current, [127, 0, 0, 1]))
         .await
         .unwrap();
     let fabric_over_tcp = t
         .app
         .clone()
-        .oneshot(tcp_callback(HOST_TOKEN, [127, 0, 0, 1], None))
+        .oneshot(tcp_callback(HOST_TOKEN, [127, 0, 0, 1]))
         .await
         .unwrap();
     let (on_socket, _) = get(

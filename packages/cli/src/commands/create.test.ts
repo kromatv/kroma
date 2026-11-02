@@ -50,7 +50,7 @@ afterEach(() => {
 });
 
 describe('createCommand outside a checkout', () => {
-  it('writes a page, a sidecar and everything that packs them', async () => {
+  it('writes a page, a component and everything that packs them', async () => {
     const cwd = plain();
 
     await create(cwd);
@@ -75,7 +75,7 @@ describe('createCommand outside a checkout', () => {
     ]);
   });
 
-  it('leaves out the page for a sidecar, and everything npm for it too', async () => {
+  it('leaves out the page for a component alone, and everything npm for it too', async () => {
     const cwd = plain();
 
     await create(cwd, { kind: 'server' });
@@ -109,6 +109,35 @@ describe('createCommand outside a checkout', () => {
       version: '0.1.0',
       feRemote: { module: './remoteEntry.js' },
     });
+  });
+
+  it('writes the manifest against schema 3, the one a component is', async () => {
+    const cwd = plain();
+
+    await create(cwd);
+
+    expect(json(join(cwd, 'tv.acme.notes'), 'module.json')).toMatchObject({
+      $schema: 'https://modules.kroma.tv/schemas/3/manifest.json',
+      schemaVersion: 3,
+    });
+  });
+
+  it('writes a crate that builds a component, with axum and tokio picked per target', async () => {
+    const cwd = plain();
+
+    await create(cwd, { kind: 'server' });
+
+    const at = join(cwd, 'tv.acme.notes');
+    const cargo = readFileSync(join(at, 'server', 'Cargo.toml'), 'utf8');
+    expect(readFileSync(join(at, 'server', 'src', 'bin', 'module.rs'), 'utf8')).toContain(
+      'kroma_module_runtime::module_main!(',
+    );
+    expect(cargo).toContain(`[target.'cfg(target_family = "wasm")'.dependencies]`);
+    expect(cargo).toContain(`[target.'cfg(not(target_family = "wasm"))'.dependencies]`);
+    expect(cargo.slice(0, cargo.indexOf('[target.'))).not.toMatch(/^(axum|tokio) =/m);
+    expect(readFileSync(join(at, 'rust-toolchain.toml'), 'utf8')).toContain(
+      'targets = ["wasm32-wasip2"]',
+    );
   });
 
   it('depends on the published SDK and extends its tsconfig', async () => {

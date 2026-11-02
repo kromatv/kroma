@@ -2,7 +2,7 @@
 //! helper for running a query off the async runtime.
 //!
 //! This is deliberately NOT on [`HostCtx`](crate::HostCtx). A pool on the base
-//! trait is ambient authority: every sidecar gets unrestricted read/write on the
+//! trait is ambient authority: every module gets unrestricted read/write on the
 //! whole core database whether or not it has a single table, and it links the
 //! bundled SQLite amalgamation to get it. Behind a capability, a module that
 //! declares no storage neither links SQLite nor can reach a row.

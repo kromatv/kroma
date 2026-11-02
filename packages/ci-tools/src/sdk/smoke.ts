@@ -56,7 +56,7 @@ export function wireToTarball(manifest: string, tarball: string): string {
 
 export interface SmokeOptions {
   out: string;
-  /** Build the sidecar too (needs a Rust toolchain); off keeps it to types. */
+  /** Build the module's server too (needs a Rust toolchain); off keeps it to types. */
   rust: boolean;
 }
 

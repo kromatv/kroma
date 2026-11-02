@@ -1,6 +1,6 @@
-//! Where the seam's sockets live: the core's `host.sock`, and one directory per
-//! module holding the socket its process serves on, each open to the server's
-//! own user and nobody else. That is `<data>/run`, or a short directory under
+//! Where the modules' sockets live: the core's `host.sock`, and one directory per
+//! module holding the socket it answers on, each open to the server's own user
+//! and nobody else. That is `<data>/run`, or a short directory under
 //! `/tmp` named after the data directory when `<data>` is too deep for a socket
 //! path to fit.
 
@@ -51,12 +51,17 @@ impl RunDir {
     }
 
     pub(crate) fn prepare_module(&self, id: &str) -> io::Result<PathBuf> {
+        let socket = self.prepare_module_dir(id)?;
+        remove_stale(&socket)?;
+        Ok(socket)
+    }
+
+    pub(crate) fn prepare_module_dir(&self, id: &str) -> io::Result<PathBuf> {
         private_dir(&self.root)?;
         private_dir(&self.root.join("modules"))?;
         let socket = Self::socket_in(&self.root, id);
         ensure_fits(&socket)?;
         private_dir(socket.parent().unwrap_or(&self.root))?;
-        remove_stale(&socket)?;
         Ok(socket)
     }
 

@@ -19,6 +19,7 @@ fn flow(host: &str) -> NetworkFlow {
         duration_ms: 5,
         error: None,
         rule: None,
+        carried: false,
     }
 }
 

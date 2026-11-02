@@ -3,7 +3,7 @@
 
 use anyhow::{Result, anyhow};
 use kroma_module_sdk::db::{self, WantedRow};
-use kroma_module_sdk::engine::model::{MediaRequest, RequestKind};
+use kroma_module_sdk::domain::{MediaRequest, RequestKind};
 use kroma_module_sdk::host::HostStorage;
 use serde::Deserialize;
 
@@ -67,7 +67,7 @@ fn resolve_request<S: HostStorage>(state: &S, id: &str, scope: SearchScope) -> R
     // A pending request has no ledger yet: search as if it were approved, so a
     // moderator can look before green-lighting.
     if ledger.is_empty() {
-        kroma_module_sdk::engine::services::requests::preview_wanted(state, &req, &mut ledger)?;
+        kroma_module_sdk::requests::lifecycle::preview_wanted(state, &req, &mut ledger)?;
     }
     let mut searched = forced_wanted(&ledger);
     searched.extend(rows_outside_request(state, &req, &searched, scope)?);
@@ -99,7 +99,7 @@ fn resolve_title<S: HostStorage>(
         None => searched.is_empty(),
     };
     if uncovered {
-        let previews = kroma_module_sdk::engine::services::monitoring::preview_rows(
+        let previews = kroma_module_sdk::requests::monitoring::preview_rows(
             state,
             kind,
             tmdb_id,
@@ -161,13 +161,13 @@ fn rows_outside_request<S: HostStorage>(
     if wanted.iter().any(|w| w.season == Some(season)) {
         return Ok(Vec::new());
     }
-    kroma_module_sdk::engine::services::request_ledger::preview_season_rows(state, req, season)
+    kroma_module_sdk::requests::request_ledger::preview_season_rows(state, req, season)
 }
 
 #[cfg(test)]
 mod tests {
     use kroma_module_sdk::db::testing::temp_pool;
-    use kroma_module_sdk::engine::model::RequestStatus;
+    use kroma_module_sdk::domain::RequestStatus;
     use kroma_module_sdk::host::testing::StubHost;
 
     use super::*;

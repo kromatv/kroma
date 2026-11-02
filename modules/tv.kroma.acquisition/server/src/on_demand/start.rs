@@ -1,20 +1,16 @@
 //! Whether an on-demand search can start, and the answer a page shows when it
 //! cannot.
 
-use std::sync::atomic::{AtomicBool, Ordering};
-
 use anyhow::Result;
-use kroma_module_sdk::engine::model::RequestKind;
-use kroma_module_sdk::engine::services::jobs::now_ms;
+use kroma_module_sdk::domain::RequestKind;
+use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::host::HostStorage;
 use serde::Serialize;
 
+use super::lease;
 use super::queue::{self, Ask};
 use super::{Unit, missing_units};
 use crate::peers::indexers::IndexerRef;
-
-/// The two jobs sweep the same indexers, so one runs at a time.
-static RUNNING: AtomicBool = AtomicBool::new(false);
 
 pub const ON_DEMAND_JOB: &str = "acquisition.ondemand";
 pub const CUTOFF_JOB: &str = "acquisition.cutoff";
@@ -61,7 +57,7 @@ impl Started {
 /// deliberately not read: it governs the passes that run on their own, and
 /// this one an admin asked for.
 pub fn ready<S: HostStorage>(state: &S) -> Result<Vec<IndexerRef>, NotStarted> {
-    if RUNNING.load(Ordering::SeqCst) {
+    if lease::held(state.store(), now_ms()).unwrap_or(false) {
         return Err(NotStarted::Busy);
     }
     if !crate::peers::downloads::gate_open(state) {
@@ -106,20 +102,6 @@ pub fn start_cutoff_search<S: HostStorage>(state: &S) -> Result<Started> {
     Ok(Started::running(None))
 }
 
-pub(super) fn claim() -> Option<Slot> {
-    (!RUNNING.swap(true, Ordering::SeqCst)).then_some(Slot)
-}
-
-pub(super) struct Slot;
-
-// A run that panics must still free the slot, or every later press reads busy
-// until the server restarts.
-impl Drop for Slot {
-    fn drop(&mut self) {
-        RUNNING.store(false, Ordering::SeqCst);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -128,8 +110,6 @@ mod tests {
     use kroma_module_sdk::host::testing::StubHost;
     use kroma_module_sdk::testing::{blocking, serve};
     use serde_json::Value;
-
-    use crate::on_demand::tests::SOLO;
 
     async fn host_with(gate: bool, indexers: Vec<Value>) -> StubHost {
         let list: &'static Vec<Value> = Box::leak(Box::new(indexers));
@@ -149,11 +129,7 @@ mod tests {
         let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-start"))
             .with_point(crate::peers::downloads::DOWNLOAD_GRAB, None, &base, &token)
             .with_point(crate::peers::indexers::INDEXER_DB, None, &base, &token);
-        kroma_module_sdk::db::apply_migrations(
-            &host.store().get().unwrap(),
-            crate::rules::schema::MIGRATIONS,
-        )
-        .unwrap();
+        crate::rules::schema::install(host.store());
         host
     }
 
@@ -161,17 +137,6 @@ mod tests {
         vec![serde_json::json!({
             "id": "a", "name": "A", "kind": "torznab", "priority": 30, "enabled": true
         })]
-    }
-
-    #[tokio::test]
-    async fn the_run_slot_is_held_by_one_run_and_freed_when_it_ends() {
-        let _solo = SOLO.lock().await;
-        let held = claim().expect("a free slot");
-
-        assert!(claim().is_none());
-
-        drop(held);
-        assert!(claim().is_some());
     }
 
     #[test]
@@ -194,7 +159,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_search_an_admin_asked_for_runs_with_background_acquisition_off() {
-        let _solo = SOLO.lock().await;
         let host = host_with(true, one_indexer()).await;
 
         let answer =
@@ -207,7 +171,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_search_with_no_indexer_configured_says_which_one_is_missing() {
-        let _solo = SOLO.lock().await;
         let host = host_with(true, Vec::new()).await;
 
         let answer = blocking(move || start_cutoff_search(&host).unwrap()).await;
@@ -217,7 +180,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_search_behind_a_closed_kill_switch_says_so_rather_than_grabbing() {
-        let _solo = SOLO.lock().await;
         let host = host_with(false, one_indexer()).await;
 
         let answer = blocking(move || start_cutoff_search(&host).unwrap()).await;
@@ -227,9 +189,10 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_search_asked_for_while_one_runs_says_it_is_busy() {
-        let _solo = SOLO.lock().await;
         let host = host_with(true, one_indexer()).await;
-        let held = claim().expect("a free slot");
+        let held = lease::claim(host.store(), now_ms())
+            .unwrap()
+            .expect("a free search");
 
         let answer = blocking(move || start_cutoff_search(&host).unwrap()).await;
 

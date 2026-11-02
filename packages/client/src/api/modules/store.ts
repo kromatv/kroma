@@ -1,4 +1,4 @@
-import { Contribution, PointReq } from '@kromatv/registry';
+import { Contribution, Permissions, PointReq } from '@kromatv/registry';
 import { z } from 'zod';
 import { ModuleId } from './ids';
 
@@ -14,13 +14,13 @@ export const StoreRefusal = z.discriminatedUnion('kind', [
     range: z.string(),
     serverVersion: z.string(),
   }),
-  z.object({ kind: z.literal('platform'), target: z.string() }),
+  z.object({ kind: z.literal('native') }),
 ]);
 export type StoreRefusal = z.infer<typeof StoreRefusal>;
 
 /** One catalog entry, enriched server-side (`GET /api/admin/store/catalog`):
- * the picked artifact for this platform, installed/update state, and the
- * compatibility verdict with its reason. */
+ * the picked artifact, installed/update state, and the compatibility verdict
+ * with its reason. */
 export const StoreModule = z.object({
   id: ModuleId,
   name: z.string(),
@@ -33,7 +33,6 @@ export const StoreModule = z.object({
   optionalDependencies: DependencyMap,
   contributes: z.array(Contribution),
   consumes: z.array(PointReq),
-  target: z.string().nullish(),
   url: z.string().nullish(),
   size: z.number().nullish(),
   sha256: z.string().nullish(),
@@ -45,8 +44,17 @@ export const StoreModule = z.object({
   refusal: StoreRefusal.nullish().catch(null),
   /** Name of the registry this entry came from. */
   source: z.string(),
+  /** What this version may do. Absent when the registry does not say. */
+  permissions: Permissions.nullish().catch(null),
+  /** This update asks for more than the installed version, so an operator has
+   * to accept it: no batch or automatic update takes it. */
+  widensPermissions: z.boolean().default(false),
+  official: z.boolean().default(false),
 });
 export type StoreModule = z.infer<typeof StoreModule>;
+
+/** What a module may do, as its manifest declares it. */
+export type ModulePermissions = NonNullable<StoreModule['permissions']>;
 
 /** One registry row: the stored entry merged with its fetch outcome (`skipped`
  * carries why a row was not consulted; `shadowed` the ids a higher-priority
@@ -69,7 +77,6 @@ export type StoreRegistry = z.infer<typeof StoreRegistry>;
 export const StoreCatalog = z.object({
   schema: z.number(),
   serverVersion: z.string(),
-  target: z.string(),
   registryUrl: z.string(),
   error: z.string().nullish(),
   registries: z.array(StoreRegistry),
@@ -86,6 +93,9 @@ export const StorePlanModule = z.object({
   size: z.number().nullish(),
   installedVersion: z.string().nullish(),
   requested: z.boolean(),
+  permissions: Permissions.nullish().catch(null),
+  widensPermissions: z.boolean().default(false),
+  official: z.boolean().default(false),
 });
 export type StorePlanModule = z.infer<typeof StorePlanModule>;
 
@@ -145,8 +155,22 @@ export type StoreInstallReport = z.infer<typeof StoreInstallReport>;
 export const StoreUpdateResult = z.object({
   updated: z.array(z.object({ id: z.string(), from: z.string(), to: z.string() })),
   failed: z.array(z.object({ id: z.string(), error: z.string() })),
+  /** Ids held back because the update asks for more than the installed version. */
+  needsConsent: z.array(z.string()).default([]),
 });
 export type StoreUpdateResult = z.infer<typeof StoreUpdateResult>;
+
+/** `POST /api/admin/store/inspect`: what a `.kmod` declares, read before it is
+ * installed so an operator can accept it. */
+export const StoreBundleInspection = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+  permissions: Permissions.nullish().catch(null),
+  installedVersion: z.string().nullish(),
+  widensPermissions: z.boolean().default(false),
+});
+export type StoreBundleInspection = z.infer<typeof StoreBundleInspection>;
 
 /** `POST /api/admin/store/registry-preview`: what a candidate registry URL
  * serves, fetched before the row is saved. */
@@ -165,7 +189,7 @@ export const StoreRegistryPreview = z.object({
 });
 export type StoreRegistryPreview = z.infer<typeof StoreRegistryPreview>;
 
-/** `POST /api/admin/modules/{id}/enabled`. `warning` reports a sidecar that
+/** `POST /api/admin/modules/{id}/enabled`. `warning` reports a module that
  * failed to start; the flag is set either way, the admin asked for it. */
 export const ModuleEnabledResult = z.object({
   id: ModuleId,

@@ -29,10 +29,10 @@ describe('StoreModule', () => {
   });
 
   it('keeps a refusal kind it knows', () => {
-    const entry = { ...ENTRY, refusal: { kind: 'platform', target: 'x86_64' } };
+    const entry = { ...ENTRY, refusal: { kind: 'native' } };
 
     const parsed = StoreModule.parse(entry);
 
-    expect(parsed.refusal).toEqual({ kind: 'platform', target: 'x86_64' });
+    expect(parsed.refusal).toEqual({ kind: 'native' });
   });
 });

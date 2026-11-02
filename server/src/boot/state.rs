@@ -72,6 +72,20 @@ pub fn build(
         Arc::new(move |id: &str| supervisor.permissions_of(id))
     };
 
+    let network_providers: kroma_engine::services::network::NetworkProviders = {
+        let supervisor = supervisor.clone();
+        let settings = settings.clone();
+        Arc::new(move || {
+            supervisor
+                .installed_manifests()
+                .into_iter()
+                .filter(|m| m.contributes.iter().any(|c| c.point == "network"))
+                .filter(|m| kroma_engine::modules::module_enabled(&settings, &m.id))
+                .map(|m| m.id)
+                .collect()
+        })
+    };
+
     // Transcription is long-running and rides a DB row for progress, so the core
     // holds a client for it. The embedder needs none: the state builds that point
     // from the same resolver.
@@ -81,7 +95,7 @@ pub fn build(
     ));
     services.insert(std::any::TypeId::of::<TranscriberClient>(), transcriber);
 
-    // Empty job roster: sidecars register their own jobs over `/_host/register-job`.
+    // Empty job roster: modules register their own jobs over `/_host/register-job`.
     let state = state::AppState::new(
         config,
         ffprobe_available,
@@ -94,6 +108,7 @@ pub fn build(
             contributions,
             official_modules,
             permissions,
+            network_providers,
         },
     );
     if let Err(e) = state.network.install() {
@@ -127,7 +142,7 @@ fn supervisor_config(config: &Config, host_token: String) -> SupervisorConfig {
         db_path: config.db_path(),
         data_dir: config.data_dir.clone(),
         // An in-core backend can't be shadowed by an installed `.kmod` of the
-        // same id (two live backends); sidecar-only modules are not reserved.
+        // same id (two live backends); installed-only modules are not reserved.
         reserved_ids: kroma_module_kernel::backend_ids(),
         server_version: crate::VERSION.to_string(),
         log_line: Some(Arc::new(|id: &str, line: &str| {

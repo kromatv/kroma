@@ -1,5 +1,5 @@
 // This module's own admin API. The routes belong to the module, not to the core
-// client: they are served by its sidecar under the mount the host derives from
+// client: they are served by the module under the mount the host derives from
 // its id, which `moduleApiHook` binds without the module naming itself.
 
 import { moduleApiHook } from '@kromatv/module-sdk';

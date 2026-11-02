@@ -6,7 +6,7 @@ use kroma_db::testing::{temp_pool, TempPool};
 use kroma_engine::point::Point;
 use kroma_engine::services::email::send_test;
 use kroma_engine::services::network::{
-    Flow, FlowFilter, FlowRoute, Network, NetworkRules, CORE, VPN_POINT,
+    Flow, FlowFilter, FlowRoute, Network, NetworkRules, CORE, NETWORK_POINT,
 };
 use kroma_engine::services::settings::Settings;
 use kroma_http::egress::BLOCKED;
@@ -23,8 +23,12 @@ fn network() -> &'static Network {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("create the policy's database folder");
         let pool = kroma_db::init(&dir.join("kroma.db")).expect("open the policy's database");
-        let vpn = Point::stub(VPN_POINT, |_, _| {
-            Some(json!("socks5://kroma:pw@127.0.0.1:25345"))
+        let vpn = Point::stub(NETWORK_POINT, |_, _| {
+            Some(json!([{
+                "name": "vpn",
+                "endpoint": { "address": "127.0.0.1:25345" },
+                "health": { "up": true }
+            }]))
         });
         let network = Arc::new(Network::new(pool.clone(), Settings::load(&pool), vpn));
         let rules: NetworkRules = serde_json::from_value(json!({

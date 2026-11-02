@@ -1,4 +1,4 @@
-//! The sidecar's half of the module's catalogs: the strings it sends a box come
+//! This crate's half of the module's catalogs: the strings it sends a box come
 //! from the same `locales/<code>.json` the console page and the channel read.
 
 use std::sync::OnceLock;
@@ -28,7 +28,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_catalogs_the_console_page_reads_are_the_ones_the_sidecar_resolves() {
+    fn the_catalogs_the_console_page_reads_are_the_ones_the_server_half_resolves() {
         let codes: Vec<&str> = CATALOGS.iter().map(|(code, _)| *code).collect();
 
         assert_eq!(codes, ["en", "fr"]);

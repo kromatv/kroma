@@ -1,1 +1,1 @@
-wasmtime::component::bindgen!({ path: "wit", world: "module" });
+wasmtime::component::bindgen!({ path: "../kroma-module-runtime/wit", world: "module" });

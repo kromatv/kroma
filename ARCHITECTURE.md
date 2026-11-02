@@ -49,37 +49,44 @@ server/
   src/                 kroma-server BINARY: main.rs + api/ (router + handlers), 8k LOC
   crates/
     kroma-engine/       infra + services + state + i18n + model  (the business logic, 20k LOC)
+    kroma-requests/     the request and monitoring workflows, no engine under them
     kroma-media/        ffprobe, the ffmpeg budget, HLS and its per-request program
                         (no db, no domain: the core and any module share it)
     kroma-db/           all SQL, one shared Pool                 (persistence, 7k LOC)
     kroma-sqlite/       the pool itself, the storage grant, a module's migrations
+    kroma-sqlite-guest/ rusqlite's API for a component; the host runs each statement
     kroma-domain/       entities + PURE rules (serde only, no I/O)
     kroma-module-wire/  the JSON a module and the host exchange (serde only)
     kroma-config/       env-parsed Config
     kroma-i18n/         translate + CLDR plurals (Rust port of @kromatv/core i18n)
     kroma-primitives/         timestamps · short hashes · random tokens (below db)
-    kroma-whisper/   Whisper transcription (candle)   ── heavy/optional dep graphs,
-    kroma-vector/        content embeddings (candle)      ── isolated behind features so
-    kroma-mdns/    mDNS advertising                 ── editing the server doesn't
-    kroma-http/ kroma-scene/ kroma-torznab/ kroma-torrent/   the acquisition stack
+    kroma-http/ kroma-egress/ kroma-push/   Fetch, the module gateway, push delivery
+    kroma-module-*/     the module host: kernel, manifest, macros, sdk, runtime, host,
+                        supervisor
+    kroma-wasm-host/    wasmtime and the WIT world every module is built against
 ```
+
+Modules are not here: each is its own cargo workspace under `modules/`, built into
+a WebAssembly component the supervisor runs.
 
 **Dependency graph (acyclic, compiler-enforced):**
 
 ```
-kroma-server(bin) → kroma-engine → { kroma-db, kroma-whisper, kroma-vector, kroma-mdns,
-                                    kroma-http, kroma-scene, kroma-torznab, kroma-torrent }
-       kroma-db → kroma-domain, kroma-primitives        everything → kroma-domain / kroma-config
+kroma-server(bin) → kroma-engine → { kroma-db, kroma-requests, kroma-media, kroma-http,
+                                    kroma-push, kroma-module-host }
+kroma-server(bin) → kroma-module-supervisor → { kroma-wasm-host, kroma-egress, kroma-db }
+       kroma-db → kroma-sqlite, kroma-domain, kroma-primitives
 ```
 
 - **`kroma-domain`** depends only on serde, **never** axum/rusqlite/reqwest/process.
-- **A sidecar links neither `kroma-db` nor `kroma-domain`.** The seven types it
-  exchanges with the host are `kroma-module-wire`, the pool and the grant are
-  `kroma-sqlite`, and both are re-exported by the crate that used to own them,
-  so nothing above the seam moved.
+- **A module links neither `kroma-db` nor `kroma-domain`** unless it is first-party and
+  enables the SDK's `core` or `domain` feature, as `acquisition` and `torrents` do. Both
+  crates build for wasm. The seven types a module exchanges with the host are
+  `kroma-module-wire`, the pool and the grant are `kroma-sqlite`, and the core crates
+  re-export both.
 - The layer modules keep their historical paths (`crate::db`, `crate::services`,
   `crate::model`, …) via crate aliases, so the split left call sites untouched.
-- Heavy or optional dependencies (candle, mdns) live in the module that needs them,
+- Heavy or optional dependencies (candle) live in the module that needs them,
   and each `.kmod` picks its own backend through its `[package.metadata.kmod]
   features`. The binary has no feature flags for them.
 - `services/` may use db/infra/domain, never api. `api/` translates HTTP↔services and holds no business logic.

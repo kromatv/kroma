@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use kroma_module_sdk::host::{call, call_raw, pinned_resolver, HostCtx, Resolver};
+use kroma_module_sdk::host::{call, call_raw, pinned_resolver, run_blocking, HostCtx, Resolver};
 
 pub const DOWNLOAD_GRAB: &str = "tv.kroma.torrents/grab";
 
@@ -106,6 +106,14 @@ pub fn activate(host: &dyn HostCtx, id: &str) {
     if let Err(e) = lifecycle(host, "activate", id) {
         tracing::warn!(target: "acquisition", download = %id, "could not start the download: {e:#}");
     }
+}
+
+/// [`activate`], once the caller has answered: an engine add is slow. Needs a
+/// tokio runtime, which every route and job here runs under.
+pub fn activate_later<H: HostCtx + Send + Sync + 'static>(host: H, id: String) {
+    tokio::spawn(async move {
+        let _ = run_blocking(move || activate(&host, &id)).await;
+    });
 }
 
 /// Free a download's data and stop seeding, once its files were imported.

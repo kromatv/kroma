@@ -72,11 +72,17 @@ export const Permissions = z
           .describe(
             'Sockets the gateway listens on for this module. The module never binds a host interface itself.',
           ),
+        discovery: z
+          .array(z.enum(['mdns', 'ssdp']))
+          .nullish()
+          .describe(
+            'What this module may ask of the local network through the host, without a socket: publishing over mDNS, searching over SSDP.',
+          ),
         host: z
           .boolean()
           .optional()
           .describe(
-            "Run on the host's network, outside the sandbox: for LAN multicast and a network provider's own tunnel. Shown in red at install, official registry only by default.",
+            "The programs this module starts use this machine's network directly: a network provider's own tunnel, a download engine's peers. Shown in red at install.",
           ),
       })
       .strict()
@@ -88,7 +94,9 @@ export const Permissions = z
     run: z
       .array(z.string().regex(/^(?!\.{1,2}$)[^/]+$/))
       .optional()
-      .describe('Binaries this module may start, by bare name. They inherit its sandbox.'),
+      .describe(
+        'Programs this module may start, by bare name: a helper it pins, or one on the server PATH. Only a module the official registry shipped may start any, and what it starts runs outside the component.',
+      ),
     env: z
       .array(z.string().regex(/^[A-Z_][A-Z0-9_]*$/))
       .optional()

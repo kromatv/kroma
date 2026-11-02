@@ -54,7 +54,7 @@ function UpdateRow({
           <Button
             variant="glass"
             size="sm"
-            label={t('admin.modulesUpdate')}
+            label={t(m.widensPermissions ? 'admin.modulesReview' : 'admin.modulesUpdate')}
             onPress={onUpdate}
             disabled={busy}
           />

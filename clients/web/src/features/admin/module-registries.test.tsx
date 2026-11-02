@@ -32,7 +32,6 @@ function runtimeListing(registries: StoreRegistry[]): WebRuntime {
   vi.spyOn(runtime.moduleApi, 'fetchStoreCatalog').mockResolvedValue({
     schema: 1,
     serverVersion: '0.1.39',
-    target: 'x86_64-unknown-linux-musl',
     registryUrl: registries[0]?.url ?? '',
     registries,
     modules: [],

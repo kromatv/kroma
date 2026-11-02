@@ -10,9 +10,9 @@ use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 
 use kroma_module_sdk::db;
-use kroma_module_sdk::engine::model::RequestKind;
-use kroma_module_sdk::engine::services::jobs::now_ms;
-use kroma_module_sdk::engine::services::requests::today_ymd;
+use kroma_module_sdk::domain::RequestKind;
+use kroma_module_sdk::primitives::now_ms;
+use kroma_module_sdk::requests::lifecycle::today_ymd;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::Verdict;
 
@@ -42,6 +42,7 @@ pub(crate) struct Pass<'a, S: HostStorage> {
     pub(crate) book: &'a RuleBook,
     pub(crate) log: &'a dyn Fn(String),
     pub(crate) cancelled: &'a dyn Fn() -> bool,
+    pub(crate) searching: &'a dyn Fn(),
 }
 
 pub fn auto_search_pass<S: HostStorage>(
@@ -70,6 +71,7 @@ pub fn auto_search_pass<S: HostStorage>(
         book: &book,
         log,
         cancelled,
+        searching: &|| {},
     };
     fill_missing(&pass, &mut summary)?;
     if summary.targets < MAX_TARGETS && !cancelled() {
@@ -215,6 +217,7 @@ pub(crate) fn search_title<S: HostStorage>(
             continue;
         }
         summary.targets += 1;
+        (pass.searching)();
         searched.extend(target_rows.iter().cloned());
         let aim = Aim {
             target: st,

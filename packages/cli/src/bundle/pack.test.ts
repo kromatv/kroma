@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { Project } from '../project';
-import { bundleName, type PackInput, packBundle, packForDev, SEAM } from './pack';
+import { bundleName, type PackInput, packBundle, packForDev } from './pack';
 import { tarNames, tarRead, toTar } from './tar';
 
 const work = mkdtempSync(join(tmpdir(), 'kroma-pack-'));
@@ -16,50 +16,61 @@ function fixture(): PackInput {
   made += 1;
   const dir = join(work, `notes-${made}`);
   mkdirSync(join(dir, 'fe'), { recursive: true });
-  const manifest = { schemaVersion: 2, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' };
+  const manifest = { schemaVersion: 3, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' };
   writeFileSync(join(dir, 'module.json'), JSON.stringify(manifest));
   writeFileSync(join(dir, 'icon.svg'), '<svg/>');
-  writeFileSync(join(dir, 'module'), 'ELF sidecar');
+  writeFileSync(join(dir, 'kroma-module-notes.wasm'), '\0asm component');
   writeFileSync(join(dir, 'fe', 'remoteEntry.js'), 'export default 1;');
   const project: Project = { dir, manifest, server: null, ui: null };
   return {
     project,
-    binPath: join(dir, 'module'),
+    binPath: join(dir, 'kroma-module-notes.wasm'),
     feDir: join(dir, 'fe'),
     outDir: join(work, `dist-${made}`),
-    target: 'aarch64-apple-darwin',
   };
 }
 
 const bytesOf = (path: string) => new Uint8Array(readFileSync(path));
-const bundledManifest = (path: string): Record<string, unknown> =>
-  JSON.parse(Buffer.from(tarRead(toTar(bytesOf(path)), 'module.json') ?? []).toString('utf8'));
 const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 describe('bundleName', () => {
-  it('adds the triple only to a bundle that carries a sidecar', () => {
-    expect(bundleName('tv.kroma.notes', true, 'aarch64-apple-darwin')).toBe(
-      'tv.kroma.notes-aarch64-apple-darwin.kmod',
-    );
-    expect(bundleName('tv.kroma.notes', false, 'aarch64-apple-darwin')).toBe('tv.kroma.notes.kmod');
-    expect(bundleName('tv.kroma.notes', true, null)).toBe('tv.kroma.notes.kmod');
+  it('names every bundle after its module id alone, the same for every platform', () => {
+    expect(bundleName('tv.kroma.notes')).toBe('tv.kroma.notes.kmod');
   });
 });
 
 describe('packBundle', () => {
-  it('holds the manifest, the sidecar, the icon and the frontend', () => {
+  it('holds the manifest, the component, the icon and the frontend', () => {
     const input = fixture();
 
     const packed = packBundle(input);
 
-    expect(packed.file).toBe('tv.kroma.notes-aarch64-apple-darwin.kmod');
+    expect(packed.file).toBe('tv.kroma.notes.kmod');
     expect(tarNames(toTar(bytesOf(packed.path)))).toEqual([
       'fe/',
       'fe/remoteEntry.js',
       'icon.svg',
-      'module',
       'module.json',
+      'module.wasm',
     ]);
+  });
+
+  it('packs the component under the one name the server reads, whatever cargo called it', () => {
+    const input = fixture();
+
+    const packed = packBundle(input);
+
+    const component = tarRead(toTar(bytesOf(packed.path)), 'module.wasm');
+    expect(Buffer.from(component ?? []).toString('utf8')).toBe('\0asm component');
+  });
+
+  it('refuses a server build that is not a component, naming the module', () => {
+    const input = fixture();
+    writeFileSync(join(input.project.dir, 'module'), 'ELF');
+
+    expect(() => packBundle({ ...input, binPath: join(input.project.dir, 'module') })).toThrow(
+      /tv\.kroma\.notes: .*module is not a WebAssembly component/,
+    );
   });
 
   it('carries the module’s catalogs, which the server renders its notifications from', () => {
@@ -75,27 +86,15 @@ describe('packBundle', () => {
     expect(names).not.toContain('locales/notes.md');
   });
 
-  it('records in the manifest that the sidecar speaks the socket seam', () => {
+  it('packs the manifest byte for byte as it was written', () => {
     const input = fixture();
 
     const packed = packBundle(input);
 
-    expect(bundledManifest(packed.path)).toEqual({
-      schemaVersion: 2,
-      id: 'tv.kroma.notes',
-      name: 'Notes',
-      version: '1.2.0',
-      seam: SEAM,
-    });
-  });
-
-  it('leaves the manifest of a library module as it was written', () => {
-    const input = fixture();
-
-    const packed = packBundle({ ...input, binPath: null });
-
-    expect(bundledManifest(packed.path).seam).toBeUndefined();
-    expect(readFileSync(join(input.project.dir, 'module.json'), 'utf8')).not.toContain('seam');
+    const bundled = tarRead(toTar(bytesOf(packed.path)), 'module.json');
+    expect(Buffer.from(bundled ?? []).toString('utf8')).toBe(
+      readFileSync(join(input.project.dir, 'module.json'), 'utf8'),
+    );
   });
 
   it('leaves nothing staged in the module directory', () => {
@@ -140,13 +139,13 @@ describe('packBundle', () => {
     );
   });
 
-  it('names a library module after its id alone, whatever it was built for', () => {
+  it('packs a library module with no component in it, under the same name', () => {
     const input = fixture();
 
     const packed = packBundle({ ...input, binPath: null });
 
     expect(packed.file).toBe('tv.kroma.notes.kmod');
-    expect(tarNames(toTar(bytesOf(packed.path)))).not.toContain('module');
+    expect(tarNames(toTar(bytesOf(packed.path)))).not.toContain('module.wasm');
   });
 });
 
@@ -163,8 +162,8 @@ describe('packForDev', () => {
       'fe/',
       'fe/remoteEntry.js',
       'icon.svg',
-      'module',
       'module.json',
+      'module.wasm',
     ]);
     expect(existsSync(`${packed.path}.sha256`)).toBe(false);
   });

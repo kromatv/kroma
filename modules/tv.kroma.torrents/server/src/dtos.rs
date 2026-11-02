@@ -37,7 +37,6 @@ pub enum EngineState {
     Ready,
     Starting,
     Stopped,
-    NotCompiled,
     Unknown,
 }
 
@@ -77,7 +76,6 @@ impl MatchSource {
 #[serde(rename_all = "camelCase")]
 pub struct DownloadClientsView {
     pub clients: Vec<DownloadClientView>,
-    pub rqbit_compiled: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]

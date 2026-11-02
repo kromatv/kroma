@@ -1,6 +1,8 @@
 import type { RulesUpdate } from '@kromatv/client/network';
 import { describe, expect, it } from 'vitest';
 import {
+  actionNetworks,
+  EMPTY_DRAFT,
   freshRuleId,
   moveRule,
   parseHostPattern,
@@ -57,13 +59,15 @@ describe('a rule written in the editor', () => {
       caller: 'core',
       purpose: 'metadata',
       host: '',
+      port: '',
+      address: '',
       action: 'direct',
       note: '  ',
     } as const;
 
     expect(ruleFromDraft(draft, 'r-9')).toEqual({
       ok: true,
-      rule: rule({ id: 'r-9', caller: 'core', purpose: 'metadata' }),
+      rule: rule({ id: 'r-9', caller: 'core', purpose: 'metadata', port: null, address: null }),
     });
   });
 
@@ -72,11 +76,35 @@ describe('a rule written in the editor', () => {
       caller: null,
       purpose: null,
       host: 'http://x',
+      port: '',
+      address: '',
       action: 'block',
       note: '',
     } as const;
 
-    expect(ruleFromDraft(draft, 'r-9')).toEqual({ ok: false });
+    expect(ruleFromDraft(draft, 'r-9')).toEqual({ ok: false, field: 'host' });
+  });
+
+  it('reads a port and an address range', () => {
+    const draft = { ...EMPTY_DRAFT, port: ' 6881 ', address: '10.0.0.0/8' };
+
+    const made = ruleFromDraft(draft, 'r-9');
+
+    expect(made).toMatchObject({ ok: true, rule: { port: 6881, address: '10.0.0.0/8' } });
+  });
+
+  it('is refused while its port is not one', () => {
+    expect(ruleFromDraft({ ...EMPTY_DRAFT, port: '70000' }, 'r-9')).toEqual({
+      ok: false,
+      field: 'port',
+    });
+  });
+
+  it('is refused while its address is not a range', () => {
+    expect(ruleFromDraft({ ...EMPTY_DRAFT, address: 'nas' }, 'r-9')).toEqual({
+      ok: false,
+      field: 'address',
+    });
   });
 });
 
@@ -151,5 +179,17 @@ describe('a rule for one host', () => {
     expect(
       withHostRule({ ...RULES, defaultAction: 'block' }, 'x.example', 'vpn').defaultAction,
     ).toBe('block');
+  });
+});
+
+describe('the networks a rule can name', () => {
+  const offered = { label: '', carries: { tcp: true, udp: false, dns: true }, up: true };
+
+  it('are the ones on offer', () => {
+    expect(actionNetworks([{ ...offered, name: 'vpn' }], 'direct')).toEqual(['vpn']);
+  });
+
+  it('keep the one a rule already names, though it is gone', () => {
+    expect(actionNetworks([{ ...offered, name: 'vpn' }], 'tor')).toEqual(['vpn', 'tor']);
   });
 });

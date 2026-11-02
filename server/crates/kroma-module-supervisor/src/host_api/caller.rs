@@ -13,7 +13,7 @@ use crate::Supervisor;
 /// Who made a callback, and what that caller declared about itself.
 ///
 /// `module` is `None` for a caller holding the fabric token rather than one minted
-/// per module process: authenticated, but not named. A bundle built before
+/// per module: authenticated, but not named. A bundle built before
 /// per-module tokens existed is in that position, and so is a module presenting
 /// the fabric token on purpose, so an unnamed caller reaches nothing that wants a
 /// declaration.

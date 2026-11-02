@@ -30,6 +30,19 @@ pub struct NetPermissions {
     pub listen: Vec<Listen>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub host: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub discovery: Vec<Discovery>,
+}
+
+/// What a module may ask of the local network through the host, without a socket
+/// of its own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Discovery {
+    /// Publish a service over mDNS.
+    Mdns,
+    /// Search for devices over SSDP.
+    Ssdp,
 }
 
 /// Connections for one purpose. `to` holds `public`, `lan`, a host (`*.` for a
@@ -93,6 +106,17 @@ pub struct Attempt<'a> {
     pub proto: Proto,
 }
 
+/// How far a covered connection may reach once its name is resolved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reach {
+    /// Covered by `public` alone, so every address the name resolves to must be
+    /// public.
+    PublicOnly,
+    /// Covered by `lan`, a host or a setting: a destination someone named, which
+    /// may well sit on a private address.
+    Named,
+}
+
 impl Permissions {
     /// Whether some `net.connect` entry covers `attempt`. `setting` answers the
     /// hosts a `setting:<key>` destination currently names.
@@ -101,15 +125,64 @@ impl Permissions {
         attempt: &Attempt<'_>,
         setting: &dyn Fn(&str) -> Vec<String>,
     ) -> bool {
-        self.net.connect.iter().any(|entry| {
-            entry.purpose == attempt.purpose
-                && (entry.ports.is_empty() || entry.ports.contains(&attempt.port))
-                && entry.protocols().contains(&attempt.proto)
-                && entry
-                    .to
-                    .iter()
-                    .any(|to| destination_matches(to, attempt, setting))
+        self.connect_reach(attempt, setting).is_some()
+    }
+
+    /// Whether this block asks for anything `before` does not grant.
+    pub fn widens(&self, before: &Permissions) -> bool {
+        let beyond = |asked: &[String], granted: &[String]| asked.iter().any(|a| !granted.contains(a));
+        let roots_beyond = |asked: &[FsRoot], granted: &[FsRoot]| asked.iter().any(|a| !granted.contains(a));
+        (self.net.host && !before.net.host)
+            || self.net.connect.iter().any(|connect| !before.covers(connect))
+            || self.net.discovery.iter().any(|kind| !before.net.discovery.contains(kind))
+            || self.net.listen.iter().any(|listen| !before.net.listen.contains(listen))
+            || roots_beyond(&self.fs.read, &before.fs.read)
+            || roots_beyond(&self.fs.write, &before.fs.write)
+            || beyond(&self.run, &before.run)
+            || beyond(&self.env, &before.env)
+    }
+
+    fn covers(&self, asked: &Connect) -> bool {
+        asked.to.iter().all(|to| {
+            self.net.connect.iter().any(|granted| {
+                granted.purpose == asked.purpose
+                    && granted.to.contains(to)
+                    && (granted.ports.is_empty()
+                        || (!asked.ports.is_empty()
+                            && asked.ports.iter().all(|port| granted.ports.contains(port))))
+                    && asked
+                        .protocols()
+                        .iter()
+                        .all(|proto| granted.protocols().contains(proto))
+            })
         })
+    }
+
+    /// How far `attempt` may reach, or `None` when no `net.connect` entry covers
+    /// it.
+    pub fn connect_reach(
+        &self,
+        attempt: &Attempt<'_>,
+        setting: &dyn Fn(&str) -> Vec<String>,
+    ) -> Option<Reach> {
+        let mut covered = None;
+        for entry in &self.net.connect {
+            let applies = entry.purpose == attempt.purpose
+                && (entry.ports.is_empty() || entry.ports.contains(&attempt.port))
+                && entry.protocols().contains(&attempt.proto);
+            if !applies {
+                continue;
+            }
+            for to in &entry.to {
+                if destination_matches(to, attempt, setting) {
+                    if to != "public" {
+                        return Some(Reach::Named);
+                    }
+                    covered = Some(Reach::PublicOnly);
+                }
+            }
+        }
+        covered
     }
 }
 

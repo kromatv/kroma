@@ -8,7 +8,7 @@ export interface SiteModule {
   /** English, from the catalog. Site copy is preferred; this is the fallback. */
   description: string | null;
   icon: string | null;
-  /** A library module is linked by the sidecars that use it; it runs no process of its own. */
+  /** A library module is linked by the modules that use it; it runs nothing of its own. */
   library: boolean;
   answers: string[];
   needs: string[];

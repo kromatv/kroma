@@ -1,26 +1,18 @@
-//! The host callbacks on both doors: on the core's own Unix socket, for any
-//! token the supervisor minted; on the TCP listener, for a module on the legacy
-//! seam only.
+//! The host callbacks, on the core's own Unix socket and nowhere else, for any
+//! token the supervisor minted.
 
-use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::extract::{ConnectInfo, Request, State};
-use axum::http::StatusCode;
-use axum::middleware::{from_fn_with_state, Next};
-use axum::response::Response;
 use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
 use tower_http::trace::TraceLayer;
 
 use super::{host_events, host_jobs, module_proxy};
-use crate::api::error::json_error;
-use crate::api::extract::bearer_from_headers;
 use crate::state::SharedState;
 
-/// The router on the core's own Unix socket, where a module on the socket seam
-/// calls back: the host callbacks and the reverse proxy to a peer module, and
-/// none of the routes a client of the server reaches.
+/// The router on the core's own Unix socket, where a module calls back: the host
+/// callbacks and the reverse proxy to a peer module, and none of the routes a
+/// client of the server reaches.
 pub fn router(
     state: SharedState,
     supervisor: Arc<Supervisor>,
@@ -33,17 +25,6 @@ pub fn router(
         .nest("/api", api)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
-}
-
-pub(super) fn tcp_host_routes(
-    state: &SharedState,
-    supervisor: &Arc<Supervisor>,
-    subscriptions: &Arc<host_events::Subscriptions>,
-) -> Router<SharedState> {
-    host_routes(state, supervisor, subscriptions).layer(from_fn_with_state(
-        supervisor.clone(),
-        legacy_host_callers_only,
-    ))
 }
 
 fn host_routes(
@@ -62,33 +43,6 @@ fn host_routes(
         subscriptions.clone(),
     ))
 }
-
-async fn legacy_host_callers_only(
-    State(supervisor): State<Arc<Supervisor>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    req: Request,
-    next: Next,
-) -> Response {
-    let relayed = RELAY_HEADERS
-        .iter()
-        .any(|name| req.headers().contains_key(*name));
-    let legacy =
-        bearer_from_headers(req.headers()).is_some_and(|bearer| supervisor.legacy_caller(&bearer));
-    if addr.ip().to_canonical().is_loopback() && !relayed && legacy {
-        next.run(req).await
-    } else {
-        json_error(StatusCode::NOT_FOUND, "not found")
-    }
-}
-
-const RELAY_HEADERS: [&str; 6] = [
-    "forwarded",
-    "x-forwarded-for",
-    "x-forwarded-host",
-    "x-real-ip",
-    "cf-connecting-ip",
-    "cdn-loop",
-];
 
 #[cfg(test)]
 mod tests {

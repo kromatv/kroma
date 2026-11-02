@@ -1,77 +1,55 @@
 use std::sync::Arc;
-use std::time::Duration;
 
-use anyhow::{anyhow, bail, Result};
-use librqbit::api::TorrentIdOrHash;
-use librqbit::{AddTorrent, AddTorrentOptions, AddTorrentResponse};
+use anyhow::{Result, anyhow, bail};
 
-use super::{ManagedTorrentHandle, RqbitEngine, METADATA_DEADLINE};
+use super::RqbitEngine;
+use super::adding::StillAdding;
+use super::api::AddOptions;
+use super::wire::Listed;
 use crate::{AddTorrentReq, DownloadClient, TorrentState, TorrentStatus};
+
+const CURL_TIMED_OUT: &str = "curl exit 28";
 
 pub(crate) struct RqbitClient {
     pub(super) engine: Arc<RqbitEngine>,
 }
 
-// librqbit `Speed.mbps` is MiB/s (bytes / 1024 / 1024).
 fn mib_to_bytes(mbps: f64) -> u64 {
     (mbps * 1024.0 * 1024.0).max(0.0) as u64
 }
 
-fn status_of(handle: &ManagedTorrentHandle) -> TorrentStatus {
-    use librqbit::TorrentStatsState as S;
-    let stats = handle.stats();
+fn state_of(listed: &Listed) -> TorrentState {
+    let stats = listed.stats.as_ref();
+    let done = stats.is_some_and(|stats| stats.finished);
+    match stats.map_or("", |stats| stats.state.as_str()) {
+        "paused" if done => TorrentState::Completed,
+        "paused" => TorrentState::Paused,
+        "error" => TorrentState::Error,
+        "live" if done => TorrentState::Seeding,
+        "live" => TorrentState::Downloading,
+        _ => TorrentState::Queued,
+    }
+}
+
+fn status_of(listed: &Listed, files: Vec<String>) -> TorrentStatus {
+    let stats = listed.stats.clone().unwrap_or_default();
+    let live = stats.live.clone().unwrap_or_default();
     let progress = if stats.total_bytes > 0 {
         stats.progress_bytes as f64 / stats.total_bytes as f64
     } else {
         0.0
     };
-    let done = stats.finished;
-    let state = match stats.state {
-        S::Initializing => TorrentState::Queued,
-        S::Paused if done => TorrentState::Completed,
-        S::Paused => TorrentState::Paused,
-        S::Error => TorrentState::Error,
-        S::Live if done => TorrentState::Seeding,
-        S::Live => TorrentState::Downloading,
-    };
-    let (down_bps, up_bps) = stats
-        .live
-        .as_ref()
-        .map(|l| {
-            (
-                mib_to_bytes(l.download_speed.mbps),
-                mib_to_bytes(l.upload_speed.mbps),
-            )
-        })
-        .unwrap_or((0, 0));
-    let (peers, peers_seen) = stats
-        .live
-        .as_ref()
-        .map(|l| (l.snapshot.peer_stats.live, l.snapshot.peer_stats.seen))
-        .unwrap_or((0, 0));
-    let metadata = handle.metadata.load();
-    let files = metadata
-        .as_ref()
-        .map(|m| {
-            m.file_infos
-                .iter()
-                .map(|f| f.relative_filename.to_string_lossy().into_owned())
-                .collect()
-        })
-        .unwrap_or_default();
     TorrentStatus {
-        client_ref: handle.info_hash().as_string(),
-        name: handle.name().unwrap_or_default(),
-        info_hash: Some(handle.info_hash().as_string()),
+        client_ref: listed.info_hash.clone(),
+        name: listed.name.clone().unwrap_or_default(),
+        info_hash: Some(listed.info_hash.clone()),
         progress,
-        state,
-        down_bps,
-        up_bps,
-        peers,
-        peers_seen,
+        state: state_of(listed),
+        down_bps: mib_to_bytes(live.download_speed.mbps),
+        up_bps: mib_to_bytes(live.upload_speed.mbps),
+        peers: live.snapshot.peer_stats.live,
+        peers_seen: live.snapshot.peer_stats.seen,
         size_bytes: stats.total_bytes,
-        // The manager sets an explicit per-download output folder at add time
-        // and remembers it; the engine reports none.
         save_path: None,
         files,
         error: stats.error,
@@ -86,46 +64,18 @@ impl DownloadClient for RqbitClient {
     }
 
     fn test(&self) -> Result<String> {
-        Ok(format!("librqbit {} (embedded)", "9"))
+        Ok(format!("rqbit {} (helper)", self.engine.version))
     }
 
     fn add(&self, req: &AddTorrentReq) -> Result<String> {
         let engine = &self.engine;
         refuse_unsealed_fetch(engine, req.torrent_bytes, req.magnet_or_url)?;
-        let initial_peers = engine.proxied_peers(req.torrent_bytes, req.magnet_or_url);
-        if !initial_peers.is_empty() {
-            let v6 = initial_peers.iter().filter(|p| p.is_ipv6()).count();
-            tracing::info!(
-                total = initial_peers.len(),
-                ipv6 = v6,
-                "seeded torrent with peers from our proxied tracker announce"
-            );
-        }
-        let opts = AddTorrentOptions {
-            output_folder: req.download_dir.map(str::to_string),
-            overwrite: true,
-            only_files: req.only_files.map(<[usize]>::to_vec),
-            initial_peers: (!initial_peers.is_empty()).then_some(initial_peers),
-            ..Default::default()
+        let added = match req.torrent_bytes {
+            Some(bytes) => add_bytes(engine, bytes, req),
+            None => add_link(engine, req),
         };
-        let magnet_or_url = req.magnet_or_url.to_string();
-        let add = match req.torrent_bytes {
-            Some(bytes) => AddTorrent::from_bytes(bytes.to_vec()),
-            None => AddTorrent::from_url(&magnet_or_url),
-        };
-        let response = engine.handle.block_on(async {
-            tokio::time::timeout(
-                Duration::from_secs(120),
-                engine.session().add_torrent(add, Some(opts)),
-            )
-            .await
-            .map_err(|_| anyhow!("timed out adding torrent (magnet resolve slow?)"))?
-        })?;
-        match response {
-            AddTorrentResponse::Added(_, handle)
-            | AddTorrentResponse::AlreadyManaged(_, handle) => Ok(handle.info_hash().as_string()),
-            AddTorrentResponse::ListOnly(_) => bail!("unexpected list-only add response"),
-        }
+        engine.forget_snapshot();
+        added
     }
 
     fn list_files(
@@ -136,94 +86,120 @@ impl DownloadClient for RqbitClient {
         let engine = &self.engine;
         refuse_unsealed_fetch(engine, torrent_bytes, magnet_or_url)?;
         let initial_peers = engine.proxied_peers(torrent_bytes, magnet_or_url);
-        let opts = AddTorrentOptions {
+        let options = AddOptions {
             list_only: true,
-            initial_peers: (!initial_peers.is_empty()).then_some(initial_peers),
-            ..Default::default()
+            is_url: torrent_bytes.is_none(),
+            initial_peers: &initial_peers,
+            ..AddOptions::default()
         };
-        let url = magnet_or_url.to_string();
-        let add = match torrent_bytes {
-            Some(bytes) => AddTorrent::from_bytes(bytes.to_vec()),
-            None => AddTorrent::from_url(&url),
-        };
-        let response = engine.handle.block_on(async {
-            tokio::time::timeout(
-                METADATA_DEADLINE,
-                engine.session().add_torrent(add, Some(opts)),
-            )
-            .await
-            .map_err(|_| anyhow!("no peer answered with this torrent's file list in time"))?
+        let body = torrent_bytes.unwrap_or(magnet_or_url.as_bytes());
+        let added = engine.api.add(body, &options).map_err(|error| {
+            if format!("{error:#}").contains(CURL_TIMED_OUT) {
+                anyhow!("no peer answered with this torrent's file list in time")
+            } else {
+                error
+            }
         })?;
-        let info = match response {
-            AddTorrentResponse::ListOnly(resp) => resp.info,
-            AddTorrentResponse::Added(_, h) | AddTorrentResponse::AlreadyManaged(_, h) => h
-                .metadata
-                .load()
-                .as_ref()
-                .map(|m| m.info.clone())
-                .ok_or_else(|| {
-                    anyhow!("torrent already added but its metadata is not resolved yet")
-                })?,
-        };
-        let mut out = Vec::new();
-        for (index, file) in info.iter_file_details().enumerate() {
-            out.push(crate::TorrentFileEntry {
+        Ok(added
+            .details
+            .files
+            .unwrap_or_default()
+            .iter()
+            .enumerate()
+            .map(|(index, file)| crate::TorrentFileEntry {
                 index,
-                path: file.filename.to_pathbuf().to_string_lossy().into_owned(),
-                size_bytes: file.len,
-            });
-        }
-        Ok(out)
+                path: file.path(),
+                size_bytes: file.length,
+            })
+            .collect())
     }
 
     fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
-        match TorrentIdOrHash::parse(client_ref)
-            .ok()
-            .and_then(|id| self.engine.session().get(id))
-        {
-            Some(handle) => Ok(Some(status_of(&handle))),
-            None => Ok(None),
-        }
+        let Some(listed) = self.engine.listed(client_ref)? else {
+            return Ok(None);
+        };
+        let files = self.engine.files_of(client_ref)?;
+        Ok(Some(status_of(&listed, files)))
     }
 
     fn pause(&self, client_ref: &str) -> Result<()> {
-        let handle = self.engine.find(client_ref)?;
-        self.engine
-            .handle
-            .block_on(self.engine.session().pause(&handle))
+        self.engine.forget_snapshot();
+        self.engine.api.pause(client_ref)
     }
 
     fn resume(&self, client_ref: &str) -> Result<()> {
-        let handle = self.engine.find(client_ref)?;
-        self.engine
-            .handle
-            .block_on(self.engine.session().unpause(&handle))
+        self.engine.forget_snapshot();
+        self.engine.api.start(client_ref)
     }
 
     fn reannounce(&self, client_ref: &str) -> Result<()> {
-        // librqbit exposes no force-announce; a pause->unpause cycle rebuilds
-        // the live task, which re-announces to every tracker immediately (the
-        // recovery lever for a peer-starved torrent stuck at 0%).
-        let handle = self.engine.find(client_ref)?;
-        if matches!(handle.stats().state, librqbit::TorrentStatsState::Paused) {
-            return Ok(()); // deliberately paused: don't resurrect it
+        let listed = self.engine.listed(client_ref)?;
+        let paused = listed
+            .and_then(|listed| listed.stats)
+            .is_some_and(|stats| stats.state == "paused");
+        if paused {
+            return Ok(());
         }
-        self.engine.handle.block_on(async {
-            self.engine.session().pause(&handle).await?;
-            self.engine.session().unpause(&handle).await
-        })
+        self.engine.forget_snapshot();
+        self.engine.api.pause(client_ref)?;
+        self.engine.api.start(client_ref)
     }
 
     fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
-        let id = TorrentIdOrHash::parse(client_ref)
-            .map_err(|e| anyhow!("bad torrent ref {client_ref:?}: {e:#}"))?;
-        self.engine
-            .handle
-            .block_on(self.engine.session().delete(id, delete_data))
+        self.engine.forget_snapshot();
+        self.engine.forget_files(client_ref);
+        if delete_data {
+            self.engine.api.delete(client_ref)
+        } else {
+            self.engine.api.forget(client_ref)
+        }
     }
 }
 
-// librqbit resolves a `.torrent` URL's name locally, outside the tunnel.
+fn add_bytes(engine: &RqbitEngine, bytes: &[u8], req: &AddTorrentReq) -> Result<String> {
+    let initial_peers = engine.proxied_peers(Some(bytes), req.magnet_or_url);
+    if !initial_peers.is_empty() {
+        let v6 = initial_peers.iter().filter(|peer| peer.is_ipv6()).count();
+        tracing::info!(
+            total = initial_peers.len(),
+            ipv6 = v6,
+            "seeded torrent with peers from our proxied tracker announce"
+        );
+    }
+    let options = AddOptions {
+        output_folder: req.download_dir,
+        only_files: req.only_files,
+        initial_peers: &initial_peers,
+        ..AddOptions::default()
+    };
+    Ok(engine.api.add(bytes, &options)?.details.info_hash)
+}
+
+fn add_link(engine: &RqbitEngine, req: &AddTorrentReq) -> Result<String> {
+    let link = req.magnet_or_url;
+    if let Some(answer) = engine.adding.poll(link) {
+        return answer;
+    }
+    let known = crate::magnet::parse(link).and_then(|magnet| magnet.hex_hash());
+    if let Some(hash) = known {
+        if engine.api.holds(&hash)? {
+            return Ok(hash);
+        }
+    }
+    let initial_peers = engine.proxied_peers(None, link);
+    engine.adding.start(
+        link,
+        &AddOptions {
+            output_folder: req.download_dir,
+            only_files: req.only_files,
+            initial_peers: &initial_peers,
+            is_url: true,
+            ..AddOptions::default()
+        },
+    )?;
+    Err(StillAdding.into())
+}
+
 fn refuse_unsealed_fetch(
     engine: &RqbitEngine,
     torrent_bytes: Option<&[u8]>,
@@ -234,3 +210,6 @@ fn refuse_unsealed_fetch(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

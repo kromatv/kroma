@@ -1,3 +1,5 @@
+use kroma_module_sdk::db::{Run, Step};
+
 /// The tables this module keeps in its own database, applied at boot.
 pub const MIGRATIONS: &str = "
     -- The quality profiles, custom formats and size limits the admin edits.
@@ -83,3 +85,97 @@ pub const MIGRATIONS: &str = "
         PRIMARY KEY (kind, tmdb_id)
     );
 ";
+
+/// Every change to this module's database since [`MIGRATIONS`], oldest first.
+pub const STEPS: &[Step] = &[Step {
+    name: "what every instance of the module shares",
+    run: Run::Sql(
+        "
+        CREATE TABLE IF NOT EXISTS search_results (
+            key         TEXT PRIMARY KEY,
+            releases    TEXT NOT NULL,
+            searched_at INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS run_leases (
+            name       TEXT PRIMARY KEY,
+            holder     TEXT NOT NULL,
+            expires_at INTEGER NOT NULL
+        );
+        ",
+    ),
+    rebuilds: false,
+}];
+
+#[cfg(test)]
+pub(crate) fn install(store: &kroma_module_sdk::db::Pool) {
+    let conn = store.get().unwrap();
+    kroma_module_sdk::db::apply_migrations(&conn, MIGRATIONS).unwrap();
+    for step in STEPS {
+        if let Run::Sql(sql) = step.run {
+            conn.execute_batch(sql).unwrap();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use kroma_module_sdk::db::{migrate_store, open};
+
+    use super::*;
+
+    fn tables(store: &kroma_module_sdk::db::Pool) -> Vec<String> {
+        let conn = store.get().unwrap();
+        let mut rows = conn
+            .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name")
+            .unwrap();
+        rows.query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn a_new_file_has_the_tables_every_instance_shares() {
+        let scratch = kroma_module_sdk::testing::temp_dir("acq-schema-new");
+        let store = open(&scratch.path().join("module.sqlite")).unwrap();
+
+        migrate_store(&store, "tv.kroma.acquisition", MIGRATIONS, STEPS).unwrap();
+
+        let found = tables(&store);
+        assert!(found.contains(&"search_results".to_string()), "{found:?}");
+        assert!(found.contains(&"run_leases".to_string()), "{found:?}");
+    }
+
+    #[test]
+    fn a_file_from_before_the_step_keeps_its_rows_and_gains_the_tables() {
+        let scratch = kroma_module_sdk::testing::temp_dir("acq-schema-old");
+        let store = open(&scratch.path().join("module.sqlite")).unwrap();
+        migrate_store(&store, "tv.kroma.acquisition", MIGRATIONS, &[]).unwrap();
+        store
+            .get()
+            .unwrap()
+            .execute("INSERT INTO rule_settings (key, value) VALUES ('kept', '1')", [])
+            .unwrap();
+
+        migrate_store(&store, "tv.kroma.acquisition", MIGRATIONS, STEPS).unwrap();
+
+        let conn = store.get().unwrap();
+        let kept: String = conn
+            .query_row("SELECT value FROM rule_settings WHERE key = 'kept'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(kept, "1");
+        assert!(tables(&store).contains(&"run_leases".to_string()));
+    }
+
+    #[test]
+    fn two_instances_reaching_the_step_together_both_start() {
+        let scratch = kroma_module_sdk::testing::temp_dir("acq-schema-race");
+        let store = open(&scratch.path().join("module.sqlite")).unwrap();
+        migrate_store(&store, "tv.kroma.acquisition", MIGRATIONS, &[]).unwrap();
+        store.get().unwrap().execute_batch("CREATE TABLE search_results (key TEXT PRIMARY KEY, releases TEXT NOT NULL, searched_at INTEGER NOT NULL)").unwrap();
+
+        migrate_store(&store, "tv.kroma.acquisition", MIGRATIONS, STEPS).unwrap();
+
+        assert!(tables(&store).contains(&"run_leases".to_string()));
+    }
+}

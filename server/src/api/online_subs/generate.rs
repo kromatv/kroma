@@ -183,7 +183,7 @@ async fn run_generation(t: GenTask) {
     let settings = state.settings.clone();
     let data_dir = state.config.data_dir.clone();
     let pool = state.db.clone();
-    // The transcriber is the out-of-process sidecar proxy (registered as a
+    // The transcriber is the module proxy (registered as a
     // service in the composition root); translate-only generations don't need
     // it, so a missing one only fails a transcribe.
     let transcriber = kroma_module_host::service::<TranscriberClient>(&state);

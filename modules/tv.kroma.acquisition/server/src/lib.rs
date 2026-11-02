@@ -5,6 +5,9 @@
 
 #![allow(clippy::result_large_err)]
 
+#[cfg(target_family = "wasm")]
+extern crate kroma_sqlite_guest as rusqlite;
+
 pub mod auto;
 pub mod dtos;
 pub mod failures;
@@ -26,7 +29,7 @@ pub use serve::acqsearch_routes;
 
 use kroma_module_sdk::host::HostStorage;
 
-use kroma_module_sdk::engine::services::jobs::now_ms;
+use kroma_module_sdk::primitives::now_ms;
 use peers::indexers::IndexerRef;
 
 pub const MODULE_ID: &str = "tv.kroma.acquisition";
@@ -42,6 +45,15 @@ pub fn search_indexer<S: HostStorage>(
     query: &peers::indexers::Query,
 ) -> anyhow::Result<Vec<peers::indexers::Release>> {
     let outcome = peers::indexers::search(state, &indexer.id, query)?;
+    releases_of(state, indexer, outcome)
+}
+
+/// What one indexer's answer comes to, noted against it for the admin.
+pub(crate) fn releases_of<S: HostStorage>(
+    state: &S,
+    indexer: &IndexerRef,
+    outcome: peers::indexers::SearchOutcome,
+) -> anyhow::Result<Vec<peers::indexers::Release>> {
     // A partial per-path error alongside real results must not flag the indexer
     // as broken.
     let note_ok = !outcome.releases.is_empty() || outcome.errors.is_empty();
@@ -95,6 +107,10 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
         rules::schema::MIGRATIONS
     }
 
+    fn steps(&self) -> &'static [kroma_module_sdk::db::Step] {
+        rules::schema::STEPS
+    }
+
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
         Some(
             routes::routes::<S>()
@@ -107,7 +123,7 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
     fn jobs(&self) -> Vec<kroma_module_sdk::host::ModuleJob<S>> {
         use kroma_module_sdk::host::ModuleJob;
         vec![
-            // Import runs often: the cross-sidecar completion trigger can't reach
+            // Import runs often: the cross-module completion trigger can't reach
             // us, so a short cadence catches completed downloads within minutes.
             ModuleJob {
                 key: "acquisition.import",
@@ -187,7 +203,7 @@ fn run_import<S: HostStorage>(host: &S) -> anyhow::Result<()> {
 }
 
 fn run_match<S: HostStorage>(host: &S) -> anyhow::Result<()> {
-    kroma_module_sdk::engine::services::requests::availability_pass(host)?;
+    kroma_module_sdk::requests::lifecycle::availability_pass(host)?;
     let cleared = import::empty_recycle_bin(host);
     if cleared > 0 {
         tracing::info!(target: "acquisition", "cleared {cleared} file(s) from the recycle bin");
@@ -196,7 +212,7 @@ fn run_match<S: HostStorage>(host: &S) -> anyhow::Result<()> {
 }
 
 fn run_refresh<S: HostStorage>(host: &S) -> anyhow::Result<()> {
-    kroma_module_sdk::engine::services::requests::refresh_pass(host)?;
+    kroma_module_sdk::requests::lifecycle::refresh_pass(host)?;
     Ok(())
 }
 

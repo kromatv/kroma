@@ -2,64 +2,13 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  bundleFor,
-  bundleRunsOn,
-  hostTriplePart,
-  resolveServer,
-  type Server,
-  serverPlatform,
-  uploadBundle,
-} from './server';
+import { resolveServer, type Server, uploadBundle } from './server';
 
 const work = mkdtempSync(join(tmpdir(), 'kroma-server-'));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
-});
-
-describe('bundleFor', () => {
-  const files = [
-    'tv.kroma.vpn-aarch64-apple-darwin.kmod',
-    'tv.kroma.vpn-x86_64-unknown-linux-musl.kmod',
-    'tv.kroma.scene.kmod',
-    'tv.kroma.vpnx-aarch64-apple-darwin.kmod',
-  ];
-
-  it('takes the universal bundle when a module ships one', () => {
-    expect(bundleFor(files, 'tv.kroma.scene')).toBe('tv.kroma.scene.kmod');
-  });
-
-  it("takes this machine's build over a cross-compiled one", () => {
-    expect(bundleFor(files, 'tv.kroma.vpn', hostTriplePart('arm64', 'darwin'))).toBe(
-      'tv.kroma.vpn-aarch64-apple-darwin.kmod',
-    );
-    expect(bundleFor(files, 'tv.kroma.vpn', hostTriplePart('x64', 'linux'))).toBe(
-      'tv.kroma.vpn-x86_64-unknown-linux-musl.kmod',
-    );
-  });
-
-  it('does not hand an arm Mac an aarch64 LINUX build', () => {
-    // Matching on arch alone did exactly that.
-    const linuxOnly = ['tv.kroma.vpn-aarch64-unknown-linux-musl.kmod'];
-    expect(bundleFor(linuxOnly, 'tv.kroma.vpn', hostTriplePart('arm64', 'darwin'))).toBe(
-      // Nothing matches the host, so the only build there is offered and the
-      // server decides - but it is not claimed to be this machine's.
-      'tv.kroma.vpn-aarch64-unknown-linux-musl.kmod',
-    );
-    expect(hostTriplePart('arm64', 'darwin')).toBe('aarch64-apple-darwin');
-    expect(hostTriplePart('arm64', 'linux')).toBe('aarch64-unknown-linux');
-  });
-
-  it('does not mistake a longer id that starts the same', () => {
-    // `tv.kroma.vpnx` must not be offered as a build of `tv.kroma.vpn`.
-    expect(bundleFor(['tv.kroma.vpnx-aarch64-apple-darwin.kmod'], 'tv.kroma.vpn')).toBeUndefined();
-  });
-
-  it('is undefined when nothing was packed for it', () => {
-    expect(bundleFor(files, 'tv.kroma.nope')).toBeUndefined();
-  });
 });
 
 describe('resolveServer', () => {
@@ -121,52 +70,7 @@ describe('resolveServer', () => {
   });
 });
 
-describe('bundleRunsOn', () => {
-  const darwin = { target: 'aarch64-apple-darwin', serverVersion: '0.1.9' };
-
-  it('runs a universal bundle on anything', () => {
-    expect(bundleRunsOn('tv.kroma.scene.kmod', darwin)).toBe(true);
-  });
-
-  it('runs a sidecar only on the platform it was built for', () => {
-    expect(bundleRunsOn('tv.kroma.vpn-aarch64-apple-darwin.kmod', darwin)).toBe(true);
-    expect(bundleRunsOn('tv.kroma.vpn-x86_64-unknown-linux-musl.kmod', darwin)).toBe(false);
-  });
-
-  it('takes any bundle when the server does not say what it runs on', () => {
-    expect(bundleRunsOn('tv.kroma.vpn-x86_64-unknown-linux-musl.kmod', null)).toBe(true);
-  });
-});
-
 const SERVER: Server = { url: 'http://localhost:4040', token: 'tok' };
-
-describe('serverPlatform', () => {
-  it('reads the triple and the version the server reports', async () => {
-    const fetch = vi.fn(async () =>
-      Response.json({ target: 'aarch64-apple-darwin', serverVersion: '0.1.9' }),
-    );
-    vi.stubGlobal('fetch', fetch);
-
-    const platform = await serverPlatform(SERVER);
-
-    expect(platform).toEqual({ target: 'aarch64-apple-darwin', serverVersion: '0.1.9' });
-    expect(fetch).toHaveBeenCalledWith('http://localhost:4040/api/admin/store/platform', {
-      headers: { authorization: 'Bearer tok' },
-    });
-  });
-
-  it.each([404, 405])('is null on a server too old to answer, which says %i', async (status) => {
-    vi.stubGlobal('fetch', async () => new Response('', { status }));
-
-    await expect(serverPlatform(SERVER)).resolves.toBeNull();
-  });
-
-  it('throws when the server fails the request outright', async () => {
-    vi.stubGlobal('fetch', async () => new Response('boom', { status: 500 }));
-
-    await expect(serverPlatform(SERVER)).rejects.toThrow(/platform failed \(500\)/);
-  });
-});
 
 describe('uploadBundle', () => {
   const bundle = () => {

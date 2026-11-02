@@ -10,8 +10,8 @@ It does four things:
    (Plex-style) and grouping episodes into shows → seasons → episodes.
 2. Exposes metadata over a small JSON REST API.
 3. Range-streams the original media files to clients.
-4. Hosts the modules: it spawns each installed `.kmod` as its own process and
-   reverse-proxies `/api/module/<id>/*` to it. See
+4. Hosts the modules: it runs each installed `.kmod` as a WebAssembly component
+   and reverse-proxies `/api/module/<id>/*` to it. See
    [`modules/README.md`](../modules/README.md).
 
 `server/` is a cargo workspace, and the layers are its crates: `kroma-domain`
@@ -120,8 +120,8 @@ Environment variables carry all configuration:
 | `KROMA_WEB_DIR`    | *(empty)*   | Built SPA served as the fallback route. Ignored unless it holds `_shell.html`, which is why dev leaves it unset. |
 | `KROMA_INSTALL`    | `unknown`   | How this server was installed: `docker`, `synology` or `binary`. The Docker images and the Synology package set their own; `binary` is for an operator running the built server directly, and an unset value reports `unknown` rather than guessing. Reported only with the anonymous statistics. See [`docs/anonymous-stats.md`](../docs/anonymous-stats.md). |
 | `KROMA_SELF_UPDATE_DIR` | *(empty)* | Set by the Synology package's service script: the folder where the server unpacks the builds it downloads for itself. The script starts the newest one. See [Server updates](updater/README.md#synology-dsm-7). |
-| `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Inherited by the module sidecars. |
-| `KROMA_MODULE_LOG` | *(empty)*   | Overrides `RUST_LOG` for the module sidecars only, e.g. `kroma_indexer=debug`. Their output is drained into the core's log and Admin → Modules → *module* → Journaux. |
+| `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Forwarded into every module and the programs it starts. |
+| `KROMA_MODULE_LOG` | *(empty)*   | Overrides `RUST_LOG` for the modules only, e.g. `kroma_indexer=debug`, and is forwarded into each of them. Their output goes to the core's log and Admin → Modules → *module* → Journaux. |
 | `KROMA_HWACCEL`    | *(probed)*  | Pins the re-encode pipeline: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, or `software` to rule hardware out of a problem. See [Hardware transcoding](#hardware-transcoding). |
 | `KROMA_RENDER_NODE`| `/dev/dri/renderD128` | Which DRM render node VAAPI/QSV open, for a host with more than one. |
 | `KROMA_ENCODE_EFFORT`| *(from the box)* | Pins the software encoder tier: `quality` or `realtime`. |
@@ -130,8 +130,8 @@ Environment variables carry all configuration:
 | `KROMA_PROBE_WORKERS`| *(half the cores, 2..4)* | Concurrent `ffprobe` processes during a scan.        |
 | `KROMA_WALK_THREADS`| *(cores × 4, 8..32)* | Threads walking the library roots. Raise it for remote mounts. |
 | `KROMA_WATCH_INTERVAL`| `300`     | Seconds between periodic rescans, `0` for none (filesystem events still fire). The `watchIntervalSecs` admin setting wins over it. |
-| `KROMA_MODULE_HOT_RELOAD`| *(empty)* | Set to `1` so a changed sidecar binary restarts its process. A dev loop only: it polls the filesystem. |
-| `KROMA_MODULE_ENV`| *(empty)* | Comma-separated variable names a module sidecar inherits. A sidecar starts from an allowlist (`PATH`, locale, temp dir, CA bundle, proxy variables, `LIBVA_*`, logging) and never sees the server's own variables, secrets included. |
+| `KROMA_MODULE_HOT_RELOAD`| *(empty)* | Set to `1` so a changed `module.wasm` restarts its component. A dev loop only: it polls the filesystem. |
+| `KROMA_MODULE_ENV`| *(empty)* | Comma-separated variable names a program a module starts inherits. Such a program starts from an allowlist (`PATH`, locale, temp dir, CA bundle, proxy variables, `LIBVA_*`, logging) and never sees the server's own variables, secrets included. |
 
 A fork shipping its own published app also reads `KROMA_APNS_KEY_P8`,
 `KROMA_APNS_KEY_ID`, `KROMA_APNS_TEAM_ID`, `KROMA_APNS_TOPIC` and

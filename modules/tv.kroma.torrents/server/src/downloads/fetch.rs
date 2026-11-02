@@ -8,6 +8,7 @@ use super::gate::{active_proxy_url, vpn_sealed_expected};
 use crate::db;
 
 const PURPOSE: &str = "torrent-file";
+const CALL_SECS: u32 = 10;
 
 pub(super) fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
     // Trackers behind Cloudflare intermittently drop the TLS connection
@@ -53,7 +54,7 @@ fn is_transient_fetch(err: &anyhow::Error) -> bool {
 }
 
 pub(super) fn fetch_torrent_file(host: &dyn HostCtx, url: &str) -> Result<Vec<u8>> {
-    let resp = route(host, url)?.max_time(30).get(url)?.ensure_ok()?;
+    let resp = route(host, url)?.max_time(CALL_SECS).get(url)?.ensure_ok()?;
     if resp.body.is_empty() {
         bail!("indexer returned an empty response");
     }
@@ -94,16 +95,13 @@ fn snippet(body: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use kroma_module_sdk::host::testing::StubHost;
-    use serde_json::json;
 
     use super::*;
 
     const PRIVATE_LINK: &str = "https://tracker.example.org/download.php?id=1&passkey=SECRET";
 
     fn vpn_configured_but_down() -> StubHost {
-        StubHost::new()
-            .with_module_enabled(true)
-            .with_setting("vpnWgConfig", json!("[Interface]\nPrivateKey = K"))
+        StubHost::new().with_network_seal(kroma_module_sdk::host::NetworkSeal::Down)
     }
 
     #[test]

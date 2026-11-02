@@ -22,6 +22,7 @@ pub(super) struct Planned<'a> {
     pub entry: &'a CatalogModule,
     installed: Option<String>,
     requested: bool,
+    widens: bool,
 }
 
 /// Post-order walk of the hard-dependency graph, so dependencies land in the
@@ -32,6 +33,7 @@ pub(super) struct Planned<'a> {
 pub(super) struct Planner<'a> {
     by_id: HashMap<&'a str, &'a CatalogModule>,
     present: HashMap<String, String>,
+    granted: HashMap<String, kroma_module_manifest::Permissions>,
     // `(point, instance)` the present modules answer, for `consumes`
     // satisfaction. Disabled modules count: the admin can enable them.
     present_answers: Vec<(String, Option<String>)>,
@@ -53,8 +55,14 @@ impl<'a> Planner<'a> {
                     .map(|c| (c.point.clone(), c.id.clone()))
             })
             .collect();
+        let granted = manifests
+            .iter()
+            .filter_map(|m| Some((m.id.clone(), m.permissions.clone()?)))
+            .collect();
         let present = manifests.into_iter().map(|m| (m.id, m.version)).collect();
-        Self::with_present(modules, present, present_answers)
+        let mut planner = Self::with_present(modules, present, present_answers);
+        planner.granted = granted;
+        planner
     }
 
     fn with_present(
@@ -65,6 +73,7 @@ impl<'a> Planner<'a> {
         Self {
             by_id: modules.iter().map(|m| (m.id.as_str(), m)).collect(),
             present,
+            granted: HashMap::new(),
             present_answers,
             plan: Vec::new(),
             planned: HashSet::new(),
@@ -100,7 +109,7 @@ impl<'a> Planner<'a> {
             bail!("'{id}' {reason}");
         }
         if catalog::pick_artifact(entry).is_none() {
-            bail!("'{id}' has no build for this server's platform");
+            bail!("'{id}' is {}", super::refusal::Refusal::Native.reason());
         }
         self.stack.push(id.to_string());
         for (dep_id, range) in &entry.dependencies {
@@ -132,6 +141,7 @@ impl<'a> Planner<'a> {
             entry,
             installed: self.present.get(id).cloned(),
             requested: is_root,
+            widens: catalog::widens_permissions(entry, self.granted.get(id)),
         });
         Ok(())
     }
@@ -266,6 +276,8 @@ fn row_base(entry: &CatalogModule) -> Map<String, Value> {
     row.insert("name".into(), json!(entry.name));
     row.insert("version".into(), json!(entry.version));
     row.insert("size".into(), json!(entry_size(entry)));
+    row.insert("permissions".into(), json!(entry.permissions));
+    row.insert("official".into(), json!(entry.official));
     row
 }
 
@@ -281,6 +293,7 @@ fn plan_row(p: &Planned<'_>) -> Value {
     let mut row = row_base(p.entry);
     row.insert("installedVersion".into(), json!(p.installed));
     row.insert("requested".into(), json!(p.requested));
+    row.insert("widensPermissions".into(), json!(p.widens));
     Value::Object(row)
 }
 
@@ -528,13 +541,25 @@ mod tests {
     }
 
     #[test]
-    fn a_module_with_no_build_for_this_platform_blocks_the_plan_up_front() {
-        let modules = vec![catalog::test_module("tv.x.app", "1.0.0")];
+    fn a_module_published_only_as_native_builds_blocks_the_plan_up_front() {
+        let native = Artifact {
+            target: Some("x86_64-unknown-linux-musl".into()),
+            url: "https://x/tv.x.app-x86_64-unknown-linux-musl.kmod".into(),
+            size: Some(1),
+            sha256: Some("00".into()),
+        };
+        let modules = vec![CatalogModule {
+            artifacts: vec![native],
+            ..catalog::test_module("tv.x.app", "1.0.0")
+        }];
         let err = planner(&modules)
             .roots(&["tv.x.app"])
             .unwrap_err()
             .to_string();
-        assert_eq!(err, "'tv.x.app' has no build for this server's platform");
+        assert_eq!(
+            err,
+            "'tv.x.app' is a native build, which this server no longer runs"
+        );
     }
 
     #[test]

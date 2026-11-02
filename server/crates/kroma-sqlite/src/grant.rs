@@ -8,21 +8,12 @@
 //! the scope cannot be talked around by building the SQL as a string: an
 //! ungranted table fails at `prepare`, before a row is read. It is per-connection,
 //! which is what lets one database serve two modules with different scopes.
-use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use std::sync::Arc;
 
 use anyhow::Result;
-use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
-use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
 use crate::Pool;
-
-/// Reading a table's schema is not reading its data, and denying it breaks
-/// `PRAGMA table_info` and rusqlite's own column lookups for statements that are
-/// otherwise allowed.
-const SCHEMA_TABLES: [&str; 3] = ["sqlite_master", "sqlite_schema", "sqlite_temp_master"];
 
 /// Which core tables and columns a module may reach.
 ///
@@ -47,124 +38,6 @@ impl Grant {
     pub fn none() -> Self {
         Self::default()
     }
-
-    /// Compile the declared entries into the lookup the authorizer runs per
-    /// action. Unparseable entries are dropped rather than failing the module:
-    /// a typo in a manifest costs that one grant, loudly, not the whole boot.
-    fn compile(&self) -> Compiled {
-        Compiled {
-            read: columns_by_table(&self.read),
-            write: columns_by_table(&self.write),
-        }
-    }
-}
-
-// `None` as the column set means the whole table.
-type Tables = BTreeMap<String, Option<BTreeSet<String>>>;
-
-struct Compiled {
-    read: Tables,
-    write: Tables,
-}
-
-fn columns_by_table(entries: &[String]) -> Tables {
-    let mut out: Tables = BTreeMap::new();
-    for entry in entries {
-        let entry = entry.trim();
-        if entry.is_empty() {
-            continue;
-        }
-        match entry.split_once('.') {
-            None => {
-                out.insert(entry.to_ascii_lowercase(), None);
-            }
-            Some((table, column)) => {
-                let slot = out
-                    .entry(table.trim().to_ascii_lowercase())
-                    .or_insert_with(|| Some(BTreeSet::new()));
-                // A whole-table entry beside a column entry keeps the wider one.
-                if let Some(cols) = slot {
-                    cols.insert(column.trim().to_ascii_lowercase());
-                }
-            }
-        }
-    }
-    out
-}
-
-fn allows(tables: &Tables, table: &str, column: &str) -> bool {
-    match tables.get(&table.to_ascii_lowercase()) {
-        None => false,
-        Some(None) => true,
-        // SQLite passes an empty column for a table-level touch (`count(*)`).
-        Some(Some(cols)) => column.is_empty() || cols.contains(&column.to_ascii_lowercase()),
-    }
-}
-
-// INSERT writes every column of a row and DELETE removes every column of one,
-// so neither is expressible as a column grant: they need the whole table.
-fn allows_whole_table(tables: &Tables, table: &str) -> bool {
-    matches!(tables.get(&table.to_ascii_lowercase()), Some(None))
-}
-
-/// Where a denial happened, for the log line. A bare `SQLITE_AUTH` says only
-/// "not authorized", which is unhelpful three layers down a module's data access.
-fn describe(action: &AuthAction<'_>) -> String {
-    match action {
-        AuthAction::Read {
-            table_name,
-            column_name,
-        } => format!("read {table_name}.{column_name}"),
-        AuthAction::Insert { table_name } => format!("insert into {table_name}"),
-        AuthAction::Update {
-            table_name,
-            column_name,
-        } => {
-            format!("update {table_name}.{column_name}")
-        }
-        AuthAction::Delete { table_name } => format!("delete from {table_name}"),
-        AuthAction::Attach { filename } => format!("attach {filename}"),
-        AuthAction::Pragma { pragma_name, .. } => format!("pragma {pragma_name}"),
-        other => format!("{other:?}"),
-    }
-}
-
-fn decide(module_id: &str, grant: &Compiled, ctx: &AuthContext<'_>) -> Authorization {
-    let allow = match &ctx.action {
-        // The umbrella actions a legal statement always raises. They carry no
-        // table, so the per-table checks below are what actually gate the data.
-        AuthAction::Select
-        | AuthAction::Function { .. }
-        | AuthAction::Transaction { .. }
-        | AuthAction::Savepoint { .. } => true,
-
-        AuthAction::Read {
-            table_name,
-            column_name,
-        } => SCHEMA_TABLES.contains(table_name) || allows(&grant.read, table_name, column_name),
-        AuthAction::Insert { table_name } => allows_whole_table(&grant.write, table_name),
-        AuthAction::Delete { table_name } => allows_whole_table(&grant.write, table_name),
-        AuthAction::Update {
-            table_name,
-            column_name,
-        } => allows(&grant.write, table_name, column_name),
-
-        // Everything else -- DDL, ATTACH, PRAGMA, extension loading, REINDEX --
-        // is denied outright. A module's own schema belongs in its own file, and
-        // ATTACH would otherwise re-open the core database under a name the
-        // per-table rules above never see.
-        _ => false,
-    };
-    if allow {
-        Authorization::Allow
-    } else {
-        tracing::warn!(
-            module = %module_id,
-            denied = %describe(&ctx.action),
-            "module storage grant does not cover this statement"
-        );
-        Authorization::Deny
-    }
 }
 
 /// A pool over `path` whose every connection refuses anything `grant` does not
@@ -172,70 +45,26 @@ fn decide(module_id: &str, grant: &Compiled, ctx: &AuthContext<'_>) -> Authoriza
 ///
 /// The database is NOT created or migrated here: the core owns the file and has
 /// already done both by the time a module is spawned.
+#[cfg(not(target_family = "wasm"))]
 pub fn init_scoped(path: &Path, module_id: &str, grant: &Grant) -> Result<Pool> {
-    let scope = Scope {
-        module_id: module_id.to_string(),
-        grant: Arc::new(grant.compile()),
-    };
-    crate::open::pool_at(path, 4, Some(scope))
+    crate::open::scoped_pool_at(
+        path,
+        4,
+        Some(crate::authorizer::Scope::granted(module_id, grant)),
+    )
 }
 
-/// The authorizer a scoped [`Pool`] installs on each connection it opens.
-pub(crate) struct Scope {
-    module_id: String,
-    grant: Arc<Compiled>,
+/// In a component the host holds the file and applies the grant its manifest
+/// declared, so nothing the component says about it counts.
+#[cfg(target_family = "wasm")]
+pub fn init_scoped(path: &Path, _module_id: &str, _grant: &Grant) -> Result<Pool> {
+    crate::open::pool_at(path, 4)
 }
 
-impl Scope {
-    pub(crate) fn install(&self, conn: &Connection) -> Result<()> {
-        let (module_id, grant) = (self.module_id.clone(), Arc::clone(&self.grant));
-        conn.authorizer(Some(move |ctx: AuthContext<'_>| {
-            decide(&module_id, &grant, &ctx)
-        }))?;
-        Ok(())
-    }
+/// A pool over a module's own file, for the host that runs statements on its
+/// behalf: everything is allowed except what would reach outside that file.
+#[cfg(not(target_family = "wasm"))]
+pub fn open_guarded(path: &Path, module_id: &str) -> Result<Pool> {
+    crate::open::scoped_pool_at(path, 4, Some(crate::authorizer::Scope::own_file(module_id)))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn grant(read: &[&str], write: &[&str]) -> Grant {
-        Grant {
-            read: read.iter().map(ToString::to_string).collect(),
-            write: write.iter().map(ToString::to_string).collect(),
-        }
-    }
-
-    #[test]
-    fn a_grant_round_trips_through_the_manifest_shape() {
-        let g: Grant =
-            serde_json::from_str(r#"{ "read": ["requests", "users.username"], "write": ["wanted"] }"#)
-                .unwrap();
-        assert_eq!(g.read, ["requests", "users.username"]);
-        assert_eq!(g.write, ["wanted"]);
-        assert_eq!(
-            serde_json::from_value::<Grant>(serde_json::to_value(&g).unwrap()).unwrap(),
-            g
-        );
-        // An absent object is the empty grant, not an error.
-        assert_eq!(serde_json::from_str::<Grant>("{}").unwrap(), Grant::none());
-    }
-
-    #[test]
-    fn table_and_column_entries_for_one_table_keep_the_wider_grant() {
-        let compiled = grant(&["users.username", "users"], &[]).compile();
-        assert!(allows(&compiled.read, "users", "email"));
-        // Order must not matter.
-        let compiled = grant(&["users", "users.username"], &[]).compile();
-        assert!(allows(&compiled.read, "users", "email"));
-    }
-
-    #[test]
-    fn a_table_name_matches_whatever_case_the_sql_used() {
-        let compiled = grant(&["Requests.Title"], &[]).compile();
-        assert!(allows(&compiled.read, "requests", "title"));
-        assert!(allows(&compiled.read, "REQUESTS", "TITLE"));
-        assert!(!allows(&compiled.read, "requests", "status"));
-    }
-}

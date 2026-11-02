@@ -6,11 +6,7 @@ use super::*;
 fn host() -> StubHost {
     let host = StubHost::with_core(db::testing::temp_pool("acq-failures"))
         .with_setting("acqStallHours", serde_json::json!(0));
-    db::apply_migrations(
-        &host.store().get().unwrap(),
-        crate::rules::schema::MIGRATIONS,
-    )
-    .unwrap();
+    crate::rules::schema::install(host.store());
     host
 }
 

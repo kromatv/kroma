@@ -3,13 +3,13 @@
 //! and a personalized "For You" centroid (see `crate::db::vectors`).
 //!
 //! Two backends sit behind one [`Embedder`] trait:
-//!   * [`LexicalEmbedder`] dependency-free hashed term vector. The DEFAULT:
-//!     compiles on the pinned rustc 1.81 / musl build with zero new crates.
-//!     Similarity reflects shared genres/cast/words. Good for "more like this".
-//!   * `MiniLmEmbedder` a real `all-MiniLM-L6-v2` sentence-transformer via
-//!     `candle` (Cargo feature `semantic`). Gives free-text *semantic*
-//!     matches (e.g. embed the phrase "cozy christmas movie" and retrieve titles
-//!     whose overview never says "christmas"). Heavier dep graph; opt-in.
+//!   * [`LexicalEmbedder`] dependency-free hashed term vector, used when no model
+//!     is on disk. Similarity reflects shared genres/cast/words. Good for "more
+//!     like this".
+//!   * `MiniLmEmbedder` a real sentence-transformer via `candle` (Cargo feature
+//!     `semantic`, on in the published bundle). Gives free-text *semantic* matches
+//!     (e.g. embed the phrase "cozy christmas movie" and retrieve titles whose
+//!     overview never says "christmas").
 //!
 //! Both backends consume the SAME document string from [`build_doc`] and return a
 //! normalized vector, so storage/search downstream is backend-agnostic.
@@ -25,6 +25,8 @@ pub use serve::embedder_routes;
 
 #[cfg(feature = "semantic")]
 mod candle;
+#[cfg(feature = "semantic")]
+mod weights;
 
 /// Produces a fixed-dimension, **L2-normalized** vector for a text document.
 /// Normalization is part of the contract: it lets the search layer treat cosine
@@ -43,25 +45,73 @@ pub trait Embedder: Send + Sync {
     fn relevance_floor(&self) -> f32;
 }
 
-/// Pick the compiled-in backend: MiniLM when the `semantic` feature is
-/// on (falling back to lexical if the model files can't be loaded), else the
-/// dependency-free lexical embedder.
+/// Pick the compiled-in backend: MiniLM when the `semantic` feature is on (falling
+/// back to lexical if the model files can't be loaded), else the dependency-free
+/// lexical embedder.
 ///
-/// Cheap for the lexical path; the MiniLM path loads a ~25 MB model, so callers
-/// should build this ONCE (e.g. into shared state) rather than per request. The
-/// current prototype builds it once per enrichment pass.
+/// The MiniLM path loads the model on the first embedding or `meta` asked of it, so
+/// an instance that only ever answers `/_health` never holds one. Build this once
+/// (e.g. into shared state) rather than per request.
 pub fn default_embedder() -> Arc<dyn Embedder> {
     #[cfg(feature = "semantic")]
     {
-        match candle::MiniLmEmbedder::load() {
-            Ok(e) => return Arc::new(e),
-            Err(err) => tracing::warn!(
+        Arc::new(OnFirstUse::new(semantic_or_lexical))
+    }
+    #[cfg(not(feature = "semantic"))]
+    {
+        Arc::new(LexicalEmbedder::new(LEXICAL_DIMENSIONS))
+    }
+}
+
+const LEXICAL_DIMENSIONS: usize = 256;
+
+#[cfg(feature = "semantic")]
+fn semantic_or_lexical() -> Arc<dyn Embedder> {
+    match candle::MiniLmEmbedder::load() {
+        Ok(minilm) => Arc::new(minilm),
+        Err(err) => {
+            tracing::warn!(
                 error = %err,
                 "MiniLM load failed; falling back to the lexical embedder"
-            ),
+            );
+            Arc::new(LexicalEmbedder::new(LEXICAL_DIMENSIONS))
         }
     }
-    Arc::new(LexicalEmbedder::new(256))
+}
+
+#[cfg(feature = "semantic")]
+struct OnFirstUse {
+    build: fn() -> Arc<dyn Embedder>,
+    built: std::sync::OnceLock<Arc<dyn Embedder>>,
+}
+
+#[cfg(feature = "semantic")]
+impl OnFirstUse {
+    fn new(build: fn() -> Arc<dyn Embedder>) -> Self {
+        Self {
+            build,
+            built: std::sync::OnceLock::new(),
+        }
+    }
+
+    fn backend(&self) -> &dyn Embedder {
+        self.built.get_or_init(self.build).as_ref()
+    }
+}
+
+#[cfg(feature = "semantic")]
+impl Embedder for OnFirstUse {
+    fn dim(&self) -> usize {
+        self.backend().dim()
+    }
+
+    fn embed(&self, text: &str) -> Vec<f32> {
+        self.backend().embed(text)
+    }
+
+    fn relevance_floor(&self) -> f32 {
+        self.backend().relevance_floor()
+    }
 }
 
 // L2-normalize in place; a no-op for the zero vector. Shared by both backends
@@ -107,5 +157,32 @@ mod tests {
             (v[0] - 0.6).abs() < 1e-6 && (v[1] - 0.8).abs() < 1e-6,
             "{v:?}"
         );
+    }
+
+    #[cfg(feature = "semantic")]
+    mod on_first_use {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        use super::*;
+
+        static BUILDS: AtomicUsize = AtomicUsize::new(0);
+
+        fn counted() -> Arc<dyn Embedder> {
+            BUILDS.fetch_add(1, Ordering::SeqCst);
+            Arc::new(LexicalEmbedder::new(LEXICAL_DIMENSIONS))
+        }
+
+        #[test]
+        fn the_backend_is_built_once_and_only_when_something_is_asked_of_it() {
+            let embedder = OnFirstUse::new(counted);
+            let before = BUILDS.load(Ordering::SeqCst);
+            let dim = embedder.dim();
+            let vector = embedder.embed("a heist thriller");
+
+            assert_eq!(before, 0);
+            assert_eq!(BUILDS.load(Ordering::SeqCst), 1);
+            assert_eq!(dim, LEXICAL_DIMENSIONS);
+            assert_eq!(vector.len(), LEXICAL_DIMENSIONS);
+        }
     }
 }

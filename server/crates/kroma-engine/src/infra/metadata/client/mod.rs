@@ -6,67 +6,9 @@ mod certification;
 mod details;
 mod details_json;
 mod lookup;
-mod seasons;
 
 pub use lookup::{lookup, lookup_all, lookup_all_by_id};
-pub use seasons::{season_episodes, season_episodes_multi, EpisodeArt, SeasonData};
-
-use std::sync::atomic::{AtomicBool, Ordering};
-
-use kroma_http::Fetch;
-use serde::de::DeserializeOwned;
-use tracing::{debug, warn};
-
-const REQUEST_MAX_TIME_SECS: u32 = 10;
-
-pub(super) const API: &str = "https://api.themoviedb.org/3";
-
-/// A function, not a bare const, so tests can override it via `#[cfg(test)]`.
-pub(super) fn api() -> String {
-    #[cfg(test)]
-    if let Some(base) = test_override::get() {
-        return base;
-    }
-    API.to_string()
-}
-
-/// Test-only TMDB base override. Thread-local, so tests running in parallel
-/// cannot see each other's fake server.
-#[cfg(test)]
-pub(crate) mod test_override {
-    use std::cell::RefCell;
-
-    thread_local! {
-        static BASE: RefCell<Option<String>> = const { RefCell::new(None) };
-    }
-
-    static SHARED: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
-
-    pub(crate) fn get() -> Option<String> {
-        BASE.with(|b| b.borrow().clone()).or_else(|| {
-            SHARED
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone()
-        })
-    }
-
-    pub(crate) fn set_shared(base: Option<&str>) {
-        *SHARED
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = base.map(str::to_string);
-    }
-
-    pub(crate) fn set(base: &str) {
-        BASE.with(|b| *b.borrow_mut() = Some(base.to_string()));
-    }
-
-    pub(crate) fn clear() {
-        BASE.with(|b| *b.borrow_mut() = None);
-    }
-}
-
-pub(super) const IMG: &str = "https://image.tmdb.org/t/p";
+pub(super) use kroma_requests::tmdb::{api, tmdb_json, IMG};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Target {
@@ -111,60 +53,6 @@ const MAX_CREW: usize = 8;
 
 // TMDB returns keywords unordered; this bounds how much feeds the embedding doc.
 const MAX_KEYWORDS: usize = 20;
-
-// First TMDB failure logs at WARN (so a bad `KROMA_TMDB_API_KEY` or dead
-// network is visible); later ones drop to DEBUG to avoid spamming a bulk
-// enrichment pass.
-static FAILURE_WARNED: AtomicBool = AtomicBool::new(false);
-
-fn note_failure(reason: &str, detail: &str) {
-    let detail = detail.trim();
-    if FAILURE_WARNED.swap(true, Ordering::Relaxed) {
-        debug!(reason, detail, "TMDB request failed");
-    } else {
-        warn!(
-            reason,
-            detail,
-            "TMDB enrichment request failed check KROMA_TMDB_API_KEY and network connectivity; \
-             further failures are logged at debug level"
-        );
-    }
-}
-
-/// GET `url` with `params` as the query, parsed as JSON `T`. `Err(())` on any
-/// failure, so a transient one is never cached as a miss.
-pub(super) fn tmdb_json<T: DeserializeOwned>(
-    purpose: &'static str,
-    url: &str,
-    api_key: &str,
-    params: &[(&str, String)],
-) -> Result<T, ()> {
-    let mut request = Fetch::new()
-        .purpose(purpose)
-        .max_time(REQUEST_MAX_TIME_SECS);
-    request = if is_bearer_token(api_key) {
-        request.header("Authorization", format!("Bearer {api_key}"))
-    } else {
-        request.query("api_key", api_key)
-    };
-    for (name, value) in params {
-        request = request.query(name, value.as_str());
-    }
-    let response = request
-        .get(url)
-        .map_err(|e| note_failure("transport", &format!("{e:#}")))?
-        .ensure_ok()
-        .map_err(|e| note_failure("http_status", &e.to_string()))?;
-    response
-        .json()
-        .map_err(|e| note_failure("parse", &e.to_string()))
-}
-
-// A TMDB v4 read token is a JWT (`header.payload.signature`); v3 keys are
-// 32-char hex with no dots.
-fn is_bearer_token(key: &str) -> bool {
-    key.split('.').count() == 3
-}
 
 #[cfg(test)]
 mod tests;

@@ -4,17 +4,17 @@
 //! without a re-sweep.
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::sync::Mutex;
 
 use anyhow::{anyhow, Result};
-use kroma_module_sdk::engine::services::requests::today_ymd;
+use kroma_module_sdk::primitives::now_ms;
+use kroma_module_sdk::requests::lifecycle::today_ymd;
 use kroma_module_sdk::host::HostStorage;
 
 use crate::dtos::{InteractiveSearchView, ScoredReleaseView};
 use crate::rules::files::{judge_title_files, JudgedFile};
 use crate::search::hits::{collect_search_hits, CachedRelease};
 use crate::search::judge::Judge;
+use crate::search::remembered::remember;
 use crate::search::verdict::{units_of, verdict_for};
 use crate::search::subject::{resolve, Subject};
 use crate::search::targets::{targets_for_scope, SearchScope};
@@ -23,36 +23,7 @@ mod grab;
 
 pub use grab::{grab_cached, replaces};
 
-static SEARCH_CACHE: Mutex<Option<HashMap<String, Vec<CachedRelease>>>> = Mutex::new(None);
-
 const BLOCKLIST: &str = "blocklist";
-
-pub fn cached_release(
-    subject: &Subject,
-    scope: SearchScope,
-    guid: &str,
-    indexer_id: &str,
-) -> Option<CachedRelease> {
-    SEARCH_CACHE
-        .lock()
-        .unwrap()
-        .as_ref()
-        .and_then(|m| m.get(&subject.cache_key(scope)))
-        .and_then(|list| {
-            list.iter()
-                .find(|c| c.view.guid == guid && c.view.indexer_id == indexer_id)
-                .cloned()
-        })
-}
-
-fn cache_results(subject: &Subject, scope: SearchScope, releases: Vec<CachedRelease>) {
-    let mut guard = SEARCH_CACHE.lock().unwrap();
-    let map = guard.get_or_insert_with(HashMap::new);
-    if map.len() > 24 {
-        map.clear();
-    }
-    map.insert(subject.cache_key(scope), releases);
-}
 
 /// Interactive search for `subject` over `scope`: sweep every enabled indexer
 /// and return everything, judged or rejected-with-reason, best first.
@@ -118,7 +89,9 @@ pub fn interactive_search<S: HostStorage>(
         accepted = releases.iter().filter(|r| r.score.is_some()).count(),
         "interactive search done",
     );
-    cache_results(subject, scope, cached);
+    if let Err(e) = remember(state.store(), &subject.cache_key(scope), &cached, now_ms()) {
+        tracing::warn!(error = %format!("{e:#}"), "could not keep the search for its grab");
+    }
     Ok(InteractiveSearchView {
         releases,
         indexers: indexer_reports,
@@ -156,6 +129,7 @@ pub(crate) fn best_first(a: &CachedRelease, b: &CachedRelease) -> Ordering {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::search::remembered::recall;
     use crate::search::test_support::{episode_target, indexer, release, TestRules};
 
     fn cached(name: &str, seeders: u32, rules: &TestRules) -> CachedRelease {
@@ -185,22 +159,91 @@ mod tests {
         assert_ne!(a, Subject::request("r2").cache_key(SearchScope::Season { season: 1 }));
     }
 
+    fn store() -> kroma_module_sdk::db::testing::TempPool {
+        let pool = kroma_module_sdk::db::testing::temp_pool("acq-remembered");
+        crate::rules::schema::install(&pool);
+        pool
+    }
+
+    fn recalled(
+        store: &kroma_module_sdk::db::testing::TempPool,
+        subject: &Subject,
+        scope: SearchScope,
+        guid: &str,
+        indexer_id: &str,
+    ) -> Option<crate::search::remembered::RememberedRelease> {
+        recall(store, &subject.cache_key(scope), guid, indexer_id).unwrap()
+    }
+
     #[test]
-    fn the_cache_hands_a_grab_back_the_release_the_search_showed() {
+    fn the_database_hands_a_grab_back_the_release_the_search_showed() {
         let rules = TestRules::new();
+        let store = store();
         let subject = Subject::request("req-cache");
         let scope = SearchScope::Episode {
             season: 4,
             episode: 2,
         };
-        cache_results(&subject, scope, vec![cached("Show.S04E02.1080p", 9, &rules)]);
+        let shown = [cached("Show.S04E02.1080p", 9, &rules)];
+        remember(&store, &subject.cache_key(scope), &shown, 1).unwrap();
 
-        let found = cached_release(&subject, scope, "g1", "idx1").expect("cached");
+        let found = recalled(&store, &subject, scope, "g1", "idx1").expect("remembered");
 
         assert_eq!(found.magnet_or_url, "magnet:?xt=2");
-        assert!(cached_release(&subject, SearchScope::All, "g1", "idx1").is_none());
-        assert!(cached_release(&subject, scope, "other", "idx1").is_none());
-        assert!(cached_release(&subject, scope, "g1", "other").is_none());
+        assert_eq!(found.tmdb_id, 42);
+        assert!(recalled(&store, &subject, SearchScope::All, "g1", "idx1").is_none());
+        assert!(recalled(&store, &subject, scope, "other", "idx1").is_none());
+        assert!(recalled(&store, &subject, scope, "g1", "other").is_none());
+    }
+
+    #[test]
+    fn a_release_read_back_says_everything_the_search_decided_about_it() {
+        let rules = TestRules::new();
+        let store = store();
+        let subject = Subject::request("req-verdict");
+        let mut shown = cached("Show.S01E01.1080p.WEB-DL.x265", 50, &rules);
+        settle_verdict(&mut shown, &[], &rules.profile);
+        let view = shown.view.clone();
+        remember(&store, &subject.cache_key(SearchScope::All), &[shown], 1).unwrap();
+
+        let found = recalled(&store, &subject, SearchScope::All, &view.guid, &view.indexer_id)
+            .expect("remembered");
+
+        assert_eq!(found.view.verdict, Some(kroma_scene::Verdict::Fill));
+        assert_eq!(found.view.score, view.score);
+        assert_eq!(found.view.quality, view.quality);
+        assert_eq!(found.view.breakdown.len(), view.breakdown.len());
+        assert_eq!(found.view.target, view.target);
+    }
+
+    #[test]
+    fn searching_again_replaces_what_the_last_search_showed() {
+        let rules = TestRules::new();
+        let store = store();
+        let subject = Subject::request("req-again");
+        let key = subject.cache_key(SearchScope::All);
+        remember(&store, &key, &[cached("Show.S01E01.1080p", 9, &rules)], 1).unwrap();
+
+        remember(&store, &key, &[], 2).unwrap();
+
+        assert!(recalled(&store, &subject, SearchScope::All, "g1", "idx1").is_none());
+    }
+
+    #[test]
+    fn the_searches_kept_stop_growing_at_the_cap() {
+        let rules = TestRules::new();
+        let store = store();
+        let shown = [cached("Show.S01E01.1080p", 9, &rules)];
+
+        for n in 0..60 {
+            remember(&store, &format!("key-{n}"), &shown, n).unwrap();
+        }
+
+        let conn = store.get().unwrap();
+        let kept: i64 = conn
+            .query_row("SELECT COUNT(*) FROM search_results", [], |r| r.get(0))
+            .unwrap();
+        assert!(kept <= 25, "{kept}");
     }
 
     #[test]

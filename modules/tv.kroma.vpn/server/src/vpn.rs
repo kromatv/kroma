@@ -2,11 +2,10 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
-use tokio::process::Child;
-
+use kroma_module_sdk::host::process::Child;
 use kroma_module_sdk::host::HostCtx;
 
-use crate::process::{reap_stale, record_pid, spawn_child};
+use crate::process::spawn_child;
 use crate::provision;
 use crate::socks_auth;
 use crate::wireguard::ipv4_only_wg;
@@ -20,6 +19,7 @@ pub struct Vpn {
     // Latched by `stop` so an `apply` racing the shutdown - a `PUT /vpn` still
     // draining while the process exits - can't bring the bridge back up.
     stopping: AtomicBool,
+    exit: std::sync::Mutex<Option<String>>,
 }
 
 fn wireproxy_conf(wg_path: &std::path::Path, port: u16, password: &str) -> String {
@@ -37,6 +37,7 @@ impl Vpn {
             child: tokio::sync::Mutex::new(None),
             generation: AtomicU64::new(0),
             stopping: AtomicBool::new(false),
+            exit: std::sync::Mutex::new(None),
         })
     }
 
@@ -48,15 +49,9 @@ impl Vpn {
     /// Call at boot and whenever `vpnWgConfig` / `vpnLocalPort` change.
     pub async fn apply(self: &Arc<Self>, host: &dyn HostCtx) {
         let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
-        // Always stop the previous child first (config change or teardown), then
-        // sweep for one this process never owned. The sweep is above the
-        // no-config exit on purpose: with `vpnWgConfig` cleared there is no
-        // tracked child to notice an orphan by, so anything left tunnelling from
-        // a killed generation would keep the SOCKS port bound forever.
-        if let Some(mut old) = self.child.lock().await.take() {
-            let _ = old.kill().await;
+        if let Some(old) = self.child.lock().await.take() {
+            old.kill();
         }
-        reap_stale(&self.dir());
         let wg = host.setting_str("vpnWgConfig", "");
         if wg.trim().is_empty() || self.stopping.load(Ordering::SeqCst) {
             return;
@@ -68,17 +63,30 @@ impl Vpn {
     }
 
     /// Take the bridge down for good: latch respawns off, kill the child, and
-    /// sweep any orphan. Idempotent, and awaited by the callers that matter: the
-    /// module being disabled and the sidecar being asked to exit, so nothing is
-    /// left tunnelling. [`Self::resume`] undoes the latch on re-enable.
+    /// sweep any orphan. Idempotent, and awaited by the caller that matters: the
+    /// module being disabled or stopped, so nothing is left tunnelling.
+    /// [`Self::resume`] undoes the latch on re-enable.
     pub async fn stop(self: &Arc<Self>) {
         self.stopping.store(true, Ordering::SeqCst);
         self.generation.fetch_add(1, Ordering::SeqCst);
-        if let Some(mut old) = self.child.lock().await.take() {
-            let _ = old.kill().await;
+        if let Some(old) = self.child.lock().await.take() {
+            old.kill();
         }
-        reap_stale(&self.dir());
         tracing::info!("wireguard bridge shut down");
+    }
+
+    /// Keep the exit address the download engine last reported, so offering the
+    /// network never has to ask the engine, which may be asking for the network.
+    pub fn remember_exit(&self, exit: Option<String>) {
+        *self.exit.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = exit;
+    }
+
+    /// The exit address the download engine last reported.
+    pub fn last_exit(&self) -> Option<String> {
+        self.exit
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
     }
 
     /// Clear a previous [`Self::stop`] so `apply` may start the bridge again.
@@ -94,9 +102,7 @@ impl Vpn {
     ) -> Result<(), String> {
         let bin = provision::ensure(&self.data_dir).await?;
         let dir = self.dir();
-        tokio::fs::create_dir_all(&dir)
-            .await
-            .map_err(|e| format!("create vpn dir: {e}"))?;
+        std::fs::create_dir_all(&dir).map_err(|e| format!("create vpn dir: {e}"))?;
         let wg_path = dir.join("wg.conf");
         // Force the tunnel IPv4-only. wireproxy carries IPv4 BitTorrent peer
         // connections fine but STALLS IPv6 ones mid-handshake (Proton's IPv6
@@ -104,30 +110,25 @@ impl Vpn {
         // trackers over IPv6, so the tracker returns IPv6 peers (which then
         // can't be reached) instead of the IPv4 peers wireproxy can use. See
         // `ipv4_only_wg`.
-        tokio::fs::write(&wg_path, ipv4_only_wg(wg_config.trim()) + "\n")
-            .await
+        std::fs::write(&wg_path, ipv4_only_wg(wg_config.trim()) + "\n")
             .map_err(|e| format!("write wg.conf: {e}"))?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let _ =
-                tokio::fs::set_permissions(&wg_path, std::fs::Permissions::from_mode(0o600)).await;
+            let _ = std::fs::set_permissions(&wg_path, std::fs::Permissions::from_mode(0o600));
         }
         let password =
             socks_auth::password(&dir).map_err(|e| format!("mint the SOCKS password: {e}"))?;
         let conf_path = dir.join("wireproxy.conf");
-        tokio::fs::write(&conf_path, wireproxy_conf(&wg_path, port, &password))
-            .await
+        std::fs::write(&conf_path, wireproxy_conf(&wg_path, port, &password))
             .map_err(|e| format!("write wireproxy.conf: {e}"))?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let _ = tokio::fs::set_permissions(&conf_path, std::fs::Permissions::from_mode(0o600))
-                .await;
+            let _ = std::fs::set_permissions(&conf_path, std::fs::Permissions::from_mode(0o600));
         }
 
         let child = spawn_child(&bin, &conf_path)?;
-        record_pid(&dir, &child);
         tracing::info!(port, "wireguard bridge started (wireproxy)");
         *self.child.lock().await = Some(child);
 
@@ -137,8 +138,8 @@ impl Vpn {
 
     /// Whether the bridge child is currently alive.
     pub async fn running(&self) -> bool {
-        let mut guard = self.child.lock().await;
-        match guard.as_mut() {
+        let guard = self.child.lock().await;
+        match guard.as_ref() {
             Some(child) => child.try_wait().map(|s| s.is_none()).unwrap_or(false),
             None => false,
         }
@@ -178,7 +179,6 @@ mod tests {
         assert!(proxy.contains("BindAddress = 127.0.0.1:25999"));
         assert!(proxy.contains("\nUsername = kroma\n"), "{proxy}");
         assert!(proxy.contains("\nPassword = "), "{proxy}");
-        assert!(vpn.dir().join("wireproxy.pid").exists());
         vpn.stop().await;
     }
 
@@ -188,11 +188,11 @@ mod tests {
         install_script(host.data_dir(), RUNNING);
         let vpn = vpn_for(&host);
         vpn.apply(&host).await;
-        let first = vpn.child.lock().await.as_ref().and_then(|c| c.id());
+        let first = vpn.child.lock().await.as_ref().map(|c| c.id());
 
         vpn.apply(&host).await;
 
-        let second = vpn.child.lock().await.as_ref().and_then(|c| c.id());
+        let second = vpn.child.lock().await.as_ref().map(|c| c.id());
         assert_ne!(first, second);
         assert!(vpn.running().await);
         vpn.stop().await;

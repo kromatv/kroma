@@ -1,10 +1,10 @@
-//! The download manager: the embedded torrent engine's lifecycle, the grab
-//! ledger and the kill-switch gate. Everything here is blocking.
+//! The download manager: the rqbit helper's lifecycle, the grab ledger and the
+//! kill-switch gate. Everything here is blocking.
 
 pub mod monitor;
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use crate::{ClientDef, DownloadClient, RqbitEngine};
@@ -25,6 +25,7 @@ mod gate;
 mod grab;
 mod ledger;
 pub mod matching;
+mod supervise;
 #[cfg(test)]
 pub(crate) mod test_support;
 mod throughput;
@@ -36,6 +37,8 @@ pub use throughput::{bps_setting, DOWN_KBPS_KEY, MAX_ACTIVE_KEY, UP_KBPS_KEY};
 use fetch::fetch_torrent_file;
 
 pub const LABEL: &str = "kroma";
+
+const STATE_DIR: &str = "torrents";
 
 pub struct DownloadManager {
     rqbit: RwLock<Option<Arc<RqbitEngine>>>,
@@ -49,6 +52,9 @@ pub struct DownloadManager {
     starting_since: Mutex<Option<i64>>,
     engine_gate: tokio::sync::Mutex<()>,
     retiring: Mutex<Option<Arc<RqbitEngine>>>,
+    start_failures: AtomicU32,
+    reseed_turn: AtomicUsize,
+    helper: String,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
     host: Arc<dyn HostCtx>,
@@ -64,8 +70,17 @@ impl DownloadManager {
         core: Pool,
         store: Pool,
     ) -> Arc<Self> {
-        let state_dir = data_dir.join("torrents");
-        std::fs::create_dir_all(&state_dir).ok();
+        Self::build(host, data_dir, core, store, crate::rqbit::PROGRAM.to_string())
+    }
+
+    pub(crate) fn build(
+        host: Arc<dyn HostCtx>,
+        data_dir: &std::path::Path,
+        core: Pool,
+        store: Pool,
+        helper: String,
+    ) -> Arc<Self> {
+        let state_dir = state_dir_under(data_dir);
         Arc::new(Self {
             rqbit: RwLock::new(None),
             gate_open: AtomicBool::new(true),
@@ -78,6 +93,9 @@ impl DownloadManager {
             starting_since: Mutex::new(None),
             engine_gate: tokio::sync::Mutex::new(()),
             retiring: Mutex::new(None),
+            start_failures: AtomicU32::new(0),
+            reseed_turn: AtomicUsize::new(0),
+            helper,
             downloads_dir: state_dir.join("downloads"),
             state_dir,
             host,
@@ -97,11 +115,8 @@ impl DownloadManager {
         &self.store
     }
 
-    /// Idempotent; a no-op when the embedded engine is not compiled in.
+    /// Idempotent.
     pub fn seed_embedded_client(&self) {
-        if !crate::RQBIT_COMPILED {
-            return;
-        }
         let _ = db::insert_download_client(
             self.store(),
             &DownloadClientRow {
@@ -163,11 +178,11 @@ impl DownloadManager {
     /// Only the embedded engine warms up in the background; an external one is
     /// a daemon that is either reachable or not.
     pub fn engine_pending(&self, row: &DownloadClientRow) -> bool {
-        row.kind == crate::engine::EMBEDDED_KIND && crate::RQBIT_COMPILED && self.rqbit().is_none()
+        row.kind == crate::engine::EMBEDDED_KIND && self.rqbit().is_none()
     }
 
-    /// The engine for one configured client. The embedded one is in this process;
-    /// every other kind is a module answering the `download-client` point under
+    /// The engine for one configured client. The embedded one is the helper this
+    /// module started; every other kind is a module answering the `download-client` point under
     /// that kind, so a client this module has never heard of works as soon as
     /// something is installed to answer for it.
     pub fn engine_for(&self, row: &DownloadClientRow) -> Result<Box<dyn DownloadClient>> {
@@ -178,19 +193,23 @@ impl DownloadManager {
             password: row.password.clone(),
         };
         if def.kind == crate::engine::EMBEDDED_KIND {
-            let engine = self.rqbit().ok_or_else(|| {
-                if crate::RQBIT_COMPILED {
-                    anyhow!("embedded engine not started")
-                } else {
-                    anyhow!("the embedded engine is not compiled into this build")
-                }
-            })?;
+            let engine = self.rqbit().ok_or_else(|| anyhow!("embedded engine not started"))?;
             return Ok(engine.client());
         }
         crate::engine::remote::RemoteEngine::new(&*self.host, def)
             .map(|e| Box::new(e) as Box<dyn DownloadClient>)
             .ok_or_else(|| anyhow!("no module provides the {:?} download client", row.kind))
     }
+}
+
+fn state_dir_under(data_dir: &std::path::Path) -> PathBuf {
+    let shared = data_dir.join(STATE_DIR);
+    if std::fs::create_dir_all(&shared).is_ok() {
+        return shared;
+    }
+    let own = data_dir.join("modules").join(crate::MODULE_ID).join(STATE_DIR);
+    std::fs::create_dir_all(&own).ok();
+    own
 }
 
 /// Everything needed to grab a torrent + import it.

@@ -1,5 +1,5 @@
-//! The two tokens a module process holds: the one it calls the core back with,
-//! which names it, and the one its own routes accept.
+//! The two tokens a module holds: the one it calls the core back with, which
+//! names it, and the one its own routes accept.
 
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -29,8 +29,8 @@ fn minted_for(tokens: &RwLock<HashMap<String, String>>, module_id: &str, bearer:
 }
 
 impl Supervisor {
-    /// The token `id`'s process calls back with: minted on first ask, stable for
-    /// the life of this server, and naming its holder.
+    /// The token `id` calls back with: minted on first ask, stable for the life
+    /// of this server, and naming its holder.
     pub fn module_token(&self, id: &str) -> String {
         minted(&self.module_tokens, id)
     }
@@ -46,8 +46,7 @@ impl Supervisor {
             .map(|(id, _)| id.clone())
     }
 
-    /// The token `id`'s own routes accept, handed to its process as
-    /// `KROMA_HOST_TOKEN`. A peer gets it only through [`Self::contributions_for`].
+    /// The token `id`'s own routes accept, handed to it as `KROMA_HOST_TOKEN`. A peer gets it only through [`Self::contributions_for`].
     pub fn port_token(&self, id: &str) -> String {
         minted(&self.port_tokens, id)
     }
@@ -60,25 +59,6 @@ impl Supervisor {
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "))
             .is_some_and(|bearer| self.speaks_for(module_id, bearer))
-    }
-
-    /// Whether `bearer` is a token minted for a module on the legacy TCP seam:
-    /// the only caller the core's TCP listener answers a host callback for,
-    /// because every other module reaches the core on its socket.
-    pub fn legacy_caller(&self, bearer: &str) -> bool {
-        self.minted_to(bearer)
-            .is_some_and(|id| self.seam_of(&id) == Some(kroma_module_manifest::Seam::Tcp))
-    }
-
-    fn minted_to(&self, bearer: &str) -> Option<String> {
-        self.module_of_token(bearer).or_else(|| {
-            self.port_tokens
-                .read()
-                .unwrap()
-                .iter()
-                .find(|(_, token)| ct_eq(token.as_bytes(), bearer.as_bytes()))
-                .map(|(id, _)| id.clone())
-        })
     }
 
     fn speaks_for(&self, module_id: &str, bearer: &str) -> bool {
@@ -108,7 +88,7 @@ impl Supervisor {
             );
             return Vec::new();
         }
-        self.answers(point, self.seam_of(caller).unwrap_or_default())
+        self.answers(point, true)
     }
 }
 

@@ -1,5 +1,4 @@
 import { apiErrorText } from '@kromatv/client';
-import type { RuleAction } from '@kromatv/client/network';
 import { useT } from '@kromatv/ui';
 import { useConfirm } from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,7 +6,7 @@ import { useAsyncAction } from '#web/features/admin/hooks';
 import { withHostRule } from '#web/features/admin/network-rules';
 import { useAuth } from '#web/shared/lib/auth';
 
-export type HostAction = Extract<RuleAction, 'block' | 'vpn'>;
+export type HostAction = 'block' | 'vpn';
 
 /** Asks before writing a rule for one host, then writes it at the head of the
  * stored list. Reads the list fresh first, so an edit saved elsewhere since the

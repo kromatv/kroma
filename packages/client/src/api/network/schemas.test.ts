@@ -134,8 +134,8 @@ describe('the firewall rules', () => {
     expect(RulesView.parse(RULES).rules.map((rule) => rule.id)).toEqual(['r-downloads', 'r-ads']);
   });
 
-  it('refuses an action other than direct, vpn or block', () => {
-    const rules = [{ ...RULES.rules[0], action: 'allow' }];
+  it('refuses an action that could not name a network', () => {
+    const rules = [{ ...RULES.rules[0], action: 'a b' }];
 
     expect(() => RulesView.parse({ ...RULES, rules })).toThrow();
   });
@@ -155,7 +155,7 @@ describe('the listening sockets', () => {
       owner: 'tv.kroma.vpn',
       protocol: 'unix',
       address: '/data/run/modules/tv.kroma.vpn/module.sock',
-      purpose: 'sidecar',
+      purpose: 'component',
       exposure: 'loopback',
     };
 

@@ -13,6 +13,7 @@ export const CLOSURE = [
   'kroma-module-wire',
   'kroma-media',
   'kroma-sqlite',
+  'kroma-sqlite-guest',
   'kroma-http',
   'kroma-i18n',
   'kroma-primitives',

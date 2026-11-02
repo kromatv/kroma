@@ -99,12 +99,15 @@ impl DownloadManager {
     }
 }
 
-/// The local wireproxy SOCKS5 bridge peers are routed through (librqbit only
-/// proxies via SOCKS5). `None` = no VPN, torrent traffic goes out directly.
+/// The SOCKS5 route peers take while a network carries them. `None` = no VPN, and
+/// torrent traffic goes out directly.
 pub fn active_proxy_url(host: &dyn HostCtx) -> Option<String> {
     crate::port::vpn::proxy_url(host)
 }
 
 pub(super) fn vpn_sealed_expected(host: &dyn HostCtx) -> bool {
-    host.module_enabled("tv.kroma.vpn") && !host.setting_str("vpnWgConfig", "").trim().is_empty()
+    crate::port::vpn::must_stay_behind_a_network(host)
 }
+
+#[cfg(test)]
+mod tests;

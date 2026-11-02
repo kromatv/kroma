@@ -1,5 +1,5 @@
-// Admin "Journaux" console: the server's recent log lines (core + module
-// sidecars) from the in-memory ring over `/api/admin/logs`, with level/source/
+// Admin "Journaux" console: the server's recent log lines (core + modules)
+// from the in-memory ring over `/api/admin/logs`, with level/source/
 // text filters and a follow-tail toggle. Polls; the ring is the source of
 // truth so a page load shows history, not just what streams in afterwards.
 

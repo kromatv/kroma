@@ -1,8 +1,12 @@
 //! Reading a `.torrent` an operator uploaded.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
+use sha1::{Digest, Sha1};
+
+use crate::bencode::{self, Node};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedTorrentFile {
@@ -13,7 +17,7 @@ pub struct ParsedTorrentFile {
     pub magnet: String,
 }
 
-fn encode(value: &str) -> String {
+pub(crate) fn encode(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     for byte in value.as_bytes() {
         match byte {
@@ -43,25 +47,15 @@ pub fn parse(bytes: &[u8]) -> Result<ParsedTorrentFile> {
     if bytes.is_empty() {
         bail!("the uploaded file is empty");
     }
-    let meta = librqbit_core::torrent_metainfo::torrent_from_bytes(bytes)
-        .map_err(|e| anyhow::anyhow!("{e}"))
-        .context("this file is not a valid .torrent")?;
-    let info = meta
-        .info
-        .data
-        .clone()
-        .validate()
-        .map_err(|e| anyhow::anyhow!("{e}"))
-        .context("this .torrent describes no files")?;
-    let name = info.name().map(|n| n.to_string()).unwrap_or_default();
-    let size_bytes = info.iter_file_lengths().sum();
-    let trackers: Vec<String> = meta
-        .iter_announce()
-        .filter_map(|t| std::str::from_utf8(t.as_ref()).ok())
-        .filter(|t| !t.is_empty())
-        .map(str::to_string)
-        .collect();
-    let info_hash = meta.info_hash.as_string();
+    let torrent = bencode::parse(bytes).context("this file is not a valid .torrent")?;
+    let info = torrent.get(b"info").context("this file is not a valid .torrent")?;
+    let files = validated_files(info).context("this .torrent describes no files")?;
+    let name = text_of(info, b"name.utf-8")
+        .or_else(|| text_of(info, b"name"))
+        .unwrap_or_default();
+    let size_bytes = files.iter().map(|file| file.length).sum();
+    let trackers = trackers_of(&torrent);
+    let info_hash = sha1_hex(info.raw);
     let magnet = magnet_for(&info_hash, &name, &trackers);
     Ok(ParsedTorrentFile {
         info_hash,
@@ -70,6 +64,117 @@ pub fn parse(bytes: &[u8]) -> Result<ParsedTorrentFile> {
         trackers,
         magnet,
     })
+}
+
+struct TorrentEntry<'a> {
+    components: Vec<&'a [u8]>,
+    length: u64,
+    padding: bool,
+}
+
+fn sha1_hex(bytes: &[u8]) -> String {
+    let mut hasher = Sha1::new();
+    hasher.update(bytes);
+    let digest: [u8; 20] = hasher.finalize().into();
+    crate::magnet::to_hex(&digest)
+}
+
+fn text_of(node: &Node<'_>, key: &[u8]) -> Option<String> {
+    let text = node.get(key)?.bytes()?;
+    (!text.is_empty()).then(|| String::from_utf8_lossy(text).into_owned())
+}
+
+fn trackers_of(torrent: &Node<'_>) -> Vec<String> {
+    let tiers: Vec<&Node<'_>> = torrent
+        .get(b"announce-list")
+        .and_then(Node::list)
+        .unwrap_or_default()
+        .iter()
+        .flat_map(|tier| tier.list().unwrap_or_default())
+        .collect();
+    let chosen = if tiers.is_empty() {
+        torrent.get(b"announce").into_iter().collect()
+    } else {
+        tiers
+    };
+    chosen
+        .into_iter()
+        .filter_map(Node::bytes)
+        .filter_map(|tracker| std::str::from_utf8(tracker).ok())
+        .filter(|tracker| !tracker.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn entries_of<'a>(info: &Node<'a>) -> Result<Vec<TorrentEntry<'a>>> {
+    let single = info.get(b"length");
+    let many = info.get(b"files");
+    match (single, many) {
+        (Some(length), None) => {
+            let name = info.get(b"name").and_then(Node::bytes).context("the file has no name")?;
+            Ok(vec![TorrentEntry {
+                components: vec![name],
+                length: u64::try_from(length.int().context("a file has no length")?)?,
+                padding: is_padding(info),
+            }])
+        }
+        (None, Some(files)) => {
+            let files = files.list().context("the file list is not a list")?;
+            files.iter().map(entry_of).collect()
+        }
+        _ => bail!("a torrent is either one file or a list of them"),
+    }
+}
+
+fn entry_of<'a>(file: &Node<'a>) -> Result<TorrentEntry<'a>> {
+    let path = file.get(b"path").and_then(Node::list).context("a file has no path")?;
+    let components = path
+        .iter()
+        .map(|component| component.bytes().context("a path holds something else"))
+        .collect::<Result<Vec<_>>>()?;
+    let length = file.get(b"length").and_then(Node::int).context("a file has no length")?;
+    Ok(TorrentEntry {
+        components,
+        length: u64::try_from(length)?,
+        padding: is_padding(file),
+    })
+}
+
+fn is_padding(node: &Node<'_>) -> bool {
+    node.get(b"attr")
+        .and_then(Node::bytes)
+        .is_some_and(|attr| attr.contains(&b'p'))
+}
+
+fn validated_files<'a>(info: &Node<'a>) -> Result<Vec<TorrentEntry<'a>>> {
+    info.get(b"pieces").and_then(Node::bytes).context("the piece hashes are missing")?;
+    let piece_length = info.get(b"piece length").and_then(Node::int);
+    if !piece_length.is_some_and(|length| length > 0 && u32::try_from(length).is_ok()) {
+        bail!("the piece length is not usable");
+    }
+    let files = entries_of(info)?;
+    if files.is_empty() {
+        bail!("the file list is empty");
+    }
+    if files.iter().map(|file| file.length).sum::<u64>() == 0 {
+        bail!("there is nothing to download");
+    }
+    let mut seen = HashSet::new();
+    for file in &files {
+        if file.components.is_empty() || file.components.iter().all(|part| part.is_empty()) {
+            bail!("a file has no name");
+        }
+        let hostile = |part: &&[u8]| {
+            *part == b".." || part.contains(&b'/') || part.contains(&b'\\')
+        };
+        if file.components.iter().any(hostile) {
+            bail!("a file's path leaves the torrent's folder");
+        }
+        if !file.padding && !seen.insert(file.components.clone()) {
+            bail!("two files share one path");
+        }
+    }
+    Ok(files)
 }
 
 /// Where an uploaded `.torrent` is kept, keyed by info hash so re-uploading the
@@ -95,67 +200,4 @@ pub fn stored_bytes(state_dir: &Path, info_hash: Option<&str>) -> Option<Vec<u8>
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn bstr(value: &str) -> String {
-        format!("{}:{value}", value.len())
-    }
-
-    // A minimal single-file v1 torrent: one 16 KiB piece, one tracker. Built
-    // rather than typed, because bencode counts its own bytes.
-    fn sample() -> Vec<u8> {
-        let mut out = Vec::new();
-        out.extend_from_slice(
-            format!(
-                "d{}{}{}d{}i1024e{}{}{}i16384e{}20:",
-                bstr("announce"),
-                bstr(TRACKER),
-                bstr("info"),
-                bstr("length"),
-                bstr("name"),
-                bstr(NAME),
-                bstr("piece length"),
-                bstr("pieces"),
-            )
-            .as_bytes(),
-        );
-        out.extend_from_slice(&[0u8; 20]);
-        out.extend_from_slice(b"ee");
-        out
-    }
-
-    const TRACKER: &str = "http://tracker.test/announce";
-    const NAME: &str = "Dune.2021.mkv";
-
-    #[test]
-    fn a_torrent_file_yields_its_hash_name_size_and_a_magnet_standing_for_it() {
-        let parsed = parse(&sample()).unwrap();
-
-        assert_eq!(parsed.name, NAME);
-        assert_eq!(parsed.size_bytes, 1024);
-        assert_eq!(parsed.trackers, [TRACKER]);
-        assert_eq!(parsed.info_hash.len(), 40);
-        assert!(parsed.magnet.starts_with(&format!(
-            "magnet:?xt=urn:btih:{}&dn=Dune.2021.mkv&tr=http%3A%2F%2F",
-            parsed.info_hash
-        )));
-    }
-
-    #[test]
-    fn anything_that_is_not_a_torrent_is_refused_rather_than_guessed_at() {
-        assert!(parse(b"").unwrap_err().to_string().contains("empty"));
-        assert!(parse(b"<html>nope</html>").is_err());
-    }
-
-    #[test]
-    fn stored_bytes_come_back_by_hash_and_a_miss_is_not_an_error() {
-        let dir = kroma_module_sdk::testing::temp_dir("torrent-upload");
-
-        store(dir.path(), "abc123", b"payload").unwrap();
-
-        assert_eq!(stored_bytes(dir.path(), Some("abc123")).as_deref(), Some(&b"payload"[..]));
-        assert_eq!(stored_bytes(dir.path(), Some("missing")), None);
-        assert_eq!(stored_bytes(dir.path(), None), None);
-    }
-}
+mod tests;

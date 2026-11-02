@@ -3,48 +3,11 @@
 //! in-memory as raw tars (the installer accepts zstd / gzip / raw, dispatched
 //! by magic bytes) and use `library: true` manifests so nothing is spawned.
 
-use kroma_module_supervisor::Source;
-use kroma_module_supervisor::{verify_sha256, Supervisor, SupervisorConfig};
+use kroma_module_supervisor::{Accept, Source, verify_sha256};
 
-// The contract THIS build speaks, so a bump to it does not read as four broken
-// tests: only the two that are deliberately about an older bundle spell a
-// version of their own.
-fn current(body: &str) -> String {
-    format!(
-        r#"{{ "schemaVersion": {}, {body} }}"#,
-        kroma_module_manifest::MODULE_SCHEMA_VERSION
-    )
-}
+mod install_support;
 
-fn tar_with_manifest(manifest: &str) -> Vec<u8> {
-    let mut builder = tar::Builder::new(Vec::new());
-    let bytes = manifest.as_bytes();
-    let mut header = tar::Header::new_gnu();
-    header.set_size(bytes.len() as u64);
-    header.set_mode(0o600);
-    header.set_cksum();
-    builder
-        .append_data(&mut header, "module.json", bytes)
-        .unwrap();
-    builder.into_inner().unwrap()
-}
-
-fn temp_modules_dir(tag: &str) -> kroma_testing::TempDir {
-    kroma_testing::temp_dir(&format!("sup-{tag}"))
-}
-
-fn supervisor(dir: &std::path::Path, server_version: &str) -> std::sync::Arc<Supervisor> {
-    Supervisor::new(SupervisorConfig {
-        modules_dir: dir.to_path_buf(),
-        core_port: 0,
-        host_token: "t".into(),
-        db_path: dir.join("db.sqlite"),
-        data_dir: dir.to_path_buf(),
-        reserved_ids: vec!["tv.kroma.reserved".into()],
-        server_version: server_version.into(),
-        log_line: None,
-    })
-}
+use install_support::{current, supervisor, tar_with_manifest, temp_modules_dir, uploaded};
 
 #[test]
 fn install_rejects_a_module_needing_a_newer_server() {
@@ -160,6 +123,7 @@ fn install_reports_an_id_mismatch_before_the_contract_it_was_built_against() {
                 kind: "registry",
                 url: None,
                 official: true,
+                accept: Accept::Anything,
             },
         )
         .unwrap_err()
@@ -176,100 +140,4 @@ fn checksum_verification_accepts_match_and_rejects_mismatch() {
     assert!(verify_sha256(bytes, &good.to_uppercase()).is_ok());
     let err = verify_sha256(bytes, "deadbeef").unwrap_err().to_string();
     assert!(err.contains("checksum mismatch"), "unexpected error: {err}");
-}
-
-#[test]
-fn upgrading_a_module_keeps_the_database_it_owns() {
-    let scratch = temp_modules_dir("keep-store");
-    let dir = scratch.path();
-    let sup = supervisor(dir, "0.1.4");
-    let bundle = |version: &str| {
-        tar_with_manifest(&current(&format!(
-            r#""id": "com.example.demo", "name": "Demo", "version": "{version}",
-                 "storage": {{}}, "library": true"#
-        )))
-    };
-
-    sup.install(&bundle("1.0.0"), None, uploaded()).unwrap();
-    let store = dir.join("com.example.demo").join("module.sqlite");
-    std::fs::write(&store, b"the module's own rows").unwrap();
-    sup.install(&bundle("2.0.0"), None, uploaded()).unwrap();
-
-    assert_eq!(std::fs::read(&store).unwrap(), b"the module's own rows");
-    assert_eq!(sup.installed_manifests()[0].version, "2.0.0");
-}
-
-fn uploaded() -> Source<'static> {
-    Source {
-        kind: "upload",
-        url: None,
-        official: false,
-    }
-}
-
-#[test]
-fn a_module_remembers_whether_the_official_catalog_served_it() {
-    let scratch = temp_modules_dir("origin-official");
-    let dir = scratch.path();
-    let sup = supervisor(dir, "9.9.9");
-    let bundle = tar_with_manifest(&current(
-        r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0", "library": true"#,
-    ));
-
-    sup.install(
-        &bundle,
-        Some("com.example.demo"),
-        Source {
-            kind: "registry",
-            url: Some("https://github.com/owner/repo/releases/download/x/demo.kmod"),
-            official: true,
-        },
-    )
-    .unwrap();
-
-    assert!(
-        sup.origin("com.example.demo").official,
-        "an artifact URL names a release host, not the catalog that listed it"
-    );
-
-    sup.install(&bundle, Some("com.example.demo"), uploaded())
-        .unwrap();
-    assert!(!sup.origin("com.example.demo").official);
-}
-
-fn tar_with_frontend(manifest: &str, entry: &str) -> Vec<u8> {
-    let mut builder = tar::Builder::new(Vec::new());
-    for (path, body) in [("module.json", manifest), ("fe/remoteEntry.js", entry)] {
-        let mut header = tar::Header::new_gnu();
-        header.set_size(body.len() as u64);
-        header.set_mode(0o600);
-        header.set_mtime(0);
-        header.set_cksum();
-        builder
-            .append_data(&mut header, path, body.as_bytes())
-            .unwrap();
-    }
-    builder.into_inner().unwrap()
-}
-
-#[test]
-fn an_installed_frontend_is_dated_by_the_install_rather_than_by_the_bundle() {
-    let scratch = temp_modules_dir("fe-date");
-    let dir = scratch.path();
-    let sup = supervisor(dir, "0.1.4");
-    let bundle = tar_with_frontend(
-        &current(
-            r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0", "library": true"#,
-        ),
-        "export {};",
-    );
-    let started = std::time::SystemTime::now() - std::time::Duration::from_secs(60);
-
-    sup.install(&bundle, None, uploaded()).unwrap();
-
-    let entry = dir
-        .join("com.example.demo")
-        .join("fe")
-        .join("remoteEntry.js");
-    assert!(std::fs::metadata(entry).unwrap().modified().unwrap() > started);
 }

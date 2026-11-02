@@ -8,7 +8,7 @@ import {
   satisfies,
 } from '@kromatv/registry';
 import { z } from 'zod';
-import { cargo, targetDir } from '../cargo';
+import { COMPONENT_TARGET, cargo, targetDir } from '../cargo';
 import { exec } from '../exec';
 import { findProjects, type Project } from '../project';
 import { style } from '../style';
@@ -76,6 +76,24 @@ async function checkTs(project: Project): Promise<string[]> {
   return problems;
 }
 
+async function checkRust(project: Project, dir: string): Promise<string[]> {
+  const server = project.server;
+  if (!server) return [];
+  const id = project.manifest.id;
+  const problems: string[] = [];
+  const lints = ['--', '-D', 'warnings'];
+  if ((await cargo(server.dir, ['clippy', '--all-targets', ...lints], dir)) !== 0) {
+    problems.push(`${id}: clippy failed`);
+  }
+  if (!server.bin) return problems;
+  const features = server.features.length ? ['--features', server.features.join(',')] : [];
+  const component = ['clippy', '--bin', server.bin, ...features, '--target', COMPONENT_TARGET];
+  if ((await cargo(server.dir, [...component, ...lints], dir)) !== 0) {
+    problems.push(`${id}: clippy failed for ${COMPONENT_TARGET}`);
+  }
+  return problems;
+}
+
 /** A declared range no peer in this tree satisfies. A module's real contract is
  *  the point it consumes, but a range is what the Store resolves an install
  *  against, so one that has rotted past its peer blocks the update rather than
@@ -134,7 +152,7 @@ export function notificationProblems(manifest: Manifest, catalogs: Catalogs): st
 
 /** `kroma check`: every manifest valid and unique, its notification types
  *  worded in every catalog, the frontend typed and its imports in bounds, the
- *  crate clean under clippy. */
+ *  crate clean under clippy here and for the component target. */
 export async function checkCommand(options: CheckOptions): Promise<number> {
   const cwd = options.cwd ?? process.cwd();
   const projects = findProjects(options.dirs, cwd);
@@ -153,14 +171,7 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     console.log(`\n${style.bold(project.manifest.id)}`);
     problems.push(...notificationProblems(project.manifest, catalogsOf(project.dir)));
     if (options.ts !== false) problems.push(...(await checkTs(project)));
-    if (options.rust !== false && project.server) {
-      const code = await cargo(
-        project.server.dir,
-        ['clippy', '--all-targets', '--', '-D', 'warnings'],
-        dir,
-      );
-      if (code !== 0) problems.push(`${project.manifest.id}: clippy failed`);
-    }
+    if (options.rust !== false) problems.push(...(await checkRust(project, dir)));
   }
 
   if (problems.length > 0) {
