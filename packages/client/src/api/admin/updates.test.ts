@@ -22,6 +22,16 @@ describe('UpdateStatus', () => {
     expect(UpdateStatus.safeParse(status('javascript:alert(1)')).success).toBe(false);
   });
 
+  it('offers no restart when an older server does not say whether it can', () => {
+    expect(UpdateStatus.parse(status('https://x.dev')).restartable).toBe(false);
+  });
+
+  it('reads that the server can restart itself', () => {
+    expect(UpdateStatus.parse({ ...status('https://x.dev'), restartable: true }).restartable).toBe(
+      true,
+    );
+  });
+
   it('reads host readiness and durable installation progress', () => {
     const value = {
       ...status('https://github.com/kromatv/kroma/releases/tag/canary'),

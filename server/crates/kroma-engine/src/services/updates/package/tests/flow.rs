@@ -3,8 +3,8 @@ use serde_json::json;
 use super::super::*;
 use super::support::*;
 use crate::services::updates::{
-    auto_install, install, package_of, recover, status, Channel, Target, AUTO_INSTALL_KEY,
-    OPERATION_KEY,
+    auto_install, install, package_of, recover, restart_requested, status, wait_for_restart,
+    Channel, Target, AUTO_INSTALL_KEY, OPERATION_KEY,
 };
 use crate::test_support::{test_state, test_state_as_package};
 

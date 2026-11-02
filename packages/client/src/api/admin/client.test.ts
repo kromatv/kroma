@@ -22,6 +22,12 @@ describe('the admin console endpoints', () => {
       path: '/admin/updates/install',
       body: { channel: 'Canary', version: '0.1.42', build: 3600000 },
     },
+    {
+      name: 'restartServer',
+      call: (c) => c.admin.restartServer(),
+      method: 'POST',
+      path: '/admin/server/restart',
+    },
     { name: 'status', call: (c) => c.admin.status(), method: 'GET', path: '/status' },
     { name: 'sessions', call: (c) => c.admin.sessions(), method: 'GET', path: '/admin/sessions' },
     {

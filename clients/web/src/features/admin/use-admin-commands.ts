@@ -2,7 +2,7 @@ import { hasPermission } from '@kromatv/client/accounts';
 import { type ModuleNav, moduleIconUrl } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { toast } from '@kromatv/ui/kit';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminNavSections } from '#web/features/admin/admin-nav';
 import { isAnyAdmin } from '#web/features/admin/hooks';
 import type { AdminModule } from '#web/features/admin/module-api';
@@ -45,6 +45,11 @@ export function useAdminCommands(): void {
   const moduleNav = useModuleNavAll();
   const typing = useCommandQuery().trim().length > 0;
   const { modules, actionsOf } = useModuleActions();
+  const { data: updates } = useQuery({
+    queryKey: ['admin', 'updates'],
+    queryFn: () => client.admin.updates(),
+    enabled: !!user && hasPermission(user, 'settings.manage'),
+  });
 
   const { sections, orphans } = adminNavSections(
     moduleNav,
@@ -135,6 +140,15 @@ export function useAdminCommands(): void {
             keywords: 'update upgrade version',
             cap: 'settings.manage',
             run: checkForUpdates,
+          },
+          updates?.restartable && {
+            label: t('admin.serverRestart'),
+            group: t('admin.groupMaintenance'),
+            icon: 'power',
+            keywords: 'restart reboot redemarrer relancer serveur server',
+            cap: 'settings.manage',
+            to: '/admin/updates',
+            search: { restart: true },
           },
         ]
       : [],
