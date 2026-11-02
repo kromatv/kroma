@@ -2,7 +2,7 @@
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -10,7 +10,9 @@ use kroma_http::Loopback;
 use kroma_module_host::{
     NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkPolicyOf,
 };
-use kroma_module_supervisor::{Endpoint, MODULE_COMPONENT, Supervisor, SupervisorConfig};
+use kroma_module_supervisor::{
+    Endpoint, FolderRoots, MODULE_COMPONENT, Supervisor, SupervisorConfig,
+};
 
 pub mod wasm;
 
@@ -58,7 +60,15 @@ impl Server {
     pub fn new(tag: &str, action: NetworkAction) -> Self {
         let dir = kroma_testing::temp_dir(tag);
         let data_dir = dir.path().to_path_buf();
-        Self::at(dir, data_dir, action)
+        Self::at(dir, data_dir, action, FolderRoots::none())
+    }
+
+    pub fn holding(tag: &str, folders: impl FnOnce(&Path) -> FolderRoots) -> Self {
+        let dir = kroma_testing::temp_dir(tag);
+        let data_dir = dir.path().join("data");
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let folders = folders(dir.path());
+        Self::at(dir, data_dir, NetworkAction::Direct, folders)
     }
 
     pub fn behind_an_absolute_link(tag: &str, action: NetworkAction) -> Self {
@@ -67,10 +77,15 @@ impl Server {
         std::fs::create_dir_all(volume.join("data")).unwrap();
         let link = dir.path().join("var");
         std::os::unix::fs::symlink(&volume, &link).unwrap();
-        Self::at(dir, link.join("data"), action)
+        Self::at(dir, link.join("data"), action, FolderRoots::none())
     }
 
-    fn at(dir: kroma_testing::TempDir, data_dir: PathBuf, action: NetworkAction) -> Self {
+    fn at(
+        dir: kroma_testing::TempDir,
+        data_dir: PathBuf,
+        action: NetworkAction,
+        folders: FolderRoots,
+    ) -> Self {
         let runtime = tokio::runtime::Runtime::new().unwrap();
         let said: Arc<Mutex<Vec<String>>> = Arc::default();
         let log = said.clone();
@@ -93,7 +108,7 @@ impl Server {
         supervisor.serve_gateways(
             NetworkPolicyOf(network.clone()),
             runtime.handle().clone(),
-            Arc::new(Vec::new),
+            folders,
         );
         Self {
             supervisor,
@@ -116,6 +131,16 @@ impl Server {
         permissions: &str,
         origin: &str,
     ) -> Endpoint {
+        let module = self.installed(id, permissions, origin);
+        std::fs::write(module.join(MODULE_COMPONENT), component).unwrap();
+        self.supervisor.spawn(id).unwrap()
+    }
+
+    pub fn installed_beside(&self, id: &str, permissions: &str) {
+        self.installed(id, permissions, FIRST_PARTY);
+    }
+
+    fn installed(&self, id: &str, permissions: &str, origin: &str) -> PathBuf {
         let module = self.data_dir.join("modules").join(id);
         std::fs::create_dir_all(&module).unwrap();
         std::fs::write(
@@ -127,8 +152,7 @@ impl Server {
         )
         .unwrap();
         std::fs::write(module.join("origin.json"), origin).unwrap();
-        std::fs::write(module.join(MODULE_COMPONENT), component).unwrap();
-        self.supervisor.spawn(id).unwrap()
+        module
     }
 
     pub fn installed_as_shipped(&self, id: &str, component: &[u8]) -> Endpoint {

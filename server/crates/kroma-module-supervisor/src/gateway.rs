@@ -12,7 +12,7 @@ use kroma_module_host::{
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
 
-use super::component::MediaRoots;
+use super::component::FolderRoots;
 use super::Supervisor;
 
 const CARRIED_METHOD: &str = "CONNECT";
@@ -22,12 +22,12 @@ const NOTHING_DECLARED: &str = "a contained module that declares no permissions 
 pub(crate) struct Wiring {
     pub(crate) network: NetworkPolicyOf,
     pub(crate) runtime: Handle,
-    media: MediaRoots,
+    folders: FolderRoots,
 }
 
 impl Wiring {
-    pub(crate) fn media(&self) -> &MediaRoots {
-        &self.media
+    pub(crate) fn folders(&self) -> &FolderRoots {
+        &self.folders
     }
 }
 
@@ -50,13 +50,13 @@ pub(crate) type Slot = OnceLock<Wiring>;
 
 impl Supervisor {
     /// Give every module started from here on a gateway ruled by `network`,
-    /// served on `runtime`. `media` answers where the `media` root is. A
+    /// served on `runtime`. `folders` answers where the named folder roots are. A
     /// supervisor never told this starts no module.
-    pub fn serve_gateways(&self, network: NetworkPolicyOf, runtime: Handle, media: MediaRoots) {
+    pub fn serve_gateways(&self, network: NetworkPolicyOf, runtime: Handle, folders: FolderRoots) {
         let wired = self.gateway.set(Wiring {
             network,
             runtime,
-            media,
+            folders,
         });
         if wired.is_err() {
             tracing::warn!("the module gateways were wired twice; keeping the first");

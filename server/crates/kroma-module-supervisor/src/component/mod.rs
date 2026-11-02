@@ -15,7 +15,7 @@ mod startup;
 use answer::answer;
 pub(crate) use pool::Pool;
 use pool::tick_forever;
-pub use roots::MediaRoots;
+pub use roots::{FolderRoots, Folders};
 
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::{Arc, Mutex};
@@ -113,14 +113,27 @@ impl Supervisor {
             address,
             credential: token.clone(),
         };
-        let roots = self.component_roots(id, &manifest, first_party, wiring.media())?;
-        let media = manifest
-            .permissions
-            .as_ref()
-            .is_some_and(|p| {
-                p.fs.read.contains(&FsRoot::Media) || p.fs.write.contains(&FsRoot::Media)
-            })
-            .then(|| (wiring.media())());
+        let downloads = (first_party && roots::declares(&manifest, FsRoot::Downloads)).then(|| {
+            let folders = self.download_folders(wiring.folders());
+            for refused in &folders.refused {
+                self.say(
+                    id,
+                    &format!(
+                        "WARN download folder {} is not held: it lies inside or above the server's own files",
+                        refused.display()
+                    ),
+                );
+            }
+            folders.held
+        });
+        let roots = self.component_roots(
+            id,
+            &manifest,
+            first_party,
+            wiring.folders(),
+            downloads.as_deref().unwrap_or_default(),
+        )?;
+        let media = roots::declares(&manifest, FsRoot::Media).then(|| (wiring.folders().media)());
         let databases = storage.map(|storage| {
             Arc::new(database::ModuleDatabases::new(
                 id,
@@ -213,6 +226,7 @@ impl Supervisor {
             Proc {
                 endpoint: endpoint.clone(),
                 media,
+                downloads,
                 component: pool,
                 _gateway: Running { tasks },
             },

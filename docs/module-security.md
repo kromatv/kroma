@@ -54,7 +54,7 @@ and an install fails when it does not.
 | `net.discovery` | `mdns` to publish a service, `ssdp` to search for devices | the host sends and listens for the module, which holds no socket |
 | `net.listen` | a port a program the module starts listens on | a component cannot listen. Shown at consent, and an update that adds one asks again |
 | `net.host` | the host's network, for the programs the module starts | a tunnel (`wireproxy`, `cloudflared`) and the torrent engine reach the internet from the host. Shown in red |
-| `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only unless `fs.write` names it, as an importer's does, and always read-only when one holds the server's data folder), `downloads`, `temp` (every module gets a private `/tmp`) |
+| `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only unless `fs.write` names it, as an importer's does, and always read-only when one holds a folder of the server's own), `downloads` (the [download folders](#the-download-folders), first-party only), `temp` (every module gets a private `/tmp`) |
 | `run` | programs it may start, by name | first-party modules only. What starts is a process of the host, see [below](#what-the-component-does-not-contain) |
 | `env` | environment variables beyond the allowlist | the server's own variables, secrets included, are never passed |
 
@@ -128,26 +128,39 @@ the host refuses every `sql.open`.
 
 **Files.** The host preopens folders at the same paths they have on the host: the
 module's own folder, its `dataDirs` (first-party only), the media roots when it
-declares `media`, and a private `/tmp`. A directory an absolute path in a
-`permissions.env` variable names is preopened read-only. A first-party module
-that declares `downloads` holds `/`, because a download client reports where a
-torrent landed and nobody can list those paths ahead of time. It also holds the
-data folder and the media roots at their own paths: WASI refuses a symlink whose
-target is absolute even under `/`, and Synology's `/var/packages/kroma/var` is
-one. `files.canonical`
-and `files.copy` (a reflink where the filesystem has one) cover what WASI lacks,
-inside the same folders.
+declares `media`, the [download folders](#the-download-folders) when a
+first-party module declares `downloads`, and a private `/tmp`. A directory an
+absolute path in a `permissions.env` variable names is preopened read-only. Each
+folder is opened where it really is and shown at the path it was named by, because
+WASI refuses a symlink whose target is absolute, and Synology's
+`/var/packages/kroma/var` is one. `files.canonical` and `files.copy` (a reflink
+where the filesystem has one) cover what WASI lacks, inside the same folders.
+
+The server's own folders are the data folder, the modules folder, the release
+folder the Synology package starts from, the folder of the running binary, the
+web client and the updater's folder. No module holds one of them or a folder
+above one, except a library folder, which is then read-only. Under the data
+folder, `modules`, `run`, `logs`, `backups` and `helpers` keep each module's
+database and manifest, its socket, and the programs the host runs beside each
+component's compiled copy: a module holds its own folder there and nothing else,
+and no library, download or `permissions.env` folder is taken from inside them.
+Which folders a module holds comes from settings no module may write:
+`libraries` and `downloadFolders` reach no module, and `acqRecycleBin` reaches
+only one that declares it. A module whose library or download folders change is
+restarted within half a minute.
 
 **Programs.** `process` starts only a program `run` names, and only for a
 first-party module: a third-party module never starts one. A program pinned under
 `helpers` is fetched by the host, through the gateway under the purpose
 `binary-download`, checked against its `sha256`, and kept in
-`<data>/helpers/<id>/`, a folder no module can write. Only `ensure` downloads;
-starting never does. An argument holding `{gateway:<purpose>}` becomes a SOCKS5
-URL to the module's gateway, with a token the component never sees. A program
-starts from the environment allowlist, plus what `KROMA_MODULE_ENV` names. Its
-children stop with the module, and what a crashed server left running is stopped
-at the next start.
+`<data>/helpers/<id>/`, a folder no module holds. The file is hashed against the
+manifest's `sha256` again before every start, so a binary changed after the fetch
+does not run: starting refuses it, and `ensure` fetches the pinned build again.
+Only `ensure` downloads; starting never does. An argument holding
+`{gateway:<purpose>}` becomes a SOCKS5 URL to the module's gateway, with a token
+the component never sees. A program starts from the environment allowlist, plus
+what `KROMA_MODULE_ENV` names. Its children stop with the module, and what a
+crashed server left running is stopped at the next start.
 
 **Discovery.** `lan` publishes over mDNS and searches over SSDP for a module that
 declares `net.discovery`, and refuses the one it did not declare.
@@ -157,6 +170,23 @@ failure goes on the module's log, and the next call gets a fresh one. `cpuSecond
 counts the call's own CPU time, not the time it waits on an import. An instance
 starts when the module does, so `on_enable` runs without a first call, and work it
 leaves running advances on a 100 ms tick. Stopping runs `on_disable`.
+
+### The download folders
+
+A download client reports where a torrent landed, so a module that imports
+downloads has to reach where clients save. It holds:
+
+- the `downloads` folder of each data directory a first-party module that declares
+  `downloads` keeps. The torrent engine's is `<data>/torrents/downloads`. A link
+  there that leads out of its data directory is not followed.
+- each folder in **Download folders** under Admin → Acquisition, where an external
+  client such as qBittorrent or Transmission saves, as this server sees it.
+- the recycle bin, when one is set.
+
+None of them lies inside or above one of the server's own folders: one the
+operator names there is not held, and the module's log says so when it starts.
+They are writable when `fs.write` names `downloads`. A download saved anywhere
+else does not import, and the queue says which folder to add.
 
 ### What the component does not contain
 
@@ -230,8 +260,10 @@ name and read an environment variable the host has, and each attempt must fail.
 on Ubuntu, macOS and Windows. The `kroma-module-supervisor/tests/component_*.rs`
 suites run components under the real supervisor: a call goes through the gateway and into
 the journal, a component with no `permissions` has no network, one reads only the
-core tables it declared, and a third-party one starts no program, even one it
-declared.
+core tables it declared, a third-party one starts no program, even one it
+declared, a downloads module opens its download folders and the libraries but
+none of the server's own files, and a helper changed after its fetch does not
+start.
 
 ## Status
 
@@ -248,6 +280,7 @@ declared.
 | Every module a WebAssembly component, one bundle for every platform; manifest schema 3 | on `main` (#510, #511) |
 | A native bundle refused from every registry and from an upload | on `main` (#513) |
 | Filesystem and `run` held by the component host; programs for first-party modules only | on `main` (#488) |
+| A downloads module holds its download folders, not `/`; a helper is hashed against its pin before every start | in review (#569) |
 | Storage grants enforced in the host; the component holds no database file | on `main` (#555) |
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |

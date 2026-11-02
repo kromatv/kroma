@@ -37,8 +37,9 @@ fn every_key_that_carries_a_default_declares_who_may_reach_it() {
 
     assert!(
         undeclared.is_empty(),
-        "a key reaches the store through one of public(), core_only() and \
-         module_credential(), each of which declares a reach: {undeclared:?}"
+        "a key reaches the store through one of public(), core_only(), \
+         module_credential() and module_declared(), each of which declares a \
+         reach: {undeclared:?}"
     );
 }
 
@@ -175,4 +176,11 @@ fn defaults_carry_known_keys() {
     assert_eq!(d.get("llmTemperature"), Some(&json!(0.7)));
     assert_eq!(d.get("smtpPassword"), Some(&json!("")));
     assert!(!d.contains_key("nonexistentKey"));
+}
+
+#[test]
+fn a_key_naming_folders_a_module_holds_is_written_only_by_the_core_or_its_declarer() {
+    assert_eq!(reach_of_setting("libraries"), SettingReach::CoreOnly);
+    assert_eq!(reach_of_setting("downloadFolders"), SettingReach::CoreOnly);
+    assert_eq!(reach_of_setting("acqRecycleBin"), SettingReach::Declared);
 }

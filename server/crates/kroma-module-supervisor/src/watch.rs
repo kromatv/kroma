@@ -1,6 +1,6 @@
 //! Keeping the running set matching what is installed: the hot-reload loop a
 //! dev build swaps a component under, and the watchdog that restarts a component
-//! whose library folders moved.
+//! whose library or download folders moved.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -14,7 +14,7 @@ use super::{Supervisor, MODULE_COMPONENT};
 const HOT_RELOAD_POLL: Duration = Duration::from_millis(400);
 
 #[cfg(unix)]
-const MEDIA_CHECK: Duration = Duration::from_secs(30);
+const FOLDERS_CHECK: Duration = Duration::from_secs(30);
 
 impl Supervisor {
     /// Watch every running module's component and restart the ones that change.
@@ -98,26 +98,27 @@ impl Supervisor {
         }
     }
 
-    /// Restart, every half minute, each running module that reaches the `media`
-    /// root and whose library folders changed: a component holds the folders it
-    /// started with, so one added later is only there after a restart.
+    /// Restart, every half minute, each running module whose library folders or
+    /// download folders changed: a component holds the folders it started with,
+    /// so one added later is only there after a restart.
     pub fn spawn_watchdog(self: &Arc<Self>) {
         #[cfg(unix)]
         {
             let this = self.clone();
             std::thread::spawn(move || loop {
-                std::thread::sleep(MEDIA_CHECK);
-                this.restart_where_media_moved();
+                std::thread::sleep(FOLDERS_CHECK);
+                this.restart_where_folders_moved();
             });
         }
     }
 
     #[cfg(unix)]
-    fn restart_where_media_moved(&self) {
+    fn restart_where_folders_moved(&self) {
         let Some(wiring) = self.gateway.get() else {
             return;
         };
-        let wanted = (wiring.media())();
+        let media = (wiring.folders().media)();
+        let downloads = self.download_folders(wiring.folders()).held;
         let moved: Vec<String> = self
             .procs
             .read()
@@ -126,12 +127,13 @@ impl Supervisor {
             .filter(|(_, proc)| {
                 proc.media
                     .as_ref()
-                    .is_some_and(|media| !media.is_empty() && *media != wanted)
+                    .is_some_and(|held| !held.is_empty() && *held != media)
+                    || proc.downloads.as_ref().is_some_and(|held| *held != downloads)
             })
             .map(|(id, _)| id.clone())
             .collect();
         for id in moved {
-            self.say(&id, "INFO restarting: the library folders changed");
+            self.say(&id, "INFO restarting: the library or download folders changed");
             self.stop(&id);
             if let Err(e) = self.start_installed(&id) {
                 self.say(&id, &format!("ERROR restart failed: {e:#}"));

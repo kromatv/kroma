@@ -61,6 +61,14 @@ pub(super) fn is_gone(save_path: &Path) -> bool {
             .is_some_and(|parent| matches!(parent.try_exists(), Ok(true)))
 }
 
+pub(super) fn is_held(save_path: &Path) -> bool {
+    held_by(save_path, |dir| matches!(dir.try_exists(), Ok(true)))
+}
+
+fn held_by(save_path: &Path, opens: impl Fn(&Path) -> bool) -> bool {
+    save_path.ancestors().any(opens)
+}
+
 pub(super) fn largest(files: &[PathBuf]) -> Option<&Path> {
     files
         .iter()
@@ -233,6 +241,18 @@ mod tests {
         let gone = is_gone(downloads.path());
 
         assert!(!gone);
+    }
+
+    #[test]
+    fn a_save_path_under_no_folder_the_module_holds_is_not_held() {
+        let opens = |dir: &Path| dir.starts_with("/volume1/video");
+
+        let held = (
+            held_by(Path::new("/volume1/downloads/Film.2024"), opens),
+            held_by(Path::new("/volume1/video/incoming/Film.2024"), opens),
+        );
+
+        assert_eq!(held, (false, true));
     }
 
     #[test]

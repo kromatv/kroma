@@ -1,6 +1,7 @@
 //! The programs a component starts. It names them, and only names its manifest
 //! declares. A pinned helper is fetched here, into a folder the module cannot
-//! write, so what runs is what the manifest pinned.
+//! write, and hashed again before each start, so what runs is what the manifest
+//! pinned.
 
 mod capture;
 mod fetch;

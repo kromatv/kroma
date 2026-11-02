@@ -480,7 +480,8 @@ the reach that will be refused when it is.
   CPU time, not the time it waits on the host).
 - **`helpers`** pins the upstream build of a program `permissions.run` names, per
   `<os>-<arch>`: a `url`, its `sha256`, and the `member` to take out of a
-  `.tar.gz`. The host fetches and checks it. Only a first-party module starts a
+  `.tar.gz`. The host fetches it and checks it against the pin, once at the fetch
+  and again before every start. Only a first-party module starts a
   program at all; see [module security](../docs/module-security.md#what-the-component-does-not-contain).
 
 ### Instances

@@ -1,5 +1,8 @@
 //! The folders a component holds, each at the path it has on the host.
 
+mod downloads;
+mod server_files;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -8,10 +11,33 @@ use kroma_wasm_host::Preopen;
 
 use crate::Supervisor;
 
-/// The folders a module that declares the `media` root can reach.
-pub type MediaRoots = Arc<dyn Fn() -> Vec<PathBuf> + Send + Sync>;
+/// A list of folders, asked again each time a module starts.
+pub type Folders = Arc<dyn Fn() -> Vec<PathBuf> + Send + Sync>;
 
-const ROOT: &str = "/";
+/// Where the named roots are on this machine, as the core answers them: the
+/// library folders behind `media`, the folders the operator named for downloads
+/// (a recycle bin included) behind `downloads`, and the folders holding the
+/// server's own files besides its data directory. No module holds one of those,
+/// nor a download folder above one, and a library folder above one is read-only.
+#[derive(Clone)]
+pub struct FolderRoots {
+    pub media: Folders,
+    pub downloads: Folders,
+    pub server_dirs: Vec<PathBuf>,
+}
+
+impl FolderRoots {
+    /// No library, no download folder, and nothing of the server's outside its
+    /// data directory.
+    pub fn none() -> Self {
+        Self {
+            media: Arc::new(Vec::new),
+            downloads: Arc::new(Vec::new),
+            server_dirs: Vec::new(),
+        }
+    }
+}
+
 const TMP: &str = "/tmp";
 const RESERVED_DATA_DIRS: [&str; 5] = ["modules", "run", "logs", "backups", "helpers"];
 
@@ -28,11 +54,18 @@ fn holds(outer: &Path, inner: &Path) -> bool {
     canonical(inner).starts_with(canonical(outer))
 }
 
-fn held(host: impl Into<PathBuf>, writable: bool) -> Preopen {
-    let host = host.into();
-    let guest = host.to_string_lossy().into_owned();
+pub(super) fn declares(manifest: &ModuleManifest, root: FsRoot) -> bool {
+    manifest
+        .permissions
+        .as_ref()
+        .is_some_and(|p| p.fs.read.contains(&root) || p.fs.write.contains(&root))
+}
+
+fn held(dir: impl Into<PathBuf>, writable: bool) -> Preopen {
+    let dir = dir.into();
+    let guest = dir.to_string_lossy().into_owned();
     Preopen {
-        host,
+        host: dir.canonicalize().unwrap_or(dir),
         guest,
         writable,
     }
@@ -44,12 +77,12 @@ impl Supervisor {
         id: &str,
         manifest: &ModuleManifest,
         first_party: bool,
-        media: &MediaRoots,
+        folders: &FolderRoots,
+        downloads: &[PathBuf],
     ) -> anyhow::Result<Vec<Preopen>> {
         let default_fs = kroma_module_manifest::FsPermissions::default();
         let permissions = manifest.permissions.as_ref();
         let fs = permissions.map_or(&default_fs, |p| &p.fs);
-        let declares = |root: FsRoot| fs.read.contains(&root) || fs.write.contains(&root);
         let mut roots = Vec::new();
 
         let run_dir = self.run.prepare_module_dir(id)?;
@@ -74,39 +107,28 @@ impl Supervisor {
                 roots.push(held(dir, own_writable));
             }
         }
-        // A download client reports where a torrent landed, a path nobody can list
-        // ahead of time, so an official module that declares it keeps the machine.
-        if first_party && declares(FsRoot::Downloads) {
-            let writable = fs.write.contains(&FsRoot::Downloads);
-            roots.push(Preopen {
-                host: PathBuf::from(ROOT),
-                guest: ROOT.to_string(),
-                writable,
-            });
-            roots.extend(
-                std::iter::once(self.cfg.data_dir.clone())
-                    .chain(media())
-                    .filter(|dir| dir.is_dir())
-                    .map(|dir| held(dir, writable)),
-            );
-            return Ok(roots);
-        }
-        if declares(FsRoot::Media) {
+        let writable = fs.write.contains(&FsRoot::Downloads);
+        roots.extend(downloads.iter().map(|dir| held(dir, writable)));
+        let files = self.server_files(folders);
+        if declares(manifest, FsRoot::Media) {
             let writable = fs.write.contains(&FsRoot::Media);
-            let data_dir = &self.cfg.data_dir;
             roots.extend(
-                media()
+                (folders.media)()
                     .into_iter()
-                    .filter(|root| root.is_dir())
+                    .filter(|root| root.is_dir() && !files.inside_reserved(root))
                     .map(|root| {
-                        let writable = writable && !holds(&root, data_dir);
+                        let writable = writable && !files.above(&root);
                         held(root, writable)
                     }),
             );
         }
         for name in permissions.map_or(&[][..], |p| p.env.as_slice()) {
             if let Some(path) = std::env::var_os(name).map(PathBuf::from) {
-                if path.is_absolute() && path.is_dir() {
+                if path.is_absolute()
+                    && path.is_dir()
+                    && !files.above(&path)
+                    && !files.inside_reserved(&path)
+                {
                     roots.push(held(path, false));
                 }
             }
@@ -139,5 +161,19 @@ mod tests {
         let held = (holds(root.path(), &data), holds(&data, &data), holds(&data, root.path()));
 
         assert_eq!(held, (true, true, false));
+    }
+
+    #[test]
+    fn a_folder_is_opened_where_it_really_is_and_seen_where_it_was_named() {
+        let root = kroma_testing::temp_dir("roots-link");
+        let real = root.path().join("volume");
+        std::fs::create_dir_all(&real).unwrap();
+        let link = root.path().join("var");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        let preopen = held(&link, true);
+
+        assert_eq!(preopen.host, real.canonicalize().unwrap());
+        assert_eq!(preopen.guest, link.to_string_lossy());
     }
 }

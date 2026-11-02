@@ -2,6 +2,8 @@
 //! server; each submodule owns one thing it has to build.
 
 pub mod background;
+#[cfg(unix)]
+pub mod folders;
 #[cfg(feature = "hotpatch")]
 pub mod hot;
 pub mod https;

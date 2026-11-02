@@ -16,6 +16,8 @@ fn routes() -> Router<RemoteHost> {
         .route("/echo", get(|| async { "still here" }))
         .route("/explode", get(explode))
         .route("/file", get(read_a_file))
+        .route("/read", get(read_at))
+        .route("/write", get(write_at))
         .route("/fetch", get(fetch))
         .route(
             "/setting",
@@ -41,6 +43,16 @@ async fn explode() -> &'static str {
 
 async fn read_a_file() -> String {
     format!("{:?}", std::fs::read_to_string("/etc/passwd").map_err(|e| e.kind()))
+}
+
+async fn read_at(RawQuery(path): RawQuery) -> String {
+    let read = std::fs::read_to_string(path.unwrap_or_default());
+    format!("{:?}", read.map_err(|e| e.kind()))
+}
+
+async fn write_at(RawQuery(path): RawQuery) -> String {
+    let written = std::fs::write(path.unwrap_or_default(), "written");
+    format!("{:?}", written.map_err(|e| e.kind()))
 }
 
 async fn fetch(RawQuery(url): RawQuery) -> String {

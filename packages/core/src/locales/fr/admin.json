@@ -799,5 +799,7 @@
   "admin.updatesStep": "Étape {step} sur {total}",
   "admin.updatesStages": "Étapes de mise à jour terminées",
   "admin.updatesNow": "En cours",
-  "admin.updatesCompleteHint": "Votre serveur est prêt. Votre bibliothèque et votre historique vous attendent."
+  "admin.updatesCompleteHint": "Votre serveur est prêt. Votre bibliothèque et votre historique vous attendent.",
+  "admin.downloadFolders": "Dossiers de téléchargement",
+  "admin.downloadFoldersHint": "Là où un client de téléchargement externe enregistre ses fichiers, tel que ce serveur les voit. Séparez les dossiers par des virgules."
 }

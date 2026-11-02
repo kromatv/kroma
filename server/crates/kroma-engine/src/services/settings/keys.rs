@@ -51,6 +51,10 @@ impl Declared {
         self.declare(key, SettingReach::Declared, value);
     }
 
+    fn module_declared(&mut self, key: &'static str, value: Value) {
+        self.declare(key, SettingReach::Declared, value);
+    }
+
     fn minted(&mut self, key: &'static str) {
         self.reach.insert(key, SettingReach::CoreOnly);
     }
@@ -154,7 +158,9 @@ fn declared() -> Declared {
     m.public("acqReplaceOnUpgrade", json!(true));
     // A file an upgrade replaces moves here instead of being deleted ("" =
     // delete at once), and is cleared after `acqRecycleDays`.
-    m.public("acqRecycleBin", json!(""));
+    m.module_declared("acqRecycleBin", json!(""));
+    // Folders an external download client saves into, comma or line separated.
+    m.core_only("downloadFolders", json!(""));
     m.public("acqRecycleDays", json!(30));
     // A download still unfinished this many hours after its grab has failed
     // (0 = never).
@@ -211,7 +217,7 @@ fn declared() -> Declared {
     // Seeded from the flat `llm*` keys above on first read when empty.
     m.public("llmProviders", json!([]));
     m.public("llmDefaultProvider", json!(""));
-    m.public("libraries", json!(null));
+    m.core_only("libraries", json!(null));
     // ISO-8601 `items.added_at` the digest has reported up to. Empty = never run:
     // the first pass adopts the current library as its baseline and stays silent.
     m.public("notifications.digest.since", json!(""));
