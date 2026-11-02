@@ -30,7 +30,8 @@ pub use manifest::{
 };
 pub use matching::{host_matches, purpose_covers};
 pub use permissions::{
-    Attempt, Connect, Discovery, FsPermissions, FsRoot, Listen, NetPermissions, Permissions, Proto, Reach,
+    Attempt, Connect, Discovery, FsPermissions, FsRoot, Listen, MediaTool, NetPermissions, Permissions, Proto,
+    Reach,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
 

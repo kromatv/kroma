@@ -6,7 +6,7 @@ use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{FsPerms, WasiCtx, WasiCtxView, WasiView};
 
 use crate::bindings::kroma::module::{files, host_api, lan, net, process, settings, sql, types};
-use crate::capabilities::{Databases, Files, Lan, Preopen, Processes, SqlConnection};
+use crate::capabilities::{Databases, Files, Lan, Media, Preopen, Processes, SqlConnection};
 use crate::limits::Ceiling;
 use crate::policy::{FetchCall, FetchRecord, NetPolicy, Outcome, Verdict};
 use crate::{Grant, HostError, Request, Response, Settings};
@@ -25,6 +25,7 @@ pub(crate) struct State {
     processes: Option<Arc<dyn Processes>>,
     lan: Option<Arc<dyn Lan>>,
     files: Option<Arc<dyn Files>>,
+    pub(crate) media: Option<Arc<dyn Media>>,
     connections: HashMap<u32, Box<dyn SqlConnection>>,
     next_connection: u32,
     pub(crate) fetches: Vec<FetchRecord>,
@@ -45,6 +46,7 @@ impl State {
             processes: grant.processes,
             lan: grant.lan,
             files: grant.files,
+            media: grant.media,
             connections: HashMap::new(),
             next_connection: 0,
             fetches: Vec::new(),

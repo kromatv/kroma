@@ -1,10 +1,12 @@
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
-use axum::extract::{Path, RawQuery, State};
+use axum::extract::{Path, Query, RawQuery, State};
 use axum::routing::get;
 use axum::Router;
 use kroma_module_runtime::RemoteHost;
+use kroma_module_sdk::host::media::{self, Pcm, SampleFormat};
 use kroma_module_sdk::host::process::Command;
 use kroma_module_sdk::host::{HostCtx, HostStorage, ServerModule};
 
@@ -35,6 +37,7 @@ fn routes() -> Router<RemoteHost> {
         .route("/start/{program}", get(start_a_program))
         .route("/ensure/{program}", get(ensure_a_program))
         .route("/tamper/{program}", get(tamper))
+        .route("/decode", get(decode))
 }
 
 async fn explode() -> &'static str {
@@ -149,6 +152,20 @@ async fn ensure_a_program(Path(program): Path<String>) -> String {
 async fn tamper(State(host): State<RemoteHost>, Path(program): Path<String>) -> String {
     let helper = host.data_dir().join("helpers").join("tv.example.guest").join(program);
     format!("{:?}", std::fs::write(helper, "#!/bin/sh\necho tampered\n").map_err(|e| e.kind()))
+}
+
+async fn decode(Query(asked): Query<HashMap<String, String>>) -> String {
+    let pcm = Pcm {
+        sample_rate: 16_000,
+        channels: 1,
+        format: SampleFormat::F32le,
+    };
+    let source = std::path::Path::new(&asked["source"]);
+    let track = asked["track"].parse().unwrap_or(0);
+    let into = std::path::Path::new(&asked["into"]);
+    let decoded = media::decode_audio(source, track, pcm, into);
+    let seen = std::fs::metadata(into).map(|meta| meta.len()).map_err(|e| e.kind());
+    format!("{decoded:?} {seen:?}")
 }
 
 async fn who() -> String {

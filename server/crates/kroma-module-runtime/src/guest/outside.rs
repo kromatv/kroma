@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use kroma_module_host::outside::{CommandSpec, LanReply, LanService, Outside};
+use kroma_module_host::media::SampleFormat;
+use kroma_module_host::outside::{CommandSpec, DecodeSpec, LanReply, LanService, Outside};
 
-use super::kroma::module::{files, lan, process};
+use super::kroma::module::{files, lan, media, process};
 
 pub(super) struct ThroughTheHost;
 
@@ -79,5 +80,19 @@ impl Outside for ThroughTheHost {
 
     fn copy(&self, source: &str, destination: &str) -> Result<u64, String> {
         files::copy(source, destination)
+    }
+
+    fn decode_audio(&self, spec: DecodeSpec) -> Result<u64, String> {
+        media::decode_audio(&media::AudioDecode {
+            source: spec.source,
+            track: spec.track,
+            sample_rate: spec.pcm.sample_rate,
+            channels: spec.pcm.channels,
+            format: match spec.pcm.format {
+                SampleFormat::F32le => media::SampleFormat::F32le,
+                SampleFormat::S16le => media::SampleFormat::S16le,
+            },
+            destination: spec.destination,
+        })
     }
 }

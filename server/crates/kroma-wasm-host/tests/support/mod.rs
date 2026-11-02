@@ -5,8 +5,8 @@ use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use kroma_wasm_host::{
-    FetchRequest, Grant, Limits, ModuleComponent, ModuleInstance, NetPolicy, Request, Response,
-    Settings, Verdict, WasmHost,
+    FetchRequest, Grant, Limits, Media, ModuleComponent, ModuleInstance, NetPolicy, Request,
+    Response, Settings, Verdict, WasmHost,
 };
 
 pub const MEMORY_CEILING_BYTES: usize = 32 * 1024 * 1024;
@@ -42,6 +42,24 @@ pub fn component() -> &'static ModuleComponent {
 }
 
 pub fn instance(policy: Arc<dyn NetPolicy>, settings: Settings, limits: Limits) -> ModuleInstance {
+    granted(policy, settings, limits, None)
+}
+
+pub fn with_media(media: Arc<dyn Media>) -> ModuleInstance {
+    granted(
+        Arc::new(BlockEverything),
+        Settings::default(),
+        LIMITS,
+        Some(media),
+    )
+}
+
+fn granted(
+    policy: Arc<dyn NetPolicy>,
+    settings: Settings,
+    limits: Limits,
+    media: Option<Arc<dyn Media>>,
+) -> ModuleInstance {
     let grant = Grant {
         policy,
         settings,
@@ -53,6 +71,7 @@ pub fn instance(policy: Arc<dyn NetPolicy>, settings: Settings, limits: Limits) 
         processes: None,
         lan: None,
         files: None,
+        media,
     };
     component()
         .instantiate(grant)

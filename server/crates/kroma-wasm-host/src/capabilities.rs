@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use crate::bindings::kroma::module::{lan, process, sql};
+use crate::bindings::kroma::module::{lan, media, process, sql};
 
 pub use lan::{Reply, Service};
+pub use media::{AudioDecode, SampleFormat};
 pub use process::{Command, Output};
 pub use sql::{Failure as SqlFailure, Outcome as SqlOutcome, Value as SqlValue};
 
@@ -42,6 +43,11 @@ pub trait Processes: Send + Sync {
 pub trait Files: Send + Sync {
     fn canonical(&self, path: &str) -> Option<String>;
     fn copy(&self, source: &str, destination: &str) -> Result<u64, String>;
+}
+
+/// What a module may ask of the core's media tools, on the files it holds.
+pub trait Media: Send + Sync {
+    fn decode_audio(&self, request: AudioDecode) -> Result<u64, String>;
 }
 
 /// What a module may ask of the local network without holding a socket.

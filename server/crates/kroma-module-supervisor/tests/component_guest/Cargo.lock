@@ -522,6 +522,7 @@ dependencies = [
  "axum",
  "kroma-http",
  "kroma-module-wire",
+ "kroma-primitives",
  "kroma-sqlite",
  "serde",
  "serde_json",

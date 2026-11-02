@@ -5,6 +5,7 @@
 //! write in rather than deriving one. A module links this crate and a database
 //! never comes with it.
 
+pub mod audio;
 pub mod external_subtitles;
 pub mod ffmpeg_gate;
 pub mod ffmpeg_run;

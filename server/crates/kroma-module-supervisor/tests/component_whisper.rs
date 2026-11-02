@@ -110,7 +110,7 @@ fn the_real_whisper_module_answers_nothing_when_it_cannot_get_its_model() {
 fn the_real_whisper_module_transcribes_speech_and_reports_on_its_row() {
     let server = Server::new("component-whisper-speech", NetworkAction::Direct);
     seed_whisper_job(&server);
-    let clip = spoken_clip(server.dir.path());
+    let clip = spoken_clip(&server.library());
     let endpoint = server.installed_as_shipped(WHISPER, whisper_component());
 
     let text = transcribed(&server, &endpoint, &clip).expect("a transcript");
@@ -133,7 +133,7 @@ fn the_real_whisper_module_transcribes_speech_and_reports_on_its_row() {
 fn a_transcription_the_core_cancels_stops_and_answers_nothing() {
     let server = Server::new("component-whisper-cancel", NetworkAction::Direct);
     seed_whisper_job(&server);
-    let clip = spoken_clip(server.dir.path());
+    let clip = spoken_clip(&server.library());
     let endpoint = server.installed_as_shipped(WHISPER, whisper_component());
     let core = server.core_database();
     core.execute(

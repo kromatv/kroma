@@ -457,6 +457,7 @@
   "admin.permissionDiscovery": "Chercher et publier sur le réseau local par le serveur : {kinds}",
   "admin.permissionHostNetwork": "Laisser les programmes qu'il lance utiliser directement le réseau de cette machine",
   "admin.permissionListen": "Écouter les connexions entrantes pour {purpose}",
+  "admin.permissionMediaDecode": "Décoder les pistes audio des fichiers qu'il peut lire, avec le ffmpeg du serveur",
   "admin.permissionNone": "Il ne demande rien.",
   "admin.permissionRead": "Lire {roots}",
   "admin.permissionRootDownloads": "vos téléchargements",

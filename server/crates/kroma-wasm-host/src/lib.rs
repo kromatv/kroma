@@ -9,6 +9,7 @@ mod host;
 mod instance;
 mod limits;
 mod log;
+mod media;
 mod policy;
 mod settings;
 mod state;
@@ -16,8 +17,8 @@ mod state;
 pub use bindings::kroma::module::net::FetchRequest;
 pub use bindings::kroma::module::types::{Header, Request, Response};
 pub use capabilities::{
-    Command, Databases, Files, Lan, Output, Preopen, Processes, Reply, Service, SqlConnection, SqlFailure,
-    SqlOutcome, SqlValue,
+    AudioDecode, Command, Databases, Files, Lan, Media, Output, Preopen, Processes, Reply, SampleFormat, Service,
+    SqlConnection, SqlFailure, SqlOutcome, SqlValue,
 };
 pub use error::HostError;
 pub use host::{ModuleComponent, Readied, WasmHost};

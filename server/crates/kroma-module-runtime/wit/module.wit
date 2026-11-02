@@ -105,6 +105,24 @@ interface files {
   copy: func(source: string, destination: string) -> result<u64, string>;
 }
 
+interface media {
+  enum sample-format {
+    f32le,
+    s16le,
+  }
+
+  record audio-decode {
+    source: string,
+    track: u32,
+    sample-rate: u32,
+    channels: u8,
+    format: sample-format,
+    destination: string,
+  }
+
+  decode-audio: func(request: audio-decode) -> result<u64, string>;
+}
+
 interface lan {
   record service {
     kind: string,
@@ -144,6 +162,7 @@ world module {
   import sql;
   import process;
   import files;
+  import media;
   import lan;
 
   export route;

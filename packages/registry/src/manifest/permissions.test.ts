@@ -14,6 +14,7 @@ const torrents = {
   },
   fs: { read: ['media'], write: ['module', 'downloads'] },
   run: ['ffmpeg'],
+  media: ['decode'],
   env: ['KROMA_EMBED_MODEL_DIR'],
 };
 
@@ -50,6 +51,10 @@ describe('Permissions', () => {
     expect(() => Permissions.parse({ run: ['..'] })).toThrow();
     expect(() => Permissions.parse({ run: ['.'] })).toThrow();
     expect(() => Permissions.parse({ env: ['path'] })).toThrow();
+  });
+
+  it('refuses a media tool the server does not have', () => {
+    expect(() => Permissions.parse({ media: ['transcode'] })).toThrow();
   });
 
   it('is optional in a manifest, which keeps an older module readable', () => {

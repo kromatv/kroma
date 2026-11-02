@@ -2,7 +2,7 @@ use std::hint::black_box;
 use std::net::{TcpStream, ToSocketAddrs};
 
 use exports::kroma::module::route::{Guest, Request, Response};
-use kroma::module::{net, settings};
+use kroma::module::{media, net, settings};
 
 wit_bindgen::generate!({ path: "../../../kroma-module-runtime/wit", world: "module" });
 
@@ -28,6 +28,7 @@ impl Guest for Probes {
             "/sleep" => answer(sleep(&argument)),
             "/fetch" => answer(fetch(&argument)),
             "/settings" => answer(settings::get(&argument).ok_or_else(|| "absent".into())),
+            "/media/decode" => answer(decode(&argument)),
             "/bench/settings" => answer(read_settings_repeatedly(&argument)),
             _ => Response {
                 status: 404,
@@ -108,6 +109,18 @@ fn fetch(purpose: &str) -> Result<String, String> {
         digest: None,
     })?;
     Ok(String::from_utf8_lossy(&response.body).into_owned())
+}
+
+fn decode(source: &str) -> Result<String, String> {
+    let bytes = media::decode_audio(&media::AudioDecode {
+        source: source.to_string(),
+        track: 2,
+        sample_rate: 16_000,
+        channels: 1,
+        format: media::SampleFormat::S16le,
+        destination: "/tmp/pcm".to_string(),
+    })?;
+    Ok(format!("decoded {bytes} bytes"))
 }
 
 fn read_settings_repeatedly(count: &str) -> Result<String, String> {
