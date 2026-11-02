@@ -25,8 +25,10 @@ pub mod testing;
 pub use grant::{init_scoped, Grant};
 #[cfg(not(target_family = "wasm"))]
 pub use grant::open_guarded;
-pub use migrate::{migrate, user_version, Legacy, Migrated, Run, Schema, Step, KEPT_SNAPSHOTS};
-pub use open::{apply_migrations, migrate_store, open, open_with};
+pub use migrate::{
+    migrate, user_version, Change, Legacy, Migrated, Run, Schema, SqlStep, Step, KEPT_SNAPSHOTS,
+};
+pub use open::{apply_migrations, migrate_store, migrate_store_sql, open, open_with};
 pub use pool::{Pool, PoolInner, PooledConn};
 
 /// The pragmas every pooled connection applies on open.

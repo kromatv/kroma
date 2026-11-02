@@ -157,6 +157,35 @@ impl Server {
     pub fn core_database(&self) -> rusqlite::Connection {
         rusqlite::Connection::open(self.data_dir.join("kroma.db")).unwrap()
     }
+
+    pub fn core_hearing(&self) -> Heard {
+        let socket = self.supervisor.prepare_host_socket().unwrap();
+        let heard = Heard::default();
+        let kept = heard.clone();
+        let app = axum::Router::new().fallback(move |uri: axum::http::Uri| {
+            kept.0.lock().unwrap().push(uri.path().to_string());
+            async { axum::http::StatusCode::NO_CONTENT }
+        });
+        let _entered = self.runtime.enter();
+        let listener = tokio::net::UnixListener::bind(&socket).unwrap();
+        self.runtime
+            .spawn(async move { axum::serve(listener, app).await });
+        heard
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct Heard(Arc<Mutex<Vec<String>>>);
+
+impl Heard {
+    pub fn count(&self, path: &str) -> usize {
+        self.0
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|heard| *heard == path)
+            .count()
+    }
 }
 
 impl Drop for Server {

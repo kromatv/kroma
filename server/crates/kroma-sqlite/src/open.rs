@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
-use crate::{Legacy, Migrated, Pool, PoolInner, Schema, Step};
+use crate::{Change, Legacy, Migrated, Pool, PoolInner, Schema, SqlStep, Step};
 
 /// A pool over `path` with the pragmas applied and NO schema.
 ///
@@ -77,6 +77,16 @@ pub fn apply_migrations(conn: &Connection, sql: &str) -> Result<()> {
 /// module had steps runs it once more (it is `IF NOT EXISTS` DDL) before taking
 /// them.
 pub fn migrate_store(store: &Pool, name: &str, baseline: &str, steps: &[Step]) -> Result<Migrated> {
+    migrate_own(store, name, baseline, steps)
+}
+
+/// [`migrate_store`] for a schema read at run time, the way the host applies a
+/// module's.
+pub fn migrate_store_sql(store: &Pool, name: &str, baseline: &str, steps: &[SqlStep]) -> Result<Migrated> {
+    migrate_own(store, name, baseline, steps)
+}
+
+fn migrate_own<C: Change>(store: &Pool, name: &str, baseline: &str, steps: &[C]) -> Result<Migrated> {
     let schema = Schema {
         name,
         baseline,

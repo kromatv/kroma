@@ -22,7 +22,12 @@ wit_bindgen::generate!({
 pub use exports::kroma::module::route::{Guest, Request, Response};
 use kroma::module::types::Header;
 use kroma::module::{host_api, net};
+use kroma_module_host::ServerModule;
+pub use kroma_module_wire::Lifecycle;
 
+use crate::RemoteHost;
+
+mod lifecycle;
 mod outside;
 #[cfg(feature = "storage")]
 mod sql;
@@ -201,9 +206,18 @@ pub fn stop() {
     }
 }
 
-/// What `export_component!` answers each call with: the module started on the
-/// first one, then the request through its router.
-pub fn handle(request: Request, start: fn() -> Result<()>) -> Response {
+/// What `modules` ask the host to run once, for every instance.
+pub fn declare(modules: Vec<Box<dyn ServerModule<RemoteHost>>>) -> Result<Lifecycle> {
+    crate::lifecycle::declared(&modules)
+}
+
+/// What `export_component!` answers each call with: the host's request for the
+/// module's [`Lifecycle`] before it starts, and otherwise the module started on
+/// the first call, then the request through its router.
+pub fn handle(request: Request, start: fn() -> Result<()>, declare: fn() -> Result<Lifecycle>) -> Response {
+    if request.path == kroma_module_wire::LIFECYCLE_PATH {
+        return lifecycle::answer(&request, declare);
+    }
     if let Err(reason) = started(start) {
         return failed(500, reason);
     }

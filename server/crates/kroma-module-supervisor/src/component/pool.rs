@@ -1,7 +1,8 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
+use kroma_module_wire::{Role, ROLE_ENV};
 use kroma_wasm_host::{Grant, Limits, ModuleComponent, ModuleInstance, Preopen, Request, Settings};
 use tokio::sync::Semaphore;
 
@@ -16,6 +17,7 @@ const RECLAIM_ABOVE_BYTES: usize = 64 * 1024 * 1024;
 pub(super) struct Parked {
     instance: ModuleInstance,
     programs: Arc<programs::InstancePrograms>,
+    role: Role,
     since: Instant,
     running: bool,
 }
@@ -46,24 +48,64 @@ pub(crate) struct Pool {
     pub(super) files: Arc<files::ModuleFiles>,
     pub(super) idle: Mutex<Vec<Parked>>,
     pub(super) slots: Arc<Semaphore>,
-    pub(super) capacity: u32,
+    pub(super) capacity: AtomicU32,
+    pub(super) instances: u32,
+    pub(super) port_token: String,
+    pub(super) started_up: AtomicBool,
+    pub(super) primary_up: AtomicBool,
     pub(super) awake: AtomicBool,
     pub(super) say: Arc<dyn Fn(&str) + Send + Sync>,
 }
 
 impl Pool {
     fn instance(&self) -> Result<Parked, String> {
-        if let Some(parked) = self.idle.lock().unwrap_or_else(PoisonError::into_inner).pop() {
+        if self
+            .primary_up
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+        {
+            return self
+                .primary()
+                .inspect_err(|_| self.primary_up.store(false, Ordering::Release));
+        }
+        if let Some(parked) = self.idle_one() {
             return Ok(parked);
         }
+        self.instantiate(Role::Worker)
+    }
+
+    fn idle_one(&self) -> Option<Parked> {
+        let mut idle = self.idle.lock().unwrap_or_else(PoisonError::into_inner);
+        let at = idle
+            .iter()
+            .position(|parked| parked.role == Role::Primary)
+            .or_else(|| idle.len().checked_sub(1))?;
+        Some(idle.remove(at))
+    }
+
+    fn primary(&self) -> Result<Parked, String> {
+        let mut parked = self.instantiate(Role::Primary)?;
+        if !self.started_up.load(Ordering::Acquire) {
+            self.start_up(&mut parked.instance)?;
+            self.started_up.store(true, Ordering::Release);
+        }
+        match parked.instance.tick() {
+            Ok(running) => Ok(parked.used(running)),
+            Err(error) => Err(self.lost(Role::Primary, &error)),
+        }
+    }
+
+    fn instantiate(&self, role: Role) -> Result<Parked, String> {
         let programs = Arc::new(programs::InstancePrograms::new(self.programs.clone()));
+        let mut env = self.env.clone();
+        env.push((ROLE_ENV.to_string(), role.as_str().to_string()));
         let instance = self
             .component
             .instantiate(Grant {
                 policy: self.outside.clone(),
                 settings: Settings::default(),
                 limits: self.limits,
-                env: self.env.clone(),
+                env,
                 log: Some(self.say.clone()),
                 preopens: self.roots.clone(),
                 databases: self.databases.clone().map(|databases| databases as _),
@@ -75,6 +117,7 @@ impl Pool {
         Ok(Parked {
             instance,
             programs,
+            role,
             since: Instant::now(),
             running: true,
         })
@@ -84,7 +127,10 @@ impl Pool {
         self.idle.lock().unwrap_or_else(PoisonError::into_inner).push(parked);
     }
 
-    fn lost(&self, error: &kroma_wasm_host::HostError) -> String {
+    fn lost(&self, role: Role, error: &kroma_wasm_host::HostError) -> String {
+        if role == Role::Primary {
+            self.primary_up.store(false, Ordering::Release);
+        }
         let reason = error.to_string();
         tracing::error!(module = %self.module, %reason, "a component call failed");
         (self.say)(&format!("ERROR component stopped: {reason}"));
@@ -101,7 +147,7 @@ impl Pool {
                 self.park(parked.used(true));
                 Ok(response)
             }
-            Err(error) => Err(self.lost(&error)),
+            Err(error) => Err(self.lost(parked.role, &error)),
         }
     }
 
@@ -132,7 +178,7 @@ impl Pool {
                     self.park(parked);
                 }
                 Err(error) => {
-                    self.lost(&error);
+                    self.lost(parked.role, &error);
                 }
             }
         }
@@ -141,16 +187,14 @@ impl Pool {
         }
     }
 
-    // A process runs from the moment it starts, and what a module does on enable
-    // cannot wait for someone to call it: its jobs, its subscriptions, a tunnel.
-    fn start_one(&self) {
+    // A module runs from the moment it starts, and what it does on enable cannot
+    // wait for someone to call it: its jobs, its subscriptions, a tunnel.
+    fn start_primary(&self) {
+        if self.primary_up.load(Ordering::Acquire) {
+            return;
+        }
         match self.instance() {
-            Ok(mut parked) => match parked.instance.tick() {
-                Ok(running) => self.park(parked.used(running)),
-                Err(error) => {
-                    self.lost(&error);
-                }
-            },
+            Ok(parked) => self.park(parked),
             Err(reason) => (self.say)(&format!("ERROR component did not start: {reason}")),
         }
     }
@@ -159,11 +203,12 @@ impl Pool {
         let spent: Vec<Parked> = {
             let mut idle = self.idle.lock().unwrap_or_else(PoisonError::into_inner);
             let (spent, kept) = std::mem::take(&mut *idle).into_iter().partition(|parked| {
-                worth_dropping(
-                    parked.running || parked.programs.any_running(),
-                    now.saturating_duration_since(parked.since),
-                    parked.instance.memory_bytes(),
-                )
+                parked.role == Role::Worker
+                    && worth_dropping(
+                        parked.running || parked.programs.any_running(),
+                        now.saturating_duration_since(parked.since),
+                        parked.instance.memory_bytes(),
+                    )
             });
             *idle = kept;
             spent
@@ -178,7 +223,7 @@ impl Pool {
     pub(crate) fn shut_down(&self) {
         let deadline = Instant::now() + STOP_WAIT;
         let held = loop {
-            match self.slots.try_acquire_many(self.capacity) {
+            match self.slots.try_acquire_many(self.capacity.load(Ordering::Acquire)) {
                 Ok(held) => break Some(held),
                 Err(_) if Instant::now() < deadline => std::thread::sleep(STOP_STEP),
                 Err(_) => break None,
@@ -213,7 +258,7 @@ pub(super) async fn with_a_slot<T: Send + 'static>(
 }
 
 pub(super) async fn tick_forever(pool: Arc<Pool>) {
-    with_a_slot(&pool, Pool::start_one).await;
+    with_a_slot(&pool, Pool::start_primary).await;
     let mut every = tokio::time::interval(TICK_EVERY);
     every.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     while !pool.slots.is_closed() {
@@ -230,28 +275,4 @@ pub(super) async fn tick_forever(pool: Arc<Pool>) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const LARGE: usize = RECLAIM_ABOVE_BYTES + 1;
-
-    #[test]
-    fn a_large_instance_idle_long_enough_is_dropped() {
-        assert!(worth_dropping(false, RECLAIM_AFTER, LARGE));
-    }
-
-    #[test]
-    fn an_instance_with_work_still_running_is_kept() {
-        assert!(!worth_dropping(true, RECLAIM_AFTER * 10, LARGE));
-    }
-
-    #[test]
-    fn a_large_instance_used_recently_is_kept() {
-        assert!(!worth_dropping(false, RECLAIM_AFTER / 2, LARGE));
-    }
-
-    #[test]
-    fn a_small_instance_is_kept_however_long_it_idles() {
-        assert!(!worth_dropping(false, RECLAIM_AFTER * 10, RECLAIM_ABOVE_BYTES));
-    }
-}
+mod tests;

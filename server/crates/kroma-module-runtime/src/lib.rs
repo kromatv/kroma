@@ -21,6 +21,8 @@ mod host_ctx;
 #[cfg(any(target_family = "wasm", test))]
 mod jobs;
 #[cfg(any(target_family = "wasm", test))]
+mod lifecycle;
+#[cfg(any(target_family = "wasm", test))]
 mod migrations;
 mod remote_host;
 mod serve;
@@ -54,6 +56,10 @@ macro_rules! module_main {
                 $crate::guest::block_on($crate::serve($wire, $modules))
             }
 
+            fn declare() -> ::anyhow::Result<$crate::guest::Lifecycle> {
+                $crate::guest::declare($modules)
+            }
+
             impl $crate::guest::Guest for Entry {
                 fn tick() -> bool {
                     $crate::guest::tick(start)
@@ -64,7 +70,7 @@ macro_rules! module_main {
                 }
 
                 fn handle(request: $crate::guest::Request) -> $crate::guest::Response {
-                    $crate::guest::handle(request, start)
+                    $crate::guest::handle(request, start, declare)
                 }
             }
 

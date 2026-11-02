@@ -2324,6 +2324,7 @@ dependencies = [
  "kroma-http",
  "kroma-module-host",
  "kroma-module-manifest",
+ "kroma-module-wire",
  "kroma-primitives",
  "kroma-sqlite",
  "kroma-testing",

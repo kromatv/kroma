@@ -23,14 +23,61 @@ pub struct Step {
     pub rebuilds: bool,
 }
 
+/// A [`Step`] that is SQL read at run time rather than compiled in, the way the
+/// host reads a module's.
+pub struct SqlStep<'a> {
+    pub name: &'a str,
+    pub sql: &'a str,
+    pub rebuilds: bool,
+}
+
+/// What [`migrate`] applies as one numbered change: a [`Step`] or an [`SqlStep`].
+pub trait Change {
+    fn name(&self) -> &str;
+    fn rebuilds(&self) -> bool;
+    fn apply(&self, conn: &Connection) -> Result<()>;
+}
+
+impl Change for Step {
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn rebuilds(&self) -> bool {
+        self.rebuilds
+    }
+
+    fn apply(&self, conn: &Connection) -> Result<()> {
+        match self.run {
+            Run::Sql(sql) => conn.execute_batch(sql)?,
+            Run::Code(code) => code(conn)?,
+        }
+        Ok(())
+    }
+}
+
+impl Change for SqlStep<'_> {
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn rebuilds(&self) -> bool {
+        self.rebuilds
+    }
+
+    fn apply(&self, conn: &Connection) -> Result<()> {
+        Ok(conn.execute_batch(self.sql)?)
+    }
+}
+
 /// A database's whole history: the shape a new file starts from, the version
 /// that shape stands for, and every step since.
-pub struct Schema<'a> {
+pub struct Schema<'a, C = Step> {
     /// Names the database in an error, "the core database" or a module's id.
     pub name: &'a str,
     pub baseline: &'a str,
     pub baseline_version: u32,
-    pub steps: &'a [Step],
+    pub steps: &'a [C],
     /// Brings a database written before versioning existed (tables present,
     /// `user_version` still 0) up to the baseline. `None` refuses such a file.
     pub legacy: Option<Legacy<'a>>,
@@ -44,7 +91,7 @@ pub enum Legacy<'a> {
     Code(fn(&Connection) -> Result<()>),
 }
 
-impl Schema<'_> {
+impl<C> Schema<'_, C> {
     /// The version a database holds once every step has run.
     pub fn latest(&self) -> u32 {
         self.baseline_version + self.steps.len() as u32
@@ -66,7 +113,11 @@ pub enum Migrated {
 /// file, `path` (when given) is copied beside it with `VACUUM INTO`, keeping the
 /// last [`KEPT_SNAPSHOTS`]; a copy that cannot be made is logged and the upgrade
 /// goes on, so a full disk does not stop the server from starting.
-pub fn migrate(conn: &mut Connection, schema: &Schema, path: Option<&Path>) -> Result<Migrated> {
+pub fn migrate<C: Change>(
+    conn: &mut Connection,
+    schema: &Schema<'_, C>,
+    path: Option<&Path>,
+) -> Result<Migrated> {
     let latest = schema.latest();
     let found = user_version(conn)?;
     if found == latest {
@@ -129,7 +180,7 @@ fn has_tables(conn: &Connection) -> Result<bool> {
     )?)
 }
 
-fn create(conn: &mut Connection, schema: &Schema) -> Result<()> {
+fn create<C>(conn: &mut Connection, schema: &Schema<'_, C>) -> Result<()> {
     let tx = conn.transaction()?;
     tx.execute_batch(schema.baseline)
         .with_context(|| format!("{} could not create its baseline", schema.name))?;
@@ -138,34 +189,31 @@ fn create(conn: &mut Connection, schema: &Schema) -> Result<()> {
     Ok(())
 }
 
-fn apply_steps(conn: &mut Connection, schema: &Schema, from: u32) -> Result<()> {
+fn apply_steps<C: Change>(conn: &mut Connection, schema: &Schema<'_, C>, from: u32) -> Result<()> {
     let done = (from - schema.baseline_version) as usize;
     for (at, step) in schema.steps.iter().enumerate().skip(done) {
         let version = schema.baseline_version + at as u32 + 1;
         apply(conn, step, version)
-            .with_context(|| format!("{} step {version} ({}) failed", schema.name, step.name))?;
+            .with_context(|| format!("{} step {version} ({}) failed", schema.name, step.name()))?;
     }
     Ok(())
 }
 
-fn apply(conn: &mut Connection, step: &Step, version: u32) -> Result<()> {
-    if step.rebuilds {
+fn apply(conn: &mut Connection, step: &impl Change, version: u32) -> Result<()> {
+    if step.rebuilds() {
         conn.execute_batch("PRAGMA foreign_keys = OFF")?;
     }
     let applied = run(conn, step, version);
-    if step.rebuilds {
+    if step.rebuilds() {
         conn.execute_batch("PRAGMA foreign_keys = ON")?;
     }
     applied
 }
 
-fn run(conn: &mut Connection, step: &Step, version: u32) -> Result<()> {
+fn run(conn: &mut Connection, step: &impl Change, version: u32) -> Result<()> {
     let tx = conn.transaction()?;
-    match step.run {
-        Run::Sql(sql) => tx.execute_batch(sql)?,
-        Run::Code(code) => code(&tx)?,
-    }
-    if step.rebuilds {
+    step.apply(&tx)?;
+    if step.rebuilds() {
         let broken: i64 =
             tx.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |r| {
                 r.get(0)
@@ -180,19 +228,21 @@ fn run(conn: &mut Connection, step: &Step, version: u32) -> Result<()> {
 }
 
 #[cfg(target_family = "wasm")]
-fn write_snapshot(conn: &Connection, target: &Path) -> rusqlite::Result<()> {
+fn write_snapshot(conn: &Connection, _source: &Path, target: &Path) -> rusqlite::Result<()> {
     conn.snapshot_to(target)
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn write_snapshot(conn: &Connection, target: &Path) -> rusqlite::Result<()> {
-    conn.execute("VACUUM INTO ?1", [target.to_string_lossy()]).map(|_| ())
+fn write_snapshot(_conn: &Connection, source: &Path, target: &Path) -> rusqlite::Result<()> {
+    Connection::open(source)?
+        .execute("VACUUM INTO ?1", [target.to_string_lossy()])
+        .map(|_| ())
 }
 
 fn snapshot(conn: &Connection, path: &Path, version: u32) {
     let target = snapshot_path(path, version);
     let _ = std::fs::remove_file(&target);
-    match write_snapshot(conn, &target) {
+    match write_snapshot(conn, path, &target) {
         Ok(()) => prune_snapshots(path),
         Err(e) => tracing::warn!(
             "no copy of {} was kept before upgrading it: {e}",

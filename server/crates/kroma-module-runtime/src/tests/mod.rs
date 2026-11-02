@@ -1,5 +1,6 @@
 mod boot;
 mod metadata;
+mod roles;
 mod served;
 
 use std::path::{Path, PathBuf};
@@ -229,6 +230,7 @@ pub fn scratch(name: &str) -> kroma_testing::TempDir {
 
 pub fn env(dir: &Path, id: &str, core_socket: &Path) -> Env {
     Env {
+        startup: crate::env::Startup::Own,
         module_id: id.to_string(),
         core_url: format!("{}/", unix_url(core_socket)),
         host_token: HOST_TOKEN.to_string(),
