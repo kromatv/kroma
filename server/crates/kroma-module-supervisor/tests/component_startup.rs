@@ -12,14 +12,13 @@ use component_support::{Server, wait_until};
 const LIFECYCLE: &str = "tv.example.lifecycle";
 const FOUR: &str = r#", "storage": {}, "component": { "instances": 4 }"#;
 
-fn database_at_schema_one(server: &Server) -> std::path::PathBuf {
+fn database_at_schema_one(server: &Server) {
     let dir = server.dir.path().join("modules").join(LIFECYCLE);
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("module.sqlite");
     let conn = rusqlite::Connection::open(&file).unwrap();
     conn.execute_batch("CREATE TABLE enabled (at INTEGER NOT NULL); PRAGMA user_version = 1;")
         .unwrap();
-    file
 }
 
 fn count(file: &std::path::Path, table: &str) -> i64 {
@@ -35,8 +34,9 @@ fn count(file: &std::path::Path, table: &str) -> i64 {
 fn a_module_with_four_instances_migrates_registers_and_enables_once() {
     let server = Server::new("component-startup-once", NetworkAction::Direct);
     let core = server.core_hearing();
-    let file = database_at_schema_one(&server);
+    database_at_schema_one(&server);
     let endpoint = server.started(LIFECYCLE, lifecycle_component(), FOUR);
+    let file = server.data_dir.join("databases").join(LIFECYCLE).join("module.sqlite");
 
     let names: BTreeSet<String> = std::thread::scope(|threads| {
         let held: Vec<_> = (0..4)
