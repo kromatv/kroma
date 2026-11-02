@@ -54,10 +54,13 @@ host processes, declared in the manifest. See
   directory only the server's user can open, and `proxy_to` reverse-proxies a
   request there. An instance starts as soon as the module does, so `on_enable`
   runs without waiting for a first call. Every 100 ms each instance not answering
-  a call gets a turn, so background tasks advance. Stopping runs `on_disable`
-  through `stop`, then stops the programs the module started. Before starting a
-  module the supervisor moves any table it declared under `storage.adopt` out of
-  the core database and into the module's own file.
+  a call gets a turn, so background tasks advance. An instance holds its slot
+  until its call ends, even when the caller has given up, so a module never runs
+  more instances than it declares, and one lost to a trap takes the programs it
+  started with it. Stopping runs `on_disable` through `stop`, then stops the
+  programs the module started. Before starting a module the supervisor moves any
+  table it declared under `storage.adopt` out of the core database and into the
+  module's own file.
   `host_router::<HostCtx>(supervisor, reach)` serves `/api/_host/*` (setting /
   settings / events / job / enabled / session / ...), resolved against the core's
   real state behind a token the supervisor minted **per module**, so a callback

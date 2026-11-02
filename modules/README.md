@@ -425,6 +425,8 @@ reads these: a module never does unless it has a reason of its own.
 An instance starts when the module does, so `on_enable` runs without waiting for
 a first call. Work a module leaves running advances on a 100 ms tick between
 calls. Stopping runs `on_disable`, then stops every program the module started.
+An instance lost to a panic or a limit takes the programs it started with it, and
+the fresh one that replaces it runs `on_enable` again.
 
 The settings callback reads and writes the operator's preferences, **not the
 core's own credentials**. A key reaches you only when the core declared that it

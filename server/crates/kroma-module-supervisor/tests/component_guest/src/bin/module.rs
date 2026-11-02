@@ -28,6 +28,8 @@ fn routes() -> Router<RemoteHost> {
         .route("/background", get(start_background))
         .route("/background/count", get(background_count))
         .route("/who", get(who))
+        .route("/slow", get(slow))
+        .route("/start/{program}", get(start_a_program))
         .route("/ensure/{program}", get(ensure_a_program))
         .route("/tamper/{program}", get(tamper))
 }
@@ -84,6 +86,18 @@ async fn run_a_program(Path(program): Path<String>) -> String {
         Ok(output) => format!("{} {}", output.code, String::from_utf8_lossy(&output.stdout)),
         Err(reason) => format!("refused: {reason}"),
     }
+}
+
+async fn start_a_program(Path(program): Path<String>) -> String {
+    match Command::new(program).arg("30").spawn() {
+        Ok(_) => "started".to_string(),
+        Err(reason) => format!("refused: {reason}"),
+    }
+}
+
+async fn slow() -> &'static str {
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    "done"
 }
 
 async fn start_background() -> &'static str {

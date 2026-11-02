@@ -4,7 +4,9 @@
 
 mod capture;
 mod fetch;
+mod instance_programs;
 mod stale;
+mod stop;
 #[cfg(test)]
 mod tests;
 
@@ -20,6 +22,7 @@ use kroma_module_manifest::Helper;
 use kroma_wasm_host::{Command as Asked, Output, Processes};
 
 use capture::{capture, drained, Captured};
+pub(in crate::component) use instance_programs::InstancePrograms;
 
 /// Under the data directory, and listed as reserved so no module can ask for it.
 pub(crate) const HELPERS_DIR: &str = "helpers";
@@ -120,44 +123,6 @@ impl Programs {
             self.gateway.address
         );
         format!("{}{url}{}", &text[..at], &rest[end + 1..])
-    }
-
-    pub(in crate::component) fn stop_all(&self) {
-        let pids: Vec<u32> = self
-            .children
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .values_mut()
-            .filter_map(|spawned| match &mut spawned.state {
-                State::Running(child) => Some(child.id()),
-                State::Ended(_) => None,
-            })
-            .collect();
-        for pid in &pids {
-            signal(*pid, libc::SIGTERM);
-        }
-        let deadline = Instant::now() + STOP_GRACE;
-        while Instant::now() < deadline && self.any_running() {
-            std::thread::sleep(POLL);
-        }
-        for pid in &pids {
-            signal(*pid, libc::SIGKILL);
-        }
-        let _ = self.any_running();
-    }
-
-    fn any_running(&self) -> bool {
-        let mut children = self.children.lock().unwrap_or_else(PoisonError::into_inner);
-        let mut running = false;
-        for spawned in children.values_mut() {
-            if let State::Running(child) = &mut spawned.state {
-                match child.try_wait() {
-                    Ok(Some(status)) => spawned.state = State::Ended(status.code().unwrap_or(-1)),
-                    _ => running = true,
-                }
-            }
-        }
-        running
     }
 
     fn note_ended(&self, child: u64) {
@@ -287,11 +252,5 @@ impl Processes for Programs {
             signal(spawned.pid, if force { libc::SIGKILL } else { libc::SIGTERM });
         }
         Ok(())
-    }
-}
-
-impl Drop for Programs {
-    fn drop(&mut self) {
-        self.stop_all();
     }
 }

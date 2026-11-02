@@ -9,6 +9,7 @@ use component_support::{GUEST, Server, THIRD_PARTY, http_server};
 
 const RUNS_ECHO: &str = r#", "storage": {}, "permissions": { "run": ["echo"] }"#;
 const STAND_IN: &str = "#!/bin/sh\necho from the helper\n";
+const SLEEPER: &str = "#!/bin/sh\nexec sleep \"$1\"\n";
 
 fn sha256_of(bytes: &[u8]) -> String {
     use sha2::Digest;
@@ -128,4 +129,38 @@ fn a_helper_is_kept_where_the_module_cannot_write() {
         server.get(&endpoint, "/run/stand-in").text(),
         "0 from the helper\n"
     );
+}
+
+fn is_alive(pid: &str) -> bool {
+    std::process::Command::new("ps")
+        .args(["-p", pid])
+        .output()
+        .is_ok_and(|out| out.status.success())
+}
+
+#[test]
+fn a_component_that_traps_takes_the_programs_it_started_with_it() {
+    let server = Server::new("component-helper-trap", NetworkAction::Direct);
+    let (port, _) = http_server(SLEEPER);
+    let manifest = manifest_with_helper(port, &sha256_of(SLEEPER.as_bytes()));
+    let endpoint = server.started(GUEST, guest_component(), &manifest);
+    server.get(&endpoint, "/ensure/stand-in");
+    let started = server.get(&endpoint, "/start/stand-in");
+    let pids = std::fs::read_to_string(
+        server
+            .dir
+            .path()
+            .join("helpers")
+            .join(GUEST)
+            .join("stand-in.pid"),
+    )
+    .unwrap();
+    let pid = pids.lines().last().unwrap().to_string();
+    let alive_before = is_alive(&pid);
+
+    let _ = server.as_the_core(GUEST).get(&endpoint.url("/explode"));
+
+    assert_eq!(started.text(), "started");
+    assert!(alive_before);
+    assert!(!is_alive(&pid));
 }

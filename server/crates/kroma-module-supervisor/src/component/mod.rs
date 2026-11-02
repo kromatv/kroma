@@ -2,6 +2,7 @@
 //! reached on a socket of its own, and everything it asks of the outside is ruled
 //! here on its behalf.
 
+mod answer;
 mod database;
 mod files;
 mod lan;
@@ -10,8 +11,9 @@ mod pool;
 mod programs;
 mod roots;
 
+use answer::answer;
 pub(crate) use pool::Pool;
-use pool::{answer, tick_forever};
+use pool::tick_forever;
 pub use roots::MediaRoots;
 
 use std::sync::atomic::AtomicBool;
@@ -185,7 +187,7 @@ impl Supervisor {
             programs,
             lan,
             idle: Mutex::new(Vec::new()),
-            slots: Semaphore::new(instances),
+            slots: Arc::new(Semaphore::new(instances)),
             capacity: u32::try_from(instances).unwrap_or(1),
             awake: AtomicBool::new(true),
             say,
