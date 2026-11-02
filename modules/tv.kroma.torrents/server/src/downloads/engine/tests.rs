@@ -88,6 +88,18 @@ async fn while_a_network_must_carry_the_peers_and_is_down_the_helper_does_not_st
 }
 
 #[tokio::test]
+async fn with_the_kill_switch_on_and_no_network_on_offer_the_helper_does_not_start() {
+    let base = host_over("engine-kill-switch", &[])
+        .with_setting("vpnKillSwitch", serde_json::json!(true));
+    let (host, _stub, manager, dump) = world("engine-kill-switch", base);
+
+    manager.ensure_rqbit(&host).await;
+
+    assert!(manager.rqbit().is_none());
+    assert!(!dump.exists());
+}
+
+#[tokio::test]
 async fn while_the_embedded_client_is_disabled_the_helper_does_not_start() {
     let (host, _stub, manager, dump) = world("engine-off", host_over("engine-off", &[]));
     crate::db::update_download_client(

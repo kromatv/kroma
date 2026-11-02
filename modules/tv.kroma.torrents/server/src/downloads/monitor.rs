@@ -73,7 +73,7 @@ impl DownloadManager {
             let _ = self.vpn_check(host);
         }
         if reseed_due {
-            self.reseed_stalled(host);
+            self.reseed_stalled();
         }
         let had_active = self.tick(host);
         self.sample_bandwidth(host);
