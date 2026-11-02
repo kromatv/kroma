@@ -42,10 +42,11 @@ use serde_json::json;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+pub(crate) use crate::api::permission::require;
 use crate::api::util::{blocking, query};
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::{Permission, User};
+use crate::model::User;
 use crate::state::SharedState;
 
 /// Compose the admin subtree. Nested under `/api/admin` by [`crate::api::router`],
@@ -140,18 +141,6 @@ fn relay_url(state: &SharedState) -> &str {
         .mail_relay_url
         .as_deref()
         .unwrap_or(crate::services::email::RELAY_URL)
-}
-
-pub(crate) fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        Err(lerr(
-            user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 // Any management capability unlocks the read-only dashboard panels.

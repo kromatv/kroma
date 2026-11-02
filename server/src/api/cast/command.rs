@@ -9,15 +9,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::query;
 use crate::db;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::CastCommand;
+use crate::model::{CastCommand, Permission};
 use crate::services::cast::valid_receiver_id;
 use crate::state::SharedState;
 
-use super::{bad_id, require_playback};
+use super::bad_id;
 
 #[derive(Debug, Deserialize)]
 pub struct CommandBody {
@@ -41,7 +42,7 @@ pub async fn command(
     Path(id): Path<String>,
     Json(body): Json<CommandBody>,
 ) -> Result<Response, Response> {
-    require_playback(&user)?;
+    require(&user, Permission::Playback)?;
     if !valid_receiver_id(&id) {
         return Err(bad_id(&user));
     }

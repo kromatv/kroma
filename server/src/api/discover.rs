@@ -16,6 +16,7 @@ use serde_json::json;
 
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::blocking;
 use crate::i18n;
 use crate::i18n::AskedLocale;
@@ -44,18 +45,6 @@ fn require_tmdb(state: &SharedState, user: &User) -> Result<String, Response> {
             "error.tmdbUnavailable",
         )
     })
-}
-
-fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        Err(lerr(
-            i18n::user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 fn scope_from_type(kind: Option<&str>) -> discover::DiscoverScope {
