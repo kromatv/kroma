@@ -13,14 +13,13 @@
 //! The bridge must never outlive the module. Stopping this module (the admin
 //! toggle, an uninstall, a server shutdown) runs [`VpnModule::on_disable`] →
 //! [`Vpn::stop`]: respawns are latched off and the child is killed before the
-//! module stops. A generation that missed that window (SIGKILL, a crash) leaves
-//! a `wireproxy` still tunnelling and still holding the SOCKS port, so
-//! [`Vpn::apply`] reaps one by pidfile on every pass, including the pass that
-//! finds no config at all.
+//! module stops. A server that died before that leaves a `wireproxy` holding the
+//! SOCKS port, and the host stops it by pidfile before the module starts again.
 
 #![allow(clippy::result_large_err)]
 
 mod admin;
+mod backoff;
 pub mod bandwidth;
 mod module;
 pub mod port;
@@ -28,6 +27,7 @@ mod process;
 mod provision;
 pub mod routes;
 mod socks_auth;
+mod stderr_tail;
 mod supervise;
 #[cfg(test)]
 mod test_support;

@@ -83,8 +83,8 @@ impl Command {
     }
 }
 
-/// A running program. It belongs to the module, so dropping this leaves it
-/// running, and the host stops it when the module stops.
+/// A running program. Dropping this leaves it running: the host stops it when the
+/// module stops, or when the instance that started it is lost.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Child {
     id: u64,

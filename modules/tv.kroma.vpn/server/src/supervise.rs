@@ -1,33 +1,57 @@
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
+use crate::backoff::Backoff;
 use crate::process::spawn_child;
+use crate::stderr_tail::StderrTail;
 use crate::vpn::Vpn;
 
+const POLL: Duration = Duration::from_secs(3);
+
+#[derive(Debug, PartialEq, Eq)]
+enum Watch {
+    Gone,
+    Running,
+    Exited(Option<i32>),
+}
+
 impl Vpn {
-    /// While `generation` is the active config, respawn the child (with a small
-    /// backoff) whenever it dies. The kill switch covers the gap. Respawns
-    /// re-run the child directly, never `apply`.
+    /// While `generation` is the active config, respawn the child whenever it
+    /// dies, waiting longer each time it dies young. The kill switch covers the
+    /// gap. Respawns re-run the child directly, never `apply`.
     pub(crate) fn supervise(self: Arc<Self>, generation: u64, bin: String, conf_path: PathBuf) {
         let me = self;
         tokio::spawn(async move {
+            let mut backoff = Backoff::default();
+            let mut started = Instant::now();
+            let mut stderr = StderrTail::default();
             loop {
-                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                tokio::time::sleep(POLL).await;
                 if !me.is_current(generation) {
                     return;
                 }
-                match me.child_died().await {
-                    // No child left to watch: a `stop` took it.
-                    None => return,
-                    Some(false) => continue,
-                    Some(true) => {}
-                }
-                tracing::warn!("wireguard bridge exited; restarting in 5s");
-                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                let code = match me.watch(&mut stderr).await {
+                    Watch::Gone => return,
+                    Watch::Running => continue,
+                    Watch::Exited(code) => code,
+                };
+                let ran = started.elapsed();
+                let retry = backoff.after(ran);
+                tracing::warn!(
+                    code = ?code,
+                    ran_secs = ran.as_secs(),
+                    retry_in_secs = retry.as_secs(),
+                    stderr = %stderr.last_lines(),
+                    "wireguard bridge exited; restarting"
+                );
+                stderr = StderrTail::default();
+                tokio::time::sleep(retry).await;
                 if !me.respawn(generation, &bin, &conf_path).await {
                     return;
                 }
+                started = Instant::now();
             }
         });
     }
@@ -36,11 +60,18 @@ impl Vpn {
         self.generation.load(Ordering::SeqCst) == generation
     }
 
-    /// Whether the child has exited, or `None` when there is no longer one.
-    async fn child_died(&self) -> Option<bool> {
+    async fn watch(&self, stderr: &mut StderrTail) -> Watch {
         let guard = self.child.lock().await;
-        let child = guard.as_ref()?;
-        Some(child.try_wait().map(|s| s.is_some()).unwrap_or(true))
+        let Some(child) = guard.as_ref() else {
+            return Watch::Gone;
+        };
+        let exited = child.try_wait();
+        stderr.drain(child);
+        match exited {
+            Ok(None) => Watch::Running,
+            Ok(Some(code)) => Watch::Exited(Some(code)),
+            Err(_) => Watch::Exited(None),
+        }
     }
 
     /// Whether the supervisor should keep watching: false once this generation
@@ -79,6 +110,8 @@ impl Vpn {
 mod tests {
     use std::sync::atomic::Ordering;
 
+    use super::Watch;
+    use crate::stderr_tail::StderrTail;
     use crate::test_support::{eventually, install_script, vpn_for, EXITING, RUNNING};
     use kroma_module_sdk::host::testing::StubHost;
     use kroma_module_sdk::host::HostCtx;
@@ -88,25 +121,50 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn child_died_is_none_without_a_child() {
+    async fn watching_without_a_child_finds_it_gone() {
         let host = StubHost::new();
         let vpn = vpn_for(&host);
 
-        assert_eq!(vpn.child_died().await, None);
+        assert_eq!(vpn.watch(&mut StderrTail::default()).await, Watch::Gone);
     }
 
     #[tokio::test]
-    async fn child_died_reports_a_live_and_an_exited_child() {
+    async fn watching_reports_a_live_and_an_exited_child() {
         let host = StubHost::new();
         let vpn = vpn_for(&host);
         let live = install_script(host.data_dir(), RUNNING);
         *vpn.child.lock().await = Some(crate::process::spawn_child(live.to_str().unwrap(), &live).unwrap());
-        assert_eq!(vpn.child_died().await, Some(false));
+        assert_eq!(vpn.watch(&mut StderrTail::default()).await, Watch::Running);
         vpn.child.lock().await.take().unwrap().kill();
         let gone = install_script(host.data_dir(), EXITING);
         *vpn.child.lock().await = Some(crate::process::spawn_child(gone.to_str().unwrap(), &gone).unwrap());
 
-        eventually(|| async { vpn.child_died().await == Some(true) }).await;
+        eventually(|| async {
+            vpn.watch(&mut StderrTail::default()).await == Watch::Exited(Some(3))
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn an_exited_child_leaves_what_it_wrote_to_stderr() {
+        let host = StubHost::new();
+        let vpn = vpn_for(&host);
+        let bin = install_script(
+            host.data_dir(),
+            "#!/bin/sh\necho 'listen tcp 127.0.0.1:25999: bind: address already in use' >&2\nexit 1\n",
+        );
+        let child = crate::process::spawn_child(bin.to_str().unwrap(), &bin).unwrap();
+        *vpn.child.lock().await = Some(child.clone());
+        child.wait().await.unwrap();
+        let mut stderr = StderrTail::default();
+
+        let watched = vpn.watch(&mut stderr).await;
+
+        assert_eq!(watched, Watch::Exited(Some(1)));
+        assert_eq!(
+            stderr.last_lines(),
+            "listen tcp 127.0.0.1:25999: bind: address already in use"
+        );
     }
 
     #[tokio::test]

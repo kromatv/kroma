@@ -62,10 +62,10 @@ impl Vpn {
         }
     }
 
-    /// Take the bridge down for good: latch respawns off, kill the child, and
-    /// sweep any orphan. Idempotent, and awaited by the caller that matters: the
-    /// module being disabled or stopped, so nothing is left tunnelling.
-    /// [`Self::resume`] undoes the latch on re-enable.
+    /// Take the bridge down for good: latch respawns off and kill the child.
+    /// Idempotent, and awaited by the caller that matters: the module being
+    /// disabled or stopped, so nothing is left tunnelling. [`Self::resume`]
+    /// undoes the latch on re-enable.
     pub async fn stop(self: &Arc<Self>) {
         self.stopping.store(true, Ordering::SeqCst);
         self.generation.fetch_add(1, Ordering::SeqCst);

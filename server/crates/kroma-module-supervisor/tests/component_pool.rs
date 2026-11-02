@@ -31,6 +31,22 @@ fn a_component_that_panics_is_reported_and_the_next_call_gets_a_fresh_one() {
 }
 
 #[test]
+fn a_call_its_caller_gave_up_on_keeps_the_only_instance_until_it_ends() {
+    let server = Server::new("component-abandoned", NetworkAction::Direct);
+    let endpoint = server.started(GUEST, guest_component(), DECLARES);
+    let before = server.get(&endpoint, "/who").text();
+
+    let abandoned = server
+        .as_the_core(GUEST)
+        .max_time(1)
+        .get(&endpoint.url("/slow"));
+    let after = server.get(&endpoint, "/who").text();
+
+    assert!(abandoned.is_err());
+    assert_eq!(after, before);
+}
+
+#[test]
 fn what_a_component_leaves_running_advances_between_calls() {
     let server = Server::new("component-tick", NetworkAction::Direct);
     let endpoint = server.started(GUEST, guest_component(), DECLARES);

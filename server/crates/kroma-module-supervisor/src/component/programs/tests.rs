@@ -155,3 +155,44 @@ fn a_helper_with_no_build_for_this_platform_is_refused() {
 
     assert!(ensured.unwrap_err().contains("no build"));
 }
+
+#[test]
+fn what_an_instance_started_stops_when_the_instance_goes() {
+    let dir = kroma_testing::temp_dir("programs-instance-gone");
+    let programs = Arc::new(programs(dir.path(), &["sleep"], true));
+    let instance = InstancePrograms::new(programs.clone());
+    let child = instance.spawn(asked("sleep", &["30"])).unwrap();
+
+    drop(instance);
+
+    assert!(programs.wait(child, Duration::ZERO).unwrap().is_some());
+}
+
+#[test]
+fn an_instance_going_leaves_what_another_started_running() {
+    let dir = kroma_testing::temp_dir("programs-instance-other");
+    let programs = Arc::new(programs(dir.path(), &["sleep"], true));
+    let kept = InstancePrograms::new(programs.clone());
+    let gone = InstancePrograms::new(programs.clone());
+    let child = kept.spawn(asked("sleep", &["30"])).unwrap();
+
+    drop(gone);
+
+    assert_eq!(programs.wait(child, Duration::ZERO).unwrap(), None);
+    assert!(kept.any_running());
+}
+
+#[test]
+fn an_instance_runs_something_only_while_one_of_its_programs_does() {
+    let dir = kroma_testing::temp_dir("programs-instance-running");
+    let programs = Arc::new(programs(dir.path(), &["sleep"], true));
+    let instance = InstancePrograms::new(programs.clone());
+    let child = instance.spawn(asked("sleep", &["30"])).unwrap();
+    let while_running = instance.any_running();
+
+    instance.kill(child, true).unwrap();
+    programs.wait(child, Duration::from_secs(5)).unwrap();
+
+    assert!(while_running);
+    assert!(!instance.any_running());
+}

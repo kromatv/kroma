@@ -2,16 +2,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use axum::body::{to_bytes, Body};
-use axum::extract::{Request as HttpRequest, State};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response as HttpResponse};
-use kroma_wasm_host::{Grant, Header, Limits, ModuleComponent, ModuleInstance, Preopen, Request, Settings};
+use kroma_wasm_host::{Grant, Limits, ModuleComponent, ModuleInstance, Preopen, Request, Settings};
 use tokio::sync::Semaphore;
 
 use super::{database, files, lan, outside, programs};
 
-const MAX_REQUEST_BYTES: usize = 64 * 1024 * 1024;
 const TICK_EVERY: Duration = Duration::from_millis(100);
 const STOP_WAIT: Duration = Duration::from_secs(10);
 const STOP_STEP: Duration = Duration::from_millis(10);
@@ -20,17 +15,16 @@ const RECLAIM_ABOVE_BYTES: usize = 64 * 1024 * 1024;
 
 pub(super) struct Parked {
     instance: ModuleInstance,
+    programs: Arc<programs::InstancePrograms>,
     since: Instant,
     running: bool,
 }
 
 impl Parked {
-    fn new(instance: ModuleInstance, running: bool) -> Self {
-        Self {
-            instance,
-            since: Instant::now(),
-            running,
-        }
+    fn used(mut self, running: bool) -> Self {
+        self.since = Instant::now();
+        self.running = running;
+        self
     }
 }
 
@@ -51,18 +45,20 @@ pub(crate) struct Pool {
     pub(super) lan: Option<Arc<lan::ModuleLan>>,
     pub(super) files: Arc<files::ModuleFiles>,
     pub(super) idle: Mutex<Vec<Parked>>,
-    pub(super) slots: Semaphore,
+    pub(super) slots: Arc<Semaphore>,
     pub(super) capacity: u32,
     pub(super) awake: AtomicBool,
     pub(super) say: Arc<dyn Fn(&str) + Send + Sync>,
 }
 
 impl Pool {
-    fn instance(&self) -> Result<ModuleInstance, String> {
+    fn instance(&self) -> Result<Parked, String> {
         if let Some(parked) = self.idle.lock().unwrap_or_else(PoisonError::into_inner).pop() {
-            return Ok(parked.instance);
+            return Ok(parked);
         }
-        self.component
+        let programs = Arc::new(programs::InstancePrograms::new(self.programs.clone()));
+        let instance = self
+            .component
             .instantiate(Grant {
                 policy: self.outside.clone(),
                 settings: Settings::default(),
@@ -71,11 +67,21 @@ impl Pool {
                 log: Some(self.say.clone()),
                 preopens: self.roots.clone(),
                 databases: self.databases.clone().map(|databases| databases as _),
-                processes: Some(self.programs.clone()),
+                processes: Some(programs.clone()),
                 lan: self.lan.clone().map(|lan| lan as _),
                 files: Some(self.files.clone()),
             })
-            .map_err(|error| error.to_string())
+            .map_err(|error| error.to_string())?;
+        Ok(Parked {
+            instance,
+            programs,
+            since: Instant::now(),
+            running: true,
+        })
+    }
+
+    fn park(&self, parked: Parked) {
+        self.idle.lock().unwrap_or_else(PoisonError::into_inner).push(parked);
     }
 
     fn lost(&self, error: &kroma_wasm_host::HostError) -> String {
@@ -85,16 +91,14 @@ impl Pool {
         reason
     }
 
-    // A call that traps or runs past a limit costs that instance and nothing else.
-    fn call(&self, request: &Request) -> Result<kroma_wasm_host::Response, String> {
-        let mut instance = self.instance()?;
+    // A call that traps or runs past a limit costs that instance and what it
+    // started, nothing else.
+    pub(super) fn call(&self, request: &Request) -> Result<kroma_wasm_host::Response, String> {
+        let mut parked = self.instance()?;
         self.awake.store(true, Ordering::Relaxed);
-        match instance.handle(request) {
+        match parked.instance.handle(request) {
             Ok(response) => {
-                self.idle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .push(Parked::new(instance, true));
+                self.park(parked.used(true));
                 Ok(response)
             }
             Err(error) => Err(self.lost(&error)),
@@ -117,23 +121,15 @@ impl Pool {
                 }
                 idle.remove(0)
             };
-            let Parked {
-                mut instance,
-                since,
-                ..
-            } = next;
-            match instance.tick() {
+            let mut parked = next;
+            match parked.instance.tick() {
                 Ok(running) => {
                     still_running |= running;
-                    let since = if running { Instant::now() } else { since };
-                    self.idle
-                        .lock()
-                        .unwrap_or_else(PoisonError::into_inner)
-                        .push(Parked {
-                            instance,
-                            since,
-                            running,
-                        });
+                    if running {
+                        parked.since = Instant::now();
+                    }
+                    parked.running = running;
+                    self.park(parked);
                 }
                 Err(error) => {
                     self.lost(&error);
@@ -149,12 +145,8 @@ impl Pool {
     // cannot wait for someone to call it: its jobs, its subscriptions, a tunnel.
     fn start_one(&self) {
         match self.instance() {
-            Ok(mut instance) => match instance.tick() {
-                Ok(running) => self
-                    .idle
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .push(Parked::new(instance, running)),
+            Ok(mut parked) => match parked.instance.tick() {
+                Ok(running) => self.park(parked.used(running)),
                 Err(error) => {
                     self.lost(&error);
                 }
@@ -168,7 +160,7 @@ impl Pool {
             let mut idle = self.idle.lock().unwrap_or_else(PoisonError::into_inner);
             let (spent, kept) = std::mem::take(&mut *idle).into_iter().partition(|parked| {
                 worth_dropping(
-                    parked.running,
+                    parked.running || parked.programs.any_running(),
                     now.saturating_duration_since(parked.since),
                     parked.instance.memory_bytes(),
                 )
@@ -206,11 +198,22 @@ impl Pool {
     }
 }
 
+pub(super) async fn with_a_slot<T: Send + 'static>(
+    pool: &Arc<Pool>,
+    work: impl FnOnce(&Pool) -> T + Send + 'static,
+) -> Option<T> {
+    let slot = pool.slots.clone().acquire_owned().await.ok()?;
+    let pool = pool.clone();
+    tokio::task::spawn_blocking(move || {
+        let _slot = slot;
+        work(&pool)
+    })
+    .await
+    .ok()
+}
+
 pub(super) async fn tick_forever(pool: Arc<Pool>) {
-    if let Ok(_slot) = pool.slots.acquire().await {
-        let first = pool.clone();
-        let _ = tokio::task::spawn_blocking(move || first.start_one()).await;
-    }
+    with_a_slot(&pool, Pool::start_one).await;
     let mut every = tokio::time::interval(TICK_EVERY);
     every.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     while !pool.slots.is_closed() {
@@ -222,54 +225,7 @@ pub(super) async fn tick_forever(pool: Arc<Pool>) {
         if pool.slots.available_permits() == 0 {
             continue;
         }
-        let Ok(_slot) = pool.slots.acquire().await else {
-            return;
-        };
-        let turn = pool.clone();
-        let _ = tokio::task::spawn_blocking(move || turn.tick()).await;
-    }
-}
-
-pub(super) async fn answer(State(pool): State<Arc<Pool>>, request: HttpRequest) -> HttpResponse {
-    let Ok(_slot) = pool.slots.acquire().await else {
-        return StatusCode::SERVICE_UNAVAILABLE.into_response();
-    };
-    let (parts, body) = request.into_parts();
-    let Ok(body) = to_bytes(body, MAX_REQUEST_BYTES).await else {
-        return StatusCode::PAYLOAD_TOO_LARGE.into_response();
-    };
-    let call = Request {
-        method: parts.method.to_string(),
-        path: parts.uri.path_and_query().map_or_else(
-            || parts.uri.path().to_string(),
-            |path| path.as_str().to_string(),
-        ),
-        headers: parts
-            .headers
-            .iter()
-            .filter_map(|(name, value)| {
-                Some(Header {
-                    name: name.as_str().to_string(),
-                    value: value.to_str().ok()?.to_string(),
-                })
-            })
-            .collect(),
-        body: body.to_vec(),
-    };
-    let pool = pool.clone();
-    let answered = tokio::task::spawn_blocking(move || pool.call(&call)).await;
-    match answered {
-        Ok(Ok(response)) => {
-            let mut built = axum::http::Response::builder().status(response.status);
-            for header in &response.headers {
-                built = built.header(header.name.as_str(), header.value.as_str());
-            }
-            built
-                .body(Body::from(response.body))
-                .unwrap_or_else(|_| StatusCode::BAD_GATEWAY.into_response())
-        }
-        Ok(Err(reason)) => (StatusCode::BAD_GATEWAY, reason).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        with_a_slot(&pool, Pool::tick).await;
     }
 }
 
