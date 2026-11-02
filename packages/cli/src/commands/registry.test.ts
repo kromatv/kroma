@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { schemaPath } from '@kromatv/registry';
+import { MODULE_SCHEMA_VERSION, schemaPath } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { packBundle } from '../bundle/pack';
 import { registryCommand, resolveDir } from './registry';
@@ -11,7 +11,7 @@ let dir: string;
 function pack(id: string, version: string, outDir = join(dir, 'dist', 'modules')): void {
   const project = join(dir, 'modules', id);
   mkdirSync(project, { recursive: true });
-  const manifest = { schemaVersion: 2, id, name: id, version, library: true };
+  const manifest = { schemaVersion: MODULE_SCHEMA_VERSION, id, name: id, version, library: true };
   writeFileSync(join(project, 'module.json'), JSON.stringify(manifest));
   writeFileSync(join(project, 'icon.svg'), '<svg/>');
   packBundle({
@@ -19,7 +19,6 @@ function pack(id: string, version: string, outDir = join(dir, 'dist', 'modules')
     binPath: null,
     feDir: null,
     outDir,
-    target: null,
   });
 }
 

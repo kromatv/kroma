@@ -165,7 +165,7 @@ Closing it means a credential on the art routes too, which costs the sign-in sli
 launcher cards, and that trade has not been made.
 
 **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
-out-of-process code on the server ([`modules/`](../modules/)). A plain user may use whatever
+code on the server ([`modules/`](../modules/)). A plain user may use whatever
 modules an admin has installed and enabled, within their own library visibility, and may not
 install, update or remove them.
 

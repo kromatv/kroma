@@ -40,7 +40,7 @@ const LOCAL_SUFFIXES: [&str; 7] = [
 /// The target of an absolute `http` or `https` URL. `None` for any other scheme,
 /// no host, or credentials (`user@host`), which can disguise where a URL goes.
 pub fn web_target(url: &str) -> Option<WebTarget> {
-    let uri: hyper::Uri = url.parse().ok()?;
+    let uri: http::Uri = url.parse().ok()?;
     let authority = uri.authority()?;
     if authority.as_str().contains('@') {
         return None;

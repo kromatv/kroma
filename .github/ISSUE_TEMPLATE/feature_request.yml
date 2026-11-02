@@ -51,7 +51,7 @@ body:
     id: module
     attributes:
       label: Could this be a module instead of core?
-      description: KROMA pushes optional capability into out-of-process `tv.kroma.*` sidecars. Core earns its weight.
+      description: KROMA pushes optional capability into `tv.kroma.*` modules. Core earns its weight.
       options:
         - "Yes — this belongs in a module"
         - "No — this has to be core"

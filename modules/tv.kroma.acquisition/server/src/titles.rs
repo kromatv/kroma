@@ -12,7 +12,7 @@ use serde_json::json;
 
 use kroma_module_sdk::db;
 use kroma_module_sdk::domain::{Permission, User};
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 
 use crate::http::run;
@@ -87,7 +87,7 @@ async fn grab<S: HostStorage + Clone + Send + Sync + 'static>(
     })
     .await?;
     let id = row.id.clone();
-    tokio::task::spawn_blocking(move || crate::peers::downloads::activate(&state, &row.id));
+    crate::peers::downloads::activate_later(state, row.id);
     Ok(Json(json!({ "id": id })).into_response())
 }
 

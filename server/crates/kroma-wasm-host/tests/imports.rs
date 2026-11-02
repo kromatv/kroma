@@ -3,7 +3,7 @@ mod support;
 use std::sync::Arc;
 
 use kroma_wasm_host::{
-    FetchCall, FetchRecord, ModuleInstance, NetPolicy, Outcome, Response, Settings, Verdict,
+    FetchCall, FetchRecord, FetchRequest, ModuleInstance, NetPolicy, Outcome, Response, Settings, Verdict,
 };
 use support::{instance, probe, text, LIMITS};
 
@@ -14,12 +14,13 @@ const BLOCKED_REASON: &str = "telemetry is not a declared purpose";
 struct OnePurpose;
 
 impl NetPolicy for OnePurpose {
-    fn decide(&self, call: &FetchCall) -> Verdict {
-        if call.purpose != ALLOWED_PURPOSE {
+    fn fetch(&self, request: &FetchRequest) -> Verdict {
+        if request.purpose != ALLOWED_PURPOSE {
             return Verdict::Block(BLOCKED_REASON.into());
         }
         Verdict::Allow(Response {
             status: 200,
+            headers: Vec::new(),
             body: b"stubbed answer".to_vec(),
         })
     }

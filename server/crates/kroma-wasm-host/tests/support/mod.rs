@@ -5,7 +5,7 @@ use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use kroma_wasm_host::{
-    FetchCall, Grant, Limits, ModuleComponent, ModuleInstance, NetPolicy, Request, Response,
+    FetchRequest, Grant, Limits, ModuleComponent, ModuleInstance, NetPolicy, Request, Response,
     Settings, Verdict, WasmHost,
 };
 
@@ -27,8 +27,8 @@ const GUEST_TARGET: &str = "wasm32-wasip2";
 pub struct BlockEverything;
 
 impl NetPolicy for BlockEverything {
-    fn decide(&self, call: &FetchCall) -> Verdict {
-        Verdict::Block(format!("{} is not declared", call.purpose))
+    fn fetch(&self, request: &FetchRequest) -> Verdict {
+        Verdict::Block(format!("{} is not declared", request.purpose))
     }
 }
 
@@ -46,6 +46,13 @@ pub fn instance(policy: Arc<dyn NetPolicy>, settings: Settings, limits: Limits) 
         policy,
         settings,
         limits,
+        env: Vec::new(),
+        log: None,
+        preopens: Vec::new(),
+        databases: None,
+        processes: None,
+        lan: None,
+        files: None,
     };
     component()
         .instantiate(grant)
@@ -60,6 +67,7 @@ pub fn request(path: &str, argument: &str) -> Request {
     Request {
         method: "POST".into(),
         path: path.into(),
+        headers: Vec::new(),
         body: argument.as_bytes().to_vec(),
     }
 }

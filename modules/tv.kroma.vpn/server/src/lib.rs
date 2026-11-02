@@ -11,12 +11,12 @@
 //! tunnel. Works identically for Mullvad or any other WireGuard provider.
 //!
 //! The bridge must never outlive the module. Stopping this module (the admin
-//! toggle, an uninstall, a server shutdown) SIGTERMs the sidecar, which runs
-//! [`VpnModule::on_disable`] → [`Vpn::stop`]: respawns are latched off and the
-//! child is killed before the process exits. A generation that missed that
-//! window (SIGKILL, a crash) leaves a `wireproxy` still tunnelling and still
-//! holding the SOCKS port, so [`Vpn::apply`] reaps one by pidfile on every pass,
-//! including the pass that finds no config at all.
+//! toggle, an uninstall, a server shutdown) runs [`VpnModule::on_disable`] →
+//! [`Vpn::stop`]: respawns are latched off and the child is killed before the
+//! module stops. A generation that missed that window (SIGKILL, a crash) leaves
+//! a `wireproxy` still tunnelling and still holding the SOCKS port, so
+//! [`Vpn::apply`] reaps one by pidfile on every pass, including the pass that
+//! finds no config at all.
 
 #![allow(clippy::result_large_err)]
 
@@ -39,6 +39,6 @@ mod wireguard;
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
-pub use admin::{proxy_url, wg_configured, SaveVpnBody, VpnAdminView, VpnTestResult};
+pub use admin::{bridge_password, wg_configured, SaveVpnBody, VpnAdminView, VpnTestResult};
 pub use module::{server_module, VpnModule, MODULE_ID};
 pub use vpn::Vpn;

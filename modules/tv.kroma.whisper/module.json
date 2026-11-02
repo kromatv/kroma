@@ -1,10 +1,15 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.whisper",
   "name": "Whisper transcription",
-  "version": "0.3.19",
+  "version": "0.3.20",
   "description": "In-process Whisper subtitle transcription (candle).",
+  "component": {
+    "instances": 2,
+    "memoryMib": 2048,
+    "cpuSeconds": 10800
+  },
   "engines": {
     "server": ">=0.1.39"
   },
@@ -19,12 +24,13 @@
       "write": ["whisper_jobs"]
     }
   },
+  "dataDirs": ["whisper"],
   "permissions": {
     "net": {
       "connect": [
         {
           "purpose": "model-download",
-          "to": ["huggingface.co"],
+          "to": ["huggingface.co", "*.huggingface.co", "*.hf.co"],
           "ports": [443]
         }
       ]

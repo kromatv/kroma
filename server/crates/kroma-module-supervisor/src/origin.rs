@@ -1,9 +1,11 @@
 //! Where an installed module came from, recorded beside it at install time so
-//! the admin can tell an artifact apart from a locally built binary.
+//! the admin can tell an artifact apart from a locally built component.
 
 use std::path::Path;
 
-use super::{Supervisor, MODULE_BIN};
+use kroma_module_manifest::Permissions;
+
+use super::{Supervisor, MODULE_COMPONENT};
 
 /// Written beside a module at install time; not part of the `.kmod` itself.
 const ORIGIN_FILE: &str = "origin.json";
@@ -19,13 +21,13 @@ pub struct Origin {
     pub url: Option<String>,
     /// Unix seconds.
     pub installed_at: u64,
-    /// The binary's size and mtime AS INSTALLED. Compared against what is on
+    /// The component's size and mtime AS INSTALLED. Compared against what is on
     /// disk to spot a local build; recorded rather than inferred from
     /// `installed_at` so restoring a backup (which rewrites mtimes wholesale)
     /// does not read as one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bin: Option<BinStamp>,
-    /// The binary on disk is not the one installed: a dev loop swapped it, so
+    /// The component on disk is not the one installed: a dev loop swapped it, so
     /// this module is NOT running the artifact it was installed from.
     #[serde(default)]
     pub local_build: bool,
@@ -46,9 +48,23 @@ pub struct Source<'a> {
     pub url: Option<&'a str>,
     /// The catalog that listed it was the official one.
     pub official: bool,
+    /// What the bundle's `permissions` may be, for this install to go through.
+    pub accept: Accept<'a>,
 }
 
-/// Identity of an installed binary, enough to notice it was replaced.
+/// What an operator accepted, which a bundle's `permissions` are held to.
+#[derive(Debug, Clone, Copy)]
+pub enum Accept<'a> {
+    /// They read the bundle's own declaration, or it comes from no catalog.
+    Anything,
+    /// They read this declaration on its catalog row, so the bundle must say the
+    /// same.
+    Exactly(&'a Permissions),
+    /// Nobody is looking, so the bundle may ask for no more than what is installed.
+    NoWider,
+}
+
+/// Identity of an installed component, enough to notice it was replaced.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BinStamp {
@@ -85,7 +101,7 @@ fn stamp_of(path: &Path) -> Option<BinStamp> {
 }
 
 impl Supervisor {
-    /// Where an installed module came from, and whether its binary has been
+    /// Where an installed module came from, and whether its component has been
     /// swapped since. Read from the `origin.json` written at install time;
     /// modules installed before that existed report `Origin::unknown()`.
     pub fn origin(&self, id: &str) -> Origin {
@@ -94,11 +110,11 @@ impl Supervisor {
             .ok()
             .and_then(|s| serde_json::from_str::<Origin>(&s).ok())
             .unwrap_or_else(Origin::unknown);
-        // A binary that is not the one recorded at install is one a dev loop
-        // swapped in, so the process is not running the artifact this module was
-        // installed from.
+        // A component that is not the one recorded at install is one a dev loop
+        // swapped in, so the module is not running the artifact it was installed
+        // from.
         if let (Some(installed), Some(current)) =
-            (origin.bin.clone(), stamp_of(&dir.join(MODULE_BIN)))
+            (origin.bin.clone(), stamp_of(&dir.join(MODULE_COMPONENT)))
         {
             origin.local_build = current != installed;
         }
@@ -110,7 +126,7 @@ impl Supervisor {
             kind: source.kind.to_string(),
             url: source.url.map(str::to_string),
             installed_at: unix_secs(std::time::SystemTime::now()),
-            bin: stamp_of(&self.dir(id).join(MODULE_BIN)),
+            bin: stamp_of(&self.dir(id).join(MODULE_COMPONENT)),
             local_build: false,
             official: source.official,
         };

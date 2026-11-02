@@ -23,7 +23,7 @@ export const DownloadClientView = z.object({
   priority: z.number(),
   createdAt: z.number(),
   builtin: z.boolean(),
-  state: z.enum(['ready', 'starting', 'stopped', 'notCompiled', 'unknown']).catch('unknown'),
+  state: z.enum(['ready', 'starting', 'stopped', 'unknown']).catch('unknown'),
   startingForMs: z.number().nullable().catch(null),
 });
 export type DownloadClientView = z.infer<typeof DownloadClientView>;
@@ -31,7 +31,6 @@ export type DownloadClientView = z.infer<typeof DownloadClientView>;
 /** `GET /download-clients`. */
 export const DownloadClientsView = z.object({
   clients: z.array(DownloadClientView),
-  rqbitCompiled: z.boolean(),
 });
 export type DownloadClientsView = z.infer<typeof DownloadClientsView>;
 

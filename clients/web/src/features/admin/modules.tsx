@@ -26,6 +26,7 @@ const sDefinition = styles({ hidden: { display: 'none' } });
 import { canUpdate, message } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
 import { InstallModal } from '#web/features/admin/module-install';
+import { UploadConsentModal } from '#web/features/admin/module-upload-consent';
 import { InstalledList } from '#web/features/admin/module-installed';
 import { useStoreOps } from '#web/features/admin/module-ops';
 import { PointsList } from '#web/features/admin/module-points-list';
@@ -72,11 +73,23 @@ function ModulesInner() {
       if (result.failed.length > 0) {
         throw new Error(result.failed.map((f) => `${f.id}: ${f.error}`).join(' · '));
       }
+      if (result.needsConsent.length > 0) {
+        throw new Error(t('admin.modulesNeedsConsent', { list: result.needsConsent.join(', ') }));
+      }
     }, message);
+
+  // An update that asks for more goes through the plan, where the operator sees
+  // what they are accepting.
+  const requestUpdate = (id: string) => {
+    if (updates.some((m) => m.id === id && m.widensPermissions)) void requestInstall(id);
+    else runUpdate([id]);
+  };
 
   const onPick = (file: File | undefined) => {
     if (!file) return;
     void upload.run(async () => {
+      const bundle = await webRuntime.moduleApi.inspectBundle(file);
+      if (!(await UploadConsentModal.call({ bundle }))) return;
       await webRuntime.moduleApi.installBundle(file);
       await refreshAll();
     }, message);
@@ -167,7 +180,7 @@ function ModulesInner() {
             active={activeByModule}
             onOpen={openDetail}
             onInstall={(id) => void requestInstall(id)}
-            onUpdate={(id) => runUpdate([id])}
+            onUpdate={requestUpdate}
           />
         )}
         {tab === 'installed' && (
@@ -187,7 +200,7 @@ function ModulesInner() {
             busy={updating.busy}
             error={updating.error}
             onUpdateAll={() => runUpdate()}
-            onUpdate={(id) => runUpdate([id])}
+            onUpdate={requestUpdate}
             onOpen={openDetail}
           />
         )}

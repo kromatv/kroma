@@ -6,7 +6,7 @@ import {
   stubFetch,
   unreadable,
 } from '#web/features/admin/module-api.fixture';
-import { matchesQuery, message } from './module-api';
+import { declaresNothing, matchesQuery, message } from './module-api';
 import { moduleApi, sessionToken, setSessionToken } from './module-api.fixture';
 
 const { adminApi } = moduleApi;
@@ -103,5 +103,19 @@ describe('matchesQuery', () => {
   it('treats a missing description as empty rather than matching everything', () => {
     expect(matchesQuery({ id: 'a', name: 'A', description: null }, 'engine')).toBe(false);
     expect(matchesQuery({ id: 'a', name: 'A' }, 'a')).toBe(true);
+  });
+});
+
+describe('declaresNothing', () => {
+  it('names a module with a process and no permissions', () => {
+    expect(declaresNothing({ hasSidecar: true, permissions: undefined })).toBe(true);
+  });
+
+  it('spares a module that declares an empty block', () => {
+    expect(declaresNothing({ hasSidecar: true, permissions: {} })).toBe(false);
+  });
+
+  it('spares a library, which runs nothing', () => {
+    expect(declaresNothing({ hasSidecar: false, permissions: undefined })).toBe(false);
   });
 });

@@ -1,9 +1,9 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.roku",
   "name": "Roku",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "A KROMA channel for Roku boxes: found on the LAN, sideloaded from the console, paired like any television.",
   "engines": {
     "server": ">=0.1.39"
@@ -20,7 +20,7 @@
           "ports": [8060, 80]
         }
       ],
-      "host": true
+      "discovery": ["ssdp"]
     },
     "fs": {
       "read": ["module"],

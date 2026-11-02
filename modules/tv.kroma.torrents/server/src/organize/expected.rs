@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use kroma_module_sdk::engine::model::{Kind, MediaFile, MediaItem, Show};
+use kroma_module_sdk::domain::{Kind, MediaFile, MediaItem, Show};
 use std::path::PathBuf;
 
 use super::files::current_abs;

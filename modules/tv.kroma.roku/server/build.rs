@@ -1,6 +1,6 @@
 //! Packs `../channel/` (the BrightScript source tree) and `../locales/` (the
 //! module's catalogs, which the channel reads on the box) into the zip a Roku's
-//! developer installer accepts, so the sidecar carries the channel it installs.
+//! developer installer accepts, so the module carries the channel it installs.
 
 use std::fs;
 use std::io::Write;

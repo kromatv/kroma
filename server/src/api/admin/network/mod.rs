@@ -26,6 +26,30 @@ mod listeners;
 const DEFAULT_FLOWS: usize = 200;
 const DEFAULT_SUMMARY_DAYS: u32 = 7;
 
+// The credentials a network's endpoint carries never leave the core.
+async fn networks(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let offers = tokio::task::spawn_blocking(move || state.network.networks())
+        .await
+        .unwrap_or_default();
+    let rows: Vec<serde_json::Value> = offers
+        .into_iter()
+        .map(|offer| {
+            serde_json::json!({
+                "name": offer.name,
+                "label": offer.label,
+                "carries": offer.carries,
+                "up": offer.health.up,
+                "exit": offer.health.exit,
+            })
+        })
+        .collect();
+    Ok(Json(serde_json::json!({ "networks": rows })).into_response())
+}
+
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/network/flows", get(list_flows))
@@ -38,6 +62,7 @@ pub fn routes() -> Router<SharedState> {
                 .layer(DefaultBodyLimit::max(MAX_BODY_BYTES)),
         )
         .route("/network/listeners", get(listeners::list))
+        .route("/network/networks", get(networks))
 }
 
 #[derive(Deserialize)]

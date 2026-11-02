@@ -7,11 +7,6 @@
 
 use kroma_module_runtime::RemoteHost;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve(
+kroma_module_runtime::module_main!(
         |_host| kroma_qbittorrent::port::routes(),
-        vec![kroma_qbittorrent::server_module::<RemoteHost>()],
-    )
-    .await
-}
+        vec![kroma_qbittorrent::server_module::<RemoteHost>()],);

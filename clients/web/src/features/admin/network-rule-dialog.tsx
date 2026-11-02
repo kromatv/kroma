@@ -1,23 +1,17 @@
-import type { DeclaredPurpose, Rule, RuleAction } from '@kromatv/client/network';
-import type { MessageKey } from '@kromatv/i18n';
+import type { DeclaredPurpose, NetworkView, Rule, RuleAction } from '@kromatv/client/network';
 import { useT } from '@kromatv/ui';
 import { Dialog, Field, SegmentGroup } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { ChoiceSelect } from '#web/features/admin/network-choice-select';
 import { callerChoices, purposeChoices } from '#web/features/admin/network-flows';
-import { type RuleDraft, ruleFromDraft } from '#web/features/admin/network-rules';
-
-const RULE_ACTIONS: readonly { action: RuleAction; labelKey: MessageKey }[] = [
-  { action: 'direct', labelKey: 'network.actionDirect' },
-  { action: 'vpn', labelKey: 'network.actionVpn' },
-  { action: 'block', labelKey: 'network.actionBlock' },
-];
+import { actionNetworks, type RuleDraft, ruleFromDraft } from '#web/features/admin/network-rules';
 
 interface RuleDialogProps {
   initial: RuleDraft;
   id: string;
   adding: boolean;
   purposes: readonly DeclaredPurpose[];
+  networks: readonly NetworkView[];
   callerName: (caller: string) => string;
   onDone: (rule: Rule) => void;
   onCancel: () => void;
@@ -28,6 +22,7 @@ export function RuleDialog({
   id,
   adding,
   purposes,
+  networks,
   callerName,
   onDone,
   onCancel,
@@ -73,12 +68,40 @@ export function RuleDialog({
       </Field.Root>
       <Field.Root
         label={t('network.colHost')}
-        error={touched && !result.ok ? t('network.hostInvalid') : undefined}
+        error={
+          touched && !result.ok && result.field === 'host' ? t('network.hostInvalid') : undefined
+        }
         value={draft.host}
         onValueChange={(host) => edit({ host })}
       >
         <Field.Input placeholder={t('network.hostPlaceholder')} onBlur={() => setTouched(true)} />
         <Field.Hint>{t('network.hostHint')}</Field.Hint>
+      </Field.Root>
+      <Field.Root
+        label={t('network.colPort')}
+        error={
+          touched && !result.ok && result.field === 'port' ? t('network.portInvalid') : undefined
+        }
+        value={draft.port}
+        onValueChange={(port) => edit({ port })}
+      >
+        <Field.Input placeholder={t('network.portPlaceholder')} onBlur={() => setTouched(true)} />
+      </Field.Root>
+      <Field.Root
+        label={t('network.colAddress')}
+        error={
+          touched && !result.ok && result.field === 'address'
+            ? t('network.addressRangeInvalid')
+            : undefined
+        }
+        value={draft.address}
+        onValueChange={(address) => edit({ address })}
+      >
+        <Field.Input
+          placeholder={t('network.addressRangePlaceholder')}
+          onBlur={() => setTouched(true)}
+        />
+        <Field.Hint>{t('network.addressRangeHint')}</Field.Hint>
       </Field.Root>
       <Field.Root label={t('network.colAction')}>
         <SegmentGroup.Root<RuleAction>
@@ -86,11 +109,17 @@ export function RuleDialog({
           value={draft.action}
           onValueChange={(action) => edit({ action })}
         >
-          {RULE_ACTIONS.map((one) => (
-            <SegmentGroup.Item key={one.action} value={one.action}>
-              <SegmentGroup.Label>{t(one.labelKey)}</SegmentGroup.Label>
+          <SegmentGroup.Item value="direct">
+            <SegmentGroup.Label>{t('network.actionDirect')}</SegmentGroup.Label>
+          </SegmentGroup.Item>
+          {actionNetworks(networks, draft.action).map((name) => (
+            <SegmentGroup.Item key={name} value={name}>
+              <SegmentGroup.Label>{name}</SegmentGroup.Label>
             </SegmentGroup.Item>
           ))}
+          <SegmentGroup.Item value="block">
+            <SegmentGroup.Label>{t('network.actionBlock')}</SegmentGroup.Label>
+          </SegmentGroup.Item>
         </SegmentGroup.Root>
       </Field.Root>
       <Field.Root

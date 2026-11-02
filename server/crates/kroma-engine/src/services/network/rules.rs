@@ -16,6 +16,7 @@ const MAX_CALLER_CHARS: usize = 128;
 const MAX_PURPOSE_CHARS: usize = 64;
 const MAX_HOST_CHARS: usize = 253;
 const MAX_NOTE_CHARS: usize = 500;
+const MAX_NETWORK_CHARS: usize = 64;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -33,9 +34,10 @@ pub enum DefaultAction {
     Block,
 }
 
-/// One rule. Each of `caller`, `purpose` and `host` must match when set; `host`
-/// is an exact name or address, or `*.suffix` for the suffix and every name
-/// under it.
+/// One rule. Each of `caller`, `purpose`, `host`, `port` and `address` must match
+/// when set; `host` is an exact name or address, or `*.suffix` for the suffix and
+/// every name under it, and `address` is a range (`10.0.0.0/8`) a literal address
+/// falls in, since a name is not resolved to decide where it goes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rule {
@@ -43,16 +45,41 @@ pub struct Rule {
     pub caller: Option<String>,
     pub purpose: Option<String>,
     pub host: Option<String>,
+    #[serde(default)]
+    pub port: Option<u16>,
+    #[serde(default)]
+    pub address: Option<String>,
     pub action: Action,
     pub note: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+/// What a matching rule does: send the call direct, refuse it, or send it through
+/// the network of that name. On the wire it is one word.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     Direct,
-    Vpn,
     Block,
+    Network(String),
+}
+
+impl Serialize for Action {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(match self {
+            Action::Direct => "direct",
+            Action::Block => "block",
+            Action::Network(name) => name,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Action {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(match String::deserialize(deserializer)?.as_str() {
+            "direct" => Action::Direct,
+            "block" => Action::Block,
+            name => Action::Network(name.to_string()),
+        })
+    }
 }
 
 /// Why a rules write was refused. [`RulesError::code`] is what the API answers.
@@ -64,6 +91,8 @@ pub enum RulesError {
     InvalidCaller(String),
     InvalidPurpose(String),
     InvalidHost(String),
+    InvalidAddress(String),
+    InvalidNetwork(String),
     InvalidNote,
 }
 
@@ -76,6 +105,8 @@ impl RulesError {
             RulesError::InvalidCaller(_) => "invalid_caller",
             RulesError::InvalidPurpose(_) => "invalid_purpose",
             RulesError::InvalidHost(_) => "invalid_host",
+            RulesError::InvalidAddress(_) => "invalid_address",
+            RulesError::InvalidNetwork(_) => "invalid_network",
             RulesError::InvalidNote => "invalid_note",
         }
     }
@@ -90,6 +121,8 @@ impl std::fmt::Display for RulesError {
             RulesError::InvalidCaller(caller) => write!(f, "invalid caller: {caller:?}"),
             RulesError::InvalidPurpose(purpose) => write!(f, "invalid purpose: {purpose:?}"),
             RulesError::InvalidHost(host) => write!(f, "invalid host: {host:?}"),
+            RulesError::InvalidAddress(range) => write!(f, "invalid address range: {range:?}"),
+            RulesError::InvalidNetwork(name) => write!(f, "invalid network name: {name:?}"),
             RulesError::InvalidNote => write!(f, "a note is at most {MAX_NOTE_CHARS} characters"),
         }
     }
@@ -153,12 +186,32 @@ fn check(rule: &Rule) -> Result<(), RulesError> {
             return Err(RulesError::InvalidHost(host.clone()));
         }
     }
+    if let Some(range) = &rule.address {
+        if address_range(range).is_none() {
+            return Err(RulesError::InvalidAddress(range.clone()));
+        }
+    }
+    if let Action::Network(name) = &rule.action {
+        if !is_token(name, MAX_NETWORK_CHARS, |c| {
+            c.is_ascii_alphanumeric() || matches!(c, '-' | '_')
+        }) {
+            return Err(RulesError::InvalidNetwork(name.clone()));
+        }
+    }
     if let Some(note) = &rule.note {
         if note.chars().count() > MAX_NOTE_CHARS {
             return Err(RulesError::InvalidNote);
         }
     }
     Ok(())
+}
+
+pub(super) fn address_range(range: &str) -> Option<(std::net::IpAddr, u32)> {
+    let (address, bits) = range.split_once('/')?;
+    let address: std::net::IpAddr = address.parse().ok()?;
+    let bits: u32 = bits.parse().ok()?;
+    let width = if address.is_ipv4() { 32 } else { 128 };
+    (bits <= width).then_some((address, bits))
 }
 
 fn is_token(value: &str, max_chars: usize, allowed: impl Fn(char) -> bool) -> bool {

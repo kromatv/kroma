@@ -10,13 +10,13 @@ import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import type { ModuleEntry } from '#site/catalog';
-import { ModuleBuilds } from '#site/components/module-builds';
-import { ModuleDownload, useDownloadPick } from '#site/components/module-download';
+import { ModuleChecksum } from '#site/components/module-checksum';
+import { ModuleDownload } from '#site/components/module-download';
 import { ModuleHistory } from '#site/components/module-history';
 import { RegistryUrl } from '#site/components/registry-url';
 import { SiteFooter } from '#site/components/site-footer';
 import { SiteHeader } from '#site/components/site-header';
-import { downloads } from '#site/lib/artifacts';
+import { download } from '#site/lib/artifacts';
 import { depEntries } from '#site/lib/deps';
 import { getCatalog } from '#site/lib/get-catalog';
 import { getModuleHistory } from '#site/lib/get-module';
@@ -60,8 +60,7 @@ function Page({ children, registry }: Readonly<{ children: ReactNode; registry: 
 }
 
 function Hero({ module: m }: Readonly<{ module: ModuleEntry }>) {
-  const files = downloads(m);
-  const { picked, pick } = useDownloadPick(files);
+  const file = download(m);
   const deps = depEntries(m);
   return (
     <Row gap={24} align="flex-start" wrap>
@@ -105,8 +104,9 @@ function Hero({ module: m }: Readonly<{ module: ModuleEntry }>) {
             ))}
           </Row>
         ) : null}
+        {file?.sha256 ? <ModuleChecksum sha256={file.sha256} /> : null}
       </Column>
-      {picked ? <ModuleDownload files={files} picked={picked} onPick={pick} /> : null}
+      {file ? <ModuleDownload file={file} /> : null}
     </Row>
   );
 }
@@ -128,7 +128,6 @@ function ModulePage() {
   return (
     <Page registry={registry}>
       <Hero module={module} />
-      <ModuleBuilds files={downloads(module)} />
       <ModuleHistory rows={history} />
       <RegistryUrl url={registry} note="Admin → Modules → Registries, then install from there." />
     </Page>

@@ -20,7 +20,7 @@ const NO_PROXY: &str = "the module registry cannot be reached through a proxy";
 // anything approaching this is a misconfigured or hostile host, not a catalog.
 const MAX_CATALOG_BYTES: u64 = 4 * 1024 * 1024;
 const CATALOG_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
-/// Ceiling on an installable `.kmod`: a sidecar binary plus a small frontend
+/// Ceiling on an installable `.kmod`: a component plus a small frontend
 /// bundle. The upload route bounds its body with this too, so a bundle that can
 /// be uploaded can also be fetched by URL.
 pub const MAX_BUNDLE_BYTES: u64 = 64 * 1024 * 1024;
@@ -60,6 +60,7 @@ async fn fetch_bounded(
         duration_ms: 0,
         error: None,
         rule,
+        carried: false,
     };
     let refusal = match decision {
         Decision::Direct => None,
@@ -199,7 +200,7 @@ impl Supervisor {
         })
     }
 
-    // https_only: the artifact produces an executable, and a redirect from https
+    // https_only: the artifact is code this server runs, and a redirect from https
     // to http would otherwise undo the caller's scheme check.
     fn artifact_client(&self) -> &reqwest::Client {
         self.registry_clients.artifact.get_or_init(|| {

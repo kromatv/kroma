@@ -30,13 +30,13 @@ export type Verdict =
   | { kind: 'new' }
   | { kind: 'publish'; from: string }
   | { kind: 'unchanged' }
-  | { kind: 'stale'; published: string; targets: string[] }
+  | { kind: 'stale'; published: string }
   | { kind: 'backwards'; published: string };
 
 /**
  * What should happen to one module, given what is live and what was just packed.
- * Targets are compared one by one, and only those present on BOTH sides: a
- * target this run did not build says nothing about whether the module changed.
+ * At the same version, the bundle's content hash is compared with the published
+ * one; a published entry that recorded none says nothing either way.
  */
 export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
   if (!live) return { kind: 'new' };
@@ -44,16 +44,9 @@ export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
   if (order < 0) return { kind: 'backwards', published: live.version };
   if (order > 0) return { kind: 'publish', from: live.version };
 
-  const liveHashes = new Map(live.artifacts.map((a) => [a.target ?? '', a.contentHash]));
-  const stale = local.artifacts
-    .filter((a) => {
-      const published = liveHashes.get(a.target ?? '');
-      return published !== undefined && published !== a.contentHash;
-    })
-    .map((a) => a.target ?? 'universal');
-  stale.sort(byCodeUnit);
-  if (stale.length > 0) {
-    return { kind: 'stale', published: live.version, targets: stale };
+  const published = live.artifacts[0]?.contentHash;
+  if (published && published !== local.artifacts[0]?.contentHash) {
+    return { kind: 'stale', published: live.version };
   }
   return { kind: 'unchanged' };
 }
@@ -146,7 +139,6 @@ export function decide(
           [
             `${entry.id}: the bundle changed but the version did not.`,
             `    module.json says ${entry.version}, which is already published`,
-            `    differing target(s): ${verdict.targets.join(', ')}`,
             `    Bump the module's version past ${verdict.published} and re-push.`,
           ].join('\n'),
         );
@@ -176,7 +168,7 @@ export function decide(
 function report(plan: Plan, stale: string[], errors: string[], strict: boolean): void {
   for (const r of plan.publish) {
     const label = r.reason === 'new' ? 'new' : 'update';
-    console.log(`  publish  ${r.tag}  (${label}, ${r.files.length / 2} artifact(s))`);
+    console.log(`  publish  ${r.tag}  (${label})`);
   }
   for (const id of plan.unchanged) console.log(`  unchanged ${id}`);
   for (const id of plan.carried) console.log(`  carried  ${id} (not built in this run)`);

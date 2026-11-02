@@ -3,6 +3,7 @@
 // boundary, and the inferred types are the only shape the rest of the code sees.
 
 import { z } from 'zod';
+import { Permissions } from '../manifest/permissions.ts';
 
 /** Subresource-Integrity form of a sha256 digest: `sha256-<base64>`. */
 export const Integrity = z.string().regex(/^sha256-[A-Za-z0-9+/]{43}=$/, 'not an sha256 SRI');
@@ -65,6 +66,9 @@ export const RegistryVersion = z.object({
   definesPoints: z.array(PointDef).nullish(),
   contributes: z.array(Contribution).nullish(),
   consumes: z.array(PointReq).nullish(),
+  // What this version may do, as its manifest declares it, so an install screen
+  // can show it before anything is downloaded.
+  permissions: Permissions.nullish(),
   artifacts: z.array(RegistryArtifact),
 });
 export type RegistryVersion = z.infer<typeof RegistryVersion>;

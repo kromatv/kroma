@@ -43,6 +43,11 @@ export function RuleEditor({
     error: loadError,
     reload,
   } = usePoll(['admin', 'network', 'rules'], () => client.network.rules(), RULES_POLL_MS);
+  const { data: offered } = usePoll(
+    ['admin', 'network', 'networks'],
+    () => client.network.networks(),
+    RULES_POLL_MS,
+  );
   const [draft, setDraft] = useState<RulesUpdate | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [saved, setSaved] = useState(false);
@@ -198,6 +203,7 @@ export function RuleEditor({
           id={editing.id}
           adding={editing.index === null}
           purposes={purposes}
+          networks={offered?.networks ?? []}
           callerName={callerName}
           onDone={finishEditing}
           onCancel={() => setEditing(null)}

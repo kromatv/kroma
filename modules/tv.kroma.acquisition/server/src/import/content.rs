@@ -31,7 +31,7 @@ impl Content {
         self.files
             .iter()
             .filter(|path| {
-                kroma_module_sdk::media::video::has_video_extension(path) && !is_a_sample(path)
+                kroma_module_sdk::primitives::video::has_video_extension(path) && !is_a_sample(path)
             })
             .cloned()
             .collect()

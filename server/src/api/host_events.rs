@@ -1,4 +1,4 @@
-//! The `/_host/register-events` callback a sidecar POSTs to say which event
+//! The `/_host/register-events` callback a module POSTs to say which event
 //! topics it wants, and the task that delivers them.
 //!
 //! Modules could already publish onto the bus and never hear it, so a module
@@ -147,7 +147,7 @@ fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payloa
     let token = supervisor.port_token(module_id);
     let body = payload.to_string();
     // Off the bus task: one slow module must not hold up the next event, and the
-    // sidecar answers before it does the work anyway.
+    // module answers before it does the work anyway.
     tokio::task::spawn_blocking(move || {
         let sent = kroma_http::Loopback::new()
             .header("authorization", format!("Bearer {token}"))
@@ -185,7 +185,7 @@ mod tests {
         assert!(subs.wanting("a").is_empty());
     }
 
-    // The callback a sidecar POSTs at boot, driven the way it drives it.
+    // The callback a module POSTs at boot, driven the way it drives it.
     async fn register_via_route(subs: Arc<Subscriptions>, body: serde_json::Value) -> StatusCode {
         let t = crate::api::test_support::test_app();
         let app = routes(t.supervisor, subs).with_state(t.state);
@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_sidecar_registers_its_topics_over_the_callback() {
+    async fn a_module_registers_its_topics_over_the_callback() {
         let subs = Arc::new(Subscriptions::default());
 
         let status = register_via_route(

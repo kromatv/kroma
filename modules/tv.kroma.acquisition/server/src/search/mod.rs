@@ -8,6 +8,7 @@ pub mod hits;
 pub mod interactive;
 pub mod judge;
 pub mod manual;
+pub mod remembered;
 pub mod subject;
 pub mod sweep;
 pub mod targets;
@@ -16,7 +17,7 @@ pub mod verdict;
 pub(crate) mod test_support;
 
 pub use hits::CachedRelease;
-pub use interactive::{cached_release, grab_cached, interactive_search};
+pub use interactive::{grab_cached, interactive_search};
 pub use subject::Subject;
 pub use manual::manual_search;
 pub use targets::{

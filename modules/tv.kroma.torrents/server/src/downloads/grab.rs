@@ -91,8 +91,9 @@ impl DownloadManager {
         Ok(row)
     }
 
-    /// Background phase of a grab: slow (up to a couple of minutes), and safe
-    /// to run detached from the request that queued it.
+    /// Background phase of a grab: safe to run detached from the request that
+    /// queued it, and again on every monitor tick while a magnet is being added, in
+    /// which case the row stays `queued` until the add lands.
     pub fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
         if !self.slot_available(host) {
             tracing::info!(
@@ -136,8 +137,6 @@ impl DownloadManager {
                 return;
             }
         };
-        // Behind the VPN the engine takes bytes, not a URL: fetch the `.torrent`
-        // ourselves, through the tunnel unless the indexer is on the LAN.
         let prefetched = match self.prefetch_torrent(host, row, &client) {
             Ok(p) => p,
             Err(()) => return,
@@ -151,6 +150,9 @@ impl DownloadManager {
         });
         match added {
             Ok(client_ref) => self.reconcile_added(row, &*engine, &client_ref),
+            Err(e) if e.is::<crate::StillAdding>() => {
+                tracing::debug!(release = %row.release_title, "torrent metadata still on its way");
+            }
             Err(e) => {
                 let msg = format!("{e:#}");
                 tracing::warn!(id = %row.id, release = %row.release_title, error = %msg, "torrent add failed");
@@ -266,3 +268,6 @@ impl DownloadManager {
         Ok(row)
     }
 }
+
+#[cfg(test)]
+mod tests;

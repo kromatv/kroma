@@ -1,4 +1,4 @@
-//! Whichever sidecar answers the `transcriber` point, as the subtitle service's
+//! Whichever module answers the `transcriber` point, as the subtitle service's
 //! transcription step. Transcription is long-running, so progress and
 //! cancellation ride a shared DB row rather than the buffered HTTP call.
 //!
@@ -6,7 +6,7 @@
 //! closure, and [`TranscriberClient::step`] is what the composition root hands
 //! it. A module answers JSON and knows nothing about this file.
 
-/// Talks to that sidecar over the point bridge instead of transcribing
+/// Talks to that module over the point bridge instead of transcribing
 /// in-process, so a heavy model and its Metal/CUDA deps run out of the core.
 /// Transcription is long and drives live progress + mid-run cancel, which don't
 /// fit `kroma-http`'s buffered request/response, so a shared `whisper_jobs` DB

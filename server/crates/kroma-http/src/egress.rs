@@ -68,6 +68,51 @@ pub struct Exchange {
     pub duration_ms: u64,
     pub error: Option<String>,
     pub rule: Option<String>,
+    /// The process's [`Gateway`] carried this call and files the connection
+    /// itself, so this record only adds what the gateway cannot see.
+    pub carried: bool,
+}
+
+/// The core's gateway as this process reaches it: a SOCKS5 endpoint and the
+/// credential that names this process as its caller.
+#[derive(Clone, PartialEq, Eq)]
+pub struct Gateway {
+    pub address: String,
+    pub credential: String,
+}
+
+impl std::fmt::Debug for Gateway {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Gateway")
+            .field("address", &self.address)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Gateway {
+    /// The SOCKS5 username for a connection made for `purpose`: `.public` when
+    /// every address must be public, and `.vpn` when it must take the VPN or fail.
+    pub fn username(purpose: &str, public_only: bool, sealed: bool) -> String {
+        let mut username = purpose.to_string();
+        if public_only {
+            username.push_str(".public");
+        }
+        if sealed {
+            username.push_str(".vpn");
+        }
+        username
+    }
+
+    /// This gateway as a SOCKS5 URL, for a library that takes one and cannot go
+    /// through [`crate::Fetch`].
+    pub fn proxy_url(&self, purpose: &str, sealed: bool) -> String {
+        format!(
+            "socks5://{}:{}@{}",
+            Self::username(purpose, false, sealed),
+            self.credential,
+            self.address
+        )
+    }
 }
 
 pub type Gate = Arc<dyn Fn(&Outgoing) -> Ruling + Send + Sync>;
@@ -85,6 +130,7 @@ const MAX_ERROR_CHARS: usize = 300;
 
 static GATE: OnceLock<Gate> = OnceLock::new();
 static SINK: OnceLock<Sink> = OnceLock::new();
+static GATEWAY: OnceLock<Gateway> = OnceLock::new();
 static GATE_REQUIRED: AtomicBool = AtomicBool::new(false);
 static PENDING: Mutex<Vec<(Exchange, SystemTime)>> = Mutex::new(Vec::new());
 
@@ -103,6 +149,20 @@ pub fn set_gate(gate: Gate) -> Result<()> {
         bail!("an egress gate is already installed");
     }
     Ok(())
+}
+
+/// Send every [`crate::Fetch`] this process makes through `gateway`. Once per
+/// process, like [`set_gate`].
+pub fn set_gateway(gateway: Gateway) -> Result<()> {
+    if GATEWAY.set(gateway).is_err() {
+        bail!("an egress gateway is already installed");
+    }
+    Ok(())
+}
+
+/// The gateway this process goes through, when it has one.
+pub fn gateway() -> Option<&'static Gateway> {
+    GATEWAY.get()
 }
 
 /// Install the process's sink, then hand it the exchanges recorded before it,

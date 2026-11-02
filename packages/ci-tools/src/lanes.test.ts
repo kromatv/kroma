@@ -13,7 +13,7 @@ describe('matchLanes', () => {
     expect(matchLanes(['server/src/main.rs'])).toEqual(only('code', 'rust', 'synology'));
   });
 
-  it('puts a module sidecar change in rust and synology, and its ui in the fleet too', () => {
+  it('puts a module server change in rust and synology, and its ui in the fleet too', () => {
     expect(matchLanes(['modules/tv.kroma.vpn/server/src/lib.rs'])).toEqual(
       only('code', 'rust', 'synology'),
     );

@@ -1,11 +1,11 @@
-// sync() runs against a real socket serving .tar.gz bytes: the transport is
-// curl + the system tar, so this exercises the whole path.
-
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
-use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use tar::{Builder, Header};
 
 use super::DefinitionStore;
 
@@ -44,32 +44,18 @@ search:
   rows: {}
 ";
 
-// Builds a `.tar.gz` laid out the way the upstream repo is; `layout` maps a
-// path inside the archive to its contents.
 pub(super) fn tarball(layout: &[(&str, &str)]) -> Vec<u8> {
-    let root = scratch("tar");
+    let mut archive = Builder::new(GzEncoder::new(Vec::new(), Compression::fast()));
     for (path, body) in layout {
-        let full = root.path().join(path);
-        std::fs::create_dir_all(full.parent().unwrap()).unwrap();
-        std::fs::write(&full, body).unwrap();
+        let mut header = Header::new_gnu();
+        header.set_size(body.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        archive
+            .append_data(&mut header, path, body.as_bytes())
+            .unwrap();
     }
-    let archive = root.path().join("out.tar.gz");
-    let entries: Vec<String> = std::fs::read_dir(root.path())
-        .unwrap()
-        .filter_map(Result::ok)
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| n != "out.tar.gz")
-        .collect();
-    let ok = Command::new("tar")
-        .arg("-czf")
-        .arg(&archive)
-        .arg("-C")
-        .arg(root.path())
-        .args(&entries)
-        .status()
-        .unwrap();
-    assert!(ok.success(), "could not build the fixture archive");
-    std::fs::read(&archive).unwrap()
+    archive.into_inner().unwrap().finish().unwrap()
 }
 
 pub(super) fn serve(status: u16, body: Vec<u8>) -> String {

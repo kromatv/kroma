@@ -1,7 +1,6 @@
-// The module store needs the compile target triple at runtime (env!("KROMA_BUILD_TARGET"))
-// to pick the matching per-target `.kmod` artifact: a sidecar module carries a
-// native binary, so its platform must match this server's.
 fn main() {
+    // env!("KROMA_BUILD_TARGET") for the anonymous heartbeat, which reports the
+    // platform this server runs on.
     println!(
         "cargo:rustc-env=KROMA_BUILD_TARGET={}",
         std::env::var("TARGET").unwrap_or_default()

@@ -12,7 +12,8 @@ use crate::egress::{self, scrubbed, Decision, Exchange, Route, Ruling, BLOCKED};
 use crate::pin::public_resolve_line;
 use crate::response::Response;
 
-use super::render::{bare_proxy, proxy_lines};
+use super::bare_proxy;
+use super::render::{gateway_lines, proxy_lines};
 use super::Fetch;
 
 pub(super) struct Call<'a> {
@@ -74,10 +75,18 @@ impl Fetch {
             Ok(proxy) => proxy,
             Err(reason) => {
                 let refused = Err(anyhow!("{BLOCKED}: {reason}"));
-                self.report(sent, Route::Blocked, url, &refused);
+                self.report(sent, Route::Blocked, url, &refused, false);
                 return refused;
             }
         };
+        if let Some(gateway) = egress::gateway() {
+            let username =
+                egress::Gateway::username(self.purpose, self.public_only, self.socks5.is_some());
+            config.push_str(&gateway_lines(gateway, &username));
+            let outcome = run(config);
+            self.report(sent, Route::Proxy, url, &outcome, true);
+            return outcome;
+        }
         if let Some(proxy) = &proxy {
             config.push_str(&proxy_lines(proxy));
         }
@@ -87,7 +96,7 @@ impl Fetch {
         } else {
             Route::Direct
         };
-        self.report(sent, route, url, &outcome);
+        self.report(sent, route, url, &outcome, false);
         outcome
     }
 
@@ -98,7 +107,14 @@ impl Fetch {
         Ok(config)
     }
 
-    fn report(&self, sent: Sent<'_>, route: Route, url: &str, outcome: &Result<Response>) {
+    fn report(
+        &self,
+        sent: Sent<'_>,
+        route: Route,
+        url: &str,
+        outcome: &Result<Response>,
+        carried: bool,
+    ) {
         let (host, port) = sent
             .target
             .map_or((String::new(), 0), |target| (target.host, target.port));
@@ -117,6 +133,7 @@ impl Fetch {
                 .err()
                 .map(|error| scrubbed(&format!("{error:#}"), url, &host)),
             rule: sent.rule,
+            carried,
             route,
             host,
             port,

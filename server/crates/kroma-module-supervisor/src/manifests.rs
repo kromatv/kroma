@@ -1,29 +1,28 @@
-//! What is installed on disk: the manifests, their icons, the cached listing,
-//! and the storage grant a manifest declares.
+//! What is installed on disk: the manifests, their icons and the cached listing.
 
 use kroma_module_manifest::ModuleManifest;
 
-use super::{Supervisor, MODULE_BIN, STAGING_PREFIX};
+use super::{Supervisor, MODULE_COMPONENT, STAGING_PREFIX};
 
 impl Supervisor {
-    /// `id`'s manifest as it is on disk, which is what its process is spawned
-    /// from: the storage grant, and the seam.
+    /// `id`'s manifest as it is on disk, which is what its component starts
+    /// from: the storage grant, and the permissions.
     ///
     /// Read off disk rather than out of [`installed_manifests`](Self::installed_manifests),
     /// which is cached: a grant one version out of date is not a stale listing,
     /// it is a module that gets the wrong answer to every query. One small file,
-    /// read once per spawn.
+    /// read once per start.
     pub(crate) fn manifest_on_disk(&self, id: &str) -> Option<ModuleManifest> {
         let text = std::fs::read_to_string(self.dir(id).join("module.json")).ok()?;
         serde_json::from_str::<ModuleManifest>(&text).ok()
     }
 
-    /// Whether this module ships a sidecar binary at all. A library module (the
+    /// Whether this module ships a component at all. A library module (the
     /// scene parser, the download sub-engines) is code co-linked into another
-    /// process, so it HAS no process: "not running" is its normal state, not a
-    /// fault, and nothing should report it as one.
-    pub fn has_binary(&self, id: &str) -> bool {
-        self.dir(id).join(MODULE_BIN).exists()
+    /// component, so it has none of its own: "not running" is its normal state,
+    /// not a fault, and nothing should report it as one.
+    pub fn has_component(&self, id: &str) -> bool {
+        self.dir(id).join(MODULE_COMPONENT).exists()
     }
 
     /// Every installed module's `module.json`, cached until the next install or
@@ -116,246 +115,5 @@ pub(super) fn check_manifest_schema(id: &str, manifest: &ModuleManifest) -> anyh
     Ok(())
 }
 
-/// A module's core-database grant on the wire, as `kroma-db` reads it back.
-/// Serialization cannot fail for this shape; an empty grant is the fallback and
-/// also the answer for a module that declared no storage.
-pub(super) fn grant_json(storage: Option<&kroma_module_manifest::Storage>) -> String {
-    storage
-        .map(|s| serde_json::json!({ "read": s.core.read, "write": s.core.write }))
-        .and_then(|v| serde_json::to_string(&v).ok())
-        .unwrap_or_else(|| "{}".to_string())
-}
-
 #[cfg(test)]
-mod tests {
-    use super::super::{Supervisor, SupervisorConfig};
-    use super::{check_manifest_schema, grant_json};
-
-    #[test]
-    fn a_module_declaring_a_permission_no_server_could_grant_is_refused() {
-        let manifest: kroma_module_manifest::ModuleManifest =
-            serde_json::from_value(serde_json::json!({
-                "schemaVersion": kroma_module_manifest::MODULE_SCHEMA_VERSION,
-                "id": "com.example.shell", "name": "Shell", "version": "1.0.0",
-                "permissions": { "run": ["/bin/sh"] }
-            }))
-            .unwrap();
-
-        let refusal = check_manifest_schema("com.example.shell", &manifest)
-            .unwrap_err()
-            .to_string();
-
-        assert!(refusal.contains("bare binary name"), "{refusal}");
-    }
-
-    #[test]
-    fn a_module_declaring_a_notification_type_outside_its_namespace_is_refused() {
-        let manifest: kroma_module_manifest::ModuleManifest =
-            serde_json::from_value(serde_json::json!({
-                "schemaVersion": kroma_module_manifest::MODULE_SCHEMA_VERSION,
-                "id": "com.example.loud", "name": "Loud", "version": "1.0.0",
-                "notifications": [{
-                    "type": "tv.kroma.torrents/download.completed", "category": "downloads",
-                    "titleKey": "t", "bodyKey": "b"
-                }]
-            }))
-            .unwrap();
-
-        let refusal = check_manifest_schema("com.example.loud", &manifest)
-            .unwrap_err()
-            .to_string();
-
-        assert!(refusal.contains("com.example.loud/<name>"), "{refusal}");
-    }
-
-    #[test]
-    fn the_grant_a_module_is_spawned_with_is_the_one_its_manifest_declares() {
-        let storage = kroma_module_manifest::Storage {
-            core: kroma_module_manifest::CoreScope {
-                read: vec!["requests".into(), "users.username".into()],
-                write: vec!["wanted".into()],
-            },
-            adopt: vec!["indexers".into()],
-        };
-        let json = grant_json(Some(&storage));
-        let back: kroma_db::Grant = serde_json::from_str(&json).expect("kroma-db reads it back");
-        assert_eq!(back.read, ["requests", "users.username"]);
-        assert_eq!(back.write, ["wanted"]);
-    }
-
-    #[test]
-    fn a_module_that_declared_no_storage_is_spawned_with_an_empty_grant() {
-        let json = grant_json(None);
-        assert_eq!(
-            serde_json::from_str::<kroma_db::Grant>(&json).unwrap(),
-            kroma_db::Grant::none()
-        );
-
-        let private_only = kroma_module_manifest::Storage::default();
-        let json = grant_json(Some(&private_only));
-        assert_eq!(
-            serde_json::from_str::<kroma_db::Grant>(&json).unwrap(),
-            kroma_db::Grant::none()
-        );
-    }
-
-    #[test]
-    fn a_module_token_names_its_holder_and_nothing_else_does() {
-        let dir = kroma_testing::temp_dir("module-tokens");
-        let sup = Supervisor::new(SupervisorConfig {
-            modules_dir: dir.path().to_path_buf(),
-            core_port: 0,
-            host_token: "fabric".into(),
-            db_path: dir.path().join("db.sqlite"),
-            data_dir: dir.path().to_path_buf(),
-            reserved_ids: Vec::new(),
-            server_version: "0.1.4".into(),
-            log_line: None,
-        });
-
-        let first = sup.module_token("com.example.one");
-        let second = sup.module_token("com.example.two");
-
-        assert_eq!(
-            first,
-            sup.module_token("com.example.one"),
-            "stable per module"
-        );
-        assert_ne!(first, second);
-        assert_ne!(first, "fabric");
-        assert_eq!(
-            sup.module_of_token(&first),
-            Some("com.example.one".to_string())
-        );
-        assert_eq!(
-            sup.module_of_token("fabric"),
-            None,
-            "the fabric token names no module"
-        );
-        assert_eq!(sup.module_of_token("invented"), None);
-        assert_eq!(sup.module_of_token(""), None);
-    }
-
-    #[test]
-    fn a_modules_settings_declaration_is_what_its_manifest_says() {
-        let dir = kroma_testing::temp_dir("settings-scope");
-        let sup = Supervisor::new(SupervisorConfig {
-            modules_dir: dir.path().to_path_buf(),
-            core_port: 0,
-            host_token: "fabric".into(),
-            db_path: dir.path().join("db.sqlite"),
-            data_dir: dir.path().to_path_buf(),
-            reserved_ids: Vec::new(),
-            server_version: "0.1.4".into(),
-            log_line: None,
-        });
-        let v = kroma_module_manifest::MODULE_SCHEMA_VERSION;
-        let write = |id: &str, body: &str| {
-            let d = dir.path().join(id);
-            std::fs::create_dir_all(&d).unwrap();
-            std::fs::write(d.join("module.json"), body).unwrap();
-        };
-
-        write(
-            "com.example.declaring",
-            &format!(
-                r#"{{ "schemaVersion": {v}, "id": "com.example.declaring", "name": "D",
-                      "version": "1.0.0",
-                      "settings": {{ "read": ["vpnWgConfig"], "write": ["vpnLocalPort"] }} }}"#
-            ),
-        );
-        write(
-            "com.example.silent",
-            &format!(
-                r#"{{ "schemaVersion": {v}, "id": "com.example.silent", "name": "S",
-                      "version": "1.0.0" }}"#
-            ),
-        );
-
-        let declared = sup.settings_scope("com.example.declaring").unwrap();
-        assert!(declared.reads("vpnWgConfig"));
-        assert!(!declared.writes("vpnWgConfig"));
-        assert!(declared.writes("vpnLocalPort"));
-        assert!(sup.settings_scope("com.example.silent").is_none());
-        assert!(sup.settings_scope("com.example.never-installed").is_none());
-    }
-
-    #[test]
-    fn a_modules_grant_comes_off_disk_even_when_the_listing_cache_is_stale() {
-        let dir = kroma_testing::temp_dir("grant-stale-cache");
-        let sup = Supervisor::new(SupervisorConfig {
-            modules_dir: dir.path().to_path_buf(),
-            core_port: 0,
-            host_token: "t".into(),
-            db_path: dir.path().join("db.sqlite"),
-            data_dir: dir.path().to_path_buf(),
-            reserved_ids: Vec::new(),
-            server_version: "0.1.4".into(),
-            log_line: None,
-        });
-
-        let write = |body: &str| {
-            let d = dir.path().join("com.example.demo");
-            std::fs::create_dir_all(&d).unwrap();
-            std::fs::write(d.join("module.json"), body).unwrap();
-        };
-        let v = kroma_module_manifest::MODULE_SCHEMA_VERSION;
-
-        write(&format!(
-            r#"{{ "schemaVersion": {v}, "id": "com.example.demo", "name": "D", "version": "1.0.0" }}"#
-        ));
-        assert_eq!(sup.installed_manifests().len(), 1);
-        assert!(sup
-            .manifest_on_disk("com.example.demo")
-            .and_then(|m| m.storage)
-            .is_none());
-
-        // The cache is deliberately NOT invalidated here: this is the window
-        // `install` spawns in.
-        write(&format!(
-            r#"{{ "schemaVersion": {v}, "id": "com.example.demo", "name": "D", "version": "2.0.0",
-                  "storage": {{ "core": {{ "read": ["requests"], "write": ["wanted"] }} }} }}"#
-        ));
-        assert_eq!(
-            sup.installed_manifests()[0].version,
-            "1.0.0",
-            "the listing is still stale, which is the whole point"
-        );
-
-        let storage = sup
-            .manifest_on_disk("com.example.demo")
-            .and_then(|m| m.storage)
-            .expect("the grant comes off disk");
-        assert_eq!(storage.core.read, ["requests"]);
-        assert_eq!(storage.core.write, ["wanted"]);
-
-        // ...and it is what would reach the sidecar.
-        let back: kroma_db::Grant = serde_json::from_str(&grant_json(Some(&storage))).unwrap();
-        assert_eq!(back.read, ["requests"]);
-    }
-
-    #[test]
-    fn an_icon_is_never_read_from_outside_the_modules_dir() {
-        let dir = kroma_testing::temp_dir("module-icon");
-        let modules = dir.path().join("modules");
-        std::fs::create_dir_all(modules.join("com.example.one")).unwrap();
-        std::fs::write(modules.join("com.example.one/icon.svg"), "<svg/>").unwrap();
-        std::fs::create_dir_all(dir.path().join("outside")).unwrap();
-        std::fs::write(dir.path().join("outside/icon.svg"), "<svg/>").unwrap();
-        let sup = Supervisor::new(SupervisorConfig {
-            modules_dir: modules,
-            core_port: 0,
-            host_token: "fabric".into(),
-            db_path: dir.path().join("db.sqlite"),
-            data_dir: dir.path().to_path_buf(),
-            reserved_ids: Vec::new(),
-            server_version: "0.1.4".into(),
-            log_line: None,
-        });
-        let absolute = dir.path().join("outside").to_string_lossy().into_owned();
-
-        assert!(sup.icon("com.example.one").is_some());
-        assert!(sup.icon("../outside").is_none());
-        assert!(sup.icon(&absolute).is_none());
-    }
-}
+mod tests;

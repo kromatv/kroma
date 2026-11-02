@@ -3,16 +3,23 @@ name = "kroma-wasm-host"
 version = "0.1.0"
 edition.workspace = true
 rust-version = "1.97"
-description = "The spike for running a module as a WebAssembly component: wasmtime, a small WIT world, an empty WASI context, and a memory ceiling and CPU budget per instance."
+description = "Runs a module as a WebAssembly component: wasmtime, a small WIT world, an empty WASI context, and a memory ceiling and CPU budget per instance."
 license.workspace = true
 
 [dependencies]
-wasmtime = { version = "50.0.1", default-features = false, features = ["runtime", "cranelift", "component-model", "std"] }
+wasmtime = { version = "50.0.1", default-features = false, features = ["runtime", "cranelift", "component-model", "std", "parallel-compilation"] }
 wasmtime-wasi = { version = "50.0.1", default-features = false, features = ["p2"] }
 thiserror = "2"
+tracing = { workspace = true }
+tokio = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Threading"] }
 
 [dev-dependencies]
 axum = { workspace = true }
 kroma-http = { workspace = true }
 kroma-testing = { workspace = true }
-tokio = { workspace = true }

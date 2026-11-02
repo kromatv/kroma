@@ -42,6 +42,7 @@ pub struct ModuleWiring {
     pub contributions: Contributions,
     pub official_modules: OfficialModules,
     pub permissions: crate::services::network::DeclaredPermissions,
+    pub network_providers: crate::services::network::NetworkProviders,
 }
 
 pub struct AppState {
@@ -112,6 +113,7 @@ impl AppState {
             contributions,
             official_modules,
             permissions,
+            network_providers,
         } = wiring;
         let hls = hls::HlsEngine::new(
             config.data_dir.join("hls"),
@@ -147,8 +149,9 @@ impl AppState {
         let network = Arc::new(crate::services::network::Network::new(
             db.clone(),
             settings.clone(),
-            crate::point::Point::new(crate::services::network::VPN_POINT, contributions.clone()),
+            crate::point::Point::new(crate::services::network::NETWORK_POINT, contributions.clone()),
         )
+        .with_providers(network_providers)
         .with_core_ports(config.port, config.https_port_override)
         .with_declared(permissions));
         Arc::new_cyclic(|weak| AppState {
@@ -243,6 +246,7 @@ mod tests {
                 contributions: Arc::new(|_| Vec::new()),
                 official_modules: Arc::new(Vec::new),
                 permissions: Arc::new(|_| None),
+                network_providers: Arc::new(Vec::new),
             },
         );
         state.own_scratch_dir(dir);

@@ -21,7 +21,7 @@ fn a_valid_rule_is_kept_with_its_host_lowercased() {
     .unwrap();
 
     assert_eq!(rules.rules[0].host.as_deref(), Some("*.tracker.example"));
-    assert_eq!(rules.rules[0].action, Action::Vpn);
+    assert_eq!(rules.rules[0].action, Action::Network("vpn".to_string()));
 }
 
 #[test]
@@ -84,6 +84,8 @@ fn more_rules_than_the_cap_are_refused() {
         caller: None,
         purpose: None,
         host: None,
+        port: None,
+        address: None,
         action: Action::Block,
         note: None,
     };
@@ -96,11 +98,10 @@ fn more_rules_than_the_cap_are_refused() {
 }
 
 #[test]
-fn an_unknown_action_or_field_does_not_parse() {
+fn an_unknown_default_action_or_field_does_not_parse() {
     for body in [
         json!({ "defaultAction": "maybe", "rules": [] }),
         json!({ "defaultAction": "allow", "rules": [], "extra": 1 }),
-        json!({ "defaultAction": "allow", "rules": [{ "id": "r", "action": "tunnel" }] }),
     ] {
         assert!(
             serde_json::from_value::<NetworkRules>(body.clone()).is_err(),
@@ -123,3 +124,52 @@ fn a_stored_value_that_is_missing_or_invalid_reads_as_the_defaults() {
         );
     }
 }
+
+fn with_action(action: &str) -> Result<NetworkRules, RulesError> {
+    serde_json::from_value::<NetworkRules>(serde_json::json!({
+        "defaultAction": "allow",
+        "rules": [{ "id": "a", "caller": null, "purpose": null, "host": null, "action": action, "note": null }]
+    }))
+    .unwrap()
+    .validated()
+}
+
+#[test]
+fn an_action_is_direct_block_or_the_name_of_a_network() {
+    assert_eq!(with_action("direct").unwrap().rules[0].action, Action::Direct);
+    assert_eq!(with_action("block").unwrap().rules[0].action, Action::Block);
+    assert_eq!(
+        with_action("vpn-ch").unwrap().rules[0].action,
+        Action::Network("vpn-ch".to_string())
+    );
+}
+
+#[test]
+fn a_network_name_that_could_not_be_one_is_refused() {
+    assert_eq!(
+        with_action("a b").unwrap_err(),
+        RulesError::InvalidNetwork("a b".to_string())
+    );
+}
+
+#[test]
+fn an_action_is_written_back_as_the_one_word_it_came_as() {
+    let written = serde_json::to_value(Action::Network("vpn".to_string())).unwrap();
+
+    assert_eq!(written, serde_json::json!("vpn"));
+}
+
+#[test]
+fn an_address_range_that_is_not_one_is_refused() {
+    let rules: NetworkRules = serde_json::from_value(serde_json::json!({
+        "defaultAction": "allow",
+        "rules": [{ "id": "a", "caller": null, "purpose": null, "host": null, "address": "10.0.0.0/99", "action": "block", "note": null }]
+    }))
+    .unwrap();
+
+    assert_eq!(
+        rules.validated().unwrap_err(),
+        RulesError::InvalidAddress("10.0.0.0/99".to_string())
+    );
+}
+

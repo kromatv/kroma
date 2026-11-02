@@ -17,7 +17,7 @@ pub(super) struct JobBody {
 
 // `trigger_job` takes `&'static str` for in-process callers passing literals, so
 // a key off the wire has to be leaked. Job keys are a small fixed vocabulary;
-// this ceiling is what keeps a sidecar sending unbounded new ones from growing
+// this ceiling is what keeps a module sending unbounded new ones from growing
 // the core's memory one callback at a time.
 const MAX_INTERNED: usize = 512;
 

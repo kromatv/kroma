@@ -13,7 +13,7 @@ const device = {
 };
 
 describe('RokuView', () => {
-  it('parses the sidecar view a box has never been installed on', () => {
+  it('parses the module view a box has never been installed on', () => {
     const view = RokuView.parse({
       serverUrl: 'http://192.168.1.20:4040',
       hasPassword: false,
@@ -52,13 +52,13 @@ describe('RokuDevice', () => {
     expect(parsed.model).toBe('Roku Ultra');
   });
 
-  it('refuses a box the sidecar could not name', () => {
+  it('refuses a box the module could not name', () => {
     expect(() => RokuDevice.parse({ ...device, serial: 42 })).toThrow();
   });
 });
 
 describe('InstallStatus', () => {
-  it('reads every state the sidecar reports', () => {
+  it('reads every state the module reports', () => {
     for (const status of ['none', 'installing', 'installed', 'failed']) {
       expect(InstallStatus.parse(status)).toBe(status);
     }

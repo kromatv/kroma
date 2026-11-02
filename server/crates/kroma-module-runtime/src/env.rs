@@ -1,10 +1,7 @@
 use std::path::PathBuf;
 
-use crate::listen::Listen;
-
 pub(crate) struct Env {
     pub(crate) module_id: String,
-    pub(crate) listen: Listen,
     pub(crate) core_url: String,
     pub(crate) host_token: String,
     pub(crate) module_token: String,
@@ -16,35 +13,18 @@ pub(crate) struct Env {
 }
 
 impl Env {
+    #[cfg(target_family = "wasm")]
     pub(crate) fn from_process() -> anyhow::Result<Self> {
         let get = |k: &str| std::env::var(k).map_err(|_| anyhow::anyhow!("{k} not set"));
         Ok(Self {
             module_id: get("KROMA_MODULE_ID")?,
-            listen: Listen::from_process()?,
             core_url: get("KROMA_CORE_URL")?,
             host_token: get("KROMA_HOST_TOKEN")?,
-            // A host that predates per-module tokens sends none, and the fabric
-            // token still authenticates; it just does not name this module, so
-            // the callback answers it nothing that wants a declaration.
             module_token: std::env::var("KROMA_MODULE_TOKEN")
                 .or_else(|_| get("KROMA_HOST_TOKEN"))?,
             #[cfg(feature = "storage")]
             db_path: PathBuf::from(get("KROMA_DB_PATH")?),
             data_dir: PathBuf::from(get("KROMA_DATA_DIR")?),
-        })
-    }
-
-    /// The grant the core spawned this module with, as its manifest declared it.
-    /// Absent or unreadable is the empty grant: a pool that answers nothing,
-    /// never an unscoped one.
-    #[cfg(feature = "storage")]
-    pub(crate) fn grant(&self) -> kroma_sqlite::Grant {
-        let Ok(json) = std::env::var("KROMA_MODULE_GRANT") else {
-            return kroma_sqlite::Grant::none();
-        };
-        serde_json::from_str(&json).unwrap_or_else(|error| {
-            tracing::error!(%error, "core sent a storage grant this build cannot read; denying all");
-            kroma_sqlite::Grant::none()
         })
     }
 

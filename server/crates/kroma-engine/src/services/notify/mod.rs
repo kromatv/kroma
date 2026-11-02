@@ -224,6 +224,9 @@ pub fn publish_unread<S: HostStorage>(state: &S, user_id: &str, unread: u32) {
 }
 
 #[cfg(test)]
+mod request_news;
+
+#[cfg(test)]
 mod tests {
     use kroma_domain::{NotificationCategory, NotificationEvent, Permission};
 

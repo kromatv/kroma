@@ -19,7 +19,10 @@ const COLUMNS: readonly RuleColumn[] = [
   { labelKey: null, width: 168, align: 'end' },
 ];
 
-const ROAD: Record<RuleAction, FlowRoute> = { direct: 'direct', vpn: 'vpn', block: 'blocked' };
+function road(action: RuleAction): FlowRoute {
+  if (action === 'direct') return 'direct';
+  return action === 'block' ? 'blocked' : 'vpn';
+}
 
 interface RuleRowProps {
   rule: Rule;
@@ -65,7 +68,7 @@ function RuleRow({
         </Text>
       </Table.Cell>
       <Table.Cell>
-        <RouteBadge route={ROAD[rule.action]} />
+        <RouteBadge route={road(rule.action)} />
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textMuted" lines={2}>

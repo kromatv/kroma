@@ -1,109 +1,94 @@
-//! The embedded BitTorrent engine: a librqbit `Session` wrapped so the sync
-//! [`DownloadClient`] trait can drive it. Torrents are identified by their
-//! info-hash hex, stable across restarts.
+//! The embedded BitTorrent engine: the upstream `rqbit` server as a helper program
+//! the host starts, driven over its HTTP API so the sync [`DownloadClient`] trait
+//! can use it. Torrents are identified by their info-hash hex, stable across
+//! restarts, and rqbit's own persistence carries them over a restart of the module.
 
+use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Context, Result};
-use librqbit::api::TorrentIdOrHash;
-use librqbit::limits::LimitsConfig;
-use librqbit::{
-    AddTorrent, AddTorrentOptions, ConnectionOptions, DhtSessionConfig, ListenerMode,
-    ListenerOptions, ManagedTorrent, Session, SessionOptions, SessionPersistenceConfig,
-};
-use librqbit_core::peer_id::generate_azereus_style;
-
-type ManagedTorrentHandle = Arc<ManagedTorrent>;
+use anyhow::{Context, Result, anyhow, bail};
+use kroma_module_sdk::host::process::{self, Child, Command};
+use kroma_module_sdk::host::run_blocking;
+use kroma_module_sdk::http::egress::BLOCKED;
 
 use crate::DownloadClient;
 
+mod adding;
+mod api;
 mod client;
+mod command;
+pub(crate) mod ports;
 mod rate_limits;
+mod snapshot;
+#[cfg(test)]
+pub(crate) mod test_support;
+mod wire;
 
-// Shorter than the 30s a caller reaching this over the module bridge waits, so
-// the answer is always OURS: a caller that gives up first reports a transport
-// failure, which says nothing about the torrent.
-const METADATA_DEADLINE: Duration = Duration::from_secs(25);
+use adding::Adding;
+pub use adding::StillAdding;
+use api::Api;
+
+pub const PROGRAM: &str = "rqbit";
+
+const START_DEADLINE: Duration = Duration::from_secs(300);
+const FIRST_PROBE_PAUSE: Duration = Duration::from_millis(100);
+const LONGEST_PROBE_PAUSE: Duration = Duration::from_secs(2);
+const STOP_GRACE: Duration = Duration::from_secs(6);
+const STOP_POLL: Duration = Duration::from_millis(100);
+const OUTPUT_TAIL_BYTES: u32 = 4096;
 
 #[derive(Debug, Clone, Default)]
 pub struct RqbitConfig {
+    pub program: String,
     pub session_dir: PathBuf,
     pub download_dir: PathBuf,
+    pub work_dir: PathBuf,
     pub socks_proxy_url: Option<String>,
-    pub listen_port: Option<u16>,
+    pub sealed: bool,
+    pub api_port: u16,
+    pub listen_port: u16,
     pub download_bps: Option<u32>,
     pub upload_bps: Option<u32>,
 }
 
 pub struct RqbitEngine {
-    session: Arc<Session>,
-    handle: tokio::runtime::Handle,
-    // The VPN socks5 the session dials through (if any), reused for our own
-    // tracker announces so recovered peers are reachable from the same network.
+    child: Child,
+    api: Api,
+    adding: Adding,
+    started: Instant,
+    sealed: bool,
     socks_proxy: Option<String>,
-    // Fresh at each start, so a tracker cannot link this session to the last.
+    version: String,
     peer_id: [u8; 20],
+    snapshot: Mutex<Option<snapshot::Snapshot>>,
+    files: Mutex<HashMap<String, Vec<String>>>,
+    limits: Mutex<(Option<u32>, Option<u32>)>,
 }
 
-fn session_options(cfg: &RqbitConfig) -> SessionOptions {
-    let opts = SessionOptions {
-        persistence: Some(SessionPersistenceConfig::Json {
-            folder: Some(cfg.session_dir.clone()),
-        }),
-        fastresume: true,
-        connect: Some(ConnectionOptions {
-            proxy_url: cfg.socks_proxy_url.clone(),
-            ..Default::default()
-        }),
-        // TCP-only: uTP is UDP and can't traverse a TCP SOCKS5 tunnel.
-        listen: Some(ListenerOptions {
-            mode: ListenerMode::TcpOnly,
-            listen_addr: (
-                std::net::Ipv6Addr::UNSPECIFIED,
-                cfg.listen_port.unwrap_or(0),
-            )
-                .into(),
-            // A NAS behind the user's control: no surprise router reconfig.
-            enable_upnp_port_forwarding: false,
-            ..Default::default()
-        }),
-        ratelimits: LimitsConfig {
-            download_bps: cfg.download_bps.and_then(std::num::NonZeroU32::new),
-            upload_bps: cfg.upload_bps.and_then(std::num::NonZeroU32::new),
-        },
-        // Ephemeral port, no persistence: a persisted port collides with the
-        // session still shutting down on restart ("address already in use").
-        dht: Some(DhtSessionConfig {
-            bootstrap_addrs: None,
-            port: None,
-            persistence: None,
-        }),
-        disable_local_service_discovery: true,
-        ..Default::default()
-    };
-    if cfg.socks_proxy_url.is_none() {
-        return opts;
-    }
-    // Only SOCKS-dialled TCP stays in the tunnel: DHT, UDP trackers, HTTP
-    // trackers and a host listener all leave it, so `announce` feeds the peers.
-    SessionOptions {
-        dht: None,
-        listen: None,
-        disable_trackers: true,
-        ipv4_only: true,
-        ..opts
-    }
+fn fresh_peer_id() -> [u8; 20] {
+    let mut id = *b"-rQ9100-000000000000";
+    let random = kroma_module_sdk::primitives::random_token();
+    id[8..].copy_from_slice(&random.as_bytes()[..12]);
+    id
+}
+
+fn wanted_limits(download_bps: Option<u32>, upload_bps: Option<u32>) -> (Option<u32>, Option<u32>) {
+    (
+        download_bps.filter(|bps| *bps > 0),
+        upload_bps.filter(|bps| *bps > 0),
+    )
 }
 
 impl RqbitEngine {
-    /// Start (or restore, via fastresume) the embedded session. Must be called
-    /// from within a tokio runtime.
+    /// Fetch the helper if it is not here yet, start it, and wait for its API. A
+    /// session that takes a while to restore only makes this wait: other work
+    /// runs in the meantime.
     pub async fn start(cfg: &RqbitConfig) -> Result<Arc<RqbitEngine>> {
-        tokio::fs::create_dir_all(&cfg.download_dir).await.ok();
-        tokio::fs::create_dir_all(&cfg.session_dir).await.ok();
-        // Before the session opens, because opening it is what waits on these.
+        std::fs::create_dir_all(&cfg.download_dir).ok();
+        std::fs::create_dir_all(&cfg.session_dir).ok();
         let dropped = crate::rqbit_session::prune_unrestorable(&cfg.session_dir);
         if dropped > 0 {
             tracing::info!(
@@ -111,40 +96,75 @@ impl RqbitEngine {
                 "dropped persisted torrents with no metadata on disk; the ledger re-adds them"
             );
         }
-        let peer_id = generate_azereus_style(*b"rQ", (9, 0, 0, 0));
-        let opts = SessionOptions {
-            peer_id: Some(peer_id),
-            ..session_options(cfg)
-        };
-        let session = Session::new_with_opts(cfg.download_dir.clone(), opts)
+        let program = cfg.program.clone();
+        run_blocking(move || process::ensure(&program))
             .await
-            .context("start embedded torrent session")?;
-        Ok(Arc::new(RqbitEngine {
-            session,
-            handle: tokio::runtime::Handle::current(),
+            .map_err(|error| anyhow!("{error}"))?
+            .map_err(|reason| anyhow!(reason))
+            .context("fetch the rqbit helper")?;
+
+        let password = kroma_module_sdk::primitives::random_token();
+        let mut helper = Command::new(cfg.program.clone())
+            .args(command::arguments(cfg))
+            .env(api::AUTH_ENV, api::user_pass(&password));
+        for (name, value) in command::environment(cfg) {
+            helper = helper.env(name, value);
+        }
+        let child = helper
+            .spawn()
+            .map_err(|reason| anyhow!(reason))
+            .context("start rqbit")?;
+        let api = Api::new(cfg.api_port, &password);
+        let version = match until_answering(&child, &api).await {
+            Ok(version) => version,
+            Err(error) => {
+                child.kill();
+                return Err(error);
+            }
+        };
+        Ok(Self::attached(child, api, version, cfg))
+    }
+
+    fn attached(child: Child, api: Api, version: String, cfg: &RqbitConfig) -> Arc<Self> {
+        Arc::new(Self {
+            child,
+            adding: Adding::new(api.clone(), cfg.work_dir.clone()),
+            api,
+            started: Instant::now(),
+            sealed: cfg.sealed,
             socks_proxy: cfg.socks_proxy_url.clone(),
-            peer_id: peer_id.0,
-        }))
+            version,
+            peer_id: fresh_peer_id(),
+            snapshot: Mutex::new(None),
+            files: Mutex::new(HashMap::new()),
+            limits: Mutex::new(wanted_limits(cfg.download_bps, cfg.upload_bps)),
+        })
     }
 
-    fn session(&self) -> &Arc<Session> {
-        &self.session
-    }
-
-    /// Whether the session dials through the VPN, with every other peer
-    /// source off.
+    /// Whether the session dials through the VPN, with every other peer source off.
     pub fn is_sealed(&self) -> bool {
-        self.socks_proxy.is_some()
+        self.sealed
+    }
+
+    /// The exit code once the helper has ended on its own.
+    pub fn exited(&self) -> Option<i32> {
+        self.child.try_wait().unwrap_or(Some(-1))
+    }
+
+    /// How long this helper has been up.
+    pub fn uptime(&self) -> Duration {
+        self.started.elapsed()
+    }
+
+    /// What the helper last said about itself, with no credential in it.
+    pub fn last_words(&self) -> String {
+        output_tail(&self.child)
     }
 
     /// Peers from our own announce through the VPN, for a `.torrent` or else a
-    /// magnet. Empty without a proxy, where the session's trackers run.
-    pub fn proxied_peers(
-        &self,
-        torrent_bytes: Option<&[u8]>,
-        magnet: &str,
-    ) -> Vec<std::net::SocketAddr> {
-        let Some(proxy) = self.socks_proxy.as_deref() else {
+    /// magnet. Empty unless sealed, where the session's trackers run.
+    pub fn proxied_peers(&self, torrent_bytes: Option<&[u8]>, magnet: &str) -> Vec<SocketAddr> {
+        let Some(proxy) = self.socks_proxy.as_deref().filter(|_| self.sealed) else {
             return Vec::new();
         };
         match torrent_bytes {
@@ -153,18 +173,26 @@ impl RqbitEngine {
         }
     }
 
-    /// Drain the session (stops all torrent activity) without waiting for it.
-    /// A replacement session must use [`Self::shutdown`] instead: both would
-    /// write the same persistence directory.
+    /// Ask the helper to end and drop what it was doing, without waiting. A
+    /// replacement must use [`Self::shutdown`] instead: both would write the same
+    /// persistence directory.
     pub fn stop(&self) {
-        let session = self.session().clone();
-        self.handle.spawn(async move { session.stop().await });
+        self.adding.cancel_all();
+        self.child.terminate();
     }
 
-    /// Drain the session and wait until it has stopped, so the next session can
-    /// open the same persistence directory without racing this one's writes.
+    /// End the helper and wait until it has, so the next one can open the same
+    /// persistence directory and port.
     pub async fn shutdown(&self) {
-        self.session().stop().await;
+        self.stop();
+        let deadline = Instant::now() + STOP_GRACE;
+        while Instant::now() < deadline {
+            if self.exited().is_some() {
+                return;
+            }
+            tokio::time::sleep(STOP_POLL).await;
+        }
+        self.child.kill();
     }
 
     pub fn client(self: &Arc<Self>) -> Box<dyn DownloadClient> {
@@ -173,84 +201,72 @@ impl RqbitEngine {
         })
     }
 
-    fn find(&self, client_ref: &str) -> Result<ManagedTorrentHandle> {
-        let id = TorrentIdOrHash::parse(client_ref)
-            .map_err(|e| anyhow!("bad torrent ref {client_ref:?}: {e:#}"))?;
-        self.session()
-            .get(id)
-            .ok_or_else(|| anyhow!("torrent {client_ref} not in session"))
+    /// Drop a magnet still being added, and the torrent if it just landed. The
+    /// row that asked for it has gone or been paused.
+    pub fn cancel_add(&self, link: &str) {
+        self.adding.cancel(link);
     }
 
-    /// Re-seed a stalled torrent with a fresh peer set (from our own proxied
-    /// tracker announce). librqbit has no public API to push peers into a live
-    /// torrent, and `initial_peers` is only honored on the FIRST add, so this
-    /// removes the torrent (KEEPING its data on disk) and re-adds it seeded with
-    /// the peers. Callers must serialize this against status polls
-    /// (the monitor runs both on its one thread) so the brief remove window is
-    /// never observed as "torrent disappeared".
-    pub fn reseed(
-        &self,
-        client_ref: &str,
-        torrent_bytes: Vec<u8>,
-        output_folder: Option<&str>,
-        peers: &[std::net::SocketAddr],
-    ) -> Result<()> {
-        let id = TorrentIdOrHash::parse(client_ref)
-            .map_err(|e| anyhow!("bad torrent ref {client_ref:?}: {e:#}"))?;
-        let output_folder = output_folder.map(str::to_string);
-        let peers = peers.to_vec();
-        self.handle.block_on(async {
-            self.session().delete(id, false).await.ok();
-            let opts = AddTorrentOptions {
-                output_folder,
-                overwrite: true,
-                initial_peers: Some(peers),
-                ..Default::default()
-            };
-            self.session()
-                .add_torrent(AddTorrent::from_bytes(torrent_bytes), Some(opts))
-                .await
-                .map(|_| ())
-        })
+    /// Hand a stalled torrent peers from our own proxied tracker announce.
+    pub fn add_peers(&self, client_ref: &str, peers: &[SocketAddr]) -> Result<usize> {
+        self.api.add_peers(client_ref, peers)
     }
+}
+
+async fn until_answering(child: &Child, api: &Api) -> Result<String> {
+    let deadline = Instant::now() + START_DEADLINE;
+    let mut pause = FIRST_PROBE_PAUSE;
+    loop {
+        if let Some(code) = child.try_wait().map_err(|reason| anyhow!(reason))? {
+            bail!(
+                "rqbit exited with code {code} before it answered: {}",
+                output_tail(child)
+            );
+        }
+        let probe = api.clone();
+        let answer = run_blocking(move || probe.version())
+            .await
+            .map_err(|error| anyhow!("{error}"))?;
+        match answer {
+            Ok(version) => return Ok(version),
+            Err(error) if format!("{error:#}").contains(BLOCKED) => {
+                return Err(error.context("the network rules refuse this module its own engine"));
+            }
+            Err(_) if Instant::now() >= deadline => {
+                bail!("rqbit did not answer within {START_DEADLINE:?}");
+            }
+            Err(_) => {}
+        }
+        tokio::time::sleep(pause).await;
+        pause = (pause * 2).min(LONGEST_PROBE_PAUSE);
+    }
+}
+
+fn output_tail(child: &Child) -> String {
+    let stderr = child.read_stderr(OUTPUT_TAIL_BYTES);
+    let stdout = child.read_stdout(OUTPUT_TAIL_BYTES);
+    let text =
+        String::from_utf8_lossy(if stderr.is_empty() { &stdout } else { &stderr }).into_owned();
+    text.lines()
+        .filter(|line| !line.contains("socks5"))
+        .map(without_colors)
+        .collect::<Vec<_>>()
+        .join(" | ")
+}
+
+fn without_colors(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut escaped = false;
+    for c in line.chars() {
+        match (escaped, c) {
+            (false, '\u{1b}') => escaped = true,
+            (false, _) => out.push(c),
+            (true, 'm') => escaped = false,
+            (true, _) => {}
+        }
+    }
+    out
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const BRIDGE: &str = "socks5://127.0.0.1:25345";
-
-    #[test]
-    fn behind_the_vpn_nothing_leaves_outside_the_socks_tunnel() {
-        let opts = session_options(&RqbitConfig {
-            socks_proxy_url: Some(BRIDGE.into()),
-            listen_port: Some(51413),
-            ..Default::default()
-        });
-
-        assert!(opts.dht.is_none());
-        assert!(opts.listen.is_none());
-        assert!(opts.disable_trackers);
-        assert!(opts.disable_local_service_discovery);
-        assert!(opts.ipv4_only);
-        assert_eq!(opts.connect.unwrap().proxy_url.as_deref(), Some(BRIDGE));
-    }
-
-    #[test]
-    fn without_a_vpn_the_engine_keeps_its_dht_trackers_and_listener() {
-        let opts = session_options(&RqbitConfig::default());
-
-        assert!(opts.dht.is_some());
-        assert!(opts.listen.is_some());
-        assert!(!opts.disable_trackers);
-        assert!(opts.connect.unwrap().proxy_url.is_none());
-    }
-
-    #[test]
-    fn without_a_vpn_local_service_discovery_stays_off() {
-        let opts = session_options(&RqbitConfig::default());
-
-        assert!(opts.disable_local_service_discovery);
-    }
-}
+mod tests;

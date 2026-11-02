@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use kroma_module_sdk::domain::Permission;
-use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
+use kroma_module_sdk::host::{blocking, json_error, run_blocking, AuthUser, HostStorage};
 
 use crate::admin::definition_store;
 use crate::{
@@ -92,7 +92,7 @@ pub async fn sync_definitions<S: HostStorage + Clone>(
     let host = state.clone();
     // Not via `blocking`: we want the real network/extract error message to reach
     // the admin, and `blocking` collapses errors to a generic 500.
-    let report = tokio::task::spawn_blocking(move || definition_store(&host).sync())
+    let report = run_blocking(move || definition_store(&host).sync())
         .await
         .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "sync task failed"))?
         .map_err(|e| json_error(StatusCode::BAD_GATEWAY, &format!("sync failed: {e:#}")))?;

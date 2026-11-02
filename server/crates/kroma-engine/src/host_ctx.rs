@@ -129,6 +129,10 @@ impl HostCtx for AppState {
         }
     }
 
+    fn network_seal(&self) -> kroma_module_host::NetworkSeal {
+        self.network.seal()
+    }
+
     fn module_enabled(&self, id: &str) -> bool {
         crate::modules::module_enabled(&self.settings, id)
     }

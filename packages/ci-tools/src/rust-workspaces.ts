@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { parse as parseToml } from 'smol-toml';
+import { z } from 'zod';
 import type { Graph } from './rust-affected';
 import { root } from './root';
 
@@ -12,10 +14,25 @@ export interface Workspace {
 
 const KMOD_TARGET_DIR = join(root, 'target/kmod');
 
-// `--all-features` is no answer: the ML backends behind the whisper and vector
-// modules' features are a build of their own, and the point of a default build
-// is that it is cheap.
-const EXTRA_FEATURES: Record<string, string> = { 'tv.kroma.torrents': 'rqbit' };
+const KmodFeatures = z.object({
+  package: z
+    .object({
+      metadata: z
+        .object({ kmod: z.object({ features: z.array(z.string()).default([]) }).optional() })
+        .optional(),
+    })
+    .optional(),
+});
+
+// What a bundle ships with, checked in a second pass so the default one stays
+// cheap. Not `--all-features`, which would ask for builds nobody publishes.
+function shippedFeatures(ws: Workspace): string[] {
+  if (ws.id === SERVER.id) return [];
+  const manifest = join(ws.dir, 'Cargo.toml');
+  if (!existsSync(manifest)) return [];
+  const read = KmodFeatures.safeParse(parseToml(readFileSync(manifest, 'utf8')));
+  return read.success ? (read.data.package?.metadata?.kmod?.features ?? []) : [];
+}
 
 export const SERVER: Workspace = { id: 'server', dir: join(root, 'server'), targetDir: undefined };
 
@@ -35,11 +52,12 @@ export function workspaces(): Workspace[] {
   return out;
 }
 
-export const featured = (): Workspace[] => workspaces().filter((ws) => ws.id in EXTRA_FEATURES);
+export const featured = (): Workspace[] =>
+  workspaces().filter((ws) => shippedFeatures(ws).length > 0);
 
 export const on = (ws: Workspace): string[] => {
-  const features = EXTRA_FEATURES[ws.id];
-  return features ? ['--features', features] : [];
+  const features = shippedFeatures(ws);
+  return features.length ? ['--features', features.join(',')] : [];
 };
 
 const PATH_DEP = /path\s*=\s*"([^"]+)"/g;

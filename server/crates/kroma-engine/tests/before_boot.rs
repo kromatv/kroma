@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use kroma_db::testing::temp_pool;
 use kroma_engine::point::Point;
-use kroma_engine::services::network::{FlowFilter, FlowRoute, Network, CORE, VPN_POINT};
+use kroma_engine::services::network::{FlowFilter, FlowRoute, Network, CORE, NETWORK_POINT};
 use kroma_engine::services::settings::Settings;
 use kroma_http::egress::{self, BLOCKED, NO_GATE};
 use kroma_http::Fetch;
@@ -43,7 +43,7 @@ fn a_fetch_before_the_network_policy_is_refused_unsent_and_journaled_at_its_own_
     let network = Arc::new(Network::new(
         (*pool).clone(),
         Settings::load(&pool),
-        Point::absent(VPN_POINT),
+        Point::absent(NETWORK_POINT),
     ));
     let installed_at = now_ms();
     network.install().expect("install the policy");

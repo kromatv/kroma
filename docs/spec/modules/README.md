@@ -1,6 +1,6 @@
 # Modules
 
-Status: **SHIPPED** overall. The out-of-process model, the `.kmod` bundle, the Store,
+Status: **SHIPPED** overall. The module model, the `.kmod` bundle, the Store,
 install-by-id and by-upload, checksum verification, dependency resolution and the
 compatibility gate are all released. The trust posture, the abandonment story and
 containment are decided but not yet built, and say so. Every section carries a status; the
@@ -9,9 +9,8 @@ file-level label is the floor.
 **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and
 catalogue, meaning downloads, indexers, acquisition, VPN, transcription, embeddings, network
 discovery and remote access, arrives as an installable `.kmod` whose backend runs *isolated
-from the server*, and every module is therefore uninstallable from Admin. Today each backend
-is a separate process. [RFC 480](../../rfcs/480-network-firewall.md) moves it inside the
-server, contained as [MOD-83](#containment) states.
+from the server*, and every module is therefore uninstallable from Admin. Each backend is a
+WebAssembly component the server runs, contained as [MOD-83](#containment) states.
 
 That is the load-bearing decision of this domain, chosen for three reasons:
 
@@ -24,7 +23,7 @@ That is the load-bearing decision of this domain, chosen for three reasons:
 - **Runtime installability.** A capability is added or removed on a running server
   without rebuilding or replacing the server binary. The base build never grows.
 
-Mechanics, meaning how a sidecar is spawned, supervised and reverse-proxied, live in
+Mechanics, meaning how a module is run, supervised and reverse-proxied, live in
 [`../modules-as-kmod.md`](../../modules-as-kmod.md); registry wiring lives in
 [`../module-registries.md`](../../module-registries.md). This file states the product rules.
 
@@ -36,7 +35,7 @@ Status: **SHIPPED**
 (`tv.kroma.torrents`). It brings its own backend, its own data, its own settings and,
 optionally, its own admin UI.
 
-**MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers
+**MOD-3** (SHIPPED) - Within its own component a module has wide latitude: it registers
 services, schedules jobs, and serves HTTP the server reverse-proxies under its own id.
 
 **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module
@@ -76,8 +75,8 @@ dependency is declared, resolved and enforced rather than discovered at runtime.
 
 Status: **SHIPPED**
 
-**MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native
-backend binary, an icon and the module's own frontend, packed together. At product level the
+**MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the backend as
+a WebAssembly component, an icon and the module's own frontend, packed together. At product level the
 manifest is the contract.
 
 The manifest declares:
@@ -91,9 +90,9 @@ The manifest declares:
   the module needs, as a bare version or a range. This is the whole compatibility contract.
 - **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and
   optional ones offered but not required.
-- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only
-  module, a manifest and frontend with no native binary, declares no target and runs anywhere;
-  everything else ships per platform and the server picks the artifact that fits the host.
+- **MOD-15** (SHIPPED) - **No target.** The backend is a WebAssembly component, so one bundle
+  per version runs on every platform the server runs on, and so does a library-only module, a
+  manifest and frontend with no backend.
 
 **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256
 and refuses a bundle whose checksum does not match or that publishes none.
@@ -105,8 +104,8 @@ ones the registry named, not that they are trustworthy.
 
 Status: **SHIPPED**
 
-Two paths, one outcome: the module is unpacked under the server's data directory and its
-sidecar is spawned:
+Two paths, one outcome: the module is unpacked under the server's data directory and
+started:
 
 - **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies
   automatically, offers optional ones and capability providers, so a module that needs a
@@ -129,7 +128,7 @@ registries, and shows the union of every registry's catalogue.
 may add their own.
 
 **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the
-catalogue entry: which artifact matches this host's platform, the installed version and whether
+catalogue entry: whether it publishes a build this server runs, the installed version and whether
 an update exists, and whether the module is compatible with this server and, if not, the
 reason. A `minServer` the server does not satisfy is named, never hidden.
 
@@ -142,17 +141,17 @@ duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 
 Status: **AGREED**
 
-**The registry is the trust boundary, not the module.** A module is a native binary the
-server executes, and nothing KROMA can check about the bytes changes that. So the one place
+**The registry is the trust boundary, not the module.** A module is code the server runs with
+the reach its manifest declares, and nothing KROMA can check about the bytes makes that safe. So the one place
 consent is asked is where a source of modules is added, and it is asked in those terms.
 
 - **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is
   pinned, first-party and curated, and a module from it installs without a trust prompt.
 - **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one
   is admin-only and is *not* a trust grant to its modules; it only makes them visible.
-- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary
-  the server will execute, so adding a registry they do not control is equivalent to trusting
-  its operator with code execution on the host.
+- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is code the server
+  will run with what its manifest declares, so adding a registry they do not control is
+  trusting its operator with that reach on the host.
 - **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so
   where it matters: on the add-registry flow and on installing a non-first-party module.
 
@@ -160,7 +159,7 @@ consent is asked is where a source of modules is added, and it is asked in those
 on the module's own page, so an operator can always see whose code they are about to run.
 
 **MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per
-registry, on an explicit acknowledgement that its modules run as native code on this host. The
+registry, on an explicit acknowledgement that its modules run on this host with what they declare. The
 acknowledgement is recorded; it is not asked again per module.
 
 **KROMA does not sign modules, and the official catalogue has no curated-versus-community
@@ -182,14 +181,14 @@ Status: **SHIPPED**
 
 Four actions, and what each does to the module's data:
 
-- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes,
-  jobs and UI become live. Enabled is the state that survives a reboot: enabled modules are
-  re-spawned at boot.
-- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and
-  its **data is kept untouched**, so enabling again resumes where it left off. Disable is the
+- **MOD-28** (SHIPPED) - **Enable.** The server starts the module, and its routes, jobs and UI
+  become live. Enabled is the state that survives a reboot: enabled modules are started again
+  at boot.
+- **MOD-29** (SHIPPED) - **Disable.** The module is stopped, and its **data is kept
+  untouched**, so enabling again resumes where it left off. Disable is the
   reversible off switch.
-- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is
-  re-spawned. The module's migrations carry its data forward, and settings and stored state
+- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the module is
+  started again. The module's migrations carry its data forward, and settings and stored state
   persist across the update.
 - **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the
   server is refused with a reason rather than installed into a crash.
@@ -213,9 +212,10 @@ Status: **SHIPPED**
 
 This is the guarantee the whole architecture exists to make:
 
-- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a
-  supervised child process. If it dies, the server stays up, every other module stays up, and
-  requests to the failed module get a clear error instead of a hung server.
+- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** A module runs in
+  WebAssembly instances of its own. If a call traps or runs past its limits, that instance is
+  dropped, the server stays up, every other module stays up, and the request gets a clear
+  error instead of a hung server.
 - **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is
   enforced at install *and* again at spawn, so a stale bundle that no longer fits the server
   fails to start with a named reason rather than emitting confusing runtime errors downstream.
@@ -237,8 +237,8 @@ or process of its own, on any platform the server runs on.
 Work that needs the operating system, such as ffmpeg, inference, a VPN tunnel or LAN
 discovery, becomes a capability the server provides, never code inside the module.
 
-**MOD-84** (AGREED) - A module that still ships as a native program runs under the strongest
-containment the platform offers, and Admin says which.
+**MOD-84** (AGREED) - A module that ships as a native program is refused at install and never
+started, and its log says why.
 
 ## The compatibility promise
 
@@ -317,10 +317,10 @@ a curated library has no need to carry any of it.
   is out of scope for the library, which only *observes* what appears, [`library/`](../library/).
   This stack carries the heaviest and most legally sensitive native code in the product; it
   is exactly what should be optional, isolated and removable.
-- **Transcription** (`tv.kroma.whisper`). A speech-to-text ML runtime, a large native
-  dependency most servers will never enable. Its process can be spawned only when used.
-- **Semantic search** (`tv.kroma.vector`). Vector embeddings and search, again a native
-  ML stack, and a feature a plain catalogue does not need.
+- **Transcription** (`tv.kroma.whisper`). A speech-to-text ML runtime, a large dependency
+  most servers will never enable.
+- **Semantic search** (`tv.kroma.vector`). Vector embeddings and search, again an ML stack,
+  and a feature a plain catalogue does not need.
 - **Network discovery** (`tv.kroma.mdns`). Advertising the server on the LAN for pairing,
   [`discovery/`](../discovery/), a capability an operator may deliberately not want
   running, so it is opt-in.
@@ -330,7 +330,7 @@ a curated library has no need to carry any of it.
   UI written in BrightScript, sideloaded through the box's developer installer. A shell that
   only some homes own, with a sideload flow the console has no other reason to carry.
 - **Scene parsing** (`tv.kroma.scene`). A shared library the acquisition and downloads
-  sidecars co-link, rather than a spawned sidecar, because it sits on a hot path that must
+  modules link, rather than a module of its own, because it sits on a hot path that must
   not become a network hop.
 
 ## Not in scope
@@ -345,5 +345,5 @@ Status: **AGREED**
   admin surface, is [`admin/`](../admin/).
 - **Registry wiring and precedence**, covering official-vs-added, shadowing, https and
   autodiscovery, is [`../module-registries.md`](../../module-registries.md).
-- **How a sidecar is built, packed, spawned and released** is
+- **How a module is built, packed, run and released** is
   [`../modules-as-kmod.md`](../../modules-as-kmod.md).

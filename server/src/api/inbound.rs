@@ -1,6 +1,6 @@
 //! Files every request a client makes of this server in the network service's
-//! incoming tally. A loopback caller is this machine talking to itself (a module
-//! sidecar, a health probe) and is left out.
+//! incoming tally. A loopback caller is this machine talking to itself (a health
+//! probe) and is left out.
 
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;

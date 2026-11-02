@@ -1,19 +1,23 @@
-//! The network layer: a per-indexer [`Session`] that fetches over `curl`
-//! (via `kroma-http`), keeping a cookie jar, driving the login flow, and
-//! optionally routing through a SOCKS5 proxy or a FlareSolverr instance.
+//! The network layer: a per-indexer [`Session`] that fetches through `kroma-http`,
+//! keeping a cookie jar, driving the login flow, and optionally routing through
+//! the VPN or a FlareSolverr instance.
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::{bail, Context as _, Result};
+use kroma_module_sdk::db::Pool;
 
 use crate::context::Context;
 use crate::definition::Definition;
 use crate::{engine, template, IndexerConfig, Release};
 
+use pace::Pace;
+
 mod download;
 mod login;
+mod pace;
 mod response;
 mod search;
 
@@ -33,12 +37,12 @@ pub struct Session {
     cookie_jar: PathBuf,
     socks5: Option<String>,
     flaresolverr: Option<String>,
+    pace: Pace,
     state: Mutex<SessionState>,
 }
 
 #[derive(Default)]
 struct SessionState {
-    next_allowed: Option<Instant>,
     cookie_header: Option<String>,
     logged_in: bool,
 }
@@ -58,7 +62,10 @@ pub enum DownloadTarget {
 }
 
 impl Session {
+    /// `store` is this module's own database, where the tracker's pacing lives:
+    /// every instance of this module asks the same tracker.
     pub fn new(
+        store: Pool,
         data_dir: &Path,
         indexer_id: &str,
         def: Definition,
@@ -73,6 +80,7 @@ impl Session {
             cookie_jar,
             socks5,
             flaresolverr,
+            pace: Pace::new(store, indexer_id),
             state: Mutex::new(SessionState::default()),
         }
     }
@@ -110,23 +118,16 @@ impl Session {
         f
     }
 
-    fn throttle(&self) {
+    fn throttle(&self) -> Result<()> {
         let delay = match self.def.request_delay {
             Some(d) if d > 0.0 => Duration::from_secs_f64(d),
-            _ => return,
+            _ => return Ok(()),
         };
-        // Reserve this caller's slot under the lock, then sleep without holding
-        // it, so concurrent callers stay spaced without blocking each other.
-        let now = Instant::now();
-        let start_at = {
-            let mut st = self.state.lock().unwrap();
-            let base = st.next_allowed.map(|na| na.max(now)).unwrap_or(now);
-            st.next_allowed = Some(base + delay);
-            base
-        };
-        if start_at > now {
-            std::thread::sleep(start_at - now);
+        let wait = self.pace.reserve(delay).context("reserve a request slot")?;
+        if !wait.is_zero() {
+            std::thread::sleep(wait);
         }
+        Ok(())
     }
 
     fn get_text(&self, url: &str, query: &[(String, String)]) -> Result<String> {
@@ -134,7 +135,7 @@ impl Session {
             // FlareSolverr only GETs a single URL, so fold the query params into it.
             return self.flaresolverr_fetch("request.get", &append_query(url, query), None);
         }
-        self.throttle();
+        self.throttle()?;
         let mut f = self.base_fetch();
         for (k, v) in query {
             f = f.query(k, v.clone());
@@ -149,7 +150,7 @@ impl Session {
             // too, or they get the challenge page back.
             return self.flaresolverr_fetch("request.post", url, Some(form_encode(fields)));
         }
-        self.throttle();
+        self.throttle()?;
         let refs: Vec<(&str, &str)> = fields
             .iter()
             .map(|(k, v)| (k.as_str(), v.as_str()))
@@ -164,7 +165,7 @@ impl Session {
     /// Fetch a `.torrent` file's bytes through the session (cookies applied), so
     /// private-tracker links resolve. Fails on a non-2xx or a clearly-HTML body.
     pub fn fetch_torrent(&self, url: &str) -> Result<Vec<u8>> {
-        self.throttle();
+        self.throttle()?;
         let resp = self
             .base_fetch()
             .purpose("torrent-file")
@@ -184,7 +185,7 @@ impl Session {
         post_data: Option<String>,
     ) -> Result<String> {
         let base = self.flaresolverr.as_ref().unwrap().trim_end_matches('/');
-        self.throttle();
+        self.throttle()?;
         let body = flaresolverr_body(cmd, url, post_data);
         let resp: serde_json::Value = self
             .base_fetch()
@@ -201,9 +202,9 @@ impl Session {
     // A tracker that answered "too many requests" means it, and the definition's
     // own request delay is about spacing, not about serving a penalty.
     fn hold_off(&self, wait: Duration) {
-        let until = Instant::now() + wait;
-        let mut st = self.state.lock().unwrap();
-        st.next_allowed = Some(st.next_allowed.map_or(until, |n| n.max(until)));
+        if let Err(error) = self.pace.hold_off(wait) {
+            tracing::warn!(indexer = %self.def.name, error = %format!("{error:#}"), "the hold-off was not recorded");
+        }
     }
 
     /// Forget that this session logged in, so the next search does it again.
@@ -260,42 +261,4 @@ fn form_encode(fields: &[(String, String)]) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn jar_path_is_sanitized_and_stable() {
-        let dir = Path::new("/data");
-        let a = cookie_jar_path(dir, "torrent-leech");
-        assert_eq!(a, cookie_jar_path(dir, "torrent-leech"));
-        assert_eq!(a, Path::new("/data/indexers/torrent_leech.cookies"));
-    }
-
-    #[test]
-    fn flaresolverr_request_shape() {
-        let body = flaresolverr_body("request.get", "https://x.to/s?q=a", None);
-        assert_eq!(body["cmd"], "request.get");
-        assert_eq!(body["url"], "https://x.to/s?q=a");
-        assert_eq!(body["maxTimeout"], 60000);
-        assert!(body.get("postData").is_none());
-        let post = flaresolverr_body("request.post", "https://x.to/login", Some("u=a&p=b".into()));
-        assert_eq!(post["postData"], "u=a&p=b");
-    }
-
-    #[test]
-    fn append_query_and_form_encode() {
-        let q = vec![
-            ("q".to_string(), "the matrix".to_string()),
-            ("cat".to_string(), "1,2".to_string()),
-        ];
-        assert_eq!(
-            append_query("https://x/a", &q),
-            "https://x/a?q=the%20matrix&cat=1%2C2"
-        );
-        assert_eq!(
-            append_query("https://x/a?p=1", &q),
-            "https://x/a?p=1&q=the%20matrix&cat=1%2C2"
-        );
-        assert_eq!(append_query("https://x/a", &[]), "https://x/a");
-    }
-}
+mod tests;

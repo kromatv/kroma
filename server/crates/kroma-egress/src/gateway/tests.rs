@@ -1,8 +1,6 @@
-use std::path::PathBuf;
 use std::sync::Mutex;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::UnixStream;
 
 use super::*;
 use crate::Upstream;
@@ -41,9 +39,9 @@ impl Policy for TestPolicy {
         (credential == CREDENTIAL).then(|| CALLER.to_string())
     }
 
-    fn decide(&self, request: &Request) -> Verdict {
+    fn decide(&self, request: &Request) -> Ruling {
         self.asked.lock().unwrap().push(request.clone());
-        self.verdict.clone()
+        self.verdict.clone().into()
     }
 
     fn record(&self, flow: Flow) {
@@ -65,12 +63,19 @@ async fn echo_server() -> SocketAddr {
     addr
 }
 
-fn gateway_socket(policy: Arc<TestPolicy>) -> (kroma_testing::TempDir, PathBuf) {
-    let dir = kroma_testing::temp_dir("egress");
-    let path = dir.path().join("gateway.sock");
-    let listener = UnixListener::bind(&path).unwrap();
-    tokio::spawn(serve_unix(listener, policy));
-    (dir, path)
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test's own client of the gateway it serves on loopback"
+)]
+async fn dial(gateway: SocketAddr) -> TcpStream {
+    TcpStream::connect(gateway).await.unwrap()
+}
+
+async fn serving(policy: Arc<TestPolicy>) -> SocketAddr {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let gateway = listener.local_addr().unwrap();
+    tokio::spawn(serve_tcp(listener, policy));
+    gateway
 }
 
 fn connect_request(host: &str, port: u16) -> Vec<u8> {
@@ -94,8 +99,13 @@ fn connect_request(host: &str, port: u16) -> Vec<u8> {
     request
 }
 
-async fn socks_connect(path: &PathBuf, password: &str, host: &str, port: u16) -> (UnixStream, u8) {
-    let mut stream = UnixStream::connect(path).await.unwrap();
+async fn socks_connect(
+    gateway: SocketAddr,
+    password: &str,
+    host: &str,
+    port: u16,
+) -> (TcpStream, u8) {
+    let mut stream = dial(gateway).await;
     stream.write_all(&[0x05, 0x01, 0x02]).await.unwrap();
     let mut chosen = [0u8; 2];
     stream.read_exact(&mut chosen).await.unwrap();
@@ -125,9 +135,9 @@ async fn an_allowed_connection_is_relayed_and_reported_with_its_bytes() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (mut stream, answer) = socks_connect(&path, CREDENTIAL, "127.0.0.1", echo.port()).await;
+    let (mut stream, answer) = socks_connect(gateway, CREDENTIAL, "127.0.0.1", echo.port()).await;
     stream.write_all(b"ping").await.unwrap();
     let mut back = [0u8; 4];
     stream.read_exact(&mut back).await.unwrap();
@@ -148,8 +158,8 @@ async fn a_caller_offering_no_credentials_is_refused_before_naming_a_destination
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
-    let mut stream = UnixStream::connect(&path).await.unwrap();
+    let gateway = serving(policy.clone()).await;
+    let mut stream = dial(gateway).await;
 
     stream.write_all(&[0x05, 0x01, 0x00]).await.unwrap();
     let mut chosen = [0u8; 2];
@@ -164,9 +174,9 @@ async fn a_credential_the_policy_does_not_know_is_refused() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (_stream, answer) = socks_connect(&path, "guessed", "127.0.0.1", 9).await;
+    let (_stream, answer) = socks_connect(gateway, "guessed", "127.0.0.1", 9).await;
 
     assert_eq!(answer, 0xff);
     assert!(policy.asked.lock().unwrap().is_empty());
@@ -175,9 +185,9 @@ async fn a_credential_the_policy_does_not_know_is_refused() {
 #[tokio::test]
 async fn a_blocked_connection_is_refused_and_still_reported() {
     let policy = TestPolicy::answering(Verdict::Block("not on the list".into()));
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (_stream, answer) = socks_connect(&path, CREDENTIAL, "tracker.example.org", 443).await;
+    let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "tracker.example.org", 443).await;
 
     assert_eq!(answer, 0x02);
     let flow = policy.flow().await;
@@ -192,9 +202,9 @@ async fn a_name_that_resolves_to_this_machine_is_refused_unless_private_is_allow
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: false,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (_stream, answer) = socks_connect(&path, CREDENTIAL, "localhost", echo.port()).await;
+    let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "localhost", echo.port()).await;
 
     assert_eq!(answer, 0x02);
     let flow = policy.flow().await;
@@ -207,10 +217,10 @@ async fn link_local_stays_unreachable_even_when_private_is_allowed() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (_plain, plain) = socks_connect(&path, CREDENTIAL, "169.254.169.254", 80).await;
-    let (_mapped, mapped) = socks_connect(&path, CREDENTIAL, "::ffff:169.254.169.254", 80).await;
+    let (_plain, plain) = socks_connect(gateway, CREDENTIAL, "169.254.169.254", 80).await;
+    let (_mapped, mapped) = socks_connect(gateway, CREDENTIAL, "::ffff:169.254.169.254", 80).await;
 
     assert_eq!(plain, 0x02);
     assert_eq!(mapped, 0x02);
@@ -224,9 +234,9 @@ async fn a_destination_refusing_every_address_is_answered_connection_refused() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (_stream, answer) = socks_connect(&path, CREDENTIAL, "127.0.0.1", port).await;
+    let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "127.0.0.1", port).await;
 
     assert_eq!(answer, 0x05);
     let flow = policy.flow().await;
@@ -242,9 +252,9 @@ async fn a_name_that_does_not_resolve_is_answered_host_unreachable() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (_stream, answer) = socks_connect(&path, CREDENTIAL, "nowhere.invalid", 443).await;
+    let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "nowhere.invalid", 443).await;
 
     assert_eq!(answer, 0x04);
     assert!(policy
@@ -260,8 +270,8 @@ async fn anything_but_connect_is_refused() {
     let policy = TestPolicy::answering(Verdict::Direct {
         private_allowed: true,
     });
-    let (_dir, path) = gateway_socket(policy.clone());
-    let mut stream = UnixStream::connect(&path).await.unwrap();
+    let gateway = serving(policy.clone()).await;
+    let mut stream = dial(gateway).await;
     stream.write_all(&[0x05, 0x01, 0x02]).await.unwrap();
     let mut chosen = [0u8; 2];
     stream.read_exact(&mut chosen).await.unwrap();
@@ -293,9 +303,9 @@ async fn an_upstream_route_hands_the_name_itself_to_the_upstream_proxy() {
         address: upstream_addr.to_string(),
         credentials: Some(("bridge".into(), "bridge-secret".into())),
     }));
-    let (_dir, path) = gateway_socket(policy.clone());
+    let gateway = serving(policy.clone()).await;
 
-    let (mut stream, answer) = socks_connect(&path, CREDENTIAL, "localhost", echo.port()).await;
+    let (mut stream, answer) = socks_connect(gateway, CREDENTIAL, "localhost", echo.port()).await;
     stream.write_all(b"through").await.unwrap();
     let mut back = [0u8; 7];
     stream.read_exact(&mut back).await.unwrap();
@@ -319,11 +329,12 @@ impl Policy for UpstreamPolicy {
         (credential == "bridge-secret").then(|| "kroma".to_string())
     }
 
-    fn decide(&self, request: &Request) -> Verdict {
+    fn decide(&self, request: &Request) -> Ruling {
         self.asked.lock().unwrap().push(request.clone());
         Verdict::Direct {
             private_allowed: true,
         }
+        .into()
     }
 
     fn record(&self, _flow: Flow) {}

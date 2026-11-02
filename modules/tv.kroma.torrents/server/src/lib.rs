@@ -1,27 +1,25 @@
 //! Torrent download engines behind one [`DownloadClient`] trait, so the
-//! server's DownloadManager is engine-agnostic: the embedded librqbit session
-//! (feature `rqbit`), a Transmission daemon (RPC over curl) and a qBittorrent
-//! WebUI (cookie auth over curl) all look the same.
+//! server's DownloadManager is engine-agnostic: the rqbit helper this module
+//! starts, a Transmission daemon and a qBittorrent WebUI all look the same.
 
 #![allow(clippy::result_large_err)]
 
-#[cfg(feature = "rqbit")]
+#[cfg(target_family = "wasm")]
+extern crate kroma_sqlite_guest as rusqlite;
+
 mod announce;
 pub mod bandwidth;
+pub(crate) mod bencode;
 pub mod db;
 pub mod downloads;
 pub mod dtos;
+pub(crate) mod magnet;
 pub mod module;
 pub mod organize;
 pub mod port;
 pub mod proxycheck;
 pub mod routes;
-#[cfg(feature = "rqbit")]
 mod rqbit;
-#[cfg(not(feature = "rqbit"))]
-#[path = "rqbit_stub.rs"]
-mod rqbit;
-#[cfg(feature = "rqbit")]
 mod rqbit_session;
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -30,20 +28,15 @@ pub(crate) mod zero_as_none;
 
 pub use dtos::*;
 pub use module::MODULE;
-pub use rqbit::{RqbitConfig, RqbitEngine};
-#[cfg(feature = "rqbit")]
-pub use announce::tracker_peers as announce_peers;
+pub use rqbit::{RqbitConfig, RqbitEngine, StillAdding};
 pub use db::{requests_with_active_downloads, ActiveDownload};
 pub use downloads::{active_proxy_url, DownloadDb, DownloadManager, GrabSpec, LABEL};
-
-pub const RQBIT_COMPILED: bool = cfg!(feature = "rqbit");
 
 pub const MODULE_ID: &str = "tv.kroma.torrents";
 
 /// The Downloads module's backend behavior: it serves the queue / download-client
-/// / organize admin routes (behind its enabled-gate) and drives the librqbit
-/// engine lifecycle, so disabling it 404s those routes and stops the running
-/// engine.
+/// / organize admin routes (behind its enabled-gate) and drives the rqbit helper's
+/// lifecycle, so disabling it 404s those routes and stops the running engine.
 pub struct DownloadsModule;
 
 #[kroma_module_sdk::host::async_trait]
@@ -68,10 +61,6 @@ impl<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>
         };
         downloads.seed_embedded_client();
         downloads.ensure_monitor(std::sync::Arc::new(host.clone()));
-        // Detached, because the host does not serve a route until every module
-        // has finished enabling and starting the engine is NETWORK work: a
-        // restored magnet with no peers sits in the DHT for minutes, and
-        // awaiting it here held the whole module's API at 502 for that long.
         tokio::spawn(async move {
             downloads.ensure_rqbit(&host).await;
             downloads.resume_after_enable();

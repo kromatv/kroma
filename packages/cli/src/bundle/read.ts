@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { Manifest, MODULE_SCHEMA_VERSION, speaksCurrentSchema } from '@kromatv/registry';
 import { byCodeUnit } from '../sort';
 import type { Artifact, Entry } from './catalog';
+import { bundleName } from './pack';
 import { tarRead, toTar } from './tar';
 
 /** One packed bundle on disk, before it is placed in a catalog. */
 export interface Bundle {
   manifest: Manifest;
-  target: string | null;
   file: string;
   path: string;
   size: number;
@@ -32,7 +32,8 @@ function iconDataUri(tar: Uint8Array): string | undefined {
   return undefined;
 }
 
-/** Opens and describes one `.kmod`; `null` (with a warning) for a file that is not one. */
+/** Opens and describes one `.kmod`; `null` (with a warning) for a file that is
+ *  not one, and for a bundle not named `<id>.kmod` after the module it holds. */
 export function readBundle(path: string): Bundle | null {
   const file = path.split('/').pop() ?? path;
   const bytes = readFileSync(path);
@@ -54,12 +55,14 @@ export function readBundle(path: string): Bundle | null {
     );
     return null;
   }
-  const stem = file.slice(0, -'.kmod'.length);
-  const target =
-    stem === manifest.id ? null : stem.slice(manifest.id.length).replace(/^-/, '') || null;
+  if (file !== bundleName(manifest.id)) {
+    console.warn(
+      `  ! ${file}: holds ${manifest.id}, which packs as ${bundleName(manifest.id)}; skipped`,
+    );
+    return null;
+  }
   return {
     manifest,
-    target,
     file,
     path,
     size: bytes.length,
@@ -81,27 +84,23 @@ export function readBundles(dir: string): Bundle[] {
     .flatMap((f) => readBundle(join(dir, f)) ?? []);
 }
 
-/** Groups bundles into one catalog entry per module id, each artifact's URL
- *  resolved against `baseFor(bundle)`. */
+/** One catalog entry per module, sorted by id, its one artifact's URL resolved
+ *  against `baseFor(bundle)`. Two bundles of one module are refused. */
 export function toEntries(bundles: readonly Bundle[], baseFor: (b: Bundle) => string): Entry[] {
   const entries = new Map<string, Entry>();
   for (const b of bundles) {
+    const id = b.manifest.id;
+    const twin = entries.get(id);
+    if (twin) throw new Error(`${twin.file} and ${b.file} both hold ${id}`);
     const base = baseFor(b).replace(/\/$/, '');
     const artifact: Artifact = {
-      target: b.target,
       file: b.file,
       url: base ? `${base}/${b.file}` : b.file,
       size: b.size,
       sha256: b.sha256,
       contentHash: b.contentHash,
     };
-    const existing = entries.get(b.manifest.id);
-    if (existing) {
-      existing.artifacts.push(artifact);
-      existing.icon ??= b.icon;
-      continue;
-    }
-    entries.set(b.manifest.id, {
+    entries.set(id, {
       ...b.manifest,
       icon: b.icon,
       artifacts: [artifact],
@@ -111,16 +110,5 @@ export function toEntries(bundles: readonly Bundle[], baseFor: (b: Bundle) => st
       sha256: artifact.sha256,
     });
   }
-  const out = [...entries.values()].sort((a, b) => byCodeUnit(a.id, b.id));
-  for (const m of out) {
-    m.artifacts.sort((a, b) => byCodeUnit(a.target ?? '', b.target ?? ''));
-    const first = m.artifacts[0];
-    if (first) {
-      m.file = first.file;
-      m.url = first.url;
-      m.size = first.size;
-      m.sha256 = first.sha256;
-    }
-  }
-  return out;
+  return [...entries.values()].sort((a, b) => byCodeUnit(a.id, b.id));
 }

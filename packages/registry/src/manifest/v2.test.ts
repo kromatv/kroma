@@ -46,7 +46,7 @@ describe('Manifest', () => {
 describe('storage', () => {
   it('is absent for a module that declares none, which is most of them', () => {
     // Absent is not the same as empty: it means no database at all, and a
-    // sidecar built for it does not link SQLite.
+    // module built for it does not link SQLite.
     expect(Manifest.parse(base).storage).toBeUndefined();
   });
 

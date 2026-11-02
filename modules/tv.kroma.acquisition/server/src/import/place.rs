@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::{files, HostCtx};
 
 pub(super) fn ext_of(path: &Path) -> &str {
     path.extension()
@@ -75,30 +75,8 @@ fn write_to(src: &Path, dest: &Path) -> Result<()> {
     if std::fs::hard_link(src, dest).is_ok() {
         return Ok(());
     }
-    // Reflink (FICLONE): a copy-on-write clone across subvolumes of one Btrfs/XFS
-    // filesystem: the Synology case, where hard link fails and DSM's old kernel
-    // won't reflink through std::fs::copy.
-    #[cfg(target_os = "linux")]
-    if try_reflink(src, dest).is_ok() {
-        return Ok(());
-    }
-    std::fs::copy(src, dest)?;
+    files::copy(src, dest).map_err(anyhow::Error::msg)?;
     Ok(())
-}
-
-#[cfg(target_os = "linux")]
-fn try_reflink(src: &Path, dest: &Path) -> std::io::Result<()> {
-    let src_f = std::fs::File::open(src)?;
-    let dest_f = std::fs::File::create(dest)?;
-    match rustix::fs::ioctl_ficlone(&dest_f, &src_f) {
-        Ok(()) => Ok(()),
-        Err(e) => {
-            drop(dest_f);
-            // Clean up so the caller's copy fallback starts from a fresh destination.
-            let _ = std::fs::remove_file(dest);
-            Err(e.into())
-        }
-    }
 }
 
 #[cfg(test)]

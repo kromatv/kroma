@@ -48,7 +48,7 @@ async fn search_now_h<S: HostStorage + Clone + Send + Sync + 'static>(
     Json(req): Json<SearchNowReq>,
 ) -> Json<Result<crate::on_demand::Started, String>> {
     port_reply(move || {
-        let kind = kroma_module_sdk::engine::model::RequestKind::parse(&req.kind)
+        let kind = kroma_module_sdk::domain::RequestKind::parse(&req.kind)
             .ok_or_else(|| anyhow::anyhow!("unknown kind {}", req.kind))?;
         crate::on_demand::start_title_search(&host, kind, req.tmdb_id, &req.units)
     })
@@ -77,7 +77,7 @@ async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
             &req.indexer_id,
         )?;
         let id = row.id.clone();
-        std::thread::spawn(move || crate::peers::downloads::activate(&host, &row.id));
+        crate::peers::downloads::activate_later(host, row.id);
         Ok(id)
     })
     .await
@@ -94,7 +94,9 @@ mod tests {
     type DbHost = kroma_module_sdk::host::testing::StubHost;
 
     fn db_host() -> DbHost {
-        DbHost::with_core(kroma_module_sdk::db::testing::temp_pool("acqserve"))
+        let host = DbHost::with_core(kroma_module_sdk::db::testing::temp_pool("acqserve"));
+        crate::rules::schema::install(host.store());
+        host
     }
 
     async fn post(path: &str, body: serde_json::Value) -> (StatusCode, serde_json::Value) {

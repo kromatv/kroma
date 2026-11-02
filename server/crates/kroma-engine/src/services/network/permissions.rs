@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use kroma_http::address::{web_target, WebTarget};
-use kroma_module_manifest::{Attempt, Permissions, Proto};
+use kroma_module_manifest::{Attempt, Permissions, Proto, Reach};
 use serde_json::Value;
 
 use super::Network;
@@ -15,13 +15,18 @@ pub type DeclaredPermissions = Arc<dyn Fn(&str) -> Option<Permissions> + Send + 
 pub const PERMISSION_NET_CONNECT: &str = "permission:net.connect";
 
 impl Network {
-    pub(super) fn missing_permission(
+    /// How far `caller` may reach for `purpose` at `target`, or the refusal that
+    /// names what it did not declare. A module with no block reaches as it did
+    /// before the block existed.
+    pub(super) fn reach(
         &self,
         caller: &str,
         purpose: &str,
         target: &WebTarget,
-    ) -> Option<String> {
-        let declared = (self.declared)(caller)?;
+    ) -> Result<Reach, String> {
+        let Some(declared) = (self.declared)(caller) else {
+            return Ok(Reach::Named);
+        };
         let attempt = Attempt {
             purpose,
             host: &target.host,
@@ -30,13 +35,12 @@ impl Network {
             proto: Proto::Tcp,
         };
         let named = |key: &str| hosts_named(&self.settings.get(key));
-        if declared.allows_connect(&attempt, &named) {
-            return None;
-        }
-        Some(format!(
-            "net.connect: {}:{} for purpose \"{purpose}\" is not declared",
-            target.host, target.port
-        ))
+        declared.connect_reach(&attempt, &named).ok_or_else(|| {
+            format!(
+                "net.connect: {}:{} for purpose \"{purpose}\" is not declared",
+                target.host, target.port
+            )
+        })
     }
 }
 

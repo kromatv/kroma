@@ -88,6 +88,39 @@ impl Point {
     }
 }
 
+impl Point {
+    /// Ask everything answering this point, each by its module id. `None` for one
+    /// that could not be reached or answered the wrong shape.
+    pub fn answers<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+        &self,
+        method: &str,
+        body: &B,
+    ) -> Vec<(String, Option<T>)> {
+        match &self.answer {
+            Answer::Live(resolve) => resolve(self.name)
+                .into_iter()
+                .map(|found| {
+                    let answer = kroma_module_host::call_raw(
+                        &found.resolver(),
+                        &format!("{}/{method}", self.name),
+                        body,
+                    )
+                    .ok();
+                    (found.module_id, answer)
+                })
+                .collect(),
+            Answer::Stub(f) => {
+                let sent = serde_json::to_value(body).ok();
+                let answer = sent
+                    .and_then(|sent| f(method, &sent))
+                    .and_then(|value| serde_json::from_value(value).ok());
+                vec![(self.name.to_string(), answer)]
+            }
+            Answer::Absent => Vec::new(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

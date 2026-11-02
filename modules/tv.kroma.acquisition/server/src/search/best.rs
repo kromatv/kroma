@@ -118,7 +118,7 @@ pub(crate) mod test_world;
 
 #[cfg(test)]
 mod tests {
-    use kroma_module_sdk::engine::model::RequestKind;
+    use kroma_module_sdk::domain::RequestKind;
     use kroma_module_sdk::testing::blocking;
 
     use super::test_world::{host, Fakes};

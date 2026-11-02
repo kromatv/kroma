@@ -46,7 +46,7 @@ function entryList(staging: string, entries: readonly string[]): Entry[] {
         walk(`${rel}/${child}`);
       }
     } else {
-      out.push({ name: rel, dir: false, mode: rel === 'module' ? 0o755 : 0o644 });
+      out.push({ name: rel, dir: false, mode: 0o644 });
     }
   };
   for (const entry of [...entries].sort(byCodeUnit)) walk(entry);

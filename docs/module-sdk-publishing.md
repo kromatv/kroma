@@ -11,7 +11,7 @@ it is too.
 | `types/<pkg>/` declarations | `packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav}` |
 | `types/react-native/` | the declaration files of the React Native fork the kit is typed against, so a module installs no React Native (it and its toolchain are most of a 250 MB `node_modules`; the runtime is the host's) |
 | `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kromatv/*` specifier and `react-native` onto `types/` |
-| `rust/` | the twelve crates a sidecar links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
+| `rust/` | the twelve crates a module links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
 | `templates/` | what `kroma create` renders |
 
 Every workspace package stays `private: true`; `bun run ci sdk stage` assembles
@@ -52,19 +52,19 @@ The closure is `kroma-module-sdk`, `kroma-module-runtime`, `kroma-module-host`,
 `kroma-media`, `kroma-sqlite`, `kroma-http`, `kroma-i18n`, `kroma-primitives`,
 `kroma-testing`.
 
-None of it is server code, and that is the rule the split enforces. A sidecar
-used to link `kroma-domain` for seven wire types and `kroma-db` for a pool and
-a grant, which shipped the core's forty-table schema and every query over it:
-1.1 MB of source to reach 84 KB of contract. Those two now sit in
-`kroma-module-wire` (the JSON both sides exchange) and `kroma-sqlite` (the WAL
+None of it is server code, and that is the rule the split enforces.
+`kroma-domain` and `kroma-db` carry the core's forty-table schema and every query
+over it, 1.1 MB of source, where a module needs 84 KB of contract. That contract
+is `kroma-module-wire` (the JSON both sides exchange) and `kroma-sqlite` (the WAL
 pool, the SQLite authorizer behind a `storage` grant, and a module's own
-migrations), which the server's crates re-export so nothing above them moved.
+migrations), which the server's crates re-export.
 
-The SDK's three in-repo features are dropped from the vendored crate along with
+The SDK's four in-repo features are dropped from the vendored crate along with
 the dependency and the comment that introduced it: `core` (the core schema, so
 a first-party grant test prepares against the real tables), `domain` (all of
-`kroma-domain`) and `engine` (the whole core, for the two modules that
-orchestrate it).
+`kroma-domain`), `requests` (`kroma-requests`, the request and monitoring
+workflows acquisition runs) and `engine` (the whole core, which no module
+enables).
 
 `transcode` is not one of them. `kroma-media` is reading and re-encoding one
 input and nothing else, so it ships: a module that holds a media file gets

@@ -1,8 +1,8 @@
 //! Multilingual semantic-embedding backend Cargo feature `semantic`.
 //!
 //! Loads a BERT-architecture sentence model (config.json + tokenizer.json +
-//! model.safetensors) from `$KROMA_EMBED_MODEL_DIR` (default `./models/ml-minilm`)
-//! and mean-pools its token embeddings into a 384-d vector. CPU only.
+//! model.safetensors) from the folder `crate::model` places it in, and
+//! mean-pools its token embeddings into a 384-d vector. CPU only.
 //!
 //! Chosen model: **`paraphrase-multilingual-MiniLM-L12-v2`** (384-d, 12 layers,
 //! ~470 MB). Libraries are often non-English (ours has French overviews), and an
@@ -12,17 +12,14 @@
 //! / Elf / Krampus; heist → Heat / Le Cercle rouge). Keep the phrase bank in
 //! ENGLISH English queries outperform French against this model.
 //!
-//! Build notes (musl / Synology): keep candle on its pure-Rust `gemm` backend (no
-//! mkl/accelerate/cuda) and `tokenizers` with `onig` (Oniguruma C cross-compiles
-//! like the bundled SQLite/zstd C). Requires rustc ≥ 1.85 (edition2024); see the
-//! `semantic` feature comment in Cargo.toml. Any BERT-arch sentence
-//! model in the dir works, but `dim()` assumes 384-d output.
+//! Build notes: candle stays on its pure-Rust `gemm` backend (no mkl/accelerate/
+//! cuda) and `tokenizers` on `fancy-regex`, since a component holds no C. Any
+//! BERT-arch sentence model in the dir works, but `dim()` assumes 384-d output.
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use candle_core::{Device, Tensor};
-use candle_nn::VarBuilder;
 use candle_transformers::models::bert::{BertModel, Config, DTYPE};
 use tokenizers::Tokenizer;
 
@@ -35,12 +32,9 @@ pub struct MiniLmEmbedder {
 }
 
 impl MiniLmEmbedder {
-    /// Load the model from disk once. Ship the three files alongside the binary
-    /// (or `include_bytes!` them) so the NAS install is self-contained.
-    pub fn load() -> Result<Self> {
-        let dir = std::env::var("KROMA_EMBED_MODEL_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("models/ml-minilm"));
+    /// Load the model from `dir`, which holds `config.json`, `tokenizer.json`
+    /// and `model.safetensors`.
+    pub fn load(dir: &Path) -> Result<Self> {
         let device = Device::Cpu;
 
         let config: Config = serde_json::from_str(
@@ -51,10 +45,8 @@ impl MiniLmEmbedder {
         let tokenizer = Tokenizer::from_file(dir.join("tokenizer.json"))
             .map_err(|e| anyhow::anyhow!("load tokenizer.json: {e}"))?;
 
-        let vb = unsafe {
-            VarBuilder::from_mmaped_safetensors(&[dir.join("model.safetensors")], DTYPE, &device)
-                .context("mmap safetensors")?
-        };
+        let vb = crate::weights::var_builder(&dir.join("model.safetensors"), DTYPE, &device)
+            .context("read safetensors")?;
         let model = BertModel::load(vb, &config).context("build BERT")?;
 
         Ok(Self {
@@ -123,7 +115,7 @@ mod tests {
     #[test]
     #[ignore = "needs the MiniLM model files (models/minilm) on disk"]
     fn minilm_embeds_and_ranks_by_meaning() {
-        let e = MiniLmEmbedder::load().expect("load MiniLM model");
+        let e = MiniLmEmbedder::load(&crate::model::place().dir).expect("load MiniLM model");
         assert_eq!(e.dim(), 384);
 
         let christmas = e.embed("a heartwarming christmas movie about santa and family");
@@ -146,107 +138,5 @@ mod tests {
             near > far + 0.1,
             "christmas~holiday {near:.3} should ≫ christmas~war {far:.3}"
         );
-    }
-
-    /// Non-destructive A/B on the LIVE library: embeds every enriched title with
-    /// MiniLM **in memory** (no DB writes, no re-scan, no server restart) and
-    /// prints the top hits per themed query, with scores so we can compare to
-    /// the lexical `/themed` probes and calibrate the MiniLM relevance floor.
-    ///   KROMA_EMBED_MODEL_DIR=models/minilm cargo test -p kroma-vector --features semantic \
-    ///     minilm_library_probe -- --ignored --nocapture
-    #[test]
-    #[ignore = "manual: reads data/kroma.db + model, prints MiniLM rankings on the real library"]
-    fn minilm_library_probe() {
-        let e = MiniLmEmbedder::load().expect("load MiniLM model");
-        let conn = rusqlite::Connection::open("data/kroma.db").expect("open data/kroma.db");
-        let mut stmt = conn
-            .prepare("SELECT title, year, metadata FROM items WHERE kind != 'episode' AND metadata IS NOT NULL")
-            .unwrap();
-        let rows = stmt
-            .query_map([], |r| {
-                Ok((
-                    r.get::<_, String>(0)?,
-                    r.get::<_, Option<i64>>(1)?,
-                    r.get::<_, Option<String>>(2)?,
-                ))
-            })
-            .unwrap();
-
-        let mut lib: Vec<(String, Vec<f32>)> = Vec::new();
-        for row in rows {
-            let (title, year, meta_json) = row.unwrap();
-            let Some(mj) = meta_json else { continue };
-            let Ok(meta) =
-                serde_json::from_str::<kroma_module_sdk::domain::metadata::Metadata>(&mj)
-            else {
-                continue;
-            };
-            let doc = kroma_module_sdk::domain::build_doc(&title, year.map(|y| y as u32), &meta);
-            lib.push((title, e.embed(&doc)));
-        }
-        eprintln!(
-            "\nMiniLM-embedded {} titles from the live library\n",
-            lib.len()
-        );
-
-        let dot = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>();
-
-        // Corpus mean embedding the anisotropy "common direction" we subtract.
-        let dim = lib[0].1.len();
-        let mut mean = vec![0f32; dim];
-        for (_, v) in &lib {
-            for (m, x) in mean.iter_mut().zip(v) {
-                *m += x;
-            }
-        }
-        for m in mean.iter_mut() {
-            *m /= lib.len() as f32;
-        }
-        // Center against the corpus mean, then re-normalize.
-        let center = |v: &[f32]| -> Vec<f32> {
-            let mut c: Vec<f32> = v.iter().zip(&mean).map(|(x, m)| x - m).collect();
-            let n = c.iter().map(|x| x * x).sum::<f32>().sqrt();
-            if n > 0.0 {
-                for x in c.iter_mut() {
-                    *x /= n;
-                }
-            }
-            c
-        };
-        let lib_c: Vec<(&str, Vec<f32>)> =
-            lib.iter().map(|(t, v)| (t.as_str(), center(v))).collect();
-
-        let top = |scored: &mut Vec<(&str, f32)>| -> String {
-            scored.sort_by(|a, b| b.1.total_cmp(&a.1));
-            scored
-                .iter()
-                .take(8)
-                .map(|(t, s)| format!("{t} ({s:.2})"))
-                .collect::<Vec<_>>()
-                .join("  ·  ")
-        };
-
-        // EN/FR pairs so we can see whether a multilingual model bridges the
-        // English-query → French-overview gap, and whether French queries do better.
-        let probes = [
-            "christmas holiday movie",
-            "film de noël féérique en famille",
-            "clever heist crew robbery thriller",
-            "film de braquage avec une équipe",
-            "feel-good uplifting comedy",
-            "comédie légère qui fait du bien",
-        ];
-        for q in probes {
-            let qv = e.embed(q);
-            let qc = center(&qv);
-            let mut raw: Vec<(&str, f32)> =
-                lib.iter().map(|(t, v)| (t.as_str(), dot(v, &qv))).collect();
-            let mut cen: Vec<(&str, f32)> = lib_c.iter().map(|(t, v)| (*t, dot(v, &qc))).collect();
-            eprintln!(
-                "── \"{q}\"\n   RAW      {}\n   CENTERED {}\n",
-                top(&mut raw),
-                top(&mut cen)
-            );
-        }
     }
 }

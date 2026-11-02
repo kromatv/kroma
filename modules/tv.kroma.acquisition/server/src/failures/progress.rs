@@ -43,11 +43,7 @@ mod tests {
 
     fn pool() -> kroma_module_sdk::db::testing::TempPool {
         let pool = kroma_module_sdk::db::testing::temp_pool("acq-progress");
-        kroma_module_sdk::db::apply_migrations(
-            &pool.get().unwrap(),
-            crate::rules::schema::MIGRATIONS,
-        )
-        .unwrap();
+        crate::rules::schema::install(&pool);
         pool
     }
 

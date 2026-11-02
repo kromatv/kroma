@@ -347,19 +347,19 @@
 
 - **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and <sub>[README.md](modules/README.md)</sub>
 - **MOD-2** (SHIPPED) - A module is a self-contained capability with a reverse-DNS id <sub>[README.md](modules/README.md)</sub>
-- **MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers <sub>[README.md](modules/README.md)</sub>
+- **MOD-3** (SHIPPED) - Within its own component a module has wide latitude: it registers <sub>[README.md](modules/README.md)</sub>
 - **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module <sub>[README.md](modules/README.md)</sub>
 - **MOD-5** (SHIPPED) - It may not reach into the server's process or another module's <sub>[README.md](modules/README.md)</sub>
 - **MOD-6** (SHIPPED) - It may not replace core. Playback, catalogue, accounts and the <sub>[README.md](modules/README.md)</sub>
 - **MOD-7** (SHIPPED) - It may not claim a first-party module id it does not own. <sub>[README.md](modules/README.md)</sub>
 - **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable, <sub>[README.md](modules/README.md)</sub>
 - **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that <sub>[README.md](modules/README.md)</sub>
-- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native <sub>[README.md](modules/README.md)</sub>
+- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the backend as <sub>[README.md](modules/README.md)</sub>
 - **MOD-11** (SHIPPED) - **Identity and version.** The reverse-DNS id and a hand-set version. <sub>[README.md](modules/README.md)</sub>
 - **MOD-12** (SHIPPED) - The release process refuses to publish changed bytes under an <sub>[README.md](modules/README.md)</sub>
 - **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version <sub>[README.md](modules/README.md)</sub>
 - **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and <sub>[README.md](modules/README.md)</sub>
-- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only <sub>[README.md](modules/README.md)</sub>
+- **MOD-15** (SHIPPED) - **No target.** The backend is a WebAssembly component, so one bundle <sub>[README.md](modules/README.md)</sub>
 - **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256 <sub>[README.md](modules/README.md)</sub>
 - **MOD-17** (SHIPPED) - Integrity is not safety: a matching checksum proves the bytes are the <sub>[README.md](modules/README.md)</sub>
 - **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies <sub>[README.md](modules/README.md)</sub>
@@ -370,16 +370,16 @@
 - **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the <sub>[README.md](modules/README.md)</sub>
 - **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is <sub>[README.md](modules/README.md)</sub>
 - **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one <sub>[README.md](modules/README.md)</sub>
-- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary <sub>[README.md](modules/README.md)</sub>
+- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is code the server <sub>[README.md](modules/README.md)</sub>
 - **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so <sub>[README.md](modules/README.md)</sub>
-- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes, <sub>[README.md](modules/README.md)</sub>
-- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and <sub>[README.md](modules/README.md)</sub>
-- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is <sub>[README.md](modules/README.md)</sub>
+- **MOD-28** (SHIPPED) - **Enable.** The server starts the module, and its routes, jobs and UI <sub>[README.md](modules/README.md)</sub>
+- **MOD-29** (SHIPPED) - **Disable.** The module is stopped, and its **data is kept <sub>[README.md](modules/README.md)</sub>
+- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the module is <sub>[README.md](modules/README.md)</sub>
 - **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the <sub>[README.md](modules/README.md)</sub>
 - **MOD-32** (SHIPPED) - **Uninstall.** The module is removed entirely. It is the one <sub>[README.md](modules/README.md)</sub>
 - **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still <sub>[README.md](modules/README.md)</sub>
 - **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module <sub>[README.md](modules/README.md)</sub>
-- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a <sub>[README.md](modules/README.md)</sub>
+- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** A module runs in <sub>[README.md](modules/README.md)</sub>
 - **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is <sub>[README.md](modules/README.md)</sub>
 - **MOD-37** (SHIPPED) - **Failure is visible, not silent.** A module that will not start or <sub>[README.md](modules/README.md)</sub>
 - **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares <sub>[README.md](modules/README.md)</sub>
@@ -428,7 +428,7 @@
 - **MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
-- **MOD-84** (AGREED) - A module that still ships as a native program runs under the strongest <sub>[README.md](modules/README.md)</sub>
+- **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

@@ -4,11 +4,17 @@ use std::net::{TcpStream, ToSocketAddrs};
 use exports::kroma::module::route::{Guest, Request, Response};
 use kroma::module::{net, settings};
 
-wit_bindgen::generate!({ path: "../../wit", world: "module" });
+wit_bindgen::generate!({ path: "../../../kroma-module-runtime/wit", world: "module" });
 
 struct Probes;
 
 impl Guest for Probes {
+    fn tick() -> bool {
+        false
+    }
+
+    fn stop() {}
+
     fn handle(request: Request) -> Response {
         let argument = String::from_utf8_lossy(&request.body).into_owned();
         match request.path.as_str() {
@@ -19,11 +25,13 @@ impl Guest for Probes {
             "/env" => answer(std::env::var(&argument).map_err(|error| format!("{error:?}"))),
             "/memory" => answer(allocate(&argument)),
             "/spin" => spin(),
+            "/sleep" => answer(sleep(&argument)),
             "/fetch" => answer(fetch(&argument)),
             "/settings" => answer(settings::get(&argument).ok_or_else(|| "absent".into())),
             "/bench/settings" => answer(read_settings_repeatedly(&argument)),
             _ => Response {
                 status: 404,
+                headers: Vec::new(),
                 body: Vec::new(),
             },
         }
@@ -34,10 +42,12 @@ fn answer(outcome: Result<String, String>) -> Response {
     match outcome {
         Ok(body) => Response {
             status: 200,
+            headers: Vec::new(),
             body: body.into_bytes(),
         },
         Err(reason) => Response {
             status: 403,
+            headers: Vec::new(),
             body: reason.into_bytes(),
         },
     }
@@ -62,6 +72,12 @@ fn resolve(host_and_port: &str) -> Result<String, String> {
     Ok(format!("{:?}", addresses.collect::<Vec<_>>()))
 }
 
+fn sleep(millis: &str) -> Result<String, String> {
+    let millis: u64 = millis.parse().map_err(|_| format!("not a number: {millis}"))?;
+    std::thread::sleep(std::time::Duration::from_millis(millis));
+    Ok("awake".to_string())
+}
+
 fn allocate(size: &str) -> Result<String, String> {
     let bytes: usize = size.parse().map_err(|_| format!("not a size: {size}"))?;
     let block = vec![1u8; bytes];
@@ -75,7 +91,22 @@ fn spin() -> ! {
 }
 
 fn fetch(purpose: &str) -> Result<String, String> {
-    let response = net::fetch(purpose, "GET", "https://api.example.test/v1", &[])?;
+    let response = net::fetch(&net::FetchRequest {
+        purpose: purpose.to_string(),
+        method: "GET".to_string(),
+        url: "https://api.example.test/v1".to_string(),
+        headers: Vec::new(),
+        body: Vec::new(),
+        max_time_secs: 30,
+        max_bytes: None,
+        max_redirects: None,
+        follow_redirects: true,
+        public_only: false,
+        https_only: false,
+        sealed: false,
+        http2: false,
+        digest: None,
+    })?;
     Ok(String::from_utf8_lossy(&response.body).into_owned())
 }
 

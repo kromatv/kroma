@@ -6,7 +6,7 @@ use std::net::IpAddr;
 use kroma_http::address::WebTarget;
 
 use super::flow::purpose_covers;
-use super::rules::{Action, DefaultAction, NetworkRules, Rule};
+use super::rules::{address_range, Action, DefaultAction, NetworkRules, Rule};
 
 pub const CORE: &str = "core";
 
@@ -15,8 +15,8 @@ pub const GUARD_LINK_LOCAL: &str = "guard:link-local";
 pub const GUARD_LOOPBACK: &str = "guard:loopback";
 
 /// The action for one call and the id of the rule or guard that chose it,
-/// `None` for the default. No rule overrides a guard, and a `vpn` rule for a
-/// local host goes `direct` since the tunnel cannot reach it.
+/// `None` for the default. No rule overrides a guard, and a rule naming a network
+/// for a local host goes `direct` since a tunnel cannot reach it.
 pub fn decide(
     rules: &NetworkRules,
     caller: &str,
@@ -31,7 +31,7 @@ pub fn decide(
     let Some(rule) = rules
         .rules
         .iter()
-        .find(|rule| matches(rule, caller, purpose, &host))
+        .find(|rule| matches(rule, caller, purpose, &host, target))
     else {
         let action = match rules.default_action {
             DefaultAction::Allow => Action::Direct,
@@ -39,9 +39,9 @@ pub fn decide(
         };
         return (action, None);
     };
-    let action = match rule.action {
-        Action::Vpn if target.is_local() => Action::Direct,
-        action => action,
+    let action = match &rule.action {
+        Action::Network(_) if target.is_local() => Action::Direct,
+        action => action.clone(),
     };
     (action, Some(rule.id.clone()))
 }
@@ -83,13 +83,41 @@ fn is_link_local(ip: IpAddr) -> bool {
     }
 }
 
-fn matches(rule: &Rule, caller: &str, purpose: &str, host: &str) -> bool {
+fn matches(rule: &Rule, caller: &str, purpose: &str, host: &str, target: &WebTarget) -> bool {
     rule.caller.as_deref().is_none_or(|c| c == caller)
         && rule.purpose.as_deref().is_none_or(|p| purpose_covers(p, purpose))
         && rule
             .host
             .as_deref()
             .is_none_or(|pattern| host_matches(pattern, host))
+        && rule.port.is_none_or(|port| port == target.port)
+        && rule
+            .address
+            .as_deref()
+            .is_none_or(|range| target.literal().is_some_and(|ip| in_range(ip, range)))
+}
+
+fn in_range(ip: IpAddr, range: &str) -> bool {
+    let Some((network, bits)) = address_range(range) else {
+        return false;
+    };
+    match (unmapped(ip), network) {
+        (IpAddr::V4(ip), IpAddr::V4(network)) => prefix_matches(
+            u128::from(u32::from(ip)),
+            u128::from(u32::from(network)),
+            32,
+            bits,
+        ),
+        (IpAddr::V6(ip), IpAddr::V6(network)) => {
+            prefix_matches(u128::from(ip), u128::from(network), 128, bits)
+        }
+        _ => false,
+    }
+}
+
+fn prefix_matches(ip: u128, network: u128, width: u32, bits: u32) -> bool {
+    let unmasked = width - bits;
+    bits == 0 || ip >> unmasked == network >> unmasked
 }
 
 fn host_matches(pattern: &str, host: &str) -> bool {

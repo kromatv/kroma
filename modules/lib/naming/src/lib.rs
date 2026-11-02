@@ -2,9 +2,9 @@
 //! facts. Unknown tokens render empty; the token vocabulary lives in [`tokens`].
 //!
 //! A library and not an extension point: this renders one path per imported
-//! file, so reaching it over a localhost round trip would be slower than the code
+//! file, so reaching it over a point call would be slower than the code
 //! it replaced. It names no host and no module, and takes its templates as an
-//! argument, so the core and a sidecar read them through whatever settings seam
+//! argument, so the core and a module read them through whatever settings seam
 //! each of them holds.
 
 mod casing;

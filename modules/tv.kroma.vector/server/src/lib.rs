@@ -3,13 +3,13 @@
 //! and a personalized "For You" centroid (see `crate::db::vectors`).
 //!
 //! Two backends sit behind one [`Embedder`] trait:
-//!   * [`LexicalEmbedder`] dependency-free hashed term vector. The DEFAULT:
-//!     compiles on the pinned rustc 1.81 / musl build with zero new crates.
-//!     Similarity reflects shared genres/cast/words. Good for "more like this".
-//!   * `MiniLmEmbedder` a real `all-MiniLM-L6-v2` sentence-transformer via
-//!     `candle` (Cargo feature `semantic`). Gives free-text *semantic*
-//!     matches (e.g. embed the phrase "cozy christmas movie" and retrieve titles
-//!     whose overview never says "christmas"). Heavier dep graph; opt-in.
+//!   * [`LexicalEmbedder`] dependency-free hashed term vector, used when no model
+//!     is on disk. Similarity reflects shared genres/cast/words. Good for "more
+//!     like this".
+//!   * `MiniLmEmbedder` a real sentence-transformer via `candle` (Cargo feature
+//!     `semantic`, on in the published bundle). Gives free-text *semantic* matches
+//!     (e.g. embed the phrase "cozy christmas movie" and retrieve titles whose
+//!     overview never says "christmas").
 //!
 //! Both backends consume the SAME document string from [`build_doc`] and return a
 //! normalized vector, so storage/search downstream is backend-agnostic.
@@ -25,6 +25,12 @@ pub use serve::embedder_routes;
 
 #[cfg(feature = "semantic")]
 mod candle;
+#[cfg(feature = "semantic")]
+mod model;
+#[cfg(feature = "semantic")]
+mod semantic;
+#[cfg(feature = "semantic")]
+mod weights;
 
 /// Produces a fixed-dimension, **L2-normalized** vector for a text document.
 /// Normalization is part of the contract: it lets the search layer treat cosine
@@ -43,26 +49,27 @@ pub trait Embedder: Send + Sync {
     fn relevance_floor(&self) -> f32;
 }
 
-/// Pick the compiled-in backend: MiniLM when the `semantic` feature is
-/// on (falling back to lexical if the model files can't be loaded), else the
-/// dependency-free lexical embedder.
+/// Pick the compiled-in backend: under the `semantic` feature, MiniLM once its
+/// model is on disk, and the lexical embedder until then; else the lexical
+/// embedder alone.
 ///
-/// Cheap for the lexical path; the MiniLM path loads a ~25 MB model, so callers
-/// should build this ONCE (e.g. into shared state) rather than per request. The
-/// current prototype builds it once per enrichment pass.
+/// Under a host, a missing model is downloaded into `<data>/models/ml-minilm` in
+/// the background, pinned by sha256, and the embedder switches to it once it
+/// lands. `KROMA_EMBED_MODEL_DIR` names an operator's own copy instead, which is
+/// never downloaded into. Build this once (e.g. into shared state) rather than
+/// per request.
 pub fn default_embedder() -> Arc<dyn Embedder> {
     #[cfg(feature = "semantic")]
     {
-        match candle::MiniLmEmbedder::load() {
-            Ok(e) => return Arc::new(e),
-            Err(err) => tracing::warn!(
-                error = %err,
-                "MiniLM load failed; falling back to the lexical embedder"
-            ),
-        }
+        Arc::new(semantic::Semantic::new(model::place()))
     }
-    Arc::new(LexicalEmbedder::new(256))
+    #[cfg(not(feature = "semantic"))]
+    {
+        Arc::new(LexicalEmbedder::new(LEXICAL_DIMENSIONS))
+    }
 }
+
+const LEXICAL_DIMENSIONS: usize = 256;
 
 // L2-normalize in place; a no-op for the zero vector. Shared by both backends
 // (a private parent item, visible to the `lexical`/`candle` submodules).

@@ -3,7 +3,7 @@
 How a module extends KROMA, how a module extends another module, and why the
 core knows none of it.
 
-[`modules-as-kmod.md`](modules-as-kmod.md) covers packaging, spawning,
+[`modules-as-kmod.md`](modules-as-kmod.md) covers packaging, running,
 supervision and release. That layer works. This document is the contract layer,
 which did not: the core compiled every module's vocabulary, and a module type
 nobody had written yet had nowhere to declare itself.
@@ -106,7 +106,7 @@ the core is just a module that happens to ship in the binary.**
 The old model could not do this. `DownloadClientHost::register_engine` took a
 `fn(&mut DownloadClientRegistry)`, so an engine plugged a factory into the
 manager's process by function pointer. That requires one address space, which is
-why qBittorrent and Transmission do not work as sidecars today. Inverting it
+why qBittorrent and Transmission could not be modules of their own. Inverting it
 fixes the break and removes the registry: an engine serves the methods, and the
 manager calls whichever endpoints resolution hands it.
 
@@ -198,8 +198,8 @@ Authorization: Bearer <that module's port token>
 ```
 
 The caller never builds the address. `/_host/contributions` hands it a base URL
-and a token: `http+unix://...` for the answering module's socket, or, for a caller
-on the legacy TCP seam, the core's `/api/module/<id>` reverse proxy.
+and a token: the core's `/api/module/<id>` reverse proxy on `host.sock`, which a
+component reaches through its `host-api` import.
 
 Each side declares its own structs for the JSON it reads or writes. There is no
 shared type, and that is deliberate: the two ends ship on separate tags at
@@ -264,9 +264,9 @@ at `debug` rather than as a warning, because it is a typo or a feature that left
 rather than something an operator has to act on. The core owns that decision; the supervisor only asks, so
 it still knows nothing about what any module is for.
 
-A credential whose consumer IS a sidecar is the third case, and it reaches **the
-sidecar that declared it**. The supervisor spawns every module with its own
-`KROMA_MODULE_TOKEN`, so a callback names its caller, and `settings: { read, write }`
+A credential whose consumer IS a module is the third case, and it reaches **the
+module that declared it**. The supervisor mints every module its own token, which
+the host adds to the module's callbacks, so a callback names its caller, and `settings: { read, write }`
 in that module's manifest says which core keys it uses. The WireGuard config goes
 to the module that brings the tunnel up and to the one that has to know whether
 the tunnel is up, because both named it, and to nothing else installed. A caller
@@ -317,18 +317,20 @@ is the slot name and the lookup. Not built.
 
 ## Trust, stated honestly
 
-A module is a native process running as the same user. The storage grant is a
-privilege *declaration*, enforced per connection by SQLite's authorizer, and it
-is real for anything going through the SDK. It is not a sandbox: the process
-could open the file itself. What the model buys is that reach is declared where
-an operator reads it before installing, and that the official registry is pinned
-and every artifact sha256-verified. For a third-party registry, that is the whole
-of the protection, and the consent screen should say so in those words.
+A module is a WebAssembly component the server runs. It reaches what its
+manifest declares and the operator accepted, through the host, and nothing else:
+the storage grant is enforced by SQLite's authorizer in the host, which holds the
+file, so it binds a module that does not cooperate. The programs a first-party
+module starts (`run`) are the exception: they are processes of the server's user,
+and [module security](module-security.md#what-the-component-does-not-contain)
+names each one. The official registry is pinned and every artifact
+sha256-verified. A third-party module starts no program, so for one the
+manifest the consent screen showed is the whole of its reach.
 
 ## Not solved here
 
 **Cross-module workflows have no transaction.** Acquisition grabs, torrents
-records, the import runs. Three processes, no rollback. Today this is implicit;
+records, the import runs. Three modules, no rollback. Today this is implicit;
 it needs idempotency keys on the grab and a reconciliation job, or an explicit
 statement that the ledger is eventually consistent and how it heals.
 
@@ -365,9 +367,9 @@ Phases 1 through 5 have landed. Each was green on `cargo clippy --workspace`,
    along with `semantic-embeddings` and the four `whisper-*` features, which had
    been compiling candle into the server for code no file under `src/` reaches.
 4. **The engines inverted, and the recursion is real.** The download module
-   defines `tv.kroma.torrents/client` and answers it in-process for the embedded
-   librqbit engine. qBittorrent and Transmission are their own sidecars answering
-   the same point under their own kind, each with its own binary, its own routes
+   defines `tv.kroma.torrents/client` and answers it for the `rqbit` engine it
+   starts. qBittorrent and Transmission are their own modules answering
+   the same point under their own kind, each with its own component, its own routes
    and its own structs; the download module deps neither, and resolves whichever answers
    the kind a client row names.
 
@@ -376,12 +378,12 @@ Phases 1 through 5 have landed. Each was green on `cargo clippy --workspace`,
    handle as an `Arc<dyn Any>`, so an engine had to share the download module's
    address space, and both `.kmod`s shipped with NO binary at all: the supervisor
    could never have spawned them. They were installable in name only. Inverting it
-   deleted the registry, the ctx and the host trait, and now `kroma plan`
-   emits a binary for each.
+   deleted the registry, the ctx and the host trait, and now `kroma build`
+   packs a component for each.
 
    The engine is stateless about which client it serves: an operator may have two
    qBittorrents, so the row's URL and credentials travel with every call rather
-   than being held by the sidecar. `RemoteEngine` pins its endpoint for the one
+   than being held by the engine module. `RemoteEngine` pins its endpoint for the one
    call it is built for, because the monitor builds one per active download every
    five seconds and re-resolving per method would double the callbacks to learn the
    same answer twice.
@@ -402,7 +404,7 @@ that, since the two modules release on separate tags.
    another module but never react to one.
 
    Push rather than a stream a module holds open, for the same reason jobs are
-   push: the supervisor already knows every module's port, a restarted module
+   push: the supervisor already knows every module's socket, a restarted module
    needs no reconnection, and there is no connection to leak. The costs are
    stated where an author will read them — opt in per topic because the bus
    carries playback progress, delivery is best-effort so anything that must not
@@ -412,8 +414,8 @@ that, since the two modules release on separate tags.
    The core still learns nothing about what a topic means. It matches a string it
    was handed against a string a module asked for.
 
-Two things an engine sidecar does not do yet, both because no engine reads them:
-`only_files` (file selection is the embedded engine's) and a pre-fetched
+Two things an engine module does not do yet, both because no engine reads them:
+`only_files` (file selection is the rqbit engine's) and a pre-fetched
 `torrent_bytes` (an external client takes a URL). Adding either is a new key,
 which is additive; `list_files` answers "unsupported" without a round trip,
 because no external client exposes a list-only add.
@@ -431,6 +433,9 @@ because no external client exposes a list-only add.
    floors at `>=0.1.39`, and the twelve move to 0.3.0 together with their
    dependency ranges, because the point names changed and a 0.2.x peer resolves
    nothing.
+
+   It moved to **3** later, when every module became a WebAssembly component and
+   the native seam went away (see [`modules-as-kmod.md`](modules-as-kmod.md)).
 
    The indexer's Torznab point went with it. `torznab` was a protocol name at the
    top level; it is now a contribution to `tv.kroma.indexer/engine` under the kind
@@ -460,7 +465,7 @@ under a new id is picked up by the download module at runtime, and neither the
 core nor the download module is edited to accept it.
 
 Mechanically, today: `server/Cargo.toml` deps no crate under `modules/`; no crate
-under `server/` names a module's domain in a type, trait or function; the three
-point names the core holds — `acquisition`, `transcriber`, `embedder` — are bare
-capability names in its own route table and composition root. The remaining
+under `server/` names a module's domain in a type, trait or function; the four
+point names the core holds, `acquisition`, `transcriber`, `embedder` and
+`network`, are bare capability names in its own route table and composition root. The remaining
 `tv.kroma.*` and point-name hits under `server/` are test fixtures and prose.

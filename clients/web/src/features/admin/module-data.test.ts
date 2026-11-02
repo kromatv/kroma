@@ -89,14 +89,14 @@ describe('useModuleData', () => {
 describe('useModuleToggle', () => {
   it("surfaces the server's start warning and reports done", async () => {
     const onDone = vi.fn();
-    H.setModuleEnabled.mockResolvedValue({ id: 'x', enabled: true, warning: 'sidecar died' });
+    H.setModuleEnabled.mockResolvedValue({ id: 'x', enabled: true, warning: 'module died' });
     const { result } = renderHook(() => useModuleToggle('x', onDone));
 
     await act(async () => {
       await result.current.toggle(true);
     });
     expect(H.setModuleEnabled).toHaveBeenCalledWith('x', true);
-    expect(result.current.error).toBe('sidecar died');
+    expect(result.current.error).toBe('module died');
     expect(result.current.busy).toBe(false);
     expect(onDone).toHaveBeenCalledTimes(1);
   });

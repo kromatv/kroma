@@ -18,7 +18,7 @@ stage! {
     subject_kind: "item",
     concurrency: 4,
     pause_for_playback: true,
-    schedule: Some("45 4 * * *"),
+    schedule: Some("45 * * * *"),
     triggers: &[Trigger::AfterJob(JobKey("pipeline.metadata"))],
 }
 

@@ -1,14 +1,14 @@
-//! The `download-vpn` point this module answers, and the `vpn-proxy` point it
-//! calls.
+//! The `download-vpn` point this module answers, and whether a network must carry
+//! its peers.
 
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Json, Router};
-use serde_json::json;
 
-use kroma_module_sdk::host::{call_raw, pinned_resolver, service, HostCtx};
+use kroma_module_sdk::host::{run_blocking, service, HostCtx, NetworkSeal};
+use kroma_module_sdk::http::egress::Gateway;
 
 use crate::bandwidth::{BandwidthView, Range};
 use crate::dtos::VpnStatusView;
@@ -16,15 +16,24 @@ use crate::DownloadManager;
 
 pub const DOWNLOAD_VPN: &str = "tv.kroma.torrents/vpn";
 
-pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
+const PEERS_PURPOSE: &str = "peers";
 
-/// The local SOCKS5 bridge to route peers through (librqbit only proxies via
-/// SOCKS5). `None` means no bridge, and torrent traffic goes out directly.
+/// The gateway's SOCKS5 URL while a network is up to carry peers, as a placeholder
+/// the host fills in when it starts the engine: this module never holds the token.
+/// `None` means none is, and the caller asks [`must_stay_behind_a_network`] whether
+/// traffic may go out directly.
 pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
-    let resolve = pinned_resolver(host, VPN_PROXY, None)?;
-    call_raw(&resolve, &format!("{VPN_PROXY}/url"), &json!({}))
-        .ok()
-        .flatten()
+    (host.network_seal() == NetworkSeal::Up).then(|| gateway_placeholder(true))
+}
+
+/// The placeholder for this module's peers, kept behind a network or not.
+pub fn gateway_placeholder(sealed: bool) -> String {
+    format!("{{gateway:{}}}", Gateway::username(PEERS_PURPOSE, false, sealed))
+}
+
+/// Whether this server offers a network, in which case nothing may go direct.
+pub fn must_stay_behind_a_network(host: &dyn HostCtx) -> bool {
+    host.network_seal() != NetworkSeal::None
 }
 
 pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
@@ -62,7 +71,7 @@ struct Seal {
 async fn seal_check<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
 ) -> Json<Option<Seal>> {
-    let seal = tokio::task::spawn_blocking(move || {
+    let seal = run_blocking(move || {
         let manager = manager(&host)?;
         let check = manager.vpn_check(&host)?;
         Some(Seal {
@@ -88,7 +97,7 @@ async fn bandwidth<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
     Json(ask): Json<BandwidthAsk>,
 ) -> Json<Option<BandwidthView>> {
-    let view = tokio::task::spawn_blocking(move || {
+    let view = run_blocking(move || {
         manager(&host)?
             .bandwidth(&host, Range::parse(&ask.range))
             .ok()
@@ -105,7 +114,7 @@ async fn restart<S: HostCtx + Clone + Send + Sync + 'static>(
     let Some(manager) = manager(&host) else {
         return Json(None);
     };
-    manager.restart_rqbit(&host).await;
+    tokio::spawn(async move { manager.follow_the_network(&host).await });
     Json(Some(true))
 }
 
@@ -158,6 +167,26 @@ mod tests {
     }
 
     #[test]
+    fn a_network_that_is_up_carries_the_peers_and_the_token_stays_with_the_host() {
+        let host = StubHost::new().with_network_seal(NetworkSeal::Up);
+
+        assert_eq!(proxy_url(&host).as_deref(), Some("{gateway:peers.vpn}"));
+    }
+
+    #[test]
+    fn a_network_that_is_down_carries_nothing_and_nothing_may_go_direct() {
+        let host = StubHost::new().with_network_seal(NetworkSeal::Down);
+
+        assert_eq!(proxy_url(&host), None);
+        assert!(must_stay_behind_a_network(&host));
+    }
+
+    #[test]
+    fn with_no_network_on_offer_peers_still_go_through_the_gateway() {
+        assert_eq!(gateway_placeholder(false), "{gateway:peers}");
+    }
+
+    #[test]
     fn a_status_serializes_under_the_keys_the_consumer_reads() {
         let json = serde_json::to_value(VpnStatusView {
             connected: true,
@@ -173,7 +202,7 @@ mod tests {
 
     #[test]
     fn a_caller_that_names_no_window_is_answered_with_the_day() {
-        let ask: BandwidthAsk = serde_json::from_value(json!({})).unwrap();
+        let ask: BandwidthAsk = serde_json::from_value(serde_json::json!({})).unwrap();
 
         assert_eq!(Range::parse(&ask.range), Range::Day);
     }

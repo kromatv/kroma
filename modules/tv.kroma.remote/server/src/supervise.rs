@@ -2,42 +2,36 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::process::Child;
 use tracing::{info, warn};
 
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::process::Child;
+use kroma_module_sdk::host::{run_blocking, HostCtx};
 
 use crate::access::RemoteAccess;
-#[cfg(unix)]
-use crate::process::tunnel_needle;
 use crate::process::{drain, spawn_tunnel};
 
 const RECONCILE_SECS: u64 = 3;
+const KILL_WAIT: Duration = Duration::from_secs(5);
 
 impl RemoteAccess {
     // Also reaps the exit status if the child died.
     pub(crate) async fn alive(&self) -> bool {
         let mut g = self.inner.lock().await;
-        match g.child.as_mut() {
+        let answer = g.child.as_ref().map(Child::try_wait);
+        match answer {
             None => false,
-            Some(child) => match child.try_wait() {
-                Ok(None) => true,
-                Ok(Some(status)) => {
-                    g.running = false;
-                    g.child = None;
-                    g.last_error = Some(format!("cloudflared exited ({status})"));
-                    false
-                }
-                Err(_) => true,
-            },
+            Some(Ok(None) | Err(_)) => true,
+            Some(Ok(Some(status))) => {
+                g.running = false;
+                g.child = None;
+                g.last_error = Some(format!("cloudflared exited ({status})"));
+                false
+            }
         }
     }
 
-    // Kills the tracked child AND any cloudflared orphaned by a SIGKILL of a
-    // previous sidecar generation (the supervisor SIGKILLs sidecars on update,
-    // which leaves their cloudflared running but no longer held by this
-    // process's in-memory handle - so killing only the tracked child left the
-    // tunnel up after "disable"). Reaps the tracked child to avoid a zombie.
+    // The host also stops what an earlier run left when this one starts, so one
+    // connector is all that ever runs.
     pub(crate) async fn kill_child(&self) {
         let child = {
             let mut g = self.inner.lock().await;
@@ -45,35 +39,12 @@ impl RemoteAccess {
             g.child.take()
         };
         let had = child.is_some();
-        if let Some(mut child) = child {
-            let _ = child.start_kill();
-            let _ = child.wait().await;
+        if let Some(child) = child {
+            child.kill();
+            let _ = run_blocking(move || child.wait_for(KILL_WAIT)).await;
         }
-        #[cfg(unix)]
-        self.kill_all_cloudflared();
         if had {
             info!("remote access: cloudflared connector stopped");
-        }
-    }
-
-    // SIGKILLs every process running OUR `cloudflared` binary as a tunnel - the
-    // tracked child plus any orphan from a prior generation. Matching the
-    // resolved binary path is safe: nothing else on the box runs it. Best-effort.
-    #[cfg(unix)]
-    pub(crate) fn kill_all_cloudflared(&self) {
-        let needle = tunnel_needle(&self.resolve_binary());
-        let Ok(out) = std::process::Command::new("ps").arg("aux").output() else {
-            return;
-        };
-        for line in String::from_utf8_lossy(&out.stdout).lines() {
-            if line.contains(&needle) {
-                // `ps aux`: USER PID ... - the pid is the second whitespace field.
-                if let Some(pid) = line.split_whitespace().nth(1) {
-                    let _ = std::process::Command::new("kill")
-                        .args(["-9", pid])
-                        .status();
-                }
-            }
         }
     }
 
@@ -89,11 +60,6 @@ impl RemoteAccess {
                 g.starting = true;
                 g.last_error = None;
             }
-            // Clear any orphan from a prior sidecar generation before spawning a
-            // fresh tracked child, so exactly one connector ever runs (else an
-            // untracked orphan keeps serving the tunnel after a later "disable").
-            #[cfg(unix)]
-            self.kill_all_cloudflared();
             let result = self.spawn_child(token).await;
             {
                 let mut g = self.inner.lock().await;
@@ -125,19 +91,9 @@ impl RemoteAccess {
     // start/running state (the caller does).
     pub(crate) async fn spawn_child(self: &Arc<Self>, token: String) -> Result<Child, String> {
         let bin = self.ensure_binary().await?;
-        let mut child = spawn_tunnel(&bin, &token)
-            .await
+        let child = spawn_tunnel(&bin, &token)
             .map_err(|e| format!("failed to launch cloudflared ({bin}): {e}"))?;
-        // Drain stdout + stderr into the log ring so the panel shows connection
-        // progress ("Registered tunnel connection …") and any error.
-        if let Some(out) = child.stdout.take() {
-            let me = self.clone();
-            tokio::spawn(async move { drain(me, out).await });
-        }
-        if let Some(err) = child.stderr.take() {
-            let me = self.clone();
-            tokio::spawn(async move { drain(me, err).await });
-        }
+        tokio::spawn(drain(self.clone(), child.clone()));
         Ok(child)
     }
 
@@ -164,9 +120,9 @@ impl RemoteAccess {
     }
 
     /// Take the connector down for good: latch the reconcile loop off, then kill
-    /// the child. Idempotent, and awaited by the callers that matter: the
-    /// module being disabled and the sidecar being asked to exit, so the tunnel
-    /// is gone before this process is.
+    /// the child. Idempotent, and awaited by the caller that matters: the
+    /// module being disabled or stopped, so the tunnel is gone before the module
+    /// is.
     pub async fn shutdown(&self) {
         self.stopping.store(true, Ordering::SeqCst);
         self.kill_child().await;
@@ -184,12 +140,6 @@ impl RemoteAccess {
             return;
         }
         tokio::spawn(async move {
-            // A prior generation killed outright (SIGKILL, a crash) left its
-            // connector running and untracked. Nothing else will ever reap it:
-            // while `remoteAccess` is off the reconcile loop has no live child
-            // to notice, so claim the slot before the first reconcile.
-            #[cfg(unix)]
-            self.kill_all_cloudflared();
             loop {
                 self.reconcile(&*host).await;
                 tokio::time::sleep(Duration::from_secs(RECONCILE_SECS)).await;

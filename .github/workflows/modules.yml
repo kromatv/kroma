@@ -1,28 +1,20 @@
 name: Modules
 
-# The module release train. Modules ride their OWN tags (`<module-id>@<version>`)
-# and are published by this workflow alone, on its own cadence.
+# The module release train. Every module is a WebAssembly component, built once
+# for wasm32-wasip2 into one `<id>.kmod` that installs on every platform, and
+# released on its own tag, `<module-id>@<version>`.
 #
-# They used to be the module half of release.yml, which meant a module fix could
-# only reach anyone when a server version shipped - and it shipped under whatever
-# version module.json happened to say, with nothing checking that the version had
-# moved. So the same version went out again carrying different bytes, the Store
-# (which compares versions to offer an update) concluded there was nothing to do,
-# and module fixes reached nobody. `kroma release` is the gate that closes that:
-# packed bundles are content-hashed against the live catalog, and a changed module
-# whose version stood still is left unpublished and named in the run.
+# `kroma release` compares each packed bundle with the live catalog: a bumped
+# version publishes, identical bytes are left as they are, and bytes that moved
+# under a version that did not are named in the run and left unpublished.
 #
 # What publishing produces:
-#   <module-id>@<version>   one prerelease per module, holding its per-target
-#                           .kmod bundles + .sha256 sidecars
+#   <module-id>@<version>   one prerelease per module, holding its .kmod and
+#                           .sha256
 #   modules                 a rolling prerelease holding only modules.json, the
-#                           merge of the newest release of every module. This is
-#                           what https://modules.kroma.tv serves and what the
+#                           newest release of every module. This is what
+#                           https://modules.kroma.tv serves and what the
 #                           in-app Store browses.
-#
-# A push that changes nothing a module ships publishes nothing: every module comes
-# out content-identical, so the run reports "unchanged" across the board and only
-# refreshes the catalog.
 
 on:
   push:
@@ -56,52 +48,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Runtime-installable module bundles: every module packed to a zstd .kmod the
-  # in-app Store installs (or an admin uploads) with no server rebuild. Built
-  # PER TARGET (a sidecar .kmod carries a native binary, so its platform must
-  # match the server): each matrix entry cross-compiles the sidecar binaries and
-  # suffixes the bundle with the triple; the publish job below merges every
-  # target into one published index. The musl builds are fully static, so one
-  # build per CPU arch covers everything on Linux: x86_64 musl serves the
-  # Synology .spk, the linux/amd64 Docker image and any x86_64 host; aarch64
-  # musl serves the linux/arm64 Docker image (Raspberry Pi & co) and any ARM64
-  # host.
-  #
-  # Per-target build strategy:
-  #  - linux musl: built INSIDE the same musl cross-toolchain image the Synology
-  #    .spk build uses (messense/rust-musl-cross), which is proven to link the
-  #    heavy sidecars (candle in whisper/vector, librqbit in torrents) for musl
-  #    a plain host `musl-gcc` lacks the C/C++ sysroot they need. The build plan
-  #    is derived from each module's Cargo.toml, then run in the container; the
-  #    .kmod staging + zstd packing (and each vite frontend) run on the host.
-  #  - macOS arm64 (dev servers): built natively on a macos runner, no container
-  #    (`kroma build` compiles + packs in one step).
+  # Every module's component and frontend, packed into dist/modules.
   modules:
-    name: Modules (.kmod ${{ matrix.target }})
-    runs-on: ${{ matrix.runner }}
+    name: Modules (.kmod)
+    runs-on: ubuntu-latest
     permissions:
       contents: read # only reads the repo and uploads run artifacts
     timeout-minutes: 90
-    strategy:
-      matrix:
-        # Add an entry to publish more platforms (image = cross container, blank
-        # = native build); the catalog picks up whatever targets appear.
-        include:
-          # Digest-pinned: a moving tag swaps rustc underneath and invalidates
-          # the whole cached target dir (same pin as clients/synology/build.sh).
-          - target: x86_64-unknown-linux-musl
-            runner: ubuntu-latest
-            image: messense/rust-musl-cross:x86_64-musl@sha256:ce75e9174325d4fbb3de85c309e2d7ca29f7500169bc4b5d2c611ff7e86d549a
-          # aarch64 flavor of the same cross image: ARM64 Linux hosts (Raspberry
-          # Pi 4/5, ARM servers) + the linux/arm64 half of the Docker image.
-          - target: aarch64-unknown-linux-musl
-            runner: ubuntu-latest
-            image: messense/rust-musl-cross:aarch64-musl@sha256:ecae5dd62d1c938c14f8071d36c16fa699860aace03bfb5284fb1216474d2643
-          - target: aarch64-apple-darwin
-            runner: macos-15
-            image: ''
-    env:
-      KMOD_TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -113,92 +66,33 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
-        if: matrix.image == ''
-        with:
-          targets: ${{ matrix.target }}
+      - name: Install the pinned toolchain and the component target
+        run: |
+          cargo --version
+          rustup target add wasm32-wasip2
 
-      # Cache the cargo registry + server/target (mounted into the container on
-      # the cross legs) so a re-run doesn't rebuild candle from scratch.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: |
             server
             . -> target/kmod
-          key: kmod-${{ matrix.target }}
+          key: kmod
 
-      # Cross legs: compile every sidecar binary in the proven musl toolchain
-      # image. The WHOLE repo is mounted (not server/ + packages/ separately):
-      # each module is its own workspace under modules/<id>, it path-deps the SDK
-      # back under server/crates, and kroma-i18n `include_str!`s the shared locale
-      # catalogs from packages/ — so only one mount keeps every relative path
-      # resolving. The build plan's manifest paths are repo-root relative.
-      - name: Cross-compile sidecar binaries (container)
-        if: matrix.image != ''
-        run: |
-          set -euo pipefail
-          bun run kroma plan > /tmp/kmod-build.sh
-          echo "=== build plan ==="; cat /tmp/kmod-build.sh
-          mkdir -p "$HOME/.cargo/registry"
-          docker run --rm \
-            -v "$PWD":/home/rust/repo \
-            -v "$HOME/.cargo/registry":/root/.cargo/registry \
-            -v /tmp/kmod-build.sh:/tmp/kmod-build.sh:ro \
-            -w /home/rust/repo \
-            "${{ matrix.image }}" \
-            bash -euo pipefail /tmp/kmod-build.sh
-
-      # The container runs as root and leaves root-owned files in target/kmod
-      # AND in the mounted ~/.cargo/registry; rust-cache's post-save step then
-      # died on the registry half ("tar: ../../../.cargo/registry/...: Cannot
-      # open: Permission denied" -> exit 2 -> "Failed to save"), so the cache
-      # NEVER persisted and every release recompiled the full dep tree (candle,
-      # librqbit, ... ~11 min). rust-cache saves ~/.cargo too, so BOTH trees
-      # must be handed back before anything tries to read or save them.
-      - name: Fix target ownership (container leg)
-        if: always() && matrix.image != ''
-        run: sudo chown -R "$(id -u):$(id -g)" target "$HOME/.cargo" || true
-
-      # The native leg runs the same plan. Now that each module is its own
-      # workspace there is no single invocation that selects them all, so the
-      # plan is one `cargo build` per module against a SHARED CARGO_TARGET_DIR:
-      # the common dep graph (axum, tokio, candle, librqbit) is still compiled
-      # once, but cargo holds an exclusive lock on that dir, so the final links
-      # run in sequence instead of overlapping the way one invocation allowed.
-      - name: Build every sidecar binary (native leg)
-        if: matrix.image == ''
-        run: |
-          set -euo pipefail
-          bun run kroma plan > /tmp/kmod-build.sh
-          echo "=== build plan ==="; cat /tmp/kmod-build.sh
-          bash -euo pipefail /tmp/kmod-build.sh
-
-      # Build each module's frontend remote, then stage + zstd-pack it with the
-      # binary into dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each).
-      # KMOD_SKIP_BUILD is set on BOTH legs: whichever step above produced the
-      # binaries, this one only stages them.
-      - name: Pack all modules
-        env:
-          KMOD_SKIP_BUILD: '1'
+      - name: Build and pack every module
         run: bun run kroma build
 
       - name: Upload .kmod artifacts (+ checksums)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: kroma-modules-${{ matrix.target }}
+          name: kroma-modules
           path: dist/modules/*.kmod*
           if-no-files-found: error
 
-  # Decide, then publish. `modules release` compares every packed bundle against
-  # the LIVE catalog and answers per module: publish under a new tag, skip because
-  # the bytes are identical, or fail the run because the bytes moved and the
-  # version did not. Nothing is published until every module has an answer, so a
-  # single un-bumped module stops the whole train rather than shipping a version
-  # that lies about its contents.
-  #
-  # `needs` is a plain dependency: a target whose build failed means the catalog
-  # would describe a module as available on a platform whose bundle does not
-  # exist. Better to publish nothing and keep the previous catalog serving.
+  # Decide, then publish. `kroma release` compares every packed bundle against
+  # the live catalog and answers per module: publish under a new tag, skip
+  # identical bytes, or leave out a module whose bytes moved under the same
+  # version. A build that failed publishes nothing, and the previous catalog
+  # keeps serving.
   publish:
     name: Publish the module releases
     needs: modules
@@ -223,12 +117,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Collect every target's bundles
+      - name: Collect the bundles
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: kroma-modules-*
+          name: kroma-modules
           path: dist/modules
-          merge-multiple: true
 
       # Reads the live catalog off the registry worker (its default), so the
       # comparison is against what servers are actually being served - not

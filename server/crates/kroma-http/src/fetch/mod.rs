@@ -1,18 +1,15 @@
 //! The request builder and the executors that send it.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use anyhow::{Context, Result};
-use serde::de::DeserializeOwned;
-
-use crate::config::{header_line, option_line};
-use crate::multipart::FormPart;
-use crate::response::Response;
-
+#[cfg(target_family = "wasm")]
+pub mod guest;
+#[cfg(not(target_family = "wasm"))]
+mod native;
+#[cfg(not(target_family = "wasm"))]
 mod render;
+#[cfg(not(target_family = "wasm"))]
 mod send;
-
-use send::Call;
 
 /// A prepared request: builder-style options, then one of the executors
 /// ([`Fetch::get`], [`Fetch::post_json`], [`Fetch::post_form`]). Every executor
@@ -72,7 +69,7 @@ impl Fetch {
     /// resolves the name: curl reads `socks5://` as "resolve locally" even under
     /// `--socks5-hostname`. A proxy the gate names replaces this one.
     pub fn socks5(mut self, proxy: impl Into<String>) -> Self {
-        self.socks5 = render::bare_proxy(&proxy.into());
+        self.socks5 = bare_proxy(&proxy.into());
         self
     }
 
@@ -134,86 +131,12 @@ impl Fetch {
         self
     }
 
-    pub fn get(&self, url: &str) -> Result<Response> {
-        let mut config = self.base_config();
-        if !self.query.is_empty() {
-            config.push_str("get\n");
-            for (k, v) in &self.query {
-                config.push_str(&option_line("data-urlencode", &format!("{k}={v}")));
-            }
-        }
-        config.push_str(&option_line("url", url));
-        self.send(Call::get(), url, config)
-    }
+}
 
-    /// GET `url` into the file at `dest` rather than into memory, for a body
-    /// too large to hold. The response carries the status and headers and an
-    /// empty body; `dest` holds whatever was sent, an error page included, so
-    /// check the status before keeping it.
-    pub fn download(&self, url: &str, dest: &Path) -> Result<Response> {
-        let mut config = self.base_config();
-        config.push_str(&option_line("output", &dest.to_string_lossy()));
-        config.push_str(&option_line("url", url));
-        self.send(Call::download(dest), url, config)
-    }
-
-    pub fn post_json(&self, url: &str, body: &serde_json::Value) -> Result<Response> {
-        let body = serde_json::to_string(body)?;
-        let mut config = self.base_config();
-        config.push_str(&header_line("content-type", "application/json"));
-        config.push_str(&option_line("data-binary", &body));
-        config.push_str(&option_line("url", url));
-        self.send(Call::post(body.len() as u64), url, config)
-    }
-
-    /// POST a raw byte body (Web Push's `aes128gcm` ciphertext).
-    ///
-    /// The bytes go through a temp file, not an argv entry: an encrypted body is
-    /// arbitrary binary, and a command-line argument cannot carry a NUL and
-    /// would be mangled by any non-UTF-8 byte.
-    pub fn post_bytes(&self, url: &str, content_type: &str, body: &[u8]) -> Result<Response> {
-        use std::io::Write;
-
-        let mut file = tempfile::Builder::new()
-            .prefix("kroma-http-body-")
-            .tempfile()
-            .context("create the curl request body")?;
-        file.write_all(body)
-            .context("write the curl request body")?;
-        file.flush().context("write the curl request body")?;
-
-        let mut config = self.base_config();
-        config.push_str(&header_line("content-type", content_type));
-        config.push_str(&option_line(
-            "data-binary",
-            &format!("@{}", file.path().display()),
-        ));
-        config.push_str(&option_line("url", url));
-        self.send(Call::post(body.len() as u64), url, config)
-    }
-
-    /// `application/x-www-form-urlencoded` POST (qBittorrent login/actions).
-    /// With no fields it is a POST with an empty body rather than a GET, which
-    /// is what Roku's ECP wants: the arguments in the query string, nothing else.
-    pub fn post_form(&self, url: &str, fields: &[(&str, &str)]) -> Result<Response> {
-        let sent = fields
-            .iter()
-            .map(|(k, v)| (k.len() + v.len() + 1) as u64)
-            .sum();
-        self.send(Call::post(sent), url, self.form_config(url, fields))
-    }
-
-    /// `multipart/form-data` POST (Roku's developer installer takes the channel
-    /// zip this way).
-    pub fn post_multipart(&self, url: &str, parts: &[(&str, FormPart<'_>)]) -> Result<Response> {
-        let sent = parts.iter().map(|(_, part)| part.size()).sum();
-        self.send(Call::post(sent), url, self.multipart_config(url, parts))
-    }
-
-    /// GET expecting a 2xx JSON body; the common happy path in one call.
-    pub fn get_json<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        self.get(url)?.ensure_ok()?.json()
-    }
+pub(crate) fn bare_proxy(proxy: &str) -> Option<String> {
+    let proxy = proxy.trim();
+    let bare = proxy.split_once("://").map_or(proxy, |(_, rest)| rest);
+    (!bare.is_empty()).then(|| bare.to_string())
 }
 
 #[cfg(test)]

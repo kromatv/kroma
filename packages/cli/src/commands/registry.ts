@@ -51,9 +51,6 @@ export function registryCommand(options: RegistryOptions): number {
   }
 
   console.log(`registry: ${modules.length} module(s) -> ${outDir}`);
-  for (const m of modules) {
-    const targets = m.artifacts.map((a) => a.target ?? 'universal').join(', ');
-    console.log(`  ${m.id}  v${m.version}  [${targets}]`);
-  }
+  for (const m of modules) console.log(`  ${m.id}  v${m.version}`);
   return 0;
 }

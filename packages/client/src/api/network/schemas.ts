@@ -116,9 +116,24 @@ export const InboundSummary = z.object({
 });
 export type InboundSummary = z.infer<typeof InboundSummary>;
 
-/** What a matching rule does with a connection. */
-export const RuleAction = z.enum(['direct', 'vpn', 'block']);
+/** What a matching rule does with a connection: `direct`, `block`, or the name of
+ * the network it goes through. */
+export const RuleAction = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 export type RuleAction = z.infer<typeof RuleAction>;
+
+/** One way out a module offers. Its endpoint and credentials stay in the core. */
+export const NetworkView = z.object({
+  name: z.string(),
+  label: z.string(),
+  carries: z.object({ tcp: z.boolean(), udp: z.boolean(), dns: z.boolean() }),
+  up: z.boolean(),
+  exit: z.string().nullish(),
+});
+export type NetworkView = z.infer<typeof NetworkView>;
+
+/** `GET /api/admin/network/networks`. */
+export const NetworksView = z.object({ networks: z.array(NetworkView) });
+export type NetworksView = z.infer<typeof NetworksView>;
 
 /** What happens to a connection no rule matches. */
 export const DefaultAction = z.enum(['allow', 'block']);
@@ -131,6 +146,8 @@ export const Rule = z.object({
   caller: z.string().nullable(),
   purpose: z.string().nullable(),
   host: z.string().nullable(),
+  port: z.number().int().min(1).max(65535).nullish(),
+  address: z.string().nullish(),
   action: RuleAction,
   note: z.string().nullable(),
 });

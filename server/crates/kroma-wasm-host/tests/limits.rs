@@ -18,6 +18,16 @@ fn a_component_allocates_freely_below_its_memory_ceiling() {
 }
 
 #[test]
+fn an_instance_keeps_the_memory_it_grew_to_after_the_call_frees_it() {
+    let mut module = sandboxed();
+    let size = MEMORY_CEILING_BYTES / 4;
+
+    probe(&mut module, "/memory", &size.to_string());
+
+    assert!(module.memory_bytes() >= size, "{}", module.memory_bytes());
+}
+
+#[test]
 fn a_component_that_allocates_past_its_ceiling_stops_with_a_memory_error() {
     let mut module = sandboxed();
 
@@ -41,6 +51,16 @@ fn a_component_that_loops_forever_stops_at_its_cpu_budget() {
         matches!(error, HostError::CpuBudget { budget } if budget == CPU_BUDGET),
         "{error:?}"
     );
+}
+
+#[test]
+fn a_component_that_sleeps_past_its_cpu_budget_is_not_stopped() {
+    let mut module = sandboxed();
+    let past_the_budget = (CPU_BUDGET * 4).as_millis().to_string();
+
+    let response = probe(&mut module, "/sleep", &past_the_budget);
+
+    assert_eq!((response.status, text(&response).as_str()), (200, "awake"));
 }
 
 #[test]

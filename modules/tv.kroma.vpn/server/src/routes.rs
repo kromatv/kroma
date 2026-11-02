@@ -56,15 +56,20 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    let bridge_running = match service::<Vpn>(&state) {
+    let vpn = service::<Vpn>(&state);
+    let bridge_running = match &vpn {
         Some(vpn) => vpn.running().await,
         None => false,
     };
+    let status = crate::port::engine_status(&state);
+    if let Some(vpn) = &vpn {
+        vpn.remember_exit(status.as_ref().and_then(|status| status.exit_ip.clone()));
+    }
     let view = VpnAdminView {
         wg_configured: wg_configured(&state),
         bridge_running,
         local_port: state.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16,
-        status: crate::port::engine_status(&state),
+        status,
     };
     Ok(Json(view).into_response())
 }

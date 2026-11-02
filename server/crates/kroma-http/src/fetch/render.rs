@@ -1,15 +1,10 @@
 //! A [`Fetch`]'s options, spelled as the curl config it hands over on stdin.
 
 use crate::config::{header_line, option_line};
+use crate::egress::Gateway;
 use crate::multipart::{part_line, FormPart};
 
 use super::Fetch;
-
-pub(super) fn bare_proxy(proxy: &str) -> Option<String> {
-    let proxy = proxy.trim();
-    let bare = proxy.split_once("://").map_or(proxy, |(_, rest)| rest);
-    (!bare.is_empty()).then(|| bare.to_string())
-}
 
 pub(super) fn proxy_lines(proxy: &str) -> String {
     // ipv4: the only SOCKS proxy (a WireGuard bridge) is IPv4-only, and a
@@ -19,6 +14,15 @@ pub(super) fn proxy_lines(proxy: &str) -> String {
     // An empty list overrides `NO_PROXY`, which would send its hosts around the
     // tunnel.
     lines.push_str(&option_line("noproxy", ""));
+    lines
+}
+
+pub(super) fn gateway_lines(gateway: &Gateway, username: &str) -> String {
+    let mut lines = proxy_lines(&gateway.address);
+    lines.push_str(&option_line(
+        "proxy-user",
+        &format!("{username}:{}", gateway.credential),
+    ));
     lines
 }
 

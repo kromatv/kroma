@@ -4,7 +4,7 @@
 #
 # Inputs (env): GH_TOKEN, GH_REPO, SHA
 # Inputs (files): dist/registry/plan.json, dist/registry/modules.json,
-#                 dist/modules/<the .kmod files the plan names>
+#                 dist/modules/<the .kmod and .sha256 each release names>
 set -euo pipefail
 
 plan=dist/registry/plan.json
@@ -39,10 +39,10 @@ for i in $(seq 0 $((count - 1))); do
     gh release create "$tag" \
       --target "$SHA" \
       --title "$id $version" \
-      --notes "Installable \`.kmod\` bundles for \`$id\` $version.
+      --notes "The \`.kmod\` bundle for \`$id\` $version, which installs on every platform.
 
 Install from **Admin → Modules** in KROMA; the Store resolves this from the
-catalog at https://modules.kroma.tv/modules.json and verifies each SHA-256." \
+catalog at https://modules.kroma.tv/modules.json and verifies its SHA-256." \
       --prerelease >/dev/null
     # A prerelease so a module never becomes the repo's `latest` release and
     # displaces the server's.

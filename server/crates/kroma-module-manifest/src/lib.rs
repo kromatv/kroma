@@ -10,7 +10,6 @@ mod manifest;
 mod notifications;
 mod permissions;
 mod registry;
-mod seam;
 
 pub use compat::{
     engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
@@ -25,14 +24,13 @@ pub use kroma_module_macros::embedded_module;
 pub use kroma_module_wire::NotificationType;
 pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
-    ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,
+    ComponentNeeds, ConfigField, Contribution, CoreScope, Dependency, FeRemote, Helper, HelperAsset, ModuleManifest, PointDef, PointReq,
     SettingsScope, Storage, Version,
 };
 pub use permissions::{
-    Attempt, Connect, FsPermissions, FsRoot, Listen, NetPermissions, Permissions, Proto,
+    Attempt, Connect, Discovery, FsPermissions, FsRoot, Listen, NetPermissions, Permissions, Proto, Reach,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
-pub use seam::Seam;
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the
 /// module's `module.json`, embedded at build time via `include_bytes!` and

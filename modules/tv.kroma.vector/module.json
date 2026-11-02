@@ -1,10 +1,15 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.vector",
   "name": "Embeddings",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "description": "Content embeddings for recommendations and semantic search.",
+  "component": {
+    "instances": 2,
+    "memoryMib": 1024,
+    "cpuSeconds": 600
+  },
   "engines": {
     "server": ">=0.1.39"
   },
@@ -13,7 +18,21 @@
       "point": "embedder"
     }
   ],
+  "dataDirs": ["models"],
   "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "model-download",
+          "to": ["huggingface.co", "*.huggingface.co", "*.hf.co"],
+          "ports": [443]
+        }
+      ]
+    },
+    "fs": {
+      "read": ["module"],
+      "write": ["module"]
+    },
     "env": ["KROMA_EMBED_MODEL_DIR"]
   }
 }

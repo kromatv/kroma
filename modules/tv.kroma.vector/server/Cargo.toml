@@ -12,10 +12,15 @@ description = "Content embeddings (lexical default + optional MiniLM/candle sema
 license = "AGPL-3.0-or-later"
 
 [[bin]]
-# The module's `.kmod` entrypoint: a port-provider-only sidecar serving the
-# embedder over HTTP (see src/bin/module.rs).
+# The module's `.kmod` entrypoint: a port provider serving the embedder (see
+# src/bin/module.rs).
 name = "kroma-module-vector"
 path = "src/bin/module.rs"
+
+[package.metadata.kmod]
+# The packed `.kmod` carries the MiniLM backend. With no model on disk it answers
+# with the lexical embedder.
+features = ["semantic"]
 
 [features]
 # Off by default: the dependency-free lexical embedder is the default backend.
@@ -24,10 +29,8 @@ semantic = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:
 
 [dependencies]
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
-# The `.kmod` binary: the out-of-process runtime + axum for the embedder routes.
+# The `.kmod` binary: the runtime + axum for the embedder routes.
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
-axum = { version = "0.8", features = ["macros", "ws"] }
-tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -35,24 +38,34 @@ tracing = "0.1"
 candle-core = { version = "0.11", default-features = false, optional = true }
 candle-nn = { version = "0.11", default-features = false, optional = true }
 candle-transformers = { version = "0.11", default-features = false, optional = true }
-tokenizers = { version = "0.23", default-features = false, features = ["onig"], optional = true }
+tokenizers = { version = "0.23", default-features = false, features = ["fancy-regex"], optional = true }
 
-# Auto-enable Metal on Apple-Silicon dev builds (see kroma-whisper for the
-# rationale); inert until `semantic` pulls candle in.
+# Metal for a native macOS build (the tests); inert until `semantic` pulls candle
+# in, and the published bundle is a component, which never has it.
 [target.'cfg(target_os = "macos")'.dependencies]
 candle-core = { version = "0.11", default-features = false, features = ["metal"], optional = true }
 candle-nn = { version = "0.11", default-features = false, features = ["metal"], optional = true }
 candle-transformers = { version = "0.11", default-features = false, features = ["metal"], optional = true }
 
 [dev-dependencies]
+# `testing::temp_dir`, the scratch dir the weights tests write in.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 # `oneshot`, to drive the embedder routes without binding a port.
 tower = "0.5"
 
-# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
-# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
-# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
-# process and the supervisor respawns it. Defined per module because a profile is
-# only honoured at a workspace root, and each module is now its own workspace.
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+
+# The profile `kroma build` builds this component with: release + `panic =
+# "abort"`, which drops the unwinding tables at no speed cost (opt-level stays
+# 3). Safe for a component: a panic traps its instance, and the host starts a
+# fresh one. Defined per module because a profile is only honoured at a
+# workspace root, and each module is its own workspace.
 # Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
 # workspace root, and this module is its own workspace, so `inherits = "release"`
 # below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen

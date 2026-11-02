@@ -1,4 +1,4 @@
-//! The `/_host/setting` + `/_host/settings` callbacks: what a sidecar may read
+//! The `/_host/setting` + `/_host/settings` callbacks: what a module may read
 //! and write of the core's settings store, by what the core declared about the key
 //! and what the calling module declared about itself.
 

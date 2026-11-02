@@ -8,7 +8,7 @@ use axum::{Json, Router};
 use serde::Deserialize;
 
 use kroma_module_sdk::domain::{Permission, User};
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 
 use super::{Unit, start_cutoff_search, start_title_search};

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mb, platformLabel, shortHash } from './ui';
+import { mb, shortHash } from './ui';
 
 describe('mb', () => {
   it('stays in kilobytes below a megabyte and never rounds down to nothing', () => {
@@ -17,25 +17,6 @@ describe('mb', () => {
     expect(mb(0)).toBe('');
     expect(mb(null)).toBe('');
     expect(mb(undefined)).toBe('');
-  });
-});
-
-describe('platformLabel', () => {
-  it('names the four published targets the way a reader recognises them', () => {
-    expect(platformLabel('aarch64-apple-darwin')).toBe('macOS arm64');
-    expect(platformLabel('x86_64-apple-darwin')).toBe('macOS x64');
-    expect(platformLabel('aarch64-unknown-linux-musl')).toBe('Linux arm64');
-    expect(platformLabel('x86_64-unknown-linux-musl')).toBe('Linux x64');
-  });
-
-  it('passes an unmapped triple through rather than hiding it', () => {
-    expect(platformLabel('riscv64-unknown-linux-gnu')).toBe('riscv64-unknown-linux-gnu');
-  });
-
-  it('calls a module built for no target universal', () => {
-    expect(platformLabel(null)).toBe('Universal');
-    expect(platformLabel(undefined)).toBe('Universal');
-    expect(platformLabel('')).toBe('Universal');
   });
 });
 

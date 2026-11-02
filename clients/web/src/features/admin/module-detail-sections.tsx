@@ -221,8 +221,8 @@ function restartState(module: AdminModule, restart: ModuleRestart) {
   return { tone: 'neutral', icon: 'refresh', title: null } as const;
 }
 
-/** The sidecar's state and the one action that answers it. Only for a module
- * that has a process to restart: a library module ships no binary. */
+/** The module's state and the one action that answers it. Only for a module
+ * that has code to run: a library module ships none. */
 export function RestartCallout({
   module,
   restart,

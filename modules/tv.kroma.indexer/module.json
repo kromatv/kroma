@@ -1,9 +1,13 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.4.31",
+  "version": "0.4.32",
+  "component": {
+    "instances": 4,
+    "cpuSeconds": 300
+  },
   "description": "Native Cardigann indexer engine: searches trackers from community YAML definitions, no external Torznab aggregator.",
   "engines": {
     "server": ">=0.1.39"
@@ -54,13 +58,14 @@
       "point": "tv.kroma.indexer/engine"
     },
     {
-      "point": "tv.kroma.vpn/proxy",
+      "point": "network",
       "optional": true
     }
   ],
   "storage": {
     "adopt": ["indexers"]
   },
+  "dataDirs": ["indexer-defs"],
   "permissions": {
     "net": {
       "connect": [
@@ -86,7 +91,6 @@
     "fs": {
       "read": ["module"],
       "write": ["module"]
-    },
-    "run": ["tar"]
+    }
   }
 }

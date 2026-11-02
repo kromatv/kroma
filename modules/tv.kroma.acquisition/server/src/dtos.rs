@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// One score-explanation line (mirrors `kroma_scene::ScoreLine` on the wire).
 /// `code` is the stable key a screen translates with `params`; `rule` holds
 /// the same code and `note` the English, for a caller that reads neither.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoreLineView {
     pub rule: String,
@@ -31,7 +31,7 @@ impl From<&kroma_scene::ScoreLine> for ScoreLineView {
 
 /// Why a profile would not take a release, as a screen can say it in the
 /// reader's own language: a stable `rule` and what the sentence needs.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RefusalView {
     pub rule: String,
@@ -57,7 +57,7 @@ impl From<&kroma_scene::Reject> for RefusalView {
 }
 
 /// A custom format a release matched, and what the profile scores it.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FormatScoreView {
     pub name: String,
@@ -66,7 +66,7 @@ pub struct FormatScoreView {
 
 /// One release from an interactive search, scored (or rejected with the rule
 /// that fired). Sorted accepted-first, best score first.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoredReleaseView {
     pub title: String,

@@ -179,11 +179,21 @@ fn run(conn: &mut Connection, step: &Step, version: u32) -> Result<()> {
     Ok(())
 }
 
+#[cfg(target_family = "wasm")]
+fn write_snapshot(conn: &Connection, target: &Path) -> rusqlite::Result<()> {
+    conn.snapshot_to(target)
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn write_snapshot(conn: &Connection, target: &Path) -> rusqlite::Result<()> {
+    conn.execute("VACUUM INTO ?1", [target.to_string_lossy()]).map(|_| ())
+}
+
 fn snapshot(conn: &Connection, path: &Path, version: u32) {
     let target = snapshot_path(path, version);
     let _ = std::fs::remove_file(&target);
-    match conn.execute("VACUUM INTO ?1", [target.to_string_lossy()]) {
-        Ok(_) => prune_snapshots(path),
+    match write_snapshot(conn, &target) {
+        Ok(()) => prune_snapshots(path),
         Err(e) => tracing::warn!(
             "no copy of {} was kept before upgrading it: {e}",
             path.display()

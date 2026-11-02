@@ -1,47 +1,54 @@
-//! The core side of the out-of-process module system: spawns each installed
-//! module's binary, reverse-proxies to it, and serves the `/api/_host/*` callback API.
+//! The core side of the module system: runs each installed module, a WebAssembly
+//! component, inside the server on a socket of its own, reverse-proxies to it,
+//! and serves the `/api/_host/*` callback API.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use kroma_module_host::Contribution;
-use kroma_module_manifest::{ModuleManifest, Seam};
+use kroma_module_manifest::ModuleManifest;
 use serde_json::Value;
 
 mod adopt;
+#[cfg(unix)]
+mod component;
+mod endpoint;
+#[cfg(unix)]
+mod gateway;
 mod host_api;
 mod install;
+mod lifecycle;
 mod manifests;
 mod notifications;
 mod origin;
 mod permissions;
-mod process;
+mod program_env;
 mod proxy;
 mod registry;
 mod run_dir;
-mod seam;
-mod sidecar_env;
 mod tokens;
 mod watch;
 
+#[cfg(unix)]
+pub use component::MediaRoots;
+pub use endpoint::Endpoint;
 pub use host_api::host_router;
-pub use origin::{BinStamp, Origin, Source};
+pub use origin::{Accept, BinStamp, Origin, Source};
 pub use proxy::proxy_to;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
-pub use seam::Endpoint;
 
-use manifests::{check_manifest_schema, grant_json};
-use process::Proc;
+use lifecycle::Proc;
+use manifests::check_manifest_schema;
 use run_dir::RunDir;
 
-pub const MODULE_BIN: &str = "module";
+pub const MODULE_COMPONENT: &str = "module.wasm";
 pub const MODULE_STORE: &str = "module.sqlite";
+const NATIVE_BINARY: &str = "module";
 const LOCALES_DIR: &str = "locales";
 const STAGING_PREFIX: &str = ".staging-";
 
-/// Where a module's own log lines go, as `(module_id, line)`. `None` leaves the
-/// sidecar's stdout and stderr inherited by the core process.
+/// Where a module's own log lines go, as `(module_id, line)`. `None` drops them.
 pub type LogSink = Arc<dyn Fn(&str, &str) + Send + Sync>;
 
 #[derive(Clone)]
@@ -69,6 +76,10 @@ pub struct Supervisor {
     // itself in quick succession; within the TTL they share one fetch.
     catalog_cache: RwLock<HashMap<String, (std::time::Instant, Value)>>,
     registry_clients: registry::Clients,
+    #[cfg(unix)]
+    gateway: gateway::Slot,
+    #[cfg(unix)]
+    wasm: std::sync::OnceLock<kroma_wasm_host::WasmHost>,
 }
 
 impl Supervisor {
@@ -83,6 +94,10 @@ impl Supervisor {
             notifications_cache: RwLock::new(None),
             catalog_cache: RwLock::new(HashMap::new()),
             registry_clients: registry::Clients::default(),
+            #[cfg(unix)]
+            gateway: gateway::Slot::new(),
+            #[cfg(unix)]
+            wasm: std::sync::OnceLock::new(),
         })
     }
 
@@ -91,7 +106,7 @@ impl Supervisor {
     }
 
     /// Move any table `id` declared as its own out of the core database and into
-    /// its own file, before the process that will read it starts. Best-effort:
+    /// its own file, before the component that will read it starts. Best-effort:
     /// a failure leaves the rows in the core database and is logged, because a
     /// module that starts without its old rows is worse than one that starts late.
     fn adopt_declared_tables(&self, id: &str, storage: Option<&kroma_module_manifest::Storage>) {
@@ -123,14 +138,14 @@ impl Supervisor {
 
     /// A lifecycle line in the module's OWN log stream. `tracing` would file it
     /// under the core, where nobody looking at that module would find it: a
-    /// restart has to read as one story next to the sidecar's own output.
+    /// restart has to read as one story next to the module's own output.
     fn say(&self, id: &str, line: &str) {
         if let Some(log_line) = &self.cfg.log_line {
             log_line(id, line);
         }
     }
 
-    /// Where `id`'s process answers, while it runs.
+    /// Where `id` answers, while it runs.
     pub fn endpoint_of(&self, id: &str) -> Option<Endpoint> {
         self.procs
             .read()
@@ -170,10 +185,10 @@ impl Supervisor {
     /// failing a request an hour later. The definer is found from the point's own
     /// name, which is why a point carries one.
     pub fn contributions(&self, point: &str) -> Vec<Contribution> {
-        self.answers(point, Seam::Unix)
+        self.answers(point, false)
     }
 
-    fn answers(&self, point: &str, caller: Seam) -> Vec<Contribution> {
+    fn answers(&self, point: &str, via_core: bool) -> Vec<Contribution> {
         let installed = self.installed_manifests();
         let defined_at = point_major(&installed, point);
         let mut out = Vec::new();
@@ -186,7 +201,7 @@ impl Supervisor {
             let Some(live) = self.endpoint_of(&m.id) else {
                 continue;
             };
-            let base = self.peer_base(&m.id, &live, caller);
+            let base = self.peer_base(&m.id, &live, via_core);
             for answer in answers {
                 if defined_at.is_some_and(|major| answer.version != major) {
                     self.say(

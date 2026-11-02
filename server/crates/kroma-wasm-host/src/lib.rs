@@ -3,18 +3,26 @@
 //! decides every fetch, and the settings its [`Grant`] declares.
 
 mod bindings;
+mod capabilities;
 mod error;
 mod host;
 mod instance;
 mod limits;
+mod log;
 mod policy;
 mod settings;
 mod state;
 
-pub use bindings::kroma::module::types::{Request, Response};
+pub use bindings::kroma::module::net::FetchRequest;
+pub use bindings::kroma::module::types::{Header, Request, Response};
+pub use capabilities::{
+    Command, Databases, Files, Lan, Output, Preopen, Processes, Reply, Service, SqlConnection, SqlFailure,
+    SqlOutcome, SqlValue,
+};
 pub use error::HostError;
-pub use host::{ModuleComponent, WasmHost};
+pub use host::{ModuleComponent, Readied, WasmHost};
 pub use instance::{Grant, ModuleInstance};
 pub use limits::Limits;
+pub use log::LogSink;
 pub use policy::{FetchCall, FetchRecord, NetPolicy, Outcome, Verdict};
 pub use settings::Settings;

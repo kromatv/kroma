@@ -1,5 +1,5 @@
 //! In-memory ring buffer of recent log lines, fed by the core's tracing layer
-//! and by each module sidecar's piped output. Process-global because the tracing
+//! and by each module's log lines. Process-global because the tracing
 //! layer is installed before any state exists.
 
 use std::collections::VecDeque;
@@ -57,10 +57,10 @@ impl LogBuffer {
         });
     }
 
-    /// A raw sidecar line (`2026-07-16T07:37:53Z  INFO target: msg`): parses out
+    /// A raw module line (`2026-07-16T07:37:53Z  INFO target: msg`): parses out
     /// the level and drops the leading timestamp, which the entry carries itself.
     pub fn push_module_line(&self, module_id: &str, line: &str) {
-        // Sidecars keep ANSI colour on (their fmt layer never checks the pipe).
+        // Modules keep ANSI colour on (their fmt layer never checks where it writes).
         let line = strip_ansi(line);
         let mut message = line.trim_end();
         let mut level = "info";

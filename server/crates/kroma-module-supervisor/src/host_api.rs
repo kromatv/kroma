@@ -1,4 +1,4 @@
-//! The `/api/_host/*` callback API a sidecar reaches back into the core with:
+//! The `/api/_host/*` callback API a module reaches back into the core with:
 //! settings, events, notifications, jobs, session lookups and the network
 //! policy.
 
@@ -47,16 +47,20 @@ where
         .route("/_host/metadata-language", get(metadata_language::<S>))
         .route("/_host/metadata-search", get(metadata_search::<S>))
         .route("/_host/metadata-episodes", get(metadata_episodes::<S>))
-        // By NAME: a sidecar asks for the credential it needs, and this route
+        // By NAME: a module asks for the credential it needs, and this route
         // never learns which vendors exist.
         .route("/_host/secret", get(secret::<S>))
-        // Authentication, so a sidecar resolves the caller of one of its routes
+        // Authentication, so a module resolves the caller of one of its routes
         // without reading the `sessions` table, the last thing that made a
         // module with no storage of its own open a database.
         .route("/_host/session", post(session_user::<S>))
         // How a module reaches a peer: it asks for a CONTRACT and the core
         // answers with whoever serves it. No module id crosses this wire.
         .route("/_host/contributions", get(contributions))
+        .route(
+            "/_host/network/seal",
+            post(network::seal),
+        )
         .route(
             "/_host/network/decide",
             post(network::decide).layer(DefaultBodyLimit::max(network::MAX_ASK_BYTES)),

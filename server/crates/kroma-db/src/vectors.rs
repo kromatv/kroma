@@ -20,7 +20,12 @@ pub use recommendations::*;
 pub use search::*;
 
 /// Insert/replace one title's embedding. `vec` MUST already be L2-normalized.
+/// An empty `vec` is what an embedder that did not answer returns: it stores
+/// nothing and leaves any vector already there.
 pub fn set_item_vector(pool: &Pool, id: &str, vec: &[f32]) -> Result<()> {
+    if vec.is_empty() {
+        return Ok(());
+    }
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO item_vectors (id, dim, vec, updated_at) VALUES (?1, ?2, ?3, ?4) \
@@ -159,5 +164,23 @@ mod tests {
         assert_eq!(prune_orphan_vectors(&p).unwrap(), 1);
         assert!(!has_vector(&p, "orphan").unwrap());
         assert!(has_vector(&p, "a").unwrap());
+    }
+
+    #[test]
+    fn an_empty_vector_keeps_the_one_already_stored() {
+        let p = seeded();
+
+        set_item_vector(&p, "a", &[]).unwrap();
+
+        assert_eq!(vector_dim(&p, "a").unwrap(), Some(2));
+    }
+
+    #[test]
+    fn an_empty_vector_stores_no_row() {
+        let p = seeded();
+
+        set_item_vector(&p, "orphan", &[]).unwrap();
+
+        assert!(!has_vector(&p, "orphan").unwrap());
     }
 }

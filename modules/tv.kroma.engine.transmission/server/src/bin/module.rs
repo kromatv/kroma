@@ -7,11 +7,6 @@
 
 use kroma_module_runtime::RemoteHost;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve(
+kroma_module_runtime::module_main!(
         |_host| kroma_transmission::port::routes(),
-        vec![kroma_transmission::server_module::<RemoteHost>()],
-    )
-    .await
-}
+        vec![kroma_transmission::server_module::<RemoteHost>()],);

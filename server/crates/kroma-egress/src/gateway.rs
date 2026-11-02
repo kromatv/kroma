@@ -7,30 +7,18 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
 use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::net::{TcpListener, TcpStream, UnixListener};
+use tokio::net::{TcpListener, TcpStream};
 
 use kroma_http::address::is_public;
 
 use crate::protocol::{accept_credentials, answer_credentials, read_connect, reply, Reply};
-use crate::{upstream, Flow, Host, Policy, Request, Route, Verdict};
+use crate::{upstream, Flow, Host, Policy, Request, Route, Ruling, Verdict};
 
 const HANDSHAKE_BUDGET: Duration = Duration::from_secs(10);
 const CONNECT_BUDGET: Duration = Duration::from_secs(15);
 const RELAY_BUFFER: usize = 64 * 1024;
 
-/// Serve callers on a Unix socket until the listener fails. The socket is how
-/// a module with no network of its own reaches anything.
-pub async fn serve_unix(listener: UnixListener, policy: Arc<dyn Policy>) {
-    loop {
-        let Ok((stream, _)) = listener.accept().await else {
-            return;
-        };
-        tokio::spawn(handle(stream, Arc::clone(&policy)));
-    }
-}
-
-/// Serve callers on a TCP listener, for a caller that cannot dial a Unix
-/// socket. Bind it to loopback only.
+/// Serve callers on a TCP listener until it fails. Bind it to loopback only.
 pub async fn serve_tcp(listener: TcpListener, policy: Arc<dyn Policy>) {
     loop {
         let Ok((stream, _)) = listener.accept().await else {
@@ -56,7 +44,8 @@ where
         let request = request.clone();
         tokio::task::spawn_blocking(move || policy.decide(&request)).await
     };
-    let verdict = decided.unwrap_or_else(|_| Verdict::Block("the policy failed".into()));
+    let Ruling { verdict, rule } =
+        decided.unwrap_or_else(|_| Verdict::Block("the policy failed".into()).into());
     let mut flow = Flow {
         caller: request.caller.clone(),
         purpose: request.purpose.clone(),
@@ -67,6 +56,7 @@ where
         bytes_down: 0,
         duration: Duration::ZERO,
         error: None,
+        rule,
     };
     let dialled = match verdict {
         Verdict::Block(reason) => Err((Reply::NotAllowed, reason)),

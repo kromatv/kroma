@@ -7,14 +7,16 @@ use std::collections::HashSet;
 
 use anyhow::Result;
 use kroma_module_sdk::db::{self, WantedRow};
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::HostStorage;
+use kroma_module_sdk::primitives::now_ms;
 use serde::{Deserialize, Serialize};
 
 use crate::auto::{AutoSummary, Pass, search_title};
 use crate::peers::indexers::IndexerRef;
 use crate::upgrades::{Sweep, upgrade_pass};
 
+mod lease;
 mod queue;
 mod routes;
 mod start;
@@ -39,7 +41,7 @@ pub struct Unit {
 /// Searches every title a page queued. The `acquisition.ondemand` job.
 pub fn drain_queue<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<AutoSummary> {
     let mut summary = AutoSummary::default();
-    let Some(_slot) = start::claim() else {
+    let Some(slot) = lease::claim(state.store(), now_ms())? else {
         log("another search is already running".into());
         return Ok(summary);
     };
@@ -47,7 +49,8 @@ pub fn drain_queue<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Au
         let Some(ask) = queue::take(state.store())? else {
             break;
         };
-        search_title_now(state, ask.kind, ask.tmdb_id, &ask.units, log, &mut summary)?;
+        slot.renew();
+        search_title_now(state, &ask, &slot, log, &mut summary)?;
     }
     if summary.titles == 0 {
         log("no title is waiting to be searched".into());
@@ -59,26 +62,26 @@ pub fn drain_queue<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Au
 /// `acquisition.cutoff` job.
 pub fn sweep_cutoff<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<AutoSummary> {
     let mut summary = AutoSummary::default();
-    let Some(_slot) = start::claim() else {
+    let Some(slot) = lease::claim(state.store(), now_ms())? else {
         log("another search is already running".into());
         return Ok(summary);
     };
-    search_cutoff_now(state, log, &mut summary)?;
+    search_cutoff_now(state, &slot, log, &mut summary)?;
     Ok(summary)
 }
 
 fn search_title_now<S: HostStorage>(
     state: &S,
-    kind: RequestKind,
-    tmdb_id: u64,
-    units: &[Unit],
+    ask: &queue::Ask,
+    slot: &lease::Slot,
     log: &dyn Fn(String),
     summary: &mut AutoSummary,
 ) -> Result<()> {
+    let (kind, tmdb_id) = (ask.kind, ask.tmdb_id);
     let Some(indexers) = sweepable(state, log)? else {
         return Ok(());
     };
-    let open = open_rows(state, kind, tmdb_id, units)?;
+    let open = open_rows(state, kind, tmdb_id, &ask.units)?;
     if open.is_empty() {
         log(format!("nothing is missing on title {tmdb_id}"));
         return Ok(());
@@ -90,6 +93,7 @@ fn search_title_now<S: HostStorage>(
         book: &book,
         log,
         cancelled: &|| false,
+        searching: &|| slot.renew(),
     };
     search_title(&pass, (kind, tmdb_id), &open, summary, &mut HashSet::new())?;
     log(format!(
@@ -101,6 +105,7 @@ fn search_title_now<S: HostStorage>(
 
 fn search_cutoff_now<S: HostStorage>(
     state: &S,
+    slot: &lease::Slot,
     log: &dyn Fn(String),
     summary: &mut AutoSummary,
 ) -> Result<()> {
@@ -114,6 +119,7 @@ fn search_cutoff_now<S: HostStorage>(
         book: &book,
         log,
         cancelled: &|| false,
+        searching: &|| slot.renew(),
     };
     upgrade_pass(&pass, summary, Sweep::now())?;
     log(format!(
@@ -179,8 +185,6 @@ mod tests {
     use super::queue::{self, Ask};
     use super::*;
     use crate::search::best::test_world::{host, hold_file, monitor, monitored, want, wanted_row, Fakes};
-
-    pub(super) static SOLO: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
     const DUNE_1080: &str = "Dune.2021.1080p.BluRay.x264-GRP";
     const DUNE_720: &str = "Dune.2021.720p.WEB-DL.x264-GRP";
@@ -248,7 +252,7 @@ mod tests {
         assert_eq!(unit.episode, None);
     }
 
-    fn dune() -> kroma_module_sdk::engine::model::MonitoredTitle {
+    fn dune() -> kroma_module_sdk::domain::MonitoredTitle {
         monitored(RequestKind::Movie, 2, "Dune", Some(2021))
     }
 
@@ -297,7 +301,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_queued_title_is_searched_and_its_missing_film_grabbed() {
-        let _solo = SOLO.lock().await;
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = wanting_dune(&fakes).await;
         ask_for_dune(&host);
@@ -310,7 +313,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn an_empty_queue_says_nothing_is_waiting() {
-        let _solo = SOLO.lock().await;
         let fakes = Fakes::new();
         let host = host(&fakes).await;
 
@@ -322,7 +324,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_title_with_nothing_missing_is_reported_and_not_searched() {
-        let _solo = SOLO.lock().await;
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = host(&fakes).await;
         monitor(&host, &dune());
@@ -336,7 +337,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_queue_drained_with_no_indexer_says_to_configure_one() {
-        let _solo = SOLO.lock().await;
         let mut fakes = Fakes::new();
         fakes.indexers.clear();
         let host = wanting_dune(&fakes).await;
@@ -350,13 +350,8 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_queue_drained_with_no_indexer_module_says_none_answered() {
-        let _solo = SOLO.lock().await;
         let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-od"));
-        kroma_module_sdk::db::apply_migrations(
-            &host.store().get().unwrap(),
-            crate::rules::schema::MIGRATIONS,
-        )
-        .unwrap();
+        crate::rules::schema::install(host.store());
         ask_for_dune(&host);
 
         let (_, lines) = drained(host).await;
@@ -366,11 +361,12 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_drain_started_while_another_search_runs_does_nothing() {
-        let _solo = SOLO.lock().await;
         let fakes = Fakes::new().offering(&[DUNE_1080]);
         let host = wanting_dune(&fakes).await;
         ask_for_dune(&host);
-        let held = start::claim().expect("a free slot");
+        let held = lease::claim(host.store(), now_ms())
+            .unwrap()
+            .expect("a free search");
 
         let (summary, lines) = drained(host).await;
 
@@ -381,7 +377,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_cutoff_sweep_upgrades_a_title_held_below_its_cutoff() {
-        let _solo = SOLO.lock().await;
         let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
         let host = host(&fakes).await;
         let film = dune();
@@ -398,7 +393,6 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_cutoff_sweep_with_no_indexer_searches_nothing() {
-        let _solo = SOLO.lock().await;
         let mut fakes = Fakes::new();
         fakes.indexers.clear();
         let host = host(&fakes).await;
@@ -410,10 +404,11 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_cutoff_sweep_started_while_another_runs_does_nothing() {
-        let _solo = SOLO.lock().await;
         let fakes = Fakes::new();
         let host = host(&fakes).await;
-        let held = start::claim().expect("a free slot");
+        let held = lease::claim(host.store(), now_ms())
+            .unwrap()
+            .expect("a free search");
 
         let (_, lines) = swept(host).await;
 

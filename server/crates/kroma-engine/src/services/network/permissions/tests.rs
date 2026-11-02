@@ -6,7 +6,7 @@ use kroma_module_manifest::Permissions;
 use super::*;
 use crate::db::testing::{temp_pool, TempPool};
 use crate::point::Point;
-use crate::services::network::{FlowFilter, NetworkRules, VPN_POINT};
+use crate::services::network::{FlowFilter, NetworkRules, NETWORK_POINT};
 use crate::services::settings::Settings;
 
 const MODULE: &str = "tv.kroma.example";
@@ -15,7 +15,7 @@ fn network(tag: &str, block: Option<Value>) -> (Network, TempPool) {
     let pool = temp_pool(tag);
     let settings = Settings::load(&pool);
     let declared: Option<Permissions> = block.map(|block| serde_json::from_value(block).unwrap());
-    let network = Network::new((*pool).clone(), settings, Point::absent(VPN_POINT)).with_declared(
+    let network = Network::new((*pool).clone(), settings, Point::absent(NETWORK_POINT)).with_declared(
         Arc::new(move |id| (id == MODULE).then(|| declared.clone()).flatten()),
     );
     (network, pool)
@@ -28,6 +28,7 @@ fn ask(purpose: &str, host: &str, port: u16) -> NetworkAsk {
         host: host.to_string(),
         port,
         https: port == 443,
+        sealed: false,
     }
 }
 
@@ -133,6 +134,7 @@ fn the_refusal_the_module_reports_is_journaled_with_the_permission() {
         duration_ms: 1,
         error: answer.reason.clone(),
         rule: answer.rule.clone(),
+        carried: false,
     };
 
     network.record_flows(MODULE, vec![reported]);

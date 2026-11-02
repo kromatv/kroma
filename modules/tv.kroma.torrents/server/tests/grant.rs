@@ -162,19 +162,7 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
     let manager =
         kroma_torrent::DownloadManager::new(host, dir.path(), (*core).clone(), store.clone());
 
-    // Seeding the embedded engine writes the module's own file. Without the
-    // `rqbit` feature there is no embedded engine to seed, so the seed is a
-    // no-op by design and the row below is the one this test puts there.
     manager.seed_embedded_client();
-    if !kroma_torrent::RQBIT_COMPILED {
-        let conn = store.get().unwrap();
-        conn.execute(
-            "INSERT INTO download_clients (id,kind,name,password,enabled,priority,created_at) \
-             VALUES ('qb','qbittorrent','qBit','hunter2',1,0,1)",
-            [],
-        )
-        .unwrap();
-    }
     let seeded = kroma_torrent::db::list_download_clients(&store.get().unwrap()).unwrap();
     assert_eq!(
         seeded.len(),

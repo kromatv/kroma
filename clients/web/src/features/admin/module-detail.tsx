@@ -15,11 +15,13 @@ import { ModuleActions, UninstallConfirm } from '#web/features/admin/module-deta
 import {
   Addons,
   DepsSection,
+  Label,
   Meta,
   ModuleSettings,
   OpProgress,
   RestartCallout,
 } from '#web/features/admin/module-detail-sections';
+import { PermissionList } from '#web/features/admin/module-permissions-list';
 import {
   IdentityCard,
   identityOf,
@@ -154,9 +156,16 @@ function InstalledSections({
   id,
   onSaved,
 }: Readonly<{ installed: AdminModule | undefined; id: string; onSaved: () => void }>) {
+  const t = useT();
   if (!installed) return null;
   return (
     <>
+      {installed.hasSidecar ? (
+        <Box>
+          <Label>{t('admin.permissionHeading', { name: installed.name })}</Label>
+          <PermissionList permissions={installed.permissions} />
+        </Box>
+      ) : null}
       <ModuleSettings module={installed} onSaved={onSaved} />
       <ModuleLogs id={id} />
     </>

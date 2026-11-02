@@ -8,6 +8,41 @@ use serde::{Deserialize, Serialize};
 /// [`crate::range_matches`], which treats anything unparseable as no constraint.
 pub type Version = String;
 
+/// An upstream program, one pinned build per platform. The key is `<os>-<arch>` as
+/// Rust names them, such as `linux-x86_64`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Helper {
+    pub assets: BTreeMap<String, HelperAsset>,
+}
+
+/// One platform's build of a [`Helper`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct HelperAsset {
+    pub url: String,
+    pub sha256: String,
+    /// The file to take out of a `.tar.gz`. Absent when the download is the binary.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub member: Option<String>,
+}
+
+/// What a component needs that is not the default.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ComponentNeeds {
+    /// Calls answered at once. Each instance has its own memory, so more than one
+    /// fits only a module whose state lives in its database. Default 1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instances: Option<u32>,
+    /// The memory one instance may grow to, in MiB. Default 512.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory_mib: Option<u32>,
+    /// The seconds of its own time one call may spend. Default 60.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_seconds: Option<u32>,
+}
+
 /// A point this module DEFINES: somewhere other modules can plug in. `name` is
 /// local, and the point's full name is `<this module's id>/<name>`, so ownership
 /// is legible from the name alone and two authors cannot collide.
@@ -262,10 +297,10 @@ pub struct PointReq {
 /// versions parse as *absent*, never as errors: a v1 bundle still spelling its
 /// dependencies `dependsOn` would install with an empty dependency set and fail
 /// at runtime, somewhere else, with nothing pointing back here.
-pub const MODULE_SCHEMA_VERSION: u32 = 2;
+pub const MODULE_SCHEMA_VERSION: u32 = 3;
 
 /// A module's declared storage, and the capability itself: a manifest with no
-/// `storage` object gets no database at all, and the sidecar built for it does
+/// `storage` object gets no database at all, and the module built for it does
 /// not link SQLite.
 ///
 /// Presence alone grants the module its own file
@@ -346,6 +381,13 @@ impl SettingsScope {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModuleManifest {
+    /// Upstream programs the host fetches and starts for this module, by the name
+    /// `permissions.run` declares them under.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub helpers: BTreeMap<String, Helper>,
+    /// What this module needs from the host to run as a component.
+    #[serde(default)]
+    pub component: ComponentNeeds,
     /// Which manifest contract this module was built against. `0` when absent,
     /// which is every bundle predating the field and therefore every bundle
     /// this build refuses.
@@ -384,10 +426,12 @@ pub struct ModuleManifest {
     pub library: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permissions: Option<crate::Permissions>,
+    /// Directories under the data directory that hold this module's own state.
+    /// The server opens them only to a module the official registry shipped.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub data_dirs: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub notifications: Vec<kroma_module_wire::NotificationType>,
-    #[serde(default, skip_serializing_if = "crate::Seam::is_tcp")]
-    pub seam: crate::Seam,
 }
 
 impl ModuleManifest {
@@ -399,6 +443,8 @@ impl ModuleManifest {
         version: impl Into<Version>,
     ) -> Self {
         Self {
+            helpers: BTreeMap::new(),
+            component: ComponentNeeds::default(),
             schema_version: MODULE_SCHEMA_VERSION,
             id: id.into(),
             name: name.into(),
@@ -416,8 +462,8 @@ impl ModuleManifest {
             settings: None,
             library: false,
             permissions: None,
+            data_dirs: Vec::new(),
             notifications: Vec::new(),
-            seam: crate::Seam::Tcp,
         }
     }
 

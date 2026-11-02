@@ -21,6 +21,7 @@ import {
   Spinner,
   Text,
 } from '@kromatv/ui/kit';
+import { ConsentNotes } from '#web/features/admin/module-permissions-list';
 
 /** The dialog title already says the install failed, so the server's
  * `install failed:` prefix is dropped and the detail (which module, which
@@ -187,6 +188,15 @@ export function PlanStage({
           ))}
         </ListRow.Group>
       </Box>
+      {plan.modules.map((m) => (
+        <ConsentNotes
+          key={m.id}
+          name={m.name}
+          permissions={m.permissions}
+          widens={m.widensPermissions}
+          official={m.official}
+        />
+      ))}
       <OptInGroup
         title={t('admin.modulesInstallContributors')}
         rows={optional.filter((m) => m.point)}

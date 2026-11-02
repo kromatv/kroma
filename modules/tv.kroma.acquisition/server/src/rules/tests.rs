@@ -6,8 +6,7 @@ use super::*;
 
 fn host() -> StubHost {
     let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-rules"));
-    kroma_module_sdk::db::apply_migrations(&host.store().get().unwrap(), schema::MIGRATIONS)
-        .unwrap();
+    schema::install(host.store());
     host
 }
 
@@ -136,7 +135,7 @@ fn a_copy_beside_is_remembered_by_download() {
 #[test]
 fn an_upgrade_search_that_found_nothing_waits_longer_each_time() {
     let host = host();
-    let title = kroma_module_sdk::engine::model::MonitoredTitle {
+    let title = kroma_module_sdk::domain::MonitoredTitle {
         kind: RequestKind::Movie,
         tmdb_id: 603,
         title: "M".into(),

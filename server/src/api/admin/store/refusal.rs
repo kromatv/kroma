@@ -18,9 +18,7 @@ pub enum Refusal {
         range: String,
         server_version: String,
     },
-    Platform {
-        target: String,
-    },
+    Native,
 }
 
 impl From<EngineRefusal> for Refusal {
@@ -60,7 +58,7 @@ impl Refusal {
                 server_version: server_version.clone(),
             }
             .to_string(),
-            Self::Platform { target } => format!("no build for this server's platform ({target})"),
+            Self::Native => "a native build, which this server no longer runs".to_string(),
         }
     }
 }

@@ -1,4 +1,4 @@
-//! The Acquisition module as a standalone process (its `.kmod` entrypoint).
+//! The Acquisition module as a component (its `.kmod` entrypoint).
 //!
 //! Serves its admin routes and contributes the search / import / match passes
 //! as [`ServerModule::jobs`](kroma_module_sdk::host::ServerModule::jobs),
@@ -8,12 +8,7 @@
 
 use kroma_module_runtime::RemoteHost;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve(
-        // Provider routes for the core's /api/requests/:id/search + /grab endpoints.
-        |_host| kroma_acquisition::acqsearch_routes::<RemoteHost>(),
-        vec![kroma_acquisition::server_module::<RemoteHost>()],
-    )
-    .await
-}
+kroma_module_runtime::module_main!(
+    |_host: &RemoteHost| kroma_acquisition::acqsearch_routes::<RemoteHost>(),
+    vec![kroma_acquisition::server_module::<RemoteHost>()],
+);

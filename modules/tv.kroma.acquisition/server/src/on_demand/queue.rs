@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use kroma_module_sdk::db::Pool;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use rusqlite::{OptionalExtension, params};
 
 use super::Unit;
@@ -55,11 +55,7 @@ mod tests {
 
     fn pool() -> kroma_module_sdk::db::testing::TempPool {
         let pool = kroma_module_sdk::db::testing::temp_pool("acq-queue");
-        kroma_module_sdk::db::apply_migrations(
-            &pool.get().unwrap(),
-            crate::rules::schema::MIGRATIONS,
-        )
-        .unwrap();
+        crate::rules::schema::install(&pool);
         pool
     }
 

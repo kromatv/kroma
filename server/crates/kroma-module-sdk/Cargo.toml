@@ -3,25 +3,26 @@ name = "kroma-module-sdk"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "The KROMA module SDK: the single crate every server module depends on. Re-exports the manifest layer plus the engine/host/domain/http/i18n/db surface, so modules never depend on core crates directly."
+description = "The KROMA module SDK: the single crate every server module depends on. Re-exports the manifest layer plus the host/domain/http/i18n/db surface, so modules never depend on core crates directly."
 license.workspace = true
 
 [dependencies]
-# Manifest layer (below engine): EmbeddedModule / Registry / ModuleManifest.
+# Manifest layer: EmbeddedModule / Registry / ModuleManifest.
 kroma-module-manifest = { workspace = true }
 # The embedded_module!() proc-macro, re-exported so modules write one line.
 kroma-module-macros = { workspace = true }
 # Host contract: ServerModule, HostCtx, service/port resolution, async_trait.
 kroma-module-host = { workspace = true }
-# The application surface modules build against. Both are optional and both are
-# off by default: between them they are the whole core, and a sidecar that only
-# publishes an mDNS beacon has no business linking it.
-kroma-engine = { workspace = true, optional = true }
+# The core's own shapes and queries, for a first-party module that reads them.
+# Both are optional and off by default: a module that only publishes an mDNS
+# beacon has no business linking them.
 kroma-domain = { workspace = true, optional = true }
 kroma-db = { workspace = true, optional = true }
+# The core's request and monitoring workflows, behind `requests`.
+kroma-requests = { workspace = true, optional = true }
 # Reading and re-encoding one input, behind `transcode`.
 kroma-media = { workspace = true, optional = true }
-# What a sidecar links: the wire types, the HTTP client, the i18n engine its
+# What a module links: the wire types, the HTTP client, the i18n engine its
 # own catalogs resolve against, the SQLite pool.
 kroma-module-wire = { workspace = true }
 kroma-http = { workspace = true }
@@ -30,41 +31,43 @@ kroma-sqlite = { workspace = true, optional = true }
 kroma-primitives = { workspace = true }
 # `testing::{TempDir, temp_dir}`, the scratch dir every module test writes in.
 kroma-testing = { workspace = true, optional = true }
-# Both ends of every port contract live beside its trait: the provider mounts
-# axum routes, the consumer proxies over them.
-axum = { workspace = true }
-tokio = { workspace = true }
 # The port contract types derive serde and return anyhow::Result.
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# Both ends of every port contract live beside its trait: the provider mounts
+# axum routes, the consumer proxies over them.
+axum = { workspace = true }
+tokio = { workspace = true }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { package = "axum", version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { package = "tokio", version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
 [features]
 # Everything a module's tests reach: the `StubHost` double, `test_serve`, a
-# throwaway pool and a self-deleting scratch dir. Never `engine`: a round-trip
-# test must not link the whole core.
+# throwaway pool and a self-deleting scratch dir.
 testing = ["kroma-module-host/testing", "storage", "kroma-sqlite/testing", "kroma-db?/testing", "dep:kroma-testing"]
 # The `storage` capability: `host::HostStorage` and the `db` facade. A module
-# enables it when its `module.json` declares `storage`, and only then does its
-# binary link SQLite -- which is 1.5 MB of the 3.3 MB a sidecar used to be.
+# enables it when its `module.json` declares `storage`. In a component the SQL
+# runs in the host, so it links rusqlite's API and no SQLite.
 storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]
 # The `transcode` capability: `media::{hls, probe, program, stream}`, for a module
-# that holds a media file and has to describe or re-encode it. Never `core`,
-# `domain` or `engine`: a module transcodes without a catalog, and a crate with no
-# database is what lets it.
+# that holds a media file and has to describe or re-encode it. Never `core` or
+# `domain`: a module transcodes without a catalog, and a crate with no database is
+# what lets it.
 transcode = ["dep:kroma-media"]
 # The core database's own schema, so `db::testing::temp_pool` stamps it: what a
-# grant test needs to run against the real tables. In-repo only, like `domain`
-# and `engine` below -- none of the three is part of the published SDK.
+# grant test needs to run against the real tables. In-repo only, like `domain` and
+# `requests` below: none of the three is part of the published SDK.
 core = ["dep:kroma-db", "storage"]
 # The whole of `kroma-domain` under `domain::`, for a first-party module that
 # reads the core's own shapes.
 domain = ["dep:kroma-domain"]
-# The `engine` facade (`engine::services`, `engine::model`): the core's own
-# business logic, for the two modules that orchestrate it. It pulls `kroma-db`
-# with it, because the services it exposes are written against the pool -- and
-# with `testing`, that crate's own temp pool, which stamps the core schema.
-engine = ["dep:kroma-engine", "core", "domain"]
+# `requests::{lifecycle, monitoring, request_ledger}`: the core's request and
+# monitoring workflows, for the first-party module that orchestrates them.
+requests = ["dep:kroma-requests", "core", "domain"]
 
 [dev-dependencies]
 # The shared HostCtx double (`testing::StubHost`) for the seam tests.

@@ -80,6 +80,10 @@ impl HostCtx for StubHost {
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         self.log.jobs.lock().unwrap().push((key, reason));
     }
+    fn network_seal(&self) -> kroma_module_wire::NetworkSeal {
+        self.network_seal
+    }
+
     fn module_enabled(&self, _id: &str) -> bool {
         self.module_enabled
     }

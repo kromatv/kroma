@@ -1,6 +1,6 @@
-//! `GET /api/admin/network/listeners`: the sockets this server and its module
-//! sidecars listen on, and whether each is reachable from the network or only
-//! from this machine.
+//! `GET /api/admin/network/listeners`: the sockets this server and its modules
+//! listen on, and whether each is reachable from the network or only from this
+//! machine.
 
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
@@ -40,40 +40,35 @@ struct Listener {
     address: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     port: Option<u16>,
-    purpose: &'static str,
+    purpose: String,
     exposure: Exposure,
 }
 
 impl Listener {
-    fn tcp(owner: &str, socket: SocketAddr, purpose: &'static str) -> Self {
+    fn tcp(owner: &str, socket: SocketAddr, purpose: &str) -> Self {
         Self {
             owner: owner.to_string(),
             protocol: Protocol::Tcp,
             address: socket.ip().to_string(),
             port: Some(socket.port()),
-            purpose,
+            purpose: purpose.to_string(),
             exposure: exposure_of(socket.ip()),
         }
     }
 
-    fn unix(owner: &str, socket: &Path, purpose: &'static str) -> Self {
+    fn unix(owner: &str, socket: &Path, purpose: &str) -> Self {
         Self {
             owner: owner.to_string(),
             protocol: Protocol::Unix,
             address: socket.display().to_string(),
             port: None,
-            purpose,
+            purpose: purpose.to_string(),
             exposure: Exposure::Loopback,
         }
     }
 
     fn module(id: &str, endpoint: &Endpoint) -> Self {
-        match endpoint {
-            Endpoint::Unix(socket) => Self::unix(id, socket, "sidecar"),
-            Endpoint::Tcp(port) => {
-                Self::tcp(id, SocketAddr::from(([127, 0, 0, 1], *port)), "legacy-seam")
-            }
-        }
+        Self::unix(id, &endpoint.socket, "component")
     }
 }
 
@@ -114,7 +109,9 @@ mod tests {
 
     #[test]
     fn a_module_on_its_socket_is_listed_by_path_as_reachable_from_this_machine_only() {
-        let socket = Endpoint::Unix("/data/run/modules/tv.kroma.vpn/module.sock".into());
+        let socket = Endpoint {
+            socket: "/data/run/modules/tv.kroma.vpn/module.sock".into(),
+        };
 
         let listener = Listener::module("tv.kroma.vpn", &socket);
 
@@ -123,20 +120,7 @@ mod tests {
             json!({
                 "owner": "tv.kroma.vpn", "protocol": "unix",
                 "address": "/data/run/modules/tv.kroma.vpn/module.sock",
-                "purpose": "sidecar", "exposure": "loopback"
-            })
-        );
-    }
-
-    #[test]
-    fn a_module_on_the_legacy_seam_is_listed_on_its_loopback_port() {
-        let listener = Listener::module("com.example.old", &Endpoint::Tcp(41234));
-
-        assert_eq!(
-            serde_json::to_value(listener).unwrap(),
-            json!({
-                "owner": "com.example.old", "protocol": "tcp", "address": "127.0.0.1",
-                "port": 41234, "purpose": "legacy-seam", "exposure": "loopback"
+                "purpose": "component", "exposure": "loopback"
             })
         );
     }

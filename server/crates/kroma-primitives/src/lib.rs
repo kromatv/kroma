@@ -3,7 +3,10 @@
 //! `services::{jobs::now_ms, scan::{now_iso8601, short_hash}, auth::random_*}`
 //! re-export these for backwards compatibility.
 
+pub mod external_subtitles;
+pub mod input;
 pub mod language;
+pub mod video;
 
 use std::fs::File;
 use std::path::Path;
@@ -54,6 +57,16 @@ pub fn sha256_file(path: &Path) -> std::io::Result<String> {
 /// from this, so a clock-seeded stand-in would let an attacker who can
 /// estimate the generation time brute-force the seed. We panic instead of
 /// minting predictable secrets.
+#[cfg(target_family = "wasm")]
+pub fn random_bytes(n: usize) -> Vec<u8> {
+    let mut buf = vec![0u8; n];
+    getrandom::fill(&mut buf).expect("kroma-primitives: the host's random source is unavailable");
+    buf
+}
+
+/// See the `wasm` twin above: in a component there is no `/dev/urandom`, and the
+/// host's `wasi:random` is the same CSPRNG.
+#[cfg(not(target_family = "wasm"))]
 pub fn random_bytes(n: usize) -> Vec<u8> {
     use std::io::Read;
     let mut buf = vec![0u8; n];

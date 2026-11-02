@@ -5,8 +5,8 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use kroma_module_sdk::host::HostCtx;
-use kroma_module_sdk::media::external_subtitles::beside;
+use kroma_module_sdk::host::{files, HostCtx};
+use kroma_module_sdk::primitives::external_subtitles::beside;
 
 /// What became of a replaced file.
 #[derive(Debug, PartialEq, Eq)]
@@ -46,7 +46,7 @@ pub(super) fn retire(host: &dyn HostCtx, path: &Path) -> std::io::Result<Retired
         std::fs::remove_file(path)?;
         return Ok(Retired::Deleted);
     }
-    let day = kroma_module_sdk::engine::services::requests::today_ymd();
+    let day = kroma_module_sdk::requests::lifecycle::today_ymd();
     let into = Path::new(bin.trim()).join(day);
     std::fs::create_dir_all(&into)?;
     let target = free_name(&into, path);
@@ -75,7 +75,7 @@ fn free_name(dir: &Path, path: &Path) -> PathBuf {
 // library is the common case on a NAS: copy, then remove the original.
 fn move_file(from: &Path, to: &Path) -> std::io::Result<()> {
     if std::fs::rename(from, to).is_err() {
-        std::fs::copy(from, to)?;
+        files::copy(from, to).map_err(std::io::Error::other)?;
         std::fs::remove_file(from)?;
     }
     if let Err(e) = touch(to) {
@@ -124,7 +124,7 @@ pub fn empty_recycle_bin(host: &dyn HostCtx) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kroma_module_sdk::engine::services::requests::today_ymd;
+    use kroma_module_sdk::requests::lifecycle::today_ymd;
     use kroma_module_sdk::host::testing::StubHost;
 
     fn dir(tag: &str) -> kroma_module_sdk::testing::TempDir {

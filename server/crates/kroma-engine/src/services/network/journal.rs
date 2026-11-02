@@ -9,9 +9,20 @@ use std::sync::{Mutex, PoisonError};
 use crate::db::network_flows::{self, FlowTally};
 use crate::db::Pool;
 
+use kroma_http::address::is_public;
+use kroma_module_host::NetworkFlow;
+
 use super::flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute};
 
 pub const RECENT_CAPACITY: usize = 5000;
+
+/// The method the gateway files a connection under, until the module says what
+/// went over it.
+pub const CARRIED_METHOD: &str = "CONNECT";
+
+/// The host a public address is tallied under. A torrent's peers are thousands
+/// of addresses a day, and the list of them says what a household downloads.
+pub const TALLIED_PUBLIC_ADDRESS: &str = "*";
 
 pub(super) const MAX_PENDING_TALLIES: usize = 10_000;
 const MAX_PURPOSE_CHARS: usize = 64;
@@ -70,6 +81,29 @@ impl Journal {
         recent.truncate(RECENT_CAPACITY);
     }
 
+    /// Add what a module saw of a call the gateway carried to the connection the
+    /// gateway filed: its method, its status, the error it met. A report that
+    /// matches no connection is dropped, since the gateway is what says a call
+    /// happened.
+    pub fn annotate(&self, caller: &str, report: &NetworkFlow) {
+        let mut recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
+        let filed = recent.iter_mut().find(|flow| {
+            flow.status.is_none()
+                && flow.method == CARRIED_METHOD
+                && flow.caller == caller
+                && flow.purpose == report.purpose
+                && flow.host == report.host
+                && flow.port == report.port
+        });
+        if let Some(flow) = filed {
+            flow.method = clipped(&report.method, MAX_METHOD_CHARS);
+            flow.status = report.status;
+            if flow.error.is_none() {
+                flow.error = report.error.as_deref().map(|e| clipped(e, MAX_ERROR_CHARS));
+            }
+        }
+    }
+
     pub fn page(&self, filter: &FlowFilter) -> FlowPage {
         let recent = self.recent.lock().unwrap_or_else(PoisonError::into_inner);
         let mut flows = Vec::new();
@@ -126,7 +160,7 @@ impl Journal {
             day: network_flows::day_of(flow.at),
             caller: flow.caller.clone(),
             purpose: flow.purpose.clone(),
-            host: flow.host.clone(),
+            host: tallied_host(&flow.host),
             route: flow.route,
         };
         let delta = Tally {
@@ -140,6 +174,13 @@ impl Journal {
             return;
         }
         merge(pending.entry(key).or_default(), delta);
+    }
+}
+
+fn tallied_host(host: &str) -> String {
+    match host.parse::<std::net::IpAddr>() {
+        Ok(address) if is_public(address) => TALLIED_PUBLIC_ADDRESS.to_string(),
+        _ => host.to_string(),
     }
 }
 

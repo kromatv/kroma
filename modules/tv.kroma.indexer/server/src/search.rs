@@ -27,7 +27,7 @@ pub fn run<S: HostStorage>(
         "indexer search",
     );
     if row.kind == admin::KIND_BUILTIN {
-        let session = admin::builtin_session(host, row)?;
+        let session = admin::builtin_session(host, host.store(), row)?;
         let outcome = session.search(query, categories);
         return Ok(SearchOutcome {
             releases: outcome.releases,
@@ -57,7 +57,7 @@ pub fn resolve_download<S: HostStorage>(
     if magnet_or_url.starts_with("magnet:") {
         return Ok(DownloadTarget::Magnet(magnet_or_url.to_string()));
     }
-    let session = admin::builtin_session(host, row)?;
+    let session = admin::builtin_session(host, host.store(), row)?;
     let release = Release {
         title: title.to_string(),
         link: magnet_or_url
@@ -90,6 +90,9 @@ pub fn fetch_torrent<S: HostStorage>(
     let Some(row) = row.filter(|row| row.kind == admin::KIND_BUILTIN) else {
         return Ok(None);
     };
-    let session = admin::builtin_session(host, &row)?;
+    let session = admin::builtin_session(host, host.store(), &row)?;
     session.fetch_torrent(url).map(Some)
 }
+
+#[cfg(test)]
+mod tests;

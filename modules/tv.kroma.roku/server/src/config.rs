@@ -1,4 +1,4 @@
-//! What the console tells this sidecar and nothing else needs: the developer
+//! What the console tells this module and nothing else needs: the developer
 //! password every box on the network was set up with, kept in the module's
 //! own directory and readable by its owner alone.
 

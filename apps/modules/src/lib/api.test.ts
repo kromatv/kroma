@@ -359,6 +359,23 @@ describe('the RFC-110 documents', () => {
     expect(await machineResponse(req('/schemas/9/manifest.json'), {}, ctx())).toBeNull();
   });
 
+  it('serves schema 3, the component manifest, beside the native schema 2 it replaced', async () => {
+    upstreamServing(CATALOG);
+    const served = async (path: string) =>
+      (await (await machine(path)).json()) as { $id: string; properties: Record<string, unknown> };
+
+    const native = await served('/schemas/2/manifest.json');
+    const component = await served('/schemas/3/manifest.json');
+    const current = await served('/schemas/manifest.json');
+
+    expect(component.$id).toBe('https://modules.kroma.tv/schemas/3/manifest.json');
+    expect(component.properties).toHaveProperty('helpers');
+    expect(component.properties).toHaveProperty('component');
+    expect(component.properties).not.toHaveProperty('seam');
+    expect(native.properties).toHaveProperty('seam');
+    expect(current.$id).toBe(component.$id);
+  });
+
   it('leaves any other /m/ path to the rendered site', async () => {
     upstreamServing(CATALOG);
     expect(await machineResponse(req('/m/tv.kroma.demo'), {}, ctx())).toBeNull();

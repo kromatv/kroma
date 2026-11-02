@@ -1,6 +1,6 @@
 //! Serving, and stopping: the HTTP listener (plus the optional HTTPS one), the
-//! socket modules call back on, and the shutdown that must outlive the process —
-//! sidecars survive their parent, so failing to stop them orphans them.
+//! socket modules call back on, and the shutdown that lets every module run its
+//! own before the process ends.
 
 use anyhow::Context;
 use kroma_engine::state;
@@ -12,7 +12,7 @@ use crate::boot::https::{
 };
 use crate::boot::seam::{SeamSocket, Served};
 
-/// Serve until a shutdown signal, then stop the jobs and every module process.
+/// Serve until a shutdown signal, then stop the jobs and every module.
 /// Takes ownership of both: nothing outlives this call.
 pub async fn run(
     state: state::SharedState,
@@ -24,7 +24,7 @@ pub async fn run(
     // spawn anything, and this outlives it.
     let subscriptions = std::sync::Arc::new(api::host_events::Subscriptions::default());
     api::host_events::deliver(state.clone(), supervisor.clone(), subscriptions.clone());
-    let mut app = api::router(state.clone(), supervisor.clone(), subscriptions.clone());
+    let mut app = api::router(state.clone(), supervisor.clone());
 
     // Built before serving so the cert-download route can be merged into the router.
     let https = build_https(&state).await;
@@ -58,6 +58,11 @@ pub async fn run(
         info!("KROMA listening on http://{addr}  (API under /api)");
     }
 
+    supervisor.serve_gateways(
+        kroma_module_host::NetworkPolicyOf(state.network.clone()),
+        tokio::runtime::Handle::current(),
+        media_roots(&state),
+    );
     let seam = open_seam(&state, &supervisor, subscriptions);
     supervisor.spawn_enabled(&*state);
     supervisor.spawn_watchdog();
@@ -93,10 +98,10 @@ pub async fn run(
 
     https_handle.graceful_shutdown(Some(std::time::Duration::from_secs(3)));
 
-    info!("shutting down: cancelling running jobs + stopping module processes");
+    info!("shutting down: cancelling running jobs + stopping modules");
     state.jobs.cancel_all();
     await_jobs_drained(&state).await;
-    // Blocking: each sidecar gets a grace period to run its own shutdown hooks.
+    // Blocking: each module runs its own shutdown hooks.
     let _ = tokio::task::spawn_blocking(move || supervisor.stop_all()).await;
     drop(seam);
     let network = state.network.clone();
@@ -104,6 +109,22 @@ pub async fn run(
         tracing::warn!("the last network tallies could not be written: {e:#}");
     }
     Ok(())
+}
+
+#[cfg(unix)]
+fn media_roots(state: &state::SharedState) -> kroma_module_supervisor::MediaRoots {
+    use kroma_module_host::HostCtx;
+    let state = state.clone();
+    std::sync::Arc::new(move || {
+        let mut roots: Vec<std::path::PathBuf> = HostCtx::library_folders(&*state)
+            .into_iter()
+            .flat_map(|library| library.folders)
+            .map(std::path::PathBuf::from)
+            .collect();
+        roots.sort();
+        roots.dedup();
+        roots
+    })
 }
 
 fn open_seam(

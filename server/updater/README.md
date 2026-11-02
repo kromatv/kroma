@@ -107,8 +107,8 @@ The package updates itself, with no setup. DSM 7 runs a third-party package as
 its own user, and that user may not call the package manager. So the server
 downloads the reviewed `.spk` from the official release, requires GitHub's
 SHA-256 asset digest and verifies it, and unpacks the payload into
-`/var/packages/kroma/var/releases/<build>`. Then it stops cleanly, module
-sidecars included, and exits with status 75. The package's service script then
+`/var/packages/kroma/var/releases/<build>`. Then it stops cleanly, modules
+included, and exits with status 75. The package's service script then
 starts the newest payload: the one in `releases/` or the one Package Center
 installed, whichever build is higher. It deletes the others.
 

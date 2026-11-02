@@ -108,7 +108,7 @@ impl Roku {
         };
         for f in found {
             let address = f.address;
-            let info = tokio::task::spawn_blocking(move || ecp::device_info(address)).await;
+            let info = kroma_module_sdk::host::run_blocking(move || ecp::device_info(address)).await;
             match info {
                 Ok(Ok(info)) => self.remember(&f, info),
                 Ok(Err(e)) => {
@@ -120,7 +120,7 @@ impl Roku {
     }
 
     pub async fn add(&self, address: DeviceAddress) -> anyhow::Result<Device> {
-        let info = tokio::task::spawn_blocking(move || ecp::device_info(address)).await??;
+        let info = kroma_module_sdk::host::run_blocking(move || ecp::device_info(address)).await??;
         if info.serial.is_empty() {
             anyhow::bail!("{address} answered without a serial number");
         }
@@ -170,7 +170,7 @@ impl Roku {
         };
         let address = device.address;
         let outcome =
-            tokio::task::spawn_blocking(move || installer::install(address, &password, &zip)).await;
+            kroma_module_sdk::host::run_blocking(move || installer::install(address, &password, &zip)).await;
         let (status, message) = match outcome {
             Ok(Ok(Outcome::Installed)) | Ok(Ok(Outcome::Unchanged)) => {
                 (InstallStatus::Installed, None)
@@ -193,7 +193,7 @@ impl Roku {
         };
         let address = device.address;
         let result =
-            tokio::task::spawn_blocking(move || ecp::launch_dev(address, &server_url)).await;
+            kroma_module_sdk::host::run_blocking(move || ecp::launch_dev(address, &server_url)).await;
         if let Ok(Err(e)) = result {
             warn!(serial, error = %format!("{e:#}"), "roku: launch failed");
         }

@@ -4,13 +4,12 @@
 //! Metal / CUDA GPU when the build includes that backend (see [`best_device`]),
 //! else the pure-Rust CPU path.
 
+use std::fs::File;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::{anyhow, Result};
 use candle_core::{DType, Device, IndexOp, Tensor};
-use candle_nn::VarBuilder;
-use candle_transformers::models::whisper::{self as w, audio, Config};
+use candle_transformers::models::whisper::{self as w, Config};
 use tokenizers::Tokenizer;
 
 const SAMPLE_RATE: f64 = 16000.0;
@@ -18,18 +17,19 @@ const N_FRAMES: usize = 3000; // 30 s of mel frames (hop 160 @ 16 kHz)
 const HOP: f64 = 160.0;
 const MAX_TOKENS: usize = 224;
 
-/// Transcribe `pcm` (mono 16 kHz f32) with the model in `model_dir`. `lang` forces
-/// the spoken language (ISO 639-1) when the model is multilingual. `on_progress`
-/// reports decoded-window counts; `cancel` is polled per window. `None` on failure
-/// (logged) or cancellation; the caller reports an error.
+/// Transcribe `pcm` (a file of mono 16 kHz little-endian f32) with the model in
+/// `model_dir`. `lang` forces the spoken language (ISO 639-1) when the model is
+/// multilingual. `on_progress` reports decoded-window counts; `cancelled` is asked
+/// before each window and each decoded token. `None` on failure (logged) or
+/// cancellation; the caller reports an error.
 pub fn transcribe(
     model_dir: &Path,
-    pcm: &[f32],
+    pcm: File,
     lang: Option<&str>,
     on_progress: &dyn Fn(usize, usize),
-    cancel: &AtomicBool,
+    cancelled: &dyn Fn() -> bool,
 ) -> Option<String> {
-    match run(model_dir, pcm, lang, on_progress, cancel) {
+    match run(model_dir, pcm, lang, on_progress, cancelled) {
         Ok(vtt) => Some(vtt),
         Err(e) => {
             tracing::warn!(error = %format!("{e:#}"), "whisper transcription failed");
@@ -38,18 +38,12 @@ pub fn transcribe(
     }
 }
 
-// Pick the fastest available inference device. `new_metal`/`new_cuda` exist even
-// when candle was built WITHOUT that backend (they just return an error), so this
-// degrades gracefully to CPU the pure-Rust gemm path. Build with
-// `--features whisper-metal` (Apple Silicon) or `whisper-cuda` to light up the GPU.
 fn best_device() -> Device {
     match Device::new_metal(0) {
         Ok(d) => {
             tracing::info!("whisper: running on the Metal GPU");
             return d;
         }
-        // Logged at debug so a CPU fallback is diagnosable: this error is the
-        // difference between "not compiled in" and "no Metal device present".
         Err(e) => tracing::debug!(error = %e, "whisper: Metal backend unavailable"),
     }
     match Device::new_cuda(0) {
@@ -59,35 +53,28 @@ fn best_device() -> Device {
         }
         Err(e) => tracing::debug!(error = %e, "whisper: CUDA backend unavailable"),
     }
-    // Warn (not info): CPU transcription is many times slower, and on a Mac it means
-    // the running binary was built without Metal run the server via `bun run dev`
-    // (server:watch) or `cargo run --features whisper-metal` to use the GPU.
-    tracing::warn!("whisper: running on CPU (slow); built without a GPU backend for this platform");
+    tracing::info!("whisper: running on the CPU");
     Device::Cpu
 }
 
 fn run(
     model_dir: &Path,
-    pcm: &[f32],
+    pcm: File,
     lang: Option<&str>,
     on_progress: &dyn Fn(usize, usize),
-    cancel: &AtomicBool,
+    cancelled: &dyn Fn() -> bool,
 ) -> Result<String> {
     let device = best_device();
-    let cfg: Config = serde_json::from_reader(std::fs::File::open(model_dir.join("config.json"))?)?;
+    let cfg: Config = serde_json::from_reader(File::open(model_dir.join("config.json"))?)?;
     let tokenizer =
         Tokenizer::from_file(model_dir.join("tokenizer.json")).map_err(|e| anyhow!("{e}"))?;
-    let vb = unsafe {
-        VarBuilder::from_mmaped_safetensors(
-            &[model_dir.join("model.safetensors")],
-            DType::F32,
-            &device,
-        )?
+    let mut model = {
+        let vb = crate::weights::var_builder(&model_dir.join("model.safetensors"), DType::F32, &device)?;
+        w::model::Whisper::load(&vb, cfg.clone())?
     };
-    let mut model = w::model::Whisper::load(&vb, cfg.clone())?;
 
-    let filters = mel_filters(cfg.num_mel_bins);
-    let mel = audio::pcm_to_mel(&cfg, pcm, &filters);
+    let samples = usize::try_from(pcm.metadata()?.len())? / size_of::<f32>();
+    let mel = crate::mel::log_mel(pcm, samples, cfg.num_mel_bins)?;
     let n_frames = mel.len() / cfg.num_mel_bins;
     let mel = Tensor::from_vec(mel, (1, cfg.num_mel_bins, n_frames), &device)?;
 
@@ -123,7 +110,7 @@ fn run(
     let mut seek = 0usize;
     let mut window_idx = 0usize;
     while seek < n_frames {
-        if cancel.load(Ordering::Relaxed) {
+        if cancelled() {
             anyhow::bail!("cancelled");
         }
         on_progress(window_idx, total_windows);
@@ -135,7 +122,7 @@ fn run(
         }
         let features = model.encoder.forward(&window, true)?;
 
-        let tokens = decode_window(&mut model, &features, &device, &seed)?;
+        let tokens = decode_window(&mut model, &features, &device, &seed, cancelled)?;
 
         let offset = seek as f64 * HOP / SAMPLE_RATE;
         emit_segments(&mut out, &tokens, &tokenizer, ts0, &specials, offset);
@@ -162,6 +149,7 @@ fn decode_window(
     features: &Tensor,
     device: &Device,
     seed: &DecodeSeed,
+    cancelled: &dyn Fn() -> bool,
 ) -> Result<Vec<u32>> {
     let mut tokens: Vec<u32> = vec![seed.sot];
     if let Some(l) = seed.lang_tok {
@@ -169,6 +157,9 @@ fn decode_window(
         tokens.push(seed.transcribe);
     }
     for i in 0..MAX_TOKENS {
+        if cancelled() {
+            anyhow::bail!("cancelled");
+        }
         let t = Tensor::new(tokens.as_slice(), device)?.unsqueeze(0)?;
         // `decoder.forward` returns hidden states (1, seq, d_model); the vocab
         // logits come from the SEPARATE `final_linear` projection (candle keeps
@@ -226,50 +217,6 @@ fn fmt_ts(s: f64) -> String {
     let m = ((s % 3600.0) / 60.0) as u64;
     let sec = s % 60.0;
     format!("{h:02}:{m:02}:{sec:06.3}")
-}
-
-// Slaney (librosa-compatible) mel filterbank for Whisper: sr=16000, n_fft=400.
-// Flattened `n_mels * (n_fft/2 + 1)`, matching `audio::pcm_to_mel`'s expectation.
-fn mel_filters(n_mels: usize) -> Vec<f32> {
-    const SR: f64 = 16000.0;
-    const N_FFT: usize = 400;
-    let n_freqs = N_FFT / 2 + 1;
-    let f_sp = 200.0 / 3.0;
-    let min_log_hz = 1000.0;
-    let min_log_mel = min_log_hz / f_sp;
-    let logstep = (6.4_f64).ln() / 27.0;
-    let hz_to_mel = |hz: f64| {
-        if hz >= min_log_hz {
-            min_log_mel + (hz / min_log_hz).ln() / logstep
-        } else {
-            hz / f_sp
-        }
-    };
-    let mel_to_hz = |mel: f64| {
-        if mel >= min_log_mel {
-            min_log_hz * (logstep * (mel - min_log_mel)).exp()
-        } else {
-            mel * f_sp
-        }
-    };
-    let mel_min = hz_to_mel(0.0);
-    let mel_max = hz_to_mel(SR / 2.0);
-    let hz_pts: Vec<f64> = (0..n_mels + 2)
-        .map(|i| mel_to_hz(mel_min + (mel_max - mel_min) * i as f64 / (n_mels + 1) as f64))
-        .collect();
-    let fft_freqs: Vec<f64> = (0..n_freqs)
-        .map(|i| (SR / 2.0) * i as f64 / (n_freqs - 1) as f64)
-        .collect();
-    let mut weights = vec![0f32; n_mels * n_freqs];
-    for m in 0..n_mels {
-        let (lo, ce, hi) = (hz_pts[m], hz_pts[m + 1], hz_pts[m + 2]);
-        let enorm = 2.0 / (hi - lo);
-        for (k, &f) in fft_freqs.iter().enumerate() {
-            let val = ((f - lo) / (ce - lo)).min((hi - f) / (hi - ce)).max(0.0) * enorm;
-            weights[m * n_freqs + k] = val as f32;
-        }
-    }
-    weights
 }
 
 #[cfg(test)]

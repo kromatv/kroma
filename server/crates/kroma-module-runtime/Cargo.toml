@@ -3,13 +3,12 @@ name = "kroma-module-runtime"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "The out-of-process module runtime: each module ships as its own native binary that opens the shared SQLite, serves its routes on the Unix socket the supervisor names, and reaches the host over a small IPC. `serve(...)` is the whole main()."
+description = "The module runtime: each module is a WebAssembly component the server runs in-process, which serves its routes to the host and reaches the core through the imports the host rules. `module_main!` is the whole main()."
 license.workspace = true
 
 [features]
 # The `storage` capability: the module's own database plus the scoped core one.
-# Off by default -- a module that declares no storage must not link SQLite, whose
-# bundled amalgamation is most of a sidecar's size.
+# Off by default -- a module that declares no storage must not link SQLite.
 storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]
 
 [dependencies]
@@ -18,18 +17,26 @@ storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]
 # with the in-process path, so the same route code runs behind the remote host.
 kroma-module-host = { workspace = true }
 # Only under `storage`: the module's own database, and the core one behind the
-# grant its manifest declared. WAL is multi-process, so both are opened here
-# rather than proxied.
+# grant its manifest declared, both opened through the host.
 kroma-sqlite = { workspace = true, optional = true }
 # User / Permission for local require() checks.
 kroma-module-wire = { workspace = true }
 kroma-http = { workspace = true }
-axum = { workspace = true }
-tokio = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { package = "axum", version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { package = "tokio", version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+tower = { version = "0.5", features = ["util"] }
+http-body-util = { workspace = true }
+wit-bindgen = { version = "0.63", default-features = false, features = ["macros", "realloc", "std"] }
 [dev-dependencies]
 async-trait = { workspace = true }
+kroma-testing = { workspace = true }

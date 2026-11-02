@@ -21,11 +21,12 @@ pub mod host {
     pub use kroma_module_host::*;
 }
 
-/// The application surface: `state::SharedState`, `services::*`, `model::*`.
-/// Behind the `engine` feature: this is the whole core.
-#[cfg(feature = "engine")]
-pub mod engine {
-    pub use kroma_engine::*;
+/// The core's request and monitoring workflows, over [`host::HostStorage`]: the
+/// same code the core runs. Behind the `requests` feature, which brings the core's
+/// queries and shapes and no engine, so a component can hold it.
+#[cfg(feature = "requests")]
+pub mod requests {
+    pub use kroma_requests::*;
 }
 
 /// What the host and a module exchange: the session user and its permissions,
@@ -56,7 +57,7 @@ pub mod http {
 
 /// The catalogs a module ships in `locales/`, resolved by the same engine the
 /// core resolves its own with, so a plural or a `{name}` behaves the same in a
-/// sidecar as it does on a screen.
+/// module as it does on a screen.
 pub mod i18n {
     pub use kroma_i18n::*;
 
@@ -109,11 +110,11 @@ pub mod i18n {
 /// Direct SQLite access: the pool, the grant and a module's own migrations.
 /// Behind the `storage` feature, which a module turns on when its `module.json`
 /// declares `storage`; the pools themselves come from `host::HostStorage`, not
-/// from here. Under `engine`, every query the core makes of its own database as
+/// from here. Under `core`, every query the core makes of its own database as
 /// well.
 #[cfg(feature = "storage")]
 pub mod db {
-    #[cfg(feature = "engine")]
+    #[cfg(feature = "core")]
     pub use kroma_db::*;
     pub use kroma_sqlite::{
         apply_migrations, init_scoped, migrate_store, open, open_with, Grant, Pool, PoolInner,
@@ -126,6 +127,10 @@ pub mod db {
     #[cfg(all(any(test, feature = "testing"), feature = "core"))]
     pub use kroma_db::testing;
 }
+
+/// Files a module downloads once and keeps, each pinned by the sha256 of its
+/// bytes: model weights, a dataset, anything too large to ship in the bundle.
+pub mod pinned;
 
 /// Small shared primitives (`now_ms`, ...).
 pub mod primitives {

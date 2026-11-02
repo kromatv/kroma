@@ -1,9 +1,9 @@
-//! The reverse proxy in front of a running sidecar: one shared client, and the
-//! header handling a hop-by-hop-aware relay owes its two ends.
+//! The reverse proxy in front of a running module: one client per socket, and
+//! the header handling a hop-by-hop-aware relay owes its two ends.
 
 #![expect(
     clippy::disallowed_types,
-    reason = "the reverse proxy into a sidecar: proxy_to reaches only a module's Unix socket or http://127.0.0.1, so this client never leaves the machine"
+    reason = "the reverse proxy into a module: proxy_to reaches only a module's Unix socket, so this client never leaves the machine"
 )]
 
 use std::time::Duration;
@@ -28,13 +28,6 @@ fn builder() -> reqwest::ClientBuilder {
         .read_timeout(READ_TIMEOUT)
 }
 
-// Shared by every proxied request: a client owns the connection pool, so one
-// per request means a fresh handshake and a socket left in TIME_WAIT each time.
-fn tcp_client() -> &'static reqwest::Client {
-    static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
-    CLIENT.get_or_init(|| builder().build().unwrap_or_default())
-}
-
 #[cfg(unix)]
 fn socket_client(socket: &std::path::Path) -> Option<reqwest::Client> {
     use std::collections::HashMap;
@@ -56,16 +49,10 @@ fn socket_client(_socket: &std::path::Path) -> Option<reqwest::Client> {
 }
 
 fn target(endpoint: &Endpoint, path_and_query: &str) -> Option<(reqwest::Client, String)> {
-    match endpoint {
-        Endpoint::Tcp(port) => Some((
-            tcp_client().clone(),
-            format!("http://127.0.0.1:{port}{path_and_query}"),
-        )),
-        Endpoint::Unix(socket) => Some((
-            socket_client(socket)?,
-            format!("http://localhost{path_and_query}"),
-        )),
-    }
+    Some((
+        socket_client(&endpoint.socket)?,
+        format!("http://localhost{path_and_query}"),
+    ))
 }
 
 // RFC 9110 section 7.6.1: a connection-scoped header describes the hop it
@@ -86,7 +73,7 @@ fn is_hop_by_hop(name: &axum::http::HeaderName) -> bool {
 }
 
 /// Reverse-proxy `req` (its path already rewritten to the module-local path) to
-/// the module process answering at `endpoint`.
+/// the module answering at `endpoint`.
 pub async fn proxy_to(endpoint: &Endpoint, path_and_query: &str, req: Request) -> Response {
     let Some((client, url)) = target(endpoint, path_and_query) else {
         tracing::warn!(?endpoint, "no client reaches this module");
@@ -151,30 +138,23 @@ mod tests {
             .with_state(seen)
     }
 
-    async fn on_a_port(app: Router) -> Endpoint {
-        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
-            .await
-            .unwrap();
-        let port = listener.local_addr().unwrap().port();
-        tokio::spawn(async move {
-            axum::serve(listener, app).await.unwrap();
-        });
-        Endpoint::Tcp(port)
-    }
-
     #[cfg(unix)]
     fn on_a_socket(app: Router, socket: &std::path::Path) -> Endpoint {
         let listener = tokio::net::UnixListener::bind(socket).unwrap();
         tokio::spawn(async move {
             axum::serve(listener, app).await.unwrap();
         });
-        Endpoint::Unix(socket.to_path_buf())
+        Endpoint {
+            socket: socket.to_path_buf(),
+        }
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn a_body_far_larger_than_the_old_buffer_cap_is_streamed_through() {
+        let dir = kroma_testing::temp_dir("proxy-stream");
         let seen = Arc::new(AtomicUsize::new(0));
-        let endpoint = on_a_port(counting_body(seen.clone())).await;
+        let endpoint = on_a_socket(counting_body(seen.clone()), &dir.path().join("m.sock"));
         let chunks = 257 * 16;
         let chunk = axum::body::Bytes::from(vec![b'x'; 64 * 1024]);
         let stream = futures_util::stream::iter(
@@ -223,7 +203,9 @@ mod tests {
     #[tokio::test]
     async fn a_module_whose_socket_is_gone_is_a_bad_gateway() {
         let dir = kroma_testing::temp_dir("proxy-gone");
-        let endpoint = Endpoint::Unix(dir.path().join("gone.sock"));
+        let endpoint = Endpoint {
+            socket: dir.path().join("gone.sock"),
+        };
 
         let resp = proxy_to(&endpoint, "/_health", Request::new(Body::empty())).await;
 

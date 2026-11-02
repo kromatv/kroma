@@ -1,9 +1,12 @@
-//! The transport for the internal seam: the core and its module sidecars
+//! The transport for the internal seam: the core and its modules
 //! calling each other on this machine.
 
+#[cfg(not(target_family = "wasm"))]
 mod exchange;
+#[cfg(not(target_family = "wasm"))]
 mod tcp;
 mod transport;
+#[cfg(not(target_family = "wasm"))]
 mod unix;
 
 use std::sync::{Arc, OnceLock, RwLock};
@@ -12,12 +15,19 @@ use std::time::Duration;
 use anyhow::{bail, Result};
 
 use crate::response::Response;
+#[cfg(not(target_family = "wasm"))]
 pub use exchange::MAX_BODY_BYTES;
+#[cfg(not(target_family = "wasm"))]
 pub use tcp::Tcp;
 pub use transport::{Method, Request, Transport};
+#[cfg(not(target_family = "wasm"))]
 pub use unix::unix_url;
 #[cfg(unix)]
 pub use unix::Unix;
+
+/// The most a response may carry.
+#[cfg(target_family = "wasm")]
+pub const MAX_BODY_BYTES: usize = 64 * 1024 * 1024;
 
 const DEFAULT_MAX_TIME_SECS: u32 = 30;
 
@@ -26,11 +36,17 @@ fn registry() -> &'static RwLock<Vec<Arc<dyn Transport>>> {
     REGISTRY.get_or_init(|| RwLock::new(built_in()))
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn built_in() -> Vec<Arc<dyn Transport>> {
     let mut transports: Vec<Arc<dyn Transport>> = vec![Arc::new(Tcp)];
     #[cfg(unix)]
     transports.push(Arc::new(Unix));
     transports
+}
+
+#[cfg(target_family = "wasm")]
+fn built_in() -> Vec<Arc<dyn Transport>> {
+    Vec::new()
 }
 
 /// Add a transport ahead of the built-in ones, for the URLs its
@@ -99,6 +115,55 @@ impl Loopback {
         self.send(Method::Post, url, Some((content_type, body)))
     }
 
+    /// POST each `(url, body)`, none waiting on another. Answers in the same order.
+    /// For a sweep: a WebAssembly component has one thread, so this is its only way
+    /// to ask several peers at once.
+    pub fn post_json_all(&self, calls: &[(String, serde_json::Value)]) -> Vec<Result<Response>> {
+        #[cfg(not(target_family = "wasm"))]
+        {
+            std::thread::scope(|threads| {
+                let running: Vec<_> = calls
+                    .iter()
+                    .map(|(url, body)| threads.spawn(move || self.post_json(url, body)))
+                    .collect();
+                running
+                    .into_iter()
+                    .map(|call| call.join().unwrap_or_else(|_| bail_panicked()))
+                    .collect()
+            })
+        }
+        #[cfg(target_family = "wasm")]
+        {
+            let urls: Vec<String> = calls.iter().map(|(url, _)| self.with_query(url)).collect();
+            let bodies: Vec<Vec<u8>> = calls
+                .iter()
+                .map(|(_, body)| serde_json::to_vec(body).unwrap_or_default())
+                .collect();
+            let Some(first) = urls.first() else {
+                return Vec::new();
+            };
+            let transport = match transport_for(first) {
+                Ok(transport) => transport,
+                Err(error) => {
+                    let reason = format!("{error:#}");
+                    return calls.iter().map(|_| Err(anyhow::anyhow!(reason.clone()))).collect();
+                }
+            };
+            let requests: Vec<Request<'_>> = urls
+                .iter()
+                .zip(&bodies)
+                .map(|(url, body)| Request {
+                    method: Method::Post,
+                    url,
+                    headers: &self.headers,
+                    body: Some(("application/json", body.as_slice())),
+                    timeout: Duration::from_secs(u64::from(self.max_time_secs)),
+                })
+                .collect();
+            transport.send_all(&requests)
+        }
+    }
+
     fn with_query(&self, url: &str) -> String {
         if self.query.is_empty() {
             return url.to_string();
@@ -129,105 +194,10 @@ impl Loopback {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[derive(Debug)]
-    struct Stub(&'static str);
-
-    impl Transport for Stub {
-        fn name(&self) -> &'static str {
-            "stub"
-        }
-
-        fn accepts(&self, url: &str) -> bool {
-            url.starts_with(self.0)
-        }
-
-        fn send(&self, request: &Request<'_>) -> Result<Response> {
-            Ok(Response {
-                status: 200,
-                headers: vec![("x-transport".into(), self.name().into())],
-                body: format!("{} {}", request.method.as_str(), request.url).into_bytes(),
-            })
-        }
-    }
-
-    #[test]
-    fn a_url_no_transport_claims_is_an_error_naming_it() {
-        let err = Loopback::new()
-            .get("http://example.com/_port/x")
-            .unwrap_err()
-            .to_string();
-        assert!(err.contains("example.com"), "{err}");
-    }
-
-    #[test]
-    fn a_registered_transport_takes_the_urls_it_claims() {
-        register(Arc::new(Stub("stub://")));
-
-        let resp = Loopback::new().get("stub://peer/_port/x").unwrap();
-
-        assert_eq!(resp.status, 200);
-        assert_eq!(resp.header("x-transport"), Some("stub"));
-        assert_eq!(resp.text(), "GET stub://peer/_port/x");
-    }
-
-    #[test]
-    fn a_post_carries_its_query_rather_than_dropping_it() {
-        register(Arc::new(Stub("stub://")));
-
-        let resp = Loopback::new()
-            .query("id", "a b")
-            .post_json("stub://peer/_port/x", &serde_json::json!({}))
-            .unwrap();
-
-        assert_eq!(resp.text(), "POST stub://peer/_port/x?id=a+b");
-    }
-
-    #[test]
-    fn a_query_goes_before_a_fragment_rather_than_inside_it() {
-        let call = Loopback::new().query("k", "v");
-        assert_eq!(
-            call.with_query("http://127.0.0.1:9/x#frag"),
-            "http://127.0.0.1:9/x?k=v#frag"
-        );
-    }
-
-    #[test]
-    fn a_query_is_form_encoded_onto_the_url() {
-        let call = Loopback::new()
-            .query("q", "the matrix")
-            .query("cat", "2000&2010");
-
-        assert_eq!(
-            call.with_query("http://127.0.0.1:9/search"),
-            "http://127.0.0.1:9/search?q=the+matrix&cat=2000%262010"
-        );
-    }
-
-    #[test]
-    fn a_url_that_already_carries_a_query_gains_the_pairs_rather_than_a_second_question_mark() {
-        let call = Loopback::new().query("key", "a b");
-        assert_eq!(
-            call.with_query("http://127.0.0.1:9/setting?scope=x"),
-            "http://127.0.0.1:9/setting?scope=x&key=a+b"
-        );
-        assert_eq!(
-            Loopback::new().with_query("http://127.0.0.1:9/setting"),
-            "http://127.0.0.1:9/setting"
-        );
-    }
-
-    #[test]
-    fn the_builder_accumulates_headers_and_a_budget() {
-        let call = Loopback::new()
-            .header("authorization", "Bearer tok")
-            .header("x-extra", "1")
-            .max_time(5);
-        assert_eq!(call.headers.len(), 2);
-        assert_eq!(call.max_time_secs, 5);
-        assert_eq!(Loopback::new().max_time_secs, DEFAULT_MAX_TIME_SECS);
-    }
+#[cfg(not(target_family = "wasm"))]
+fn bail_panicked() -> Result<Response> {
+    bail!("the call panicked")
 }
+
+#[cfg(test)]
+mod tests;

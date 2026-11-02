@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use kroma_module_sdk::host::HostCtx;
-use kroma_module_sdk::media::external_subtitles::beside;
+use kroma_module_sdk::primitives::external_subtitles::beside;
 
 use super::place::{place, Placement};
 

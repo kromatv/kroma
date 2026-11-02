@@ -21,7 +21,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 
 use kroma_module_sdk::db;
-use kroma_module_sdk::engine::model::{Kind, MediaItem};
+use kroma_module_sdk::domain::{Kind, MediaItem};
 
 use crate::dtos::{OrganizeMove, OrganizePlan, OrganizeResult};
 use kroma_module_sdk::host::HostStorage;

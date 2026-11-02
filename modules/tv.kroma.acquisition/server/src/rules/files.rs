@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 use kroma_module_sdk::db::{self, TitleFile};
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::{Evaluation, Language, QualityProfile, Rules, cutoff_unmet, evaluate};
 use serde::Serialize;

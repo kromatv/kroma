@@ -14,6 +14,9 @@
 //! the per-domain query submodules below as a flat namespace so
 //! `db::list_movies(...)` etc. resolve unchanged.
 
+#[cfg(target_family = "wasm")]
+extern crate kroma_sqlite_guest as rusqlite;
+
 use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 

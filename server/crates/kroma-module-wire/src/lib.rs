@@ -2,7 +2,7 @@
 //! session resolves to, the notification a module raises and who it is for,
 //! what the host answers a metadata lookup with, what it rules on an outbound
 //! call, and how a track inside a media file is described. Serde and nothing
-//! else, so a sidecar links this and never the crates that give these types
+//! else, so a module links this and never the crates that give these types
 //! meaning.
 
 mod accounts;

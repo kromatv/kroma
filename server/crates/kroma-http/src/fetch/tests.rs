@@ -1,8 +1,9 @@
 use std::path::Path;
 
-use super::render::proxy_lines;
+use super::render::{gateway_lines, proxy_lines};
 use super::send::chosen_proxy;
 use super::*;
+use crate::multipart::FormPart;
 use crate::egress::{scrubbed, Decision};
 
 #[test]
@@ -257,4 +258,40 @@ fn builder_setters_record_options() {
     assert_eq!(Fetch::new().max_time_secs, 30);
     assert!(!Fetch::new().http2);
     assert!(Fetch::new().http2().http2);
+}
+
+fn gateway() -> crate::egress::Gateway {
+    crate::egress::Gateway {
+        address: "127.0.0.1:41000".to_string(),
+        credential: "module-token".to_string(),
+    }
+}
+
+#[test]
+fn the_gateway_hears_the_purpose_and_the_modules_token() {
+    let lines = gateway_lines(&gateway(), &crate::egress::Gateway::username("indexer", false, false));
+
+    assert!(lines.contains("socks5-hostname = \"127.0.0.1:41000\""), "{lines}");
+    assert!(lines.contains("proxy-user = \"indexer:module-token\""), "{lines}");
+}
+
+#[test]
+fn the_gateway_hears_what_the_caller_asked_of_the_route() {
+    let lines = gateway_lines(&gateway(), &crate::egress::Gateway::username("indexer", true, true));
+
+    assert!(lines.contains("proxy-user = \"indexer.public.vpn:module-token\""), "{lines}");
+}
+
+#[test]
+fn a_gateway_url_carries_the_flags_a_library_cannot_pass_otherwise() {
+    let url = gateway().proxy_url("peers", true);
+
+    assert_eq!(url, "socks5://peers.vpn:module-token@127.0.0.1:41000");
+}
+
+#[test]
+fn a_gateway_never_prints_its_credential() {
+    let printed = format!("{:?}", gateway());
+
+    assert!(!printed.contains("module-token"), "{printed}");
 }

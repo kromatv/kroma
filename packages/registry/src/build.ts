@@ -65,6 +65,7 @@ function versionOf(entry: DescribedModule): RegistryVersion {
     definesPoints: some(entry.definesPoints),
     contributes: some(entry.contributes),
     consumes: some(entry.consumes),
+    permissions: entry.permissions,
     artifacts: entry.artifacts.flatMap((a) => {
       const integrity = sriFromHex(a.sha256);
       if (!integrity) return [];

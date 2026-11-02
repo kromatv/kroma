@@ -20,6 +20,9 @@ kroma-module-host = { workspace = true, features = ["storage"] }
 kroma-module-manifest = { workspace = true }
 kroma-http = { workspace = true }
 kroma-push = { workspace = true }
+# The request and monitoring workflows and the TMDB lookups under them, re-exported
+# under `services::` and `infra::metadata`. A module runs the same code.
+kroma-requests = { workspace = true }
 # ffprobe, the ffmpeg budget and the HLS engine, re-exported under `infra::`.
 kroma-media = { workspace = true }
 # The heavy/optional adapters (embeddings, whisper transcription, mDNS) are no
@@ -59,6 +62,8 @@ rusty-chromaprint = { workspace = true }
 kroma-module-host = { workspace = true, features = ["testing"] }
 # `db::testing::temp_pool`, the throwaway database the service tests run against.
 kroma-db = { workspace = true, features = ["testing"] }
+# `testing::FakeTmdb`, and the base override it needs.
+kroma-requests = { workspace = true, features = ["testing"] }
 kroma-testing = { workspace = true }
 # `test-util` gives the runtime a clock a test can advance, so the loops that
 # sleep between sweeps are reachable without waiting out their interval.

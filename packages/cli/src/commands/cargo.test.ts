@@ -20,7 +20,7 @@ function moduleCrate(id: string, withServer = true): string {
   mkdirSync(project, { recursive: true });
   writeFileSync(
     join(project, 'module.json'),
-    JSON.stringify({ schemaVersion: 2, id, name: id, version: '0.1.0' }),
+    JSON.stringify({ schemaVersion: 3, id, name: id, version: '0.1.0' }),
   );
   if (withServer) {
     mkdirSync(join(project, 'server'), { recursive: true });

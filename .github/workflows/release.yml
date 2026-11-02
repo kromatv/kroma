@@ -305,7 +305,7 @@ jobs:
   # ------------------------------------------------------------------- SDK ---
 
   # `@kromatv/module-sdk`, the one public package: the declarations of the SDK,
-  # the kit and their closure, the Rust crates a sidecar links, and the `kroma`
+  # the kit and their closure, the Rust crates a module links, and the `kroma`
   # CLI, all built into one tarball stamped with this run's version. A
   # candidate publishes under the `canary` dist-tag, a stable tag under
   # `latest`; a dispatch publishes nothing. Not in the candidate gate: a module

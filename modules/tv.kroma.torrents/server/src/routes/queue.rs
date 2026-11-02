@@ -130,7 +130,7 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     // runtime.
     let live: HashMap<String, LiveStat> = {
         let mgr = manager.clone();
-        tokio::task::spawn_blocking(move || mgr.live_stats())
+        kroma_module_sdk::host::run_blocking(move || mgr.live_stats())
             .await
             .unwrap_or_default()
     };

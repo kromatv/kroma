@@ -9,7 +9,9 @@ impl DownloadManager {
     /// call is skipped and `activate()` honors the ledger when the add lands.
     pub fn pause(&self, id: &str) -> Result<()> {
         let (row, client) = self.row_and_client(id)?;
-        if !row.client_ref.is_empty() {
+        if row.client_ref.is_empty() {
+            self.cancel_add(&row);
+        } else {
             self.engine_for(&client)?.pause(&row.client_ref)?;
         }
         db::set_download_status(self.core(), id, "paused", None)?;
@@ -29,8 +31,9 @@ impl DownloadManager {
 
     pub fn remove(&self, id: &str, delete_data: bool) -> Result<()> {
         let (row, client) = self.row_and_client(id)?;
-        // Best-effort: the ledger must be cleanable even if the engine errors.
-        if !row.client_ref.is_empty() {
+        if row.client_ref.is_empty() {
+            self.cancel_add(&row);
+        } else {
             if let Ok(engine) = self.engine_for(&client) {
                 if let Err(e) = engine.remove(&row.client_ref, delete_data) {
                     tracing::warn!(id, error = %format!("{e:#}"), "engine remove failed");
@@ -109,6 +112,12 @@ impl DownloadManager {
             }
         }
         Ok(n)
+    }
+
+    fn cancel_add(&self, row: &DownloadRow) {
+        if let Some(engine) = self.rqbit() {
+            engine.cancel_add(&row.magnet_or_url);
+        }
     }
 
     pub(super) fn row_and_client(&self, id: &str) -> Result<(DownloadRow, DownloadClientRow)> {

@@ -103,6 +103,7 @@ async fn deliver(settings: &Settings, msg: Message) -> Result<(), String> {
         duration_ms: 0,
         error: None,
         rule,
+        carried: false,
     };
     let refusal = match decision {
         Decision::Direct => None,

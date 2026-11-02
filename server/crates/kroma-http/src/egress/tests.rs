@@ -13,6 +13,7 @@ fn exchange(port: u16) -> Exchange {
         duration_ms: 0,
         error: None,
         rule: None,
+        carried: false,
     }
 }
 
