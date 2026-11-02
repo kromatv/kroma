@@ -45,8 +45,6 @@ impl ModuleMedia {
         self.stopping.store(true, Ordering::Relaxed);
     }
 
-    // ffmpeg parses what it reads with the server's rights, so it is handed only a
-    // file the module cannot have written: one it holds, and in no folder it may write.
     fn source(&self, asked: &str) -> Result<PathBuf, String> {
         let path = on_host(asked, &self.roots);
         if !is_within(&path, &self.roots, false) {
