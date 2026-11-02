@@ -82,7 +82,8 @@ fn a_component_decodes_into_its_private_tmp() {
 #[test]
 fn a_source_outside_the_folders_a_component_holds_is_refused() {
     let server = Server::new("component-media-outside", NetworkAction::Block);
-    let clip = tone_in(&server.dir.path().join("elsewhere"));
+    let elsewhere = kroma_testing::TempDir::new_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    let clip = tone_in(elsewhere.path());
     let endpoint = server.started(GUEST, guest_component(), DECODES);
     let into = server.module_dir(GUEST).join("pcm");
 
