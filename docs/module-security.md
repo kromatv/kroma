@@ -25,8 +25,15 @@ first-party module declares one. The core enforces `net.connect` on every call a
 component makes and every connection through its gateway (#546). A module with
 no block has no network and starts no program, and the admin marks it.
 
-The install screen lists every permission in plain words before the operator
-accepts, from the catalog row or, for an upload, from the bundle itself. An update
+A module's page opens its security card with one verdict: "Accès étendu" when it
+reaches past its isolation (a program it starts, the host's own network, or the
+whole disk an official module that declares `downloads` holds), "Isolé" when it
+does not. The four kinds of access that weigh most follow as tiles, and "Détails"
+opens the rest. The install screen says it once for every module the install
+brings: one line per module with extended access, then the kinds of access they
+share and which modules have each. It reads the catalog row or, for an upload,
+the bundle itself; once installed, the page adds the account data, server tables
+and settings the module's `storage` and `settings` reach. An update
 that asks for more waits: no automatic or batch update takes it, and the operator
 accepts it from the install plan. Asking for more is a wider `permissions` block or
 a key in `settings.write` the installed version did not declare. A bundle must
@@ -55,9 +62,9 @@ declare what its catalog row showed, and an install fails when it does not.
 | `net.connect` | connections for a purpose to a set of destinations | `to` is `public`, `lan`, a host pattern, or `setting:<key>`, which makes the operator's own configuration the allowlist |
 | `net.discovery` | `mdns` to publish a service, `ssdp` to search for devices | the host sends and listens for the module, which holds no socket |
 | `net.listen` | a port a program the module starts listens on | a component cannot listen. Shown at consent, and an update that adds one asks again |
-| `net.host` | the host's network, for the programs the module starts | a tunnel (`wireproxy`, `cloudflared`) and the torrent engine reach the internet from the host. Shown in red |
+| `net.host` | the host's network, for the programs the module starts | a tunnel (`wireproxy`, `cloudflared`) and the torrent engine reach the internet from the host. Marked as extended access |
 | `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only unless `fs.write` names it, as an importer's does, and always read-only when one holds a folder of the server's own), `downloads` (the [download folders](#the-download-folders), first-party only), `temp` (every module gets a private `/tmp`) |
-| `run` | programs it may start, by name | first-party modules only. What starts is a process of the host, see [below](#what-the-component-does-not-contain) |
+| `run` | programs it may start, by name | first-party modules only. What starts is a process of the host, see [below](#what-the-component-does-not-contain). Marked as extended access |
 | `env` | environment variables beyond the allowlist | the server's own variables, secrets included, are never passed |
 | `media` | the core's media tools, by name: `decode` turns an audio track into raw PCM | the core's ffmpeg runs it under its budget, on a file the module holds and cannot write |
 

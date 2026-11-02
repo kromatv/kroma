@@ -82,7 +82,7 @@ export const Permissions = z
           .boolean()
           .optional()
           .describe(
-            "The programs this module starts use this machine's network directly: a network provider's own tunnel, a download engine's peers. Shown in red at install.",
+            "The programs this module starts use this machine's network directly: a network provider's own tunnel, a download engine's peers. Marked as extended access at install.",
           ),
       })
       .strict()

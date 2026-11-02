@@ -22,12 +22,14 @@ const iconWellVariants = sv({
     tone: {
       neutral: { root: { bg: 'tint/6' } },
       accent: { root: { bg: 'accentSoft' } },
+      success: { root: { bg: 'success/14' } },
     },
   },
   defaults: { size: 'tv', tone: 'neutral' },
 });
 
 const GLYPH = { xs: 16, sm: 17, tv: 20 } as const;
+const INK = { neutral: 'textMuted', accent: 'accent', success: 'success' } as const;
 const ART_FADE_MS = 120;
 
 interface IconWellProps {
@@ -43,9 +45,7 @@ function IconWell({ name, size = 'tv', tone = 'neutral', src }: Readonly<IconWel
   const iconWellVariantsScoped = useSv(iconWellVariants);
 
   const s = iconWellVariantsScoped({ size, tone });
-  const glyph = (
-    <Icon name={name} size={GLYPH[size]} color={tone === 'accent' ? 'accent' : 'textMuted'} />
-  );
+  const glyph = <Icon name={name} size={GLYPH[size]} color={INK[tone]} />;
   const behindArt = (
     <Box fill center>
       {glyph}

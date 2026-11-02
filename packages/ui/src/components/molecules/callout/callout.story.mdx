@@ -1,5 +1,6 @@
 import { defineStory } from '@kromatv/workbench/story';
 import { Button } from '#ui/components/atoms/button';
+import { IconWell } from '#ui/components/atoms/icon-well';
 import { Text } from '#ui/components/atoms/text';
 import { Callout } from './callout';
 
@@ -87,6 +88,29 @@ The toned block a page keeps beside its content: a failure, a warning, a result 
         supervisor: port 41310 already bound
       </Text>
     </Callout.Root>
+  ))}
+</Scene>
+
+<Scene name="Lit">
+  `lit` lays the tone as a wash that fades down the block instead of a flat fill, for the callout that heads a section, such as a verdict, rather than one reporting inside it. A well from `<IconWell>` in `<Callout.Media>` gives it the same mark a row has.
+
+  {story.take(({ size }) => (
+    <>
+      <Callout.Root size={size} tone="accent" lit>
+        <Callout.Media>
+          <IconWell name="shield-exclamation" size="xs" tone="accent" />
+        </Callout.Media>
+        <Callout.Title>Extended access</Callout.Title>
+        <Callout.Detail>Starts rqbit on your server, outside the module's isolation.</Callout.Detail>
+      </Callout.Root>
+      <Callout.Root size={size} tone="success" lit>
+        <Callout.Media>
+          <IconWell name="shield-check" size="xs" tone="success" />
+        </Callout.Media>
+        <Callout.Title>Isolated</Callout.Title>
+        <Callout.Detail>Starts no program. Goes only through the access listed.</Callout.Detail>
+      </Callout.Root>
+    </>
   ))}
 </Scene>
 
