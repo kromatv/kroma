@@ -3,7 +3,6 @@ import {
   type ModuleAccess,
   type PermissionAccess,
   type PermissionCategory,
-  type PermissionGroup,
   permissionGroups,
   type PermissionSource,
   tileGroups,
@@ -13,22 +12,14 @@ import { listOf, opening } from '#web/features/admin/module-permissions-words';
 
 const LINES_SHOWN = 3;
 
-type Clause = 'host' | 'diskWrite' | 'diskRead';
-
-const CLAUSE: Record<Clause, readonly [first: MessageKey, then: MessageKey]> = {
-  host: ['modulePermissions.verdictHostFirst', 'modulePermissions.verdictHost'],
-  diskWrite: ['modulePermissions.verdictDiskWriteFirst', 'modulePermissions.verdictDiskWrite'],
-  diskRead: ['modulePermissions.verdictDiskReadFirst', 'modulePermissions.verdictDiskRead'],
-};
-
-function clauseOf(group: PermissionGroup): Clause {
-  if (group.category === 'host') return 'host';
-  return group.access === 'write' ? 'diskWrite' : 'diskRead';
-}
+const HOST: readonly [first: MessageKey, then: MessageKey] = [
+  'modulePermissions.verdictHostFirst',
+  'modulePermissions.verdictHost',
+];
 
 /** What reaches past a module's isolation, as the clauses of one sentence:
- *  the programs it starts, the server's own connection, the whole disk. Empty
- *  for a module that stays inside it. */
+ *  the programs it starts and the server's own connection. Empty for a module
+ *  that stays inside it. */
 export function extendedReasons(source: PermissionSource, t: Translate): string[] {
   const programs = source.permissions.run ?? [];
   return permissionGroups(source, t)
@@ -37,7 +28,7 @@ export function extendedReasons(source: PermissionSource, t: Translate): string[
       if (group.category === 'run') {
         return t('modulePermissions.verdictRun', { programs: listOf(programs, t) });
       }
-      const [first, then] = CLAUSE[clauseOf(group)];
+      const [first, then] = HOST;
       return t(at === 0 ? first : then);
     });
 }

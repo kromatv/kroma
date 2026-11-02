@@ -42,20 +42,22 @@ const modules = (...sources: [string, PermissionSource | null][]): ModuleAccess[
   sources.map(([name, source]) => ({ id: name.toLowerCase(), name, source }));
 
 describe('extendedSentence', () => {
-  it('names the programs, the direct connection and the whole disk in one sentence', () => {
+  it('names the programs and the direct connection in one sentence', () => {
     expect(extendedSentence(TORRENTS, t)).toBe(
-      "Starts rqbit and curl on your server, uses its direct connection and can change every folder on it, outside the module's isolation.",
+      "Starts rqbit and curl on your server and uses its direct connection, outside the module's isolation.",
     );
   });
 
   it('starts from the server when the module starts no program', () => {
-    expect(extendedSentence(ACQUISITION, t)).toBe(
-      "Can change every folder on your server, outside the module's isolation.",
+    const direct: PermissionSource = { permissions: { net: { host: true } }, official: true };
+
+    expect(extendedSentence(direct, t)).toBe(
+      "Uses your server's direct connection, outside the module's isolation.",
     );
   });
 
-  it('says nothing for a module that stays inside its isolation', () => {
-    expect(extendedSentence(INDEXERS, t)).toBeNull();
+  it('says nothing for a module that stays inside its isolation, downloads included', () => {
+    expect([extendedSentence(INDEXERS, t), extendedSentence(ACQUISITION, t)]).toEqual([null, null]);
   });
 });
 
@@ -97,7 +99,7 @@ describe('consentOverview', () => {
     expect(extended).toEqual([
       {
         id: 'torrents',
-        line: 'Torrents starts rqbit and curl on your server, uses its direct connection and can change every folder on it',
+        line: 'Torrents starts rqbit and curl on your server and uses its direct connection',
       },
       { id: 'vpn', line: 'VPN starts wireproxy on your server and uses its direct connection' },
     ]);

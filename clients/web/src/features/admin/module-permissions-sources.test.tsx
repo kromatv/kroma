@@ -40,7 +40,6 @@ describe('addedAccess', () => {
 
     expect(added).toEqual([
       ['run', 'Runs rqbit'],
-      ['disk', 'Can change every folder on the server'],
       ['accounts', 'Username'],
       ['files', 'Downloads'],
       ['internet', 'Any website'],

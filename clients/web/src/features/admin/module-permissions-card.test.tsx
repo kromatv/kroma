@@ -42,7 +42,7 @@ it('opens with one verdict naming what reaches past the isolation, then four til
   expect(screen.getByText('Extended access')).toBeTruthy();
   expect(
     screen.getByText(
-      "Starts rqbit on your server, uses its direct connection and can change every folder on it, outside the module's isolation.",
+      "Starts rqbit on your server and uses its direct connection, outside the module's isolation.",
     ),
   ).toBeTruthy();
   expect(screen.getByText('Accounts')).toBeTruthy();

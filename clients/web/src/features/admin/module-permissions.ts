@@ -15,7 +15,6 @@ import { accessWord, listOf, opening } from '#web/features/admin/module-permissi
 export type PermissionCategory =
   | 'run'
   | 'host'
-  | 'disk'
   | 'accounts'
   | 'files'
   | 'internet'
@@ -33,9 +32,8 @@ export interface PermissionDetail {
 
 /** One kind of access a module has: a sentence for the sheet, a few words for a
  *  tile, and its particulars. `extended` marks what reaches past the module's
- *  isolation: a program the host runs, the host's own network, and the whole
- *  disk an official download module is handed. `access` is null where reading
- *  and changing do not apply. */
+ *  isolation: a program the host runs and the host's own network. `access` is
+ *  null where reading and changing do not apply. */
 export interface PermissionGroup {
   category: PermissionCategory;
   summary: string;
@@ -105,19 +103,6 @@ function runGroup(source: PermissionSource, t: Translate): PermissionGroup | nul
   );
 }
 
-function diskGroup(source: PermissionSource, t: Translate): PermissionGroup | null {
-  const fs = source.permissions.fs;
-  const declared = fs?.read?.includes('downloads') || fs?.write?.includes('downloads');
-  if (!source.official || !declared) return null;
-  const writes = fs?.write?.includes('downloads') ?? false;
-  return extendedGroup(
-    'disk',
-    t(writes ? 'modulePermissions.diskWrite' : 'modulePermissions.diskRead'),
-    [],
-    writes ? 'write' : 'read',
-  );
-}
-
 function filesGroup(fs: ModulePermissions['fs'], t: Translate): PermissionGroup | null {
   const reads = SHARED_ROOTS.filter((root) => fs?.read?.includes(root));
   const writes = SHARED_ROOTS.filter((root) => fs?.write?.includes(root));
@@ -167,7 +152,6 @@ export function permissionGroups(source: PermissionSource, t: Translate): Permis
   return [
     runGroup(source, t),
     net?.host ? extendedGroup('host', t('modulePermissions.hostSummary')) : null,
-    diskGroup(source, t),
     accountsGroup(core, t),
     filesGroup(permissions.fs, t),
     internetGroup(net?.connect ?? [], t),

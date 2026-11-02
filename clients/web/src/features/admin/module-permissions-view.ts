@@ -25,12 +25,6 @@ export const CATEGORY_VIEW: Record<PermissionCategory, CategoryView> = {
     line: 'modulePermissions.hostTitle',
     note: 'modulePermissions.hostNote',
   },
-  disk: {
-    icon: 'folders',
-    title: 'modulePermissions.diskTitle',
-    line: 'modulePermissions.diskTitle',
-    note: 'modulePermissions.diskNote',
-  },
   accounts: {
     icon: 'user-circle',
     title: 'modulePermissions.accountsTitle',

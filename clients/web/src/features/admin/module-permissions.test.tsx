@@ -179,18 +179,14 @@ describe('permissionGroups', () => {
     expect(offered.details).toEqual([]);
   });
 
-  it('hands the whole disk to an official module that declares downloads, and to no other', () => {
+  it('counts the downloads an official module declares as its files, not as extended access', () => {
     const fs = { read: ['downloads' as const], write: ['downloads' as const] };
 
-    const official = group({ permissions: { fs }, official: true }, 'disk');
-    const thirdParty = groups({ permissions: { fs } }).map((one) => one.category);
+    const official = groups({ permissions: { fs }, official: true });
 
-    expect(official).toMatchObject({
-      extended: true,
-      access: 'write',
-      summary: 'Can change every folder on the server',
-    });
-    expect(thirdParty).toEqual(['files']);
+    expect(official.map(({ category, extended }) => [category, extended])).toEqual([
+      ['files', false],
+    ]);
   });
 
   it('says whether a kind of access reads or changes, where that applies', () => {
