@@ -1,5 +1,6 @@
 // The KROMA brand mark and the 10-foot wall clock.
 
+import { formatClock } from '@kromatv/ui/intl';
 import { Logo } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 
@@ -25,5 +26,5 @@ export function useClock(): string {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
-  return now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  return formatClock(now);
 }
