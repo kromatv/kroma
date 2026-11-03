@@ -1,7 +1,22 @@
 # tv-native
 
-The Apple TV / Android TV shell. It is platform glue: the 10-foot experience
-itself lives in [`@kromatv/tv`](../../packages/tv).
+The Apple TV / Android TV / Samsung Tizen shell. It is platform glue: the
+10-foot experience itself lives in [`@kromatv/tv`](../../packages/tv).
+
+## Samsung Tizen
+
+Tizen runs this same app through
+[`@kromatv/react-native-tizen`](../../packages/react-native-tizen), which reads
+`expo.tizen` in `app.json` and the Metro config's `withTizen`. From this
+directory:
+
+```bash
+bunx rn-tizen simulator run --instance <name>   # the aarch64 simulator
+bunx rn-tizen run --device <tv-ip>              # a TV in Developer Mode
+```
+
+A local module carries its Tizen implementation in its own `tizen/` folder,
+declared in its `expo-module.config.json`; `server-discovery` is one.
 
 ## Testing the voice and launcher doors
 

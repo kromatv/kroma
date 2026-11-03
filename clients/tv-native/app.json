@@ -24,6 +24,13 @@
         "NSSiriUsageDescription": "KROMA lets you ask Siri to search for something to watch in your library."
       }
     },
+    "tizen": {
+      "package": "tv.kroma.app",
+      "label": "KROMA",
+      "locales": ["fr", "en"],
+      "voice": { "searchUrl": "kroma://search?q={query}" },
+      "preview": { "refreshMinutes": 30 }
+    },
     "android": {
       "package": "tv.kroma.app",
       "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"]
