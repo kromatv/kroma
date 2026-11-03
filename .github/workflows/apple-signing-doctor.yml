@@ -67,12 +67,12 @@ jobs:
             echo "--- $label ---"
             if [ -z "$data" ]; then echo "  (secret is empty)"; return; fi
             if ! printf '%s' "$data" | base64 --decode > "$RUNNER_TEMP/p.mobileprovision" 2>/dev/null; then
-              echo "  ::error::not valid base64 - this is what makes exportArchive say"
-              echo "  'The data couldn't be read because it isn't in the correct format'"
+              echo "  ::error::not valid base64 - this is what makes exportArchive say" >&2
+              echo "  'The data couldn't be read because it isn't in the correct format'" >&2
               return
             fi
             if ! security cms -D -i "$RUNNER_TEMP/p.mobileprovision" > "$RUNNER_TEMP/p.plist" 2>/dev/null; then
-              echo "  ::error::decodes from base64 but is not a .mobileprovision"
+              echo "  ::error::decodes from base64 but is not a .mobileprovision" >&2
               return
             fi
             echo "  name:     $(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/p.plist" 2>/dev/null || echo '?')"

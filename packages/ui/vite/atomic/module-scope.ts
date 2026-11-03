@@ -178,7 +178,7 @@ export class ModuleLoader {
   scope(file: string): ModuleScope {
     const mtime = statSync(file).mtimeMs;
     const hit = this.scopes.get(file);
-    if (hit && hit.mtime === mtime) return hit.scope;
+    if (hit?.mtime === mtime) return hit.scope;
     const scope = scopeOf(parseModule(readFileSync(file, 'utf8'), file), file);
     this.scopes.set(file, { mtime, scope });
     return scope;
