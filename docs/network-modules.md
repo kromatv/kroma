@@ -24,7 +24,7 @@ core-called point `network`:
 A component cannot listen on a socket, so the tunnel is a program the module
 starts: named in `run`, pinned under `helpers`, and started by the host. Only a
 first-party module may start one. `net.host` says that program reaches the
-internet from the host. It is the permission the install screen shows in red, so
+internet from the host. It is one of the two permissions the install screen marks as extended access, so
 a network module should do nothing else.
 
 ### `network/list`

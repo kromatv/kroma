@@ -1,4 +1,4 @@
-import type { StoreModule } from '@kromatv/client/modules';
+import type { StoreCatalog, StoreModule } from '@kromatv/client/modules';
 import { useT } from '@kromatv/ui';
 import { Box, Button, EmptyState, Skeleton, Surface } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
@@ -15,13 +15,18 @@ import { ModuleActions, UninstallConfirm } from '#web/features/admin/module-deta
 import {
   Addons,
   DepsSection,
-  Label,
   Meta,
   ModuleSettings,
   OpProgress,
   RestartCallout,
 } from '#web/features/admin/module-detail-sections';
-import { PermissionList } from '#web/features/admin/module-permissions-list';
+import type { PermissionSource } from '#web/features/admin/module-permissions';
+import { SecurityCard } from '#web/features/admin/module-permissions-card';
+import {
+  declaredSource,
+  fromOfficialRegistry,
+  installedSource,
+} from '#web/features/admin/module-permissions-sources';
 import {
   IdentityCard,
   identityOf,
@@ -117,6 +122,7 @@ function ModuleDetailInner({ id }: Readonly<{ id: string }>) {
             update={update}
             description={description}
           />
+          <Security id={id} name={name} source={permissionSource(installed, entry, catalog)} />
         </Box>
 
         <Box flex minW={0} w={{ base: '100%', lg: 'auto' }}>
@@ -156,20 +162,32 @@ function InstalledSections({
   id,
   onSaved,
 }: Readonly<{ installed: AdminModule | undefined; id: string; onSaved: () => void }>) {
-  const t = useT();
   if (!installed) return null;
   return (
     <>
-      {installed.hasSidecar ? (
-        <Box>
-          <Label>{t('admin.permissionHeading', { name: installed.name })}</Label>
-          <PermissionList permissions={installed.permissions} />
-        </Box>
-      ) : null}
       <ModuleSettings module={installed} onSaved={onSaved} />
       <ModuleLogs id={id} />
     </>
   );
+}
+
+function permissionSource(
+  installed: AdminModule | undefined,
+  entry: StoreModule | undefined,
+  catalog: StoreCatalog | null | undefined,
+): PermissionSource | null | undefined {
+  if (installed) return installed.hasSidecar ? installedSource(installed) : undefined;
+  if (!entry || entry.library || !catalog) return undefined;
+  return declaredSource({ ...entry, official: fromOfficialRegistry(catalog, entry) });
+}
+
+function Security({
+  id,
+  name,
+  source,
+}: Readonly<{ id: string; name: string; source: PermissionSource | null | undefined }>) {
+  if (source === undefined) return null;
+  return <SecurityCard id={id} name={name} source={source} />;
 }
 
 function useUninstall(id: string) {
