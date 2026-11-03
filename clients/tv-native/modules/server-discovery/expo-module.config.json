@@ -1,9 +1,12 @@
 {
-  "platforms": ["android", "apple"],
+  "platforms": ["android", "apple", "tizen"],
   "android": {
     "modules": ["expo.modules.serverdiscovery.ServerDiscoveryModule"]
   },
   "apple": {
     "modules": ["ServerDiscoveryModule"]
+  },
+  "tizen": {
+    "cmake": "tizen/CMakeLists.txt"
   }
 }

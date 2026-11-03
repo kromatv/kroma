@@ -61,6 +61,8 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // the design falls back to anyway.
 const NATIVE_KIT = configureKit({ image: expoImageBackend, frost: BlurView, ground: 'dark' });
 
+const PLATFORM_LABELS: Record<string, string> = { ios: 'AppleTV', tizen: 'Tizen' };
+
 export function App() {
   const [frameLimits] = useState(decoderFrameLimits);
   const [deepLinks] = useState(createDeepLinks);
@@ -110,7 +112,7 @@ export function App() {
           searchShell={nativeSearchShell}
           launcher={nativeLauncher}
           serverBrowse={browseForServers}
-          platform={Platform.OS === 'ios' ? 'AppleTV' : 'AndroidTV'}
+          platform={PLATFORM_LABELS[Platform.OS] ?? 'AndroidTV'}
           // This television announces itself on its own link, so a phone in the
           // room can sign it in without the server having to place the two by
           // their addresses. Null on a shell without the native module.

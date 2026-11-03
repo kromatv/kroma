@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
+    "@kromatv/react-native-tizen": "workspace:*",
     "@react-native-tvos/config-tv": "^0.1.7",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
