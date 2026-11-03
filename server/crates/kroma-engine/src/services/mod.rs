@@ -11,6 +11,7 @@ pub mod email;
 pub mod embeddings;
 pub mod enrich;
 pub mod jobs;
+pub mod library_counts;
 pub mod library_missing;
 pub mod llm;
 pub mod loginguard;
