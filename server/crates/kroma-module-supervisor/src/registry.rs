@@ -6,7 +6,7 @@
     reason = "the module registry client: fetch_bounded asks the egress gate before every request and records its exchange"
 )]
 
-use kroma_http::egress::{self, Decision, Exchange, Route, Ruling, BLOCKED};
+use kroma_http::egress::{self, Exchange};
 use serde_json::Value;
 
 use super::Supervisor;
@@ -46,32 +46,12 @@ async fn fetch_bounded(
     on_progress: Option<FetchProgress<'_>>,
 ) -> anyhow::Result<Vec<u8>> {
     let started = std::time::Instant::now();
-    let (target, Ruling { decision, rule }) = egress::rule_url(PURPOSE, "GET", url);
+    let (target, ruling) = egress::rule_url(PURPOSE, "GET", url);
     let (host, port) = target.map_or((String::new(), 0), |t| (t.host, t.port));
-    let mut exchange = Exchange {
-        purpose: PURPOSE,
-        method: "GET",
-        host,
-        port,
-        route: Route::Direct,
-        status: None,
-        bytes_in: 0,
-        bytes_out: 0,
-        duration_ms: 0,
-        error: None,
-        rule,
-        carried: false,
-    };
-    let refusal = match decision {
-        Decision::Direct => None,
-        Decision::Block(reason) => Some(reason),
-        Decision::Proxy(_) => Some(NO_PROXY.to_string()),
-    };
+    let (mut exchange, refusal) =
+        Exchange::direct_only(PURPOSE, "GET", host, port, ruling, NO_PROXY);
     let outcome = match refusal {
-        Some(reason) => {
-            exchange.route = Route::Blocked;
-            Err(anyhow::anyhow!("{BLOCKED}: {reason}"))
-        }
+        Some(refusal) => Err(anyhow::anyhow!(refusal)),
         None => read_bounded(client, url, max_bytes, on_progress, &mut exchange.status).await,
     };
     exchange.bytes_in = outcome.as_ref().map_or(0, |body| body.len() as u64);

@@ -55,7 +55,7 @@ pub fn parse(bytes: &[u8]) -> Result<ParsedTorrentFile> {
         .unwrap_or_default();
     let size_bytes = files.iter().map(|file| file.length).sum();
     let trackers = trackers_of(&torrent);
-    let info_hash = sha1_hex(info.raw);
+    let info_hash = crate::magnet::to_hex(&info_hash(info));
     let magnet = magnet_for(&info_hash, &name, &trackers);
     Ok(ParsedTorrentFile {
         info_hash,
@@ -72,11 +72,10 @@ struct TorrentEntry<'a> {
     padding: bool,
 }
 
-fn sha1_hex(bytes: &[u8]) -> String {
+pub(crate) fn info_hash(info: &Node<'_>) -> [u8; 20] {
     let mut hasher = Sha1::new();
-    hasher.update(bytes);
-    let digest: [u8; 20] = hasher.finalize().into();
-    crate::magnet::to_hex(&digest)
+    hasher.update(info.raw);
+    hasher.finalize().into()
 }
 
 fn text_of(node: &Node<'_>, key: &[u8]) -> Option<String> {

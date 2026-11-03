@@ -67,14 +67,14 @@ if tar --no-mac-metadata --help >/dev/null 2>&1; then
 fi
 sha256() { if command -v shasum >/dev/null; then shasum -a 256 "$@"; else sha256sum "$@"; fi; }
 
-if [ "${SKIP_WEB:-}" != "1" ]; then
+if [[ "${SKIP_WEB:-}" != "1" ]]; then
   say "Building web SPA"
   ( cd "$ROOT" && bun run build:web )
 fi
-[ -f "$ROOT/clients/web/dist/client/_shell.html" ] || { echo "web build missing (_shell.html)"; exit 1; }
+[[ -f "$ROOT/clients/web/dist/client/_shell.html" ]] || { echo "web build missing (_shell.html)"; exit 1; }
 
 BIN="$ROOT/server/target/$TARGET/release/kroma-server"
-if [ "${SKIP_RUST:-}" != "1" ]; then
+if [[ "${SKIP_RUST:-}" != "1" ]]; then
   command -v docker >/dev/null || { echo "Docker required for the musl cross-build (or set SKIP_RUST=1 after a manual build)"; exit 1; }
   say "Cross-compiling kroma-server → $TARGET (Docker: $RUST_IMAGE)"
   # No feature flags: transcription is the whisper module's, and its `.kmod`
@@ -90,7 +90,7 @@ if [ "${SKIP_RUST:-}" != "1" ]; then
     -e KROMA_BUILD="$BUILD" \
     "$RUST_IMAGE" cargo build --release --target "$TARGET"
 fi
-[ -f "$BIN" ] || { echo "musl binary missing: $BIN"; exit 1; }
+[[ -f "$BIN" ]] || { echo "musl binary missing: $BIN"; exit 1; }
 
 # BtbN's GPL shared build, pinned in ffmpeg.lock and mirrored on our own
 # vendor release: it is the one configured with `--enable-vaapi --enable-libvpl`,

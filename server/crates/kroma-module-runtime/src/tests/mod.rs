@@ -208,7 +208,10 @@ fn start_core(log: CoreLog, socket: &Path) {
     );
 }
 
-pub fn serve(app: Router, socket: &Path) {
+fn listening<F>(socket: &Path, run: impl FnOnce(tokio::net::UnixListener) -> F + Send + 'static)
+where
+    F: std::future::Future<Output = ()>,
+{
     let _ = std::fs::remove_file(socket);
     let listener = std::os::unix::net::UnixListener::bind(socket).expect("bind");
     listener.set_nonblocking(true).expect("non-blocking");
@@ -219,8 +222,14 @@ pub fn serve(app: Router, socket: &Path) {
             .expect("runtime");
         rt.block_on(async move {
             let listener = tokio::net::UnixListener::from_std(listener).expect("listener");
-            axum::serve(listener, app).await.expect("serve");
+            run(listener).await;
         });
+    });
+}
+
+pub fn serve(app: Router, socket: &Path) {
+    listening(socket, move |listener| async move {
+        axum::serve(listener, app).await.expect("serve");
     });
 }
 
@@ -247,19 +256,9 @@ pub fn on_a_socket(
     wire: impl FnOnce(&RemoteHost) -> Router<RemoteHost> + Send + 'static,
     modules: Vec<Box<dyn ServerModule<RemoteHost>>>,
 ) {
-    let _ = std::fs::remove_file(socket);
-    let listener = std::os::unix::net::UnixListener::bind(socket).expect("bind");
-    listener.set_nonblocking(true).expect("non-blocking");
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("runtime");
-        rt.block_on(async move {
-            let listener = tokio::net::UnixListener::from_std(listener).expect("listener");
-            let (app, _, _) = started(env, wire, modules).await.expect("started");
-            axum::serve(listener, app).await.expect("serve");
-        });
+    listening(socket, move |listener| async move {
+        let (app, _, _) = started(env, wire, modules).await.expect("started");
+        axum::serve(listener, app).await.expect("serve");
     });
 }
 

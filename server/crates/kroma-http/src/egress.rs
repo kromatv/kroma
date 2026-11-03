@@ -73,6 +73,47 @@ pub struct Exchange {
     pub carried: bool,
 }
 
+impl Exchange {
+    /// The record of a call to `host:port` by a client that is not
+    /// [`crate::Fetch`] and cannot take a proxy, as `ruling` let it start, and
+    /// the error the call fails with when it may not: a [`Decision::Block`]'s
+    /// reason, or `no_proxy` for a [`Decision::Proxy`]. A refused call is
+    /// recorded as [`Route::Blocked`].
+    pub fn direct_only(
+        purpose: &'static str,
+        method: &'static str,
+        host: String,
+        port: u16,
+        ruling: Ruling,
+        no_proxy: &str,
+    ) -> (Self, Option<String>) {
+        let refusal = match ruling.decision {
+            Decision::Direct => None,
+            Decision::Block(reason) => Some(format!("{BLOCKED}: {reason}")),
+            Decision::Proxy(_) => Some(format!("{BLOCKED}: {no_proxy}")),
+        };
+        let exchange = Self {
+            purpose,
+            method,
+            host,
+            port,
+            route: if refusal.is_some() {
+                Route::Blocked
+            } else {
+                Route::Direct
+            },
+            status: None,
+            bytes_in: 0,
+            bytes_out: 0,
+            duration_ms: 0,
+            error: None,
+            rule: ruling.rule,
+            carried: false,
+        };
+        (exchange, refusal)
+    }
+}
+
 /// The core's gateway as this process reaches it: a SOCKS5 endpoint and the
 /// credential that names this process as its caller.
 #[derive(Clone, PartialEq, Eq)]

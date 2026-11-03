@@ -1,9 +1,9 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use kroma_module_sdk::host::process::Child;
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::{run_blocking, HostCtx};
 
 use crate::process::spawn_child;
 use crate::provision;
@@ -22,12 +22,41 @@ pub struct Vpn {
     exit: std::sync::Mutex<Option<String>>,
 }
 
-fn wireproxy_conf(wg_path: &std::path::Path, port: u16, password: &str) -> String {
+fn wireproxy_conf(wg_path: &Path, port: u16, password: &str) -> String {
     format!(
         "WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\nUsername = {}\nPassword = {password}\n",
         wg_path.display(),
         socks_auth::USER,
     )
+}
+
+fn written_configs(dir: &Path, wg_config: &str, port: u16) -> Result<PathBuf, String> {
+    std::fs::create_dir_all(dir).map_err(|e| format!("create vpn dir: {e}"))?;
+    let wg_path = dir.join("wg.conf");
+    // Force the tunnel IPv4-only. wireproxy carries IPv4 BitTorrent peer
+    // connections fine but STALLS IPv6 ones mid-handshake (Proton's IPv6
+    // P2P path). Worse, an IPv6-capable tunnel makes the client announce to
+    // trackers over IPv6, so the tracker returns IPv6 peers (which then
+    // can't be reached) instead of the IPv4 peers wireproxy can use. See
+    // `ipv4_only_wg`.
+    write_private(&wg_path, &(ipv4_only_wg(wg_config.trim()) + "\n"))
+        .map_err(|e| format!("write wg.conf: {e}"))?;
+    let password =
+        socks_auth::password(dir).map_err(|e| format!("mint the SOCKS password: {e}"))?;
+    let conf_path = dir.join("wireproxy.conf");
+    write_private(&conf_path, &wireproxy_conf(&wg_path, port, &password))
+        .map_err(|e| format!("write wireproxy.conf: {e}"))?;
+    Ok(conf_path)
+}
+
+fn write_private(path: &Path, contents: &str) -> std::io::Result<()> {
+    std::fs::write(path, contents)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
+    }
+    Ok(())
 }
 
 impl Vpn {
@@ -102,31 +131,9 @@ impl Vpn {
     ) -> Result<(), String> {
         let bin = provision::ensure(&self.data_dir).await?;
         let dir = self.dir();
-        std::fs::create_dir_all(&dir).map_err(|e| format!("create vpn dir: {e}"))?;
-        let wg_path = dir.join("wg.conf");
-        // Force the tunnel IPv4-only. wireproxy carries IPv4 BitTorrent peer
-        // connections fine but STALLS IPv6 ones mid-handshake (Proton's IPv6
-        // P2P path). Worse, an IPv6-capable tunnel makes the client announce to
-        // trackers over IPv6, so the tracker returns IPv6 peers (which then
-        // can't be reached) instead of the IPv4 peers wireproxy can use. See
-        // `ipv4_only_wg`.
-        std::fs::write(&wg_path, ipv4_only_wg(wg_config.trim()) + "\n")
-            .map_err(|e| format!("write wg.conf: {e}"))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&wg_path, std::fs::Permissions::from_mode(0o600));
-        }
-        let password =
-            socks_auth::password(&dir).map_err(|e| format!("mint the SOCKS password: {e}"))?;
-        let conf_path = dir.join("wireproxy.conf");
-        std::fs::write(&conf_path, wireproxy_conf(&wg_path, port, &password))
-            .map_err(|e| format!("write wireproxy.conf: {e}"))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&conf_path, std::fs::Permissions::from_mode(0o600));
-        }
+        let conf_path = run_blocking(move || written_configs(&dir, &wg_config, port))
+            .await
+            .map_err(|e| e.to_string())??;
 
         let child = spawn_child(&bin, &conf_path)?;
         tracing::info!(port, "wireguard bridge started (wireproxy)");

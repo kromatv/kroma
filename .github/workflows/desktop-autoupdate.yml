@@ -279,15 +279,17 @@ jobs:
 
           API="repos/${GITHUB_REPOSITORY}/releases"
           upload() { # <file> <asset-name>; prints the response JSON
+            local file="$1" asset="$2"
             curl -sf -X POST \
               -H "Authorization: token ${GH_TOKEN}" \
               -H "Content-Type: application/octet-stream" \
-              --data-binary @"$1" \
-              "https://uploads.github.com/${API}/${RELEASE_ID}/assets?name=$2"
+              --data-binary @"$file" \
+              "https://uploads.github.com/${API}/${RELEASE_ID}/assets?name=$asset"
           }
           asset_id() { # <asset-name>; empty when absent
+            local asset="$1"
             gh api "${API}/${RELEASE_ID}/assets" --paginate \
-              --jq ".[] | select(.name == \"$1\") | .id"
+              --jq ".[] | select(.name == \"$asset\") | .id"
           }
 
           # Swap in the fixed AppImage + its detached .sig. On a DRAFT release

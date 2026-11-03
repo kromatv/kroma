@@ -49,7 +49,7 @@ pub(super) fn tarball(layout: &[(&str, &str)]) -> Vec<u8> {
     for (path, body) in layout {
         let mut header = Header::new_gnu();
         header.set_size(body.len() as u64);
-        header.set_mode(0o644);
+        header.set_mode(0o600);
         header.set_cksum();
         archive
             .append_data(&mut header, path, body.as_bytes())

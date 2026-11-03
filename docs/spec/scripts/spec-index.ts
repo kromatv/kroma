@@ -106,7 +106,7 @@ async function collect(): Promise<{ reqs: Requirement[]; errors: string[] }> {
       }
       if (inFence) return;
 
-      const idm = raw.match(REQ_ID);
+      const idm = REQ_ID.exec(raw);
       if (!idm) return;
       const [, prefix, num, rest] = idm;
       const line = i + 1;
