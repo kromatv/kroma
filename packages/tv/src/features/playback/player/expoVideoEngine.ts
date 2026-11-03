@@ -66,6 +66,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   private bufSec: number | null = null;
   private subscriptions: { remove(): void }[] = [];
   private pendingSeek: number | null = null;
+  private pendingAudio = false;
 
   constructor(opts: EngineOptions) {
     super(opts);
@@ -90,6 +91,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (budget) player.bufferOptions = budget;
     // Only direct mode needs a seek: master's clock already starts at baseSec.
     this.pendingSeek = this.mode === 'direct' && seekSec > 0 ? seekSec : null;
+    this.pendingAudio = this.mode === 'direct';
     this.player = player;
     this.subscribe(player);
     // Notify the surface before playing: React hasn't re-rendered <VideoView>
@@ -143,7 +145,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         return;
       }
       if (payload.status === 'readyToPlay') {
-        this.applyPendingSeek();
+        this.applyPending();
         this.listeners.onPlaying();
         this.listeners.onReady();
         return;
@@ -156,11 +158,15 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     });
   }
 
-  private applyPendingSeek(): void {
-    const seek = this.pendingSeek;
+  private applyPending(): void {
+    const { player, pendingSeek: seek, pendingAudio: audio } = this;
     this.pendingSeek = null;
-    if (seek == null || !this.player) return;
-    this.player.currentTime = seek;
+    this.pendingAudio = false;
+    if (!player) return;
+    const track = audio ? player.availableAudioTracks[this.rendition] : undefined;
+    if (track && player.audioTrack?.id !== track.id) player.audioTrack = track;
+    if (seek == null) return;
+    player.currentTime = seek;
     this.elSec = seek;
   }
 
@@ -181,6 +187,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       this.elSec = 0;
     }
     this.pendingSeek = this.mode === 'direct' && absSec > 0 ? absSec : null;
+    this.pendingAudio = this.mode === 'direct';
     this.bufSec = null;
   }
 
