@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -75,6 +75,12 @@ fn fresh_peer_id() -> [u8; 20] {
     id
 }
 
+fn prepared_dirs(download_dir: &Path, session_dir: &Path) -> usize {
+    std::fs::create_dir_all(download_dir).ok();
+    std::fs::create_dir_all(session_dir).ok();
+    crate::rqbit_session::prune_unrestorable(session_dir)
+}
+
 fn wanted_limits(download_bps: Option<u32>, upload_bps: Option<u32>) -> (Option<u32>, Option<u32>) {
     (
         download_bps.filter(|bps| *bps > 0),
@@ -87,9 +93,10 @@ impl RqbitEngine {
     /// session that takes a while to restore only makes this wait: other work
     /// runs in the meantime.
     pub async fn start(cfg: &RqbitConfig) -> Result<Arc<RqbitEngine>> {
-        std::fs::create_dir_all(&cfg.download_dir).ok();
-        std::fs::create_dir_all(&cfg.session_dir).ok();
-        let dropped = crate::rqbit_session::prune_unrestorable(&cfg.session_dir);
+        let (downloads, session) = (cfg.download_dir.clone(), cfg.session_dir.clone());
+        let dropped = run_blocking(move || prepared_dirs(&downloads, &session))
+            .await
+            .map_err(|error| anyhow!("{error}"))?;
         if dropped > 0 {
             tracing::info!(
                 dropped,

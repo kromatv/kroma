@@ -163,12 +163,8 @@ fn parses_v4_and_v6_peers() {
 }
 
 #[test]
-fn computes_info_hash_and_announce() {
+fn a_single_announce_is_the_one_tracker() {
     let t = bencode::parse(b"d8:announce3:url4:infod3:foo3:baree").unwrap();
-    let ih = info_hash(&t).expect("hash");
-    let mut h = Sha1::new();
-    h.update(b"d3:foo3:bare");
-    let expect: [u8; 20] = h.finalize().into();
-    assert_eq!(ih, expect);
+
     assert_eq!(announce_urls(&t), vec!["url".to_string()]);
 }

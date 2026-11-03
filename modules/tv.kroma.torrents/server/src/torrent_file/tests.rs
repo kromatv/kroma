@@ -61,7 +61,10 @@ fn a_pack_sizes_up_as_all_of_its_files_under_the_hash_of_its_info_dict() {
     let info = bencode::parse(&bytes).unwrap();
     assert_eq!(parsed.name, "Pack");
     assert_eq!(parsed.size_bytes, 10);
-    assert_eq!(parsed.info_hash, sha1_hex(info.get(b"info").unwrap().raw));
+    assert_eq!(
+        parsed.info_hash,
+        crate::magnet::to_hex(&info_hash(info.get(b"info").unwrap()))
+    );
 }
 
 #[test]

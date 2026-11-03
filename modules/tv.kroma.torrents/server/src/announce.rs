@@ -5,8 +5,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::time::{Duration, Instant};
 
-use sha1::{Digest, Sha1};
-
 use crate::bencode::{self, Node};
 
 const MAX_TRACKERS: usize = 4;
@@ -19,9 +17,10 @@ pub fn tracker_peers(torrent_bytes: &[u8], proxy: &str, peer_id: &[u8; 20]) -> V
     let Some(torrent) = bencode::parse(torrent_bytes) else {
         return Vec::new();
     };
-    let Some(info_hash) = info_hash(&torrent) else {
+    let Some(info) = torrent.get(b"info") else {
         return Vec::new();
     };
+    let info_hash = crate::torrent_file::info_hash(info);
     announce_all(&info_hash, announce_urls(&torrent), proxy, peer_id)
 }
 
@@ -126,12 +125,6 @@ fn parse_peers(body: &[u8]) -> Vec<SocketAddr> {
         SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::from(ip), port, 0, 0))
     }));
     out
-}
-
-fn info_hash(torrent: &Node<'_>) -> Option<[u8; 20]> {
-    let mut hasher = Sha1::new();
-    hasher.update(torrent.get(b"info")?.raw);
-    Some(hasher.finalize().into())
 }
 
 fn announce_urls(torrent: &Node<'_>) -> Vec<String> {
