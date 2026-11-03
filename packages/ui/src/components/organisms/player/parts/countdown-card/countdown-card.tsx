@@ -13,7 +13,6 @@ import {
   sharedStyle,
   styles,
   useStyleScope,
-  useTheme,
 } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
@@ -74,7 +73,6 @@ export function CountdownCard({
   useLockFocusBehind(active);
   const scope = useStyleScope();
   const s = useStyles(sDefinition);
-  const theme = useTheme();
   const px = scaler(scale);
   const radiusOf = (size: 'lg' | '2xl') => scaledRadius(size, scale, activeTheme(scope.theme));
   const ring = px(54);
@@ -100,7 +98,7 @@ export function CountdownCard({
                 size={ring}
                 thickness={px(6)}
                 track="rgba(255, 255, 255, 0.14)"
-                fill={theme.colors.accent}
+                fill="accent"
               />
             </Box>
             <Box w={px(42)} h={px(42)} center radius="circle" bg="playerSurface">

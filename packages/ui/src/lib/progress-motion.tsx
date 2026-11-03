@@ -12,6 +12,10 @@ import { ease } from '#ui/lib/ease';
 import type { RingGeometry } from '#ui/lib/ring';
 import { Circle } from '#ui/lib/svg';
 
+interface ProgressArcProps extends RingGeometry {
+  eased: boolean;
+}
+
 export interface ProgressFillProps {
   value: number;
   style: StyleProp<ViewStyle>;
@@ -41,30 +45,30 @@ function useSettling(to: number): Animated.Value {
   return value;
 }
 
-/** The arc of a <ProgressRing>, easing to a new length when the value changes. */
-export function ProgressArc({
-  centre,
-  radius,
-  thickness,
-  fill,
-  circumference,
-  dashOffset,
-}: Readonly<RingGeometry>) {
-  const offset = useSettling(dashOffset);
+/** The arc of a <ProgressRing>, easing to a new length when the value changes
+ *  unless `eased` is off. */
+export function ProgressArc({ eased, ...arc }: Readonly<ProgressArcProps>) {
+  if (!eased) return <Circle {...arcShape(arc)} strokeDashoffset={arc.dashOffset} />;
+  return <SettlingArc {...arc} />;
+}
 
-  return (
-    <AnimatedCircle
-      cx={centre}
-      cy={centre}
-      r={radius}
-      fill="none"
-      stroke={fill}
-      strokeWidth={thickness}
-      strokeLinecap="round"
-      strokeDasharray={circumference}
-      strokeDashoffset={offset}
-    />
-  );
+function SettlingArc(arc: Readonly<RingGeometry>) {
+  const offset = useSettling(arc.dashOffset);
+
+  return <AnimatedCircle {...arcShape(arc)} strokeDashoffset={offset} />;
+}
+
+function arcShape({ centre, radius, thickness, fill, circumference }: Readonly<RingGeometry>) {
+  return {
+    cx: centre,
+    cy: centre,
+    r: radius,
+    fill: 'none',
+    stroke: fill,
+    strokeWidth: thickness,
+    strokeLinecap: 'round' as const,
+    strokeDasharray: circumference,
+  };
 }
 
 /** The fill of a <Progress> track, easing to `value` (0..1). `style` paints it

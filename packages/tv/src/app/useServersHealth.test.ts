@@ -24,7 +24,15 @@ const HEALTH = {
   shows: 18,
 };
 
-afterEach(() => vi.unstubAllGlobals());
+const NAS = 'http://nas:4040';
+const NAS_HEALTH = `${NAS}/api/health`;
+
+const offline = () => Promise.reject(new Error('offline'));
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('useServersHealth', () => {
   it('reports the identity a server states in its health answer', async () => {
@@ -66,6 +74,43 @@ describe('useServersHealth', () => {
     await waitFor(() => expect(result.current['http://old:4040']).toBeDefined());
     expect(result.current['http://old:4040']?.online).toBe(true);
     expect(result.current['http://old:4040']?.version).toBeUndefined();
+  });
+
+  it('probes a server that failed again within a second', async () => {
+    vi.useFakeTimers();
+    let up = false;
+    const answering = fakeFetch({ [NAS_HEALTH]: { body: HEALTH } });
+    vi.stubGlobal('fetch', (url: string) => (up ? answering(url) : offline()));
+    const { result } = renderHook(() => useServersHealth([NAS]));
+    await vi.advanceTimersByTimeAsync(0);
+    up = true;
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(result.current[NAS]?.online).toBe(true);
+  });
+
+  it('backs off a server that keeps failing, up to the slow loop', async () => {
+    vi.useFakeTimers();
+    const fetchFn = vi.fn(offline);
+    vi.stubGlobal('fetch', fetchFn);
+    renderHook(() => useServersHealth([NAS]));
+
+    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000 + 8000 + 12000 + 12000);
+
+    expect(fetchFn).toHaveBeenCalledTimes(7);
+  });
+
+  it('keeps the slow loop while every server answers', async () => {
+    vi.useFakeTimers();
+    const fetchFn = fakeFetch({ [NAS_HEALTH]: { body: HEALTH } });
+    vi.stubGlobal('fetch', fetchFn);
+    renderHook(() => useServersHealth([NAS]));
+
+    await vi.advanceTimersByTimeAsync(11_999);
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
   it('probes nothing and stays empty without urls', async () => {

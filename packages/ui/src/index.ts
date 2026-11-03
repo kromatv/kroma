@@ -14,7 +14,7 @@ export {
 export { useForeground } from './lib/use-foreground';
 export { useAccountStorage } from './services/account-storage';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
-export { useAiSuggest } from './services/aiSuggest';
+export { useAiSuggest, useEstimatedProgress } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';
 export { useAuthSession } from './services/auth';
 export type { Cast, CastFailure, CastProviderProps } from './services/cast';

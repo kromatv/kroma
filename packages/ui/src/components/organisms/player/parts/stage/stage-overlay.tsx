@@ -3,7 +3,6 @@ import { Box } from '#ui/components/atoms/box';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { EmptyState } from '#ui/components/molecules/empty-state';
 import { styles } from '#ui/core';
-import { color as tokenColor } from '#ui/core/color';
 import { useStyles } from '#ui/core/styles';
 import { backdropBlur } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
@@ -59,7 +58,7 @@ function StageOverlay({ error, hint, waiting = false, reason }: Readonly<StageOv
           size={48}
           thickness={4}
           track="rgba(255, 255, 255, 0.14)"
-          fill={tokenColor('accent')}
+          fill="accent"
           label={t(reason === 'buffering' ? 'player.buffering' : 'player.loading')}
         />
       </Box>

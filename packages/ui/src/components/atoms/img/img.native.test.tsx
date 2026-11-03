@@ -30,6 +30,7 @@ function mount(props: ImgProps) {
   );
   return {
     fadeMs: () => leaves.at(-1)?.fadeMs,
+    draws: () => leaves.length,
     classes: () => (view.container.firstElementChild as HTMLElement).className,
     load: () => act(() => leaves.at(-1)?.onLoad?.({ width: 600, height: 900 })),
     settle: () => act(() => vi.advanceTimersByTime(400)),
@@ -93,6 +94,33 @@ describe('Img on React Native', () => {
     img.rerender({ src: 'b.jpg', ...at });
 
     expect(img.classes()).toBe(filled);
+  });
+
+  it('draws a centred cover once, with nothing to measure when it loads', () => {
+    const img = mount({ src: 'a.jpg', noCrossFade: true });
+    const drawn = img.draws();
+
+    img.load();
+
+    expect(img.draws()).toBe(drawn);
+  });
+
+  it('draws contained art once, with nothing to measure when it loads', () => {
+    const img = mount({ src: 'a.jpg', fit: 'contain', position: '50% 20%', noCrossFade: true });
+    const drawn = img.draws();
+
+    img.load();
+
+    expect(img.draws()).toBe(drawn);
+  });
+
+  it('learns the size of art placed off-centre, to put its focal point there', () => {
+    const img = mount({ src: 'a.jpg', position: '50% 28%', noCrossFade: true });
+    const drawn = img.draws();
+
+    img.load();
+
+    expect(img.draws()).toBeGreaterThan(drawn);
   });
 
   it('keeps the background under art that may be transparent', () => {

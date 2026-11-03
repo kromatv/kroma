@@ -5,7 +5,7 @@
 
 import { Animated, View } from 'react-native';
 import { clamp01 } from '#ui/components/atoms/progress';
-import { style } from '#ui/core';
+import { activeTheme, color, style, useStyleScope } from '#ui/core';
 import { a11yState, a11yValue } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
 import { ProgressArc } from '#ui/lib/progress-motion';
@@ -20,6 +20,9 @@ import { Circle, Svg } from '#ui/lib/svg';
 
 interface ProgressRingProps extends RingProps {
   indeterminate?: boolean;
+  /** Eases the arc to each new value. Default true; turn it off for a value that
+   *  already moves in small steps, so each step is one redraw, not an animation. */
+  eased?: boolean;
   /** Names the ring to assistive tech. Leave it out inside a control that
    *  already carries the name. */
   label?: string;
@@ -30,7 +33,13 @@ interface ProgressRingProps extends RingProps {
 // React Native's transform vocabulary, on both platforms.
 const startAtTwelve = style({ transform: [{ rotate: RING_ROTATION }] });
 
-function ProgressRing({ indeterminate = false, label, ...props }: Readonly<ProgressRingProps>) {
+function ProgressRing({
+  indeterminate = false,
+  eased = true,
+  label,
+  ...props
+}: Readonly<ProgressRingProps>) {
+  const theme = activeTheme(useStyleScope().theme);
   const g = ringGeometry(indeterminate ? { ...props, value: RING_BUSY_ARC } : props);
   const spin = useLoop('spin', RING_SPIN_MS, indeterminate);
   const a11y = indeterminate
@@ -50,10 +59,10 @@ function ProgressRing({ indeterminate = false, label, ...props }: Readonly<Progr
           cy={g.centre}
           r={g.radius}
           fill="none"
-          stroke={g.track}
+          stroke={color(g.track, theme)}
           strokeWidth={g.thickness}
         />
-        <ProgressArc {...g} />
+        <ProgressArc {...g} fill={color(g.fill, theme)} eased={eased} />
       </Svg>
     </View>
   );
