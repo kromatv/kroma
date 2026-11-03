@@ -33,7 +33,7 @@ function pickLocation(): File | null {
   for (const location of LOCATIONS) {
     try {
       const file = handleIn(location.dir());
-      if (!file.exists) file.write('{}');
+      if (!file.exists) file.writeSync('{}');
       if (file.exists) return file;
     } catch {
       // A device that refuses every location keeps the in-memory store.
@@ -72,7 +72,7 @@ class DeviceStore implements SessionStorage {
   private flush(): void {
     if (!this.target) return;
     try {
-      this.target.write(JSON.stringify(this.data));
+      this.target.writeSync(JSON.stringify(this.data));
     } catch (cause) {
       // Must not throw (costs only the next launch) and must not be silent
       // (release builds strip console; the disk file is the only signal left).
