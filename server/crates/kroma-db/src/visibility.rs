@@ -46,23 +46,45 @@ pub fn show_library(pool: &Pool, show_id: &str) -> Result<Option<String>> {
         .optional()?)
 }
 
+/// The library of the item `subject_id` names, or of the show when no item does.
+pub fn subject_library(pool: &Pool, subject_id: &str) -> Result<Option<String>> {
+    match item_library(pool, subject_id)? {
+        Some(library) => Ok(Some(library)),
+        None => show_library(pool, subject_id),
+    }
+}
+
 /// The library of each named item, skipping ids nothing matches.
 pub fn item_libraries(pool: &Pool, item_ids: &[String]) -> Result<HashMap<String, String>> {
-    if item_ids.is_empty() {
+    libraries_of(pool, &["items"], item_ids)
+}
+
+/// The library of each named item or show, skipping ids nothing matches. An id
+/// that names both answers with the item's library, as [`subject_library`] does.
+pub fn subject_libraries(pool: &Pool, subject_ids: &[String]) -> Result<HashMap<String, String>> {
+    libraries_of(pool, &["items", "shows"], subject_ids)
+}
+
+fn libraries_of(pool: &Pool, tables: &[&str], ids: &[String]) -> Result<HashMap<String, String>> {
+    if ids.is_empty() {
         return Ok(HashMap::new());
     }
     let conn = pool.get()?;
-    let ids: Vec<&str> = item_ids.iter().map(String::as_str).collect();
+    let ids: Vec<&str> = ids.iter().map(String::as_str).collect();
     let mut out = HashMap::with_capacity(ids.len());
-    for chunk in ids.chunks(IN_CHUNK) {
-        let ph = vec!["?"; chunk.len()].join(",");
-        let mut stmt = conn.prepare(&format!("SELECT id,library FROM items WHERE id IN ({ph})"))?;
-        let rows = stmt.query_map(rusqlite::params_from_iter(chunk), |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
-        })?;
-        for row in rows {
-            let (id, library) = row?;
-            out.insert(id, library);
+    for table in tables {
+        for chunk in ids.chunks(IN_CHUNK) {
+            let ph = vec!["?"; chunk.len()].join(",");
+            let mut stmt = conn.prepare(&format!(
+                "SELECT id,library FROM {table} WHERE id IN ({ph})"
+            ))?;
+            let rows = stmt.query_map(rusqlite::params_from_iter(chunk), |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+            })?;
+            for row in rows {
+                let (id, library) = row?;
+                out.entry(id).or_insert(library);
+            }
         }
     }
     Ok(out)
@@ -153,6 +175,27 @@ mod tests {
         assert_eq!(found.get("m1").map(String::as_str), Some("films"));
         assert_eq!(found.get("e1").map(String::as_str), Some("series"));
         assert!(item_libraries(&pool, &[]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_saved_subject_reports_the_library_of_its_item_or_its_show() {
+        let pool = seeded();
+
+        let found =
+            subject_libraries(&pool, &["m1".into(), "s1".into(), "tmdb:603".into()]).unwrap();
+
+        assert_eq!(found.len(), 2);
+        assert_eq!(found.get("m1").map(String::as_str), Some("films"));
+        assert_eq!(found.get("s1").map(String::as_str), Some("series"));
+        assert_eq!(
+            subject_library(&pool, "m1").unwrap().as_deref(),
+            Some("films")
+        );
+        assert_eq!(
+            subject_library(&pool, "s1").unwrap().as_deref(),
+            Some("series")
+        );
+        assert!(subject_library(&pool, "tmdb:603").unwrap().is_none());
     }
 
     #[test]
