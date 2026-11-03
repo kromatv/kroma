@@ -140,6 +140,8 @@ mod it_reset;
 #[cfg(test)]
 mod it_reset_faults;
 #[cfg(test)]
+mod it_saved_titles;
+#[cfg(test)]
 mod it_server_restart;
 #[cfg(test)]
 mod it_stream_hls;

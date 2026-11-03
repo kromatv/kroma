@@ -34,6 +34,57 @@ pub async fn gate_item(state: &SharedState, user: &User, item_id: &str) -> Resul
     }
 }
 
+/// Refuse unless the caller may see what `subject_id` saves to "Ma liste" or
+/// marks watched: an item or a show in a granted library, or `tmdb:<id>`, a
+/// title not in the library yet, which no grant covers and none hides.
+pub async fn gate_saved(
+    state: &SharedState,
+    user: &User,
+    subject_id: &str,
+) -> Result<(), Response> {
+    if user.sees_every_library() || is_tmdb_title(subject_id) {
+        return Ok(());
+    }
+    let id = subject_id.to_string();
+    let library = query(&state.db, move |pool| db::subject_library(&pool, &id)).await?;
+    match library {
+        Some(library) if user.sees_library(&library) => Ok(()),
+        _ => Err(out_of_scope()),
+    }
+}
+
+/// Which of the saved `subject_ids` the caller may see, under the rule of
+/// [`gate_saved`].
+pub async fn visible_saved_ids(
+    state: &SharedState,
+    user: &User,
+    subject_ids: Vec<String>,
+) -> Result<HashSet<String>, Response> {
+    if user.sees_every_library() {
+        return Ok(subject_ids.into_iter().collect());
+    }
+    let (tmdb, local): (Vec<String>, Vec<String>) =
+        subject_ids.into_iter().partition(|id| is_tmdb_title(id));
+    let mut visible: HashSet<String> = tmdb.into_iter().collect();
+    if local.is_empty() {
+        return Ok(visible);
+    }
+    let libraries = query(&state.db, move |pool| db::subject_libraries(&pool, &local)).await?;
+    visible.extend(
+        libraries
+            .into_iter()
+            .filter(|(_, library)| user.sees_library(library))
+            .map(|(id, _)| id),
+    );
+    Ok(visible)
+}
+
+fn is_tmdb_title(subject_id: &str) -> bool {
+    subject_id
+        .strip_prefix("tmdb:")
+        .is_some_and(|n| n.bytes().all(|b| b.is_ascii_digit()) && n.parse::<u64>().is_ok())
+}
+
 pub async fn gate_show(state: &SharedState, user: &User, show_id: &str) -> Result<(), Response> {
     if user.sees_every_library() {
         return Ok(());
