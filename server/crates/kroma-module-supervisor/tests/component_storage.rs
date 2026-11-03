@@ -31,15 +31,8 @@ fn a_component_keeps_rows_in_its_own_database_across_calls() {
 
     assert_eq!(first.text(), "Ok(1)");
     assert_eq!(second.text(), "Ok(2)");
-    assert!(
-        server
-            .dir
-            .path()
-            .join("modules")
-            .join(GUEST)
-            .join("module.sqlite")
-            .exists()
-    );
+    assert!(server.databases_dir(GUEST).join("module.sqlite").is_file());
+    assert!(!server.own_dir(GUEST).join("module.sqlite").exists());
 }
 
 #[test]

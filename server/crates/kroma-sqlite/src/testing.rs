@@ -43,7 +43,7 @@ impl TempPool {
     }
 
     /// A module-private database beside this one, with no schema in it, as the
-    /// runtime opens `<data>/modules/<id>/module.sqlite`.
+    /// runtime opens its `module.sqlite`.
     pub fn store(&self) -> Pool {
         crate::open(&self.dir.path().join("module.sqlite")).expect("open test store")
     }

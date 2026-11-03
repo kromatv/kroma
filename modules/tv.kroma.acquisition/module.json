@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.4.23",
+  "version": "0.4.24",
   "component": {
     "instances": 4,
     "cpuSeconds": 300

@@ -16,6 +16,7 @@ kroma-module-sdk = { path = "../../../kroma-module-sdk", features = ["storage"] 
 anyhow = "1"
 axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
 tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+wasip2 = "1"
 
 # Its own workspace: it builds for wasm32-wasip2 only, never as a member of server/.
 [workspace]

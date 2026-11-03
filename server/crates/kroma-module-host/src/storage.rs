@@ -26,8 +26,8 @@ pub trait HostStorage: HostCtx {
     /// The shared core database, scoped to the module's declared grant.
     fn db(&self) -> &Pool;
 
-    /// The module's private database (`<data>/modules/<id>/module.sqlite`), where
-    /// its own `migrations()` are applied. No authorizer: it is the module's file.
+    /// The module's private database, kept by the host in `<data>/databases/<id>/`,
+    /// where its own `migrations()` are applied. No authorizer: it is the module's file.
     fn store(&self) -> &Pool;
 }
 

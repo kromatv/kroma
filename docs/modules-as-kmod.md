@@ -43,9 +43,9 @@ processes, declared in the manifest. See
   run natively, but it refuses to start.
 - **Storage is a capability, not part of the runtime.** A module that declares no
   `storage` in its manifest reaches no row. One that does gets two databases:
-  its own file at `<data>/modules/<id>/module.sqlite`, and the shared core
-  database behind an `sqlite3_set_authorizer` scope built from what its manifest
-  declared. The component holds neither file. `kroma-sqlite-guest` is rusqlite's
+  its own, which the host keeps in `<data>/databases/<id>/`, and the shared
+  core database behind an `sqlite3_set_authorizer` scope built from what its
+  manifest declared. The component holds neither file. `kroma-sqlite-guest` is rusqlite's
   API for a component (aliased as `rusqlite` on wasm) and sends every statement
   to the host's `sql` import, which opens both files and enforces the grant. See
   `modules/README.md#storage`.

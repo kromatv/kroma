@@ -9,22 +9,38 @@ use serde_json::{Map, Value};
 use super::rows::{dump_query, is_ident, restore_rows};
 use super::{table_exists, BackupDoc};
 
+const MODULE_STORE: &str = "module.sqlite";
+
 /// Every installed module's own database, as `(module id, path)`. Empty when
 /// nothing is installed, which is the zero-module base build.
 pub(super) fn module_stores(data_dir: &std::path::Path) -> Vec<(String, std::path::PathBuf)> {
-    let Ok(entries) = std::fs::read_dir(data_dir.join("modules")) else {
+    let Ok(entries) = std::fs::read_dir(data_dir.join(kroma_sqlite::MODULE_DATABASES_DIR)) else {
         return Vec::new();
     };
     let mut out: Vec<(String, std::path::PathBuf)> = entries
         .filter_map(Result::ok)
         .filter_map(|e| {
-            let store = e.path().join("module.sqlite");
-            let id = e.file_name().to_string_lossy().into_owned();
-            store.is_file().then_some((id, store))
+            let id = e.file_name().to_str()?.to_string();
+            let store = e.path().join(MODULE_STORE);
+            (is_module_id(&id) && is_regular(&store)).then_some((id, store))
         })
         .collect();
     out.sort();
     out
+}
+
+fn is_regular(path: &std::path::Path) -> bool {
+    std::fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_file())
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn open_store(path: &std::path::Path) -> Result<Connection> {
+    kroma_sqlite::open_owned(path)
+}
+
+#[cfg(target_family = "wasm")]
+fn open_store(path: &std::path::Path) -> Result<Connection> {
+    Ok(Connection::open(path)?)
 }
 
 // Every user table in one module's database, whatever they are: the core does
@@ -32,7 +48,7 @@ pub(super) fn module_stores(data_dir: &std::path::Path) -> Vec<(String, std::pat
 pub(super) fn dump_store(
     path: &std::path::Path,
 ) -> Result<BTreeMap<String, Vec<Map<String, Value>>>> {
-    let conn = Connection::open(path)?;
+    let conn = open_store(path)?;
     let names: Vec<String> = conn
         .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")?
         .query_map([], |r| r.get(0))?
@@ -66,8 +82,11 @@ pub(super) fn restore_modules(
             tracing::warn!(module = %id, "not a module id; its rows are not restored");
             continue;
         }
-        let path = data_dir.join("modules").join(id).join("module.sqlite");
-        if !path.is_file() {
+        let path = data_dir
+            .join(kroma_sqlite::MODULE_DATABASES_DIR)
+            .join(id)
+            .join(MODULE_STORE);
+        if !is_regular(&path) {
             tracing::info!(module = %id, "not installed here; its rows are not restored");
             continue;
         }
@@ -84,7 +103,7 @@ fn restore_store(
     tables: &BTreeMap<String, Vec<Map<String, Value>>>,
     reset: bool,
 ) -> Result<Vec<(String, usize)>> {
-    let mut conn = Connection::open(path)?;
+    let mut conn = open_store(path)?;
     let tx = conn.transaction()?;
     let mut summary = Vec::new();
     for (name, rows) in tables {
@@ -175,7 +194,7 @@ mod tests {
         );
 
         assert!(import_portable(&dst, &dir, &doc, false).unwrap().is_empty());
-        assert!(!dir.join("modules/tv.kroma.indexer/module.sqlite").exists());
+        assert!(!dir.join("databases/tv.kroma.indexer/module.sqlite").exists());
     }
 
     #[test]
@@ -186,7 +205,7 @@ mod tests {
         let store = seed_indexer_store(&outside, "");
         let mut doc = empty_doc();
         doc.modules.insert(
-            "../outside/modules/tv.kroma.indexer".into(),
+            "../outside/databases/tv.kroma.indexer".into(),
             BTreeMap::from([(
                 "indexers".to_string(),
                 vec![Map::from_iter([
@@ -200,5 +219,68 @@ mod tests {
 
         assert!(import_portable(&dst, &dir, &doc, false).unwrap().is_empty());
         assert_eq!(store_count(&store, "indexers"), 0);
+    }
+
+    #[cfg(unix)]
+    fn indexer_rows() -> BTreeMap<String, Vec<Map<String, Value>>> {
+        BTreeMap::from([(
+            "indexers".to_string(),
+            vec![Map::from_iter([
+                ("id".to_string(), Value::from("ix1")),
+                ("name".to_string(), Value::from("J")),
+                ("api_key".to_string(), Value::from("k")),
+                ("created_at".to_string(), Value::from(1)),
+            ])],
+        )])
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_export_never_follows_a_link_named_like_a_modules_database() {
+        let src = fresh_pool("mod-export-link");
+        let dir = data_dir(&src);
+        let store = kroma_sqlite::module_databases_dir(&dir, "tv.kroma.indexer");
+        std::fs::create_dir_all(&store).unwrap();
+        std::os::unix::fs::symlink(src.path(), store.join("module.sqlite")).unwrap();
+
+        let doc = export_portable(&src, &dir).unwrap();
+
+        assert!(doc.modules.is_empty(), "{:?}", doc.modules.keys());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_restore_never_writes_through_a_link() {
+        let dst = fresh_pool("mod-restore-link");
+        let dir = data_dir(&dst);
+        let outside = seed_indexer_store(&dir.join("outside"), "");
+        let store = kroma_sqlite::module_databases_dir(&dir, "tv.kroma.indexer");
+        std::fs::create_dir_all(&store).unwrap();
+        std::os::unix::fs::symlink(&outside, store.join("module.sqlite")).unwrap();
+        let mut doc = empty_doc();
+        doc.modules.insert("tv.kroma.indexer".into(), indexer_rows());
+
+        let summary = import_portable(&dst, &dir, &doc, true).unwrap();
+
+        assert!(summary.is_empty(), "{summary:?}");
+        assert_eq!(store_count(&outside, "indexers"), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_restore_never_writes_through_a_journal_that_is_a_link() {
+        let dst = fresh_pool("mod-restore-journal-link");
+        let dir = data_dir(&dst);
+        let store = seed_indexer_store(&dir, "");
+        let elsewhere = dir.join("elsewhere");
+        std::fs::write(&elsewhere, "untouched").unwrap();
+        std::os::unix::fs::symlink(&elsewhere, kroma_sqlite::journal_of(&store, "-wal")).unwrap();
+        let mut doc = empty_doc();
+        doc.modules.insert("tv.kroma.indexer".into(), indexer_rows());
+
+        let summary = import_portable(&dst, &dir, &doc, false).unwrap();
+
+        assert!(summary.is_empty(), "{summary:?}");
+        assert_eq!(std::fs::read_to_string(&elsewhere).unwrap(), "untouched");
     }
 }

@@ -31,6 +31,7 @@ use tokio::sync::Semaphore;
 
 use super::gateway::{ModulePolicy, Running};
 use super::lifecycle::Proc;
+use super::private_folder::private_folder;
 use super::{Endpoint, Supervisor, HELPERS_DIR};
 
 const DEFAULT_MEMORY_MIB: u32 = 512;
@@ -76,10 +77,12 @@ impl Supervisor {
             );
         }
         let own_dir = self.own_dir(id);
-        std::fs::create_dir_all(&own_dir).with_context(|| format!("create '{id}'s own folder"))?;
+        private_folder(&own_dir).with_context(|| format!("create '{id}'s own folder"))?;
         let manifest: ModuleManifest = self
             .manifest_on_disk(id)
             .ok_or_else(|| anyhow::anyhow!("'{id}' has no readable manifest"))?;
+        let storage = manifest.storage.clone();
+        let kept_in = storage.as_ref().map(|_| self.module_databases(id)).transpose()?;
         let first_party = self.origin(id).official;
         let no_network = manifest.permissions.is_none();
         let token = self.module_token(id);
@@ -113,8 +116,9 @@ impl Supervisor {
                 }
             })
         };
-        let storage = manifest.storage.clone();
-        self.adopt_declared_tables(id, storage.as_ref());
+        if let Some(kept_in) = &kept_in {
+            self.adopt_declared_tables(id, storage.as_ref(), kept_in);
+        }
         let gateway = Gateway {
             address,
             credential: token.clone(),
@@ -140,12 +144,13 @@ impl Supervisor {
             downloads.as_deref().unwrap_or_default(),
         )?;
         let media = roots::declares(&manifest, FsRoot::Media).then(|| (wiring.folders().media)());
-        let databases = storage.map(|storage| {
+        let databases = storage.zip(kept_in).map(|(storage, kept_in)| {
             Arc::new(database::ModuleDatabases::new(
                 id,
                 self.cfg.db_path.clone(),
                 CORE_DATABASE,
                 own_dir.clone(),
+                kept_in,
                 kroma_sqlite::Grant {
                     read: storage.core.read,
                     write: storage.core.write,

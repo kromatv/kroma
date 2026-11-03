@@ -547,10 +547,11 @@ kroma-module-runtime = { path = "...", features = ["storage"] }
 
 The capability gives a module TWO databases, and they are not interchangeable:
 
-- `host.store()` is the module's own file, `<data>/modules/<id>/module.sqlite`.
-  It owns it outright, `migrations()` are applied there, and nothing else reads
-  it. This is where a table only that module uses belongs, especially one
-  holding credentials.
+- `host.store()` is the module's own database, `module.sqlite`. The host keeps
+  it in `<data>/databases/<id>/`, a folder no module holds, so it is not a file
+  in the module's own folder. The module owns it outright, `migrations()` are
+  applied there, and nothing else reads it. This is where a table only that
+  module uses belongs, especially one holding credentials.
 - `host.db()` is the shared core database, and every statement prepared on it
   passes an authorizer built from the `core` grant above. A module that declared
   no grant still gets the pool. It answers nothing, and says which table it
@@ -559,10 +560,16 @@ The capability gives a module TWO databases, and they are not interchangeable:
 Both are held by the host. `kroma-sqlite-guest` is rusqlite's API for a
 component: the SDK's pool runs on it, and every statement goes to the host's
 `sql` import, which opens the files, enforces the grant, and refuses `ATTACH`
-and every `PRAGMA` but a short allowlist on the module's own file. A crate that
-writes SQL through `rusqlite` itself depends on `kroma-sqlite-guest` for
-`wasm32` and names it there with `extern crate kroma_sqlite_guest as rusqlite;`,
-as `tv.kroma.indexer` does.
+and every `PRAGMA` but a short allowlist on the module's own file. A module names
+its databases and never a path: `sql.open` takes a file name of letters, digits,
+`.`, `_` and `-` (or that name under the module's own folder, which is what the
+runtime sends), and the host opens it in the folder it keeps for the module,
+following no link. The copy a schema upgrade takes is kept there too, the last
+two of them. A database a module kept in `<data>/modules/<id>/` before moves
+there once, at its next start (see [module security](../docs/module-security.md)).
+A crate that writes SQL through `rusqlite` itself depends on `kroma-sqlite-guest`
+for `wasm32` and names it there with `extern crate kroma_sqlite_guest as
+rusqlite;`, as `tv.kroma.indexer` does.
 
 ### Changing the module's own schema
 

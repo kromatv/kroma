@@ -117,4 +117,6 @@ fn a_module_installed_before_the_host_kept_its_files_apart_starts_with_its_datab
     assert_eq!(counted, "Ok(3)");
     assert!(server.supervisor.origin(GUEST).official);
     assert!(!server.own_dir(GUEST).join("module.json").exists());
+    assert!(!server.own_dir(GUEST).join("module.sqlite").exists());
+    assert!(server.databases_dir(GUEST).join("module.sqlite").is_file());
 }

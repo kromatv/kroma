@@ -1,17 +1,18 @@
-use std::path::{Component, Path, PathBuf};
+use std::path::PathBuf;
+use std::sync::Arc;
 
 use kroma_sqlite::PooledConn;
 use kroma_wasm_host::{SqlConnection, SqlFailure, SqlOutcome, SqlValue};
 use rusqlite::types::Value;
 
-use super::{failure, SQLITE_AUTH, SQLITE_ERROR};
+use super::{failure, failure_of_any, Kept, SQLITE_AUTH, SQLITE_ERROR};
 
 const SQLITE_TOOBIG: i32 = 18;
 const MAX_RESULT_BYTES: usize = 256 * 1024 * 1024;
 
 pub(super) struct HostConnection {
     pub(super) connection: PooledConn,
-    pub(super) own_dir: Option<PathBuf>,
+    pub(super) kept: Option<Arc<Kept>>,
 }
 
 fn failure_of(error: rusqlite::Error) -> SqlFailure {
@@ -80,19 +81,29 @@ impl SqlConnection for HostConnection {
     }
 
     fn snapshot(&mut self, target: &str) -> Result<(), SqlFailure> {
-        let Some(own_dir) = &self.own_dir else {
+        let Some(kept) = &self.kept else {
             return Err(failure(SQLITE_AUTH, "a module keeps no copy of the core database"));
         };
-        let target = Path::new(target);
-        if !target.starts_with(own_dir) || target.components().any(|part| part == Component::ParentDir) {
-            return Err(failure(SQLITE_AUTH, "a copy stays in this module's own folder"));
+        let target = kept
+            .path_of(target)
+            .ok_or_else(|| failure(SQLITE_AUTH, "a copy is one of this module's databases, named like one"))?;
+        let source = self.connection.path().map(PathBuf::from).ok_or_else(|| failure(SQLITE_ERROR, "no file"))?;
+        if target == source {
+            return Err(failure(SQLITE_AUTH, "a copy does not replace the database it copies"));
         }
-        let path = self.connection.path().map(PathBuf::from).ok_or_else(|| failure(SQLITE_ERROR, "no file"))?;
-        let unguarded = rusqlite::Connection::open(path).map_err(failure_of)?;
+        kroma_sqlite::refuse_unowned(&target).map_err(|error| failure_of_any(&error))?;
+        match std::fs::remove_file(&target) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                return Err(failure(SQLITE_ERROR, error.to_string()));
+            }
+            _ => {}
+        }
+        let unguarded = kroma_sqlite::open_owned(&source).map_err(|error| failure_of_any(&error))?;
         unguarded
             .execute("VACUUM INTO ?1", [target.to_string_lossy()])
-            .map(|_| ())
-            .map_err(failure_of)
+            .map_err(failure_of)?;
+        kroma_sqlite::prune_snapshots(&source);
+        Ok(())
     }
 }
 

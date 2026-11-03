@@ -164,6 +164,10 @@ impl Server {
         self.data_dir.join("modules").join(id)
     }
 
+    pub fn databases_dir(&self, id: &str) -> PathBuf {
+        kroma_sqlite::module_databases_dir(&self.data_dir, id)
+    }
+
     pub fn installed_beside(&self, id: &str, permissions: &str) {
         self.installed(id, permissions, FIRST_PARTY);
     }

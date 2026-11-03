@@ -63,6 +63,7 @@ pub fn init_scoped(path: &Path, _module_id: &str, _grant: &Grant) -> Result<Pool
 
 /// A pool over a module's own file, for the host that runs statements on its
 /// behalf: everything is allowed except what would reach outside that file.
+/// Each connection opens through [`open_owned`](crate::open_owned).
 #[cfg(not(target_family = "wasm"))]
 pub fn open_guarded(path: &Path, module_id: &str) -> Result<Pool> {
     crate::open::scoped_pool_at(path, 4, Some(crate::authorizer::Scope::own_file(module_id)))

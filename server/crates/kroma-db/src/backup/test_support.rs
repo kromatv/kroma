@@ -22,10 +22,7 @@ pub(super) fn data_dir(pool: &Pool) -> std::path::PathBuf {
 // Stand up one module's own database the way a running module would: the
 // indexer's table, holding an API key nobody wants to lose in a restore.
 pub(super) fn seed_indexer_store(dir: &std::path::Path, rows: &str) -> std::path::PathBuf {
-    let store = dir
-        .join("modules")
-        .join("tv.kroma.indexer")
-        .join("module.sqlite");
+    let store = kroma_sqlite::module_databases_dir(dir, "tv.kroma.indexer").join("module.sqlite");
     std::fs::create_dir_all(store.parent().unwrap()).unwrap();
     let conn = Connection::open(&store).unwrap();
     conn.execute_batch(&format!(

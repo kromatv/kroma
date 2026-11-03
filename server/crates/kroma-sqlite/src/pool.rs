@@ -40,7 +40,7 @@ impl PoolInner {
 
     #[cfg(not(target_family = "wasm"))]
     fn open(&self) -> Result<Connection> {
-        let conn = Connection::open(&self.path).context("open sqlite connection")?;
+        let conn = crate::own_file::connect(&self.path, self.scope.as_ref())?;
         conn.execute_batch(PRAGMAS).context("apply pragmas")?;
         // After the pragmas, never before: the authorizer denies PRAGMA, and
         // these are the host's own, not the module's.

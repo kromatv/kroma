@@ -9,6 +9,7 @@ use std::sync::Arc;
 use kroma_module_manifest::{FsRoot, ModuleManifest};
 use kroma_wasm_host::Preopen;
 
+use crate::private_folder::private_folder;
 use crate::Supervisor;
 
 /// A list of folders, asked again each time a module starts.
@@ -39,7 +40,15 @@ impl FolderRoots {
 }
 
 const TMP: &str = "/tmp";
-const RESERVED_DATA_DIRS: [&str; 6] = ["modules", "installed", "run", "logs", "backups", "helpers"];
+const RESERVED_DATA_DIRS: [&str; 7] = [
+    "modules",
+    "installed",
+    kroma_sqlite::MODULE_DATABASES_DIR,
+    "run",
+    "logs",
+    "backups",
+    "helpers",
+];
 
 fn is_data_dir_name(name: &str) -> bool {
     !name.is_empty()
@@ -91,7 +100,7 @@ impl Supervisor {
             .map(|dir| dir.join("tmp"))
             .ok_or_else(|| anyhow::anyhow!("'{id}' has no run directory"))?;
         let _ = std::fs::remove_dir_all(&tmp);
-        std::fs::create_dir_all(&tmp)?;
+        private_folder(&tmp)?;
         roots.push(Preopen {
             host: tmp,
             guest: TMP.to_string(),
@@ -103,7 +112,7 @@ impl Supervisor {
         if first_party {
             for name in manifest.data_dirs.iter().filter(|name| is_data_dir_name(name)) {
                 let dir = self.cfg.data_dir.join(name);
-                std::fs::create_dir_all(&dir)?;
+                private_folder(&dir)?;
                 roots.push(held(dir, own_writable));
             }
         }
@@ -149,6 +158,7 @@ mod tests {
         assert!(!is_data_dir_name(".."));
         assert!(!is_data_dir_name("a/b"));
         assert!(!is_data_dir_name("modules"));
+        assert!(!is_data_dir_name("databases"));
         assert!(!is_data_dir_name("run"));
     }
 

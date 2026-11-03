@@ -13,6 +13,8 @@ use serde_json::Value;
 mod adopt;
 #[cfg(unix)]
 mod component;
+#[cfg(unix)]
+mod databases;
 mod endpoint;
 #[cfg(unix)]
 mod gateway;
@@ -24,6 +26,8 @@ mod manifests;
 mod notifications;
 mod origin;
 mod permissions;
+#[cfg(unix)]
+mod private_folder;
 mod program_env;
 mod proxy;
 mod registry;
@@ -128,14 +132,19 @@ impl Supervisor {
     /// its own file, before the component that will read it starts. Best-effort:
     /// a failure leaves the rows in the core database and is logged, because a
     /// module that starts without its old rows is worse than one that starts late.
-    fn adopt_declared_tables(&self, id: &str, storage: Option<&kroma_module_manifest::Storage>) {
+    fn adopt_declared_tables(
+        &self,
+        id: &str,
+        storage: Option<&kroma_module_manifest::Storage>,
+        databases: &std::path::Path,
+    ) {
         let Some(tables) = storage
             .map(|s| s.adopt.as_slice())
             .filter(|t| !t.is_empty())
         else {
             return;
         };
-        let store = self.own_dir(id).join(MODULE_STORE);
+        let store = databases.join(MODULE_STORE);
         let moved = kroma_db::init(&self.cfg.db_path)
             .and_then(|pool| pool.get())
             .and_then(|conn| adopt::adopt_tables(&conn, &store, tables));

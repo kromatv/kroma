@@ -73,11 +73,7 @@ fn a_downloads_module_writes_in_its_download_folders_and_the_libraries() {
 fn a_downloads_module_opens_none_of_the_servers_own_files() {
     let server = on_a_machine("component-download-own");
     let helper = server.data_dir.join("helpers").join(ENGINE).join("rqbit");
-    let database = server
-        .data_dir
-        .join("modules")
-        .join(ENGINE)
-        .join("module.sqlite");
+    let database = server.databases_dir(ENGINE).join("module.sqlite");
     let binary = server.dir.path().join("releases/7/bin/kroma-server");
     for file in [&helper, &database, &binary] {
         std::fs::create_dir_all(file.parent().unwrap()).unwrap();
