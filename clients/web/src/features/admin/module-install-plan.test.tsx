@@ -93,3 +93,65 @@ it('counts what an install requires, and leaves the optional module out of it', 
     'With 2 required modules',
   );
 });
+
+const TORRENTS = {
+  id: 'tv.kroma.torrents',
+  name: 'Torrents',
+  version: '0.6.33',
+  requested: true,
+  official: true,
+  permissions: { run: ['rqbit'], net: { connect: [{ purpose: 'peers', to: ['public'] }] } },
+  storage: { core: { read: ['downloads', 'users.email'] } },
+  settings: { read: ['rqbitPort'] },
+  helpers: {},
+};
+
+function showOne(module: Record<string, unknown>) {
+  const plan = StorePlan.parse({
+    requested: TORRENTS.id,
+    modules: [module],
+    optional: [],
+    missing: [],
+    totalSize: 0,
+  });
+  render(
+    <I18nProvider locale="fr">
+      <PlanBody
+        plan={plan}
+        error={null}
+        optional={[]}
+        include={[]}
+        onIncludeChange={() => {}}
+        icons={{}}
+        installed={[]}
+      />
+    </I18nProvider>,
+  );
+}
+
+it('shows the account data a catalog row reaches before the module is installed', () => {
+  showOne(TORRENTS);
+
+  expect(screen.getByText('Lire les comptes')).toBeTruthy();
+  expect(screen.getByText('Adresse e-mail')).toBeTruthy();
+  expect(screen.getByText('Lire la base du serveur')).toBeTruthy();
+});
+
+it('says less for a row from a catalog that predates storage and settings', () => {
+  const { storage: _s, settings: _t, helpers: _h, ...older } = TORRENTS;
+
+  showOne(older);
+
+  expect(screen.getByText('Aller sur Internet')).toBeTruthy();
+  expect(screen.queryByText('Lire les comptes')).toBeNull();
+});
+
+it('calls a row with no permissions block isolated, since it gets no network', () => {
+  const { permissions: _p, ...silent } = TORRENTS;
+
+  showOne(silent);
+
+  expect(screen.getByText('Isolé')).toBeTruthy();
+  expect(screen.getByText("Ne déclare rien : il n'a ni réseau ni programme.")).toBeTruthy();
+  expect(screen.queryByText('Lire les comptes')).toBeNull();
+});

@@ -95,10 +95,16 @@ pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
         contributes,
         consumes,
         artifacts,
-        permissions: m
-            .get("permissions")
-            .and_then(|block| serde_json::from_value(block.clone()).ok()),
+        permissions: declared(m, "permissions"),
+        storage: declared(m, "storage"),
+        settings: declared(m, "settings"),
+        helpers: declared(m, "helpers"),
     })
+}
+
+fn declared<T: serde::de::DeserializeOwned>(m: &Value, key: &str) -> Option<T> {
+    m.get(key)
+        .and_then(|block| serde_json::from_value(block.clone()).ok())
 }
 
 // `contributes` and `consumes` are the same shape on the wire: a point, and an

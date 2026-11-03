@@ -27,16 +27,18 @@ no block has no network and starts no program, and the admin marks it.
 
 A module's page opens its security card with one verdict: "Accès étendu" when it
 reaches past its isolation (a program it starts or the host's own network),
-"Isolé" when it does not. The four kinds of access that weigh most follow as tiles, and "Détails"
-opens the rest. The install screen says it once for every module the install
+"Isolé" when it does not. The four kinds of access that weigh most follow as
+tiles, and "Détails" opens the rest. The install screen says it once for every module the install
 brings: one line per module with extended access, then the kinds of access they
 share and which modules have each. It reads the catalog row or, for an upload,
-the bundle itself; once installed, the page adds the account data, server tables
-and settings the module's `storage` and `settings` reach. An update
-that asks for more waits: no automatic or batch update takes it, and the operator
-accepts it from the install plan. Asking for more is a wider `permissions` block or
-a key in `settings.write` the installed version did not declare. A bundle must
-declare what its catalog row showed, and an install fails when it does not.
+the bundle itself. The row carries the module's `storage` and `settings` beside
+its `permissions`, so the account data, server tables and settings show before
+install too. An update that asks for more waits: a new permission, core table or
+account column, or a key in `settings.write` the installed version did not
+declare. No automatic or batch update takes it, and the operator accepts it from
+the install plan, which shows only what the update adds. A bundle must declare
+the `permissions` its catalog row showed, and an install fails when it does not.
+Its `storage` and `settings` are not yet held to the row.
 
 ```json
 "permissions": {

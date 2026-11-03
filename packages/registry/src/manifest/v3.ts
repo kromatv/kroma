@@ -4,6 +4,7 @@
 // so the two cannot drift where they agree.
 
 import { z } from 'zod';
+import { Helpers } from './helpers.ts';
 import { ArtifactRef, Manifest as V2 } from './v2.ts';
 
 const SCHEMA_VERSION = 3;
@@ -16,24 +17,9 @@ export const Manifest = V2.omit({ seam: true }).extend({
     .describe(
       "Directories under the server's data directory that hold this module's own state. The server opens them only to a module the official registry shipped; any other keeps its state in its own directory.",
     ),
-  helpers: z
-    .record(
-      z.string(),
-      z.strictObject({
-        assets: z.record(
-          z.string().regex(/^[a-z]+-[a-z0-9_]+$/),
-          z.strictObject({
-            url: z.url(),
-            sha256: z.string().regex(/^[0-9a-f]{64}$/),
-            member: z.string().nullish(),
-          }),
-        ),
-      }),
-    )
-    .nullish()
-    .describe(
-      'Upstream programs the host fetches, verifies and starts for this module, by the name permissions.run declares them under. Each has one pinned build per platform, keyed <os>-<arch> as Rust names them, such as linux-x86_64.',
-    ),
+  helpers: Helpers.nullish().describe(
+    'Upstream programs the host fetches, verifies and starts for this module, by the name permissions.run declares them under. Each has one pinned build per platform, keyed <os>-<arch> as Rust names them, such as linux-x86_64.',
+  ),
   component: z
     .strictObject({
       instances: z.number().int().min(1).max(16).nullish(),

@@ -193,3 +193,56 @@ describe('permissions', () => {
     expect(record.versions['0.1.7']?.permissions).toEqual(permissions);
   });
 });
+
+describe('what a version reaches', () => {
+  const storage = { core: { read: ['users.email', 'requests'], write: ['requests'] } };
+  const settings = { read: ['namingCase'], write: ['namingCase'] };
+  const rqbit = { assets: { 'linux-x86_64': { url: 'https://h/rqbit', sha256: 'ab'.repeat(32) } } };
+
+  it('a catalog entry carries the storage, settings and helpers its manifest declares', () => {
+    const declared = entry({
+      storage,
+      settings,
+      helpers: { rqbit },
+      permissions: { run: ['rqbit', 'curl'] },
+    });
+
+    const [row] = RegistryIndex.parse(buildIndex([declared]));
+
+    expect(row?.storage).toEqual(storage);
+    expect(row?.settings).toEqual(settings);
+    expect(row?.helpers).toEqual({ rqbit });
+  });
+
+  it('a module that runs only programs of the server says it pins none', () => {
+    const [row] = buildIndex([entry({ permissions: { run: ['ffmpeg'] } })]);
+
+    expect(row?.helpers).toEqual({});
+  });
+
+  it('a module that reaches nothing carries none of them', () => {
+    const [row] = buildIndex([entry()]);
+
+    expect(row?.storage).toBeUndefined();
+    expect(row?.settings).toBeUndefined();
+    expect(row?.helpers).toBeUndefined();
+  });
+
+  it('an entry from a catalog that predates them still parses', () => {
+    const [row] = buildIndex([entry({ permissions: { fs: { read: ['media'] } } })]);
+    const { storage: _s, settings: _t, helpers: _h, ...older } = row ?? {};
+
+    const [parsed] = RegistryIndex.parse([older]);
+
+    expect(parsed?.permissions).toEqual({ fs: { read: ['media'] } });
+    expect(parsed?.storage).toBeUndefined();
+    expect(parsed?.settings).toBeUndefined();
+  });
+
+  it('a module record carries them per version', () => {
+    const record = buildModuleRecord(entry({ storage, settings }));
+
+    expect(record.versions['0.1.7']?.storage).toEqual(storage);
+    expect(record.versions['0.1.7']?.settings).toEqual(settings);
+  });
+});

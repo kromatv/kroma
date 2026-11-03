@@ -49,9 +49,9 @@ export interface Access {
   write?: readonly string[] | null;
 }
 
-/** What a module declares, and whether the official registry ships it. A catalog
- *  row carries `permissions` alone, so the groups drawn from the rest appear once
- *  the module is installed. */
+/** What a module declares, and whether the official registry ships it. A row
+ *  from a catalog that predates `storage`, `settings` and `helpers` carries
+ *  `permissions` alone, so it says less. */
 export interface PermissionSource {
   permissions: ModulePermissions;
   storage?: { core?: Access | null } | null;

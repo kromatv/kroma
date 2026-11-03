@@ -14,6 +14,7 @@ mod notifications;
 mod permissions;
 mod registry;
 mod settings_scope;
+mod widening;
 
 pub use compat::{
     engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
@@ -38,6 +39,7 @@ pub use permissions::{
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
 pub use settings_scope::SettingsScope;
+pub use widening::Declared;
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the
 /// module's `module.json`, embedded at build time via `include_bytes!` and

@@ -55,6 +55,11 @@ function metaOf(entry: DescribedModule) {
   };
 }
 
+function helpersOf(entry: DescribedModule) {
+  if (entry.helpers) return entry.helpers;
+  return entry.permissions?.run?.length ? {} : undefined;
+}
+
 function versionOf(entry: DescribedModule): RegistryVersion {
   return {
     schemaVersion: entry.schemaVersion,
@@ -66,6 +71,9 @@ function versionOf(entry: DescribedModule): RegistryVersion {
     contributes: some(entry.contributes),
     consumes: some(entry.consumes),
     permissions: entry.permissions,
+    storage: entry.storage,
+    settings: entry.settings,
+    helpers: helpersOf(entry),
     artifacts: entry.artifacts.flatMap((a) => {
       const integrity = sriFromHex(a.sha256);
       if (!integrity) return [];
