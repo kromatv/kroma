@@ -762,6 +762,15 @@
   "admin.updatesLoadFailedHint": "Nouvel essai automatique. Vérifiez que votre serveur fonctionne.",
   "admin.updatesActionFailed": "La demande a échoué. Actualisez les versions et vérifiez que l’outil hôte est en ligne.",
   "admin.updatesLoading": "Chargement des mises à jour du serveur…",
+  "admin.serverRestart": "Redémarrer le serveur",
+  "admin.serverRestartConfirmTitle": "Redémarrer le serveur ?",
+  "admin.serverRestartConfirmHint": "KROMA s'arrête proprement puis redémarre. Les lectures en cours s'arrêtent et les tâches en cours sont annulées.",
+  "admin.serverRestartWaiting": "Redémarrage du serveur…",
+  "admin.serverRestartWaitingHint": "Cette page se rechargera dès que le serveur répondra.",
+  "admin.serverRestartSlow": "Le redémarrage prend plus de temps que prévu. Si le serveur ne revient pas, démarrez KROMA depuis le Centre de paquets de votre NAS.",
+  "admin.serverRestartFailed": "Le redémarrage n'a pas pu être demandé.",
+  "admin.serverRestartUnsupported": "Cette installation ne sait pas redémarrer le serveur toute seule.",
+  "admin.serverRestartDuringUpdate": "Une mise à jour est en cours, elle redémarrera le serveur elle-même.",
   "admin.updatesOpen": "Voir la mise à jour",
   "admin.updatesNew": "Nouveau",
   "admin.updatesAutoInstall": "Installer automatiquement au repos",
@@ -773,5 +782,7 @@
   "admin.updatesStep": "Étape {step} sur {total}",
   "admin.updatesStages": "Étapes de mise à jour terminées",
   "admin.updatesNow": "En cours",
-  "admin.updatesCompleteHint": "Votre serveur est prêt. Votre bibliothèque et votre historique vous attendent."
+  "admin.updatesCompleteHint": "Votre serveur est prêt. Votre bibliothèque et votre historique vous attendent.",
+  "admin.downloadFolders": "Dossiers de téléchargement",
+  "admin.downloadFoldersHint": "Là où un client de téléchargement externe enregistre ses fichiers, tel que ce serveur les voit. Séparez les dossiers par des virgules."
 }

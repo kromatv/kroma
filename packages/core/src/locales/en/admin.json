@@ -762,6 +762,15 @@
   "admin.updatesLoadFailedHint": "We’ll keep trying. Check that your server is running.",
   "admin.updatesActionFailed": "The request could not be completed. Refresh the release information and check that the host updater is online.",
   "admin.updatesLoading": "Checking your server’s update status…",
+  "admin.serverRestart": "Restart server",
+  "admin.serverRestartConfirmTitle": "Restart the server?",
+  "admin.serverRestartConfirmHint": "KROMA stops cleanly, then starts again. Playback in progress stops and running tasks are cancelled.",
+  "admin.serverRestartWaiting": "Restarting the server…",
+  "admin.serverRestartWaitingHint": "This page reloads as soon as the server answers.",
+  "admin.serverRestartSlow": "The restart is taking longer than expected. If the server does not come back, start KROMA from Package Center on your NAS.",
+  "admin.serverRestartFailed": "The restart could not be requested.",
+  "admin.serverRestartUnsupported": "This installation cannot restart the server on its own.",
+  "admin.serverRestartDuringUpdate": "An update is in progress and will restart the server itself.",
   "admin.updatesOpen": "View update",
   "admin.updatesNew": "New",
   "admin.updatesAutoInstall": "Install automatically when idle",
@@ -773,5 +782,7 @@
   "admin.updatesStep": "Step {step} of {total}",
   "admin.updatesStages": "Update stages completed",
   "admin.updatesNow": "Now",
-  "admin.updatesCompleteHint": "Your server is ready. Your library and watch history are right where you left them."
+  "admin.updatesCompleteHint": "Your server is ready. Your library and watch history are right where you left them.",
+  "admin.downloadFolders": "Download folders",
+  "admin.downloadFoldersHint": "Where an external download client saves its files, as this server sees them. Separate folders with commas."
 }
