@@ -19,7 +19,7 @@ interface NativeLayersArgs {
   duration: number;
   errored: boolean;
   opacity: Animated.Value;
-  setNatural: (size: Size) => void;
+  setNatural: ((size: Size) => void) | undefined;
   markLoaded: () => void;
   onCovered: ((uri: string) => void) | undefined;
   onLoad: (() => void) | undefined;
@@ -40,7 +40,7 @@ function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
       fadeMs,
       accessibilityLabel: at.alt || undefined,
       onLoad: (size: Size | null) => {
-        if (size) at.setNatural(size);
+        if (size) at.setNatural?.(size);
         markImageReady(uri);
         at.markLoaded();
         const cover = () => at.onCovered?.(uri);

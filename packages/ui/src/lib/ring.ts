@@ -2,6 +2,7 @@
 // on every target. Pure maths, so it is unit-tested rather than eyeballed.
 
 import { clamp01 } from '#ui/components/atoms/progress';
+import type { ColorValue } from '#ui/core/color';
 
 export interface RingProps {
   /** Fill fraction, 0..1 (clamped). */
@@ -9,8 +10,8 @@ export interface RingProps {
   /** Outer diameter. */
   size?: number;
   thickness?: number;
-  track?: string;
-  fill?: string;
+  track?: ColorValue;
+  fill?: ColorValue;
 }
 
 export interface RingGeometry {

@@ -22,31 +22,24 @@ export interface UseAiSuggestResult {
   /** True once the server has answered that it is generating, until the section
    * lands or polling gives up; false before its first answer. */
   pending: boolean;
-  /** Elapsed-time progress estimate (0..1) for a spinner while `pending`. */
-  progress: number;
 }
 
 /**
- * Elapsed-time *estimate* (the LLM run is opaque): eases toward a 96% ceiling on
- * an exponential curve so it decelerates and never reads "done" until the work
- * actually arrives. τ=14s ⇒ ~90% at ~30s. Steps every 250ms; a CSS transition on
- * the ring interpolates between steps. Resets to 0 whenever it re-arms.
+ * Elapsed-time *estimate* (the LLM run is opaque) for a ring shown while a
+ * section is pending: eases toward a 96% ceiling on an exponential curve so it
+ * never reads "done" before the work arrives. τ=14s ⇒ ~90% at ~30s. Counts from
+ * the caller's mount and re-renders it every 250ms, so call it from the ring's
+ * own leaf rather than from the screen around it.
  */
-function useEstimatedProgress(active: boolean): number {
+export function useEstimatedProgress(): number {
   const [progress, setProgress] = useState(0);
-  const [armed, setArmed] = useState(active);
-  if (armed !== active) {
-    setArmed(active);
-    if (active) setProgress(0);
-  }
   useEffect(() => {
-    if (!active) return;
     const start = Date.now();
     const id = setInterval(() => {
       setProgress(Math.min(0.96, 1 - Math.exp(-(Date.now() - start) / 14000)));
     }, 250);
     return () => clearInterval(id);
-  }, [active]);
+  }, []);
   return progress;
 }
 
@@ -57,7 +50,6 @@ export function useAiSuggest(
 ): UseAiSuggestResult {
   const [section, setSection] = useState<Section | null>(null);
   const [pending, setPending] = useState(false);
-  const progress = useEstimatedProgress(pending && active);
   const [seen, setSeen] = useState({ client, id, active });
   if (seen.client !== client || seen.id !== id || seen.active !== active) {
     setSeen({ client, id, active });
@@ -100,5 +92,5 @@ export function useAiSuggest(
     };
   }, [client, id, active]);
 
-  return { section, pending, progress };
+  return { section, pending };
 }
