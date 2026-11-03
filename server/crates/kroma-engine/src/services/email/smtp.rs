@@ -8,7 +8,7 @@
 use std::time::Instant;
 
 use kroma_http::address::WebTarget;
-use kroma_http::egress::{self, Decision, Exchange, Outgoing, Route, Ruling, BLOCKED};
+use kroma_http::egress::{self, Exchange, Outgoing};
 use lettre::{
     message::{Attachment, MultiPart, SinglePart},
     transport::smtp::{authentication::Credentials, response::Response, Error},
@@ -82,7 +82,7 @@ async fn deliver(settings: &Settings, msg: Message) -> Result<(), String> {
     }
     let port = settings.get_i64("smtpPort", 587) as u16;
     let started = Instant::now();
-    let Ruling { decision, rule } = egress::decide(&Outgoing {
+    let ruling = egress::decide(&Outgoing {
         purpose: PURPOSE,
         method: METHOD,
         target: WebTarget {
@@ -91,30 +91,10 @@ async fn deliver(settings: &Settings, msg: Message) -> Result<(), String> {
             port,
         },
     });
-    let mut exchange = Exchange {
-        purpose: PURPOSE,
-        method: METHOD,
-        host,
-        port,
-        route: Route::Direct,
-        status: None,
-        bytes_in: 0,
-        bytes_out: 0,
-        duration_ms: 0,
-        error: None,
-        rule,
-        carried: false,
-    };
-    let refusal = match decision {
-        Decision::Direct => None,
-        Decision::Block(reason) => Some(reason),
-        Decision::Proxy(_) => Some(NO_PROXY.to_string()),
-    };
+    let (mut exchange, refusal) =
+        Exchange::direct_only(PURPOSE, METHOD, host, port, ruling, NO_PROXY);
     let outcome = match refusal {
-        Some(reason) => {
-            exchange.route = Route::Blocked;
-            Err(format!("{BLOCKED}: {reason}"))
-        }
+        Some(refusal) => Err(refusal),
         None => {
             exchange.bytes_out = msg.formatted().len() as u64;
             let sent = send(settings, &exchange.host, port, msg).await;
