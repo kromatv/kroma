@@ -14,7 +14,7 @@ import { createMenuKeys } from '#ui/lib/menu-keys';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 
 const rn = vi.hoisted(() => ({
-  os: 'ios' as 'ios' | 'android',
+  os: 'ios' as 'ios' | 'android' | 'tizen',
   isTV: true,
   remote: null as ((event: HWEvent) => void) | null,
   back: null as (() => boolean) | null,
@@ -260,6 +260,33 @@ describe('the Back button', () => {
     expect(routeRemoteKey).toHaveBeenCalledWith({ tag: 'a' }, 'Back');
     unmount();
     expect(rn.removeBack).toHaveBeenCalledOnce();
+  });
+
+  it('routes Tizen’s hardware Back into the player and swallows the press', () => {
+    rn.os = 'tizen';
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+
+    let consumed: boolean | undefined;
+    act(() => {
+      consumed = rn.back?.();
+    });
+
+    expect(consumed).toBe(true);
+    expect(routeRemoteKey).toHaveBeenCalledWith({ tag: 'a' }, 'Back');
+    unmount();
+  });
+
+  it('routes Tizen’s Back after the d-pad came through the TV event stream', () => {
+    rn.os = 'tizen';
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+
+    press('down', 1);
+    act(() => {
+      rn.back?.();
+    });
+
+    expect(routed()).toEqual(['Down', 'Back']);
+    unmount();
   });
 
   it('leaves the OS back button alone on tvOS, where Menu already carries Back', () => {
