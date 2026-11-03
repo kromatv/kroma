@@ -464,6 +464,29 @@ describe('ExpoVideoEngine audio', () => {
     expect(player.replaced).toEqual([]);
   });
 
+  it('direct: selects the chosen track once the file is ready', () => {
+    const { e } = make({ direct: true, initialRendition: 1 });
+    const player = current(e);
+    player.availableAudioTracks = [{ id: 'en' }, { id: 'fr' }];
+
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    expect(player.audioTrack).toEqual({ id: 'fr' });
+    expect(player.replaced).toEqual([]);
+  });
+
+  it('direct: selects the chosen track only once', () => {
+    const { e } = make({ direct: true, initialRendition: 1 });
+    const player = current(e);
+    player.availableAudioTracks = [{ id: 'en' }, { id: 'fr' }];
+    player.emit('statusChange', { status: 'readyToPlay' });
+    player.audioTrack = { id: 'en' };
+
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    expect(player.audioTrack).toEqual({ id: 'en' });
+  });
+
   it('direct: a track the player does not expose re-opens the source', () => {
     // Re-anchoring the direct file brings back the same track list, so this is a
     // no-op reload rather than the master fallback the master branch gets.
