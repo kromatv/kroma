@@ -2,7 +2,6 @@ import { type ReactNode, useContext, useEffect, useEffectEvent, useRef, useState
 import {
   Animated,
   type LayoutChangeEvent,
-  Platform,
   type StyleProp,
   StyleSheet,
   View,
@@ -10,11 +9,12 @@ import {
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { splitBoxLayers } from '#ui/lib/box-layers';
+import { GPU_MASKS } from '#ui/lib/gpu-masks';
 import { ScrollPositionContext } from '#ui/lib/scroll-position';
 import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
 const RAMP = 80;
-const MASKED = Platform.OS === 'ios';
+const MASKED = GPU_MASKS;
 const PROBE: ViewStyle = { position: 'absolute', top: 0, left: 0, width: 0, height: 0 };
 const OPAQUE = '#000';
 const REMEASURE_MS = 120;
