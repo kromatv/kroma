@@ -17,6 +17,7 @@ export type PermissionCategory =
   | 'host'
   | 'accounts'
   | 'files'
+  | 'media'
   | 'internet'
   | 'listen'
   | 'lan'
@@ -141,9 +142,21 @@ function filesGroup(fs: ModulePermissions['fs'], t: Translate): PermissionGroup 
   };
 }
 
+function mediaGroup(media: ModulePermissions['media'], t: Translate): PermissionGroup | null {
+  if (!media?.includes('decode')) return null;
+  return {
+    category: 'media',
+    summary: t('modulePermissions.mediaSummary'),
+    brief: t('modulePermissions.mediaBrief'),
+    details: [],
+    extended: false,
+    access: null,
+  };
+}
+
 /** Every kind of access `source` declares, most consequential first: what
  *  reaches past the module's isolation, then the data about people, the files,
- *  the internet, what may reach in, the local network, the server's data and
+ *  the audio the server decodes for it, the internet, what may reach in, the local network, the server's data and
  *  its settings. */
 export function permissionGroups(source: PermissionSource, t: Translate): PermissionGroup[] {
   const { permissions } = source;
@@ -154,6 +167,7 @@ export function permissionGroups(source: PermissionSource, t: Translate): Permis
     net?.host ? extendedGroup('host', t('modulePermissions.hostSummary')) : null,
     accountsGroup(core, t),
     filesGroup(permissions.fs, t),
+    mediaGroup(permissions.media, t),
     internetGroup(net?.connect ?? [], t),
     listenGroup(net?.listen ?? [], t),
     lanGroup(net, t),

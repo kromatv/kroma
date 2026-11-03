@@ -10,17 +10,8 @@ import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import {
-  type ColorValue,
-  color,
-  style,
-  styles,
-  themed,
-  type TypeRole,
-  useStyleScope,
-} from '#ui/core';
+import { type ColorValue, styles, type TypeRole } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-import { gradient } from '#ui/lib/css';
 import {
   CONTROL,
   type ControlMetrics,
@@ -45,28 +36,6 @@ const TONE: Record<CalloutTone, Paint> = {
   success: { bg: 'success/9', border: 'success/25', ink: 'success' },
   danger: { bg: 'danger/10', border: 'danger/25', ink: 'dangerHover' },
 };
-
-const WASH: Record<CalloutTone, readonly [ColorValue, ColorValue]> = {
-  neutral: ['tint/8', 'tint/3'],
-  accent: ['accentWash/13', 'accentWash/4'],
-  success: ['success/11', 'success/3'],
-  danger: ['danger/13', 'danger/4'],
-};
-
-const litRamp = themed((theme) => {
-  const ramp = (tone: CalloutTone) =>
-    style(
-      gradient(
-        `linear-gradient(180deg, ${color(WASH[tone][0], theme)}, ${color(WASH[tone][1], theme)})`,
-      ),
-    );
-  return {
-    neutral: ramp('neutral'),
-    accent: ramp('accent'),
-    success: ramp('success'),
-    danger: ramp('danger'),
-  };
-});
 
 const LIVE_ROLE: Record<CalloutTone, 'alert' | 'status' | undefined> = {
   neutral: undefined,
@@ -134,18 +103,13 @@ interface CalloutRootProps {
   /** The mark, as a glyph the kit can size. Media it cannot size goes through
    *  <Callout.Media>, which wins the head of the row. */
   icon?: IconName;
-  /** Lays the tone as a soft wash fading down the block instead of a flat fill,
-   *  with the mark held at the top, for a callout that heads a section rather
-   *  than reporting inside one. */
-  lit?: boolean;
   /** A DIRECT <Callout.Media> or <Callout.Actions> child is sorted into the head
    *  and tail of the row, so those two may be written anywhere; everything else
    *  is the message column, in the order it was written. */
   children?: ReactNode;
 }
 
-function Root({ tone = 'neutral', size, icon, lit = false, children }: Readonly<CalloutRootProps>) {
-  const scope = useStyleScope();
+function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootProps>) {
   const entryDefaults = useEntryDefaults();
   const step = size ?? entryDefaults.size;
   const metrics = CONTROL[step];
@@ -161,15 +125,14 @@ function Root({ tone = 'neutral', size, icon, lit = false, children }: Readonly<
     <CalloutContext.Provider value={context}>
       <Box
         row
-        align={lit ? 'flex-start' : 'center'}
+        align="center"
         role={LIVE_ROLE[tone]}
         gap={metrics.gap}
         px={metrics.px}
         py={metrics.py}
         radius={metrics.radius}
-        bg={lit ? undefined : context.paint.bg}
+        bg={context.paint.bg}
         border={context.paint.border}
-        style={lit ? litRamp(scope.theme)[tone] : undefined}
       >
         {leading}
         {/* minW 0: without it a long message pushes the actions off the block

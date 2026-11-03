@@ -26,9 +26,8 @@ component makes and every connection through its gateway (#546). A module with
 no block has no network and starts no program, and the admin marks it.
 
 A module's page opens its security card with one verdict: "Accès étendu" when it
-reaches past its isolation (a program it starts, the host's own network, or the
-whole disk an official module that declares `downloads` holds), "Isolé" when it
-does not. The four kinds of access that weigh most follow as tiles, and "Détails"
+reaches past its isolation (a program it starts or the host's own network),
+"Isolé" when it does not. The four kinds of access that weigh most follow as tiles, and "Détails"
 opens the rest. The install screen says it once for every module the install
 brings: one line per module with extended access, then the kinds of access they
 share and which modules have each. It reads the catalog row or, for an upload,

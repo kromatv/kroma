@@ -40,6 +40,15 @@ describe('permissionGroups', () => {
     ]);
   });
 
+  it('says the server decodes audio for a module that asks it, inside its isolation', () => {
+    const media = group({ permissions: { media: ['decode'] } }, 'media');
+
+    expect(media).toMatchObject({
+      summary: 'Has the server decode the audio of files it can read',
+      extended: false,
+    });
+  });
+
   it('says where a connection goes and why when it has one purpose', () => {
     const internet = group(
       {

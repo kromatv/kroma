@@ -38,6 +38,11 @@ export const CATEGORY_VIEW: Record<PermissionCategory, CategoryView> = {
     title: 'modulePermissions.filesTitle',
     line: { read: 'modulePermissions.lineFilesRead', write: 'modulePermissions.lineFilesWrite' },
   },
+  media: {
+    icon: 'wave-sine',
+    title: 'modulePermissions.mediaTitle',
+    line: 'modulePermissions.lineMedia',
+  },
   internet: {
     icon: 'world',
     title: 'modulePermissions.internetTitle',

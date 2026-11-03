@@ -13,7 +13,7 @@ export function Verdict({
   children,
 }: Readonly<{ extended: boolean; title: string; children?: ReactNode }>) {
   return (
-    <Callout.Root tone={extended ? 'accent' : 'success'} lit>
+    <Callout.Root tone={extended ? 'accent' : 'success'}>
       <Callout.Media>
         <IconWell
           name={extended ? 'shield-exclamation' : 'shield-check'}
