@@ -63,7 +63,11 @@ vi.mock('expo-file-system', () => {
     get exists() {
       return fs.files.has(this.key);
     }
-    write(data: string) {
+    async write(data: string) {
+      await Promise.resolve();
+      this.writeSync(data);
+    }
+    writeSync(data: string) {
       if (fs.failing.has(this.dir)) throw new Error(`cannot write to ${this.dir}`);
       fs.writes.push({ dir: this.dir, data });
       // The tvOS lie: the call succeeds and nothing is kept.
