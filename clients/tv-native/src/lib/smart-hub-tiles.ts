@@ -43,7 +43,7 @@ function link(type: 'item' | 'show', id: string): string {
 }
 
 function tile(
-  item: { title: string; subtitle?: string | undefined; imageUrl?: string | undefined },
+  item: { title: string; subtitle?: string; imageUrl?: string },
   url: string,
   playable: boolean,
 ): PreviewTile | null {

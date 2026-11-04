@@ -9,42 +9,50 @@ namespace {
 constexpr std::size_t kHeaderSize = 12;
 constexpr std::uint16_t kResponseFlag = 0x8000;
 constexpr std::uint16_t kClassIn = 1;
-constexpr std::uint8_t kPointerMask = 0xC0;
+constexpr std::byte kPointerMask{0xC0};
 constexpr int kMaxPointerJumps = 32;
+constexpr std::size_t kMaxLabelLength = 63;
 constexpr std::size_t kMaxNameLength = 255;
 
-void putUint16(std::vector<std::uint8_t> &out, std::uint16_t value) {
-  out.push_back(static_cast<std::uint8_t>(value >> 8));
-  out.push_back(static_cast<std::uint8_t>(value & 0xFF));
+void putUint16(std::vector<std::byte> &out, std::uint16_t value) {
+  out.push_back(static_cast<std::byte>(value >> 8));
+  out.push_back(static_cast<std::byte>(value & 0xFF));
 }
 
-void putName(std::vector<std::uint8_t> &out, const std::string &name) {
+void putName(std::vector<std::byte> &out, std::string_view name) {
   std::size_t start = 0;
   while (start < name.size()) {
     auto end = name.find('.', start);
-    if (end == std::string::npos) end = name.size();
-    const auto length = end - start;
-    if (length > 0 && length < 64) {
-      out.push_back(static_cast<std::uint8_t>(length));
-      out.insert(out.end(), name.begin() + static_cast<std::ptrdiff_t>(start), name.begin() + static_cast<std::ptrdiff_t>(end));
+    if (end == std::string_view::npos) end = name.size();
+    if (const auto length = end - start; length > 0 && length <= kMaxLabelLength) {
+      out.push_back(static_cast<std::byte>(length));
+      for (const char character : name.substr(start, length)) out.push_back(static_cast<std::byte>(character));
     }
     start = end + 1;
   }
-  out.push_back(0);
+  out.push_back(std::byte{0});
+}
+
+std::string text(std::span<const std::byte> bytes) {
+  std::string out;
+  out.reserve(bytes.size());
+  for (const auto byte : bytes) out.push_back(std::to_integer<char>(byte));
+  return out;
 }
 
 class Reader {
  public:
-  Reader(const std::uint8_t *data, std::size_t size) : data_(data), size_(size) {}
+  explicit Reader(std::span<const std::byte> data) : data_(data) {}
 
   bool has(std::size_t count) const {
-    return offset_ + count <= size_;
+    return offset_ + count <= data_.size();
   }
 
   std::uint16_t uint16() {
-    const auto value = static_cast<std::uint16_t>((data_[offset_] << 8) | data_[offset_ + 1]);
+    const auto high = std::to_integer<std::uint16_t>(data_[offset_]);
+    const auto low = std::to_integer<std::uint16_t>(data_[offset_ + 1]);
     offset_ += 2;
-    return value;
+    return static_cast<std::uint16_t>((high << 8) | low);
   }
 
   std::uint32_t uint32() {
@@ -65,30 +73,32 @@ class Reader {
     std::size_t at = offset_;
     std::optional<std::size_t> resume;
     std::size_t length = 0;
-    for (int jumps = 0; at < size_;) {
+    int jumps = 0;
+    while (at < data_.size()) {
       const auto byte = data_[at];
       if ((byte & kPointerMask) == kPointerMask) {
-        if (at + 1 >= size_ || ++jumps > kMaxPointerJumps) return std::nullopt;
-        if (!resume) resume = at + 2;
-        at = (static_cast<std::size_t>(byte & ~kPointerMask) << 8) | data_[at + 1];
+        ++jumps;
+        if (at + 1 >= data_.size() || jumps > kMaxPointerJumps) return std::nullopt;
+        if (!resume.has_value()) resume = at + 2;
+        at = (std::to_integer<std::size_t>(byte & ~kPointerMask) << 8) | std::to_integer<std::size_t>(data_[at + 1]);
         continue;
       }
-      if (byte & kPointerMask) return std::nullopt;
-      if (byte == 0) {
+      if ((byte & kPointerMask) != std::byte{0}) return std::nullopt;
+      const auto size = std::to_integer<std::size_t>(byte);
+      if (size == 0) {
         offset_ = resume.value_or(at + 1);
         return labels;
       }
-      length += byte + 1;
-      if (at + 1 + byte > size_ || length > kMaxNameLength) return std::nullopt;
-      labels.emplace_back(reinterpret_cast<const char *>(data_ + at + 1), byte);
-      at += 1 + byte;
+      length += size + 1;
+      if (at + 1 + size > data_.size() || length > kMaxNameLength) return std::nullopt;
+      labels.emplace_back(text(data_.subspan(at + 1, size)));
+      at += 1 + size;
     }
     return std::nullopt;
   }
 
  private:
-  const std::uint8_t *data_;
-  std::size_t size_;
+  std::span<const std::byte> data_;
   std::size_t offset_ = 0;
 };
 
@@ -103,19 +113,19 @@ std::string dotted(const std::vector<std::string> &labels) {
 
 bool readRecordData(Reader &reader, Record &record, std::uint16_t length) {
   const auto end = reader.offset() + length;
-  switch (static_cast<RecordType>(record.type)) {
-    case RecordType::A:
+  switch (record.type) {
+    case kTypeA:
       if (length != 4) return false;
       record.ipv4 = reader.uint32();
       return true;
-    case RecordType::Ptr: {
+    case kTypePtr: {
       auto target = reader.labels();
       if (!target || target->empty() || reader.offset() != end) return false;
       record.target = dotted(*target);
       record.targetFirstLabel = target->front();
       return true;
     }
-    case RecordType::Srv: {
+    case kTypeSrv: {
       if (length < 7) return false;
       reader.skip(4);
       record.port = reader.uint16();
@@ -124,27 +134,28 @@ bool readRecordData(Reader &reader, Record &record, std::uint16_t length) {
       record.target = dotted(*target);
       return true;
     }
+    default:
+      reader.skip(length);
+      return true;
   }
-  reader.skip(length);
-  return true;
 }
 
 } // namespace
 
-std::vector<std::uint8_t> encodeQuery(const std::vector<Question> &questions) {
-  std::vector<std::uint8_t> out(kHeaderSize, 0);
-  out[4] = static_cast<std::uint8_t>(questions.size() >> 8);
-  out[5] = static_cast<std::uint8_t>(questions.size() & 0xFF);
+std::vector<std::byte> encodeQuery(const std::vector<Question> &questions) {
+  std::vector<std::byte> out(kHeaderSize, std::byte{0});
+  out[4] = static_cast<std::byte>(questions.size() >> 8);
+  out[5] = static_cast<std::byte>(questions.size() & 0xFF);
   for (const auto &question : questions) {
     putName(out, question.name);
-    putUint16(out, static_cast<std::uint16_t>(question.type));
+    putUint16(out, question.type);
     putUint16(out, kClassIn);
   }
   return out;
 }
 
-std::optional<std::vector<Record>> parseResponse(const std::uint8_t *data, std::size_t size) {
-  Reader reader(data, size);
+std::optional<std::vector<Record>> parseResponse(std::span<const std::byte> message) {
+  Reader reader(message);
   if (!reader.has(kHeaderSize)) return std::nullopt;
   reader.skip(2);
   if ((reader.uint16() & kResponseFlag) == 0) return std::nullopt;
@@ -169,8 +180,8 @@ std::optional<std::vector<Record>> parseResponse(const std::uint8_t *data, std::
   return parsed;
 }
 
-std::string foldedName(const std::string &name) {
-  std::string folded = name;
+std::string foldedName(std::string_view name) {
+  std::string folded(name);
   for (auto &character : folded) {
     character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
   }

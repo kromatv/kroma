@@ -5,7 +5,6 @@
 #include "src/logging/Log.h"
 
 #include <algorithm>
-#include <exception>
 #include <string>
 #include <thread>
 
@@ -18,13 +17,11 @@ constexpr double kMaxTimeoutMs = 10000;
 
 folly::dynamic browseOrNothing(double timeoutMs) {
   const auto bounded = std::clamp(timeoutMs, 0.0, kMaxTimeoutMs);
+  const auto result = browseServices(kServiceType, std::chrono::milliseconds(static_cast<long>(bounded)));
+  if (result.error) rntizen::log(rntizen::LogLevel::Warning, "ServerDiscovery: " + result.error.message());
   folly::dynamic found = folly::dynamic::array();
-  try {
-    for (const auto &server : browseServices(kServiceType, std::chrono::milliseconds(static_cast<long>(bounded)))) {
-      found.push_back(folly::dynamic::object("name", server.name)("host", server.host)("port", server.port));
-    }
-  } catch (const std::exception &error) {
-    rntizen::log(rntizen::LogLevel::Warning, std::string("ServerDiscovery: ") + error.what());
+  for (const auto &server : result.servers) {
+    found.push_back(folly::dynamic::object("name", server.name)("host", server.host)("port", server.port));
   }
   return found;
 }
