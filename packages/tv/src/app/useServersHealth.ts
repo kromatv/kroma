@@ -2,6 +2,7 @@ import { Health } from '@kromatv/client/media';
 import { useEffect, useState } from 'react';
 
 const INTERVAL_MS = 12000;
+const FIRST_RETRY_MS = 1000;
 // A probe unanswered by now counts as unreachable: a dead host never refuses.
 const TIMEOUT_MS = 4000;
 
@@ -20,8 +21,9 @@ export interface ServerProbe {
 }
 
 /** Probes each `<url>/api/health` on a slow loop for the profile picker; a url
- * is absent until its first probe answers. Meant for the *other* saved servers:
- * the active one already has a live heartbeat driving `connection.online`. */
+ * is absent until its first probe answers. A round with a server down retries
+ * after a second, doubling back up to the slow loop. Meant for the *other* saved
+ * servers: the active one already has a live heartbeat driving `connection.online`. */
 export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
   const [map, setMap] = useState<Record<string, ServerProbe>>({});
   // Collapse to a stable primitive so the effect restarts only when the SET of
@@ -39,12 +41,14 @@ export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
     if (list.length === 0) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let failedRounds = 0;
 
     const round = async () => {
       const results = await Promise.all(list.map(probeServer));
       if (cancelled) return;
       setMap(Object.fromEntries(results));
-      timer = setTimeout(round, INTERVAL_MS);
+      failedRounds = results.every(([, probe]) => probe.online) ? 0 : failedRounds + 1;
+      timer = setTimeout(round, nextRoundIn(failedRounds));
     };
     void round();
 
@@ -55,6 +59,11 @@ export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
   }, [key]);
 
   return map;
+}
+
+function nextRoundIn(failedRounds: number): number {
+  if (failedRounds === 0) return INTERVAL_MS;
+  return Math.min(INTERVAL_MS, FIRST_RETRY_MS * 2 ** (failedRounds - 1));
 }
 
 async function probeServer(url: string): Promise<[string, ServerProbe]> {

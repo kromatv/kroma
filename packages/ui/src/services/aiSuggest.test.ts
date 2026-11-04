@@ -11,7 +11,7 @@ import { ItemId, type Section } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAiSuggest } from './aiSuggest';
+import { useAiSuggest, useEstimatedProgress } from './aiSuggest';
 
 const ITEM = ItemId.parse('item-1');
 const OTHER_ITEM = ItemId.parse('item-2');
@@ -114,6 +114,23 @@ describe('useAiSuggest', () => {
     expect(aiSuggest).toHaveBeenCalledTimes(13);
   });
 
+  it('leaves its caller alone between two polls', async () => {
+    const { client } = clientServing(null);
+    let renders = 0;
+    renderHook(() => {
+      renders += 1;
+      return useAiSuggest(client, ITEM);
+    });
+    await settle();
+    const settled = renders;
+
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(renders).toBe(settled);
+  });
+
   it('stops pending when the request fails', async () => {
     const client = fakeClient({
       media: {
@@ -158,35 +175,26 @@ describe('useAiSuggest', () => {
   });
 });
 
-describe('progress', () => {
-  // The LLM run is opaque, so this is an elapsed-time ESTIMATE. It must never
-  // read as finished before the work actually lands.
-  it('climbs while pending but never reaches 1', async () => {
-    const { client } = clientServing(null);
-    const { result } = renderHook(() => useAiSuggest(client, ITEM));
-    await settle();
-    expect(result.current.progress).toBe(0);
+describe('useEstimatedProgress', () => {
+  it('starts from zero', () => {
+    const { result } = renderHook(() => useEstimatedProgress());
 
+    expect(result.current).toBe(0);
+  });
+
+  it('climbs with time but never reads as finished', async () => {
+    const { result } = renderHook(() => useEstimatedProgress());
     await act(async () => {
       vi.advanceTimersByTime(5000);
     });
-    const early = result.current.progress;
-    expect(early).toBeGreaterThan(0);
+    const early = result.current;
 
     await act(async () => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(result.current.progress).toBeGreaterThan(early);
-    expect(result.current.progress).toBeLessThanOrEqual(0.96);
-  });
 
-  it('stays at zero when nothing is pending', async () => {
-    const { client } = clientServing(section());
-    const { result } = renderHook(() => useAiSuggest(client, ITEM));
-    await settle();
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
-    });
-    expect(result.current.progress).toBe(0);
+    expect(early).toBeGreaterThan(0);
+    expect(result.current).toBeGreaterThan(early);
+    expect(result.current).toBeLessThanOrEqual(0.96);
   });
 });

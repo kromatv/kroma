@@ -18,12 +18,14 @@ export function useArtLayers(input: Readonly<ArtLayersInput>): ArtLayers {
   const [natural, setNatural] = useState<Size | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
   const { src, fit } = input;
+  const focal = parsePosition(input.position);
+  const placed = fit === 'cover' && (focal.x !== 0.5 || focal.y !== 0.5);
 
   useLayoutEffect(() => {
     if (src) opacity.setValue(0);
   }, [src, opacity]);
 
-  const rect = fit === 'cover' ? coverRect(box, natural, parsePosition(input.position)) : null;
+  const rect = placed ? coverRect(box, natural, focal) : null;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -32,10 +34,16 @@ export function useArtLayers(input: Readonly<ArtLayersInput>): ArtLayers {
 
   return {
     surface: (style: StyleProp<ViewStyle>, children: ReactNode) => (
-      <View onLayout={onLayout} style={style}>
+      <View onLayout={placed ? onLayout : undefined} style={style}>
         {children}
       </View>
     ),
-    layers: nativeLayers({ ...input, backend, rect, opacity, setNatural }),
+    layers: nativeLayers({
+      ...input,
+      backend,
+      rect,
+      opacity,
+      setNatural: placed ? setNatural : undefined,
+    }),
   };
 }

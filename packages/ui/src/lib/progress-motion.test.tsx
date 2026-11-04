@@ -8,6 +8,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Progress } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
+import { color } from '#ui/core/color';
 import { declared } from '#ui/testing';
 import { ProgressFill } from './progress-motion';
 import { ringGeometry } from './ring';
@@ -48,6 +49,19 @@ describe('the ring', () => {
     expect(arc.getAttribute('stroke-dashoffset')).toBe(
       String(ringGeometry({ value: 0.5 }).dashOffset),
     );
+  });
+
+  it('paints the colour a token names rather than the token itself', () => {
+    const { container } = render(<ProgressRing value={0.5} track="text/15" fill="text/70" />);
+
+    expect(arcIn(container).getAttribute('stroke')).toBe(color('text/70'));
+    expect(only(container, 'circle').getAttribute('stroke')).toBe(color('text/15'));
+  });
+
+  it('draws each value as it comes when it is not eased', () => {
+    const { container } = render(<ProgressRing value={0.5} eased={false} />);
+
+    expect(declared(arcIn(container), 'transition-property')).toBeFalsy();
   });
 
   it('spins a fixed arc when indeterminate, rather than one stuck at zero', () => {
