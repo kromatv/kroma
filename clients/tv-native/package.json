@@ -29,6 +29,7 @@
     "@kromatv/core": "workspace:*",
     "@kromatv/lan-beacon": "workspace:*",
     "@kromatv/media3-ffmpeg": "workspace:*",
+    "@kromatv/react-native-tizen": "0.1.0-alpha.0",
     "@kromatv/tv": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "@react-native-masked-view/masked-view": "0.3.2",
@@ -49,7 +50,6 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
-    "@kromatv/react-native-tizen": "workspace:*",
     "@react-native-tvos/config-tv": "^0.1.7",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
