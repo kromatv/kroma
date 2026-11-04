@@ -45,6 +45,7 @@ mod reports;
 mod requests;
 pub mod seam;
 mod search;
+mod server_status;
 mod stream;
 mod suggest;
 mod themes;
@@ -118,6 +119,8 @@ mod it_online_subs;
 #[cfg(test)]
 mod it_passkeys;
 #[cfg(test)]
+mod it_people;
+#[cfg(test)]
 mod it_pin;
 #[cfg(test)]
 mod it_pin_lockout;
@@ -143,6 +146,8 @@ mod it_reset_faults;
 mod it_saved_titles;
 #[cfg(test)]
 mod it_server_restart;
+#[cfg(test)]
+mod it_server_status;
 #[cfg(test)]
 mod it_stream_hls;
 #[cfg(test)]
@@ -232,6 +237,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(mail::routes())
         .merge(images::routes())
         .merge(media::public_routes())
+        .merge(server_status::public_routes())
         .merge(stream::routes())
         .merge(online_subs::public_routes())
         .merge(themes::routes())
@@ -246,6 +252,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // is not library bytes.
     let content = Router::new()
         .merge(media::routes())
+        .merge(server_status::routes())
         .merge(stream::protected_routes())
         .merge(search::routes())
         .merge(people::routes())

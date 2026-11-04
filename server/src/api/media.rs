@@ -1,34 +1,28 @@
-//! Catalogue browse + detail endpoints (libraries / items / movies / shows) plus
-//! the server status / scan / logs handlers.
+//! Catalogue browse + detail endpoints (libraries / items / movies / shows) and
+//! the sign-in screen's splash sample.
 
-use std::net::SocketAddr;
-
-use axum::extract::{ConnectInfo, Path, Query, State};
-use axum::http::{header, StatusCode};
+use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
 use crate::api::extract::AuthUser;
-use crate::api::util::{blocking, query};
+use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
 use crate::i18n::ReqLocale;
 use crate::model::MediaCard;
 use crate::state::SharedState;
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Router;
 
-/// Unauthenticated: the TV health monitor polls `/api/health` before any login.
-/// `/splash` is the deliberate exception to "no catalogue data before a
-/// session": a fixed-size random sample of covers for the sign-in screen,
-/// never a listing. `/health` and `/status` may not leak catalogue data.
+/// Unauthenticated: `/splash` is the deliberate exception to "no catalogue data
+/// before a session": a fixed-size random sample of covers for the sign-in
+/// screen, never a listing.
 pub fn public_routes() -> Router<SharedState> {
-    Router::new()
-        .route("/health", get(health))
-        .route("/status", get(status))
-        .route("/splash", get(splash))
+    Router::new().route("/splash", get(splash))
 }
 
 /// Gated by the session middleware in [`super`] so the library isn't listable
@@ -41,8 +35,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/shows", get(list_shows))
         .route("/shows/{id}", get(get_show))
         .route("/items/{id}", get(get_item))
-        .route("/logs", get(logs))
-        .route("/scan", post(rescan))
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,37 +64,6 @@ pub async fn splash(
 ) -> Result<Response, Response> {
     let entries = query(&state.db, move |pool| db::splash_entries(&pool, 12, locale)).await?;
     Ok(Json(entries).into_response())
-}
-
-/// `GET /api/health`. Public, so the human-readable server name is attached for
-/// LAN callers only.
-pub async fn health(
-    State(state): State<SharedState>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    headers: axum::http::HeaderMap,
-) -> Result<Response, Response> {
-    let (libraries, items, shows) = query(&state.db, move |pool| db::counts(&pool)).await?;
-    let ip = crate::api::util::client_ip(&headers, &addr, &state.config.trusted_proxies);
-    let is_lan = crate::services::playback::is_lan(
-        &ip,
-        &crate::services::settings::local_networks(&state.settings),
-    );
-    Ok(Json(super::dto::Health {
-        build: crate::services::settings::build_info().number,
-        boot_id: kroma_engine::boot_id(),
-        active_streams: is_lan.then(|| state.playback.list().len()),
-        auto_install_updates: is_lan.then(|| crate::services::updates::auto_install(&state)),
-        status: "ok",
-        name: is_lan.then(|| crate::services::settings::server_name(&state.settings)),
-        instance_id: state.instance_id.clone(),
-        version: crate::VERSION,
-        update_channel: is_lan.then(|| crate::services::updates::channel(&state.settings)),
-        ffprobe: state.ffprobe_available,
-        libraries,
-        items,
-        shows,
-    })
-    .into_response())
 }
 
 /// `GET /api/libraries` → `Library[]`, narrowed to the libraries the caller was
@@ -228,83 +189,4 @@ pub async fn get_item(
     .await?
     .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
     Ok(Json(item).into_response())
-}
-
-/// `POST /api/scan` → trigger a full library rescan. Routed through the tracked
-/// `library.scan` job so it shares the job manager's single-flight guard: no
-/// concurrent walk can race a watch-triggered run on the same DB.
-pub async fn rescan(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    crate::api::admin::require(&user, crate::model::Permission::LibraryManage)?;
-    use crate::services::jobs::{JobKey, TriggerError};
-    match state
-        .jobs
-        .trigger(state.clone(), JobKey("library.scan"), "manual")
-    {
-        Ok(run_id) => Ok(Json(serde_json::json!({ "runId": run_id })).into_response()),
-        Err(TriggerError::AlreadyRunning) => Err(json_error(
-            StatusCode::CONFLICT,
-            "a scan is already running",
-        )),
-        Err(TriggerError::Unknown) => Err(json_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "scan job not registered",
-        )),
-    }
-}
-
-/// `GET /api/status` → live scan/enrichment snapshot.
-pub async fn status(State(state): State<SharedState>) -> Response {
-    let snap = crate::services::activity::snapshot(&state.activity);
-    Json(snap).into_response()
-}
-
-#[derive(Debug, Deserialize)]
-pub struct LogsQuery {
-    pub tail: Option<usize>,
-}
-
-/// `GET /api/logs?tail=N` → the last N lines of the current server log, as
-/// `text/plain`. Reads the most-recently-modified file under `<data>/logs/`.
-pub async fn logs(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Query(q): Query<LogsQuery>,
-) -> Result<Response, Response> {
-    crate::api::admin::require_any_admin(&user)?;
-    let dir = state.config.logs_dir();
-    let tail = q.tail.unwrap_or(200).min(5000);
-
-    let text = blocking(move || Ok(read_log_tail(&dir, tail))).await?;
-    Ok(([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], text).into_response())
-}
-
-fn read_log_tail(dir: &std::path::Path, tail: usize) -> String {
-    let newest = std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.is_file())
-        .filter_map(|p| {
-            let mtime = std::fs::metadata(&p).and_then(|m| m.modified()).ok()?;
-            Some((mtime, p))
-        })
-        .max_by_key(|(mtime, _)| *mtime)
-        .map(|(_, p)| p);
-
-    let Some(path) = newest else {
-        return String::new();
-    };
-    let content = std::fs::read_to_string(&path).unwrap_or_else(|e| {
-        // Keep the always-200, text/plain contract, but don't swallow a real
-        // read failure.
-        tracing::warn!(path = %path.display(), error = %e, "failed to read log file for /api/logs");
-        String::new()
-    });
-    let lines: Vec<&str> = content.lines().collect();
-    let start = lines.len().saturating_sub(tail);
-    lines[start..].join("\n")
 }

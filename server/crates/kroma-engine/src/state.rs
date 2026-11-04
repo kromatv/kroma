@@ -69,6 +69,7 @@ pub struct AppState {
     pub jobs: Arc<JobManager>,
     pub subtitle_gen: Arc<GenRegistry>,
     pub instance_id: String,
+    pub library_counts: Arc<crate::services::library_counts::LibraryCounts>,
     // Signs the media tickets the byte routes accept in a URL. Never served.
     pub media_ticket_key: String,
     // Semaphore for offline-download remuxes; a full gate returns `503`
@@ -178,6 +179,7 @@ impl AppState {
             jobs: Arc::new(jobs),
             subtitle_gen: Arc::new(GenRegistry::default()),
             instance_id,
+            library_counts: Default::default(),
             media_ticket_key,
             downloads,
             me: weak.clone(),
