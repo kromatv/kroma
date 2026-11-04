@@ -6,14 +6,18 @@ The Apple TV / Android TV / Samsung Tizen shell. It is platform glue: the
 ## Samsung Tizen
 
 Tizen runs this same app through
-[`@kromatv/react-native-tizen`](../../packages/react-native-tizen), which reads
-`expo.tizen` in `app.json` and the Metro config's `withTizen`. From this
-directory:
+[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen),
+which reads its config plugin's props in `app.json` and the Metro config's
+`withTizen`. From this directory:
 
 ```bash
+bunx expo start                                 # then shift+m, Run on TV
 bunx rn-tizen simulator run --instance <name>   # the aarch64 simulator
 bunx rn-tizen run --device <tv-ip>              # a TV in Developer Mode
 ```
+
+Use `bunx`, not `npx`: npm resolves `rn-tizen` from the workspace root, where
+bun does not link it.
 
 A local module carries its Tizen implementation in its own `tizen/` folder,
 declared in its `expo-module.config.json`; `server-discovery` is one.
