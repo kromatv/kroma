@@ -56,6 +56,10 @@ class Socket {
     if (fd_ >= 0) ::close(fd_);
   }
 
+  bool open() const {
+    return fd_ >= 0;
+  }
+
   std::error_code error() const {
     return error_;
   }
@@ -100,7 +104,7 @@ void receive(const Socket &socket, ServiceCollector &collector, Clock::time_poin
 
 BrowseResult browseServices(const std::string &serviceType, std::chrono::milliseconds timeout) {
   const Socket socket;
-  if (socket.error()) return {.servers = {}, .error = socket.error()};
+  if (!socket.open()) return {.servers = {}, .error = socket.error()};
   ServiceCollector collector(serviceType);
   const auto start = Clock::now();
   for (int round = 1; round <= kQueryRounds; ++round) {

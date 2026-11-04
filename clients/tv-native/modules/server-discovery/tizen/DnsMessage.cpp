@@ -143,7 +143,7 @@ bool readRecordData(Reader &reader, Record &record, std::uint16_t length) {
 } // namespace
 
 std::vector<std::byte> encodeQuery(const std::vector<Question> &questions) {
-  std::vector<std::byte> out(kHeaderSize, std::byte{0});
+  std::vector out(kHeaderSize, std::byte{0});
   out[4] = static_cast<std::byte>(questions.size() >> 8);
   out[5] = static_cast<std::byte>(questions.size() & 0xFF);
   for (const auto &question : questions) {
