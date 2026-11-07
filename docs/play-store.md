@@ -34,10 +34,10 @@ roles. For the first upload, choose the intended app signing identity for both
 form factors. If Play generates a new app signing key, an APK signed only with
 the upload key cannot update over the Play-installed app, or vice versa.
 
-To build only the two Android clients, without distributing anything:
+To build only the two Android clients (a build never uploads to Play):
 
 ```sh
-gh workflow run release.yml -R kromatv/kroma --ref <branch> -f targets=android -f distribute=false
+gh workflow run release.yml -R kromatv/kroma --ref <branch> -f targets=android
 ```
 
 ## First setup in Play Console
@@ -89,9 +89,11 @@ Track names must match the API; consult Google's
 The workflow permits internal (`internal`/`qa`), alpha or beta testing tracks,
 with the corresponding `tv:` prefix, and refuses production tracks.
 
-`_release-play.yml` waits for both Android artifacts, serializes uploads and
-creates **draft releases**, with changes not sent for review. A push candidate,
-stable release or explicitly distributed manual build can prepare drafts.
+`_distribute.yml` takes both Android bundles from one Build & Release run,
+serializes uploads and creates **draft releases**, with changes not sent for
+review. It runs once a day from `beta.yml` with the newest candidate, and from
+`deploy.yml` with the promoted run; a push uploads nothing (see
+[the beta channels](ci.md#the-beta-channels-testflight-and-google-play)).
 Review and roll them out in Play Console. Without `PLAY_STORE_READY`, builds
 still produce signed AAB artifacts, with no Play upload.
 
