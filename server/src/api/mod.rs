@@ -13,6 +13,7 @@ pub mod ws;
 mod accounts;
 mod cast;
 mod diagnostics;
+mod direct;
 mod discover;
 mod downloads_overlay;
 mod extract;
@@ -74,6 +75,10 @@ mod it_cast;
 mod it_content;
 #[cfg(test)]
 mod it_diagnostics;
+#[cfg(test)]
+mod it_direct;
+#[cfg(test)]
+mod it_direct_reach;
 #[cfg(test)]
 mod it_external_subtitles;
 #[cfg(test)]
@@ -238,6 +243,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(images::routes())
         .merge(media::public_routes())
         .merge(server_status::public_routes())
+        .merge(direct::public_routes())
         .merge(stream::routes())
         .merge(online_subs::public_routes())
         .merge(themes::routes())
@@ -253,6 +259,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     let content = Router::new()
         .merge(media::routes())
         .merge(server_status::routes())
+        .merge(direct::routes())
         .merge(stream::protected_routes())
         .merge(search::routes())
         .merge(people::routes())
@@ -325,7 +332,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
             .and(NotForContentType::new("application/vnd.apple.mpegurl")),
     );
 
-    app.layer(origin::cors(&state.config.allowed_origins))
+    app.layer(origin::cors(&state.config, state.direct.origins()))
         .layer(compression)
         .layer(from_fn_with_state(state.clone(), inbound::tally))
         .layer(axum::middleware::from_fn(spa_cache_headers))

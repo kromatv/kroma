@@ -74,6 +74,12 @@ vi.mock('@kromatv/core', () => ({
   deviceLocale: () => 'fr',
   discoverServer: H.discoverServer,
   checkServerCompat: H.checkServerCompat,
+  startDirectConnection: () => ({
+    setSignedIn: () => undefined,
+    setForeground: () => undefined,
+    recheck: () => undefined,
+    stop: () => undefined,
+  }),
 }));
 
 type HealthModule = typeof import('#tv/app/useServerHealth');

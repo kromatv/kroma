@@ -33,6 +33,9 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) for the three roads a television
   takes to an account, what "the same network" means, and which shells can hear
   a television on the link rather than being told about it.
+- [`docs/direct-connection.md`](docs/direct-connection.md) for the route a
+  signed-in client takes straight to its server on the same network, what
+  proves it is the same server, and what each shell does with it.
 
 ## Checks
 

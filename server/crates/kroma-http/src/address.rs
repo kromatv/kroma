@@ -122,6 +122,18 @@ fn embedded_v4(ip: Ipv6Addr) -> Option<Ipv4Addr> {
     None
 }
 
+/// The address this machine reaches the internet from, read off the routing
+/// table. `None` on a machine with no route out, which would otherwise report
+/// loopback or the wildcard.
+#[cfg(not(target_family = "wasm"))]
+pub fn primary_address() -> Option<IpAddr> {
+    // Connecting a UDP socket sends no packets; it only consults the routing table.
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    let ip = socket.local_addr().ok()?.ip();
+    (!ip.is_loopback() && !ip.is_unspecified()).then_some(ip)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

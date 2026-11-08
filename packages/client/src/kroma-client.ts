@@ -2,8 +2,10 @@ import { domains } from './api/discover';
 import { bindDomains, type Domains } from './core/client';
 import {
   createRequestContext,
+  createRoute,
   type KromaClientOptions,
   preconnect,
+  type Route,
   type TransportConfig,
   withUserAgent,
 } from './core/http';
@@ -12,7 +14,10 @@ import { createSessionScope, type SessionScope } from './core/session';
 /** What the client carries beyond its domains: the bearer, the locale, and the
  * few things a platform needs to reach the server without the transport. */
 export interface ClientControls {
+  /** The base the client was configured with, whichever route it is using. */
   readonly baseUrl: string;
+  /** Which base requests go to, and the switch `connectDirect` turns. */
+  readonly route: Route;
   readonly session: SessionScope;
   readonly locale: string | undefined;
   /** Adopt a session bearer for this client, or clear it with `undefined`.
@@ -74,8 +79,9 @@ export function kromaClientParts(options: KromaClientOptions): {
     return token;
   };
 
+  const route = createRoute(baseUrl, { directMedia: options.directMedia });
   const config: TransportConfig = {
-    baseUrl,
+    route,
     fetchFn: options.userAgent ? withUserAgent(base, options.userAgent) : base,
     token: session.sessionToken,
     locale: () => locale,
@@ -88,6 +94,7 @@ export function kromaClientParts(options: KromaClientOptions): {
 
   const controls: ClientControls = {
     baseUrl,
+    route,
     session,
     get locale() {
       return locale;

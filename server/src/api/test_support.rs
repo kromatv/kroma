@@ -5,6 +5,7 @@
 //! all-permissions owner session. Requests run in-process via
 //! [`tower::ServiceExt::oneshot`]: no socket, no network, no module.
 
+mod direct;
 mod media;
 mod modules;
 mod requests;
@@ -23,11 +24,12 @@ use crate::model::Permission;
 use crate::services::settings::{self, LibraryDef, Settings};
 use crate::state::{AppState, SharedState};
 
+pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
 pub use modules::{installed_module, read_setting, store_settings, write_settings};
-pub use requests::{get, raw, send, text};
+pub use requests::{get, get_from, raw, send, text};
 
 static SEQ: AtomicU32 = AtomicU32::new(0);
 
@@ -96,6 +98,15 @@ pub fn test_app_with_mail_relay(relay_url: &str) -> TestApp {
 pub fn test_app_with_releases(releases_url: &str) -> TestApp {
     build_app_with(None, &[], |config| {
         config.releases_url = Some(releases_url.to_string());
+    })
+}
+
+/// Like [`test_app`] but with a public address and an echo that names this
+/// server's public IPv4, either of which a test may leave out.
+pub fn test_app_served_at(web_url: Option<&str>, public_ip_url: Option<&str>) -> TestApp {
+    build_app_with(None, &[], |config| {
+        config.web_url = web_url.map(str::to_string);
+        config.public_ip_url = public_ip_url.map(str::to_string);
     })
 }
 

@@ -2145,6 +2145,7 @@ dependencies = [
  "base64 0.23.1",
  "chacha20poly1305",
  "hex",
+ "if-addrs",
  "jwalk",
  "kroma-config",
  "kroma-db",

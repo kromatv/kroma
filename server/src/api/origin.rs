@@ -5,6 +5,8 @@
 //! left to decide is who may READ the answer, and that is CORS.
 
 use std::net::IpAddr;
+use std::sync::Arc;
+use std::time::Duration;
 
 use axum::extract::{Request, State};
 use axum::http::{header, StatusCode, Uri};
@@ -13,24 +15,35 @@ use axum::response::Response;
 use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, Any, CorsLayer};
 
 use crate::api::error::json_error;
+use kroma_config::Config;
+use crate::services::direct::{origin_of, PublicOrigins};
 use crate::state::SharedState;
 
 // KROMA's own televisions-in-a-browser client. An ordinary page on the web, and
 // trusted for one reason: this project publishes it.
 const OFFICIAL_CLIENTS: &[&str] = &["https://tv.kroma.tv"];
 
+// Chromium caps a cached preflight at two hours; without one, every request a
+// page sends with its bearer pays a second round trip first.
+const PREFLIGHT_MAX_AGE: Duration = Duration::from_secs(7200);
+
 /// The CORS policy for the whole API. An origin that is not this machine, this
-/// network, a shell loaded off a device or one the operator named is answered
-/// without an `Access-Control-Allow-Origin`, so a page on the web can make the
-/// request (it always could) but never read what came back.
-pub fn cors(named: &[String]) -> CorsLayer {
-    let named = named.to_vec();
+/// network, a shell loaded off a device, one the operator named, or one this
+/// server was seen served at through a proxy it trusts is answered without an
+/// `Access-Control-Allow-Origin`, so a page on the web can make the request (it
+/// always could) but never read what came back.
+pub fn cors(config: &Config, served_at: Arc<PublicOrigins>) -> CorsLayer {
+    let mut named = config.allowed_origins.clone();
+    named.extend(config.web_url.as_deref().and_then(origin_of));
     CorsLayer::new()
         .allow_methods(AllowMethods::mirror_request())
         .allow_headers(AllowHeaders::mirror_request())
         .expose_headers(Any)
+        .max_age(PREFLIGHT_MAX_AGE)
         .allow_origin(AllowOrigin::predicate(move |origin, _| {
-            origin.to_str().is_ok_and(|origin| may_read(origin, &named))
+            origin
+                .to_str()
+                .is_ok_and(|origin| may_read(origin, &named) || served_at.contains(origin))
         }))
 }
 

@@ -2,7 +2,7 @@ import type { KromaClient } from '@kromatv/client';
 import { normalizeServerUrl as norm, type SavedServer } from '@kromatv/client/accounts';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import { discoverServer } from '@kromatv/core';
-import { useAccountStorage } from '@kromatv/ui';
+import { useAccountStorage, useDirectConnection } from '@kromatv/ui';
 import { useDeviceStore } from '@kromatv/ui/device-store';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { makeClient } from '#tv/app/apiClient';
@@ -195,8 +195,11 @@ export function useCatalogue(
     if (client && signedIn) void fetchCatalogue(client);
   }, [client, signedIn, fetchCatalogue]);
 
+  const direct = useDirectConnection(client, signedIn);
+
   // Heartbeat: detect when the server drops and auto-refetch when it returns.
   const { online, recheck, serverVersion, compat } = useServerHealth(client, signedIn, () => {
+    direct.recheck();
     if (client) void fetchCatalogue(client, true);
   });
 

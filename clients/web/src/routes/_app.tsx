@@ -10,6 +10,7 @@ import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { CastPicker } from '#web/shared/ui/cast-picker';
+import { DirectOffer } from '#web/shared/ui/direct-offer';
 import { CAST_PICKER_Z } from '#web/shared/ui/page';
 
 export const Route = createFileRoute('/_app')({
@@ -59,6 +60,7 @@ function AppLayout() {
         </div>
         <CatalogModalHosts />
         <CastBar />
+        <DirectOffer />
       </Box>
       <Box z={CAST_PICKER_Z}>
         <CastPicker />

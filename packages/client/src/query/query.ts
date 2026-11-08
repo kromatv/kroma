@@ -88,7 +88,7 @@ export function createQueryClient(options: KromaClientOptions): QueryClient {
     Object.fromEntries(Object.keys(domains).map((name) => [name, client[name as keyof Domains]])),
     [],
     run,
-    config.baseUrl,
+    config.route.canonical,
   ) as Queries<Domains>;
 
   return Object.defineProperty(client, 'query', { value: query, enumerable: true }) as QueryClient;

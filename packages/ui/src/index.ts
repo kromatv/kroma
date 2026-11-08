@@ -11,6 +11,7 @@ export {
   registerTvMediaKeys,
   resolveRemoteKey,
 } from './lib/remote-keys';
+export { mediaFollowsDirectRoute, withLocalAddressSpace } from './lib/lan-reach';
 export { useForeground } from './lib/use-foreground';
 export { useAccountStorage } from './services/account-storage';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
@@ -19,6 +20,8 @@ export type { ActivateResult, AuthSession } from './services/auth';
 export { useAuthSession } from './services/auth';
 export type { Cast, CastFailure, CastProviderProps } from './services/cast';
 export { CastProvider, useCast } from './services/cast';
+export type { DirectConnectionView, DirectPlatform } from './services/direct-connection';
+export { useDirectConnection } from './services/direct-connection';
 export { type Format, useFormat } from './services/format';
 export type { I18nProviderProps } from './services/i18n';
 export {
