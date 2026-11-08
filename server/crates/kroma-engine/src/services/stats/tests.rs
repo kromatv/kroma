@@ -20,7 +20,7 @@ fn an_install_whose_operator_switched_it_off_sends_nothing() {
     switch_off(&state);
     let calls = AtomicUsize::new(0);
 
-    let report = report(&state, |_, _| {
+    let report = report(&state, |_| {
         calls.fetch_add(1, Ordering::SeqCst);
         Ok(Outcome::Accepted)
     })
@@ -48,13 +48,13 @@ fn opting_in_mints_one_id_and_keeps_it_across_runs() {
     let state = test_state();
     enable(&state);
 
-    report(&state, |_, _| Ok(Outcome::Accepted)).unwrap();
+    report(&state, |_| Ok(Outcome::Accepted)).unwrap();
     let first = state.settings.get_str(ID_KEY, "");
     state
         .settings
         .set_internal(&state.db, SENT_KEY, json!(""))
         .unwrap();
-    report(&state, |_, _| Ok(Outcome::Accepted)).unwrap();
+    report(&state, |_| Ok(Outcome::Accepted)).unwrap();
 
     assert_eq!(first.len(), 64);
     assert_ne!(first, state.instance_id);
@@ -65,7 +65,7 @@ fn opting_in_mints_one_id_and_keeps_it_across_runs() {
 fn no_caller_can_choose_the_stats_id_through_the_settings_patch() {
     let state = test_state();
     enable(&state);
-    report(&state, |_, _| Ok(Outcome::Accepted)).unwrap();
+    report(&state, |_| Ok(Outcome::Accepted)).unwrap();
     let minted = state.settings.get_str(ID_KEY, "");
 
     let written = state
@@ -84,7 +84,7 @@ fn a_run_that_was_accepted_stamps_when_it_happened() {
     let state = test_state();
     enable(&state);
 
-    let report = report(&state, |_, _| Ok(Outcome::Accepted)).unwrap();
+    let report = report(&state, |_| Ok(Outcome::Accepted)).unwrap();
 
     assert!(matches!(report, Report::Sent(_)));
     assert!(!state.settings.get_str(SENT_KEY, "").is_empty());
@@ -95,7 +95,7 @@ fn a_payload_the_collector_will_not_take_is_reported_and_never_raised() {
     let state = test_state();
     enable(&state);
 
-    let report = report(&state, |_, _| Ok(Outcome::Refused(400))).unwrap();
+    let report = report(&state, |_| Ok(Outcome::Refused(400))).unwrap();
 
     assert_eq!(report, Report::Refused(400));
     assert!(
@@ -109,7 +109,7 @@ fn a_wobble_at_the_far_end_defers_rather_than_pretending_it_landed() {
     let state = test_state();
     enable(&state);
 
-    let report = report(&state, |_, _| Ok(Outcome::Transient(503))).unwrap();
+    let report = report(&state, |_| Ok(Outcome::Transient(503))).unwrap();
 
     assert_eq!(report, Report::Deferred(503));
     assert_eq!(state.settings.get_str(SENT_KEY, ""), "");
@@ -132,17 +132,21 @@ fn a_real_collector_accepts_what_this_server_actually_sends() {
 }
 
 #[test]
-fn the_payload_goes_to_the_ping_route_of_the_one_address_every_server_uses() {
-    let state = test_state();
-    enable(&state);
+fn a_release_build_reports_to_the_one_address_every_server_uses_whatever_the_environment_says() {
+    let url = endpoint(false, Some("https://elsewhere.example".to_string()));
 
-    let mut seen = String::new();
-    report(&state, |url, _| {
-        seen = url.to_string();
-        Ok(Outcome::Accepted)
-    })
-    .unwrap();
+    assert_eq!(url.as_deref(), Some("https://stats.kroma.tv/v1/ping"));
+}
 
-    assert!(seen.ends_with("/v1/ping"), "{seen}");
-    assert!(!seen.contains("//v1"), "{seen}");
+#[test]
+fn a_development_build_reports_nowhere_unless_a_collector_is_named() {
+    assert_eq!(endpoint(true, None), None);
+    assert_eq!(endpoint(true, Some("  ".to_string())), None);
+}
+
+#[test]
+fn a_development_build_reports_to_the_ping_route_of_the_collector_it_was_given() {
+    let url = endpoint(true, Some(" http://127.0.0.1:8787/ ".to_string()));
+
+    assert_eq!(url.as_deref(), Some("http://127.0.0.1:8787/v1/ping"));
 }
