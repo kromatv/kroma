@@ -114,6 +114,7 @@ webauthn-rs = "0.5.5"
 webauthn-rs-proto = "0.5.5"
 # musl allocator (Linux only; see the binary's #[global_allocator]).
 mimalloc = { version = "0.1", default-features = false }
+libmimalloc-sys = { version = "0.1.49", default-features = false, features = ["extended"] }
 # In-workspace crates, referenced by path so a member bumping its own version
 # doesn't force a churn here.
 # Low manifest layer (below engine): manifest/registry/embedded types that
@@ -290,6 +291,7 @@ kroma-db = { workspace = true, features = ["testing"] }
 # allocator. See the #[global_allocator] in main.rs.
 [target.'cfg(target_os = "linux")'.dependencies]
 mimalloc = { workspace = true }
+libmimalloc-sys = { workspace = true }
 
 # Keep the dependency graph lean and 1.81-friendly.
 [profile.release]

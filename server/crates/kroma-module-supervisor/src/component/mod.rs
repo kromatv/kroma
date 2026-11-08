@@ -14,12 +14,12 @@ mod roots;
 mod startup;
 
 use answer::answer;
-pub(crate) use pool::Pool;
+pub(crate) use pool::{Pool, WORKER_LIFETIME};
 use pool::tick_forever;
 pub use roots::{FolderRoots, Folders};
 
 use std::sync::atomic::{AtomicBool, AtomicU32};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
@@ -49,6 +49,12 @@ fn limits_of(needs: ComponentNeeds) -> Limits {
 }
 
 impl Supervisor {
+    /// How long a worker instance with nothing left running outlives its last
+    /// call, for the modules started after this. A minute unless set.
+    pub fn keep_idle_workers_for(&self, lifetime: Duration) {
+        *self.worker_lifetime.write().unwrap_or_else(PoisonError::into_inner) = lifetime;
+    }
+
     fn wasm_host(&self) -> anyhow::Result<&WasmHost> {
         if let Some(host) = self.wasm.get() {
             return Ok(host);
@@ -222,6 +228,7 @@ impl Supervisor {
             slots: Arc::new(Semaphore::new(1)),
             capacity: AtomicU32::new(1),
             instances,
+            worker_lifetime: *self.worker_lifetime.read().unwrap_or_else(PoisonError::into_inner),
             port_token,
             started_up: AtomicBool::new(false),
             primary_up: AtomicBool::new(false),

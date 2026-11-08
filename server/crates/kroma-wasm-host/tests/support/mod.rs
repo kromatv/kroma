@@ -32,13 +32,28 @@ impl NetPolicy for BlockEverything {
     }
 }
 
+pub fn guest_wasm() -> &'static [u8] {
+    static WASM: OnceLock<Vec<u8>> = OnceLock::new();
+    WASM.get_or_init(build_guest)
+}
+
 pub fn component() -> &'static ModuleComponent {
     static COMPONENT: OnceLock<ModuleComponent> = OnceLock::new();
     COMPONENT.get_or_init(|| {
         let host = WasmHost::new().expect("build the wasm host");
-        host.compile(&build_guest())
-            .expect("compile the test guest")
+        host.compile(guest_wasm()).expect("compile the test guest")
     })
+}
+
+pub fn sandboxed_from(component: &ModuleComponent) -> ModuleInstance {
+    component
+        .instantiate(grant(
+            Arc::new(BlockEverything),
+            Settings::default(),
+            LIMITS,
+            None,
+        ))
+        .expect("instantiate the test guest")
 }
 
 pub fn instance(policy: Arc<dyn NetPolicy>, settings: Settings, limits: Limits) -> ModuleInstance {
@@ -54,13 +69,13 @@ pub fn with_media(media: Arc<dyn Media>) -> ModuleInstance {
     )
 }
 
-fn granted(
+fn grant(
     policy: Arc<dyn NetPolicy>,
     settings: Settings,
     limits: Limits,
     media: Option<Arc<dyn Media>>,
-) -> ModuleInstance {
-    let grant = Grant {
+) -> Grant {
+    Grant {
         policy,
         settings,
         limits,
@@ -72,9 +87,17 @@ fn granted(
         lan: None,
         files: None,
         media,
-    };
+    }
+}
+
+fn granted(
+    policy: Arc<dyn NetPolicy>,
+    settings: Settings,
+    limits: Limits,
+    media: Option<Arc<dyn Media>>,
+) -> ModuleInstance {
     component()
-        .instantiate(grant)
+        .instantiate(grant(policy, settings, limits, media))
         .expect("instantiate the test guest")
 }
 

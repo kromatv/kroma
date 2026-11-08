@@ -11,8 +11,7 @@ use super::{database, files, lan, media, outside, programs};
 const TICK_EVERY: Duration = Duration::from_millis(100);
 const STOP_WAIT: Duration = Duration::from_secs(10);
 const STOP_STEP: Duration = Duration::from_millis(10);
-const RECLAIM_AFTER: Duration = Duration::from_secs(300);
-const RECLAIM_ABOVE_BYTES: usize = 64 * 1024 * 1024;
+pub(crate) const WORKER_LIFETIME: Duration = Duration::from_secs(60);
 
 pub(super) struct Parked {
     instance: ModuleInstance,
@@ -30,8 +29,8 @@ impl Parked {
     }
 }
 
-fn worth_dropping(running: bool, idle_for: Duration, memory_bytes: usize) -> bool {
-    !running && idle_for >= RECLAIM_AFTER && memory_bytes > RECLAIM_ABOVE_BYTES
+fn worth_dropping(running: bool, idle_for: Duration, lifetime: Duration) -> bool {
+    !running && idle_for >= lifetime
 }
 
 /// The instances of one running component, and what they share.
@@ -51,6 +50,7 @@ pub(crate) struct Pool {
     pub(super) slots: Arc<Semaphore>,
     pub(super) capacity: AtomicU32,
     pub(super) instances: u32,
+    pub(super) worker_lifetime: Duration,
     pub(super) port_token: String,
     pub(super) started_up: AtomicBool,
     pub(super) primary_up: AtomicBool,
@@ -209,7 +209,7 @@ impl Pool {
                     && worth_dropping(
                         parked.running || parked.programs.any_running(),
                         now.saturating_duration_since(parked.since),
-                        parked.instance.memory_bytes(),
+                        self.worker_lifetime,
                     )
             });
             *idle = kept;
@@ -268,11 +268,8 @@ pub(super) async fn tick_forever(pool: Arc<Pool>) {
     every.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     while !pool.slots.is_closed() {
         every.tick().await;
-        if !pool.awake.load(Ordering::Relaxed) {
-            pool.reclaim(Instant::now());
-            continue;
-        }
-        if pool.slots.available_permits() == 0 {
+        pool.reclaim(Instant::now());
+        if !pool.awake.load(Ordering::Relaxed) || pool.slots.available_permits() == 0 {
             continue;
         }
         with_a_slot(&pool, Pool::tick).await;
