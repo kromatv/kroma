@@ -159,6 +159,7 @@ describe('productVersion', () => {
 describe('collectBuildInfo', { timeout: 30_000 }, () => {
   afterEach(() => {
     delete process.env.KROMA_BUILD_DIRTY;
+    delete process.env.KROMA_BUILD;
   });
 
   it('reports the commit, branch and remote of a real checkout', () => {
@@ -204,6 +205,22 @@ describe('collectBuildInfo', { timeout: 30_000 }, () => {
     process.env.KROMA_BUILD_DIRTY = 'yes';
 
     expect(collectBuildInfo(dir).dirty).toBe(true);
+  });
+
+  it('carries the build number CI stamped', () => {
+    process.env.KROMA_BUILD = '3488516';
+
+    expect(collectBuildInfo(project()).build).toBe(3488516);
+  });
+
+  it('reports no build number for a local build', () => {
+    expect(collectBuildInfo(project()).build).toBeNull();
+  });
+
+  it.each(['0', 'abc', '-4', '1.5'])('reports no build number for a stamp of %s', (stamped) => {
+    process.env.KROMA_BUILD = stamped;
+
+    expect(collectBuildInfo(project()).build).toBeNull();
   });
 
   it('DEGRADES to null outside a checkout', () => {

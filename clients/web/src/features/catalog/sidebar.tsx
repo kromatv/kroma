@@ -5,7 +5,8 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { CATALOG_NAV } from '#web/features/catalog/catalog-nav';
-import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
+import { UserChip } from '#web/features/catalog/sidebar-account';
+import { SidebarVersion } from '#web/features/catalog/sidebar-version';
 import {
   ServerUpdateIndicator,
   ServerUpdateNotice,
@@ -122,8 +123,8 @@ function SidebarNav() {
         </SideNav.Group>
         <Box style={s.accountArea}>
           <UserChip />
-          <Box px={10} pt={6}>
-            <VersionInfo />
+          <Box px={4} pt={6}>
+            <SidebarVersion />
           </Box>
         </Box>
       </SideNav.Footer>

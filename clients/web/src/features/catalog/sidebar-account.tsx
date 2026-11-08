@@ -1,10 +1,7 @@
-import { useWebRuntime } from '#web/shared/lib/web-runtime';
-// The sidebar's footer: who is signed in, and what this build is.
+// The sidebar's footer: who is signed in.
 
-import buildInfo from 'virtual:build-info';
 import { useT } from '@kromatv/ui';
-import { Box, classes, Menu, type MenuTriggerBind, styles, Text, useStyles } from '@kromatv/ui/kit';
-import { useQuery } from '@tanstack/react-query';
+import { Box, Menu, type MenuTriggerBind, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useRouterState } from '@tanstack/react-router';
 import { type Ref, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
@@ -20,8 +17,6 @@ import { UserAvatar } from '#web/shared/ui/user-avatar';
 // square. The gap above is a margin for the same reason, so the box the outline
 // traces is the box the eye sees.
 const sDefinition = styles({
-  tabular: { fontVariant: ['tabular-nums'] },
-  versionTooltip: { display: 'flex', minWidth: 0 },
   noCaps: { textTransform: 'none' },
   chipButton: {
     display: 'block',
@@ -40,38 +35,6 @@ const sDefinition = styles({
     cursor: 'pointer',
   },
 });
-
-/** Client version + commit come from the build-time `virtual:build-info`
- *  module; the server version is the public `/api/health` endpoint. */
-export function VersionInfo() {
-  const webRuntime = useWebRuntime();
-
-  const s = useStyles(sDefinition);
-
-  const t = useT();
-  const { data: health } = useQuery(webRuntime.queries.serverQueries.health());
-  const clientTitle = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''} · ${buildInfo.branch} · ${buildInfo.buildDate}`;
-  const serverVersion = health ? `v${health.version}` : '…';
-  return (
-    <Box row align="center" gap={6} px={2}>
-      <Box flex minW={0}>
-        <span title={clientTitle} className={classes(s.versionTooltip)}>
-          <Text variant="meta" color="textDim" lines={1} style={s.tabular}>
-            {`${t('nav.versionClient')} v${buildInfo.version}`}
-          </Text>
-        </span>
-      </Box>
-      <Text variant="meta" color="textDim" opacity={0.4}>
-        ·
-      </Text>
-      <Box flex minW={0}>
-        <Text variant="meta" color="textDim" lines={1} textAlign="right" style={s.tabular}>
-          {`${t('nav.versionServer')} ${serverVersion}`}
-        </Text>
-      </Box>
-    </Box>
-  );
-}
 
 /** The signed-in profile, and the account menu it opens. */
 export function UserChip() {

@@ -2,6 +2,7 @@
 declare module 'virtual:build-info' {
   export interface BuildInfo {
     version: string;
+    build: number | null;
     commit: string;
     commitFull: string;
     branch: string;
@@ -12,6 +13,7 @@ declare module 'virtual:build-info' {
   const buildInfo: BuildInfo;
   export default buildInfo;
   export const version: string;
+  export const build: number | null;
   export const commit: string;
   export const commitFull: string;
   export const branch: string;

@@ -408,7 +408,7 @@ as `ffprobe` for media metadata. With no key set, the `/metadata` routes return
 ```bash
 # Health is public. `name` comes back for a LAN caller only.
 curl -s http://localhost:4040/api/health
-# {"status":"ok","name":"Salon","instanceId":"…","version":"0.1.39","ffprobe":true,"libraries":2,"items":10,"shows":2}
+# {"status":"ok","name":"Salon","instanceId":"…","version":"0.1.39","build":3488516,"commit":"1fadb4f","ffprobe":true,"libraries":2,"items":10,"shows":2}
 
 # Everything below needs a session token.
 AUTH=(-H "Authorization: Bearer $TOKEN")

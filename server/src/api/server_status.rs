@@ -46,8 +46,10 @@ pub async fn health(
         &ip,
         &crate::services::settings::local_networks(&state.settings),
     );
+    let build = crate::services::settings::build_info();
     Ok(Json(super::dto::Health {
-        build: crate::services::settings::build_info().number,
+        build: build.number,
+        commit: build.commit,
         boot_id: kroma_engine::boot_id(),
         active_streams: is_lan.then(|| state.playback.list().len()),
         auto_install_updates: is_lan.then(|| crate::services::updates::auto_install(&state)),

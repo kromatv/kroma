@@ -172,6 +172,8 @@ export const Health = z.object({
   instanceId: z.string().optional(),
   bootId: z.string().optional(),
   version: z.string(),
+  build: z.number().optional(),
+  commit: z.string().optional(),
   ffprobe: z.boolean(),
   libraries: z.number(),
   items: z.number(),

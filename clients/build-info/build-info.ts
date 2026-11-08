@@ -13,10 +13,13 @@ import path from 'node:path';
  * Every git-derived field is nullable: a build made outside a checkout still
  * ships, it just has less to say. `KROMA_GIT_HASH`, `KROMA_GIT_HASH_FULL`,
  * `KROMA_GIT_BRANCH` and `KROMA_GIT_REMOTE` win over git when set, for a build
- * that has no `.git` to ask, such as `server/Dockerfile`.
+ * that has no `.git` to ask, such as `server/Dockerfile`. `build` is
+ * `KROMA_BUILD`, the build number the CI run stamped on what it shipped, and
+ * `null` for a build CI did not stamp.
  */
 export interface BuildInfo {
   version: string;
+  build: number | null;
   commit: string | null;
   commitFull: string | null;
   branch: string | null;
@@ -94,6 +97,11 @@ function repoRootOf(projectRoot: string): string {
   return path.resolve(projectRoot, '..', '..');
 }
 
+function ciBuild(): number | null {
+  const parsed = Number(declared('KROMA_BUILD'));
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 /**
  * Whether the tree the binary was built from differs from its commit.
  *
@@ -122,6 +130,7 @@ export function collectBuildInfo(
       productVersion(repoRootOf(projectRoot)) ??
       packageVersion(projectRoot) ??
       '0.0.0',
+    build: ciBuild(),
     commit: declared('KROMA_GIT_HASH') ?? git('rev-parse --short HEAD', projectRoot),
     commitFull: declared('KROMA_GIT_HASH_FULL') ?? git('rev-parse HEAD', projectRoot),
     branch: declared('KROMA_GIT_BRANCH') ?? git('rev-parse --abbrev-ref HEAD', projectRoot),

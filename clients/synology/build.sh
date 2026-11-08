@@ -69,7 +69,7 @@ sha256() { if command -v shasum >/dev/null; then shasum -a 256 "$@"; else sha256
 
 if [[ "${SKIP_WEB:-}" != "1" ]]; then
   say "Building web SPA"
-  ( cd "$ROOT" && bun run build:web )
+  ( cd "$ROOT" && KROMA_VERSION="$VERSION" KROMA_BUILD="$BUILD" bun run build:web )
 fi
 [[ -f "$ROOT/clients/web/dist/client/_shell.html" ]] || { echo "web build missing (_shell.html)"; exit 1; }
 
