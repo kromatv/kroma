@@ -1,6 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import { normalizeServerUrl as norm, type SavedServer } from '@kromatv/client/accounts';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import { discoverServer } from '@kromatv/core';
 import { useAccountStorage } from '@kromatv/ui';
 import { useDeviceStore } from '@kromatv/ui/device-store';
@@ -84,7 +84,7 @@ export function useCatalogue(
   // still exchanging its token makes a request.
   const [signedIn, setSignedIn] = useState(false);
   const [status, setStatus] = useState<Status>(activeServerUrl ? 'connecting' : 'discovering');
-  const [movies, setMovies] = useState<MediaItem[]>([]);
+  const [movies, setMovies] = useState<MediaCard[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
   const [error, setError] = useState('');
   const [discovering, setDiscovering] = useState(servers.length === 0);
@@ -163,7 +163,7 @@ export function useCatalogue(
   // refetch below no "connecting" flicker, keep current data on a transient error).
   const fetchCatalogue = useCallback(
     (c: KromaClient, quiet = false): Promise<void> =>
-      Promise.all([c.media.movies(), c.media.shows()])
+      Promise.all([c.media.movieCards(), c.media.shows()])
         .then(([mvs, shs]) => {
           // A server switch mid-flight: the answer belongs to the server that has
           // just been left, so it must not become the catalogue on screen.

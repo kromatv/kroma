@@ -18,6 +18,9 @@ export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context: { runtime: webRuntime } }) => {
     if (isAuthed()) await webRuntime.ensureSession();
   },
+  loader: ({ context: { runtime: webRuntime, queryClient } }) => {
+    if (isAuthed()) void queryClient.prefetchQuery(webRuntime.queries.userQueries.notifications());
+  },
   component: AppLayout,
 });
 

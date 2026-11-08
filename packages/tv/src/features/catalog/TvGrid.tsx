@@ -1,4 +1,4 @@
-import type { MediaItem, Show, SubjectId } from '@kromatv/client/media';
+import type { MediaCard, Show, SubjectId } from '@kromatv/client/media';
 import { collectGenres, hasGenre, type SortMode, sortTitles } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
@@ -25,7 +25,7 @@ const LABEL_KEY: Record<'films' | 'series' | 'mylist', MessageKey> = {
   mylist: 'nav.myList',
 };
 
-function sectionList<T extends MediaItem | Show>(
+function sectionList<T extends MediaCard | Show>(
   items: T[],
   own: boolean,
   other: boolean,
@@ -76,7 +76,7 @@ export function TvGrid() {
   );
 
   const entries = useMemo<Entry[]>(() => {
-    const keep = (it: MediaItem | Show) => !genre || hasGenre(it, genre);
+    const keep = (it: MediaCard | Show) => !genre || hasGenre(it, genre);
     return [
       ...sortTitles(baseMovies.filter(keep), sort).map((m): Entry => ({ kind: 'movie', item: m })),
       ...sortTitles(baseShows.filter(keep), sort).map((s): Entry => ({ kind: 'show', item: s })),

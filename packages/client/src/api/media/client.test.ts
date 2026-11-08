@@ -42,6 +42,12 @@ describe('the media endpoints', () => {
       path: '/items/i%201/similar',
     },
     {
+      name: 'similarCards',
+      call: (c) => c.media.similarCards(spaced),
+      method: 'GET',
+      path: '/items/i%201/similar?view=card',
+    },
+    {
       name: 'themed',
       call: (c) => c.media.themed('christmas & co'),
       method: 'GET',

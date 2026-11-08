@@ -1,4 +1,4 @@
-import type { MediaItem, SectionItem, Show } from '@kromatv/client/media';
+import type { MediaItem, MediaCard as MovieCard, SectionItem, Show } from '@kromatv/client/media';
 import { episodeTag, genreLabels, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
@@ -24,8 +24,9 @@ import { useRecommend } from '#tv/app/providers/recommend';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
 import { useRootBack } from '#tv/app/useRootBack';
+import { usePlayTitle } from '#tv/features/catalog/full-item';
 import { computeHero, Hero } from '#tv/features/catalog/home/Hero';
-import { entryId } from '#tv/features/catalog/home/sectionEntry';
+import { entryId, type HomeEntry } from '#tv/features/catalog/home/sectionEntry';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
 const RAIL_LIMIT = 20;
@@ -81,12 +82,13 @@ export function TvHome() {
   useFocusNav({ onBack: titleMenu.onBack });
   const hold = titleMenu.open;
 
-  const onSelectMovie = useCallback((m: MediaItem) => go('movie', { item: m }), [go]);
+  const onSelectMovie = useCallback((m: MovieCard) => go('movie', { item: m }), [go]);
   const onSelectShow = useCallback((s: Show) => go('show', { show: s }), [go]);
   const onPlay = useCallback((m: MediaItem) => go('player', { item: m }), [go]);
+  const playTitle = usePlayTitle();
   // Open a recommendation entry: play page for movies, detail for shows.
   const onSelectEntry = useCallback(
-    (e: SectionItem) => (e.type === 'show' ? onSelectShow(e.show) : onSelectMovie(e.item)),
+    (e: HomeEntry) => (e.type === 'show' ? onSelectShow(e.show) : onSelectMovie(e.item)),
     [onSelectMovie, onSelectShow],
   );
 
@@ -245,7 +247,7 @@ export function TvHome() {
           <FocusSlot>
             <Hero
               info={heroInfo}
-              onPlay={onPlay}
+              onPlay={playTitle}
               onSelectShow={onSelectShow}
               onSelectEntry={onSelectEntry}
               maskInset={NAV_BOTTOM}

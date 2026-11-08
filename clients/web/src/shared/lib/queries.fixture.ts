@@ -12,7 +12,7 @@ const domains = {
     show: endpoint(),
     item: endpoint(),
     featured: endpoint(),
-    similar: endpoint(),
+    similarCards: endpoint(),
     people: endpoint(),
     person: endpoint(),
     home: endpoint(),

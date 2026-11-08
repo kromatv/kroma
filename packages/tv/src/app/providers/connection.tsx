@@ -1,7 +1,7 @@
 import type { KromaClient } from '@kromatv/client';
 import type { SavedServer } from '@kromatv/client/accounts';
 import type { Activity } from '@kromatv/client/admin';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import type { CompatVerdict } from '@kromatv/core';
 import { createContext, type ReactNode, useContext } from 'react';
 import type { DeepLink } from '#tv/shared/preview';
@@ -21,7 +21,7 @@ export interface Connection {
   serverVersion: string | null;
   compat: CompatVerdict;
   client: KromaClient | null;
-  movies: MediaItem[];
+  movies: MediaCard[];
   shows: Show[];
   activity: Activity | null;
   discovering: boolean;

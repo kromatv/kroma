@@ -29,3 +29,40 @@ async fn an_unknown_view_is_refused() {
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+fn ids(list: &serde_json::Value) -> Vec<&str> {
+    list.as_array()
+        .unwrap()
+        .iter()
+        .map(|entry| entry["id"].as_str().unwrap())
+        .collect()
+}
+
+#[tokio::test]
+async fn similar_titles_come_as_cards_when_asked() {
+    let t = test_app();
+    let (_, movies) = get(&t.app, "/api/movies", Some(&t.token)).await;
+    let seed = movies[0]["id"].as_str().unwrap();
+
+    let (status, cards) = get(
+        &t.app,
+        &format!("/api/items/{seed}/similar?view=card"),
+        Some(&t.token),
+    )
+    .await;
+    let (_, full) = get(
+        &t.app,
+        &format!("/api/items/{seed}/similar"),
+        Some(&t.token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(!ids(&cards).is_empty());
+    assert_eq!(ids(&cards), ids(&full));
+    for card in cards.as_array().unwrap() {
+        for gone in ["files", "subtitles", "audioTracks", "container"] {
+            assert!(card.get(gone).is_none(), "{gone} in {card}");
+        }
+    }
+}
