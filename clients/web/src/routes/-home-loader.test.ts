@@ -11,7 +11,7 @@ import { Route } from './_app.index';
 const media = {
   featured: vi.fn(),
   movieCards: vi.fn(async () => []),
-  shows: vi.fn(async () => []),
+  showCards: vi.fn(async () => []),
   artwork: { posterFor: () => '/poster', showPosterFor: () => '/poster', backdropFor: () => null },
   streamUrl: () => '/stream',
   subtitleUrl: () => '/subtitle',
@@ -53,7 +53,7 @@ it('starts the home rails alongside the featured pick', async () => {
 
   await load();
 
-  expect(media.shows).toHaveBeenCalledTimes(1);
+  expect(media.showCards).toHaveBeenCalledTimes(1);
   expect(requestedPaths()).toEqual(expect.arrayContaining(['/api/home', '/api/continue']));
 });
 
@@ -63,5 +63,5 @@ it('falls back to the catalogue when the server has no pick', async () => {
   await load();
 
   expect(media.movieCards).toHaveBeenCalledTimes(1);
-  expect(media.shows).toHaveBeenCalledTimes(1);
+  expect(media.showCards).toHaveBeenCalledTimes(1);
 });

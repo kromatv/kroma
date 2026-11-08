@@ -1,4 +1,4 @@
-import type { Section } from '@kromatv/client/media';
+import type { CardSection } from '@kromatv/client/media';
 import { genreLabels, metaLine, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Badge, Box, Button, classes, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
@@ -208,7 +208,7 @@ export const ShowPoster = memo(function ShowPoster({
   );
 });
 
-type SectionEntry = Section['items'][number];
+type SectionEntry = CardSection['items'][number];
 
 /** Same watched badge + show-progress affordances as the catalogue grids, so the
  * home rows and the "Suggestions IA" rail stay visually consistent with them. */

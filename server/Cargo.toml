@@ -58,6 +58,7 @@ tracing = "0.1"
 # 1.96 (edition2024 is stable since 1.85, which >= 0.3.37 needs).
 time = { version = "0.3", features = ["formatting", "macros"] }
 sha2 = "0.10"
+twox-hash = { version = "2", default-features = false, features = ["xxhash3_128"] }
 hex = "0.4"
 base64 = "0.23"
 # Embedded SQLite compiled from source. Shared by kroma-db + the binary.
@@ -211,6 +212,8 @@ rusqlite = { workspace = true }
 # download), walkdir + sysinfo (storage/stats endpoints).
 time = { workspace = true }
 hex = { workspace = true }
+# The weak ETag the catalogue listings answer with (api/etag.rs).
+twox-hash = { workspace = true }
 # A registry publishes checksums in Subresource-Integrity form (sha256-<base64>).
 base64 = { workspace = true }
 walkdir = { workspace = true }
