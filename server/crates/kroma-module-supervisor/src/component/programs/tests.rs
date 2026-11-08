@@ -3,7 +3,7 @@ use kroma_module_manifest::HelperAsset;
 
 use super::*;
 
-fn gateway() -> Gateway {
+pub(super) fn gateway() -> Gateway {
     Gateway {
         address: "127.0.0.1:9".to_string(),
         credential: "secret".to_string(),
