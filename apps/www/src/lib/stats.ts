@@ -11,7 +11,12 @@ export const Stats = z.object({
   // Optional, because the collector is deployed by hand and the site by CI: a
   // page that hard-required this would go blank for the window between them.
   reports: z
-    .object({ usage: z.number(), statistics: z.number(), sizes: z.number().optional() })
+    .object({
+      usage: z.number(),
+      statistics: z.number(),
+      sizes: z.number().optional(),
+      builds: z.number().optional(),
+    })
     .optional(),
   clients: z.object({
     tv: z.number(),
@@ -25,6 +30,7 @@ export const Stats = z.object({
   versions: Counted,
   platforms: Counted,
   installs: Counted,
+  builds: Counted.optional(),
   countries: Counted,
   locales: Counted,
   modules: Counted,

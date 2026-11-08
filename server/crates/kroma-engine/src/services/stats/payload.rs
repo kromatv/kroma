@@ -14,7 +14,7 @@ const ACTIVE_DAYS: i64 = 7;
 
 /// The payload's shape. Bumped whenever a field is added, removed or given a
 /// new meaning, in the same commit as `docs/anonymous-stats.md`.
-pub const SCHEMA: u32 = 3;
+pub const SCHEMA: u32 = 4;
 
 /// What one install says about itself. The base block is always there; a detail
 /// block is `None` when its switch is off, and `serde` leaves the key out
@@ -28,6 +28,8 @@ pub struct Payload {
     pub commit: String,
     pub target: String,
     pub install: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub build: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locales: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -54,6 +56,7 @@ pub fn build(state: &SharedState, id: String, prefs: Preferences) -> Result<Payl
         commit: build.commit,
         target: build.target,
         install: state.config.install.as_str(),
+        build: (build.number > 0).then_some(build.number),
         locales: prefs.usage.then(|| locales::spoken(&devices)),
         modules: prefs.usage.then(|| enabled_official(state)),
         clients: prefs.statistics.then(|| clients::tally(&devices)),
@@ -141,6 +144,17 @@ mod tests {
                 "the payload carries {forbidden}: {json}"
             );
         }
+    }
+
+    #[test]
+    fn a_build_made_outside_the_release_pipeline_sends_no_build_number() {
+        let state = test_state();
+
+        let payload = build(&state, "an-id".into(), EVERYTHING).unwrap();
+        let json = serde_json::to_string(&payload).unwrap();
+
+        assert_eq!(payload.build, None);
+        assert!(!json.contains("\"build\""), "{json}");
     }
 
     #[test]

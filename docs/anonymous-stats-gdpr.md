@@ -96,7 +96,7 @@ so the description here can be checked rather than believed.
 | Block | Category | Field | Why it is collected |
 |---|---|---|---|
 | Base | Pseudonymous identifier | `id` | To count servers once rather than once a day. 32 random bytes minted locally, not derived from hardware, not the identifier served on `/api/health`. |
-| Base | Software version | `version`, `commit` | To know when a release can stop being supported. |
+| Base | Software version | `version`, `commit`, `build` | To know when a release can stop being supported, and how recent the builds still running are. `build` is the release pipeline's build number and is absent on a server built from source. |
 | Base | Platform | `target`, `install` | To know which operating systems and packagings are still in use. Only the OS half of the build triple is stored. |
 | Base | Approximate location | derived country | A two-letter code Cloudflare derives at the edge from the connection. Never sent by the server, and the address it came from is not stored. |
 | What it runs | Language preference | `locales` | To know which languages to translate into. The set of tags devices asked for, never per-device and never counted. |
