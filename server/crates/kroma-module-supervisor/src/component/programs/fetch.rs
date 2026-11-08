@@ -23,7 +23,10 @@ pub(super) fn on_path(program: &str) -> Option<PathBuf> {
 }
 
 pub(super) fn sha256_of(path: &Path) -> std::io::Result<String> {
-    let mut file = std::fs::File::open(path)?;
+    sha256_reader(std::fs::File::open(path)?)
+}
+
+fn sha256_reader(mut file: impl Read) -> std::io::Result<String> {
     let mut digest = Sha256::new();
     let mut chunk = vec![0_u8; 1024 * 1024];
     loop {
@@ -35,11 +38,11 @@ pub(super) fn sha256_of(path: &Path) -> std::io::Result<String> {
     }
 }
 
-fn matches_pin(path: &Path, asset: &HelperAsset) -> bool {
-    path.is_file() && sha256_of(path).is_ok_and(|actual| actual == asset.sha256)
-}
-
-fn take_member(archive: &Path, member: &str, destination: &Path) -> Result<(), String> {
+fn read_member<T>(
+    archive: &Path,
+    member: &str,
+    read: impl FnOnce(&mut dyn Read) -> std::io::Result<T>,
+) -> Result<T, String> {
     let file = std::fs::File::open(archive).map_err(|error| error.to_string())?;
     let mut entries = tar::Archive::new(flate2::read::GzDecoder::new(file));
     let found = entries.entries().map_err(|error| error.to_string())?;
@@ -51,9 +54,7 @@ fn take_member(archive: &Path, member: &str, destination: &Path) -> Result<(), S
             .and_then(|path| path.file_name().map(|name| name == member))
             .unwrap_or(false);
         if is_it {
-            let mut out = std::fs::File::create(destination).map_err(|error| error.to_string())?;
-            std::io::copy(&mut entry, &mut out).map_err(|error| error.to_string())?;
-            return Ok(());
+            return read(&mut entry).map_err(|error| error.to_string());
         }
     }
     Err(format!("the archive holds no {member}"))
@@ -65,14 +66,30 @@ pub(super) fn make_executable(path: &Path) -> std::io::Result<()> {
 }
 
 impl Programs {
+    fn beside(&self, program: &str, suffix: &str) -> PathBuf {
+        self.helpers_dir.join(format!("{program}.{suffix}"))
+    }
+
+    fn matches_pin(&self, program: &str, asset: &HelperAsset) -> bool {
+        let Ok(actual) = sha256_of(&self.helpers_dir.join(program)) else {
+            return false;
+        };
+        let Some(member) = &asset.member else {
+            return actual == asset.sha256;
+        };
+        let archive = self.beside(program, "archive");
+        sha256_of(&archive).is_ok_and(|pinned| pinned == asset.sha256)
+            && read_member(&archive, member, |entry| sha256_reader(entry)).is_ok_and(|unpacked| unpacked == actual)
+    }
+
     pub(super) fn fetch_helper(&self, program: &str, asset: &HelperAsset) -> Result<PathBuf, String> {
         let destination = self.helpers_dir.join(program);
         let _one_at_a_time = self.fetching.lock().unwrap_or_else(PoisonError::into_inner);
-        if matches_pin(&destination, asset) {
+        if self.matches_pin(program, asset) {
             return Ok(destination);
         }
         std::fs::create_dir_all(&self.helpers_dir).map_err(|error| error.to_string())?;
-        let download = self.helpers_dir.join(format!("{program}.download"));
+        let download = self.beside(program, "download");
         let username = Gateway::username(DOWNLOAD_PURPOSE, false, false);
         let response = Fetch::new()
             .purpose(DOWNLOAD_PURPOSE)
@@ -80,19 +97,40 @@ impl Programs {
             .carry_download(&self.gateway, &username, &asset.url, &download)
             .map_err(|error| format!("download {program}: {error:#}"))?;
         response.ensure_ok().map_err(|error| format!("download {program}: {error:#}"))?;
-        let actual = sha256_of(&download).map_err(|error| error.to_string())?;
-        if actual != asset.sha256 {
-            let _ = std::fs::remove_file(&download);
+        self.install(program, asset)
+    }
+
+    fn install(&self, program: &str, asset: &HelperAsset) -> Result<PathBuf, String> {
+        let installed = self.take_download(program, asset);
+        if installed.is_err() {
+            let _ = std::fs::remove_file(self.beside(program, "download"));
+            let _ = std::fs::remove_file(self.beside(program, "unpacked"));
+        }
+        installed
+    }
+
+    fn take_download(&self, program: &str, asset: &HelperAsset) -> Result<PathBuf, String> {
+        let destination = self.helpers_dir.join(program);
+        let download = self.beside(program, "download");
+        if sha256_of(&download).map_err(|error| error.to_string())? != asset.sha256 {
             return Err(format!("{program} does not match its pinned sha256"));
         }
-        match &asset.member {
+        let binary = match &asset.member {
             Some(member) => {
-                take_member(&download, member, &destination)?;
-                let _ = std::fs::remove_file(&download);
+                let unpacked = self.beside(program, "unpacked");
+                read_member(&download, member, |entry| {
+                    std::io::copy(entry, &mut std::fs::File::create(&unpacked)?)
+                })?;
+                std::fs::rename(&download, self.beside(program, "archive")).map_err(|error| error.to_string())?;
+                unpacked
             }
-            None => std::fs::rename(&download, &destination).map_err(|error| error.to_string())?,
-        }
-        make_executable(&destination).map_err(|error| error.to_string())?;
+            None => {
+                let _ = std::fs::remove_file(self.beside(program, "archive"));
+                download
+            }
+        };
+        make_executable(&binary).map_err(|error| error.to_string())?;
+        std::fs::rename(&binary, &destination).map_err(|error| error.to_string())?;
         Ok(destination)
     }
 
@@ -115,7 +153,7 @@ impl Programs {
         if !destination.is_file() {
             return Err(format!("{program} has not been fetched yet"));
         }
-        if !matches_pin(&destination, asset) {
+        if !self.matches_pin(program, asset) {
             tracing::warn!(module = %self.module, program, "a helper no longer matches its pinned sha256 and was not started");
             return Err(format!(
                 "{program} no longer matches the sha256 its manifest pins, so it was not started; ensuring it fetches the pinned build again"
@@ -124,3 +162,6 @@ impl Programs {
         Ok(destination)
     }
 }
+
+#[cfg(test)]
+mod tests;

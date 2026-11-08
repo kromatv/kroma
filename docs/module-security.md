@@ -252,7 +252,9 @@ first-party module: a third-party module never starts one. A program pinned unde
 the module's. The file is hashed against the
 manifest's `sha256` again before every start, so a binary changed after the fetch
 does not run: starting refuses it, and `ensure` fetches the pinned build again.
-Only `ensure` downloads; starting never does. An argument holding
+A binary taken from a `.tar.gz` keeps its archive beside it, since the pin names
+the archive: starting hashes the archive against the pin and the binary against
+the `member` inside it. Only `ensure` downloads; starting never does. An argument holding
 `{gateway:<purpose>}` becomes a SOCKS5 URL to the module's gateway, with a token
 the component never sees. A program starts from the environment allowlist, plus
 what `KROMA_MODULE_ENV` names. Its children stop with the module, and what a
