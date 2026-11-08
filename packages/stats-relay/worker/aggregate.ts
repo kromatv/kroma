@@ -3,6 +3,7 @@
 // Nothing here reads a row out to a caller: every number below is a count over
 // installs, never an install.
 
+import { buildAges } from './build-age';
 import type { DailyRow, InstanceRow } from './store';
 
 const DAY = 86_400;
@@ -41,6 +42,7 @@ export interface Reports {
   usage: number;
   statistics: number;
   sizes: number;
+  builds: number;
 }
 
 /** Accounts and titles summed over the installs that report a size, or null
@@ -67,6 +69,7 @@ interface Aggregate {
   versions: Counted[];
   platforms: Counted[];
   installs: Counted[];
+  builds: Counted[];
   countries: Counted[];
   locales: Counted[];
   modules: Counted[];
@@ -160,6 +163,7 @@ function sizes(rows: InstanceRow[]): Sizes | null {
 export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number): Aggregate {
   const live = counted(rows, now);
   const placed = live.flatMap((row) => (row.country ? [row.country] : []));
+  const builds = live.flatMap((row) => (row.build === undefined ? [] : [row.build]));
   const clients = live.reduce(
     (total, row) => ({
       tv: total.tv + (row.clients?.tv ?? 0),
@@ -175,6 +179,7 @@ export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number)
       usage: live.filter((row) => row.modules !== undefined || row.locales !== undefined).length,
       statistics: live.filter((row) => row.clients !== undefined).length,
       sizes: live.filter((row) => row.users !== undefined && row.titles !== undefined).length,
+      builds: builds.length,
     },
     clients: { ...clients, total: clients.tv + clients.mobile + clients.desktop },
     sizes: sizes(live),
@@ -182,6 +187,7 @@ export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number)
     versions: ranked(tally(live.map((row) => row.version))),
     platforms: ranked(tally(live.map((row) => platform(row.target)))),
     installs: ranked(tally(live.map((row) => row.install))),
+    builds: buildAges(builds, now),
     countries: ranked(tally(placed)),
     locales: ranked(tally(live.flatMap((row) => unique(row.locales ?? [])))),
     modules: ranked(tally(live.flatMap((row) => unique(row.modules ?? [])))),

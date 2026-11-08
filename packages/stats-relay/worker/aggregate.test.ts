@@ -204,6 +204,19 @@ describe('aggregate', () => {
     expect(result.sizes).toBeNull();
   });
 
+  it('bands the builds of the servers that report one, over how many do', () => {
+    const rows = [
+      settled({ id: 'source', build: 0 }),
+      settled({ id: 'older-shape' }),
+      settled({ id: 'gone', build: 0, lastSeen: NOW - (ACTIVE_DAYS + 1) * DAY }),
+    ];
+
+    const result = aggregate(rows, [], NOW);
+
+    expect(result.builds).toEqual([{ key: 'source', n: 1 }]);
+    expect(result.reports.builds).toBe(1);
+  });
+
   it('passes the recorded history through and stamps when it answered', () => {
     const history = [{ day: '2026-08-25', instances: 3, clients: 9, users: 4, titles: 120 }];
 

@@ -35,12 +35,13 @@ One JSON body, once a day. This is all of it:
 
 ```json
 {
-  "schema": 3,
+  "schema": 4,
   "id": "9f2c…",
   "version": "1.4.2",
   "commit": "cafed00d",
   "target": "aarch64-apple-darwin",
   "install": "docker",
+  "build": 3488516,
   "locales": ["de-de", "fr-ch"],
   "modules": ["tv.kroma.torrents"],
   "clients": { "tv": 2, "mobile": 1, "desktop": 3 },
@@ -56,6 +57,7 @@ One JSON body, once a day. This is all of it:
 | `schema` | The payload's shape. The collector is taught a new one rather than swapped onto it, so a server that has not updated keeps counting. |
 | `id` | 32 random bytes this server minted for itself on the first start after this shipped. Not derived from any hardware, not the `instanceId` on `/api/health`, and never joined to an address. |
 | `version`, `commit` | Which build is running, so a version can be retired once nobody runs it. |
+| `build` | The release pipeline's build number, minutes since 2020, the one a canary file is named after. Absent on a server built from source. Published only as how old the builds are, in bands. |
 | `target` | The build triple. The collector keeps only the operating system half of it. |
 | `install` | `docker`, `synology`, `binary` or `unknown`, from `KROMA_INSTALL`. The Docker images and the Synology package set their own; nothing sets `binary`, so an operator running the built server directly sets it by hand or is counted as `unknown`. |
 
@@ -73,9 +75,9 @@ One JSON body, once a day. This is all of it:
 | `clients` | Devices that used this server in the last 7 days, by kind, each capped at 50. |
 | `users`, `titles` | How many accounts this server has, and how many films and shows are in its library. Numbers only: no account and no title is named, and neither number is ever published against one install. |
 
-A server still on the previous shape keeps counting. It sized itself in bands,
-and a band is not read back as a number, so it has no size at the collector
-until it updates.
+A server still on an older shape keeps counting. One on schema 3 has no build
+age until it updates. One on schema 2 sized itself in bands, and a band is not
+read back as a number, so it has no size at the collector either.
 
 ## What is never sent
 
