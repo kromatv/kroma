@@ -112,12 +112,16 @@ describe('the downloads heading band', () => {
     expect(within(speed).queryByRole('button')).toBeNull();
   });
 
-  it('drops the columns the narrow shell has no room for, header and all', () => {
+  it('keeps every column on a narrow shell, header and all', () => {
     pinDesignWidth(480);
     render(<Queue />);
 
     expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
       RELEASE,
+      'downloads.colProgress',
+      'downloads.colSpeed',
+      'downloads.colStatus',
+      ADDED,
       '',
     ]);
   });
