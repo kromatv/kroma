@@ -80,8 +80,8 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
       }
       return Promise.resolve();
     },
-    record(day, instances, clients) {
-      days.set(day, { day, instances, clients });
+    record(entry) {
+      days.set(entry.day, { ...entry });
       return Promise.resolve();
     },
     prune(before) {

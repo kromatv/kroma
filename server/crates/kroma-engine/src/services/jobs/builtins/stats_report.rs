@@ -25,6 +25,9 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     match stats::run(&ctx.state)? {
         Report::NotYet => (),
         Report::Off => ctx.info("anonymous statistics are off; nothing was sent"),
+        Report::DevBuild => ctx.info(
+            "a development build reports only to KROMA_STATS_URL, which is unset; nothing was sent",
+        ),
         Report::Deferred(status) => ctx.info(format!(
             "the statistics endpoint answered {status}; the next run is the retry"
         )),

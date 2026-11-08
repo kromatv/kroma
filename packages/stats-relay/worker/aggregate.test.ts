@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ACTIVE_DAYS, aggregate, counted, ranked, SETTLE_DAYS, SIZE_REPORTERS } from './aggregate';
+import {
+  ACTIVE_DAYS,
+  aggregate,
+  counted,
+  ranked,
+  REPORTING_DAYS,
+  SETTLE_DAYS,
+  SIZE_REPORTERS,
+} from './aggregate';
 import { row } from './test-support';
 
 const DAY = 86_400;
@@ -30,6 +38,45 @@ describe('counted', () => {
     ];
 
     expect(counted(rows, NOW).map((r) => r.id)).toEqual(['old']);
+  });
+
+  it('leaves out an install that went quiet before it had reported for the settling window', () => {
+    const rows = [
+      settled({ id: 'kept' }),
+      settled({ id: 'once', firstSeen: NOW - 10 * DAY, lastSeen: NOW - 10 * DAY }),
+      settled({
+        id: 'a-few-days',
+        firstSeen: NOW - 20 * DAY,
+        lastSeen: NOW - (20 - SETTLE_DAYS + 1) * DAY,
+      }),
+    ];
+
+    expect(counted(rows, NOW).map((r) => r.id)).toEqual(['kept']);
+  });
+
+  it('counts an install whose reports span the settling window however few they are', () => {
+    const rows = [settled({ id: 'weekly', firstSeen: NOW - SETTLE_DAYS * DAY, lastSeen: NOW })];
+
+    expect(counted(rows, NOW).map((r) => r.id)).toEqual(['weekly']);
+  });
+
+  it('publishes how many installs in their first week are still reporting', () => {
+    const rows = [
+      settled({ id: 'counted' }),
+      settled({ id: 'new', firstSeen: NOW - 3 * DAY, lastSeen: NOW - DAY }),
+      settled({ id: 'today', firstSeen: NOW, lastSeen: NOW }),
+      settled({
+        id: 'trial',
+        firstSeen: NOW - (REPORTING_DAYS + 1) * DAY,
+        lastSeen: NOW - (REPORTING_DAYS + 1) * DAY,
+      }),
+      settled({ id: 'fleet', firstSeen: NOW - DAY, lastSeen: NOW, flagged: true }),
+    ];
+
+    const result = aggregate(rows, [], NOW);
+
+    expect(result.instances).toBe(1);
+    expect(result.settling).toBe(2);
   });
 
   it('leaves out a row the nightly sweep flagged', () => {
@@ -158,7 +205,7 @@ describe('aggregate', () => {
   });
 
   it('passes the recorded history through and stamps when it answered', () => {
-    const history = [{ day: '2026-08-25', instances: 3, clients: 9 }];
+    const history = [{ day: '2026-08-25', instances: 3, clients: 9, users: 4, titles: 120 }];
 
     const result = aggregate([], history, NOW);
 

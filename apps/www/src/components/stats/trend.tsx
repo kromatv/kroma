@@ -8,7 +8,8 @@ export interface TrendSeries {
   label: string;
   /** Read after the value: `12 servers`. */
   unit: string;
-  values: readonly number[];
+  /** One per day; `null` where the day has no published value, and the line breaks there. */
+  values: readonly (number | null)[];
 }
 
 export interface TrendProps {
@@ -22,6 +23,22 @@ const WIDTH = 720;
 const HEIGHT = 240;
 const PAD = { top: 20, right: 20, bottom: 30, left: 44 };
 const PLOT = { w: WIDTH - PAD.left - PAD.right, h: HEIGHT - PAD.top - PAD.bottom };
+const HIDDEN = '-';
+
+function runs(values: readonly (number | null)[]): number[][] {
+  const out: number[][] = [];
+  let run: number[] = [];
+  values.forEach((value, i) => {
+    if (value !== null) {
+      run.push(i);
+      return;
+    }
+    if (run.length > 0) out.push(run);
+    run = [];
+  });
+  if (run.length > 0) out.push(run);
+  return out;
+}
 
 export function Trend({ days, series, empty }: Readonly<TrendProps>) {
   const lang = getLocale();
@@ -34,15 +51,21 @@ export function Trend({ days, series, empty }: Readonly<TrendProps>) {
 
   const { values } = current;
   const last = values.length - 1;
-  const { top, lines } = scaleFor(values.reduce((peak, v) => Math.max(peak, v), 0));
+  const { top, lines } = scaleFor(values.reduce<number>((peak, v) => Math.max(peak, v ?? 0), 0));
   const x = (i: number) => PAD.left + (i / last) * PLOT.w;
   const y = (v: number) => PAD.top + PLOT.h - (v / top) * PLOT.h;
-  const line = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(v)}`).join(' ');
   const floor = PAD.top + PLOT.h;
-  const area = `${line} L${x(last)},${floor} L${PAD.left},${floor} Z`;
+  const paths = runs(values).map((run) => {
+    const stroke = run.map((i, k) => `${k === 0 ? 'M' : 'L'}${x(i)},${y(values[i] ?? 0)}`);
+    const edge = `L${x(run.at(-1) ?? 0)},${floor} L${x(run[0] ?? 0)},${floor} Z`;
+    return { line: stroke.join(' '), area: `${stroke.join(' ')} ${edge}` };
+  });
+  const line = paths.map((path) => path.line).join(' ');
+  const area = paths.map((path) => path.area).join(' ');
   const shown = hovered ?? last;
   const shownDay = days[shown];
-  const shownValue = values[shown] ?? 0;
+  const shownValue = values[shown] ?? null;
+  const said = (v: number | null | undefined) => (v == null ? HIDDEN : v.toLocaleString(lang));
   const firstDay = days[0];
   const lastDay = days[last];
 
@@ -66,7 +89,7 @@ export function Trend({ days, series, empty }: Readonly<TrendProps>) {
         </div>
         <p className="text-right tabular-nums">
           <span className="font-display text-3xl font-extrabold leading-none text-text">
-            {shownValue.toLocaleString(lang)}
+            {said(shownValue)}
           </span>
           <span className="ml-2 text-sm text-muted">{current.unit}</span>
           <span className="mt-1 block text-xs text-dim">
@@ -78,7 +101,7 @@ export function Trend({ days, series, empty }: Readonly<TrendProps>) {
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="mt-6 w-full text-accent-wash"
         role="img"
-        aria-label={`${current.label}: ${firstDay} ${values[0]} ${current.unit}, ${lastDay} ${values[last]} ${current.unit}`}
+        aria-label={`${current.label}: ${firstDay} ${said(values[0])} ${current.unit}, ${lastDay} ${said(values[last])} ${current.unit}`}
         onPointerLeave={() => setHovered(null)}
         onPointerMove={(event) => {
           const box = event.currentTarget.getBoundingClientRect();
@@ -136,14 +159,16 @@ export function Trend({ days, series, empty }: Readonly<TrendProps>) {
             strokeDasharray="3 3"
           />
         )}
-        <circle
-          cx={x(shown)}
-          cy={y(shownValue)}
-          r="5.5"
-          fill="currentColor"
-          className="stroke-surface-1"
-          strokeWidth="2.5"
-        />
+        {shownValue !== null && (
+          <circle
+            cx={x(shown)}
+            cy={y(shownValue)}
+            r="5.5"
+            fill="currentColor"
+            className="stroke-surface-1"
+            strokeWidth="2.5"
+          />
+        )}
         <text x={PAD.left} y={HEIGHT - 8} className="fill-dim text-[11px]">
           {firstDay && formatDayShort(firstDay, lang)}
         </text>

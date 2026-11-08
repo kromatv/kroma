@@ -35,8 +35,8 @@ pub const SENT_KEY: &str = "stats.lastSentAt";
 // A constant rather than a setting, for the same reason the push relay's
 // address is one: it is the same address for every KROMA server, and letting an
 // operator point it at an arbitrary host would be a phishing route, not a
-// feature. A debug build honours `KROMA_STATS_URL` so the loop can be run
-// against a worker on this machine.
+// feature. A debug build reports only to `KROMA_STATS_URL`, a worker on this
+// machine, and nowhere when it is unset.
 const STATS_URL: &str = "https://stats.kroma.tv";
 
 /// What one run did. The job turns this into its log line, which is the only
@@ -44,6 +44,7 @@ const STATS_URL: &str = "https://stats.kroma.tv";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Report {
     Off,
+    DevBuild,
     NotYet,
     Sent(Box<Payload>),
     Deferred(u16),
@@ -59,12 +60,16 @@ enum Outcome {
 /// Send this install's heartbeat, or do nothing at all if the operator has
 /// switched it off.
 pub fn run(state: &SharedState) -> Result<Report> {
-    report(state, post)
+    let configured = std::env::var("KROMA_STATS_URL").ok();
+    let Some(url) = endpoint(cfg!(debug_assertions), configured) else {
+        return Ok(Report::DevBuild);
+    };
+    report(state, |payload| post(&url, payload))
 }
 
 fn report(
     state: &SharedState,
-    mut send: impl FnMut(&str, &Payload) -> Result<Outcome>,
+    mut send: impl FnMut(&Payload) -> Result<Outcome>,
 ) -> Result<Report> {
     let prefs = Preferences::read(&state.settings);
     if !prefs.base {
@@ -76,7 +81,7 @@ fn report(
         return Ok(Report::NotYet);
     }
     let payload = payload::build(state, id.clone(), prefs)?;
-    let outcome = send(&endpoint(), &payload)?;
+    let outcome = send(&payload)?;
     if let Outcome::Transient(status) = outcome {
         return Ok(Report::Deferred(status));
     }
@@ -141,22 +146,15 @@ fn post(url: &str, payload: &Payload) -> Result<Outcome> {
     Ok(Outcome::Refused(res.status))
 }
 
-fn endpoint() -> String {
-    let base = base_url();
-    format!("{}/v1/ping", base.trim_end_matches('/'))
-}
-
-#[cfg(debug_assertions)]
-fn base_url() -> String {
-    match std::env::var("KROMA_STATS_URL") {
-        Ok(url) if !url.trim().is_empty() => url.trim().to_string(),
-        _ => STATS_URL.to_string(),
-    }
-}
-
-#[cfg(not(debug_assertions))]
-fn base_url() -> String {
-    STATS_URL.to_string()
+fn endpoint(debug: bool, configured: Option<String>) -> Option<String> {
+    let base = if debug {
+        configured
+            .map(|url| url.trim().to_string())
+            .filter(|url| !url.is_empty())?
+    } else {
+        STATS_URL.to_string()
+    };
+    Some(format!("{}/v1/ping", base.trim_end_matches('/')))
 }
 
 #[cfg(test)]

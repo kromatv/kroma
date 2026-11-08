@@ -127,8 +127,18 @@ of the rights, is [`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
 
 ## How the published number is counted
 
-- A server counts once it has been reporting for **7 days**, so a fleet of fake
-  ids has to be maintained for a week before it moves anything.
+- A server counts once it has been reporting for **7 days**: its first and
+  latest reports have to be a week apart. A fleet of fake ids has to be
+  maintained for a week before it moves anything, and an install that reports
+  once and is gone, a trial run or a container started without a volume, never
+  counts.
+- A development build of the server sends nothing unless `KROMA_STATS_URL`
+  names a collector, so a dev checkout or a test run is never one of the servers.
+- Servers in their first week that are still reporting are published as one
+  count beside the total, so a new install shows before it counts.
+- The day-by-day history records servers, devices, accounts and titles. The
+  days written before the rule above was tightened, in November 2026, were
+  counted again under it, each server with what it reported last.
 - It stops counting **30 days** after its last report.
 - Every breakdown (a version, a platform, a country, a language, a module) is
   published from the first server that has it. A breakdown names software and
