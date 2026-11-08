@@ -91,6 +91,8 @@ pub struct Supervisor {
     gateway: gateway::Slot,
     #[cfg(unix)]
     wasm: std::sync::OnceLock<kroma_wasm_host::WasmHost>,
+    #[cfg(unix)]
+    worker_lifetime: RwLock<std::time::Duration>,
 }
 
 impl Supervisor {
@@ -111,6 +113,8 @@ impl Supervisor {
             gateway: gateway::Slot::new(),
             #[cfg(unix)]
             wasm: std::sync::OnceLock::new(),
+            #[cfg(unix)]
+            worker_lifetime: RwLock::new(component::WORKER_LIFETIME),
         });
         supervisor.keep_installs_apart();
         supervisor

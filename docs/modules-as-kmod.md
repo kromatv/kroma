@@ -53,6 +53,9 @@ processes, declared in the manifest. See
   scans `<data>/installed/*`, hashes each enabled module's `module.wasm` against
   the `sha256` recorded when it was installed, compiles it and keeps the machine
   code beside it at `<data>/installed/<id>/module.cwasm`, so a restart reuses it.
+  The machine code runs from that file mapped in place, so the kernel can drop
+  its pages instead of swapping them, and a new compile replaces the file by a
+  rename rather than writing into it.
   It serves the module on `modules/<id>/module.sock` under `<data>/run`, in a
   directory only the server's user can open, and `proxy_to` reverse-proxies a
   request there. The first instance is the primary, and it starts as soon as the

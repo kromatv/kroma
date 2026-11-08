@@ -43,6 +43,8 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     kroma_http::egress::require_gate();
+    #[cfg(target_os = "linux")]
+    boot::allocator::spawn_collector();
     let config = Config::from_env();
     // Held for the whole process so buffered log lines flush to disk.
     let log_guard = boot::tracing::init_tracing(&config.logs_dir());

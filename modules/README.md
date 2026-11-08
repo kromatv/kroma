@@ -512,8 +512,8 @@ call finds every instance busy.
   preference, not a promise. So a module that keeps state in memory declares one
   instance, and a module that declares more keeps everything a call must see in
   its database.
-- An idle worker that grew past 64 MiB is dropped after five minutes. The
-  primary is kept.
+- A worker is dropped once a minute has passed since its last call with
+  nothing left running in it. The primary is kept.
 
 A bundle built against an SDK from before this runs its whole startup itself, in
 every instance. The host runs one instance of it until it is rebuilt, and says
