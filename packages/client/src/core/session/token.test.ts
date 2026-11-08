@@ -84,3 +84,44 @@ it('coalesces within one owner and never shares an exchange across owners', asyn
   await expect(first).resolves.toEqual({ token: 'a', user: 'alice' });
   await expect(second).resolves.toEqual({ token: 'b', user: 'bob' });
 });
+
+describe('currentExchange', () => {
+  it('offers the settled answer while the bearer it minted is the one in use', async () => {
+    const scope = createSessionScope();
+
+    await scope.sharedTokenExchange(async () => ({ token: 'minted', user: 'ada' }));
+    scope.setSessionToken('minted');
+
+    expect(scope.currentExchange()).toEqual({ token: 'minted', user: 'ada' });
+  });
+
+  it('offers nothing once another bearer replaces the one it minted', async () => {
+    const scope = createSessionScope();
+    await scope.sharedTokenExchange(async () => ({ token: 'minted', user: 'ada' }));
+    scope.setSessionToken('minted');
+
+    scope.setSessionToken('replaced');
+    scope.setSessionToken('minted');
+
+    expect(scope.currentExchange()).toBeUndefined();
+  });
+
+  it('offers nothing before the settled bearer is adopted', async () => {
+    const scope = createSessionScope();
+
+    await scope.sharedTokenExchange(async () => ({ token: 'minted', user: 'ada' }));
+
+    expect(scope.currentExchange()).toBeUndefined();
+  });
+
+  it('leaves a refresh asking the server again', async () => {
+    const scope = createSessionScope();
+    const exchange = vi.fn(async () => ({ token: 'minted', user: 'ada' }));
+    await scope.sharedTokenExchange(exchange);
+    scope.setSessionToken('minted');
+
+    await scope.sharedTokenExchange(exchange);
+
+    expect(exchange).toHaveBeenCalledTimes(2);
+  });
+});
