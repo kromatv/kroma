@@ -1,5 +1,5 @@
 import { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import { collectGenres, type GenreCount, genreLabel } from '@kromatv/core';
 import {
   Box,
@@ -42,8 +42,8 @@ export function GenrePickerSheet({
     queryKey: ['genreCatalogue'],
     enabled: asked,
     staleTime: 10 * 60_000,
-    queryFn: async (): Promise<(MediaItem | Show)[]> => {
-      const [movies, shows] = await Promise.all([client.media.movies(), client.media.shows()]);
+    queryFn: async (): Promise<(MediaCard | Show)[]> => {
+      const [movies, shows] = await Promise.all([client.media.movieCards(), client.media.shows()]);
       return [...movies, ...shows];
     },
   });

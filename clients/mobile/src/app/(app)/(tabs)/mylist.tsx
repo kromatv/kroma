@@ -1,7 +1,7 @@
 // A my-list id can name a movie OR a show, so the ids are resolved against both
 // catalogues, in the order the server returned them (newest first).
 
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import { Box, Icon, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
@@ -26,11 +26,11 @@ export default function MyList() {
   const { cardW } = gridMetrics(width, gutters.left + gutters.right);
 
   const ids = useQuery(client.query.playback.myList());
-  const movies = useQuery(client.query.media.movies());
+  const movies = useQuery(client.query.media.movieCards());
   const shows = useQuery(client.query.media.shows());
 
   const cards: CardModel[] = useMemo(() => {
-    const movieById = new Map<string, MediaItem>((movies.data ?? []).map((m) => [m.id, m]));
+    const movieById = new Map<string, MediaCard>((movies.data ?? []).map((m) => [m.id, m]));
     const showById = new Map<string, Show>((shows.data ?? []).map((s) => [s.id, s]));
     const out: CardModel[] = [];
     for (const id of ids.data ?? []) {
