@@ -1,49 +1,82 @@
 ---
 title: "Welcome to KROMA"
 date: "2026-01-14"
-excerpt: "Why we collapsed six containers into a single Rust binary, and what that changes for your media library."
+excerpt: "Why KROMA is one server instead of six containers, and what you get the day you install it."
 author: "Maxime Scharwath"
 tags: ["Announcement", "Behind the scenes"]
 ---
 
-Standing up a self-hosted media library today means wiring together half a dozen
-services: an indexer, a tracker aggregator, a BitTorrent client, a VPN wrapper, a
-media server, a request interface. Six containers, six configuration files, six
-things that break, each in its own way, and never at the same time.
+Running your own media library today often looks like this: Jellyfin to watch,
+Sonarr and Radarr for shows and films, Prowlarr for indexers, qBittorrent to
+download, Gluetun for the VPN. Six containers, six configuration files, and six
+things that break, each in its own way, never at the same time.
 
-KROMA refuses the premise. None of that should be your problem.
+KROMA starts from a simple idea. All of that should fit in one app.
 
-## One server, written in Rust
+## One server
 
-A classic setup bolts together Sonarr, Radarr, Prowlarr, qBittorrent, Gluetun and
-Jellyfin. KROMA is one server, and it starts in a few milliseconds. The indexer,
-the download engine, the VPN bridge with its kill-switch and the player all run
-under it. You install the server once; everything past playback and catalog
-arrives as a module, not as another container to cable up.
+KROMA is one program, written in Rust. It installs with one command, starts in
+milliseconds and uses almost no CPU when nobody is watching.
 
-There is no transcoding farm to keep warm either. The server streams the original
-files by byte range, and each client decodes HEVC/H.265 itself, in hardware on
-Samsung and LG televisions. Your NAS stays at rest.
+```bash
+docker run -d -p 4040:4040 \
+  -e KROMA_MEDIA_DIRS=/media \
+  -v /volume1/video:/media \
+  -v kroma-data:/data \
+  ghcr.io/kromatv/kroma:latest
+```
 
-## The same design, everywhere
+Point it at your film and show folders and it does the rest. It tells a film
+from an episode by its file name, groups episodes into seasons, and fetches
+posters and summaries by itself, with no API key to create.
 
-The other decision is visual. KROMA speaks one design language, deep charcoal and
-warm amber, two type families, no emoji, and holds it on the web, on mobile, and
-on the 10-foot experience driven by a remote in the living room.
+## The rest, as modules
 
-The components and the design tokens exist once, in a shared kit, and render
-natively on React Native as well as in the browser through react-native-web. A
-tile looks the same on an Apple TV and on a Samsung panel because it is *the same*
-tile.
+A fresh install is a media server and nothing more. You add the rest when you
+need it, in one click from the admin. Each tool from the usual stack has its
+counterpart:
 
-## Free, and built to be owned
+- Prowlarr becomes the Indexers module.
+- qBittorrent becomes the Torrent downloads module, or stays where it is if you
+  already run it.
+- Sonarr and Radarr become the Acquisition module. You ask for a title, and it
+  picks the best release, downloads it and files it.
+- Gluetun becomes the VPN module, a WireGuard tunnel that cuts all traffic if the
+  tunnel drops.
 
-KROMA is open source, under the AGPL-3.0 license. Your library and your activity
-never leave your network. There is no account to create, no subscription, no
-central service that could shut down.
+Some modules have no counterpart in the usual stack. Whisper writes subtitles on
+your own machine, and Embeddings adds rows picked for you to the home screen.
+
+A module runs inside the server, isolated, and reaches only what it declared,
+such as the network, some files or its own database. Each one ships on its own
+schedule, without waiting for a new server release.
+
+## Playing the file as it is
+
+Re-encoding a video on the fly keeps your NAS busy for the whole film. KROMA
+avoids it whenever it can. When the device can read the file, HDR and 10-bit
+included, the server sends it the original file, untouched. The TV or the phone
+decodes it with its own video chip.
+
+Re-encoding only happens when the device really cannot read the file, and it
+uses hardware acceleration when the machine has it.
+
+## The same KROMA on every screen
+
+Web, iPhone, iPad, Android, Samsung and LG TVs, Apple TV, Android TV, Mac,
+Windows, Linux, Steam Deck. Every one of these apps comes from the same code,
+with the same design: one charcoal grey, one amber, two typefaces, and no emoji.
+
+Several people can share one server, each with their own profile, a PIN if they
+want one, and the spot where they stopped. A TV on the same network shows up in
+the phone app and signs in with one tap.
+
+## Yours, for real
+
+KROMA is open source, under the AGPL. Your library and what you watch stay on
+your network. No account with us, no subscription, and no central service that
+could shut down one day and take your library with it.
 
 > Built to be owned, not rented.
 
-Later posts take the technical choices one at a time: the spatial focus engine
-for the remote, direct-play decoding, the WireGuard bridge, and how one UI kit
-serves six platforms.
+Everything you need to install it is on [the download page](/download).

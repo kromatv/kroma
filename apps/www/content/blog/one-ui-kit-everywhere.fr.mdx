@@ -1,54 +1,97 @@
 ---
-title: "Un seul kit d’interface, six plateformes"
+title: "Un seul kit d'interface pour tous les écrans"
 date: "2026-02-03"
-excerpt: "Comment le même composant s’affiche sur un Apple TV, sur une TV Samsung et dans un navigateur, sans jamais être réécrit."
+excerpt: "Comment la même affiche s'affiche sur une Apple TV, une TV Samsung et dans un navigateur à partir d'un seul fichier, et pourquoi le plus dur a été le focus."
 author: "Maxime Scharwath"
 tags: ["Design système", "Technique"]
 ---
 
-L’affiche d’un film est identique sur un Apple TV, sur une TV Samsung et dans
-votre navigateur. C’est un seul composant, pas trois qu’on garde synchronisés à
-la main.
+Ouvrez KROMA sur une Apple TV, sur une TV Samsung et dans votre navigateur.
+L'affiche d'un film a la même taille, les mêmes coins arrondis et la même lueur
+quand on la sélectionne. Ce ne sont pas trois composants qu'on garde
+synchronisés à la main. C'est un seul fichier.
 
-## Écrit une fois, pour React Native
+## Un composant, deux moteurs de rendu
 
-Le kit `@kromatv/ui` est écrit pour React Native. Sur Apple TV, Android TV, iPhone
-et Android, il s’affiche en natif. Sur le web, sur les TV Tizen et webOS, dans
-l’app desktop Tauri et dans le client web, il passe par react-native-web. Un
-fichier, deux moteurs de rendu.
+Tout le kit, `@kromatv/ui`, est écrit pour React Native. Sur les appareils qui
+font tourner React Native, c'est-à-dire Apple TV, Android TV, iPhone, iPad et
+Android, chaque composant devient un vrai élément natif du système.
 
-Les couleurs, la typo, les ombres et le focus sont définis une seule fois eux
-aussi, en TypeScript. Ce sont eux qui génèrent les variables CSS que lisent les
-cibles web :
+Ailleurs, il passe par react-native-web, une bibliothèque qui traduit les mêmes
+composants en HTML et en CSS. C'est le cas du site web, des TV LG, de l'app pour
+Mac, Windows et Linux, et des TV Samsung. Les Samsung de 2021 et après peuvent
+maintenant tourner en natif elles aussi, grâce à
+[react-native-tizen](/fr/blog/react-native-on-tizen).
+
+On écrit donc un composant une fois, et il a deux façons de s'afficher.
+
+## Les couleurs et les tailles, une seule fois
+
+Les couleurs, les polices, les espacements et les ombres sont définis une seule
+fois, en TypeScript :
 
 ```ts
-import { colors, type } from '@kromatv/ui/tokens';
+import { colors, typeSpec } from '@kromatv/ui/tokens';
 
-colors.accent; // #F4B642, le seul ambre du produit
-colors.bg;     // #0A0A0C, le gris charbon du fond
-type.hero;     // 66px / 700, Bricolage Grotesque
+colors.accent; // '#F4B642', l'ambre
+colors.bg;     // '#0A0A0C', le gris charbon du fond
+typeSpec.hero; // Bricolage Grotesque, 66 px, graisse 700
 ```
 
-Ce site ne définit aucune couleur à lui. Il importe le thème Tailwind v4 du kit,
-donc il s’affiche dans le même charbon et le même ambre que l’application.
+Les apps natives lisent ces valeurs directement. Pour les cibles web, la
+compilation les transforme en variables CSS. Il n'y a aucune feuille de style à
+recopier, donc rien qui puisse se désynchroniser.
 
-## Le focus, la seule vraie différence
+Ces valeurs sont volontairement de simples chaînes de caractères. Pas de
+`oklch()`, pas de `color-mix()`. La même valeur doit passer telle quelle dans une
+feuille de style React Native, dans une variable CSS et dans le navigateur d'une
+vieille TV LG qui tourne sous Chromium 53. Dès qu'une valeur demande un calcul,
+l'un des trois ne sait plus la lire.
 
-Entre une TV et un navigateur, ce qui change c’est la navigation, pas
-l’apparence. Une télécommande n’a pas de curseur.
+Les écrans TV sont dessinés sur une toile fixe de 1920 par 1080. Un nombre dans
+le code, c'est donc directement un pixel de la maquette, sans échelle à retenir.
 
-En natif, c’est l’OS qui gère les déplacements directionnels : UIFocusEngine sur
-tvOS, la résolution `nextFocus` sur Android TV. Le web n’a aucun moteur de focus,
-donc le déplacement est calculé géométriquement. L’élément focusable le plus
-proche dans la direction pressée gagne, et l’écart latéral est pénalisé pour
-qu’un voisin aligné passe devant un voisin décalé.
+Ce site, kroma.tv, importe les mêmes tokens. C'est pour ça qu'il a exactement le
+même ambre que l'app.
 
-Toute cette différence tient dans quelques fichiers `.web.ts`. Rien d’autre dans
-le kit ne sait qu’elle existe.
+## Le plus dur, c'est le focus
 
-## Ce que ça coûte, et ce que ça rapporte
+Sur une TV, il n'y a pas de souris. On se déplace avec les flèches de la
+télécommande, et à chaque appui, l'app doit décider quel élément s'allume
+ensuite. Quand on appuie sur droite depuis une affiche, il faut tomber sur sa
+voisine, pas sur un bouton à l'autre bout de l'écran.
 
-Écrire pour React Native coûte une étape de résolution dans chaque bundler, et un
-deuxième moteur de rendu à tester. En échange, changer l’affiche d’un film est un
-seul commit, et tous les écrans de KROMA l’ont le jour même. Six apps, un
-composant.
+Au début, on laissait faire le système. Apple TV et Android TV ont leur propre
+moteur de focus. Les TV qui passent par le navigateur n'en ont pas, alors on
+calculait nous-mêmes le voisin le plus proche dans la direction pressée. Deux
+moteurs, qui ont fini par ne plus se comporter pareil. Le même écran ne se
+parcourait pas de la même façon sur une Apple TV et sur une Samsung.
+
+On est alors passés à une bibliothèque de navigation commune à toutes les
+cibles. Elle a réglé ce problème et en a apporté d'autres. Quand une liste
+enregistrait deux fois le même élément, la bibliothèque plantait au milieu de
+l'enregistrement, et les éléments suivants n'existaient plus pour elle. À
+l'écran, ça donnait plusieurs affiches allumées en même temps.
+
+Alors on a écrit la nôtre, `@kromatv/spatial-nav`. On a commencé par les tests,
+qui décrivent comment le focus doit se déplacer, puis on a écrit le moteur pour
+qu'il les passe. Aujourd'hui, une Apple TV et une TV qui affiche KROMA dans son
+navigateur déplacent le focus avec exactement les mêmes règles.
+
+## Une règle : aucun cas particulier dans les composants
+
+Avec deux moteurs de rendu, on a vite envie d'écrire
+`if (Platform.OS === 'web')` un peu partout. On se l'interdit. Aucun composant ne
+teste la plateforme. Les différences vivent dans une seule couche, sous les
+composants, et une règle de lint refuse le code qui essaie quand même.
+
+Quand une plateforme se comporte autrement, on corrige cette couche, et tous les
+composants en profitent d'un coup.
+
+## Ce que ça coûte
+
+Chaque outil de compilation doit savoir remplacer React Native par
+react-native-web, et il faut tester deux moteurs de rendu au lieu d'un.
+
+En échange, changer l'affiche d'un film, c'est un seul commit. Chaque app l'a à
+sa prochaine version, la TV du salon comme le téléphone.
