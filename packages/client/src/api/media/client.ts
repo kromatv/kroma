@@ -4,6 +4,7 @@ import { artworkApi } from './artwork';
 import type { ItemId, LibraryId, ShowId } from './ids';
 import { rematchApi } from './rematch';
 import {
+  CardSection,
   Health,
   Library,
   MediaCard,
@@ -98,6 +99,14 @@ export default function mediaApi(ctx: RequestContext) {
     shows: (library?: LibraryId) =>
       ctx.get('/shows', Show.array(), { query: { library }, concurrency: 'share' }),
 
+    /** Every show as a list draws it: `shows()` without the cast and crew only a
+     * show's own page lists. */
+    showCards: (library?: LibraryId) =>
+      ctx.get('/shows', Show.array(), {
+        query: { library, view: 'card' },
+        concurrency: 'share',
+      }),
+
     /** One show with its seasons + episodes. */
     show: (id: ShowId) =>
       ctx.get('/shows/:id', ShowDetail, { params: { id }, concurrency: 'share' }),
@@ -119,6 +128,11 @@ export default function mediaApi(ctx: RequestContext) {
     /** The generated home screen (Bearer): an ordered, server-assembled list of
      * section rails already localized and de-duplicated. Rendered generically. */
     home: () => ctx.get('/home', Section.array(), { concurrency: 'share' }),
+
+    /** The same home with every entry slimmed to what a poster draws: a fraction
+     * of `home()`, for a client that opens a title's own page to show more. */
+    homeCards: () =>
+      ctx.get('/home', CardSection.array(), { query: { view: 'card' }, concurrency: 'share' }),
 
     /** Today's "En vedette" hero for the caller (Bearer): one movie or show
      * picked server-side with a deterministic daily rotation. `null` only when

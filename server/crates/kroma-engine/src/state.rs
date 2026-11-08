@@ -15,7 +15,7 @@ use crate::services::jobs::JobManager;
 use crate::services::pairing::{handoff, quickconnect, Handoff, QuickConnect};
 use crate::services::playback::Registry;
 use crate::services::search::SearchEngine;
-use crate::services::sections::VectorCache;
+use crate::services::sections::{HomeMemo, VectorCache};
 use crate::services::settings::Settings;
 use crate::services::subtitles::GenRegistry;
 use kroma_media::hls;
@@ -67,6 +67,7 @@ pub struct AppState {
     pub direct: crate::services::direct::Direct,
     pub search: Arc<SearchEngine>,
     pub vectors: Arc<VectorCache>,
+    pub home: HomeMemo,
     pub jobs: Arc<JobManager>,
     pub subtitle_gen: Arc<GenRegistry>,
     pub instance_id: String,
@@ -179,6 +180,7 @@ impl AppState {
             direct,
             search: Arc::new(SearchEngine::new().expect("init search index")),
             vectors: Arc::new(VectorCache::new()),
+            home: HomeMemo::default(),
             jobs: Arc::new(jobs),
             subtitle_gen: Arc::new(GenRegistry::default()),
             instance_id,

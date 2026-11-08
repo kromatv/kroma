@@ -16,6 +16,7 @@ mod diagnostics;
 mod direct;
 mod discover;
 mod downloads_overlay;
+mod etag;
 mod extract;
 mod handoff;
 mod home;
@@ -105,6 +106,8 @@ mod it_module_frontend;
 mod it_media_bearer;
 #[cfg(test)]
 mod it_media_ticket;
+#[cfg(test)]
+mod it_home;
 #[cfg(test)]
 mod it_movie_cards;
 #[cfg(test)]

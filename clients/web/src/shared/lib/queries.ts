@@ -49,7 +49,7 @@ export function createQueries(client: QueryClient) {
         queryKey: ['shows', 'view'] as const,
         queryFn: async (): Promise<ShowView[]> => {
           const c = client;
-          return (await c.media.shows()).map((s) => toShowView(c, s));
+          return (await c.media.showCards()).map((s) => toShowView(c, s));
         },
       }),
 
@@ -82,7 +82,7 @@ export function createQueries(client: QueryClient) {
         queryKey: [...client.query.media.show(id).queryKey, 'bundle'],
         queryFn: async (): Promise<ShowBundle> => {
           const c = client;
-          const [detail, shows] = await Promise.all([c.media.show(id), c.media.shows()]);
+          const [detail, shows] = await Promise.all([c.media.show(id), c.media.showCards()]);
           const show = detail.show;
           const tmdbId = show.metadata?.tmdbId ?? null;
           // The discover overlay (season availability + request state) is fetched
@@ -141,7 +141,7 @@ export function createQueries(client: QueryClient) {
 
   // Only mount once `ready && user`.
   const userQueries = {
-    home: () => client.query.media.home(),
+    home: () => client.query.media.homeCards(),
 
     continueWatching: () => client.query.playback.continueWatching(),
 

@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::{Kind, MediaItem, VideoStream};
+use super::{Kind, MediaItem, Show, VideoStream};
 use crate::metadata::Metadata;
 
 /// A title as a list draws it: what a grid sorts, filters and paints, without
@@ -15,19 +15,30 @@ pub struct MediaCard {
     pub duration_ms: Option<u64>,
     pub video: Option<VideoStream>,
     pub library: String,
+    #[serde(rename = "showId", skip_serializing_if = "Option::is_none")]
+    pub show_id: Option<String>,
     #[serde(rename = "addedAt")]
     pub added_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
 }
 
+fn without_credits(mut metadata: Metadata) -> Metadata {
+    metadata.cast.clear();
+    metadata.crew.clear();
+    metadata
+}
+
+/// A show as a list draws it (`GET /api/shows?view=card`): its own shape, without
+/// the cast and crew only its page lists.
+pub fn show_card(mut show: Show) -> Show {
+    show.metadata = show.metadata.map(without_credits);
+    show
+}
+
 impl From<MediaItem> for MediaCard {
     fn from(item: MediaItem) -> Self {
-        let metadata = item.metadata.map(|mut metadata| {
-            metadata.cast.clear();
-            metadata.crew.clear();
-            metadata
-        });
+        let metadata = item.metadata.map(without_credits);
         Self {
             id: item.id,
             title: item.title,
@@ -36,6 +47,7 @@ impl From<MediaItem> for MediaCard {
             duration_ms: item.duration_ms,
             video: item.video,
             library: item.library,
+            show_id: item.show_id,
             added_at: item.added_at,
             metadata,
         }
@@ -75,6 +87,34 @@ mod tests {
     }
 
     #[test]
+    fn a_show_card_keeps_its_shape_without_credits() {
+        let show: Show = serde_json::from_value(json!({
+            "id": "s1", "title": "Wire", "library": "lib", "seasonCount": 5,
+            "episodeCount": 60, "addedAt": "t",
+            "metadata": enriched_movie().metadata
+        }))
+        .unwrap();
+
+        let card = serde_json::to_value(show_card(show)).unwrap();
+
+        assert_eq!(card["seasonCount"], json!(5));
+        assert_eq!(card["metadata"]["genres"], json!(["Crime"]));
+        assert_eq!(card["metadata"].get("cast"), None);
+        assert_eq!(card["metadata"].get("crew"), None);
+    }
+
+    #[test]
+    fn an_episode_card_names_the_show_its_poster_opens() {
+        let mut item = enriched_movie();
+        item.kind = Kind::Episode;
+        item.show_id = Some("s1".into());
+
+        let card = serde_json::to_value(MediaCard::from(item)).unwrap();
+
+        assert_eq!(card["showId"], json!("s1"));
+    }
+
+    #[test]
     fn a_card_keeps_what_a_grid_draws_and_drops_what_only_the_title_page_reads() {
         let item = enriched_movie();
 
@@ -83,7 +123,7 @@ mod tests {
         assert_eq!(card["title"], json!("Heat"));
         assert_eq!(card["metadata"]["genres"], json!(["Crime"]));
         assert_eq!(card["metadata"]["posterUrl"], json!("/api/images/a.webp"));
-        for gone in ["files", "subtitles", "audioTracks", "container", "relPath"] {
+        for gone in ["files", "subtitles", "audioTracks", "container", "relPath", "showId"] {
             assert_eq!(card.get(gone), None, "{gone}");
         }
         for gone in ["cast", "crew"] {

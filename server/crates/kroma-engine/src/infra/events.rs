@@ -2,122 +2,15 @@
 //!
 //! Fans server events out to every WebSocket client (`GET /api/events`); a no-op with no subscribers.
 
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+
 use serde::Serialize;
 use tokio::sync::broadcast;
 
-/// A server-pushed event. Serialized as `{ "type": "...", ...fields }`.
-#[derive(Clone, Debug, Serialize)]
-#[serde(tag = "type")]
-pub enum ServerEvent {
-    #[serde(rename = "hello")]
-    Hello { version: &'static str },
-    #[serde(rename = "scan.started")]
-    ScanStarted,
-    #[serde(rename = "scan.completed")]
-    ScanCompleted {
-        items: usize,
-        shows: usize,
-        libraries: usize,
-    },
-    #[serde(rename = "library.updated")]
-    LibraryUpdated,
-    #[serde(rename = "item.updated")]
-    ItemUpdated { id: String },
-    #[serde(rename = "show.updated")]
-    ShowUpdated { id: String },
-    #[serde(rename = "enrich.progress")]
-    EnrichProgress { done: usize, total: usize },
-    #[serde(rename = "enrich.completed")]
-    EnrichCompleted { resolved: usize, total: usize },
-    #[serde(rename = "probe.progress")]
-    ProbeProgress { done: usize, total: usize },
-    #[serde(rename = "probe.completed")]
-    ProbeCompleted { total: usize },
-    #[serde(rename = "playback.started")]
-    PlaybackStarted { count: usize },
-    #[serde(rename = "playback.updated")]
-    PlaybackUpdated { count: usize },
-    #[serde(rename = "playback.stopped")]
-    PlaybackStopped { count: usize },
-    #[serde(rename = "playback.terminate")]
-    PlaybackTerminate {
-        #[serde(rename = "sessionId")]
-        session_id: String,
-        message: String,
-    },
-    #[serde(rename = "cast.receiver")]
-    CastReceiverChanged {
-        receiver: Box<crate::model::CastReceiver>,
-    },
-    #[serde(rename = "cast.receiver.gone")]
-    CastReceiverGone {
-        #[serde(rename = "receiverId")]
-        receiver_id: String,
-    },
-    #[serde(rename = "cast.position")]
-    CastPosition {
-        #[serde(rename = "receiverId")]
-        receiver_id: String,
-        #[serde(rename = "positionMs")]
-        position_ms: i64,
-        #[serde(rename = "durationMs", skip_serializing_if = "Option::is_none")]
-        duration_ms: Option<i64>,
-        state: crate::model::CastState,
-    },
-    #[serde(rename = "cast.command")]
-    CastCommandIssued {
-        #[serde(rename = "receiverId")]
-        receiver_id: String,
-        seq: u64,
-        command: crate::model::CastCommand,
-    },
-    #[serde(rename = "cast.kicked")]
-    CastKicked {
-        #[serde(rename = "receiverId")]
-        receiver_id: String,
-    },
-    #[serde(rename = "settings.updated")]
-    SettingsUpdated,
-    #[serde(rename = "job.started")]
-    JobStarted {
-        key: String,
-        #[serde(rename = "runId")]
-        run_id: String,
-    },
-    #[serde(rename = "job.progress")]
-    JobProgress {
-        key: String,
-        #[serde(rename = "runId")]
-        run_id: String,
-        done: usize,
-        total: usize,
-    },
-    #[serde(rename = "job.log")]
-    JobLog {
-        #[serde(rename = "runId")]
-        run_id: String,
-        level: &'static str,
-        message: String,
-    },
-    #[serde(rename = "job.finished")]
-    JobFinished {
-        key: String,
-        #[serde(rename = "runId")]
-        run_id: String,
-        status: String,
-    },
-    #[serde(rename = "pipeline.stats")]
-    PipelineStats {
-        stages: Vec<crate::model::StageStat>,
-    },
-    #[serde(rename = "request.updated")]
-    RequestUpdated { id: String, status: String },
-    #[serde(rename = "report.updated")]
-    ReportUpdated { id: String, status: String },
-    // Module events (download.progress, vpn.status, ...) publish generically via
-    // `HostCtx::publish(Event)`; the bus fans out the raw JSON, so the core owns
-    // no module event type.
-}
+mod server_event;
+
+pub use server_event::ServerEvent;
 
 /// Who an event is for. Most of the bus is server-wide activity every
 /// signed-in client may see; a notification names its recipient instead, so it
@@ -167,18 +60,33 @@ impl Envelope {
 #[derive(Clone)]
 pub struct Bus {
     tx: broadcast::Sender<Envelope>,
+    catalog: Arc<AtomicU64>,
 }
 
 impl Bus {
     pub fn new() -> Self {
         // Capacity bounds how far a slow client can lag before it drops events.
         let (tx, _rx) = broadcast::channel(512);
-        Self { tx }
+        Self {
+            tx,
+            catalog: Arc::default(),
+        }
     }
 
-    /// Fan an event out to all subscribers. No-op when there are none.
+    /// Fan an event out to all subscribers. No-op when there are none, except
+    /// that a catalogue change is always counted in [`Self::catalog_version`].
     pub fn publish(&self, event: ServerEvent) {
+        if event.changes_catalog() {
+            self.catalog.fetch_add(1, Ordering::Release);
+        }
         self.send(Audience::Everyone, &event);
+    }
+
+    /// How many catalogue changes ([`ServerEvent::changes_catalog`]) have been
+    /// published, whether or not anyone was listening. Two equal readings mean
+    /// none was published in between.
+    pub fn catalog_version(&self) -> u64 {
+        self.catalog.load(Ordering::Acquire)
     }
 
     /// Fan an event out to one user's sockets only. Used for notifications, whose
@@ -269,6 +177,37 @@ mod tests {
             env.payload_unrouted()
         );
         assert!(env.payload_unrouted().contains("abc"));
+    }
+
+    #[test]
+    fn a_catalogue_change_is_counted_with_nobody_listening() {
+        let bus = Bus::new();
+        let before = bus.catalog_version();
+
+        bus.publish(ServerEvent::LibraryUpdated);
+
+        assert_eq!(bus.catalog_version(), before + 1);
+    }
+
+    #[test]
+    fn playback_activity_is_not_a_catalogue_change() {
+        let bus = Bus::new();
+        let before = bus.catalog_version();
+
+        bus.publish(ServerEvent::PlaybackUpdated { count: 1 });
+        bus.publish(ServerEvent::EnrichProgress { done: 1, total: 2 });
+
+        assert_eq!(bus.catalog_version(), before);
+    }
+
+    #[test]
+    fn a_clone_of_the_bus_counts_into_the_same_version() {
+        let bus = Bus::new();
+        let handle = bus.clone();
+
+        handle.publish(item("x"));
+
+        assert_eq!(bus.catalog_version(), 1);
     }
 
     #[test]

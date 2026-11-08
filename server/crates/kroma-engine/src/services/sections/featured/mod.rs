@@ -1,6 +1,6 @@
 //! The "En vedette" hero pick: one spotlight title per user per day. This file
-//! orchestrates gather -> gate -> rank -> rotate -> localize; [`score`] holds the
-//! scoring rules and [`gather`] the catalog/history reads.
+//! orchestrates gather -> gate -> rank -> rotate -> hydrate -> localize; [`score`]
+//! holds the scoring rules and [`gather`] the catalog/history reads.
 
 mod gather;
 mod score;
@@ -10,7 +10,7 @@ mod fixtures;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::db::{self, Pool};
+use crate::db::{self, HeroCandidate, Pool};
 use crate::model::SectionItem;
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
@@ -24,7 +24,7 @@ const ROTATION_POOL: usize = 5;
 pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Option<SectionItem> {
     let _ = state.vectors.refresh_if_stale(pool);
 
-    let all = gather::catalog(pool);
+    let all = super::memo::hero_candidates(state, || gather::candidates(pool));
     if all.is_empty() {
         return None;
     }
@@ -46,22 +46,25 @@ pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Op
     let candidates = gate(&all, &seen);
     let top = rank(&candidates, &taste, &trend, day_start, ROTATION_POOL);
     let winner = *top.get(rotation_index(day, user_id, top.len()))?;
-    let mut hero = vec![winner.clone()];
+    let mut hero = db::entities_by_ids(pool, &[winner.id.as_str()]).unwrap_or_else(|e| {
+        tracing::error!(target: "sections", "featured: reading the winner failed: {e:#}");
+        Vec::new()
+    });
     let _ = db::localize::overlay_section_items(pool, &mut hero, locale);
     hero.pop()
 }
 
 // Relaxes strict -> presentable-only -> anything, so a small or fully-watched
 // library still yields a hero.
-fn gate<'a>(all: &'a [SectionItem], seen: &HashSet<String>) -> Vec<&'a SectionItem> {
-    let strict: Vec<&SectionItem> = all
+fn gate<'a>(all: &'a [HeroCandidate], seen: &HashSet<String>) -> Vec<&'a HeroCandidate> {
+    let strict: Vec<&HeroCandidate> = all
         .iter()
-        .filter(|e| presentable(e) && !seen.contains(e.id()))
+        .filter(|e| presentable(e) && !seen.contains(&e.id))
         .collect();
     if !strict.is_empty() {
         return strict;
     }
-    let presentable_only: Vec<&SectionItem> = all.iter().filter(|e| presentable(e)).collect();
+    let presentable_only: Vec<&HeroCandidate> = all.iter().filter(|e| presentable(e)).collect();
     if presentable_only.is_empty() {
         all.iter().collect()
     } else {
@@ -79,7 +82,7 @@ fn today(now_ms: i64) -> (u64, i64) {
 
 #[cfg(test)]
 mod tests {
-    use super::fixtures::{meta, seed_user};
+    use super::fixtures::{candidate, meta, seed_user, shown};
     use super::*;
     use crate::model::Metadata;
     use crate::test_support;
@@ -170,11 +173,9 @@ mod tests {
 
     #[test]
     fn gate_ladder_relaxes_presentation_before_going_dark() {
-        let plain = fixtures::movie("plain", Some(meta(None, false, false)), "t", None);
-        let shown = fixtures::movie("shown", Some(meta(None, true, true)), "t", None);
-        let all = vec![plain, shown];
+        let all = vec![candidate("plain"), shown("shown")];
         let seen: HashSet<String> = ["shown".to_string()].into();
-        let ids = |v: Vec<&SectionItem>| v.iter().map(|e| e.id().to_string()).collect::<Vec<_>>();
+        let ids = |v: Vec<&HeroCandidate>| v.iter().map(|e| e.id.clone()).collect::<Vec<_>>();
         assert_eq!(ids(gate(&all, &HashSet::new())), ["shown"]);
         assert_eq!(ids(gate(&all, &seen)), ["shown"]);
         assert_eq!(ids(gate(&all[..1], &HashSet::new())), ["plain"]);

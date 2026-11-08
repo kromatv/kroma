@@ -20,7 +20,7 @@ describe('the show bundle', () => {
 
   it('prefers shows that share a genre', async () => {
     c.media.show.mockResolvedValue(detail('s1', ['Drama']));
-    c.media.shows.mockResolvedValue([
+    c.media.showCards.mockResolvedValue([
       show('s1', ['Drama']),
       show('a', ['Drama']),
       show('b', ['Drama']),
@@ -34,7 +34,7 @@ describe('the show bundle', () => {
 
   it('tolerates a show, and a catalogue, with no metadata at all', async () => {
     c.media.show.mockResolvedValue({ show: { id: 's1' } });
-    c.media.shows.mockResolvedValue([{ id: 's1' }, { id: 'a' }, { id: 'b' }]);
+    c.media.showCards.mockResolvedValue([{ id: 's1' }, { id: 'a' }, { id: 'b' }]);
 
     const { similarShows } = await run(catalogQueries.showBundle(ShowId.parse('s1')));
     expect(similarShows.map((s: { id: string }) => s.id)).toEqual(['a', 'b']);
@@ -42,7 +42,7 @@ describe('the show bundle', () => {
 
   it('never suggests the show you are already looking at', async () => {
     c.media.show.mockResolvedValue(detail('s1', ['Drama']));
-    c.media.shows.mockResolvedValue([show('s1', ['Drama']), show('a', ['Drama'])]);
+    c.media.showCards.mockResolvedValue([show('s1', ['Drama']), show('a', ['Drama'])]);
 
     const { similarShows } = await run(catalogQueries.showBundle(ShowId.parse('s1')));
     expect(similarShows.map((s: { id: string }) => s.id)).not.toContain('s1');
@@ -50,7 +50,7 @@ describe('the show bundle', () => {
 
   it('falls back to the rest of the catalogue rather than showing one lonely card', async () => {
     c.media.show.mockResolvedValue(detail('s1', ['Drama']));
-    c.media.shows.mockResolvedValue([
+    c.media.showCards.mockResolvedValue([
       show('s1', ['Drama']),
       show('a', ['Drama']),
       show('x', ['Comedy']),
@@ -63,7 +63,7 @@ describe('the show bundle', () => {
 
   it('caps the rail so a big library does not render hundreds of cards', async () => {
     c.media.show.mockResolvedValue(detail('s1', ['Drama']));
-    c.media.shows.mockResolvedValue([
+    c.media.showCards.mockResolvedValue([
       show('s1', ['Drama']),
       ...Array.from({ length: 30 }, (_, i) => show(`o${i}`, ['Drama'])),
     ]);

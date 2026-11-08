@@ -2456,6 +2456,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "twox-hash",
  "uuid",
  "walkdir",
  "webauthn-rs",
