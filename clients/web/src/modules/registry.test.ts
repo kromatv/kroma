@@ -3,7 +3,7 @@ import { createModuleRuntime } from './registry';
 
 describe('the module registry', () => {
   it('starts empty: every frontend arrives from the server at runtime', () => {
-    const { registry: moduleRegistry } = createModuleRuntime();
+    const { registry: moduleRegistry } = createModuleRuntime(async () => []);
     expect(moduleRegistry.ids()).toEqual([]);
     expect(moduleRegistry.routes()).toEqual([]);
     expect(moduleRegistry.navItems()).toEqual([]);
@@ -11,8 +11,8 @@ describe('the module registry', () => {
 });
 
 it('disposes only the leaving host registry and survives immediate effect replay', async () => {
-  const a = createModuleRuntime();
-  const b = createModuleRuntime();
+  const a = createModuleRuntime(async () => []);
+  const b = createModuleRuntime(async () => []);
   const releaseA = a.retain();
   const releaseB = b.retain();
   a.registry.register({ id: 'a', version: '1.0.0' });

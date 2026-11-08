@@ -74,9 +74,12 @@ export const REMOTE_SHARED = 'shared.json';
 /** In `REMOTE_SHARED`, a read of the namespace as a whole rather than of names. */
 export const WHOLE_NAMESPACE = '*';
 
-/** Where the server serves a module's `fe/` from. */
-export function remoteEntryUrl(baseUrl: string, id: string): string {
-  return `${baseUrl}/modules/${encodeURIComponent(id)}/${REMOTE_ENTRY}`;
+/** Where the server serves a module's entry. Under a `revision` the module
+ *  list named, every file of the bundle is immutable; without one, the entry
+ *  revalidates on every load. */
+export function remoteEntryUrl(baseUrl: string, id: string, revision?: string): string {
+  const pinned = revision ? `@${encodeURIComponent(revision)}` : '';
+  return `${baseUrl}/modules/${encodeURIComponent(id)}${pinned}/${REMOTE_ENTRY}`;
 }
 
 /** Where the server serves a module's `REMOTE_SHARED`. */

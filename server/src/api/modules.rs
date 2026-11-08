@@ -38,6 +38,8 @@ struct ListedModule {
     /// nothing says why.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     unmet: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    frontend: Option<kroma_module_supervisor::Frontend>,
 }
 
 async fn list(State(state): State<SharedState>) -> impl IntoResponse {
@@ -47,10 +49,21 @@ async fn list(State(state): State<SharedState>) -> impl IntoResponse {
 
     let mods: Vec<ListedModule> = all
         .iter()
-        .map(|m| ListedModule {
-            manifest: m.clone(),
-            enabled: enabled_of(&m.id),
-            unmet: unmet_of(m, &answered),
+        .map(|m| {
+            let frontend = m
+                .fe_remote
+                .as_ref()
+                .and_then(|_| kroma_module_kernel::frontend(&state, &m.id));
+            let mut manifest = m.clone();
+            if frontend.is_none() {
+                manifest.fe_remote = None;
+            }
+            ListedModule {
+                manifest,
+                enabled: enabled_of(&m.id),
+                unmet: unmet_of(m, &answered),
+                frontend,
+            }
         })
         .collect();
     Json(mods)
@@ -181,6 +194,7 @@ mod tests {
             manifest: ModuleManifest::new("tv.x.leaf", "Leaf", "1.0.0"),
             enabled: true,
             unmet: Vec::new(),
+            frontend: None,
         };
 
         let json = serde_json::to_value(&listed).unwrap();
@@ -195,6 +209,7 @@ mod tests {
             manifest: wanting("tv.kroma.indexer/search", None),
             enabled: true,
             unmet: vec!["tv.kroma.indexer/search".to_string()],
+            frontend: None,
         };
 
         let json = serde_json::to_value(&listed).unwrap();

@@ -1,16 +1,11 @@
 import { domainModules } from '@kromatv/client';
+import type { EntryReads } from '@kromatv/client/modules';
 import {
   SHARED_GLOBAL,
   SHARED_MODULES,
   type SharedModule,
   WHOLE_NAMESPACE,
 } from '@kromatv/module-sdk';
-import { z } from 'zod';
-
-/** What a module's entry reads from the host as it loads, as its build wrote it
- *  beside the entry (`REMOTE_SHARED`). */
-export const EntryReads = z.record(z.string(), z.array(z.string()));
-export type EntryReads = z.infer<typeof EntryReads>;
 
 /** What the host hands a runtime-loaded module, by the specifier its source
  *  imported. Loaded on demand: a page with no module installed pays nothing.

@@ -1,55 +1,59 @@
 import type { KromaClient } from '@kromatv/client';
+import { EntryReads, type ModuleInfo } from '@kromatv/client/modules';
 import {
   depEntries,
   type KromaModule,
-  type ModuleManifest,
   type ModuleRegistry,
   remoteEntryUrl,
   remoteSharedUrl,
 } from '@kromatv/module-sdk';
-import { queryOptions } from '@tanstack/react-query';
+import { type QueryClient, queryOptions } from '@tanstack/react-query';
 import { apiBase } from '#web/shared/lib/api';
-import { EntryReads, installShared, provideEntryShared, provideShared } from './shared-scope';
+import { installShared, provideEntryShared, provideShared } from './shared-scope';
 
-interface RemoteSpec {
-  id: string;
-  entry: string;
-  reads: string;
-}
+type RemoteSpec = { id: string; entry: string } & (
+  | { listed: true; reads: EntryReads | null }
+  | { listed: false; declaration: string }
+);
 
 const MAX_DECLARATION_BYTES = 64 * 1024;
 
-/** The installed modules, as `GET /api/modules` lists them. */
-export async function fetchModules(client?: KromaClient): Promise<ModuleManifest[]> {
-  const res = await fetch(`${apiBase()}/api/modules`, {
-    headers: client?.authHeaders() ?? {},
-  });
-  if (!res.ok) throw new Error(`GET /api/modules failed (${res.status})`);
-  return (await res.json()) as ModuleManifest[];
-}
-
 /** One cache entry for the module list, so the remote loader, the host and the
  *  nav read a single response per boot. */
-export const modulesQuery = (client?: KromaClient) =>
+export const modulesQuery = (client: KromaClient) =>
   queryOptions({
     queryKey: ['modules'],
-    queryFn: () => fetchModules(client),
+    queryFn: () => client.modules.list(),
     staleTime: 60_000,
   });
 
-function remotesOf(listed: readonly ModuleManifest[]): RemoteSpec[] {
-  return listed
-    .filter((m) => m.feRemote != null && m.enabled !== false)
-    .map((m) => ({
-      id: m.id,
-      entry: remoteEntryUrl(apiBase(), m.id),
-      reads: remoteSharedUrl(apiBase(), m.id),
-    }));
+/** Reads the module list into `queryClient` once `client` holds a session, so
+ *  the list travels with the first page's data rather than after the signed-in
+ *  tree mounts. A no-op without a session. */
+export function prefetchModules(queryClient: QueryClient, client: KromaClient): Promise<void> {
+  if (!client.hasAuth) return Promise.resolve();
+  return queryClient.prefetchQuery(modulesQuery(client));
+}
+
+function remoteOf(m: ModuleInfo, base: string): RemoteSpec | null {
+  if (m.enabled === false) return null;
+  if (m.frontend) {
+    const entry = remoteEntryUrl(base, m.id, m.frontend.revision);
+    return { id: m.id, entry, listed: true, reads: m.frontend.shared ?? null };
+  }
+  if (!m.feRemote) return null;
+  const declaration = remoteSharedUrl(base, m.id);
+  return { id: m.id, entry: remoteEntryUrl(base, m.id), listed: false, declaration };
+}
+
+function remotesOf(listed: readonly ModuleInfo[]): RemoteSpec[] {
+  const base = apiBase();
+  return listed.flatMap((m) => remoteOf(m, base) ?? []);
 }
 
 /** What a module's build declared its entry reads (`REMOTE_SHARED` at `url`),
- *  or `null` when there is no usable declaration: absent, too large, not JSON,
- *  or not the expected shape. */
+ *  for a server whose module list does not carry it. `null` when there is no
+ *  usable declaration: absent, too large, not JSON, or not the expected shape. */
 export async function readDeclaration(url: string): Promise<EntryReads | null> {
   try {
     const res = await fetch(url);
@@ -82,11 +86,9 @@ function unmet(registry: ModuleRegistry, m: KromaModule): string | null {
   return depEntries(m.dependencies).find(({ id }) => !registry.has(id))?.id ?? null;
 }
 
-/** Remote loading state belongs to one mounted module host. */
-export function createRuntimeRemotes(
-  client?: KromaClient,
-  listModules: () => Promise<ModuleManifest[]> = () => fetchModules(client),
-) {
+/** Remote loading state belongs to one mounted module host, reading the
+ *  installed set through `listModules`. */
+export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleInfo[]>) {
   const loadedRemotes = new Set<string>();
   let loaders = DEFAULT_LOADERS;
   let sharedReady: Promise<void> | null = null;
@@ -116,7 +118,9 @@ export function createRuntimeRemotes(
 
   async function provideFor(specs: readonly RemoteSpec[]): Promise<void> {
     if (sharedReady) return sharedReady;
-    const reads = await Promise.all(specs.map((s) => loaders.readDeclaration(s.reads)));
+    const reads = await Promise.all(
+      specs.map((s) => (s.listed ? s.reads : loaders.readDeclaration(s.declaration))),
+    );
     const declared = reads.filter((r): r is EntryReads => r !== null);
     if (declared.length < reads.length) return ensureShared();
     installShared(await loaders.provideEntryShared(declared), false);

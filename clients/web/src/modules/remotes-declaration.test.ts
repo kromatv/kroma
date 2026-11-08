@@ -1,6 +1,8 @@
+import { createKromaClient } from '@kromatv/client';
+import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createModuleRuntime } from './registry';
-import { modulesQuery, readDeclaration } from './remotes';
+import { modulesQuery, prefetchModules, readDeclaration } from './remotes';
 
 const URL = 'http://localhost:3000/modules/vpn/shared.json';
 
@@ -46,23 +48,50 @@ describe('readDeclaration', () => {
 });
 
 describe('the module list', () => {
-  it('is one cache entry that reads GET /api/modules', async () => {
-    vi.stubGlobal('fetch', answer('[{"id":"tv.kroma.vpn"}]'));
+  it('is one cache entry that reads GET /api/modules with the session bearer', async () => {
+    const fetched = answer('[{"id":"tv.kroma.vpn","name":"VPN"}]');
+    const client = createKromaClient({ baseUrl: 'http://localhost:3000', fetch: fetched });
+    client.setAuthToken('tok123');
 
-    const query = modulesQuery();
+    const query = modulesQuery(client);
     const listed = await query.queryFn?.({} as never);
 
     expect(query.queryKey).toEqual(['modules']);
     expect(query.staleTime).toBeGreaterThan(0);
-    expect(listed).toEqual([{ id: 'tv.kroma.vpn' }]);
-    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/modules', { headers: {} });
+    expect(listed).toEqual([{ id: 'tv.kroma.vpn', name: 'VPN' }]);
+    const [url, init] = fetched.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('http://localhost:3000/api/modules');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer tok123');
   });
 
-  it('is what a runtime reads when its host gives it no list of its own', async () => {
-    vi.stubGlobal('fetch', answer('[{"id":"tv.kroma.remote"}]'));
+  it('is what a runtime reads its installed set from', async () => {
+    const listModules = vi.fn(async () => []);
 
-    const runtime = createModuleRuntime();
+    const runtime = createModuleRuntime(listModules);
 
-    expect(await runtime.listModules()).toEqual([{ id: 'tv.kroma.remote' }]);
+    expect(await runtime.listModules()).toEqual([]);
+    expect(listModules).toHaveBeenCalledOnce();
+  });
+});
+
+describe('reading the module list ahead of the host', () => {
+  it('fills the cache entry the host reads once there is a session', async () => {
+    const fetched = answer('[{"id":"tv.kroma.vpn","name":"VPN"}]');
+    const client = createKromaClient({ baseUrl: 'http://localhost:3000', fetch: fetched });
+    client.setAuthToken('tok123');
+    const queryClient = new QueryClient();
+
+    await prefetchModules(queryClient, client);
+
+    expect(queryClient.getQueryData(['modules'])).toEqual([{ id: 'tv.kroma.vpn', name: 'VPN' }]);
+  });
+
+  it('asks nothing before there is a session', async () => {
+    const fetched = answer('[]');
+    const client = createKromaClient({ baseUrl: 'http://localhost:3000', fetch: fetched });
+
+    await prefetchModules(new QueryClient(), client);
+
+    expect(fetched).not.toHaveBeenCalled();
   });
 });

@@ -50,3 +50,17 @@ pub fn uploaded() -> Source<'static> {
         accept: Accept::Anything,
     }
 }
+
+pub fn tar_with_files(files: &[(&str, &str)]) -> Vec<u8> {
+    let mut builder = tar::Builder::new(Vec::new());
+    for (path, body) in files {
+        let mut header = tar::Header::new_gnu();
+        header.set_size(body.len() as u64);
+        header.set_mode(0o600);
+        header.set_cksum();
+        builder
+            .append_data(&mut header, path, body.as_bytes())
+            .unwrap();
+    }
+    builder.into_inner().unwrap()
+}
