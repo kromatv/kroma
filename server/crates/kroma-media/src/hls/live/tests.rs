@@ -34,6 +34,7 @@ fn a_downscale_reports_the_box_it_is_fitting_the_picture_into() {
         &plan("it1:h264-1080-aac:30:a1", mode, HwAccel::Vaapi),
         &dir,
         true,
+        0.0,
     );
 
     assert_eq!(t.video, "h264-1080");
@@ -52,7 +53,12 @@ fn a_stream_copy_says_it_is_costing_the_box_nothing() {
     let (_data, dir) = seeded_dir("hls-live-copy");
     let mode = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
 
-    let t = report(&plan("it1:copy:0:a1", mode, HwAccel::Software), &dir, true);
+    let t = report(
+        &plan("it1:copy:0:a1", mode, HwAccel::Software),
+        &dir,
+        true,
+        0.0,
+    );
 
     assert_eq!(t.video, "copy");
     assert!(!t.transcodes_video);
@@ -79,6 +85,7 @@ fn the_rate_the_encoder_is_holding_comes_from_the_progress_file() {
         &plan("it1:h264-aac:0:a1", mode, HwAccel::Software),
         &dir,
         true,
+        0.0,
     );
 
     assert!(
@@ -91,6 +98,22 @@ fn the_rate_the_encoder_is_holding_comes_from_the_progress_file() {
 }
 
 #[test]
+fn a_seek_reports_the_keyframe_ffmpeg_started_from_beside_the_anchor_asked_for() {
+    let (_data, dir) = seeded_dir("hls-live-start");
+    let mode = StreamMode::new(VideoMode::H264, AudioMode::Aac);
+
+    let t = report(
+        &plan("it1:h264-aac:30:a1", mode, HwAccel::Software),
+        &dir,
+        true,
+        27.5,
+    );
+
+    assert_eq!(t.anchor_secs, 30.0);
+    assert_eq!(t.start_secs, 27.5);
+}
+
+#[test]
 fn a_session_with_no_progress_file_yet_reports_zeroes_rather_than_nothing() {
     let (_data, dir) = seeded_dir("hls-live-early");
     let mode = StreamMode::new(VideoMode::H264, AudioMode::Copy);
@@ -99,6 +122,7 @@ fn a_session_with_no_progress_file_yet_reports_zeroes_rather_than_nothing() {
         &plan("it1:h264-copy:0:a1", mode, HwAccel::Software),
         &dir,
         true,
+        0.0,
     );
 
     assert_eq!(t.speed, 0.0);
@@ -132,7 +156,12 @@ fn a_finished_run_stops_reading_as_running() {
     .expect("progress file");
 
     let mode = StreamMode::new(VideoMode::Copy, AudioMode::Aac);
-    let t = report(&plan("it1:aac:0:a1", mode, HwAccel::Software), &dir, true);
+    let t = report(
+        &plan("it1:aac:0:a1", mode, HwAccel::Software),
+        &dir,
+        true,
+        0.0,
+    );
 
     assert!(!t.running);
 }

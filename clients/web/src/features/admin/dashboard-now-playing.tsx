@@ -126,7 +126,12 @@ export function NowPlayingCard({
       <NowPlayingThumb s={s} />
 
       <Box flex minW={0} gap={12}>
-        <Box row={{ base: false, lg: true }} between gap={18}>
+        <Box
+          row={{ base: false, lg: true }}
+          between
+          align={{ base: 'stretch', lg: 'flex-start' }}
+          gap={18}
+        >
           <Box flex minW={0}>
             <Box row={{ base: false, md: true }} gap={10}>
               <Text variant="title" accessibilityRole="header" lines={1} shrink={1} minW={0}>
@@ -143,7 +148,7 @@ export function NowPlayingCard({
               {[sub, s.videoLabel].filter((part) => part && part !== '-').join(' · ')}
             </Text>
           </Box>
-          <Row shrink={0} gap={11} maxW="100%">
+          <Row shrink={0} gap={11} justify="flex-end" maxW={{ base: '100%', lg: '45%' }}>
             <Box align="flex-end" shrink={1} minW={0}>
               <Text variant="label" lines={1}>
                 {s.username}

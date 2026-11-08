@@ -24,6 +24,7 @@ const session = (fields: Partial<LiveTranscode> = {}): LiveTranscode => ({
   effort: 'realtime',
   onTheCpu: false,
   anchorSecs: 450,
+  startSecs: 442,
   startedAt: 0,
   speed: 1.8,
   fps: 48,
@@ -34,6 +35,7 @@ const session = (fields: Partial<LiveTranscode> = {}): LiveTranscode => ({
   bytes: 4_000_000,
   running: true,
   title: LONG_TITLE,
+  cpu: 12,
   ...fields,
 });
 
@@ -58,27 +60,27 @@ describe('a transcode session card', () => {
     expect(screen.getByTitle(LONG_TITLE).textContent).toBe(LONG_TITLE);
   });
 
-  it('reads the stretch of film produced from where the session started', () => {
+  it('reads the stretch of film produced from the keyframe ffmpeg started on', () => {
     stage(session());
 
-    expect(screen.getByText('7:30 to 7:36')).toBeTruthy();
+    expect(screen.getByText('7:22 to 7:36')).toBeTruthy();
   });
 
-  it('starts the stretch at the seek point after a seek, not at zero', () => {
-    stage(session({ anchorSecs: 3600, outTimeMs: 3_612_000 }));
+  it('starts the stretch at the seek point when the server does not say where ffmpeg started', () => {
+    stage(session({ startSecs: null }));
 
-    expect(screen.getByText('1:00:00 to 1:00:12')).toBeTruthy();
+    expect(screen.getByText('7:30 to 7:36')).toBeTruthy();
   });
 
   it('shows a dash until ffmpeg has reported a position', () => {
     stage(session({ outTimeMs: 0 }));
 
-    expect(screen.getByText('PRODUCED').parentElement?.textContent).toBe('PRODUCED-');
+    expect(screen.getByText('-')).toBeTruthy();
   });
 
-  it('shows a dash while the clock is still behind the seek point', () => {
-    stage(session({ anchorSecs: 450, outTimeMs: 449_000 }));
+  it('shows a dash while the clock is still behind where ffmpeg started', () => {
+    stage(session({ outTimeMs: 441_000 }));
 
-    expect(screen.getByText('PRODUCED').parentElement?.textContent).toBe('PRODUCED-');
+    expect(screen.getByText('-')).toBeTruthy();
   });
 });

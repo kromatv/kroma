@@ -5,7 +5,7 @@
 
 import type { LiveTranscode, Transcodes } from '@kromatv/client/admin';
 import { TABULAR } from '@kromatv/module-sdk';
-import { useFormat, useT } from '@kromatv/ui';
+import { type Format, useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   type ColorValue,
@@ -64,12 +64,8 @@ function title(s: LiveTranscode, t: ReturnType<typeof useT>) {
   return `${name} · ${t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' })}`;
 }
 
-function producedSpan(
-  s: LiveTranscode,
-  t: ReturnType<typeof useT>,
-  fmt: ReturnType<typeof useFormat>,
-) {
-  const fromMs = s.anchorSecs * 1000;
+function producedSpan(s: LiveTranscode, t: ReturnType<typeof useT>, fmt: Format) {
+  const fromMs = (s.startSecs ?? s.anchorSecs) * 1000;
   if (s.outTimeMs <= 0 || s.outTimeMs < fromMs) return '-';
   return t('admin.tcProducedSpan', { from: fmt.timecode(fromMs), to: fmt.timecode(s.outTimeMs) });
 }
