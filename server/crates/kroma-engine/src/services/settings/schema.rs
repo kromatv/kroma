@@ -315,6 +315,15 @@ pub fn groups(
                         true,
                     ),
                     row(
+                        crate::services::direct::ENABLED_KEY,
+                        t("admin.directConnections"),
+                        Some(t("admin.directConnectionsHint")),
+                        "toggle",
+                        &[],
+                        g(crate::services::direct::ENABLED_KEY),
+                        true,
+                    ),
+                    row(
                         "httpsEnabled",
                         t("admin.httpsEnabled"),
                         Some(t("admin.httpsEnabledHint")),

@@ -104,7 +104,9 @@ export async function probeAll(
   return slots.filter((hit): hit is { url: string; body: HealthProbe } => hit !== null);
 }
 
-async function probeHealth(
+/** One bounded `/api/health` on `base`, validated, or null for a host that is
+ * not a KROMA server answering in time. Sends no credential. */
+export async function probeHealth(
   fetchFn: typeof globalThis.fetch,
   base: string,
   timeoutMs: number,

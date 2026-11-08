@@ -55,6 +55,8 @@ notify = { workspace = true }
 sysinfo = { workspace = true }
 tantivy = { workspace = true }
 rusty-chromaprint = { workspace = true }
+# The interfaces and addresses this machine holds, for the direct LAN route.
+if-addrs = "0.15"
 
 [dev-dependencies]
 # The shared HostCtx doubles: `testing::Recording` taps a real app host's bus,

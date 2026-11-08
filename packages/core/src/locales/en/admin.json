@@ -176,6 +176,8 @@
   "admin.deleteFailed": "Couldn't delete",
   "admin.deliveriesSub": "Every account's last attempts, and why a device did not ring.",
   "admin.deliveriesTitle": "Recent pushes",
+  "admin.directConnections": "Direct connection at home",
+  "admin.directConnectionsHint": "Apps on the same network as the server reach it at its local address instead of going through the internet. On the local network, requests travel unencrypted, as when the server is opened at its local address",
   "admin.directPlay": "Direct play",
   "admin.downloadsSub": "Live download queue, history and torrent clients.",
   "admin.downloadsTitle": "Downloads",

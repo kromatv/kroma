@@ -6,12 +6,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { WebRuntimeProvider } from './web-runtime';
 import { createWebTestRuntime } from './web-runtime.fixture';
 
-const shared = vi.fn((client: unknown, itemId: string, opts?: unknown) => ({
-  client,
-  itemId,
-  opts,
+const shared = vi.hoisted(() =>
+  vi.fn((client: unknown, itemId: string, opts?: unknown) => ({
+    client,
+    itemId,
+    opts,
+  })),
+);
+vi.mock('@kromatv/ui', () => ({
+  useStoryboard: shared,
+  withLocalAddressSpace: (fetchFn: typeof fetch) => fetchFn,
 }));
-vi.mock('@kromatv/ui', () => ({ useStoryboard: shared }));
 const { useStoryboard } = await import('./use-storyboard');
 
 function root() {

@@ -64,6 +64,7 @@ pub struct AppState {
     pub metrics: Metrics,
     pub embedder: crate::point::Point,
     pub network: Arc<crate::services::network::Network>,
+    pub direct: crate::services::direct::Direct,
     pub search: Arc<SearchEngine>,
     pub vectors: Arc<VectorCache>,
     pub jobs: Arc<JobManager>,
@@ -155,6 +156,7 @@ impl AppState {
         .with_providers(network_providers)
         .with_core_ports(config.port, config.https_port_override)
         .with_declared(permissions));
+        let direct = crate::services::direct::Direct::new(config.public_ip_url.clone());
         Arc::new_cyclic(|weak| AppState {
             config,
             ffprobe_available,
@@ -174,6 +176,7 @@ impl AppState {
             metrics,
             embedder,
             network,
+            direct,
             search: Arc::new(SearchEngine::new().expect("init search index")),
             vectors: Arc::new(VectorCache::new()),
             jobs: Arc::new(jobs),

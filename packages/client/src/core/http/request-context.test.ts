@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { KromaApiError, KromaSchemaError } from './api-error';
 import { createRequestContext, type TransportConfig } from './request-context';
+import { createRoute } from './route';
 
 const Item = z.object({ id: z.string() });
 
@@ -46,7 +47,7 @@ function transport(
 
   let ticket: string | undefined;
   const ctx = createRequestContext({
-    baseUrl: 'http://kroma.test',
+    route: createRoute('http://kroma.test'),
     fetchFn,
     token: () => 'tok',
     locale: () => 'fr',
@@ -231,7 +232,7 @@ describe('an abort signal', () => {
     const controller = new AbortController();
     let seen: AbortSignal | null | undefined;
     const ctx = createRequestContext({
-      baseUrl: 'http://kroma.test',
+      route: createRoute('http://kroma.test'),
       fetchFn: (async (_input: RequestInfo | URL, init?: RequestInit) => {
         seen = init?.signal;
         return { ok: true, status: 200, text: async () => '{"id":"i1"}', body: null } as Response;
@@ -254,7 +255,7 @@ describe('concurrency policy', () => {
     let calls = 0;
     const aborted: (AbortSignal | null | undefined)[] = [];
     const ctx = createRequestContext({
-      baseUrl: 'http://kroma.test',
+      route: createRoute('http://kroma.test'),
       fetchFn: (async (_input: RequestInfo | URL, init?: RequestInit) => {
         calls += 1;
         aborted.push(init?.signal);

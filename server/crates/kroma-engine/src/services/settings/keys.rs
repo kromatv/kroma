@@ -124,6 +124,7 @@ fn declared() -> Declared {
     m.module_declared("httpsRedirect", json!(false));
     m.module_declared("ipv6", json!(false));
     m.module_declared("localDiscovery", json!(true));
+    m.core_only(crate::services::direct::ENABLED_KEY, json!(true));
     m.module_declared(
         "localNetworks",
         json!("192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12"),

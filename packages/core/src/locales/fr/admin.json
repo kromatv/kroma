@@ -176,6 +176,8 @@
   "admin.deleteFailed": "Suppression impossible",
   "admin.deliveriesSub": "Les dernières tentatives de chaque compte, et pourquoi un appareil n'a pas sonné.",
   "admin.deliveriesTitle": "Envois récents",
+  "admin.directConnections": "Connexion directe à la maison",
+  "admin.directConnectionsHint": "Les apps sur le même réseau que le serveur le joignent par son adresse locale au lieu de passer par Internet. Sur le réseau local, les requêtes circulent sans chiffrement, comme en ouvrant le serveur à son adresse locale",
   "admin.directPlay": "Lecture directe",
   "admin.downloadsSub": "File de téléchargement en direct, historique et clients torrent.",
   "admin.downloadsTitle": "Téléchargements",

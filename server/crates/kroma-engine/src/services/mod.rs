@@ -7,6 +7,7 @@ pub mod auth;
 pub mod backup;
 pub mod cast;
 pub mod demo;
+pub mod direct;
 pub mod email;
 pub mod embeddings;
 pub mod enrich;
