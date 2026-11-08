@@ -1,11 +1,11 @@
 import { type MediaCard, type MediaItem, ItemId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { TitleDetail } from '#web/features/catalog/title-detail';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { buildTitleView } from '#web/shared/lib/titleView';
+import { buildTitleView, movieSimilarTargets } from '#web/shared/lib/titleView';
 import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
@@ -19,10 +19,8 @@ export const Route = createFileRoute('/_app/movies/$id')({
     if (!isAuthed()) throw redirect({ to: '/' });
     const id = ItemId.parse(params.id);
     const { catalogQueries } = webRuntime.queries;
-    await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.item(id)),
-      queryClient.ensureQueryData(catalogQueries.similar(id)),
-    ]);
+    void queryClient.prefetchQuery(catalogQueries.similar(id));
+    await queryClient.ensureQueryData(catalogQueries.item(id));
   },
   pendingComponent: DetailSkeleton,
   component: MovieDetailPage,
@@ -35,13 +33,27 @@ function MovieDetailPage() {
   // Re-enrichment (incl. a corrected TMDB match) lands via the event stream.
   useCatalogLiveRefresh('item', id);
   const { data: item } = useSuspenseQuery(webRuntime.queries.catalogQueries.item(id));
-  const { data: similar } = useSuspenseQuery(webRuntime.queries.catalogQueries.similar(id));
-  return <MovieDetail item={item} similar={similar.slice(0, SIMILAR_COUNT)} />;
+  const { data: similar } = useQuery(webRuntime.queries.catalogQueries.similar(id));
+  return <MovieDetail item={item} similar={similar?.slice(0, SIMILAR_COUNT)} />;
 }
 
-function MovieDetail({ item, similar }: Readonly<{ item: MediaItem; similar: MediaCard[] }>) {
+function MovieDetail({
+  item,
+  similar,
+}: Readonly<{ item: MediaItem; similar: MediaCard[] | undefined }>) {
   const t = useT();
   const { client, user } = useAuth();
-  const view = buildTitleView(client, t, user, { source: 'movie', item, similar, discover: null });
-  return <TitleDetail key={item.id} initial={view} />;
+  const view = buildTitleView(client, t, user, {
+    source: 'movie',
+    item,
+    similar: [],
+    discover: null,
+  });
+  return (
+    <TitleDetail
+      key={item.id}
+      initial={view}
+      similar={similar && movieSimilarTargets(client, t, similar)}
+    />
+  );
 }

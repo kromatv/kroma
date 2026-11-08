@@ -23,6 +23,7 @@ pub mod notify;
 pub mod pairing;
 pub mod pipeline;
 pub mod playback;
+pub mod recommend;
 pub mod releases;
 pub mod rematch;
 pub mod scan;

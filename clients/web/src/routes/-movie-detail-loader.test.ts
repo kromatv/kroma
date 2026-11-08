@@ -43,12 +43,23 @@ it('opens a title without fetching the movie list, however few its neighbours', 
   expect(media.movieCards).not.toHaveBeenCalled();
 });
 
+it('opens a title before its neighbours answer', async () => {
+  media.similarCards.mockReturnValue(new Promise(() => undefined));
+
+  const queryClient = await load();
+
+  expect(queryClient.getQueryData(['similar', ID])).toBeUndefined();
+  expect(media.similarCards).toHaveBeenCalledTimes(1);
+});
+
 it('fills the similar rail from the card view of its neighbours', async () => {
   media.similarCards.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
 
   const queryClient = await load();
 
-  expect(queryClient.getQueryData(['similar', ID])).toEqual([{ id: 'a' }, { id: 'b' }]);
+  await vi.waitFor(() =>
+    expect(queryClient.getQueryData(['similar', ID])).toEqual([{ id: 'a' }, { id: 'b' }]),
+  );
 });
 
 it('opens a title with an empty rail when its neighbours could not be fetched', async () => {
@@ -56,5 +67,5 @@ it('opens a title with an empty rail when its neighbours could not be fetched', 
 
   const queryClient = await load();
 
-  expect(queryClient.getQueryData(['similar', ID])).toEqual([]);
+  await vi.waitFor(() => expect(queryClient.getQueryData(['similar', ID])).toEqual([]));
 });

@@ -17,7 +17,7 @@ use crate::model::MediaItem;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
-use kroma_engine::services::embeddings;
+use kroma_engine::services::recommend;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -35,8 +35,9 @@ pub async fn for_you(
     ReqLocale(locale): ReqLocale,
 ) -> Response {
     let uid = user.id.clone();
+    let engine = state.clone();
     match query(&state.db, move |pool| {
-        let mut items = db::recommended_for(&pool, &uid, ROW_LEN)?;
+        let mut items = recommend::for_you(&engine, &pool, &uid, ROW_LEN)?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
@@ -67,8 +68,9 @@ pub async fn similar(
     if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
         return resp;
     }
+    let engine = state.clone();
     match query(&state.db, move |pool| {
-        let mut items = db::similar_items(&pool, &id, ROW_LEN)?;
+        let mut items = recommend::similar(&engine, &pool, &id, ROW_LEN)?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
@@ -101,11 +103,9 @@ pub async fn themed(
         return Json(Vec::<MediaItem>::new()).into_response();
     }
     // Embed and search together on the blocking pool: embedding is CPU work.
-    let embedder = state.embedder.clone();
+    let engine = state.clone();
     match query(&state.db, move |pool| {
-        let vec = embeddings::embed(&embedder, &q);
-        let mut items =
-            db::themed_items(&pool, &vec, ROW_LEN, embeddings::relevance_floor(&embedder))?;
+        let mut items = recommend::themed(&engine, &pool, &q, ROW_LEN)?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
