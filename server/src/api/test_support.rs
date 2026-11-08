@@ -164,10 +164,16 @@ fn build_app_with(
     let settings = Settings::load(&db);
     let supervisor = test_supervisor(&data_dir);
     let services: HashMap<std::any::TypeId, Arc<dyn std::any::Any + Send + Sync>> =
-        HashMap::from([(
-            std::any::TypeId::of::<kroma_engine::services::notify::types::DeclaredTypes>(),
-            Arc::new(crate::boot::state::declared_types(&supervisor)) as Arc<_>,
-        )]);
+        HashMap::from([
+            (
+                std::any::TypeId::of::<kroma_module_supervisor::Supervisor>(),
+                supervisor.clone() as Arc<_>,
+            ),
+            (
+                std::any::TypeId::of::<kroma_engine::services::notify::types::DeclaredTypes>(),
+                Arc::new(crate::boot::state::declared_types(&supervisor)) as Arc<_>,
+            ),
+        ]);
     let state = AppState::new(
         config,
         false,

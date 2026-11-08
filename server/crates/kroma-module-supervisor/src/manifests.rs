@@ -69,6 +69,7 @@ impl Supervisor {
     pub(crate) fn invalidate_manifests(&self) {
         *self.manifests_cache.write().unwrap() = None;
         *self.notifications_cache.write().unwrap() = None;
+        self.frontends.write().unwrap().forget();
     }
 
     /// The ids of every runtime-installed (`.kmod`) module — not the ones

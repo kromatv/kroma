@@ -1,6 +1,7 @@
 import { useT } from '@kromatv/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
+import { modulesQuery } from '#web/modules/remotes';
 import { useAuth } from '#web/shared/lib/auth';
 
 export const CORE_CALLER = 'core';
@@ -10,11 +11,7 @@ export const CORE_CALLER = 'core';
 export function useCallerName(): (caller: string) => string {
   const t = useT();
   const { client } = useAuth();
-  const { data } = useQuery({
-    queryKey: ['modules'],
-    queryFn: () => client.modules.list(),
-    staleTime: 30_000,
-  });
+  const { data } = useQuery(modulesQuery(client));
   const names = useMemo(
     () => new Map<string, string>((data ?? []).map((module) => [module.id, module.name])),
     [data],

@@ -7,6 +7,11 @@ const listed = (...ids: string[]) =>
     ids.map((id) => ({ id, enabled: true, feRemote: { module: './remoteEntry.js' } }) as never),
   );
 
+const REVISION = '3f2a9c1d8e7b6a50';
+
+const pinned = (id: string, shared?: Record<string, string[]>) =>
+  vi.fn(async () => [{ id, enabled: true, frontend: { revision: REVISION, shared } }] as never);
+
 const module = (id: string, extra: Partial<KromaModule> = {}) => ({
   default: { id, version: '1.0.0', ...extra },
 });
@@ -36,7 +41,7 @@ afterEach(() => {
 
 describe('the entries a host loads', () => {
   it('are handed only what their builds declared they read', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('vpn'));
+    const remotes = createRuntimeRemotes(listed('vpn'));
     const given = loaders();
 
     const added = await remotes.loadRuntimeRemotes(new ModuleRegistry(), given);
@@ -52,7 +57,7 @@ describe('the entries a host loads', () => {
   });
 
   it('read the declaration from beside the entry on the server origin', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('vpn'));
+    const remotes = createRuntimeRemotes(listed('vpn'));
     const given = loaders();
 
     await remotes.loadRuntimeRemotes(new ModuleRegistry(), given);
@@ -63,7 +68,7 @@ describe('the entries a host loads', () => {
   });
 
   it('all get the full set when one of them declares nothing', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('vpn', 'legacy'));
+    const remotes = createRuntimeRemotes(listed('vpn', 'legacy'));
     const given = loaders({
       readDeclaration: vi.fn(async (url: string) =>
         url.includes('legacy') ? null : { react: ['lazy'] },
@@ -77,7 +82,7 @@ describe('the entries a host loads', () => {
   });
 
   it('get the full set before a module that runs code at start is registered', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('notes'));
+    const remotes = createRuntimeRemotes(listed('notes'));
     const registry = new ModuleRegistry();
     const given = loaders({ importRemote: vi.fn(async () => module('notes', { setup() {} })) });
 
@@ -92,7 +97,7 @@ describe('the entries a host loads', () => {
 
   it('come from the list the host gave, without a fetch of their own', async () => {
     const list = listed('vpn');
-    const remotes = createRuntimeRemotes(undefined, list);
+    const remotes = createRuntimeRemotes(list);
 
     await remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders());
 
@@ -101,9 +106,42 @@ describe('the entries a host loads', () => {
   });
 });
 
+describe('the entries a module list names', () => {
+  it('are handed what the list says they read, with no request for it', async () => {
+    const remotes = createRuntimeRemotes(pinned('vpn', { react: ['lazy'] }));
+    const given = loaders();
+
+    await remotes.loadRuntimeRemotes(new ModuleRegistry(), given);
+
+    expect(given.readDeclaration).not.toHaveBeenCalled();
+    expect(given.provideEntryShared).toHaveBeenCalledWith([{ react: ['lazy'] }]);
+  });
+
+  it('are imported from the revision the list names', async () => {
+    const remotes = createRuntimeRemotes(pinned('vpn', {}));
+    const given = loaders();
+
+    await remotes.loadRuntimeRemotes(new ModuleRegistry(), given);
+
+    expect(given.importRemote).toHaveBeenCalledWith(
+      `http://localhost:3000/modules/vpn@${REVISION}/remoteEntry.js`,
+    );
+  });
+
+  it('get the full set when the list says the build declared nothing', async () => {
+    const remotes = createRuntimeRemotes(pinned('legacy'));
+    const given = loaders();
+
+    await remotes.loadRuntimeRemotes(new ModuleRegistry(), given);
+
+    expect(given.readDeclaration).not.toHaveBeenCalled();
+    expect(given.provideShared).toHaveBeenCalledOnce();
+  });
+});
+
 describe('ready', () => {
   it('loads the full set once and answers the same promise every call', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('vpn'));
+    const remotes = createRuntimeRemotes(listed('vpn'));
     const given = loaders();
     await remotes.loadRuntimeRemotes(new ModuleRegistry(), given);
 
@@ -115,7 +153,7 @@ describe('ready', () => {
   });
 
   it('puts the real modules over the stand-ins an entry was handed', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('vpn'));
+    const remotes = createRuntimeRemotes(listed('vpn'));
     const given = loaders({
       provideShared: vi.fn(async () => ({ '@kromatv/module-sdk': 'the real sdk' })),
     });
@@ -129,7 +167,7 @@ describe('ready', () => {
   });
 
   it('settles even when the full set cannot load', async () => {
-    const remotes = createRuntimeRemotes(undefined, listed('vpn'));
+    const remotes = createRuntimeRemotes(listed('vpn'));
     await remotes.loadRuntimeRemotes(
       new ModuleRegistry(),
       loaders({ provideShared: vi.fn(async () => Promise.reject(new Error('offline'))) }),

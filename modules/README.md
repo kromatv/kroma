@@ -284,8 +284,9 @@ main sidebar. `icon` is a name from `clients/web/src/modules/module-icons.ts`;
 `requires` gates the link by capability.
 
 `kroma build` bundles the frontend into `fe/` and `module.json` declares it with
-`"feRemote": { "module": "./remoteEntry.js" }`. The web client fetches
-`/modules/<id>/remoteEntry.js` for every enabled module at boot. The bundle
+`"feRemote": { "module": "./remoteEntry.js" }`. The web client imports the
+entry of every enabled module at boot, from `/modules/<id>@<revision>/`, a URL
+that moves with the bundle's bytes and is cached for a year. The bundle
 carries none of `react`, `@kromatv/ui`, `@kromatv/module-sdk`, `@kromatv/core`,
 `@kromatv/client`, `@tanstack/react-query` or `react-call`: it reads them from
 the host at load time (`SHARED_MODULES` in `@kromatv/module-sdk`), so one React,
@@ -297,8 +298,8 @@ components from `@kromatv/ui/kit`; a deeper kit path is folded onto it.
 
 Keep the entry to `defineModule` and `lazy()`. The build writes `fe/shared.json`
 beside `remoteEntry.js`, naming what the entry and the chunks it imports
-statically read from the host as they load, and the host hands over only that
-at boot. The rest, the kit included, arrives when a module page, slot or panel
+statically read from the host as they load; the server folds it into the module
+list, and the host hands over only that at boot. The rest, the kit included, arrives when a module page, slot or panel
 first renders. An entry that imports the kit at its top level makes every page
 of the app load it, whether or not the module shows anything there.
 
