@@ -19,6 +19,8 @@ async fn health_and_status_are_public_and_report_the_demo_counts() {
     assert_eq!(body["shows"], json!(2));
     assert_eq!(body["libraries"], json!(2));
     assert_eq!(body["ffprobe"], json!(false));
+    assert!(body["build"].is_u64());
+    assert!(body["commit"].is_string());
 
     // /status is the public scan/enrichment snapshot (idle in the test app).
     let (status, snap) = get(&t.app, "/api/status", None).await;

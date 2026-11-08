@@ -102,7 +102,16 @@ describe('the stamp it serves', () => {
 
   it('carries every field the app reads', () => {
     expect(Object.keys(stamp()).sort()).toEqual(
-      ['branch', 'buildDate', 'commit', 'commitFull', 'dirty', 'repository', 'version'].sort(),
+      [
+        'branch',
+        'build',
+        'buildDate',
+        'commit',
+        'commitFull',
+        'dirty',
+        'repository',
+        'version',
+      ].sort(),
     );
   });
 

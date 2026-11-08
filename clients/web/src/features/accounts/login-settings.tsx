@@ -16,6 +16,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
+import { clientStamp, serverStamp, stampLabel } from '#web/shared/lib/version-stamp';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 import { MODAL_SCRIM } from '#web/shared/ui';
@@ -159,7 +160,10 @@ export function LoginSettings() {
 
                 <Divider spacing={6} />
                 <SectionHead title={t('nav.versionClient')} />
-                <InfoRow label={t('settings.version')} value={`v${buildInfo.version}`} />
+                <InfoRow
+                  label={t('settings.version')}
+                  value={stampLabel(clientStamp(buildInfo), t)}
+                />
                 <InfoRow
                   label={t('settings.commit')}
                   value={
@@ -184,7 +188,7 @@ export function LoginSettings() {
                 </SectionHead>
                 <InfoRow
                   label={t('settings.version')}
-                  value={health ? `v${health.version}` : '…'}
+                  value={health ? stampLabel(serverStamp(health), t) : '…'}
                 />
                 <InfoRow label={t('settings.content')} value={health ? contentLine(health) : '…'} />
 
