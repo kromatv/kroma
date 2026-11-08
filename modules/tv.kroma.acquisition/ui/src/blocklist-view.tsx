@@ -22,7 +22,7 @@ import { useAcquisitionApi } from './api';
 import type { BlockedRelease } from './judgement-schemas';
 import { useBlocklist } from './use-rules';
 
-const COLUMNS: TableColumn[] = [{}, { width: 150, from: 'md' }, { width: 120 }, { width: 64 }];
+const COLUMNS: TableColumn[] = [{ min: 200 }, { width: 150 }, { width: 120 }, { width: 64 }];
 
 const PER_PAGE = 25;
 

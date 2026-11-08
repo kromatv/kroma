@@ -99,7 +99,7 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
         <PageHeader.Title>{req.title}</PageHeader.Title>
         <PageHeader.Subtitle>{metaLine(req, t)}</PageHeader.Subtitle>
         <PageHeader.Actions>
-          <Row wrap gap={8}>
+          <Row wrap gap={8} maxW="100%">
             {canModerate ? (
               <Moderation
                 req={req}

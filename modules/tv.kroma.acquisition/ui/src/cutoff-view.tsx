@@ -7,12 +7,7 @@ import { useQualityLabel } from './use-quality-label';
 import { useCutoffTitles } from './use-rules';
 import { useSearchNow } from './use-search-now';
 
-const COLUMNS: TableColumn[] = [
-  { min: 200 },
-  { width: 150, from: 'md' },
-  { width: 160, from: 'md' },
-  { width: 150 },
-];
+const COLUMNS: TableColumn[] = [{ min: 200 }, { width: 150 }, { width: 160 }, { width: 150 }];
 
 const POSTER_W = 32;
 const POSTER_H = 48;

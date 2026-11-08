@@ -73,7 +73,7 @@ export function HistoryFilters({
     narrow({ range: value !== EVERY_WINDOW && isHistoryRange(value) ? value : undefined });
 
   return (
-    <Row gap={10} wrap>
+    <Row gap={10} wrap maxW="100%">
       {search.item ? (
         <Chip
           active

@@ -21,9 +21,9 @@ const COLUMNS = [
   { width: 60 },
   { width: 96, from: 'md' },
   { width: 76 },
-  { flex: 1, min: 110 },
-  { width: 112, from: 'md' },
-  { width: 124, from: 'lg' },
+  { flex: 1, min: 180 },
+  { width: 112 },
+  { width: 124 },
   { width: 104, align: 'end' },
   { width: 88 },
 ] as const;

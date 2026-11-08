@@ -124,6 +124,7 @@ function SeasonCard({
   const s = useStyles(sDefinition);
   const t = useT();
   const confirm = useConfirm();
+  const narrow = useBreakpoint() === 'base';
   const [open, setOpen] = useState(defaultOpen);
   const { data, isPending, isError, refetch } = useSeasonLedger(tmdbId, season.season, open);
   const name = useSeasonName()(season.season);
@@ -164,11 +165,13 @@ function SeasonCard({
           ring="focusInset"
           style={s.header}
         >
-          <Box w={THUMB_COLUMN} shrink={0} align="center">
-            <Box w={POSTER_W} h={POSTER_H} radius="xs" overflow="hidden" bg="tint/6">
-              <Image src={sizedImageUrl(season.posterUrl ?? poster, 185)} fit="cover" fill />
+          {narrow ? null : (
+            <Box w={THUMB_COLUMN} shrink={0} align="center">
+              <Box w={POSTER_W} h={POSTER_H} radius="xs" overflow="hidden" bg="tint/6">
+                <Image src={sizedImageUrl(season.posterUrl ?? poster, 185)} fit="cover" fill />
+              </Box>
             </Box>
-          </Box>
+          )}
           <Box flex minW={0}>
             <Text variant="label" lines={1}>
               {name}

@@ -9,10 +9,10 @@ import { IndexerCell, SeedersCell, SizeCell } from './release-cells';
 import type { ManualReleaseView } from './schemas';
 
 const COLUMNS: TableColumn[] = [
-  {},
-  { width: 150, from: 'md' },
-  { width: 92, from: 'md' },
-  { width: 84, from: 'md' },
+  { min: 220 },
+  { width: 150 },
+  { width: 92 },
+  { width: 84 },
   { width: 64 },
 ];
 

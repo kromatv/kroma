@@ -121,7 +121,7 @@ export function PipelinePage() {
       <PageHeader.Root>
         <PageHeader.Title>{t('admin.pipelineTitle')}</PageHeader.Title>
         <PageHeader.Actions>
-          <Row wrap minW={0} gap={12}>
+          <Row wrap minW={0} maxW="100%" gap={12}>
             {canManage ? (
               <Button
                 variant="glass"
@@ -163,9 +163,7 @@ export function PipelinePage() {
         onPick={(facet, value) => pick(facet === 'status' ? setStatus : setKind)(value)}
       />
 
-      <Table.Root
-        columns={[{}, { width: 198, from: 'md' }, { width: 132, from: 'md' }, { width: 64 }]}
-      >
+      <Table.Root columns={[{ min: 200 }, { width: 198 }, { width: 132 }, { width: 64 }]}>
         <Table.Header>
           <Table.Column>{t('pipeline.colElement')}</Table.Column>
           <Table.Column>{t('pipeline.treatments')}</Table.Column>

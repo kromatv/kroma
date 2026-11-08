@@ -440,13 +440,38 @@ describe('a row the caller reorders', () => {
 const grid = () => screen.getByRole('table') as HTMLElement;
 
 describe('a table wider than the room it is given', () => {
-  it('never scrolls sideways: the frame is the table, and a flex column shrinks to its minimum', () => {
+  it('scrolls sideways, and never narrows below the widths and minimums it draws', () => {
     pinDesignWidth(1200);
     render(<Declared />);
 
+    const scroller = grid().parentElement?.parentElement as Element;
+
     expect(grid().firstElementChild?.getAttribute('role')).toBe('rowgroup');
+    expect(getComputedStyle(scroller).overflowX).toBe('auto');
+    expect(getComputedStyle(grid()).minWidth).toBe('436px');
+  });
+
+  it('leaves a column it does not draw out of that floor', () => {
+    pinDesignWidth(390);
+    render(<Declared />);
+
+    expect(getComputedStyle(grid()).minWidth).toBe('308px');
+  });
+});
+
+describe('a table whose columns state no width', () => {
+  it('is the frame itself, with nothing to scroll', () => {
+    render(
+      <Table.Root label="Modules">
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>tv.kroma.vpn</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table.Root>,
+    );
+
     expect(getComputedStyle(grid().parentElement as Element).overflowX).not.toBe('auto');
-    expect(getComputedStyle(grid()).minWidth).toBe('0px');
   });
 });
 

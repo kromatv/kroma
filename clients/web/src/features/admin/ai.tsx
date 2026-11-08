@@ -154,11 +154,11 @@ export function AiPage() {
         py={18}
         mt={24}
       >
-        <Row gap={14}>
+        <Row gap={14} flex minW={0}>
           <Row center w={40} h={40} shrink={0} radius="xs" bg="accentSoft">
             <Icon name="sparkles" size={20} thickness={1.8} color="accentText" />
           </Row>
-          <Box>
+          <Box flex minW={0}>
             <Text variant="label">{t('admin.aiEnabled')}</Text>
             <Text variant="meta" color="textDim" mt={2}>
               {t('admin.aiEnabledHint')}

@@ -4,12 +4,20 @@ import { sharedStyle, style, useStyleScope } from '#ui/core';
 // the arrow keys move the selection the way a native radio group does.
 
 import { Children, isValidElement, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Animated, Easing, type StyleProp, type View, type ViewStyle } from 'react-native';
+import {
+  Animated,
+  Easing,
+  ScrollView,
+  type StyleProp,
+  type View,
+  type ViewStyle,
+} from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 
 import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
+import { RingScopeProvider } from '#ui/lib/ring-scope';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import {
   type Box2D,
@@ -121,32 +129,41 @@ function Root<T extends string>({
     mount,
   };
 
+  const group = (
+    <Box
+      row
+      self={stretch ? 'stretch' : 'flex-start'}
+      gap={GROUP_PAD}
+      p={GROUP_PAD}
+      radius={metrics.radius}
+      border="borderStrong"
+      bg="surface2"
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      // A physical keyboard moves the selection with the arrows, the way a
+      // native radio group does; the D-pad already walks the FocusRegion.
+      onKeyDown={(event) => {
+        const key = event.nativeEvent.key;
+        if (key === 'ArrowLeft' || key === 'ArrowUp') move(-1);
+        else if (key === 'ArrowRight' || key === 'ArrowDown') move(1);
+      }}
+      style={style}
+    >
+      <Thumb at={thumb} radius={segmentRadius(shell, scope)} />
+      {children}
+    </Box>
+  );
   return (
     <Context.Provider value={ctx}>
-      <FocusRegion>
-        <Box
-          row
-          self={stretch ? 'stretch' : 'flex-start'}
-          gap={GROUP_PAD}
-          p={GROUP_PAD}
-          radius={metrics.radius}
-          border="borderStrong"
-          bg="surface2"
-          accessibilityRole="radiogroup"
-          accessibilityLabel={label}
-          // A physical keyboard moves the selection with the arrows, the way a
-          // native radio group does; the D-pad already walks the FocusRegion.
-          onKeyDown={(event) => {
-            const key = event.nativeEvent.key;
-            if (key === 'ArrowLeft' || key === 'ArrowUp') move(-1);
-            else if (key === 'ArrowRight' || key === 'ArrowDown') move(1);
-          }}
-          style={style}
-        >
-          <Thumb at={thumb} radius={segmentRadius(shell, scope)} />
-          {children}
-        </Box>
-      </FocusRegion>
+      {stretch ? (
+        <FocusRegion>{group}</FocusRegion>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={SCROLLER}>
+          <FocusRegion>
+            <RingScopeProvider value="focusInset">{group}</RingScopeProvider>
+          </FocusRegion>
+        </ScrollView>
+      )}
     </Context.Provider>
   );
 }
@@ -192,6 +209,8 @@ const THUMB = style({
   pointerEvents: 'none',
   bg: 'accentSoft',
 });
+
+const SCROLLER = style({ grow: 0, shrink: 1, maxW: '100%' });
 
 const SegmentGroup = { Root, Item, Label, Hint };
 

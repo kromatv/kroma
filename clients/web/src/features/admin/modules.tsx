@@ -114,25 +114,23 @@ function ModulesInner() {
         <PageHeader.Title>{t('admin.modulesTitle')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('admin.modulesSub')}</PageHeader.Subtitle>
         <PageHeader.Actions>
-          <Row gap={8}>
-            <Button
-              variant="glass"
-              label={t('admin.modulesRegistries')}
-              icon="world"
-              onPress={() =>
-                void RegistriesDrawer.call({}).then((c) => {
-                  if (c) void refreshAll();
-                })
-              }
-            />
-            <Button
-              variant="glass"
-              label={t('admin.modulesUpload')}
-              icon="upload"
-              onPress={() => fileRef.current?.click()}
-              loading={upload.busy}
-            />
-          </Row>
+          <Button
+            variant="glass"
+            label={t('admin.modulesRegistries')}
+            icon="world"
+            onPress={() =>
+              void RegistriesDrawer.call({}).then((c) => {
+                if (c) void refreshAll();
+              })
+            }
+          />
+          <Button
+            variant="glass"
+            label={t('admin.modulesUpload')}
+            icon="upload"
+            onPress={() => fileRef.current?.click()}
+            loading={upload.busy}
+          />
         </PageHeader.Actions>
       </PageHeader.Root>
       <input

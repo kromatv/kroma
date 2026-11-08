@@ -10,17 +10,17 @@ export interface HistoryColumn extends TableColumn {
 }
 
 export const HISTORY_COLUMNS: readonly HistoryColumn[] = [
-  { column: 'username', labelKey: 'admin.colUser', flex: 1.1 },
-  { column: 'kind', labelKey: 'admin.colType', flex: 0.7, from: 'md' },
-  { column: 'title', labelKey: 'admin.colTitle', flex: 2 },
-  { column: 'player', labelKey: 'admin.colPlayer', flex: 1.1, from: 'md' },
-  { column: 'device', labelKey: 'admin.colPlatform', flex: 1, from: 'md' },
-  { column: 'endedAt', labelKey: 'admin.colWhen', flex: 1, from: 'md' },
+  { column: 'username', labelKey: 'admin.colUser', flex: 1.1, min: 120 },
+  { column: 'kind', labelKey: 'admin.colType', flex: 0.7, min: 96 },
+  { column: 'title', labelKey: 'admin.colTitle', flex: 2, min: 200 },
+  { column: 'player', labelKey: 'admin.colPlayer', flex: 1.1, min: 120 },
+  { column: 'device', labelKey: 'admin.colPlatform', flex: 1, min: 120 },
+  { column: 'endedAt', labelKey: 'admin.colWhen', flex: 1, min: 132 },
 ];
 
 export const ITEM_HISTORY_COLUMNS: readonly HistoryColumn[] = HISTORY_COLUMNS.filter(
   (column) => column.column !== 'title',
-).map((column) => (column.column === 'endedAt' ? { ...column, from: 'base' as const } : column));
+);
 
 export function isHistorySort(value: unknown): value is HistorySort {
   return HISTORY_COLUMNS.some((column) => column.column === value);

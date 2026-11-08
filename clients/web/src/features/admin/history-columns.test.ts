@@ -38,10 +38,11 @@ describe("the watch history's columns", () => {
     expect(ITEM_HISTORY_COLUMNS.map((column) => column.column)).not.toContain('title');
   });
 
-  it('keeps when it was watched on a narrow screen once the title is gone', () => {
-    const when = ITEM_HISTORY_COLUMNS.find((column) => column.column === 'endedAt');
-
-    expect(when?.from).toBe('base');
+  it('keeps every column on a narrow screen, each with a floor the table scrolls to', () => {
+    for (const column of [...HISTORY_COLUMNS, ...ITEM_HISTORY_COLUMNS]) {
+      expect(column.from).toBeUndefined();
+      expect(column.min).toBeGreaterThan(0);
+    }
   });
 
   it('orders by a column the table has and by nothing else', () => {
