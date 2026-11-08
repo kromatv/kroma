@@ -163,3 +163,29 @@ describe('a segment that holds more than a string', () => {
     expect(screen.getByLabelText('Unread, 2')).toBeTruthy();
   });
 });
+
+const scrollerOf = (group: HTMLElement) => {
+  let node = group.parentElement;
+  while (node && getComputedStyle(node).overflowX !== 'auto') node = node.parentElement;
+  return node;
+};
+
+describe('a group wider than the room it is given', () => {
+  it('scrolls sideways rather than running off the screen', () => {
+    render(<Group value="a" onValueChange={() => {}} />);
+
+    expect(scrollerOf(screen.getByRole('radiogroup'))).not.toBeNull();
+  });
+
+  it('does not scroll when it fills the width, every segment an equal share', () => {
+    render(
+      <SegmentGroup.Root value="a" onValueChange={() => {}} label="Mode" stretch>
+        <SegmentGroup.Item value="a">
+          <SegmentGroup.Label>A</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      </SegmentGroup.Root>,
+    );
+
+    expect(scrollerOf(screen.getByRole('radiogroup'))).toBeNull();
+  });
+});

@@ -26,6 +26,7 @@ interface TableGrid {
   columns: readonly TableColumn[];
   boxes: readonly ViewStyle[];
   step: number;
+  minWidth: number;
 }
 
 const GridContext = createContext<TableGrid | null>(null);
@@ -85,5 +86,23 @@ function lastDrawn(columns: readonly TableColumn[], count: number, step: number)
   return -1;
 }
 
+function minWidthOf(columns: readonly TableColumn[], step: number): number {
+  let total = 0;
+  for (const column of columns) {
+    if (drawn(column, step)) total += column.width ?? column.min ?? 0;
+  }
+  return total;
+}
+
 export type { TableColumn, TableGrid };
-export { breakpointMask, columnBox, drawn, FILL, GridContext, lastDrawn, NO_COLUMNS, useTableGrid };
+export {
+  breakpointMask,
+  columnBox,
+  drawn,
+  FILL,
+  GridContext,
+  lastDrawn,
+  minWidthOf,
+  NO_COLUMNS,
+  useTableGrid,
+};

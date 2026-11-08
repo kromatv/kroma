@@ -12,10 +12,10 @@ interface RuleColumn extends TableColumn {
 const COLUMNS: readonly RuleColumn[] = [
   { labelKey: 'network.colOrder', width: 48 },
   { labelKey: 'network.colCaller', flex: 1.3, min: 120 },
-  { labelKey: 'network.colPurpose', flex: 0.8, from: 'md' },
+  { labelKey: 'network.colPurpose', flex: 0.8, min: 110 },
   { labelKey: 'network.colHost', flex: 1.4, min: 140 },
   { labelKey: 'network.colAction', width: 104 },
-  { labelKey: 'network.colNote', flex: 1.2, from: 'lg' },
+  { labelKey: 'network.colNote', flex: 1.2, min: 140 },
   { labelKey: null, width: 168, align: 'end' },
 ];
 

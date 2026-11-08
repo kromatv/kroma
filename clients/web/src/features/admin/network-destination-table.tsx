@@ -14,11 +14,11 @@ interface DestinationColumn extends TableColumn {
 
 const COLUMNS: readonly DestinationColumn[] = [
   { labelKey: 'network.colHost', flex: 2, min: 180 },
-  { labelKey: 'network.colCallers', flex: 1.2, from: 'md' },
+  { labelKey: 'network.colCallers', flex: 1.2, min: 140 },
   { labelKey: 'network.colRoute', flex: 1, min: 96 },
   { labelKey: 'network.colCount', width: 150, align: 'end' },
-  { labelKey: 'network.colVolume', flex: 1, from: 'lg', align: 'end' },
-  { labelKey: 'network.colLastSeen', flex: 1, from: 'md' },
+  { labelKey: 'network.colVolume', flex: 1, min: 96, align: 'end' },
+  { labelKey: 'network.colLastSeen', flex: 1, min: 120 },
   { labelKey: null, width: 56, align: 'end' },
 ];
 

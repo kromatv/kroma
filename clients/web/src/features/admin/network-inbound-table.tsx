@@ -16,8 +16,8 @@ const COLUMNS: readonly InboundColumn[] = [
   { labelKey: 'network.colAddress', flex: 1.2, min: 130 },
   { labelKey: 'network.colRoute', width: 120 },
   { labelKey: 'network.colRequests', width: 110, align: 'end' },
-  { labelKey: 'network.colVolume', flex: 1, from: 'lg', align: 'end' },
-  { labelKey: 'network.colLastSeen', flex: 1, from: 'md' },
+  { labelKey: 'network.colVolume', flex: 1, min: 96, align: 'end' },
+  { labelKey: 'network.colLastSeen', flex: 1, min: 120 },
 ];
 
 const KIND_LABEL: Record<DeviceKind, MessageKey> = {

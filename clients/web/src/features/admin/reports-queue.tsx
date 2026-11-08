@@ -197,13 +197,7 @@ export function ReportsQueuePage() {
       </Row>
 
       <Table.Root
-        columns={[
-          {},
-          { width: 128, from: 'md' },
-          { width: 150, from: 'md' },
-          { width: 96, from: 'md' },
-          { width: 116, from: 'md' },
-        ]}
+        columns={[{ min: 200 }, { width: 128 }, { width: 150 }, { width: 96 }, { width: 116 }]}
       >
         <Table.Header>
           <Table.Column>{t('reports.colTitle')}</Table.Column>

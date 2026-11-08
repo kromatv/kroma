@@ -104,7 +104,7 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 <Scene name="Columns that hold">
   The same four columns at two widths. State, Added and Size state a `width` and keep it to the pixel; Title takes what is left and stops at its `min` of 160 rather than squeezing to nothing. Size sits at the end of its cell, where a number is read against the ones above it. Added names `from: 'md'` and is gone below that breakpoint, which follows the WINDOW rather than this canvas, so narrow the browser to watch it leave the header and every row at once.
 
-  The second table is narrower than those columns want: a table never scrolls sideways, so a `flex` column shrinks to its `min` and truncates what it holds, and a column that cannot fit a narrow screen says `from: 'md'` and leaves rather than pushing the last column out of the frame.
+  The second table is narrower than those columns want. A `flex` column shrinks to its `min` and no further: once the `width`s and `min`s of the columns drawn add up to more than the frame, the table scrolls sideways inside it, so every column can still be reached on a phone. `from: 'md'` is for a column a narrow screen can do without, one whose value the row already shows some other way.
 
   {story.take(({ variant }) => (
     <Box gap={24}>
@@ -147,7 +147,7 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 </Scene>
 
 <Scene name="Columns the reader resizes">
-  `resizable` puts a seam at the trailing edge of every heading but the last, the same seam `<Resizable>` draws between panels. Drag it and the boundary follows the pointer: the column before it grows, the one after it gives the width up, and the columns beyond move only once that one reaches its floor. The table still never scrolls sideways, because a seam only ever shares out the width the table already has.
+  `resizable` puts a seam at the trailing edge of every heading but the last, the same seam `<Resizable>` draws between panels. Drag it and the boundary follows the pointer: the column before it grows, the one after it gives the width up, and the columns beyond move only once that one reaches its floor. A seam only ever shares out the width the table already has, so dragging one never makes the table wider.
 
   The seam is a D-pad stop too. Press it to take the arrow keys, move it, press it again to give them back. Press it twice, or hold it, and every column goes back to the width it was declared with. A column stops at its `min`, or at 56 points where it states none. A cell never paints past its column: text truncates, and anything that cannot, a chip or a badge, is clipped. So give a column that holds one a `min` as wide as what it holds, as the State column here does. Pass `autoSaveId` and the widths come back on the next visit, one layout for each set of columns the window draws.
 

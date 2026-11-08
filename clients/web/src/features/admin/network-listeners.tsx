@@ -18,7 +18,7 @@ interface ListenerColumn extends TableColumn {
 
 const COLUMNS: readonly ListenerColumn[] = [
   { labelKey: 'network.colOwner', flex: 1.2, min: 120 },
-  { labelKey: 'network.colPurpose', flex: 1, from: 'md' },
+  { labelKey: 'network.colPurpose', flex: 1, min: 120 },
   { labelKey: 'network.colAddress', flex: 1.4, min: 140 },
   { labelKey: 'network.colProtocol', width: 112 },
   { labelKey: 'network.colExposure', width: 112 },

@@ -15,13 +15,13 @@ interface FlowColumn extends TableColumn {
 const COLUMNS: readonly FlowColumn[] = [
   { labelKey: 'network.colTime', width: 88 },
   { labelKey: 'network.colCaller', flex: 1.2, min: 120 },
-  { labelKey: 'network.colPurpose', flex: 0.8, from: 'md' },
+  { labelKey: 'network.colPurpose', flex: 0.8, min: 110 },
   { labelKey: 'network.colDestination', flex: 1.8, min: 160 },
   { labelKey: 'network.colRoute', width: 92 },
-  { labelKey: 'network.colStatus', width: 72, from: 'md' },
-  { labelKey: 'network.colVolume', flex: 1, from: 'lg', align: 'end' },
-  { labelKey: 'network.colDuration', width: 88, from: 'md', align: 'end' },
-  { labelKey: 'network.colRule', flex: 1, from: 'lg' },
+  { labelKey: 'network.colStatus', width: 72 },
+  { labelKey: 'network.colVolume', flex: 1, min: 96, align: 'end' },
+  { labelKey: 'network.colDuration', width: 88, align: 'end' },
+  { labelKey: 'network.colRule', flex: 1, min: 120 },
 ];
 
 const ABSENT = '-';

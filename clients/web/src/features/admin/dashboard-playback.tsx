@@ -55,11 +55,9 @@ export function PlaybackSection() {
       <Section.Header>
         <Section.Title>{t('admin.playHistory')}</Section.Title>
         <Section.Actions>
-          <Row gap={10}>
-            <FilterSelect label={t('admin.colType')} choice={kind} />
-            <FilterSelect label={t('admin.colUser')} choice={account} />
-            <FilterSelect label={t('admin.playHistory')} choice={range} />
-          </Row>
+          <FilterSelect label={t('admin.colType')} choice={kind} />
+          <FilterSelect label={t('admin.colUser')} choice={account} />
+          <FilterSelect label={t('admin.playHistory')} choice={range} />
         </Section.Actions>
       </Section.Header>
       {data ? (
