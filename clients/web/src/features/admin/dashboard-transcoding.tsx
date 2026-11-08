@@ -5,7 +5,7 @@
 
 import type { LiveTranscode, Transcodes } from '@kromatv/client/admin';
 import { TABULAR } from '@kromatv/module-sdk';
-import { useFormat, useT } from '@kromatv/ui';
+import { type Format, useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   type ColorValue,
@@ -64,6 +64,12 @@ function title(s: LiveTranscode, t: ReturnType<typeof useT>) {
   return `${name} · ${t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' })}`;
 }
 
+function producedSpan(s: LiveTranscode, t: ReturnType<typeof useT>, fmt: Format) {
+  const fromMs = (s.startSecs ?? s.anchorSecs) * 1000;
+  if (s.outTimeMs <= 0 || s.outTimeMs < fromMs) return '-';
+  return t('admin.tcProducedSpan', { from: fmt.timecode(fromMs), to: fmt.timecode(s.outTimeMs) });
+}
+
 /** The line that says which silicon the host settled on, and why. A device that
  *  is present, listed and unusable looks exactly like no device at all, so the
  *  reason is the half an operator can act on. */
@@ -87,13 +93,14 @@ function TranscodeRow({ s }: Readonly<{ s: LiveTranscode }>) {
   const fmt = useFormat();
   const tone = speedTone(s.speed);
   const heavy = s.transcodesVideo && s.onTheCpu;
+  const name = title(s, t);
 
   return (
     <Surface elevated pad="none" border="border" px={20} py={16} gap={12}>
-      <Row between align="flex-start" gap={16}>
-        <Box minW={0} gap={4}>
+      <Box row={{ base: false, md: true }} between gap={16}>
+        <Box flex minW={0} gap={4}>
           <Text variant="title" lines={1}>
-            {title(s, t)}
+            <span title={name}>{name}</span>
           </Text>
           <Text variant="meta" color="textDim">
             {pictureLabel(s, t)} · {soundLabel(s, t)}
@@ -109,7 +116,7 @@ function TranscodeRow({ s }: Readonly<{ s: LiveTranscode }>) {
             {s.speed > 0 ? `${fmt.decimal(s.speed, 2)}×` : t('admin.tcStarting')}
           </Pill>
         </Row>
-      </Row>
+      </Box>
 
       {s.speed > 0 && s.speed < FALLING_BEHIND ? (
         <Row gap={8} radius="sm" bg="danger/10" px={12} py={8}>
@@ -144,7 +151,7 @@ function TranscodeRow({ s }: Readonly<{ s: LiveTranscode }>) {
         <DataField.Root size="sm">
           <DataField.Label>{t('admin.tcProduced')}</DataField.Label>
           <Text variant="meta" color="textMuted" style={TABULAR}>
-            {fmt.timecode(s.outTimeMs)}
+            {producedSpan(s, t, fmt)}
           </Text>
         </DataField.Root>
         <DataField.Root size="sm">

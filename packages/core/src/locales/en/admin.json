@@ -632,6 +632,7 @@
   "admin.tcOnTheCpu": "CPU",
   "admin.tcPipeline": "PIPELINE",
   "admin.tcProduced": "PRODUCED",
+  "admin.tcProducedSpan": "{from} to {to}",
   "admin.tcSegments": "SEGMENTS",
   "admin.tcSoftwareWarning": "No usable encoder found: every frame is rebuilt by the CPU.",
   "admin.tcStarting": "Starting",

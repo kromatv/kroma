@@ -632,6 +632,7 @@
   "admin.tcOnTheCpu": "Processeur",
   "admin.tcPipeline": "CHAÎNE",
   "admin.tcProduced": "PRODUIT",
+  "admin.tcProducedSpan": "{from} à {to}",
   "admin.tcSegments": "SEGMENTS",
   "admin.tcSoftwareWarning": "Aucun encodeur matériel utilisable : chaque image est reconstruite par le processeur.",
   "admin.tcStarting": "Démarrage",
