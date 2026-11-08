@@ -10,18 +10,21 @@ import { useAuth } from '#web/shared/lib/auth';
 
 import { PosterRail, RailSkeleton } from '#web/shared/ui';
 
+/** The two rails held while the server's sections are on their way. */
+export function SectionsSkeleton() {
+  return (
+    <>
+      <RailSkeleton />
+      <RailSkeleton />
+    </>
+  );
+}
+
 export function HomeSections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
   const { user, ready } = useAuth();
   if (!ready || !user) return null;
   return (
-    <Suspense
-      fallback={
-        <>
-          <RailSkeleton />
-          <RailSkeleton />
-        </>
-      }
-    >
+    <Suspense fallback={<SectionsSkeleton />}>
       <Sections excludeId={excludeId} />
     </Suspense>
   );

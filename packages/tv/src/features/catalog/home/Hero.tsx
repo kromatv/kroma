@@ -1,5 +1,5 @@
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem, Section, SectionItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Section, SectionItem, Show } from '@kromatv/client/media';
 import {
   formatRuntime,
   genreLabels,
@@ -27,7 +27,7 @@ import {
   useStyles,
   Veil,
 } from '@kromatv/ui/kit';
-import { entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
+import { entryId, entryMetadata, type HomeEntry } from '#tv/features/catalog/home/sectionEntry';
 
 const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
 const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
@@ -62,7 +62,7 @@ const sDefinition = styles({
 });
 
 export interface HeroInfo {
-  hero: SectionItem | null;
+  hero: HomeEntry | null;
   heroId: string | null;
   heroMeta: ReturnType<typeof entryMetadata> | null;
   heroBackdrop: string | null;
@@ -75,10 +75,10 @@ export interface HeroInfo {
 export function computeHero(
   featured: SectionItem | null,
   sections: Section[],
-  movies: MediaItem[],
+  movies: MediaCard[],
   client: KromaClient,
 ): HeroInfo {
-  const hero: SectionItem | null =
+  const hero: HomeEntry | null =
     featured ?? sections[0]?.items[0] ?? (movies[0] ? { type: 'movie', item: movies[0] } : null);
   const heroId = hero ? entryId(hero) : null;
   const heroMeta = hero ? entryMetadata(hero) : null;
@@ -101,9 +101,9 @@ export function computeHero(
 
 export interface HeroProps {
   info: HeroInfo;
-  onPlay: (m: MediaItem) => void;
+  onPlay: (m: MediaCard) => void;
   onSelectShow: (show: Show) => void;
-  onSelectEntry: (e: SectionItem) => void;
+  onSelectEntry: (e: HomeEntry) => void;
   maskInset: number;
 }
 
@@ -196,7 +196,7 @@ export function Hero({
 
 // Year · runtime · genre (quality lives in the badge). Shows have no
 // runtime, so it's just year · genre.
-function heroLine(t: Translate, e: SectionItem): string {
+function heroLine(t: Translate, e: HomeEntry): string {
   if (e.type === 'show') {
     return [e.show.year ? String(e.show.year) : null, genreLabels(t, e.show.metadata)[0]]
       .filter(Boolean)

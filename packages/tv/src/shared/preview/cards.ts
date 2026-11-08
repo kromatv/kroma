@@ -2,7 +2,7 @@
 // resumable items) into the carousel tile JSON the TV expects.
 
 import type { KromaClient } from '@kromatv/client';
-import type { ContinueItem, MediaItem } from '@kromatv/client/media';
+import type { ContinueItem, MediaCard, MediaItem } from '@kromatv/client/media';
 import { metaLine } from '@kromatv/core';
 import type { DeepLink } from '#tv/shared/preview/types';
 
@@ -12,7 +12,9 @@ const RECENT_BADGE = 'Nouveauté';
 const RESUME_BADGE = 'Reprendre';
 const MAX_TILES = 20;
 
-function newest(movies: MediaItem[]): MediaItem[] {
+type PreviewTitle = MediaCard & Partial<Pick<MediaItem, 'showId' | 'showTitle'>>;
+
+function newest(movies: MediaCard[]): MediaCard[] {
   return [...movies].sort((a, b) => {
     if (a.addedAt < b.addedAt) return 1;
     if (a.addedAt > b.addedAt) return -1;
@@ -33,28 +35,28 @@ interface Section {
   tiles: Tile[];
 }
 
-function hasArt(m: MediaItem): boolean {
+function hasArt(m: PreviewTitle): boolean {
   return !!(m.metadata?.backdropUrl || m.metadata?.posterUrl);
 }
 
-function deepLinkFor(m: MediaItem): DeepLink {
+function deepLinkFor(m: PreviewTitle): DeepLink {
   return m.kind === 'episode' && m.showId
     ? { type: 'show', id: m.showId }
     : { type: 'movie', id: m.id };
 }
 
-function titleFor(m: MediaItem): string {
+function titleFor(m: PreviewTitle): string {
   return m.showTitle ?? m.title;
 }
 
-function subtitleFor(m: MediaItem): string {
+function subtitleFor(m: PreviewTitle): string {
   const type = m.kind === 'episode' || m.showId ? 'Série' : 'Film';
   const meta = metaLine(m);
   return meta ? `${type} · ${meta}` : type;
 }
 
 // `?v=<addedAt>` busts the TV's preview image cache when art changes.
-function tile(client: KromaClient, m: MediaItem, badge: string, progress?: number): Tile {
+function tile(client: KromaClient, m: PreviewTitle, badge: string, progress?: number): Tile {
   const params = new URLSearchParams({ label: badge, v: m.addedAt });
   if (progress != null && progress > 0) params.set('progress', progress.toFixed(3));
   return {
@@ -70,7 +72,7 @@ function tile(client: KromaClient, m: MediaItem, badge: string, progress?: numbe
 /** The Smart Hub preview document, or `null` when there is nothing to show. */
 export function buildPreviewData(
   client: KromaClient,
-  movies: MediaItem[],
+  movies: MediaCard[],
   continueItems: ContinueItem[] = [],
 ): string | null {
   const sections: Section[] = [];

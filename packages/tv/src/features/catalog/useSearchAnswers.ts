@@ -1,13 +1,17 @@
 import type { DiscoverEntry } from '@kromatv/client/discovery';
-import type { SearchHit } from '@kromatv/client/media';
+import type { MediaCard, SearchHit } from '@kromatv/client/media';
 import { useEffect, useRef, useState } from 'react';
 import { useClient } from '#tv/app/router';
 
 const DEBOUNCE_MS = 250;
 
+/** A library answer: the server's ranked hit, or a catalogue card the offline
+ * fallback matched. */
+export type LibraryHit = SearchHit | { type: 'movie'; item: MediaCard };
+
 interface SearchAnswers {
   query: string;
-  library: SearchHit[];
+  library: LibraryHit[];
   discover: DiscoverEntry[];
 }
 
@@ -18,7 +22,7 @@ const NOTHING: SearchAnswers = { query: '', library: [], discover: [] };
  * its identity between renders. */
 export function useSearchAnswers(
   typed: string,
-  offline: (query: string) => SearchHit[],
+  offline: (query: string) => LibraryHit[],
 ): SearchAnswers {
   const client = useClient();
   const [answers, setAnswers] = useState<SearchAnswers>(NOTHING);
@@ -40,7 +44,7 @@ export function useSearchAnswers(
     const timer = setTimeout(() => {
       void Promise.all([
         client.media.search(query).then(
-          (answer) => answer.results,
+          (answer): LibraryHit[] => answer.results,
           () => offline(query),
         ),
         client.discovery.search(query).then(

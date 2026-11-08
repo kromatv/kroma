@@ -103,7 +103,7 @@ describe('the show bundle', () => {
 
 describe('the optional lookups', () => {
   it('treat a missing similar list as no suggestions', async () => {
-    c.media.similar.mockRejectedValue(new Error('boom'));
+    c.media.similarCards.mockRejectedValue(new Error('boom'));
     expect(await run(catalogQueries.similar(ItemId.parse('m1')))).toEqual([]);
   });
 

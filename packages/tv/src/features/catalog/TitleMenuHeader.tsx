@@ -18,9 +18,11 @@ function factsOf(t: Translate, title: HeldTitle): string {
       .filter(Boolean)
       .join(' · ');
   }
+  if (title.kind !== 'movie' && title.item.kind === 'episode') {
+    const episode = title.item;
+    return [episode.showTitle, episodeTag(episode)].filter(Boolean).join(' · ');
+  }
   const item = title.item;
-  if (item.kind === 'episode')
-    return [item.showTitle, episodeTag(item)].filter(Boolean).join(' · ');
   return [
     item.year ? String(item.year) : null,
     formatRuntime(item.durationMs),

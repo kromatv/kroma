@@ -1,6 +1,6 @@
 import { formatRuntime, genreLabels, qualityBadge } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Button, FocusRegion, styles, useFocusNav, useStyles } from '@kromatv/ui/kit';
+import { Button, FocusRegion, FocusSlot, styles, useFocusNav, useStyles } from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -13,10 +13,11 @@ import {
   WatchedButton,
 } from '#tv/features/catalog/detail/parts';
 import { TvAiSuggestRow } from '#tv/features/catalog/detail/TvAiSuggestRow';
+import { useFullItem, usePlayTitle } from '#tv/features/catalog/full-item';
 
 /** Film detail backdrop, synopsis, metadata, a Lecture button, my-list, an
- * "ends at" hint and the cast. The movie already carries its TMDB metadata from
- * the catalog list, so no extra fetch. */
+ * "ends at" hint and the cast. The page draws from the catalogue card at once;
+ * the cast arrives with the full item. */
 // The backdrop fills the stage and no more: the original is several times
 // this on a modern release.
 const STAGE_W = 1920;
@@ -26,6 +27,8 @@ export function TvMovieDetail() {
 
   const nav = useNav();
   const { item } = useParams('movie');
+  const full = useFullItem(item);
+  const play = usePlayTitle();
   const client = useClient();
   const t = useT();
   const myList = useMyList();
@@ -65,7 +68,7 @@ export function TvMovieDetail() {
             autoFocus
             icon="player-play-filled"
             label={t('player.play')}
-            onPress={() => nav.go('player', { item })}
+            onPress={() => play(full ?? item)}
           />
           <ListButton inList={myList.has(item.id)} onToggle={() => myList.toggle(item.id)} />
           <WatchedButton watched={watched.has(item.id)} onToggle={() => watched.toggle(item.id)} />
@@ -76,8 +79,12 @@ export function TvMovieDetail() {
       }
     >
       <EndsAtHint runtimeMs={item.durationMs} />
-      <CastRow cast={item.metadata?.cast} crew={item.metadata?.crew} />
-      <TvAiSuggestRow id={item.id} />
+      <FocusSlot>
+        <CastRow cast={full?.metadata?.cast} crew={full?.metadata?.crew} />
+      </FocusSlot>
+      <FocusSlot>
+        <TvAiSuggestRow id={item.id} />
+      </FocusSlot>
     </TvDetailScaffold>
   );
 }

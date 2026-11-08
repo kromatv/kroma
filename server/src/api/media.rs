@@ -13,7 +13,7 @@ use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
 use crate::i18n::ReqLocale;
-use crate::model::MediaCard;
+use crate::model::{MediaCard, MediaItem};
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -113,13 +113,19 @@ pub async fn list_movies(
     })
     .await?;
     visibility::keep_items(&user, &mut items);
-    Ok(match q.view {
+    Ok(items_in_view(items, q.view))
+}
+
+/// `items` as JSON, each cut down to a [`MediaCard`] when the caller asked for
+/// `?view=card`.
+pub fn items_in_view(items: Vec<MediaItem>, view: Option<ListView>) -> Response {
+    match view {
         Some(ListView::Card) => {
             let cards: Vec<MediaCard> = items.into_iter().map(MediaCard::from).collect();
             Json(cards).into_response()
         }
         None => Json(items).into_response(),
-    })
+    }
 }
 
 /// `GET /api/shows` (optional `?library=`) → `Show[]`. Personalises each show's

@@ -8,6 +8,7 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::extract::AuthUser;
+use crate::api::media::{items_in_view, ListView};
 use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
@@ -49,11 +50,19 @@ pub async fn for_you(
     }
 }
 
+#[derive(Deserialize)]
+pub struct SimilarParams {
+    view: Option<ListView>,
+}
+
+/// `GET /api/items/:id/similar` → `MediaItem[]`, or with `?view=card` →
+/// `MediaCard[]`: the shape a poster rail draws.
 pub async fn similar(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
+    Query(params): Query<SimilarParams>,
 ) -> Response {
     if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
         return resp;
@@ -67,7 +76,7 @@ pub async fn similar(
     {
         Ok(mut items) => {
             visibility::keep_items(&user, &mut items);
-            Json(items).into_response()
+            items_in_view(items, params.view)
         }
         Err(resp) => resp,
     }

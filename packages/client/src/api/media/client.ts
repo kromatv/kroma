@@ -108,6 +108,10 @@ export default function mediaApi(ctx: RequestContext) {
     /** "More like this": content-embedding neighbours of a title (public). */
     similar: (id: ItemId) => ctx.get('/items/:id/similar', MediaItem.array(), { params: { id } }),
 
+    /** `similar()` as a poster rail draws it: a fraction of the full items. */
+    similarCards: (id: ItemId) =>
+      ctx.get('/items/:id/similar', MediaCard.array(), { params: { id }, query: { view: 'card' } }),
+
     /** Zero-shot themed row: titles matching a free-text phrase (e.g. "christmas
      * movie", "action"), ranked by content-embedding similarity (public). */
     themed: (query: string) => ctx.get('/themed', MediaItem.array(), { query: { q: query } }),

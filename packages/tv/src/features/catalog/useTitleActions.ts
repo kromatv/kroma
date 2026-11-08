@@ -7,6 +7,7 @@ import { useContinue } from '#tv/app/providers/continue';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
+import { usePlayTitle } from '#tv/features/catalog/full-item';
 import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
 import { useOpenShow, useUpNext } from '#tv/features/catalog/useTitleTargets';
 
@@ -45,6 +46,7 @@ export function useTitleActions(title: HeldTitle): TitleAction[] {
   const watched = useWatched();
   const openShow = useOpenShow();
   const { refresh } = useContinue();
+  const playTitle = usePlayTitle();
   const upNext = useUpNext(title.kind === 'show' ? title.item.id : null);
   const subject = title.item;
 
@@ -75,7 +77,16 @@ export function useTitleActions(title: HeldTitle): TitleAction[] {
     run: () => nav.go('report', { kind: reportKind(title), id: subject.id, title: subject.title }),
   };
 
-  if (title.kind === 'movie') return [playItem(title.item, false), list, markWatched, report];
+  if (title.kind === 'movie') {
+    const film = title.item;
+    const play: TitleAction = {
+      id: 'play',
+      icon: 'player-play-filled',
+      label: t('player.play'),
+      run: () => playTitle(film),
+    };
+    return [play, list, markWatched, report];
+  }
   if (title.kind === 'show') {
     const showId = title.item.id;
     const start = (next: UpNext | null) => {

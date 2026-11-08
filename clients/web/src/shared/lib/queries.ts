@@ -105,9 +105,9 @@ export function createQueries(client: QueryClient) {
     similar: (id: ItemId) =>
       queryOptions({
         queryKey: ['similar', id] as const,
-        // The catalogue tolerates a missing similar list (falls back to genre
-        // overlap), so swallow failures into an empty array here.
-        queryFn: () => client.media.similar(id).catch(() => []),
+        // A title page renders without its "more like this" rail, so a failure
+        // resolves to an empty one rather than to the route's error boundary.
+        queryFn: () => client.media.similarCards(id).catch(() => []),
       }),
 
     personCredits: (person: string) => client.query.media.people(person),

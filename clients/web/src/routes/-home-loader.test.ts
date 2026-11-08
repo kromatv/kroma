@@ -39,29 +39,28 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it('renders a featured pick without fetching the whole movie catalogue', async () => {
-  media.featured.mockResolvedValue({ type: 'show', show: { id: 'show-1' } });
+it('hands the page over before the featured pick lands', async () => {
+  media.featured.mockReturnValue(new Promise(() => undefined));
 
   const queryClient = await load();
 
-  expect(media.movieCards).not.toHaveBeenCalled();
-  expect(queryClient.getQueryData(['featured'])).toMatchObject({ type: 'show' });
+  expect(queryClient.getQueryData(['featured'])).toBeUndefined();
 });
 
-it('starts the home rails alongside the featured pick', async () => {
-  media.featured.mockResolvedValue({ type: 'show', show: { id: 'show-1' } });
+it('starts the featured pick and the home rails together', async () => {
+  media.featured.mockReturnValue(new Promise(() => undefined));
 
   await load();
 
+  expect(media.featured).toHaveBeenCalledTimes(1);
   expect(media.shows).toHaveBeenCalledTimes(1);
   expect(requestedPaths()).toEqual(expect.arrayContaining(['/api/home', '/api/continue']));
 });
 
-it('falls back to the catalogue when the server has no pick', async () => {
+it('leaves the movie catalogue alone, even when the server has no pick', async () => {
   media.featured.mockResolvedValue(null);
 
   await load();
 
-  expect(media.movieCards).toHaveBeenCalledTimes(1);
-  expect(media.shows).toHaveBeenCalledTimes(1);
+  expect(media.movieCards).not.toHaveBeenCalled();
 });
