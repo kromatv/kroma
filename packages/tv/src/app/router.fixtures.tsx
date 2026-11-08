@@ -20,6 +20,7 @@ export function stubScreens(screens: Partial<TvScreens> = {}): TvScreens {
     show: stub('show'),
     discover: stub('discover'),
     player: stub('player'),
+    trailer: stub('trailer'),
     report: stub('report'),
     releases: stub('releases'),
     ...screens,

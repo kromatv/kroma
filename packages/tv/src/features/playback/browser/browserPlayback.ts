@@ -5,11 +5,17 @@
 import { lazy } from 'react';
 import type { PlaybackPlatform } from '#tv/features/playback/player/playbackBackend';
 
-/** Playback on the browser shells, the player loaded as its own chunk. */
+/** Playback on the browser shells, the player and the trailer each loaded as
+ * their own chunk. */
 export const BROWSER_PLAYBACK: PlaybackPlatform = {
   Player: lazy(() =>
     import('#tv/features/playback/browser/BrowserPlayer').then((m) => ({
       default: m.BrowserPlayer,
+    })),
+  ),
+  Trailer: lazy(() =>
+    import('#tv/features/playback/browser/BrowserTrailer').then((m) => ({
+      default: m.BrowserTrailer,
     })),
   ),
 };

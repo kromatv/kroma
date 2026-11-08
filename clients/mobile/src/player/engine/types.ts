@@ -49,6 +49,13 @@ export interface Engine extends EngineState {
   shutdown(): void;
 }
 
+/** What the chrome's transport reads and drives. A film's engine is one, and so
+ * is a clip's. */
+export type Transport = Pick<
+  Engine,
+  'player' | 'cur' | 'dur' | 'buffered' | 'playing' | 'waiting' | 'togglePlay' | 'seekTo' | 'skip'
+>;
+
 /** The engine's mutable state. Held in a ref, not in React state: the event
  * handlers read and write it many times per second, and none of it may trigger
  * a render on its own. */

@@ -56,7 +56,7 @@ tv.kroma.torrents/client
 tv.kroma.indexer/engine
 ```
 
-The handful the CORE calls are bare — `acquisition`, `transcriber`, `embedder` —
+The handful the CORE calls are bare — `acquisition`, `transcriber`, `embedder`, `trailer` —
 because the core has no manifest to define one in and nothing else may define
 one. A bare name is the core's; a name with a `/` belongs to the module before
 it.
@@ -148,8 +148,10 @@ core is one question:
 `tmdb_api_key` fails badly. `whisper` fails: it is a model's name, so only one
 implementation could ever answer it. `embedder` and `transcriber` pass — the
 search pipeline genuinely needs embeddings and the subtitle service genuinely
-needs transcription, and neither word names who provides it. `pipeline-stage`
-passes. `metadata-provider` passes. `search-ranker` passes.
+needs transcription, and neither word names who provides it. `trailer` passes
+for the same reason: the catalog needs a title's trailer as one playable file,
+and the word names neither the site it comes from nor the module that fetches
+it. `pipeline-stage` passes. `metadata-provider` passes. `search-ranker` passes.
 
 An earlier draft of this rule failed `embedder` and `transcriber` too, on the
 grounds that they exist because a vector module and a whisper module exist. That
@@ -464,7 +466,7 @@ under a new id is picked up by the download module at runtime, and neither the
 core nor the download module is edited to accept it.
 
 Mechanically, today: `server/Cargo.toml` deps no crate under `modules/`; no crate
-under `server/` names a module's domain in a type, trait or function; the four
-point names the core holds, `acquisition`, `transcriber`, `embedder` and
-`network`, are bare capability names in its own route table and composition root. The remaining
+under `server/` names a module's domain in a type, trait or function; the five
+point names the core holds, `acquisition`, `transcriber`, `embedder`, `network`
+and `trailer`, are bare capability names in its own route table and composition root. The remaining
 `tv.kroma.*` and point-name hits under `server/` are test fixtures and prose.

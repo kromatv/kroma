@@ -1,9 +1,9 @@
 # Modules
 
 KROMA's core is playback + catalog. Everything else (downloads, indexers,
-acquisition, VPN, transcription, embeddings, discovery, remote access) is a
-module: a WebAssembly component with a reverse-DNS id (`tv.kroma.torrents`) that
-the server installs, runs and reverse-proxies.
+acquisition, VPN, transcription, embeddings, discovery, remote access,
+trailers) is a module: a WebAssembly component with a reverse-DNS id
+(`tv.kroma.torrents`) that the server installs, runs and reverse-proxies.
 
 Modules are NOT compiled into the server: the base build carries none, and a
 module reaches users as a `.kmod` bundle installed from Admin → Modules, either
@@ -36,7 +36,7 @@ modules/<id>/
 ```
 
 `ui/`, `locales/` and `package.json` are optional and travel together: 5 of
-the 12 first-party modules have a frontend.
+the 13 first-party modules have a frontend.
 
 ## Build one
 
@@ -181,7 +181,7 @@ Three manifest verbs, and any module may use all three:
 - **`definesPoints: [{ name, version?, methods? }]`** invents a point. `name` is
   local: the full name is `<this module's id>/<name>`, so ownership reads off the
   name and two authors cannot collide. The handful the CORE calls (`acquisition`,
-  `transcriber`, `embedder`, `network`) are bare, and nothing but the core may define one.
+  `transcriber`, `embedder`, `network`, `trailer`) are bare, and nothing but the core may define one.
 - **`contributes: [{ point, version?, id?, label?, fields?, flow? }]`** answers a
   point, its own included. `id` is the instance name for a point several modules
   answer at once, the way a download client is picked, and absent for a point

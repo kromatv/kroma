@@ -39,6 +39,14 @@ describe('controlOrder', () => {
     expect(controlOrder(WEB_FLAGS, true).indexOf('next')).toBe(3);
   });
 
+  it('leaves the track pickers out of a clip that has no tracks to pick', () => {
+    const row = controlOrder({ ...WEB_FLAGS, tracks: false }, false);
+
+    expect(row).not.toContain('subtitles');
+    expect(row).not.toContain('audio');
+    expect(row).toContain('settings');
+  });
+
   it('honors individual flags independently', () => {
     const row = controlOrder(
       { volume: true, pip: false, fullscreen: true, pointer: true, arrowSeek: true },

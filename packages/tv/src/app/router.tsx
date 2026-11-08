@@ -1,8 +1,9 @@
 import type { KromaClient } from '@kromatv/client';
 import type { StoredSession } from '@kromatv/client/accounts';
-import type { DiscoverEntry } from '@kromatv/client/discovery';
+import type { DiscoverEntry, TmdbKind } from '@kromatv/client/discovery';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import type { ReportSubjectKind } from '@kromatv/client/reports';
+import type { Trailer } from '@kromatv/client/trailers';
 import { Box, ConfirmHost, FocusScope, PageMain, PerfHud } from '@kromatv/ui/kit';
 import {
   type ComponentType,
@@ -40,6 +41,7 @@ export interface TvRoutes {
   show: { show: Show };
   discover: { entry: DiscoverEntry };
   player: { item: MediaItem };
+  trailer: { kind: TmdbKind; tmdbId: number; title: string; trailer: Trailer };
   report: {
     kind: ReportSubjectKind;
     id: string;

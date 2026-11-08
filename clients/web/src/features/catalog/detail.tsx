@@ -102,6 +102,7 @@ export interface DetailHeroProps {
   playable?: MediaItem | null;
   themeUrl?: string | null;
   adminAction?: ReactNode;
+  trailerAction?: ReactNode;
   onReport?: () => void;
 }
 
@@ -132,6 +133,7 @@ export function DetailHero({
   playable,
   themeUrl,
   adminAction,
+  trailerAction,
   onReport,
 }: Readonly<DetailHeroProps>) {
   const scope = useStyleScope();
@@ -240,6 +242,7 @@ export function DetailHero({
                     onPress={onPlay}
                   />
                 ) : null)}
+              {trailerAction}
               {castItemId ? <CastButton itemId={castItemId} /> : null}
               <WatchedButton watched={watched} onToggle={onToggleWatched} />
               <ListButton inList={inList} onToggle={onToggleList} />

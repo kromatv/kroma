@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkEndpoint, type Endpoint } from '../../endpoints.fixture';
-import { recordingClient } from '../../kroma-client.fixture';
+import { recordingClient, ticketedClient } from '../../kroma-client.fixture';
 import { ItemId, LibraryId, ShowId } from './ids';
 
 const item = ItemId.parse('i1');
@@ -122,24 +122,6 @@ describe('the URL builders, which make no request', () => {
     expect(url).toBe(`http://kroma.test/api${path}`);
   });
 });
-
-const SIGNED_IN_USER = {
-  id: 'u1',
-  email: 'a@b.c',
-  username: 'alice',
-  permissions: ['playback'],
-  createdAt: '2026-01-01T00:00:00Z',
-  hasPin: false,
-};
-
-/** A client that has signed in and so holds the media ticket its byte URLs carry. */
-async function ticketedClient(ticket = 'dev.999.sig') {
-  const { client } = recordingClient(() => ({
-    json: { token: 'tok', mediaTicket: ticket, user: SIGNED_IN_USER },
-  }));
-  await client.accounts.exchangeToken('access-token');
-  return client;
-}
 
 describe('the URLs a player fetches for itself', () => {
   it('carries the account media ticket, because the element cannot send a header', async () => {

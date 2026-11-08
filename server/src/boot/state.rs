@@ -94,6 +94,10 @@ pub fn build(
         db.clone(),
     ));
     services.insert(std::any::TypeId::of::<TranscriberClient>(), transcriber);
+    services.insert(
+        std::any::TypeId::of::<kroma_engine::services::trailers::Trailers>(),
+        Arc::new(kroma_engine::services::trailers::Trailers::in_data_dir(&config.data_dir)),
+    );
 
     // Empty job roster: modules register their own jobs over `/_host/register-job`.
     let state = state::AppState::new(

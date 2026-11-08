@@ -1,0 +1,10 @@
+{
+  "trailer.back": "Retour",
+  "trailer.failed": "Cette bande-annonce ne peut pas être lue pour le moment.",
+  "trailer.failedHint": "YouTube ne l'a pas transmise. Réessayez dans quelques minutes.",
+  "trailer.openOnYoutube": "Voir sur YouTube",
+  "trailer.preparing": "Préparation de la bande-annonce…",
+  "trailer.watch": "Bande-annonce",
+  "trailer.watchOriginal": "Bande-annonce (VO)",
+  "trailer.watchSubtitled": "Bande-annonce (VOST)"
+}

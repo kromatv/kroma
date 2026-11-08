@@ -49,6 +49,7 @@ mod server_status;
 mod stream;
 mod suggest;
 mod themes;
+mod trailers;
 mod util;
 mod visibility;
 
@@ -153,6 +154,8 @@ mod it_stream_hls;
 #[cfg(test)]
 mod it_suggest;
 #[cfg(test)]
+mod it_trailers;
+#[cfg(test)]
 mod it_updates;
 #[cfg(test)]
 mod it_verify_email;
@@ -241,6 +244,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(stream::routes())
         .merge(online_subs::public_routes())
         .merge(themes::routes())
+        .merge(trailers::public_routes())
         .merge(modules::public_routes())
         .merge(diagnostics::routes())
         .merge(ws::routes());
@@ -265,6 +269,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(cast::routes())
         .merge(handoff::routes())
         .merge(discover::routes())
+        .merge(trailers::routes())
         .merge(rematch::routes())
         .merge(monitoring::routes())
         .merge(requests::routes())

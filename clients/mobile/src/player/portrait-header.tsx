@@ -6,7 +6,7 @@ export function PortraitHeader({
   onBack,
   onCast,
   onSettings,
-}: Readonly<{ onBack(): void; onCast(): void; onSettings(): void }>) {
+}: Readonly<{ onBack(): void; onCast?(): void; onSettings?(): void }>) {
   const s = useStyles(definition);
   const t = useT();
   return (
@@ -21,22 +21,26 @@ export function PortraitHeader({
       />
       <Text style={s.context}>{t('player.nowPlaying')}</Text>
       <Box style={s.actions}>
-        <IconButton
-          variant="ghost"
-          diameter={44}
-          icon="cast"
-          glyph={21}
-          label={t('cast.moveToTv')}
-          onPress={onCast}
-        />
-        <IconButton
-          variant="ghost"
-          diameter={44}
-          icon="settings"
-          glyph={21}
-          label={t('player.settings')}
-          onPress={onSettings}
-        />
+        {onCast ? (
+          <IconButton
+            variant="ghost"
+            diameter={44}
+            icon="cast"
+            glyph={21}
+            label={t('cast.moveToTv')}
+            onPress={onCast}
+          />
+        ) : null}
+        {onSettings ? (
+          <IconButton
+            variant="ghost"
+            diameter={44}
+            icon="settings"
+            glyph={21}
+            label={t('player.settings')}
+            onPress={onSettings}
+          />
+        ) : null}
       </Box>
     </Box>
   );

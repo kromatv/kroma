@@ -33,6 +33,7 @@ const ACCESS: Record<RouteName, Access> = {
   show: 'signedIn',
   discover: 'signedIn',
   player: 'signedIn',
+  trailer: 'signedIn',
   report: 'signedIn',
   releases: 'signedIn',
   profileMenu: 'signedIn',

@@ -41,7 +41,8 @@ export function controlOrder(flags: PlayerFlags, hasNext: boolean): ControlId[] 
   const row: ControlId[] = ['rewind', 'play', 'forward'];
   if (hasNext) row.push('next');
   if (flags.volume) row.push('volume');
-  row.push('subtitles', 'audio', 'settings');
+  if (flags.tracks !== false) row.push('subtitles', 'audio');
+  row.push('settings');
   // Right after settings, left of the window controls: casting is about the
   // film, pip and fullscreen are about this window.
   if (flags.cast) row.push('cast');
