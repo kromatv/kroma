@@ -1,52 +1,92 @@
 ---
-title: "One UI kit, six platforms"
+title: "One UI kit for every screen"
 date: "2026-02-03"
-excerpt: "How the same component renders on an Apple TV, a Samsung panel and in a browser, without ever being rewritten."
+excerpt: "How the same poster tile renders on an Apple TV, a Samsung TV and in a browser from one file, and why focus was the hard part."
 author: "Maxime Scharwath"
 tags: ["Design system", "Engineering"]
 ---
 
-A movie tile looks the same on an Apple TV, on a Samsung television and in your
-browser. It is one component, not three kept in step by hand.
+Open KROMA on an Apple TV, on a Samsung TV and in your browser. A film's poster
+has the same size, the same rounded corners and the same glow when you select
+it. These are not three components kept in sync by hand. It is one file.
 
-## Written once, against React Native
+## One component, two renderers
 
-The `@kromatv/ui` kit is written against React Native. On Apple TV, Android TV,
-iPhone and Android it renders natively. On the web, on Tizen and webOS
-televisions, in the Tauri desktop app and in the web client it goes through
-react-native-web. One file, two rendering engines.
+The whole kit, `@kromatv/ui`, is written for React Native. On devices that run
+React Native, meaning Apple TV, Android TV, iPhone, iPad and Android, each
+component becomes a real native element of the system.
 
-Colors, typography, elevations and focus live once too, in TypeScript, and
-generate the CSS variables the web targets read:
+Everywhere else it goes through react-native-web, a library that turns the same
+components into HTML and CSS. That covers the website, LG TVs, the app for Mac,
+Windows and Linux, and Samsung TVs. Samsung TVs from 2021 on can now run it
+natively too, thanks to [react-native-tizen](/blog/react-native-on-tizen).
+
+So you write a component once, and it has two ways to show up on screen.
+
+## Colors and sizes, defined once
+
+Colors, typefaces, spacing and shadows are defined once, in TypeScript:
 
 ```ts
-import { colors, type } from '@kromatv/ui/tokens';
+import { colors, typeSpec } from '@kromatv/ui/tokens';
 
-colors.accent; // #F4B642, the one warm amber
-colors.bg;     // #0A0A0C, the deep charcoal
-type.hero;     // 66px / 700, Bricolage Grotesque
+colors.accent; // '#F4B642', the amber
+colors.bg;     // '#0A0A0C', the charcoal background
+typeSpec.hero; // Bricolage Grotesque, 66 px, weight 700
 ```
 
-This site defines no color of its own. It imports the kit's Tailwind v4 theme,
-so it renders in the same charcoal and the same amber as the application.
+Native apps read these values directly. For web targets, the build turns them
+into CSS variables. There is no stylesheet to copy by hand, so nothing can drift
+out of sync.
 
-## Focus is the only real split
+These values are plain strings on purpose. No `oklch()`, no `color-mix()`. The
+same value has to go unchanged into a React Native stylesheet, into a CSS
+variable and into the browser of an old LG TV running Chromium 53. As soon as a
+value needs computing, one of the three can no longer read it.
 
-What differs between a television and a browser is the navigation, not the
-appearance. A remote has no cursor.
+TV screens are drawn on a fixed 1920 by 1080 canvas. A number in the code is a
+pixel of the design, with no scale to remember.
 
-On native, the OS focus engine handles directional moves: UIFocusEngine on tvOS,
-`nextFocus` resolution on Android TV. On the web there is no focus engine at all,
-so movement is geometric. The next focusable in the pressed direction wins, with
-lateral drift penalized so that a neighbor in a straight line beats one off to
-the side.
+This site, kroma.tv, imports the same tokens. That is why it has exactly the same
+amber as the app.
 
-That split lives in a handful of `.web.ts` files. Nothing else in the kit knows
-it exists.
+## Focus is the hard part
 
-## What it costs, and what it buys
+A TV has no mouse. You move with the arrows on the remote, and on every press
+the app has to decide which element lights up next. Press right on a poster and
+you should land on its neighbour, not on a button at the other end of the
+screen.
 
-Writing against React Native costs a resolver step in every bundler and a second
-rendering path to keep honest. What it buys is that a change to the movie tile is
-one commit, and every screen KROMA draws has it the same day. Six shells, one
-component.
+At first we let the system handle it. Apple TV and Android TV have their own
+focus engine. TVs that run KROMA in a browser have none, so we computed the
+nearest neighbour in the pressed direction ourselves. Two engines, and over time
+they stopped behaving the same way. The same screen did not move the same way on
+an Apple TV and on a Samsung.
+
+So we moved to one navigation library for every target. It fixed that problem
+and brought new ones. When a list registered the same element twice, the
+library crashed halfway through registering, and every element after that no
+longer existed for it. On screen, several posters lit up at once.
+
+So we wrote our own, `@kromatv/spatial-nav`. We started with the tests, which
+describe how focus has to move, then wrote the engine to pass them. Today an
+Apple TV and a TV that runs KROMA in its browser move focus by exactly the same
+rules.
+
+## One rule: no special cases in components
+
+With two renderers, it is tempting to write `if (Platform.OS === 'web')` all
+over the place. We don't allow it. No component checks the platform. The
+differences live in one layer below the components, and a lint rule rejects code
+that tries anyway.
+
+When a platform behaves differently, we fix that layer, and every component gets
+the fix at once.
+
+## What it costs
+
+Every build tool has to know how to swap React Native for react-native-web, and
+there are two renderers to test instead of one.
+
+In return, changing a film's poster is one commit. Every app has it in its next
+release, the living room TV as much as the phone.
