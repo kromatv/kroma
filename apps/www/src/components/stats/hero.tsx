@@ -89,6 +89,7 @@ function Count({ stats, fetchedAt, locale }: Readonly<CountProps>) {
   const one = (n: number) => new Intl.PluralRules(locale).select(n) === 'one';
   const countries = stats.located?.countries;
   const devices = stats.clients.total;
+  const settling = stats.settling ?? 0;
   const parts = [
     countries !== undefined &&
       (one(countries)
@@ -97,6 +98,10 @@ function Count({ stats, fetchedAt, locale }: Readonly<CountProps>) {
     one(devices)
       ? m.stats_hero_devices_one({ n: count(devices) })
       : m.stats_hero_devices_other({ n: count(devices) }),
+    settling > 0 &&
+      (one(settling)
+        ? m.stats_hero_settling_one({ n: count(settling) })
+        : m.stats_hero_settling_other({ n: count(settling) })),
   ].filter(Boolean);
 
   return (

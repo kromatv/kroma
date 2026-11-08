@@ -381,7 +381,28 @@ describe('sweep', () => {
     expect(store.rows.get('fleet-0')?.flagged).toBe(true);
     expect(store.rows.get(OTHER_ID)?.flagged).toBe(false);
     expect(store.rows.has('c'.repeat(64))).toBe(false);
-    expect(await store.daily()).toEqual([{ day: '2027-01-15', instances: 1, clients: 3 }]);
+    expect(await store.daily()).toEqual([
+      { day: '2027-01-15', instances: 1, clients: 3, users: null, titles: null },
+    ]);
+  });
+
+  it('writes down the accounts and titles of the day once enough servers report a size', async () => {
+    const store = memoryStore([
+      row({
+        id: 'a'.repeat(64),
+        firstSeen: NOW - 30 * DAY,
+        lastSeen: NOW - DAY,
+        users: 2,
+        titles: 10,
+      }),
+      row({ id: OTHER_ID, firstSeen: NOW - 30 * DAY, lastSeen: NOW - DAY, users: 5, titles: 90 }),
+    ]);
+
+    await sweep(store, NOW);
+
+    expect(await store.daily()).toEqual([
+      { day: '2027-01-15', instances: 2, clients: 6, users: 7, titles: 100 },
+    ]);
   });
 });
 

@@ -24,6 +24,9 @@ export interface DailyRow {
   day: string;
   instances: number;
   clients: number;
+  /** Null on a day fewer than `SIZE_REPORTERS` counted installs reported a size. */
+  users: number | null;
+  titles: number | null;
 }
 
 export interface Store {
@@ -35,7 +38,7 @@ export interface Store {
   all(): Promise<InstanceRow[]>;
   daily(): Promise<DailyRow[]>;
   flag(ids: string[]): Promise<void>;
-  record(day: string, instances: number, clients: number): Promise<void>;
+  record(row: DailyRow): Promise<void>;
   /** Forget rows nobody has heard from since `before`. */
   prune(before: number): Promise<void>;
   /** Forget one install on its own request. */
@@ -178,7 +181,7 @@ export function d1Store(db: D1Database): Store {
     },
     async daily() {
       const { results } = await db
-        .prepare('SELECT day, instances, clients FROM daily ORDER BY day')
+        .prepare('SELECT day, instances, clients, users, titles FROM daily ORDER BY day')
         .all<DailyRow>();
       return results;
     },
@@ -188,13 +191,14 @@ export function d1Store(db: D1Database): Store {
         ids.map((id) => db.prepare('UPDATE instances SET flagged = 1 WHERE id = ?1').bind(id)),
       );
     },
-    async record(day, instances, clients) {
+    async record({ day, instances, clients, users, titles }) {
       await db
         .prepare(
-          `INSERT INTO daily (day, instances, clients) VALUES (?1, ?2, ?3)
-             ON CONFLICT(day) DO UPDATE SET instances = excluded.instances, clients = excluded.clients`,
+          `INSERT INTO daily (day, instances, clients, users, titles) VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(day) DO UPDATE SET instances = excluded.instances,
+               clients = excluded.clients, users = excluded.users, titles = excluded.titles`,
         )
-        .bind(day, instances, clients)
+        .bind(day, instances, clients, users, titles)
         .run();
     },
     async prune(before) {

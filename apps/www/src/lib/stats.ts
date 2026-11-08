@@ -7,6 +7,7 @@ const Counted = z.array(z.object({ key: z.string(), n: z.number() }));
  * no route that returns a row. */
 export const Stats = z.object({
   instances: z.number(),
+  settling: z.number().optional(),
   // Optional, because the collector is deployed by hand and the site by CI: a
   // page that hard-required this would go blank for the window between them.
   reports: z
@@ -27,7 +28,15 @@ export const Stats = z.object({
   countries: Counted,
   locales: Counted,
   modules: Counted,
-  history: z.array(z.object({ day: z.string(), instances: z.number(), clients: z.number() })),
+  history: z.array(
+    z.object({
+      day: z.string(),
+      instances: z.number(),
+      clients: z.number(),
+      users: z.number().nullable().optional(),
+      titles: z.number().nullable().optional(),
+    }),
+  ),
   updatedAt: z.number(),
 });
 export type Stats = z.infer<typeof Stats>;

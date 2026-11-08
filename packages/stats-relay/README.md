@@ -81,14 +81,15 @@ bunx wrangler dev
 
 Then point a debug build of the server at it with
 `KROMA_STATS_URL=http://127.0.0.1:8787` and run the `stats.report` job from
-Admin → Jobs. A release build ignores that variable: the address is a constant
-for the same reason the push relay's is, so no operator can be redirected to a
-collector that is not this one.
+Admin → Jobs. Without that variable a debug build sends nothing at all, so a dev
+checkout or a test run never writes a row here. A release build ignores it: the
+address is a constant for the same reason the push relay's is, so no operator
+can be redirected to a collector that is not this one.
 
 ## The administrator's view
 
 `GET /v1/admin/stats` answers the same aggregate, plus how many rows are
-stored, how many the nightly sweep flagged, and how many are still settling. It
+stored and how many the nightly sweep flagged. It
 deliberately does not return rows: per-install data is read from D1, which is a
 different door with a different key.
 
