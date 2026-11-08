@@ -35,7 +35,7 @@ async function mount(media: {
   movieCards?: () => Promise<unknown>;
 }) {
   const runtime = createWebTestRuntime({
-    media: { shows: async () => [], movieCards: async () => [], artwork: art, ...media },
+    media: { showCards: async () => [], movieCards: async () => [], artwork: art, ...media },
   });
   const Page = Route.options.component as ComponentType;
   await act(async () => {
