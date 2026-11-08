@@ -11,6 +11,10 @@ use candle_nn::var_builder::SimpleBackend;
 use candle_nn::{Init, VarBuilder};
 use serde::Deserialize;
 
+mod rows;
+
+pub use rows::Rows;
+
 const HEADER_LENGTH_BYTES: u64 = 8;
 const METADATA_KEY: &str = "__metadata__";
 const READ_CHUNK: usize = 1024 * 1024;
