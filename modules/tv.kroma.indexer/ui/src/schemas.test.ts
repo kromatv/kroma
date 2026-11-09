@@ -6,7 +6,6 @@ import {
   IndexerTestResult,
   IndexerView,
   SaveIndexerBody,
-  SyncDefinitionsResult,
 } from './schemas';
 
 const indexer = {
@@ -99,11 +98,22 @@ describe('definitions and probes', () => {
   it('parses the browse list and one definition with its settings schema', () => {
     const list = IndexerDefinitionsView.parse({
       definitions: [
-        { id: 'sometracker', name: 'SomeTracker', kind: 'private', description: '', links: [] },
+        {
+          id: 'sometracker',
+          name: 'SomeTracker',
+          kind: 'private',
+          description: '',
+          links: [],
+          language: 'fr-FR',
+        },
       ],
       synced: true,
+      syncedAt: 1700000000000,
+      failedAt: null,
+      failure: null,
     });
     expect(list.definitions[0]?.kind).toBe('private');
+    expect(list.definitions[0]?.language).toBe('fr-FR');
 
     const detail = IndexerDefinitionDetailView.parse({
       id: 'sometracker',
@@ -143,7 +153,7 @@ describe('definitions and probes', () => {
     ).toThrow();
   });
 
-  it('reads a capability probe and a definitions sync', () => {
+  it('reads a capability probe', () => {
     const probe = IndexerTestResult.parse({
       ok: true,
       latencyMs: 120,
@@ -152,10 +162,5 @@ describe('definitions and probes', () => {
       error: null,
     });
     expect(probe.serverTitle).toBe('Jackett');
-
-    expect(SyncDefinitionsResult.parse({ count: 512, version: 'v11' })).toEqual({
-      count: 512,
-      version: 'v11',
-    });
   });
 });

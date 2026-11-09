@@ -40,7 +40,7 @@ pub use module::MODULE;
 pub const MODULE_ID: &str = "tv.kroma.indexer";
 
 /// The Indexers sub-module: exposes the native-engine admin routes over the
-/// HostCtx seam. Lifecycle-free (disabling it just gates its routes off).
+/// HostCtx seam, and the daily job that keeps the definition catalog current.
 pub struct IndexersModule;
 
 #[kroma_module_sdk::host::async_trait]
@@ -62,6 +62,19 @@ impl<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
         Some(routes::routes::<S>())
     }
+
+    fn jobs(&self) -> Vec<kroma_module_sdk::host::ModuleJob<S>> {
+        vec![kroma_module_sdk::host::ModuleJob {
+            key: admin::SYNC_JOB,
+            category: "acquisition",
+            schedule: Some("17 4 * * *"),
+            run: sync_definitions::<S>,
+        }]
+    }
+}
+
+fn sync_definitions<S: kroma_module_sdk::host::HostStorage>(host: &S) -> anyhow::Result<()> {
+    admin::definition_store(host).sync().map(|_| ())
 }
 
 /// This module's backend behavior, for the host's generic module roster.

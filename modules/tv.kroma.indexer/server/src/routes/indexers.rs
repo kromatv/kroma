@@ -8,7 +8,7 @@ use kroma_module_sdk::domain::Permission;
 use kroma_module_sdk::host::{query, AuthUser, HostStorage};
 use serde_json::json;
 
-use crate::admin::invalidate_caps;
+use crate::admin::{fetch_catalog_if_empty, invalidate_caps};
 use crate::db::{self, IndexerRow};
 use crate::{IndexerView, IndexersView};
 
@@ -47,6 +47,7 @@ pub async fn list<S: HostStorage>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
+    fetch_catalog_if_empty(&state);
     let view = query(state.store(), |pool| {
         let conn = pool.get()?;
         let indexers = db::list_indexers(&conn)?.iter().map(view_of).collect();

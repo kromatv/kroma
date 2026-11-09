@@ -3,12 +3,12 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use kroma_module_sdk::domain::Permission;
-use kroma_module_sdk::host::{blocking, json_error, run_blocking, AuthUser, HostStorage};
+use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
 
-use crate::admin::definition_store;
+use crate::admin::{definition_store, fetch_catalog_if_empty};
 use crate::{
     IndexerDefinitionDetailView, IndexerDefinitionSettingView, IndexerDefinitionView,
-    IndexerDefinitionsView, SyncDefinitionsResult,
+    IndexerDefinitionsView,
 };
 
 /// `GET /indexers/definitions` the browsable Cardigann catalog.
@@ -19,8 +19,10 @@ pub async fn list_definitions<S: HostStorage + Clone>(
     state.require(&user, Permission::SettingsManage)?;
     let host = state.clone();
     let view = blocking(move || {
+        fetch_catalog_if_empty(&host);
         let store = definition_store(&host);
         let synced = store.is_populated();
+        let record = store.record();
         let definitions = store
             .list()
             .unwrap_or_default()
@@ -31,11 +33,15 @@ pub async fn list_definitions<S: HostStorage + Clone>(
                 kind: m.kind,
                 description: m.description,
                 links: m.links,
+                language: m.language,
             })
             .collect();
         anyhow::Ok(IndexerDefinitionsView {
             definitions,
             synced,
+            synced_at: record.synced_at_ms,
+            failed_at: record.failure.as_ref().and(record.attempted_at_ms),
+            failure: record.failure,
         })
     })
     .await?;
@@ -81,24 +87,4 @@ pub async fn definition_detail<S: HostStorage + Clone>(
         Ok(d) => Ok(Json(d).into_response()),
         Err(_) => Err(json_error(StatusCode::NOT_FOUND, "unknown definition")),
     }
-}
-
-/// `POST /indexers/definitions/sync` fetch the current definition set.
-pub async fn sync_definitions<S: HostStorage + Clone>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    state.require(&user, Permission::SettingsManage)?;
-    let host = state.clone();
-    // Not via `blocking`: we want the real network/extract error message to reach
-    // the admin, and `blocking` collapses errors to a generic 500.
-    let report = run_blocking(move || definition_store(&host).sync())
-        .await
-        .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "sync task failed"))?
-        .map_err(|e| json_error(StatusCode::BAD_GATEWAY, &format!("sync failed: {e:#}")))?;
-    Ok(Json(SyncDefinitionsResult {
-        count: report.count,
-        version: report.version,
-    })
-    .into_response())
 }

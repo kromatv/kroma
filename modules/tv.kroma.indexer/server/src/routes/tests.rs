@@ -3,8 +3,9 @@ use kroma_module_sdk::host::HostStorage;
 use serde_json::json;
 
 use super::test_support::{call, host, row, seed, with_definition};
-use crate::admin::KIND_BUILTIN;
+use crate::admin::{definition_store, KIND_BUILTIN, SYNC_JOB};
 use crate::db;
+use crate::store::SyncRecord;
 
 #[tokio::test]
 async fn listing_shows_rows_without_their_secrets() {
@@ -234,6 +235,43 @@ async fn the_definition_catalog_is_empty_until_synced_then_lists_the_cache() {
     assert_eq!(after["synced"], true);
     assert_eq!(after["definitions"][0]["id"], "demo");
     assert_eq!(after["definitions"][0]["name"], "Demo Tracker");
+    assert_eq!(after["definitions"][0]["language"], "fr-FR");
+}
+
+#[tokio::test]
+async fn opening_the_page_or_the_picker_on_an_empty_catalog_asks_for_one_sync() {
+    let host = host();
+
+    call(&host, "GET", "/indexers", json!({})).await;
+    call(&host, "GET", "/indexers/definitions", json!({})).await;
+
+    assert_eq!(host.jobs(), vec![(SYNC_JOB, "catalog-empty")]);
+}
+
+#[tokio::test]
+async fn a_catalog_already_on_disk_asks_for_no_sync() {
+    let host = with_definition(host());
+
+    call(&host, "GET", "/indexers", json!({})).await;
+    call(&host, "GET", "/indexers/definitions", json!({})).await;
+
+    assert!(host.jobs().is_empty());
+}
+
+#[tokio::test]
+async fn the_catalog_says_when_it_was_last_synced_and_why_the_last_sync_failed() {
+    let host = with_definition(host());
+    definition_store(&host).write_record(&SyncRecord {
+        attempted_at_ms: Some(2_000),
+        synced_at_ms: Some(1_000),
+        failure: Some("download definitions: 404".into()),
+    });
+
+    let (_, body) = call(&host, "GET", "/indexers/definitions", json!({})).await;
+
+    assert_eq!(body["syncedAt"], 1_000);
+    assert_eq!(body["failedAt"], 2_000);
+    assert_eq!(body["failure"], "download definitions: 404");
 }
 
 #[tokio::test]

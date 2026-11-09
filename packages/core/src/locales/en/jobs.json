@@ -29,6 +29,8 @@
   "jobs.editSchedule": "Edit schedule",
   "jobs.empty": "No jobs registered.",
   "jobs.history": "History",
+  "jobs.indexer.definitions.desc": "Downloads the current tracker definitions each night, so the list of built-in indexers stays complete.",
+  "jobs.indexer.definitions.name": "Tracker catalog",
   "jobs.last": "Last",
   "jobs.library.missing.desc": "Compares each library show to TMDB and lists aired episodes that are not on disk (the Missing view).",
   "jobs.library.missing.name": "Missing episodes scan",

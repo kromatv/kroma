@@ -69,6 +69,8 @@ pub struct IndexerDefinitionView {
     pub kind: String,
     pub description: String,
     pub links: Vec<String>,
+    // A BCP 47 tag (`fr-FR`), empty when the definition names none.
+    pub language: String,
 }
 
 /// `GET /indexers/definitions`.
@@ -77,6 +79,9 @@ pub struct IndexerDefinitionView {
 pub struct IndexerDefinitionsView {
     pub definitions: Vec<IndexerDefinitionView>,
     pub synced: bool,
+    pub synced_at: Option<i64>,
+    pub failed_at: Option<i64>,
+    pub failure: Option<String>,
 }
 
 /// One configurable setting of a definition, for rendering the add form.
@@ -101,14 +106,6 @@ pub struct IndexerDefinitionDetailView {
     pub description: String,
     pub links: Vec<String>,
     pub settings: Vec<IndexerDefinitionSettingView>,
-}
-
-/// `POST /indexers/definitions/sync` result.
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SyncDefinitionsResult {
-    pub count: usize,
-    pub version: String,
 }
 
 /// `POST /indexers/:id/test` result (a `t=caps` round-trip).

@@ -160,3 +160,45 @@ fn a_yml_entry_that_cannot_be_read_is_skipped_rather_than_fatal() {
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].id, "good");
 }
+
+#[test]
+fn a_store_that_never_synced_has_no_record() {
+    let data = tmpdir("no-record");
+    let store = DefinitionStore::new(data.path());
+
+    assert_eq!(store.record(), SyncRecord::default());
+}
+
+#[test]
+fn an_empty_catalog_wants_a_sync_at_most_once_a_minute() {
+    let data = tmpdir("wants");
+    let store = DefinitionStore::new(data.path());
+    std::fs::create_dir_all(store.dir()).unwrap();
+    store.write_record(&SyncRecord {
+        attempted_at_ms: Some(1_000),
+        ..SyncRecord::default()
+    });
+
+    assert!(!store.wants_first_sync(1_000 + 59_999));
+    assert!(store.wants_first_sync(1_000 + 60_000));
+    assert!(DefinitionStore::new(tmpdir("never").path()).wants_first_sync(0));
+}
+
+#[test]
+fn a_populated_catalog_never_wants_a_first_sync() {
+    let data = tmpdir("populated");
+    let store = DefinitionStore::new(data.path());
+    std::fs::create_dir_all(store.dir()).unwrap();
+    std::fs::write(store.dir().join("demo.yml"), DEMO_YML).unwrap();
+
+    assert!(!store.wants_first_sync(i64::MAX));
+}
+
+#[test]
+fn meta_carries_the_definition_language() {
+    let yaml = b"id: example\nname: Example\nlanguage: fr-FR\n";
+
+    let meta: DefinitionMeta = serde_yaml::from_slice(yaml).unwrap();
+
+    assert_eq!(meta.language, "fr-FR");
+}

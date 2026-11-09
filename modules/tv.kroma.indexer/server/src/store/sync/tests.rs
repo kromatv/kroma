@@ -228,3 +228,58 @@ fn every_way_a_sync_can_fail_says_which_one_it_was() {
     let err = empty_version.sync().unwrap_err().to_string();
     assert!(err.contains("no definitions"), "{err}");
 }
+
+#[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+fn a_sync_records_when_it_brought_the_catalog() {
+    let store = store_for(serve(
+        200,
+        tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]),
+    ));
+
+    store.sync().unwrap();
+
+    let record = store.record();
+    assert!(record.attempted_at_ms.is_some());
+    assert!(record.synced_at_ms >= record.attempted_at_ms);
+    assert_eq!(record.failure, None);
+}
+
+#[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+fn a_failed_sync_records_why_and_keeps_the_last_good_date() {
+    let good = store_for(serve(
+        200,
+        tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]),
+    ));
+    good.sync().unwrap();
+    let synced_at = good.record().synced_at_ms;
+    let broken = DefinitionStore {
+        dir: good.dir().to_path_buf(),
+        source: serve(404, b"not found".to_vec()),
+        route: Ok(None),
+    };
+
+    broken.sync().unwrap_err();
+
+    let record = broken.record();
+    assert_eq!(record.synced_at_ms, synced_at);
+    assert_eq!(record.failure.as_deref(), Some("HTTP 404: not found"));
+}
+
+#[test]
+fn a_sync_refused_before_it_starts_is_recorded_as_a_failure() {
+    let dir = tmpdir("refused");
+    let store = DefinitionStore {
+        dir: dir.path().to_path_buf(),
+        source: "http://127.0.0.1:1/never".into(),
+        route: Err("no VPN is running".into()),
+    };
+
+    store.sync().unwrap_err();
+
+    assert!(store
+        .record()
+        .failure
+        .is_some_and(|why| why.contains("no VPN is running")));
+}

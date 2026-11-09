@@ -10,7 +10,6 @@ import {
   IndexerTestResult,
   IndexerView,
   type SaveIndexerBody,
-  SyncDefinitionsResult,
 } from './schemas';
 
 const enc = encodeURIComponent;
@@ -28,6 +27,4 @@ export const useIndexerApi = moduleApiHook((api) => ({
   /** The settings schema for one definition (drives the add form). */
   definition: (id: string) =>
     api.get(`/indexers/definitions/${enc(id)}`, IndexerDefinitionDetailView),
-  /** Fetch the current definition set from upstream into the local cache. */
-  syncDefinitions: () => api.post('/indexers/definitions/sync', undefined, SyncDefinitionsResult),
 }));
