@@ -124,33 +124,38 @@ export function MullvadPanel({
         </Text>
       ) : null}
       <Row wrap gap={12}>
-        <Select.Root
-          value={country}
-          onValueChange={(next) => {
-            setCountry(next);
-            setCity(ANY_CITY);
-          }}
-          label={t('vpn.mullvadCountry')}
-          placeholder={data ? t('vpn.mullvadCountry') : t('vpn.mullvadLoadingPlaces')}
-          disabled={!data}
-        >
-          <Select.Trigger />
-          {countries.map((one) => (
-            <Select.Item key={one.code} value={one.code} label={one.name} />
-          ))}
-        </Select.Root>
-        <Select.Root
-          value={city}
-          onValueChange={setCity}
-          label={t('vpn.mullvadCity')}
-          disabled={cities.length === 0}
-        >
-          <Select.Trigger />
-          <Select.Item value={ANY_CITY} label={t('vpn.mullvadAnyCity')} />
-          {cities.map((one) => (
-            <Select.Item key={one.code} value={one.code} label={one.name} />
-          ))}
-        </Select.Root>
+        <Box flex minW={180}>
+          <Select.Root
+            value={country}
+            onValueChange={(next) => {
+              setCountry(next);
+              setCity(ANY_CITY);
+            }}
+            label={t('vpn.mullvadCountry')}
+            placeholder={data ? t('vpn.mullvadCountry') : t('vpn.mullvadLoadingPlaces')}
+            disabled={!data}
+          >
+            <Select.Trigger block />
+            {countries.map((one) => (
+              <Select.Item key={one.code} value={one.code} label={one.name} />
+            ))}
+          </Select.Root>
+        </Box>
+        <Box flex minW={180}>
+          <Select.Root
+            value={city}
+            onValueChange={setCity}
+            label={t('vpn.mullvadCity')}
+            placeholder={t('vpn.mullvadAnyCity')}
+            disabled={cities.length === 0}
+          >
+            <Select.Trigger block />
+            <Select.Item value={ANY_CITY} label={t('vpn.mullvadAnyCity')} />
+            {cities.map((one) => (
+              <Select.Item key={one.code} value={one.code} label={one.name} />
+            ))}
+          </Select.Root>
+        </Box>
       </Row>
       {refusal ? (
         <RefusalNote refusal={refusal} onFree={(id) => void freeSlot(id)} busy={busy} />
