@@ -1,4 +1,6 @@
-use super::*;
+use super::{
+    HomeActivity, Inputs, Key, PartOfDay, Shelf, Slot, CANDIDATES_FRESH_FOR_MS, FRESH_FOR_MS,
+};
 
 fn inputs() -> Inputs {
     Inputs {
