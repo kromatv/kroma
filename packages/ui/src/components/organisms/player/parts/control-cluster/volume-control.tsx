@@ -19,6 +19,7 @@ import { useStyles } from '#ui/core/styles';
 import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
+import { GESTURE_SURFACE } from '#ui/lib/gesture-surface';
 import { useStableCallback } from '#ui/lib/stable-callback';
 
 // The volume pill's wrapper isn't a kit atom (it holds a button AND a slider),
@@ -172,6 +173,7 @@ export function VolumeControl({
             </IconButton>
             <View
               {...pan.panHandlers}
+              {...GESTURE_SURFACE}
               accessibilityRole="adjustable"
               accessibilityLabel={label}
               {...a11yValue({
