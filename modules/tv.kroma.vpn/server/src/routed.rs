@@ -97,7 +97,11 @@ impl Vpn {
 pub(crate) async fn retire_routed(held: Routed) {
     held.bridge.retire().await;
     let dir = held.bridge.dir.clone();
-    let _ = run_blocking(move || std::fs::remove_dir_all(dir)).await;
+    let _ = run_blocking(move || drop_files(&dir)).await;
+}
+
+fn drop_files(dir: &Path) -> std::io::Result<()> {
+    std::fs::remove_dir_all(dir)
 }
 
 #[cfg(all(test, unix))]
