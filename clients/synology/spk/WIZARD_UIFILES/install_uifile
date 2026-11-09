@@ -4,7 +4,7 @@
     "items": [
       {
         "type": "textfield",
-        "desc": "Pick the folders KROMA scans for your <b>Movies</b> and your <b>TV Shows</b>. Use absolute NAS paths; separate several with a colon or semicolon.<br>Example: <b>/volume1/video/Films:/volume1/media/Movies</b><br>Leave a field empty if you don't have that type. You don't need to get this perfect now: after install you can <b>browse</b> your NAS and fine-tune libraries (add folders, change a library's type) in KROMA's web admin under <b>Bibliothèques</b>.<br><br>Reminder: grant the package user <b>kroma</b> (or <b>sc-kroma</b>) <b>Read</b> access to these shares (Control Panel &gt; Shared Folder &gt; Edit &gt; Permissions), then restart KROMA.",
+        "desc": "Pick the folders KROMA scans for your <b>Movies</b> and your <b>TV Shows</b>. Use absolute NAS paths; separate several with a colon or semicolon.<br>Example: <b>/volume1/video/Films:/volume1/media/Movies</b><br>Leave a field empty if you don't have that type. You don't need to get this perfect now: after install you can <b>browse</b> your NAS and fine-tune libraries (add folders, change a library's type) in KROMA's web admin under <b>Server &gt; Sources</b>.<br><br>After install: grant the user <b>kroma</b> access to these shares in Control Panel &gt; Shared Folder &gt; Edit &gt; Permissions. It is listed under <b>System internal user</b>. Give it <b>Read only</b> to watch, or <b>Read/Write</b> if KROMA will download into your libraries. Then restart KROMA. Step by step: kroma.tv/docs/synology",
         "subitems": [
           {
             "key": "KROMA_MOVIES_DIRS",
