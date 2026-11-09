@@ -207,7 +207,11 @@ function ModeLine({ state }: Readonly<{ state: VpnAdminView }>) {
     return <>{t('vpn.modeMullvad', { place, server: provider.hostname })}</>;
   }
   if (provider?.kind === 'proton') {
-    return <>{t('vpn.modeProton', { server: provider.server ?? '' })}</>;
+    return provider.server ? (
+      <>{t('vpn.modeProton', { server: provider.server })}</>
+    ) : (
+      <>{t('vpn.modeProtonUnnamed')}</>
+    );
   }
   return <>{t('vpn.modeWireguard', { port: String(state.localPort) })}</>;
 }

@@ -12,6 +12,7 @@
   "vpn.modeMullvad": "Mullvad · {place} ({server}). Torrent traffic goes through the tunnel.",
   "vpn.modeOff": "No VPN: torrent traffic goes out directly.",
   "vpn.modeProton": "Proton VPN · {server}. Torrent traffic goes through the tunnel.",
+  "vpn.modeProtonUnnamed": "Proton VPN. Torrent traffic goes through the tunnel.",
   "vpn.modeSocks": "External SOCKS5 proxy.",
   "vpn.modeWireguard": "WireGuard config managed by KROMA. Torrent traffic goes through the tunnel (local port :{port}).",
   "vpn.mullvadAccount": "Mullvad account number",
