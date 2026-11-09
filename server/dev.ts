@@ -6,8 +6,8 @@
 // restarts. Everything under server/crates, and any change that moves a type, a
 // signature or a dependency, still costs a full rebuild.
 //
-// Without it, or with KROMA_HOTPATCH=0, the loop is `cargo watch -x run`: a
-// fresh clone runs `bun run dev` with no extra tooling.
+// Without it, or with KROMA_HOTPATCH=0, the loop is `cargo watch -x run`. A
+// fresh clone has neither, and runs a plain `cargo run` that does not rebuild.
 
 const serverDir = new URL('.', import.meta.url).pathname;
 
@@ -30,11 +30,23 @@ function dioxusCli(): string | null {
   return null;
 }
 
+function hasCargoWatch(): boolean {
+  try {
+    return Bun.spawnSync(['cargo', 'watch', '--version']).exitCode === 0;
+  } catch {
+    return false;
+  }
+}
+
 const dx = process.env.KROMA_HOTPATCH === '0' ? null : dioxusCli();
+const watch = !dx && hasCargoWatch();
 
 if (dx) {
   console.log('[dev] hot patching: an edit under server/src reaches the running process, no restart.');
   console.log('[dev] `dx` keeps its own build cache, so the first run is a full build.');
+} else if (!watch) {
+  console.log('[dev] no cargo-watch: the server does not rebuild when you save.');
+  console.log('[dev] to rebuild on save: cargo install cargo-watch --locked');
 } else if (process.env.KROMA_HOTPATCH !== '0') {
   console.log('[dev] no Dioxus CLI: full rebuild on every edit.');
   console.log('[dev] for hot patching: cargo install dioxus-cli@0.7.10 --locked');
@@ -43,9 +55,15 @@ if (dx) {
 // `cargo watch` with no -w walks everything below server/ to build its watch
 // list, which means crawling target/ before it runs anything. Naming the source
 // paths keeps it out of any build directory, dead or live.
-const argv = dx
-  ? [dx, 'serve', '--hot-patch', '--interactive=false', '--open=false', '--json-output', '--features', 'hotpatch', '--package', 'kroma-server']
-  : ['cargo', 'watch', '--why', '-w', 'src', '-w', 'crates', '-w', 'Cargo.toml', '-x', 'run'];
+function loop(): string[] {
+  if (dx) {
+    return [dx, 'serve', '--hot-patch', '--interactive=false', '--open=false', '--json-output', '--features', 'hotpatch', '--package', 'kroma-server'];
+  }
+  if (watch) return ['cargo', 'watch', '--why', '-w', 'src', '-w', 'crates', '-w', 'Cargo.toml', '-x', 'run'];
+  return ['cargo', 'run'];
+}
+
+const argv = loop();
 
 console.log(`[dev] ${dx ? 'dx' : 'cargo'} starting, first build is a full one`);
 
