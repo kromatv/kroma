@@ -15,7 +15,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
-    "./vite": "./vite/index.ts"
+    "./vite": "./vite/index.ts",
+    "./test": "./src/fake-video.fixture.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

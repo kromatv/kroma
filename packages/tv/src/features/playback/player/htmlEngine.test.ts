@@ -4,7 +4,8 @@ import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { decodableAudioCodecs, decodableVideoCodecs } from '@kromatv/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type FakeVideo, fakeListeners, fakeVideo } from './engine.fixture';
+import { type FakeVideo, fakeVideo } from '@kromatv/core/test';
+import { fakeListeners } from './engine.fixture';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';
 
