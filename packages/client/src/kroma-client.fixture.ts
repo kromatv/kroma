@@ -24,7 +24,8 @@ const BASE = 'http://kroma.test';
 /** The session bearer `recordRequest` signs its calls with. */
 export const BEARER = 'session-bearer';
 
-function requestUrl(input: RequestInfo | URL): string {
+/** The URL a `fetch` call names, whichever of its three spellings it was given. */
+export function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   return input instanceof URL ? input.href : input.url;
 }
