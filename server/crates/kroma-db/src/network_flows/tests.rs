@@ -25,7 +25,7 @@ fn a_delta_folds_into_its_days_row() {
     add(&pool, &[tally(today, "api.example", 2)]).unwrap();
     add(&pool, &[tally(today, "api.example", 3)]).unwrap();
 
-    let rows = since(&pool, today, 10).unwrap();
+    let rows = since(&pool, today, None, 10).unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(
         (rows[0].count, rows[0].bytes_in, rows[0].bytes_out),
@@ -49,7 +49,7 @@ fn the_window_sums_its_days_and_leaves_older_ones_out() {
     )
     .unwrap();
 
-    let rows = since(&pool, today - 6, 10).unwrap();
+    let rows = since(&pool, today - 6, None, 10).unwrap();
 
     let summed: Vec<(&str, i64)> = rows.iter().map(|r| (r.host.as_str(), r.count)).collect();
     assert_eq!(summed, [("b.example", 7), ("a.example", 3)]);
@@ -66,7 +66,7 @@ fn the_totals_count_every_flow_and_the_blocked_ones_apart() {
     };
     add(&pool, &[tally(today, "a.example", 3), blocked]).unwrap();
 
-    let totals = totals_since(&pool, today).unwrap();
+    let totals = totals_since(&pool, today, None).unwrap();
 
     assert_eq!(
         totals,
@@ -95,7 +95,7 @@ fn a_prune_drops_the_days_past_retention() {
     let dropped = prune(&pool, NOW_MS).unwrap();
 
     assert_eq!(dropped, 1);
-    let hosts: Vec<String> = since(&pool, 0, 10)
+    let hosts: Vec<String> = since(&pool, 0, None, 10)
         .unwrap()
         .into_iter()
         .map(|r| r.host)
@@ -116,4 +116,23 @@ fn the_purposes_seen_are_listed_once_each() {
     let seen = purposes(&pool).unwrap();
 
     assert_eq!(seen, [("core".to_string(), "metadata".to_string())]);
+}
+
+#[test]
+fn a_window_for_one_caller_leaves_every_other_caller_out() {
+    let pool = crate::testing::temp_pool("flows-caller");
+    let today = day_of(NOW_MS);
+    let module = FlowTally {
+        caller: "tv.kroma.indexer".into(),
+        purpose: "indexer".into(),
+        ..tally(today, "tracker.example", 4)
+    };
+    add(&pool, &[tally(today, "api.example", 3), module]).unwrap();
+
+    let rows = since(&pool, today, Some("tv.kroma.indexer"), 10).unwrap();
+    let totals = totals_since(&pool, today, Some("tv.kroma.indexer")).unwrap();
+
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].host, "tracker.example");
+    assert_eq!(totals.flows, 4);
 }

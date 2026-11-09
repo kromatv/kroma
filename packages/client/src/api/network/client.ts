@@ -17,8 +17,12 @@ export default function networkApi(ctx: RequestContext) {
   return {
     flows: (query: FlowQuery = {}) => ctx.get('/admin/network/flows', FlowsView, { query }),
 
-    /** Totals and per-destination groups over the last `days`. */
-    summary: (days = 7) => ctx.get('/admin/network/summary', NetworkSummary, { query: { days } }),
+    /** Totals and per-destination groups over the last `days`, only `caller`'s
+     * connections when one is named. */
+    summary: (days = 7, caller?: string) =>
+      ctx.get('/admin/network/summary', NetworkSummary, {
+        query: caller ? { days, caller } : { days },
+      }),
 
     /** The clients that reached the server over the last `days`. */
     inbound: (days = 7) => ctx.get('/admin/network/inbound', InboundSummary, { query: { days } }),

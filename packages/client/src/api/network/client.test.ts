@@ -36,6 +36,12 @@ describe('the network endpoints', () => {
       path: '/admin/network/summary?days=7',
     },
     {
+      name: 'summary of one module',
+      call: (c) => c.network.summary(7, 'tv.kroma.indexer'),
+      method: 'GET',
+      path: '/admin/network/summary?days=7&caller=tv.kroma.indexer',
+    },
+    {
       name: 'summary over a month',
       call: (c) => c.network.summary(30),
       method: 'GET',

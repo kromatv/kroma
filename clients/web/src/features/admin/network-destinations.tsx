@@ -33,17 +33,19 @@ function Totals({ summary }: Readonly<{ summary: NetworkSummary }>) {
   );
 }
 
-export function NetworkDestinations() {
+/** Where connections went over a window of days: every caller's, or only
+ * `caller`'s, whose host rules then apply to it alone. */
+export function NetworkDestinations({ caller }: Readonly<{ caller?: string }>) {
   const t = useT();
   const { client } = useAuth();
   const [days, setDays] = useState<SummaryWindow>(7);
   const { data, failed, error } = usePoll(
-    ['admin', 'network', 'summary', days],
-    () => client.network.summary(days),
+    ['admin', 'network', 'summary', days, caller ?? null],
+    () => client.network.summary(days, caller),
     SUMMARY_POLL_MS,
   );
   const groups = useMemo(() => groupByHost(data?.rows ?? []), [data]);
-  const hostRule = useHostRule();
+  const hostRule = useHostRule(caller ?? null);
 
   return (
     <Box gap={20}>

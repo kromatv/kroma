@@ -24,7 +24,7 @@ fn a_recorded_flow_reaches_the_journal_and_the_summary() {
     network.record(CORE, report("metadata", FlowRoute::Direct));
     network.record("tv.kroma.indexer", report("indexer", FlowRoute::Blocked));
 
-    let summary = network.summary(7).unwrap();
+    let summary = network.summary(7, None).unwrap();
 
     let blocked = network
         .flows(&FlowFilter {

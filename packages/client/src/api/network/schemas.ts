@@ -42,6 +42,10 @@ export type FlowsView = z.infer<typeof FlowsView>;
 /** The journal's server-side filters; an absent one matches everything. `before`
  * keeps out every connection from that id on, so pages taken from it stay put
  * while new ones arrive. `host` is a case-blind search in `host:port`. */
+/** The `rule` a flow carries when the network refused it because its module
+ * never declared that destination in its `permissions`. */
+export const UNDECLARED_RULE = 'permission:net.connect';
+
 export type FlowQuery = {
   limit?: number;
   offset?: number;

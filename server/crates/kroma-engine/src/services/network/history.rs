@@ -41,9 +41,9 @@ impl Network {
 
     /// The last `days` days of tallies, flushing what is pending first so the
     /// summary agrees with the journal.
-    pub fn summary(&self, days: u32) -> anyhow::Result<Summary> {
+    pub fn summary(&self, days: u32, caller: Option<&str>) -> anyhow::Result<Summary> {
         self.flush()?;
-        summary::summarize(&self.db, days, kroma_primitives::now_ms())
+        summary::summarize(&self.db, days, caller, kroma_primitives::now_ms())
     }
 
     /// Every `(caller, purpose)` pair the journal has seen or the core makes,

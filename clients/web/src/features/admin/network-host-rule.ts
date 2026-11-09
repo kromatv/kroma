@@ -8,10 +8,10 @@ import { useAuth } from '#web/shared/lib/auth';
 
 export type HostAction = 'block' | 'vpn';
 
-/** Asks before writing a rule for one host, then writes it at the head of the
- * stored list. Reads the list fresh first, so an edit saved elsewhere since the
- * page loaded is kept. */
-export function useHostRule(): {
+/** Asks before writing a rule for one host, for every caller or only `caller`,
+ * then writes it at the head of the stored list. Reads the list fresh first, so
+ * an edit saved elsewhere since the page loaded is kept. */
+export function useHostRule(caller: string | null = null): {
   apply: (host: string, action: HostAction) => Promise<void>;
   busy: boolean;
   error: string | null;
@@ -35,7 +35,7 @@ export function useHostRule(): {
     await run(
       async () => {
         const stored = await client.network.rules();
-        await client.network.saveRules(withHostRule(stored, host, action));
+        await client.network.saveRules(withHostRule(stored, host, action, caller));
         await queryClient.invalidateQueries({ queryKey: ['admin', 'network'] });
       },
       (cause) => apiErrorText(cause, t('network.saveFailed')),
