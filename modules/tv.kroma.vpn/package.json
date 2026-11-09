@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kromatv/client": "workspace:*",
     "@kromatv/module-sdk": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "zod": "^4.6.7"

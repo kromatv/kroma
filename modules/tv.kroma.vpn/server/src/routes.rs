@@ -17,7 +17,8 @@ use kroma_module_sdk::domain::Permission;
 
 use crate::bandwidth::{engine_bandwidth, range_or_default};
 use crate::{SaveVpnBody, VpnAdminView, VpnTestResult};
-use kroma_module_sdk::host::{blocking, service, AuthUser, HostCtx};
+use axum::http::StatusCode;
+use kroma_module_sdk::host::{blocking, json_error, run_blocking, service, AuthUser, HostCtx};
 
 use crate::wg_configured;
 
@@ -31,6 +32,7 @@ where
         .route("/vpn", get(status::<S>).put(save::<S>))
         .route("/vpn/test", post(test::<S>))
         .route("/vpn/bandwidth", get(bandwidth::<S>))
+        .merge(crate::mullvad::routes::routes::<S>())
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -65,7 +67,12 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     if let Some(vpn) = &vpn {
         vpn.remember_exit(status.as_ref().and_then(|status| status.exit_ip.clone()));
     }
+    let provider = crate::provider::provider_of(
+        &state.data_dir().join("vpn"),
+        &state.setting_str("vpnWgConfig", ""),
+    );
     let view = VpnAdminView {
+        provider,
         wg_configured: wg_configured(&state),
         bridge_running,
         local_port: state.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16,
@@ -85,6 +92,10 @@ async fn save<S: HostCtx + Clone + Send + Sync + 'static>(
     state.require(&user, Permission::SettingsManage)?;
     let mut patch: BTreeMap<String, Value> = BTreeMap::new();
     if let Some(wg) = body.wg_config {
+        let held = state.data_dir().join("vpn");
+        run_blocking(move || crate::mullvad::forget(&held))
+            .await
+            .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "the request did not finish"))?;
         patch.insert("vpnWgConfig".into(), json!(wg.trim()));
     }
     if let Some(port) = body.local_port {

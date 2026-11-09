@@ -21,9 +21,12 @@
 mod admin;
 mod backoff;
 pub mod bandwidth;
+mod keys;
 mod module;
+pub mod mullvad;
 pub mod port;
 mod process;
+mod provider;
 mod provision;
 pub mod routes;
 mod socks_auth;
@@ -40,5 +43,6 @@ use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
 pub use admin::{bridge_password, wg_configured, SaveVpnBody, VpnAdminView, VpnTestResult};
+pub use provider::ProviderView;
 pub use module::{server_module, VpnModule, MODULE_ID};
 pub use vpn::Vpn;

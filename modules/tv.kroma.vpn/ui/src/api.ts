@@ -4,6 +4,9 @@
 
 import { moduleApiHook } from '@kromatv/module-sdk';
 import {
+  type MullvadConnectBody,
+  MullvadConnectResult,
+  MullvadLocations,
   type SaveVpnBody,
   SaveVpnResult,
   VpnAdminView,
@@ -19,6 +22,17 @@ export const useVpnApi = moduleApiHook((api) => ({
   save: (body: SaveVpnBody) => api.put('/vpn', body, SaveVpnResult),
   /** Live seal probe: exit IP through the proxy vs direct. */
   test: () => api.post('/vpn/test', undefined, VpnTestResult),
+  /** Every country and city Mullvad can take the tunnel to. */
+  mullvadLocations: () => api.get('/vpn/mullvad/locations', MullvadLocations),
+  /** Connect through Mullvad, registering this server on the account the first
+   *  time. A refusal is a 4xx whose body is a `MullvadRefusal`. */
+  mullvadConnect: (body: MullvadConnectBody) =>
+    api.post('/vpn/mullvad', body, MullvadConnectResult),
+  /** Remove this server from the Mullvad account and stop the tunnel. */
+  mullvadDisconnect: () => api.delete('/vpn/mullvad'),
+  /** Free one of the account's device slots. */
+  mullvadRemoveDevice: (accountNumber: string, deviceId: string) =>
+    api.post('/vpn/mullvad/devices/remove', { accountNumber, deviceId }),
   /** `null` when no download module is installed to answer. */
   bandwidth: (range: VpnBandwidthRange) =>
     api.get(`/vpn/bandwidth?range=${range}`, VpnBandwidthView.nullable()),

@@ -27,6 +27,7 @@ pub fn bridge_password(host: &dyn HostCtx) -> Option<String> {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VpnAdminView {
+    pub provider: Option<crate::ProviderView>,
     // A WireGuard config is stored.
     pub wg_configured: bool,
     // The bridge child is currently alive.

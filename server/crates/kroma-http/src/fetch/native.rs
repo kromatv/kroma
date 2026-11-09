@@ -96,6 +96,18 @@ impl Fetch {
         self.send(Call::post(body.len() as u64), url, config)
     }
 
+    /// PUT a JSON body.
+    pub fn put_json(&self, url: &str, body: &serde_json::Value) -> Result<Response> {
+        let body = serde_json::to_string(body)?;
+        let sent = body.len() as u64;
+        self.send(Call::put(sent), url, self.put_json_config(url, &body))
+    }
+
+    /// DELETE `url`, with no body.
+    pub fn delete(&self, url: &str) -> Result<Response> {
+        self.send(Call::delete(), url, self.delete_config(url))
+    }
+
     /// POST a raw byte body (Web Push's `aes128gcm` ciphertext).
     ///
     /// The bytes go through a temp file, not an argv entry: an encrypted body is

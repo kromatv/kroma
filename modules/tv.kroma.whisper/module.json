@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.whisper",
   "name": "Whisper transcription",
-  "version": "0.3.22",
+  "version": "0.3.23",
   "description": "In-process Whisper subtitle transcription (candle).",
   "component": {
     "instances": 2,

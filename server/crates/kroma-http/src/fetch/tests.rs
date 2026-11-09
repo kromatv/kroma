@@ -189,6 +189,40 @@ fn a_header_value_cannot_inject_a_second_curl_option() {
 }
 
 #[test]
+fn a_put_names_its_method_and_carries_its_json_with_the_url_last() {
+    let config = Fetch::new().put_json_config(
+        "https://api.example/devices/d1/pubkey",
+        "{\"pubkey\":\"k\"}",
+    );
+
+    assert!(config.contains("request = \"PUT\"\n"), "{config}");
+    assert!(
+        config.contains("content-type: application/json"),
+        "{config}"
+    );
+    assert!(
+        config.contains("data-binary = \"{\\\"pubkey\\\":\\\"k\\\"}\"\n"),
+        "{config}"
+    );
+    assert!(
+        config.ends_with("url = \"https://api.example/devices/d1/pubkey\"\n"),
+        "{config}"
+    );
+}
+
+#[test]
+fn a_delete_names_its_method_and_sends_no_body() {
+    let config = Fetch::new().delete_config("https://api.example/devices/d1");
+
+    assert!(config.contains("request = \"DELETE\"\n"), "{config}");
+    assert!(!config.contains("data"), "{config}");
+    assert!(
+        config.ends_with("url = \"https://api.example/devices/d1\"\n"),
+        "{config}"
+    );
+}
+
+#[test]
 fn only_a_form_post_with_no_fields_names_the_method_itself() {
     let empty = Fetch::new().form_config("http://box:8060/launch/dev?server=x", &[]);
     assert!(empty.contains("request = \"POST\"\n"), "{empty}");
