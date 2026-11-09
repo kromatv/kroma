@@ -329,7 +329,10 @@ fn a_listener_holds_its_port_and_the_ones_its_count_adds() {
 
 #[test]
 fn a_listener_without_a_count_holds_one_port() {
-    assert_eq!(listen(json!({ "purpose": "a", "port": 4000 })).ports(&|_| None), [4000]);
+    assert_eq!(
+        listen(json!({ "purpose": "a", "port": 4000 })).ports(&|_| None),
+        [4000]
+    );
 }
 
 #[test]
@@ -337,6 +340,13 @@ fn a_listener_on_a_setting_nobody_set_holds_nothing() {
     let unset = listen(json!({ "purpose": "a", "port": "setting:unset", "count": 2 }));
 
     assert!(unset.ports(&|_| None).is_empty());
+}
+
+#[test]
+fn a_listener_whose_port_is_neither_a_number_nor_a_setting_holds_nothing() {
+    assert!(listen(json!({ "purpose": "a", "port": true }))
+        .ports(&|_| Some(1))
+        .is_empty());
 }
 
 #[test]

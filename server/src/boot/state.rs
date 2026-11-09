@@ -91,12 +91,7 @@ pub fn build(
         let settings = settings.clone();
         Arc::new(move || {
             supervisor
-                .installed_manifests()
-                .into_iter()
-                .filter(|m| kroma_engine::modules::module_enabled(&settings, &m.id))
-                .filter_map(|m| m.permissions)
-                .flat_map(|permissions| permissions.net.listen)
-                .collect()
+                .declared_listeners(&|id| kroma_engine::modules::module_enabled(&settings, id))
         })
     };
 

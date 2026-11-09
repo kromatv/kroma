@@ -41,3 +41,28 @@ fn a_module_answers_with_the_block_it_declares_and_one_without_with_none() {
     assert!(sup.permissions_of("com.example.silent").is_none());
     assert!(sup.permissions_of("com.example.absent").is_none());
 }
+
+#[test]
+fn the_listeners_are_those_every_enabled_module_declares() {
+    let dir = kroma_testing::temp_dir("declared-listeners");
+    let bridges = json!({ "purpose": "proxy", "port": "setting:vpnLocalPort", "count": 5 });
+    let peers = json!({ "purpose": "peers", "port": "setting:rqbitPort" });
+    installed(
+        dir.path(),
+        "com.example.vpn",
+        Some(json!({ "net": { "listen": [bridges] } })),
+    );
+    installed(
+        dir.path(),
+        "com.example.off",
+        Some(json!({ "net": { "listen": [peers] } })),
+    );
+    installed(dir.path(), "com.example.silent", None);
+    let sup = supervisor(dir.path());
+
+    let listeners = sup.declared_listeners(&|id| id != "com.example.off");
+
+    assert_eq!(listeners.len(), 1);
+    assert_eq!(listeners[0].purpose, "proxy");
+    assert_eq!(listeners[0].count, Some(5));
+}
