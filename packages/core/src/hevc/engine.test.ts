@@ -18,6 +18,11 @@ describe('nativeDirectPlayable', () => {
     expect(nativeDirectPlayable(mp4, 'android')).toBe(true);
   });
 
+  it('opens Matroska on a samsung set, as its own player does', () => {
+    const mkv = makeItem({ container: 'mkv', videoCodec: 'hevc', audio: [] });
+    expect(nativeDirectPlayable(mkv, 'tizen')).toBe(true);
+  });
+
   it('refuses AV1 on either, whatever the container', () => {
     const av1 = makeItem({ container: 'mp4', videoCodec: 'av1', audio: [] });
     expect(nativeDirectPlayable(av1, 'ios')).toBe(false);

@@ -64,6 +64,7 @@ mod tests {
         assert_eq!(kind("Mozilla/5.0 (Web0S; Linux/SmartTV)"), Kind::Tv);
         assert_eq!(kind("Kroma/1.0 (Apple TV; tvOS 26.0)"), Kind::Tv);
         assert_eq!(kind("Kroma/1.0 (Chromecast; Android TV 14)"), Kind::Tv);
+        assert_eq!(kind("Kroma/1.0 (QE65QN90A; Tizen 6.5)"), Kind::Tv);
     }
 
     #[test]

@@ -42,6 +42,10 @@ describe('deviceInfo', () => {
       label: 'BRAVIA 4K · Android TV',
       kind: 'tv',
     });
+    expect(deviceInfo('Kroma/0.1.39 (QE65QN90A; Tizen 6.5)', '?')).toEqual({
+      label: 'QE65QN90A · Tizen',
+      kind: 'tv',
+    });
   });
 
   it('still names the app when a native build sends the platform default', () => {
