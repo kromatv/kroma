@@ -29,6 +29,8 @@
   "jobs.editSchedule": "Modifier la planification",
   "jobs.empty": "Aucune tâche enregistrée.",
   "jobs.history": "Historique",
+  "jobs.indexer.definitions.desc": "Télécharge chaque nuit les définitions de trackers à jour, pour que la liste des indexeurs intégrés reste complète.",
+  "jobs.indexer.definitions.name": "Catalogue des trackers",
   "jobs.last": "Dernière",
   "jobs.library.missing.desc": "Compare chaque série de la bibliothèque à TMDB et liste les épisodes diffusés absents du disque (vue Manquants).",
   "jobs.library.missing.name": "Analyse des épisodes manquants",

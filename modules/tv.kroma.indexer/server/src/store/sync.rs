@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context as _, Result};
+use kroma_module_sdk::primitives::now_ms;
 
 use super::lock::SyncLock;
 use super::unpack::unpack;
@@ -19,6 +20,20 @@ impl DefinitionStore {
 
     pub(super) fn sync_now(&self) -> Result<SyncReport> {
         std::fs::create_dir_all(&self.dir).context("create defs dir")?;
+        let mut record = self.record();
+        record.attempted_at_ms = Some(now_ms());
+        record.failure = None;
+        self.write_record(&record);
+        let outcome = self.fetch_into_cache();
+        match &outcome {
+            Ok(_) => record.synced_at_ms = Some(now_ms()),
+            Err(e) => record.failure = Some(format!("{e:#}")),
+        }
+        self.write_record(&record);
+        outcome
+    }
+
+    fn fetch_into_cache(&self) -> Result<SyncReport> {
         let tmp = self.dir.join(".sync-tmp");
         let _ = std::fs::remove_dir_all(&tmp);
         std::fs::create_dir_all(&tmp).context("create sync tmp")?;

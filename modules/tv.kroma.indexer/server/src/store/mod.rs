@@ -11,10 +11,13 @@ use crate::definition::{self, Definition};
 
 mod heal;
 mod lock;
+mod status;
 mod sync;
 #[cfg(test)]
 mod test_support;
 mod unpack;
+
+pub use status::SyncRecord;
 
 // The `master` tarball, in one request instead of ~600 per-file fetches.
 // Overridable so a deployment can pin a fork/mirror.
@@ -34,6 +37,8 @@ pub struct DefinitionMeta {
     pub description: String,
     #[serde(default)]
     pub links: Vec<String>,
+    #[serde(default)]
+    pub language: String,
 }
 
 /// Outcome of a sync, for the admin toast.

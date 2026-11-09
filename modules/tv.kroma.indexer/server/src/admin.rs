@@ -101,6 +101,17 @@ pub fn definition_store(host: &dyn HostCtx) -> DefinitionStore {
     store.routed(route)
 }
 
+/// The job that keeps the definition catalog current.
+pub const SYNC_JOB: &str = "indexer.definitions";
+
+/// Start a sync when the catalog is still empty, so it fills while the admin
+/// is on the page instead of waiting for the daily run.
+pub fn fetch_catalog_if_empty(host: &dyn HostCtx) {
+    if definition_store(host).claim_first_sync(now_ms()) {
+        host.trigger_job(SYNC_JOB, "catalog-empty");
+    }
+}
+
 // Keyed so a config change (url / settings / VPN / FlareSolverr) yields a fresh
 // session. Reusing one session across a sweep is what makes `requestDelay`
 // throttling + the login cookie jar persist across the sweep's requests.

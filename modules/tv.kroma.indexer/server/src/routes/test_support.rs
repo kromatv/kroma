@@ -14,6 +14,7 @@ id: demo
 name: Demo Tracker
 type: public
 description: A tracker for the tests
+language: fr-FR
 links:
   - http://127.0.0.1:1/
 settings:
