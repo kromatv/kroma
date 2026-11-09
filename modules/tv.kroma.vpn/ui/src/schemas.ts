@@ -43,9 +43,23 @@ export const VpnProvider = z.discriminatedUnion('kind', [
 ]);
 export type VpnProvider = z.infer<typeof VpnProvider>;
 
+/** A WireGuard config kept on the server for one-click switching. Its text
+ * never leaves the server: this is what it is, and whether it is in use. */
+export const SavedConfig = z.object({
+  id: z.string(),
+  label: z.string(),
+  provider: VpnProvider.nullable(),
+  active: z.boolean(),
+});
+export type SavedConfig = z.infer<typeof SavedConfig>;
+
+export const SavedConfigs = z.object({ saved: z.array(SavedConfig) });
+export type SavedConfigs = z.infer<typeof SavedConfigs>;
+
 /** `GET /vpn`: the VPN configuration card's state. */
 export const VpnAdminView = z.object({
   provider: VpnProvider.nullable(),
+  saved: z.array(SavedConfig),
   wgConfigured: z.boolean(),
   bridgeRunning: z.boolean(),
   localPort: z.number(),

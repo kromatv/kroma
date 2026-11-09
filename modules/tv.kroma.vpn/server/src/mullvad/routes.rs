@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use axum::extract::State;
@@ -7,12 +6,12 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use kroma_module_sdk::domain::Permission;
-use kroma_module_sdk::host::{json_error, run_blocking, service, AuthUser, HostCtx};
+use kroma_module_sdk::host::{json_error, run_blocking, AuthUser, HostCtx};
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::json;
 
 use super::ConnectError;
-use crate::Vpn;
+use crate::routes::bring_up;
 
 /// `POST /vpn/mullvad` body. `accountNumber` is needed the first time only:
 /// once this server holds a device, changing place names just the place.
@@ -78,16 +77,6 @@ fn failed() -> Response {
         StatusCode::INTERNAL_SERVER_ERROR,
         "the request did not finish",
     )
-}
-
-async fn bring_up<S: HostCtx + Clone + Send + Sync + 'static>(state: &S, config: String) {
-    let mut patch: BTreeMap<String, Value> = BTreeMap::new();
-    patch.insert("vpnWgConfig".into(), json!(config));
-    state.set_settings(patch);
-    if let Some(vpn) = service::<Vpn>(state) {
-        vpn.apply(state).await;
-    }
-    crate::port::restart_engine(state);
 }
 
 async fn locations<S: HostCtx + Clone + Send + Sync + 'static>(

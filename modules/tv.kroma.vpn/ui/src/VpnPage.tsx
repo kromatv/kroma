@@ -30,6 +30,7 @@ import { useState } from 'react';
 import { useVpnApi } from './api';
 import { VpnBandwidthSection } from './bandwidth-panel';
 import type { VpnAdminView, VpnTestResult } from './schemas';
+import { SavedSwitcher } from './saved-switcher';
 import { VpnConfigDialog } from './vpn-config-dialog';
 
 // The VPN is global to several flows (torrent downloads and, optionally, indexer
@@ -112,6 +113,14 @@ export function VpnCard() {
           />
         </Row>
       </Row>
+
+      <SavedSwitcher
+        saved={state.saved}
+        onSwitched={() => {
+          void reload();
+          setTest({});
+        }}
+      />
 
       {test.error || test.result ? (
         <Box mt={12}>

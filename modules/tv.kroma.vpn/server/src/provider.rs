@@ -43,10 +43,11 @@ pub(crate) fn provider_of(dir: &Path, wg_config: &str) -> Option<ProviderView> {
             });
         }
     }
-    proton(wg_config)
+    provider_of_config(wg_config)
 }
 
-fn proton(config: &str) -> Option<ProviderView> {
+/// The provider a config names by itself: a Proton VPN file, by its comments.
+pub(crate) fn provider_of_config(config: &str) -> Option<ProviderView> {
     let comments: Vec<&str> = config
         .lines()
         .filter_map(|line| line.trim().strip_prefix('#'))

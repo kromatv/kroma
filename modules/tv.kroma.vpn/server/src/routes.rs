@@ -33,6 +33,7 @@ where
         .route("/vpn/test", post(test::<S>))
         .route("/vpn/bandwidth", get(bandwidth::<S>))
         .merge(crate::mullvad::routes::routes::<S>())
+        .merge(crate::saved::routes::routes::<S>())
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -71,8 +72,13 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
         &state.data_dir().join("vpn"),
         &state.setting_str("vpnWgConfig", ""),
     );
+    let saved = crate::saved::views(
+        &state.data_dir().join("vpn"),
+        &state.setting_str("vpnWgConfig", ""),
+    );
     let view = VpnAdminView {
         provider,
+        saved,
         wg_configured: wg_configured(&state),
         bridge_running,
         local_port: state.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16,
@@ -95,7 +101,12 @@ async fn save<S: HostCtx + Clone + Send + Sync + 'static>(
         let held = state.data_dir().join("vpn");
         run_blocking(move || crate::mullvad::forget(&held))
             .await
-            .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "the request did not finish"))?;
+            .map_err(|_| {
+                json_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "the request did not finish",
+                )
+            })?;
         patch.insert("vpnWgConfig".into(), json!(wg.trim()));
     }
     if let Some(port) = body.local_port {
@@ -135,4 +146,19 @@ async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
     })
     .await?;
     Ok(Json(result).into_response())
+}
+
+/// Make `config` the tunnel's ("" stops it), then restart the bridge and the
+/// engine so the new route applies at once.
+pub(crate) async fn bring_up<S: HostCtx + Clone + Send + Sync + 'static>(
+    state: &S,
+    config: String,
+) {
+    let mut patch: BTreeMap<String, Value> = BTreeMap::new();
+    patch.insert("vpnWgConfig".into(), json!(config));
+    state.set_settings(patch);
+    if let Some(vpn) = service::<Vpn>(state) {
+        vpn.apply(state).await;
+    }
+    crate::port::restart_engine(state);
 }

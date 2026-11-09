@@ -47,6 +47,15 @@ export function VpnConfigDialog({
       (e) => apiErrorText(e, t('requests.actionFailed')),
     );
 
+  const keep = (configs: string[]) =>
+    run(
+      async () => {
+        await vpn.saveConfigs(configs, true);
+        done();
+      },
+      (e) => apiErrorText(e, t('requests.actionFailed')),
+    );
+
   const remove = () =>
     run(
       async () => {
@@ -79,7 +88,7 @@ export function VpnConfigDialog({
       {choice === 'mullvad' ? (
         <MullvadPanel held={provider?.kind === 'mullvad' ? provider : null} onConnected={done} />
       ) : null}
-      {choice === 'proton' ? <ProtonPanel busy={busy} onSave={save} /> : null}
+      {choice === 'proton' ? <ProtonPanel busy={busy} onSave={keep} /> : null}
       {choice === 'other' ? <PastePanel busy={busy} onSave={save} /> : null}
       {error ? (
         <Text variant="meta" color="dangerHover">

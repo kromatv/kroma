@@ -1,29 +1,40 @@
 import { useT } from '@kromatv/module-sdk';
 import { Badge, Box, Button, Callout, Dropzone, Row, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { readWireGuard } from './wireguard-file';
+import { readWireGuard, type WireGuardFile } from './wireguard-file';
 
 const PROTON_DOWNLOADS = 'https://account.protonvpn.com/downloads';
 const MAX_CONFIG_BYTES = 16 * 1024;
 const STEPS = ['vpn.protonStep1', 'vpn.protonStep2', 'vpn.protonStep3'] as const;
 const LINK = { color: 'inherit', textDecoration: 'underline' } as const;
 
+interface Dropped {
+  name: string;
+  text: string;
+  file: WireGuardFile;
+}
+
 /** Proton offers no way for another app to make a config, so the page walks
- * the admin through Proton's own generator and takes the file it hands out. */
+ * the admin through Proton's own generator and takes the files it hands out:
+ * one per country, kept so the card switches between them in one click. */
 export function ProtonPanel({
   busy,
   onSave,
-}: Readonly<{ busy: boolean; onSave: (config: string) => void }>) {
+}: Readonly<{ busy: boolean; onSave: (configs: string[]) => void }>) {
   const t = useT();
-  const [config, setConfig] = useState<string | null>(null);
+  const [dropped, setDropped] = useState<Dropped[]>([]);
   const [refused, setRefused] = useState(false);
-  const file = config === null ? null : readWireGuard(config);
+  const valid = dropped.length > 0 && dropped.every((one) => one.file.valid);
 
-  const take = async (picked: File | undefined) => {
-    if (!picked) return;
-    const text = await picked.text();
-    setRefused(!readWireGuard(text).valid);
-    setConfig(text);
+  const take = async (picked: File[]) => {
+    const read = await Promise.all(
+      picked.map(async (one) => {
+        const text = await one.text();
+        return { name: one.name, text, file: readWireGuard(text) };
+      }),
+    );
+    setRefused(read.some((one) => !one.file.valid));
+    setDropped(read);
   };
 
   return (
@@ -50,7 +61,8 @@ export function ProtonPanel({
         label={t('vpn.protonDrop')}
         accept=".conf,text/plain"
         maxSize={MAX_CONFIG_BYTES}
-        onDrop={([picked]) => void take(picked)}
+        multiple
+        onDrop={(picked) => void take(picked)}
         onReject={() => setRefused(true)}
       >
         <Dropzone.Icon />
@@ -62,25 +74,26 @@ export function ProtonPanel({
           <Callout.Title>{t('vpn.invalidConfig')}</Callout.Title>
         </Callout.Root>
       ) : null}
-      {file?.valid ? (
+      {valid ? (
         <Callout.Root tone="success">
-          <Callout.Title>
-            {file.proton?.server
-              ? t('vpn.protonDetected', { server: file.proton.server })
-              : t('vpn.configReady')}
-          </Callout.Title>
-          {file.proton?.portForwarding ? (
-            <Callout.Detail>{t('vpn.protonPortForwarding')}</Callout.Detail>
-          ) : null}
+          <Callout.Title>{t('vpn.protonFiles', { count: dropped.length })}</Callout.Title>
+          {dropped.map((one) => (
+            <Callout.Detail key={one.name}>
+              {one.file.proton?.server
+                ? t('vpn.protonDetected', { server: one.file.proton.server })
+                : one.name}
+              {one.file.proton?.portForwarding ? ` · ${t('vpn.protonPortForwarding')}` : ''}
+            </Callout.Detail>
+          ))}
         </Callout.Root>
       ) : null}
       <Row>
         <Button
           variant="primary"
           label={t('vpn.connect')}
-          onPress={() => config && onSave(config.trim())}
+          onPress={() => onSave(dropped.map((one) => one.text.trim()))}
           loading={busy}
-          disabled={!file?.valid || busy}
+          disabled={!valid || busy}
         />
       </Row>
     </Box>

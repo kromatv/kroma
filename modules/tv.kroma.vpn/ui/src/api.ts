@@ -7,6 +7,7 @@ import {
   type MullvadConnectBody,
   MullvadConnectResult,
   MullvadLocations,
+  SavedConfigs,
   type SaveVpnBody,
   SaveVpnResult,
   VpnAdminView,
@@ -33,6 +34,14 @@ export const useVpnApi = moduleApiHook((api) => ({
   /** Free one of the account's device slots. */
   mullvadRemoveDevice: (accountNumber: string, deviceId: string) =>
     api.post('/vpn/mullvad/devices/remove', { accountNumber, deviceId }),
+  /** Keep WireGuard configs for one-click switching; with `use`, the first one
+   *  becomes the tunnel's at once. */
+  saveConfigs: (configs: string[], use: boolean) =>
+    api.post('/vpn/saved', { configs, use }, SavedConfigs),
+  /** Switch the tunnel to a kept config. */
+  useSaved: (id: string) => api.post(`/vpn/saved/${encodeURIComponent(id)}/use`, {}, SavedConfigs),
+  /** Forget a kept config; the tunnel stops when it was the one in use. */
+  removeSaved: (id: string) => api.delete(`/vpn/saved/${encodeURIComponent(id)}`, SavedConfigs),
   /** `null` when no download module is installed to answer. */
   bandwidth: (range: VpnBandwidthRange) =>
     api.get(`/vpn/bandwidth?range=${range}`, VpnBandwidthView.nullable()),

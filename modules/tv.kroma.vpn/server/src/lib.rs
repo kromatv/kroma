@@ -29,6 +29,7 @@ mod process;
 mod provider;
 mod provision;
 pub mod routes;
+pub mod saved;
 mod socks_auth;
 mod stderr_tail;
 mod supervise;
