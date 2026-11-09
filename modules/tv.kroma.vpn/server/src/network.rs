@@ -94,7 +94,7 @@ fn offers(
         },
     }];
     for saved in crate::saved::routed(&dir) {
-        let is_default = saved.config.trim() == default_config.trim();
+        let is_default = crate::wireguard::same_tunnel(&saved.config, &default_config);
         let port = if is_default {
             Some(base)
         } else {

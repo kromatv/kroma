@@ -45,7 +45,8 @@
         {
           "purpose": "proxy",
           "proto": ["tcp"],
-          "port": "setting:vpnLocalPort"
+          "port": "setting:vpnLocalPort",
+          "count": 5
         }
       ],
       "host": true

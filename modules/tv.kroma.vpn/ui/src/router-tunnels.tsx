@@ -5,7 +5,7 @@ import { useVpnApi } from './api';
 import type { SavedConfig } from './schemas';
 
 /** The kept configs a network rule can send calls through by name, each on a
- *  tunnel of its own. Shown once there are two configs to tell apart. */
+ *  tunnel of its own. Shown once one of them is not the default. */
 export function RouterTunnels({
   saved,
   slots,
@@ -15,7 +15,7 @@ export function RouterTunnels({
   const vpn = useVpnApi();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (saved.length < 2) return null;
+  if (!saved.some((one) => !one.active)) return null;
   const routed = saved.filter((one) => one.routable).map((one) => one.id);
   const full = routed.length >= slots;
 
@@ -55,6 +55,11 @@ export function RouterTunnels({
           </ChoiceList.Item>
         ))}
       </ChoiceList.Root>
+      {saved.some((one) => one.provider?.kind === 'proton') ? (
+        <Text variant="meta" color="textDim">
+          {t('vpn.routerProtonLimit')}
+        </Text>
+      ) : null}
       {full ? (
         <Text variant="meta" color="textDim">
           {t('vpn.routerFull', { count: slots })}

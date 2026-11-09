@@ -43,6 +43,28 @@ pub(crate) fn ipv4_only_wg(config: &str) -> String {
     out.join("\n")
 }
 
+pub(crate) fn value_of<'a>(config: &'a str, key: &str) -> Option<&'a str> {
+    config
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix(key))
+        .filter_map(|rest| rest.trim_start().strip_prefix('='))
+        .map(str::trim)
+        .next()
+}
+
+/// Whether two configs bring up the same tunnel: one key to one peer. Two
+/// bridges on it would steal each other's replies, so they share one.
+pub(crate) fn same_tunnel(a: &str, b: &str) -> bool {
+    let key = |config| {
+        (
+            value_of(config, "PrivateKey"),
+            value_of(config, "PublicKey"),
+        )
+    };
+    let (left, right) = (key(a), key(b));
+    a.trim() == b.trim() || (left.0.is_some() && left.1.is_some() && left == right)
+}
+
 #[cfg(test)]
 mod tests {
     use super::ipv4_only_wg;
@@ -89,5 +111,29 @@ mod tests {
         let cfg = "[Interface]\nAddress = 2a07:b944::2:2/128\n[Peer]\nAllowedIPs = ::/0";
         let out = ipv4_only_wg(cfg);
         assert!(out.contains("Address = 2a07:b944::2:2/128"));
+    }
+
+    const CH: &str =
+        "[Interface]\nPrivateKey = KEY\n[Peer]\nPublicKey = RELAY_CH\nEndpoint = 192.0.2.1:51820\n";
+
+    #[test]
+    fn one_key_to_one_peer_is_one_tunnel_however_the_text_differs() {
+        let commented = format!("# Mullvad ch-zrh-wg-001\n{CH}");
+
+        assert!(super::same_tunnel(CH, &commented));
+    }
+
+    #[test]
+    fn one_key_to_two_peers_is_two_tunnels() {
+        let se = CH.replace("RELAY_CH", "RELAY_SE");
+
+        assert!(!super::same_tunnel(CH, &se));
+    }
+
+    #[test]
+    fn two_keys_to_one_peer_are_two_tunnels() {
+        let other = CH.replace("PrivateKey = KEY", "PrivateKey = OTHER");
+
+        assert!(!super::same_tunnel(CH, &other));
     }
 }

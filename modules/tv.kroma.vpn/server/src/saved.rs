@@ -93,6 +93,13 @@ pub(crate) fn find(dir: &Path, id: &str) -> Option<Saved> {
     load(dir).into_iter().find(|one| one.id == id)
 }
 
+/// Forget every kept config built on `private_key`, once that key is revoked.
+pub(crate) fn forget_key(dir: &Path, private_key: &str) -> std::io::Result<()> {
+    let mut saved = load(dir);
+    saved.retain(|one| crate::wireguard::value_of(&one.config, "PrivateKey") != Some(private_key));
+    store(dir, &saved)
+}
+
 /// Forget one kept config. Answers whether it was there.
 pub(crate) fn remove(dir: &Path, id: &str) -> std::io::Result<bool> {
     let mut saved = load(dir);
@@ -133,12 +140,10 @@ pub(crate) fn routed(dir: &Path) -> Vec<Saved> {
     routed
 }
 
-/// The port a slot's tunnel listens on: above the default tunnel's, or below
-/// it when the default sits at the top of the range.
+/// The port a slot's tunnel listens on: the slot's place above the default
+/// tunnel's, which the manifest declares as one run of ports.
 pub(crate) fn port_for(base: u16, slot: u8) -> Option<u16> {
     base.checked_add(u16::from(slot))
-        .or_else(|| base.checked_sub(u16::from(slot)))
-        .filter(|port| *port > 0)
 }
 
 /// Every kept config, marked active when it is the tunnel's config now.

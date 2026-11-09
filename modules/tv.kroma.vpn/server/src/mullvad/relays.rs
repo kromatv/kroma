@@ -116,11 +116,25 @@ impl RelayList {
         owned_only: bool,
         roll: u32,
     ) -> Option<&Relay> {
+        self.pick_avoiding(country, city, owned_only, roll, &[])
+    }
+
+    /// [`Self::pick`], leaving out the relays named in `avoid`: one key to one
+    /// relay twice would steal its own replies.
+    pub(crate) fn pick_avoiding(
+        &self,
+        country: &str,
+        city: Option<&str>,
+        owned_only: bool,
+        roll: u32,
+        avoid: &[&str],
+    ) -> Option<&Relay> {
         let candidates: Vec<&Relay> = self
             .wireguard
             .relays
             .iter()
             .filter(|relay| relay.active && relay.weight > 0 && (relay.owned || !owned_only))
+            .filter(|relay| !avoid.contains(&relay.hostname.as_str()))
             .filter(|relay| match city {
                 Some(city) => relay.location == city,
                 None => country_of(&relay.location) == country && relay.include_in_country,

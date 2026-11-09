@@ -54,7 +54,7 @@ fn failed() -> Response {
     )
 }
 
-fn listed(host: &dyn HostCtx) -> Response {
+pub(crate) fn listed(host: &dyn HostCtx) -> Response {
     let saved = super::views(&dir(host), &host.setting_str("vpnWgConfig", ""));
     Json(json!({ "saved": saved })).into_response()
 }
@@ -64,9 +64,12 @@ async fn switch_to<S: HostCtx + Clone + Send + Sync + 'static>(
     config: String,
 ) -> Result<(), Response> {
     let held = dir(state);
-    run_blocking(move || crate::mullvad::forget(&held))
-        .await
-        .map_err(|_| failed())?;
+    let keeps_mullvad = crate::mullvad::uses_key(&held, &config);
+    if !keeps_mullvad {
+        run_blocking(move || crate::mullvad::forget(&held))
+            .await
+            .map_err(|_| failed())?;
+    }
     bring_up(state, config).await;
     Ok(())
 }
@@ -129,6 +132,14 @@ async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
     Ok(listed(&state))
 }
 
+pub(crate) fn router_full() -> Response {
+    (
+        StatusCode::CONFLICT,
+        Json(json!({ "code": "routerFull", "max": ROUTER_SLOTS })),
+    )
+        .into_response()
+}
+
 async fn set_network<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -145,13 +156,7 @@ async fn set_network<S: HostCtx + Clone + Send + Sync + 'static>(
         Err(RoutingError::Missing) => {
             return Err(json_error(StatusCode::NOT_FOUND, "no such config"));
         }
-        Err(RoutingError::Full) => {
-            return Err((
-                StatusCode::CONFLICT,
-                Json(json!({ "code": "routerFull", "max": ROUTER_SLOTS })),
-            )
-                .into_response());
-        }
+        Err(RoutingError::Full) => return Err(router_full()),
         Err(RoutingError::Io(error)) => {
             tracing::warn!(%error, "could not keep the configs in the router");
             return Err(failed());

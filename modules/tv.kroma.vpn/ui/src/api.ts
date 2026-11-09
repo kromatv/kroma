@@ -7,6 +7,7 @@ import {
   type MullvadConnectBody,
   MullvadConnectResult,
   MullvadLocations,
+  type MullvadPlaceBody,
   SavedConfigs,
   type SaveVpnBody,
   SaveVpnResult,
@@ -29,6 +30,10 @@ export const useVpnApi = moduleApiHook((api) => ({
    *  time. A refusal is a 4xx whose body is a `MullvadRefusal`. */
   mullvadConnect: (body: MullvadConnectBody) =>
     api.post('/vpn/mullvad', body, MullvadConnectResult),
+  /** Keep another place on this server's Mullvad device as a tunnel of its own
+   *  that a network rule can name. Costs no device on the account. */
+  mullvadAddToRouter: (body: MullvadPlaceBody) =>
+    api.post('/vpn/mullvad/router', body, SavedConfigs),
   /** Remove this server from the Mullvad account and stop the tunnel. */
   mullvadDisconnect: () => api.delete('/vpn/mullvad'),
   /** Free one of the account's device slots. */

@@ -117,15 +117,40 @@ the default one, so a network rule can name it. Read 2026-11-09.
   Documented. The page renumbers the second file's `Address` to `10.3.0.2/32`
   for clients that share one network stack; wireproxy does not (below).
 - **How many.** [Pricing](https://protonvpn.com/pricing): Free secures 1 device
-  at a time, VPN Plus 10. Whether a downloaded WireGuard file takes one of those
-  slots while it is connected is not documented on any page read; the
-  [router guide](https://protonvpn.com/support/installing-protonvpn-on-a-router)
-  says a router "only counts as one connection on a Free plan". Inferred: each
-  tunnel the module runs counts as one. The module caps the router at four
-  besides the default.
+  at a time, VPN Plus 10. For manual OpenVPN, an auth failure can mean "You
+  have hit your maximum number of concurrent sessions", "Free users get 1
+  connection, while Proton Plus users get up to ten connections"
+  ([auth fail](https://protonvpn.com/support/vpn-auth-fail-solution)).
+  Documented. No page says the same of a WireGuard file. Read in source: the
+  VPN server, not the app, counts sessions per account. Proton's local agent
+  names `REASON_CODE_MAX_SESSIONS_FREE` to `_PLUS`
+  ([local-agent-rs](https://github.com/ProtonVPN/local-agent-rs/blob/74ec6f4f/local_agent_rs/src/reason_code.rs#L14-L20)),
+  and a session past the limit is jailed, "vpn tunnel established, but not
+  communicating to the rest of internet"
+  (`python-proton-vpn-local-agent/src/agent_features.rs:45-46`). Inferred: each
+  tunnel the module runs is one session, the default included, and one past
+  the limit opens but passes nothing, with no error wireproxy could see. The
+  page says so beside the router list. The same file names
+  `REASON_CODE_KEY_USED_MULTIPLE_TIMES` (line 20), so one file never runs twice.
 - **No address clash.** wireproxy v1.1.2 (commit `3792cd42`) takes one
   `WGConfig` per process (`config.go:76-80`, `config.go:540-546`) and puts its
   `Address` on an in-process gVisor stack (`wireguard.go:70`, wireguard-go
   `tun/netstack/tun.go:62`). Read in source. Inferred: two bridges that both use
   `10.2.0.2/32` each own a private copy, so Proton files need no renumbering
   here.
+- **Mullvad: one key, several relays.** Mullvad's own client runs one key on
+  two relays at once for multihop: two devices built from the same
+  `config.tunnel.private_key`
+  ([mullvadvpn-app](https://github.com/mullvad/mullvadvpn-app/blob/b8e8e546/talpid-wireguard/src/gotatun/mod.rs#L200-L209)),
+  and `mullvad-wg.sh` writes one config per relay with the same `PrivateKey`
+  and `Address`, then prints `wg-quick up` for each (lines 65 to 88). Read in
+  source. Mullvad's warning is about devices, not relays: "If you are running
+  WireGuard on multiple devices, generate a separate key for each device"
+  ([Linux guide](https://mullvad.net/en/help/easy-wireguard-mullvad-setup-linux)).
+  So a place in the router reuses this server's device, and never a relay the
+  default or another kept place already reaches.
+- **Mullvad counts devices.** "An account can be used on up to 5 devices"
+  ([terms](https://mullvad.net/en/help/terms-service)); the accounts spec's
+  `max_devices` is the "Maximum number of devices allowed for this account"
+  and has no field that counts connections. Documented. Inferred: a place in
+  the router takes no device slot.

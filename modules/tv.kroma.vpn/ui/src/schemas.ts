@@ -158,6 +158,14 @@ export const MullvadConnectBody = z.object({
 });
 export type MullvadConnectBody = z.infer<typeof MullvadConnectBody>;
 
+/** `POST /vpn/mullvad/router` body: another place for this server's device. */
+export const MullvadPlaceBody = MullvadConnectBody.omit({ accountNumber: true });
+export type MullvadPlaceBody = z.infer<typeof MullvadPlaceBody>;
+
+/** The 409 a full router answers: it holds `max` configs besides the default. */
+export const RouterFull = z.object({ code: z.literal('routerFull'), max: z.number().int() });
+export type RouterFull = z.infer<typeof RouterFull>;
+
 export const MullvadConnectResult = z.object({ provider: VpnProvider.nullable() });
 export type MullvadConnectResult = z.infer<typeof MullvadConnectResult>;
 

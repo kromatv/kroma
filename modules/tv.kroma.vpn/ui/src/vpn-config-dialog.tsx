@@ -86,7 +86,11 @@ export function VpnConfigDialog({
         </SegmentGroup.Item>
       </SegmentGroup.Root>
       {choice === 'mullvad' ? (
-        <MullvadPanel held={provider?.kind === 'mullvad' ? provider : null} onConnected={done} />
+        <MullvadPanel
+          held={provider?.kind === 'mullvad' ? provider : null}
+          onConnected={done}
+          onRouted={done}
+        />
       ) : null}
       {choice === 'proton' ? <ProtonPanel busy={busy} onSave={keep} /> : null}
       {choice === 'other' ? <PastePanel busy={busy} onSave={save} /> : null}

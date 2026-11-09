@@ -23,7 +23,7 @@ struct Wanted {
 fn wanted(dir: &Path, default_config: &str, base: u16) -> Vec<Wanted> {
     saved::routed(dir)
         .into_iter()
-        .filter(|one| one.config.trim() != default_config.trim())
+        .filter(|one| !crate::wireguard::same_tunnel(&one.config, default_config))
         .filter_map(|Saved { id, config, slot }| {
             let port = saved::port_for(base, slot?)?;
             Some(Wanted { id, config, port })

@@ -138,7 +138,30 @@ fn the_page_sees_which_configs_are_in_the_router() {
 }
 
 #[test]
-fn a_slot_sits_above_the_default_port_or_below_it_at_the_top_of_the_range() {
+fn a_slot_sits_above_the_default_port_and_never_past_the_last_one() {
     assert_eq!(port_for(25345, 1), Some(25346));
-    assert_eq!(port_for(65535, 2), Some(65533));
+    assert_eq!(port_for(65534, 2), None);
+}
+
+#[test]
+fn the_manifest_declares_a_port_for_the_default_tunnel_and_each_slot() {
+    let manifest: serde_json::Value =
+        serde_json::from_str(include_str!("../../../module.json")).unwrap();
+
+    let listen = &manifest["permissions"]["net"]["listen"][0];
+
+    assert_eq!(listen["port"], "setting:vpnLocalPort");
+    assert_eq!(listen["count"], u64::from(ROUTER_SLOTS) + 1);
+}
+
+#[test]
+fn forgetting_a_key_drops_every_config_built_on_it_and_keeps_the_rest() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-forget-key");
+    let mullvad = "[Interface]\nPrivateKey = device\n[Peer]\n# Mullvad ch-zrh-wg-001 · Switzerland · Zurich\nPublicKey = relay\nEndpoint = 192.0.2.5:51820\n";
+    add(dir.path(), &[mullvad.to_string(), proton("CH#3")]).unwrap();
+
+    forget_key(dir.path(), "device").unwrap();
+
+    let labels: Vec<String> = views(dir.path(), "").into_iter().map(|v| v.label).collect();
+    assert_eq!(labels, ["Proton VPN · CH#3"]);
 }

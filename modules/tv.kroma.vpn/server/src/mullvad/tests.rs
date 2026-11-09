@@ -39,11 +39,26 @@ fn a_bare_tunnel_address_gets_a_host_prefix() {
 }
 
 #[test]
+fn the_config_names_its_relay_and_place_where_the_page_reads_them() {
+    let list = list();
+    let relay = list.pick("se", None, false, 0).unwrap();
+    let place = place_of(&list, relay, Some("se-sto"));
+
+    let config = render(&account(), relay, &list.wireguard.ipv4_gateway, &place);
+
+    assert!(
+        config.contains("\n# Mullvad se-sto-wg-001 · Sweden · Stockholm\n"),
+        "{config}"
+    );
+}
+
+#[test]
 fn the_config_carries_the_devices_key_and_address_and_the_relays_peer() {
     let list = list();
     let relay = list.pick("se", None, false, 0).unwrap();
+    let place = place_of(&list, relay, None);
 
-    let config = render(&account(), relay, &list.wireguard.ipv4_gateway);
+    let config = render(&account(), relay, &list.wireguard.ipv4_gateway, &place);
 
     assert!(config.contains("PrivateKey = private\n"), "{config}");
     assert!(config.contains("Address = 10.140.1.2/32\n"), "{config}");
@@ -94,4 +109,30 @@ fn what_this_server_holds_survives_a_restart_and_is_private() {
             .mode();
         assert_eq!(mode & 0o777, 0o600);
     }
+}
+
+#[test]
+fn a_config_on_this_servers_device_key_is_this_servers_mullvad() {
+    let dir = kroma_module_sdk::testing::temp_dir("mullvad-uses-key");
+    store::save(dir.path(), &account()).unwrap();
+    let mine = "[Interface]\nPrivateKey = private\n[Peer]\nPublicKey = relay\n";
+    let foreign = "[Interface]\nPrivateKey = someone-else\n[Peer]\nPublicKey = relay\n";
+
+    assert!(uses_key(dir.path(), mine));
+    assert!(!uses_key(dir.path(), foreign));
+}
+
+#[test]
+fn the_relays_this_device_already_uses_are_the_defaults_and_the_kept_places() {
+    let dir = kroma_module_sdk::testing::temp_dir("mullvad-in-use");
+    store::save(dir.path(), &account()).unwrap();
+    let on_key = |host: &str| {
+        format!("[Interface]\nPrivateKey = private\n[Peer]\n# Mullvad {host} · Switzerland\nPublicKey = {host}\n")
+    };
+    let foreign = "[Interface]\nPrivateKey = other\n[Peer]\n# Mullvad se-got-wg-001 · Sweden\nPublicKey = x\n";
+    crate::saved::add(dir.path(), &[on_key("ch-zrh-wg-002"), foreign.to_string()]).unwrap();
+
+    let in_use = relays_in_use(dir.path(), &account(), &on_key("ch-zrh-wg-001"));
+
+    assert_eq!(in_use, ["ch-zrh-wg-001", "ch-zrh-wg-002"]);
 }

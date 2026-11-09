@@ -3,6 +3,7 @@ import { apiErrorText, usePoll, useT } from '@kromatv/module-sdk';
 import { Box, Button, Callout, Field, Row, Select, Switch, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import { useVpnApi } from './api';
+import { MullvadRouterButton } from './mullvad-router';
 import {
   type MullvadCountry,
   type MullvadRefusal,
@@ -23,11 +24,13 @@ function placesFor(countries: readonly MullvadCountry[], ownedOnly: boolean): Mu
 }
 
 /** Connect through Mullvad: the account number once, then a country and an
- * optional city. `held` is the Mullvad place this server already uses, if any. */
+ * optional city. `held` is the Mullvad place this server already uses, if any;
+ * once there is one, the picked place can also go in the router beside it. */
 export function MullvadPanel({
   held,
   onConnected,
-}: Readonly<{ held: Held | null; onConnected: () => void }>) {
+  onRouted,
+}: Readonly<{ held: Held | null; onConnected: () => void; onRouted: () => void }>) {
   const t = useT();
   const vpn = useVpnApi();
   const { data, failed } = usePoll(
@@ -174,6 +177,14 @@ export function MullvadPanel({
           disabled={!ready}
         />
       </Row>
+      {held && !newAccount ? (
+        <MullvadRouterButton
+          country={country}
+          city={city === ANY_CITY ? null : city}
+          ownedOnly={ownedOnly}
+          onRouted={onRouted}
+        />
+      ) : null}
     </Box>
   );
 }

@@ -105,3 +105,20 @@ fn a_place_says_whether_mullvad_owns_a_server_there() {
         .collect();
     assert_eq!(owned, [("Gothenburg", false), ("Stockholm", true)]);
 }
+
+#[test]
+fn a_relay_already_carrying_this_key_is_never_picked_again() {
+    let list = list();
+
+    let picked: Vec<String> = (0..400)
+        .map(|roll| {
+            let relay = list.pick_avoiding("se", None, false, roll, &["se-sto-wg-001"]);
+            relay.unwrap().hostname.clone()
+        })
+        .collect();
+
+    assert!(picked.iter().all(|hostname| hostname == "se-sto-wg-002"));
+    assert!(list
+        .pick_avoiding("se", Some("se-got"), false, 0, &["se-got-wg-001"])
+        .is_none());
+}
