@@ -24,15 +24,21 @@ pub struct Context {
     pub in_progress: Vec<String>,
 }
 
+impl PartOfDay {
+    pub fn at(hour: u8) -> Self {
+        match hour {
+            5..=11 => Self::Morning,
+            12..=17 => Self::Afternoon,
+            18..=22 => Self::Evening,
+            _ => Self::LateNight,
+        }
+    }
+}
+
 impl Context {
     pub fn build(pool: &Pool, user_id: &str, played_percent: i64) -> Self {
         let now = OffsetDateTime::now_utc();
-        let part_of_day = match now.hour() {
-            5..=11 => PartOfDay::Morning,
-            12..=17 => PartOfDay::Afternoon,
-            18..=22 => PartOfDay::Evening,
-            _ => PartOfDay::LateNight,
-        };
+        let part_of_day = PartOfDay::at(now.hour());
         Self {
             month: u8::from(now.month()),
             weekday: now.weekday(),

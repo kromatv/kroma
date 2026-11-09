@@ -100,6 +100,12 @@ pub fn icon(state: &SharedState, id: &str) -> Option<(&'static str, Vec<u8>)> {
     supervisor(state).and_then(|s| s.icon(id))
 }
 
+/// An installed module's frontend, when its bundle carries one, for the module
+/// list and the `/modules/<id>@<revision>/*` route.
+pub fn frontend(state: &SharedState, id: &str) -> Option<kroma_module_supervisor::Frontend> {
+    supervisor(state).and_then(|s| s.frontend(id))
+}
+
 /// The backend behavior for a module id, if it has any (for the enable/disable
 /// lifecycle driven by the admin toggle).
 pub fn find_server(id: &str) -> Option<&'static dyn ServerModule<SharedState>> {

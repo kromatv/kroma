@@ -12,7 +12,7 @@ import { Route } from './_app.movies.$id';
 const ID = ItemId.parse('m1');
 
 const media = {
-  similar: vi.fn(),
+  similarCards: vi.fn(),
   movieCards: vi.fn(async () => []),
   artwork: { posterFor: () => '/poster', backdropFor: () => null },
 };
@@ -28,24 +28,44 @@ async function load() {
     params: { id: ID },
     context: { runtime, queryClient: runtime.queryClient },
   } as never);
+  return runtime.queryClient;
 }
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-it('opens a title with enough neighbours without fetching the movie list', async () => {
-  media.similar.mockResolvedValue([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
+it('opens a title without fetching the movie list, however few its neighbours', async () => {
+  media.similarCards.mockResolvedValue([{ id: 'a' }]);
 
   await load();
 
   expect(media.movieCards).not.toHaveBeenCalled();
 });
 
-it('reaches for the movie list when the neighbours are too few to fill the rail', async () => {
-  media.similar.mockResolvedValue([{ id: 'a' }]);
+it('opens a title before its neighbours answer', async () => {
+  media.similarCards.mockReturnValue(new Promise(() => undefined));
 
-  await load();
+  const queryClient = await load();
 
-  expect(media.movieCards).toHaveBeenCalledTimes(1);
+  expect(queryClient.getQueryData(['similar', ID])).toBeUndefined();
+  expect(media.similarCards).toHaveBeenCalledTimes(1);
+});
+
+it('fills the similar rail from the card view of its neighbours', async () => {
+  media.similarCards.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+
+  const queryClient = await load();
+
+  await vi.waitFor(() =>
+    expect(queryClient.getQueryData(['similar', ID])).toEqual([{ id: 'a' }, { id: 'b' }]),
+  );
+});
+
+it('opens a title with an empty rail when its neighbours could not be fetched', async () => {
+  media.similarCards.mockRejectedValue(new Error('offline'));
+
+  const queryClient = await load();
+
+  await vi.waitFor(() => expect(queryClient.getQueryData(['similar', ID])).toEqual([]));
 });

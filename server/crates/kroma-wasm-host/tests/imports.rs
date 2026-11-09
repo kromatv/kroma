@@ -74,7 +74,7 @@ fn a_fetch_the_policy_blocks_fails_inside_the_component_with_its_reason() {
 }
 
 #[test]
-fn the_journal_holds_every_fetch_with_its_verdict_in_call_order() {
+fn the_journal_holds_each_fetch_with_its_verdict_in_call_order() {
     let mut module = fetching_module();
     probe(&mut module, "/fetch", ALLOWED_PURPOSE);
 
@@ -82,7 +82,7 @@ fn the_journal_holds_every_fetch_with_its_verdict_in_call_order() {
 
     assert_eq!(
         module.fetches(),
-        [
+        &[
             FetchRecord {
                 call: call_for(ALLOWED_PURPOSE),
                 outcome: Outcome::Allowed,
@@ -93,6 +93,22 @@ fn the_journal_holds_every_fetch_with_its_verdict_in_call_order() {
             },
         ]
     );
+}
+
+#[test]
+fn the_journal_keeps_the_last_256_fetches_and_drops_the_oldest() {
+    let mut module = fetching_module();
+    probe(&mut module, "/fetch", BLOCKED_PURPOSE);
+
+    for _ in 0..256 {
+        probe(&mut module, "/fetch", ALLOWED_PURPOSE);
+    }
+
+    assert_eq!(module.fetches().len(), 256);
+    assert!(module
+        .fetches()
+        .iter()
+        .all(|record| record.outcome == Outcome::Allowed));
 }
 
 #[test]

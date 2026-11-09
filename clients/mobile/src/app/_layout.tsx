@@ -1,6 +1,6 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { lanBeacon } from '@kromatv/lan-beacon';
-import { CastProvider, I18nProvider as KitI18nProvider } from '@kromatv/ui';
+import { CastProvider, I18nProvider as KitI18nProvider, useDirectConnection } from '@kromatv/ui';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import {
   configureKit,
@@ -30,6 +30,7 @@ import { useNotificationStream } from '#mobile/lib/notifications';
 import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/notifications/usePush';
 import { lockUpright, UPRIGHT } from '#mobile/lib/orientation';
 import { ProgressQueueProvider } from '#mobile/lib/progress';
+import { PHONE_NETWORK } from '#mobile/lib/network-change';
 import { SessionProvider, useSession } from '#mobile/lib/session';
 import { MOBILE, mobileTheme } from '#mobile/lib/theme';
 import { PlaybackOwnerProvider } from '#mobile/player/playback-owner';
@@ -68,6 +69,12 @@ function NotificationStream() {
   // The relay grant a server holds expires, and only this app can replace one -
   // so a launch is the only chance to do it before push goes quiet.
   usePushGrantRefresh();
+  return null;
+}
+
+function DirectRoute() {
+  const { status, client } = useSession();
+  useDirectConnection(client, status === 'signedIn', PHONE_NETWORK);
   return null;
 }
 
@@ -121,6 +128,7 @@ function Shell() {
                 lan={lanBeacon ?? undefined}
               >
                 <NotificationStream />
+                <DirectRoute />
                 <BottomSheetModalProvider>
                   {/* Innermost: a theme swap REMOUNTS this subtree, so every provider
                     above it survives one and only the screens are drawn again. */}

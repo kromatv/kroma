@@ -50,7 +50,7 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
   const { client } = useAuth();
   const queryClient = useQueryClient();
   const [runtime] = useState(() =>
-    createModuleRuntime(client, () => queryClient.fetchQuery(modulesQuery(client))),
+    createModuleRuntime(() => queryClient.fetchQuery(modulesQuery(client))),
   );
   const { registry: moduleRegistry, remotes, listModules } = runtime;
   const [revision, setRevision] = useState(0);
@@ -93,7 +93,7 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
     await remotes.loadRuntimeRemotes(moduleRegistry);
     try {
       const listed = host ? await listModules() : [];
-      const present = new Set(listed.map((m) => m.id));
+      const present = new Set<string>(listed.map((m) => m.id));
       for (const id of moduleRegistry.ids()) {
         if (!present.has(id) && remotes.isLoadedRemote(id)) {
           moduleRegistry.unregister(id);

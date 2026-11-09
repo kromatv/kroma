@@ -1,7 +1,7 @@
 // Genres: the library's own genres as artwork tiles, most common first, on the
 // same tile the web and the television draw.
 
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import {
   collectGenres,
   genreColors,
@@ -51,8 +51,8 @@ export default function Genres() {
   const catalogue = useQuery({
     queryKey: ['genreCatalogue'],
     staleTime: 10 * 60_000,
-    queryFn: async (): Promise<(MediaItem | Show)[]> => {
-      const [movies, shows] = await Promise.all([client.media.movies(), client.media.shows()]);
+    queryFn: async (): Promise<(MediaCard | Show)[]> => {
+      const [movies, shows] = await Promise.all([client.media.movieCards(), client.media.shows()]);
       return [...movies, ...shows];
     },
   });

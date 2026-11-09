@@ -2,11 +2,12 @@
 //! so the module holds no socket of its own.
 
 use std::collections::HashMap;
-use std::net::{IpAddr, SocketAddr, UdpSocket};
+use std::net::{SocketAddr, UdpSocket};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
+use kroma_http::address::primary_address;
 use kroma_module_manifest::Discovery;
 use kroma_wasm_host::{Lan, Reply, Service};
 use mdns_sd::{ServiceDaemon, ServiceInfo};
@@ -14,7 +15,6 @@ use mdns_sd::{ServiceDaemon, ServiceInfo};
 const SSDP_ADDRESS: &str = "239.255.255.250:1900";
 const MULTICAST_TTL: u32 = 2;
 const MAX_WAIT: Duration = Duration::from_secs(10);
-const ROUTE_PROBE: &str = "8.8.8.8:80";
 
 pub(super) struct ModuleLan {
     module: String,
@@ -23,16 +23,6 @@ pub(super) struct ModuleLan {
     daemon: Mutex<Option<ServiceDaemon>>,
     announced: Mutex<HashMap<u64, String>>,
     next: AtomicU64,
-}
-
-// Connecting a UDP socket sends no packets; it only consults the routing table.
-// A machine with no route reports loopback or the wildcard, and publishing either
-// hands every client an address that cannot work.
-fn primary_address() -> Option<IpAddr> {
-    let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
-    socket.connect(ROUTE_PROBE).ok()?;
-    let ip = socket.local_addr().ok()?.ip();
-    (!ip.is_loopback() && !ip.is_unspecified()).then_some(ip)
 }
 
 fn search_message(target: &str) -> String {

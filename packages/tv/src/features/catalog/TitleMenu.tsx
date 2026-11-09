@@ -1,4 +1,4 @@
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, MediaItem, Show } from '@kromatv/client/media';
 import {
   Drawer,
   FocusColumn,
@@ -15,7 +15,7 @@ import { useTitleActions } from '#tv/features/catalog/useTitleActions';
  * tile: a film or an episode the viewer is part way through, `progress` of
  * the way (0..1). */
 export type HeldTitle =
-  | { kind: 'movie'; item: MediaItem }
+  | { kind: 'movie'; item: MediaCard }
   | { kind: 'show'; item: Show }
   | { kind: 'episode'; item: MediaItem }
   | { kind: 'resume'; item: MediaItem; progress: number };

@@ -21,6 +21,7 @@ import type { WebRuntime } from '#web/shared/lib/api';
 import { AuthProvider } from '#web/shared/lib/auth';
 import { BlurPreferenceProvider } from '#web/shared/lib/blur-pref';
 import { CommandMenuProvider } from '#web/shared/lib/command-menu';
+import { DirectConnectionProvider } from '#web/shared/lib/direct-connection';
 import { LocaleProvider } from '#web/shared/lib/locale';
 import { MyListProvider } from '#web/shared/lib/mylist';
 import { WatchedProvider } from '#web/shared/lib/watched';
@@ -115,19 +116,21 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
               <ConfirmHost>
                 <WebRuntimeProvider value={runtime}>
                   <AuthProvider>
-                    <WatchedProvider>
-                      <MyListProvider>
-                        <LocaleProvider>
-                          <ModuleHostProvider>
-                            <CommandMenuProvider load={loadCommandMenu}>
-                              <NavActionsProvider actions={NAV_ACTIONS}>
-                                <BootScreen>{children}</BootScreen>
-                              </NavActionsProvider>
-                            </CommandMenuProvider>
-                          </ModuleHostProvider>
-                        </LocaleProvider>
-                      </MyListProvider>
-                    </WatchedProvider>
+                    <DirectConnectionProvider>
+                      <WatchedProvider>
+                        <MyListProvider>
+                          <LocaleProvider>
+                            <ModuleHostProvider>
+                              <CommandMenuProvider load={loadCommandMenu}>
+                                <NavActionsProvider actions={NAV_ACTIONS}>
+                                  <BootScreen>{children}</BootScreen>
+                                </NavActionsProvider>
+                              </CommandMenuProvider>
+                            </ModuleHostProvider>
+                          </LocaleProvider>
+                        </MyListProvider>
+                      </WatchedProvider>
+                    </DirectConnectionProvider>
                   </AuthProvider>
                 </WebRuntimeProvider>
 

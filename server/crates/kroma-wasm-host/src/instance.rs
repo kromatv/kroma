@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::sync::Arc;
 
 use wasmtime::{Engine, Store, Trap};
@@ -123,8 +124,9 @@ impl ModuleInstance {
         self.store.data().ceiling.largest
     }
 
-    /// Every `net.fetch` this instance made, allowed or blocked, in call order.
-    pub fn fetches(&self) -> &[FetchRecord] {
+    /// The last 256 `net.fetch` calls this instance made, allowed or blocked, in
+    /// call order.
+    pub fn fetches(&self) -> &VecDeque<FetchRecord> {
         &self.store.data().fetches
     }
 }

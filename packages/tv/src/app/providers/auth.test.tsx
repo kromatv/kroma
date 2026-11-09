@@ -195,6 +195,7 @@ describe('TV boot with a remembered session', () => {
       '/home/featured',
       '/movies',
       '/my-list',
+      '/server/direct',
       '/shows',
       '/watched',
     ]);

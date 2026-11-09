@@ -15,6 +15,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { copyText } from '#web/shared/lib/copy-text';
+import { useDirectRoute } from '#web/shared/lib/direct-connection';
+import { routeHost } from '#web/shared/lib/direct-offer';
 import { clientStamp, serverStamp, stampLines, versionReport } from '#web/shared/lib/version-stamp';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -47,9 +49,27 @@ const GLYPH: Record<CopyState, IconName> = {
 };
 
 /** The build the sidebar is running and the server behind it, on one line
- *  when they are the same build and one line each when they are not. Pressing
- *  it copies a report naming both, for a bug report. */
+ *  when they are the same build and one line each when they are not, and the
+ *  direct route when one is in use. Pressing it copies a report naming both
+ *  builds, for a bug report. */
 export function SidebarVersion() {
+  const t = useT();
+  const { route } = useDirectRoute();
+  return (
+    <>
+      <VersionStamp />
+      {route ? (
+        <Box px={6}>
+          <Text variant="meta" color="textDim" lines={1}>
+            {t('connection.directRoute', { host: routeHost(route) })}
+          </Text>
+        </Box>
+      ) : null}
+    </>
+  );
+}
+
+function VersionStamp() {
   const webRuntime = useWebRuntime();
   const t = useT();
   const s = useStyles(sDefinition);

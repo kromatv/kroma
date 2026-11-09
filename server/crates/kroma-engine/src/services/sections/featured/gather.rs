@@ -5,34 +5,20 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::db::{self, Pool};
-use crate::model::SectionItem;
+use crate::db::{self, HeroCandidate, Pool};
 
 // How deep the trending rank signal looks.
 const TREND_DEPTH: usize = 50;
 
 /// Everything the hero can be picked from: every movie and every show (episodes
-/// are never a hero, they belong to their show's page).
-pub(super) fn catalog(pool: &Pool) -> Vec<SectionItem> {
-    let mut all: Vec<SectionItem> = Vec::new();
-    match db::list_movies(pool, None) {
-        Ok(movies) => {
-            all.extend(
-                movies
-                    .into_iter()
-                    .map(|m| SectionItem::Movie { item: Box::new(m) }),
-            );
-        }
-        Err(e) => tracing::error!(target: "sections", "featured: reading movies failed: {e:#}"),
-    }
-    match db::list_shows(pool, None) {
-        Ok(shows) => {
-            all.extend(
-                shows
-                    .into_iter()
-                    .map(|s| SectionItem::Show { show: Box::new(s) }),
-            );
-        }
+/// are never a hero, they belong to their show's page), as scoring facts only.
+pub(super) fn candidates(pool: &Pool) -> Vec<HeroCandidate> {
+    let mut all = db::hero_movie_candidates(pool).unwrap_or_else(|e| {
+        tracing::error!(target: "sections", "featured: reading movies failed: {e:#}");
+        Vec::new()
+    });
+    match db::hero_show_candidates(pool) {
+        Ok(shows) => all.extend(shows),
         Err(e) => tracing::error!(target: "sections", "featured: reading shows failed: {e:#}"),
     }
     all
@@ -91,15 +77,16 @@ mod tests {
     use super::*;
     use crate::test_support;
 
+    fn ids(pool: &Pool) -> Vec<String> {
+        candidates(pool).into_iter().map(|c| c.id).collect()
+    }
+
     #[test]
     fn catalog_gathers_movies_and_shows_but_not_episodes() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
         test_support::seed_show_episode(&state, "sh1", "e1");
-        let ids: Vec<String> = catalog(&state.db)
-            .iter()
-            .map(|e| e.id().to_string())
-            .collect();
+        let ids = ids(&state.db);
         assert!(ids.contains(&"m1".to_string()));
         assert!(ids.contains(&"sh1".to_string()));
         assert!(!ids.contains(&"e1".to_string()));
@@ -108,7 +95,7 @@ mod tests {
     #[test]
     fn catalog_is_empty_on_a_bare_db() {
         let state = test_support::test_state();
-        assert!(catalog(&state.db).is_empty());
+        assert!(candidates(&state.db).is_empty());
     }
 
     #[test]
@@ -123,11 +110,7 @@ mod tests {
             .execute("DROP TABLE shows", [])
             .unwrap();
 
-        let ids: Vec<String> = catalog(&state.db)
-            .iter()
-            .map(|e| e.id().to_string())
-            .collect();
-        assert_eq!(ids, vec!["m1".to_string()]);
+        assert_eq!(ids(&state.db), vec!["m1".to_string()]);
 
         state
             .db
@@ -135,7 +118,7 @@ mod tests {
             .unwrap()
             .execute("DROP TABLE items", [])
             .unwrap();
-        assert!(catalog(&state.db).is_empty());
+        assert!(candidates(&state.db).is_empty());
     }
 
     #[test]

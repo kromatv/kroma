@@ -88,6 +88,23 @@ export type TitleInput =
     }
   | { source: 'discover'; detail: DiscoverDetail };
 
+/** The "more like this" tiles for a movie, from its neighbours' cards. */
+export function movieSimilarTargets(
+  c: KromaClient,
+  t: Translate,
+  cards: readonly MediaCard[],
+): SimilarTarget[] {
+  return cards.map((m) => ({
+    key: m.id,
+    title: m.title,
+    poster: c.media.artwork.posterFor(m),
+    genre: genreLabels(t, m.metadata)[0] ?? t('content.film'),
+    localId: m.id,
+    tmdbId: null,
+    kind: 'movie',
+  }));
+}
+
 export function buildTitleView(
   c: KromaClient,
   t: Translate,
@@ -124,15 +141,7 @@ export function buildTitleView(
       requestStatus: discover?.requestStatus ?? null,
       requestProgress: discover?.requestProgress ?? null,
       canRequest: false,
-      similar: similar.map((m) => ({
-        key: m.id,
-        title: m.title,
-        poster: c.media.artwork.posterFor(m),
-        genre: genreLabels(t, m.metadata)[0] ?? t('content.film'),
-        localId: m.id,
-        tmdbId: null,
-        kind: 'movie' as const,
-      })),
+      similar: movieSimilarTargets(c, t, similar),
     };
   }
 

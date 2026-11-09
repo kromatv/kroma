@@ -9,13 +9,14 @@ const domains = {
   media: {
     movieCards: endpoint(),
     shows: endpoint(),
+    showCards: endpoint(),
     show: endpoint(),
     item: endpoint(),
     featured: endpoint(),
-    similar: endpoint(),
+    similarCards: endpoint(),
     people: endpoint(),
     person: endpoint(),
-    home: endpoint(),
+    homeCards: endpoint(),
     health: endpoint(),
     splash: endpoint(),
   },
@@ -76,6 +77,7 @@ export function installHarness(): void {
   beforeEach(() => {
     vi.resetAllMocks();
     c.media.shows.mockResolvedValue([]);
+    c.media.showCards.mockResolvedValue([]);
     c.playback.upNext.mockResolvedValue(null);
     c.discovery.detail.mockResolvedValue(null);
     c.playback.following.mockResolvedValue([]);

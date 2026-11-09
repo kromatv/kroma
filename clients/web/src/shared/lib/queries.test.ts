@@ -65,7 +65,7 @@ describe('the catalogue views', () => {
       { id: 'm2', mapped: 'card' },
     ]);
 
-    c.media.shows.mockResolvedValue([{ id: 's1' }]);
+    c.media.showCards.mockResolvedValue([{ id: 's1' }]);
     expect(await run(catalogQueries.showsView())).toEqual([{ id: 's1', mapped: 'show' }]);
   });
 
@@ -107,11 +107,11 @@ describe('the plain reads', () => {
     ['catalog.item', () => catalogQueries.item(ItemId.parse('m1')), c.media.item],
     ['catalog.show', () => catalogQueries.show(ShowId.parse('s1')), c.media.show],
     ['catalog.shows', () => catalogQueries.shows(), c.media.shows],
-    ['catalog.similar', () => catalogQueries.similar(ItemId.parse('m1')), c.media.similar],
+    ['catalog.similar', () => catalogQueries.similar(ItemId.parse('m1')), c.media.similarCards],
     ['catalog.personCredits', () => catalogQueries.personCredits('Ana'), c.media.people],
     ['catalog.personDetails', () => catalogQueries.personDetails('Ana'), c.media.person],
     ['catalog.upNext', () => catalogQueries.upNext(ShowId.parse('s1')), c.playback.upNext],
-    ['user.home', () => userQueries.home(), c.media.home],
+    ['user.home', () => userQueries.home(), c.media.homeCards],
     ['user.continueWatching', () => userQueries.continueWatching(), c.playback.continueWatching],
     ['user.progress', () => userQueries.progress(), c.playback.progress],
     ['user.myRequests', () => userQueries.myRequests(), c.requests.list, { mine: true }],

@@ -8,7 +8,7 @@ const H = vi.hoisted(() => {
   const norm = (u: string) => (u || '').replace(/\/+$/, '');
   return {
     norm,
-    movies: vi.fn(),
+    movieCards: vi.fn(),
     shows: vi.fn(),
     status: vi.fn(),
     health: vi.fn(),
@@ -62,7 +62,7 @@ vi.mock('@kromatv/client', () => ({
       baseUrl: opts.baseUrl,
       hasAuth: false,
       admin: { status: H.status },
-      media: { movies: H.movies, shows: H.shows, health: H.health },
+      media: { movieCards: H.movieCards, shows: H.shows, health: H.health },
       playback: { itemProgress: H.itemProgress },
     };
     H.instances.push(client);
@@ -74,6 +74,12 @@ vi.mock('@kromatv/core', () => ({
   deviceLocale: () => 'fr',
   discoverServer: H.discoverServer,
   checkServerCompat: H.checkServerCompat,
+  startDirectConnection: () => ({
+    setSignedIn: () => undefined,
+    setForeground: () => undefined,
+    recheck: () => undefined,
+    stop: () => undefined,
+  }),
 }));
 
 type HealthModule = typeof import('#tv/app/useServerHealth');
@@ -131,7 +137,7 @@ beforeEach(() => {
   H.checkServerCompat.mockReturnValue('ok');
   H.loadSession.mockReturnValue(null);
   H.initialServers.mockReturnValue([]);
-  H.movies.mockResolvedValue([]);
+  H.movieCards.mockResolvedValue([]);
   H.shows.mockResolvedValue([]);
   H.status.mockResolvedValue(null);
   H.health.mockResolvedValue(undefined);
@@ -154,12 +160,12 @@ describe('useCatalogue boot session', () => {
     renderHook(() => useCatalogue('tizen'));
     await settle();
 
-    expect(H.movies).not.toHaveBeenCalled();
+    expect(H.movieCards).not.toHaveBeenCalled();
     expect(H.health).not.toHaveBeenCalled();
   });
 
   it('builds a client for the saved server and loads the catalogue when signed in', async () => {
-    H.movies.mockResolvedValue([{ id: 'm1' }]);
+    H.movieCards.mockResolvedValue([{ id: 'm1' }]);
     H.shows.mockResolvedValue([{ id: 's1' }]);
 
     const { result } = signedIn();
@@ -167,7 +173,7 @@ describe('useCatalogue boot session', () => {
     expect(result.current.activeServerUrl).toBe('http://tv.local');
 
     await settle();
-    expect(H.movies).toHaveBeenCalled();
+    expect(H.movieCards).toHaveBeenCalled();
     expect(result.current.connection.status).toBe('ready');
     expect(result.current.connection.movies).toEqual([{ id: 'm1' }]);
     expect(result.current.connection.shows).toEqual([{ id: 's1' }]);
@@ -178,16 +184,16 @@ describe('useCatalogue boot session', () => {
 describe('useCatalogue signed-out picker', () => {
   it('makes no catalogue requests until a profile signs in', async () => {
     H.initialServers.mockReturnValue([{ url: 'http://tv.local', name: null }]);
-    H.movies.mockResolvedValue([{ id: 'm1' }]);
+    H.movieCards.mockResolvedValue([{ id: 'm1' }]);
 
     const { result } = renderHook(() => useCatalogue('tizen'));
     await settle();
-    expect(H.movies).not.toHaveBeenCalled();
+    expect(H.movieCards).not.toHaveBeenCalled();
     expect(result.current.connection.status).toBe('connecting');
 
     act(() => result.current.setSignedIn(true));
     await settle();
-    expect(H.movies).toHaveBeenCalled();
+    expect(H.movieCards).toHaveBeenCalled();
     expect(result.current.connection.movies).toEqual([{ id: 'm1' }]);
   });
 });
@@ -273,13 +279,13 @@ describe('useCatalogue server management', () => {
   it('ignores a catalogue that only arrives after the TV moved to another server', async () => {
     H.initialServers.mockReturnValue([{ url: 'http://a.local', name: 'A' }]);
     let releaseA: (items: unknown[]) => void = () => {};
-    H.movies.mockImplementationOnce(
+    H.movieCards.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           releaseA = resolve;
         }),
     );
-    H.movies.mockResolvedValue([{ id: 'b1' }]);
+    H.movieCards.mockResolvedValue([{ id: 'b1' }]);
 
     const { result } = renderHook(() => useCatalogue('tizen'));
     act(() => result.current.setSignedIn(true));
@@ -355,9 +361,9 @@ describe('useCatalogue server management', () => {
     await settle();
     expect(result.current.client).toBeNull();
 
-    const before = H.movies.mock.calls.length;
+    const before = H.movieCards.mock.calls.length;
     await act(async () => H.reconnect?.());
-    expect(H.movies).toHaveBeenCalledTimes(before);
+    expect(H.movieCards).toHaveBeenCalledTimes(before);
   });
 });
 
@@ -388,7 +394,7 @@ describe('useCatalogue deep links', () => {
 
 describe('useCatalogue error handling', () => {
   it('surfaces a fetch failure as the error status', async () => {
-    H.movies.mockRejectedValue(new Error('boom'));
+    H.movieCards.mockRejectedValue(new Error('boom'));
 
     const { result } = signedIn();
     await settle();
@@ -397,7 +403,7 @@ describe('useCatalogue error handling', () => {
   });
 
   it('surfaces a rejection that is not an Error as its own text', async () => {
-    H.movies.mockRejectedValue('offline');
+    H.movieCards.mockRejectedValue('offline');
     const { result } = signedIn();
     await settle();
     expect(result.current.connection.error).toBe('offline');
@@ -457,27 +463,27 @@ describe('useCatalogue live event stream', () => {
     signedIn();
     await tick();
     const { opts } = stream();
-    const before = H.movies.mock.calls.length;
+    const before = H.movieCards.mock.calls.length;
 
     act(() => opts.onEvent({ type: 'library.updated' }));
     await tick();
-    expect(H.movies).toHaveBeenCalledTimes(before + 1);
+    expect(H.movieCards).toHaveBeenCalledTimes(before + 1);
 
     act(() => opts.onEvent({ type: 'item.updated' }));
     act(() => opts.onEvent({ type: 'show.updated' }));
     await tick();
-    expect(H.movies).toHaveBeenCalledTimes(before + 1);
+    expect(H.movieCards).toHaveBeenCalledTimes(before + 1);
 
     await tick(2500);
-    expect(H.movies).toHaveBeenCalledTimes(before + 2);
+    expect(H.movieCards).toHaveBeenCalledTimes(before + 2);
   });
 
   it('keeps the catalogue it has when a live refetch fails', async () => {
-    H.movies.mockResolvedValue([{ id: 'm1' }]);
+    H.movieCards.mockResolvedValue([{ id: 'm1' }]);
     const { result } = signedIn();
     await tick();
 
-    H.movies.mockRejectedValue(new Error('gone'));
+    H.movieCards.mockRejectedValue(new Error('gone'));
     act(() => stream().opts.onEvent({ type: 'library.updated' }));
     await tick();
 
@@ -528,17 +534,17 @@ describe('useCatalogue live event stream', () => {
     await tick();
     expect(result.current.connection.online).toBe(false);
 
-    const before = H.movies.mock.calls.length;
+    const before = H.movieCards.mock.calls.length;
     H.health.mockResolvedValue({ version: '0.9.0' });
     await tick(3000);
 
     expect(result.current.connection.online).toBe(true);
     expect(result.current.connection.serverVersion).toBe('0.9.0');
-    expect(H.movies).toHaveBeenCalledTimes(before + 1);
+    expect(H.movieCards).toHaveBeenCalledTimes(before + 1);
   });
 
   it('publishes the home-screen carousel a moment after the catalogue is ready', async () => {
-    H.movies.mockResolvedValue([{ id: 'm1' }]);
+    H.movieCards.mockResolvedValue([{ id: 'm1' }]);
     signedIn();
     await tick();
     expect(H.publishPreview).not.toHaveBeenCalled();

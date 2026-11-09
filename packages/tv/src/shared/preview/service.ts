@@ -3,7 +3,7 @@
 // KROMA itself, so this writes the tile JSON where that service can read it.
 
 import type { KromaClient } from '@kromatv/client';
-import type { ContinueItem, MediaItem } from '@kromatv/client/media';
+import type { ContinueItem, MediaCard } from '@kromatv/client/media';
 import { buildPreviewData } from '#tv/shared/preview/cards';
 import { type Tizen, type TizenFile, tizen } from '#tv/shared/preview/tizen';
 
@@ -79,7 +79,7 @@ export function createPreviewPublisher() {
 
   /** Persist the carousel and (throttled) ask the service to publish it. No-op
    *  off Tizen. */
-  return async function publishPreview(client: KromaClient, movies: MediaItem[]): Promise<void> {
+  return async function publishPreview(client: KromaClient, movies: MediaCard[]): Promise<void> {
     const t = tizen();
     if (!t) return;
     let continueItems: ContinueItem[] = [];

@@ -1,4 +1,10 @@
 {
+  "connection.directOfferAction": "Connect directly",
+  "connection.directOfferDetail": "A direct connection skips the detour through the internet. Your browser will ask for access to your local network.",
+  "connection.directOfferDismiss": "Don't offer again",
+  "connection.directOfferFailed": "The server did not answer at its local address.",
+  "connection.directOfferTitle": "You are on the same network as your server",
+  "connection.directRoute": "Direct connection ({host})",
   "connection.offline": "Offline",
   "connection.reconnecting": "Reconnecting…"
 }

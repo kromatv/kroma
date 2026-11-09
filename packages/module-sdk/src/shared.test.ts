@@ -36,4 +36,10 @@ describe('remoteEntryUrl', () => {
       'http://kroma.local:4040/modules/tv.acme.notes/remoteEntry.js',
     );
   });
+
+  it('pins the revision the module list named beside the id', () => {
+    expect(remoteEntryUrl('http://kroma.local:4040', 'tv.acme.notes', '3f2a9c1d8e7b6a50')).toBe(
+      'http://kroma.local:4040/modules/tv.acme.notes@3f2a9c1d8e7b6a50/remoteEntry.js',
+    );
+  });
 });

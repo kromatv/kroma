@@ -161,7 +161,8 @@ function TitleBody({
 export function TitleDetail({
   initial,
   season,
-}: Readonly<{ initial: TitleView; season?: number }>) {
+  similar,
+}: Readonly<{ initial: TitleView; season?: number; similar?: readonly SimilarTarget[] }>) {
   const webRuntime = useWebRuntime();
 
   const s = useStyles(sDefinition);
@@ -210,7 +211,7 @@ export function TitleDetail({
   const overline = view.genres.length
     ? view.genres.slice(0, 3).join(' · ')
     : t(fallbackOverlineKey);
-  const similarItems: SimilarItem[] = view.similar.map((s) => ({
+  const similarItems: SimilarItem[] = (similar ?? view.similar).map((s) => ({
     id: s.key,
     title: s.title,
     genre: s.genre,

@@ -60,7 +60,7 @@ pub struct SecretQuery {
 /// Canonical, because a dual-stack bind (`KROMA_HOST=::`) hands an IPv4 proxy
 /// over as `::ffff:127.0.0.1`, which is neither loopback nor equal to
 /// `127.0.0.1` nor inside any IPv4 CIDR until it is unmapped.
-fn trusted(ip: IpAddr, list: &[String]) -> bool {
+pub(crate) fn trusted(ip: IpAddr, list: &[String]) -> bool {
     let ip = ip.to_canonical();
     ip.is_loopback()
         || list.iter().any(|entry| {

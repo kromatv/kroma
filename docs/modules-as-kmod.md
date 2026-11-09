@@ -53,6 +53,9 @@ processes, declared in the manifest. See
   scans `<data>/installed/*`, hashes each enabled module's `module.wasm` against
   the `sha256` recorded when it was installed, compiles it and keeps the machine
   code beside it at `<data>/installed/<id>/module.cwasm`, so a restart reuses it.
+  The machine code runs from that file mapped in place, so the kernel can drop
+  its pages instead of swapping them, and a new compile replaces the file by a
+  rename rather than writing into it.
   It serves the module on `modules/<id>/module.sock` under `<data>/run`, in a
   directory only the server's user can open, and `proxy_to` reverse-proxies a
   request there. The first instance is the primary, and it starts as soon as the
@@ -100,13 +103,21 @@ processes, declared in the manifest. See
   bundle that carries a native `module` binary, from every registry and from an
   upload. A native module an older server left on disk is never started: its
   log says why, and the Store offers its update.
-- **The frontend tier**: `fe/remoteEntry.js` is served at
-  `/modules/<id>/remoteEntry.js` and the web client imports it for every
-  enabled module at boot. The bundle takes React, the design system, the SDK
-  and the client from the host through one global (`SHARED_MODULES` in
-  `@kromatv/module-sdk`), so one React and one theme live on the page. At boot
-  the host hands an entry only what `fe/shared.json` says it reads as it loads;
-  the rest arrives when a module page, slot or panel first renders.
+- **The frontend tier**: `GET /api/modules` names a `frontend` for every
+  module whose installed bundle carries `fe/remoteEntry.js`: a `revision`, the
+  first 16 hex of a sha256 over every file under `fe/`, and `shared`, the
+  bundle's `fe/shared.json`. The web client imports the entry of every enabled
+  module from `/modules/<id>@<revision>/remoteEntry.js`, where every file of the
+  bundle is `public, max-age=31536000, immutable`: any change to the bytes,
+  an update or a `kroma dev` save, moves the revision and so the URL. The bare
+  `/modules/<id>/*` and `shared.json` stay for clients that predate the
+  listing, and revalidate. A module whose bundle has no entry lists neither
+  `frontend` nor `feRemote`, whatever its manifest says. The bundle takes
+  React, the design system, the SDK and the client from the host through one
+  global (`SHARED_MODULES` in `@kromatv/module-sdk`), so one React and one
+  theme live on the page. At boot the host hands an entry only what `shared`
+  says it reads as it loads; the rest arrives when a module page, slot or panel
+  first renders.
 - **Registry + Store (shipped)**: `kroma registry` builds a catalog (one
   artifact per version, with `sha256`, `contentHash`, `dependsOn`, `engines`)
   for a self-hosted directory; `kroma release` builds the

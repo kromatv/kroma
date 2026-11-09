@@ -62,7 +62,7 @@ export function MonitorTitlesDialog({
   const { data: library } = useQuery({
     queryKey: ['admin', 'monitoring', 'catalog'],
     queryFn: async () => {
-      const [movies, shows] = await Promise.all([client.media.movies(), client.media.shows()]);
+      const [movies, shows] = await Promise.all([client.media.movieCards(), client.media.shows()]);
       return { movies, shows };
     },
     enabled: open && source === 'library',

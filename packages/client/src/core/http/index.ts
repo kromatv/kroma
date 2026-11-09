@@ -4,4 +4,5 @@ export * from './path';
 export * from './preconnect';
 export * from './query';
 export * from './request-context';
+export * from './route';
 export * from './user-agent';

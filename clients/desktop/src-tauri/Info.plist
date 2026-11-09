@@ -20,5 +20,7 @@
     <key>NSAllowsLocalNetworking</key>
     <true/>
   </dict>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>KROMA plays straight from your media server when it is on the same network as this computer.</string>
 </dict>
 </plist>

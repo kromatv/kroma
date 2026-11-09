@@ -7,7 +7,20 @@ use axum::Router;
 use serde_json::Value;
 use tower::ServiceExt;
 
+const LOOPBACK_PEER: std::net::SocketAddr =
+    std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST), 40000);
+
 fn build_request(
+    method: &str,
+    uri: &str,
+    token: Option<&str>,
+    body: Option<String>,
+) -> Request<Body> {
+    build_request_from(LOOPBACK_PEER, method, uri, token, body)
+}
+
+fn build_request_from(
+    peer: std::net::SocketAddr,
     method: &str,
     uri: &str,
     token: Option<&str>,
@@ -25,11 +38,7 @@ fn build_request(
         None => Body::empty(),
     };
     let mut req = builder.body(body).expect("build request");
-    req.extensions_mut()
-        .insert(ConnectInfo(std::net::SocketAddr::from((
-            [127, 0, 0, 1],
-            40000,
-        ))));
+    req.extensions_mut().insert(ConnectInfo(peer));
     req
 }
 
@@ -43,9 +52,28 @@ pub async fn raw(
     json: Option<Value>,
     headers: &[(&str, &str)],
 ) -> (StatusCode, axum::http::HeaderMap, Value) {
-    use axum::http::{HeaderName, HeaderValue};
     let body = json.map(|v| v.to_string());
-    let mut req = build_request(method, uri, token, body);
+    drive(app, build_request(method, uri, token, body), headers).await
+}
+
+/// A `GET` like [`raw`]'s, but arriving from `peer` rather than from loopback,
+/// which is what a client on the network, or a proxy nobody named, looks like.
+pub async fn get_from(
+    app: &Router,
+    peer: std::net::SocketAddr,
+    uri: &str,
+    token: Option<&str>,
+    headers: &[(&str, &str)],
+) -> (StatusCode, axum::http::HeaderMap, Value) {
+    drive(app, build_request_from(peer, "GET", uri, token, None), headers).await
+}
+
+async fn drive(
+    app: &Router,
+    mut req: Request<Body>,
+    headers: &[(&str, &str)],
+) -> (StatusCode, axum::http::HeaderMap, Value) {
+    use axum::http::{HeaderName, HeaderValue};
     for (k, v) in headers {
         req.headers_mut().insert(
             HeaderName::from_bytes(k.as_bytes()).expect("header name"),

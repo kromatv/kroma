@@ -49,7 +49,7 @@ export function createQueries(client: QueryClient) {
         queryKey: ['shows', 'view'] as const,
         queryFn: async (): Promise<ShowView[]> => {
           const c = client;
-          return (await c.media.shows()).map((s) => toShowView(c, s));
+          return (await c.media.showCards()).map((s) => toShowView(c, s));
         },
       }),
 
@@ -82,7 +82,7 @@ export function createQueries(client: QueryClient) {
         queryKey: [...client.query.media.show(id).queryKey, 'bundle'],
         queryFn: async (): Promise<ShowBundle> => {
           const c = client;
-          const [detail, shows] = await Promise.all([c.media.show(id), c.media.shows()]);
+          const [detail, shows] = await Promise.all([c.media.show(id), c.media.showCards()]);
           const show = detail.show;
           const tmdbId = show.metadata?.tmdbId ?? null;
           // The discover overlay (season availability + request state) is fetched
@@ -105,9 +105,9 @@ export function createQueries(client: QueryClient) {
     similar: (id: ItemId) =>
       queryOptions({
         queryKey: ['similar', id] as const,
-        // The catalogue tolerates a missing similar list (falls back to genre
-        // overlap), so swallow failures into an empty array here.
-        queryFn: () => client.media.similar(id).catch(() => []),
+        // A title page renders without its "more like this" rail, so a failure
+        // resolves to an empty one rather than to the route's error boundary.
+        queryFn: () => client.media.similarCards(id).catch(() => []),
       }),
 
     personCredits: (person: string) => client.query.media.people(person),
@@ -141,7 +141,7 @@ export function createQueries(client: QueryClient) {
 
   // Only mount once `ready && user`.
   const userQueries = {
-    home: () => client.query.media.home(),
+    home: () => client.query.media.homeCards(),
 
     continueWatching: () => client.query.playback.continueWatching(),
 

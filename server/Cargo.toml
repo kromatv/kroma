@@ -58,6 +58,7 @@ tracing = "0.1"
 # 1.96 (edition2024 is stable since 1.85, which >= 0.3.37 needs).
 time = { version = "0.3", features = ["formatting", "macros"] }
 sha2 = "0.10"
+twox-hash = { version = "2", default-features = false, features = ["xxhash3_128"] }
 hex = "0.4"
 base64 = "0.23"
 # Embedded SQLite compiled from source. Shared by kroma-db + the binary.
@@ -113,6 +114,7 @@ webauthn-rs = "0.5.5"
 webauthn-rs-proto = "0.5.5"
 # musl allocator (Linux only; see the binary's #[global_allocator]).
 mimalloc = { version = "0.1", default-features = false }
+libmimalloc-sys = { version = "0.1.49", default-features = false, features = ["extended"] }
 # In-workspace crates, referenced by path so a member bumping its own version
 # doesn't force a churn here.
 # Low manifest layer (below engine): manifest/registry/embedded types that
@@ -211,6 +213,8 @@ rusqlite = { workspace = true }
 # download), walkdir + sysinfo (storage/stats endpoints).
 time = { workspace = true }
 hex = { workspace = true }
+# The weak ETag the catalogue listings answer with (api/etag.rs).
+twox-hash = { workspace = true }
 # A registry publishes checksums in Subresource-Integrity form (sha256-<base64>).
 base64 = { workspace = true }
 walkdir = { workspace = true }
@@ -287,6 +291,7 @@ kroma-db = { workspace = true, features = ["testing"] }
 # allocator. See the #[global_allocator] in main.rs.
 [target.'cfg(target_os = "linux")'.dependencies]
 mimalloc = { workspace = true }
+libmimalloc-sys = { workspace = true }
 
 # Keep the dependency graph lean and 1.81-friendly.
 [profile.release]
