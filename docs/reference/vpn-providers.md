@@ -97,3 +97,35 @@ Documented.
   mapping lasting 60. Not done by the module yet.
 - Every Proton file uses `10.2.0.2` by default, so two Proton tunnels on one
   host would collide unless renumbered.
+
+## Several tunnels at once
+
+What the module relies on when a kept config runs a tunnel of its own beside
+the default one, so a network rule can name it. Read 2026-11-09.
+
+- **One key, one tunnel.** WireGuard "discovers the endpoint of its peers by
+  examining from where correctly authenticated data originates", and "both
+  client and server send encrypted data to the most recent IP endpoint for which
+  they authentically decrypted data" (<https://www.wireguard.com/>, Built-in
+  Roaming). Documented. Inferred from it: two bridges on one private key look
+  like one peer hopping between ports, and each steals the other's replies. So
+  a config that is also the default never runs a second bridge: its own network
+  name points at the default tunnel.
+- **Proton allows it.** "If your WireGuard client or router supports the
+  feature, you can deploy multiple WireGuard VPN tunnels simultaneously"
+  ([WireGuard configurations](https://protonvpn.com/support/wireguard-configurations)).
+  Documented. The page renumbers the second file's `Address` to `10.3.0.2/32`
+  for clients that share one network stack; wireproxy does not (below).
+- **How many.** [Pricing](https://protonvpn.com/pricing): Free secures 1 device
+  at a time, VPN Plus 10. Whether a downloaded WireGuard file takes one of those
+  slots while it is connected is not documented on any page read; the
+  [router guide](https://protonvpn.com/support/installing-protonvpn-on-a-router)
+  says a router "only counts as one connection on a Free plan". Inferred: each
+  tunnel the module runs counts as one. The module caps the router at four
+  besides the default.
+- **No address clash.** wireproxy v1.1.2 (commit `3792cd42`) takes one
+  `WGConfig` per process (`config.go:76-80`, `config.go:540-546`) and puts its
+  `Address` on an in-process gVisor stack (`wireguard.go:70`, wireguard-go
+  `tun/netstack/tun.go:62`). Read in source. Inferred: two bridges that both use
+  `10.2.0.2/32` each own a private copy, so Proton files need no renumbering
+  here.

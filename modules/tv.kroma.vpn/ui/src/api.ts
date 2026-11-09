@@ -40,6 +40,10 @@ export const useVpnApi = moduleApiHook((api) => ({
     api.post('/vpn/saved', { configs, use }, SavedConfigs),
   /** Switch the tunnel to a kept config. */
   useSaved: (id: string) => api.post(`/vpn/saved/${encodeURIComponent(id)}/use`, {}, SavedConfigs),
+  /** Give a kept config a tunnel of its own that a network rule can pick, or
+   *  take it back. A full router answers 409 `{ code: "routerFull", max }`. */
+  setRoutable: (id: string, on: boolean) =>
+    api.put(`/vpn/saved/${encodeURIComponent(id)}/network`, { on }, SavedConfigs),
   /** Forget a kept config; the tunnel stops when it was the one in use. */
   removeSaved: (id: string) => api.delete(`/vpn/saved/${encodeURIComponent(id)}`, SavedConfigs),
   /** `null` when no download module is installed to answer. */

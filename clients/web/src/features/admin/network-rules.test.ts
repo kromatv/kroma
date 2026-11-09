@@ -183,13 +183,21 @@ describe('a rule for one host', () => {
 });
 
 describe('the networks a rule can name', () => {
-  const offered = { label: '', carries: { tcp: true, udp: false, dns: true }, up: true };
+  const offered = { carries: { tcp: true, udp: false, dns: true }, up: true };
+  const ch3 = { ...offered, name: 'vpn', label: 'Proton VPN · CH#3' };
+  const nl12 = { ...offered, name: 'vpn-40fd4c79cd7a7537', label: 'Proton VPN · NL#12' };
 
-  it('are the ones on offer', () => {
-    expect(actionNetworks([{ ...offered, name: 'vpn' }], 'direct')).toEqual(['vpn']);
+  it('are the ones on offer, each with the name its module gave it', () => {
+    expect(actionNetworks([ch3, nl12], 'direct')).toEqual([
+      { name: 'vpn', label: 'Proton VPN · CH#3' },
+      { name: 'vpn-40fd4c79cd7a7537', label: 'Proton VPN · NL#12' },
+    ]);
   });
 
-  it('keep the one a rule already names, though it is gone', () => {
-    expect(actionNetworks([{ ...offered, name: 'vpn' }], 'tor')).toEqual(['vpn', 'tor']);
+  it('keep the one a rule already names, though it is gone and has no name left', () => {
+    expect(actionNetworks([ch3], 'tor')).toEqual([
+      { name: 'vpn', label: 'Proton VPN · CH#3' },
+      { name: 'tor', label: null },
+    ]);
   });
 });

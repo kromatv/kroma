@@ -69,15 +69,27 @@ function parsePort(input: string): number | null | undefined {
   return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : undefined;
 }
 
+/** The network the presets send calls through: whichever tunnel the VPN page
+ *  made the default, so a rule naming it follows that page's choice. */
+export const DEFAULT_NETWORK = 'vpn';
+
+/** A network a rule can name, and what its module calls it. `label` is `null`
+ *  for one no longer on offer. */
+export interface NetworkChoice {
+  name: string;
+  label: string | null;
+}
+
 /** The networks a rule can name: every one on offer, and the one it already names,
  *  which may be down or gone. */
 export function actionNetworks(
   networks: readonly NetworkView[],
   current: string,
-): readonly string[] {
-  const names = networks.map((network) => network.name);
-  const named = current !== 'direct' && current !== 'block' && !names.includes(current);
-  return named ? [...names, current] : names;
+): readonly NetworkChoice[] {
+  const offered = networks.map(({ name, label }) => ({ name, label }));
+  const named =
+    current !== 'direct' && current !== 'block' && !offered.some(({ name }) => name === current);
+  return named ? [...offered, { name: current, label: null }] : offered;
 }
 
 /** The rule a draft stands for, refused while one of its fields is not valid. */

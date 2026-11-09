@@ -37,7 +37,7 @@ pub(crate) fn load(dir: &Path) -> Option<Account> {
 pub(crate) fn save(dir: &Path, account: &Account) -> std::io::Result<()> {
     std::fs::create_dir_all(dir)?;
     let text = serde_json::to_string(account).map_err(std::io::Error::other)?;
-    crate::vpn::write_private(&path(dir), &text)
+    crate::bridge::write_private(&path(dir), &text)
 }
 
 pub(crate) fn forget(dir: &Path) {

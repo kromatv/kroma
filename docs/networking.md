@@ -246,6 +246,9 @@ The gateway asks the same policy as the gate, so a connection is ruled by the
 module's `net.connect` and then by the operator's rules. A `direct` route dials
 from the core, checking every address a name resolves to. A `vpn` route hands the
 name to the VPN's bridge with its credentials, so it resolves inside the tunnel.
+A connection that must take the VPN, and that no rule sends through a network by
+name, takes the first network that is up: the VPN module lists its default
+tunnel first, then one network per kept config the admin put in the router.
 Each connection goes into the journal under `CONNECT`, whoever opened it.
 
 The host carries a component's `net.fetch` through it once the policy answered,

@@ -1,6 +1,8 @@
 {
   "network.actionBlock": "Block",
+  "network.actionDefaultVpn": "Default VPN · {label}",
   "network.actionDirect": "Direct",
+  "network.actionNetworksHint": "The default VPN follows the server picked on the VPN page. A named server stays the same.",
   "network.actionVpn": "Through the VPN",
   "network.addressRangeHint": "Applies to an address written as is: a name is not resolved to decide where it goes.",
   "network.addressRangeInvalid": "Write a range like 10.0.0.0/8",

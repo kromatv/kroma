@@ -29,6 +29,7 @@ pub fn bridge_password(host: &dyn HostCtx) -> Option<String> {
 pub struct VpnAdminView {
     pub provider: Option<crate::ProviderView>,
     pub saved: Vec<crate::saved::SavedView>,
+    pub router_slots: u8,
     // A WireGuard config is stored.
     pub wg_configured: bool,
     // The bridge child is currently alive.

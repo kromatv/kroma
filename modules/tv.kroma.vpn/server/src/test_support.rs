@@ -6,6 +6,7 @@ use std::time::Duration;
 use kroma_module_sdk::host::testing::StubHost;
 use kroma_module_sdk::host::HostCtx;
 
+use crate::bridge::Bridge;
 use crate::provision;
 use crate::Vpn;
 
@@ -21,6 +22,11 @@ pub fn configured_host() -> StubHost {
 
 pub fn vpn_for(host: &StubHost) -> Arc<Vpn> {
     Vpn::new(host.data_dir().to_path_buf())
+}
+
+pub fn bridge_for(host: &StubHost) -> Arc<Bridge> {
+    let dir = host.data_dir().join("vpn");
+    Bridge::new(dir.clone(), dir)
 }
 
 #[cfg(unix)]

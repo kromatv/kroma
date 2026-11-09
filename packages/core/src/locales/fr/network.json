@@ -1,6 +1,8 @@
 {
   "network.actionBlock": "Bloquer",
+  "network.actionDefaultVpn": "VPN par défaut · {label}",
   "network.actionDirect": "Direct",
+  "network.actionNetworksHint": "Le VPN par défaut suit le serveur choisi sur la page VPN. Un serveur nommé reste le même.",
   "network.actionVpn": "Par le VPN",
   "network.addressRangeHint": "S'applique à une adresse écrite telle quelle : un nom n'est pas résolu pour décider où il va.",
   "network.addressRangeInvalid": "Écrivez une plage comme 10.0.0.0/8",

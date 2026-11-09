@@ -1,10 +1,11 @@
-import type { DeclaredPurpose, NetworkView, Rule, RuleAction } from '@kromatv/client/network';
+import type { DeclaredPurpose, NetworkView, Rule } from '@kromatv/client/network';
 import { useT } from '@kromatv/ui';
-import { Dialog, Field, SegmentGroup } from '@kromatv/ui/kit';
+import { Dialog, Field } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { ChoiceSelect } from '#web/features/admin/network-choice-select';
 import { callerChoices, purposeChoices } from '#web/features/admin/network-flows';
-import { actionNetworks, type RuleDraft, ruleFromDraft } from '#web/features/admin/network-rules';
+import { RuleActionField } from '#web/features/admin/network-rule-action';
+import { type RuleDraft, ruleFromDraft } from '#web/features/admin/network-rules';
 
 interface RuleDialogProps {
   initial: RuleDraft;
@@ -103,25 +104,11 @@ export function RuleDialog({
         />
         <Field.Hint>{t('network.addressRangeHint')}</Field.Hint>
       </Field.Root>
-      <Field.Root label={t('network.colAction')}>
-        <SegmentGroup.Root<RuleAction>
-          label={t('network.colAction')}
-          value={draft.action}
-          onValueChange={(action) => edit({ action })}
-        >
-          <SegmentGroup.Item value="direct">
-            <SegmentGroup.Label>{t('network.actionDirect')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-          {actionNetworks(networks, draft.action).map((name) => (
-            <SegmentGroup.Item key={name} value={name}>
-              <SegmentGroup.Label>{name}</SegmentGroup.Label>
-            </SegmentGroup.Item>
-          ))}
-          <SegmentGroup.Item value="block">
-            <SegmentGroup.Label>{t('network.actionBlock')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-        </SegmentGroup.Root>
-      </Field.Root>
+      <RuleActionField
+        value={draft.action}
+        networks={networks}
+        onChange={(action) => edit({ action })}
+      />
       <Field.Root
         label={t('network.colNote')}
         value={draft.note}

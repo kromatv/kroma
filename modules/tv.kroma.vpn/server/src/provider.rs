@@ -82,6 +82,32 @@ fn is_proton_server(comment: &str) -> bool {
         && number.chars().all(|c| c.is_ascii_digit())
 }
 
+/// What a tunnel is called where the admin picks one: the Mullvad place, the
+/// Proton server, or else the peer it reaches.
+pub(crate) fn label_of(config: &str, provider: Option<&ProviderView>) -> String {
+    match provider {
+        Some(ProviderView::Mullvad {
+            country_name,
+            city_name,
+            ..
+        }) => match city_name {
+            Some(city) => format!("Mullvad · {country_name}, {city}"),
+            None => format!("Mullvad · {country_name}"),
+        },
+        Some(ProviderView::Proton {
+            server: Some(server),
+            ..
+        }) => format!("Proton VPN · {server}"),
+        _ => config
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("Endpoint"))
+            .filter_map(|rest| rest.trim_start().strip_prefix('='))
+            .map(|endpoint| endpoint.trim().to_string())
+            .next()
+            .unwrap_or_else(|| "WireGuard".to_string()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
