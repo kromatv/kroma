@@ -8,6 +8,7 @@ import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
+import { useTrailerLink } from '#mobile/lib/useTrailerLink';
 
 function downloadBarLabel(state: DownloadState, t: ReturnType<typeof useT>): string {
   if (state.status === 'done') return t('offline.downloaded');
@@ -89,6 +90,12 @@ export function DetailActions({
   const t = useT();
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
+  const title = item.metadata?.title ?? item.title;
+  const trailer = useTrailerLink(
+    'movie',
+    item.kind === 'movie' ? item.metadata?.tmdbId : null,
+    title,
+  );
   // Always offered: a cast button that appears only when a receiver happens to be
   // awake is one nobody learns exists. With no TV the picker says so.
   const { playOn } = useCast();
@@ -101,7 +108,6 @@ export function DetailActions({
         label={downloadBarLabel(state, t)}
         progress={state.status === 'downloading' || state.status === 'paused' ? state.progress : 0}
         onPress={() => {
-          const title = item.metadata?.title ?? item.title;
           if (state.status === 'none') downloads.start(item);
           else if (state.status === 'queued') downloads.cancel(item.id);
           else if (state.status === 'downloading') {
@@ -127,6 +133,9 @@ export function DetailActions({
           } else if (state.status === 'done') void downloads.remove(item.id);
         }}
       />
+      {trailer ? (
+        <DetailActionButton icon="movie" label={trailer.label} onPress={trailer.open} />
+      ) : null}
       <Box style={s.secondaryRow}>
         <Pressable
           accessibilityRole="button"

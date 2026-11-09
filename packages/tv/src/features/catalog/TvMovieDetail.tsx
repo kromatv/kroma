@@ -12,6 +12,7 @@ import {
   ReportButton,
   WatchedButton,
 } from '#tv/features/catalog/detail/parts';
+import { LeadActions } from '#tv/features/catalog/detail/TrailerButton';
 import { TvAiSuggestRow } from '#tv/features/catalog/detail/TvAiSuggestRow';
 import { useFullItem, usePlayTitle } from '#tv/features/catalog/full-item';
 
@@ -63,13 +64,15 @@ export function TvMovieDetail() {
       // takes it as a prop (see TvDetailScaffold).
       actions={
         <FocusRegion style={s.actionRow}>
-          <Button
-            size="lg"
-            autoFocus
-            icon="player-play-filled"
-            label={t('player.play')}
-            onPress={() => play(full ?? item)}
-          />
+          <LeadActions trailer={{ kind: 'movie', tmdbId: meta?.tmdbId, title: item.title }}>
+            <Button
+              size="lg"
+              autoFocus
+              icon="player-play-filled"
+              label={t('player.play')}
+              onPress={() => play(full ?? item)}
+            />
+          </LeadActions>
           <ListButton inList={myList.has(item.id)} onToggle={() => myList.toggle(item.id)} />
           <WatchedButton watched={watched.has(item.id)} onToggle={() => watched.toggle(item.id)} />
           <ReportButton

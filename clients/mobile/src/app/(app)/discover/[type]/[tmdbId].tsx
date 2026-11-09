@@ -1,5 +1,5 @@
 import { hasPermission } from '@kromatv/client/accounts';
-import { type DiscoverDetail, TmdbKind } from '@kromatv/client/discovery';
+import { type DiscoverDetail, TmdbKind, tmdbKindOf } from '@kromatv/client/discovery';
 import { formatRuntime, sizedImageUrl } from '@kromatv/core';
 import { useAskForTitle } from '@kromatv/core/react';
 import { Box, Button, styles, Text, useStyles } from '@kromatv/ui/kit';
@@ -8,6 +8,7 @@ import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { DiscoverEpisodes } from '#mobile/components/DiscoverEpisodes';
+import { TrailerButton } from '#mobile/components/TrailerButton';
 import { CastRail, DetailHero } from '#mobile/components/detail';
 import {
   ErrorBanner,
@@ -107,6 +108,7 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
 
       <Box style={[s.body, gutters.style]}>
         {user && hasPermission(user, 'requests.create') ? <AskAction detail={detail} /> : null}
+        <TrailerButton kind={tmdbKindOf(detail.kind)} tmdbId={detail.tmdbId} title={detail.title} />
         {detail.overview ? <ExpandableText>{detail.overview}</ExpandableText> : null}
       </Box>
 

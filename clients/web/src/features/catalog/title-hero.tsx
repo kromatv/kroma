@@ -1,3 +1,4 @@
+import { tmdbKindOf } from '@kromatv/client/discovery';
 import type { ItemId, SubjectId } from '@kromatv/client/media';
 import { formatRuntime } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
@@ -12,6 +13,7 @@ import {
 } from '#web/features/catalog/detail';
 import { FollowState } from '#web/features/catalog/follow-state';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
+import { TrailerButton } from '#web/features/catalog/trailer-button';
 import { savedTitleId } from '#web/shared/lib/saved-title-id';
 import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
@@ -89,6 +91,11 @@ export function TitleHero({
       onToggleList={listState.onToggleList}
       primaryAction={
         owned ? undefined : <RequestCta view={view} busy={busy} onRequest={onRequest} />
+      }
+      trailerAction={
+        view.tmdbId == null ? null : (
+          <TrailerButton kind={tmdbKindOf(view.kind)} tmdbId={view.tmdbId} title={view.title} />
+        )
       }
       adminAction={
         <FollowState kind={view.kind === 'show' ? 'show' : 'movie'} tmdbId={view.tmdbId ?? null} />

@@ -29,6 +29,25 @@ function requestUrl(input: RequestInfo | URL): string {
   return input instanceof URL ? input.href : input.url;
 }
 
+const SIGNED_IN_USER = {
+  id: 'u1',
+  email: 'a@b.c',
+  username: 'alice',
+  permissions: ['playback'],
+  createdAt: '2026-01-01T00:00:00Z',
+  hasPin: false,
+};
+
+/** A client that has signed in, and so holds the media ticket its byte URLs
+ * carry. */
+export async function ticketedClient(ticket = 'dev.999.sig') {
+  const { client } = recordingClient(() => ({
+    json: { token: 'tok', mediaTicket: ticket, user: SIGNED_IN_USER },
+  }));
+  await client.accounts.exchangeToken('access-token');
+  return client;
+}
+
 /** A `KromaClient` over a fetch that records every request and answers with
  * whatever `reply` returns. Responses are schema-parsed, so a test that only
  * cares about the REQUEST lets the parse fail and reads the recorded call. */

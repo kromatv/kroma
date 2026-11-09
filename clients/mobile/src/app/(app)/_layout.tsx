@@ -1,9 +1,26 @@
 import { activeTheme, color, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 import { Redirect, Stack } from 'expo-router';
+import type { ComponentProps } from 'react';
 import { lockUpright, PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';
 
-/** Everything behind the auth gate: tabs, detail pages, the player. */
+const PLAYER_SCREEN = {
+  dangerouslySingular: true,
+  listeners: {
+    transitionEnd: ({ data }) => {
+      if (data.closing) lockUpright();
+    },
+  },
+  options: {
+    autoHideHomeIndicator: true,
+    animation: 'fade',
+    gestureEnabled: false,
+    presentation: 'fullScreenModal',
+    orientation: PLAYER_ORIENTATION,
+  },
+} satisfies Omit<ComponentProps<typeof Stack.Screen>, 'name'>;
+
+/** Everything behind the auth gate: tabs, detail pages, the players. */
 export default function AppLayout() {
   const scope = useStyleScope();
   useThemeVersion();
@@ -19,22 +36,8 @@ export default function AppLayout() {
         orientation: UPRIGHT,
       }}
     >
-      <Stack.Screen
-        name="player/[id]"
-        dangerouslySingular
-        listeners={{
-          transitionEnd: ({ data }) => {
-            if (data.closing) lockUpright();
-          },
-        }}
-        options={{
-          autoHideHomeIndicator: true,
-          animation: 'fade',
-          gestureEnabled: false,
-          presentation: 'fullScreenModal',
-          orientation: PLAYER_ORIENTATION,
-        }}
-      />
+      <Stack.Screen name="player/[id]" {...PLAYER_SCREEN} />
+      <Stack.Screen name="trailer/[kind]/[tmdbId]" {...PLAYER_SCREEN} />
     </Stack>
   );
 }

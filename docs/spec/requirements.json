@@ -4600,6 +4600,76 @@
     "line": 147
   },
   {
+    "id": "PLAY-54",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 54,
+    "status": "SHIPPED",
+    "text": "A detail page offers a trailer button only when the server can play the",
+    "file": "docs/spec/playback/README.md",
+    "line": 253
+  },
+  {
+    "id": "PLAY-55",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 55,
+    "status": "SHIPPED",
+    "text": "The trailer offered is the best one for the viewer's language: spoken in",
+    "file": "docs/spec/playback/README.md",
+    "line": 257
+  },
+  {
+    "id": "PLAY-56",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 56,
+    "status": "SHIPPED",
+    "text": "The button says when the trailer is not spoken in the viewer's language:",
+    "file": "docs/spec/playback/README.md",
+    "line": 261
+  },
+  {
+    "id": "PLAY-57",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 57,
+    "status": "SHIPPED",
+    "text": "A trailer never plays an AI-dubbed audio track. It plays the track its",
+    "file": "docs/spec/playback/README.md",
+    "line": 264
+  },
+  {
+    "id": "PLAY-58",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 58,
+    "status": "SHIPPED",
+    "text": "The first play of a trailer may wait while the server fetches it, and the",
+    "file": "docs/spec/playback/README.md",
+    "line": 267
+  },
+  {
+    "id": "PLAY-59",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 59,
+    "status": "SHIPPED",
+    "text": "A trailer saves no progress, marks nothing watched and offers no next",
+    "file": "docs/spec/playback/README.md",
+    "line": 271
+  },
+  {
+    "id": "PLAY-60",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 60,
+    "status": "SHIPPED",
+    "text": "When a trailer cannot be fetched, the player says so plainly. Where the",
+    "file": "docs/spec/playback/README.md",
+    "line": 274
+  },
+  {
     "id": "SURF-1",
     "domain": "SURF",
     "space": "surfaces",

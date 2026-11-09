@@ -1,5 +1,5 @@
 import { hasPermission } from '@kromatv/client/accounts';
-import type { DiscoverEntry } from '@kromatv/client/discovery';
+import { type DiscoverEntry, tmdbKindOf } from '@kromatv/client/discovery';
 import { formatRuntime } from '@kromatv/core';
 import { useAskForTitle } from '@kromatv/core/react';
 import { useT } from '@kromatv/ui';
@@ -18,6 +18,7 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import { TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
 import { CastRow } from '#tv/features/catalog/detail/parts';
+import { TrailerButton } from '#tv/features/catalog/detail/TrailerButton';
 import { useDiscoverDetail } from '#tv/features/catalog/discover/useDiscoverDetail';
 
 const STAGE_W = 1920;
@@ -53,6 +54,7 @@ export function TvDiscoverDetail() {
   const nav = useNav();
   const client = useClient();
   const { user } = useAuth();
+  const canAsk = user != null && hasPermission(user, 'requests.create');
   const fiche = useDiscoverDetail(entry.kind, entry.tmdbId);
   useFocusNav({ onBack: nav.back });
 
@@ -76,7 +78,13 @@ export function TvDiscoverDetail() {
       overview={detail?.overview ?? entry.overview}
       actions={
         <FocusRegion style={s.actionRow}>
-          {user && hasPermission(user, 'requests.create') ? <AskButton entry={entry} /> : null}
+          {canAsk ? <AskButton entry={entry} /> : null}
+          <TrailerButton
+            kind={tmdbKindOf(entry.kind)}
+            tmdbId={entry.tmdbId}
+            title={entry.title}
+            autoFocus={!canAsk}
+          />
         </FocusRegion>
       }
     >

@@ -155,7 +155,10 @@ export function TvApp({
   const [ownedSearchRequests] = useState(createSearchRequests);
   const searchRequests = suppliedSearchRequests ?? ownedSearchRequests;
   const name = useDeviceName(deviceName, platform);
-  const screens = useMemo(() => ({ ...SCREENS, player: playback.Player }), [playback.Player]);
+  const screens = useMemo(
+    () => ({ ...SCREENS, player: playback.Player, trailer: playback.Trailer }),
+    [playback.Player, playback.Trailer],
+  );
 
   return (
     <DevicePreferencesProvider value={devicePreferences}>
@@ -248,7 +251,7 @@ export function TvApp({
   );
 }
 
-const SCREENS: Omit<TvScreens, 'player'> = {
+const SCREENS: Omit<TvScreens, 'player' | 'trailer'> = {
   connect: TvConnect,
   profiles: TvProfiles,
   addProfile: TvAddProfile,

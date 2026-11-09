@@ -16,7 +16,7 @@ export function PlayerLayout({
   header: ReactNode;
   transport: ReactNode;
   details: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
 }>) {
   const s = useStyles(definition);
   const insets = useSafeAreaInsets();

@@ -23,7 +23,7 @@ impl Target {
             Target::Tv => "search/tv",
         }
     }
-    fn detail_path(self) -> &'static str {
+    pub(super) fn detail_path(self) -> &'static str {
         match self {
             Target::Movie => "movie",
             Target::Tv => "tv",

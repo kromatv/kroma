@@ -1,4 +1,14 @@
-import { BackButton, Box, Button, Icon, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
+import {
+  BackButton,
+  Box,
+  Button,
+  Icon,
+  type IconName,
+  Spinner,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
@@ -9,6 +19,7 @@ export function PlayerStatusScreen({
   title,
   detail,
   loading = false,
+  action,
   onBack,
   onRetry,
 }: Readonly<{
@@ -16,6 +27,7 @@ export function PlayerStatusScreen({
   title?: string;
   detail?: string;
   loading?: boolean;
+  action?: { icon: IconName; label: string; onPress(): void };
   onBack(): void;
   onRetry?(): void;
 }>) {
@@ -51,7 +63,14 @@ export function PlayerStatusScreen({
         ) : null}
         {!loading ? (
           <Box style={s.actions}>
-            <Button label={t('player.back')} onPress={onBack} />
+            {action ? (
+              <Button icon={action.icon} label={action.label} onPress={action.onPress} />
+            ) : null}
+            <Button
+              variant={action ? 'glass' : 'primary'}
+              label={t('player.back')}
+              onPress={onBack}
+            />
             {onRetry ? <Button variant="glass" label={t('error.retry')} onPress={onRetry} /> : null}
           </Box>
         ) : null}

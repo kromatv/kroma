@@ -241,3 +241,35 @@ never blames the person and never implies the file is broken.
 > web apps, or ask the server owner to enable conversion for this device.
 
 The file is fine; this screen just cannot decode it.
+
+## Trailers
+
+Status: **SHIPPED**
+
+A title's trailer plays in KROMA's own player, on every surface, whether or not the library
+holds the title. Trailers come from the videos TMDB lists for a title; fetching one is the job
+of an optional module, so a server without it shows no trailer button rather than a broken one.
+
+**PLAY-54** (SHIPPED) - A detail page offers a trailer button only when the server can play the
+title's trailer. A title with no trailer, a server with no trailer module, or a title with no
+TMDB match shows no button.
+
+**PLAY-55** (SHIPPED) - The trailer offered is the best one for the viewer's language: spoken in
+it first, then subtitled in it, then the title's original language, then any other. The viewer's
+language is their preferred audio language, else the language their app runs in.
+
+**PLAY-56** (SHIPPED) - The button says when the trailer is not spoken in the viewer's language:
+*Bande-annonce (VOST)* for one subtitled in it, *Bande-annonce (VO)* for neither.
+
+**PLAY-57** (SHIPPED) - A trailer never plays an AI-dubbed audio track. It plays the track its
+uploader published.
+
+**PLAY-58** (SHIPPED) - The first play of a trailer may wait while the server fetches it, and the
+player says so. Every later play starts at once, from the server's own copy, even when the source
+has since changed or gone.
+
+**PLAY-59** (SHIPPED) - A trailer saves no progress, marks nothing watched and offers no next
+episode. Closing it returns to the page it was opened from.
+
+**PLAY-60** (SHIPPED) - When a trailer cannot be fetched, the player says so plainly. Where the
+device can open a browser, it offers to watch the trailer on YouTube instead.

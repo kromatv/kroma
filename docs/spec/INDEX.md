@@ -3,7 +3,7 @@
 
 # Requirement index
 
-512 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+519 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -485,6 +485,13 @@
 - **PLAY-51** (SHIPPED) - A **fatal** failure, a source gone, a transcode that cannot start, or
 - **PLAY-52** (SHIPPED) - When a television's older decoder cannot play a file a modern phone
 - **PLAY-53** (AGREED) - A settled seek also reports, so jumping and then losing the client does
+- **PLAY-54** (SHIPPED) - A detail page offers a trailer button only when the server can play the
+- **PLAY-55** (SHIPPED) - The trailer offered is the best one for the viewer's language: spoken in
+- **PLAY-56** (SHIPPED) - The button says when the trailer is not spoken in the viewer's language:
+- **PLAY-57** (SHIPPED) - A trailer never plays an AI-dubbed audio track. It plays the track its
+- **PLAY-58** (SHIPPED) - The first play of a trailer may wait while the server fetches it, and the
+- **PLAY-59** (SHIPPED) - A trailer saves no progress, marks nothing watched and offers no next
+- **PLAY-60** (SHIPPED) - When a trailer cannot be fetched, the player says so plainly. Where the
 
 ## SURF - [surfaces](surfaces/)
 

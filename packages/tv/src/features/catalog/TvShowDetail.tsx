@@ -27,6 +27,7 @@ import {
   ThemeButton,
   WatchedButton,
 } from '#tv/features/catalog/detail/parts';
+import { LeadActions } from '#tv/features/catalog/detail/TrailerButton';
 import { useShowDetail } from '#tv/features/catalog/detail/useShowDetail';
 
 // The backdrop fills the stage and no more: the original is several times
@@ -80,25 +81,27 @@ export function TvShowDetail() {
       // takes it as a prop (see TvDetailScaffold).
       actions={
         <FocusRegion style={s.actionRow}>
-          <Button
-            size="lg"
-            autoFocus
-            icon="player-play-filled"
-            // NOT disabled while the episodes load: the navigator registers a
-            // node when it mounts and never re-registers it, so a button that
-            // becomes focusable later joins the row at its END - the remote
-            // walked past the leftmost button on the screen. It simply does
-            // nothing until there is something to play.
-            label={
-              playTarget
-                ? t(playLabelKey, {
-                    season: playTarget.season ?? 0,
-                    episode: playTarget.episode ?? 0,
-                  })
-                : t('player.play')
-            }
-            onPress={() => playTarget && nav.go('player', { item: playTarget })}
-          />
+          <LeadActions trailer={{ kind: 'tv', tmdbId: meta?.tmdbId, title: show.title }}>
+            <Button
+              size="lg"
+              autoFocus
+              icon="player-play-filled"
+              // NOT disabled while the episodes load: the navigator registers a
+              // node when it mounts and never re-registers it, so a button that
+              // becomes focusable later joins the row at its END - the remote
+              // walked past the leftmost button on the screen. It simply does
+              // nothing until there is something to play.
+              label={
+                playTarget
+                  ? t(playLabelKey, {
+                      season: playTarget.season ?? 0,
+                      episode: playTarget.episode ?? 0,
+                    })
+                  : t('player.play')
+              }
+              onPress={() => playTarget && nav.go('player', { item: playTarget })}
+            />
+          </LeadActions>
           <ListButton inList={myList.has(show.id)} onToggle={() => myList.toggle(show.id)} />
           <WatchedButton watched={watched.has(show.id)} onToggle={() => watched.toggle(show.id)} />
           {theme.active ? <ThemeButton muted={theme.muted} onToggle={theme.toggle} /> : null}

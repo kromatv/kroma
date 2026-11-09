@@ -33,6 +33,9 @@ export interface PlayerFlags {
   /** Left and Right seek wherever the chrome is (web, YouTube's keys). Off on
    *  the 10-foot app, where the arrows walk the controls. */
   arrowSeek: boolean;
+  /** The subtitle and audio-track pickers. Default on; off for a clip with one
+   *  sound and no subtitles, such as a trailer. */
+  tracks?: boolean;
 }
 
 export const WEB_FLAGS: PlayerFlags = {

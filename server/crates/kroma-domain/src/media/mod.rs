@@ -11,12 +11,14 @@ mod card;
 mod edition;
 mod loudness;
 mod preference;
+mod trailer;
 
 pub use card::*;
 pub use edition::*;
 pub use kroma_module_wire::{AudioStream, ColorInfo, HdrFormat, SubtitleTrack, VideoStream};
 pub use loudness::*;
 pub use preference::*;
+pub use trailer::*;
 
 use serde::{Deserialize, Serialize};
 

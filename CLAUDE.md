@@ -155,7 +155,7 @@ the handlers as `src/api/it_*.rs`.
 ### Modules are WebAssembly components
 
 KROMA's core is playback + catalog; everything else (downloads, indexers,
-acquisition, VPN, whisper, vector, mDNS, remote, scene) is a **module** with a
+acquisition, VPN, whisper, vector, mDNS, remote, scene, trailers) is a **module** with a
 reverse-DNS id like `tv.kroma.torrents`.
 
 No module is a dependency of the server binary, and no crate under `server/`
@@ -166,8 +166,8 @@ separate tags.
 
 A point is named by whoever defines it: a module writes `definesPoints` for what
 it invents (`<its id>/<local name>`), `contributes` for what it answers, and
-`consumes` for what it calls. The four the CORE calls, `acquisition`,
-`transcriber`, `embedder` and `network`, are bare because the core has no manifest
+`consumes` for what it calls. The five the CORE calls, `acquisition`,
+`transcriber`, `embedder`, `network` and `trailer`, are bare because the core has no manifest
 to define one in and nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
 for the model and what is still missing from it, and
 [`modules/README.md`](modules/README.md#calling-another-module) for how to write

@@ -7,6 +7,7 @@
 
 import type { ReactNode } from 'react';
 import { createTvEngine, planEngine } from '#tv/features/playback/native/backend';
+import { NativeTrailer } from '#tv/features/playback/native/NativeTrailer';
 import { PlayerSurface } from '#tv/features/playback/native/PlayerSurface';
 import { nativePictureInPicture } from '#tv/features/playback/native/pip';
 import {
@@ -31,5 +32,6 @@ function NativePlayer(): ReactNode {
   );
 }
 
-/** Playback on the native shells: expo-video or VLC, loaded eagerly. */
-export const NATIVE_PLAYBACK: PlaybackPlatform = { Player: NativePlayer };
+/** Playback on the native shells: expo-video or VLC for a film, expo-video for a
+ * trailer, both loaded eagerly. */
+export const NATIVE_PLAYBACK: PlaybackPlatform = { Player: NativePlayer, Trailer: NativeTrailer };
