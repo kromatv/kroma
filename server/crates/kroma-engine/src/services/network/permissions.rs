@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use kroma_http::address::{web_target, WebTarget};
-use kroma_module_manifest::{Attempt, Permissions, Proto, Reach};
+use kroma_module_manifest::{Attempt, Listen, Permissions, Proto, Reach};
 use serde_json::Value;
 
 use super::Network;
@@ -11,6 +11,10 @@ use super::Network;
 /// The `permissions` block a module declares, by module id. `None` for a module
 /// that declares none, whose calls are ruled as they were before the block.
 pub type DeclaredPermissions = Arc<dyn Fn(&str) -> Option<Permissions> + Send + Sync>;
+
+/// Every `net.listen` entry the enabled modules declare. No module may reach
+/// those ports on this machine: the program behind them answers the core alone.
+pub type DeclaredListeners = Arc<dyn Fn() -> Vec<Listen> + Send + Sync>;
 
 pub const PERMISSION_NET_CONNECT: &str = "permission:net.connect";
 

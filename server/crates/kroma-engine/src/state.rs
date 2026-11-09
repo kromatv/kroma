@@ -43,6 +43,7 @@ pub struct ModuleWiring {
     pub official_modules: OfficialModules,
     pub permissions: crate::services::network::DeclaredPermissions,
     pub network_providers: crate::services::network::NetworkProviders,
+    pub network_listeners: crate::services::network::DeclaredListeners,
 }
 
 pub struct AppState {
@@ -117,6 +118,7 @@ impl AppState {
             official_modules,
             permissions,
             network_providers,
+            network_listeners,
         } = wiring;
         let hls = hls::HlsEngine::new(
             config.data_dir.join("hls"),
@@ -155,6 +157,7 @@ impl AppState {
             crate::point::Point::new(crate::services::network::NETWORK_POINT, contributions.clone()),
         )
         .with_providers(network_providers)
+        .with_listeners(network_listeners)
         .with_core_ports(config.port, config.https_port_override)
         .with_declared(permissions));
         let direct = crate::services::direct::Direct::new(config.public_ip_url.clone());
@@ -254,6 +257,7 @@ mod tests {
                 official_modules: Arc::new(Vec::new),
                 permissions: Arc::new(|_| None),
                 network_providers: Arc::new(Vec::new),
+                network_listeners: Arc::new(Vec::new),
             },
         );
         state.own_scratch_dir(dir);

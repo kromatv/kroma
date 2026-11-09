@@ -95,6 +95,17 @@ export function lanGroup(net: Net | undefined, t: Translate): PermissionGroup | 
   };
 }
 
+function listenPorts({ port, count = 1 }: Listen, t: Translate): string | undefined {
+  const after = count - 1;
+  if (typeof port !== 'number') {
+    return after > 0
+      ? t('modulePermissions.portSettingRun', { count: after })
+      : t('modulePermissions.portSetting');
+  }
+  if (after === 0) return withPorts(null, [port], t);
+  return opening(t('modulePermissions.portRange', { first: port, last: port + after }));
+}
+
 /** The incoming connections a program the module starts accepts. */
 export function listenGroup(listens: readonly Listen[], t: Translate): PermissionGroup | null {
   const [only] = listens;
@@ -108,15 +119,7 @@ export function listenGroup(listens: readonly Listen[], t: Translate): Permissio
     brief: one
       ? opening(purposeWord(only.purpose, t))
       : t('modulePermissions.listenBrief', { count: listens.length }),
-    details: listens.map((listen) =>
-      purposeDetail(
-        listen,
-        typeof listen.port === 'number'
-          ? withPorts(null, [listen.port], t)
-          : t('modulePermissions.portSetting'),
-        t,
-      ),
-    ),
+    details: listens.map((listen) => purposeDetail(listen, listenPorts(listen, t), t)),
     extended: false,
     access: null,
   };

@@ -52,6 +52,16 @@ impl Permissions {
                     entry.purpose
                 ));
             }
+            if entry
+                .count
+                .is_some_and(|count| !(1..=super::MAX_LISTEN_COUNT).contains(&count))
+            {
+                return Some(format!(
+                    "net.listen \"{}\": count must be 1-{}",
+                    entry.purpose,
+                    super::MAX_LISTEN_COUNT
+                ));
+            }
         }
         if let Some(bad) = self.run.iter().find(|bin| !is_binary_name(bin)) {
             return Some(format!(

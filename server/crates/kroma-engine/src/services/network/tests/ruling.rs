@@ -39,9 +39,17 @@ fn a_vpn_rule_refuses_the_call_while_no_vpn_answers() {
     assert_eq!(ruling.decision, Decision::Block("the network vpn is not running".to_string()));
 }
 
+fn listening(listens: serde_json::Value) -> DeclaredListeners {
+    let listens: Vec<kroma_module_manifest::Listen> = serde_json::from_value(listens).unwrap();
+    Arc::new(move || listens.clone())
+}
+
 #[test]
 fn a_block_names_the_rule_or_the_guard_that_refused() {
     let (network, _pool) = network("network-block", Point::absent(NETWORK_POINT));
+    let network = network.with_listeners(listening(json!([
+        { "purpose": "proxy", "port": "setting:vpnLocalPort" }
+    ])));
     network.set_rules(everything("block")).unwrap();
 
     let by_rule = network.rule_on(CORE, "stats", &target("stats.kroma.tv"));
@@ -174,4 +182,38 @@ fn a_rule_can_match_on_a_port_and_an_address_range() {
     assert_eq!(in_the_range.rule.as_deref(), Some("b"));
     assert_eq!(outside_it.rule, None);
     assert_eq!(a_name.rule, None);
+}
+
+#[test]
+fn every_port_a_module_declares_it_listens_on_is_refused_to_another_module() {
+    let (network, _pool) = network("network-listeners", Point::absent(NETWORK_POINT));
+    let network = network.with_listeners(listening(json!([
+        { "purpose": "proxy", "port": "setting:vpnLocalPort", "count": 5 }
+    ])));
+    let at = |port: u16| WebTarget {
+        port,
+        ..target("127.0.0.1")
+    };
+
+    let last = network.rule_on("tv.kroma.roku", "roku", &at(25349));
+    let after = network.rule_on("tv.kroma.roku", "roku", &at(25350));
+
+    assert_eq!(last.rule.as_deref(), Some(GUARD_LOOPBACK));
+    assert_eq!(after.decision, Decision::Direct);
+}
+
+#[test]
+fn the_core_still_reaches_a_port_a_module_listens_on() {
+    let (network, _pool) = network("network-listeners-core", Point::absent(NETWORK_POINT));
+    let network = network.with_listeners(listening(json!([
+        { "purpose": "proxy", "port": "setting:vpnLocalPort", "count": 5 }
+    ])));
+    let bridge = WebTarget {
+        port: 25346,
+        ..target("127.0.0.1")
+    };
+
+    let ruling = network.rule_on(CORE, "proxy", &bridge);
+
+    assert_eq!(ruling.decision, Decision::Direct);
 }

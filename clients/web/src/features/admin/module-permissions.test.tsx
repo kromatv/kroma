@@ -154,6 +154,28 @@ describe('permissionGroups', () => {
     expect(listen.details[0]?.hint).toBe('The port you set');
   });
 
+  it('says how many ports it listens on when it holds a run of them', () => {
+    const listen = group(
+      {
+        permissions: {
+          net: { listen: [{ purpose: 'proxy', port: 'setting:vpnLocalPort', count: 5 }] },
+        },
+      },
+      'listen',
+    );
+
+    expect(listen.details[0]?.hint).toBe('The port you set and the 4 after it');
+  });
+
+  it('names the run of ports a fixed listener holds', () => {
+    const listen = group(
+      { permissions: { net: { listen: [{ purpose: 'proxy', port: 4000, count: 3 }] } } },
+      'listen',
+    );
+
+    expect(listen.details[0]?.hint).toBe('Ports 4000 to 4002');
+  });
+
   it('leaves its own folder out of your files', () => {
     expect(
       groups({ permissions: { fs: { read: ['module', 'temp'], write: ['module'] } } }),

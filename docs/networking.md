@@ -79,8 +79,9 @@ can allow it.
    - A link-local address (`169.254.0.0/16`, `fe80::/10`, IPv4-mapped forms
      included) is never reachable. Cloud metadata services answer there.
    - A module never reaches this server's own listeners on this machine: its
-     HTTP and HTTPS ports and the VPN bridge, whether written as an address or
-     as `localhost`. It reaches the core and the other modules through the host
+     HTTP and HTTPS ports and every port an enabled module declares in
+     `net.listen`, a `count` run included (the VPN's bridges among them),
+     whether written as an address or as `localhost`. It reaches the core and the other modules through the host
      API, which checks who is asking. A download client or FlareSolverr on
      another local port stays reachable.
    - A host on the local network (a private address, a single-label name,

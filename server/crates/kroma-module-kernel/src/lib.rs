@@ -300,6 +300,7 @@ mod gate_tests {
                 official_modules: Arc::new(Vec::new),
                 permissions: Arc::new(|_| None),
                 network_providers: Arc::new(Vec::new),
+                network_listeners: Arc::new(Vec::new),
             },
         );
         (state, dir)

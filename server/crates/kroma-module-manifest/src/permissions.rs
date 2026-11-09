@@ -65,7 +65,8 @@ pub struct Connect {
 }
 
 /// A socket the gateway listens on for the module. `port` is a number or
-/// `setting:<key>`.
+/// `setting:<key>`; `count` makes it that port and the ones after it, for a
+/// program that runs one listener per instance.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Listen {
@@ -73,6 +74,28 @@ pub struct Listen {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub proto: Vec<Proto>,
     pub port: serde_json::Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub count: Option<u16>,
+}
+
+/// The most ports one `net.listen` entry may hold.
+pub const MAX_LISTEN_COUNT: u16 = 16;
+
+impl Listen {
+    /// The ports this entry holds. `setting` answers the port a
+    /// `setting:<key>` names, `None` when nobody set it.
+    pub fn ports(&self, setting: &dyn Fn(&str) -> Option<u16>) -> Vec<u16> {
+        let first = match &self.port {
+            serde_json::Value::Number(n) => n.as_u64().and_then(|p| u16::try_from(p).ok()),
+            serde_json::Value::String(s) => s.strip_prefix("setting:").and_then(setting),
+            _ => None,
+        };
+        let Some(first) = first.filter(|port| *port > 0) else {
+            return Vec::new();
+        };
+        let count = self.count.unwrap_or(1).min(MAX_LISTEN_COUNT);
+        (0..count).map_while(|step| first.checked_add(step)).collect()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

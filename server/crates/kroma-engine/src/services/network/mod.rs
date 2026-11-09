@@ -25,12 +25,13 @@ mod rules;
 mod summary;
 
 pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK};
+use decide::is_this_machine;
 pub use flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute, Verdict};
 pub use history::{CallerPurpose, CORE_PURPOSES, FLUSH_EVERY};
 pub use inbound::{via_of, Arrival, InboundJournal, InboundSummary, Via};
 pub use journal::{Journal, CARRIED_METHOD, RECENT_CAPACITY, TALLIED_PUBLIC_ADDRESS};
 pub use offers::{NetworkProviders, NO_NETWORK};
-pub use permissions::{DeclaredPermissions, PERMISSION_NET_CONNECT};
+pub use permissions::{DeclaredListeners, DeclaredPermissions, PERMISSION_NET_CONNECT};
 pub use rules::{
     Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
 };
@@ -51,6 +52,7 @@ pub struct Network {
     settings: Settings,
     networks: Point,
     providers: NetworkProviders,
+    listeners: DeclaredListeners,
     journal: Journal,
     inbound: InboundJournal,
     offers: Mutex<Option<(Instant, Offers)>>,
@@ -68,6 +70,7 @@ impl Network {
             settings,
             networks,
             providers: Arc::new(Vec::new),
+            listeners: Arc::new(Vec::new),
             journal: Journal::default(),
             inbound: InboundJournal::default(),
             offers: Mutex::new(None),
@@ -91,6 +94,13 @@ impl Network {
         self
     }
 
+    /// What the enabled modules declare they listen on, which the loopback
+    /// guard keeps every other module away from.
+    pub fn with_listeners(mut self, listeners: DeclaredListeners) -> Self {
+        self.listeners = listeners;
+        self
+    }
+
     /// The core's own HTTP port, and its HTTPS port when the environment pins
     /// one (otherwise the `httpsPort` setting is read at each decision).
     pub fn with_core_ports(mut self, http: u16, https: Option<u16>) -> Self {
@@ -102,14 +112,18 @@ impl Network {
     fn own_ports(&self) -> Vec<u16> {
         let setting =
             |key: &str, fallback: i64| u16::try_from(self.settings.get_i64(key, fallback)).ok();
-        [
+        let set_port = |key: &str| setting(key, 0).filter(|port| *port > 0);
+        let mut ports: Vec<u16> = [
             self.core_port,
             self.https_port.or_else(|| setting("httpsPort", 4443)),
-            setting("vpnLocalPort", 25345),
         ]
         .into_iter()
         .flatten()
-        .collect()
+        .collect();
+        for listen in (self.listeners)() {
+            ports.extend(listen.ports(&set_port));
+        }
+        ports
     }
 
     /// Put this policy and journal on every `kroma_http::Fetch` call this
@@ -142,7 +156,12 @@ impl Network {
     /// Where a call `caller` makes for `purpose` to `target` goes. An action naming
     /// a network becomes that network's proxy, or a refusal while it is not up.
     pub fn rule_on(&self, caller: &str, purpose: &str, target: &WebTarget) -> Ruling {
-        let (action, rule) = decide(&self.rules(), caller, purpose, target, &self.own_ports());
+        let own_ports = if is_this_machine(target) {
+            self.own_ports()
+        } else {
+            Vec::new()
+        };
+        let (action, rule) = decide(&self.rules(), caller, purpose, target, &own_ports);
         let decision = match action {
             Action::Direct => Decision::Direct,
             Action::Block => Decision::Block(refusal(rule.as_deref())),

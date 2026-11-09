@@ -62,7 +62,7 @@ Its `storage` and `settings` are not yet held to the row.
 |---|---|---|
 | `net.connect` | connections for a purpose to a set of destinations | `to` is `public`, `lan`, a host pattern, or `setting:<key>`, which makes the operator's own configuration the allowlist |
 | `net.discovery` | `mdns` to publish a service, `ssdp` to search for devices | the host sends and listens for the module, which holds no socket |
-| `net.listen` | a port a program the module starts listens on | a component cannot listen. Shown at consent, and an update that adds one asks again |
+| `net.listen` | a port a program the module starts listens on, a number or `setting:<key>`, and with `count` (1 to 16) that port and the ones after it | a component cannot listen. Shown at consent, and an update that adds one or widens its run asks again. No other module may dial these ports on this machine |
 | `net.host` | the host's network, for the programs the module starts | a tunnel (`wireproxy`, `cloudflared`) and the torrent engine reach the internet from the host. Marked as extended access |
 | `fs.read`, `fs.write` | named roots, never raw paths | `module` (its own data), `media` (library roots, read-only unless `fs.write` names it, as an importer's does, and always read-only when one holds a folder of the server's own), `downloads` (the [download folders](#the-download-folders), first-party only), `temp` (every module gets a private `/tmp`) |
 | `run` | programs it may start, by name | first-party modules only. What starts is a process of the host, see [below](#what-the-component-does-not-contain). Marked as extended access |
