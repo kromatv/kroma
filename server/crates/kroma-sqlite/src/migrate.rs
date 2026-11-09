@@ -243,7 +243,11 @@ fn snapshot(conn: &Connection, path: &Path, version: u32) {
     let target = snapshot_path(path, version);
     let _ = std::fs::remove_file(&target);
     match write_snapshot(conn, path, &target) {
-        Ok(()) => prune_snapshots(path),
+        Ok(()) => {
+            #[cfg(not(target_family = "wasm"))]
+            crate::private::restrict(&target);
+            prune_snapshots(path);
+        }
         Err(e) => tracing::warn!(
             "no copy of {} was kept before upgrading it: {e}",
             path.display()
@@ -257,19 +261,28 @@ fn snapshot_path(path: &Path, version: u32) -> PathBuf {
     path.with_file_name(name)
 }
 
-pub fn prune_snapshots(path: &Path) {
-    let Some(dir) = path.parent() else { return };
+pub(crate) fn snapshots_of(path: &Path) -> Vec<PathBuf> {
+    let Some(dir) = path.parent() else {
+        return Vec::new();
+    };
     let prefix = format!(
         "{}.pre-v",
         path.file_name().unwrap_or_default().to_string_lossy()
     );
     let Ok(entries) = std::fs::read_dir(dir) else {
-        return;
+        return Vec::new();
     };
-    let mut copies: Vec<(std::time::SystemTime, PathBuf)> = entries
+    entries
         .flatten()
         .filter(|e| e.file_name().to_string_lossy().starts_with(&prefix))
-        .filter_map(|e| Some((e.metadata().ok()?.modified().ok()?, e.path())))
+        .map(|e| e.path())
+        .collect()
+}
+
+pub fn prune_snapshots(path: &Path) {
+    let mut copies: Vec<(std::time::SystemTime, PathBuf)> = snapshots_of(path)
+        .into_iter()
+        .filter_map(|copy| Some((std::fs::metadata(&copy).ok()?.modified().ok()?, copy)))
         .collect();
     copies.sort_by_key(|copy| std::cmp::Reverse(copy.0));
     for (_, stale) in copies.into_iter().skip(KEPT_SNAPSHOTS) {

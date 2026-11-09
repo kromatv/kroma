@@ -13,6 +13,7 @@ mod pin_attempts;
 mod preferences;
 mod resets;
 mod sessions;
+mod stored_token;
 mod verifications;
 
 #[cfg(test)]

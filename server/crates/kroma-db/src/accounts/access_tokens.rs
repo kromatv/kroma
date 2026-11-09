@@ -1,10 +1,11 @@
 //! The long-lived device credential a session is minted from.
 
 use anyhow::Result;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 
 use kroma_domain::User;
 
+use super::stored_token::{device_id, stored};
 use crate::rows::row_to_user;
 use crate::{now_or_blank, Pool};
 
@@ -33,7 +34,7 @@ pub fn create_access_token(
         "INSERT INTO access_tokens (token,user_id,created_at,expires_at,pin_verified,last_seen,user_agent,language) \
          VALUES (?1,?2,?3,?4,?5,?3,?6,?7)",
         params![
-            token,
+            stored(token),
             user_id,
             now_or_blank(),
             expires_at,
@@ -61,9 +62,9 @@ pub fn list_access_tokens(pool: &Pool, user_id: &str) -> Result<Vec<AccessTokenR
          WHERE user_id = ?1 AND expires_at > ?2 ORDER BY created_at DESC",
     )?;
     let rows = stmt.query_map(params![user_id, now], |r| {
-        let token: String = r.get(0)?;
+        let kept: String = r.get(0)?;
         Ok(AccessTokenRow {
-            id: kroma_primitives::short_hash(&token),
+            id: device_id(&kept),
             created_at: r.get(1)?,
             last_seen: r.get(2)?,
             user_agent: r.get(3)?,
@@ -96,14 +97,13 @@ pub fn devices_seen_since(pool: &Pool, since: &str) -> Result<Vec<DeviceHints>> 
 /// once. Scoped to `user_id`, so a caller can only revoke their own devices.
 pub fn delete_access_token_by_id(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
     let conn = pool.get()?;
-    // Tokens are only reversible by hashing, hence the scan for a matching hash.
-    let mut stmt = conn.prepare("SELECT token FROM access_tokens WHERE user_id = ?1")?;
-    let tokens = stmt
-        .query_map(params![user_id], |r| r.get::<_, String>(0))?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    let Some(token) = tokens
-        .into_iter()
-        .find(|t| kroma_primitives::short_hash(t) == id)
+    let Some(token) = conn
+        .query_row(
+            "SELECT token FROM access_tokens WHERE user_id = ?1 AND substr(token, 1, 16) = ?2",
+            params![user_id, id],
+            |r| r.get::<_, String>(0),
+        )
+        .optional()?
     else {
         return Ok(false);
     };
@@ -124,7 +124,7 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
          FROM access_tokens a JOIN users u ON u.id = a.user_id \
          WHERE a.token = ?1 AND a.expires_at > ?2",
     )?;
-    let mut rows = stmt.query_map(params![token, now], |r| {
+    let mut rows = stmt.query_map(params![stored(token), now], |r| {
         Ok((row_to_user(r)?, r.get::<_, i64>(11)? != 0))
     })?;
     match rows.next() {
@@ -138,25 +138,18 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
 /// `None` once the device is revoked, its credential has lapsed, or the account
 /// is gone, so a URL-borne ticket stops working the moment the device does.
 ///
-/// Tokens are only reversible by hashing, so the live rows are scanned; there is
-/// one per signed-in device on the server.
 pub fn access_token_user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    let mut stmt = conn.prepare(
-        "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries,a.token \
-         FROM access_tokens a JOIN users u ON u.id = a.user_id WHERE a.expires_at > ?1",
-    )?;
-    let rows = stmt.query_map(params![now], |r| {
-        Ok((row_to_user(r)?, r.get::<_, String>(11)?))
-    })?;
-    for row in rows {
-        let (user, token) = row?;
-        if kroma_primitives::short_hash(&token) == id {
-            return Ok(Some(user));
-        }
-    }
-    Ok(None)
+    Ok(conn
+        .query_row(
+            "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries \
+             FROM access_tokens a JOIN users u ON u.id = a.user_id \
+             WHERE a.expires_at > ?1 AND substr(a.token, 1, 16) = ?2",
+            params![now, id],
+            row_to_user,
+        )
+        .optional()?)
 }
 
 /// Stamp a device credential as seen now, re-labelling it with whatever the
@@ -166,7 +159,7 @@ pub fn touch_access_token(conn: &Connection, token: &str, hints: &DeviceHints) -
     conn.execute(
         "UPDATE access_tokens SET last_seen = ?2, user_agent = COALESCE(?3, user_agent), \
          language = COALESCE(?4, language) WHERE token = ?1",
-        params![token, now_or_blank(), hints.user_agent, hints.language],
+        params![stored(token), now_or_blank(), hints.user_agent, hints.language],
     )?;
     Ok(())
 }
@@ -175,7 +168,7 @@ pub fn set_access_pin_verified(pool: &Pool, token: &str, verified: bool) -> Resu
     let conn = pool.get()?;
     conn.execute(
         "UPDATE access_tokens SET pin_verified = ?2 WHERE token = ?1",
-        params![token, verified as i64],
+        params![stored(token), verified as i64],
     )?;
     Ok(())
 }
@@ -193,7 +186,7 @@ pub fn reset_access_pin_verified(pool: &Pool, user_id: &str) -> Result<()> {
 
 pub fn delete_access_token(pool: &Pool, token: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute("DELETE FROM access_tokens WHERE token = ?1", params![token])?;
+    conn.execute("DELETE FROM access_tokens WHERE token = ?1", params![stored(token)])?;
     Ok(())
 }
 
@@ -222,8 +215,8 @@ mod tests {
         p.get()
             .unwrap()
             .execute(
-                "UPDATE access_tokens SET last_seen = NULL WHERE token = 'never-seen'",
-                [],
+                "UPDATE access_tokens SET last_seen = NULL WHERE token = ?1",
+                [stored("never-seen")],
             )
             .unwrap();
 

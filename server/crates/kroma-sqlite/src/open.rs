@@ -61,6 +61,7 @@ pub(crate) fn scoped_pool_at(
         scope,
     });
     let _ = pool.get()?;
+    crate::private::keep_private(path);
     Ok(pool)
 }
 

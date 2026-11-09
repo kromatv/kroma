@@ -20,6 +20,8 @@ mod migrate;
 mod open;
 #[cfg(not(target_family = "wasm"))]
 mod own_file;
+#[cfg(not(target_family = "wasm"))]
+mod private;
 mod pool;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
