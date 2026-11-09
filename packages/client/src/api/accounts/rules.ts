@@ -6,7 +6,7 @@ export const emailRule = z
   .toLowerCase()
   .pipe(z.email({ error: 'auth.emailInvalid' }));
 
-export const passwordRule = z.string().min(4, { message: 'auth.passwordTooShort' });
+export const passwordRule = z.string().min(8, { message: 'auth.passwordTooShort' });
 
 export const usernameRule = z.string().trim().min(1, { message: 'auth.usernameInvalid' });
 
