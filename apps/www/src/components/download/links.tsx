@@ -3,8 +3,6 @@ import type { ReactNode } from 'react';
 
 export const docs = {
   releases: `${site.repo}/releases`,
-  installGuide: `${site.repo}/blob/main/INSTALL.md`,
-  beta: `${site.repo}/blob/main/BETA.md`,
 } as const;
 
 /**

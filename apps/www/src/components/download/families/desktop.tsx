@@ -3,7 +3,7 @@ import { IconBrandApple, IconBrandWindows } from '@tabler/icons-react';
 import { useDownloadRelease } from '#site/components/download/channel';
 import { DownloadButton } from '#site/components/download/download-button';
 import { PlatformEntry } from '#site/components/download/platform-entry';
-import { docs } from '#site/components/download/links';
+import { L } from '#site/components/localized-link';
 import { fromDownload } from '#site/lib/build-file';
 import { megabytes } from '#site/lib/releases';
 import { TARGETS, type TargetId } from '#site/lib/release-targets';
@@ -45,14 +45,9 @@ export function DesktopFamily({
       help={
         <div>
           <p className="text-sm leading-relaxed text-muted">{computer.help}</p>
-          <a
-            href={docs.installGuide}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="mt-2 inline-block text-sm text-accent-text"
-          >
+          <L to="/docs/desktop" className="mt-2 inline-block text-sm text-accent-text">
             {m.download_ui_detailed_steps()} →
-          </a>
+          </L>
         </div>
       }
     >

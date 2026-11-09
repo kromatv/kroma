@@ -29,7 +29,7 @@ export const site = {
     releases: `${repo}/releases`,
     issues: `${repo}/issues`,
     license: `${repo}/blob/main/LICENSE`,
-    installGuide: `${repo}/blob/main/INSTALL.md`,
+    installGuide: `${url}/docs`,
     contributing: `${repo}/blob/main/CONTRIBUTING.md`,
   },
 } as const;

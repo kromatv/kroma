@@ -23,11 +23,15 @@ translates HTTP. [`ARCHITECTURE.md`](../ARCHITECTURE.md) draws the whole shape.
 H.264, etc. itself and the server ships the original bytes. What a client cannot
 decode goes through an on-demand HLS session instead (MKV→fMP4 repackaging,
 AC3/EAC3/DTS→AAC, HEVC→H.264, language switching), the only path that re-encodes.
-See [Hardware transcoding](#hardware-transcoding). `ffprobe` reads metadata and
+See [Hardware transcoding](../docs/setup/hardware-transcoding.md). `ffprobe` reads metadata and
 nothing else, and without it the server still runs and infers the codec from the
 file extension. None of that machinery is the core's alone: it is `kroma-media`,
 which links no database, so a module holding a media file describes and
 re-encodes it with the same engine (`kroma-module-sdk/transcode`).
+
+To install and run the server, follow the
+[setup guides](../docs/setup/README.md). This page is the developer's view:
+how the server reads a library, how to run it from source, and its API.
 
 SQLite holds the library (`<data>/kroma.db`, WAL mode). A scan computes the full
 set of libraries/shows/items and swaps it in atomically, and reads run on a small
@@ -39,6 +43,9 @@ built-in demo content (movies + two shows) so clients render out of the box.
 Demo items cannot be streamed: their `/stream` endpoint returns a JSON 404.
 
 ## Library detection (Plex-style)
+
+The naming rules for users are in
+[Media folders and permissions](../docs/setup/media-folders.md#name-your-files).
 
 The scanner recognises these layouts and naming cues:
 
@@ -74,7 +81,7 @@ gets streamed. A link whose target is not mounted (the usual shape in a containe
 mounts the library but not the dump) cannot be read at all; the scan logs how many
 entries it skipped and one offending path rather than reporting an empty library.
 
-## Quickstart
+## Run from source
 
 ```bash
 # From server/ runs with demo content (no media dirs configured):
@@ -95,114 +102,16 @@ token.
 
 ## Configuration
 
-Environment variables carry all configuration:
-
-| Variable           | Default     | Description                                                            |
-| ------------------ | ----------- | --------------------------------------------------------------------- |
-| `KROMA_HOST`        | `0.0.0.0`   | Interface to bind.                                                     |
-| `KROMA_PORT`        | `4040`      | TCP port to listen on.                                                 |
-| `KROMA_MEDIA_DIRS`  | *(empty)*   | Library roots to scan. OS-path-separator (`:` / `;`) or comma list.    |
-| `KROMA_MOVIES_DIRS` | *(empty)*   | Roots scanned as movies only. Same list format.                       |
-| `KROMA_SERIES_DIRS` | *(empty)*   | Roots scanned as shows only. Same list format.                        |
-| `KROMA_DATA_DIR`    | `./data`    | Where the SQLite database (`kroma.db`) lives.                          |
-| `KROMA_DEMO_MEDIA`  | `1`         | Writes the demo library to `<data>/demo-media` so a first look has files it can play. `0` leaves demo rows with no bytes behind them. |
-| `KROMA_TMDB_API_KEY`| *(empty)*   | TMDB API key → enables movie/show metadata. Unset falls back to the built-in key. |
-| `KROMA_TMDB_LANGUAGE`| `en-US`    | TMDB language for titles/overviews, e.g. `fr-FR`.                      |
-| `KROMA_TMDB_ENRICH` | `1`         | Set to `0` to skip TMDB enrichment during a scan.                     |
-| `KROMA_HTTPS`       | `0`         | Set to `1` to *also* serve HTTPS with an auto self-signed cert (off by default). |
-| `KROMA_HTTPS_PORT`  | `4443`      | Port for the HTTPS listener (only used when `KROMA_HTTPS=1`).          |
-| `KROMA_TLS_SANS`    | *(empty)*   | Extra cert names/IPs, comma/space separated. See [HTTPS](#https-on-the-lan-optional). |
-| `KROMA_HTTPS_REDIRECT`| `0`       | Set to `1` to redirect all HTTP traffic to HTTPS (needs `KROMA_HTTPS=1`). |
-| `KROMA_TRUSTED_PROXIES`| *(empty)* | Proxies whose forwarding headers may be believed. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
-| `KROMA_ALLOWED_ORIGINS`| *(empty)* | Extra browser origins allowed to read the API. See [Which browsers are answered](#which-browsers-are-answered). |
-| `KROMA_WEB_URL`    | *(`:<port>`)* | Public address written into invite and account links. Its origin may also read the LAN listener's answers, for the [direct route](../docs/direct-connection.md). |
-| `KROMA_PUBLIC_IP_URL` | `https://api.ipify.org` | An echo answering with the server's public IPv4 as plain text, which tells the [direct route](../docs/direct-connection.md) a client leaving through the same router. Empty never asks. |
-| `KROMA_MAIL_RELAY_URL` | `https://mail.kroma.tv` | The mail relay account email goes through when Admin → Email chooses `relay`. Only for an operator running their own copy of `packages/mail-relay`. |
-| `KROMA_WEB_DIR`    | *(empty)*   | Built SPA served as the fallback route. Ignored unless it holds `_shell.html`, which is why dev leaves it unset. |
-| `KROMA_INSTALL`    | `unknown`   | How this server was installed: `docker`, `synology` or `binary`. The Docker images and the Synology package set their own; `binary` is for an operator running the built server directly, and an unset value reports `unknown` rather than guessing. Reported only with the anonymous statistics. See [`docs/anonymous-stats.md`](../docs/anonymous-stats.md). |
-| `KROMA_SELF_UPDATE_DIR` | *(empty)* | Set by the Synology package's service script: the folder where the server unpacks the builds it downloads for itself. The script starts the newest one. See [Server updates](updater/README.md#synology-dsm-7). |
-| `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Forwarded into every module and the programs it starts. |
-| `KROMA_MODULE_LOG` | *(empty)*   | Overrides `RUST_LOG` for the modules only, e.g. `kroma_indexer=debug`, and is forwarded into each of them. Their output goes to the core's log and Admin → Modules → *module* → Journaux. |
-| `KROMA_HWACCEL`    | *(probed)*  | Pins the re-encode pipeline: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, or `software` to rule hardware out of a problem. See [Hardware transcoding](#hardware-transcoding). |
-| `KROMA_RENDER_NODE`| `/dev/dri/renderD128` | Which DRM render node VAAPI/QSV open, for a host with more than one. |
-| `KROMA_ENCODE_EFFORT`| *(from the box)* | Pins the software encoder tier: `quality` or `realtime`. |
-| `KROMA_MAX_TRANSCODES`| *(half the cores, 1..4)* | Video re-encodes allowed at once, never more than the `maxConcurrent` session cap. Stream copies are not counted, and a seek never costs a slot: a player's own earlier anchor of the same title is taken back first. A request past the ceiling is refused with `503` rather than queued, so the player can say so instead of buffering. |
-| `KROMA_FFMPEG_CONCURRENCY`| *(cores − 1)* | How many background media passes (storyboards, fingerprints, subtitle extraction) may run at once. |
-| `KROMA_PROBE_WORKERS`| *(half the cores, 2..4)* | Concurrent `ffprobe` processes during a scan.        |
-| `KROMA_WALK_THREADS`| *(cores × 4, 8..32)* | Threads walking the library roots. Raise it for remote mounts. |
-| `KROMA_WATCH_INTERVAL`| `300`     | Seconds between periodic rescans, `0` for none (filesystem events still fire). The `watchIntervalSecs` admin setting wins over it. |
-| `KROMA_MODULE_HOT_RELOAD`| *(empty)* | Set to `1` so a `module.wasm` changed in `<data>/installed/<id>/` is recorded as a local build and restarts its component. A dev loop only: it polls the filesystem, and without it a component that is not the one installed does not start. |
-| `KROMA_MODULE_ENV`| *(empty)* | Comma-separated variable names a program a module starts inherits. Such a program starts from an allowlist (`PATH`, locale, temp dir, CA bundle, proxy variables, `LIBVA_*`, logging) and never sees the server's own variables, secrets included. |
+Every environment variable an operator sets is in the
+[configuration reference](../docs/setup/configuration.md), with HTTPS, reverse
+proxies and remote access in [network](../docs/setup/network.md) and hardware
+encoders in [hardware transcoding](../docs/setup/hardware-transcoding.md).
 
 A fork shipping its own published app also reads `KROMA_APNS_KEY_P8`,
 `KROMA_APNS_KEY_ID`, `KROMA_APNS_TEAM_ID`, `KROMA_APNS_TOPIC` and
 `KROMA_FCM_SERVICE_ACCOUNT`, each falling back to the matching admin setting.
 KROMA's own builds push through the relay instead, see
 [`packages/push-relay`](../packages/push-relay/README.md).
-
-## Hardware transcoding
-
-Direct play never re-encodes anything, and most playback is direct play. The
-exception is a source the client's decoder cannot take: HEVC on an H.264-only
-TV, or a 4K frame on a decoder that stops at 1080p. That re-encode is the one
-part of the delivery path that costs real CPU, and on a NAS a single 4K→1080p
-stream will saturate the box on its own.
-
-On an Intel iGPU (QuickSync), an AMD/Intel GPU (VAAPI), an NVIDIA card (NVENC)
-or an Apple machine (VideoToolbox), the same job runs on fixed-function silicon
-at a few percent CPU. KROMA probes for one at startup, and **makes each
-candidate encode a test frame before believing it**. A device that is listed but
-has no driver, or whose render node the service user cannot open, otherwise looks
-exactly like no device at all.
-
-The verdict is in the log on every boot:
-
-```
-INFO video re-encodes run on hardware accel=vaapi reason=h264_vaapi encoded a test frame
-WARN video re-encodes run on the CPU reason=/dev/dri/renderD128 is not readable by this user …
-```
-
-Three things have to be true, and the log line names whichever one is not:
-
-1. **ffmpeg has the encoder.** Many static builds do not. Check with
-   `ffmpeg -hide_banner -encoders | grep -E 'h264_(vaapi|qsv|nvenc)'`.
-2. **The render node is there.** `ls -l /dev/dri` should show a `renderD*` node.
-   In Docker it has to be passed in: `--device /dev/dri:/dev/dri`.
-3. **The service user can open it.** The node is usually `root:render` (or
-   `root:videodriver` on DSM) with no access for anyone else, so the user KROMA
-   runs as must be in that group: `--group-add` under Docker, and the Synology
-   package joins `videodriver` at install.
-
-## Behind a reverse proxy
-
-The server reads `X-Forwarded-For` / `CF-Connecting-IP` only from a peer worth
-believing, because both are set by whoever is calling. Loopback is always
-believed, so **a proxy on the same host needs no configuration**.
-
-A proxy anywhere else does. In another container, or on another machine, its
-requests arrive from its own address, the headers are discarded, and the server
-sees every client as that one address. Two things stop working: nearby TV
-pairing treats the whole world as one network, and the login brute-force guard
-counts everyone as one caller.
-
-Name the proxy and it can be seen through. Bare addresses or IPv4 CIDRs, comma
-or space separated:
-
-```bash
-KROMA_TRUSTED_PROXIES="172.18.0.0/16"     # a docker bridge
-KROMA_TRUSTED_PROXIES="10.0.0.4, 10.0.0.5" # two named front-ends
-```
-
-Only ever name the proxy. Anything matching this list can claim to be any
-client, so a range your clients live in gives that away to all of them.
-
-The proxy must also set the header the standard way, appending the peer it saw
-rather than replacing what the caller sent. nginx's
-`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for` does this, as do
-Caddy and Traefik by default. The server reads the rightmost entry, the only one
-the proxy itself vouched for. `CF-Connecting-IP` is read only when no
-`X-Forwarded-For` arrived with it, since nginx and Caddy pass a caller's copy
-through untouched and Cloudflare always appends to the chain as well.
 
 ## Which browsers are answered
 
@@ -249,52 +158,6 @@ down. Naming `null` yourself places it and drops that confirmation, a trade
 rather than a fix. The route is also capped at 30 announces a minute per address,
 far above any cadence a television keeps. See
 [tv-pairing](../docs/tv-pairing.md#who-may-raise-a-beacon).
-
-## HTTPS on the LAN (optional)
-
-By default the server speaks plain HTTP, which is usually fine on a LAN. But a
-browser refuses the Web Crypto API (`crypto.subtle`, WebAuthn/passkeys) on a
-non-`localhost` HTTP origin, so a phone hitting `http://192.168.x.y:4040` cannot
-use those. A LAN box has no public DNS name for Let's Encrypt, so KROMA can serve
-HTTPS with an auto-generated self-signed certificate instead:
-
-- Enable it with `KROMA_HTTPS=1` (or the `httpsEnabled` admin setting, where the
-  env wins). HTTPS is additive: the plain-HTTP listener keeps running.
-- The server generates the cert once under `<data>/tls/` (`cert.pem` + `key.pem`,
-  key `0600`) and reuses it on restart. Delete that folder to force a regen,
-  e.g. after changing the SANs below.
-- The listener binds `KROMA_HTTPS_PORT` (default 4443).
-- Its SANs cover the box's local identities automatically: `localhost`,
-  loopback, the hostname, `<hostname>.local`, and the primary LAN IP.
-- Download the public cert from `/api/tls/cert.pem` to trust it once per device.
-
-If the cert cannot be prepared, HTTPS is skipped and HTTP keeps serving, with the
-reason logged. Preparing it never blocks startup.
-
-**Redirect HTTP to HTTPS, optionally.** Set `KROMA_HTTPS_REDIRECT=1` (or the
-`httpsRedirect` admin toggle) to make the HTTP listener 307-redirect everything
-to HTTPS. It is off by default on purpose: a self-signed origin shows a trust
-prompt until you import the cert, and some TV / native clients cannot follow the
-redirect. The cert download (`/api/tls/cert.pem`) stays reachable over plain HTTP
-either way, so a device can still bootstrap trust.
-
-### Adding names/IPs to the cert (`KROMA_TLS_SANS`)
-
-A browser only accepts the cert for an address listed in its SANs. When the
-auto-detected identities do not match how clients reach the box, add the missing
-ones. Each entry parses as an IP if it looks like one, else a DNS name. Separate
-them with commas, spaces or `;`:
-
-```bash
-KROMA_TLS_SANS="192.168.1.50, nas.home, kroma.example.com"
-```
-
-This matters most in Docker: on the default bridge network the container's
-hostname is its random ID and its "primary LAN IP" is the Docker bridge address
-(`172.x`), not your host's LAN IP, so the auto-detected SANs will not match the
-address clients use. Pass the host's real IP / DNS name here, or run with
-`--network host`, where auto-detection sees the host's identities. The
-[Docker](#https-in-docker) section has a full example.
 
 ## Data model
 
@@ -454,99 +317,12 @@ curl -s -X POST "${AUTH[@]}" http://localhost:4040/api/scan
 
 ## Docker
 
-The published image is multi-arch (`linux/amd64` + `linux/arm64`): the same
-`docker pull` works on an Intel/AMD NAS or server and on ARM64 boards such as a
-Raspberry Pi 4/5 (64-bit OS required). It bundles the static `kroma-server`
-binary, the web SPA (served on the same port) and static `ffmpeg`/`ffprobe`.
+How to run the published image, mount media and set permissions is in
+[Install KROMA with Docker](../docs/setup/docker.md). The image is multi-arch
+(`linux/amd64` and `linux/arm64`) and carries the static `kroma-server`, the web
+app and a static ffmpeg. It runs as `root` unless the operator sets a user.
 
-```bash
-docker run -d --name kroma \
-  -p 4040:4040 \
-  -v kroma-data:/data \
-  -v /path/on/host/media:/media \
-  -e KROMA_MEDIA_DIRS=/media \
-  ghcr.io/kromatv/kroma:latest
-```
-
-Or as compose. A ready-to-run [`docker-compose.yml`](../docker-compose.yml) sits
-at the repo root, so `docker compose up -d` works from there:
-
-```yaml
-services:
-  kroma:
-    image: ghcr.io/kromatv/kroma:latest
-    ports: ["4040:4040"]
-    environment:
-      KROMA_MEDIA_DIRS: /media
-    volumes:
-      - kroma-data:/data
-      - /path/on/host/media:/media
-volumes:
-  kroma-data:
-```
-
-### HTTPS in Docker
-
-To also serve the self-signed HTTPS listener (see
-[HTTPS on the LAN](#https-on-the-lan-optional)), publish its port and turn it
-on. The image `EXPOSE`s both ports, but you still publish `4443` yourself. And
-because the bridge network hides your host's real identity, pass it via
-`KROMA_TLS_SANS` so the cert is valid from other devices:
-
-```bash
-docker run -d --name kroma \
-  -p 4040:4040 -p 4443:4443 \
-  -e KROMA_HTTPS=1 \
-  -e KROMA_TLS_SANS="192.168.1.50,nas.home" \
-  -v kroma-data:/data \
-  -v /path/on/host/media:/media \
-  -e KROMA_MEDIA_DIRS=/media \
-  ghcr.io/kromatv/kroma:latest
-```
-
-Or as compose:
-
-```yaml
-services:
-  kroma:
-    image: ghcr.io/kromatv/kroma:latest
-    ports:
-      - "4040:4040"
-      - "4443:4443"
-    environment:
-      KROMA_MEDIA_DIRS: /media
-      KROMA_HTTPS: "1"
-      # Your host's real LAN IP / DNS name(s); the bridge cannot detect them.
-      KROMA_TLS_SANS: "192.168.1.50,nas.home"
-    volumes:
-      - kroma-data:/data
-      - /path/on/host/media:/media
-volumes:
-  kroma-data:
-```
-
-The cert lives in the `/data` volume (`/data/tls/`), so it survives restarts.
-Delete it, or the volume, after changing `KROMA_TLS_SANS` to force a regen. Then
-reach the box at `https://<host>:4443` and grab `/api/tls/cert.pem` to trust it
-on each device. Running with `--network host` instead lets auto-detection see the
-host's real hostname/IP, so `KROMA_TLS_SANS` is not needed.
-
-### Volumes: what needs to be writable
-
-- **`/data`** (named volume or bind mount): the SQLite database, caches,
-  installed modules, Whisper models AND the torrent download staging area
-  (`/data/torrents/downloads`). Give it enough space for in-flight downloads,
-  or bind-mount a big disk.
-- **Media mounts**: mount them read-write if you use the built-in
-  requests/downloads stack, because the import step writes the finished files
-  into the library (hardlink when possible, else reflink/copy, so separate mounts
-  work, just slower to import). `:ro` is only safe for a pre-existing library you
-  manage yourself.
-
-Tags: `latest` (main), `X.Y.Z` / `X.Y` (releases). Then point every client at
-`http://<host>:4040` (the web app is served there too).
-
-### Building the image yourself
+### Build the image yourself
 
 The from-source build needs the repo root as context (the server embeds the
 shared locale catalogs from `packages/` and the web SPA from `clients/`):

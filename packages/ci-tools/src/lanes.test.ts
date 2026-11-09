@@ -68,6 +68,12 @@ describe('matchLanes', () => {
     expect(matchLanes(['apps/www/src/routes/download.tsx'])).toEqual(only('code', 'fleet', 'site'));
   });
 
+  it('builds the site for a setup guide, the one prose it renders', () => {
+    expect(matchLanes(['docs/setup/docker.md'])).toEqual(only('site'));
+    expect(matchLanes(['apps/www/content/docs/docker.fr.md'])).toEqual(only('site'));
+    expect(matchLanes(['docs/writing-docs.md'])).toEqual(only());
+  });
+
   it('puts a spec chapter in the spec lane, where no other prose goes', () => {
     expect(matchLanes(['docs/spec/accounts/notifications.md'])).toEqual(only('spec'));
     expect(matchLanes(['docs/spec/requirements.json'])).toEqual(only('spec'));

@@ -55,7 +55,7 @@ export function SiteFooter() {
         { label: m.footer_link_blog(), to: '/blog' },
         { label: m.footer_link_stats(), to: '/stats' },
         { label: m.footer_link_source(), href: site.repo },
-        { label: m.footer_link_install_guide(), href: site.links.installGuide },
+        { label: m.footer_link_install_guide(), to: '/docs' },
         { label: m.footer_link_contribute(), href: site.links.contributing },
       ],
     },

@@ -97,8 +97,9 @@ that reboot, and the scan says so.
 **LG (webOS).** Install the **Dev Mode** app from the LG Content Store, sign in
 with a free developer.lge.com account, switch **Dev Mode ON** (the TV restarts),
 then switch **Key Server ON**. The app shows a passphrase, which the TUI asks
-for once per LG set. A session lasts **50 hours**, and when it runs out the
-sideloaded app goes with it, so extend it from the same app.
+for once per LG set. A session lasts up to 1000 hours on current firmware and
+50 hours on older sets, and when it runs out the sideloaded app goes with it,
+so extend it from the same app.
 
 **Android TV, Philips included.** **Settings > System > About**, then click the
 build 7 times until it tells you that you are a developer. **Developer options**
@@ -231,10 +232,10 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
 - **adb sees the TV as `unauthorized`.** The prompt is on the television. Accept
   it and run the install again.
 - **The LG install cannot get a key.** `ares` needs the passphrase from the Dev
-  Mode app, and a session past its 50 hours needs that app opened again first.
+  Mode app, and a session that ran out needs that app opened again first.
 - **`no .wgt found`, and the same for the other two.** Nothing is built here and
   `gh` found no release asset. Build the shell, or download the artifact from a
   Build & Release run.
 
 The manual path for each platform, and every device that is not a television, is
-in [INSTALL.md](../../INSTALL.md).
+in the [setup guides](../../docs/setup/README.md).

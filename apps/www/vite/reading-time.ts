@@ -2,6 +2,8 @@
 // post, since a second `?raw` import is impossible: the MDX plugin claims the file
 // and returns it as a component, not text.
 
+import { exportConst } from './mdx-export.ts';
+
 interface MdastNode {
   type: string;
   value?: string;
@@ -20,34 +22,6 @@ function countWords(node: MdastNode): number {
 export function remarkReadingTime() {
   return (tree: MdastNode) => {
     const minutes = Math.max(1, Math.round(countWords(tree) / 200));
-    tree.children?.unshift({
-      type: 'mdxjsEsm',
-      value: `export const readingMinutes = ${minutes};`,
-      data: {
-        estree: {
-          type: 'Program',
-          sourceType: 'module',
-          body: [
-            {
-              type: 'ExportNamedDeclaration',
-              specifiers: [],
-              source: null,
-              declaration: {
-                type: 'VariableDeclaration',
-                kind: 'const',
-                declarations: [
-                  {
-                    type: 'VariableDeclarator',
-                    id: { type: 'Identifier', name: 'readingMinutes' },
-                    init: { type: 'Literal', value: minutes },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-      // oxlint-disable-next-line typescript/no-explicit-any -- mdast node shape from the plugin API.
-    } as any);
+    tree.children?.unshift(exportConst('readingMinutes', minutes));
   };
 }

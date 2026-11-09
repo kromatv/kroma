@@ -7,6 +7,7 @@ import { LOCALES } from '#site/lib/locales';
 //   content/blog/my-post.mdx        the default-language version (the fallback)
 //   content/blog/my-post.fr.mdx     the French translation of that same document
 //   content/legal/privacy.en.mdx    an explicit suffix is allowed too
+//   content/docs/docker.fr.md       plain Markdown follows the same rule
 //
 // The blog and the legal pages have different data shapes, so they stay
 // separate loaders; this module holds only what they share: the filename
@@ -24,7 +25,7 @@ const isLang = (s: string): s is Lang => LOCALES.includes(s);
  *  that is not a known locale is part of the name, so `release.2.mdx` is the
  *  document `release.2`, not `release` in a locale called `2`. */
 export function parseContentPath(path: string): { name: string; lang: Lang } {
-  const file = path.slice(path.lastIndexOf('/') + 1).replace(/\.mdx$/, '');
+  const file = path.slice(path.lastIndexOf('/') + 1).replace(/\.mdx?$/, '');
   const parts = file.split('.');
   const last = parts.length > 1 ? parts.at(-1) : undefined;
   if (last && isLang(last)) return { name: parts.slice(0, -1).join('.'), lang: last };

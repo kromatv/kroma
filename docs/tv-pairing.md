@@ -46,7 +46,7 @@ And one it cannot even see, which is why it is configuration rather than a
 limit: a reverse proxy the server has not been told about. Its requests arrive
 from its own address, the forwarding headers are discarded, and every client
 looks like that one address, so the rule answers yes for every pair. Name it in
-`KROMA_TRUSTED_PROXIES` (see [server/README.md](../server/README.md)); a proxy
+`KROMA_TRUSTED_PROXIES` (see [network](setup/network.md#behind-your-own-reverse-proxy)); a proxy
 on the same host is loopback and needs nothing. Note that a beacon heard on the
 link is unaffected either way, since it never asks the server where anyone is.
 

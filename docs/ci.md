@@ -52,11 +52,16 @@ so does a push with no parent or a manual run. Another workflow, or a script
 only a release workflow calls, cannot change what CI checks: it is linted as
 code and builds nothing (`synology.yml` reaches the synology lane).
 
-Prose opens no lane, with one exception: `docs/spec/**` opens **spec**, which
+Prose opens no lane, with two exceptions. `docs/spec/**` opens **spec**, which
 runs `bun run spec:check`. The requirement index is generated and committed, so
-a chapter edited without regenerating it is the one way a prose change can be
+a chapter edited without regenerating it is one way a prose change can be
 wrong. The script imports nothing, so that job installs nothing and takes
 seconds.
+
+The setup guides are the other: `docs/setup/**` and their translations in
+`apps/www/content/docs/**` open **site**, because kroma.tv compiles them into
+its `/docs` pages, and a guide that does not compile breaks the site build.
+`site.yml` deploys on them for the same reason.
 
 Every other lane excludes prose, including the markdown that lives inside a code
 tree. `modules/README.md` used to open the rust lane, where the shard list is
