@@ -25,9 +25,10 @@ export function useNotificationStream(): void {
         if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
         // Patch the badge from the event's own count, so it is right even when
         // the panel is closed and the list is never refetched.
+        const counts = { unread: e.unread, unseen: e.unseen ?? e.unread };
         queryClient.setQueryData(
           webRuntime.queries.userQueries.notifications().queryKey,
-          (prev: NotificationsView | undefined) => (prev ? { ...prev, unread: e.unread } : prev),
+          (prev: NotificationsView | undefined) => (prev ? { ...prev, ...counts } : prev),
         );
         void queryClient.invalidateQueries({
           queryKey: webRuntime.queries.userQueries.notifications().queryKey,
@@ -56,8 +57,39 @@ export function useUnreadCount(): number {
   return data ?? 0;
 }
 
+/** What the bell badge counts: rows not seen since the panel was last opened.
+ * Kept live by {@link useNotificationStream}. */
+export function useUnseenCount(): number {
+  const webRuntime = useWebRuntime();
+
+  const { data } = useQuery({
+    ...webRuntime.queries.userQueries.notifications(),
+    select: (v) => v.unseen,
+  });
+  return data ?? 0;
+}
+
+/** Clears the badge: every row in the inbox counts as seen once the panel has
+ * been open. The badge drops in the frame it is called; a write the server
+ * refuses is settled by the refetch. */
+export function useMarkSeen(): () => void {
+  const webRuntime = useWebRuntime();
+
+  const queryClient = useQueryClient();
+  return useMemo(() => {
+    const key = webRuntime.queries.userQueries.notifications().queryKey;
+    return () => {
+      const current = queryClient.getQueryData<NotificationsView>(key);
+      if (!current || current.unseen === 0) return;
+      queryClient.setQueryData(key, { ...current, unseen: 0 });
+      const settle = () => void queryClient.invalidateQueries({ queryKey: key });
+      webRuntime.client.notifications.markSeen().then(settle, settle);
+    };
+  }, [queryClient, webRuntime.queries.userQueries.notifications, webRuntime.client]);
+}
+
 /** Which rows the panel is showing. */
-export type NotificationFilter = 'all' | 'unread';
+export type NotificationFilter = 'all' | 'unread' | 'archived';
 
 /** The optimistic patch behind {@link useReadState}, without the transport:
  * the rows named by `ids` move to `read`, and the badge follows by however many
@@ -74,7 +106,7 @@ export function applyRead(
     delta += read ? -1 : 1;
     return { ...n, read };
   });
-  return delta === 0 ? view : { notifications, unread: Math.max(0, view.unread + delta) };
+  return delta === 0 ? view : { ...view, notifications, unread: Math.max(0, view.unread + delta) };
 }
 
 /**

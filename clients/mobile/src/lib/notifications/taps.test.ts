@@ -87,6 +87,35 @@ describe('handleTap', () => {
     expect(route).toBeNull();
   });
 
+  it('records that the action was pressed on the row it came from', async () => {
+    const client = {
+      notifications: {
+        runAction: vi.fn().mockResolvedValue(undefined),
+        interacted: vi.fn().mockResolvedValue(undefined),
+      },
+    };
+
+    await handleTap(response({ id: 'n1', actions: [APPROVE] }, 'approve'), client as never);
+
+    expect(client.notifications.interacted).toHaveBeenCalledWith('n1');
+  });
+
+  it('still settles the tap when the server cannot record the press', async () => {
+    const client = {
+      notifications: {
+        runAction: vi.fn().mockResolvedValue(undefined),
+        interacted: vi.fn().mockRejectedValue(new Error('404')),
+      },
+    };
+
+    const route = await handleTap(
+      response({ id: 'n1', actions: [APPROVE] }, 'approve'),
+      client as never,
+    );
+
+    expect(route).toBeNull();
+  });
+
   it('falls back to opening the app when the action fails', async () => {
     const client = {
       notifications: { runAction: vi.fn().mockRejectedValue(new Error('offline')) },

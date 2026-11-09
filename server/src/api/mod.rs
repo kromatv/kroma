@@ -120,6 +120,8 @@ mod it_network;
 #[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
+mod it_notification_inbox;
+#[cfg(test)]
 mod it_notification_types;
 #[cfg(test)]
 mod it_notifications;

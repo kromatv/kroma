@@ -153,7 +153,7 @@ fn deliver<S: HostStorage>(
         &user.id,
         Event::new(
             "notification.created",
-            json!({ "id": stored.id, "unread": written.unread }),
+            json!({ "id": stored.id, "unread": written.unread, "unseen": written.unseen }),
         ),
     );
 
@@ -210,16 +210,15 @@ pub fn resolve<S: HostStorage>(
     }
 }
 
-/// Tell a user's clients that their unread count moved (they read or deleted
-/// something elsewhere), so a second open device updates its badge.
-///
-/// Takes the count rather than reading it: callers have just done the write that
-/// changed it and already know the answer, which keeps this a pure bus publish
-/// and therefore safe to call straight from an async handler.
-pub fn publish_unread<S: HostStorage>(state: &S, user_id: &str, unread: u32) {
+/// Tell a user's clients that their counts moved (they read, saw, archived or
+/// deleted something), so every open device's badge agrees.
+pub fn publish_counts<S: HostStorage>(state: &S, user_id: &str, unread: u32, unseen: u32) {
     state.publish_to(
         user_id,
-        Event::new("notification.read", json!({ "unread": unread })),
+        Event::new(
+            "notification.read",
+            json!({ "unread": unread, "unseen": unseen }),
+        ),
     );
 }
 

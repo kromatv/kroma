@@ -14,14 +14,20 @@ import {
 
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
 
-import { useMemo, useState } from 'react';
+import { useIsFocused } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, SectionList } from 'react-native';
 import { NotificationRow } from '#mobile/components/notification-row';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { EmptyState, ErrorBanner, ErrorView, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
-import { useNotifications, useRefreshNotifications } from '#mobile/lib/notifications';
+import {
+  useArchivedNotifications,
+  useMarkSeen,
+  useNotifications,
+  useRefreshNotifications,
+} from '#mobile/lib/notifications';
 import { useClient } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -34,20 +40,33 @@ export default function NotificationsScreen() {
   const t = useT();
   const client = useClient();
   const refresh = useRefreshNotifications();
-  const { data, isPending, isError, isRefetching, refetch } = useNotifications();
+  const inbox = useNotifications();
   const [busy, setBusy] = useState(false);
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'unread' | 'archived'>('all');
   const [error, setError] = useState<string | null>(null);
+  const canArchive = inbox.data?.canArchive ?? false;
+  const shelf = canArchive && filter === 'archived';
+  const archive = useArchivedNotifications(shelf);
+  const { data, isPending, isError, isRefetching, refetch } = shelf ? archive : inbox;
+  const focused = useIsFocused();
+  const markSeen = useMarkSeen();
+  const unseen = inbox.data?.unseen ?? 0;
 
-  const unread = data?.unread ?? 0;
+  useEffect(() => {
+    if (focused && unseen > 0) markSeen();
+  }, [focused, unseen, markSeen]);
+
+  const unread = inbox.data?.unread ?? 0;
   const rows = data?.notifications ?? [];
   const sections = useMemo(
     () =>
-      groupNotificationsByDay(unreadOnly ? rows.filter((row) => !row.read) : rows).map((g) => ({
-        title: t(NOTIFICATION_DAY_LABEL[g.day]),
-        data: g.items,
-      })),
-    [rows, t, unreadOnly],
+      groupNotificationsByDay(filter === 'unread' ? rows.filter((row) => !row.read) : rows).map(
+        (g) => ({
+          title: t(NOTIFICATION_DAY_LABEL[g.day]),
+          data: g.items,
+        }),
+      ),
+    [rows, t, filter],
   );
 
   async function markAll() {
@@ -73,14 +92,7 @@ export default function NotificationsScreen() {
         onRetry={() => void refetch()}
       />
     );
-  else if (sections.length === 0)
-    content = (
-      <EmptyState
-        icon={<Icon name="bell" size={34} thickness={1.4} color="textMuted" />}
-        title={t(unreadOnly ? 'notifications.emptyUnread' : 'notifications.empty')}
-        hint={t(unreadOnly ? 'notifications.emptyUnreadHint' : 'notifications.emptyHint')}
-      />
-    );
+  else if (sections.length === 0) content = <EmptyInbox filter={shelf ? 'archived' : filter} />;
   else
     content = (
       <SectionList
@@ -96,7 +108,9 @@ export default function NotificationsScreen() {
           />
         }
         renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
-        renderItem={({ item }) => <NotificationRow row={item} onError={setError} />}
+        renderItem={({ item }) => (
+          <NotificationRow row={item} canArchive={canArchive} archived={shelf} onError={setError} />
+        )}
       />
     );
 
@@ -124,8 +138,8 @@ export default function NotificationsScreen() {
       <Box style={s.filters}>
         <Chip
           label={t('notifications.filterAll')}
-          active={!unreadOnly}
-          onPress={() => setUnreadOnly(false)}
+          active={filter === 'all'}
+          onPress={() => setFilter('all')}
         />
         <Chip
           label={
@@ -133,13 +147,38 @@ export default function NotificationsScreen() {
               ? t('notifications.filterUnreadCount', { count: unread })
               : t('notifications.filterUnread')
           }
-          active={unreadOnly}
-          onPress={() => setUnreadOnly(true)}
+          active={filter === 'unread'}
+          onPress={() => setFilter('unread')}
         />
+        {canArchive ? (
+          <Chip
+            label={t('notifications.filterArchived')}
+            active={filter === 'archived'}
+            onPress={() => setFilter('archived')}
+          />
+        ) : null}
       </Box>
       {error ? <ErrorBanner message={error} /> : null}
       {content}
     </Screen>
+  );
+}
+
+const EMPTY = {
+  all: ['bell', 'notifications.empty', 'notifications.emptyHint'],
+  unread: ['bell', 'notifications.emptyUnread', 'notifications.emptyUnreadHint'],
+  archived: ['archive', 'notifications.emptyArchived', 'notifications.emptyArchivedHint'],
+} as const;
+
+function EmptyInbox({ filter }: Readonly<{ filter: keyof typeof EMPTY }>) {
+  const t = useT();
+  const [icon, title, hint] = EMPTY[filter];
+  return (
+    <EmptyState
+      icon={<Icon name={icon} size={34} thickness={1.4} color="textMuted" />}
+      title={t(title)}
+      hint={t(hint)}
+    />
   );
 }
 

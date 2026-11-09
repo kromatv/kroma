@@ -10,6 +10,46 @@ describe('the notification-centre endpoints', () => {
   it.each<Endpoint>([
     { name: 'list', call: (c) => c.notifications.list(), method: 'GET', path: '/notifications' },
     {
+      name: 'list, of the rows put away',
+      call: (c) => c.notifications.list({ archived: true }),
+      method: 'GET',
+      path: '/notifications?archived=true',
+    },
+    {
+      name: 'markSeen',
+      call: (c) => c.notifications.markSeen(),
+      method: 'POST',
+      path: '/notifications/seen',
+      body: {},
+    },
+    {
+      name: 'archive',
+      call: (c) => c.notifications.archive([notification]),
+      method: 'POST',
+      path: '/notifications/archive',
+      body: { ids: ['n 1'] },
+    },
+    {
+      name: 'archiveRead, which names no row at all',
+      call: (c) => c.notifications.archiveRead(),
+      method: 'POST',
+      path: '/notifications/archive/read',
+      body: {},
+    },
+    {
+      name: 'unarchive',
+      call: (c) => c.notifications.unarchive([notification]),
+      method: 'POST',
+      path: '/notifications/unarchive',
+      body: { ids: ['n 1'] },
+    },
+    {
+      name: 'interacted',
+      call: (c) => c.notifications.interacted(notification),
+      method: 'POST',
+      path: '/notifications/n%201/interacted',
+    },
+    {
       name: 'markRead',
       call: (c) => c.notifications.markRead([notification]),
       method: 'POST',

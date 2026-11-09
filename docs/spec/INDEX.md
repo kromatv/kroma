@@ -63,10 +63,10 @@
 - **ACCT-54** (SHIPPED) - Settling a row leaves a banner already delivered to a device alone. <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-55** (SHIPPED) - The inbox opens from the bell on any screen, lists rows newest first <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go, <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-60** (AGREED) - What goes first is archived rows, then the oldest rows that were read. <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-57** (SHIPPED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-58** (SHIPPED) - A reader **archives** a row rather than deleting it. An archived row <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that rows go in the <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-60** (SHIPPED) - What goes first is archived rows, then the oldest rows that were read. <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-61** (SHIPPED) - The inbox is on the web client and on the phone. The television has <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-62** (AGREED) - The television routes no subject kinds. It gains them with the inbox, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports, <sub>[notifications.md](accounts/notifications.md)</sub>

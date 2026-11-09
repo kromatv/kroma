@@ -4,7 +4,8 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 
-export type Listener = (e: { type: string; unread: number }) => void;
+export type ServerFrame = { type: string; unread: number; unseen?: number };
+export type Listener = (e: ServerFrame) => void;
 
 const freshClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -18,6 +19,7 @@ export const H = {
 export const listNotifications = vi.fn();
 export const markNotificationsRead = vi.fn();
 export const markNotificationsUnread = vi.fn();
+export const markNotificationsSeen = vi.fn();
 
 export const BASE_URL = 'http://server.test';
 
@@ -26,6 +28,7 @@ export const client = {
     list: listNotifications,
     markRead: markNotificationsRead,
     markUnread: markNotificationsUnread,
+    markSeen: markNotificationsSeen,
   },
   query: {
     notifications: {
@@ -43,8 +46,8 @@ export function render<T>(hook: () => T) {
   return renderHook(hook, { wrapper });
 }
 
-export function view(unread: number): NotificationsView {
-  return { notifications: [], unread } as unknown as NotificationsView;
+export function view(unread: number, unseen = unread): NotificationsView {
+  return { notifications: [], unread, unseen } as unknown as NotificationsView;
 }
 
 // A fixed number of turns is not enough: react-query's batched observer
@@ -55,7 +58,7 @@ export async function expectBadge(read: () => number, n: number) {
 
 // The write has to happen INSIDE the `act`: react-query batches its observer
 // notifications, so an `act` that returns first leaves the badge unmoved.
-export async function push(e: { type: string; unread: number }) {
+export async function push(e: ServerFrame) {
   await act(() => {
     stream().emit(e);
     return Promise.resolve();
@@ -78,7 +81,8 @@ export function ids(...raw: string[]): NotificationId[] {
 }
 
 export function inbox(...rows: NotificationsView['notifications']): NotificationsView {
-  return { notifications: rows, unread: rows.filter((r) => !r.read).length };
+  const unread = rows.filter((r) => !r.read).length;
+  return { notifications: rows, unread, unseen: unread, canArchive: true };
 }
 
 /** Registers the per-test reset every notifications suite shares. */
@@ -88,6 +92,7 @@ export function installHarness(): void {
     listNotifications.mockReset().mockResolvedValue(view(0));
     markNotificationsRead.mockReset().mockResolvedValue({ unread: 0 });
     markNotificationsUnread.mockReset().mockResolvedValue({ unread: 1 });
+    markNotificationsSeen.mockReset().mockResolvedValue({ unread: 0, unseen: 0 });
     H.client = freshClient();
   });
 

@@ -34,7 +34,12 @@ export function PanelBody({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const { data, isPending } = useQuery(webRuntime.queries.userQueries.notifications());
+  const shelf = filter === 'archived';
+  const { data, isPending } = useQuery(
+    shelf
+      ? webRuntime.queries.userQueries.archivedNotifications()
+      : webRuntime.queries.userQueries.notifications(),
+  );
   // Held across renders on purpose: the set is what keeps a row the reader just
   // marked read from vanishing before they can undo it, and an effect would
   // only decide that a frame after it had already gone.
@@ -52,6 +57,14 @@ export function PanelBody({
     setSticky(NO_STICKY);
   }
 
+  if (rows.length === 0 && shelf) {
+    return (
+      <EmptyState.Root size="sm" layout="fill" icon="archive">
+        <EmptyState.Title>{t('notifications.emptyArchived')}</EmptyState.Title>
+        <EmptyState.Hint>{t('notifications.emptyArchivedHint')}</EmptyState.Hint>
+      </EmptyState.Root>
+    );
+  }
   if (rows.length === 0) {
     const bare = filter === 'unread' && all.length > 0;
     return (
@@ -82,7 +95,7 @@ export function PanelBody({
           </h3>
           <ListRow.Group size="sm">
             {group.items.map((one) => (
-              <NotificationEntry key={one.id} one={one} onNavigate={onNavigate} />
+              <NotificationEntry key={one.id} one={one} archived={shelf} onNavigate={onNavigate} />
             ))}
           </ListRow.Group>
         </section>

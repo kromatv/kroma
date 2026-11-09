@@ -59,6 +59,8 @@ pub struct Notification {
 pub struct NotificationsView {
     pub notifications: Vec<Notification>,
     pub unread: u32,
+    /// What the bell badge counts: rows not seen since the panel was last opened.
+    pub unseen: u32,
 }
 
 /// One row of the per-category delivery matrix. A missing DB row means "on", so

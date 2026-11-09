@@ -21,8 +21,15 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 
 export function NotificationRow({
   row,
+  canArchive,
+  archived,
   onError,
-}: Readonly<{ row: Notification; onError(message: string | null): void }>) {
+}: Readonly<{
+  row: Notification;
+  canArchive: boolean;
+  archived: boolean;
+  onError(message: string | null): void;
+}>) {
   const s = useStyles(sDefinition);
   const t = useT();
   const client = useClient();
@@ -52,6 +59,26 @@ export function NotificationRow({
     if (route) router.push(route as never);
   }
 
+  function putAway() {
+    if (archived) {
+      return {
+        text: t('notifications.unarchive'),
+        onPress: () => void perform(() => client.notifications.unarchive([row.id])),
+      };
+    }
+    if (canArchive) {
+      return {
+        text: t('notifications.archive'),
+        onPress: () => void perform(() => client.notifications.archive([row.id])),
+      };
+    }
+    return {
+      text: t('common.delete'),
+      style: 'destructive' as const,
+      onPress: () => void perform(() => client.notifications.delete(row.id)),
+    };
+  }
+
   function showActions() {
     Alert.alert(row.title, undefined, [
       {
@@ -63,11 +90,7 @@ export function NotificationRow({
               : client.notifications.markUnread([row.id]),
           ),
       },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: () => void perform(() => client.notifications.delete(row.id)),
-      },
+      putAway(),
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   }
