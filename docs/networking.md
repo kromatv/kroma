@@ -324,6 +324,6 @@ or not.
 | Every module a WebAssembly component, one bundle for every platform | on `main` (#510, #511) |
 | Escape suite on Ubuntu, macOS and Windows | on `main` (#523) |
 | LAN discovery as a host capability | on `main` (#552) |
-| Remote tunnel | a `cloudflared` helper the host runs, not a host capability (#553) |
+| Remote tunnel | a `cloudflared` helper the host runs, outside the gateway: it honours no proxy for its edge connection (#553) |
 | Torrent engine as a component at full speed | not done: `rqbit` stands in for it (#514) |
 | A native bundle refused from every registry and from an upload | on `main` (#513) |

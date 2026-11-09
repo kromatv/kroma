@@ -615,7 +615,16 @@ sealed (#494). Inbound peers through the provider's port forwarding.
 - **cloudflared.** Answered (#553): the tunnel is `cloudflared`, a helper program the host
   runs for `tv.kroma.remote`, pinned by sha256 in its manifest. It dials Cloudflare's edge
   from the host, which the module's `net.host` declares, and does not go through the
-  gateway.
+  gateway, because it cannot. Its run parameters name no proxy for the edge connection
+  (only `--edge-bind-address`, `--edge-ip-version`, `--dns-resolver-addrs`, `--protocol`
+  and `--region`, [run parameters](https://developers.cloudflare.com/tunnel/reference/run-parameters/)).
+  Tested on 2026-11-09 with the pinned 2026.10.7 build, `--protocol http2`, and
+  `HTTPS_PROXY`, `HTTP_PROXY` and `ALL_PROXY` set to a SOCKS5 proxy that logs every
+  connection: `cloudflared` resolved `_v2-origintunneld._tcp.argotunnel.com` itself and
+  dialled `198.41.192.167:7844` directly, and the proxy saw no connection. So the tunnel
+  is in neither the rules nor the journal; only the requests that arrive through it are
+  counted, as `Via::Tunnel`. Bringing it under the gateway means replacing `cloudflared`,
+  which belongs with the remote-access design in RFC 448 (#408).
 - **Whether the journal and the rules get a permission of their own.** #516 gates both on
   an existing admin permission (see
   [networking](../networking.md#what-is-recorded-and-what-never-is)). A dedicated one is

@@ -403,7 +403,7 @@ writes a new key.
 | Storage grants enforced in the host; the component holds no database file | on `main` (#555) |
 | Acquisition and torrents link no core engine | on `main` (#551) |
 | LAN discovery as a host capability | on `main` (#552) |
-| Remote tunnel | a `cloudflared` helper the host runs, not a host capability (#553) |
+| Remote tunnel | a `cloudflared` helper the host runs, outside the gateway: it honours no proxy for its edge connection (#553) |
 | ffmpeg and inference | inference runs inside the component (#554); whisper decodes its audio through the host's `media` capability and starts no program |
 | WireGuard inside the gateway | not done: `wireproxy` stands in for it (#512) |
 | Torrent engine as a component at full speed | not done: `rqbit` stands in for it (#514) |
