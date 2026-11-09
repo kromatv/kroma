@@ -62,20 +62,17 @@ pub(crate) fn audio_fragments() -> Fixture {
         trun_flags: 0x201,
         edit: None,
         fragments: vec![
-            vec![
-                (vec![7; 6], 0, 0),
-                (vec![8; 8], 0, 0),
-                (vec![9; 4], 0, 0),
-                (vec![10; 6], 0, 0),
-            ],
-            vec![
-                (vec![11; 5], 0, 0),
-                (vec![12; 7], 0, 0),
-                (vec![13; 6], 0, 0),
-                (vec![14; 3], 0, 0),
-            ],
+            unflagged(&[(7, 6), (8, 8), (9, 4), (10, 6)]),
+            unflagged(&[(11, 5), (12, 7), (13, 6), (14, 3)]),
         ],
     })
+}
+
+fn unflagged(samples: &[(u8, usize)]) -> Vec<(Vec<u8>, u32, i32)> {
+    samples
+        .iter()
+        .map(|&(byte, len)| (vec![byte; len], 0, 0))
+        .collect()
 }
 
 fn build(spec: Spec) -> Fixture {
