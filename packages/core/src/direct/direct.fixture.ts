@@ -1,4 +1,4 @@
-import { recordingClient } from '@kromatv/client/test';
+import { recordingClient, requestUrl } from '@kromatv/client/test';
 import type { DirectOffer } from '@kromatv/client/server';
 import { vi } from 'vitest';
 
@@ -32,7 +32,7 @@ function answerOf(host: Host, url: string): object | undefined {
 export function network(hosts: Record<string, Host>) {
   const seen: { url: string; headers: Headers }[] = [];
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
+    const url = requestUrl(input);
     seen.push({ url, headers: new Headers(init?.headers) });
     const base = Object.keys(hosts).find((host) => url.startsWith(`${host}/`));
     const host = base ? hosts[base] : undefined;

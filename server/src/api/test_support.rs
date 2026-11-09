@@ -35,6 +35,9 @@ static SEQ: AtomicU32 = AtomicU32::new(0);
 
 const FUTURE: i64 = 9_999_999_999;
 
+/// A password every account rule accepts, for a test that registers or signs in.
+pub const PASSWORD: &str = "a-test-password";
+
 /// A fully wired app under test plus the handles a test needs to drive + assert.
 /// `app` is the TCP listener's router, `seam` the one on the core's own socket
 /// that modules on the socket seam call back on.

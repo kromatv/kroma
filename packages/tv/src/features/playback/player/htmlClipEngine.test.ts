@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fakeListeners, fakeVideo } from './engine.fixture';
+import { fakeVideo } from '@kromatv/core/test';
+import { fakeListeners } from './engine.fixture';
 import { HtmlClipEngine } from './htmlClipEngine';
 
 const TRAILER = 'http://kroma.test/api/trailers/movie/1061474/qu5n7RALVpE/stream?t=tk';

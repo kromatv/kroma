@@ -1,12 +1,16 @@
+/** A `<video>` a test drives by hand: it fires the events it is told to and
+ * reports what an engine did to it. */
 export interface FakeVideo {
   el: HTMLVideoElement;
   fire(type: string): void;
   setBuffered(ranges: [number, number][]): void;
   set(key: string, value: unknown): void;
   get(key: string): unknown;
+  listenerCount(type: string): number;
   playCalls(): number;
 }
 
+/** A paused, empty `<video>`, with `init` laid over its properties. */
 export function fakeVideo(init: Record<string, unknown> = {}): FakeVideo {
   const listeners = new Map<string, Set<EventListener>>();
   let ranges: [number, number][] = [];
@@ -29,10 +33,14 @@ export function fakeVideo(init: Record<string, unknown> = {}): FakeVideo {
     preload: '',
     src: '',
     buffered,
+    canPlayType: (_t: string) => '',
     play() {
       plays += 1;
       v.paused = false;
       return Promise.resolve();
+    },
+    pause() {
+      v.paused = true;
     },
     load() {},
     removeAttribute(_n: string) {
@@ -63,6 +71,7 @@ export function fakeVideo(init: Record<string, unknown> = {}): FakeVideo {
       v[k] = val;
     },
     get: (k) => v[k],
+    listenerCount: (t) => listeners.get(t)?.size ?? 0,
     playCalls: () => plays,
   };
 }

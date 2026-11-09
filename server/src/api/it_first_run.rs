@@ -9,7 +9,7 @@ use axum::Router;
 use serde_json::json;
 use tokio::sync::Barrier;
 
-use crate::api::test_support::{raw, send, test_app, TestApp};
+use crate::api::test_support::{raw, send, test_app, TestApp, PASSWORD};
 use crate::model::Permission;
 
 // A fresh server: no accounts at all. `test_app` seeds an owner, so the very
@@ -29,7 +29,7 @@ async fn register(app: &Router, email: &str, username: &str) -> (StatusCode, ser
         "POST",
         "/api/auth/register",
         None,
-        Some(json!({ "email": email, "username": username, "password": "s3cret12" })),
+        Some(json!({ "email": email, "username": username, "password": PASSWORD })),
     )
     .await
 }
@@ -120,7 +120,7 @@ async fn register_from(
         "POST",
         "/api/auth/register",
         None,
-        Some(json!({ "email": email, "username": username, "password": "s3cret12" })),
+        Some(json!({ "email": email, "username": username, "password": PASSWORD })),
         &[("x-forwarded-for", client)],
     )
     .await;
