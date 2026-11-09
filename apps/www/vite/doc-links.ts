@@ -12,6 +12,7 @@ export function isDocFile(path: string | undefined): boolean {
 }
 
 const ABSOLUTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|\/|#)/i;
+const GUIDE = new RegExp(String.raw`^${DOCS_DIR}/([\w-]+)\.md$`);
 
 /** A guide's link, as the site serves it. A link between guides becomes a
  *  `/docs` route, any other repository path a GitHub URL. Relative links
@@ -25,7 +26,7 @@ export function rewriteDocUrl(url: string, repoUrl: string): string {
   const resolved = posix.normalize(posix.join(DOCS_DIR, path)).replace(/\/$/, '');
   if (resolved.startsWith('..')) return url;
   if (resolved === DOCS_DIR) return `/docs${hash}`;
-  const guide = new RegExp(`^${DOCS_DIR}/([\\w-]+)\\.md$`).exec(resolved);
+  const guide = GUIDE.exec(resolved);
   if (guide) return guide[1] === 'README' ? `/docs${hash}` : `/docs/${guide[1]}${hash}`;
   return `${repoUrl}/blob/main/${resolved}${hash}`;
 }
