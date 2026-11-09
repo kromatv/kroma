@@ -1,7 +1,7 @@
 // One genre: every movie and show carrying it, in a poster grid with the
 // genre's hue as the header accent.
 
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import { genreLabel, genreOfSegment, hasGenre, sortTitles } from '@kromatv/core';
 import { Icon } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import { routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { posterWidth } from '#mobile/lib/theme';
 
-function isShow(entry: MediaItem | Show): entry is Show {
+function isShow(entry: MediaCard | Show): entry is Show {
   return 'seasonCount' in entry;
 }
 
@@ -35,8 +35,8 @@ function GenrePage({ name }: Readonly<{ name: string }>) {
   const catalogue = useQuery({
     queryKey: ['genreCatalogue'],
     staleTime: 10 * 60_000,
-    queryFn: async (): Promise<(MediaItem | Show)[]> => {
-      const [movies, shows] = await Promise.all([client.media.movies(), client.media.shows()]);
+    queryFn: async (): Promise<(MediaCard | Show)[]> => {
+      const [movies, shows] = await Promise.all([client.media.movieCards(), client.media.shows()]);
       return [...movies, ...shows];
     },
   });

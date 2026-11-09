@@ -10,10 +10,10 @@ use serde::Deserialize;
 use crate::api::error::json_error;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::{etag, visibility};
 use crate::db;
 use crate::i18n::ReqLocale;
-use crate::model::MediaCard;
+use crate::model::{show_card, MediaCard, MediaItem};
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -35,6 +35,7 @@ pub fn routes() -> Router<SharedState> {
         .route("/shows", get(list_shows))
         .route("/shows/{id}", get(get_show))
         .route("/items/{id}", get(get_item))
+        .route_layer(axum::middleware::from_fn(etag::revalidate))
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,7 +50,7 @@ pub enum ListView {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct MovieListQuery {
+pub struct ListQuery {
     pub library: Option<String>,
     pub view: Option<ListView>,
 }
@@ -103,7 +104,7 @@ pub async fn list_movies(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
-    Query(q): Query<MovieListQuery>,
+    Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
     let library = q.library;
     let mut items = query(&state.db, move |pool| {
@@ -113,26 +114,34 @@ pub async fn list_movies(
     })
     .await?;
     visibility::keep_items(&user, &mut items);
-    Ok(match q.view {
+    Ok(items_in_view(items, q.view))
+}
+
+/// `items` as JSON, each cut down to a [`MediaCard`] when the caller asked for
+/// `?view=card`.
+pub fn items_in_view(items: Vec<MediaItem>, view: Option<ListView>) -> Response {
+    match view {
         Some(ListView::Card) => {
             let cards: Vec<MediaCard> = items.into_iter().map(MediaCard::from).collect();
             Json(cards).into_response()
         }
         None => Json(items).into_response(),
-    })
+    }
 }
 
-/// `GET /api/shows` (optional `?library=`) → `Show[]`. Personalises each show's
-/// `progress` (series completion) for the calling account.
+/// `GET /api/shows` (optional `?library=`) → `Show[]`, without cast or crew with
+/// `?view=card`. Personalises each show's `progress` (series completion) for the
+/// calling account.
 pub async fn list_shows(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
-    Query(q): Query<LibraryQuery>,
+    Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
     let uid = user.id.clone();
+    let library = q.library;
     let mut shows = query(&state.db, move |pool| {
-        let mut shows = db::list_shows(&pool, q.library.as_deref())?;
+        let mut shows = db::list_shows(&pool, library.as_deref())?;
         let prog = db::show_progress(&pool, &uid).unwrap_or_default();
         for s in &mut shows {
             s.progress = prog.get(&s.id).copied();
@@ -142,6 +151,9 @@ pub async fn list_shows(
     })
     .await?;
     visibility::keep_shows(&user, &mut shows);
+    if matches!(q.view, Some(ListView::Card)) {
+        shows = shows.into_iter().map(show_card).collect();
+    }
     Ok(Json(shows).into_response())
 }
 

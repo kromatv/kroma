@@ -1,5 +1,6 @@
 import { domains } from './api/discover';
 import type { Domains } from './core/client';
+import { createRoute } from './core/http';
 import { createSessionScope } from './core/session';
 import { type ClientControls, createKromaClient, type KromaClient } from './kroma-client';
 
@@ -134,6 +135,7 @@ export function fakeClient(parts: PartialClient = {}): KromaClient {
   );
   const controls: ClientControls = {
     baseUrl: BASE,
+    route: createRoute(BASE),
     session: createSessionScope(),
     locale: undefined,
     setAuthToken: () => undefined,

@@ -4,9 +4,12 @@ import { readBoundedJson } from './body';
 import { type Concurrency, concurrencyGate } from './concurrency';
 import { buildPath, type PathParam, type PathParams } from './path';
 import { type Query, queryString } from './query';
+import { type Route, sendOnRoute } from './route';
 
 export interface KromaClientOptions {
   baseUrl: string;
+  /** Whether media URLs follow a direct route (default off), see `createRoute`. */
+  directMedia?: boolean;
   fetch?: typeof globalThis.fetch;
   authToken?: string;
   locale?: string;
@@ -41,6 +44,9 @@ export interface RequestOptions {
    * what a pre-auth handshake needs, and it is why the token exchange cannot
    * recurse. */
   auth?: AuthMode;
+  /** Send this to the configured base, never a direct route: what decides
+   * whether a direct route is worth taking cannot be asked down that route. */
+  canonical?: boolean;
 }
 
 export type AuthMode = 'public' | 'bearer';
@@ -65,6 +71,7 @@ interface Verb {
  * output type is what the caller gets, so a body the server did not shape never
  * reaches a caller as a lie. */
 export interface RequestContext {
+  /** The base a URL for a player or an image is built on. */
   readonly baseUrl: string;
   artworkScale?: () => number;
   /** The absolute URL, for what fetches itself: a `<video>` src, an `<img>`, the
@@ -104,7 +111,7 @@ export interface RequestContext {
 }
 
 export interface TransportConfig {
-  baseUrl: string;
+  route: Route;
   fetchFn: typeof globalThis.fetch;
   artworkScale?: () => number;
   token(): string | undefined;
@@ -156,34 +163,40 @@ function split(rest: readonly unknown[]) {
 /** The shared transport: path templates, auth and locale headers, the 64 MiB
  * body bound, one silent refresh per 401, and a zod parse of every JSON answer. */
 export function createRequestContext(config: TransportConfig): RequestContext {
-  const { baseUrl, fetchFn } = config;
+  const { route, fetchFn } = config;
   const underPolicy = concurrencyGate();
   const resolve = (template: string, options?: AnyOptions) =>
     `${buildPath(template, options?.params)}${queryString(options?.query)}`;
 
-  const fetchPath = (path: string, init?: RequestInit, auth: AuthMode = 'bearer') => {
+  const fetchPath = (
+    path: string,
+    init?: RequestInit,
+    auth: AuthMode = 'bearer',
+    canonical = false,
+  ) => {
     const headers = new Headers(init?.headers);
     const token = auth === 'public' ? undefined : config.token();
     const locale = config.locale();
     if (token) headers.set('Authorization', `Bearer ${token}`);
     if (locale) headers.set('Accept-Language', locale);
-    return fetchFn(`${baseUrl}/api${path}`, {
-      ...init,
-      headers,
-      signal: init?.signal ?? config.signal,
-    });
+    const send = (base: string, signal: AbortSignal | undefined) =>
+      fetchFn(`${base}/api${path}`, { ...init, headers, signal });
+    const signal = init?.signal ?? config.signal;
+    if (canonical) return send(route.canonical, signal ?? undefined);
+    return sendOnRoute(route, { method: init?.method ?? 'GET', signal }, send);
   };
 
   async function checked(
     path: string,
     init?: RequestInit,
-    auth: AuthMode = 'bearer',
+    options: { auth?: AuthMode; canonical?: boolean } = {},
     retried = false,
   ): Promise<Response> {
-    const res = await fetchPath(path, init, auth);
+    const auth = options.auth ?? 'bearer';
+    const res = await fetchPath(path, init, auth, options.canonical);
     if (res.ok) return res;
     if (res.status === 401 && !retried && auth !== 'public') {
-      if (await config.refresh()) return checked(path, init, auth, true);
+      if (await config.refresh()) return checked(path, init, options, true);
     }
     const body = await readBoundedJson(res, path).catch(() => undefined);
     throw new KromaApiError(
@@ -197,9 +210,9 @@ export function createRequestContext(config: TransportConfig): RequestContext {
     path: string,
     schema: ResponseSchema | undefined,
     init?: RequestInit,
-    auth?: AuthMode,
+    options?: AnyOptions,
   ) {
-    const res = await checked(path, init, auth);
+    const res = await checked(path, init, options);
     if (!schema) return undefined;
     const parsed = z.safeParse(schema, await readBoundedJson(res, path));
     if (!parsed.success) throw new KromaSchemaError(path, parsed.error.issues);
@@ -218,21 +231,23 @@ export function createRequestContext(config: TransportConfig): RequestContext {
               body: JSON.stringify(options.body),
             };
       return underPolicy(`${method} ${target}`, options, (signal) =>
-        decode(target, response, { method, ...body, signal }, options?.auth),
+        decode(target, response, { method, ...body, signal }, options),
       );
     }) as RequestContext['post'];
 
   return {
-    baseUrl,
+    get baseUrl() {
+      return route.media();
+    },
     artworkScale: config.artworkScale,
-    url: (template, ...args) => `${baseUrl}/api${resolve(template, args[0])}`,
+    url: (template, ...args) => `${route.media()}/api${resolve(template, args[0])}`,
     mediaTicket: config.mediaTicket,
     setMediaTicket: config.setMediaTicket,
     get: ((path: string, ...rest: unknown[]) => {
       const { response, options } = split(rest);
       const target = resolve(path, options);
       return underPolicy(`GET ${target}`, options, (signal) =>
-        decode(target, response, { headers: headersOf(options), signal }, options?.auth),
+        decode(target, response, { headers: headersOf(options), signal }, options),
       );
     }) as RequestContext['get'],
     post: verb('POST'),
@@ -253,7 +268,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
           body: file,
           signal: options?.signal,
         },
-        options?.auth,
+        options,
       );
     }) as RequestContext['upload'],
     blob: async (template, ...args) =>
@@ -261,7 +276,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
         await checked(
           resolve(template, args[0]),
           { headers: headersOf(args[0]), signal: args[0]?.signal },
-          args[0]?.auth,
+          args[0],
         )
       ).blob(),
     text: async (template, ...args) =>
@@ -269,7 +284,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
         await checked(
           resolve(template, args[0]),
           { headers: headersOf(args[0]), signal: args[0]?.signal },
-          args[0]?.auth,
+          args[0],
         )
       ).text(),
     send: (template, ...args) =>
@@ -277,6 +292,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
         resolve(template, args[0]),
         { headers: headersOf(args[0]), signal: args[0]?.signal },
         args[0]?.auth,
+        args[0]?.canonical,
       ),
     external: (absolute) => fetchFn(absolute),
   };

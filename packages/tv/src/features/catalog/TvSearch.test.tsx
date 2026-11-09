@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { DiscoverEntry, DiscoverResponse } from '@kromatv/client/discovery';
-import type { MediaItem, SearchResponse, Show } from '@kromatv/client/media';
+import type { MediaCard, MediaItem, SearchResponse, Show } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -66,7 +66,7 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 function mount({
   search = vi.fn(async () => found()),
   discover = vi.fn(async () => known()),
-  movies = [] as MediaItem[],
+  movies = [] as MediaCard[],
   shows = [] as Show[],
   requests = createSearchRequests(),
   voiceSearch = null,
@@ -74,7 +74,7 @@ function mount({
 }: {
   search?: () => Promise<SearchResponse>;
   discover?: () => Promise<DiscoverResponse>;
-  movies?: MediaItem[];
+  movies?: MediaCard[];
   shows?: Show[];
   requests?: SearchRequests;
   voiceSearch?: VoiceSearchBackend | null;

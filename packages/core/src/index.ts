@@ -4,6 +4,7 @@
 export * from './airdate';
 export * from './browse';
 export * from './compat';
+export * from './direct';
 export * from './discover';
 export * from './format';
 export * from './genre';

@@ -19,14 +19,23 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use candle_core::{Device, Tensor};
-use candle_transformers::models::bert::{BertModel, Config, DTYPE};
+use candle_core::{Device, Module, Tensor};
+use candle_nn::{embedding, Embedding};
+use candle_transformers::models::bert::{BertEncoder, Config, DTYPE};
+use candle_transformers::models::with_tracing::{layer_norm, LayerNorm};
+use kroma_weights::Rows;
 use tokenizers::Tokenizer;
 
 use super::Embedder;
 
+const WORDS: &str = "embeddings.word_embeddings.weight";
+
 pub struct MiniLmEmbedder {
-    model: BertModel,
+    words: Rows,
+    positions: Embedding,
+    token_types: Embedding,
+    norm: LayerNorm,
+    encoder: BertEncoder,
     tokenizer: Tokenizer,
     device: Device,
 }
@@ -45,15 +54,56 @@ impl MiniLmEmbedder {
         let tokenizer = Tokenizer::from_file(dir.join("tokenizer.json"))
             .map_err(|e| anyhow::anyhow!("load tokenizer.json: {e}"))?;
 
-        let vb = kroma_weights::var_builder(&dir.join("model.safetensors"), DTYPE, &device)
-            .context("read safetensors")?;
-        let model = BertModel::load(vb, &config).context("build BERT")?;
-
+        let weights = dir.join("model.safetensors");
+        let words = Rows::open(&weights, WORDS).context("read the word table")?;
+        anyhow::ensure!(
+            words.width() == config.hidden_size,
+            "the word table is {} wide, the model {}",
+            words.width(),
+            config.hidden_size
+        );
+        let vb =
+            kroma_weights::var_builder(&weights, DTYPE, &device).context("read safetensors")?;
+        let embeddings = vb.pp("embeddings");
         Ok(Self {
-            model,
+            words,
+            positions: embedding(
+                config.max_position_embeddings,
+                config.hidden_size,
+                embeddings.pp("position_embeddings"),
+            )?,
+            token_types: embedding(
+                config.type_vocab_size,
+                config.hidden_size,
+                embeddings.pp("token_type_embeddings"),
+            )?,
+            norm: layer_norm(
+                config.hidden_size,
+                config.layer_norm_eps,
+                embeddings.pp("LayerNorm"),
+            )?,
+            encoder: BertEncoder::load(vb.pp("encoder"), &config).context("build BERT")?,
             tokenizer,
             device,
         })
+    }
+
+    fn sequence(&self, ids: &[u32]) -> Result<Tensor> {
+        let tokens = Tensor::new(ids, &self.device)?.unsqueeze(0)?;
+        let words = self.words.gather(ids, &self.device)?.unsqueeze(0)?;
+        let token_types = self.token_types.forward(&tokens.zeros_like()?)?;
+        let positions = Tensor::new(&(0..ids.len() as u32).collect::<Vec<_>>()[..], &self.device)?;
+        let embedded =
+            (&words + token_types)?.broadcast_add(&self.positions.forward(&positions)?)?;
+        let embedded = self.norm.forward(&embedded)?;
+        let mask = tokens
+            .ones_like()?
+            .unsqueeze(1)?
+            .unsqueeze(1)?
+            .to_dtype(DTYPE)?;
+        let mask = (mask.ones_like()? - &mask)?
+            .broadcast_mul(&Tensor::try_from(f32::MIN)?.to_dtype(DTYPE)?)?;
+        Ok(self.encoder.forward(&embedded, &mask)?)
     }
 
     fn embed_inner(&self, text: &str) -> Result<Vec<f32>> {
@@ -61,15 +111,9 @@ impl MiniLmEmbedder {
             .tokenizer
             .encode(text, true)
             .map_err(|e| anyhow::anyhow!("tokenize: {e}"))?;
-        let ids = enc.get_ids();
-
-        // [1, seq_len] a single, unpadded sequence.
-        let tokens = Tensor::new(ids, &self.device)?.unsqueeze(0)?;
-        let token_type = tokens.zeros_like()?;
-        let mask = tokens.ones_like()?;
 
         // [1, seq_len, 384] → mean-pool over the sequence → [384].
-        let out = self.model.forward(&tokens, &token_type, Some(&mask))?;
+        let out = self.sequence(enc.get_ids())?;
         let pooled = out.mean(1)?.squeeze(0)?;
         let mut v: Vec<f32> = pooled.to_vec1()?;
         super::l2_normalize(&mut v);
@@ -106,6 +150,48 @@ impl Embedder for MiniLmEmbedder {
 mod tests {
     use super::*;
     use crate::Embedder;
+
+    #[test]
+    #[ignore = "needs the MiniLM model files (models/minilm) on disk"]
+    fn minilm_embeds_as_candles_bert_model_does() {
+        use candle_transformers::models::bert::BertModel;
+
+        let dir = crate::model::place().dir;
+        let e = MiniLmEmbedder::load(&dir).expect("load MiniLM model");
+        let config: Config =
+            serde_json::from_str(&std::fs::read_to_string(dir.join("config.json")).unwrap())
+                .unwrap();
+        let vb = kroma_weights::var_builder(&dir.join("model.safetensors"), DTYPE, &Device::Cpu)
+            .unwrap();
+        let whole = BertModel::load(vb, &config).unwrap();
+        let ids = e
+            .tokenizer
+            .encode(
+                "un film de Noël chaleureux about santa and his family",
+                true,
+            )
+            .unwrap()
+            .get_ids()
+            .to_vec();
+        let tokens = Tensor::new(&ids[..], &Device::Cpu)
+            .unwrap()
+            .unsqueeze(0)
+            .unwrap();
+        let expected = whole
+            .forward(
+                &tokens,
+                &tokens.zeros_like().unwrap(),
+                Some(&tokens.ones_like().unwrap()),
+            )
+            .unwrap();
+
+        let gathered = e.sequence(&ids).unwrap();
+
+        assert_eq!(
+            gathered.flatten_all().unwrap().to_vec1::<f32>().unwrap(),
+            expected.flatten_all().unwrap().to_vec1::<f32>().unwrap()
+        );
+    }
 
     /// End-to-end runtime check: loads the real model and verifies the output is a
     /// 384-d unit vector AND that it ranks *meaning*, not words the whole reason

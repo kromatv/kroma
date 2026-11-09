@@ -3,7 +3,7 @@
 // the top so every screen routes titles the same way.
 
 import type { KromaClient } from '@kromatv/client';
-import type { ContinueItem, MediaItem, SectionItem, Show } from '@kromatv/client/media';
+import type { ContinueItem, MediaCard, SectionItem, Show } from '@kromatv/client/media';
 import { episodeTag, sizedImageUrl } from '@kromatv/core';
 import {
   Box,
@@ -33,7 +33,7 @@ export interface CardModel {
   watched?: boolean;
 }
 
-export function movieCard(item: MediaItem, client: KromaClient, width: number): CardModel {
+export function movieCard(item: MediaCard, client: KromaClient, width: number): CardModel {
   return {
     key: item.id,
     title: item.metadata?.title ?? item.title,

@@ -92,6 +92,25 @@ describe('the module list', () => {
     expect(modules[0]?.id).toBe('tv.kroma.torrents');
   });
 
+  it("reads a module's frontend: the revision its files are served under and what its entry reads", async () => {
+    const frontend = { revision: '3f2a9c1d8e7b6a50', shared: { react: ['lazy'] } };
+    const { client } = recordingClient(() => ({ json: [{ ...TORRENTS, frontend }] }));
+
+    const modules = await client.modules.list();
+
+    expect(modules[0]?.frontend).toEqual(frontend);
+  });
+
+  it('keeps a module whose frontend block it cannot read, as one without a frontend', async () => {
+    const frontend = { revision: '../../etc', shared: { react: 'everything' } };
+    const { client } = recordingClient(() => ({ json: [{ ...TORRENTS, frontend }] }));
+
+    const modules = await client.modules.list();
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0]?.frontend).toBeUndefined();
+  });
+
   it('rejects a body that is not a list at all', async () => {
     const { client } = recordingClient(() => ({ json: { modules: [] } }));
 

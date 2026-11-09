@@ -139,8 +139,14 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       return;
     }
     let cancelled = false;
-    client.session
-      .sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
+    const settled = client.session.currentExchange<User>();
+    const exchanged =
+      settled?.user.id === active.user.id
+        ? Promise.resolve(settled)
+        : client.session.sharedTokenExchange(() =>
+            client.accounts.exchangeToken(active.accessToken),
+          );
+    exchanged
       .then((res) => {
         if (cancelled) return;
         adopt(active, res.token, res.user, res.mediaTicket);

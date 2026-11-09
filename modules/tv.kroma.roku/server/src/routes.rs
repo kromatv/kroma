@@ -151,7 +151,10 @@ async fn home(AuthUser(user): AuthUser, headers: HeaderMap) -> Result<Response, 
         tokio::join!(core.get_or_null("/continue"), core.get_or_null("/home"));
     let mut screen = rows::home(strings, &continuing, &sections);
     if screen.len() <= 1 {
-        let (movies, shows) = tokio::join!(core.get_or_null("/movies"), core.get_or_null("/shows"));
+        let (movies, shows) = tokio::join!(
+            core.get_or_null("/movies?view=card"),
+            core.get_or_null("/shows")
+        );
         screen.extend(rows::library(strings, &movies, &shows));
     }
     Ok(Json(json!({ "rows": screen })).into_response())

@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crate::model::{Metadata, SectionItem, VideoStream};
+use crate::db::HeroCandidate;
 
 /// Milliseconds in a day: the quantum for both the scoring clock and the
 /// rotation (see the module docs on staying stable within a day).
@@ -30,12 +30,12 @@ const W_CINEMA: f32 = 0.10;
 /// keeps one entry, so this partitions with `select_nth_unstable_by` and sorts
 /// the survivors, and it hands back borrows so nothing is cloned on the way.
 pub(super) fn rank<'a>(
-    candidates: &[&'a SectionItem],
+    candidates: &[&'a HeroCandidate],
     taste: &HashMap<String, f32>,
     trend: &HashMap<String, f32>,
     now_ms: i64,
     top: usize,
-) -> Vec<&'a SectionItem> {
+) -> Vec<&'a HeroCandidate> {
     let head = top.min(candidates.len());
     if head == 0 {
         return Vec::new();
@@ -44,7 +44,7 @@ pub(super) fn rank<'a>(
     // barely separate titles, so spread them to a usable 0..1.
     let vals: Vec<f32> = candidates
         .iter()
-        .filter_map(|e| taste.get(e.id()))
+        .filter_map(|e| taste.get(&e.id))
         .copied()
         .collect();
     let (lo, hi) = vals
@@ -53,12 +53,12 @@ pub(super) fn rank<'a>(
     let spread = hi - lo;
     let norm = (vals.len() > 1 && spread > f32::EPSILON).then_some((lo, spread));
 
-    let mut scored: Vec<(&SectionItem, f32)> = candidates
+    let mut scored: Vec<(&HeroCandidate, f32)> = candidates
         .iter()
         .map(|e| (*e, blend(e, taste, trend, now_ms, norm)))
         .collect();
-    let by_rank = |a: &(&SectionItem, f32), b: &(&SectionItem, f32)| {
-        b.1.total_cmp(&a.1).then_with(|| a.0.id().cmp(b.0.id()))
+    let by_rank = |a: &(&HeroCandidate, f32), b: &(&HeroCandidate, f32)| {
+        b.1.total_cmp(&a.1).then_with(|| a.0.id.cmp(&b.0.id))
     };
     if head < scored.len() {
         scored.select_nth_unstable_by(head - 1, by_rank);
@@ -74,18 +74,18 @@ pub(super) fn rank<'a>(
 // no embedding yet must not eat a flat `W_TASTE` haircut). `taste_norm` is the
 // pool's `(lo, spread)`, `None` when the pool has no usable spread to stretch.
 fn blend(
-    e: &SectionItem,
+    e: &HeroCandidate,
     taste: &HashMap<String, f32>,
     trend: &HashMap<String, f32>,
     now_ms: i64,
     taste_norm: Option<(f32, f32)>,
 ) -> f32 {
     let mut sum = W_QUALITY * quality(e)
-        + W_FRESH * freshness(added_at(e), now_ms)
-        + W_TREND * trend.get(e.id()).copied().unwrap_or(0.0)
-        + W_CINEMA * cinematic(video(e));
+        + W_FRESH * freshness(&e.added_at, now_ms)
+        + W_TREND * trend.get(&e.id).copied().unwrap_or(0.0)
+        + W_CINEMA * cinematic(e.width, e.hdr);
     let mut weight = W_QUALITY + W_FRESH + W_TREND + W_CINEMA;
-    if let (Some((lo, spread)), Some(v)) = (taste_norm, taste.get(e.id())) {
+    if let (Some((lo, spread)), Some(v)) = (taste_norm, taste.get(&e.id)) {
         sum += W_TASTE * (v - lo) / spread;
         weight += W_TASTE;
     }
@@ -93,17 +93,13 @@ fn blend(
 }
 
 /// The hero needs art and a synopsis to render.
-pub(super) fn presentable(e: &SectionItem) -> bool {
-    meta(e).is_some_and(|m| {
-        m.backdrop_url.is_some() && m.overview.as_deref().is_some_and(|o| !o.is_empty())
-    })
+pub(super) fn presentable(e: &HeroCandidate) -> bool {
+    e.has_backdrop && e.has_overview
 }
 
 // TMDB rating scaled to 0..1; unrated titles sit at a neutral 0.5.
-fn quality(e: &SectionItem) -> f32 {
-    meta(e)
-        .and_then(|m| m.rating)
-        .map_or(0.5, |r| (r / 10.0).clamp(0.0, 1.0))
+fn quality(e: &HeroCandidate) -> f32 {
+    e.rating.map_or(0.5, |r| (r / 10.0).clamp(0.0, 1.0))
 }
 
 // `0.5 ^ (age / half-life)`: 1.0 when just added, 0.5 after two weeks, ~0 for
@@ -118,13 +114,12 @@ fn freshness(added_at: &str, now_ms: i64) -> f32 {
 }
 
 // Showcase bonus: 4K counts more than HDR; both stack to 1.0.
-fn cinematic(v: Option<&VideoStream>) -> f32 {
-    let Some(v) = v else { return 0.0 };
+fn cinematic(width: u32, hdr: bool) -> f32 {
     let mut score = 0.0;
-    if v.width.unwrap_or(0) >= 3840 {
+    if width >= 3840 {
         score += 0.6;
     }
-    if v.hdr {
+    if hdr {
         score += 0.4;
     }
     score
@@ -146,52 +141,30 @@ fn fnv1a(s: &str) -> u64 {
     h
 }
 
-fn meta(e: &SectionItem) -> Option<&Metadata> {
-    match e {
-        SectionItem::Movie { item } => item.metadata.as_ref(),
-        SectionItem::Show { show } => show.metadata.as_ref(),
-    }
-}
-
-fn video(e: &SectionItem) -> Option<&VideoStream> {
-    match e {
-        SectionItem::Movie { item } => item.video.as_ref(),
-        SectionItem::Show { show } => show.video.as_ref(),
-    }
-}
-
-fn added_at(e: &SectionItem) -> &str {
-    match e {
-        SectionItem::Movie { item } => &item.added_at,
-        SectionItem::Show { show } => &show.added_at,
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::super::fixtures::{iso, meta, movie, stream, NOW_MS};
+    use super::super::fixtures::{candidate, iso, shown, NOW_MS};
     use super::*;
 
     // Rank the whole pool (the tests assert on full orderings).
     fn ranked_ids(
-        refs: &[&SectionItem],
+        refs: &[&HeroCandidate],
         taste: &HashMap<String, f32>,
         trend: &HashMap<String, f32>,
     ) -> Vec<String> {
         rank(refs, taste, trend, NOW_MS, refs.len())
             .iter()
-            .map(|e| e.id().to_string())
+            .map(|e| e.id.clone())
             .collect()
     }
 
     // Two interchangeable titles: same rating, same age, no video, no trend.
-    fn twin(id: &str) -> SectionItem {
-        movie(
-            id,
-            Some(meta(Some(7.0), true, true)),
-            &iso(30 * DAY_MS),
-            None,
-        )
+    fn twin(id: &str) -> HeroCandidate {
+        HeroCandidate {
+            rating: Some(7.0),
+            added_at: iso(30 * DAY_MS),
+            ..shown(id)
+        }
     }
 
     #[test]
@@ -209,41 +182,37 @@ mod tests {
 
     #[test]
     fn cinematic_rewards_4k_and_hdr() {
-        assert_eq!(cinematic(None), 0.0);
-        assert_eq!(cinematic(Some(&stream(1920, false))), 0.0);
-        assert_eq!(cinematic(Some(&stream(3840, false))), 0.6);
-        assert!((cinematic(Some(&stream(3840, true))) - 1.0).abs() < f32::EPSILON);
+        assert_eq!(cinematic(0, false), 0.0);
+        assert_eq!(cinematic(1920, false), 0.0);
+        assert_eq!(cinematic(3840, false), 0.6);
+        assert!((cinematic(3840, true) - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn quality_is_neutral_when_unrated() {
-        let rated = movie("a", Some(meta(Some(8.0), true, true)), "t", None);
-        let unrated = movie("b", Some(meta(None, true, true)), "t", None);
+        let rated = HeroCandidate {
+            rating: Some(8.0),
+            ..shown("a")
+        };
+        let unrated = shown("b");
         assert!((quality(&rated) - 0.8).abs() < f32::EPSILON);
         assert!((quality(&unrated) - 0.5).abs() < f32::EPSILON);
     }
 
     #[test]
     fn presentable_requires_backdrop_and_overview() {
-        assert!(presentable(&movie(
-            "a",
-            Some(meta(None, true, true)),
-            "t",
-            None
-        )));
-        assert!(!presentable(&movie(
-            "b",
-            Some(meta(None, false, true)),
-            "t",
-            None
-        )));
-        assert!(!presentable(&movie(
-            "c",
-            Some(meta(None, true, false)),
-            "t",
-            None
-        )));
-        assert!(!presentable(&movie("d", None, "t", None)));
+        let no_art = HeroCandidate {
+            has_backdrop: false,
+            ..shown("b")
+        };
+        let no_synopsis = HeroCandidate {
+            has_overview: false,
+            ..shown("c")
+        };
+        assert!(presentable(&shown("a")));
+        assert!(!presentable(&no_art));
+        assert!(!presentable(&no_synopsis));
+        assert!(!presentable(&candidate("d")));
     }
 
     #[test]
@@ -260,19 +229,19 @@ mod tests {
 
     #[test]
     fn rank_prefers_fresh_high_quality_cinematic() {
-        let winner = movie(
-            "new",
-            Some(meta(Some(8.5), true, true)),
-            &iso(DAY_MS),
-            Some(stream(3840, true)),
-        );
-        let loser = movie(
-            "old",
-            Some(meta(Some(5.0), true, true)),
-            &iso(400 * DAY_MS),
-            None,
-        );
-        let refs: Vec<&SectionItem> = vec![&loser, &winner];
+        let winner = HeroCandidate {
+            rating: Some(8.5),
+            added_at: iso(DAY_MS),
+            width: 3840,
+            hdr: true,
+            ..shown("new")
+        };
+        let loser = HeroCandidate {
+            rating: Some(5.0),
+            added_at: iso(400 * DAY_MS),
+            ..shown("old")
+        };
+        let refs: Vec<&HeroCandidate> = vec![&loser, &winner];
         assert_eq!(
             ranked_ids(&refs, &HashMap::new(), &HashMap::new())[0],
             "new"
@@ -282,7 +251,7 @@ mod tests {
     #[test]
     fn rank_uses_taste_to_separate_equal_titles() {
         let (a, b) = (twin("a"), twin("b"));
-        let refs: Vec<&SectionItem> = vec![&a, &b];
+        let refs: Vec<&HeroCandidate> = vec![&a, &b];
         let taste: HashMap<String, f32> = [("a".to_string(), 0.31), ("b".to_string(), 0.62)].into();
         assert_eq!(ranked_ids(&refs, &taste, &HashMap::new())[0], "b");
         // Without taste the tie breaks on id instead.
@@ -293,7 +262,7 @@ mod tests {
     fn rank_renormalizes_taste_per_candidate() {
         // Same title three times over; only a and c have been embedded.
         let (a, b, c) = (twin("a"), twin("b"), twin("c"));
-        let refs: Vec<&SectionItem> = vec![&a, &b, &c];
+        let refs: Vec<&HeroCandidate> = vec![&a, &b, &c];
         let taste: HashMap<String, f32> = [("a".to_string(), 0.1), ("c".to_string(), 0.9)].into();
         // c wins on taste; b, which the embedder has no vector for, is judged on
         // the signals it *does* have rather than taking a flat W_TASTE haircut,
@@ -304,7 +273,7 @@ mod tests {
     #[test]
     fn rank_uses_trending_signal() {
         let (a, b) = (twin("a"), twin("b"));
-        let refs: Vec<&SectionItem> = vec![&a, &b];
+        let refs: Vec<&HeroCandidate> = vec![&a, &b];
         let trend: HashMap<String, f32> = [("b".to_string(), 1.0)].into();
         assert_eq!(ranked_ids(&refs, &HashMap::new(), &trend)[0], "b");
     }
@@ -312,10 +281,10 @@ mod tests {
     #[test]
     fn rank_returns_only_the_requested_head() {
         let (a, b, c) = (twin("a"), twin("b"), twin("c"));
-        let refs: Vec<&SectionItem> = vec![&c, &b, &a];
+        let refs: Vec<&HeroCandidate> = vec![&c, &b, &a];
         // The partial sort keeps the same winners the full sort would, in order.
         let head = rank(&refs, &HashMap::new(), &HashMap::new(), NOW_MS, 2);
-        assert_eq!(head.iter().map(|e| e.id()).collect::<Vec<_>>(), ["a", "b"]);
+        assert_eq!(head.iter().map(|e| e.id.as_str()).collect::<Vec<_>>(), ["a", "b"]);
         // Asking for more than the pool holds is capped, asking for none is empty.
         assert_eq!(
             rank(&refs, &HashMap::new(), &HashMap::new(), NOW_MS, 99).len(),

@@ -9,6 +9,7 @@ import type { MediaCard, MediaItem, Show } from '@kromatv/client/media';
 import { createQueryClient, type QueryClient } from '@kromatv/client/query';
 import type { SubtitleId } from '@kromatv/client/subtitles';
 import { deviceLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
+import { withLocalAddressSpace } from '@kromatv/ui';
 
 declare global {
   interface Window {
@@ -52,7 +53,12 @@ export function isAuthed(): boolean {
 /** Request state and query factories belong to one router, including SSR. */
 export function createWebRuntime(options: { client?: QueryClient } = {}) {
   const client =
-    options.client ?? createQueryClient({ baseUrl: apiBase(), locale: deviceLocale() });
+    options.client ??
+    createQueryClient({
+      baseUrl: apiBase(),
+      locale: deviceLocale(),
+      fetch: withLocalAddressSpace(globalThis.fetch.bind(globalThis)),
+    });
   const queryClient = makeQueryClient();
   async function exchangeStoredSession(): Promise<string | undefined> {
     const active = loadSession();

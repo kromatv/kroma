@@ -333,6 +333,12 @@
       }
     },
     {
+      "files": ["packages/core/src/direct/direct.fixture.ts"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
       "files": ["packages/core/src/discover.ts"],
       "rules": {
         "sonarjs/no-clear-text-protocols": "off"

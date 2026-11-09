@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -14,6 +14,7 @@ use crate::{Grant, HostError, Request, Response, Settings};
 const NO_DATABASE: &str = "this module declares no storage";
 const NO_PROCESSES: &str = "this module may not start programs";
 const NO_LAN: &str = "this module declares no discovery";
+const FETCHES_KEPT: usize = 256;
 
 pub(crate) struct State {
     wasi: WasiCtx,
@@ -28,7 +29,7 @@ pub(crate) struct State {
     pub(crate) media: Option<Arc<dyn Media>>,
     connections: HashMap<u32, Box<dyn SqlConnection>>,
     next_connection: u32,
-    pub(crate) fetches: Vec<FetchRecord>,
+    pub(crate) fetches: VecDeque<FetchRecord>,
     pub(crate) cpu_at_start: Duration,
     pub(crate) cpu_budget: Duration,
 }
@@ -49,7 +50,7 @@ impl State {
             media: grant.media,
             connections: HashMap::new(),
             next_connection: 0,
-            fetches: Vec::new(),
+            fetches: VecDeque::new(),
             cpu_at_start: Duration::ZERO,
             cpu_budget: grant.limits.cpu_budget,
         })
@@ -60,7 +61,10 @@ impl State {
             Ok(_) => Outcome::Allowed,
             Err(reason) => Outcome::Blocked(reason.clone()),
         };
-        self.fetches.push(FetchRecord {
+        if self.fetches.len() == FETCHES_KEPT {
+            self.fetches.pop_front();
+        }
+        self.fetches.push_back(FetchRecord {
             call: FetchCall {
                 purpose: request.purpose.clone(),
                 method: request.method.clone(),

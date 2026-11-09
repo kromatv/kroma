@@ -15,8 +15,23 @@ fn hydrate(pool: &Pool, ranked: &[(String, f32)]) -> Result<Vec<MediaItem>> {
 /// "For You" as render-ready movies. Over-fetches since show ids drop during
 /// hydration, then trims to `n`.
 pub fn recommended_for(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<MediaItem>> {
-    let ranked = for_you(pool, user_id, n + 8)?;
-    let mut items = hydrate(pool, &ranked)?;
+    recommended_from(pool, &for_you(pool, user_id, ranking_depth(n))?, n)
+}
+
+/// How many neighbours a "For You" or themed row ranks before hydration drops
+/// the ids that are not movies.
+pub fn ranking_depth(n: usize) -> usize {
+    n + 8
+}
+
+/// How many neighbours "More like this" ranks before its genre guard prunes them.
+pub fn similar_depth(n: usize) -> usize {
+    (n + 8).max(48)
+}
+
+/// [`recommended_for`] over a ranking already computed, nearest first.
+pub fn recommended_from(pool: &Pool, ranked: &[(String, f32)], n: usize) -> Result<Vec<MediaItem>> {
+    let mut items = hydrate(pool, ranked)?;
     items.truncate(n);
     Ok(items)
 }
@@ -24,7 +39,16 @@ pub fn recommended_for(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<Media
 /// "More like this": [`similar`] + a genre-overlap guard (the lexical embedder is
 /// weakly discriminative item↔item) + hydration.
 pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> {
-    let raw = similar(pool, id, (n + 8).max(48))?;
+    similar_items_from(pool, id, similar(pool, id, similar_depth(n))?, n)
+}
+
+/// [`similar_items`] over neighbours already ranked, nearest first.
+pub fn similar_items_from(
+    pool: &Pool,
+    id: &str,
+    raw: Vec<(String, f32)>,
+    n: usize,
+) -> Result<Vec<MediaItem>> {
     let guarded = genre_guard(pool, id, raw.clone());
     // The guard can prune below `n` (few neighbours share a genre); top up from
     // the unguarded neighbours so it still fills when candidates exist.
@@ -73,13 +97,18 @@ pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> 
 /// noise (so an off-library query like "christmas" returns few/none rather than
 /// random classics).
 pub fn themed_items(pool: &Pool, query: &[f32], n: usize, floor: f32) -> Result<Vec<MediaItem>> {
-    let ranked: Vec<(String, f32)> = themed(pool, query, n + 8)?
-        .into_iter()
-        .filter(|(_, s)| *s >= floor)
-        .collect();
-    let mut items = hydrate(pool, &ranked)?;
-    items.truncate(n);
-    Ok(items)
+    themed_items_from(pool, themed(pool, query, ranking_depth(n))?, n, floor)
+}
+
+/// [`themed_items`] over a ranking already computed, nearest first.
+pub fn themed_items_from(
+    pool: &Pool,
+    ranked: Vec<(String, f32)>,
+    n: usize,
+    floor: f32,
+) -> Result<Vec<MediaItem>> {
+    let ranked: Vec<(String, f32)> = ranked.into_iter().filter(|(_, s)| *s >= floor).collect();
+    recommended_from(pool, &ranked, n)
 }
 
 #[cfg(test)]

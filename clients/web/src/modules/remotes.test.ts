@@ -1,20 +1,20 @@
-import { createKromaClient } from '@kromatv/client';
-
-const remoteClient = createKromaClient({ baseUrl: 'http://localhost:3000' });
-const setSessionToken = remoteClient.setAuthToken;
-
 import { ModuleRegistry, SHARED_GLOBAL } from '@kromatv/module-sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRuntimeRemotes, type RemoteLoaders } from './remotes';
 
 const WIN = { location: { origin: 'http://localhost:3000' } };
 
-function stubFetch(impl: (url: string) => Response | Promise<Response>) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => impl(url)),
-  );
-}
+const listing = (...modules: object[]) => vi.fn(async () => modules as never);
+
+const withRemote = (id: string) => ({
+  id,
+  enabled: true,
+  feRemote: { module: './remoteEntry.js' },
+});
+
+const oneRemote = (id: string) => listing(withRemote(id));
+
+const nothing = listing();
 
 function stubBrowserGlobals() {
   vi.stubGlobal('window', WIN);
@@ -30,11 +30,6 @@ function loaders(overrides: Partial<RemoteLoaders> = {}): RemoteLoaders {
   };
 }
 
-const oneRemote = (id: string) =>
-  new Response(JSON.stringify([{ id, enabled: true, feRemote: { module: './remoteEntry.js' } }]), {
-    status: 200,
-  });
-
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -46,67 +41,53 @@ afterEach(() => {
 
 describe('isLoadedRemote / forgetRemote', () => {
   it('reports false for a never-loaded module', () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(nothing);
     expect(remotes.isLoadedRemote('tv.kroma.ghost')).toBe(false);
   });
 
   it('forgetRemote is a no-op for an unknown id', () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(nothing);
     expect(() => remotes.forgetRemote('tv.kroma.ghost')).not.toThrow();
   });
 });
 
 describe('loadRuntimeRemotes (deterministic branches)', () => {
   it('is a no-op during SSR (no window)', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('ssr'));
     await expect(remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders())).resolves.toEqual([]);
   });
 
   it('returns [] when discovery throws', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
-    stubBrowserGlobals();
-    stubFetch(() => {
-      throw new Error('network down');
-    });
-    await expect(remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders())).resolves.toEqual([]);
-  });
-
-  it('returns [] when /api/modules is not OK', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
-    stubBrowserGlobals();
-    stubFetch(() => new Response('nope', { status: 500 }));
-    await expect(remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders())).resolves.toEqual([]);
-  });
-
-  it('returns [] when no installed module ships a feRemote', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
-    stubBrowserGlobals();
-    stubFetch(
-      () =>
-        new Response(JSON.stringify([{ id: 'tv.kroma.plain', enabled: true }]), { status: 200 }),
+    const remotes = createRuntimeRemotes(
+      vi.fn(async () => Promise.reject(new Error('network down'))),
     );
+    stubBrowserGlobals();
     await expect(remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders())).resolves.toEqual([]);
   });
 
-  it('skips a disabled module that ships a feRemote', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+  it('returns [] when no installed module ships a frontend', async () => {
+    const remotes = createRuntimeRemotes(listing({ id: 'tv.kroma.plain', enabled: true }));
     stubBrowserGlobals();
-    stubFetch(
-      () =>
-        new Response(
-          JSON.stringify([{ id: 'tv.kroma.off', enabled: false, feRemote: { module: './P' } }]),
-          { status: 200 },
-        ),
+    await expect(remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders())).resolves.toEqual([]);
+  });
+
+  it('skips a disabled module that ships a frontend', async () => {
+    const remotes = createRuntimeRemotes(
+      listing({
+        id: 'tv.kroma.off',
+        enabled: false,
+        frontend: { revision: '3f2a9c1d8e7b6a50' },
+      }),
     );
+    stubBrowserGlobals();
     await expect(remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders())).resolves.toEqual([]);
   });
 });
 
 describe('loadRuntimeRemotes (the host contract)', () => {
   it('returns [] and loads nothing when the shared modules cannot be provided', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('sharedFail'));
     stubBrowserGlobals();
-    stubFetch(() => oneRemote('sharedFail'));
     const importRemote = vi.fn(async () => ({}));
     const result = await remotes.loadRuntimeRemotes(
       new ModuleRegistry(),
@@ -119,9 +100,8 @@ describe('loadRuntimeRemotes (the host contract)', () => {
   });
 
   it('fills the shared global before it imports the entry, from the server origin', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('order'));
     stubBrowserGlobals();
-    stubFetch(() => oneRemote('order'));
     const seen: string[] = [];
     const importRemote = vi.fn(async (entry: string) => {
       seen.push(entry, JSON.stringify(Reflect.get(globalThis, SHARED_GLOBAL)));
@@ -133,28 +113,9 @@ describe('loadRuntimeRemotes (the host contract)', () => {
     expect(seen[1]).toContain('"react"');
   });
 
-  it('carries the session bearer into discovery', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
-    setSessionToken('tok123');
-    stubBrowserGlobals();
-    const inits: RequestInit[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init: RequestInit) => {
-        inits.push(init);
-        return new Response('[]', { status: 200 });
-      }),
-    );
-    await remotes.loadRuntimeRemotes(new ModuleRegistry(), loaders());
-    const headers = inits[0]?.headers as Record<string, string> | undefined;
-    expect(headers?.Authorization).toBe('Bearer tok123');
-    setSessionToken(undefined);
-  });
-
   it('leaves a module the registry already holds alone', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('dup'));
     stubBrowserGlobals();
-    stubFetch(() => oneRemote('dup'));
     const reg = new ModuleRegistry();
     reg.register({ id: 'dup', version: '1.0.0' } as never);
     const importRemote = vi.fn(async () => ({ default: { id: 'dup', version: '1.0.0' } as never }));
@@ -162,9 +123,8 @@ describe('loadRuntimeRemotes (the host contract)', () => {
   });
 
   it('registers a runtime remote and returns its id', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('runtimeDemo'));
     stubBrowserGlobals();
-    stubFetch(() => oneRemote('runtimeDemo'));
     const importRemote = vi.fn(async () => ({
       default: { id: 'runtimeDemo', version: '1.0.0' } as never,
     }));
@@ -180,18 +140,8 @@ describe('loadRuntimeRemotes (the host contract)', () => {
   });
 
   it('keeps a module whose dependency arrives in the same batch, whatever the order', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(listing(withRemote('needsBase'), withRemote('base')));
     stubBrowserGlobals();
-    stubFetch(
-      () =>
-        new Response(
-          JSON.stringify([
-            { id: 'needsBase', enabled: true, feRemote: { module: './remoteEntry.js' } },
-            { id: 'base', enabled: true, feRemote: { module: './remoteEntry.js' } },
-          ]),
-          { status: 200 },
-        ),
-    );
     const importRemote = vi.fn(async (entry: string) =>
       entry.includes('needsBase')
         ? { default: { id: 'needsBase', version: '1.0.0', dependencies: { base: '*' } } as never }
@@ -205,9 +155,8 @@ describe('loadRuntimeRemotes (the host contract)', () => {
   });
 
   it('rolls back a remote whose deps do not resolve', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('runtimeBad'));
     stubBrowserGlobals();
-    stubFetch(() => oneRemote('runtimeBad'));
     const importRemote = vi.fn(async () => ({
       default: { id: 'runtimeBad', version: '1.0.0', dependencies: { nope: '*' } } as never,
     }));
@@ -220,9 +169,8 @@ describe('loadRuntimeRemotes (the host contract)', () => {
   });
 
   it('returns [] when a remote fails to load, and frees it for a retry', async () => {
-    const remotes = createRuntimeRemotes(remoteClient);
+    const remotes = createRuntimeRemotes(oneRemote('runtimeErr'));
     stubBrowserGlobals();
-    stubFetch(() => oneRemote('runtimeErr'));
     const importRemote = vi.fn(async () => Promise.reject(new Error('boom')));
 
     const reg = new ModuleRegistry();
@@ -233,9 +181,8 @@ describe('loadRuntimeRemotes (the host contract)', () => {
 
 it('loads the same remote into independent registries for different hosts', async () => {
   stubBrowserGlobals();
-  stubFetch(() => oneRemote('owned'));
-  const a = createRuntimeRemotes(remoteClient);
-  const b = createRuntimeRemotes(remoteClient);
+  const a = createRuntimeRemotes(oneRemote('owned'));
+  const b = createRuntimeRemotes(oneRemote('owned'));
   const regA = new ModuleRegistry();
   const regB = new ModuleRegistry();
   const imports = vi.fn(async () => ({ default: { id: 'owned', version: '1.0.0' } }));
@@ -250,8 +197,7 @@ it('loads the same remote into independent registries for different hosts', asyn
 
 it('does not adopt a remote that finishes importing after its host leaves', async () => {
   stubBrowserGlobals();
-  stubFetch(() => oneRemote('late'));
-  const remotes = createRuntimeRemotes(remoteClient);
+  const remotes = createRuntimeRemotes(oneRemote('late'));
   const registry = new ModuleRegistry();
   let resolveImport: (value: { default: { id: string; version: string } }) => void = () => {};
   const importing = new Promise<{ default: { id: string; version: string } }>((resolve) => {

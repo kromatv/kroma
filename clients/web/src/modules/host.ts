@@ -26,7 +26,9 @@ async function apiGet<T>(client: KromaClient, path: string): Promise<T> {
  *  #185). */
 export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost | null {
   const auth = useAuth();
-  const [owned] = useState(() => (provided ? null : createModuleRuntime(auth.client)));
+  const [owned] = useState(() =>
+    provided ? null : createModuleRuntime(() => auth.client.modules.list()),
+  );
   const runtime = provided ?? owned;
   if (!runtime) throw new Error('Module host requires its runtime');
   const { registry: moduleRegistry, bus: appBus, remotes, listModules } = runtime;
@@ -75,15 +77,13 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
     };
     void (async () => {
       try {
+        const switchedOff = listModules().then(
+          (listed) => new Set(listed.filter((m) => m.enabled === false).map((m) => m.id)),
+          () => undefined,
+        );
         await remotes.loadRuntimeRemotes(moduleRegistry);
         if (!alive) return;
-        let skip: Set<string> | undefined;
-        try {
-          const listed = await listModules();
-          skip = new Set(listed.filter((m) => m.enabled === false).map((m) => m.id));
-        } catch {
-          skip = undefined; // enabled-state unavailable; set up everything
-        }
+        const skip = await switchedOff;
         if (!alive) return;
         const wired = await moduleRegistry.start(base, skip);
         if (alive) setHost(wired);

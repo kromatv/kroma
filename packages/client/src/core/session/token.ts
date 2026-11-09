@@ -11,6 +11,7 @@ export function createSessionScope() {
   // memory only (never persisted) so a stolen localStorage dump can't be
   // replayed as a live session.
   let memorySessionToken: string | undefined;
+  let settledExchange: TokenExchange | undefined;
 
   /** The current in-memory session bearer, or undefined when not (yet) exchanged. */
   function sessionToken(): string | undefined {
@@ -21,6 +22,7 @@ export function createSessionScope() {
    *  `KromaClient.setAuthToken` calls this, so one call serves both. */
   function setSessionToken(token: string | undefined): void {
     memorySessionToken = token;
+    if (settledExchange?.token !== token) settledExchange = undefined;
   }
 
   let memoryMediaTicket: string | undefined;
@@ -46,11 +48,26 @@ export function createSessionScope() {
     exchange: () => Promise<TokenExchange<U>>,
   ): Promise<TokenExchange<U>> {
     if (inflightExchange) return inflightExchange as Promise<TokenExchange<U>>;
-    const p = exchange().finally(() => {
-      if (inflightExchange === p) inflightExchange = null;
-    });
+    const p = exchange()
+      .then((result) => {
+        settledExchange = result;
+        return result;
+      })
+      .finally(() => {
+        if (inflightExchange === p) inflightExchange = null;
+      });
     inflightExchange = p as Promise<TokenExchange>;
     return p;
+  }
+
+  /** The last shared exchange's answer, while the bearer it minted is still the
+   * one in use: a second boot step reuses it instead of asking the server again.
+   * A refresh after a 401 calls `sharedTokenExchange`, which always asks. */
+  function currentExchange<U>(): TokenExchange<U> | undefined {
+    if (settledExchange === undefined || settledExchange.token !== memorySessionToken) {
+      return undefined;
+    }
+    return settledExchange as TokenExchange<U>;
   }
 
   return {
@@ -59,6 +76,7 @@ export function createSessionScope() {
     sessionMediaTicket,
     setSessionMediaTicket,
     sharedTokenExchange,
+    currentExchange,
   };
 }
 export type SessionScope = ReturnType<typeof createSessionScope>;

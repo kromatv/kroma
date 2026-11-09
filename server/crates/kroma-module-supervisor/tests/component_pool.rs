@@ -1,13 +1,35 @@
 #![cfg(unix)]
 
+use std::collections::BTreeSet;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use kroma_module_host::NetworkAction;
+use kroma_module_supervisor::Endpoint;
 
 mod component_support;
 
 use component_support::wasm::guest_component;
 use component_support::{DECLARES, GUEST, Server, wait_until};
+
+const TWO_INSTANCES: &str = r#", "storage": {}, "component": { "instances": 2 }"#;
+const THREE_INSTANCES: &str = r#", "storage": {}, "component": { "instances": 3 }"#;
+const WORKER_LIFETIME: Duration = Duration::from_millis(200);
+
+fn instances_answering(server: &Server, endpoint: &Endpoint) -> BTreeSet<String> {
+    let names = Mutex::new(BTreeSet::new());
+    std::thread::scope(|threads| {
+        for _ in 0..4 {
+            threads.spawn(|| {
+                for _ in 0..40 {
+                    let name = server.get(endpoint, "/who").text();
+                    names.lock().unwrap().insert(name);
+                }
+            });
+        }
+    });
+    names.into_inner().unwrap()
+}
 
 #[test]
 fn a_component_that_panics_is_reported_and_the_next_call_gets_a_fresh_one() {
@@ -67,21 +89,38 @@ fn what_a_component_leaves_running_advances_between_calls() {
 #[test]
 fn the_instances_of_a_busy_component_never_outnumber_what_it_declares() {
     let server = Server::new("component-instances", NetworkAction::Direct);
-    let two = r#", "storage": {}, "component": { "instances": 2 }"#;
-    let endpoint = server.started(GUEST, guest_component(), two);
+    let endpoint = server.started(GUEST, guest_component(), TWO_INSTANCES);
     server.get(&endpoint, "/background");
-    let names = Mutex::new(std::collections::BTreeSet::new());
 
-    std::thread::scope(|threads| {
-        for _ in 0..4 {
-            threads.spawn(|| {
-                for _ in 0..40 {
-                    let name = server.get(&endpoint, "/who").text();
-                    names.lock().unwrap().insert(name);
-                }
-            });
-        }
-    });
+    let names = instances_answering(&server, &endpoint);
 
-    assert_eq!(names.lock().unwrap().len(), 2);
+    assert_eq!(names.len(), 2);
+}
+
+#[test]
+fn an_idle_worker_is_dropped_after_its_lifetime_while_another_instance_keeps_running() {
+    let server = Server::new("component-worker-dropped", NetworkAction::Direct);
+    server.supervisor.keep_idle_workers_for(WORKER_LIFETIME);
+    let endpoint = server.started(GUEST, guest_component(), THREE_INSTANCES);
+    server.get(&endpoint, "/background");
+    let before = instances_answering(&server, &endpoint);
+    std::thread::sleep(WORKER_LIFETIME * 5);
+
+    let after = instances_answering(&server, &endpoint);
+
+    assert_eq!(before.len(), 3, "{before:?}");
+    assert!(after.difference(&before).next().is_some(), "{before:?} {after:?}");
+    assert!(after.intersection(&before).next().is_some(), "{before:?} {after:?}");
+}
+
+#[test]
+fn a_worker_used_within_its_lifetime_is_kept() {
+    let server = Server::new("component-worker-kept", NetworkAction::Direct);
+    let endpoint = server.started(GUEST, guest_component(), TWO_INSTANCES);
+    server.get(&endpoint, "/background");
+    let before = instances_answering(&server, &endpoint);
+
+    let after = instances_answering(&server, &endpoint);
+
+    assert_eq!(after, before);
 }

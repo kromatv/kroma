@@ -84,7 +84,7 @@ export function qualityBadgeForVideo(video: VideoTrack | null | undefined): stri
 }
 
 /** Top-right quality badge text for an item, or null. */
-export function qualityBadge(item: MediaItem): string | null {
+export function qualityBadge(item: Pick<MediaItem, 'video'>): string | null {
   return qualityBadgeForVideo(item.video);
 }
 

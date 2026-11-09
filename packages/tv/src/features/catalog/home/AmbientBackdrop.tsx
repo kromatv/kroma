@@ -1,5 +1,5 @@
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import { Box, Img, SHADE, shade, useSettledValue, Veil } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { useClient } from '#tv/app/router';
@@ -49,7 +49,7 @@ const AmbientArt = memo(AmbientArtImpl);
 
 const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
 
-export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
+export type CatalogEntry = { kind: 'movie'; item: MediaCard } | { kind: 'show'; item: Show };
 
 export function entryPoster(client: KromaClient, e: CatalogEntry, width: number): string {
   return e.kind === 'movie'

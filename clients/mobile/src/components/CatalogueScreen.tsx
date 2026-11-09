@@ -2,7 +2,7 @@
 // filter strip, an exact-fit poster grid, and the A-Z rail beside it.
 
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, Show } from '@kromatv/client/media';
 import {
   collectGenres,
   genreLabel,
@@ -31,7 +31,7 @@ import { EmptyState, ErrorView, Loading } from './ui';
 const RAIL_MIN_ITEMS = 24;
 
 function featuredBackdrop(
-  entries: readonly (MediaItem | Show)[],
+  entries: readonly (MediaCard | Show)[],
   client: KromaClient,
 ): string | null {
   let best: { rating: number; url: string } | null = null;
@@ -44,7 +44,7 @@ function featuredBackdrop(
   return best === null ? null : sizedImageUrl(best.url, 1200);
 }
 
-export function CatalogueScreen<T extends MediaItem | Show>({
+export function CatalogueScreen<T extends MediaCard | Show>({
   title,
   entries,
   kind,
@@ -99,7 +99,7 @@ export function CatalogueScreen<T extends MediaItem | Show>({
       view.map((entry) => ({
         ...(kind === 'show'
           ? showCard(entry as Show, client, cardW)
-          : movieCard(entry as MediaItem, client, cardW)),
+          : movieCard(entry as MediaCard, client, cardW)),
         watched: watchedIds.has(entry.id),
       })),
     [view, kind, client, cardW, watchedIds],

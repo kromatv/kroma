@@ -1,6 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -26,6 +27,33 @@ pub struct WasmHost {
 fn sha256_hex(bytes: &[u8]) -> String {
     use sha2::Digest;
     hex::encode(sha2::Sha256::digest(bytes))
+}
+
+fn file_sha256_hex(path: &Path) -> std::io::Result<String> {
+    use sha2::Digest;
+    let mut hasher = sha2::Sha256::new();
+    std::io::copy(&mut std::fs::File::open(path)?, &mut hasher)?;
+    Ok(hex::encode(hasher.finalize()))
+}
+
+fn keep(copy: &Path, stamp: &Path, expected: &str, machine_code: &[u8]) -> std::io::Result<()> {
+    static WRITES: AtomicU64 = AtomicU64::new(0);
+    if let Some(folder) = copy.parent() {
+        std::fs::create_dir_all(folder)?;
+    }
+    let mut partial = copy.as_os_str().to_owned();
+    partial.push(format!(
+        ".{}-{}.partial",
+        std::process::id(),
+        WRITES.fetch_add(1, Ordering::Relaxed)
+    ));
+    let partial = PathBuf::from(partial);
+    let written = std::fs::write(&partial, machine_code).and_then(|()| std::fs::rename(&partial, copy));
+    if written.is_err() {
+        let _ = std::fs::remove_file(&partial);
+    }
+    written?;
+    std::fs::write(stamp, format!("{expected}-{}", sha256_hex(machine_code)))
 }
 
 impl WasmHost {
@@ -57,6 +85,9 @@ impl WasmHost {
     /// `copy` where no module can write: it runs as native code. A copy whose bytes
     /// are not the ones recorded beside it is not loaded, and the component is
     /// compiled again.
+    ///
+    /// The component runs from `copy` mapped in place, so the caller replaces or
+    /// deletes that file and never writes into it while the component lives.
     pub fn compile_keeping(
         &self,
         wasm: &[u8],
@@ -71,16 +102,20 @@ impl WasmHost {
             Kept::Absent => Readied::Compiled,
         };
         let machine_code = self.engine.precompile_component(wasm).map_err(HostError::Compile)?;
-        let kept = copy
-            .parent()
-            .map_or(Ok(()), std::fs::create_dir_all)
-            .and_then(|()| std::fs::write(copy, &machine_code))
-            .and_then(|()| std::fs::write(&stamp, format!("{expected}-{}", sha256_hex(&machine_code))));
-        if let Err(error) = kept {
-            tracing::warn!(%error, "the compiled component was not kept");
+        let component = match keep(copy, &stamp, &expected, &machine_code) {
+            Ok(()) => {
+                drop(machine_code);
+                // SAFETY: this engine compiled the file a moment ago, and it was
+                // renamed into place whole, in a folder no module holds.
+                unsafe { Component::deserialize_file(&self.engine, copy) }
+            }
+            Err(error) => {
+                tracing::warn!(%error, "the compiled component was not kept");
+                // SAFETY: `machine_code` was produced by this engine a moment ago.
+                unsafe { Component::deserialize(&self.engine, &machine_code) }
+            }
         }
-        // SAFETY: `machine_code` was produced by this engine a moment ago.
-        let component = unsafe { Component::deserialize(&self.engine, &machine_code) }.map_err(HostError::Compile)?;
+        .map_err(HostError::Compile)?;
         Ok((self.linked(&component)?, readied))
     }
 
@@ -88,17 +123,17 @@ impl WasmHost {
         let recorded = std::fs::read_to_string(stamp)
             .ok()
             .and_then(|found| found.strip_prefix(&format!("{expected}-")).map(str::to_string));
-        let (Some(recorded), Ok(machine_code)) = (recorded, std::fs::read(copy)) else {
+        let (Some(recorded), Ok(actual)) = (recorded, file_sha256_hex(copy)) else {
             return Kept::Absent;
         };
-        if sha256_hex(&machine_code) != recorded {
+        if actual != recorded {
             tracing::warn!(copy = %copy.display(), "a compiled copy is not the one recorded beside it");
             return Kept::Changed;
         }
-        // SAFETY: this host wrote these bytes under this stamp, which names the
-        // component, this engine's compatibility and the bytes' own sha256, in a
-        // folder no module holds.
-        match unsafe { Component::deserialize(&self.engine, &machine_code) } {
+        // SAFETY: this host wrote this file under this stamp, which names the
+        // component, this engine's compatibility and the file's own sha256, in a
+        // folder no module holds, and it only ever replaces the file by a rename.
+        match unsafe { Component::deserialize_file(&self.engine, copy) } {
             Ok(component) => Kept::Loaded(component),
             Err(_) => Kept::Absent,
         }

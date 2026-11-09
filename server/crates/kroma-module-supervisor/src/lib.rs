@@ -16,6 +16,7 @@ mod component;
 #[cfg(unix)]
 mod databases;
 mod endpoint;
+mod frontend;
 #[cfg(unix)]
 mod gateway;
 mod host_api;
@@ -38,6 +39,7 @@ mod watch;
 #[cfg(unix)]
 pub use component::{FolderRoots, Folders};
 pub use endpoint::Endpoint;
+pub use frontend::Frontend;
 pub use host_api::host_router;
 pub use origin::{Accept, AsksForMore, BinStamp, Origin, Source};
 pub use proxy::proxy_to;
@@ -82,6 +84,7 @@ pub struct Supervisor {
     port_tokens: RwLock<HashMap<String, String>>,
     manifests_cache: RwLock<Option<Vec<ModuleManifest>>>,
     notifications_cache: RwLock<Option<Arc<Vec<kroma_module_host::ModuleNotifications>>>>,
+    frontends: RwLock<frontend::FrontendCache>,
     // Short-TTL catalog cache: the admin flow sweeps EVERY registry from the
     // catalog view, the plan dialog (once per opt-in toggle) and the install
     // itself in quick succession; within the TTL they share one fetch.
@@ -91,6 +94,8 @@ pub struct Supervisor {
     gateway: gateway::Slot,
     #[cfg(unix)]
     wasm: std::sync::OnceLock<kroma_wasm_host::WasmHost>,
+    #[cfg(unix)]
+    worker_lifetime: RwLock<std::time::Duration>,
 }
 
 impl Supervisor {
@@ -105,12 +110,15 @@ impl Supervisor {
             port_tokens: RwLock::new(HashMap::new()),
             manifests_cache: RwLock::new(None),
             notifications_cache: RwLock::new(None),
+            frontends: frontend::FrontendCache::new(),
             catalog_cache: RwLock::new(HashMap::new()),
             registry_clients: registry::Clients::default(),
             #[cfg(unix)]
             gateway: gateway::Slot::new(),
             #[cfg(unix)]
             wasm: std::sync::OnceLock::new(),
+            #[cfg(unix)]
+            worker_lifetime: RwLock::new(component::WORKER_LIFETIME),
         });
         supervisor.keep_installs_apart();
         supervisor

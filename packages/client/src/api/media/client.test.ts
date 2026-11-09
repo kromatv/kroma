@@ -33,6 +33,12 @@ describe('the media endpoints', () => {
       path: '/movies?view=card',
     },
     { name: 'shows', call: (c) => c.media.shows(), method: 'GET', path: '/shows' },
+    {
+      name: 'showCards',
+      call: (c) => c.media.showCards(),
+      method: 'GET',
+      path: '/shows?view=card',
+    },
     { name: 'show', call: (c) => c.media.show(show), method: 'GET', path: '/shows/s1' },
     { name: 'item', call: (c) => c.media.item(spaced), method: 'GET', path: '/items/i%201' },
     {
@@ -42,12 +48,24 @@ describe('the media endpoints', () => {
       path: '/items/i%201/similar',
     },
     {
+      name: 'similarCards',
+      call: (c) => c.media.similarCards(spaced),
+      method: 'GET',
+      path: '/items/i%201/similar?view=card',
+    },
+    {
       name: 'themed',
       call: (c) => c.media.themed('christmas & co'),
       method: 'GET',
       path: '/themed?q=christmas+%26+co',
     },
     { name: 'home', call: (c) => c.media.home(), method: 'GET', path: '/home' },
+    {
+      name: 'homeCards',
+      call: (c) => c.media.homeCards(),
+      method: 'GET',
+      path: '/home?view=card',
+    },
     { name: 'featured', call: (c) => c.media.featured(), method: 'GET', path: '/home/featured' },
     {
       name: 'aiSuggest',
