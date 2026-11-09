@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use p256::pkcs8::DecodePrivateKey;
 use p256::SecretKey;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 
 use crate::{jwt, PushRequest, Urgency};
 
@@ -168,7 +169,7 @@ pub fn build_request(
         // Collapse a repeat of the same notification instead of stacking it.
         (
             "apns-collapse-id".into(),
-            alert.collapse_key.unwrap_or(alert.id).chars().take(64).collect(),
+            collapse_id(alert.collapse_key.unwrap_or(alert.id)),
         ),
         ("content-type".into(), "application/json".into()),
     ];
@@ -180,6 +181,15 @@ pub fn build_request(
         // Non-negotiable: APNs refuses HTTP/1.1.
         http2: true,
     })
+}
+
+const COLLAPSE_ID_MAX_BYTES: usize = 64;
+
+fn collapse_id(key: &str) -> String {
+    if key.len() <= COLLAPSE_ID_MAX_BYTES {
+        return key.to_owned();
+    }
+    format!("{:x}", Sha256::digest(key.as_bytes()))
 }
 
 /// Whether an APNs response means "this device token is dead, stop sending".
@@ -564,5 +574,48 @@ mod tests {
         assert_eq!(body["actions"][0]["method"], "POST");
         assert_eq!(body["actions"][0]["href"], "/api/requests/r1/approve");
         assert_eq!(body["actions"][1]["id"], "open");
+    }
+
+    fn collapse_id_for(key: &str) -> String {
+        let key_pair = test_key(Environment::Production);
+        let grouped = Alert {
+            collapse_key: Some(key),
+            ..alert()
+        };
+        build_request(&key_pair, "DEV1", &grouped, Urgency::High, 1_700_000_000)
+            .unwrap()
+            .headers
+            .into_iter()
+            .find(|(name, _)| name == "apns-collapse-id")
+            .map(|(_, value)| value)
+            .unwrap()
+    }
+
+    #[test]
+    fn a_group_key_that_fits_is_its_own_collapse_id() {
+        assert_eq!(
+            collapse_id_for("media.added:movie:ab12"),
+            "media.added:movie:ab12"
+        );
+    }
+
+    #[test]
+    fn two_long_group_keys_that_share_their_first_64_characters_stay_apart() {
+        let shared = "x".repeat(64);
+
+        let first = collapse_id_for(&format!("{shared}a"));
+        let second = collapse_id_for(&format!("{shared}b"));
+
+        assert_ne!(first, second);
+        assert_eq!(first, collapse_id_for(&format!("{shared}a")));
+    }
+
+    #[test]
+    fn a_collapse_id_never_passes_64_bytes_whatever_the_key() {
+        let accented = "é".repeat(40);
+
+        let id = collapse_id_for(&accented);
+
+        assert!(id.len() <= 64, "{} bytes", id.len());
     }
 }
