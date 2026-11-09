@@ -21,18 +21,12 @@ KROMA_DATA_DIR="${KROMA_DATA_DIR:-}"
 EOF
 fi
 
-# If the user chose a custom data folder, create it now (postinst runs as root)
-# and hand it to the package's least-privilege runtime user so the service can
-# write there without a manual permission step. Best-effort: never fail the
-# install over this, and only touch a path the user explicitly asked for.
+# A custom data folder is created here when the package user may write to its
+# parent. DSM 7 runs this script as that user, not as root, so it cannot take
+# over a folder someone else made: the user grants `kroma` Read/Write on it
+# instead. Best-effort: a folder that cannot be made never fails the install.
 if [ -n "${KROMA_DATA_DIR:-}" ]; then
     mkdir -p "${KROMA_DATA_DIR}" 2>/dev/null || true
-    for u in sc-kroma kroma; do
-        if id "$u" >/dev/null 2>&1; then
-            chown -R "$u" "${KROMA_DATA_DIR}" 2>/dev/null || true
-            break
-        fi
-    done
 fi
 
 exit 0
