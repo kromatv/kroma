@@ -31,12 +31,8 @@ fn signed_in_before_the_step(pool: &crate::Pool) {
 fn stored(pool: &crate::Pool, sql: &str) -> Vec<String> {
     let conn = pool.get().unwrap();
     let mut stmt = conn.prepare(sql).unwrap();
-    let values = stmt
-        .query_map([], |r| r.get(0))
-        .unwrap()
-        .collect::<rusqlite::Result<Vec<String>>>()
-        .unwrap();
-    values
+    let rows = stmt.query_map([], |r| r.get(0)).unwrap();
+    rows.collect::<rusqlite::Result<Vec<String>>>().unwrap()
 }
 
 #[test]

@@ -31,8 +31,8 @@ pub(super) fn hash_bearers(conn: &Connection) -> rusqlite::Result<()> {
 
 fn column(conn: &Connection, sql: &str) -> rusqlite::Result<Vec<String>> {
     let mut stmt = conn.prepare(sql)?;
-    let values = stmt.query_map([], |r| r.get(0))?.collect();
-    values
+    let rows = stmt.query_map([], |r| r.get(0))?;
+    rows.collect()
 }
 
 #[cfg(test)]
