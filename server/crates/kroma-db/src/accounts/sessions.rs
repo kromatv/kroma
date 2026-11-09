@@ -6,6 +6,7 @@ use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
 use kroma_domain::User;
 
 use super::access_tokens::{touch_access_token, DeviceHints};
+use super::stored_token::{device_id, stored};
 use crate::admin::mark_last_seen;
 use crate::rows::row_to_user;
 use crate::{now_or_blank, Pool};
@@ -57,7 +58,7 @@ fn insert_session(
     )?;
     conn.execute(
         "INSERT INTO sessions (token,user_id,created_at,expires_at,access_token) VALUES (?1,?2,?3,?4,?5)",
-        params![token, user_id, now_or_blank(), expires_at, access_token],
+        params![stored(token), user_id, now_or_blank(), expires_at, access_token.map(stored)],
     )?;
     Ok(())
 }
@@ -70,12 +71,12 @@ pub fn session_device_id(pool: &Pool, token: &str) -> Result<Option<String>> {
     let access = conn
         .query_row(
             "SELECT access_token FROM sessions WHERE token = ?1",
-            params![token],
+            params![stored(token)],
             |r| r.get::<_, Option<String>>(0),
         )
         .optional()?
         .flatten();
-    Ok(access.map(|t| kroma_primitives::short_hash(&t)))
+    Ok(access.map(|kept| device_id(&kept)))
 }
 
 /// Resolve a session token to its user; expired sessions resolve to `None`.
@@ -87,7 +88,7 @@ pub fn session_user(pool: &Pool, token: &str) -> Result<Option<User>> {
          FROM sessions s JOIN users u ON u.id = s.user_id \
          WHERE s.token = ?1 AND s.expires_at > ?2",
     )?;
-    let mut rows = stmt.query_map(params![token, now], row_to_user)?;
+    let mut rows = stmt.query_map(params![stored(token), now], row_to_user)?;
     match rows.next() {
         Some(u) => Ok(Some(u?)),
         None => Ok(None),
@@ -96,7 +97,7 @@ pub fn session_user(pool: &Pool, token: &str) -> Result<Option<User>> {
 
 pub fn delete_session(pool: &Pool, token: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute("DELETE FROM sessions WHERE token = ?1", params![token])?;
+    conn.execute("DELETE FROM sessions WHERE token = ?1", params![stored(token)])?;
     Ok(())
 }
 
@@ -106,6 +107,7 @@ pub fn delete_session(pool: &Pool, token: &str) -> Result<()> {
 /// (fail-closed).
 pub fn revoke_other_sessions(pool: &Pool, user_id: &str, keep_token: &str) -> Result<()> {
     let conn = pool.get()?;
+    let keep_token = stored(keep_token);
     let keep_device: Option<String> = conn
         .query_row(
             "SELECT access_token FROM sessions WHERE token = ?1",
@@ -189,7 +191,9 @@ mod tests {
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap();
-        assert_eq!(tokens, ["live", "renewed", "theirs"]);
+        let mut kept: Vec<String> = ["live", "renewed", "theirs"].map(stored).to_vec();
+        kept.sort();
+        assert_eq!(tokens, kept);
     }
 
     #[test]

@@ -37,11 +37,16 @@ pub fn now_iso8601() -> String {
         .unwrap_or_else(|_| "1970-01-01T00:00:00Z".to_string())
 }
 
-/// `hex(sha256(input))[..16]` stable, short, collision-resistant enough.
-pub fn short_hash(input: &str) -> String {
+/// Lowercase hex SHA-256 of `input`, all 64 characters.
+pub fn sha256_hex(input: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
-    hex::encode(hasher.finalize())[..16].to_string()
+    hex::encode(hasher.finalize())
+}
+
+/// `hex(sha256(input))[..16]` stable, short, collision-resistant enough.
+pub fn short_hash(input: &str) -> String {
+    sha256_hex(input)[..16].to_string()
 }
 
 /// Lowercase hex SHA-256 of the file at `path`, streamed rather than read whole.
