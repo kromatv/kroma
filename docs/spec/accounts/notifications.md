@@ -88,7 +88,8 @@ identical failures is a line saying how many.
 
 **ACCT-49** (SHIPPED) - A repeat folds into the row the person already has: its count rises,
 it comes back unread at the top of the inbox, and the banner it raises on a device replaces
-the earlier one instead of stacking beside it.
+the earlier one instead of stacking beside it. A repeat of something already settled starts a
+new row, because it needs someone again.
 
 **ACCT-50** (SHIPPED) - A folded group raises a banner at most once an hour, and repeats in
 between update the inbox silently.

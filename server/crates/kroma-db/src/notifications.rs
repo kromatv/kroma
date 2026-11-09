@@ -112,7 +112,7 @@ fn fold_into_group(
     let existing: Option<(String, u32)> = conn
         .query_row(
             "SELECT id, count FROM notifications WHERE user_id = ?1 AND group_key = ?2 \
-             ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1",
+             AND resolved_at IS NULL ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1",
             params![user_id, key],
             |r| Ok((r.get(0)?, r.get(1)?)),
         )
@@ -380,6 +380,31 @@ mod tests {
         assert_eq!(rows[0].id, "n1");
         assert!(!rows[0].read);
         assert!(rows[1].read);
+    }
+
+    #[test]
+    fn a_repeat_after_its_group_was_settled_starts_a_new_open_row() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        let job = kroma_domain::NotificationSubject::job("library.scan");
+        let mut failing = new("n1", 1_000);
+        failing.subject = Some(job.clone());
+        failing.event = NotificationEvent::SystemJobFailed;
+        failing.group_key = Some("system.job.failed:job:library.scan".into());
+        insert_notification(&conn, &u1, &failing).unwrap();
+        resolve(&conn, &job, NotificationEvent::SystemJobFailed, None, 1_500).unwrap();
+        let mut again = failing.clone();
+        again.id = "n2".into();
+        again.created_at = 2_000;
+
+        let written = insert_notification(&conn, &u1, &again).unwrap();
+
+        assert!(!written.folded);
+        assert_eq!((written.id.as_str(), written.count), ("n2", 1));
+        let rows = list_notifications(&conn, &u1, 50, false).unwrap();
+        assert_eq!(rows[0].id, "n2");
+        assert_eq!(rows[0].resolved_at, None);
+        assert_eq!(rows[1].resolved_at, Some(1_500));
     }
 
     #[test]
