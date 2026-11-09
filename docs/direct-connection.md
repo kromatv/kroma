@@ -30,7 +30,7 @@ with, never on a direct route:
   one bound to a single address has that one.
 - `nonce` and `answer` are a challenge, held in memory for a minute and good once.
 - `sameNetwork` is true when the caller's address (after the trusted-proxy rules
-  in [server/README.md](../server/README.md#behind-a-reverse-proxy)) is itself
+  in [network](setup/network.md#behind-your-own-reverse-proxy)) is itself
   private, is this server's own public IPv4, or shares a `/64` with one of this
   machine's global IPv6 addresses. The public IPv4 comes from an echo
   (`KROMA_PUBLIC_IP_URL`, `https://api.ipify.org` by default, empty to never

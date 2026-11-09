@@ -256,3 +256,71 @@
   margin: 2.6em 0;
 }
 
+
+/* The setup guides: steps that hold code blocks, tables and GitHub's alerts,
+   which vite/alerts.ts turns into `aside.callout`. */
+.prose-docs {
+  font-size: 1rem;
+}
+.prose-docs li + li {
+  margin-top: 0.5em;
+}
+.prose-docs li > * + * {
+  margin-top: 0.75em;
+}
+.prose-docs ul ul,
+.prose-docs ol ul {
+  margin-top: 0.5em;
+}
+.prose-docs h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-top: 1.6em;
+  scroll-margin-top: 6rem;
+}
+.prose-docs table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.prose-docs th,
+.prose-docs td {
+  border-bottom: 1px solid var(--kroma-border);
+  padding: 0.6em 0.9em 0.6em 0;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-docs th {
+  color: var(--kroma-text);
+  font-weight: 700;
+  border-bottom-color: var(--kroma-border-strong);
+  white-space: nowrap;
+}
+.prose-docs td {
+  color: color-mix(in srgb, var(--kroma-text) 82%, transparent);
+}
+.prose-docs .callout {
+  border: 1px solid var(--kroma-border);
+  border-left: 3px solid var(--callout-accent, var(--kroma-accent-text));
+  border-radius: 10px;
+  background: var(--kroma-surface-1);
+  padding: 0.9em 1.1em;
+}
+.prose-docs .callout > * + * {
+  margin-top: 0.6em;
+}
+.prose-docs .callout-title {
+  color: var(--callout-accent, var(--kroma-accent-text));
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.prose-docs .callout-warning,
+.prose-docs .callout-caution {
+  --callout-accent: var(--kroma-danger);
+}

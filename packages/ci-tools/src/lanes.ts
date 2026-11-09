@@ -5,11 +5,15 @@ interface Lane {
   paths: readonly string[];
   /** Paths that never do, even when `paths` matches them. */
   except?: readonly string[];
+  /** Prose that is this lane's source all the same, kept in spite of `except`. */
+  keep?: readonly string[];
 }
 
 const PROSE = ['**/*.md', 'docs/**', '.claude/**', 'LICENSE'];
 
 const INSTALL = ['bun.lock', 'package.json', 'patches/**', '.bun-version'];
+
+const GUIDES = ['docs/setup/**', 'apps/www/content/docs/**'];
 
 /**
  * What a change can reach, as the jobs that prove it. A lane is a set of
@@ -80,8 +84,14 @@ export const LANES = {
     except: PROSE,
   },
   site: {
-    paths: ['apps/www/**', 'packages/{bundler,registry,site-kit,site-meta,ui}/**', ...INSTALL],
+    paths: [
+      'apps/www/**',
+      'packages/{bundler,registry,site-kit,site-meta,ui}/**',
+      ...GUIDES,
+      ...INSTALL,
+    ],
     except: PROSE,
+    keep: GUIDES,
   },
   spec: { paths: ['docs/spec/**'] },
 } as const satisfies Record<string, Lane>;
@@ -100,7 +110,8 @@ const PIPELINE = ['.github/workflows/ci.yml', 'packages/ci-tools/**'];
 type Verdict = Record<LaneName, boolean>;
 
 const inLane = (file: string, lane: Lane) =>
-  matchesAny(file, lane.paths) && !matchesAny(file, lane.except ?? []);
+  matchesAny(file, lane.paths) &&
+  (!matchesAny(file, lane.except ?? []) || matchesAny(file, lane.keep ?? []));
 
 /**
  * Which lanes a set of changed files lands in. `'all'` is a change whose

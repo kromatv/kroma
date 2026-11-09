@@ -36,6 +36,13 @@ describe('parseContentPath', () => {
     expect(parseContentPath('/any/where/at/all/deep.fr.mdx').name).toBe('deep');
   });
 
+  it('reads plain Markdown the same way as MDX', () => {
+    expect(parseContentPath('../../content/docs/docker.fr.md')).toEqual({
+      name: 'docker',
+      lang: 'fr',
+    });
+  });
+
   it('reads a bare filename, with no directory above it at all', () => {
     expect(parseContentPath('my-post.fr.mdx')).toEqual({ name: 'my-post', lang: 'fr' });
   });

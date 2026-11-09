@@ -6,7 +6,8 @@ import { SamsungIcon } from '#site/components/download/samsung-icon';
 import { LgIcon } from '#site/components/download/lg-icon';
 import { family } from '#site/components/download/families/meta';
 import { JoinButton } from '#site/components/download/join-button';
-import { docs, join, ProseLink } from '#site/components/download/links';
+import { join } from '#site/components/download/links';
+import { L } from '#site/components/localized-link';
 import { PlatformDownload } from '#site/components/download/platform-download';
 import { PlatformEntry } from '#site/components/download/platform-entry';
 import { PlatformFamily } from '#site/components/download/platform-family';
@@ -50,9 +51,12 @@ export function TvFamily() {
                   m.download_tv_samsung_step_3(),
                 ]}
               />
-              <ProseLink href={`${docs.installGuide}#samsung-tv-tizen-wgt`}>
+              <L
+                to="/docs/samsung-tv"
+                className="text-accent-text underline decoration-accent-text/40 underline-offset-2 hover:decoration-accent-text"
+              >
                 {m.download_tv_signing_guide()}
-              </ProseLink>
+              </L>
             </div>
           }
         >
@@ -74,9 +78,12 @@ export function TvFamily() {
                   m.download_tv_lg_step_3(),
                 ]}
               />
-              <ProseLink href={`${docs.installGuide}#lg-tv-webos-ipk-old-and-new-models`}>
+              <L
+                to="/docs/lg-tv"
+                className="text-accent-text underline decoration-accent-text/40 underline-offset-2 hover:decoration-accent-text"
+              >
                 {m.download_ui_detailed_steps()}
-              </ProseLink>
+              </L>
             </div>
           }
         >

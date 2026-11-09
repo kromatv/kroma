@@ -33,6 +33,10 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) for the three roads a television
   takes to an account, what "the same network" means, and which shells can hear
   a television on the link rather than being told about it.
+- [`docs/writing-docs.md`](docs/writing-docs.md) for how the setup guides in
+  [`docs/setup/`](docs/setup/README.md) are written, and how the website renders
+  the same files at kroma.tv/docs. A change to a screen, a setting or a default
+  they describe updates them in the same pull request.
 - [`docs/direct-connection.md`](docs/direct-connection.md) for the route a
   signed-in client takes straight to its server on the same network, what
   proves it is the same server, and what each shell does with it.

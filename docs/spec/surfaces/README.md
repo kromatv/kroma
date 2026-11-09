@@ -247,7 +247,7 @@ Each surface ships and updates the way its host expects. Deploy mechanics are
   channel. KROMA never self-updates a television; the platform does, on its terms.
 - **SURF-39** (AGREED) - **NAS.** The Synology package installs and updates through Package
   Center. It ships the *server*, so everything it serves follows the web rule above. Today a
-  person installs it by hand from a downloaded package ([`INSTALL.md`](../../../INSTALL.md));
+  person installs it by hand from a downloaded package ([setup guides](../../setup/README.md));
   a published source URL is what turns this SHIPPED.
 
 ## Deprecation

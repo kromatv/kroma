@@ -64,6 +64,28 @@ block. That's the whole workflow: it's discovered, prerendered, dated and
 sorted automatically. Full details and the frontmatter fields are in the
 [authoring guide](./content/blog/README.md).
 
+## Setup guides
+
+`/docs` renders the repository's own setup guides, the Markdown files in
+[`docs/setup/`](../../docs/setup/README.md) that GitHub shows too, so the
+guides have one source. French versions live in
+[`content/docs/`](./content/docs) as `<slug>.fr.md`, and a page without one
+falls back to English with a notice. The rules for writing them are in
+[`docs/writing-docs.md`](../../docs/writing-docs.md).
+
+Three remark plugins in [`vite/`](./vite) adapt a GitHub page to the site:
+
+| Plugin | What it does |
+| --- | --- |
+| `doc-meta.ts` | lifts the `# Title` and the first paragraph into `title` and `description` exports, for the page header and the head tags |
+| `doc-links.ts` | turns a link to another guide (`docker.md`) into its route (`/docs/docker`), and any other repository path into a GitHub URL |
+| `alerts.ts` | renders GitHub's `> [!NOTE]` alerts as `aside.callout`, titled in the page's language |
+
+The reading order and the sidebar sections are `DOC_SECTIONS` in
+[`src/lib/docs.ts`](./src/lib/docs.ts). A new guide is a new file in
+`docs/setup/`, a slug in that list and a `docs_nav_<slug>` label in both
+message catalogs.
+
 ## Languages
 
 i18n is [Paraglide JS](https://paraglidejs.com) (inlang). Strings never live in
@@ -72,8 +94,8 @@ generated, typed function for the one it needs.
 
 ```
 messages/
-  en.json      the base locale, 353 keys
-  fr.json      the same 353 keys, in French
+  en.json      the base locale, 498 keys
+  fr.json      the same 498 keys, in French
 project.inlang/settings.json    the locale list
 ```
 
@@ -171,6 +193,7 @@ unbuilt `worker.ts`.
 ```
 apps/www/
 ├─ content/blog/       the blog, one .mdx per post + .<lang>.mdx translations
+├─ content/docs/       the French setup guides; the English ones are docs/setup
 ├─ content/legal/      the privacy policy, as MDX per locale
 ├─ messages/           the Paraglide catalogs, one .json per locale
 ├─ vite/               the build's own plugins: og (Takumi, JSX -> PNG), mdx,
@@ -185,8 +208,8 @@ apps/www/
 │  │  ├─ blog.ts       resolves content/blog into typed posts
 │  │  └─ seo.ts        the <head> helper (title, canonical, OG, hreflang)
 │  │                   (the domain, addresses and nav are @kromatv/site-meta's)
-│  ├─ routes/          file-based routes (home, download, blog, modules, privacy,
-│  │                   support, 404)
+│  ├─ routes/          file-based routes (home, download, docs, blog, modules,
+│  │                   privacy, support, 404)
 │  ├─ server/          what the worker answers under /api/*
 │  ├─ router.tsx       the router the prerender and the worker share
 │  └─ styles.css       imports @kromatv/ui/css + site-only @utility/@theme
