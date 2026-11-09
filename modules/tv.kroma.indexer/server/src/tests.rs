@@ -114,6 +114,28 @@ fn the_module_declares_its_id_migrations_and_admin_routes() {
 }
 
 #[test]
+fn the_module_keeps_its_catalog_current_with_one_scheduled_job() {
+    let module = server_module::<StubHost>();
+
+    let jobs = module.jobs();
+
+    assert_eq!(jobs.len(), 1);
+    assert_eq!(jobs[0].key, admin::SYNC_JOB);
+    assert!(jobs[0].schedule.is_some());
+}
+
+#[test]
+fn the_catalog_job_takes_the_vpn_route_and_records_why_it_could_not() {
+    let host = StubHost::new().with_setting("acqIndexersUseVpn", serde_json::json!(true));
+    let job = server_module::<StubHost>().jobs().remove(0);
+
+    let err = (job.run)(&host).unwrap_err().to_string();
+
+    assert!(err.contains("no VPN is running"), "{err}");
+    assert!(admin::definition_store(&host).record().failure.is_some());
+}
+
+#[test]
 fn the_module_hands_the_host_every_schema_step() {
     let module = server_module::<StubHost>();
 

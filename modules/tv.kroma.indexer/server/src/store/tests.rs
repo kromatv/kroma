@@ -202,3 +202,16 @@ fn meta_carries_the_definition_language() {
 
     assert_eq!(meta.language, "fr-FR");
 }
+
+#[test]
+fn a_record_that_cannot_be_written_is_dropped_rather_than_failing() {
+    let data = tmpdir("no-dir");
+    let store = DefinitionStore::new(data.path());
+
+    store.write_record(&SyncRecord {
+        attempted_at_ms: Some(1),
+        ..SyncRecord::default()
+    });
+
+    assert_eq!(store.record(), SyncRecord::default());
+}
