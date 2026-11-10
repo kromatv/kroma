@@ -97,6 +97,7 @@
   "network.ruleNumber": "Rule {position}",
   "network.ruleRemove": "Delete rule {position}",
   "network.ruleRemoveTitle": "Delete rule {position}?",
+  "network.ruleUndeclared": "Undeclared",
   "network.ruleUp": "Move rule {position} up",
   "network.rulesEmpty": "No rules",
   "network.rulesEmptyAllow": "Everything goes out direct. Add a rule or start from a preset.",

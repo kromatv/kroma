@@ -163,15 +163,21 @@ export function sameRules(a: RulesUpdate, b: RulesUpdate): boolean {
 }
 
 /** Puts a rule for `host` alone at the head of the list, where no broader rule
- * can answer first. A rule already written for that host alone moves there with
- * the new action rather than being written twice. */
-export function withHostRule(update: RulesUpdate, host: string, action: RuleAction): RulesUpdate {
+ * can answer first, for every caller or only `caller`. A rule already written
+ * for exactly that moves there with the new action rather than being written
+ * twice. */
+export function withHostRule(
+  update: RulesUpdate,
+  host: string,
+  action: RuleAction,
+  caller: string | null = null,
+): RulesUpdate {
   const forHostAlone = (rule: Rule) =>
-    rule.host === host && rule.caller === null && rule.purpose === null;
+    rule.host === host && rule.caller === caller && rule.purpose === null;
   const existing = update.rules.find(forHostAlone);
   const placed: Rule = existing
     ? { ...existing, action }
-    : { id: freshRuleId(update.rules), caller: null, purpose: null, host, action, note: null };
+    : { id: freshRuleId(update.rules), caller, purpose: null, host, action, note: null };
   return {
     defaultAction: update.defaultAction,
     rules: [placed, ...update.rules.filter((rule) => !forHostAlone(rule))],

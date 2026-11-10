@@ -97,6 +97,7 @@
   "network.ruleNumber": "Règle {position}",
   "network.ruleRemove": "Supprimer la règle {position}",
   "network.ruleRemoveTitle": "Supprimer la règle {position} ?",
+  "network.ruleUndeclared": "Non déclaré",
   "network.ruleUp": "Monter la règle {position}",
   "network.rulesEmpty": "Aucune règle",
   "network.rulesEmptyAllow": "Tout sort en direct. Ajoutez une règle ou partez d'un modèle.",

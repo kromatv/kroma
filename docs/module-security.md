@@ -337,12 +337,15 @@ written on its log.
 
 ## Auditing a module on its own
 
-Both tools are planned. Once they ship, every module can be analysed without the
-rest of the server:
+Two tools let a module be judged on its own. The dashboard one is on `main`; the
+command-line one is planned:
 
 - **In the dashboard** (#496), Admin → Modules → a module shows its declared
-  permissions next to what it actually did: its connections, destinations,
-  refusals, and anything it attempted outside its declaration.
+  permissions next to what it actually did: where its connections went over the
+  last days, its latest connections, and every attempt outside its declaration,
+  marked. A host rule written there applies to that module alone. Attempts
+  outside the declaration are kept in the journal, which holds the latest 5,000
+  connections and is emptied when the server restarts.
 - **From the command line** (#495), `kroma audit <module>` starts the module
   alone behind a recording gateway, drives its routes and jobs, and prints every
   connection and file access it attempted against what it declared. CI runs it on
@@ -409,5 +412,5 @@ writes a new key.
 | Torrent engine as a component at full speed | not done: `rqbit` stands in for it (#514) |
 | Strict tier by uid, Watch scanner | dropped: no module is a native process (#489, #490) |
 | Escape suite on Ubuntu, macOS and Windows | on `main` (#523) |
-| Per-module network view | planned (#496) |
+| Per-module network view | on `main` (#496) |
 | `kroma audit` | planned (#495) |

@@ -35,6 +35,7 @@ import {
 } from '#web/features/admin/module-identity';
 import { InstallModal } from '#web/features/admin/module-install';
 import { ModuleLogs } from '#web/features/admin/module-logs';
+import { ModuleNetwork } from '#web/features/admin/module-network';
 import { useModuleRestart, useStoreOps } from '#web/features/admin/module-ops';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
@@ -166,6 +167,7 @@ function InstalledSections({
   return (
     <>
       <ModuleSettings module={installed} onSaved={onSaved} />
+      <ModuleNetwork id={id} />
       <ModuleLogs id={id} />
     </>
   );

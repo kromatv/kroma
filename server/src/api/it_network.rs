@@ -180,6 +180,45 @@ async fn a_core_call_the_rules_block_shows_up_in_the_journal_and_the_summary() {
     );
 }
 
+#[tokio::test]
+async fn the_summary_for_one_module_holds_that_modules_flows_alone() {
+    let t = test_app();
+    let today = crate::db::network_flows::day_of(crate::services::jobs::now_ms());
+    let tally = |caller: &str, host: &str| crate::db::network_flows::FlowTally {
+        day: today,
+        caller: caller.into(),
+        purpose: "indexer".into(),
+        host: host.into(),
+        route: "direct".into(),
+        verdict: "allowed".into(),
+        count: 2,
+        bytes_in: 0,
+        bytes_out: 0,
+        last_at: 1,
+    };
+    crate::db::network_flows::add(
+        &t.state.db,
+        &[
+            tally("tv.kroma.indexer", "tracker.example"),
+            tally("tv.kroma.torznab", "jackett.example"),
+        ],
+    )
+    .unwrap();
+
+    let uri = "/api/admin/network/summary?days=1&caller=tv.kroma.indexer";
+    let (status, summary) = get(&t.app, uri, Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(summary["totals"]["flows"], json!(2));
+    let hosts: Vec<&Value> = summary["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| &r["host"])
+        .collect();
+    assert_eq!(hosts, [&json!("tracker.example")]);
+}
+
 fn phone_on_the_tunnel() -> [(&'static str, &'static str); 4] {
     [
         ("x-forwarded-for", "203.0.113.9"),

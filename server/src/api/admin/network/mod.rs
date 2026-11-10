@@ -100,6 +100,7 @@ async fn list_flows(
 #[derive(Deserialize)]
 struct SummaryQuery {
     days: Option<u32>,
+    caller: Option<String>,
 }
 
 async fn summary(
@@ -109,7 +110,8 @@ async fn summary(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let days = query.days.unwrap_or(DEFAULT_SUMMARY_DAYS);
-    let summary = blocking(move || state.network.summary(days)).await?;
+    let caller = query.caller.filter(|c| !c.is_empty());
+    let summary = blocking(move || state.network.summary(days, caller.as_deref())).await?;
     Ok(Json(summary).into_response())
 }
 

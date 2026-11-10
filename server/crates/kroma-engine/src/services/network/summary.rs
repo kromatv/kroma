@@ -42,9 +42,14 @@ pub struct SummaryRow {
     pub last_at: i64,
 }
 
-/// The last `days` UTC days up to `now_ms`, today included; `days` is clamped
-/// to `1..=MAX_DAYS`.
-pub fn summarize(pool: &Pool, days: u32, now_ms: i64) -> anyhow::Result<Summary> {
+/// The last `days` UTC days up to `now_ms`, today included, only `caller`'s
+/// flows when one is named; `days` is clamped to `1..=MAX_DAYS`.
+pub fn summarize(
+    pool: &Pool,
+    days: u32,
+    caller: Option<&str>,
+    now_ms: i64,
+) -> anyhow::Result<Summary> {
     let days = i64::from(days.clamp(1, MAX_DAYS));
     let since_day = network_flows::day_of(now_ms) - (days - 1);
     let FlowTotals {
@@ -52,8 +57,8 @@ pub fn summarize(pool: &Pool, days: u32, now_ms: i64) -> anyhow::Result<Summary>
         blocked,
         bytes_in,
         bytes_out,
-    } = network_flows::totals_since(pool, since_day)?;
-    let rows = network_flows::since(pool, since_day, MAX_ROWS)?
+    } = network_flows::totals_since(pool, since_day, caller)?;
+    let rows = network_flows::since(pool, since_day, caller, MAX_ROWS)?
         .into_iter()
         .map(SummaryRow::from)
         .collect();

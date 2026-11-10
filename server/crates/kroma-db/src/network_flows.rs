@@ -66,18 +66,24 @@ pub fn add(pool: &Pool, deltas: &[FlowTally]) -> Result<()> {
 }
 
 /// Every tally from `since_day` on, summed across days, busiest first and at
-/// most `limit` rows. `day` is `since_day` in every row returned.
-pub fn since(pool: &Pool, since_day: i64, limit: usize) -> Result<Vec<FlowTally>> {
+/// most `limit` rows, only `caller`'s when one is named. `day` is `since_day` in
+/// every row returned.
+pub fn since(
+    pool: &Pool,
+    since_day: i64,
+    caller: Option<&str>,
+    limit: usize,
+) -> Result<Vec<FlowTally>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT caller, purpose, host, route, verdict, \
                 SUM(count), SUM(bytes_in), SUM(bytes_out), MAX(last_at) \
-         FROM network_flows_daily WHERE day >= ?1 \
+         FROM network_flows_daily WHERE day >= ?1 AND (?3 IS NULL OR caller = ?3) \
          GROUP BY caller, purpose, host, route, verdict \
          ORDER BY SUM(count) DESC, MAX(last_at) DESC LIMIT ?2",
     )?;
     let limit = i64::try_from(limit).unwrap_or(i64::MAX);
-    let rows = stmt.query_map(params![since_day, limit], |r| {
+    let rows = stmt.query_map(params![since_day, limit, caller], |r| {
         Ok(FlowTally {
             day: since_day,
             caller: r.get(0)?,
@@ -102,14 +108,15 @@ pub struct FlowTotals {
     pub bytes_out: i64,
 }
 
-pub fn totals_since(pool: &Pool, since_day: i64) -> Result<FlowTotals> {
+/// The window's totals, only `caller`'s when one is named.
+pub fn totals_since(pool: &Pool, since_day: i64, caller: Option<&str>) -> Result<FlowTotals> {
     let conn = pool.get()?;
     Ok(conn.query_row(
         "SELECT COALESCE(SUM(count), 0), \
                 COALESCE(SUM(CASE WHEN verdict = 'blocked' THEN count ELSE 0 END), 0), \
                 COALESCE(SUM(bytes_in), 0), COALESCE(SUM(bytes_out), 0) \
-         FROM network_flows_daily WHERE day >= ?1",
-        params![since_day],
+         FROM network_flows_daily WHERE day >= ?1 AND (?2 IS NULL OR caller = ?2)",
+        params![since_day, caller],
         |r| {
             Ok(FlowTotals {
                 flows: r.get(0)?,

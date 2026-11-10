@@ -166,6 +166,17 @@ describe('a rule for one host', () => {
     ]);
   });
 
+  it('applies to one module when one is named, and leaves the same host for the others alone', () => {
+    const everyone = withHostRule(RULES, 'tracker.example', 'block');
+
+    const next = withHostRule(everyone, 'tracker.example', 'vpn', 'tv.kroma.indexer');
+
+    expect(next.rules[0]).toEqual(
+      rule({ id: 'r-4', caller: 'tv.kroma.indexer', host: 'tracker.example', action: 'vpn' }),
+    );
+    expect(next.rules[1]).toEqual(everyone.rules[0]);
+  });
+
   it('hands back only what a save sends, whatever else the list carried', () => {
     const view = { ...RULES, purposes: [{ caller: 'core', purpose: 'metadata' }] };
 

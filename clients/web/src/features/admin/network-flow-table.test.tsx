@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Flow } from '@kromatv/client/network';
+import { type Flow, UNDECLARED_RULE } from '@kromatv/client/network';
 import { I18nProvider } from '@kromatv/ui';
 import { createStyleTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -86,5 +86,11 @@ describe('the connection journal', () => {
     mount([flowOf({ rule: null })]);
 
     expect(cells(1).at(-1)).toBe('Default');
+  });
+
+  it('marks a connection refused because its module never declared it', () => {
+    mount([flowOf({ route: 'blocked', rule: UNDECLARED_RULE })]);
+
+    expect(cells(1).at(-1)).toBe('Undeclared');
   });
 });

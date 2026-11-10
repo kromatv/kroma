@@ -1,8 +1,8 @@
-import type { Flow, Rule } from '@kromatv/client/network';
+import { type Flow, type Rule, UNDECLARED_RULE } from '@kromatv/client/network';
 import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useFormat, useLocale, useT } from '@kromatv/ui';
-import { Box, Table, type TableColumn, Text } from '@kromatv/ui/kit';
+import { Badge, Box, Table, type TableColumn, Text } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useCallerName } from '#web/features/admin/network-callers';
 import { destination, flowDuration, flowVolume } from '#web/features/admin/network-format';
@@ -55,6 +55,9 @@ function RuleCell({
         {t('network.ruleDefault')}
       </Text>
     );
+  }
+  if (id === UNDECLARED_RULE) {
+    return <Badge tone="danger">{t('network.ruleUndeclared')}</Badge>;
   }
   const ref = rules.get(id);
   const detail = ref ? (ref.rule.note ?? ref.rule.host) : null;

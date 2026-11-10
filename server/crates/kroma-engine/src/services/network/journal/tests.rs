@@ -193,7 +193,7 @@ fn a_flush_writes_one_tally_per_day_caller_purpose_host_and_route() {
     journal.flush(&pool).unwrap();
     journal.flush(&pool).unwrap();
 
-    let tallies = network_flows::since(&pool, network_flows::day_of(AT_MS), 10).unwrap();
+    let tallies = network_flows::since(&pool, network_flows::day_of(AT_MS), None, 10).unwrap();
     let counts: Vec<(&str, &str, i64)> = tallies
         .iter()
         .map(|t| (t.route.as_str(), t.verdict.as_str(), t.count))
