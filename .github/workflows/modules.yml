@@ -11,9 +11,10 @@ name: Modules
 # What publishing produces:
 #   <module-id>@<version>   one prerelease per module, holding its .kmod and
 #                           .sha256
-#   modules                 a rolling prerelease holding only modules.json, the
-#                           newest release of every module. This is what
-#                           https://modules.kroma.tv serves and what the
+#   modules                 a rolling prerelease holding modules.json, the
+#                           newest release of every module, and history.json,
+#                           what every version ever released needs. This is
+#                           what https://modules.kroma.tv serves and what the
 #                           in-app Store browses.
 
 on:
@@ -123,11 +124,17 @@ jobs:
           name: kroma-modules
           path: dist/modules
 
+      # Adds every module release the published history does not describe yet,
+      # reading each one's manifest at its tag. The first run builds the history;
+      # every later run finds nothing missing, or repairs what was lost.
+      - name: Repair the version history
+        run: bun run ci modules-history --out dist/registry/history.json
+
       # Reads the live catalog off the registry worker (its default), so the
       # comparison is against what servers are actually being served - not
       # against a release asset that may have been superseded.
       - name: Decide what to publish
-        run: bun run kroma release --repo "$GH_REPO"
+        run: bun run kroma release --repo "$GH_REPO" --published-history dist/registry/history.json
 
       - name: Show the plan
         run: |
@@ -146,5 +153,6 @@ jobs:
           name: kroma-modules-registry
           path: |
             dist/registry/modules.json
+            dist/registry/history.json
             dist/registry/plan.json
           if-no-files-found: error

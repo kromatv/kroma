@@ -155,25 +155,37 @@ the document builders, and a typed client (`descriptor`, `index`, `module`,
 
 ### Where the reference registry gets its modules
 
-Two sources, and the split matters:
+Three sources, and the split matters:
 
 - **`/index.json`** is projected from the merged `modules.json` the release train
   publishes to the rolling `modules` tag. That document is the publisher's
-  statement of what is *current*, and it is the only place the manifest metadata
-  (icon, `engines`, dependencies, points) exists outside the bundles.
+  statement of what is *current*.
 - **`/m/{id}.json`** additionally lists every version, read from the
-  `<id>@<version>` **GitHub Releases themselves** — the ground truth the merged
+  `<id>@<version>` **GitHub Releases themselves**, the ground truth the merged
   catalog is only a current-row projection of. Each asset carries a `digest`
   GitHub computed, which becomes `integrity` directly, so the published
   `.sha256` files never have to be fetched to trust a bundle.
+- **`history.json`**, beside `modules.json` on the same release, says what each
+  of those versions needs: its `engines`, schema, dependencies and permissions,
+  everything `/m/{id}.json` serves for the newest one. Each version it describes
+  replaces the bare row the release listing gave. It is what lets a server judge
+  an older version without downloading it, and offer it when the newest version
+  needs a newer server ([RFC 627](rfcs/627-version-compatibility.md)).
 
-A historical version therefore carries its artifacts and their integrity but not
-its manifest metadata: that lives inside the `.kmod`, and only the current row is
-in the catalog. Enough to pin or roll back, which is the point.
+The history is append-only. Every run of the release train folds the catalog it
+writes into the history it read (`kroma release --published-history`), and a
+version, once in, keeps the record it was first written with. Before that,
+`bun run ci modules-history` adds every release the history does not describe
+yet, reading the `module.json` its tag packed. The first run builds the history
+from every release; a later run finds nothing missing, or restores what was lost.
+
+A version neither source describes carries its artifacts and their integrity, but
+not what it needs, and a server never offers it.
 
 The listing is walked at most three pages and cached at the edge for an hour, so
-a cold request cannot turn into an unbounded crawl, and it degrades to "no
-history" rather than to an error: history enriches a record, it never gates one.
+a cold request cannot turn into an unbounded crawl. The history is cached for five
+minutes, with a week-old copy to fall back on. Both degrade to "no history"
+rather than to an error: history enriches a record, it never gates one.
 
 ## Publishing one
 

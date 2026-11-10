@@ -60,7 +60,9 @@ function helpersOf(entry: DescribedModule) {
   return entry.permissions?.run?.length ? {} : undefined;
 }
 
-function versionOf(entry: DescribedModule): RegistryVersion {
+/** Everything a registry serves about ONE version of a module: the fields a client
+ *  judges compatibility on, and the artifacts with their integrity. */
+export function buildVersion(entry: DescribedModule): RegistryVersion {
   return {
     schemaVersion: entry.schemaVersion,
     engines: entry.engines,
@@ -97,7 +99,7 @@ export type KnownVersions = Partial<Pick<ModuleRecord, 'versions' | 'distTags'>>
 /** One module's full record. `known` folds this version into the versions a
  *  registry already publishes, so republishing does not drop history. */
 export function buildModuleRecord(entry: DescribedModule, known?: KnownVersions): ModuleRecord {
-  const versions = { ...known?.versions, [entry.version]: versionOf(entry) };
+  const versions = { ...known?.versions, [entry.version]: buildVersion(entry) };
   const channel = channelOf(entry.version);
   const distTags = { ...known?.distTags, ...(channel ? { [channel]: entry.version } : {}) };
   return {
@@ -112,7 +114,7 @@ export function buildModuleRecord(entry: DescribedModule, known?: KnownVersions)
 /** `GET /index.json`, sorted by id so the same module set produces the same bytes. */
 export function buildIndex(entries: DescribedModule[]): RegistryEntry[] {
   return entries
-    .map((entry) => ({ ...metaOf(entry), version: entry.version, ...versionOf(entry) }))
+    .map((entry) => ({ ...metaOf(entry), version: entry.version, ...buildVersion(entry) }))
     .sort((a, b) => byCodeUnit(a.id, b.id));
 }
 

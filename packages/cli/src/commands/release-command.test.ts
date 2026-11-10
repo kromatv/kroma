@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { VersionHistory } from '@kromatv/registry';
 import type { Catalog } from '../bundle/catalog';
 import { packBundle } from '../bundle/pack';
 import type { Plan } from './release';
@@ -25,10 +26,13 @@ function pack(id: string, version: string, icon?: string): void {
   });
 }
 
-function stubCatalog(published: Catalog | null): void {
+function stubCatalog(published: Catalog | null, history: unknown = null): void {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => (published ? Response.json(published) : new Response('', { status: 404 }))),
+    vi.fn(async (url: string) => {
+      const body = url.endsWith('/history.json') ? history : published;
+      return body ? Response.json(body) : new Response('', { status: 404 });
+    }),
   );
 }
 
@@ -180,6 +184,55 @@ describe('releaseCommand', () => {
 
     expect(code).toBe(0);
     expect(written<Plan>('plan.json').unchanged).toEqual(['tv.acme.notes']);
+  });
+
+  it('starts the version history with the version it publishes', async () => {
+    await firstRelease('tv.acme.notes', '0.1.0');
+
+    const history = written<VersionHistory>('history.json');
+
+    expect(Object.keys(history.modules['tv.acme.notes'] ?? {})).toEqual(['0.1.0']);
+  });
+
+  it('keeps the version it replaces in the history', async () => {
+    const live = await firstRelease('tv.acme.notes', '0.1.0');
+    const history = written<VersionHistory>('history.json');
+    pack('tv.acme.notes', '0.2.0');
+    stubCatalog(live, history);
+
+    await releaseCommand({ repo: REPO, cwd: dir });
+
+    expect(
+      Object.keys(written<VersionHistory>('history.json').modules['tv.acme.notes'] ?? {}),
+    ).toEqual(['0.2.0', '0.1.0']);
+  });
+
+  it('reads the published history from the repository it releases into', async () => {
+    await firstRelease('tv.acme.notes', '0.1.0');
+    const history = written<VersionHistory>('history.json');
+    pack('tv.acme.notes', '0.2.0');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url === 'https://github.com/acme/store/releases/download/modules/history.json'
+          ? Response.json(history)
+          : new Response('', { status: 404 }),
+      ),
+    );
+
+    await releaseCommand({ repo: 'acme/store', cwd: dir });
+
+    expect(
+      Object.keys(written<VersionHistory>('history.json').modules['tv.acme.notes'] ?? {}),
+    ).toEqual(['0.2.0', '0.1.0']);
+  });
+
+  it('refuses a published history it cannot read rather than starting over', async () => {
+    pack('tv.acme.notes', '0.1.0');
+    stubCatalog(null, { schema: 99, modules: {} });
+
+    await expect(releaseCommand({ repo: REPO, cwd: dir })).rejects.toThrow();
+    expect(existsSync(join(dir, 'dist', 'registry', 'history.json'))).toBe(false);
   });
 
   it('refuses a published catalog path with nothing at it', async () => {

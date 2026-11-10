@@ -1,14 +1,13 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compareRaw, parse } from '@kromatv/registry';
-import { Catalog, type Entry } from '../bundle/catalog';
+import { compareRaw, foldHistory, parse } from '@kromatv/registry';
+import type { Catalog, Entry } from '../bundle/catalog';
 import { type Bundle, readBundles, toEntries } from '../bundle/read';
 import { versions } from '../scaffold/plan';
 import { floorBeyondRelease } from '../server-floor';
 import { byCodeUnit } from '../sort';
+import { DEFAULT_CATALOG, defaultHistory, loadHistory, loadPublished } from './published';
 import { resolveDir } from './registry';
-
-const DEFAULT_REGISTRY = 'https://modules.kroma.tv/modules.json';
 
 /** The git tag a module's release is cut under. Kept in one place: the workflow,
  *  the catalog URLs and the recovery path must all agree on it. */
@@ -51,20 +50,6 @@ export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
     return { kind: 'stale', published: live.version };
   }
   return { kind: 'unchanged' };
-}
-
-async function loadPublished(source: string): Promise<Catalog> {
-  if (!/^https?:\/\//.test(source)) {
-    if (!existsSync(source)) throw new Error(`--published ${source} does not exist`);
-    return Catalog.parse(JSON.parse(readFileSync(source, 'utf8')));
-  }
-  const res = await fetch(source, { headers: { 'user-agent': 'kroma-cli' } });
-  if (res.status === 404) {
-    console.warn(`  ! ${source} is 404: treating every module as a first release`);
-    return { schema: 2, modules: [] };
-  }
-  if (!res.ok) throw new Error(`${source}: HTTP ${res.status}`);
-  return Catalog.parse(await res.json());
 }
 
 export interface PlannedRelease {
@@ -200,6 +185,7 @@ function report(plan: Plan, stale: string[], errors: string[], strict: boolean):
 export interface ReleaseOptions {
   repo?: string;
   published?: string;
+  publishedHistory?: string;
   from?: string;
   out?: string;
   dryRun?: boolean;
@@ -208,8 +194,8 @@ export interface ReleaseOptions {
 }
 
 /** `kroma release`: decide which packed modules publish on their own tags, and
- *  merge the catalog against what is already live. Writes `modules.json` and
- *  `plan.json` under `--out`. */
+ *  merge the catalog against what is already live. Writes `modules.json`,
+ *  `history.json` and `plan.json` under `--out`. */
 export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   const repo = options.repo ?? process.env.GITHUB_REPOSITORY;
   if (!repo) throw new Error('--repo owner/name is required (or set GITHUB_REPOSITORY)');
@@ -218,12 +204,14 @@ export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   const outDir = resolveDir(options.out, 'dist/registry', cwd);
 
   const bundles = readBundles(modulesDir);
-  const published = await loadPublished(options.published ?? DEFAULT_REGISTRY);
+  const published = await loadPublished(options.published ?? DEFAULT_CATALOG);
+  const publishedHistory = await loadHistory(options.publishedHistory ?? defaultHistory(repo));
+  const now = new Date().toISOString();
   const { plan, catalog, stale, errors } = decide(
     bundles,
     published,
     repo,
-    new Date().toISOString(),
+    now,
     versions(cwd).server,
   );
   report(plan, stale, errors, options.strict === true);
@@ -235,6 +223,8 @@ export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   }
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, 'modules.json'), `${JSON.stringify(catalog, null, 2)}\n`);
+  const history = foldHistory(publishedHistory, catalog.modules, now);
+  writeFileSync(join(outDir, 'history.json'), `${JSON.stringify(history, null, 2)}\n`);
   writeFileSync(join(outDir, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
   console.log(
     `\n${plan.publish.length} release(s) to cut; catalog describes ${catalog.modules.length} module(s) -> ${outDir}`,

@@ -4104,7 +4104,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 85,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The official registry describes every version of a module it has",
     "file": "docs/spec/modules/README.md",
     "line": 153
