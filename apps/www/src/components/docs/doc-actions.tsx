@@ -16,6 +16,7 @@ import { m } from '#site/paraglide/messages';
 export interface DocActionsProps {
   title: string;
   markdown: string;
+  className?: string;
 }
 
 type Copied = 'page' | 'prompt' | undefined;
@@ -40,7 +41,7 @@ function Glyph({ done, children }: Readonly<{ done: boolean; children: ReactNode
 
 /** What a reader hands to an AI assistant: the guide as Markdown, a prompt that
  *  points at it, or a conversation opened on that prompt. */
-export function DocActions({ title, markdown }: Readonly<DocActionsProps>) {
+export function DocActions({ title, markdown, className }: Readonly<DocActionsProps>) {
   const lang = useLang();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<Copied>();
@@ -87,7 +88,12 @@ export function DocActions({ title, markdown }: Readonly<DocActionsProps>) {
   };
 
   return (
-    <div ref={root} className="relative mt-6 inline-flex rounded-lg border border-border text-sm">
+    <div
+      ref={root}
+      className={['relative inline-flex rounded-lg border border-border text-sm', className]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <button
         type="button"
         onClick={copyPage}
@@ -117,7 +123,7 @@ export function DocActions({ title, markdown }: Readonly<DocActionsProps>) {
       {open && (
         <div
           id={panel}
-          className="absolute left-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-strong bg-surface-1 p-2 shadow-pop"
+          className="absolute left-0 top-full z-20 mt-2 w-72 sm:left-auto sm:right-0 max-w-[calc(100vw-2rem)] rounded-2xl border border-border-strong bg-surface-1 p-2 shadow-pop"
         >
           <button type="button" onClick={copyPrompt} className={ITEM}>
             <Glyph done={copied === 'prompt'}>
