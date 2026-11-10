@@ -14,15 +14,16 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useArchive } from '#web/features/notifications/use-archive';
 import {
   type NotificationFilter,
   useUnreadCount,
 } from '#web/features/notifications/use-notifications';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
-/** The drawer's fixed half: what the panel is, what it is showing, and the two
+/** The drawer's fixed half: what the panel is, what it is showing, and the
  * things that act on the whole of it. */
 export function PanelHeader({
   filter,
@@ -36,6 +37,22 @@ export function PanelHeader({
   const queryClient = useQueryClient();
   const unread = useUnreadCount();
   const [busy, setBusy] = useState(false);
+  const { archiveRead } = useArchive();
+  const [archiving, setArchiving] = useState(false);
+  const { data: anyRead = false } = useQuery({
+    ...webRuntime.queries.userQueries.notifications(),
+    select: (v) => v.notifications.some((n) => n.read),
+  });
+  const archiveOff = archiving || !anyRead;
+
+  async function archiveAllRead() {
+    setArchiving(true);
+    try {
+      await archiveRead();
+    } finally {
+      setArchiving(false);
+    }
+  }
 
   async function markAll() {
     setBusy(true);
@@ -60,6 +77,17 @@ export function PanelHeader({
         <Spacer />
         {/* Icon-only: the label is long in every language and crowded the title. */}
         <Row gap={2}>
+          <IconButton
+            variant="ghost"
+            diameter={36}
+            radius="sm"
+            label={t('notifications.archiveRead')}
+            onPress={() => void archiveAllRead()}
+            disabled={archiveOff}
+            style={archiveOff ? s.off : undefined}
+          >
+            {archiving ? <Spinner size={17} /> : <Icon name="archive" size={18} />}
+          </IconButton>
           <IconButton
             variant="ghost"
             diameter={36}
@@ -94,6 +122,9 @@ export function PanelHeader({
             <Text>{unreadLabel}</Text>
             {unread > 0 ? <Badge tone="neutral">{unread}</Badge> : null}
           </Row>
+        </SegmentGroup.Item>
+        <SegmentGroup.Item value="archived">
+          <SegmentGroup.Label>{t('notifications.filterArchived')}</SegmentGroup.Label>
         </SegmentGroup.Item>
       </SegmentGroup.Root>
     </Box>

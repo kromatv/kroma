@@ -10,7 +10,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
-import { useUnreadCount } from '#mobile/lib/notifications';
+import { useUnseenCount } from '#mobile/lib/notifications';
 import { type } from '#mobile/lib/theme';
 
 export function NotificationBell() {
@@ -18,7 +18,7 @@ export function NotificationBell() {
 
   const t = useT();
   const router = useRouter();
-  const unread = useUnreadCount();
+  const unseen = useUnseenCount();
 
   return (
     <IconButton
@@ -26,15 +26,15 @@ export function NotificationBell() {
       diameter={40}
       glyph={22}
       hitSlop={10}
-      label={unread > 0 ? t('notifications.unreadCount', { n: unread }) : t('notifications.title')}
+      label={unseen > 0 ? t('notifications.titleNew', { count: unseen }) : t('notifications.title')}
       onPress={() => router.push('/notifications' as never)}
     >
       <Box>
         <Icon name="bell" size={22} thickness={2} />
-        {unread > 0 ? (
+        {unseen > 0 ? (
           <Box style={s.badge}>
             {/* Past nine the pill starts outgrowing the bell. */}
-            <Text style={s.count}>{unread > 9 ? '9+' : unread}</Text>
+            <Text style={s.count}>{unseen > 9 ? '9+' : unseen}</Text>
           </Box>
         ) : null}
       </Box>

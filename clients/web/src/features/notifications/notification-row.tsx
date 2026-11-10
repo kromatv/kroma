@@ -29,6 +29,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { notificationLink } from '#web/features/notifications/notification-link';
 import { useRelativeTime, useStandaloneTime } from '#web/features/notifications/notification-time';
+import { useArchive } from '#web/features/notifications/use-archive';
 import { useReadState } from '#web/features/notifications/use-notifications';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
@@ -54,8 +55,9 @@ function settledLabel(one: Notification, t: Translate): string | null {
 
 export function NotificationEntry({
   one,
+  archived = false,
   onNavigate,
-}: Readonly<{ one: Notification; onNavigate: () => void }>) {
+}: Readonly<{ one: Notification; archived?: boolean; onNavigate: () => void }>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -112,7 +114,11 @@ export function NotificationEntry({
           />
         </ListRow.Root>
         <Box absolute right={6} top={0} bottom={0} justify="center">
-          <ReadToggle unread={unread} title={one.title} ids={[one.id]} />
+          {archived ? (
+            <RestoreButton title={one.title} id={one.id} />
+          ) : (
+            <ReadToggle unread={unread} title={one.title} ids={[one.id]} />
+          )}
         </Box>
       </Box>
     </Box>
@@ -143,6 +149,22 @@ function ReadToggle({
         size={13}
         color={unread ? 'accentText' : 'textDim'}
       />
+    </IconButton>
+  );
+}
+
+function RestoreButton({ title, id }: Readonly<{ title: string; id: NotificationId }>) {
+  const t = useT();
+  const { unarchive } = useArchive();
+  return (
+    <IconButton
+      variant="ghost"
+      diameter={34}
+      ring="focusEdge"
+      label={`${t('notifications.unarchive')} · ${title}`}
+      onPress={() => void unarchive([id])}
+    >
+      <Icon name="restore" size={16} color="textDim" />
     </IconButton>
   );
 }

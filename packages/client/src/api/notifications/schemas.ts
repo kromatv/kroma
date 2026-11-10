@@ -99,11 +99,24 @@ export const Notification = z.object({
 });
 export type Notification = z.infer<typeof Notification>;
 
-/** `GET /api/notifications`. */
-export const NotificationsView = z.object({
-  notifications: z.array(Notification),
-  unread: z.number(),
-});
+/** What the inbox's counts are after any change. `unseen` is what the bell
+ * badge counts; a server from before it existed sends `unread` alone, which
+ * stands in for it. */
+export const InboxCounts = z
+  .object({ unread: z.number(), unseen: z.number().optional() })
+  .transform((v) => ({ unread: v.unread, unseen: v.unseen ?? v.unread }));
+export type InboxCounts = z.infer<typeof InboxCounts>;
+
+/** `GET /api/notifications`: the inbox, or with `archived` the rows put away,
+ * plus the counts. `canArchive` is whether the server keeps an archive at all;
+ * one from before it sends no `unseen`, ignores `archived`, and only deletes. */
+export const NotificationsView = z
+  .object({
+    notifications: z.array(Notification),
+    unread: z.number(),
+    unseen: z.number().optional(),
+  })
+  .transform((v) => ({ ...v, unseen: v.unseen ?? v.unread, canArchive: v.unseen !== undefined }));
 export type NotificationsView = z.infer<typeof NotificationsView>;
 
 export const CategoryPref = z.object({

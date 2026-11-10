@@ -8,6 +8,7 @@ use super::{params, Connection, Result};
 use kroma_domain::{NotificationEvent, NotificationSubject, PushCategory};
 
 mod digest;
+mod engagement;
 mod preferences;
 mod read_state;
 mod stored;
@@ -17,6 +18,7 @@ mod subjects;
 mod test_support;
 
 pub use digest::*;
+pub use engagement::*;
 pub use preferences::*;
 pub use read_state::*;
 pub use stored::*;
@@ -45,6 +47,7 @@ pub struct Written {
     pub count: u32,
     pub folded: bool,
     pub unread: u32,
+    pub unseen: u32,
 }
 
 /// Write one notification for `user_id`, folding it into the row that already
@@ -100,6 +103,7 @@ pub fn insert_notification(
         count: 1,
         folded: false,
         unread: unread_count(conn, user_id)?,
+        unseen: unseen_count(conn, user_id)?,
     })
 }
 
@@ -112,7 +116,7 @@ fn fold_into_group(
     let existing: Option<(String, u32)> = conn
         .query_row(
             "SELECT id, count FROM notifications WHERE user_id = ?1 AND group_key = ?2 \
-             AND resolved_at IS NULL ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1",
+             AND resolved_at IS NULL AND archived_at IS NULL ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1",
             params![user_id, key],
             |r| Ok((r.get(0)?, r.get(1)?)),
         )
@@ -123,7 +127,7 @@ fn fold_into_group(
     let params_json = serde_json::to_string(&n.params).unwrap_or_else(|_| "{}".into());
     let actions_json = serde_json::to_string(&n.actions).unwrap_or_else(|_| "[]".into());
     conn.execute(
-        "UPDATE notifications SET count = count + 1, updated_at = ?3, read_at = NULL, \
+        "UPDATE notifications SET count = count + 1, updated_at = ?3, read_at = NULL, seen_at = NULL, \
            title_key = ?4, body_key = ?5, params = ?6, link = ?7, image_url = ?8, \
            actions = ?9, actor_id = ?10, data = ?11 \
          WHERE user_id = ?1 AND id = ?2",
@@ -146,20 +150,25 @@ fn fold_into_group(
         count: count + 1,
         folded: true,
         unread: unread_count(conn, user_id)?,
+        unseen: unseen_count(conn, user_id)?,
     }))
 }
 
 fn prune(conn: &Connection, user_id: &str) -> rusqlite::Result<()> {
     conn.execute(
-        "DELETE FROM notifications WHERE user_id = ?1 AND id NOT IN \
-         (SELECT id FROM notifications WHERE user_id = ?1 \
-           ORDER BY COALESCE(updated_at, created_at) DESC LIMIT ?2)",
+        "DELETE FROM notifications WHERE user_id = ?1 \
+           AND NOT (read_at IS NULL AND archived_at IS NULL) \
+           AND id NOT IN (SELECT id FROM notifications WHERE user_id = ?1 \
+             ORDER BY (read_at IS NULL AND archived_at IS NULL) DESC, \
+                      (archived_at IS NULL) DESC, \
+                      COALESCE(updated_at, created_at) DESC \
+             LIMIT ?2)",
         params![user_id, RETENTION_PER_USER as i64],
     )?;
     Ok(())
 }
 
-/// One user's notifications, newest first.
+/// One user's notifications, newest first, the archived ones aside.
 pub fn list_notifications(
     conn: &Connection,
     user_id: &str,
@@ -172,7 +181,8 @@ pub fn list_notifications(
         ""
     };
     let sql = format!(
-        "SELECT {NOTIFICATION_COLS} FROM notifications WHERE user_id = ?1{unread} \
+        "SELECT {NOTIFICATION_COLS} FROM notifications \
+         WHERE user_id = ?1 AND archived_at IS NULL{unread} \
          ORDER BY COALESCE(updated_at, created_at) DESC LIMIT ?2"
     );
     let mut stmt = conn.prepare(&sql)?;
@@ -223,10 +233,11 @@ pub fn holds_dedupe_key(conn: &Connection, user_id: &str, key: &str) -> rusqlite
     )
 }
 
-/// Unread tally for the bell badge.
+/// Unread rows still in the inbox, the archived ones aside.
 pub fn unread_count(conn: &Connection, user_id: &str) -> rusqlite::Result<u32> {
     conn.query_row(
-        "SELECT COUNT(*) FROM notifications WHERE user_id = ?1 AND read_at IS NULL",
+        "SELECT COUNT(*) FROM notifications \
+         WHERE user_id = ?1 AND read_at IS NULL AND archived_at IS NULL",
         params![user_id],
         |r| r.get(0),
     )
@@ -520,16 +531,53 @@ mod tests {
     }
 
     #[test]
-    fn retention_keeps_the_newest_and_drops_the_rest() {
+    fn retention_keeps_the_newest_read_rows_and_drops_the_rest() {
         let (p, u1, _) = pool();
         for i in 0..(RETENTION_PER_USER + 5) {
-            insert(&p, &format!("n{i}"), &u1, i as i64);
+            insert_read(&p, &format!("n{i}"), &u1, i as i64);
         }
         let conn = p.get().unwrap();
         let list = list_notifications(&conn, &u1, 1_000, false).unwrap();
         assert_eq!(list.len(), RETENTION_PER_USER);
         assert_eq!(list[0].id, format!("n{}", RETENTION_PER_USER + 4));
         assert!(!list.iter().any(|n| n.id == "n0"));
+    }
+
+    #[test]
+    fn retention_never_drops_an_unread_row_for_being_old() {
+        let (p, u1, _) = pool();
+        insert(&p, "old-unread", &u1, 0);
+        for i in 1..=RETENTION_PER_USER {
+            insert_read(&p, &format!("n{i}"), &u1, i as i64);
+        }
+
+        let conn = p.get().unwrap();
+        let ids: Vec<String> = list_notifications(&conn, &u1, 1_000, false)
+            .unwrap()
+            .into_iter()
+            .map(|n| n.id)
+            .collect();
+        assert_eq!(ids.len(), RETENTION_PER_USER);
+        assert!(ids.contains(&"old-unread".to_string()));
+        assert!(!ids.contains(&"n1".to_string()));
+    }
+
+    #[test]
+    fn retention_drops_archived_rows_before_read_ones() {
+        let (p, u1, _) = pool();
+        for i in 0..RETENTION_PER_USER {
+            insert_read(&p, &format!("n{i}"), &u1, i as i64);
+        }
+        set_archived(&p, &u1, &[format!("n{}", RETENTION_PER_USER - 1)], Some(1)).unwrap();
+
+        insert(&p, "fresh", &u1, 10_000);
+
+        let conn = p.get().unwrap();
+        assert!(list_archived(&conn, &u1, 50).unwrap().is_empty());
+        assert!(list_notifications(&conn, &u1, 1_000, false)
+            .unwrap()
+            .iter()
+            .any(|n| n.id == "n0"));
     }
 
     #[test]
@@ -548,7 +596,7 @@ mod tests {
         let (p, u1, _) = pool();
         let conn = p.get().unwrap();
         for n in 0..=RETENTION_PER_USER {
-            insert_notification(&conn, &u1, &new(&format!("n{n}"), n as i64)).unwrap();
+            insert_read(&p, &format!("n{n}"), &u1, n as i64);
         }
         conn.execute_batch(
             "CREATE TRIGGER no_prune BEFORE DELETE ON notifications \

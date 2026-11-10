@@ -6,6 +6,7 @@
 // what each button does rides in the payload instead.
 
 import type { KromaClient } from '@kromatv/client';
+import { NotificationId } from '@kromatv/client/notifications';
 import type * as Notifications from 'expo-notifications';
 import { z } from 'zod';
 
@@ -73,6 +74,9 @@ export async function handleTap(
   if (action) {
     try {
       await client.notifications.runAction(action);
+      if (data.id) {
+        await client.notifications.interacted(NotificationId.parse(data.id)).catch(() => undefined);
+      }
       return null;
     } catch {
       // Offline, or already reviewed by someone else: open the app so it can

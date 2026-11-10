@@ -125,20 +125,21 @@ back to unread, or mark everything read at once.
 **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them
 changing it: reading a row on the phone drops the number in the browser.
 
-**ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel
+**ACCT-57** (SHIPPED) - The badge counts rows the person has **not seen**: opening the panel
 clears it, whether or not they then open each row. Each row still shows whether it was read,
 and the unread filter still works on that.
 
-Today the badge counts unread rows, so it stays lit until every row has been opened one by
-one. Unseen is the number a person can actually clear, which is what a badge is for.
+A badge that counted unread rows stayed lit until every row had been opened one by one.
+Unseen is the number a person can actually clear, which is what a badge is for.
 
-**ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row
-leaves the default list and stays findable.
+**ACCT-58** (SHIPPED) - A reader **archives** a row rather than deleting it. An archived row
+leaves the default list and stays findable, and can be brought back. The phone archives one row
+at a time; the web panel archives every row already read at once.
 
-**ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go,
-whatever state they are in.
+**ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that rows go in the
+order ACCT-60 sets, so an inbox holds more only while the extra rows are unread.
 
-**ACCT-60** (AGREED) - What goes first is archived rows, then the oldest rows that were read.
+**ACCT-60** (SHIPPED) - What goes first is archived rows, then the oldest rows that were read.
 An unread row is never dropped for being old, so a burst of job failures cannot push out the
 request nobody has answered yet.
 

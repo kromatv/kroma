@@ -166,6 +166,9 @@ export function createQueries(client: QueryClient) {
      * over the (addressed) event stream, so the bell invalidates on demand. */
     notifications: () => client.query.notifications.list(),
 
+    /** The rows the reader put away, fetched only while the panel shows them. */
+    archivedNotifications: () => client.query.notifications.list({ archived: true }),
+
     /** The per-category delivery matrix (for the /account settings section). */
     notificationPrefs: () => client.query.notifications.prefs(),
 

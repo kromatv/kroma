@@ -59,3 +59,14 @@ pub(super) fn insert(p: &Pool, id: &str, user: &str, at: i64) -> u32 {
     let conn = p.get().unwrap();
     insert_notification(&conn, user, &new(id, at)).unwrap().unread
 }
+
+pub(super) fn insert_read(p: &Pool, id: &str, user: &str, at: i64) {
+    insert(p, id, user, at);
+    p.get()
+        .unwrap()
+        .execute(
+            "UPDATE notifications SET read_at = ?2 WHERE id = ?1",
+            rusqlite::params![id, at],
+        )
+        .unwrap();
+}

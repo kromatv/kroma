@@ -32,4 +32,5 @@ pub(super) const STEPS: &[Step] = &[
         run: Run::Code(super::stored_tokens::hash_bearers),
         rebuilds: false,
     },
+    sql_step!("0014_notification_engagement"),
 ];
