@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA's public site (kroma.tv). TanStack Start, prerendered to static assets on Cloudflare. Marketing pages and an MD/MDX blog, styled from the @kromatv/ui design tokens.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

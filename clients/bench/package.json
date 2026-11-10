@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Performance bench: the TV app's rendering path over generated data, driven by clients/tv-build/perf-bench.ts.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

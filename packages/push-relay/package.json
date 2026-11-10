@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA push relay: the Cloudflare Worker at push.kroma.tv that holds the published app's Apple and Google credentials and issues per-device grants, so a self-hosted server can notify a phone without holding a credential it could never obtain.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "What a React interaction actually costs: which components re-rendered, and which were destroyed and rebuilt. Reads React's own fiber tree, so it names components rather than timing commits.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
