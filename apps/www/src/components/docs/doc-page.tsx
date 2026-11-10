@@ -1,5 +1,6 @@
 import { site } from '@kromatv/site-meta';
 import { IconArrowLeft, IconArrowRight, IconBrandGithub, IconLanguage } from '@tabler/icons-react';
+import { DocActions } from '#site/components/docs/doc-actions';
 import { DocAnchor } from '#site/components/docs/doc-anchor';
 import { DOC_NAV_LABEL, DOC_SECTION_LABEL } from '#site/components/docs/doc-labels';
 import { DocsNav } from '#site/components/docs/docs-nav';
@@ -67,13 +68,18 @@ export function DocPage({ slug }: Readonly<{ slug: DocSlug }>) {
       </aside>
 
       <article className="min-w-0 max-w-[46rem]">
-        <header>
-          <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent-text">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3">
+          <p className="col-span-2 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent-text sm:col-span-1">
             {DOC_SECTION_LABEL[doc.section]()}
           </p>
-          <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.08] text-text sm:text-5xl">
+          <h1 className="col-span-2 text-balance font-display text-4xl font-extrabold leading-[1.08] text-text sm:text-5xl">
             {doc.title}
           </h1>
+          <DocActions
+            title={doc.title}
+            markdown={doc.markdown}
+            className="col-span-2 mt-3 justify-self-start sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:mt-0 sm:justify-self-end"
+          />
         </header>
 
         {!doc.translated && lang !== 'en' && (

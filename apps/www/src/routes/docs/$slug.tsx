@@ -19,6 +19,7 @@ export const Route = createFileRoute('/docs/$slug')({
           title: loaderData.meta.title,
           description: loaderData.meta.description,
           path: loaderData.meta.path,
+          markdown: loaderData.meta.markdown,
           type: 'article',
         })
       : {},

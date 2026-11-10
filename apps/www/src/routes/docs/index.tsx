@@ -18,6 +18,7 @@ export const Route = createFileRoute('/docs/')({
           title: loaderData.meta.title,
           description: loaderData.meta.description,
           path: loaderData.meta.path,
+          markdown: loaderData.meta.markdown,
         })
       : {},
   component: () => <DocPage slug="index" />,

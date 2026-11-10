@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { createDocs, type DocModule, docPath, isDocSlug, repoPathOf } from './docs';
+import {
+  createDocs,
+  type DocModule,
+  docMarkdownPath,
+  docPath,
+  isDocSlug,
+  repoPathOf,
+} from './docs';
 
 const Body = (() => null) as unknown as DocModule['default'];
 
@@ -39,6 +46,7 @@ describe('createDocs', () => {
     expect(doc?.description).toBe('Résumé');
     expect(doc?.translated).toBe(true);
     expect(doc?.source).toBe('apps/www/content/docs/docker.fr.md');
+    expect(doc?.markdown).toBe('/fr/docs/docker.md');
   });
 
   it('falls back to English and says so', () => {
@@ -49,6 +57,7 @@ describe('createDocs', () => {
     expect(doc?.title).toBe('Install KROMA on an LG TV');
     expect(doc?.translated).toBe(false);
     expect(doc?.source).toBe('docs/setup/lg-tv.md');
+    expect(doc?.markdown).toBe('/docs/lg-tv.md');
   });
 
   it('names a guide by its slug when it has no title', () => {
@@ -98,6 +107,18 @@ describe('docPath', () => {
   it('puts the index at /docs and every other guide below it', () => {
     expect(docPath('index')).toBe('/docs');
     expect(docPath('samsung-tv')).toBe('/docs/samsung-tv');
+  });
+});
+
+describe('docMarkdownPath', () => {
+  it('puts the Markdown of a guide beside its page', () => {
+    expect(docMarkdownPath('index', 'en')).toBe('/docs.md');
+    expect(docMarkdownPath('samsung-tv', 'en')).toBe('/docs/samsung-tv.md');
+  });
+
+  it('keeps the prefix of a translated guide', () => {
+    expect(docMarkdownPath('index', 'fr')).toBe('/fr/docs.md');
+    expect(docMarkdownPath('docker', 'fr')).toBe('/fr/docs/docker.md');
   });
 });
 

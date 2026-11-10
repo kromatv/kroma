@@ -81,6 +81,16 @@ Three remark plugins in [`vite/`](./vite) adapt a GitHub page to the site:
 | `doc-links.ts` | turns a link to another guide (`docker.md`) into its route (`/docs/docker`), and any other repository path into a GitHub URL |
 | `alerts.ts` | renders GitHub's `> [!NOTE]` alerts as `aside.callout`, titled in the page's language |
 
+Every guide is also published as Markdown for AI assistants, by
+[`vite/llms.ts`](./vite/llms.ts): `/docs/docker.md` beside `/docs/docker`
+(`/docs.md` for the index, `/fr/docs/docker.md` for a translation), with the
+links between guides pointing at the Markdown of the other guide, and an
+[`llms.txt`](https://llmstxt.org) index per language at `/llms.txt` and
+`/fr/llms.txt`. The **Copy page** menu under a guide's title copies that
+Markdown, copies a prompt that points an assistant at it, or opens the prompt
+in Claude or ChatGPT. An assistant is a row of `DOC_CHATS` in
+[`src/lib/doc-chats.ts`](./src/lib/doc-chats.ts).
+
 The reading order and the sidebar sections are `DOC_SECTIONS` in
 [`src/lib/docs.ts`](./src/lib/docs.ts). A new guide is a new file in
 `docs/setup/`, a slug in that list and a `docs_nav_<slug>` label in both
@@ -94,8 +104,8 @@ generated, typed function for the one it needs.
 
 ```
 messages/
-  en.json      the base locale, 498 keys
-  fr.json      the same 498 keys, in French
+  en.json      the base locale, 505 keys
+  fr.json      the same 505 keys, in French
 project.inlang/settings.json    the locale list
 ```
 
@@ -197,7 +207,7 @@ apps/www/
 ├─ content/legal/      the privacy policy, as MDX per locale
 ├─ messages/           the Paraglide catalogs, one .json per locale
 ├─ vite/               the build's own plugins: og (Takumi, JSX -> PNG), mdx,
-│                      modules, releases, fetch-body, reading-time
+│                      modules, releases, fetch-body, reading-time, llms
 ├─ public/             static assets served as-is (favicon, og image, robots)
 ├─ src/
 │  ├─ components/      site chrome + per-page section components (Tailwind v4)

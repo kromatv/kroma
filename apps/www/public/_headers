@@ -1,2 +1,5 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+/*.md
+  X-Robots-Tag: noindex
