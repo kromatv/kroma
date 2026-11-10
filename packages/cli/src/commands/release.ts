@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { compareRaw, parse } from '@kromatv/registry';
 import { Catalog, type Entry } from '../bundle/catalog';
 import { type Bundle, readBundles, toEntries } from '../bundle/read';
+import { versions } from '../scaffold/plan';
+import { floorBeyondRelease } from '../server-floor';
 import { byCodeUnit } from '../sort';
 import { resolveDir } from './registry';
 
@@ -97,6 +99,7 @@ export function decide(
   published: Catalog,
   repo: string,
   now: string,
+  release?: string,
 ): Decisions {
   const live = new Map((published.modules ?? []).map((m) => [m.id, m]));
   const local = toEntries(
@@ -115,6 +118,13 @@ export function decide(
       errors.push(
         `${entry.id}: version ${JSON.stringify(entry.version)} is not semver, so it cannot be ordered against what is published`,
       );
+      continue;
+    }
+    const beyond = release ? floorBeyondRelease(entry, release) : null;
+    if (beyond) {
+      errors.push(beyond);
+      const kept = live.get(entry.id);
+      if (kept) entries.push(underRepo(kept, repo));
       continue;
     }
     const verdict = verdictFor(entry, live.get(entry.id));
@@ -214,6 +224,7 @@ export async function releaseCommand(options: ReleaseOptions): Promise<number> {
     published,
     repo,
     new Date().toISOString(),
+    versions(cwd).server,
   );
   report(plan, stale, errors, options.strict === true);
   if (errors.length > 0) return 1;

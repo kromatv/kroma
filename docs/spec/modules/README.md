@@ -75,7 +75,7 @@ dependency is declared, resolved and enforced rather than discovered at runtime.
 
 ## The `.kmod` bundle
 
-Status: **SHIPPED**, with the release guard on `minServer` (MOD-94) **AGREED**.
+Status: **SHIPPED**
 
 **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the backend as
 a WebAssembly component, an icon and the module's own frontend, packed together. At product level the
@@ -91,7 +91,7 @@ The manifest declares:
 - **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version
   the module needs, as a bare version or a range. This is the whole compatibility contract
   until MOD-92 and MOD-93 ship.
-- **MOD-94** (AGREED) - The release process refuses to publish a module whose `minServer`
+- **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer`
   names a server newer than the release being prepared, because no server could run it. A
   canary build is a prerelease of the release being prepared, not a later one.
 - **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and

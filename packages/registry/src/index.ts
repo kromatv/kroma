@@ -47,7 +47,7 @@ export {
   Storage,
   speaksCurrentSchema,
 } from './manifest/index.ts';
-export { channelOf, compareRaw, parse, satisfies, type Version } from './semver.ts';
+export { channelOf, compareRaw, floorOf, parse, satisfies, type Version } from './semver.ts';
 export {
   type JsonSchema,
   jsonSchema,

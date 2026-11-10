@@ -4194,7 +4194,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 94,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The release process refuses to publish a module whose `minServer`",
     "file": "docs/spec/modules/README.md",
     "line": 94

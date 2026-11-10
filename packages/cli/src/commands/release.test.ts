@@ -229,6 +229,43 @@ describe('decide', () => {
     expect(out.modules[0]?.artifacts.map((a) => a.target)).toEqual(['musl', 'darwin']);
   });
 
+  it('refuses a module that needs a server past the release being prepared', () => {
+    const ahead = bundle('tv.kroma.acquisition', '0.4.0', 'h');
+    ahead.manifest.engines = { server: '>=0.1.40' };
+
+    const { errors, plan } = decide([ahead], catalog(), REPO, NOW, '0.1.39');
+
+    expect(errors).toEqual([
+      'tv.kroma.acquisition: needs server 0.1.40, past 0.1.39, the release being prepared, so no server could run it',
+    ]);
+    expect(plan.publish).toEqual([]);
+  });
+
+  it('keeps serving the live version of a module it refuses', () => {
+    const ahead = bundle('tv.kroma.acquisition', '0.4.0', 'h');
+    ahead.manifest.engines = { server: '>=0.1.40' };
+
+    const { catalog: out } = decide(
+      [ahead],
+      catalog(entry('tv.kroma.acquisition', '0.3.13', 'old')),
+      REPO,
+      NOW,
+      '0.1.39',
+    );
+
+    expect(out.modules.map((m) => m.version)).toEqual(['0.3.13']);
+  });
+
+  it('publishes a module whose floor is the release being prepared', () => {
+    const current = bundle('tv.kroma.acquisition', '0.4.1', 'h');
+    current.manifest.engines = { server: '>=0.1.39' };
+
+    const { errors, plan } = decide([current], catalog(), REPO, NOW, '0.1.39');
+
+    expect(errors).toEqual([]);
+    expect(plan.publish.map((r) => r.tag)).toEqual(['tv.kroma.acquisition@0.4.1']);
+  });
+
   it('rejects a version it cannot order', () => {
     const { errors } = decide([bundle('a', 'latest', 'h')], catalog(), REPO, NOW);
 

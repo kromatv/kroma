@@ -441,7 +441,7 @@
 - **MOD-91** (AGREED) - Each dependency resolves to its own newest version that runs here. A <sub>[README.md](modules/README.md)</sub>
 - **MOD-92** (AGREED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
 - **MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
-- **MOD-94** (AGREED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>
+- **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

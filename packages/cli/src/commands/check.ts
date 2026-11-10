@@ -11,6 +11,8 @@ import { z } from 'zod';
 import { COMPONENT_TARGET, cargo, targetDir } from '../cargo';
 import { exec } from '../exec';
 import { findProjects, type Project } from '../project';
+import { versions } from '../scaffold/plan';
+import { floorBeyondRelease } from '../server-floor';
 import { style } from '../style';
 
 export interface CheckOptions {
@@ -166,6 +168,11 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     seen.set(p.manifest.id, p.dir);
   }
   problems.push(...unsatisfiableRanges(projects));
+  const release = versions(cwd).server;
+  for (const p of projects) {
+    const beyond = floorBeyondRelease(p.manifest, release);
+    if (beyond) problems.push(beyond);
+  }
 
   for (const project of projects) {
     console.log(`\n${style.bold(project.manifest.id)}`);
