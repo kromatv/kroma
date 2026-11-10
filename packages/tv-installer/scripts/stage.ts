@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { tv } from '../src/cli.ts';
 import { injectUsage, renderUsage } from '../src/usage.ts';
 
-const NAME = 'kroma-tv';
+const PACKAGE = '@kromatv/installer';
+const COMMAND = 'kroma-tv';
 const NODE_SHEBANG = '#!/usr/bin/env node\n';
 const BUN_PREAMBLE = /^#!.*\n(?:\/\/ @bun\n)?/;
 
@@ -38,7 +39,7 @@ const workspace = Workspace.parse(
   JSON.parse(await readFile(join(pkgRoot, 'package.json'), 'utf8')),
 );
 const manifest = {
-  name: NAME,
+  name: PACKAGE,
   version: values.version,
   description:
     'Finds the Samsung, LG and Android TV sets on your network and installs KROMA on them, from the latest release.',
@@ -49,7 +50,7 @@ const manifest = {
   homepage: `${site.links.installGuide}/tv`,
   bugs: site.links.issues,
   type: 'module',
-  bin: { [NAME]: 'cli.js' },
+  bin: { [COMMAND]: 'cli.js' },
   files: ['cli.js'],
   engines: { node: '>=22.12.0' },
   os: ['darwin', 'linux'],
@@ -59,10 +60,10 @@ await writeFile(join(out, 'package.json'), `${JSON.stringify(manifest, null, 2)}
 
 const commands = typeof tv.subCommands === 'function' ? tv.subCommands() : tv.subCommands;
 const { docs: _docs, ...published } = (await commands) ?? {};
-const usage = await renderUsage({ ...tv, subCommands: published }, `npx ${NAME}`);
+const usage = await renderUsage({ ...tv, subCommands: published }, `npx ${PACKAGE}`);
 const readme = await readFile(join(pkgRoot, 'npm', 'README.md'), 'utf8');
 await writeFile(join(out, 'README.md'), injectUsage(readme, usage));
 await cp(join(pkgRoot, '../..', 'LICENSE'), join(out, 'LICENSE'));
 
 await $`npm pack --silent`.cwd(out).quiet();
-console.log(`staged ${NAME}@${values.version} into ${out}`);
+console.log(`staged ${PACKAGE}@${values.version} into ${out}`);

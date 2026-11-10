@@ -13,7 +13,8 @@ whatever is ticked. It installs the toolchain a set needs before touching it.
 
 It runs on Bun or on Node 22 and later, and needs no checkout of this
 repository: with nothing built here it takes the package from the latest
-release. That is what `npx kroma-tv` runs, the same tool published to npm
+release. That is what `npx @kromatv/installer` runs, the same tool published to
+npm
 ([docs/tv-installer-publishing.md](../../docs/tv-installer-publishing.md)).
 
 Three platforms take a sideloaded package: Samsung (Tizen, `.wgt`), LG (webOS,

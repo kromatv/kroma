@@ -1,10 +1,10 @@
-# kroma-tv
+# @kromatv/installer
 
 Install [KROMA](https://kroma.tv) on the TVs on your network, from a Mac or a
 Linux computer:
 
 ```bash
-npx kroma-tv
+npx @kromatv/installer
 ```
 
 The command finds the Samsung, LG and Android TV sets on your network, downloads
@@ -28,7 +28,7 @@ it on the sets you choose. Run it again to update KROMA.
 
 ## What it puts on your computer
 
-- For a Samsung TV, nothing. `kroma-tv` signs the app with your Samsung
+- For a Samsung TV, nothing. The installer signs the app with your Samsung
   certificate and sends it to the TV itself.
 - For an LG TV, LG's command-line tools, installed with npm into
   `~/.kroma/tools`.
