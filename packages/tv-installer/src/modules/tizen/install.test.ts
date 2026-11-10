@@ -221,7 +221,7 @@ describe('installTizen', () => {
     );
     readDuid.mockResolvedValue('1900A2C4D6E8');
 
-    await expect(installTizen(studio())).rejects.toThrow('The DUID to register is 1900A2C4D6E8.');
+    await expect(installTizen(studio())).rejects.toThrow('The DUID of this set is 1900A2C4D6E8.');
   });
 
   it('deletes a widget it staged, whatever the install did', async () => {

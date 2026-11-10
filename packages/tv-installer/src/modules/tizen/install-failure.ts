@@ -13,6 +13,6 @@ export function installFailure(
     return `the install failed${said}`;
   }
   const rejected = profile ? `profile ${profile} signed it and the set refused that chain. ` : '';
-  const set = duid ? ` The DUID to register is ${duid}.` : '';
-  return `${rejected}A retail Samsung takes only a distributor certificate Samsung issued for its own DUID: Tizen Studio, Certificate Manager, Samsung, TV, with the set connected.${set}`;
+  const set = duid ? ` The DUID of this set is ${duid}.` : '';
+  return `${rejected}A retail Samsung takes only certificates Samsung issued for its own DUID: the certificate command of this tool gets them, with the address of the set.${set}`;
 }

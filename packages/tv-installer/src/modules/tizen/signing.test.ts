@@ -8,6 +8,7 @@ import { createAuthorCertificate } from './certificate/authority';
 import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
 import { activeProfile } from './profiles';
+import { readSamsungProfile } from './samsung/profile';
 import { ensureProfile, readDuid, resign } from './signing';
 
 const { directories } = vi.hoisted(() => ({ directories: new Set<string>() }));
@@ -27,6 +28,7 @@ vi.mock('./certificate/password', () => ({ randomPassword: () => 'a-random-passw
 vi.mock('./certificate/profile', () => ({ writeProfile: vi.fn() }));
 vi.mock('./certificate/widget', () => ({ signWidget: vi.fn() }));
 vi.mock('./profiles', () => ({ activeProfile: vi.fn() }));
+vi.mock('./samsung/profile', () => ({ readSamsungProfile: vi.fn(() => null) }));
 
 const kroma = {
   name: 'kroma',
@@ -49,6 +51,18 @@ afterEach(() => {
 });
 
 describe('ensureProfile', () => {
+  it('takes the certificates Samsung issued to this tool before any other', async () => {
+    const issued = {
+      name: 'samsung',
+      author: { key: '/kept/author.key', chain: '/kept/author.pem' },
+      distributor: { key: '/kept/distributor.key', chain: '/kept/distributor.pem' },
+    };
+    vi.mocked(readSamsungProfile).mockReturnValueOnce(issued);
+
+    expect(await ensureProfile(log)).toBe(issued);
+    expect(vi.mocked(activeProfile)).not.toHaveBeenCalled();
+  });
+
   it('takes the profile the Tizen tools already sign with', async () => {
     vi.mocked(activeProfile).mockResolvedValue(kroma);
 

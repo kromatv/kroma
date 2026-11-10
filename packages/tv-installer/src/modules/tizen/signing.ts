@@ -9,6 +9,7 @@ import { randomPassword } from './certificate/password';
 import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
 import { activeProfile, type SigningProfile } from './profiles';
+import { readSamsungProfile } from './samsung/profile';
 
 const SIGNATURES = ['author-signature.xml', 'signature1.xml', 'signature2.xml'];
 const KROMA_PROFILE = 'kroma';
@@ -24,12 +25,12 @@ export interface Signed {
 }
 
 /**
- * The profile to sign with, generated here if this machine has none. What can
- * be generated is the author half: the distributor certificate a retail set
- * insists on is Samsung's to issue, against that one set's DUID.
+ * The profile to sign with: the one Samsung issued to this tool, else the one
+ * Tizen Studio signs with, else an author generated here. A generated author
+ * signs for an emulator only, since a retail set takes Samsung's certificates.
  */
 export async function ensureProfile(log: LogLine): Promise<SigningProfile> {
-  const existing = await activeProfile();
+  const existing = readSamsungProfile() ?? (await activeProfile());
   if (existing) return existing;
 
   log('no signing profile here, generating an author certificate');

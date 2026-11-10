@@ -1,7 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readPkcs12 } from './pkcs12';
-import type { ProfileKey } from './profile';
+import { readSigningKey, type SigningKey } from './signing-key';
 import { widgetResources } from './widget-resources';
 import { type SignatureRole, widgetSignature } from './widget-signature';
 
@@ -12,8 +11,8 @@ const FILENAME: Record<SignatureRole, string> = {
 
 export interface WidgetSigningRequest {
   directory: string;
-  author: ProfileKey;
-  distributor?: ProfileKey;
+  author: SigningKey;
+  distributor?: SigningKey;
 }
 
 /**
@@ -31,8 +30,8 @@ export async function signWidget(request: WidgetSigningRequest): Promise<string[
   return written;
 }
 
-async function sign(directory: string, role: SignatureRole, profileKey: ProfileKey) {
-  const { chain, key } = readPkcs12(profileKey);
+async function sign(directory: string, role: SignatureRole, signingKey: SigningKey) {
+  const { chain, key } = readSigningKey(signingKey);
   const xml = widgetSignature({
     directory,
     resources: widgetResources(directory, role),

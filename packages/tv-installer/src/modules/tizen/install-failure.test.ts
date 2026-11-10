@@ -18,12 +18,13 @@ describe('installFailure', () => {
     const message = installFailure('error: certificate is invalid', 'kroma', null);
 
     expect(message).toContain('profile kroma signed it and the set refused that chain.');
-    expect(message).toContain('a distributor certificate Samsung issued for its own DUID');
+    expect(message).toContain('certificates Samsung issued for its own DUID');
+    expect(message).toContain('the certificate command of this tool gets them');
   });
 
-  it('gives the DUID to register when the set said which one it is', () => {
+  it('gives the DUID of the set when the set said which one it is', () => {
     const message = installFailure('error: certificate is invalid', null, '1900A2C4D6E8');
 
-    expect(message).toContain('The DUID to register is 1900A2C4D6E8.');
+    expect(message).toContain('The DUID of this set is 1900A2C4D6E8.');
   });
 });

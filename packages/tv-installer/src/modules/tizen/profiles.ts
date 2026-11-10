@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { run } from '../../run';
-import type { ProfileKey } from './certificate/profile';
-import { PROFILES_XML } from './certificate/profile';
+import { PROFILES_XML, type ProfileKey } from './certificate/profile';
+import type { SigningKey } from './certificate/signing-key';
 
 const PROFILE_BLOCK = /<profile\s+name="([^"]*)"\s*>([\s\S]*?)<\/profile>/g;
 const PROFILE_ITEM = /<profileitem\b([^>]*)\/>/g;
@@ -11,6 +11,12 @@ const KEYCHAIN_TIMEOUT_MS = 20_000;
 
 export interface SigningProfile {
   name: string;
+  author: SigningKey;
+  distributor?: SigningKey;
+}
+
+/** A profile as Tizen Studio keeps one: each key a PKCS#12 and its password. */
+export interface StudioProfile extends SigningProfile {
   author: ProfileKey;
   distributor?: ProfileKey;
 }
@@ -45,7 +51,7 @@ export function parseProfiles(xml: string): ParsedProfiles {
  * The profile the Tizen tools would sign with, read out of their own file so
  * that signing needs none of those tools. Without a name, the active one.
  */
-export async function readProfile(name?: string): Promise<SigningProfile | null> {
+export async function readProfile(name?: string): Promise<StudioProfile | null> {
   if (!existsSync(PROFILES_XML)) return null;
   const { active, profiles } = parseProfiles(readFileSync(PROFILES_XML, 'utf8'));
 
