@@ -23,7 +23,11 @@ import {
 import { useId } from 'react';
 import { Pressable } from 'react-native';
 import { canUpdate, matchesQuery } from '#web/features/admin/module-api';
-import { refusedAsInstalled, useRefusalText } from '#web/features/admin/module-refusal';
+import {
+  refusedAsInstalled,
+  useNewestText,
+  useRefusalText,
+} from '#web/features/admin/module-refusal';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
 import { Image } from '#web/shared/ui';
 
@@ -102,6 +106,7 @@ function StoreCard({
   const fmt = useFormat();
   const id = useId();
   const refusal = useRefusalText(m);
+  const newest = useNewestText(m);
   const offered = m.compatible && (!m.installedVersion || m.updateAvailable);
   const dimmed = !m.compatible && (!m.installedVersion || refusedAsInstalled(m));
   return (
@@ -167,6 +172,11 @@ function StoreCard({
             {refusal && (
               <Text variant="meta" color={m.updateBlocked ? 'textDim' : 'danger'} mt={4}>
                 {refusal}
+              </Text>
+            )}
+            {newest && (
+              <Text variant="meta" color="textDim" mt={4}>
+                {newest}
               </Text>
             )}
           </Box>

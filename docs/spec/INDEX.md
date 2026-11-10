@@ -433,12 +433,12 @@
 - **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
 - **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never <sub>[README.md](modules/README.md)</sub>
 - **MOD-85** (SHIPPED) - The official registry describes every version of a module it has <sub>[README.md](modules/README.md)</sub>
-- **MOD-86** (AGREED) - The Store never offers a version whose registry does not describe what <sub>[README.md](modules/README.md)</sub>
-- **MOD-87** (AGREED) - When a module's newest version does not run on this server, the Store <sub>[README.md](modules/README.md)</sub>
-- **MOD-88** (AGREED) - The Store shows the version it would install and, beside it, the newest <sub>[README.md](modules/README.md)</sub>
-- **MOD-89** (AGREED) - Installing, updating, updating everything and automatic updates all take <sub>[README.md](modules/README.md)</sub>
-- **MOD-90** (AGREED) - The Store never downgrades an installed module unless the operator asks. <sub>[README.md](modules/README.md)</sub>
-- **MOD-91** (AGREED) - Each dependency resolves to its own newest version that runs here. A <sub>[README.md](modules/README.md)</sub>
+- **MOD-86** (SHIPPED) - The Store never offers a version whose registry does not describe what <sub>[README.md](modules/README.md)</sub>
+- **MOD-87** (SHIPPED) - When a module's newest version does not run on this server, the Store <sub>[README.md](modules/README.md)</sub>
+- **MOD-88** (SHIPPED) - The Store shows the version it would install and, beside it, the newest <sub>[README.md](modules/README.md)</sub>
+- **MOD-89** (SHIPPED) - Installing, updating, updating everything and automatic updates all take <sub>[README.md](modules/README.md)</sub>
+- **MOD-90** (SHIPPED) - The Store never downgrades an installed module unless the operator asks. <sub>[README.md](modules/README.md)</sub>
+- **MOD-91** (SHIPPED) - Each dependency resolves to its own newest version that runs here. A <sub>[README.md](modules/README.md)</sub>
 - **MOD-92** (AGREED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
 - **MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
 - **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>

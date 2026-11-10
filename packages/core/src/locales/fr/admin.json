@@ -317,6 +317,8 @@
   "admin.modulesNetworkRecentEmpty": "Aucune connexion depuis le démarrage du serveur.",
   "admin.modulesNetworkUndeclared": "{count} tentatives hors de ce que ce module a déclaré, refusées",
   "admin.modulesNetworkUndeclared_one": "{count} tentative hors de ce que ce module a déclaré, refusée",
+  "admin.modulesNewestNeedsServer": "La v{newest} nécessite le serveur {range}, celui-ci est en {serverVersion}. La v{version} est la plus récente qui tourne ici.",
+  "admin.modulesNewestRefused": "La v{newest} ne tourne pas sur ce serveur. La v{version} est la plus récente qui y tourne.",
   "admin.modulesNotRunning": "Arrêté",
   "admin.modulesOfficial": "Officiel",
   "admin.modulesOptionalSuffix": "optionnel",

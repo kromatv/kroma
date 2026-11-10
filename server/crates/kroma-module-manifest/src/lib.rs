@@ -17,7 +17,8 @@ mod settings_scope;
 mod widening;
 
 pub use compat::{
-    engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
+    engines_satisfied, fallbacks_newest_first, is_newer, range_matches, version_satisfies,
+    EngineRefusal, KNOWN_ENGINES,
 };
 pub use embedded::EmbeddedModule;
 pub use event::ModuleEvent;

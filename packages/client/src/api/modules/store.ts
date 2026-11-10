@@ -66,6 +66,16 @@ export const StoreModule = DeclaredAccess.extend({
    * to accept it: no batch or automatic update takes it. */
   widensPermissions: z.boolean().default(false),
   official: z.boolean().default(false),
+  /** The registry's newest version, when this server refuses it and this entry
+   * is the newest older version the server runs instead. */
+  newest: z
+    .object({
+      version: z.string(),
+      refusal: StoreRefusal.nullish().catch(null),
+      reason: z.string().nullish(),
+    })
+    .nullish()
+    .catch(null),
 });
 export type StoreModule = z.infer<typeof StoreModule>;
 

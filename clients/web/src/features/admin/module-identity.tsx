@@ -5,7 +5,7 @@ import { Row, Surface, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { HeaderIcon } from '#web/features/admin/module-detail-sections';
-import { readableRange, useRefusalText } from '#web/features/admin/module-refusal';
+import { readableRange, useNewestText, useRefusalText } from '#web/features/admin/module-refusal';
 import { Pill } from '#web/features/admin/pill';
 
 export function IdentityCard({
@@ -60,6 +60,7 @@ export function Problems({
   entry,
 }: Readonly<{ failure: string | null | undefined; entry: StoreModule | undefined }>) {
   const incompatible = useRefusalText(entry);
+  const newest = useNewestText(entry);
   return (
     <>
       {failure ? (
@@ -70,6 +71,11 @@ export function Problems({
       {incompatible ? (
         <Text variant="meta" color={entry?.updateBlocked ? 'textDim' : 'danger'}>
           {incompatible}
+        </Text>
+      ) : null}
+      {newest ? (
+        <Text variant="meta" color="textDim">
+          {newest}
         </Text>
       ) : null}
     </>

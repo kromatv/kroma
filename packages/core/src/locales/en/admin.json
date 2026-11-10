@@ -317,6 +317,8 @@
   "admin.modulesNetworkRecentEmpty": "No connection since the server started.",
   "admin.modulesNetworkUndeclared": "{count} attempts outside what this module declared, refused",
   "admin.modulesNetworkUndeclared_one": "{count} attempt outside what this module declared, refused",
+  "admin.modulesNewestNeedsServer": "v{newest} needs server {range}, this one runs {serverVersion}. v{version} is the newest that runs here.",
+  "admin.modulesNewestRefused": "v{newest} does not run on this server. v{version} is the newest that does.",
   "admin.modulesNotRunning": "Not running",
   "admin.modulesOfficial": "Official",
   "admin.modulesOptionalSuffix": "optional",

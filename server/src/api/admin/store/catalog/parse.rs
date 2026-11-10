@@ -9,7 +9,7 @@ use super::{Artifact, CatalogModule};
 /// The registry contract this server speaks. A document declaring a higher one
 /// is refused rather than half-read: an unknown major means fields this build
 /// would silently ignore.
-const REGISTRY_API_VERSION: u64 = 1;
+pub(super) const REGISTRY_API_VERSION: u64 = 1;
 
 /// The one-request module list an RFC 110 descriptor fronts, resolved against
 /// the URL the descriptor was actually FETCHED from rather than the `url` it
@@ -37,15 +37,26 @@ pub(super) fn index_url(descriptor: &Value, fetched_from: &str) -> anyhow::Resul
     )?))
 }
 
+/// The modules a registry offers this server: each one's newest version, or the
+/// newest older version this server runs when it refuses the newest.
 pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Vec<CatalogModule>> {
     let mut raw = sup.fetch_catalog(url).await?;
+    let mut fetched_from = url.to_string();
     if let Some(index) = index_url(&raw, url)? {
         raw = sup.fetch_catalog(&index).await?;
+        fetched_from = index;
     }
     let Value::Array(entries) = &raw else {
         anyhow::bail!("not an RFC 110 registry: expected a descriptor or a module index");
     };
-    Ok(entries.iter().filter_map(parse_module).collect())
+    let mut modules = Vec::with_capacity(entries.len());
+    for entry in entries {
+        let Some(newest) = parse_module(entry) else {
+            continue;
+        };
+        modules.push(super::versions::runnable(sup, &fetched_from, entry, newest).await);
+    }
+    Ok(modules)
 }
 
 pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
@@ -99,6 +110,7 @@ pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
         storage: declared(m, "storage"),
         settings: declared(m, "settings"),
         helpers: declared(m, "helpers"),
+        newest: None,
     })
 }
 
