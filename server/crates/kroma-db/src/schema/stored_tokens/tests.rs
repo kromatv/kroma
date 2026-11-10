@@ -1,6 +1,5 @@
 use rusqlite::params;
 
-use crate::schema::CORE;
 use crate::{
     access_token_user, access_token_user_by_id, list_access_tokens, session_device_id, session_user,
 };
@@ -25,7 +24,6 @@ fn signed_in_before_the_step(pool: &crate::Pool) {
         params![FUTURE],
     )
     .unwrap();
-    conn.pragma_update(None, "user_version", 12).unwrap();
 }
 
 fn stored(pool: &crate::Pool, sql: &str) -> Vec<String> {
@@ -40,7 +38,7 @@ fn a_device_signed_in_before_the_step_stays_signed_in_after_it() {
     let pool = crate::testing::temp_pool("stored-tokens");
     signed_in_before_the_step(&pool);
 
-    kroma_sqlite::migrate(&mut pool.get().unwrap(), &CORE, None).unwrap();
+    super::hash_bearers(&pool.get().unwrap()).unwrap();
 
     assert_eq!(
         session_user(&pool, "session-bearer").unwrap().unwrap().id,
@@ -71,7 +69,7 @@ fn no_bearer_is_left_in_the_database_after_the_step() {
     let pool = crate::testing::temp_pool("stored-tokens-gone");
     signed_in_before_the_step(&pool);
 
-    kroma_sqlite::migrate(&mut pool.get().unwrap(), &CORE, None).unwrap();
+    super::hash_bearers(&pool.get().unwrap()).unwrap();
 
     let kept: Vec<String> = [
         stored(&pool, "SELECT token FROM access_tokens"),
