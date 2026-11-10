@@ -1,4 +1,4 @@
-import { run, runOk } from '../../run';
+import { type LogLine, run, runOk } from '../../run';
 import { requireTool } from '../../toolchain/detect';
 import type { InstallContext } from '../module';
 import { androidAppId } from './app-id';
@@ -6,6 +6,8 @@ import { ADB } from './tools';
 
 const ADB_PORT = 5555;
 const INSTALL_TIMEOUT_MS = 600_000;
+const ALLOW_WAIT_MS = 120_000;
+const ALLOW_POLL_MS = 2_000;
 const LEANBACK = 'android.intent.category.LEANBACK_LAUNCHER';
 
 export function parseAdbState(devices: string, serial: string): string | null {
@@ -16,15 +18,28 @@ export function parseAdbState(devices: string, serial: string): string | null {
   return null;
 }
 
+async function allowedState(adb: string, serial: string, log: LogLine): Promise<string | null> {
+  let state = parseAdbState(await runOk([adb, 'devices'], { log }), serial);
+  if (state !== 'unauthorized') return state;
+
+  log('the TV asks to allow this computer: accept the prompt on the TV, and tick Always allow');
+  const until = Date.now() + ALLOW_WAIT_MS;
+  while (state === 'unauthorized' && Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, ALLOW_POLL_MS));
+    state = parseAdbState(await runOk([adb, 'devices']), serial);
+  }
+  return state;
+}
+
 export async function installAndroid({ tv, artifact, log, launch }: InstallContext): Promise<void> {
   const adb = requireTool(ADB);
   const serial = `${tv.host}:${ADB_PORT}`;
 
   await runOk([adb, 'connect', serial], { log, timeoutMs: 25_000 });
-  const state = parseAdbState(await runOk([adb, 'devices'], { log }), serial);
+  const state = await allowedState(adb, serial, log);
   if (state === 'unauthorized') {
     throw new Error(
-      'the TV is asking to allow this computer: accept the prompt on screen, then run this again',
+      'nobody allowed this computer on the TV within two minutes: accept the prompt on screen, then run this again',
     );
   }
   if (state !== 'device') {
