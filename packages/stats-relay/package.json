@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA statistics collector: the Cloudflare Worker at stats.kroma.tv that counts running installs from the heartbeat each one sends unless its operator switched it off, and serves the aggregate the public page reads.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

@@ -409,7 +409,7 @@ jobs:
   # ---------------------------------------------------------- TV installer ---
 
   # `@kromatv/installer`, the television installer as a package `npx` runs: one
-  # bundled file with no dependency, built from packages/tv-installer. Same
+  # bundled file with no dependency, built from packages/installer. Same
   # channel rules as the two above, and outside the candidate gate for the same
   # reason.
   #
@@ -448,7 +448,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kroma-installer-npm
-          path: packages/tv-installer/dist/npm/*.tgz
+          path: packages/installer/dist/npm/*.tgz
           if-no-files-found: error
       - name: npm supports trusted publishing
         run: |
@@ -465,7 +465,7 @@ jobs:
       - name: Publish
         if: needs.version.outputs.channel != 'none' && steps.registry.outputs.published == 'true'
         run: >-
-          bun run ci npm publish packages/tv-installer/dist/npm/kromatv-installer-*.tgz --provenance
+          bun run ci npm publish packages/installer/dist/npm/kromatv-installer-*.tgz --provenance
           --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
 
   # ---------------------------------------------------------------- Canary ---

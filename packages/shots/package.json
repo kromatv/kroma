@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Captures the same screen across the web client, the TV shells and the two native simulators, then publishes the set as a markdown block a PR or issue can carry.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

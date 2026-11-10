@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA Downloads module (frontend half): the Downloads admin page (live queue + download-clients). Paired with the kroma-torrent backend at ../server via the shared module.json.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

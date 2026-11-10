@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA shared Vite plugins: build-info stamping, post-build process exit, and bundling for scripts that live outside a client's module graph.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

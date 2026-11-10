@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "KROMA mobile client (iPhone / iPad / Android) built with Expo + React Native.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

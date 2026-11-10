@@ -1,7 +1,7 @@
 # Samsung TV certificates: how Samsung issues them
 
 What the TV installer relies on when it gets a Samsung TV's certificates
-without Tizen Studio (`packages/tv-installer/src/modules/tizen/samsung`). Each
+without Tizen Studio (`packages/installer/src/platforms/tizen/samsung`). Each
 fact names its source and how it is known. Read 2026-11-10.
 
 Nothing here comes from taking Samsung's programs apart. Samsung publishes the

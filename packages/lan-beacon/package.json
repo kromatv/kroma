@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA DNS-SD beacon: publishes _kroma-tv._tcp on a television and browses for it on a phone, behind the LanDiscoveryBridge shape @kromatv/core defines.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
