@@ -18,7 +18,6 @@ export const androidtv: TvModule = {
   guide: 'android-tv',
   ports: ANDROID_PORTS,
   identify: identifyAndroidTv,
-  tools: () => [],
   sources: androidSources,
   resolve: resolveAndroidArtifact,
   install: installAndroid,

@@ -1,13 +1,13 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { docsCommand, doctorCommand, installCommand, scanCommand, toolsCommand } from './commands';
+import { docsCommand, installCommand, scanCommand } from './commands';
 import type { DeployOptions } from './install/deploy';
 import type { Television } from './television';
 import { injectUsage, renderUsage, type UsageCommand } from './usage';
 
-const { checkout, scan, deployTo, askForLocalNetwork, diagnoseEmptyScan, locate, installTool } =
-  await vi.hoisted(async () => {
+const { checkout, scan, deployTo, askForLocalNetwork, diagnoseEmptyScan } = await vi.hoisted(
+  async () => {
     const { mkdtempSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
@@ -20,23 +20,14 @@ const { checkout, scan, deployTo, askForLocalNetwork, diagnoseEmptyScan, locate,
         blocked: false,
         hints: ['a set answers when it is on'],
       })),
-      locate: vi.fn((_tool: unknown): string | null => null),
-      installTool: vi.fn(async (_tool: unknown, _log: unknown) => '/usr/bin/adb'),
     };
-  });
+  },
+);
 vi.mock('./discovery/scan', () => ({ scan }));
 vi.mock('./install/deploy', () => ({ deployTo }));
 vi.mock('./local-network', () => ({ askForLocalNetwork }));
 vi.mock('./hints', () => ({ diagnoseEmptyScan }));
 vi.mock('./root', () => ({ root: checkout }));
-vi.mock('./toolchain/detect', async (original) => ({
-  ...(await original<Record<string, unknown>>()),
-  locate,
-}));
-vi.mock('./toolchain/install', async (original) => ({
-  ...(await original<Record<string, unknown>>()),
-  installTool,
-}));
 
 const readme = join(checkout, 'packages', 'tv-installer', 'README.md');
 
@@ -78,8 +69,6 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation((line: string) => void failed.push(line));
   scan.mockReset();
   deployTo.mockReset();
-  locate.mockReset();
-  installTool.mockClear();
 });
 
 afterEach(() => {
@@ -258,54 +247,6 @@ describe('installCommand', () => {
     await installCommand('all', options);
 
     expect(failed[0]).toContain('sdb died');
-  });
-});
-
-describe('doctorCommand', () => {
-  it('lists every platform this tool installs onto', async () => {
-    doctorCommand();
-
-    expect(printed.join('\n')).toContain('Samsung  .wgt');
-    expect(printed.join('\n')).toContain('Apple TV  .app');
-  });
-
-  it('says so under a platform this tool installs onto with nothing else', async () => {
-    doctorCommand();
-
-    expect(printed.join('\n')).toContain('Samsung  .wgt\n  needs nothing this tool can install');
-    expect(printed.join('\n')).toContain('LG  .ipk\n  needs nothing this tool can install');
-  });
-
-  it('says an Android TV needs nothing, since this tool speaks adb itself', async () => {
-    doctorCommand();
-
-    expect(printed.join('\n')).toContain('Android TV  .apk\n  needs nothing this tool can install');
-  });
-});
-
-describe('toolsCommand', () => {
-  it('installs nothing for any TV, since this tool speaks to each one itself', async () => {
-    const code = await toolsCommand(['webos', 'androidtv', 'tizen']);
-
-    expect(code).toBe(0);
-    expect(installTool).not.toHaveBeenCalled();
-    expect(printed).toHaveLength(3);
-  });
-
-  it('says so about a platform that needs nothing this tool can install', async () => {
-    const code = await toolsCommand(['appletv']);
-
-    expect(code).toBe(0);
-    expect(printed.join('\n')).toContain('Apple TV needs nothing this tool can install');
-    expect(installTool).not.toHaveBeenCalled();
-  });
-
-  it('refuses a platform no module answers for, and names the ones that do', async () => {
-    const code = await toolsCommand(['sony']);
-
-    expect(code).toBe(1);
-    expect(failed).toEqual(['usage: tools <tizen|webos|androidtv|appletv>']);
-    expect(installTool).not.toHaveBeenCalled();
   });
 });
 

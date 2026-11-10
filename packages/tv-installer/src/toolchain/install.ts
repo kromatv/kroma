@@ -3,22 +3,6 @@ import { createWriteStream } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import type { LogLine } from '../run';
-import { locate, type Tool } from './detect';
-
-/** Installs a missing tool and returns its path. Idempotent: an installed tool returns early. */
-export async function installTool(tool: Tool, log: LogLine): Promise<string> {
-  const already = locate(tool);
-  if (already) return already;
-
-  if (!tool.install) throw new Error(`${tool.label} is missing: install it from ${tool.source}`);
-  log(`installing ${tool.label} from ${tool.source}`);
-  await tool.install(log);
-
-  const path = locate(tool);
-  if (!path) throw new Error(`${tool.label} installed but ${tool.binary} is not on PATH`);
-  log(`${tool.label} ready: ${path}`);
-  return path;
-}
 
 export interface Pinned {
   sha256: string;

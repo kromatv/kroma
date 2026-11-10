@@ -6,11 +6,9 @@ import type { Source } from './install/artifact';
 import { deployTo } from './install/deploy';
 import { askForLocalNetwork } from './local-network';
 import type { ModuleOptions } from './modules/module';
-import { findModule, moduleFor, modules } from './modules/registry';
+import { moduleFor } from './modules/registry';
 import { root } from './root';
 import { runtimeLabel, type Television } from './television';
-import { locate } from './toolchain/detect';
-import { installTool } from './toolchain/install';
 import { style } from './tui/ansi';
 import { injectUsage, renderUsage, type UsageCommand } from './usage';
 
@@ -77,42 +75,6 @@ export async function installCommand(target: string, options: CommandOptions): P
     }
   }
   return failures === 0 ? 0 : 1;
-}
-
-export function doctorCommand(): number {
-  for (const module of modules()) {
-    console.log(`${module.label}  ${style.dim(module.package)}`);
-    if (module.tools().length === 0)
-      console.log(style.dim('  needs nothing this tool can install'));
-    for (const tool of module.tools()) {
-      const path = locate(tool);
-      const status = path ? style.green(path) : style.yellow(`missing, from ${tool.source}`);
-      console.log(`  ${tool.label.padEnd(22)}${status}`);
-    }
-  }
-  return 0;
-}
-
-export async function toolsCommand(names: readonly string[]): Promise<number> {
-  const chosen = names.flatMap((name) => {
-    const module = findModule(name);
-    return module ? [module] : [];
-  });
-  if (chosen.length !== names.length) {
-    console.error(
-      `usage: tools <${modules()
-        .map((module) => module.id)
-        .join('|')}>`,
-    );
-    return 1;
-  }
-  for (const module of chosen.filter((candidate) => candidate.tools().length === 0)) {
-    console.log(style.dim(`${module.label} needs nothing this tool can install`));
-  }
-
-  const wanted = new Set(chosen.flatMap((module) => [...module.tools()]));
-  for (const tool of wanted) await installTool(tool, (line) => console.log(style.dim(`  ${line}`)));
-  return 0;
 }
 
 const HOST_WIDTH = 24;

@@ -4,7 +4,6 @@ import { moduleFor } from '../modules/registry';
 import { type RememberedSet, rememberSet } from '../remembered';
 import type { LogLine } from '../run';
 import type { Television } from '../television';
-import { installTool } from '../toolchain/install';
 import type { Source } from './artifact';
 
 export interface DeployOptions {
@@ -25,12 +24,11 @@ function repeated(module: TvModule, given: ModuleOptions = {}): RememberedSet['o
 }
 
 /**
- * Installs the toolchain the set's platform needs, puts KROMA on it, and
+ * Puts KROMA on a set, with the package its platform resolves, and
  * remembers what it installed there, so an update needs no question.
  */
 export async function deployTo(tv: Television, options: DeployOptions): Promise<void> {
   const module = moduleFor(tv.platform);
-  for (const tool of module.tools()) await installTool(tool, options.log);
 
   const artifact = await module.resolve({
     tv,

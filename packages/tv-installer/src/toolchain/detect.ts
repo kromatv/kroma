@@ -1,7 +1,4 @@
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import type { LogLine } from '../run';
 import { which } from './which';
 
 export interface Tool {
@@ -10,10 +7,7 @@ export interface Tool {
   binary: string;
   source: string;
   candidates?(): readonly string[];
-  install?(log: LogLine): Promise<void>;
 }
-
-export const KROMA_TOOLS = join(homedir(), '.kroma', 'tools');
 
 export function locate(tool: Tool): string | null {
   const onPath = which(tool.binary);

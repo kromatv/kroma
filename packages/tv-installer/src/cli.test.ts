@@ -1,16 +1,14 @@
 import { runCommand } from 'citty';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tv } from './cli';
-import { docsCommand, doctorCommand, installCommand, scanCommand, toolsCommand } from './commands';
+import { docsCommand, installCommand, scanCommand } from './commands';
 import { runTui } from './tui/app';
 import { updateCommand } from './update';
 
 vi.mock('./commands', () => ({
   docsCommand: vi.fn(),
-  doctorCommand: vi.fn(),
   installCommand: vi.fn(),
   scanCommand: vi.fn(),
-  toolsCommand: vi.fn(),
 }));
 vi.mock('./exit-after', () => ({ exitAfter: vi.fn() }));
 vi.mock('./tui/app', () => ({ runTui: vi.fn() }));
@@ -139,22 +137,6 @@ describe('tv update', () => {
       launch: true,
       force: true,
     });
-  });
-});
-
-describe('tv tools', () => {
-  it('installs the toolchain of every platform named', async () => {
-    await run(['tools', 'tizen', 'webos']);
-
-    expect(vi.mocked(toolsCommand)).toHaveBeenCalledWith(['tizen', 'webos']);
-  });
-});
-
-describe('tv doctor', () => {
-  it('reports what this computer already has', async () => {
-    await run(['doctor']);
-
-    expect(vi.mocked(doctorCommand)).toHaveBeenCalledOnce();
   });
 });
 

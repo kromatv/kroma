@@ -36,7 +36,6 @@ export const tizen: TvModule = {
   remembers: ['profile'],
   commands: { probe: probeCommand, certificate: certificateCommand },
   identify: identifyTizen,
-  tools: () => [],
   sources: tizenSources,
   resolve: resolveTizenArtifact,
   install: installTizen,

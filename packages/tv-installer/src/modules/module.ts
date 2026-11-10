@@ -3,7 +3,6 @@ import type { UpnpDevice } from '../discovery/upnp';
 import type { ArtifactRequest, Source } from '../install/artifact';
 import type { LogLine } from '../run';
 import type { Television } from '../television';
-import type { Tool } from '../toolchain/detect';
 
 export type ModuleOptions = Readonly<Record<string, string | boolean | undefined>>;
 
@@ -41,7 +40,6 @@ export interface TvModule {
   ): Promise<Television | null>;
   discover?(): Promise<Television[]>;
   prompt?(sets: readonly Television[]): Promise<Map<string, ModuleOptions> | null>;
-  tools(): readonly Tool[];
   sources(): readonly Source[];
   resolve(request: ArtifactRequest): Promise<string>;
   install(context: InstallContext): Promise<void>;
