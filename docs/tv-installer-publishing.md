@@ -3,13 +3,13 @@
 The television installer leaves this repository as one npm package,
 `@kromatv/installer`, so that `npx @kromatv/installer` installs KROMA on a TV
 from a computer that has Node and nothing else. The command it installs is
-`kroma-tv`, the name the single-binary builds already carry. The workspace package `@kromatv/tv-installer` stays `private`, as
+`kroma-tv`, the name the single-binary builds already carry. The workspace package of the same name, in `packages/installer`, stays `private`, as
 `@kromatv/ui` and the SDK's sources do
 ([kit-publishing.md](kit-publishing.md),
 [module-sdk-publishing.md](module-sdk-publishing.md)).
 
 ```bash
-bun run tv:stage --version 0.1.40   # packages/tv-installer/dist/npm, and its tarball
+bun run tv:stage --version 0.1.40   # packages/installer/dist/npm, and its tarball
 bun run tv:smoke                    # install the tarball outside the repo, run it under Node
 ```
 
@@ -18,7 +18,7 @@ bun run tv:smoke                    # install the tarball outside the repo, run 
 | In it | From |
 |---|---|
 | `cli.js` | `src/bin.ts` bundled for Node with every dependency inlined, the version stamped in, and a Node shebang |
-| `README.md` | `packages/tv-installer/npm/README.md`, with the command table rendered from the command tree as `npx @kromatv/installer` |
+| `README.md` | `packages/installer/npm/README.md`, with the command table rendered from the command tree as `npx @kromatv/installer` |
 | `package.json` | written by `scripts/stage.ts`, not the workspace one |
 | `LICENSE` | the repository's |
 
@@ -61,7 +61,7 @@ publishes nothing while `npm view @kromatv/installer` finds no package. Once:
 
    ```bash
    npm login
-   npm publish packages/tv-installer/dist/npm/kromatv-installer-0.1.38.tgz --access public
+   npm publish packages/installer/dist/npm/kromatv-installer-0.1.38.tgz --access public
    ```
 
 3. On npmjs.com, open `@kromatv/installer`, then **Settings**, **Trusted publisher**,

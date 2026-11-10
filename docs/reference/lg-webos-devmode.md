@@ -1,7 +1,7 @@
 # LG webOS Dev Mode: how the ares tools install an app
 
 What the TV installer relies on when it puts a package on an LG TV in Developer
-Mode without LG's CLI (`packages/tv-installer/src/modules/webos/devmode`). Each
+Mode without LG's CLI (`packages/installer/src/platforms/webos/devmode`). Each
 fact names the file it comes from and the function or lines. Read 2026-11-10.
 
 Every fact comes from LG's own command-line tools, which LG publishes under

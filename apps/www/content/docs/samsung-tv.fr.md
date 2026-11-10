@@ -152,7 +152,7 @@ bun run tv
 
 Vous devez quand même activer le mode développeur et créer le certificat comme
 ci-dessus. L'installeur est décrit dans
-[packages/tv-installer](../../packages/tv-installer/README.md).
+[packages/installer](../../packages/installer/README.md).
 
 ## Mettre à jour KROMA
 
