@@ -477,7 +477,12 @@ install plan.
   rather than who has to do it.
 - **`engines`** is what the module needs from its host (`{ "server": ">=0.1.4" }`),
   enforced at install **and** at spawn, so a stale bundle fails with a clear
-  message instead of proxy errors.
+  message instead of proxy errors. The floor names a released server or the
+  release being prepared (the version in `server/Cargo.toml`, or the SDK's
+  outside this repository), never a later one: no server could run that module,
+  so `kroma check` and `kroma release` refuse it. A canary build is a prerelease
+  of the release being prepared, so a floor of `0.1.39` already covers the
+  `0.1.39-canary.<build>` servers.
 - **`settings`** is the core settings keys you read and write, as
   `{ "read": [...], "write": [...] }`. Absent is the same as empty: a module
   without it reaches no setting.

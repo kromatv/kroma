@@ -66,6 +66,28 @@ describe('checkCommand', () => {
     expect(code).toBe(0);
   });
 
+  it('refuses a module that needs a server past the one this tree prepares', async () => {
+    modules();
+    mkdirSync(join(dir, 'server'), { recursive: true });
+    writeFileSync(join(dir, 'server', 'Cargo.toml'), '[package]\nversion = "0.1.39"\n');
+    moduleAt('notes', 'tv.acme.notes');
+    writeFileSync(
+      join(dir, 'modules', 'notes', 'module.json'),
+      JSON.stringify({
+        schemaVersion: MODULE_SCHEMA_VERSION,
+        id: 'tv.acme.notes',
+        name: 'Notes',
+        version: '0.1.0',
+        engines: { server: '>=0.1.40' },
+      }),
+    );
+
+    const code = await checkCommand({ dirs: [], rust: false, ts: false, cwd: dir });
+
+    expect(code).toBe(1);
+    expect(said()).toContain('tv.acme.notes: needs server 0.1.40, past 0.1.39');
+  });
+
   it('names both directories when two modules claim the same id', async () => {
     modules();
     moduleAt('notes', 'tv.acme.notes');
