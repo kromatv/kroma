@@ -432,7 +432,7 @@
 - **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
 - **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never <sub>[README.md](modules/README.md)</sub>
-- **MOD-85** (AGREED) - The official registry describes every version of a module it has <sub>[README.md](modules/README.md)</sub>
+- **MOD-85** (SHIPPED) - The official registry describes every version of a module it has <sub>[README.md](modules/README.md)</sub>
 - **MOD-86** (AGREED) - The Store never offers a version whose registry does not describe what <sub>[README.md](modules/README.md)</sub>
 - **MOD-87** (AGREED) - When a module's newest version does not run on this server, the Store <sub>[README.md](modules/README.md)</sub>
 - **MOD-88** (AGREED) - The Store shows the version it would install and, beside it, the newest <sub>[README.md](modules/README.md)</sub>

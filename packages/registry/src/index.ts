@@ -47,6 +47,7 @@ export {
   Storage,
   speaksCurrentSchema,
 } from './manifest/index.ts';
+export { foldHistory, HISTORY_SCHEMA, type HistoryVersions, VersionHistory } from './history.ts';
 export { channelOf, compareRaw, floorOf, parse, satisfies, type Version } from './semver.ts';
 export {
   type JsonSchema,

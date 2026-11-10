@@ -14,6 +14,7 @@ import {
 import type { ModuleEntry } from '#site/catalog';
 import { releaseHistory } from '#site/lib/releases';
 import { type Env, jsonResponse, loadCatalog } from '#site/lib/source';
+import { describedVersions, withDescriptions } from '#site/lib/version-history';
 
 const REGISTRY_NAME = 'KROMA modules';
 
@@ -67,8 +68,13 @@ export async function moduleResponse(id: string, env: Env, waitUntil: WaitUntil)
   const entry = found.find((m) => m.id === id);
   if (!entry) return jsonResponse(JSON.stringify({ error: 'no such module' }), MISS_TTL, 404);
   // Only the full record carries history: the catalog names the current version
-  // of each module, the releases hold every version ever cut.
-  const known = (await releaseHistory(env, waitUntil))[id];
+  // of each module, the releases hold every version ever cut, and the version
+  // history says what each of them needs.
+  const [listed, described] = await Promise.all([
+    releaseHistory(env, waitUntil),
+    describedVersions(env, waitUntil, id),
+  ]);
+  const known = withDescriptions(listed[id], described);
   return jsonResponse(JSON.stringify(buildModuleRecord(entry, known)), DOCUMENT_TTL);
 }
 

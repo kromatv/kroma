@@ -15,6 +15,11 @@ export const release = defineCommand({
       valueHint: 'url|file',
       description: 'The live catalog to compare against',
     },
+    'published-history': {
+      type: 'string',
+      valueHint: 'url|file',
+      description: 'The version history to fold this run into',
+    },
     from: {
       type: 'string',
       valueHint: 'dir',
@@ -38,6 +43,7 @@ export const release = defineCommand({
         m.releaseCommand({
           repo: text(args.repo),
           published: text(args.published),
+          publishedHistory: text(args['published-history']),
           from: text(args.from),
           out: text(args.out),
           dryRun: args['dry-run'] === true,

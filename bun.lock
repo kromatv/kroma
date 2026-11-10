@@ -585,6 +585,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@anthropic-ai/sdk": "0.137.0",
+        "@kromatv/registry": "workspace:*",
         "smol-toml": "^1.9.1",
         "zod": "^4.6.7",
       },

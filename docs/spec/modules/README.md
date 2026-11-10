@@ -145,12 +145,12 @@ duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 
 ### The newest version that runs here
 
-Status: **AGREED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
+Status: **AGREED**, with the full version history (MOD-85) **SHIPPED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
 
 A module's newest version can need a newer server than the one asking. Older versions of
 the same module often ran on that server, and the Store should still offer them.
 
-**MOD-85** (AGREED) - The official registry describes every version of a module it has
+**MOD-85** (SHIPPED) - The official registry describes every version of a module it has
 published, not only the newest: the server it needs, what it depends on and the permissions it
 asks for.
 

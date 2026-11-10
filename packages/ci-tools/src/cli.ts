@@ -17,6 +17,8 @@ const COMMANDS = {
   npm: async (args: string[]) => (await import('./npm-command')).main(args),
   embeds: async () => (await import('./embeds-command')).main(),
   schema: async (args: string[]) => (await import('./schema-command')).main(args),
+  'modules-history': async (args: string[]) =>
+    (await import('./modules-history-command')).main(args),
 };
 
 type Command = keyof typeof COMMANDS;
