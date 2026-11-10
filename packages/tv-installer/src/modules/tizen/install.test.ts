@@ -11,7 +11,7 @@ const {
   locate,
   requireTool,
   installOverSdb,
-  ensureProfile,
+  profileFor,
   resign,
   readDuid,
   readProfile,
@@ -22,7 +22,7 @@ const {
   locate: vi.fn((_tool: unknown): string | null => '/tizen-studio/tools/sdb'),
   requireTool: vi.fn((_tool: unknown) => ''),
   installOverSdb: vi.fn(async (_context: unknown, _artifact: string, _profile: unknown) => {}),
-  ensureProfile: vi.fn(async (_log: unknown) => ({ name: 'kroma' }) as SigningProfile),
+  profileFor: vi.fn(async (_host: string, _log: unknown) => ({ name: 'kroma' }) as SigningProfile),
   resign: vi.fn(async (_artifact: string, _profile: unknown, _log: unknown) => ({
     path: '/tmp/kroma-wgt-1/KROMA.wgt',
     staged: false,
@@ -38,7 +38,7 @@ vi.mock('../../toolchain/detect', async (original) => ({
   requireTool,
 }));
 vi.mock('./native', () => ({ installOverSdb }));
-vi.mock('./signing', () => ({ ensureProfile, resign, readDuid }));
+vi.mock('./signing', () => ({ profileFor, resign, readDuid }));
 vi.mock('./profiles', () => ({ readProfile }));
 vi.mock('./app-id', () => ({ tizenAppId: () => 'KromaTV001.KROMA' }));
 vi.mock('node:fs/promises', async (original) => ({
@@ -92,7 +92,7 @@ beforeEach(() => {
   locate.mockReset();
   requireTool.mockReset();
   installOverSdb.mockReset();
-  ensureProfile.mockReset();
+  profileFor.mockReset();
   resign.mockReset();
   readDuid.mockReset();
   readProfile.mockReset();
@@ -125,7 +125,7 @@ describe('installTizen', () => {
   it('signs the package with this machine before anything is pushed', async () => {
     await installTizen(context());
 
-    expect(ensureProfile).toHaveBeenCalled();
+    expect(profileFor).toHaveBeenCalledWith('192.168.1.31', expect.any(Function));
     expect(resign).toHaveBeenCalledWith(
       '/out/KROMA-tizen-0.1.33.wgt',
       { name: 'kroma' },
@@ -142,7 +142,7 @@ describe('installTizen', () => {
     await installTizen(context({ options: { profile: 'LUMA' } }));
 
     expect(readProfile).toHaveBeenCalledWith('LUMA');
-    expect(ensureProfile).not.toHaveBeenCalled();
+    expect(profileFor).not.toHaveBeenCalled();
   });
 
   it('refuses a profile name this machine has no certificate for', async () => {
