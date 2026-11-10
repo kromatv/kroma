@@ -127,7 +127,7 @@
     "status": "SHIPPED",
     "text": "**Unbinding is revocation.** Revoking a device's session ends its",
     "file": "docs/spec/accounts/README.md",
-    "line": 83
+    "line": 92
   },
   {
     "id": "ACCT-14",
@@ -137,7 +137,7 @@
     "status": "SHIPPED",
     "text": "A revoked device that returns must pair or sign in afresh.",
     "file": "docs/spec/accounts/README.md",
-    "line": 87
+    "line": 96
   },
   {
     "id": "ACCT-15",
@@ -147,7 +147,7 @@
     "status": "SHIPPED",
     "text": "A television session is long-lived and revocable, and is **never",
     "file": "docs/spec/accounts/README.md",
-    "line": 93
+    "line": 102
   },
   {
     "id": "ACCT-16",
@@ -157,7 +157,7 @@
     "status": "AGREED",
     "text": "The device list is the control that replaces expiry: security comes",
     "file": "docs/spec/accounts/README.md",
-    "line": 96
+    "line": 105
   },
   {
     "id": "ACCT-17",
@@ -167,7 +167,7 @@
     "status": "SHIPPED",
     "text": "An **owner or admin** runs the server: users, settings, jobs and",
     "file": "docs/spec/accounts/README.md",
-    "line": 109
+    "line": 118
   },
   {
     "id": "ACCT-18",
@@ -177,7 +177,7 @@
     "status": "AGREED",
     "text": "The owner is the founding admin, the owner may grant admin to another",
     "file": "docs/spec/accounts/README.md",
-    "line": 112
+    "line": 121
   },
   {
     "id": "ACCT-19",
@@ -187,7 +187,7 @@
     "status": "SHIPPED",
     "text": "A **user** uses the server: browses and plays what they are permitted",
     "file": "docs/spec/accounts/README.md",
-    "line": 115
+    "line": 124
   },
   {
     "id": "ACCT-20",
@@ -197,7 +197,7 @@
     "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
-    "line": 118
+    "line": 127
   },
   {
     "id": "ACCT-21",
@@ -207,7 +207,7 @@
     "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 126
+    "line": 135
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 167
+    "line": 176
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 176
+    "line": 185
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 204
+    "line": 213
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 209
+    "line": 218
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 213
+    "line": 222
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 223
+    "line": 232
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 227
+    "line": 236
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 231
+    "line": 240
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 235
+    "line": 244
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 244
+    "line": 253
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 247
+    "line": 256
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 251
+    "line": 260
   },
   {
     "id": "ACCT-34",
@@ -337,7 +337,7 @@
     "status": "SHIPPED",
     "text": "A title outside a person's grant is absent from browse, search, every",
     "file": "docs/spec/accounts/README.md",
-    "line": 132
+    "line": 141
   },
   {
     "id": "ACCT-35",
@@ -347,7 +347,7 @@
     "status": "SHIPPED",
     "text": "Every request for media bytes carries a credential the grant can be",
     "file": "docs/spec/accounts/README.md",
-    "line": 137
+    "line": 146
   },
   {
     "id": "ACCT-36",
@@ -708,6 +708,36 @@
     "text": "A module declares the kinds of notification it sends and ships their",
     "file": "docs/spec/accounts/notifications.md",
     "line": 197
+  },
+  {
+    "id": "ACCT-72",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 72,
+    "status": "AGREED",
+    "text": "The device list shows the app version each device last used",
+    "file": "docs/spec/accounts/README.md",
+    "line": 83
+  },
+  {
+    "id": "ACCT-73",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 73,
+    "status": "AGREED",
+    "text": "A device whose app is older than the oldest version its server serves",
+    "file": "docs/spec/accounts/README.md",
+    "line": 86
+  },
+  {
+    "id": "ACCT-74",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 74,
+    "status": "AGREED",
+    "text": "A device that never sent its app version shows \"version unknown\", never",
+    "file": "docs/spec/accounts/README.md",
+    "line": 89
   },
   {
     "id": "ADMIN-1",
@@ -3367,7 +3397,7 @@
     "status": "SHIPPED",
     "text": "**Dependencies.** Hard ones that must be installed alongside it, and",
     "file": "docs/spec/modules/README.md",
-    "line": 93
+    "line": 97
   },
   {
     "id": "MOD-15",
@@ -3377,7 +3407,7 @@
     "status": "SHIPPED",
     "text": "**No target.** The backend is a WebAssembly component, so one bundle",
     "file": "docs/spec/modules/README.md",
-    "line": 95
+    "line": 99
   },
   {
     "id": "MOD-16",
@@ -3387,7 +3417,7 @@
     "status": "SHIPPED",
     "text": "The server checks the bytes it downloads against a published SHA-256",
     "file": "docs/spec/modules/README.md",
-    "line": 99
+    "line": 103
   },
   {
     "id": "MOD-17",
@@ -3397,7 +3427,7 @@
     "status": "SHIPPED",
     "text": "Integrity is not safety: a matching checksum proves the bytes are the",
     "file": "docs/spec/modules/README.md",
-    "line": 102
+    "line": 106
   },
   {
     "id": "MOD-18",
@@ -3407,7 +3437,7 @@
     "status": "SHIPPED",
     "text": "**From the Store**, by id. The server resolves hard dependencies",
     "file": "docs/spec/modules/README.md",
-    "line": 112
+    "line": 116
   },
   {
     "id": "MOD-19",
@@ -3417,7 +3447,7 @@
     "status": "SHIPPED",
     "text": "**By upload**, handing the server a `.kmod` by hand: same unpack,",
     "file": "docs/spec/modules/README.md",
-    "line": 116
+    "line": 120
   },
   {
     "id": "MOD-20",
@@ -3427,7 +3457,7 @@
     "status": "SHIPPED",
     "text": "Both are admin actions on the [`admin/`](../admin/) surface.",
     "file": "docs/spec/modules/README.md",
-    "line": 120
+    "line": 124
   },
   {
     "id": "MOD-21",
@@ -3437,7 +3467,7 @@
     "status": "SHIPPED",
     "text": "The Store (Admin → Modules) is the in-app browser over the configured",
     "file": "docs/spec/modules/README.md",
-    "line": 126
+    "line": 130
   },
   {
     "id": "MOD-22",
@@ -3447,7 +3477,7 @@
     "status": "SHIPPED",
     "text": "The official registry is pinned first and cannot be removed; operators",
     "file": "docs/spec/modules/README.md",
-    "line": 129
+    "line": 133
   },
   {
     "id": "MOD-23",
@@ -3457,7 +3487,7 @@
     "status": "SHIPPED",
     "text": "For each module the Store shows **this server's verdict**, not just the",
     "file": "docs/spec/modules/README.md",
-    "line": 132
+    "line": 136
   },
   {
     "id": "MOD-24",
@@ -3467,7 +3497,7 @@
     "status": "AGREED",
     "text": "**First-party is trusted by default.** The official registry is",
     "file": "docs/spec/modules/README.md",
-    "line": 150
+    "line": 184
   },
   {
     "id": "MOD-25",
@@ -3477,7 +3507,7 @@
     "status": "AGREED",
     "text": "**A third-party registry is an explicit operator opt-in.** Adding one",
     "file": "docs/spec/modules/README.md",
-    "line": 152
+    "line": 186
   },
   {
     "id": "MOD-26",
@@ -3487,7 +3517,7 @@
     "status": "AGREED",
     "text": "The operator is told, in plain terms, that a module is code the server",
     "file": "docs/spec/modules/README.md",
-    "line": 154
+    "line": 188
   },
   {
     "id": "MOD-27",
@@ -3497,7 +3527,7 @@
     "status": "AGREED",
     "text": "**Checksums guarantee integrity, never safety**, and the server says so",
     "file": "docs/spec/modules/README.md",
-    "line": 157
+    "line": 191
   },
   {
     "id": "MOD-28",
@@ -3507,7 +3537,7 @@
     "status": "SHIPPED",
     "text": "**Enable.** The server starts the module, and its routes, jobs and UI",
     "file": "docs/spec/modules/README.md",
-    "line": 186
+    "line": 220
   },
   {
     "id": "MOD-29",
@@ -3517,7 +3547,7 @@
     "status": "SHIPPED",
     "text": "**Disable.** The module is stopped, and its **data is kept",
     "file": "docs/spec/modules/README.md",
-    "line": 189
+    "line": 223
   },
   {
     "id": "MOD-30",
@@ -3527,7 +3557,7 @@
     "status": "SHIPPED",
     "text": "**Update.** A newer version replaces the bundle and the module is",
     "file": "docs/spec/modules/README.md",
-    "line": 192
+    "line": 226
   },
   {
     "id": "MOD-31",
@@ -3537,7 +3567,7 @@
     "status": "SHIPPED",
     "text": "`minServer` is re-checked on update, so an update that outgrows the",
     "file": "docs/spec/modules/README.md",
-    "line": 195
+    "line": 229
   },
   {
     "id": "MOD-32",
@@ -3547,7 +3577,7 @@
     "status": "SHIPPED",
     "text": "**Uninstall.** The module is removed entirely. It is the one",
     "file": "docs/spec/modules/README.md",
-    "line": 197
+    "line": 231
   },
   {
     "id": "MOD-33",
@@ -3557,7 +3587,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to uninstall a module another enabled module still",
     "file": "docs/spec/modules/README.md",
-    "line": 200
+    "line": 234
   },
   {
     "id": "MOD-34",
@@ -3567,7 +3597,7 @@
     "status": "SHIPPED",
     "text": "Uninstalling a module never touches media on disk. A downloads module",
     "file": "docs/spec/modules/README.md",
-    "line": 207
+    "line": 241
   },
   {
     "id": "MOD-35",
@@ -3577,7 +3607,7 @@
     "status": "SHIPPED",
     "text": "**A crashed module cannot take down the server.** A module runs in",
     "file": "docs/spec/modules/README.md",
-    "line": 217
+    "line": 251
   },
   {
     "id": "MOD-36",
@@ -3587,7 +3617,7 @@
     "status": "SHIPPED",
     "text": "**An incompatible module never runs by accident.** `minServer` is",
     "file": "docs/spec/modules/README.md",
-    "line": 221
+    "line": 255
   },
   {
     "id": "MOD-37",
@@ -3597,7 +3627,7 @@
     "status": "SHIPPED",
     "text": "**Failure is visible, not silent.** A module that will not start or",
     "file": "docs/spec/modules/README.md",
-    "line": 224
+    "line": 258
   },
   {
     "id": "MOD-38",
@@ -3607,7 +3637,7 @@
     "status": "SHIPPED",
     "text": "The server is forward-compatible with older modules. A module declares",
     "file": "docs/spec/modules/README.md",
-    "line": 249
+    "line": 283
   },
   {
     "id": "MOD-39",
@@ -3617,7 +3647,7 @@
     "status": "SHIPPED",
     "text": "A module installed today keeps working as the server is updated,",
     "file": "docs/spec/modules/README.md",
-    "line": 252
+    "line": 286
   },
   {
     "id": "MOD-40",
@@ -3627,7 +3657,7 @@
     "status": "SHIPPED",
     "text": "A *newer* module may raise its `minServer`, and the Store says so",
     "file": "docs/spec/modules/README.md",
-    "line": 255
+    "line": 289
   },
   {
     "id": "MOD-41",
@@ -3637,7 +3667,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 263
+    "line": 305
   },
   {
     "id": "MOD-42",
@@ -3647,7 +3677,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 267
+    "line": 309
   },
   {
     "id": "MOD-43",
@@ -3657,7 +3687,7 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 270
+    "line": 312
   },
   {
     "id": "MOD-44",
@@ -3667,7 +3697,7 @@
     "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 284
+    "line": 326
   },
   {
     "id": "MOD-45",
@@ -3677,7 +3707,7 @@
     "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 288
+    "line": 330
   },
   {
     "id": "MOD-46",
@@ -3687,7 +3717,7 @@
     "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 291
+    "line": 333
   },
   {
     "id": "MOD-47",
@@ -3697,7 +3727,7 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 311
+    "line": 353
   },
   {
     "id": "MOD-48",
@@ -3707,7 +3737,7 @@
     "status": "AGREED",
     "text": "The Store names the registry every module came from, on the listing and",
     "file": "docs/spec/modules/README.md",
-    "line": 160
+    "line": 194
   },
   {
     "id": "MOD-49",
@@ -3717,7 +3747,7 @@
     "status": "AGREED",
     "text": "Installing from a registry the operator added is gated once, per",
     "file": "docs/spec/modules/README.md",
-    "line": 163
+    "line": 197
   },
   {
     "id": "MOD-50",
@@ -3727,7 +3757,7 @@
     "status": "AGREED",
     "text": "A module that has disappeared from every configured registry is flagged",
     "file": "docs/spec/modules/README.md",
-    "line": 296
+    "line": 338
   },
   {
     "id": "MOD-51",
@@ -3747,7 +3777,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to **update** a module past the range an enabled",
     "file": "docs/spec/modules/README.md",
-    "line": 202
+    "line": 236
   },
   {
     "id": "MOD-53",
@@ -4057,7 +4087,7 @@
     "status": "AGREED",
     "text": "A module runs inside the server and can call nothing but what the",
     "file": "docs/spec/modules/README.md",
-    "line": 235
+    "line": 269
   },
   {
     "id": "MOD-84",
@@ -4067,7 +4097,107 @@
     "status": "AGREED",
     "text": "A module that ships as a native program is refused at install and never",
     "file": "docs/spec/modules/README.md",
-    "line": 242
+    "line": 276
+  },
+  {
+    "id": "MOD-85",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 85,
+    "status": "AGREED",
+    "text": "The official registry describes every version of a module it has",
+    "file": "docs/spec/modules/README.md",
+    "line": 153
+  },
+  {
+    "id": "MOD-86",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 86,
+    "status": "AGREED",
+    "text": "The Store never offers a version whose registry does not describe what",
+    "file": "docs/spec/modules/README.md",
+    "line": 157
+  },
+  {
+    "id": "MOD-87",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 87,
+    "status": "AGREED",
+    "text": "When a module's newest version does not run on this server, the Store",
+    "file": "docs/spec/modules/README.md",
+    "line": 160
+  },
+  {
+    "id": "MOD-88",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 88,
+    "status": "AGREED",
+    "text": "The Store shows the version it would install and, beside it, the newest",
+    "file": "docs/spec/modules/README.md",
+    "line": 164
+  },
+  {
+    "id": "MOD-89",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 89,
+    "status": "AGREED",
+    "text": "Installing, updating, updating everything and automatic updates all take",
+    "file": "docs/spec/modules/README.md",
+    "line": 167
+  },
+  {
+    "id": "MOD-90",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 90,
+    "status": "AGREED",
+    "text": "The Store never downgrades an installed module unless the operator asks.",
+    "file": "docs/spec/modules/README.md",
+    "line": 170
+  },
+  {
+    "id": "MOD-91",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 91,
+    "status": "AGREED",
+    "text": "Each dependency resolves to its own newest version that runs here. A",
+    "file": "docs/spec/modules/README.md",
+    "line": 173
+  },
+  {
+    "id": "MOD-92",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 92,
+    "status": "AGREED",
+    "text": "A module is checked against the module interface the server implements,",
+    "file": "docs/spec/modules/README.md",
+    "line": 293
+  },
+  {
+    "id": "MOD-93",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 93,
+    "status": "AGREED",
+    "text": "`minServer` is the floor for a server capability the module needs. It is",
+    "file": "docs/spec/modules/README.md",
+    "line": 298
+  },
+  {
+    "id": "MOD-94",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 94,
+    "status": "AGREED",
+    "text": "The release process refuses to publish a module whose `minServer`",
+    "file": "docs/spec/modules/README.md",
+    "line": 94
   },
   {
     "id": "PLAY-1",
@@ -5067,7 +5197,7 @@
     "status": "AGREED",
     "text": "A surface is dropped when its host platform can no longer meet the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 257
+    "line": 290
   },
   {
     "id": "SURF-41",
@@ -5077,7 +5207,7 @@
     "status": "AGREED",
     "text": "**Notice first.** A surface entering deprecation tells its users *in",
     "file": "docs/spec/surfaces/README.md",
-    "line": 262
+    "line": 295
   },
   {
     "id": "SURF-42",
@@ -5087,7 +5217,7 @@
     "status": "AGREED",
     "text": "**Sessions survive the app.** A deprecated surface's sessions are",
     "file": "docs/spec/surfaces/README.md",
-    "line": 265
+    "line": 298
   },
   {
     "id": "SURF-43",
@@ -5097,7 +5227,7 @@
     "status": "AGREED",
     "text": "**The library outlives any surface.** Nothing about a person's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 269
+    "line": 302
   },
   {
     "id": "SURF-44",
@@ -5188,5 +5318,85 @@
     "text": "The command menu forgives typos, word order and missing accents,",
     "file": "docs/spec/surfaces/README.md",
     "line": 175
+  },
+  {
+    "id": "SURF-53",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 53,
+    "status": "AGREED",
+    "text": "Every app tells its server which app it is and which version, on every",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 263
+  },
+  {
+    "id": "SURF-54",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 54,
+    "status": "AGREED",
+    "text": "A server states the oldest app version it serves, where an app can read",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 266
+  },
+  {
+    "id": "SURF-55",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 55,
+    "status": "SHIPPED",
+    "text": "A server states its own version where an app can read it before",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 269
+  },
+  {
+    "id": "SURF-56",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 56,
+    "status": "AGREED",
+    "text": "The release that raises the oldest app version a server serves says so",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 272
+  },
+  {
+    "id": "SURF-57",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 57,
+    "status": "AGREED",
+    "text": "An app older than the oldest version its server serves shows one screen",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 275
+  },
+  {
+    "id": "SURF-58",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 58,
+    "status": "AGREED",
+    "text": "An app never reports being too old as a playback or feature error.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 278
+  },
+  {
+    "id": "SURF-59",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 59,
+    "status": "AGREED",
+    "text": "A server treats a request that names no app version as coming from an",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 280
+  },
+  {
+    "id": "SURF-60",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 60,
+    "status": "AGREED",
+    "text": "An app that needs a newer server than the one it reached shows one",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 283
   }
 ]

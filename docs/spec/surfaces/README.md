@@ -250,6 +250,39 @@ Each surface ships and updates the way its host expects. Deploy mechanics are
   person installs it by hand from a downloaded package ([setup guides](../../setup/README.md));
   a published source URL is what turns this SHIPPED.
 
+### Version skew
+
+Status: **AGREED**, from [RFC NNNN](../../rfcs/NNNN-version-compatibility.md).
+
+A television updates on its vendor's schedule (SURF-38) and a server on its operator's, so an
+app and its server are often from different releases. Each side has to know when the gap is
+too wide, and say so in words a person can act on. Apps released before these rules send no
+version, so the rules hold from the release that adds them. Whether the oldest version is one
+number for every app or one per app is decided with that work.
+
+**SURF-53** (AGREED) - Every app tells its server which app it is and which version, on every
+request.
+
+**SURF-54** (AGREED) - A server states the oldest app version it serves, where an app can read
+it before signing in.
+
+**SURF-55** (SHIPPED) - A server states its own version where an app can read it before
+signing in.
+
+**SURF-56** (AGREED) - The release that raises the oldest app version a server serves says so
+in its release notes.
+
+**SURF-57** (AGREED) - An app older than the oldest version its server serves shows one screen
+saying so, with how to update it.
+
+**SURF-58** (AGREED) - An app never reports being too old as a playback or feature error.
+
+**SURF-59** (AGREED) - A server treats a request that names no app version as coming from an
+unknown version, never as too old.
+
+**SURF-60** (AGREED) - An app that needs a newer server than the one it reached shows one
+screen saying so, naming the server version it needs.
+
 ## Deprecation
 
 Status: **AGREED**

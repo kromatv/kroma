@@ -80,6 +80,15 @@ than a typed password ([`discovery/`](../discovery/),
 same device list as everything else and revokes the same way. There is nothing you can do to a
 paired television that you cannot do to a phone.
 
+**ACCT-72** (AGREED) - The device list shows the app version each device last used
+([RFC NNNN](../../rfcs/NNNN-version-compatibility.md)).
+
+**ACCT-73** (AGREED) - A device whose app is older than the oldest version its server serves
+([SURF-54](../surfaces/README.md)) is marked outdated.
+
+**ACCT-74** (AGREED) - A device that never sent its app version shows "version unknown", never
+outdated.
+
 **ACCT-13** (SHIPPED) - **Unbinding is revocation.** Revoking a device's session ends its
 access at the next request it makes. The device is not consulted, wiped or asked to cooperate;
 the server simply stops honouring its token.
