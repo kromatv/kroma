@@ -147,6 +147,26 @@ fn a_public_only_request_to_a_private_address_never_reaches_curl() {
 }
 
 #[test]
+fn a_public_only_put_or_delete_to_a_private_address_never_reaches_curl() {
+    let fetch = Fetch::new().public_only();
+
+    let put = fetch
+        .put_json(
+            "http://10.0.0.1/devices/d1",
+            &serde_json::json!({ "pubkey": "k" }),
+        )
+        .unwrap_err()
+        .to_string();
+    let delete = fetch
+        .delete("http://10.0.0.1/devices/d1")
+        .unwrap_err()
+        .to_string();
+
+    assert!(put.contains("not a public internet address"), "{put}");
+    assert!(delete.contains("not a public internet address"), "{delete}");
+}
+
+#[test]
 fn base_config_carries_headers_cookie_jar_and_max_time() {
     let config = Fetch::new()
         .header("X-Test", "v")
