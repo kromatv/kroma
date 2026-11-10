@@ -1,7 +1,7 @@
 # Android TV over adb: what the installer speaks
 
 What the TV installer relies on when it installs KROMA on an Android TV with no
-adb binary on the computer (`packages/tv-installer/src/modules/androidtv/adb`).
+adb binary on the computer (`packages/installer/src/platforms/androidtv/adb`).
 Each fact names its source. Read 2026-11-10.
 
 ## Sources

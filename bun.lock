@@ -712,6 +712,29 @@
         "i18next",
       ],
     },
+    "packages/installer": {
+      "name": "@kromatv/installer",
+      "version": "0.0.0",
+      "bin": {
+        "kroma-tv": "./src/bin.ts",
+      },
+      "dependencies": {
+        "@clack/core": "1.5.1",
+        "@clack/prompts": "1.8.1",
+        "@kromatv/site-meta": "workspace:*",
+        "citty": "0.2.2",
+        "fflate": "^0.8.3",
+        "ssh2": "1.17.0",
+        "zod": "^4.6.7",
+      },
+      "devDependencies": {
+        "@types/node": "^22.20.5",
+        "@types/ssh2": "1.15.6",
+        "bun-types": "^1.4.3",
+        "typescript": "^7.0.2",
+        "vitest": "^5.0.5",
+      },
+    },
     "packages/lan-beacon": {
       "name": "@kromatv/lan-beacon",
       "version": "0.0.0",
@@ -966,29 +989,6 @@
       "optionalPeers": [
         "expo-video",
       ],
-    },
-    "packages/tv-installer": {
-      "name": "@kromatv/tv-installer",
-      "version": "0.0.0",
-      "bin": {
-        "kroma-tv": "./src/bin.ts",
-      },
-      "dependencies": {
-        "@clack/core": "1.5.1",
-        "@clack/prompts": "1.8.1",
-        "@kromatv/site-meta": "workspace:*",
-        "citty": "0.2.2",
-        "fflate": "^0.8.3",
-        "ssh2": "1.17.0",
-        "zod": "^4.6.7",
-      },
-      "devDependencies": {
-        "@types/node": "^22.20.5",
-        "@types/ssh2": "1.15.6",
-        "bun-types": "^1.4.3",
-        "typescript": "^7.0.2",
-        "vitest": "^5.0.5",
-      },
     },
     "packages/tv-probe": {
       "name": "@kromatv/tv-probe",
@@ -1704,6 +1704,8 @@
 
     "@kromatv/i18n-devtools": ["@kromatv/i18n-devtools@workspace:packages/i18n-devtools"],
 
+    "@kromatv/installer": ["@kromatv/installer@workspace:packages/installer"],
+
     "@kromatv/kit": ["@kromatv/kit@workspace:apps/kit"],
 
     "@kromatv/lan-beacon": ["@kromatv/lan-beacon@workspace:packages/lan-beacon"],
@@ -1767,8 +1769,6 @@
     "@kromatv/tv": ["@kromatv/tv@workspace:packages/tv"],
 
     "@kromatv/tv-bench": ["@kromatv/tv-bench@workspace:clients/bench"],
-
-    "@kromatv/tv-installer": ["@kromatv/tv-installer@workspace:packages/tv-installer"],
 
     "@kromatv/tv-native": ["@kromatv/tv-native@workspace:clients/tv-native"],
 
