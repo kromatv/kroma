@@ -170,5 +170,11 @@ keep both readable:
   site reads the title from the first `#` heading and the summary from the
   first paragraph.
 
+The site also publishes each guide as Markdown for AI assistants, at the page's
+address with `.md` added ([kroma.tv/docs/docker.md](https://kroma.tv/docs/docker.md)),
+and lists them all in [kroma.tv/llms.txt](https://kroma.tv/llms.txt). That file
+is the page as written here, so a guide that follows these rules needs nothing
+more.
+
 A French page is written from the English one, not translated word by word,
 and follows the same rules. It links exactly like the English page.

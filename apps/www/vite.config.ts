@@ -4,6 +4,7 @@ import { kroma } from '@kromatv/bundler';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { landPlugin } from './vite/land.ts';
+import { llmsPlugin } from './vite/llms.ts';
 import { mdxPlugin } from './vite/mdx.ts';
 import { modulesPlugin } from './vite/modules.ts';
 import { ogPlugin } from './vite/og.tsx';
@@ -58,6 +59,7 @@ export default defineConfig({
     modulesPlugin(),
     releasesPlugin(),
     ogPlugin(),
+    llmsPlugin(),
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/paraglide',

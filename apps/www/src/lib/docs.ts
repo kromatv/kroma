@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { CONTENT_FALLBACK_LANG, parseContentPath } from '#site/lib/content-locale';
 import type { Lang } from '#site/lib/i18n';
+import { BASE_LOCALE } from '#site/lib/locales';
 
 /** The setup guides in reading order, by section of the sidebar. A slug is the
  *  file's name in the repository's docs/setup, and `index` is its README. */
@@ -39,6 +40,7 @@ export interface Doc {
   title: string;
   description: string;
   path: string;
+  markdown: string;
   source: string;
   Component: DocModule['default'];
 }
@@ -47,6 +49,13 @@ export type DocMeta = Omit<Doc, 'Component'>;
 
 /** The site path of a guide: `/docs` for the index, `/docs/<slug>` otherwise. */
 export const docPath = (slug: DocSlug): string => (slug === 'index' ? '/docs' : `/docs/${slug}`);
+
+/** The site path of a guide as Markdown, the file an agent reads: `/docs.md`
+ *  for the index, `/docs/<slug>.md` otherwise, under the locale's prefix. */
+export function docMarkdownPath(slug: DocSlug, lang: string): string {
+  const prefix = lang === BASE_LOCALE ? '' : `/${lang}`;
+  return `${prefix}${docPath(slug)}.md`;
+}
 
 /** A glob key resolved to its path in the repository, from the folder of the
  *  module that globbed it. */
@@ -93,6 +102,7 @@ export function createDocs(modules: Record<string, DocModule>, base: string) {
       title: version.mod.title || slug,
       description: version.mod.description ?? '',
       path: docPath(slug),
+      markdown: docMarkdownPath(slug, byLang?.[lang] ? lang : CONTENT_FALLBACK_LANG),
       source: version.source,
       Component: version.mod.default,
     };

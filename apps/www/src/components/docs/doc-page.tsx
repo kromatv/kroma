@@ -1,5 +1,6 @@
 import { site } from '@kromatv/site-meta';
 import { IconArrowLeft, IconArrowRight, IconBrandGithub, IconLanguage } from '@tabler/icons-react';
+import { DocActions } from '#site/components/docs/doc-actions';
 import { DocAnchor } from '#site/components/docs/doc-anchor';
 import { DOC_NAV_LABEL, DOC_SECTION_LABEL } from '#site/components/docs/doc-labels';
 import { DocsNav } from '#site/components/docs/docs-nav';
@@ -74,6 +75,7 @@ export function DocPage({ slug }: Readonly<{ slug: DocSlug }>) {
           <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.08] text-text sm:text-5xl">
             {doc.title}
           </h1>
+          <DocActions title={doc.title} markdown={doc.markdown} />
         </header>
 
         {!doc.translated && lang !== 'en' && (
