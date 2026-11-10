@@ -1,74 +1,67 @@
-import { type LogLine, run, runOk } from '../../run';
-import { requireTool } from '../../toolchain/detect';
+import { basename } from 'node:path';
+import type { LogLine } from '../../run';
 import type { InstallContext } from '../module';
+import { AdbConnection, AdbUnauthorized } from './adb/connection';
+import { installApk, shell } from './adb/install-apk';
+import { adbKeys } from './adb/key';
 import { androidAppId } from './app-id';
-import { ADB } from './tools';
 
 const ADB_PORT = 5555;
-const INSTALL_TIMEOUT_MS = 600_000;
-const ALLOW_WAIT_MS = 120_000;
-const ALLOW_POLL_MS = 2_000;
 const LEANBACK = 'android.intent.category.LEANBACK_LAUNCHER';
+const ALLOW_PROMPT =
+  'the TV asks to allow this computer: accept the prompt on the TV, and tick Always allow';
 
-export function parseAdbState(devices: string, serial: string): string | null {
-  for (const line of devices.split('\n')) {
-    const [found = '', state = ''] = line.trim().split(/\s+/);
-    if (found === serial) return state;
+function reason(error: unknown): Error {
+  if (error instanceof AdbUnauthorized) {
+    return new Error(`${error.message}: accept the prompt on screen, then run this again`);
   }
-  return null;
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes('ECONNREFUSED') || message.includes('did not answer adb')) {
+    return new Error('the TV refused adb: turn Network debugging on in Developer options');
+  }
+  return error instanceof Error ? error : new Error(message);
 }
 
-async function allowedState(adb: string, serial: string, log: LogLine): Promise<string | null> {
-  let state = parseAdbState(await runOk([adb, 'devices'], { log }), serial);
-  if (state !== 'unauthorized') return state;
-
-  log('the TV asks to allow this computer: accept the prompt on the TV, and tick Always allow');
-  const until = Date.now() + ALLOW_WAIT_MS;
-  while (state === 'unauthorized' && Date.now() < until) {
-    await new Promise((resolve) => setTimeout(resolve, ALLOW_POLL_MS));
-    state = parseAdbState(await runOk([adb, 'devices']), serial);
-  }
-  return state;
+function progress(name: string, log: LogLine): (sent: number, total: number) => void {
+  let reported = 0;
+  return (sent, total) => {
+    const percent = total > 0 ? Math.floor((sent / total) * 100) : 0;
+    if (percent < reported + 20) return;
+    reported = percent;
+    log(`sending ${name}, ${percent}%`);
+  };
 }
 
+/**
+ * Installs KROMA over adb spoken by this tool itself: no adb to download.
+ * The first time, the TV asks to trust this computer, and the install waits
+ * for the owner to accept.
+ */
 export async function installAndroid({ tv, artifact, log, launch }: InstallContext): Promise<void> {
-  const adb = requireTool(ADB);
-  const serial = `${tv.host}:${ADB_PORT}`;
-
-  await runOk([adb, 'connect', serial], { log, timeoutMs: 25_000 });
-  const state = await allowedState(adb, serial, log);
-  if (state === 'unauthorized') {
-    throw new Error(
-      'nobody allowed this computer on the TV within two minutes: accept the prompt on screen, then run this again',
-    );
-  }
-  if (state !== 'device') {
-    throw new Error(
-      `adb sees the TV as ${state ?? 'absent'}: turn Network debugging on in Developer options`,
-    );
-  }
-
-  const installed = await run([adb, '-s', serial, 'install', '-r', artifact], {
-    log,
-    timeoutMs: INSTALL_TIMEOUT_MS,
+  const connection = await AdbConnection.open(tv.host, ADB_PORT, {
+    keys: await adbKeys(),
+    onPrompt: () => log(ALLOW_PROMPT),
+  }).catch((error: unknown) => {
+    throw reason(error);
   });
-  if (installed.code !== 0) throw new Error(installFailure(installed.output));
-  if (!launch) return;
 
-  const application = androidAppId();
-  await run([adb, '-s', serial, 'shell', 'monkey', '-p', application, '-c', LEANBACK, '1'], {
-    log,
-  });
+  try {
+    const answer = await installApk(connection, artifact, progress(basename(artifact), log));
+    if (!answer.includes('Success')) throw new Error(installFailure(answer));
+    if (launch) await shell(connection, `monkey -p ${androidAppId()} -c ${LEANBACK} 1`);
+  } finally {
+    connection.close();
+  }
 }
 
-export function installFailure(output: string, application = androidAppId()): string {
+export function installFailure(output: string): string {
   if (output.includes('INSTALL_FAILED_UPDATE_INCOMPATIBLE')) {
-    return `a KROMA signed with another key is already there: adb uninstall ${application}, then install again`;
+    return 'a KROMA signed with another key is already there: uninstall it on the TV (Settings, Apps, KROMA), then install again';
   }
   if (output.includes('INSTALL_FAILED_VERSION_DOWNGRADE')) {
     return 'the TV already has a newer build: uninstall it first, or install a newer .apk';
   }
   const tail = output.split('\n').filter(Boolean).slice(-2).join(' / ');
   const said = tail ? `: ${tail}` : '';
-  return `adb install failed${said}`;
+  return `the TV refused the install${said}`;
 }

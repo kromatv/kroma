@@ -2,7 +2,6 @@ import type { TvModule } from '../module';
 import { androidSources, resolveAndroidArtifact } from './artifact';
 import { ANDROID_PORTS, identifyAndroidTv } from './identify';
 import { installAndroid } from './install';
-import { ADB } from './tools';
 
 export const androidtv: TvModule = {
   id: 'androidtv',
@@ -19,7 +18,7 @@ export const androidtv: TvModule = {
   guide: 'android-tv',
   ports: ANDROID_PORTS,
   identify: identifyAndroidTv,
-  tools: () => [ADB],
+  tools: () => [],
   sources: androidSources,
   resolve: resolveAndroidArtifact,
   install: installAndroid,
