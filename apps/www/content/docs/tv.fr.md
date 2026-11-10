@@ -9,7 +9,7 @@ se connecte à votre compte une fois l'application installée.
 
 | Votre téléviseur ou boîtier | Guide | Ce qu'il vous faut |
 | --- | --- | --- |
-| Samsung, 2017 ou plus récent | [Téléviseur Samsung](samsung-tv.md) | un ordinateur, un compte Samsung gratuit, environ 30 minutes la première fois |
+| Samsung, 2017 ou plus récent | [Téléviseur Samsung](samsung-tv.md) | un ordinateur, un compte Samsung gratuit, environ 10 minutes la première fois |
 | LG, webOS 4.0 (2018) ou plus récent | [Téléviseur LG](lg-tv.md) | un ordinateur, un compte développeur LG gratuit |
 | Android TV, Google TV, NVIDIA Shield, Philips, Sony, TCL | [Android TV](android-tv.md) | un compte Google, ou le fichier `.apk` |
 | Amazon Fire TV avec Fire OS | [Android TV : Fire TV](android-tv.md#amazon-fire-tv) | l'application Downloader |

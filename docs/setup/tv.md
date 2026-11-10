@@ -8,7 +8,7 @@ and signs in once the app is installed.
 
 | Your TV or box | Guide | What you need |
 | --- | --- | --- |
-| Samsung, 2017 or later | [Samsung TV](samsung-tv.md) | a computer, a free Samsung account, about 30 minutes the first time |
+| Samsung, 2017 or later | [Samsung TV](samsung-tv.md) | a computer, a free Samsung account, about 10 minutes the first time |
 | LG, webOS 4.0 (2018) or later | [LG TV](lg-tv.md) | a computer, a free LG developer account |
 | Android TV, Google TV, NVIDIA Shield, Philips, Sony, TCL | [Android TV](android-tv.md) | a Google account, or the `.apk` file |
 | Amazon Fire TV with Fire OS | [Android TV: Fire TV](android-tv.md#amazon-fire-tv) | the Downloader app |
