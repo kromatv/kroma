@@ -13,7 +13,9 @@ whatever is ticked. It installs the toolchain a set needs before touching it.
 
 It runs on Bun or on Node 22 and later, and needs no checkout of this
 repository: with nothing built here it takes the package from the latest
-release.
+release. That is what `npx @kromatv/installer` runs, the same tool published to
+npm
+([docs/tv-installer-publishing.md](../../docs/tv-installer-publishing.md)).
 
 Three platforms take a sideloaded package: Samsung (Tizen, `.wgt`), LG (webOS,
 `.ipk`) and Android TV (`.apk`, which covers Philips, Sony, TCL, Shield and
@@ -184,7 +186,7 @@ markers is written by hand.
 | --- | --- |
 | `--host <ip>` | Probe this address instead of sweeping the network, repeatable |
 | `--package <path>` | The .wgt, .ipk, .apk or .app to install, instead of the newest built here |
-| `--source <local|stable|canary|build>` | Where the package comes from, instead of the newest build in this checkout |
+| `--source <local\|stable\|canary\|build>` | Where the package comes from, instead of the newest build in this checkout |
 | `--launch`, `--no-launch` | Start the app once it is installed |
 | `--json` | Print what answered as JSON |
 

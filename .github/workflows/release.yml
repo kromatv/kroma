@@ -406,6 +406,68 @@ jobs:
           bun run ci npm publish packages/ui/dist/*.tgz --provenance
           --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
 
+  # ---------------------------------------------------------- TV installer ---
+
+  # `@kromatv/installer`, the television installer as a package `npx` runs: one
+  # bundled file with no dependency, built from packages/tv-installer. Same
+  # channel rules as the two above, and outside the candidate gate for the same
+  # reason.
+  #
+  # The workspace runs the installer under Bun, so a Bun call left in the bundle
+  # passes every test here and fails on a user's machine. The smoke step
+  # installs the tarball outside the repo and runs it under Node.
+  #
+  # npm attaches a trusted publisher to a package that already exists, so the
+  # first version is published by hand (docs/tv-installer-publishing.md). Until
+  # then the job stages, proves and uploads the tarball and publishes nothing.
+  tv-installer:
+    name: TV installer package
+    needs: version
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.targets != 'android'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing and provenance
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - name: Stage the package
+        run: >-
+          bun run tv:stage
+          --version "${{ needs.version.outputs.channel == 'candidate' && needs.version.outputs.canary || needs.version.outputs.version }}"
+      - name: The tarball installs and runs under Node
+        run: bun run tv:smoke
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-installer-npm
+          path: packages/tv-installer/dist/npm/*.tgz
+          if-no-files-found: error
+      - name: npm supports trusted publishing
+        run: |
+          npm --version
+          node -e "const [a, b, c] = process.argv[1].split('.').map(Number); process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1)" "$(npm --version)"
+      - name: The package has its first version on npm
+        id: registry
+        run: |
+          if npm view @kromatv/installer name >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::@kromatv/installer has no version on npm yet, so nothing is published. See docs/tv-installer-publishing.md."
+          fi
+      - name: Publish
+        if: needs.version.outputs.channel != 'none' && steps.registry.outputs.published == 'true'
+        run: >-
+          bun run ci npm publish packages/tv-installer/dist/npm/kromatv-installer-*.tgz --provenance
+          --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
+
   # ---------------------------------------------------------------- Canary ---
 
   # The sideloadable half of what this push built, on the rolling `canary`
