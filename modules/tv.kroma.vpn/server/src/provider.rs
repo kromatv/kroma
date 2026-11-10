@@ -56,7 +56,7 @@ pub(crate) fn provider_of_config(config: &str) -> Option<ProviderView> {
     let server = comments
         .iter()
         .find(|c| is_proton_server(c))
-        .map(|c| c.to_string());
+        .map(ToString::to_string);
     let marked = comments
         .iter()
         .any(|c| c.starts_with("Key for") || c.starts_with("NAT-PMP"));
