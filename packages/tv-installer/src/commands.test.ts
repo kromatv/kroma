@@ -40,10 +40,6 @@ vi.mock('./toolchain/install', async (original) => ({
 }));
 
 const readme = join(checkout, 'packages', 'tv-installer', 'README.md');
-vi.stubGlobal('Bun', {
-  file: (path: string) => ({ text: async () => readFileSync(path, 'utf8') }),
-  write: async (path: string, content: string) => writeFileSync(path, content),
-});
 
 const salon: Television = {
   host: '192.168.1.31',
@@ -266,8 +262,8 @@ describe('installCommand', () => {
   });
 });
 
-const tizenCli = (path: string | null) => (tool: unknown) =>
-  (tool as Tool).id === 'tizen' ? path : null;
+const ares = (path: string | null) => (tool: unknown) =>
+  (tool as Tool).id === 'ares' ? path : null;
 
 describe('doctorCommand', () => {
   it('lists every platform this tool installs onto', async () => {
@@ -278,13 +274,19 @@ describe('doctorCommand', () => {
   });
 
   it('shows where a toolchain this machine already has lives', async () => {
-    locate.mockImplementation(tizenCli('/home/tizen-studio/tools/ide/bin/tizen'));
+    locate.mockImplementation(ares('/home/.kroma/tools/node_modules/.bin/ares-install'));
 
     doctorCommand();
 
     expect(printed.join('\n')).toContain(
-      'Tizen Studio CLI      /home/tizen-studio/tools/ide/bin/tizen',
+      'webOS TV CLI          /home/.kroma/tools/node_modules/.bin/ares-install',
     );
+  });
+
+  it('says so under a platform this tool installs onto with nothing else', async () => {
+    doctorCommand();
+
+    expect(printed.join('\n')).toContain('Samsung  .wgt\n  needs nothing this tool can install');
   });
 
   it('says where a missing toolchain comes from', async () => {
@@ -298,14 +300,14 @@ describe('doctorCommand', () => {
 
 describe('toolsCommand', () => {
   it('installs every tool the named platform needs', async () => {
-    const code = await toolsCommand(['tizen']);
+    const code = await toolsCommand(['webos']);
 
     expect(code).toBe(0);
-    expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['tizen', 'sdb']);
+    expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['ares']);
   });
 
   it('installs the tools of each platform that was named', async () => {
-    await toolsCommand(['webos', 'androidtv']);
+    await toolsCommand(['webos', 'androidtv', 'tizen']);
 
     expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['ares', 'adb']);
   });

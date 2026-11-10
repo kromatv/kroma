@@ -3,7 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "lib": ["ES2022"],
-    "types": ["bun-types"]
+    "types": ["node"]
   },
-  "include": ["src", "scripts"]
+  "include": ["src"]
 }

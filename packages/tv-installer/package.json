@@ -15,16 +15,18 @@
     ".": "./src/cli.ts"
   },
   "bin": {
-    "kroma-tv": "./src/cli.ts"
+    "kroma-tv": "./src/bin.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
     "compile": "bun scripts/compile.ts"
   },
   "dependencies": {
     "@clack/core": "1.5.1",
     "@clack/prompts": "1.8.1",
+    "@kromatv/site-meta": "workspace:*",
     "citty": "0.2.2",
+    "fflate": "^0.8.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {

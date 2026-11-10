@@ -1,11 +1,14 @@
 import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { site } from '@kromatv/site-meta';
+import { matchingPaths } from '../../install/matching-paths';
 import { root } from '../../root';
 import { type LogLine, runOk } from '../../run';
 import { APPLETV_TOOLS, missingAppleTvTools } from './toolchain';
 
 const BUILD_TIMEOUT_MS = 3_600_000;
 const SHELL = 'clients/tv-native';
+const TESTFLIGHT_GUIDE = `${site.links.installGuide}/apple-tv`;
 const BUILT_APPS = `${SHELL}/ios/build/**/Products/*-appletvos/*.app`;
 
 export type AppleTvSource = 'local' | 'build';
@@ -19,9 +22,7 @@ export interface AppleTvAppRequest {
 
 /** The newest `.app` built for a real set. */
 export function localAppleTvApp(): string | null {
-  const built = [
-    ...new Bun.Glob(BUILT_APPS).scanSync({ cwd: root, absolute: true, onlyFiles: false }),
-  ]
+  const built = matchingPaths(root, BUILT_APPS)
     .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }))
     .sort((a, b) => b.mtimeMs - a.mtimeMs);
   return built[0]?.path ?? null;
@@ -56,6 +57,12 @@ export async function resolveAppleTvApp({
 }
 
 export async function buildAppleTvApp(udid: string, log: LogLine): Promise<string> {
+  if (!buildableAppleTv()) {
+    throw new Error(
+      `an Apple TV takes KROMA from TestFlight: ${TESTFLIGHT_GUIDE}. From a computer it takes an .app built in a checkout of the repository, or one given with --package`,
+    );
+  }
+
   const missing = missingAppleTvTools('build');
   if (missing.length > 0) {
     const wanted = missing.map(

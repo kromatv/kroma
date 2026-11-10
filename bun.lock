@@ -976,7 +976,9 @@
       "dependencies": {
         "@clack/core": "1.5.1",
         "@clack/prompts": "1.8.1",
+        "@kromatv/site-meta": "workspace:*",
         "citty": "0.2.2",
+        "fflate": "^0.8.3",
         "zod": "^4.6.7",
       },
       "devDependencies": {

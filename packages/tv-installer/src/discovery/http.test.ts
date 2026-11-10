@@ -1,5 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { generateKeyPairSync } from 'node:crypto';
+import { createServer, type Server } from 'node:https';
+import type { AddressInfo } from 'node:net';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { selfSignedCertificate, toPem } from '../modules/tizen/certificate/x509';
 import { fetchJson, fetchText } from './http';
 
 const System = z.object({ name: z.string() });
@@ -66,16 +70,59 @@ describe('fetchText', () => {
 
     expect(await fetchText(url)).toBeNull();
   });
+});
 
-  it('accepts the certificate a television signed for itself when asked to', async () => {
-    const asked: unknown[] = [];
-    vi.stubGlobal('fetch', (_url: string, init: unknown) => {
-      asked.push(init);
-      return Promise.resolve(new Response('<root />'));
+describe('fetchText from a set that signed its own certificate', () => {
+  let server: Server;
+  let origin = '';
+
+  beforeAll(async () => {
+    const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const certificate = selfSignedCertificate({
+      subject: { commonName: 'Philips TV', organization: 'TP Vision' },
+      publicKey,
+      privateKey,
+      days: 1,
     });
+    server = createServer(
+      {
+        key: privateKey.export({ format: 'pem', type: 'pkcs8' }),
+        cert: toPem(certificate, 'CERTIFICATE'),
+      },
+      (request, response) => {
+        response.statusCode = request.url === '/missing' ? 404 : 200;
+        response.end(request.url === '/big' ? 'x'.repeat(4096) : '{"name":"55PUS7304/12"}');
+      },
+    );
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    origin = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
 
-    await fetchText(url, { insecureTls: true });
+  afterAll(() => new Promise((resolve) => server.close(resolve)));
 
-    expect(asked[0]).toMatchObject({ tls: { rejectUnauthorized: false } });
+  it('reads the answer when asked to accept that certificate', async () => {
+    expect(await fetchText(`${origin}/6/system`, { insecureTls: true })).toBe(
+      '{"name":"55PUS7304/12"}',
+    );
+  });
+
+  it('refuses that certificate when nothing asked to accept it', async () => {
+    expect(await fetchText(`${origin}/6/system`)).toBeNull();
+  });
+
+  it('answers nothing when the set refuses the request', async () => {
+    expect(await fetchText(`${origin}/missing`, { insecureTls: true })).toBeNull();
+  });
+
+  it('stops reading an answer past the size it would take', async () => {
+    expect(await fetchText(`${origin}/big`, { insecureTls: true, maxBytes: 512 })).toBeNull();
+  });
+
+  it('answers nothing when no set listens there', async () => {
+    expect(await fetchText('https://127.0.0.1:1/6/system', { insecureTls: true })).toBeNull();
+  });
+
+  it('answers nothing for an address that is not https at all', async () => {
+    expect(await fetchText('http://127.0.0.1:1/6/system', { insecureTls: true })).toBeNull();
   });
 });

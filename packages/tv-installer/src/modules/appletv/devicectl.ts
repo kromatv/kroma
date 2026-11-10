@@ -1,4 +1,4 @@
-import { unlink } from 'node:fs/promises';
+import { readFile, stat, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type RunOptions, run } from '../../run';
@@ -67,15 +67,16 @@ export function devicectlAdvice(message: string): string {
 }
 
 async function readReport(path: string): Promise<unknown> {
-  const file = Bun.file(path);
-  if (!(await file.exists())) return null;
-  if (file.size > MAX_REPORT_BYTES) {
-    throw new Error(
-      `devicectl wrote a ${file.size} byte report, past the ${MAX_REPORT_BYTES} read`,
-    );
+  const size = await stat(path).then(
+    (file) => file.size,
+    () => null,
+  );
+  if (size === null) return null;
+  if (size > MAX_REPORT_BYTES) {
+    throw new Error(`devicectl wrote a ${size} byte report, past the ${MAX_REPORT_BYTES} read`);
   }
   try {
-    return JSON.parse(await file.text());
+    return JSON.parse(await readFile(path, 'utf8'));
   } catch {
     return null;
   }

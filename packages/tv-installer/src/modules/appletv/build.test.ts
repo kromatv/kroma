@@ -26,16 +26,10 @@ vi.mock('./toolchain', async (original) => ({
   missingAppleTvTools: vi.fn(() => []),
 }));
 
-class FakeGlob {
-  constructor(private readonly pattern: string) {}
-
-  scanSync({ cwd, absolute }: { cwd: string; absolute?: boolean }): string[] {
-    const names = globbed.get(this.pattern) ?? [];
-    return names.map((name) => (absolute ? `${cwd}/${name}` : name));
-  }
-}
-
-vi.stubGlobal('Bun', { Glob: FakeGlob });
+vi.mock('../../install/matching-paths', () => ({
+  matchingPaths: (base: string, pattern: string) =>
+    (globbed.get(pattern) ?? []).map((name) => `${base}/${name}`),
+}));
 
 const BUILT = 'clients/tv-native/ios/build/**/Products/*-appletvos/*.app';
 const older = 'clients/tv-native/ios/build/Debug/Products/Debug-appletvos/KROMA.app';
@@ -114,6 +108,7 @@ describe('resolveAppleTvApp', () => {
 
   it('builds against the set even with an app already built here', async () => {
     globbed.set(BUILT, [newer]);
+    present.add('/kroma/clients/tv-native/package.json');
     vi.mocked(runOk).mockResolvedValue('');
 
     await resolveAppleTvApp({ udid: '0000-1111', log, source: 'build' });
@@ -123,8 +118,16 @@ describe('resolveAppleTvApp', () => {
 });
 
 describe('buildAppleTvApp', () => {
+  it('sends a machine with no checkout to TestFlight instead of to a build', async () => {
+    await expect(buildAppleTvApp('0000-1111', log)).rejects.toThrow(
+      'an Apple TV takes KROMA from TestFlight: https://kroma.tv/docs/apple-tv. From a computer it takes an .app built in a checkout of the repository, or one given with --package',
+    );
+    expect(vi.mocked(missingAppleTvTools)).not.toHaveBeenCalled();
+  });
+
   it('builds the app for the set it was given, from the checkout', async () => {
     globbed.set(BUILT, [newer]);
+    present.add('/kroma/clients/tv-native/package.json');
     vi.mocked(runOk).mockResolvedValue('');
 
     const app = await buildAppleTvApp('0000-1111', log);
@@ -143,6 +146,7 @@ describe('buildAppleTvApp', () => {
   });
 
   it('names every tool a build from source is still missing', async () => {
+    present.add('/kroma/clients/tv-native/package.json');
     vi.mocked(missingAppleTvTools).mockReturnValue(['cocoapods', 'prebuild']);
 
     await expect(buildAppleTvApp('0000-1111', log)).rejects.toThrow(
@@ -153,6 +157,7 @@ describe('buildAppleTvApp', () => {
   });
 
   it('refuses a build that left no app for a real set behind', async () => {
+    present.add('/kroma/clients/tv-native/package.json');
     vi.mocked(runOk).mockResolvedValue('');
 
     await expect(buildAppleTvApp('0000-1111', log)).rejects.toThrow(

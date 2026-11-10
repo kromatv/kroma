@@ -1,9 +1,10 @@
 import { rm } from 'node:fs/promises';
 import { basename, dirname } from 'node:path';
 import { run, runOk } from '../../run';
-import { locate, requireTool } from '../../toolchain/detect';
+import { requireTool } from '../../toolchain/detect';
 import { booleanOption, type InstallContext, stringOption } from '../module';
 import { tizenAppId } from './app-id';
+import { installFailure } from './install-failure';
 import { installOverSdb } from './native';
 import { readProfile, type SigningProfile } from './profiles';
 import { SDB_PORT } from './sdb';
@@ -27,10 +28,10 @@ export function parseSdbSerial(devices: string, host: string): string | null {
 }
 
 export async function installTizen(context: InstallContext): Promise<void> {
-  const native = booleanOption(context.options, 'native') ?? locate(SDB) === null;
+  const native = booleanOption(context.options, 'native') ?? true;
   const wgt = await sign(context);
   try {
-    if (native) await installOverSdb(context, wgt.path);
+    if (native) await installOverSdb(context, wgt.path, wgt.profile?.name ?? null);
     else await installOverCli(context, wgt);
   } finally {
     if (wgt.staged) await rm(dirname(wgt.path), { recursive: true, force: true });
@@ -83,19 +84,4 @@ async function installOverCli(context: InstallContext, wgt: Package): Promise<vo
   const application = tizenAppId();
   const started = await run([tizen, 'run', '-p', application], { log });
   if (started.code !== 0) await run([sdb, 'shell', '0', 'was_execute', application], { log });
-}
-
-export function installFailure(
-  output: string,
-  profile: string | null,
-  duid: string | null,
-): string {
-  if (!output.includes('certificate')) {
-    const tail = output.split('\n').filter(Boolean).slice(-2).join(' / ');
-    const said = tail ? `: ${tail}` : '';
-    return `the install failed${said}`;
-  }
-  const rejected = profile ? `profile ${profile} signed it and the set refused that chain. ` : '';
-  const set = duid ? ` The DUID to register is ${duid}.` : '';
-  return `${rejected}A retail Samsung takes only a distributor certificate Samsung issued for its own DUID: Tizen Studio, Certificate Manager, Samsung, TV, with the set connected.${set}`;
 }

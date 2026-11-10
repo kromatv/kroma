@@ -4,10 +4,7 @@ import { resolveArtifact } from '../../install/artifact';
 import type { Television } from '../../television';
 import { ANDROID_PACKAGE, androidSources, resolveAndroidArtifact } from './artifact';
 
-const { globbed, which } = vi.hoisted(() => ({
-  globbed: new Map<string, string[]>(),
-  which: vi.fn((_binary: string): string | null => null),
-}));
+const { globbed } = vi.hoisted(() => ({ globbed: new Map<string, string[]>() }));
 
 vi.mock('../../install/artifact', async (original) => ({
   ...(await original<typeof import('../../install/artifact')>()),
@@ -16,16 +13,10 @@ vi.mock('../../install/artifact', async (original) => ({
 vi.mock('node:fs', () => ({ statSync: () => ({ mtimeMs: 0 }) }));
 vi.mock('../../root', () => ({ root: '/kroma' }));
 
-class FakeGlob {
-  constructor(private readonly pattern: string) {}
-
-  scanSync({ cwd, absolute }: { cwd: string; absolute?: boolean }): string[] {
-    const names = globbed.get(this.pattern) ?? [];
-    return names.map((name) => (absolute ? join(cwd, name) : name));
-  }
-}
-
-vi.stubGlobal('Bun', { Glob: FakeGlob, which });
+vi.mock('../../install/matching-paths', () => ({
+  matchingPaths: (base: string, pattern: string) =>
+    (globbed.get(pattern) ?? []).map((name) => join(base, name)),
+}));
 
 const shield: Television = {
   host: '192.168.1.36',
@@ -41,7 +32,6 @@ const shield: Television = {
 
 beforeEach(() => {
   globbed.clear();
-  which.mockReturnValue(null);
 });
 
 afterEach(() => {
@@ -49,16 +39,13 @@ afterEach(() => {
 });
 
 describe('androidSources', () => {
-  it('offers the package built here and the two releases gh can reach', () => {
+  it('offers the package built here and the two releases', () => {
     globbed.set('out/*.apk', ['KROMA-androidtv-0.1.33.apk']);
-    which.mockReturnValue('/opt/homebrew/bin/gh');
 
     expect(androidSources()).toEqual(['local', 'stable', 'canary']);
   });
 
   it('offers the releases alone when nothing has been built here', () => {
-    which.mockReturnValue('/opt/homebrew/bin/gh');
-
     expect(androidSources()).toEqual(['stable', 'canary']);
   });
 });

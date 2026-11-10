@@ -4,21 +4,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KROMA_TOOLS } from '../../toolchain/detect';
 import { ADB } from './tools';
 
-const { runOk, download, mkdir } = vi.hoisted(() => ({
-  runOk: vi.fn(async (_command: readonly string[], _options?: unknown) => ''),
+const { extractZip, download, mkdir, chmod } = vi.hoisted(() => ({
+  extractZip: vi.fn(async (_archive: string, _directory: string) => {}),
   download: vi.fn(async (_url: string, _dest: string, _log: unknown) => {}),
   mkdir: vi.fn(async (_path: string, _options?: unknown) => undefined),
+  chmod: vi.fn(async (_path: string, _mode: number) => {}),
 }));
-vi.mock('../../run', () => ({ runOk }));
+vi.mock('../../install/zip', () => ({ extractZip }));
 vi.mock('../../toolchain/install', () => ({ download }));
-vi.mock('node:fs/promises', () => ({ mkdir }));
+vi.mock('node:fs/promises', () => ({ mkdir, chmod }));
 
 const running = process.platform;
 const on = (platform: string) =>
   Object.defineProperty(process, 'platform', { value: platform, configurable: true });
 
 beforeEach(() => {
-  runOk.mockReset();
+  extractZip.mockClear();
+  chmod.mockClear();
   download.mockReset();
 });
 
@@ -51,14 +53,13 @@ describe('ADB', () => {
   it('unpacks them where the other tools this installs live', async () => {
     await ADB.install?.(() => {});
 
-    expect(runOk.mock.calls[0]?.[0]).toEqual([
-      'unzip',
-      '-q',
-      '-o',
-      join(KROMA_TOOLS, 'platform-tools.zip'),
-      '-d',
-      KROMA_TOOLS,
-    ]);
+    expect(extractZip).toHaveBeenCalledWith(join(KROMA_TOOLS, 'platform-tools.zip'), KROMA_TOOLS);
+  });
+
+  it('makes the adb it unpacked runnable, which a zip does not carry', async () => {
+    await ADB.install?.(() => {});
+
+    expect(chmod).toHaveBeenCalledWith(join(KROMA_TOOLS, 'platform-tools', 'adb'), 0o755);
   });
 
   it('refuses a system Google ships no platform-tools for', async () => {

@@ -4,7 +4,6 @@ import { certificateCommand } from './certificate-command';
 import { identifyTizen, TIZEN_PORTS } from './identify';
 import { installTizen } from './install';
 import { probeCommand } from './probe-command';
-import { SDB, TIZEN_CLI } from './tools';
 
 export const tizen: TvModule = {
   id: 'tizen',
@@ -22,13 +21,15 @@ export const tizen: TvModule = {
     },
     native: {
       type: 'boolean',
-      default: false,
-      description: "Samsung only: talk sdb ourselves, instead of Tizen Studio's tools",
+      default: true,
+      description: 'Samsung only: install over the sdb client built into this tool',
+      negativeDescription:
+        "Samsung only: drive Tizen Studio's own tizen and sdb, already installed",
     },
   },
   commands: { probe: probeCommand, certificate: certificateCommand },
   identify: identifyTizen,
-  tools: () => [TIZEN_CLI, SDB],
+  tools: () => [],
   sources: tizenSources,
   resolve: resolveTizenArtifact,
   install: installTizen,

@@ -14,7 +14,6 @@ export const TIZEN_SHELL = 'clients/tizen';
 const BUILD_TIMEOUT_MS = 900_000;
 
 export const TIZEN_PACKAGE: PackageKind = {
-  extension: '.wgt',
   globs: [`${TIZEN_SHELL}/out/*.wgt`, `${TIZEN_SHELL}/dist/*.wgt`],
   pattern: 'KROMA-tizen-*.wgt',
   runArtifact: 'kroma-tizen-wgt',

@@ -1,8 +1,9 @@
-import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { run, runOk } from '../../run';
+import { extractZip, packZip } from '../../install/zip';
+import { run } from '../../run';
 import { createAuthorCertificate } from './certificate/authority';
 import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
@@ -16,11 +17,11 @@ vi.mock('node:fs', () => ({
 }));
 vi.mock('node:fs/promises', () => ({
   cp: vi.fn(),
-  mkdir: vi.fn(),
   mkdtemp: vi.fn(),
   rm: vi.fn(),
 }));
-vi.mock('../../run', () => ({ run: vi.fn(), runOk: vi.fn() }));
+vi.mock('../../install/zip', () => ({ extractZip: vi.fn(), packZip: vi.fn() }));
+vi.mock('../../run', () => ({ run: vi.fn() }));
 vi.mock('./certificate/authority', () => ({ createAuthorCertificate: vi.fn() }));
 vi.mock('./certificate/password', () => ({ randomPassword: () => 'a-random-password' }));
 vi.mock('./certificate/profile', () => ({ writeProfile: vi.fn() }));
@@ -41,12 +42,10 @@ beforeEach(() => {
   directories.clear();
   vi.mocked(mkdtemp).mockResolvedValue('/tmp/kroma-wgt-1');
   vi.mocked(writeProfile).mockResolvedValue('/tizen-studio-data/profile/profiles.xml');
-  vi.stubGlobal('Bun', { which: () => '/usr/bin/zip' });
 });
 
 afterEach(() => {
   vi.clearAllMocks();
-  vi.unstubAllGlobals();
 });
 
 describe('ensureProfile', () => {
@@ -103,15 +102,10 @@ describe('resign', () => {
   it('unpacks the package it was given into a directory of its own', async () => {
     await resign('/out/KROMA-tizen-0.1.33.wgt', kroma, log);
 
-    expect(vi.mocked(mkdir)).toHaveBeenCalledWith('/tmp/kroma-wgt-1/app', { recursive: true });
-    expect(vi.mocked(runOk).mock.calls[0]?.[0]).toEqual([
-      'unzip',
-      '-q',
-      '-o',
+    expect(vi.mocked(extractZip)).toHaveBeenCalledWith(
       '/out/KROMA-tizen-0.1.33.wgt',
-      '-d',
       '/tmp/kroma-wgt-1/app',
-    ]);
+    );
   });
 
   it('copies a build that is already a directory instead of unpacking it', async () => {
@@ -126,7 +120,7 @@ describe('resign', () => {
         recursive: true,
       },
     );
-    expect(vi.mocked(runOk).mock.calls[0]?.[0]).not.toContain('unzip');
+    expect(vi.mocked(extractZip)).not.toHaveBeenCalled();
   });
 
   it('drops the signatures the build carried before it signs again', async () => {
@@ -153,19 +147,11 @@ describe('resign', () => {
   it('packs the signed directory back into a widget the caller has to delete', async () => {
     const signed = await resign('/out/KROMA.wgt', kroma, log);
 
-    expect(vi.mocked(runOk).mock.calls.at(-1)).toEqual([
-      ['zip', '-X', '-r', '-q', '/tmp/kroma-wgt-1/KROMA.wgt', '.'],
-      { cwd: '/tmp/kroma-wgt-1/app', log },
-    ]);
-    expect(signed).toEqual({ path: '/tmp/kroma-wgt-1/KROMA.wgt', staged: true });
-  });
-
-  it('refuses to repack on a machine with nothing to zip with', async () => {
-    vi.stubGlobal('Bun', { which: () => null });
-
-    await expect(resign('/out/KROMA.wgt', kroma, log)).rejects.toThrow(
-      'zip is needed to repack the widget and is not here',
+    expect(vi.mocked(packZip)).toHaveBeenCalledWith(
+      '/tmp/kroma-wgt-1/app',
+      '/tmp/kroma-wgt-1/KROMA.wgt',
     );
+    expect(signed).toEqual({ path: '/tmp/kroma-wgt-1/KROMA.wgt', staged: true });
   });
 });
 

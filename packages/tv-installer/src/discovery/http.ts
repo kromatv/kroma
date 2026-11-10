@@ -1,7 +1,9 @@
+import { get } from 'node:https';
 import type { ZodType } from 'zod';
 
 const DEFAULT_TIMEOUT_MS = 1500;
 const DEFAULT_MAX_BYTES = 64 * 1024;
+const OK = 200;
 
 export interface FetchOptions {
   timeoutMs?: number;
@@ -13,11 +15,9 @@ export interface FetchOptions {
 /** The body as text, or null for any refusal: unreachable, not ok, or too big. */
 export async function fetchText(url: string, options: FetchOptions = {}): Promise<string | null> {
   const { timeoutMs = DEFAULT_TIMEOUT_MS, maxBytes = DEFAULT_MAX_BYTES } = options;
+  if (options.insecureTls) return getUnverified(url, timeoutMs, maxBytes);
   try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(timeoutMs),
-      tls: options.insecureTls ? { rejectUnauthorized: false } : undefined,
-    });
+    const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) return null;
     return await readBounded(response, maxBytes);
   } catch {
@@ -39,6 +39,35 @@ export async function fetchJson<T>(
   } catch {
     return null;
   }
+}
+
+function getUnverified(url: string, timeoutMs: number, maxBytes: number): Promise<string | null> {
+  return new Promise((resolve) => {
+    const refuse = () => resolve(null);
+    try {
+      const request = get(
+        url,
+        { rejectUnauthorized: false, signal: AbortSignal.timeout(timeoutMs) },
+        (response) => {
+          const chunks: Buffer[] = [];
+          let size = 0;
+          response.on('error', refuse);
+          response.on('data', (chunk: Buffer) => {
+            size += chunk.byteLength;
+            if (size <= maxBytes) return chunks.push(chunk);
+            refuse();
+            return request.destroy();
+          });
+          response.on('end', () => {
+            resolve(response.statusCode === OK ? Buffer.concat(chunks).toString('utf8') : null);
+          });
+        },
+      );
+      request.on('error', refuse);
+    } catch {
+      refuse();
+    }
+  });
 }
 
 async function readBounded(response: Response, maxBytes: number): Promise<string | null> {

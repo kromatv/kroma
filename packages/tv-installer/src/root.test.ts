@@ -64,6 +64,13 @@ describe('root', () => {
     expect(existsSync(join(found, 'packages', 'tv-installer', 'src', 'root.ts'))).toBe(true);
   });
 
+  it('answers a folder that does not exist for a run no checkout holds', () => {
+    const { directory } = tree('outside', 'any', 'checkout');
+    const { directory: installed } = tree('node_modules', 'kroma-tv', 'dist');
+
+    expect(existsSync(findRoot(directory, installed))).toBe(false);
+  });
+
   it('gives up before walking twenty-five levels up to a checkout', () => {
     const levels = Array.from({ length: 25 }, (_, level) => `level-${level}`);
     const { base, directory } = tree(...levels);

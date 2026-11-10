@@ -1,7 +1,6 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { run } from '../run';
 import type { Television } from '../television';
 import {
   availableSources,
@@ -11,34 +10,25 @@ import {
   resolveArtifact,
 } from './artifact';
 
-const { mtimes, globbed } = vi.hoisted(() => ({
+const { mtimes, globbed, releaseAssets, fetchAsset } = vi.hoisted(() => ({
   mtimes: new Map<string, number>(),
   globbed: new Map<string, string[]>(),
+  releaseAssets: vi.fn(),
+  fetchAsset: vi.fn(),
 }));
 
 vi.mock('node:fs', () => ({
-  existsSync: () => true,
   statSync: (path: string) => ({ mtimeMs: mtimes.get(path) ?? 0 }),
 }));
-vi.mock('node:fs/promises', () => ({ mkdir: vi.fn() }));
 vi.mock('../root', () => ({ root: '/kroma' }));
-vi.mock('../run', () => ({ run: vi.fn() }));
-
-const which = vi.fn<(binary: string) => string | null>();
-
-class FakeGlob {
-  constructor(private readonly pattern: string) {}
-
-  scanSync({ cwd, absolute }: { cwd: string; absolute?: boolean }): string[] {
-    const names = globbed.get(this.pattern) ?? [];
-    return names.map((name) => (absolute ? join(cwd, name) : name));
-  }
-}
-
-vi.stubGlobal('Bun', { which, Glob: FakeGlob });
+vi.mock('./matching-paths', async (original) => ({
+  ...(await original<Record<string, unknown>>()),
+  matchingPaths: (base: string, pattern: string) =>
+    (globbed.get(pattern) ?? []).map((name) => join(base, name)),
+}));
+vi.mock('./release', () => ({ releaseAssets, fetchAsset }));
 
 const wgt: PackageKind = {
-  extension: '.wgt',
   globs: ['clients/tizen/out/*.wgt', 'clients/tizen/dist/*.wgt'],
   pattern: 'KROMA-tizen-*.wgt',
   runArtifact: 'kroma-tizen-wgt',
@@ -61,11 +51,22 @@ const downloads = join(homedir(), '.kroma', 'downloads');
 const lines: string[] = [];
 const log = (line: string) => lines.push(line);
 
+const asset = (name: string, updated: string) => ({
+  name,
+  url: `https://github.com/kromatv/kroma/releases/download/x/${name}`,
+  size: 10,
+  sha256: 'a'.repeat(64),
+  updatedMs: Date.parse(updated),
+});
+
 beforeEach(() => {
   globbed.clear();
   mtimes.clear();
   lines.length = 0;
-  which.mockReturnValue('/usr/local/bin/gh');
+  releaseAssets.mockResolvedValue([]);
+  fetchAsset.mockImplementation(async (found: { name: string }, directory: string) =>
+    join(directory, found.name),
+  );
 });
 
 afterEach(() => {
@@ -109,16 +110,8 @@ describe('availableSources', () => {
     expect(availableSources(wgt, true)).toEqual(['local', 'stable', 'canary', 'build']);
   });
 
-  it('offers no release channel on a machine with no gh to fetch one', () => {
-    which.mockReturnValue(null);
-
-    expect(availableSources(wgt, true)).toEqual(['build']);
-  });
-
-  it('offers no build for a shell whose sources are not here', () => {
-    which.mockReturnValue(null);
-
-    expect(availableSources(wgt, false)).toEqual([]);
+  it('offers both release channels where nothing is built and nothing can be', () => {
+    expect(availableSources(wgt, false)).toEqual(['stable', 'canary']);
   });
 });
 
@@ -130,7 +123,7 @@ describe('resolveArtifact', () => {
 
     expect(path).toBe('/tmp/KROMA.wgt');
     expect(from.build).not.toHaveBeenCalled();
-    expect(vi.mocked(run)).not.toHaveBeenCalled();
+    expect(releaseAssets).not.toHaveBeenCalled();
   });
 
   it('builds from source when that is the source asked for', async () => {
@@ -151,56 +144,53 @@ describe('resolveArtifact', () => {
   });
 
   it('pulls the stable release when this checkout has built nothing', async () => {
-    vi.mocked(run).mockResolvedValue({ code: 0, output: '' });
-    globbed.set('*.wgt', ['KROMA-tizen-0.1.33.wgt']);
+    releaseAssets.mockResolvedValue([asset('KROMA-tizen-0.1.33.wgt', '2026-11-01T10:00:00Z')]);
 
     const path = await resolveArtifact(from, { tv: samsung, log });
 
-    expect(vi.mocked(run).mock.calls[0]?.[0]).toEqual([
-      'gh',
-      'release',
-      'download',
-      '--pattern',
-      'KROMA-tizen-*.wgt',
-      '--dir',
-      join(downloads, 'stable', 'tizen'),
-      '--clobber',
+    expect(releaseAssets).toHaveBeenCalledWith('stable');
+    expect(path).toBe(join(downloads, 'stable', 'tizen', 'KROMA-tizen-0.1.33.wgt'));
+    expect(lines).toEqual(['package: KROMA-tizen-0.1.33.wgt, from the stable release']);
+  });
+
+  it('reads the canary release when the canary channel is the one asked for', async () => {
+    releaseAssets.mockResolvedValue([asset('KROMA-tizen-0.1.34.wgt', '2026-11-01T10:00:00Z')]);
+
+    const path = await resolveArtifact(from, { tv: samsung, source: 'canary', log });
+
+    expect(releaseAssets).toHaveBeenCalledWith('canary');
+    expect(path).toBe(join(downloads, 'canary', 'tizen', 'KROMA-tizen-0.1.34.wgt'));
+  });
+
+  it('takes the newest of the builds a rolling release keeps', async () => {
+    releaseAssets.mockResolvedValue([
+      asset('KROMA-tizen-0.1.39-canary.3588383.wgt', '2026-11-08T10:00:00Z'),
+      asset('KROMA-tizen-0.1.39-canary.3592322.wgt', '2026-11-10T10:00:00Z'),
+      asset('KROMA-tizen-0.1.39-canary.3589132.wgt', '2026-11-09T10:00:00Z'),
     ]);
+
+    const path = await resolveArtifact(from, { tv: samsung, source: 'canary', log });
+
+    expect(path).toBe(join(downloads, 'canary', 'tizen', 'KROMA-tizen-0.1.39-canary.3592322.wgt'));
+  });
+
+  it('passes over the packages of every other platform in the release', async () => {
+    releaseAssets.mockResolvedValue([
+      asset('KROMA-androidtv-0.1.33.apk', '2026-11-02T10:00:00Z'),
+      asset('KROMA-tizen8-0.1.33.wgt', '2026-11-02T10:00:00Z'),
+      asset('KROMA-tizen-0.1.33.wgt', '2026-11-01T10:00:00Z'),
+    ]);
+
+    const path = await resolveArtifact(from, { tv: samsung, source: 'stable', log });
+
     expect(path).toBe(join(downloads, 'stable', 'tizen', 'KROMA-tizen-0.1.33.wgt'));
   });
 
-  it('names the canary tag when the canary channel is the one asked for', async () => {
-    vi.mocked(run).mockResolvedValue({ code: 0, output: '' });
-    globbed.set('*.wgt', ['KROMA-tizen-0.1.34.wgt']);
-
-    await resolveArtifact(from, { tv: samsung, source: 'canary', log });
-
-    expect(vi.mocked(run).mock.calls[0]?.[0]).toEqual([
-      'gh',
-      'release',
-      'download',
-      'canary',
-      '--pattern',
-      'KROMA-tizen-*.wgt',
-      '--dir',
-      join(downloads, 'canary', 'tizen'),
-      '--clobber',
-    ]);
-  });
-
-  it('says what to run by hand on a machine with no gh', async () => {
-    which.mockReturnValue(null);
-
-    await expect(resolveArtifact(from, { tv: samsung, source: 'stable', log })).rejects.toThrow(
-      'no .wgt here and no gh to fetch one: gh run download -n kroma-tizen-wgt',
-    );
-  });
-
   it('refuses a release that carried no package of that kind', async () => {
-    vi.mocked(run).mockResolvedValue({ code: 0, output: '' });
+    releaseAssets.mockResolvedValue([asset('KROMA-androidtv-0.1.33.apk', '2026-11-02T10:00:00Z')]);
 
     await expect(resolveArtifact(from, { tv: samsung, source: 'stable', log })).rejects.toThrow(
-      'the stable release carries no KROMA-tizen-*.wgt',
+      'the stable release carries no KROMA-tizen-*.wgt: gh run download -n kroma-tizen-wgt takes one from a build',
     );
   });
 });

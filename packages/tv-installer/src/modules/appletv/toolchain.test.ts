@@ -3,15 +3,16 @@ import { locateAppleTvTool, missingAppleTvTools, requireAppleTvTool } from './to
 
 const { present, spawnSync, which } = vi.hoisted(() => ({
   present: new Set<string>(),
-  spawnSync: vi.fn((_command: readonly string[], _options?: unknown) => ({
-    exitCode: 0,
+  spawnSync: vi.fn((_file: string, _args?: readonly string[], _options?: unknown) => ({
+    status: 0,
     stdout: Buffer.from(''),
   })),
   which: vi.fn((_binary: string): string | null => null),
 }));
 vi.mock('node:fs', () => ({ existsSync: (path: string) => present.has(path) }));
 vi.mock('../../root', () => ({ root: '/kroma' }));
-vi.stubGlobal('Bun', { spawnSync, which });
+vi.mock('node:child_process', () => ({ spawnSync }));
+vi.mock('../../toolchain/which', () => ({ which }));
 
 const DEVELOPER = '/Applications/Xcode.app/Contents/Developer';
 const DEVICECTL = `${DEVELOPER}/usr/bin/devicectl`;
@@ -28,11 +29,11 @@ beforeEach(() => {
   answers.clear();
   which.mockReset();
   spawnSync.mockReset();
-  spawnSync.mockImplementation((command) => {
-    const answer = answers.get(command[0] ?? '');
+  spawnSync.mockImplementation((file) => {
+    const answer = answers.get(file);
     return answer === undefined
-      ? { exitCode: 1, stdout: Buffer.from('') }
-      : { exitCode: 0, stdout: Buffer.from(answer) };
+      ? { status: 1, stdout: Buffer.from('') }
+      : { status: 0, stdout: Buffer.from(answer) };
   });
   on('darwin');
 });

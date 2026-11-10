@@ -12,14 +12,14 @@ vi.mock('./toolchain', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   requireAppleTvTool,
 }));
-vi.mock('node:fs/promises', () => ({ unlink }));
-vi.stubGlobal('Bun', {
-  file: () => ({
-    exists: async () => wrote.exists,
-    size: wrote.size,
-    text: async () => wrote.text,
-  }),
-});
+vi.mock('node:fs/promises', () => ({
+  unlink,
+  stat: async () => {
+    if (!wrote.exists) throw new Error('ENOENT');
+    return { size: wrote.size };
+  },
+  readFile: async () => wrote.text,
+}));
 
 const report = (description: string) => ({
   error: {

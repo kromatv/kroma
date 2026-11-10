@@ -1,4 +1,9 @@
+import { spawn } from 'node:child_process';
+import type { Readable } from 'node:stream';
+
 export type LogLine = (line: string) => void;
+
+const KILLED = 137;
 
 export interface RunOptions {
   log?: LogLine;
@@ -19,18 +24,17 @@ export async function run(
   const [file, ...args] = command;
   if (!file) throw new Error('run() needs a command');
 
-  const child = Bun.spawn([file, ...args], {
-    cwd: options.cwd,
-    stdin: 'ignore',
-    stdout: 'pipe',
-    stderr: 'pipe',
+  const child = spawn(file, args, { cwd: options.cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+  const exited = new Promise<number>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', (code) => resolve(code ?? KILLED));
   });
   const killer = options.timeoutMs
     ? setTimeout(() => child.kill('SIGKILL'), options.timeoutMs)
     : undefined;
 
   const collected: string[] = [];
-  const drain = async (stream: ReadableStream<Uint8Array>) => {
+  const drain = async (stream: Readable) => {
     for await (const line of lines(stream)) {
       collected.push(line);
       options.log?.(line);
@@ -38,8 +42,8 @@ export async function run(
   };
 
   try {
-    await Promise.all([drain(child.stdout), drain(child.stderr)]);
-    return { code: await child.exited, output: collected.join('\n') };
+    const [code] = await Promise.all([exited, drain(child.stdout), drain(child.stderr)]);
+    return { code, output: collected.join('\n') };
   } finally {
     clearTimeout(killer);
   }
@@ -56,11 +60,11 @@ export async function runOk(command: readonly string[], options: RunOptions = {}
   return output;
 }
 
-async function* lines(stream: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+async function* lines(stream: Readable): AsyncGenerator<string> {
   const decoder = new TextDecoder();
   let carry = '';
   for await (const chunk of stream) {
-    carry += decoder.decode(chunk, { stream: true });
+    carry += decoder.decode(chunk as Uint8Array, { stream: true });
     const parts = carry.split('\n');
     carry = parts.pop() ?? '';
     for (const part of parts) yield part.trimEnd();

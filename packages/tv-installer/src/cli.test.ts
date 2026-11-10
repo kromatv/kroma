@@ -79,7 +79,7 @@ describe('tv install', () => {
       hosts: undefined,
       artifact: undefined,
       source: undefined,
-      moduleOptions: { native: false },
+      moduleOptions: { native: true },
       launch: true,
       json: false,
     });
@@ -95,7 +95,7 @@ describe('tv install', () => {
       'canary',
       '--profile',
       'kroma',
-      '--native',
+      '--no-native',
       '--no-launch',
     ]);
 
@@ -103,7 +103,7 @@ describe('tv install', () => {
       hosts: undefined,
       artifact: '/out/KROMA.wgt',
       source: 'canary',
-      moduleOptions: { profile: 'kroma', native: true },
+      moduleOptions: { profile: 'kroma', native: false },
       launch: false,
       json: false,
     });

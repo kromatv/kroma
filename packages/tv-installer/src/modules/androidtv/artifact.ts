@@ -7,7 +7,6 @@ import {
 } from '../../install/artifact';
 
 export const ANDROID_PACKAGE: PackageKind = {
-  extension: '.apk',
   globs: ['out/*.apk', 'clients/tv-native/android/app/build/outputs/apk/release/*.apk'],
   // The phone build sits in the same release and is not this app.
   pattern: 'KROMA-androidtv-*.apk',

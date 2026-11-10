@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { LogLine } from '../run';
+import { which } from './which';
 
 export interface Tool {
   id: string;
@@ -15,7 +16,7 @@ export interface Tool {
 export const KROMA_TOOLS = join(homedir(), '.kroma', 'tools');
 
 export function locate(tool: Tool): string | null {
-  const onPath = Bun.which(tool.binary);
+  const onPath = which(tool.binary);
   if (onPath) return onPath;
   return (tool.candidates?.() ?? []).find((path) => existsSync(path)) ?? null;
 }
