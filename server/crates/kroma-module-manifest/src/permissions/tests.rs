@@ -313,3 +313,66 @@ fn the_host_network_a_listener_a_root_a_program_a_media_tool_and_a_variable_each
         assert!(block(after.clone()).widens(&before), "{after}");
     }
 }
+
+fn listen(value: serde_json::Value) -> Listen {
+    serde_json::from_value(value).unwrap()
+}
+
+#[test]
+fn a_listener_holds_its_port_and_the_ones_its_count_adds() {
+    let bridges = listen(json!({ "purpose": "proxy", "port": "setting:vpnLocalPort", "count": 3 }));
+
+    let ports = bridges.ports(&|key| (key == "vpnLocalPort").then_some(25345));
+
+    assert_eq!(ports, [25345, 25346, 25347]);
+}
+
+#[test]
+fn a_listener_without_a_count_holds_one_port() {
+    assert_eq!(
+        listen(json!({ "purpose": "a", "port": 4000 })).ports(&|_| None),
+        [4000]
+    );
+}
+
+#[test]
+fn a_listener_on_a_setting_nobody_set_holds_nothing() {
+    let unset = listen(json!({ "purpose": "a", "port": "setting:unset", "count": 2 }));
+
+    assert!(unset.ports(&|_| None).is_empty());
+}
+
+#[test]
+fn a_listener_whose_port_is_neither_a_number_nor_a_setting_holds_nothing() {
+    assert!(listen(json!({ "purpose": "a", "port": true }))
+        .ports(&|_| Some(1))
+        .is_empty());
+}
+
+#[test]
+fn a_range_stops_at_the_last_port_there_is() {
+    let top = listen(json!({ "purpose": "a", "port": 65534, "count": 4 }));
+
+    assert_eq!(top.ports(&|_| None), [65534, 65535]);
+}
+
+#[test]
+fn a_listener_count_is_between_one_and_sixteen() {
+    let problem = |count: u64| {
+        block(json!({ "net": { "listen": [{ "purpose": "a", "port": 1, "count": count }] } }))
+            .problem()
+    };
+
+    assert!(problem(0).unwrap().contains("count"));
+    assert!(problem(17).unwrap().contains("count"));
+    assert_eq!(problem(16), None);
+}
+
+#[test]
+fn listening_on_more_ports_than_before_widens_it() {
+    let before = block(json!({ "net": { "listen": [{ "purpose": "a", "port": 1 }] } }));
+
+    let after = block(json!({ "net": { "listen": [{ "purpose": "a", "port": 1, "count": 5 }] } }));
+
+    assert!(after.widens(&before));
+}

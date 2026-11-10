@@ -23,6 +23,14 @@ describe('Permissions', () => {
     expect(Permissions.parse(torrents)).toEqual(torrents);
   });
 
+  it('reads a listener that holds a run of ports, up to sixteen', () => {
+    const bridges = { purpose: 'proxy', port: 'setting:vpnLocalPort', count: 5 };
+
+    expect(Permissions.parse({ net: { listen: [bridges] } }).net?.listen).toEqual([bridges]);
+    expect(() => Permissions.parse({ net: { listen: [{ ...bridges, count: 17 }] } })).toThrow();
+    expect(() => Permissions.parse({ net: { listen: [{ ...bridges, count: 0 }] } })).toThrow();
+  });
+
   it('refuses a misspelt permission rather than ignoring it', () => {
     expect(() => Permissions.parse({ network: {} })).toThrow();
     expect(() => Permissions.parse({ net: { conect: [] } })).toThrow();

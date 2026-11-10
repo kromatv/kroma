@@ -48,6 +48,7 @@ tokio = { version = "1", default-features = false, features = ["sync", "macros",
 # `testing::StubHost`, for the point tests: a host that answers nothing, which is
 # what a server with no download engine installed looks like.
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+tower = { version = "0.5", features = ["util"] }
 
 [profile.release]
 opt-level = 3

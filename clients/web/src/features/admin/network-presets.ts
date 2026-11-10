@@ -2,6 +2,7 @@ import type { DeclaredPurpose, Rule, RulesUpdate } from '@kromatv/client/network
 import type { MessageKey } from '@kromatv/i18n';
 import { CORE_CALLER } from '#web/features/admin/network-callers';
 import { distinctSorted } from '#web/features/admin/network-flows';
+import { DEFAULT_NETWORK } from '#web/features/admin/network-rules';
 
 export type RulePreset = 'downloadsVpn' | 'everythingVpn' | 'bareMinimum';
 
@@ -51,14 +52,14 @@ export function presetRules(preset: RulePreset, purposes: readonly DeclaredPurpo
             caller,
             purpose: null,
             host: null,
-            action: 'vpn',
+            action: DEFAULT_NETWORK,
           })),
         ),
       };
     case 'everythingVpn':
       return {
         defaultAction: 'allow',
-        rules: numbered([{ caller: null, purpose: null, host: null, action: 'vpn' }]),
+        rules: numbered([{ caller: null, purpose: null, host: null, action: DEFAULT_NETWORK }]),
       };
     case 'bareMinimum':
       return {

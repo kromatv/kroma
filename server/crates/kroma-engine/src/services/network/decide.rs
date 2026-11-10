@@ -58,7 +58,7 @@ fn guard(caller: &str, target: &WebTarget, own_ports: &[u16]) -> Option<&'static
 }
 
 // 0.0.0.0 and :: connect to this machine on Linux, so they count as loopback.
-fn is_this_machine(target: &WebTarget) -> bool {
+pub(super) fn is_this_machine(target: &WebTarget) -> bool {
     match target.literal().map(unmapped) {
         Some(ip) => ip.is_loopback() || ip.is_unspecified(),
         None => {

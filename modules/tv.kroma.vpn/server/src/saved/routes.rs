@@ -3,14 +3,16 @@ use std::path::PathBuf;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{delete, post};
+use axum::routing::{delete, post, put};
 use axum::{Json, Router};
 use kroma_module_sdk::domain::Permission;
-use kroma_module_sdk::host::{json_error, run_blocking, AuthUser, HostCtx};
+use kroma_module_sdk::host::{json_error, run_blocking, service, AuthUser, HostCtx};
 use serde::Deserialize;
 use serde_json::json;
 
+use super::{RoutingError, ROUTER_SLOTS};
 use crate::routes::bring_up;
+use crate::Vpn;
 
 /// `POST /vpn/saved` body: WireGuard configs to keep. With `use`, the first of
 /// them becomes the tunnel's at once.
@@ -19,6 +21,13 @@ pub struct SaveConfigsBody {
     pub configs: Vec<String>,
     #[serde(default, rename = "use")]
     pub use_first: bool,
+}
+
+/// `PUT /vpn/saved/{id}/network` body: whether this config runs a tunnel of
+/// its own that a network rule can send calls through by name.
+#[derive(Debug, Deserialize)]
+pub struct RoutableBody {
+    pub on: bool,
 }
 
 const MAX_CONFIGS: usize = 64;
@@ -31,6 +40,7 @@ where
         .route("/vpn/saved", post(save::<S>))
         .route("/vpn/saved/{id}/use", post(use_saved::<S>))
         .route("/vpn/saved/{id}", delete(remove::<S>))
+        .route("/vpn/saved/{id}/network", put(set_network::<S>))
 }
 
 fn dir(host: &dyn HostCtx) -> PathBuf {
@@ -44,7 +54,7 @@ fn failed() -> Response {
     )
 }
 
-fn listed(host: &dyn HostCtx) -> Response {
+pub(crate) fn listed(host: &dyn HostCtx) -> Response {
     let saved = super::views(&dir(host), &host.setting_str("vpnWgConfig", ""));
     Json(json!({ "saved": saved })).into_response()
 }
@@ -54,9 +64,12 @@ async fn switch_to<S: HostCtx + Clone + Send + Sync + 'static>(
     config: String,
 ) -> Result<(), Response> {
     let held = dir(state);
-    run_blocking(move || crate::mullvad::forget(&held))
-        .await
-        .map_err(|_| failed())?;
+    let keeps_mullvad = crate::mullvad::uses_key(&held, &config);
+    if !keeps_mullvad {
+        run_blocking(move || crate::mullvad::forget(&held))
+            .await
+            .map_err(|_| failed())?;
+    }
     bring_up(state, config).await;
     Ok(())
 }
@@ -113,6 +126,47 @@ async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
     super::remove(&held, &id).map_err(|_| failed())?;
     if was_active {
         bring_up(&state, String::new()).await;
+    } else if let Some(vpn) = service::<Vpn>(&state) {
+        vpn.apply_routed(&state).await;
     }
     Ok(listed(&state))
 }
+
+pub(crate) fn router_full() -> Response {
+    (
+        StatusCode::CONFLICT,
+        Json(json!({ "code": "routerFull", "max": ROUTER_SLOTS })),
+    )
+        .into_response()
+}
+
+async fn set_network<S: HostCtx + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    Path(id): Path<String>,
+    Json(body): Json<RoutableBody>,
+) -> Result<Response, Response> {
+    state.require(&user, Permission::SettingsManage)?;
+    let held = dir(&state);
+    let routed = run_blocking(move || super::set_routable(&held, &id, body.on))
+        .await
+        .map_err(|_| failed())?;
+    match routed {
+        Ok(()) => {}
+        Err(RoutingError::Missing) => {
+            return Err(json_error(StatusCode::NOT_FOUND, "no such config"));
+        }
+        Err(RoutingError::Full) => return Err(router_full()),
+        Err(RoutingError::Io(error)) => {
+            tracing::warn!(%error, "could not keep the configs in the router");
+            return Err(failed());
+        }
+    }
+    if let Some(vpn) = service::<Vpn>(&state) {
+        vpn.apply_routed(&state).await;
+    }
+    Ok(listed(&state))
+}
+
+#[cfg(test)]
+mod tests;

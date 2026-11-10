@@ -44,12 +44,14 @@ export const VpnProvider = z.discriminatedUnion('kind', [
 export type VpnProvider = z.infer<typeof VpnProvider>;
 
 /** A WireGuard config kept on the server for one-click switching. Its text
- * never leaves the server: this is what it is, and whether it is in use. */
+ * never leaves the server: this is what it is, whether it is in use, and
+ * whether it runs a tunnel of its own that a network rule can pick. */
 export const SavedConfig = z.object({
   id: z.string(),
   label: z.string(),
   provider: VpnProvider.nullable(),
   active: z.boolean(),
+  routable: z.boolean(),
 });
 export type SavedConfig = z.infer<typeof SavedConfig>;
 
@@ -60,6 +62,7 @@ export type SavedConfigs = z.infer<typeof SavedConfigs>;
 export const VpnAdminView = z.object({
   provider: VpnProvider.nullable(),
   saved: z.array(SavedConfig),
+  routerSlots: z.number().int(),
   wgConfigured: z.boolean(),
   bridgeRunning: z.boolean(),
   localPort: z.number(),
@@ -154,6 +157,14 @@ export const MullvadConnectBody = z.object({
   ownedOnly: z.boolean(),
 });
 export type MullvadConnectBody = z.infer<typeof MullvadConnectBody>;
+
+/** `POST /vpn/mullvad/router` body: another place for this server's device. */
+export const MullvadPlaceBody = MullvadConnectBody.omit({ accountNumber: true });
+export type MullvadPlaceBody = z.infer<typeof MullvadPlaceBody>;
+
+/** The 409 a full router answers: it holds `max` configs besides the default. */
+export const RouterFull = z.object({ code: z.literal('routerFull'), max: z.number().int() });
+export type RouterFull = z.infer<typeof RouterFull>;
 
 export const MullvadConnectResult = z.object({ provider: VpnProvider.nullable() });
 export type MullvadConnectResult = z.infer<typeof MullvadConnectResult>;

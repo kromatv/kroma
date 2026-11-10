@@ -6,12 +6,15 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use kroma_module_sdk::domain::Permission;
-use kroma_module_sdk::host::{json_error, run_blocking, AuthUser, HostCtx};
+use kroma_module_sdk::host::{json_error, run_blocking, service, AuthUser, HostCtx};
 use serde::Deserialize;
 use serde_json::json;
 
 use super::ConnectError;
 use crate::routes::bring_up;
+use crate::saved::routes::{listed, router_full};
+use crate::saved::{RoutingError, ROUTER_SLOTS};
+use crate::Vpn;
 
 /// `POST /vpn/mullvad` body. `accountNumber` is needed the first time only:
 /// once this server holds a device, changing place names just the place.
@@ -19,6 +22,17 @@ use crate::routes::bring_up;
 #[serde(rename_all = "camelCase")]
 pub struct ConnectBody {
     pub account_number: Option<String>,
+    pub country: String,
+    pub city: Option<String>,
+    #[serde(default)]
+    pub owned_only: bool,
+}
+
+/// `POST /vpn/mullvad/router` body: another place for this server's device,
+/// kept as a tunnel of its own that a network rule can name.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaceBody {
     pub country: String,
     pub city: Option<String>,
     #[serde(default)]
@@ -41,6 +55,7 @@ where
         .route("/vpn/mullvad", post(connect::<S>).delete(disconnect::<S>))
         .route("/vpn/mullvad/locations", get(locations::<S>))
         .route("/vpn/mullvad/devices/remove", post(remove_device::<S>))
+        .route("/vpn/mullvad/router", post(add_to_router::<S>))
 }
 
 fn dir(host: &dyn HostCtx) -> PathBuf {
@@ -118,6 +133,47 @@ async fn connect<S: HostCtx + Clone + Send + Sync + 'static>(
     Ok(Json(json!({ "provider": provider })).into_response())
 }
 
+async fn add_to_router<S: HostCtx + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    Json(body): Json<PlaceBody>,
+) -> Result<Response, Response> {
+    state.require(&user, Permission::SettingsManage)?;
+    let held = dir(&state);
+    if crate::saved::routed(&held).len() >= usize::from(ROUTER_SLOTS) {
+        return Err(router_full());
+    }
+    let default_config = state.setting_str("vpnWgConfig", "");
+    let outcome = run_blocking(move || {
+        let config = super::router_place(
+            &held,
+            &body.country,
+            body.city.as_deref(),
+            body.owned_only,
+            &default_config,
+        )?;
+        let id = crate::saved::add(&held, &[config])
+            .map_err(|e| ConnectError::Unavailable(e.to_string()))?
+            .remove(0);
+        Ok::<_, ConnectError>((held, id))
+    })
+    .await
+    .map_err(|_| failed())?;
+    let (held, id) = outcome.map_err(refused)?;
+    match crate::saved::set_routable(&held, &id, true) {
+        Ok(()) => {}
+        Err(RoutingError::Full) => {
+            let _ = crate::saved::remove(&held, &id);
+            return Err(router_full());
+        }
+        Err(_) => return Err(failed()),
+    }
+    if let Some(vpn) = service::<Vpn>(&state) {
+        vpn.apply_routed(&state).await;
+    }
+    Ok(listed(&state))
+}
+
 async fn disconnect<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -143,3 +199,6 @@ async fn remove_device<S: HostCtx + Clone + Send + Sync + 'static>(
         .map_err(refused)?;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
+
+#[cfg(test)]
+mod tests;

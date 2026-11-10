@@ -48,6 +48,15 @@ const Listen = z
     port: z
       .union([z.number().int().min(1).max(65535), z.string().regex(SettingRef)])
       .describe('A port, or "setting:<key>" naming the setting that holds it.'),
+    count: z
+      .number()
+      .int()
+      .min(1)
+      .max(16)
+      .optional()
+      .describe(
+        'How many ports from `port` on the entry holds, for a program that runs one listener per instance. 1 when absent.',
+      ),
   })
   .strict();
 

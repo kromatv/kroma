@@ -154,6 +154,7 @@ export function RuleEditor({
       ) : (
         <RuleTable
           rules={current.rules}
+          networks={offered?.networks ?? []}
           callerName={callerName}
           onMove={(index, offset) => setRules(moveRule(current.rules, index, offset))}
           onEdit={(index) => {

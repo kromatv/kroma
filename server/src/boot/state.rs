@@ -86,6 +86,11 @@ pub fn build(
         })
     };
 
+    let network_listeners = {
+        let settings = settings.clone();
+        supervisor.listeners_of(move |id| kroma_engine::modules::module_enabled(&settings, id))
+    };
+
     // Transcription is long-running and rides a DB row for progress, so the core
     // holds a client for it. The embedder needs none: the state builds that point
     // from the same resolver.
@@ -113,6 +118,7 @@ pub fn build(
             official_modules,
             permissions,
             network_providers,
+            network_listeners,
         },
     );
     if let Err(e) = state.network.install() {

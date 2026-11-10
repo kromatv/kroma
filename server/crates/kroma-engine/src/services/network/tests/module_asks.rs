@@ -35,7 +35,12 @@ fn declaring(tag: &str, connect: serde_json::Value) -> (Network, TempPool) {
 #[test]
 fn a_module_asking_for_one_of_this_servers_ports_is_refused_with_the_reason() {
     let (network, _pool) = network("network-ask-loopback", Point::absent(NETWORK_POINT));
-    let network = network.with_core_ports(4040, None);
+    let bridge: Vec<kroma_module_manifest::Listen> =
+        serde_json::from_value(json!([{ "purpose": "proxy", "port": "setting:vpnLocalPort" }]))
+            .unwrap();
+    let network = network
+        .with_core_ports(4040, None)
+        .with_listeners(Arc::new(move || bridge.clone()));
 
     for port in [4040, 4443, 25345] {
         let answer = NetworkPolicy::decide(

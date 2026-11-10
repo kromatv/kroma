@@ -25,25 +25,43 @@ pub enum ProviderView {
     },
 }
 
-/// The provider behind `wg_config`: the Mullvad account this server connected
-/// itself, or a Proton VPN file recognised by the comments Proton writes in it.
+/// The provider behind `wg_config`: the Mullvad place it names, on the device
+/// this server registered, or a Proton VPN file recognised by the comments
+/// Proton writes in it.
 pub(crate) fn provider_of(dir: &Path, wg_config: &str) -> Option<ProviderView> {
     if wg_config.trim().is_empty() {
         return None;
     }
-    if let Some(account) = crate::mullvad::held(dir) {
-        if let Some(place) = account.place {
-            return Some(ProviderView::Mullvad {
-                country: place.country,
-                country_name: place.country_name,
-                city: place.city,
-                city_name: place.city_name,
-                hostname: place.hostname,
-                device_name: account.device_name,
-            });
-        }
+    let held = crate::mullvad::held(dir);
+    match (provider_of_config(wg_config), held) {
+        (
+            Some(ProviderView::Mullvad {
+                country,
+                country_name,
+                city,
+                city_name,
+                hostname,
+                ..
+            }),
+            Some(account),
+        ) => Some(ProviderView::Mullvad {
+            country,
+            country_name,
+            city,
+            city_name,
+            hostname,
+            device_name: account.device_name,
+        }),
+        (None, Some(account)) => account.place.map(|place| ProviderView::Mullvad {
+            country: place.country,
+            country_name: place.country_name,
+            city: place.city,
+            city_name: place.city_name,
+            hostname: place.hostname,
+            device_name: account.device_name,
+        }),
+        (view, _) => view,
     }
-    provider_of_config(wg_config)
 }
 
 /// The provider a config names by itself: a Proton VPN file, by its comments.
@@ -53,6 +71,9 @@ pub(crate) fn provider_of_config(config: &str) -> Option<ProviderView> {
         .filter_map(|line| line.trim().strip_prefix('#'))
         .map(str::trim)
         .collect();
+    if let Some(view) = mullvad_of(&comments) {
+        return Some(view);
+    }
     let server = comments
         .iter()
         .find(|c| is_proton_server(c))
@@ -72,6 +93,28 @@ pub(crate) fn provider_of_config(config: &str) -> Option<ProviderView> {
     })
 }
 
+fn mullvad_of(comments: &[&str]) -> Option<ProviderView> {
+    let named = comments.iter().find_map(|c| c.strip_prefix("Mullvad "))?;
+    let mut parts = named.split(" · ").map(str::trim);
+    let hostname = parts.next()?.to_string();
+    let country_name = parts.next()?.to_string();
+    let city_name = parts.next().map(str::to_string);
+    let mut codes = hostname.split('-');
+    let country = codes.next()?.to_string();
+    let city = city_name
+        .as_ref()
+        .and(codes.next())
+        .map(|city| format!("{country}-{city}"));
+    Some(ProviderView::Mullvad {
+        country,
+        country_name,
+        city,
+        city_name,
+        hostname,
+        device_name: String::new(),
+    })
+}
+
 fn is_proton_server(comment: &str) -> bool {
     let Some((name, number)) = comment.split_once('#') else {
         return false;
@@ -80,6 +123,32 @@ fn is_proton_server(comment: &str) -> bool {
         && name.chars().all(|c| c.is_ascii_uppercase() || c == '-')
         && !number.is_empty()
         && number.chars().all(|c| c.is_ascii_digit())
+}
+
+/// What a tunnel is called where the admin picks one: the Mullvad place, the
+/// Proton server, or else the peer it reaches.
+pub(crate) fn label_of(config: &str, provider: Option<&ProviderView>) -> String {
+    match provider {
+        Some(ProviderView::Mullvad {
+            country_name,
+            city_name,
+            ..
+        }) => match city_name {
+            Some(city) => format!("Mullvad · {country_name}, {city}"),
+            None => format!("Mullvad · {country_name}"),
+        },
+        Some(ProviderView::Proton {
+            server: Some(server),
+            ..
+        }) => format!("Proton VPN · {server}"),
+        _ => config
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("Endpoint"))
+            .filter_map(|rest| rest.trim_start().strip_prefix('='))
+            .map(|endpoint| endpoint.trim().to_string())
+            .next()
+            .unwrap_or_else(|| "WireGuard".to_string()),
+    }
 }
 
 #[cfg(test)]
@@ -117,5 +186,42 @@ mod tests {
 
         assert_eq!(provider_of(dir.path(), plain), None);
         assert_eq!(provider_of(dir.path(), ""), None);
+    }
+
+    const STOCKHOLM: &str = "[Interface]\nPrivateKey = private\nAddress = 10.140.1.2/32\n\n[Peer]\n# Mullvad se-sto-wg-001 · Sweden · Stockholm\nPublicKey = relay-pub\nEndpoint = 185.65.135.1:51820\n";
+
+    #[test]
+    fn a_mullvad_config_is_recognised_by_the_place_it_names() {
+        let view = provider_of_config(STOCKHOLM);
+
+        assert_eq!(
+            view,
+            Some(ProviderView::Mullvad {
+                country: "se".into(),
+                country_name: "Sweden".into(),
+                city: Some("se-sto".into()),
+                city_name: Some("Stockholm".into()),
+                hostname: "se-sto-wg-001".into(),
+                device_name: String::new(),
+            })
+        );
+        assert_eq!(
+            label_of(STOCKHOLM, view.as_ref()),
+            "Mullvad · Sweden, Stockholm"
+        );
+    }
+
+    #[test]
+    fn a_mullvad_config_on_this_servers_device_names_the_device() {
+        let dir = kroma_module_sdk::testing::temp_dir("provider-mullvad-held");
+        crate::mullvad::hold_for_test(dir.path(), "private", "Brave Otter");
+
+        let view = provider_of(dir.path(), STOCKHOLM);
+
+        assert!(matches!(
+            view,
+            Some(ProviderView::Mullvad { ref device_name, ref city_name, .. })
+                if device_name == "Brave Otter" && city_name.as_deref() == Some("Stockholm")
+        ));
     }
 }

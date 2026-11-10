@@ -84,6 +84,7 @@ fn build_state_serving(
         official_modules: Arc::new(move || official.clone()),
         permissions: Arc::new(|_| None),
         network_providers: Arc::new(Vec::new),
+        network_listeners: Arc::new(Vec::new),
     };
     let state = AppState::new(config, false, db, settings, embedder, wiring);
     state.own_scratch_dir(scratch);

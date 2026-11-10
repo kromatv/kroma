@@ -69,3 +69,99 @@ fn what_is_kept_is_readable_by_the_server_alone() {
         assert_eq!(mode & 0o777, 0o600);
     }
 }
+
+#[test]
+fn a_config_put_in_the_router_takes_the_lowest_free_slot() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-slot");
+    let ids = add(
+        dir.path(),
+        &[proton("CH#3"), proton("NL#12"), proton("SE#4")],
+    )
+    .unwrap();
+
+    set_routable(dir.path(), &ids[0], true).unwrap();
+    set_routable(dir.path(), &ids[1], true).unwrap();
+    set_routable(dir.path(), &ids[0], false).unwrap();
+    set_routable(dir.path(), &ids[2], true).unwrap();
+
+    let slots: Vec<Option<u8>> = load(dir.path()).into_iter().map(|one| one.slot).collect();
+    assert_eq!(slots, [None, Some(2), Some(1)]);
+}
+
+#[test]
+fn putting_a_config_in_the_router_again_keeps_its_slot() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-slot-again");
+    let ids = add(dir.path(), &[proton("CH#3"), proton("NL#12")]).unwrap();
+    set_routable(dir.path(), &ids[1], true).unwrap();
+
+    set_routable(dir.path(), &ids[1], true).unwrap();
+
+    assert_eq!(find(dir.path(), &ids[1]).unwrap().slot, Some(1));
+}
+
+#[test]
+fn the_router_takes_no_more_configs_than_it_has_slots() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-slot-full");
+    let servers = ["CH#1", "CH#2", "CH#3", "CH#4", "CH#5"].map(proton);
+    let ids = add(dir.path(), &servers).unwrap();
+    for id in &ids[..4] {
+        set_routable(dir.path(), id, true).unwrap();
+    }
+
+    let refused = set_routable(dir.path(), &ids[4], true);
+
+    assert!(matches!(refused, Err(RoutingError::Full)));
+    assert_eq!(find(dir.path(), &ids[4]).unwrap().slot, None);
+}
+
+#[test]
+fn a_config_that_is_not_kept_cannot_go_in_the_router() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-slot-missing");
+
+    let refused = set_routable(dir.path(), "0123456789abcdef", true);
+
+    assert!(matches!(refused, Err(RoutingError::Missing)));
+}
+
+#[test]
+fn the_page_sees_which_configs_are_in_the_router() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-slot-view");
+    let ids = add(dir.path(), &[proton("CH#3"), proton("NL#12")]).unwrap();
+
+    set_routable(dir.path(), &ids[1], true).unwrap();
+
+    let routable: Vec<bool> = views(dir.path(), "")
+        .into_iter()
+        .map(|v| v.routable)
+        .collect();
+    assert_eq!(routable, [false, true]);
+}
+
+#[test]
+fn a_slot_sits_above_the_default_port_and_never_past_the_last_one() {
+    assert_eq!(port_for(25345, 1), Some(25346));
+    assert_eq!(port_for(65534, 2), None);
+}
+
+#[test]
+fn the_manifest_declares_a_port_for_the_default_tunnel_and_each_slot() {
+    let manifest: serde_json::Value =
+        serde_json::from_str(include_str!("../../../module.json")).unwrap();
+
+    let listen = &manifest["permissions"]["net"]["listen"][0];
+
+    assert_eq!(listen["port"], "setting:vpnLocalPort");
+    assert_eq!(listen["count"], u64::from(ROUTER_SLOTS) + 1);
+}
+
+#[test]
+fn forgetting_a_key_drops_every_config_built_on_it_and_keeps_the_rest() {
+    let dir = kroma_module_sdk::testing::temp_dir("saved-forget-key");
+    let mullvad = "[Interface]\nPrivateKey = device\n[Peer]\n# Mullvad ch-zrh-wg-001 · Switzerland · Zurich\nPublicKey = relay\nEndpoint = 192.0.2.5:51820\n";
+    add(dir.path(), &[mullvad.to_string(), proton("CH#3")]).unwrap();
+
+    forget_key(dir.path(), "device").unwrap();
+
+    let labels: Vec<String> = views(dir.path(), "").into_iter().map(|v| v.label).collect();
+    assert_eq!(labels, ["Proton VPN · CH#3"]);
+}

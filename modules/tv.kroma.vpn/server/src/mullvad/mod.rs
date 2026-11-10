@@ -66,6 +66,7 @@ pub(crate) fn connect(
         (Some(number), held) => {
             if let Some(old) = held {
                 retire(&old);
+                forget_places(dir, &old);
             }
             let fresh = register(&number)?;
             store::save(dir, &fresh).map_err(|e| ConnectError::Unavailable(e.to_string()))?;
@@ -79,10 +80,54 @@ pub(crate) fn connect(
     let relay = list
         .pick(country, city, owned_only, roll)
         .ok_or(ConnectError::NoRelay)?;
-    account.place = Some(place_of(&list, relay, city));
+    let place = place_of(&list, relay, city);
+    account.place = Some(place.clone());
     store::save(dir, &account).map_err(|e| ConnectError::Unavailable(e.to_string()))?;
-    let config = render(&account, relay, &list.wireguard.ipv4_gateway);
+    let config = render(&account, relay, &list.wireguard.ipv4_gateway, &place);
     Ok((account, config))
+}
+
+/// A config for another place on this server's device, to keep beside the
+/// default tunnel: same key and address, a relay in `country` (or `city`) that
+/// neither the default nor a kept place already reaches.
+pub(crate) fn router_place(
+    dir: &Path,
+    country: &str,
+    city: Option<&str>,
+    owned_only: bool,
+    default_config: &str,
+) -> Result<String, ConnectError> {
+    let account = store::load(dir).ok_or(ConnectError::AccountNeeded)?;
+    let in_use = relays_in_use(dir, &account, default_config);
+    let avoid: Vec<&str> = in_use.iter().map(String::as_str).collect();
+    let list = api::relays()?;
+    let roll = kroma_module_sdk::primitives::random_u32();
+    let relay = list
+        .pick_avoiding(country, city, owned_only, roll, &avoid)
+        .ok_or(ConnectError::NoRelay)?;
+    let place = place_of(&list, relay, Some(&relay.location));
+    Ok(render(
+        &account,
+        relay,
+        &list.wireguard.ipv4_gateway,
+        &place,
+    ))
+}
+
+fn relays_in_use(dir: &Path, account: &Account, default_config: &str) -> Vec<String> {
+    let kept = crate::saved::load(dir).into_iter().map(|one| one.config);
+    std::iter::once(default_config.to_string())
+        .chain(kept)
+        .filter(|config| {
+            crate::wireguard::value_of(config, "PrivateKey") == Some(account.private_key.as_str())
+        })
+        .filter_map(
+            |config| match crate::provider::provider_of_config(&config) {
+                Some(crate::ProviderView::Mullvad { hostname, .. }) => Some(hostname),
+                _ => None,
+            },
+        )
+        .collect()
 }
 
 /// Remove a device from the account, to free a slot for this server.
@@ -93,16 +138,31 @@ pub(crate) fn free_device(typed: &str, device_id: &str) -> Result<(), ConnectErr
 }
 
 /// Stop using Mullvad: remove this server's device from the account, then
-/// forget the account here.
+/// forget the account here and every kept place built on its key.
 pub(crate) fn forget(dir: &Path) {
     if let Some(account) = store::load(dir) {
         retire(&account);
+        forget_places(dir, &account);
     }
     store::forget(dir);
 }
 
 pub(crate) fn held(dir: &Path) -> Option<Account> {
     store::load(dir)
+}
+
+/// Whether `config` runs on the device this server registered, so switching
+/// to it keeps the device.
+pub(crate) fn uses_key(dir: &Path, config: &str) -> bool {
+    store::load(dir).is_some_and(|account| {
+        crate::wireguard::value_of(config, "PrivateKey") == Some(account.private_key.as_str())
+    })
+}
+
+fn forget_places(dir: &Path, account: &Account) {
+    if let Err(error) = crate::saved::forget_key(dir, &account.private_key) {
+        tracing::warn!(%error, "the kept Mullvad places were not dropped");
+    }
 }
 
 fn register(number: &str) -> Result<Account, ConnectError> {
@@ -156,11 +216,28 @@ fn place_of(list: &RelayList, relay: &Relay, city: Option<&str>) -> store::Place
     }
 }
 
-fn render(account: &Account, relay: &Relay, gateway: &str) -> String {
+fn render(account: &Account, relay: &Relay, gateway: &str, place: &store::Place) -> String {
+    let named = match &place.city_name {
+        Some(city) => format!("{} · {} · {city}", relay.hostname, place.country_name),
+        None => format!("{} · {}", relay.hostname, place.country_name),
+    };
     format!(
-        "[Interface]\nPrivateKey = {}\nAddress = {}\nDNS = {gateway}\n\n[Peer]\n# Mullvad {}\nPublicKey = {}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {}:{ENDPOINT_PORT}\n",
-        account.private_key, account.ipv4, relay.hostname, relay.public_key, relay.ipv4_addr_in,
+        "[Interface]\nPrivateKey = {}\nAddress = {}\nDNS = {gateway}\n\n[Peer]\n# Mullvad {named}\nPublicKey = {}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {}:{ENDPOINT_PORT}\n",
+        account.private_key, account.ipv4, relay.public_key, relay.ipv4_addr_in,
     )
+}
+
+#[cfg(test)]
+pub(crate) fn hold_for_test(dir: &Path, private_key: &str, device_name: &str) {
+    let account = Account {
+        number: "1234123412341234".into(),
+        device_id: "d1".into(),
+        device_name: device_name.into(),
+        private_key: private_key.into(),
+        ipv4: "10.140.1.2/32".into(),
+        place: None,
+    };
+    store::save(dir, &account).unwrap();
 }
 
 #[cfg(test)]

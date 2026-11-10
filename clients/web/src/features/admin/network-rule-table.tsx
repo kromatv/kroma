@@ -1,9 +1,9 @@
-import type { FlowRoute, Rule, RuleAction } from '@kromatv/client/network';
+import type { NetworkView, Rule } from '@kromatv/client/network';
 import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { IconButton, Row, Table, type TableColumn, Text } from '@kromatv/ui/kit';
-import { RouteBadge } from '#web/features/admin/network-route-badge';
+import { RuleActionBadge } from '#web/features/admin/network-rule-action';
 
 interface RuleColumn extends TableColumn {
   labelKey: MessageKey | null;
@@ -14,20 +14,16 @@ const COLUMNS: readonly RuleColumn[] = [
   { labelKey: 'network.colCaller', flex: 1.3, min: 120 },
   { labelKey: 'network.colPurpose', flex: 0.8, min: 110 },
   { labelKey: 'network.colHost', flex: 1.4, min: 140 },
-  { labelKey: 'network.colAction', width: 104 },
+  { labelKey: 'network.colAction', width: 150 },
   { labelKey: 'network.colNote', flex: 1.2, min: 140 },
   { labelKey: null, width: 168, align: 'end' },
 ];
-
-function road(action: RuleAction): FlowRoute {
-  if (action === 'direct') return 'direct';
-  return action === 'block' ? 'blocked' : 'vpn';
-}
 
 interface RuleRowProps {
   rule: Rule;
   position: number;
   last: boolean;
+  networks: readonly NetworkView[];
   callerName: (caller: string) => string;
   onMove: (offset: -1 | 1) => void;
   onEdit: () => void;
@@ -38,6 +34,7 @@ function RuleRow({
   rule,
   position,
   last,
+  networks,
   callerName,
   onMove,
   onEdit,
@@ -68,7 +65,7 @@ function RuleRow({
         </Text>
       </Table.Cell>
       <Table.Cell>
-        <RouteBadge route={road(rule.action)} />
+        <RuleActionBadge action={rule.action} networks={networks} />
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textMuted" lines={2}>
@@ -115,6 +112,7 @@ function RuleRow({
 
 interface RuleTableProps {
   rules: readonly Rule[];
+  networks: readonly NetworkView[];
   callerName: (caller: string) => string;
   onMove: (index: number, offset: -1 | 1) => void;
   onEdit: (index: number) => void;
@@ -123,6 +121,7 @@ interface RuleTableProps {
 
 export function RuleTable({
   rules,
+  networks,
   callerName,
   onMove,
   onEdit,
@@ -147,6 +146,7 @@ export function RuleTable({
             rule={rule}
             position={index + 1}
             last={index === rules.length - 1}
+            networks={networks}
             callerName={callerName}
             onMove={(offset) => onMove(index, offset)}
             onEdit={() => onEdit(index)}

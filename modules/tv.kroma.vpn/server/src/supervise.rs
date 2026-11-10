@@ -1,12 +1,11 @@
 use std::path::PathBuf;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crate::backoff::Backoff;
+use crate::bridge::Bridge;
 use crate::process::spawn_child;
 use crate::stderr_tail::StderrTail;
-use crate::vpn::Vpn;
 
 const POLL: Duration = Duration::from_secs(3);
 
@@ -17,7 +16,7 @@ enum Watch {
     Exited(Option<i32>),
 }
 
-impl Vpn {
+impl Bridge {
     /// While `generation` is the active config, respawn the child whenever it
     /// dies, waiting longer each time it dies young. The kill switch covers the
     /// gap. Respawns re-run the child directly, never `apply`.
@@ -54,10 +53,6 @@ impl Vpn {
                 started = Instant::now();
             }
         });
-    }
-
-    fn is_current(&self, generation: u64) -> bool {
-        self.generation.load(Ordering::SeqCst) == generation
     }
 
     async fn watch(&self, stderr: &mut StderrTail) -> Watch {
@@ -112,18 +107,18 @@ mod tests {
 
     use super::Watch;
     use crate::stderr_tail::StderrTail;
-    use crate::test_support::{eventually, install_script, vpn_for, EXITING, RUNNING};
+    use crate::test_support::{bridge_for, eventually, install_script, EXITING, RUNNING};
     use kroma_module_sdk::host::testing::StubHost;
     use kroma_module_sdk::host::HostCtx;
 
-    async fn pid_of(vpn: &crate::Vpn) -> Option<u64> {
+    async fn pid_of(vpn: &crate::bridge::Bridge) -> Option<u64> {
         vpn.child.lock().await.as_ref().map(|c| c.id())
     }
 
     #[tokio::test]
     async fn watching_without_a_child_finds_it_gone() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
 
         assert_eq!(vpn.watch(&mut StderrTail::default()).await, Watch::Gone);
     }
@@ -131,7 +126,7 @@ mod tests {
     #[tokio::test]
     async fn watching_reports_a_live_and_an_exited_child() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
         let live = install_script(host.data_dir(), RUNNING);
         *vpn.child.lock().await = Some(crate::process::spawn_child(live.to_str().unwrap(), &live).unwrap());
         assert_eq!(vpn.watch(&mut StderrTail::default()).await, Watch::Running);
@@ -148,7 +143,7 @@ mod tests {
     #[tokio::test]
     async fn an_exited_child_leaves_what_it_wrote_to_stderr() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
         let bin = install_script(
             host.data_dir(),
             "#!/bin/sh\necho 'listen tcp 127.0.0.1:25999: bind: address already in use' >&2\nexit 1\n",
@@ -170,7 +165,7 @@ mod tests {
     #[tokio::test]
     async fn respawn_refuses_a_stale_generation() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
         let bin = install_script(host.data_dir(), RUNNING);
         vpn.generation.store(2, Ordering::SeqCst);
 
@@ -183,9 +178,9 @@ mod tests {
     #[tokio::test]
     async fn respawn_stores_the_new_child() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
         let bin = install_script(host.data_dir(), RUNNING);
-        std::fs::create_dir_all(vpn.dir()).unwrap();
+        std::fs::create_dir_all(&vpn.dir).unwrap();
 
         let keep_watching = vpn.respawn(0, bin.to_str().unwrap(), &bin).await;
 
@@ -197,7 +192,7 @@ mod tests {
     #[tokio::test]
     async fn respawn_keeps_watching_when_the_binary_fails_to_spawn() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
         let missing = host.data_dir().join("absent");
 
         let keep_watching = vpn.respawn(0, missing.to_str().unwrap(), &missing).await;
@@ -209,9 +204,9 @@ mod tests {
     #[tokio::test]
     async fn the_supervisor_restarts_a_child_that_exited() {
         let host = StubHost::new();
-        let vpn = vpn_for(&host);
+        let vpn = bridge_for(&host);
         let bin = install_script(host.data_dir(), EXITING);
-        std::fs::create_dir_all(vpn.dir()).unwrap();
+        std::fs::create_dir_all(&vpn.dir).unwrap();
         let first = crate::process::spawn_child(bin.to_str().unwrap(), &bin).unwrap();
         let first_pid = Some(first.id());
         *vpn.child.lock().await = Some(first);

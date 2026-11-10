@@ -205,6 +205,7 @@ fn build_app_with(
             official_modules: std::sync::Arc::new(Vec::new),
             permissions: std::sync::Arc::new(|_| None),
             network_providers: std::sync::Arc::new(Vec::new),
+            network_listeners: std::sync::Arc::new(Vec::new),
         },
     );
 

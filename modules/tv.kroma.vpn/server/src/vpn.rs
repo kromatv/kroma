@@ -1,70 +1,35 @@
-use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use kroma_module_sdk::host::process::Child;
-use kroma_module_sdk::host::{run_blocking, HostCtx};
+use kroma_module_sdk::host::HostCtx;
 
-use crate::process::spawn_child;
+use crate::bridge::Bridge;
 use crate::provision;
-use crate::socks_auth;
-use crate::wireguard::ipv4_only_wg;
+use crate::routed::{retire_routed, Routed};
 
 pub struct Vpn {
     pub(crate) data_dir: PathBuf,
-    pub(crate) child: tokio::sync::Mutex<Option<Child>>,
-    // Bumped on every (re)configure so a stale exit-waiter never respawns an
-    // old generation.
-    pub(crate) generation: AtomicU64,
+    pub(crate) main: Arc<Bridge>,
+    pub(crate) routed: tokio::sync::Mutex<BTreeMap<String, Routed>>,
     // Latched by `stop` so an `apply` racing the shutdown - a `PUT /vpn` still
     // draining while the process exits - can't bring the bridge back up.
-    stopping: AtomicBool,
+    pub(crate) stopping: AtomicBool,
     exit: std::sync::Mutex<Option<String>>,
 }
 
-fn wireproxy_conf(wg_path: &Path, port: u16, password: &str) -> String {
-    format!(
-        "WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\nUsername = {}\nPassword = {password}\n",
-        wg_path.display(),
-        socks_auth::USER,
-    )
-}
-
-fn written_configs(dir: &Path, wg_config: &str, port: u16) -> Result<PathBuf, String> {
-    std::fs::create_dir_all(dir).map_err(|e| format!("create vpn dir: {e}"))?;
-    let wg_path = dir.join("wg.conf");
-    // Force the tunnel IPv4-only. wireproxy carries IPv4 BitTorrent peer
-    // connections fine but STALLS IPv6 ones mid-handshake (Proton's IPv6
-    // P2P path). Worse, an IPv6-capable tunnel makes the client announce to
-    // trackers over IPv6, so the tracker returns IPv6 peers (which then
-    // can't be reached) instead of the IPv4 peers wireproxy can use. See
-    // `ipv4_only_wg`.
-    write_private(&wg_path, &(ipv4_only_wg(wg_config.trim()) + "\n"))
-        .map_err(|e| format!("write wg.conf: {e}"))?;
-    let password =
-        socks_auth::password(dir).map_err(|e| format!("mint the SOCKS password: {e}"))?;
-    let conf_path = dir.join("wireproxy.conf");
-    write_private(&conf_path, &wireproxy_conf(&wg_path, port, &password))
-        .map_err(|e| format!("write wireproxy.conf: {e}"))?;
-    Ok(conf_path)
-}
-
-pub(crate) fn write_private(path: &Path, contents: &str) -> std::io::Result<()> {
-    std::fs::write(path, contents)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
-    }
-    Ok(())
+pub(crate) fn base_port(host: &dyn HostCtx) -> u16 {
+    host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16
 }
 
 impl Vpn {
     pub fn new(data_dir: PathBuf) -> Arc<Self> {
+        let dir = data_dir.join("vpn");
         Arc::new(Self {
+            main: Bridge::new(dir.clone(), dir),
             data_dir,
-            child: tokio::sync::Mutex::new(None),
-            generation: AtomicU64::new(0),
+            routed: tokio::sync::Mutex::new(BTreeMap::new()),
             stopping: AtomicBool::new(false),
             exit: std::sync::Mutex::new(None),
         })
@@ -74,32 +39,36 @@ impl Vpn {
         self.data_dir.join("vpn")
     }
 
-    /// (Re)apply the stored config: start / restart / stop the bridge child.
-    /// Call at boot and whenever `vpnWgConfig` / `vpnLocalPort` change.
+    /// (Re)apply the stored config: start / restart / stop the bridge child,
+    /// then the tunnels the router sends calls through by name. Call at boot
+    /// and whenever `vpnWgConfig`, `vpnLocalPort` or a kept config's place in
+    /// the router change.
     pub async fn apply(self: &Arc<Self>, host: &dyn HostCtx) {
-        let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
-        if let Some(old) = self.child.lock().await.take() {
-            old.kill();
-        }
+        let generation = self.main.retire().await;
         let wg = host.setting_str("vpnWgConfig", "");
-        if wg.trim().is_empty() || self.stopping.load(Ordering::SeqCst) {
-            return;
+        if !wg.trim().is_empty() && !self.stopping.load(Ordering::SeqCst) {
+            let port = base_port(host);
+            let started = match provision::ensure(&self.data_dir).await {
+                Ok(bin) => self.main.launch(generation, bin, wg, port).await,
+                Err(e) => Err(e),
+            };
+            if let Err(e) = started {
+                tracing::warn!(error = %e, "wireguard bridge failed to start");
+            }
         }
-        let port = host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535);
-        if let Err(e) = self.clone().start_bridge(generation, wg, port as u16).await {
-            tracing::warn!(error = %e, "wireguard bridge failed to start");
-        }
+        self.apply_routed(host).await;
     }
 
-    /// Take the bridge down for good: latch respawns off and kill the child.
-    /// Idempotent, and awaited by the caller that matters: the module being
-    /// disabled or stopped, so nothing is left tunnelling. [`Self::resume`]
-    /// undoes the latch on re-enable.
+    /// Take every bridge down for good: latch respawns off and kill the
+    /// children. Idempotent, and awaited by the caller that matters: the module
+    /// being disabled or stopped, so nothing is left tunnelling.
+    /// [`Self::resume`] undoes the latch on re-enable.
     pub async fn stop(self: &Arc<Self>) {
         self.stopping.store(true, Ordering::SeqCst);
-        self.generation.fetch_add(1, Ordering::SeqCst);
-        if let Some(old) = self.child.lock().await.take() {
-            old.kill();
+        self.main.retire().await;
+        let routed = std::mem::take(&mut *self.routed.lock().await);
+        for held in routed.into_values() {
+            retire_routed(held).await;
         }
         tracing::info!("wireguard bridge shut down");
     }
@@ -107,7 +76,10 @@ impl Vpn {
     /// Keep the exit address the download engine last reported, so offering the
     /// network never has to ask the engine, which may be asking for the network.
     pub fn remember_exit(&self, exit: Option<String>) {
-        *self.exit.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = exit;
+        *self
+            .exit
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = exit;
     }
 
     /// The exit address the download engine last reported.
@@ -123,33 +95,9 @@ impl Vpn {
         self.stopping.store(false, Ordering::SeqCst);
     }
 
-    async fn start_bridge(
-        self: Arc<Self>,
-        generation: u64,
-        wg_config: String,
-        port: u16,
-    ) -> Result<(), String> {
-        let bin = provision::ensure(&self.data_dir).await?;
-        let dir = self.dir();
-        let conf_path = run_blocking(move || written_configs(&dir, &wg_config, port))
-            .await
-            .map_err(|e| e.to_string())??;
-
-        let child = spawn_child(&bin, &conf_path)?;
-        tracing::info!(port, "wireguard bridge started (wireproxy)");
-        *self.child.lock().await = Some(child);
-
-        self.clone().supervise(generation, bin, conf_path);
-        Ok(())
-    }
-
-    /// Whether the bridge child is currently alive.
+    /// Whether the default bridge child is currently alive.
     pub async fn running(&self) -> bool {
-        let guard = self.child.lock().await;
-        match guard.as_ref() {
-            Some(child) => child.try_wait().map(|s| s.is_none()).unwrap_or(false),
-            None => false,
-        }
+        self.main.running().await
     }
 }
 
@@ -195,11 +143,11 @@ mod tests {
         install_script(host.data_dir(), RUNNING);
         let vpn = vpn_for(&host);
         vpn.apply(&host).await;
-        let first = vpn.child.lock().await.as_ref().map(|c| c.id());
+        let first = vpn.main.child.lock().await.as_ref().map(|c| c.id());
 
         vpn.apply(&host).await;
 
-        let second = vpn.child.lock().await.as_ref().map(|c| c.id());
+        let second = vpn.main.child.lock().await.as_ref().map(|c| c.id());
         assert_ne!(first, second);
         assert!(vpn.running().await);
         vpn.stop().await;

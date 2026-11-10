@@ -79,6 +79,7 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     let view = VpnAdminView {
         provider,
         saved,
+        router_slots: crate::saved::ROUTER_SLOTS,
         wg_configured: wg_configured(&state),
         bridge_running,
         local_port: state.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16,

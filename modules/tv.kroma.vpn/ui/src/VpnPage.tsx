@@ -30,6 +30,7 @@ import { useState } from 'react';
 import { useVpnApi } from './api';
 import { VpnBandwidthSection } from './bandwidth-panel';
 import type { VpnAdminView, VpnTestResult } from './schemas';
+import { RouterTunnels } from './router-tunnels';
 import { SavedSwitcher } from './saved-switcher';
 import { VpnConfigDialog } from './vpn-config-dialog';
 
@@ -120,6 +121,11 @@ export function VpnCard() {
           void reload();
           setTest({});
         }}
+      />
+      <RouterTunnels
+        saved={state.saved}
+        slots={state.routerSlots}
+        onChanged={() => void reload()}
       />
 
       {test.error || test.result ? (
