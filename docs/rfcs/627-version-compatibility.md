@@ -1,7 +1,7 @@
-# RFC NNNN: version compatibility between servers, modules and apps
+# RFC 627: version compatibility between servers, modules and apps
 
 - Status: **DRAFT**
-- PR: #NNNN
+- PR: #627
 - Affects: `docs/spec/modules/README.md`, `docs/spec/surfaces/README.md`,
   `docs/spec/accounts/README.md`, [RFC 110](110-module-registry-api.md)'s official registry.
   Areas `area/server`, `area/modules`, `area/sdk`, `area/web`, `area/tv`, `area/mobile`,

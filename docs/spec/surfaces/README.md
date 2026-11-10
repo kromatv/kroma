@@ -252,7 +252,7 @@ Each surface ships and updates the way its host expects. Deploy mechanics are
 
 ### Version skew
 
-Status: **AGREED**, from [RFC NNNN](../../rfcs/NNNN-version-compatibility.md).
+Status: **AGREED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
 
 A television updates on its vendor's schedule (SURF-38) and a server on its operator's, so an
 app and its server are often from different releases. Each side has to know when the gap is

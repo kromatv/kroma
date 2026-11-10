@@ -81,7 +81,7 @@ same device list as everything else and revokes the same way. There is nothing y
 paired television that you cannot do to a phone.
 
 **ACCT-72** (AGREED) - The device list shows the app version each device last used
-([RFC NNNN](../../rfcs/NNNN-version-compatibility.md)).
+([RFC 627](../../rfcs/627-version-compatibility.md)).
 
 **ACCT-73** (AGREED) - A device whose app is older than the oldest version its server serves
 ([SURF-54](../surfaces/README.md)) is marked outdated.

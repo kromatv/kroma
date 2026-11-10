@@ -145,7 +145,7 @@ duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 
 ### The newest version that runs here
 
-Status: **AGREED**, from [RFC NNNN](../../rfcs/NNNN-version-compatibility.md).
+Status: **AGREED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
 
 A module's newest version can need a newer server than the one asking. Older versions of
 the same module often ran on that server, and the Store should still offer them.
@@ -293,7 +293,7 @@ clear, upfront refusal, never a half-running module.
 **MOD-92** (AGREED) - A module is checked against the module interface the server implements,
 at install and at every start. A module built against an interface version this server does
 not implement is refused by name, even when its `minServer` is met
-([RFC NNNN](../../rfcs/NNNN-version-compatibility.md)).
+([RFC 627](../../rfcs/627-version-compatibility.md)).
 
 **MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is
 no longer the whole compatibility contract.
