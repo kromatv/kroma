@@ -29,7 +29,7 @@ describe('androidPublicKey', () => {
     const jwk = key.export({ format: 'jwk' });
     const modulus = BigInt(`0x${Buffer.from(jwk.n ?? '', 'base64url').toString('hex')}`);
 
-    expect(struct.length).toBe(524);
+    expect(struct).toHaveLength(524);
     expect(struct.readUInt32LE(0)).toBe(64);
     expect(fromLittleEndian(struct.subarray(8, 264))).toBe(modulus);
     expect((BigInt(struct.readUInt32LE(4)) * modulus + 1n) % 2n ** 32n).toBe(0n);
