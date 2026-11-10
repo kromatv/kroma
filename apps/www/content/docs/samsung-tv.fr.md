@@ -3,9 +3,9 @@
 Un téléviseur Samsung n'installe une application hors de sa boutique qu'en mode
 développeur, quand elle est envoyée depuis un ordinateur du même réseau et
 signée avec un certificat que Samsung délivre pour ce seul téléviseur. Ce guide
-active le mode développeur, puis installe KROMA en une commande, qui obtient
-aussi le certificat. Le premier téléviseur prend environ 10 minutes. Le suivant,
-deux.
+active le mode développeur, puis installe KROMA avec son propre installeur, qui
+obtient aussi le certificat. Le premier téléviseur prend environ 10 minutes. Le
+suivant, deux.
 
 ## Avant de commencer
 
@@ -18,9 +18,7 @@ deux.
   téléviseur. Il est gratuit.
 - L'adresse de votre ordinateur sur le réseau, par exemple `192.168.1.20`. Sur
   un Mac, elle se trouve dans **Réglages Système** > **Wi-Fi** > **Détails**.
-  Sur Linux, exécutez `hostname -I`.
-- L'adresse de votre téléviseur, dans **Paramètres** > **Général** >
-  **Réseau** > **État du réseau** > **Paramètres IP** sur le téléviseur.
+  Sur Linux, exécutez `hostname -I`. L'installeur l'affiche aussi.
 
 ## Activer le mode développeur sur le téléviseur
 
@@ -48,18 +46,40 @@ mettre le téléviseur en veille.
 
 ## Installer KROMA
 
-1. Dans un terminal, sur votre ordinateur, exécutez :
+L'installeur pose ses questions en anglais. Déplacez-vous avec les flèches et
+répondez avec Entrée.
+
+1. Dans un terminal, sur votre ordinateur, lancez l'installeur :
 
    ```bash
-   npx @kromatv/installer install 192.168.1.62
+   npx @kromatv/installer
    ```
 
-   Remplacez `192.168.1.62` par l'adresse de votre téléviseur. L'installeur lit
-   l'identifiant du téléviseur. La première fois, il ouvre la page de connexion
+   La première fois, `npx` demande s'il peut télécharger l'installeur. Tapez
+   `y`, puis Entrée. L'installeur affiche le nom KROMA et une courte aide.
+   Pour l'arrêter à tout moment, appuyez sur Ctrl+C.
+
+2. À la question **Which version of KROMA?**, choisissez **Stable**.
+3. À la question **Which kind of TV?**, choisissez **Samsung**.
+
+   L'installeur rappelle les réglages à faire sur le téléviseur, avec
+   l'adresse de votre ordinateur. Vous les avez déjà faits dans
+   [Activer le mode développeur sur le téléviseur](#activer-le-mode-développeur-sur-le-téléviseur).
+
+4. À la question **Which TVs get KROMA?**, attendez que votre téléviseur
+   apparaisse.
+
+   L'installeur cherche les téléviseurs Samsung de votre réseau. Un téléviseur
+   en mode développeur affiche **ready** et il est déjà coché. La barre
+   d'espace coche ou décoche un téléviseur.
+
+5. Appuyez sur Entrée pour installer.
+
+   La première fois sur un téléviseur, l'installeur ouvre la page de connexion
    de Samsung dans votre navigateur, pour demander à Samsung le certificat de
    votre téléviseur.
 
-2. Dans le navigateur, connectez-vous avec votre compte Samsung.
+6. Dans le navigateur, connectez-vous avec votre compte Samsung.
 
    Le navigateur affiche **Signed in**. L'installeur télécharge la dernière
    version de KROMA pour Samsung, la signe avec le certificat, l'envoie au
@@ -71,20 +91,19 @@ KROMA apparaît dans **Applications** sur le téléviseur. Suivez
 Le certificat se trouve dans le dossier `.kroma/certificates/samsung` de votre
 dossier personnel. Samsung le délivre pour un an. Conservez ce dossier : une
 mise à jour de KROMA doit être signée avec le même certificat, sinon le
-téléviseur la refuse. Pour ajouter un deuxième téléviseur, exécutez la même
-commande avec l'adresse de ce téléviseur, et connectez-vous à nouveau.
+téléviseur la refuse. Pour ajouter un deuxième téléviseur, relancez
+l'installeur, cochez ce téléviseur et connectez-vous à nouveau.
 
 ## Mettre à jour KROMA
 
-Exécutez :
+Mettez à jour KROMA sur tous les téléviseurs où cet ordinateur l'a installé :
 
 ```bash
 npx @kromatv/installer update
 ```
 
-L'installeur met à jour KROMA sur tous les téléviseurs où il l'a installé, sans
-rien demander. Il installe la dernière version, signée avec le même
-certificat. Le téléviseur conserve l'adresse de votre serveur et reste
+L'installeur ne demande rien. Il installe la dernière version, signée avec le
+même certificat. Le téléviseur conserve l'adresse de votre serveur et reste
 connecté à votre compte.
 
 ## Facultatif : installer avec Tizen Studio
@@ -95,7 +114,9 @@ où l'installeur de KROMA ne fonctionne pas. Il remplace
 [Mettre à jour KROMA](#mettre-à-jour-kroma) ci-dessus. Il vous faut aussi le fichier
 KROMA pour Samsung, `KROMA-tizen-VERSION.wgt`, sur
 [kroma.tv/download](https://kroma.tv/download) ou sur la
-[page des versions](https://github.com/kromatv/kroma/releases).
+[page des versions](https://github.com/kromatv/kroma/releases), ainsi que
+l'adresse de votre téléviseur, dans **Paramètres** > **Général** > **Réseau** >
+**État du réseau** > **Paramètres IP** sur le téléviseur.
 
 ### Installer les outils de Samsung
 
@@ -199,6 +220,21 @@ compte.
 
 ## Dépannage
 
+### Le téléviseur n'apparaît pas dans l'installeur
+
+Vérifiez que **Mode développeur** s'affiche en haut d'**Applications** sur le
+téléviseur, et que le téléviseur et l'ordinateur sont sur le même réseau. Si
+le téléviseur n'apparaît toujours pas, installez KROMA en donnant son
+adresse :
+
+```bash
+npx @kromatv/installer install 192.168.1.62
+```
+
+Remplacez `192.168.1.62` par l'adresse de votre téléviseur. Elle se trouve dans
+**Paramètres** > **Général** > **Réseau** > **État du réseau** >
+**Paramètres IP** sur le téléviseur.
+
 ### `Invalid certificate chain with certificate in signature`
 
 Le paquet n'est pas signé avec un certificat créé pour ce téléviseur.
@@ -207,6 +243,8 @@ Redemandez à Samsung le certificat de ce téléviseur, puis installez à nouvea
 ```bash
 npx @kromatv/installer certificate 192.168.1.62
 ```
+
+Remplacez `192.168.1.62` par l'adresse de votre téléviseur.
 
 Avec Tizen Studio, cela arrive aussi avec le `.wgt` tel que téléchargé, ou avec
 un profil dont le certificat de distributeur ne contient pas ce téléviseur.

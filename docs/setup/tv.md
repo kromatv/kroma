@@ -10,7 +10,7 @@ and signs in once the app is installed.
 | --- | --- | --- |
 | Samsung, 2017 or later | [Samsung TV](samsung-tv.md) | a computer, a free Samsung account, about 10 minutes the first time |
 | LG, webOS 4.0 (2018) or later | [LG TV](lg-tv.md) | a computer, a free LG developer account |
-| Android TV, Google TV, NVIDIA Shield, Philips, Sony, TCL | [Android TV](android-tv.md) | a Google account, or the `.apk` file |
+| Android TV, Google TV, NVIDIA Shield, Philips, Sony, TCL | [Android TV](android-tv.md) | a Google account, or the `.apk` file, or a computer |
 | Amazon Fire TV with Fire OS | [Android TV: Fire TV](android-tv.md#amazon-fire-tv) | the Downloader app |
 | Apple TV | [Apple TV](apple-tv.md) | an iPhone or iPad, and TestFlight |
 
@@ -18,6 +18,30 @@ Some TVs cannot run KROMA: LG sets from 2016 and 2017 (webOS 3), Philips sets
 that run Saphi or Titan OS, and the newest Fire TV sticks, which run Vega OS
 instead of Fire OS. On those, use a streaming box such as a Google TV, an
 Apple TV or a Fire TV with Fire OS, or open KROMA in the TV's web browser.
+
+## Install from a computer
+
+Samsung, LG and Android TV sets install KROMA from a Mac or a Linux computer,
+with KROMA's own installer. It needs [Node.js](https://nodejs.org) 22 or
+later. Each guide above says what to turn on on the TV first. Then start the
+installer:
+
+```bash
+npx @kromatv/installer
+```
+
+The installer asks which version of KROMA and which kind of TV, finds the TVs
+on your network and installs KROMA on the ones you tick. If you have TVs of
+several brands, choose **Every kind** at **Which kind of TV?**.
+
+Later, update KROMA on every TV that this computer installed it on:
+
+```bash
+npx @kromatv/installer update
+```
+
+The installer does not run on Windows. Each guide gives another way for
+Windows.
 
 ## Connect the TV to your server
 

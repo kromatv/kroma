@@ -3,8 +3,8 @@
 A Samsung TV installs apps from outside its store only in developer mode, sent
 from a computer on the same network, and signed with a certificate that Samsung
 issues for that one TV. This guide turns on developer mode, then installs
-KROMA with one command, which also gets the certificate. The first TV takes about 10
-minutes. The next one takes two.
+KROMA with its own installer, which also gets the certificate. The first TV
+takes about 10 minutes. The next one takes two.
 
 ## Before you begin
 
@@ -17,9 +17,7 @@ minutes. The next one takes two.
 - A Samsung account, the same kind you use on the TV. It is free.
 - The address of your computer on the network, such as `192.168.1.20`. On a
   Mac, it is in **System Settings** > **Wi-Fi** > **Details**. On Linux, run
-  `hostname -I`.
-- The address of your TV, in **Settings** > **General** > **Network** >
-  **Network Status** > **IP Settings** on the TV.
+  `hostname -I`. The installer also shows it.
 
 ## Turn on developer mode on the TV
 
@@ -44,17 +42,37 @@ screen. If it is not, unplug the TV for 30 seconds and plug it back in: with
 
 ## Install KROMA
 
-1. In a terminal on your computer, run:
+The installer asks its questions in English. Use the arrow keys to move and
+Enter to answer.
+
+1. In a terminal on your computer, start the installer:
 
    ```bash
-   npx @kromatv/installer install 192.168.1.62
+   npx @kromatv/installer
    ```
 
-   Replace `192.168.1.62` with the address of your TV. The installer reads the
-   ID of the TV. The first time, it opens Samsung's sign-in page in your
+   The first time, `npx` asks to download the installer. Type `y`, then press
+   Enter. The installer shows the KROMA name and a short help. To stop it at
+   any time, press Ctrl+C.
+
+2. At **Which version of KROMA?**, choose **Stable**.
+3. At **Which kind of TV?**, choose **Samsung**.
+
+   The installer repeats the steps for the TV, with the address of your
+   computer. You already did them in
+   [Turn on developer mode on the TV](#turn-on-developer-mode-on-the-tv).
+
+4. At **Which TVs get KROMA?**, wait for your TV to appear.
+
+   The installer looks for Samsung TVs on your network. A TV in developer mode
+   shows **ready** and is already ticked. Press Space to tick or untick a TV.
+
+5. Press Enter to install.
+
+   The first time on a TV, the installer opens Samsung's sign-in page in your
    browser, to ask Samsung for the certificate of your TV.
 
-2. In the browser, sign in with your Samsung account.
+6. In the browser, sign in with your Samsung account.
 
    The browser shows **Signed in**. The installer downloads the latest KROMA
    for Samsung, signs it with the certificate, sends it to the TV and starts
@@ -66,29 +84,29 @@ KROMA appears in **Apps** on the TV. Follow
 The certificate is in the `.kroma/certificates/samsung` folder of your home
 folder. Samsung makes it valid for one year. Keep that folder: an update of
 KROMA must be signed with the same certificate, or the TV refuses it. To add a
-second TV, run the same command with the address of that TV, and sign in
-again.
+second TV, run the installer again, tick that TV, and sign in again.
 
 ## Update KROMA
 
-Run:
+Update KROMA on every TV that this computer installed it on:
 
 ```bash
 npx @kromatv/installer update
 ```
 
-The installer updates KROMA on every TV it installed it on, without asking
-anything. It installs the latest version, signed with the same certificate.
-The TV keeps your server address and your sign-in.
+The installer asks nothing. It installs the latest version, signed with the
+same certificate. The TV keeps your server address and your sign-in.
 
 ## Optional: install with Tizen Studio
 
 Tizen Studio is Samsung's own development tool. Use it on Windows, where
 KROMA's installer does not run. It replaces
-[Install KROMA](#install-kroma) and [Update KROMA](#update-kroma) above. You also need the KROMA file for
-Samsung, `KROMA-tizen-VERSION.wgt`, from
+[Install KROMA](#install-kroma) and [Update KROMA](#update-kroma) above. You
+also need the KROMA file for Samsung, `KROMA-tizen-VERSION.wgt`, from
 [kroma.tv/download](https://kroma.tv/download) or from the
-[releases](https://github.com/kromatv/kroma/releases).
+[releases](https://github.com/kromatv/kroma/releases), and the address of
+your TV, in **Settings** > **General** > **Network** > **Network Status** >
+**IP Settings** on the TV.
 
 ### Install Samsung's tools
 
@@ -183,6 +201,19 @@ your server address and your sign-in.
 
 ## Troubleshooting
 
+### The TV does not appear in the installer
+
+Check that **Developer mode** is written at the top of **Apps** on the TV, and
+that the TV and the computer are on the same network. If the TV still does not
+appear, install on it by its address:
+
+```bash
+npx @kromatv/installer install 192.168.1.62
+```
+
+Replace `192.168.1.62` with the address of your TV. It is in **Settings** >
+**General** > **Network** > **Network Status** > **IP Settings** on the TV.
+
 ### `Invalid certificate chain with certificate in signature`
 
 The package is not signed with a certificate made for this TV. Ask Samsung
@@ -191,6 +222,8 @@ for the certificate of this TV again, then install again:
 ```bash
 npx @kromatv/installer certificate 192.168.1.62
 ```
+
+Replace `192.168.1.62` with the address of your TV.
 
 With Tizen Studio, this also happens with the `.wgt` as downloaded, or with a
 profile whose distributor certificate does not list the TV. Sign it again with
