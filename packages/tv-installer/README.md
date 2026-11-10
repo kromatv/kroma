@@ -137,7 +137,7 @@ it is.
 | Platform | Tools | Source | Lands in |
 | --- | --- | --- | --- |
 | Samsung | none | this tool signs the package and talks sdb itself | |
-| LG | the `ares-*` commands | `bun add -g @webos-tools/cli`, or `npm install` where there is no Bun | `~/.bun/bin`, or `~/.kroma/tools` |
+| LG | none | this tool fetches the Dev Mode key and installs over SSH itself | |
 | Android TV | none | this tool speaks adb itself | |
 
 An Android TV takes this tool's own adb key, kept in `~/.kroma/adb/adbkey` and
@@ -161,8 +161,18 @@ the first install after that asks for new ones. How Samsung issues them, with
 the sources, is in
 [docs/reference/samsung-tv-certificates.md](../../docs/reference/samsung-tv-certificates.md).
 
-An install asks only from a terminal. A script gets no browser to wait on, so
-it runs the same step ahead, by itself:
+An LG set needs no tool either. The first install fetches the set's SSH key
+from the Dev Mode key server on port 9991, opens it with the passphrase the Dev
+Mode app shows, and keeps it opened in `~/.kroma/keys/webos/<address>.pem`,
+readable by its owner alone. It then logs in on port 9922, sends the `.ipk` to
+the developer temp folder over SFTP, asks the set's install service for it over
+luna and starts the app, as LG's `ares-install` and `ares-launch` do. Later
+installs and `update` use the kept key and ask for no passphrase. What the ares
+tools do, with the sources, is in
+[docs/reference/lg-webos-devmode.md](../../docs/reference/lg-webos-devmode.md).
+
+A Samsung install asks only from a terminal. A script gets no browser to wait
+on, so it runs the same step ahead, by itself:
 
 ```bash
 bun run tv certificate 192.168.1.50
@@ -215,7 +225,8 @@ and the app is not started unless `--launch` says so.
 
 A set that is off is reported and the rest go on. One whose address changed
 gets a new entry at its next install; the old entry is removed by hand from the
-file. No passphrase and no key is ever written there.
+file. No passphrase and no key is ever written there: an LG set's key is kept
+apart, in `~/.kroma/keys/webos`, and `update` logs in with it.
 
 ## Commands
 
@@ -260,8 +271,8 @@ xattr -d com.apple.quarantine kroma-tv-*                  # macOS, once
 ```
 
 The binary is signed ad-hoc, not with a Developer ID, so macOS quarantines it
-until that attribute is cleared. Windows is not built: the installer drives ares
-and devicectl and reads an ARP table, a keychain and a Settings pane.
+until that attribute is cleared. Windows is not built: the installer drives
+devicectl and reads an ARP table, a keychain and a Settings pane.
 
 Run from outside a checkout it does everything but build: it finds
 televisions, installs toolchains, and takes the package from the release.
@@ -300,8 +311,13 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
 - **`nobody allowed this computer on the TV within two minutes`.** An Android
   TV asks once to allow each computer, and the install waits two minutes for it.
   Accept the prompt on the TV, tick **Always allow**, and run the install again.
-- **The LG install cannot get a key.** `ares` needs the passphrase from the Dev
-  Mode app, and a session that ran out needs that app opened again first.
+- **The LG install cannot get a key.** Key Server has to be on in the Dev Mode
+  app, and the passphrase is the one it shows now: it changes each time Dev
+  Mode is turned off and on.
+- **An LG set refuses this computer's key.** The set no longer takes the key
+  kept from an earlier install. Turn Key Server on and install again with
+  `--passphrase` and the passphrase the app shows now, which fetches the key
+  afresh.
 - **`the stable release carries no KROMA-tizen-*.wgt`, and the same for the
   other two.** Nothing is built here and the release has no package of that
   kind. Build the shell, or download the artifact from a Build & Release run.

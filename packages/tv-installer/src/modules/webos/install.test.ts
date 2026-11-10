@@ -1,21 +1,40 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { run, runOk } from '../../run';
-import { requireTool } from '../../toolchain/detect';
+import { randomBytes } from 'node:crypto';
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { InstallContext } from '../module';
-import { deviceName, installWebos } from './install';
+import {
+  devModeKeys,
+  type FakeTv,
+  type FakeTvOptions,
+  PASSPHRASE,
+  startFakeTv,
+} from './devmode/fake-tv.fixture';
+import { keptKeyPath } from './devmode/key';
+import { installWebos } from './install';
 
-vi.mock('../../run', () => ({ run: vi.fn(), runOk: vi.fn() }));
-vi.mock('../../toolchain/detect', async (original) => ({
-  ...(await original<typeof import('../../toolchain/detect')>()),
-  requireTool: vi.fn(),
-}));
-vi.mock('./app-id', () => ({ webosAppId: () => 'tv.kroma.webos' }));
+const IPK = 'tv.kroma.webos_0.1.33_all.ipk';
+const REMOTE = `/media/developer/temp/${IPK}`;
 
-const BIN = '/Users/tester/.bun/bin';
+let scratch: string;
+let ipk: string;
+let keys: string;
+let tv: FakeTv | null = null;
+let logged: string[];
 
-const context = (options: InstallContext['options'] = {}, launch = true): InstallContext => ({
+const boot = async (options: FakeTvOptions = {}) => {
+  tv = await startFakeTv(options);
+  return tv;
+};
+
+const context = (
+  set: FakeTv,
+  options: InstallContext['options'] = { passphrase: PASSPHRASE },
+  launch = true,
+): InstallContext => ({
   tv: {
-    host: '192.168.1.44',
+    host: set.host,
     platform: 'webos',
     vendor: 'LG',
     name: 'Chambre',
@@ -25,105 +44,167 @@ const context = (options: InstallContext['options'] = {}, launch = true): Instal
     note: '',
     runtime: null,
   },
-  artifact: '/out/tv.kroma.webos_0.1.33_all.ipk',
-  log: () => {},
+  artifact: ipk,
+  log: (line) => logged.push(line),
   launch,
   options,
 });
 
-const settings = [
-  '-i',
-  'host=192.168.1.44',
-  '-i',
-  'port=9922',
-  '-i',
-  'username=prisoner',
-  '-i',
-  'privatekey=kroma-192-168-1-44.pem',
-];
-
-const ran = () => vi.mocked(run).mock.calls.map(([command]) => [...command]);
-const ranOk = () => vi.mocked(runOk).mock.calls.map(([command]) => [...command]);
-
-beforeEach(() => {
-  vi.mocked(requireTool).mockReturnValue(`${BIN}/ares-install`);
-  vi.mocked(run).mockResolvedValue({ code: 0, output: '' });
-  vi.mocked(runOk).mockResolvedValue('');
-});
-
-afterEach(() => {
-  vi.clearAllMocks();
-});
-
-describe('deviceName', () => {
-  it('names the set after its address, in something ares takes as a name', () => {
-    expect(deviceName('192.168.1.44')).toBe('kroma-192-168-1-44');
+const install = (set: FakeTv, options?: InstallContext['options'], launch?: boolean) =>
+  installWebos(context(set, options, launch), {
+    directory: keys,
+    keyServerPort: set.keyServerPort,
+    sshPort: set.sshPort,
   });
+
+const luna = (set: FakeTv) => set.commands.filter((command) => command.includes('luna-send'));
+
+beforeAll(() => {
+  devModeKeys();
+});
+
+beforeEach(async () => {
+  scratch = await mkdtemp(join(tmpdir(), 'kroma-webos-'));
+  ipk = join(scratch, IPK);
+  keys = join(scratch, 'keys');
+  logged = [];
+  await writeFile(ipk, randomBytes(150_000));
+});
+
+afterEach(async () => {
+  await tv?.close();
+  tv = null;
+  await rm(scratch, { recursive: true, force: true });
 });
 
 describe('installWebos', () => {
-  it('adds the set to the ones ares knows, over the Dev Mode port', async () => {
-    await installWebos(context());
+  it('logs in as prisoner and puts the package in the developer temp folder', async () => {
+    const set = await boot();
 
-    expect(ran()[0]).toEqual([`${BIN}/ares-setup-device`, '-a', 'kroma-192-168-1-44', ...settings]);
+    await install(set);
+
+    expect(set.users).toContain('prisoner');
+    expect(set.commands[0]).toBe(
+      '/usr/bin/test -d /media/developer/temp || /bin/mkdir -p /media/developer/temp',
+    );
+    expect(set.received.get(REMOTE)?.byteLength).toBe(150_000);
   });
 
-  it('changes the registration of a set ares already knows', async () => {
-    vi.mocked(run).mockResolvedValue({ code: 1, output: 'The specified device already exists' });
+  it('asks the install service for the package as ares-install does', async () => {
+    const set = await boot();
 
-    await installWebos(context());
+    await install(set);
 
-    expect(ranOk()).toContainEqual([
-      `${BIN}/ares-setup-device`,
-      '-m',
-      'kroma-192-168-1-44',
-      ...settings,
+    expect(luna(set)[0]).toBe(
+      `/usr/bin/luna-send-pub -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"${REMOTE}","subscribe":true}'`,
+    );
+    expect(logged).toContain('installing');
+    expect(logged).toContain('installed');
+  });
+
+  it('removes the package from the set once it is installed', async () => {
+    const set = await boot();
+
+    await install(set);
+
+    expect(set.commands).toContain(`/bin/rm -f "${REMOTE}"`);
+    expect(set.files.has(REMOTE)).toBe(false);
+  });
+
+  it('starts the app on display 0 where the set runs no session manager', async () => {
+    const set = await boot();
+
+    await install(set);
+
+    expect(luna(set).slice(1)).toEqual([
+      `/usr/bin/luna-send-pub -n 1 luna://com.webos.service.sessionmanager//getSessionList '{"subscribe":false}'`,
+      `/usr/bin/luna-send-pub -n 1 luna://com.webos.applicationManager//launch '{"id":"tv.kroma.webos","subscribe":false,"params":{"displayAffinity":0}}'`,
     ]);
   });
 
-  it('registers the passphrase the Dev Mode app shows, then fetches the key', async () => {
-    await installWebos(context({ passphrase: 'A1B2C3' }));
+  it('starts the app in the session of display 0 where the set has one', async () => {
+    const sessionList = [{ sessionId: 'host-1', deviceSetInfo: { displayId: 0 } }];
+    const set = await boot({ sessionReply: { returnValue: true, sessionList } });
 
-    expect(ran()[0]).toContain('passphrase=A1B2C3');
-    expect(ran()).toContainEqual([
-      `${BIN}/ares-novacom`,
-      '--device',
-      'kroma-192-168-1-44',
-      '--getkey',
-    ]);
-  });
+    await install(set);
 
-  it('fetches no key when this computer already holds one', async () => {
-    await installWebos(context());
-
-    expect(ran().some((command) => command.includes('--getkey'))).toBe(false);
-  });
-
-  it('installs the package on the set it registered', async () => {
-    await installWebos(context());
-
-    expect(ranOk()).toContainEqual([
-      `${BIN}/ares-install`,
-      '/out/tv.kroma.webos_0.1.33_all.ipk',
-      '-d',
-      'kroma-192-168-1-44',
-    ]);
-  });
-
-  it('starts the app once the package is on', async () => {
-    await installWebos(context());
-
-    expect(ranOk().at(-1)).toEqual([
-      `${BIN}/ares-launch`,
-      'tv.kroma.webos',
-      '-d',
-      'kroma-192-168-1-44',
-    ]);
+    expect(luna(set).at(-1)).toBe(
+      `/usr/bin/luna-send-pub -n 1 -c host-1 luna://com.webos.applicationManager//launch '{"id":"tv.kroma.webos","subscribe":false,"params":{}}'`,
+    );
   });
 
   it('leaves the app alone when it was told to install without starting it', async () => {
-    await installWebos(context({}, false));
+    const set = await boot();
 
-    expect(ranOk().some((command) => command[0]?.endsWith('ares-launch'))).toBe(false);
+    await install(set, { passphrase: PASSPHRASE }, false);
+
+    expect(luna(set)).toHaveLength(1);
+  });
+
+  it('keeps the opened key for its owner alone, and needs no passphrase the next time', async () => {
+    const set = await boot();
+    await install(set);
+
+    await install(set, {});
+
+    expect((await stat(keptKeyPath(set.host, keys))).mode & 0o777).toBe(0o600);
+    expect((await stat(keys)).mode & 0o777).toBe(0o700);
+    expect(luna(set).filter((command) => command.includes('install'))).toHaveLength(2);
+  });
+
+  it('streams the package through cat on a set that serves no SFTP', async () => {
+    const set = await boot({ sftp: false });
+
+    await install(set);
+
+    expect(set.commands).toContain(`/bin/cat > "${REMOTE}"`);
+    expect(set.received.get(REMOTE)?.byteLength).toBe(150_000);
+  });
+
+  it('says why the install service refused the package, and still removes it', async () => {
+    const replies = [{ details: { state: 'FAILED', reason: 'Not enough space' } }];
+    const set = await boot({ installReplies: replies });
+
+    await expect(install(set)).rejects.toThrow('the TV refused the package: Not enough space');
+
+    expect(set.files.has(REMOTE)).toBe(false);
+  });
+
+  it('quotes the error text of a call the service refused outright', async () => {
+    const replies = [{ returnValue: false, errorText: 'Denied method call' }];
+    const set = await boot({ installReplies: replies });
+
+    await expect(install(set)).rejects.toThrow(
+      'com.webos.appInstallService refused: Denied method call',
+    );
+  });
+
+  it('refuses an install the service never gave a verdict on', async () => {
+    const set = await boot({
+      installReplies: [{ details: { state: 'installing' } }],
+      installExits: true,
+    });
+
+    await expect(install(set)).rejects.toThrow('com.webos.appInstallService ended with no answer');
+  });
+
+  it('stops when the set cannot make its developer temp folder', async () => {
+    const set = await boot({ mkdirCode: 1 });
+
+    await expect(install(set)).rejects.toThrow('exited with 1');
+  });
+
+  it('says the set did not start the app when the launch answers anything but success', async () => {
+    const set = await boot({ launchReply: { processId: '1001' } });
+
+    await expect(install(set)).rejects.toThrow('the TV did not start tv.kroma.webos');
+  });
+
+  it('tells the user to give the passphrase again when the set refuses the key', async () => {
+    const set = await boot({ acceptKey: false });
+
+    await expect(install(set)).rejects.toThrow(
+      "refused this computer's key: turn Key Server on in the Dev Mode app",
+    );
   });
 });

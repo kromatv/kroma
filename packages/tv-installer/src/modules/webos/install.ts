@@ -1,51 +1,33 @@
-import { run, runOk } from '../../run';
-import { requireTool } from '../../toolchain/detect';
 import { type InstallContext, stringOption } from '../module';
 import { webosAppId } from './app-id';
-import { ARES, aresSibling } from './tools';
+import { installIpk } from './devmode/install-ipk';
+import { DEFAULT_KEY_STORE, devModeKey, type KeyStore } from './devmode/key';
+import { launchApp } from './devmode/launch';
+import { DEV_MODE_PORT, openSession } from './devmode/session';
 
-const DEV_PORT = '9922';
-const DEV_USER = 'prisoner';
-const INSTALL_TIMEOUT_MS = 300_000;
-
-export function deviceName(host: string): string {
-  return `kroma-${host.replaceAll('.', '-')}`;
+export interface DevModePorts extends KeyStore {
+  sshPort: number;
 }
 
-export async function installWebos(context: InstallContext): Promise<void> {
-  const { tv, artifact, log, launch } = context;
-  const passphrase = stringOption(context.options, 'passphrase');
-  const install = requireTool(ARES);
-  const setup = aresSibling(install, 'ares-setup-device');
-  const novacom = aresSibling(install, 'ares-novacom');
-  const launcher = aresSibling(install, 'ares-launch');
+const DEFAULT_PORTS: DevModePorts = { ...DEFAULT_KEY_STORE, sshPort: DEV_MODE_PORT };
 
-  const device = deviceName(tv.host);
-  await register(setup, device, tv.host, passphrase, log);
-  if (passphrase) await run([novacom, '--device', device, '--getkey'], { log, timeoutMs: 60_000 });
-
-  await runOk([install, artifact, '-d', device], { log, timeoutMs: INSTALL_TIMEOUT_MS });
-  if (launch) await runOk([launcher, webosAppId(), '-d', device], { log });
-}
-
-async function register(
-  setup: string,
-  device: string,
-  host: string,
-  passphrase: string | undefined,
-  log: InstallContext['log'],
+/**
+ * Installs over the set's Dev Mode SSH, the way the ares tools do, with this
+ * tool's own client: nothing from LG has to be on the machine.
+ */
+export async function installWebos(
+  context: InstallContext,
+  ports: DevModePorts = DEFAULT_PORTS,
 ): Promise<void> {
-  const settings = [
-    '-i',
-    `host=${host}`,
-    '-i',
-    `port=${DEV_PORT}`,
-    '-i',
-    `username=${DEV_USER}`,
-    '-i',
-    `privatekey=${device}.pem`,
-    ...(passphrase ? ['-i', `passphrase=${passphrase}`] : []),
-  ];
-  const added = await run([setup, '-a', device, ...settings], { log });
-  if (added.code !== 0) await runOk([setup, '-m', device, ...settings], { log });
+  const { tv, artifact, log, launch } = context;
+  const privateKey = await devModeKey(tv.host, stringOption(context.options, 'passphrase'), ports);
+
+  const session = await openSession({ host: tv.host, port: ports.sshPort, privateKey });
+  try {
+    const state = await installIpk(session, artifact, log);
+    log(state);
+    if (launch) await launchApp(session, webosAppId());
+  } finally {
+    session.end();
+  }
 }

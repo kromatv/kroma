@@ -5,7 +5,6 @@ import { buildable } from '../../install/build';
 import { root } from '../../root';
 import { runOk } from '../../run';
 import type { Television } from '../../television';
-import { requireTool } from '../../toolchain/detect';
 import { resolveWebosArtifact, WEBOS_PACKAGE, WEBOS_SHELL, webosSources } from './artifact';
 
 const { globbed } = vi.hoisted(() => ({ globbed: new Map<string, string[]>() }));
@@ -15,10 +14,6 @@ vi.mock('../../install/artifact', async (original) => ({
   resolveArtifact: vi.fn(),
 }));
 vi.mock('../../run', () => ({ runOk: vi.fn() }));
-vi.mock('../../toolchain/detect', async (original) => ({
-  ...(await original<typeof import('../../toolchain/detect')>()),
-  requireTool: vi.fn(),
-}));
 
 vi.mock('../../install/matching-paths', () => ({
   matchingPaths: (base: string, pattern: string) =>
@@ -47,7 +42,6 @@ const buildOf = () => {
 
 beforeEach(() => {
   globbed.clear();
-  vi.mocked(requireTool).mockReturnValue('/Users/tester/.bun/bin/ares-install');
 });
 
 afterEach(() => {
@@ -90,7 +84,7 @@ describe('resolveWebosArtifact', () => {
     });
   });
 
-  it('builds the bundle, then packs it with the CLI beside ares-install', async () => {
+  it('builds the bundle, then packs it with the LG packager that bunx fetches', async () => {
     globbed.set('*.ipk', ['tv.kroma.webos_0.1.33_all.ipk']);
     await resolveWebosArtifact({ tv: chambre, source: 'build', log: () => {} });
 
@@ -98,7 +92,10 @@ describe('resolveWebosArtifact', () => {
 
     expect(vi.mocked(runOk).mock.calls[0]?.[0]).toEqual(['bun', 'run', 'build:webos']);
     expect(vi.mocked(runOk).mock.calls[1]?.[0]).toEqual([
-      '/Users/tester/.bun/bin/ares-package',
+      'bunx',
+      '--package',
+      '@webos-tools/cli',
+      'ares-package',
       join(root, 'clients/webos/dist'),
       '--no-minify',
       '-o',

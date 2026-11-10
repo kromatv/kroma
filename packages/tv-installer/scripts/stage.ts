@@ -12,6 +12,7 @@ const PACKAGE = PUBLISHED_PACKAGE;
 const COMMAND = 'kroma-tv';
 const NODE_SHEBANG = '#!/usr/bin/env node\n';
 const BUN_PREAMBLE = /^#!.*\n(?:\/\/ @bun\n)?/;
+const NATIVE_ADDONS = ['--external', 'cpu-features', '--external', '*.node'];
 
 const Workspace = z.object({
   license: z.string(),
@@ -29,7 +30,7 @@ await mkdir(out, { recursive: true });
 
 const cli = join(out, 'cli.js');
 const stamped = `process.env.KROMA_TV_VERSION=${JSON.stringify(values.version)}`;
-await $`bun build ./src/bin.ts --target=node --define ${stamped} --outfile ${cli}`
+await $`bun build ./src/bin.ts --target=node ${NATIVE_ADDONS} --define ${stamped} --outfile ${cli}`
   .cwd(pkgRoot)
   .quiet();
 const bundle = await readFile(cli, 'utf8');

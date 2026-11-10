@@ -1,5 +1,6 @@
 import { $ } from 'bun';
 
+const NATIVE_ADDONS = ['--external', 'cpu-features', '--external', '*.node'];
 const TARGETS = ['bun-darwin-arm64', 'bun-darwin-x64', 'bun-linux-x64', 'bun-windows-x64'];
 
 const target = process.argv.find((arg) => arg.startsWith('--target='))?.slice('--target='.length);
@@ -12,7 +13,7 @@ const suffix = target ? `-${target.replace('bun-', '')}` : '';
 const name = `kroma-tv${suffix}`;
 const out = `dist/${name}${target?.includes('windows') ? '.exe' : ''}`;
 
-await $`bun build --compile ${target ? ['--target', target] : []} ./src/bin.ts --outfile ${out}`;
+await $`bun build --compile ${target ? ['--target', target] : []} ${NATIVE_ADDONS} ./src/bin.ts --outfile ${out}`;
 
 // macOS kills a compiled binary whose ad-hoc signature it cannot validate, and
 // the one `bun build` leaves behind is not one it accepts.
