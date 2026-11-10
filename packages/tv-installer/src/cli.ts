@@ -4,6 +4,7 @@ import { exitAfter } from './exit-after';
 import type { Source } from './install/artifact';
 import { moduleArgs, moduleCommands, moduleOptions, modules } from './modules/registry';
 import { runTui } from './tui/app';
+import { updateCommand } from './update';
 
 const SOURCES: readonly Source[] = ['local', 'stable', 'canary', 'build'];
 
@@ -77,6 +78,36 @@ const install = defineCommand({
     ),
 });
 
+const update = defineCommand({
+  meta: {
+    name: 'update',
+    description: 'Put the newest KROMA on every set this computer installed it on, asking nothing.',
+  },
+  args: {
+    source: sourceArg,
+    launch: {
+      type: 'boolean',
+      default: false,
+      description: 'Start the app once it is updated',
+    },
+    force: {
+      type: 'boolean',
+      default: false,
+      description: 'Install again even where the newest package is already on',
+    },
+    ...moduleArgs(),
+  },
+  run: ({ args }) =>
+    exitAfter(
+      updateCommand({
+        source: asSource(text(args.source)),
+        moduleOptions: moduleOptions(args),
+        launch: args.launch === true,
+        force: args.force === true,
+      }),
+    ),
+});
+
 const tools = defineCommand({
   meta: {
     name: 'tools',
@@ -120,7 +151,7 @@ export const tv = defineCommand({
       'Find the televisions on this network and put KROMA on them. With no command it opens the picker.',
   },
   args: { host: hostArg, package: packageArg, source: sourceArg, launch: launchArg, json: jsonArg },
-  subCommands: { scan, install, ...moduleCommands(), tools, doctor, docs },
+  subCommands: { scan, install, update, ...moduleCommands(), tools, doctor, docs },
   run: ({ args }) => {
     const hosts = hostList();
     if (!process.stdout.isTTY) {

@@ -27,6 +27,7 @@ export const tizen: TvModule = {
         "Samsung only: drive Tizen Studio's own tizen and sdb, already installed",
     },
   },
+  remembers: ['profile'],
   commands: { probe: probeCommand, certificate: certificateCommand },
   identify: identifyTizen,
   tools: () => [],
