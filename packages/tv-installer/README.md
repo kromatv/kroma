@@ -182,6 +182,27 @@ The id the app is launched by is read from the shell that ships it
 (`clients/tizen/public/config.xml`, `clients/webos/public/appinfo.json`,
 `clients/tv-native/app.json`), so renaming one there is enough.
 
+## Updating
+
+Every install that succeeds is written to `~/.kroma/televisions.json`, one
+entry per address: the set's name and model, the package put on it, the channel
+that package came from, and on a Samsung the `--profile` it was signed with.
+`update` reads the file back and asks nothing:
+
+```bash
+bun run tv update
+```
+
+It probes those addresses and no other, takes the newest package of each set's
+channel, and installs it where the set does not have it yet, signed as before.
+A set installed with no channel named follows the stable one. `--source` moves
+every set to another channel, `--force` installs again where nothing is newer,
+and the app is not started unless `--launch` says so.
+
+A set that is off is reported and the rest go on. One whose address changed
+gets a new entry at its next install; the old entry is removed by hand from the
+file. No passphrase and no key is ever written there.
+
 ## Commands
 
 Generated from the command definitions by `bun run tv docs`. Nothing between the
@@ -194,6 +215,7 @@ markers is written by hand.
 | `bun run tv` | Find the televisions on this network and put KROMA on them. With no command it opens the picker. |
 | `bun run tv scan` | List what answered and stop, the picker without the picking. |
 | `bun run tv install <target>` | Put KROMA on one set, or on all of them, without the picker. |
+| `bun run tv update` | Put the newest KROMA on every set this computer installed it on, asking nothing. |
 | `bun run tv probe <host>` | Ask a Samsung set what it is over sdb, installing nothing. |
 | `bun run tv certificate <host>` | Get Samsung's certificates for a set: sign in to Samsung once, and every install signs with them. |
 | `bun run tv tools <platform>` | Install the toolchain a platform needs, which the picker does on its own. |

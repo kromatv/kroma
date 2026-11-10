@@ -30,6 +30,7 @@ export interface TvModule {
   ports?: ModulePorts;
   searchTargets?: readonly string[];
   flags?: ArgsDef;
+  remembers?: readonly string[];
   commands?: SubCommandsDef;
   identify?(
     host: string,

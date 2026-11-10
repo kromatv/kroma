@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tv } from './cli';
 import { docsCommand, doctorCommand, installCommand, scanCommand, toolsCommand } from './commands';
 import { runTui } from './tui/app';
+import { updateCommand } from './update';
 
 vi.mock('./commands', () => ({
   docsCommand: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock('./commands', () => ({
 }));
 vi.mock('./exit-after', () => ({ exitAfter: vi.fn() }));
 vi.mock('./tui/app', () => ({ runTui: vi.fn() }));
+vi.mock('./update', () => ({ updateCommand: vi.fn() }));
 
 const argv = process.argv;
 const isTTY = process.stdout.isTTY;
@@ -113,6 +115,30 @@ describe('tv install', () => {
     await expect(run(['install', 'all', '--source', 'ftp'])).rejects.toThrow(
       '--source takes local, stable, canary, build',
     );
+  });
+});
+
+describe('tv update', () => {
+  it('updates every remembered set without starting the app or forcing', async () => {
+    await run(['update']);
+
+    expect(vi.mocked(updateCommand)).toHaveBeenCalledWith({
+      source: undefined,
+      moduleOptions: { native: true },
+      launch: false,
+      force: false,
+    });
+  });
+
+  it('hands the channel, the flags and the platform options on', async () => {
+    await run(['update', '--source', 'canary', '--force', '--launch', '--profile', 'KROMA']);
+
+    expect(vi.mocked(updateCommand)).toHaveBeenCalledWith({
+      source: 'canary',
+      moduleOptions: { profile: 'KROMA', native: true },
+      launch: true,
+      force: true,
+    });
   });
 });
 
