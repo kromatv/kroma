@@ -72,7 +72,8 @@ async function positionals(command: UsageCommand): Promise<string> {
 
 function row(label: string, description: string | undefined, code = true): string {
   const cell = code ? `\`${label}\`` : label;
-  return `| ${cell} | ${description ?? ''} |`;
+  const escaped = cell.replaceAll('|', String.raw`\|`);
+  return `| ${escaped} | ${description ?? ''} |`;
 }
 
 async function resolve<T>(value: Resolvable<T>): Promise<T> {

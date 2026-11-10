@@ -44,6 +44,16 @@ describe('renderUsage', () => {
     expect(usage).toContain('| `--host <ip>` | probe these addresses |');
   });
 
+  it('escapes a pipe in a value hint, which would split the row in two', async () => {
+    const sourced: UsageCommand = {
+      args: { source: { type: 'string', description: 'where from', valueHint: 'stable|canary' } },
+    };
+
+    const usage = await renderUsage(sourced, 'bun run tv');
+
+    expect(usage).toContain('| `--source <stable\\|canary>` | where from |');
+  });
+
   it('resolves a description a command only produces when asked', async () => {
     const lazy: UsageCommand = {
       meta: () => Promise.resolve({ description: 'resolved late' }),

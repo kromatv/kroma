@@ -115,6 +115,7 @@ const docs = defineCommand({
 export const tv = defineCommand({
   meta: {
     name: 'kroma-tv',
+    version: process.env.KROMA_TV_VERSION ?? '0.0.0',
     description:
       'Find the televisions on this network and put KROMA on them. With no command it opens the picker.',
   },
