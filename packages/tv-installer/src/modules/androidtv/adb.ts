@@ -1,11 +1,10 @@
-import { run } from '../../run';
 import type { Runtime } from '../../television';
-import { locate } from '../../toolchain/detect';
+import { AdbConnection } from './adb/connection';
+import { shell } from './adb/install-apk';
+import { existingAdbKeys } from './adb/key';
 import { androidProps, androidRuntime } from './runtime';
-import { ADB } from './tools';
 
 const CONNECT_TIMEOUT_MS = 5000;
-const SHELL_TIMEOUT_MS = 5000;
 const WEBVIEW_PACKAGE = 'com.google.android.webview';
 
 export interface AdbDevice {
@@ -15,34 +14,27 @@ export interface AdbDevice {
 }
 
 /**
- * What a set answers over adb, or null when adb is not installed, the set
- * refused the connection, or nobody has accepted the prompt on its screen. A
- * scan never fails over any of the three.
+ * What a set answers over adb, or null when it refused the connection or
+ * trusts none of this computer's keys. A scan never asks the TV to trust a
+ * key, so it shows no prompt, and never fails over a set that will not talk.
  */
 export async function adbDevice(host: string, port: number): Promise<AdbDevice | null> {
-  const adb = locate(ADB);
-  if (!adb) return null;
+  const keys = await existingAdbKeys();
+  if (keys.length === 0) return null;
 
-  const serial = `${host}:${port}`;
+  let connection: AdbConnection | null = null;
   try {
-    const connected = await run([adb, 'connect', serial], { timeoutMs: CONNECT_TIMEOUT_MS });
-    if (!connected.output.includes('connected')) return null;
-
-    const props = await run([adb, '-s', serial, 'shell', 'getprop'], {
-      timeoutMs: SHELL_TIMEOUT_MS,
-    });
-    if (props.code !== 0) return null;
-
-    const printed = androidProps(props.output);
-    const webview = await run([adb, '-s', serial, 'shell', 'dumpsys', 'package', WEBVIEW_PACKAGE], {
-      timeoutMs: SHELL_TIMEOUT_MS,
-    });
+    connection = await AdbConnection.open(host, port, { keys, timeoutMs: CONNECT_TIMEOUT_MS });
+    const printed = androidProps(await shell(connection, 'getprop'));
+    const webview = await shell(connection, `dumpsys package ${WEBVIEW_PACKAGE}`);
     return {
-      runtime: androidRuntime(printed, webview.code === 0 ? webview.output : ''),
+      runtime: androidRuntime(printed, webview),
       model: printed['ro.product.model'] ?? '',
       vendor: printed['ro.product.manufacturer'] ?? '',
     };
   } catch {
     return null;
+  } finally {
+    connection?.close();
   }
 }

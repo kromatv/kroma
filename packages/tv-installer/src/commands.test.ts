@@ -289,12 +289,10 @@ describe('doctorCommand', () => {
     expect(printed.join('\n')).toContain('Samsung  .wgt\n  needs nothing this tool can install');
   });
 
-  it('says where a missing toolchain comes from', async () => {
+  it('says an Android TV needs nothing, since this tool speaks adb itself', async () => {
     doctorCommand();
 
-    expect(printed.join('\n')).toContain(
-      'Android Debug Bridge  missing, from dl.google.com platform-tools',
-    );
+    expect(printed.join('\n')).toContain('Android TV  .apk\n  needs nothing this tool can install');
   });
 });
 
@@ -309,7 +307,7 @@ describe('toolsCommand', () => {
   it('installs the tools of each platform that was named', async () => {
     await toolsCommand(['webos', 'androidtv', 'tizen']);
 
-    expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['ares', 'adb']);
+    expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['ares']);
   });
 
   it('says so about a platform that needs nothing this tool can install', async () => {

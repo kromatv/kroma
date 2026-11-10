@@ -1,33 +1,35 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { generateKeyPairSync } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Television } from '../../television';
 import type { InstallContext } from '../module';
-import { installAndroid, installFailure, parseAdbState } from './install';
+import { AdbConnection } from './adb/connection';
+import {
+  answers,
+  type FakeAdbd,
+  fakeAdbd,
+  type FakeAdbdOptions,
+  takes,
+} from './adb/fake-adbd.fixture';
+import { type AdbKey, adbKeys, androidPublicKey } from './adb/key';
+import { installAndroid, installFailure } from './install';
 
-const { run, runOk, requireTool } = vi.hoisted(() => ({
-  run: vi.fn(async (_command: readonly string[], _options?: unknown) => ({ code: 0, output: '' })),
-  runOk: vi.fn(async (_command: readonly string[], _options?: unknown) => ''),
-  requireTool: vi.fn(() => '/usr/bin/adb'),
-}));
-vi.mock('../../run', () => ({ run, runOk }));
-vi.mock('../../toolchain/detect', async (original) => ({
-  ...(await original<Record<string, unknown>>()),
-  requireTool,
+vi.mock('./adb/key', async (original) => ({
+  ...(await original<typeof import('./adb/key')>()),
+  adbKeys: vi.fn(),
 }));
 vi.mock('./app-id', () => ({ androidAppId: () => 'tv.kroma.tv' }));
 
-const devices = [
-  'List of devices attached',
-  '192.168.1.34:5555\tdevice',
-  '192.168.1.44:5555\tunauthorized',
-  'emulator-5554\toffline',
-].join('\n');
+const base = mkdtempSync(join(tmpdir(), 'kroma-android-install-'));
+const artifact = join(base, 'KROMA.apk');
+writeFileSync(artifact, Buffer.alloc(10_000, 1));
 
-const failure = (reason: string) =>
-  [
-    'Performing Streamed Install',
-    `adb: failed to install /out/KROMA.apk: Failure [${reason}]`,
-    '',
-  ].join('\n');
+const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048, publicExponent: 65537 });
+const ours: AdbKey = { privateKey, publicKey: androidPublicKey(privateKey, 'kroma@test') };
+const LAUNCH = 'shell:monkey -p tv.kroma.tv -c android.intent.category.LEANBACK_LAUNCHER 1';
+const INSTALL = "exec:cmd package 'install' '-r' -S 10000";
 
 const shield: Television = {
   host: '192.168.1.34',
@@ -41,134 +43,104 @@ const shield: Television = {
   runtime: null,
 };
 
+let fake: FakeAdbd | null = null;
+const lines: string[] = [];
 const context = (overrides: Partial<InstallContext> = {}): InstallContext => ({
   tv: shield,
-  artifact: '/out/KROMA.apk',
-  log: () => {},
+  artifact,
+  log: (line) => lines.push(line),
   launch: true,
   options: {},
   ...overrides,
 });
 
-const argv = () => [
-  ...runOk.mock.calls.map(([command]) => command),
-  ...run.mock.calls.map(([command]) => command),
-];
-
-afterEach(() => vi.useRealTimers());
+async function tvAnswering(options: FakeAdbdOptions, promptTimeoutMs?: number): Promise<FakeAdbd> {
+  fake = await fakeAdbd({ features: ['cmd'], ...options });
+  const port = fake.port;
+  const open = AdbConnection.open.bind(AdbConnection);
+  vi.spyOn(AdbConnection, 'open').mockImplementation((_host, _port, handshake) =>
+    open('127.0.0.1', port, { ...handshake, ...(promptTimeoutMs ? { promptTimeoutMs } : {}) }),
+  );
+  return fake;
+}
 
 beforeEach(() => {
-  run.mockReset();
-  runOk.mockReset();
-  runOk.mockImplementation(async (command) => (command.includes('devices') ? devices : ''));
+  lines.length = 0;
+  vi.mocked(adbKeys).mockResolvedValue([ours]);
 });
 
-describe('parseAdbState', () => {
-  it('reads the state adb holds the television in', () => {
-    expect(parseAdbState(devices, '192.168.1.34:5555')).toBe('device');
-  });
-
-  it('reads the state of a set that is still asking to trust this computer', () => {
-    expect(parseAdbState(devices, '192.168.1.44:5555')).toBe('unauthorized');
-  });
-
-  it('answers nothing for a serial adb does not list', () => {
-    expect(parseAdbState(devices, '192.168.1.99:5555')).toBeNull();
-  });
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await fake?.close();
+  fake = null;
 });
+
+afterAll(() => rmSync(base, { recursive: true, force: true }));
 
 describe('installAndroid', () => {
-  it('connects to the set on the network debugging port', async () => {
+  it('installs over adb spoken by the tool itself, then starts the app from the TV launcher', async () => {
+    const tv = await tvAnswering({
+      trusted: [privateKey],
+      services: { [INSTALL]: takes(10_000, 'Success\n'), [LAUNCH]: answers('') },
+    });
+
     await installAndroid(context());
 
-    expect(argv()).toContainEqual(['/usr/bin/adb', 'connect', '192.168.1.34:5555']);
-  });
-
-  it('installs over whatever build the set already carries', async () => {
-    await installAndroid(context());
-
-    expect(argv()).toContainEqual([
-      '/usr/bin/adb',
-      '-s',
-      '192.168.1.34:5555',
-      'install',
-      '-r',
-      '/out/KROMA.apk',
-    ]);
-  });
-
-  it('starts the app through the launcher a television has', async () => {
-    await installAndroid(context());
-
-    expect(argv()).toContainEqual([
-      '/usr/bin/adb',
-      '-s',
-      '192.168.1.34:5555',
-      'shell',
-      'monkey',
-      '-p',
-      'tv.kroma.tv',
-      '-c',
-      'android.intent.category.LEANBACK_LAUNCHER',
-      '1',
-    ]);
+    expect(tv.opened).toEqual([INSTALL, LAUNCH]);
+    expect(lines.at(-1)).toBe('sending KROMA.apk, 100%');
   });
 
   it('leaves the app alone when the install was told not to launch', async () => {
+    const tv = await tvAnswering({ services: { [INSTALL]: takes(10_000, 'Success\n') } });
+
     await installAndroid(context({ launch: false }));
 
-    expect(argv().flat()).not.toContain('monkey');
+    expect(tv.opened).toEqual([INSTALL]);
   });
 
-  it('waits for the owner to allow this computer on the TV, then installs', async () => {
-    vi.useFakeTimers();
-    const lines: string[] = [];
-    let asked = 0;
-    runOk.mockImplementation(async (command) => {
-      if (!command.includes('devices')) return '';
-      asked += 1;
-      return `List of devices attached\n192.168.1.34:5555\t${asked < 3 ? 'unauthorized' : 'device'}`;
+  it('asks the owner to allow this computer on the TV, and goes on once they do', async () => {
+    const tv = await tvAnswering({
+      trusted: [],
+      acceptPrompt: true,
+      services: { [INSTALL]: takes(10_000, 'Success\n') },
     });
 
-    const installing = installAndroid(context({ log: (line) => lines.push(line) }));
-    await vi.advanceTimersByTimeAsync(4_000);
-    await installing;
+    await installAndroid(context({ launch: false }));
 
-    expect(lines).toContain(
+    expect(lines[0]).toBe(
       'the TV asks to allow this computer: accept the prompt on the TV, and tick Always allow',
     );
-    expect(run.mock.calls.some(([command]) => command.includes('install'))).toBe(true);
+    expect(tv.prompts).toHaveLength(1);
   });
 
-  it('gives up when nobody allows this computer within two minutes', async () => {
-    vi.useFakeTimers();
-
-    const installing = installAndroid(context({ tv: { ...shield, host: '192.168.1.44' } }));
-    const refused = expect(installing).rejects.toThrow(
-      'nobody allowed this computer on the TV within two minutes',
-    );
-    await vi.advanceTimersByTimeAsync(122_000);
-    await refused;
-
-    expect(run).not.toHaveBeenCalled();
-  });
-
-  it('refuses a set adb holds in any other state', async () => {
-    runOk.mockImplementation(async () => 'List of devices attached\n192.168.1.34:5555\toffline');
+  it('says to accept the prompt and run it again when nobody allowed this computer', async () => {
+    await tvAnswering({ trusted: [] }, 50);
 
     await expect(installAndroid(context())).rejects.toThrow(
-      'adb sees the TV as offline: turn Network debugging on in Developer options',
+      'nobody allowed this computer on the TV within two minutes: accept the prompt on screen, then run this again',
     );
   });
 
-  it('refuses a set adb never listed at all', async () => {
-    runOk.mockImplementation(async () => 'List of devices attached');
+  it('says to turn Network debugging on when the TV refuses adb', async () => {
+    const tv = await tvAnswering({});
+    await tv.close();
+    fake = null;
 
-    await expect(installAndroid(context())).rejects.toThrow('adb sees the TV as absent');
+    await expect(installAndroid(context())).rejects.toThrow(
+      'the TV refused adb: turn Network debugging on in Developer options',
+    );
   });
 
-  it('answers the advice for the failure adb reported', async () => {
-    run.mockResolvedValue({ code: 1, output: failure('INSTALL_FAILED_VERSION_DOWNGRADE') });
+  it('passes any other refusal on as the TV said it', async () => {
+    await tvAnswering({ tls: true });
+
+    await expect(installAndroid(context())).rejects.toThrow('pairing code');
+  });
+
+  it('answers the advice for the failure the package manager reported', async () => {
+    await tvAnswering({
+      services: { [INSTALL]: takes(10_000, 'Failure [INSTALL_FAILED_VERSION_DOWNGRADE]\n') },
+    });
 
     await expect(installAndroid(context())).rejects.toThrow('the TV already has a newer build');
   });
@@ -176,23 +148,18 @@ describe('installAndroid', () => {
 
 describe('installFailure', () => {
   it('tells the owner to remove a KROMA that was signed with another key', () => {
-    const output = failure('INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package tv.kroma.tv');
-
-    expect(installFailure(output)).toContain('adb uninstall tv.kroma.tv');
-  });
-
-  it('tells the owner the set already has a newer build than the package', () => {
-    const output = failure('INSTALL_FAILED_VERSION_DOWNGRADE');
-
-    expect(installFailure(output)).toContain('uninstall it first, or install a newer .apk');
-  });
-
-  it('quotes what adb said when the failure is one it has no advice for', () => {
-    const output = failure('INSTALL_FAILED_INSUFFICIENT_STORAGE');
-
-    expect(installFailure(output)).toBe(
-      'adb install failed: Performing Streamed Install / ' +
-        'adb: failed to install /out/KROMA.apk: Failure [INSTALL_FAILED_INSUFFICIENT_STORAGE]',
+    expect(installFailure('Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package]')).toBe(
+      'a KROMA signed with another key is already there: uninstall it on the TV (Settings, Apps, KROMA), then install again',
     );
+  });
+
+  it('quotes what the TV said when the failure is one it has no advice for', () => {
+    expect(installFailure('Failure [INSTALL_FAILED_INSUFFICIENT_STORAGE]\n')).toBe(
+      'the TV refused the install: Failure [INSTALL_FAILED_INSUFFICIENT_STORAGE]',
+    );
+  });
+
+  it('says only that the TV refused when it said nothing', () => {
+    expect(installFailure('')).toBe('the TV refused the install');
   });
 });

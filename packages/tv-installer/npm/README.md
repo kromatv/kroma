@@ -43,8 +43,8 @@ The installer keeps the list of those TVs, so this command asks nothing.
   it and sends it to the TV itself. Tizen Studio is not needed.
 - For an LG TV, LG's command-line tools, installed with npm into
   `~/.kroma/tools`.
-- For an Android TV, Google's `adb`, downloaded into `~/.kroma/tools`. An
-  Android SDK you already have is used instead.
+- For an Android TV, no tool: the installer talks to the TV itself. It keeps
+  the key the TV is asked to trust in `~/.kroma/adb`.
 - The KROMA apps it downloads, in `~/.kroma/downloads`. Each download is
   checked against the SHA-256 that the release lists.
 - The list of the TVs it installed KROMA on, in `~/.kroma/televisions.json`:

@@ -64,8 +64,8 @@ Every set listed says which platform version and browser engine it runs, and
 where that came from. The `scan` line carries it under the set, `--json` as
 `runtime`.
 
-- **Read off the set.** An Android TV that has accepted this computer over adb
-  answers `ro.build.version.release`, and the engine comes from
+- **Read off the set.** An Android TV that already trusts one of this
+  computer's adb keys answers `ro.build.version.release`, and the engine comes from
   `dumpsys package com.google.android.webview`. An Apple TV reports its tvOS
   version to CoreDevice and names React Native where the others name a browser,
   because the app is compiled and no browser runs it.
@@ -119,8 +119,9 @@ so extend it from the same app.
 build 7 times until it tells you that you are a developer. **Developer options**
 appears in the same menu: turn **Network debugging** on. The name varies by
 brand, and on a Chromecast with Google TV the switch called USB debugging is the
-one that opens the network port. The first `adb connect` raises a prompt on
-screen: accept it, tick "always allow", and run the install again.
+one that opens the network port. The first install raises a prompt on screen:
+accept it and tick "always allow", and the install, which waits two minutes for
+it, goes on. A scan never raises that prompt.
 
 A Philips is only an Android TV if it says so. On one running **Saphi** or
 **Titan OS** the scan lists the set and names the OS as the reason it takes no
@@ -137,10 +138,15 @@ it is.
 | --- | --- | --- | --- |
 | Samsung | none | this tool signs the package and talks sdb itself | |
 | LG | the `ares-*` commands | `bun add -g @webos-tools/cli`, or `npm install` where there is no Bun | `~/.bun/bin`, or `~/.kroma/tools` |
-| Android TV | `adb` | Google's `platform-tools-latest` zip | `~/.kroma/tools/platform-tools` |
+| Android TV | none | this tool speaks adb itself | |
 
-An existing Android SDK is picked up first, from `$ANDROID_HOME`,
-`$ANDROID_SDK_ROOT` or `~/Library/Android/sdk`.
+An Android TV takes this tool's own adb key, kept in `~/.kroma/adb/adbkey` and
+readable by its owner alone, made on the first install. When this computer
+already has Google's key, `~/.android/adbkey`, it is offered first, so a TV that
+trusts Google's adb asks nothing. Wireless debugging with a pairing code
+(Android 11 and later) is not spoken: it needs `adb pair` from Google's
+platform-tools. How the protocol works, with the sources, is in
+[docs/reference/android-adb.md](../../docs/reference/android-adb.md).
 
 A Samsung set needs no tool, but it does need Samsung's certificates: a retail
 set installs only what Samsung's own authorities signed for it. The first
@@ -254,8 +260,8 @@ xattr -d com.apple.quarantine kroma-tv-*                  # macOS, once
 ```
 
 The binary is signed ad-hoc, not with a Developer ID, so macOS quarantines it
-until that attribute is cleared. Windows is not built: the installer drives sdb,
-adb, ares and devicectl and reads an ARP table, a keychain and a Settings pane.
+until that attribute is cleared. Windows is not built: the installer drives ares
+and devicectl and reads an ARP table, a keychain and a Settings pane.
 
 Run from outside a checkout it does everything but build: it finds
 televisions, installs toolchains, and takes the package from the release.
@@ -288,7 +294,7 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   its answer to this computer, on a port from 4794 to 4813, so it has to be
   opened in a browser on this computer.
 - **`INSTALL_FAILED_UPDATE_INCOMPATIBLE`.** The Android version of the same
-  thing: `adb uninstall tv.kroma.app`, then install again.
+  thing: uninstall KROMA on the TV (Settings, Apps), then install again.
 - **`INSTALL_FAILED_VERSION_DOWNGRADE`.** The set already has a newer build.
   Uninstall it, or install a newer `.apk`.
 - **`nobody allowed this computer on the TV within two minutes`.** An Android
