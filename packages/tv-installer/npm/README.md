@@ -41,8 +41,10 @@ The installer keeps the list of those TVs, so this command asks nothing.
   for the certificate of your TV, once you sign in to your Samsung account. It
   keeps the certificate in `~/.kroma/certificates/samsung`, signs the app with
   it and sends it to the TV itself. Tizen Studio is not needed.
-- For an LG TV, LG's command-line tools, installed with npm into
-  `~/.kroma/tools`.
+- For an LG TV, no tool. On the first install, the installer asks for the
+  passphrase that the Dev Mode app shows, and gets the key of your TV with it.
+  It keeps the key in `~/.kroma/keys/webos`, readable by you alone, and sends
+  the app to the TV itself. LG's command-line tools are not needed.
 - For an Android TV, no tool: the installer talks to the TV itself. It keeps
   the key the TV is asked to trust in `~/.kroma/adb`.
 - The KROMA apps it downloads, in `~/.kroma/downloads`. Each download is
@@ -83,6 +85,13 @@ address of the TV, and sign in to your Samsung account when the browser opens.
 A KROMA signed with another certificate is already on the TV. Delete it: in
 **Apps**, hold the select button on the KROMA tile, then choose **Delete**.
 Install again.
+
+### An LG TV refuses the key
+
+The TV no longer takes the key the installer kept from an earlier install.
+Turn on **Key Server** in the Dev Mode app, then install again with
+`--passphrase` and the passphrase that the app shows now. The installer gets
+the key again.
 
 ### `GitHub did not list the stable release`
 

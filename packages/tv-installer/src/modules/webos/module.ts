@@ -3,7 +3,6 @@ import { resolveWebosArtifact, webosSources } from './artifact';
 import { identifyWebos, WEBOS_PORTS, WEBOS_SEARCH_TARGET } from './identify';
 import { installWebos } from './install';
 import { askPassphrases } from './prompt';
-import { ARES } from './tools';
 
 export const webos: TvModule = {
   id: 'webos',
@@ -29,7 +28,7 @@ export const webos: TvModule = {
   },
   identify: identifyWebos,
   prompt: askPassphrases,
-  tools: () => [ARES],
+  tools: () => [],
   sources: webosSources,
   resolve: resolveWebosArtifact,
   install: installWebos,

@@ -4,7 +4,6 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import { docsCommand, doctorCommand, installCommand, scanCommand, toolsCommand } from './commands';
 import type { DeployOptions } from './install/deploy';
 import type { Television } from './television';
-import type { Tool } from './toolchain/detect';
 import { injectUsage, renderUsage, type UsageCommand } from './usage';
 
 const { checkout, scan, deployTo, askForLocalNetwork, diagnoseEmptyScan, locate, installTool } =
@@ -262,9 +261,6 @@ describe('installCommand', () => {
   });
 });
 
-const ares = (path: string | null) => (tool: unknown) =>
-  (tool as Tool).id === 'ares' ? path : null;
-
 describe('doctorCommand', () => {
   it('lists every platform this tool installs onto', async () => {
     doctorCommand();
@@ -273,20 +269,11 @@ describe('doctorCommand', () => {
     expect(printed.join('\n')).toContain('Apple TV  .app');
   });
 
-  it('shows where a toolchain this machine already has lives', async () => {
-    locate.mockImplementation(ares('/home/.kroma/tools/node_modules/.bin/ares-install'));
-
-    doctorCommand();
-
-    expect(printed.join('\n')).toContain(
-      'webOS TV CLI          /home/.kroma/tools/node_modules/.bin/ares-install',
-    );
-  });
-
   it('says so under a platform this tool installs onto with nothing else', async () => {
     doctorCommand();
 
     expect(printed.join('\n')).toContain('Samsung  .wgt\n  needs nothing this tool can install');
+    expect(printed.join('\n')).toContain('LG  .ipk\n  needs nothing this tool can install');
   });
 
   it('says an Android TV needs nothing, since this tool speaks adb itself', async () => {
@@ -297,17 +284,12 @@ describe('doctorCommand', () => {
 });
 
 describe('toolsCommand', () => {
-  it('installs every tool the named platform needs', async () => {
-    const code = await toolsCommand(['webos']);
+  it('installs nothing for any TV, since this tool speaks to each one itself', async () => {
+    const code = await toolsCommand(['webos', 'androidtv', 'tizen']);
 
     expect(code).toBe(0);
-    expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['ares']);
-  });
-
-  it('installs the tools of each platform that was named', async () => {
-    await toolsCommand(['webos', 'androidtv', 'tizen']);
-
-    expect(installTool.mock.calls.map(([tool]) => (tool as Tool).id)).toEqual(['ares']);
+    expect(installTool).not.toHaveBeenCalled();
+    expect(printed).toHaveLength(3);
   });
 
   it('says so about a platform that needs nothing this tool can install', async () => {

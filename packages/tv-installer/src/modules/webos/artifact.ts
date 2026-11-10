@@ -10,11 +10,10 @@ import { buildable } from '../../install/build';
 import { matchingPaths } from '../../install/matching-paths';
 import { root } from '../../root';
 import { type LogLine, runOk } from '../../run';
-import { requireTool } from '../../toolchain/detect';
-import { ARES, aresSibling } from './tools';
 
 export const WEBOS_SHELL = 'clients/webos';
 const BUILD_TIMEOUT_MS = 900_000;
+const ARES_CLI = '@webos-tools/cli';
 
 export const WEBOS_PACKAGE: PackageKind = {
   globs: [`${WEBOS_SHELL}/out/*.ipk`, `${WEBOS_SHELL}/build/*.ipk`],
@@ -35,8 +34,10 @@ async function buildWebos(log: LogLine): Promise<string> {
   await runOk(['bun', 'run', 'build:webos'], { log, cwd: root, timeoutMs: BUILD_TIMEOUT_MS });
 
   const out = join(root, `${WEBOS_SHELL}/out`);
-  const packager = aresSibling(requireTool(ARES), 'ares-package');
-  await runOk([packager, join(root, `${WEBOS_SHELL}/dist`), '--no-minify', '-o', out], { log });
+  const shell = join(root, `${WEBOS_SHELL}/dist`);
+  await runOk(['bunx', '--package', ARES_CLI, 'ares-package', shell, '--no-minify', '-o', out], {
+    log,
+  });
 
   const [built] = matchingPaths(out, '*.ipk');
   if (!built) throw new Error('ares-package produced no .ipk');
