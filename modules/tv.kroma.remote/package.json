@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA Remote access module (frontend half): the Remote access admin page (share URL + managed Cloudflare Tunnel). Paired with the RemoteModule ServerModule via the shared module.json.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

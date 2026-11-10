@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA mail relay: the Cloudflare Worker at mail.kroma.tv that emails a self-hosted server's users on its behalf, and only the ones who told the relay that server may write to them.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

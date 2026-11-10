@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA design-system showcase: the @kromatv/ui workbench as a deployable website AND as an app you can launch at a phone or a television simulator.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Boots the TV shell in a real browser against a stubbed API, drives the D-pad and asserts what jsdom cannot see: one focus ring, a clean console, a bounded control count and the app's own frame report.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

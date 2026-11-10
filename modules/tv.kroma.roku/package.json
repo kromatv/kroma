@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA Roku module (frontend half): the console page that finds Roku boxes and installs the channel on them. Paired with the RokuModule ServerModule via the shared module.json.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

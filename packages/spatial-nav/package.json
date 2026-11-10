@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA's spatial navigation engine: the focus tree a D-pad walks. A dependency-free core that owns registration, sibling order, directional resolution and single-owner focus, plus the React binding the kit's <Focusable> and rails are built on.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

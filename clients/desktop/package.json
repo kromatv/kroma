@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA native desktop client: Tauri shell over @kromatv/tv with native mpv playback + gamepad input. Steam Deck is the primary target.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

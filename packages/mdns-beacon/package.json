@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "The _kroma-tv._tcp beacon for televisions with a Node service but no DNS-SD API: webOS's JS service, a Tizen service. Node's dgram and nothing else.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

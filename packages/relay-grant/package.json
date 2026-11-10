@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA relay grants: the AES-256-GCM sealed capability both kroma.tv relays (push, mail) mint for a self-hosted server, and the rate-limit key that follows the subject rather than the grant.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
