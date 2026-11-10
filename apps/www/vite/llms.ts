@@ -9,7 +9,7 @@ import { BASE_LOCALE, LOCALES } from '../src/lib/locales.ts';
 import { type AgentDocsInput, agentDocs } from './doc-markdown.ts';
 import { DOCS_DIR } from './doc-links.ts';
 
-const Messages = z.record(z.string(), z.string());
+const Messages = z.object({ site_description: z.string() }).catchall(z.string());
 
 interface Guide {
   lang: string;
@@ -18,41 +18,46 @@ interface Guide {
 }
 
 async function readGuides(dir: string): Promise<Guide[]> {
-  const guides: Guide[] = [];
-  for (const file of await readdir(dir)) {
-    if (!file.endsWith('.md')) continue;
-    const { name, lang } = parseContentPath(file);
-    const slug = name === 'README' ? 'index' : name;
-    if (isDocSlug(slug))
-      guides.push({ lang, slug, source: await readFile(join(dir, file), 'utf8') });
-  }
-  return guides;
+  const files = (await readdir(dir)).filter((file) => file.endsWith('.md'));
+  const guides = await Promise.all(
+    files.map(async (file): Promise<Guide | undefined> => {
+      const { name, lang } = parseContentPath(file);
+      const slug = name === 'README' ? 'index' : name;
+      if (!isDocSlug(slug)) return undefined;
+      return { lang, slug, source: await readFile(join(dir, file), 'utf8') };
+    }),
+  );
+  return guides.filter((guide) => guide !== undefined);
+}
+
+async function readLabels(root: string, lang: string): Promise<AgentDocsInput['labels'][string]> {
+  const file = await readFile(join(root, 'messages', `${lang}.json`), 'utf8');
+  const messages = Messages.parse(JSON.parse(file));
+  return {
+    name: site.name,
+    summary: messages.site_description,
+    sections: Object.fromEntries(
+      DOC_SECTIONS.map(({ id }) => [id, messages[`docs_section_${id}`] ?? id]),
+    ),
+  };
 }
 
 async function readInput(root: string): Promise<AgentDocsInput> {
-  const sources: AgentDocsInput['sources'] = {};
-  const labels: AgentDocsInput['labels'] = {};
-  const guides = [
-    ...(await readGuides(join(root, '../..', DOCS_DIR))),
-    ...(await readGuides(join(root, 'content/docs'))),
-  ];
-  for (const lang of LOCALES) {
-    sources[lang] = {};
-    const messages = Messages.parse(
-      JSON.parse(await readFile(join(root, 'messages', `${lang}.json`), 'utf8')),
-    );
-    labels[lang] = {
-      name: site.name,
-      summary: messages.site_description ?? '',
-      sections: Object.fromEntries(
-        DOC_SECTIONS.map(({ id }) => [id, messages[`docs_section_${id}`] ?? id]),
+  const [english, translated, labelled] = await Promise.all([
+    readGuides(join(root, '../..', DOCS_DIR)),
+    readGuides(join(root, 'content/docs')),
+    Promise.all(LOCALES.map(async (lang) => [lang, await readLabels(root, lang)] as const)),
+  ]);
+  const guides = [...english, ...translated];
+  const sources = Object.fromEntries(
+    LOCALES.map((lang) => [
+      lang,
+      Object.fromEntries(
+        guides.filter((guide) => guide.lang === lang).map(({ slug, source }) => [slug, source]),
       ),
-    };
-  }
-  for (const { lang, slug, source } of guides) {
-    const byLang = sources[lang];
-    if (byLang) byLang[slug] = source;
-  }
+    ]),
+  );
+  const labels = Object.fromEntries(labelled);
   return { siteUrl: site.url, repoUrl: site.repo, baseLocale: BASE_LOCALE, sources, labels };
 }
 
