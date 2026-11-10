@@ -14,6 +14,16 @@ describe('installFailure', () => {
     expect(installFailure('', 'kroma', null)).toBe('the install failed');
   });
 
+  it('says to remove an app another author installed, and asks Samsung for nothing', () => {
+    const output = 'install failed[118, -11], reason: Author certificate not match :';
+
+    const message = installFailure(output, 'samsung', '1900A2C4D6E8');
+
+    expect(message).toContain('another author signed the KROMA already on this set');
+    expect(message).toContain('Delete KROMA on the TV');
+    expect(message).not.toContain('DUID');
+  });
+
   it('names the profile whose chain a retail set refused', () => {
     const message = installFailure('error: certificate is invalid', 'kroma', null);
 

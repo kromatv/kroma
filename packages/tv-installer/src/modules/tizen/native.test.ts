@@ -110,6 +110,19 @@ describe('installOverSdb', () => {
     expect(vi.mocked(device.shell).mock.calls[0]?.[0]).toBe('0 getduid');
   });
 
+  it('does not ask the set for its DUID when another author is the reason', async () => {
+    vi.mocked(device.install).mockResolvedValue({
+      verdict: 'failure',
+      code: 118,
+      output: 'install failed[118, -11], reason: Author certificate not match :',
+    });
+
+    const installed = installOverSdb(context(), '/out/KROMA.wgt', 'samsung');
+
+    await expect(installed).rejects.toThrow('another author signed the KROMA already on this set');
+    expect(vi.mocked(device.shell)).not.toHaveBeenCalled();
+  });
+
   it('still names the certificate when the set would not say its DUID', async () => {
     vi.mocked(device.install).mockResolvedValue({
       verdict: 'failure',

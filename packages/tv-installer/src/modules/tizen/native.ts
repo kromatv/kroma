@@ -3,7 +3,7 @@ import type { LogLine } from '../../run';
 import type { InstallContext } from '../module';
 import { tizenAppId } from './app-id';
 import { duidOf } from './duid';
-import { installFailure } from './install-failure';
+import { installFailure, refusedChain } from './install-failure';
 import { reach } from './reach';
 
 /**
@@ -27,7 +27,7 @@ export async function installOverSdb(
       onProgress: progress(basename(artifact), log),
     });
     if (result.verdict !== 'success') {
-      const duid = result.output.includes('certificate') ? await duidOf(device) : null;
+      const duid = refusedChain(result.output) ? await duidOf(device) : null;
       throw new Error(installFailure(result.output, profile, duid));
     }
     if (launch) await device.launch(application);

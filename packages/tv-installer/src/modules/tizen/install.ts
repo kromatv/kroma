@@ -4,7 +4,7 @@ import { run, runOk } from '../../run';
 import { requireTool } from '../../toolchain/detect';
 import { booleanOption, type InstallContext, stringOption } from '../module';
 import { tizenAppId } from './app-id';
-import { installFailure } from './install-failure';
+import { installFailure, refusedChain } from './install-failure';
 import { installOverSdb } from './native';
 import { readProfile, type SigningProfile } from './profiles';
 import { SDB_PORT } from './sdb';
@@ -76,7 +76,7 @@ async function installOverCli(context: InstallContext, wgt: Package): Promise<vo
     },
   );
   if (installed.code !== 0) {
-    const duid = installed.output.includes('certificate') ? await readDuid(sdb, log) : null;
+    const duid = refusedChain(installed.output) ? await readDuid(sdb, log) : null;
     throw new Error(installFailure(installed.output, wgt.profile?.name ?? null, duid));
   }
   if (!launch) return;
