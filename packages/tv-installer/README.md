@@ -135,26 +135,29 @@ An existing Android SDK is picked up first, from `$ANDROID_HOME`,
 `$ANDROID_SDK_ROOT` or `~/Library/Android/sdk`.
 
 A Samsung set needs no tool, but it does need Samsung's certificates: a retail
-set installs only what Samsung's own authorities signed for it. One command gets
-them, with no Tizen Studio:
+set installs only what Samsung's own authorities signed for it. The first
+install on a set gets them, with no Tizen Studio. It reads the DUID off the set,
+opens Samsung's sign-in in the browser, and has Samsung issue an author and a
+distributor certificate for that set. They are kept in
+`~/.kroma/certificates/samsung`, each private key readable by its owner alone,
+and every install signs with them from then on. The first install on another
+set asks again: the author certificate is kept, and the new distributor
+certificate lists every set asked for so far. Both are valid for a year, and
+the first install after that asks for new ones. How Samsung issues them, with
+the sources, is in
+[docs/reference/samsung-tv-certificates.md](../../docs/reference/samsung-tv-certificates.md).
+
+An install asks only from a terminal. A script gets no browser to wait on, so
+it runs the same step ahead, by itself:
 
 ```bash
 bun run tv certificate 192.168.1.50
 ```
 
-It reads the DUID off the set, opens Samsung's sign-in in the browser, and has
-Samsung issue an author and a distributor certificate for that set. They are
-kept in `~/.kroma/certificates/samsung`, each private key readable by its owner
-alone, and every install signs with them from then on. Run it again for another
-set: the author certificate is kept, and the new distributor certificate lists
-every set asked for so far. Both are valid for a year. How Samsung issues them,
-with the sources, is in
-[docs/reference/samsung-tv-certificates.md](../../docs/reference/samsung-tv-certificates.md).
-
-Without them, the tool signs with the active profile of Tizen Studio when there
-is one. `--profile` names another of its profiles, and `--no-native` installs
-through Tizen Studio's own `tizen` and `sdb`, which then have to be installed
-already.
+A computer whose Tizen Studio has an active profile signs with that profile for
+a set Samsung's certificates do not list, and is not asked to sign in.
+`--profile` names another of its profiles, and `--no-native` installs through
+Tizen Studio's own `tizen` and `sdb`, which then have to be installed already.
 
 ## Where the package comes from
 
@@ -249,7 +252,8 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   certificate is already installed: delete its tile from the Apps panel
   (long-press > Delete) and install again.
 - **A Samsung refuses the certificate chain.** The set is not one the
-  distributor certificate lists. Run `certificate` with its address.
+  distributor certificate lists, which happens with a Tizen Studio profile made
+  for another set. Run `certificate` with its address.
 - **`nobody signed in to Samsung within five minutes`.** The sign-in page sends
   its answer to this computer, on a port from 4794 to 4813, so it has to be
   opened in a browser on this computer.
