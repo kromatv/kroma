@@ -75,7 +75,7 @@ dependency is declared, resolved and enforced rather than discovered at runtime.
 
 ## The `.kmod` bundle
 
-Status: **SHIPPED**
+Status: **SHIPPED**, with the release guard on `minServer` (MOD-94) **AGREED**.
 
 **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the backend as
 a WebAssembly component, an icon and the module's own frontend, packed together. At product level the
@@ -89,7 +89,11 @@ The manifest declares:
   unchanged version, so "there is a newer version" always means there is genuinely newer code,
   never a silent re-issue.
 - **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version
-  the module needs, as a bare version or a range. This is the whole compatibility contract.
+  the module needs, as a bare version or a range. This is the whole compatibility contract
+  until MOD-92 and MOD-93 ship.
+- **MOD-94** (AGREED) - The release process refuses to publish a module whose `minServer`
+  names a server newer than the release being prepared, because no server could run it. A
+  canary build is a prerelease of the release being prepared, not a later one.
 - **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and
   optional ones offered but not required.
 - **MOD-15** (SHIPPED) - **No target.** The backend is a WebAssembly component, so one bundle
@@ -138,6 +142,36 @@ That verdict is the point: a person decides to install or update against what *t
 will actually do, before committing. Registry precedence, https requirements, shadowing of
 duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 [`../module-registries.md`](../../module-registries.md).
+
+### The newest version that runs here
+
+Status: **AGREED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
+
+A module's newest version can need a newer server than the one asking. Older versions of
+the same module often ran on that server, and the Store should still offer them.
+
+**MOD-85** (AGREED) - The official registry describes every version of a module it has
+published, not only the newest: the server it needs, what it depends on and the permissions it
+asks for.
+
+**MOD-86** (AGREED) - The Store never offers a version whose registry does not describe what
+it needs. Unknown compatibility counts as incompatible.
+
+**MOD-87** (AGREED) - When a module's newest version does not run on this server, the Store
+picks the newest version that does. It considers a prerelease only when the newest version is
+one.
+
+**MOD-88** (AGREED) - The Store shows the version it would install and, beside it, the newest
+version with what that one needs.
+
+**MOD-89** (AGREED) - Installing, updating, updating everything and automatic updates all take
+the version MOD-87 picked, so none of them offers a version this server would refuse.
+
+**MOD-90** (AGREED) - The Store never downgrades an installed module unless the operator asks.
+An installed version newer than any that runs here is flagged under MOD-44 to MOD-46.
+
+**MOD-91** (AGREED) - Each dependency resolves to its own newest version that runs here. A
+dependant whose range that version misses is refused, naming both.
 
 ## Trust
 
@@ -244,7 +278,7 @@ started, and its log says why.
 
 ## The compatibility promise
 
-Status: **SHIPPED**
+Status: **SHIPPED**, with the interface check (MOD-92, MOD-93) **AGREED**.
 
 **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares
 the oldest server it can run against, and nothing below that floor is ever allowed to run.
@@ -255,6 +289,14 @@ because the server does not retroactively break the boundary its modules were bu
 **MOD-40** (SHIPPED) - A *newer* module may raise its `minServer`, and the Store says so
 before it is installed. The floor is checked at install and at every spawn, so a mismatch is a
 clear, upfront refusal, never a half-running module.
+
+**MOD-92** (AGREED) - A module is checked against the module interface the server implements,
+at install and at every start. A module built against an interface version this server does
+not implement is refused by name, even when its `minServer` is met
+([RFC 627](../../rfcs/627-version-compatibility.md)).
+
+**MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is
+no longer the whole compatibility contract.
 
 ## Module UI
 

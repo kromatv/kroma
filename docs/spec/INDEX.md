@@ -3,7 +3,7 @@
 
 # Requirement index
 
-519 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+540 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -78,6 +78,9 @@
 - **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-70** (SHIPPED) - A module addresses the audiences the core addresses and no others: one <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-71** (SHIPPED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-72** (AGREED) - The device list shows the app version each device last used <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-73** (AGREED) - A device whose app is older than the oldest version its server serves <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-74** (AGREED) - A device that never sent its app version shows "version unknown", never <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
@@ -429,6 +432,16 @@
 - **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
 - **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never <sub>[README.md](modules/README.md)</sub>
+- **MOD-85** (AGREED) - The official registry describes every version of a module it has <sub>[README.md](modules/README.md)</sub>
+- **MOD-86** (AGREED) - The Store never offers a version whose registry does not describe what <sub>[README.md](modules/README.md)</sub>
+- **MOD-87** (AGREED) - When a module's newest version does not run on this server, the Store <sub>[README.md](modules/README.md)</sub>
+- **MOD-88** (AGREED) - The Store shows the version it would install and, beside it, the newest <sub>[README.md](modules/README.md)</sub>
+- **MOD-89** (AGREED) - Installing, updating, updating everything and automatic updates all take <sub>[README.md](modules/README.md)</sub>
+- **MOD-90** (AGREED) - The Store never downgrades an installed module unless the operator asks. <sub>[README.md](modules/README.md)</sub>
+- **MOD-91** (AGREED) - Each dependency resolves to its own newest version that runs here. A <sub>[README.md](modules/README.md)</sub>
+- **MOD-92** (AGREED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
+- **MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
+- **MOD-94** (AGREED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 
@@ -547,3 +560,11 @@
 - **SURF-50** (SHIPPED) - From anywhere on web, one key combination (Command+K on a Mac,
 - **SURF-51** (SHIPPED) - A row in the command menu says what Enter will do, and can offer
 - **SURF-52** (SHIPPED) - The command menu forgives typos, word order and missing accents,
+- **SURF-53** (AGREED) - Every app tells its server which app it is and which version, on every
+- **SURF-54** (AGREED) - A server states the oldest app version it serves, where an app can read
+- **SURF-55** (SHIPPED) - A server states its own version where an app can read it before
+- **SURF-56** (AGREED) - The release that raises the oldest app version a server serves says so
+- **SURF-57** (AGREED) - An app older than the oldest version its server serves shows one screen
+- **SURF-58** (AGREED) - An app never reports being too old as a playback or feature error.
+- **SURF-59** (AGREED) - A server treats a request that names no app version as coming from an
+- **SURF-60** (AGREED) - An app that needs a newer server than the one it reached shows one
