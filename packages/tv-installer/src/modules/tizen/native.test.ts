@@ -105,9 +105,22 @@ describe('installOverSdb', () => {
     const installed = installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
 
     await expect(installed).rejects.toThrow(
-      'profile kroma signed it and the set refused that chain. A retail Samsung takes only a distributor certificate Samsung issued for its own DUID: Tizen Studio, Certificate Manager, Samsung, TV, with the set connected. The DUID to register is 1900A2C4D6E8.',
+      'profile kroma signed it and the set refused that chain. A retail Samsung takes only certificates Samsung issued for its own DUID: the certificate command of this tool gets them, with the address of the set. The DUID of this set is 1900A2C4D6E8.',
     );
     expect(vi.mocked(device.shell).mock.calls[0]?.[0]).toBe('0 getduid');
+  });
+
+  it('does not ask the set for its DUID when another author is the reason', async () => {
+    vi.mocked(device.install).mockResolvedValue({
+      verdict: 'failure',
+      code: 118,
+      output: 'install failed[118, -11], reason: Author certificate not match :',
+    });
+
+    const installed = installOverSdb(context(), '/out/KROMA.wgt', 'samsung');
+
+    await expect(installed).rejects.toThrow('another author signed the KROMA already on this set');
+    expect(vi.mocked(device.shell)).not.toHaveBeenCalled();
   });
 
   it('still names the certificate when the set would not say its DUID', async () => {
@@ -120,7 +133,7 @@ describe('installOverSdb', () => {
 
     const installed = installOverSdb(context(), '/out/KROMA.wgt', null);
 
-    await expect(installed).rejects.toThrow(/^A retail Samsung takes only .* connected\.$/);
+    await expect(installed).rejects.toThrow(/^A retail Samsung takes only .* of the set\.$/);
   });
 
   it('says what developer mode needs when nothing answers on the bridge port', async () => {

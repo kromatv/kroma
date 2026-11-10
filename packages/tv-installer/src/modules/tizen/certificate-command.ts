@@ -1,73 +1,62 @@
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { defineCommand } from 'citty';
 import { exitAfter } from '../../exit-after';
 import { run } from '../../run';
-import { requireTool } from '../../toolchain/detect';
 import { style } from '../../tui/ansi';
-import { createAuthorCertificate } from './certificate/authority';
-import { randomPassword } from './certificate/password';
-import { TIZEN_CLI } from './tools';
+import { duidOf } from './duid';
+import { reach } from './reach';
+import { requestCertificates } from './samsung/request';
+import { signIn } from './samsung/sign-in';
 
-const CERTIFICATES = join(homedir(), '.kroma', 'certificates');
+const BROWSER: Partial<Record<NodeJS.Platform, string>> = { darwin: 'open', linux: 'xdg-open' };
 
 export const certificateCommand = defineCommand({
   meta: {
     name: 'certificate',
-    description: 'Generate a Samsung author certificate and the profile the tools sign with.',
+    description:
+      "Get Samsung's certificates for a set: sign in to Samsung once, and every install signs with them.",
   },
   args: {
-    name: { type: 'string', default: 'kroma', description: 'The profile and alias name' },
-    register: {
-      type: 'boolean',
-      default: false,
-      description: 'Add it to the Tizen profiles, which makes it the active one',
-    },
+    host: { type: 'positional', required: true, description: 'The address of the Samsung set' },
   },
-  run: ({ args }) => exitAfter(certificate({ name: args.name, register: args.register })),
+  run: ({ args }) => exitAfter(certificate(args.host)),
 });
 
-interface CertificateOptions {
-  name: string;
-  register: boolean;
+async function readDuid(host: string): Promise<string> {
+  const device = await reach(host);
+  try {
+    const duid = await duidOf(device);
+    if (!duid) throw new Error(`${host} would not say its DUID`);
+    return duid;
+  } finally {
+    device.close();
+  }
+}
+
+function openBrowser(url: string): void {
+  console.log(`Sign in to your Samsung account in the browser. If none opened, go to:\n${url}`);
+  const opener = BROWSER[process.platform];
+  if (opener) run([opener, url]).catch(() => undefined);
 }
 
 /**
- * Generates an author certificate: an RSA key, a self-signed X.509 over it, and
- * the PKCS#12 the Tizen tools sign with. Registering it is opt-in, because
- * adding a profile makes it the active one and a machine that already signs for
- * a retail set must keep signing with the certificate that set accepts.
+ * Reads the DUID off the set, signs the owner in to Samsung, and has Samsung
+ * issue the author and the distributor certificate that set takes.
  */
-async function certificate(options: CertificateOptions): Promise<number> {
-  const author = await createAuthorCertificate({
-    directory: join(CERTIFICATES, options.name),
-    alias: options.name,
-    password: randomPassword(),
-    subject: { commonName: 'KROMA', organization: 'KROMA' },
+async function certificate(host: string): Promise<number> {
+  const duid = await readDuid(host);
+  console.log(`${style.green('set')}          ${host}, DUID ${duid}`);
+
+  const access = await signIn(openBrowser);
+  const obtained = await requestCertificates({
+    access,
+    duid,
+    log: (line) => console.log(style.dim(line)),
   });
 
-  console.log(`${style.green('certificate')}  ${author.certificate}`);
-  console.log(`${style.green('key')}          ${author.key}`);
-  console.log(`${style.green('archive')}      ${author.archive}`);
-  console.log(`${style.green('password')}     ${author.passwordFile}`);
-  console.log(
-    style.dim(
-      'The author half only. A retail Samsung also wants a distributor certificate,\nwhich Samsung issues against the DUID of that one set: Tizen Studio, Certificate Manager.',
-    ),
-  );
-
-  const add = ['security-profiles', 'add', '-n', options.name, '-a', author.archive, '-p'];
-  if (!options.register) {
-    // Handed over as a file read rather than printed: a terminal and a shell
-    // history both keep what they are shown. The Tizen CLI takes the password
-    // only as an argument, so it is briefly in `ps` either way.
-    const spelled = [...add, `"$(cat ${author.passwordFile})"`].join(' ');
-    console.log(`\nregister it, which also makes it the active profile:\n  tizen ${spelled}`);
-    return 0;
-  }
-
-  const { code } = await run([requireTool(TIZEN_CLI), ...add, author.password], {
-    log: (line) => console.log(line),
-  });
-  return code === 0 ? 0 : 1;
+  const day = (date: Date) => date.toISOString().slice(0, 10);
+  console.log(`${style.green('kept in')}      ${obtained.directory}`);
+  console.log(`${style.green('sets')}         ${obtained.duids.join(', ')}`);
+  console.log(`${style.green('author')}       valid until ${day(obtained.authorUntil)}`);
+  console.log(`${style.green('distributor')}  valid until ${day(obtained.distributorUntil)}`);
+  return 0;
 }

@@ -21,15 +21,16 @@ it on the sets you choose. Run it again to update KROMA.
 
 | TV | What to do once | Guide |
 | --- | --- | --- |
-| Samsung | Turn on developer mode, and create a Samsung certificate for the TV with Tizen Studio | [Samsung TV](https://kroma.tv/docs/samsung-tv) |
+| Samsung | Turn on developer mode, then get its certificate: `npx @kromatv/installer certificate TV_ADDRESS`, and sign in to Samsung | [Samsung TV](https://kroma.tv/docs/samsung-tv) |
 | LG | Install the Dev Mode app, turn on Dev Mode and its key server | [LG TV](https://kroma.tv/docs/lg-tv) |
 | Android TV, Google TV | Turn on network debugging in the developer options | [Android TV](https://kroma.tv/docs/android-tv) |
 | Apple TV | Nothing to do here: KROMA for Apple TV comes from TestFlight | [Apple TV](https://kroma.tv/docs/apple-tv) |
 
 ## What it puts on your computer
 
-- For a Samsung TV, nothing. The installer signs the app with your Samsung
-  certificate and sends it to the TV itself.
+- For a Samsung TV, no tool. The installer asks Samsung for the certificate of
+  your TV, keeps it in `~/.kroma/certificates/samsung`, signs the app with it
+  and sends it to the TV itself. Tizen Studio is not needed.
 - For an LG TV, LG's command-line tools, installed with npm into
   `~/.kroma/tools`.
 - For an Android TV, Google's `adb`, downloaded into `~/.kroma/tools`. An
@@ -59,10 +60,16 @@ Mode app running and an Android TV without network debugging do not answer.
 
 ### A Samsung TV refuses the certificate
 
-The app must be signed with a certificate that Samsung issued for that TV. See
-[Create a certificate for your TV](https://kroma.tv/docs/samsung-tv#create-a-certificate-for-your-tv).
-The error message gives the ID of the TV, called a DUID, to put in the
-certificate.
+The app must be signed with a certificate that Samsung issued for that TV. Get
+one with `npx @kromatv/installer certificate TV_ADDRESS`, where `TV_ADDRESS` is
+the address of the TV, and sign in to your Samsung account when the browser
+opens.
+
+### `Author certificate not match`
+
+A KROMA signed with another certificate is already on the TV. Delete it: in
+**Apps**, hold the select button on the KROMA tile, then choose **Delete**.
+Install again.
 
 ### `GitHub did not list the stable release`
 

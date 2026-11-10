@@ -1,14 +1,18 @@
 import { createSign, type KeyObject, randomBytes } from 'node:crypto';
 import * as der from './asn1';
 
-const OID = {
+export const OID = {
   commonName: '2.5.4.3',
   organization: '2.5.4.10',
   organizationalUnit: '2.5.4.11',
   locality: '2.5.4.7',
   state: '2.5.4.8',
   country: '2.5.4.6',
+  emailAddress: '1.2.840.113549.1.9.1',
+  extensionRequest: '1.2.840.113549.1.9.14',
   sha256WithRsa: '1.2.840.113549.1.1.11',
+  sha512WithRsa: '1.2.840.113549.1.1.13',
+  subjectAltName: '2.5.29.17',
   basicConstraints: '2.5.29.19',
   keyUsage: '2.5.29.15',
 } as const;

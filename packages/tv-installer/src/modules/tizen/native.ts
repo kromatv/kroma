@@ -2,12 +2,9 @@ import { basename } from 'node:path';
 import type { LogLine } from '../../run';
 import type { InstallContext } from '../module';
 import { tizenAppId } from './app-id';
-import { installFailure } from './install-failure';
-import { connect, type SdbDevice, SDB_PORT } from './sdb';
-
-const DUID_COMMAND = '0 getduid';
-const DUID_TIMEOUT_MS = 20_000;
-const DUID_LIMIT = 256;
+import { duidOf } from './duid';
+import { installFailure, refusedChain } from './install-failure';
+import { reach } from './reach';
 
 /**
  * Installs over this tool's own sdb client, so nothing from Tizen Studio has to
@@ -20,12 +17,7 @@ export async function installOverSdb(
 ): Promise<void> {
   const { tv, log, launch } = context;
   const application = tizenAppId();
-  const device = await connect(tv.host).catch((error: unknown) => {
-    const said = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `${said}. Nothing answered on ${SDB_PORT}: developer mode has to be on, naming this computer as the host PC, and the set rebooted since`,
-    );
-  });
+  const device = await reach(tv.host);
 
   try {
     log(`${device.banner} on ${tv.host}`);
@@ -35,20 +27,13 @@ export async function installOverSdb(
       onProgress: progress(basename(artifact), log),
     });
     if (result.verdict !== 'success') {
-      const duid = result.output.includes('certificate') ? await duidOf(device) : null;
+      const duid = refusedChain(result.output) ? await duidOf(device) : null;
       throw new Error(installFailure(result.output, profile, duid));
     }
     if (launch) await device.launch(application);
   } finally {
     device.close();
   }
-}
-
-async function duidOf(device: SdbDevice): Promise<string | null> {
-  const printed = await device
-    .shell(DUID_COMMAND, { limit: DUID_LIMIT, timeoutMs: DUID_TIMEOUT_MS })
-    .catch(() => '');
-  return printed.trim() || null;
 }
 
 function progress(name: string, log: LogLine): (sent: number, total: number) => void {

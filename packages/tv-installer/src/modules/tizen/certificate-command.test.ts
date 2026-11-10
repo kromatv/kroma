@@ -1,105 +1,142 @@
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { certificateCommand } from './certificate-command';
 
-const { run, requireTool, createAuthorCertificate, exitAfter } = vi.hoisted(() => ({
-  run: vi.fn(async (_command: readonly string[], _options?: unknown) => ({ code: 0, output: '' })),
-  requireTool: vi.fn(() => '/tizen-studio/tools/ide/bin/tizen'),
-  createAuthorCertificate: vi.fn(async (_options: unknown) => ({
-    certificate: '/certs/kroma/author.crt',
-    key: '/certs/kroma/author.key',
-    archive: '/certs/kroma/author.p12',
-    password: 'a-generated-password',
-    passwordFile: '/certs/kroma/author.pwd',
-  })),
+const { exitAfter, reach, duidOf, signIn, requestCertificates, run } = vi.hoisted(() => ({
   exitAfter: vi.fn((work: number | Promise<number>) => work),
+  reach: vi.fn(async (_host: string): Promise<unknown> => null),
+  duidOf: vi.fn(async (_device: unknown): Promise<string | null> => '1900A2C4D6E8'),
+  signIn: vi.fn(async (_open: (url: string) => void): Promise<unknown> => null),
+  requestCertificates: vi.fn(async (_order: unknown): Promise<unknown> => null),
+  run: vi.fn(async (_command: readonly string[]) => ({ code: 0, output: '' })),
 }));
-vi.mock('../../run', () => ({ run }));
-vi.mock('../../toolchain/detect', async (original) => ({
-  ...(await original<Record<string, unknown>>()),
-  requireTool,
-}));
-vi.mock('./certificate/authority', () => ({ createAuthorCertificate }));
-vi.mock('./certificate/password', () => ({ randomPassword: () => 'a-generated-password' }));
 vi.mock('../../exit-after', () => ({ exitAfter }));
+vi.mock('../../run', () => ({ run }));
+vi.mock('./reach', () => ({ reach }));
+vi.mock('./duid', () => ({ duidOf }));
+vi.mock('./samsung/sign-in', () => ({ signIn }));
+vi.mock('./samsung/request', () => ({ requestCertificates }));
 
-const generate = (args: { name: string; register: boolean }) =>
-  (certificateCommand.run as (given: { args: typeof args }) => Promise<number>)({ args });
+const access = { accessToken: 'token-123', userId: 'user-456', email: 'owner@example.com' };
+const close = vi.fn();
+const SIGN_IN = 'https://account.samsung.com/mobile/account/check.do?serviceID=v285zxnl3h';
+
+const certificate = (host: string) =>
+  (certificateCommand.run as (given: { args: { host: string } }) => Promise<number>)({
+    args: { host },
+  });
+
+const running = process.platform;
+const on = (platform: string) =>
+  Object.defineProperty(process, 'platform', { value: platform, configurable: true });
 
 const printed: string[] = [];
 
 beforeEach(() => {
   printed.length = 0;
   vi.spyOn(console, 'log').mockImplementation((line: string) => void printed.push(line));
-  run.mockReset();
-  createAuthorCertificate.mockClear();
+  reach.mockResolvedValue({ close });
+  duidOf.mockResolvedValue('1900A2C4D6E8');
+  signIn.mockImplementation(async (open) => {
+    open(SIGN_IN);
+    return access;
+  });
+  requestCertificates.mockResolvedValue({
+    directory: '/home/.kroma/certificates/samsung',
+    duids: ['1900A2C4D6E8'],
+    authorUntil: new Date('2027-11-10T12:00:00Z'),
+    distributorUntil: new Date('2027-11-11T12:00:00Z'),
+  });
+  on('darwin');
+});
+
+afterEach(() => {
+  on(running);
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('certificateCommand', () => {
-  it('generates the certificate under the name it was given', async () => {
-    await generate({ name: 'salon', register: false });
+  it('asks Samsung for the certificates of the set it read the DUID off', async () => {
+    const code = await certificate('192.168.1.31');
 
-    expect(createAuthorCertificate).toHaveBeenCalledWith({
-      directory: join(homedir(), '.kroma', 'certificates', 'salon'),
-      alias: 'salon',
-      password: 'a-generated-password',
-      subject: { commonName: 'KROMA', organization: 'KROMA' },
+    expect(code).toBe(0);
+    expect(reach).toHaveBeenCalledWith('192.168.1.31');
+    expect(requestCertificates.mock.calls[0]?.[0]).toMatchObject({ access, duid: '1900A2C4D6E8' });
+  });
+
+  it('lets go of the set before anyone signs in, since it takes one connection', async () => {
+    signIn.mockImplementation(async () => {
+      expect(close).toHaveBeenCalledOnce();
+      return access;
     });
+
+    await certificate('192.168.1.31');
+
+    expect(signIn).toHaveBeenCalledOnce();
   });
 
-  it('says where the certificate, the key, the archive and the password landed', async () => {
-    await generate({ name: 'kroma', register: false });
+  it('opens the sign-in in the browser of a Mac, and prints where to go without one', async () => {
+    await certificate('192.168.1.31');
 
-    expect(printed.join('\n')).toContain('/certs/kroma/author.crt');
-    expect(printed.join('\n')).toContain('/certs/kroma/author.key');
-    expect(printed.join('\n')).toContain('/certs/kroma/author.p12');
-    expect(printed.join('\n')).toContain('/certs/kroma/author.pwd');
+    expect(run).toHaveBeenCalledWith(['open', SIGN_IN]);
+    expect(printed.join('\n')).toContain(`If none opened, go to:\n${SIGN_IN}`);
   });
 
-  it('spells the registration out with the password read from its file, never printed', async () => {
-    await generate({ name: 'kroma', register: false });
+  it('opens the sign-in with xdg-open on Linux', async () => {
+    on('linux');
 
-    expect(printed.at(-1)).toContain(
-      'tizen security-profiles add -n kroma -a /certs/kroma/author.p12 -p "$(cat /certs/kroma/author.pwd)"',
+    await certificate('192.168.1.31');
+
+    expect(run).toHaveBeenCalledWith(['xdg-open', SIGN_IN]);
+  });
+
+  it('only prints the address on a system it knows no browser command for', async () => {
+    on('freebsd');
+
+    await certificate('192.168.1.31');
+
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('carries on when the browser command is not there', async () => {
+    run.mockRejectedValue(new Error('spawn open ENOENT'));
+
+    expect(await certificate('192.168.1.31')).toBe(0);
+  });
+
+  it('says where the certificates are kept, for which sets, and until when', async () => {
+    await certificate('192.168.1.31');
+
+    const said = printed.join('\n');
+    expect(said).toContain('192.168.1.31, DUID 1900A2C4D6E8');
+    expect(said).toContain('/home/.kroma/certificates/samsung');
+    expect(said).toContain('valid until 2027-11-10');
+    expect(said).toContain('valid until 2027-11-11');
+  });
+
+  it('passes on what the order says while it runs', async () => {
+    requestCertificates.mockImplementation(async (order) => {
+      (order as { log: (line: string) => void }).log('asking Samsung for an author certificate');
+      return {
+        directory: '/home/.kroma/certificates/samsung',
+        duids: ['1900A2C4D6E8'],
+        authorUntil: new Date('2027-11-10T12:00:00Z'),
+        distributorUntil: new Date('2027-11-11T12:00:00Z'),
+      };
+    });
+
+    await certificate('192.168.1.31');
+
+    expect(printed.join('\n')).toContain('asking Samsung for an author certificate');
+  });
+
+  it('refuses a set that would not say its DUID, and lets go of it', async () => {
+    duidOf.mockResolvedValue(null);
+
+    await expect(certificate('192.168.1.31')).rejects.toThrow(
+      '192.168.1.31 would not say its DUID',
     );
-    expect(printed.join('\n')).not.toContain('a-generated-password');
-  });
-
-  it('registers the profile with the Tizen tools when that was asked for', async () => {
-    await generate({ name: 'kroma', register: true });
-
-    expect(run.mock.calls[0]?.[0]).toEqual([
-      '/tizen-studio/tools/ide/bin/tizen',
-      'security-profiles',
-      'add',
-      '-n',
-      'kroma',
-      '-a',
-      '/certs/kroma/author.p12',
-      '-p',
-      'a-generated-password',
-    ]);
-  });
-
-  it('passes on what the Tizen tools said while they added the profile', async () => {
-    run.mockImplementation(async (_command, options) => {
-      (options as { log: (line: string) => void }).log('Succeed to add a profile');
-      return { code: 0, output: '' };
-    });
-
-    await generate({ name: 'kroma', register: true });
-
-    expect(printed).toContain('Succeed to add a profile');
-  });
-
-  it('answers a failure when the tools would not add the profile', async () => {
-    run.mockResolvedValue({ code: 1, output: 'profile already exists' });
-
-    expect(await generate({ name: 'kroma', register: true })).toBe(1);
-  });
-
-  it('answers a success once the profile is registered', async () => {
-    expect(await generate({ name: 'kroma', register: true })).toBe(0);
+    expect(close).toHaveBeenCalledOnce();
+    expect(signIn).not.toHaveBeenCalled();
   });
 });

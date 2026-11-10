@@ -134,12 +134,27 @@ it is.
 An existing Android SDK is picked up first, from `$ANDROID_HOME`,
 `$ANDROID_SDK_ROOT` or `~/Library/Android/sdk`.
 
-A Samsung set needs no tool, but it does need Samsung's certificates, and only
-Tizen Studio's Certificate Manager issues those. Create them once, as the
-[Samsung guide](../../docs/setup/samsung-tv.md#create-a-certificate-for-your-tv)
-describes, and this tool signs with the active profile from then on.
-`--no-native` installs through Tizen Studio's own `tizen` and `sdb` instead,
-which then have to be installed already.
+A Samsung set needs no tool, but it does need Samsung's certificates: a retail
+set installs only what Samsung's own authorities signed for it. One command gets
+them, with no Tizen Studio:
+
+```bash
+bun run tv certificate 192.168.1.50
+```
+
+It reads the DUID off the set, opens Samsung's sign-in in the browser, and has
+Samsung issue an author and a distributor certificate for that set. They are
+kept in `~/.kroma/certificates/samsung`, each private key readable by its owner
+alone, and every install signs with them from then on. Run it again for another
+set: the author certificate is kept, and the new distributor certificate lists
+every set asked for so far. Both are valid for a year. How Samsung issues them,
+with the sources, is in
+[docs/reference/samsung-tv-certificates.md](../../docs/reference/samsung-tv-certificates.md).
+
+Without them, the tool signs with the active profile of Tizen Studio when there
+is one. `--profile` names another of its profiles, and `--no-native` installs
+through Tizen Studio's own `tizen` and `sdb`, which then have to be installed
+already.
 
 ## Where the package comes from
 
@@ -177,7 +192,7 @@ markers is written by hand.
 | `bun run tv scan` | List what answered and stop, the picker without the picking. |
 | `bun run tv install <target>` | Put KROMA on one set, or on all of them, without the picker. |
 | `bun run tv probe <host>` | Ask a Samsung set what it is over sdb, installing nothing. |
-| `bun run tv certificate` | Generate a Samsung author certificate and the profile the tools sign with. |
+| `bun run tv certificate <host>` | Get Samsung's certificates for a set: sign in to Samsung once, and every install signs with them. |
 | `bun run tv tools <platform>` | Install the toolchain a platform needs, which the picker does on its own. |
 | `bun run tv doctor` | Show which toolchains this computer already has. |
 | `bun run tv docs` | Write this command tree into the package README, where nothing is typed by hand. |
@@ -233,6 +248,11 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
 - **A Samsung install fails on a signature.** A KROMA signed with a different
   certificate is already installed: delete its tile from the Apps panel
   (long-press > Delete) and install again.
+- **A Samsung refuses the certificate chain.** The set is not one the
+  distributor certificate lists. Run `certificate` with its address.
+- **`nobody signed in to Samsung within five minutes`.** The sign-in page sends
+  its answer to this computer, on a port from 4794 to 4813, so it has to be
+  opened in a browser on this computer.
 - **`INSTALL_FAILED_UPDATE_INCOMPATIBLE`.** The Android version of the same
   thing: `adb uninstall tv.kroma.app`, then install again.
 - **`INSTALL_FAILED_VERSION_DOWNGRADE`.** The set already has a newer build.

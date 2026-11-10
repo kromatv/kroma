@@ -9,6 +9,7 @@ export const TAG = {
   oid: 0x06,
   utf8String: 0x0c,
   printableString: 0x13,
+  ia5String: 0x16,
   utcTime: 0x17,
   sequence: 0x30,
   set: 0x31,
@@ -24,6 +25,7 @@ export const set = (...parts: Buffer[]) => encode(TAG.set, Buffer.concat(parts))
 export const nul = () => encode(TAG.null, Buffer.alloc(0));
 export const utf8 = (text: string) => encode(TAG.utf8String, Buffer.from(text, 'utf8'));
 export const printable = (text: string) => encode(TAG.printableString, Buffer.from(text, 'ascii'));
+export const ia5 = (text: string) => encode(TAG.ia5String, Buffer.from(text, 'ascii'));
 export const boolean = (value: boolean) => encode(TAG.boolean, Buffer.from([value ? 0xff : 0x00]));
 export const octets = (contents: Buffer) => encode(TAG.octetString, contents);
 

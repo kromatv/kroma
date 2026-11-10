@@ -14,16 +14,27 @@ describe('installFailure', () => {
     expect(installFailure('', 'kroma', null)).toBe('the install failed');
   });
 
+  it('says to remove an app another author installed, and asks Samsung for nothing', () => {
+    const output = 'install failed[118, -11], reason: Author certificate not match :';
+
+    const message = installFailure(output, 'samsung', '1900A2C4D6E8');
+
+    expect(message).toContain('another author signed the KROMA already on this set');
+    expect(message).toContain('Delete KROMA on the TV');
+    expect(message).not.toContain('DUID');
+  });
+
   it('names the profile whose chain a retail set refused', () => {
     const message = installFailure('error: certificate is invalid', 'kroma', null);
 
     expect(message).toContain('profile kroma signed it and the set refused that chain.');
-    expect(message).toContain('a distributor certificate Samsung issued for its own DUID');
+    expect(message).toContain('certificates Samsung issued for its own DUID');
+    expect(message).toContain('the certificate command of this tool gets them');
   });
 
-  it('gives the DUID to register when the set said which one it is', () => {
+  it('gives the DUID of the set when the set said which one it is', () => {
     const message = installFailure('error: certificate is invalid', null, '1900A2C4D6E8');
 
-    expect(message).toContain('The DUID to register is 1900A2C4D6E8.');
+    expect(message).toContain('The DUID of this set is 1900A2C4D6E8.');
   });
 });
