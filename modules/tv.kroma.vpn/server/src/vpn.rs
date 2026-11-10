@@ -49,7 +49,7 @@ fn written_configs(dir: &Path, wg_config: &str, port: u16) -> Result<PathBuf, St
     Ok(conf_path)
 }
 
-fn write_private(path: &Path, contents: &str) -> std::io::Result<()> {
+pub(crate) fn write_private(path: &Path, contents: &str) -> std::io::Result<()> {
     std::fs::write(path, contents)?;
     #[cfg(unix)]
     {

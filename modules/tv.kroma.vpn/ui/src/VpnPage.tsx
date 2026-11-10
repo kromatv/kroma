@@ -1,5 +1,5 @@
-// The VPN module page (`/admin/m/vpn`): the managed WireGuard bridge state, a
-// paste-your-config modal and a live seal test, plus the network-wide toggles
+// The VPN module page (`/admin/m/vpn`): the managed WireGuard bridge state, the
+// provider dialog (Mullvad, Proton or a pasted config) and a live seal test, plus the network-wide toggles
 // (kill switch, route indexers through the tunnel) from the settings view. VPN
 // routing is WireGuard-only (any provider). Default export so the module runtime
 // can React.lazy it into its own chunk.
@@ -10,7 +10,6 @@ import {
   ModuleFailed,
   ModuleLoading,
   SettingsView,
-  useAsyncAction,
   useCap,
   usePoll,
   useT,
@@ -20,9 +19,7 @@ import {
   Box,
   Button,
   type ColorValue,
-  Dialog,
   Divider,
-  Field,
   Icon,
   PageHeader,
   Row,
@@ -32,9 +29,9 @@ import {
 import { useState } from 'react';
 import { useVpnApi } from './api';
 import { VpnBandwidthSection } from './bandwidth-panel';
-import type { VpnTestResult } from './schemas';
-
-const MONO = { fontFamily: 'monospace', fontSize: 13 } as const;
+import type { VpnAdminView, VpnTestResult } from './schemas';
+import { SavedSwitcher } from './saved-switcher';
+import { VpnConfigDialog } from './vpn-config-dialog';
 
 // The VPN is global to several flows (torrent downloads and, optionally, indexer
 // searches), so it lives on its own page: the WireGuard config card + the
@@ -94,9 +91,7 @@ export function VpnCard() {
               {configured ? <BridgePill running={state?.bridgeRunning ?? false} /> : null}
             </Row>
             <Text variant="meta" color="textDim" mt={2}>
-              {configured
-                ? t('vpn.modeWireguard', { port: String(state?.localPort ?? 0) })
-                : t('vpn.modeOff')}
+              <ModeLine state={state} />
             </Text>
           </Box>
         </Row>
@@ -119,6 +114,14 @@ export function VpnCard() {
         </Row>
       </Row>
 
+      <SavedSwitcher
+        saved={state.saved}
+        onSwitched={() => {
+          void reload();
+          setTest({});
+        }}
+      />
+
       {test.error || test.result ? (
         <Box mt={12}>
           <Divider color="tint/6" />
@@ -129,7 +132,8 @@ export function VpnCard() {
       ) : null}
 
       {modal ? (
-        <VpnConfigModal
+        <VpnConfigDialog
+          provider={state.provider}
           configured={configured}
           onClose={() => setModal(false)}
           onSaved={() => {
@@ -192,68 +196,22 @@ function TestResultLine({
   );
 }
 
-function VpnConfigModal({
-  configured,
-  onClose,
-  onSaved,
-}: Readonly<{ configured: boolean; onClose: () => void; onSaved: () => void }>) {
+function ModeLine({ state }: Readonly<{ state: VpnAdminView }>) {
   const t = useT();
-  const vpn = useVpnApi();
-  const { busy, error, run } = useAsyncAction();
-  const [config, setConfig] = useState('');
-
-  const save = (wgConfig: string) =>
-    run(
-      async () => {
-        await vpn.save({ wgConfig, localPort: null });
-        onSaved();
-        onClose();
-      },
-      (e) => apiErrorText(e, t('requests.actionFailed')),
+  const provider = state.provider;
+  if (!state.wgConfigured) return <>{t('vpn.modeOff')}</>;
+  if (provider?.kind === 'mullvad') {
+    const place = provider.cityName
+      ? `${provider.countryName}, ${provider.cityName}`
+      : provider.countryName;
+    return <>{t('vpn.modeMullvad', { place, server: provider.hostname })}</>;
+  }
+  if (provider?.kind === 'proton') {
+    return provider.server ? (
+      <>{t('vpn.modeProton', { server: provider.server })}</>
+    ) : (
+      <>{t('vpn.modeProtonUnnamed')}</>
     );
-
-  return (
-    <Dialog.Root open title={t('vpn.modalTitle')} onClose={onClose} width="md">
-      <Text variant="meta" color="textDim">
-        {t('vpn.modalHelp')}
-      </Text>
-      <Field.Root label={t('vpn.modalTitle')} hideLabel value={config} onValueChange={setConfig}>
-        <Field.Textarea
-          rows={9}
-          placeholder={
-            '[Interface]\nPrivateKey = ...\nAddress = 10.2.0.2/32\n\n[Peer]\nPublicKey = ...\nEndpoint = ...:51820\nAllowedIPs = 0.0.0.0/0'
-          }
-          textStyle={MONO}
-        />
-      </Field.Root>
-      {configured ? (
-        <Text variant="meta" color="textDim">
-          {t('vpn.configKept')}
-        </Text>
-      ) : null}
-      {error ? (
-        <Text variant="meta" color="dangerHover">
-          {error}
-        </Text>
-      ) : null}
-      <Dialog.Actions
-        onCancel={onClose}
-        cancelLabel={t('common.cancel')}
-        onConfirm={() => save(config.trim())}
-        confirmLabel={busy ? t('common.saving') : t('common.save')}
-        busy={busy}
-        disabled={!config.trim()}
-      >
-        {configured ? (
-          <Button
-            variant="dangerGhost"
-            size="sm"
-            label={t('vpn.removeConfig')}
-            onPress={() => save('')}
-            disabled={busy}
-          />
-        ) : null}
-      </Dialog.Actions>
-    </Dialog.Root>
-  );
+  }
+  return <>{t('vpn.modeWireguard', { port: String(state.localPort) })}</>;
 }

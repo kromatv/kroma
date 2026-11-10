@@ -143,6 +143,15 @@ impl Fetch {
         self.hand_over("POST", url, Some("application/json"), body)
     }
 
+    pub fn put_json(&self, url: &str, body: &serde_json::Value) -> Result<Response> {
+        let body = serde_json::to_vec(body).context("encode the request body")?;
+        self.hand_over("PUT", url, Some("application/json"), body)
+    }
+
+    pub fn delete(&self, url: &str) -> Result<Response> {
+        self.hand_over("DELETE", url, None, Vec::new())
+    }
+
     pub fn post_bytes(&self, url: &str, content_type: &str, body: &[u8]) -> Result<Response> {
         self.hand_over("POST", url, Some(content_type), body.to_vec())
     }

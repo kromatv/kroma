@@ -27,6 +27,22 @@ pub(super) fn gateway_lines(gateway: &Gateway, username: &str) -> String {
 }
 
 impl Fetch {
+    pub(super) fn put_json_config(&self, url: &str, body: &str) -> String {
+        let mut config = self.base_config();
+        config.push_str(&option_line("request", "PUT"));
+        config.push_str(&header_line("content-type", "application/json"));
+        config.push_str(&option_line("data-binary", body));
+        config.push_str(&option_line("url", url));
+        config
+    }
+
+    pub(super) fn delete_config(&self, url: &str) -> String {
+        let mut config = self.base_config();
+        config.push_str(&option_line("request", "DELETE"));
+        config.push_str(&option_line("url", url));
+        config
+    }
+
     pub(super) fn form_config(&self, url: &str, fields: &[(&str, &str)]) -> String {
         let mut config = self.base_config();
         // Only with no fields: a data line is what makes curl POST, and naming

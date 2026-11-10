@@ -46,6 +46,20 @@ impl<'a> Call<'a> {
         }
     }
 
+    pub(super) fn put(bytes_out: u64) -> Self {
+        Self {
+            method: "PUT",
+            ..Self::post(bytes_out)
+        }
+    }
+
+    pub(super) fn delete() -> Self {
+        Self {
+            method: "DELETE",
+            ..Self::get()
+        }
+    }
+
     fn bytes_in(&self, response: &Response) -> u64 {
         match self.output {
             Some(path) => std::fs::metadata(path).map_or(0, |meta| meta.len()),

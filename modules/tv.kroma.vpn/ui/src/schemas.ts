@@ -22,8 +22,44 @@ export const VpnTestResult = z.object({
 });
 export type VpnTestResult = z.infer<typeof VpnTestResult>;
 
+/** Which provider the stored tunnel belongs to: the Mullvad place this server
+ * connected itself to, or a Proton VPN file recognised by its comments. Never
+ * carries a key or an account number. */
+export const VpnProvider = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('mullvad'),
+    country: z.string(),
+    countryName: z.string(),
+    city: z.string().nullable(),
+    cityName: z.string().nullable(),
+    hostname: z.string(),
+    deviceName: z.string(),
+  }),
+  z.object({
+    kind: z.literal('proton'),
+    server: z.string().nullable(),
+    portForwarding: z.boolean(),
+  }),
+]);
+export type VpnProvider = z.infer<typeof VpnProvider>;
+
+/** A WireGuard config kept on the server for one-click switching. Its text
+ * never leaves the server: this is what it is, and whether it is in use. */
+export const SavedConfig = z.object({
+  id: z.string(),
+  label: z.string(),
+  provider: VpnProvider.nullable(),
+  active: z.boolean(),
+});
+export type SavedConfig = z.infer<typeof SavedConfig>;
+
+export const SavedConfigs = z.object({ saved: z.array(SavedConfig) });
+export type SavedConfigs = z.infer<typeof SavedConfigs>;
+
 /** `GET /vpn`: the VPN configuration card's state. */
 export const VpnAdminView = z.object({
+  provider: VpnProvider.nullable(),
+  saved: z.array(SavedConfig),
   wgConfigured: z.boolean(),
   bridgeRunning: z.boolean(),
   localPort: z.number(),
@@ -92,3 +128,51 @@ export interface VpnStatusEvent {
   exitIp: string | null;
   paused: boolean;
 }
+
+/** A place Mullvad can take the tunnel to. `owned`: Mullvad owns at least one
+ * server there outright rather than renting it. */
+export const MullvadCity = z.object({ code: z.string(), name: z.string(), owned: z.boolean() });
+export type MullvadCity = z.infer<typeof MullvadCity>;
+
+export const MullvadCountry = z.object({
+  code: z.string(),
+  name: z.string(),
+  owned: z.boolean(),
+  cities: z.array(MullvadCity),
+});
+export type MullvadCountry = z.infer<typeof MullvadCountry>;
+
+/** `GET /vpn/mullvad/locations`. */
+export const MullvadLocations = z.object({ countries: z.array(MullvadCountry) });
+export type MullvadLocations = z.infer<typeof MullvadLocations>;
+
+/** `POST /vpn/mullvad` body. The account number is needed the first time only. */
+export const MullvadConnectBody = z.object({
+  accountNumber: z.string().nullable(),
+  country: z.string(),
+  city: z.string().nullable(),
+  ownedOnly: z.boolean(),
+});
+export type MullvadConnectBody = z.infer<typeof MullvadConnectBody>;
+
+export const MullvadConnectResult = z.object({ provider: VpnProvider.nullable() });
+export type MullvadConnectResult = z.infer<typeof MullvadConnectResult>;
+
+/** One device on the Mullvad account, offered for removal when every slot is taken. */
+export const MullvadDevice = z.object({ id: z.string(), name: z.string(), created: z.string() });
+export type MullvadDevice = z.infer<typeof MullvadDevice>;
+
+/** Why Mullvad did not connect: the body of a refused `POST /vpn/mullvad`. */
+export const MullvadRefusal = z.object({
+  code: z.enum([
+    'accountNeeded',
+    'invalidAccount',
+    'maxDevices',
+    'noRelay',
+    'throttled',
+    'unavailable',
+  ]),
+  devices: z.array(MullvadDevice).optional(),
+  detail: z.string().optional(),
+});
+export type MullvadRefusal = z.infer<typeof MullvadRefusal>;

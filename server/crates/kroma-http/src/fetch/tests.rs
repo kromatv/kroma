@@ -147,6 +147,26 @@ fn a_public_only_request_to_a_private_address_never_reaches_curl() {
 }
 
 #[test]
+fn a_public_only_put_or_delete_to_a_private_address_never_reaches_curl() {
+    let fetch = Fetch::new().public_only();
+
+    let put = fetch
+        .put_json(
+            "http://10.0.0.1/devices/d1",
+            &serde_json::json!({ "pubkey": "k" }),
+        )
+        .unwrap_err()
+        .to_string();
+    let delete = fetch
+        .delete("http://10.0.0.1/devices/d1")
+        .unwrap_err()
+        .to_string();
+
+    assert!(put.contains("not a public internet address"), "{put}");
+    assert!(delete.contains("not a public internet address"), "{delete}");
+}
+
+#[test]
 fn base_config_carries_headers_cookie_jar_and_max_time() {
     let config = Fetch::new()
         .header("X-Test", "v")
@@ -186,6 +206,40 @@ fn a_header_value_cannot_inject_a_second_curl_option() {
         "{config}"
     );
     assert!(options[6].ends_with(r#"X-Injected: 1\\""#), "{config}");
+}
+
+#[test]
+fn a_put_names_its_method_and_carries_its_json_with_the_url_last() {
+    let config = Fetch::new().put_json_config(
+        "https://api.example/devices/d1/pubkey",
+        "{\"pubkey\":\"k\"}",
+    );
+
+    assert!(config.contains("request = \"PUT\"\n"), "{config}");
+    assert!(
+        config.contains("content-type: application/json"),
+        "{config}"
+    );
+    assert!(
+        config.contains("data-binary = \"{\\\"pubkey\\\":\\\"k\\\"}\"\n"),
+        "{config}"
+    );
+    assert!(
+        config.ends_with("url = \"https://api.example/devices/d1/pubkey\"\n"),
+        "{config}"
+    );
+}
+
+#[test]
+fn a_delete_names_its_method_and_sends_no_body() {
+    let config = Fetch::new().delete_config("https://api.example/devices/d1");
+
+    assert!(config.contains("request = \"DELETE\"\n"), "{config}");
+    assert!(!config.contains("data"), "{config}");
+    assert!(
+        config.ends_with("url = \"https://api.example/devices/d1\"\n"),
+        "{config}"
+    );
 }
 
 #[test]

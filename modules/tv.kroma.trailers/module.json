@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.trailers",
   "name": "Trailers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Plays a title's trailer in the KROMA player: fetches the YouTube video TMDB lists and remuxes it into one MP4, in Rust, with no helper program.",
   "component": {
     "instances": 2
