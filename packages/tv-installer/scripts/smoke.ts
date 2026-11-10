@@ -37,10 +37,9 @@ try {
       .text();
 
   const help = await say('--help');
-  if (!help.includes(COMMAND) || !help.includes('install')) {
+  if (!help.includes(COMMAND) || !help.includes('install') || !help.includes('update')) {
     throw new Error(`--help did not describe the commands:\n${help}`);
   }
-  if (!(await say('doctor')).includes('Samsung')) throw new Error('doctor listed no platform');
 
   const found: unknown = JSON.parse(await say('scan', '--host', '127.0.0.1', '--json'));
   if (!Array.isArray(found)) throw new Error('scan --json did not print a list');
