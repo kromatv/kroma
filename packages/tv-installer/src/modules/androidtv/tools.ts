@@ -1,11 +1,13 @@
-import { mkdir } from 'node:fs/promises';
+import { chmod, mkdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { type LogLine, runOk } from '../../run';
+import { extractZip } from '../../install/zip';
+import type { LogLine } from '../../run';
 import { KROMA_TOOLS, type Tool } from '../../toolchain/detect';
 import { download } from '../../toolchain/install';
 
 const PLATFORM_TOOLS_URL = 'https://dl.google.com/android/repository/platform-tools-latest';
+const EXECUTABLE = 0o755;
 const PLATFORM_TOOLS_BUILD: Record<string, string> = {
   darwin: 'darwin',
   linux: 'linux',
@@ -34,5 +36,6 @@ async function installPlatformTools(log: LogLine): Promise<void> {
   await mkdir(KROMA_TOOLS, { recursive: true });
   const zip = join(KROMA_TOOLS, 'platform-tools.zip');
   await download(`${PLATFORM_TOOLS_URL}-${build}.zip`, zip, log);
-  await runOk(['unzip', '-q', '-o', zip, '-d', KROMA_TOOLS], { log });
+  await extractZip(zip, KROMA_TOOLS);
+  await chmod(join(KROMA_TOOLS, 'platform-tools', 'adb'), EXECUTABLE);
 }

@@ -1,15 +1,15 @@
-import { existsSync, statSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import { root } from '../root';
-import { type LogLine, run } from '../run';
+import type { LogLine } from '../run';
 import type { Television } from '../television';
+import { matchesWildcard, matchingPaths } from './matching-paths';
+import { type Channel, fetchAsset, releaseAssets } from './release';
 
 export type Source = 'local' | 'stable' | 'canary' | 'build';
 
 export interface PackageKind {
-  extension: string;
   globs: readonly string[];
   pattern: string;
   runArtifact: string;
@@ -30,7 +30,6 @@ export interface ArtifactSource {
 }
 
 const DOWNLOADS = join(homedir(), '.kroma', 'downloads');
-const DOWNLOAD_TIMEOUT_MS = 600_000;
 
 export interface Candidate {
   path: string;
@@ -51,19 +50,16 @@ export function rankArtifacts(candidates: readonly Candidate[], preferred?: RegE
 }
 
 export function localArtifact(kind: PackageKind): string | null {
-  const candidates: Candidate[] = [];
-  for (const pattern of kind.globs) {
-    for (const path of new Bun.Glob(pattern).scanSync({ cwd: root, absolute: true })) {
-      candidates.push({ path, mtimeMs: statSync(path).mtimeMs });
-    }
-  }
+  const candidates = kind.globs
+    .flatMap((pattern) => matchingPaths(root, pattern))
+    .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }));
   return rankArtifacts(candidates, kind.preferred)[0] ?? null;
 }
 
 export function availableSources(kind: PackageKind, buildable: boolean): Source[] {
   const sources: Source[] = [];
   if (localArtifact(kind)) sources.push('local');
-  if (Bun.which('gh')) sources.push('stable', 'canary');
+  sources.push('stable', 'canary');
   if (buildable) sources.push('build');
   return sources;
 }
@@ -85,33 +81,22 @@ export async function resolveArtifact(
   return fromRelease(from, 'stable', log);
 }
 
-async function fromRelease(from: ArtifactSource, source: Source, log: LogLine): Promise<string> {
-  const { extension, pattern, runArtifact } = from.kind;
-  if (!Bun.which('gh')) {
+async function fromRelease(from: ArtifactSource, channel: Channel, log: LogLine): Promise<string> {
+  const { pattern, preferred, runArtifact } = from.kind;
+  const assets = (await releaseAssets(channel)).filter((asset) =>
+    matchesWildcard(asset.name, pattern),
+  );
+  const [newest] = rankArtifacts(
+    assets.map((asset) => ({ path: asset.name, mtimeMs: asset.updatedMs })),
+    preferred,
+  );
+  const asset = assets.find((candidate) => candidate.name === newest);
+  if (!asset) {
     throw new Error(
-      `no ${extension} here and no gh to fetch one: gh run download -n ${runArtifact}`,
+      `the ${channel} release carries no ${pattern}: gh run download -n ${runArtifact} takes one from a build`,
     );
   }
 
-  const dir = join(DOWNLOADS, source, from.id);
-  await mkdir(dir, { recursive: true });
-  log(`pulling the ${source} ${extension} with gh`);
-
-  const tag = source === 'canary' ? ['canary'] : [];
-  const { code } = await run(
-    ['gh', 'release', 'download', ...tag, '--pattern', pattern, '--dir', dir, '--clobber'],
-    { log, cwd: root, timeoutMs: DOWNLOAD_TIMEOUT_MS },
-  );
-  const downloaded = existsSync(dir) ? newest(dir, from.kind) : null;
-  if (code !== 0 || !downloaded) {
-    throw new Error(`the ${source} release carries no ${pattern}`);
-  }
-  return downloaded;
-}
-
-function newest(dir: string, kind: PackageKind): string | null {
-  const candidates = [
-    ...new Bun.Glob(`*${kind.extension}`).scanSync({ cwd: dir, absolute: true }),
-  ].map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }));
-  return rankArtifacts(candidates, kind.preferred)[0] ?? null;
+  log(`package: ${asset.name}, from the ${channel} release`);
+  return fetchAsset(asset, join(DOWNLOADS, channel, from.id), log);
 }

@@ -1,6 +1,8 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { root } from '../../root';
+import { which } from '../../toolchain/which';
 
 export type AppleTvToolId = 'xcode' | 'devicectl' | 'cocoapods' | 'prebuild';
 
@@ -30,7 +32,7 @@ export function locateAppleTvTool(tool: AppleTvToolId): string | null {
   if (process.platform !== 'darwin') return null;
   if (tool === 'xcode') return developerDirectory();
   if (tool === 'devicectl') return found(['xcrun', '--find', 'devicectl']);
-  if (tool === 'cocoapods') return Bun.which('pod');
+  if (tool === 'cocoapods') return which('pod');
   return existing(join(root, WORKSPACE));
 }
 
@@ -51,8 +53,8 @@ function developerDirectory(): string | null {
 
 function found(command: readonly string[]): string | null {
   const [file = '', ...args] = command;
-  const { exitCode, stdout } = Bun.spawnSync([file, ...args], { stderr: 'ignore' });
-  return exitCode === 0 ? existing(stdout.toString().trim()) : null;
+  const { status, stdout } = spawnSync(file, args, { stdio: ['ignore', 'pipe', 'ignore'] });
+  return status === 0 ? existing(stdout.toString().trim()) : null;
 }
 
 function existing(path: string): string | null {

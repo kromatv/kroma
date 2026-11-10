@@ -5,13 +5,10 @@ import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { nodeSpawn } from '../../../run.fixture';
 import { type AuthorRequest, createAuthorCertificate } from './authority';
 import { OPENSSL } from './openssl';
 import { randomPassword } from './password';
 import { readPkcs12 } from './pkcs12';
-
-vi.stubGlobal('Bun', { spawn: nodeSpawn });
 
 const DAY_MS = 86_400_000;
 const bases: string[] = [];

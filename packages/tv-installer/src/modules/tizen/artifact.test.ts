@@ -13,13 +13,7 @@ vi.mock('../../install/artifact', async (original) => ({
 }));
 vi.mock('../../run', () => ({ runOk: vi.fn() }));
 
-class EmptyGlob {
-  scanSync(): string[] {
-    return [];
-  }
-}
-
-vi.stubGlobal('Bun', { which: () => null, Glob: EmptyGlob });
+vi.mock('../../install/matching-paths', () => ({ matchingPaths: () => [] }));
 
 const tizenOut = '/kroma/clients/tizen/out';
 
@@ -62,8 +56,8 @@ describe('buildable', () => {
 });
 
 describe('tizenSources', () => {
-  it('offers a build from source on a machine with nothing built and no gh', () => {
-    expect(tizenSources()).toEqual(['build']);
+  it('offers both releases and a build from source where nothing is built yet', () => {
+    expect(tizenSources()).toEqual(['stable', 'canary', 'build']);
   });
 });
 

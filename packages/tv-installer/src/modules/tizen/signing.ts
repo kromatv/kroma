@@ -1,8 +1,9 @@
 import { statSync } from 'node:fs';
-import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type LogLine, run, runOk } from '../../run';
+import { extractZip, packZip } from '../../install/zip';
+import { type LogLine, run } from '../../run';
 import { createAuthorCertificate } from './certificate/authority';
 import { randomPassword } from './certificate/password';
 import { writeProfile } from './certificate/profile';
@@ -61,13 +62,13 @@ export async function resign(
   log(`signing with profile ${profile.name}`);
   const workspace = await mkdtemp(join(tmpdir(), 'kroma-wgt-'));
   const stage = join(workspace, 'app');
-  await stageInto(artifact, stage, log);
+  await stageInto(artifact, stage);
 
   await Promise.all(SIGNATURES.map((file) => rm(join(stage, file), { force: true })));
   await signWidget({ directory: stage, author: profile.author, distributor: profile.distributor });
 
   const path = join(workspace, PACKAGE_NAME);
-  await pack(stage, path, log);
+  await packZip(stage, path);
   return { path, staged: true };
 }
 
@@ -81,18 +82,10 @@ export async function readDuid(sdb: string, log: LogLine): Promise<string | null
   return code === 0 && duid ? duid : null;
 }
 
-async function stageInto(artifact: string, stage: string, log: LogLine): Promise<void> {
+async function stageInto(artifact: string, stage: string): Promise<void> {
   if (statSync(artifact).isDirectory()) {
     await cp(artifact, stage, { recursive: true });
     return;
   }
-  await mkdir(stage, { recursive: true });
-  await runOk(['unzip', '-q', '-o', artifact, '-d', stage], { log });
-}
-
-// A widget is a plain zip, and the signatures cover the files rather than the
-// archive, so anything that zips produces a package the set accepts.
-async function pack(stage: string, path: string, log: LogLine): Promise<void> {
-  if (!Bun.which('zip')) throw new Error('zip is needed to repack the widget and is not here');
-  await runOk(['zip', '-X', '-r', '-q', path, '.'], { cwd: stage, log });
+  await extractZip(artifact, stage);
 }

@@ -1,3 +1,4 @@
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { scan } from './discovery/scan';
 import { diagnoseEmptyScan } from './hints';
@@ -81,6 +82,8 @@ export async function installCommand(target: string, options: CommandOptions): P
 export function doctorCommand(): number {
   for (const module of modules()) {
     console.log(`${module.label}  ${style.dim(module.package)}`);
+    if (module.tools().length === 0)
+      console.log(style.dim('  needs nothing this tool can install'));
     for (const tool of module.tools()) {
       const path = locate(tool);
       const status = path ? style.green(path) : style.yellow(`missing, from ${tool.source}`);
@@ -138,7 +141,7 @@ const README = 'packages/tv-installer/README.md';
 /** Renders the command tree into the README, so no usage line is typed by hand. */
 export async function docsCommand(command: UsageCommand, check: boolean): Promise<number> {
   const path = join(root, README);
-  const current = await Bun.file(path).text();
+  const current = await readFile(path, 'utf8');
   const written = injectUsage(current, await renderUsage(command, 'bun run tv'));
 
   if (written === current) {
@@ -149,7 +152,7 @@ export async function docsCommand(command: UsageCommand, check: boolean): Promis
     console.error(`${README} is out of date: run bun run tv docs`);
     return 1;
   }
-  await Bun.write(path, written);
+  await writeFile(path, written);
   console.log(`wrote the usage block into ${README}`);
   return 0;
 }

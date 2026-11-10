@@ -7,6 +7,7 @@ import {
   type Source,
 } from '../../install/artifact';
 import { buildable } from '../../install/build';
+import { matchingPaths } from '../../install/matching-paths';
 import { root } from '../../root';
 import { type LogLine, runOk } from '../../run';
 import { requireTool } from '../../toolchain/detect';
@@ -16,7 +17,6 @@ export const WEBOS_SHELL = 'clients/webos';
 const BUILD_TIMEOUT_MS = 900_000;
 
 export const WEBOS_PACKAGE: PackageKind = {
-  extension: '.ipk',
   globs: [`${WEBOS_SHELL}/out/*.ipk`, `${WEBOS_SHELL}/build/*.ipk`],
   pattern: 'tv.kroma.webos_*.ipk',
   runArtifact: 'kroma-webos-ipk',
@@ -38,7 +38,7 @@ async function buildWebos(log: LogLine): Promise<string> {
   const packager = aresSibling(requireTool(ARES), 'ares-package');
   await runOk([packager, join(root, `${WEBOS_SHELL}/dist`), '--no-minify', '-o', out], { log });
 
-  const [built] = [...new Bun.Glob('*.ipk').scanSync({ cwd: out, absolute: true })];
+  const [built] = matchingPaths(out, '*.ipk');
   if (!built) throw new Error('ares-package produced no .ipk');
   return built;
 }

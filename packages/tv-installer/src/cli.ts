@@ -1,5 +1,4 @@
-#!/usr/bin/env bun
-import { defineCommand, runMain } from 'citty';
+import { defineCommand } from 'citty';
 import { docsCommand, doctorCommand, installCommand, scanCommand, toolsCommand } from './commands';
 import { exitAfter } from './exit-after';
 import type { Source } from './install/artifact';
@@ -115,7 +114,7 @@ const docs = defineCommand({
 
 export const tv = defineCommand({
   meta: {
-    name: 'tv',
+    name: 'kroma-tv',
     description:
       'Find the televisions on this network and put KROMA on them. With no command it opens the picker.',
   },
@@ -165,5 +164,3 @@ function hostList(): string[] | undefined {
   });
   return hosts.length > 0 ? hosts : undefined;
 }
-
-if (import.meta.main) await runMain(tv);

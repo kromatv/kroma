@@ -1,24 +1,23 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 const Manifest = z.object({ name: z.string() });
 const MAX_DEPTH = 20;
+const NO_CHECKOUT = join(homedir(), '.kroma', 'no-checkout');
 
 /**
- * The checkout a run started in `start` belongs to: found by walking up,
- * because a compiled binary has no source path to count back from, and the
- * checkout this source sits in when the walk finds none.
+ * The checkout a run started in `start` belongs to, found by walking up, and
+ * failing that the one `source` sits in. A run with neither, as one installed
+ * from npm, gets a folder that does not exist, so nothing reads as built here.
  */
-export const findRoot = (start: string): string => walkUp(start) ?? fromSource();
+export const findRoot = (start: string, source = dirname(fileURLToPath(import.meta.url))): string =>
+  walkUp(start) ?? walkUp(source) ?? NO_CHECKOUT;
 
 /** The checkout this run belongs to. */
 export const root = findRoot(process.cwd());
-
-function fromSource(): string {
-  return join(dirname(fileURLToPath(import.meta.url)), '../../..');
-}
 
 function walkUp(start: string): string | null {
   let directory = resolve(start);

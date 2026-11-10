@@ -2,11 +2,10 @@ import { existsSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { locate, requireTool, type Tool } from './detect';
 
+const which = vi.hoisted(() => vi.fn<(binary: string) => string | null>());
+
 vi.mock('node:fs', () => ({ existsSync: vi.fn() }));
-
-const which = vi.fn<(binary: string) => string | null>();
-
-vi.stubGlobal('Bun', { which });
+vi.mock('./which', () => ({ which }));
 
 const adb: Tool = {
   id: 'adb',

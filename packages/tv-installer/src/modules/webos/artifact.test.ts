@@ -20,16 +20,10 @@ vi.mock('../../toolchain/detect', async (original) => ({
   requireTool: vi.fn(),
 }));
 
-class FakeGlob {
-  constructor(private readonly pattern: string) {}
-
-  scanSync({ cwd, absolute }: { cwd: string; absolute?: boolean }): string[] {
-    const names = globbed.get(this.pattern) ?? [];
-    return names.map((name) => (absolute ? join(cwd, name) : name));
-  }
-}
-
-vi.stubGlobal('Bun', { which: () => null, Glob: FakeGlob });
+vi.mock('../../install/matching-paths', () => ({
+  matchingPaths: (base: string, pattern: string) =>
+    (globbed.get(pattern) ?? []).map((name) => join(base, name)),
+}));
 
 const webosOut = '/kroma/clients/webos/out';
 
@@ -81,8 +75,8 @@ describe('buildable', () => {
 });
 
 describe('webosSources', () => {
-  it('offers a build from source on a machine with nothing built and no gh', () => {
-    expect(webosSources()).toEqual(['build']);
+  it('offers both releases and a build from source where nothing is built yet', () => {
+    expect(webosSources()).toEqual(['stable', 'canary', 'build']);
   });
 });
 

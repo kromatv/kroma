@@ -11,6 +11,10 @@ With no argument the picker opens straight away and fills itself as the scan
 finds sets. Arrow keys move, space ticks, enter stops the scan and installs onto
 whatever is ticked. It installs the toolchain a set needs before touching it.
 
+It runs on Bun or on Node 22 and later, and needs no checkout of this
+repository: with nothing built here it takes the package from the latest
+release.
+
 Three platforms take a sideloaded package: Samsung (Tizen, `.wgt`), LG (webOS,
 `.ipk`) and Android TV (`.apk`, which covers Philips, Sony, TCL, Shield and
 Chromecast with Google TV). An Apple TV never appears in the list. Install one
@@ -121,19 +125,19 @@ it is.
 
 | Platform | Tools | Source | Lands in |
 | --- | --- | --- | --- |
-| Samsung | `tizen`, `sdb` | the Tizen Studio 6.0 CLI installer from download.tizen.org, around 260 MB | `$TIZEN_HOME`, default `~/tizen-studio` |
-| LG | the `ares-*` commands | `bun add -g @webos-tools/cli` | `~/.bun/bin` |
+| Samsung | none | this tool signs the package and talks sdb itself | |
+| LG | the `ares-*` commands | `bun add -g @webos-tools/cli`, or `npm install` where there is no Bun | `~/.bun/bin`, or `~/.kroma/tools` |
 | Android TV | `adb` | Google's `platform-tools-latest` zip | `~/.kroma/tools/platform-tools` |
 
 An existing Android SDK is picked up first, from `$ANDROID_HOME`,
 `$ANDROID_SDK_ROOT` or `~/Library/Android/sdk`.
 
-Tizen Studio is the awkward one. It needs a JDK (`brew install --cask temurin`,
-or `apt install default-jdk`) and on Apple silicon it is an x86_64 binary, so
-Rosetta has to be there first
-(`softwareupdate --install-rosetta --agree-to-license`). Both are checked before
-the download starts. The headless installer exists for macOS and Linux only;
-anywhere else the tool stops and tells you to install it by hand.
+A Samsung set needs no tool, but it does need Samsung's certificates, and only
+Tizen Studio's Certificate Manager issues those. Create them once, as the
+[Samsung guide](../../docs/setup/samsung-tv.md#create-a-certificate-for-your-tv)
+describes, and this tool signs with the active profile from then on.
+`--no-native` installs through Tizen Studio's own `tizen` and `sdb` instead,
+which then have to be installed already.
 
 ## Where the package comes from
 
@@ -144,12 +148,15 @@ In order:
    `clients/webos/out|build/*.ipk`, `out/*.apk` or the tv-native release output.
    For Tizen the every-tier `KROMA-tizen-<n>` build is preferred over the
    per-generation slices.
-3. `gh release download --pattern '*.wgt'` (or `.ipk`, `.apk`) from the latest
-   release, into `~/.kroma/downloads/<platform>`. This needs `gh` on `PATH` and
-   logged in.
+3. The latest release on GitHub, read over HTTPS with no account, into
+   `~/.kroma/downloads/<channel>/<platform>`. `--source canary` takes the newest
+   build of the rolling `canary` prerelease instead. A download is checked
+   against the size and the SHA-256 the release lists, and a package already
+   there with that digest is not fetched again.
 
-With none of the three it stops and prints the `gh run download` line for the
-matching Build & Release artifact.
+GitHub answers 60 anonymous requests an hour for one address, which is what the
+tool says when the release will not list. With none of the three it stops and
+prints the `gh run download` line for the matching Build & Release artifact.
 
 The id the app is launched by is read from the shell that ships it
 (`clients/tizen/public/config.xml`, `clients/webos/public/appinfo.json`,
@@ -200,9 +207,8 @@ The binary is signed ad-hoc, not with a Developer ID, so macOS quarantines it
 until that attribute is cleared. Windows is not built: the installer drives sdb,
 adb, ares and devicectl and reads an ARP table, a keychain and a Settings pane.
 
-Run from outside a checkout it finds televisions and installs toolchains, but
-the package has to come from `--package`: looking for the newest build, and
-asking `gh` for a release asset, both need the repository.
+Run from outside a checkout it does everything but build: it finds
+televisions, installs toolchains, and takes the package from the release.
 
 ## As a single binary
 
@@ -233,9 +239,12 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   it and run the install again.
 - **The LG install cannot get a key.** `ares` needs the passphrase from the Dev
   Mode app, and a session that ran out needs that app opened again first.
-- **`no .wgt found`, and the same for the other two.** Nothing is built here and
-  `gh` found no release asset. Build the shell, or download the artifact from a
-  Build & Release run.
+- **`the stable release carries no KROMA-tizen-*.wgt`, and the same for the
+  other two.** Nothing is built here and the release has no package of that
+  kind. Build the shell, or download the artifact from a Build & Release run.
+- **`GitHub did not list the stable release`.** No network, or this address has
+  used its 60 anonymous requests for the hour. Try again later, or pass a
+  package you already have with `--package`.
 
 The manual path for each platform, and every device that is not a television, is
 in the [setup guides](../../docs/setup/README.md).

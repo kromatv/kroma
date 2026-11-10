@@ -1,10 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { run, runOk } from './run';
-import { nodeSpawn } from './run.fixture';
-
-beforeEach(() => vi.stubGlobal('Bun', { spawn: nodeSpawn }));
-
-afterEach(() => vi.unstubAllGlobals());
 
 describe('run', () => {
   it('answers what the command printed and the code it exited with', async () => {
@@ -47,6 +42,10 @@ describe('run', () => {
     const { output } = await run(['/bin/pwd'], { cwd: '/usr' });
 
     expect(output).toBe('/usr');
+  });
+
+  it('fails on a command this machine does not have', async () => {
+    await expect(run(['/nonexistent/kroma-tool'])).rejects.toThrow(/ENOENT/);
   });
 
   it('refuses a command with nothing to run', async () => {
