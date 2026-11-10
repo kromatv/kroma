@@ -60,7 +60,7 @@ fn the_listeners_are_those_every_enabled_module_declares() {
     installed(dir.path(), "com.example.silent", None);
     let sup = supervisor(dir.path());
 
-    let listeners = sup.declared_listeners(&|id| id != "com.example.off");
+    let listeners = sup.listeners_of(|id| id != "com.example.off")();
 
     assert_eq!(listeners.len(), 1);
     assert_eq!(listeners[0].purpose, "proxy");

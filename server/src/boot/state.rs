@@ -86,13 +86,9 @@ pub fn build(
         })
     };
 
-    let network_listeners: kroma_engine::services::network::DeclaredListeners = {
-        let supervisor = supervisor.clone();
+    let network_listeners = {
         let settings = settings.clone();
-        Arc::new(move || {
-            supervisor
-                .declared_listeners(&|id| kroma_engine::modules::module_enabled(&settings, id))
-        })
+        supervisor.listeners_of(move |id| kroma_engine::modules::module_enabled(&settings, id))
     };
 
     // Transcription is long-running and rides a DB row for progress, so the core
