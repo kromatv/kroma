@@ -98,7 +98,8 @@ version. The installer does not run on Windows.
 
 7. Press Enter to install.
 
-   The installer gets adb, Google's Android tool, by itself.
+   The installer talks to the TV by itself. Nothing else is installed on your
+   computer.
 
 8. On the TV, accept the prompt to allow this computer, and tick
    **Always allow**.

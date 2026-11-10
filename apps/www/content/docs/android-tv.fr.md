@@ -104,7 +104,8 @@ la version. L'installeur ne fonctionne pas sur Windows.
 
 7. Appuyez sur Entrée pour installer.
 
-   L'installeur se procure lui-même adb, l'outil Android de Google.
+   L'installeur dialogue lui-même avec le téléviseur. Rien d'autre n'est
+   installé sur votre ordinateur.
 
 8. Sur le téléviseur, acceptez la demande d'autorisation de cet ordinateur, et
    cochez **Toujours autoriser sur cet ordinateur**.
