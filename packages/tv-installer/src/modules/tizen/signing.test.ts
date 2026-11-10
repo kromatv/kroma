@@ -8,8 +8,10 @@ import { createAuthorCertificate } from './certificate/authority';
 import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
 import { activeProfile } from './profiles';
-import { readSamsungProfile } from './samsung/profile';
-import { ensureProfile, readDuid, resign } from './signing';
+import { duidAt } from './duid';
+import { obtainCertificates } from './samsung/obtain';
+import { coversSet, readSamsungProfile } from './samsung/profile';
+import { profileFor, readDuid, resign } from './signing';
 
 const { directories } = vi.hoisted(() => ({ directories: new Set<string>() }));
 
@@ -28,7 +30,12 @@ vi.mock('./certificate/password', () => ({ randomPassword: () => 'a-random-passw
 vi.mock('./certificate/profile', () => ({ writeProfile: vi.fn() }));
 vi.mock('./certificate/widget', () => ({ signWidget: vi.fn() }));
 vi.mock('./profiles', () => ({ activeProfile: vi.fn() }));
-vi.mock('./samsung/profile', () => ({ readSamsungProfile: vi.fn(() => null) }));
+vi.mock('./duid', () => ({ duidAt: vi.fn() }));
+vi.mock('./samsung/obtain', () => ({ obtainCertificates: vi.fn() }));
+vi.mock('./samsung/profile', () => ({
+  readSamsungProfile: vi.fn(() => null),
+  coversSet: vi.fn(() => false),
+}));
 
 const kroma = {
   name: 'kroma',
@@ -50,38 +57,119 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('ensureProfile', () => {
-  it('takes the certificates Samsung issued to this tool before any other', async () => {
-    const issued = {
-      name: 'samsung',
-      author: { key: '/kept/author.key', chain: '/kept/author.pem' },
-      distributor: { key: '/kept/distributor.key', chain: '/kept/distributor.pem' },
-    };
-    vi.mocked(readSamsungProfile).mockReturnValueOnce(issued);
+const issued = {
+  name: 'samsung',
+  author: { key: '/kept/author.key', chain: '/kept/author.pem' },
+  distributor: { key: '/kept/distributor.key', chain: '/kept/distributor.pem' },
+};
 
-    expect(await ensureProfile(log)).toBe(issued);
+const generated = {
+  directory: '/certs/kroma',
+  certificate: '/certs/kroma/kroma.crt',
+  key: '/certs/kroma/kroma.key',
+  archive: '/certs/kroma/kroma.p12',
+  password: 'a-random-password',
+  passwordFile: '/certs/kroma/kroma.pwd',
+};
+
+const terminal = process.stdin.isTTY;
+const inTerminal = (value: boolean) =>
+  Object.defineProperty(process.stdin, 'isTTY', { value, configurable: true });
+
+describe('profileFor', () => {
+  beforeEach(() => {
+    vi.mocked(duidAt).mockResolvedValue('1900A2C4D6E8');
+    vi.mocked(readSamsungProfile).mockReturnValue(null);
+    vi.mocked(coversSet).mockReturnValue(false);
+    vi.mocked(activeProfile).mockResolvedValue(null);
+    vi.mocked(createAuthorCertificate).mockResolvedValue(generated);
+    inTerminal(false);
+  });
+
+  afterEach(() => inTerminal(terminal));
+
+  it('takes the certificates Samsung issued to this tool when they list the set', async () => {
+    vi.mocked(readSamsungProfile).mockReturnValue(issued);
+    vi.mocked(coversSet).mockReturnValue(true);
+
+    expect(await profileFor('192.168.1.31', log)).toBe(issued);
+    expect(vi.mocked(coversSet).mock.calls[0]?.[0]).toBe('1900A2C4D6E8');
     expect(vi.mocked(activeProfile)).not.toHaveBeenCalled();
   });
 
-  it('takes the profile the Tizen tools already sign with', async () => {
+  it('takes the profile the Tizen tools sign with when Samsung issued none for the set', async () => {
+    vi.mocked(readSamsungProfile).mockReturnValue(issued);
     vi.mocked(activeProfile).mockResolvedValue(kroma);
 
-    expect(await ensureProfile(log)).toBe(kroma);
+    expect(await profileFor('192.168.1.31', log)).toBe(kroma);
+    expect(vi.mocked(obtainCertificates)).not.toHaveBeenCalled();
+  });
+
+  it('asks Samsung on the spot, in a terminal, for a set that has no certificate', async () => {
+    inTerminal(true);
+    vi.mocked(obtainCertificates).mockImplementation(async () => {
+      vi.mocked(readSamsungProfile).mockReturnValue(issued);
+      return {
+        directory: '/kept',
+        duids: ['1900A2C4D6E8'],
+        authorUntil: new Date(),
+        distributorUntil: new Date(),
+      };
+    });
+
+    const profile = await profileFor('192.168.1.31', log);
+
+    expect(profile).toBe(issued);
+    expect(vi.mocked(obtainCertificates).mock.calls[0]?.[0]).toMatchObject({
+      duid: '1900A2C4D6E8',
+    });
+    expect(lines).toEqual(['this set has no certificate from Samsung yet']);
+  });
+
+  it('asks nobody when no terminal is there to sign in from', async () => {
+    await profileFor('192.168.1.31', log);
+
+    expect(vi.mocked(obtainCertificates)).not.toHaveBeenCalled();
+  });
+
+  it('asks nobody for a set that would not say its DUID', async () => {
+    inTerminal(true);
+    vi.mocked(duidAt).mockResolvedValue(null);
+
+    await profileFor('192.168.1.31', log);
+
+    expect(vi.mocked(obtainCertificates)).not.toHaveBeenCalled();
+  });
+
+  it('asks nobody for a set that could not be reached, and leaves the install to say why', async () => {
+    vi.mocked(duidAt).mockRejectedValue(new Error('the TV refused the connection'));
+    vi.mocked(activeProfile).mockResolvedValue(kroma);
+
+    expect(await profileFor('192.168.1.31', log)).toBe(kroma);
+    expect(obtainCertificates).not.toHaveBeenCalled();
+  });
+
+  it('signs with certificates that list another set rather than with none', async () => {
+    vi.mocked(readSamsungProfile).mockReturnValue(issued);
+
+    expect(await profileFor('192.168.1.31', log)).toBe(issued);
     expect(vi.mocked(createAuthorCertificate)).not.toHaveBeenCalled();
   });
 
-  it('generates an author certificate on a machine that has no profile', async () => {
-    vi.mocked(activeProfile).mockResolvedValue(null);
-    vi.mocked(createAuthorCertificate).mockResolvedValue({
-      directory: '/certs/kroma',
-      certificate: '/certs/kroma/kroma.crt',
-      key: '/certs/kroma/kroma.key',
-      archive: '/certs/kroma/kroma.p12',
-      password: 'a-random-password',
-      passwordFile: '/certs/kroma/kroma.pwd',
+  it('generates an author certificate when asking Samsung kept nothing', async () => {
+    inTerminal(true);
+    vi.mocked(obtainCertificates).mockResolvedValue({
+      directory: '/kept',
+      duids: [],
+      authorUntil: new Date(),
+      distributorUntil: new Date(),
     });
 
-    const profile = await ensureProfile(log);
+    expect((await profileFor('192.168.1.31', log)).name).toBe('kroma');
+  });
+
+  it('generates an author certificate on a machine that has no profile', async () => {
+    const profile = await profileFor('192.168.1.31', log);
 
     expect(vi.mocked(createAuthorCertificate)).toHaveBeenCalledWith({
       directory: join(homedir(), '.kroma', 'certificates', 'kroma'),
@@ -97,18 +185,9 @@ describe('ensureProfile', () => {
   });
 
   it('signs with the generated profile even when the Tizen file refused it', async () => {
-    vi.mocked(activeProfile).mockResolvedValue(null);
-    vi.mocked(createAuthorCertificate).mockResolvedValue({
-      directory: '/certs/kroma',
-      certificate: '/certs/kroma/kroma.crt',
-      key: '/certs/kroma/kroma.key',
-      archive: '/certs/kroma/kroma.p12',
-      password: 'a-random-password',
-      passwordFile: '/certs/kroma/kroma.pwd',
-    });
     vi.mocked(writeProfile).mockRejectedValue(new Error('already holds profiles'));
 
-    expect((await ensureProfile(log)).name).toBe('kroma');
+    expect((await profileFor('192.168.1.31', log)).name).toBe('kroma');
   });
 });
 

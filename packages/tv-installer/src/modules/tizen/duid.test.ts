@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { duidOf } from './duid';
+import { duidAt, duidOf } from './duid';
+import { reach } from './reach';
+
+vi.mock('./reach', () => ({ reach: vi.fn() }));
 
 describe('duidOf', () => {
   it('asks the set for its DUID and trims what it printed', async () => {
@@ -19,5 +22,27 @@ describe('duidOf', () => {
     };
 
     expect(await duidOf({ shell })).toBeNull();
+  });
+});
+
+describe('duidAt', () => {
+  it('reads the DUID of the set at an address, then lets go of it', async () => {
+    const close = vi.fn();
+    vi.mocked(reach).mockResolvedValue({ shell: async () => '1900A2C4D6E8\r\n', close } as never);
+
+    expect(await duidAt('192.168.1.31')).toBe('1900A2C4D6E8');
+    expect(reach).toHaveBeenCalledWith('192.168.1.31');
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it('lets go of a set whose shell failed', async () => {
+    const close = vi.fn();
+    const shell = async () => {
+      throw new Error('closed');
+    };
+    vi.mocked(reach).mockResolvedValue({ shell, close } as never);
+
+    expect(await duidAt('192.168.1.31')).toBeNull();
+    expect(close).toHaveBeenCalledOnce();
   });
 });

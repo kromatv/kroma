@@ -8,8 +8,10 @@ import { createAuthorCertificate } from './certificate/authority';
 import { randomPassword } from './certificate/password';
 import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
+import { duidAt } from './duid';
 import { activeProfile, type SigningProfile } from './profiles';
-import { readSamsungProfile } from './samsung/profile';
+import { obtainCertificates } from './samsung/obtain';
+import { coversSet, readSamsungProfile } from './samsung/profile';
 
 const SIGNATURES = ['author-signature.xml', 'signature1.xml', 'signature2.xml'];
 const KROMA_PROFILE = 'kroma';
@@ -25,14 +27,29 @@ export interface Signed {
 }
 
 /**
- * The profile to sign with: the one Samsung issued to this tool, else the one
- * Tizen Studio signs with, else an author generated here. A generated author
- * signs for an emulator only, since a retail set takes Samsung's certificates.
+ * The profile that signs for a set: the certificates Samsung issued to this
+ * tool when they list it, else the profile Tizen Studio signs with. With
+ * neither, in a terminal, Samsung is asked for them on the spot. What is left
+ * is an author generated here, which signs for an emulator only.
  */
-export async function ensureProfile(log: LogLine): Promise<SigningProfile> {
-  const existing = readSamsungProfile() ?? (await activeProfile());
-  if (existing) return existing;
+export async function profileFor(host: string, log: LogLine): Promise<SigningProfile> {
+  const duid = await duidAt(host).catch(() => null);
+  const kept = readSamsungProfile();
+  if (kept && duid && coversSet(duid)) return kept;
 
+  const studio = await activeProfile();
+  if (studio) return studio;
+
+  if (duid && process.stdin.isTTY) {
+    log('this set has no certificate from Samsung yet');
+    await obtainCertificates({ duid, log });
+    const issued = readSamsungProfile();
+    if (issued) return issued;
+  }
+  return kept ?? generatedProfile(log);
+}
+
+async function generatedProfile(log: LogLine): Promise<SigningProfile> {
   log('no signing profile here, generating an author certificate');
   const author = await createAuthorCertificate({
     directory: join(CERTIFICATES, KROMA_PROFILE),

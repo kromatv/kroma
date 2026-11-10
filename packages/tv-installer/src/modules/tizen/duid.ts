@@ -1,3 +1,4 @@
+import { reach } from './reach';
 import type { SdbDevice } from './sdb';
 
 const DUID_COMMAND = '0 getduid';
@@ -10,4 +11,14 @@ export async function duidOf(device: Pick<SdbDevice, 'shell'>): Promise<string |
     .shell(DUID_COMMAND, { limit: LIMIT, timeoutMs: TIMEOUT_MS })
     .catch(() => '');
   return printed.trim() || null;
+}
+
+/** The DUID of the set at an address, read over a connection of its own. */
+export async function duidAt(host: string): Promise<string | null> {
+  const device = await reach(host);
+  try {
+    return await duidOf(device);
+  } finally {
+    device.close();
+  }
 }

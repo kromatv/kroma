@@ -3,7 +3,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { LISTED_CERTIFICATE, LISTED_DUIDS } from './listed.fixture';
-import { duidsIn, keptDuids, keptUntil, readSamsungProfile, samsungFiles } from './profile';
+import {
+  coversSet,
+  duidsIn,
+  keptDuids,
+  keptUntil,
+  readSamsungProfile,
+  samsungFiles,
+} from './profile';
 
 const base = mkdtempSync(join(tmpdir(), 'kroma-samsung-profile-'));
 
@@ -92,5 +99,27 @@ describe('keptUntil', () => {
     writeFileSync(join(directory, 'author.pem'), '');
 
     expect(keptUntil(join(directory, 'author.pem'))).toBeNull();
+  });
+});
+
+describe('coversSet', () => {
+  const directory = () => kept(`covering-${Math.random()}`, ['author.pem', 'distributor.pem']);
+
+  it('answers yes for a set the kept distributor certificate lists', () => {
+    expect(coversSet('1900A2C4D6E8', new Date(), directory())).toBe(true);
+  });
+
+  it('answers no for a set the certificate does not list', () => {
+    expect(coversSet('ZZ99ZZ99ZZ99', new Date(), directory())).toBe(false);
+  });
+
+  it('answers no once a kept certificate has run out', () => {
+    expect(coversSet('1900A2C4D6E8', new Date('2200-01-01'), directory())).toBe(false);
+  });
+
+  it('answers no while a half is missing', () => {
+    const half = kept('covering-half', ['distributor.pem']);
+
+    expect(coversSet('1900A2C4D6E8', new Date(), half)).toBe(false);
   });
 });

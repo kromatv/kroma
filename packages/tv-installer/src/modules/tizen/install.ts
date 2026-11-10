@@ -8,7 +8,7 @@ import { installFailure, refusedChain } from './install-failure';
 import { installOverSdb } from './native';
 import { readProfile, type SigningProfile } from './profiles';
 import { SDB_PORT } from './sdb';
-import { ensureProfile, readDuid, resign, type Signed } from './signing';
+import { profileFor, readDuid, resign, type Signed } from './signing';
 import { SDB, TIZEN_CLI } from './tools';
 
 const CONNECT_TIMEOUT_MS = 25_000;
@@ -41,7 +41,7 @@ export async function installTizen(context: InstallContext): Promise<void> {
 async function sign(context: InstallContext): Promise<Package> {
   const { artifact, log } = context;
   const named = stringOption(context.options, 'profile');
-  const profile = named ? await namedProfile(named) : await ensureProfile(log);
+  const profile = named ? await namedProfile(named) : await profileFor(context.tv.host, log);
   return { ...(await resign(artifact, profile, log)), profile };
 }
 

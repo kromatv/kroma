@@ -51,6 +51,15 @@ export function keptUntil(chain: string): Date | null {
   return leaf ? new Date(leaf.validTo) : null;
 }
 
+/** Whether the certificates Samsung issued to this tool sign for a set today. */
+export function coversSet(duid: string, now = new Date(), directory = SAMSUNG_PROFILE): boolean {
+  const files = samsungFiles(directory);
+  const valid = [keptUntil(files.authorChain), keptUntil(files.distributorChain)].every(
+    (until) => until !== null && until > now,
+  );
+  return valid && keptDuids(directory).includes(duid);
+}
+
 /** The sets the kept distributor certificate was issued for. */
 export function keptDuids(directory = SAMSUNG_PROFILE): string[] {
   const { distributorChain } = samsungFiles(directory);
