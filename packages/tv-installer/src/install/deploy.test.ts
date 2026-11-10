@@ -1,24 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TvModule } from '../modules/module';
 import type { Television } from '../television';
-import type { Tool } from '../toolchain/detect';
 import { deployTo } from './deploy';
 
-const { moduleFor, installTool, rememberSet } = vi.hoisted(() => ({
+const { moduleFor, rememberSet } = vi.hoisted(() => ({
   moduleFor: vi.fn((_platform: string): unknown => undefined),
-  installTool: vi.fn(async (_tool: unknown, _log: unknown) => '/usr/bin/adb'),
   rememberSet: vi.fn(async (_set: unknown) => {}),
 }));
 vi.mock('../modules/registry', () => ({ moduleFor }));
-vi.mock('../toolchain/install', () => ({ installTool }));
 vi.mock('../remembered', () => ({ rememberSet }));
-
-const adb: Tool = {
-  id: 'adb',
-  label: 'Android Debug Bridge',
-  binary: 'adb',
-  source: 'dl.google.com platform-tools',
-};
 
 const shield: Television = {
   host: '192.168.1.36',
@@ -42,7 +32,6 @@ const androidtv: TvModule = {
   brands: 'Philips, Sony, TCL, Shield, Chromecast',
   package: '.apk',
   notReadyHint: 'network debugging off',
-  tools: () => [adb],
   sources: () => [],
   resolve,
   install,
@@ -56,11 +45,6 @@ beforeEach(() => {
   install.mockClear();
   rememberSet.mockReset();
   rememberSet.mockResolvedValue(undefined);
-  installTool.mockReset();
-  installTool.mockImplementation(async () => {
-    steps.push('tool');
-    return '/usr/bin/adb';
-  });
   resolve.mockImplementation(async () => {
     steps.push('resolve');
     return '/out/KROMA.apk';
@@ -70,11 +54,10 @@ beforeEach(() => {
 });
 
 describe('deployTo', () => {
-  it('installs the toolchain the platform needs before it looks for a package', async () => {
+  it('resolves the package before it installs it', async () => {
     await deployTo(shield, { log });
 
-    expect(installTool).toHaveBeenCalledWith(adb, log);
-    expect(steps).toEqual(['tool', 'resolve', 'install']);
+    expect(steps).toEqual(['resolve', 'install']);
   });
 
   it('hands the module the package it resolved, and starts the app', async () => {

@@ -28,7 +28,6 @@ export const webos: TvModule = {
   },
   identify: identifyWebos,
   prompt: askPassphrases,
-  tools: () => [],
   sources: webosSources,
   resolve: resolveWebosArtifact,
   install: installWebos,

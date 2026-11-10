@@ -15,7 +15,6 @@ const kind = (over: Partial<TvModule>): TvModule => ({
   brands: 'Samsung',
   package: '.wgt',
   notReadyHint: '',
-  tools: () => [],
   sources: () => [],
   resolve: () => Promise.resolve(''),
   install: () => Promise.resolve(),

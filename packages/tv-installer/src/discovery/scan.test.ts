@@ -45,7 +45,6 @@ const tvModule = (sets?: readonly Television[]): TvModule => ({
   package: 'tv.kroma.appletv',
   notReadyHint: '',
   discover: sets ? () => Promise.resolve([...sets]) : undefined,
-  tools: () => [],
   sources: () => [],
   resolve: () => Promise.resolve(''),
   install: () => Promise.resolve(),

@@ -3,87 +3,10 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Tool } from './detect';
-import { download, installTool } from './install';
-
-const locate = vi.hoisted(() => vi.fn((_tool: unknown): string | null => null));
-vi.mock('./detect', async (original) => ({
-  ...(await original<Record<string, unknown>>()),
-  locate,
-}));
+import { download } from './install';
 
 const lines: string[] = [];
 const log = (line: string) => lines.push(line);
-
-const install = vi.fn(async () => {});
-
-const adb: Tool = {
-  id: 'adb',
-  label: 'Android Debug Bridge',
-  binary: 'adb',
-  source: 'dl.google.com platform-tools',
-  install,
-};
-
-const xcode: Tool = {
-  id: 'xcode',
-  label: 'Xcode',
-  binary: 'xcodebuild',
-  source: 'the Mac App Store',
-};
-
-beforeEach(() => {
-  lines.length = 0;
-  locate.mockReset();
-  install.mockClear();
-});
-
-describe('installTool', () => {
-  it('hands back the path of a tool that is already here without installing it', async () => {
-    locate.mockReturnValue('/usr/local/bin/adb');
-
-    const path = await installTool(adb, log);
-
-    expect(path).toBe('/usr/local/bin/adb');
-    expect(install).not.toHaveBeenCalled();
-  });
-
-  it('installs a missing tool and answers where it landed', async () => {
-    locate.mockReturnValueOnce(null).mockReturnValueOnce('/home/.kroma/tools/adb');
-
-    const path = await installTool(adb, log);
-
-    expect(install).toHaveBeenCalledOnce();
-    expect(path).toBe('/home/.kroma/tools/adb');
-  });
-
-  it('names the source of a missing tool it cannot install itself', async () => {
-    locate.mockReturnValue(null);
-
-    await expect(installTool(xcode, log)).rejects.toThrow(
-      'Xcode is missing: install it from the Mac App Store',
-    );
-  });
-
-  it('refuses an install that left nothing the shell can find', async () => {
-    locate.mockReturnValue(null);
-
-    await expect(installTool(adb, log)).rejects.toThrow(
-      'Android Debug Bridge installed but adb is not on PATH',
-    );
-  });
-
-  it('says what it is installing and where it put it', async () => {
-    locate.mockReturnValueOnce(null).mockReturnValueOnce('/home/.kroma/tools/adb');
-
-    await installTool(adb, log);
-
-    expect(lines).toEqual([
-      'installing Android Debug Bridge from dl.google.com platform-tools',
-      'Android Debug Bridge ready: /home/.kroma/tools/adb',
-    ]);
-  });
-});
 
 const folder = mkdtempSync(join(tmpdir(), 'kroma-download-'));
 const dest = join(folder, 'tools.zip');

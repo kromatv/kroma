@@ -127,18 +127,20 @@ A Philips is only an Android TV if it says so. On one running **Saphi** or
 **Titan OS** the scan lists the set and names the OS as the reason it takes no
 sideloaded app, only what its own store offers. There is nothing to enable there.
 
-## Toolchain
+## Nothing to install
 
-No toolchain has to be installed by hand. An install fetches whatever the sets
-it is about to touch need, and the `doctor` and `tools` commands below report or
-fetch it without going near a television. Anything already on `PATH` is used as
-it is.
+Nothing has to be on the computer besides Node or Bun. The tool speaks to each
+kind of set itself:
 
-| Platform | Tools | Source | Lands in |
-| --- | --- | --- | --- |
-| Samsung | none | this tool signs the package and talks sdb itself | |
-| LG | none | this tool fetches the Dev Mode key and installs over SSH itself | |
-| Android TV | none | this tool speaks adb itself | |
+| Platform | What the tool does itself |
+| --- | --- |
+| Samsung | signs the package and talks sdb |
+| LG | fetches the Dev Mode key and installs over SSH |
+| Android TV | speaks adb |
+
+Two tools are used when they are already there, and never installed: Tizen
+Studio's `tizen` and `sdb` with `--no-native`, and Xcode for an Apple TV built
+from this checkout.
 
 An Android TV takes this tool's own adb key, kept in `~/.kroma/adb/adbkey` and
 readable by its owner alone, made on the first install. When this computer
@@ -243,8 +245,6 @@ markers is written by hand.
 | `bun run tv update` | Put the newest KROMA on every set this computer installed it on, asking nothing. |
 | `bun run tv probe <host>` | Ask a Samsung set what it is over sdb, installing nothing. |
 | `bun run tv certificate <host>` | Get Samsung's certificates for a set: sign in to Samsung once, and every install signs with them. |
-| `bun run tv tools <platform>` | Install the toolchain a platform needs, which the picker does on its own. |
-| `bun run tv doctor` | Show which toolchains this computer already has. |
 | `bun run tv docs` | Write this command tree into the package README, where nothing is typed by hand. |
 
 | option | what it does |

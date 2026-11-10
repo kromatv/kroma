@@ -14,7 +14,6 @@ const module = (label: string, enableSteps?: string): TvModule => ({
   package: `tv.kroma.${label.toLowerCase()}`,
   notReadyHint: '',
   enableSteps,
-  tools: () => [],
   sources: () => [],
   resolve: () => Promise.resolve(''),
   install: () => Promise.resolve(),

@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { docsCommand, doctorCommand, installCommand, scanCommand, toolsCommand } from './commands';
+import { docsCommand, installCommand, scanCommand } from './commands';
 import { exitAfter } from './exit-after';
 import type { Source } from './install/artifact';
 import { moduleArgs, moduleCommands, moduleOptions, modules } from './modules/registry';
@@ -108,26 +108,6 @@ const update = defineCommand({
     ),
 });
 
-const tools = defineCommand({
-  meta: {
-    name: 'tools',
-    description: 'Install the toolchain a platform needs, which the picker does on its own.',
-  },
-  args: {
-    platform: {
-      type: 'positional',
-      required: true,
-      description: `${withTools().join(', ')}, and more than one is allowed`,
-    },
-  },
-  run: ({ args }) => exitAfter(toolsCommand(args._)),
-});
-
-const doctor = defineCommand({
-  meta: { name: 'doctor', description: 'Show which toolchains this computer already has.' },
-  run: () => exitAfter(doctorCommand()),
-});
-
 const docs = defineCommand({
   meta: {
     name: 'docs',
@@ -151,7 +131,7 @@ export const tv = defineCommand({
       'Find the televisions on this network and put KROMA on them. With no command it opens the picker.',
   },
   args: { host: hostArg, package: packageArg, source: sourceArg, launch: launchArg, json: jsonArg },
-  subCommands: { scan, install, update, ...moduleCommands(), tools, doctor, docs },
+  subCommands: { scan, install, update, ...moduleCommands(), docs },
   run: ({ args }) => {
     const hosts = hostList();
     if (!process.stdout.isTTY) {
@@ -168,12 +148,6 @@ export const tv = defineCommand({
     );
   },
 });
-
-function withTools(): string[] {
-  return modules()
-    .filter((module) => module.tools().length > 0)
-    .map((module) => module.id);
-}
 
 function packageKinds(): string {
   const kinds = modules().map((module) => module.package);
