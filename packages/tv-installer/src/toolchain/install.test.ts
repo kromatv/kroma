@@ -179,39 +179,34 @@ describe('download', () => {
     expect(lines.at(-1)).toBe('  100% of 0 MB');
   });
 
-  it('deletes and refuses bytes that do not hash to the pinned digest', async () => {
-    answering({ ok: true, body: body(3), headers: new Headers() });
-
-    const fetched = download('https://github.com/kroma.wgt', dest, log, {
+  it.each([
+    {
+      served: 'bytes that do not hash to the pinned digest',
+      chunks: 3,
       sha256: sha256(31),
-      size: 30,
-    });
-
-    await expect(fetched).rejects.toThrow('did not serve the file its release lists');
-    expect(existsSync(dest)).toBe(false);
-  });
-
-  it('deletes and refuses a file shorter than its release lists', async () => {
-    answering({ ok: true, body: body(2), headers: new Headers() });
-
-    const fetched = download('https://github.com/kroma.wgt', dest, log, {
+      refusal: 'did not serve the file its release lists',
+    },
+    {
+      served: 'a file shorter than its release lists',
+      chunks: 2,
       sha256: sha256(20),
-      size: 30,
-    });
-
-    await expect(fetched).rejects.toThrow('did not serve the file its release lists');
-    expect(existsSync(dest)).toBe(false);
-  });
-
-  it('stops reading a file that runs past the size its release lists', async () => {
-    answering({ ok: true, body: body(5), headers: new Headers() });
+      refusal: 'did not serve the file its release lists',
+    },
+    {
+      served: 'a file that runs past the size its release lists',
+      chunks: 5,
+      sha256: sha256(30),
+      refusal: 'serves more than it lists',
+    },
+  ])('deletes and refuses $served', async ({ chunks, sha256: pinned, refusal }) => {
+    answering({ ok: true, body: body(chunks), headers: new Headers() });
 
     const fetched = download('https://github.com/kroma.wgt', dest, log, {
-      sha256: sha256(30),
+      sha256: pinned,
       size: 30,
     });
 
-    await expect(fetched).rejects.toThrow('serves more than it lists');
+    await expect(fetched).rejects.toThrow(refusal);
     expect(existsSync(dest)).toBe(false);
   });
 });
