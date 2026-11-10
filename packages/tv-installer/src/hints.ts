@@ -9,8 +9,9 @@ function blocked(app: string): string[] {
   ];
 }
 
-function quiet(): string[] {
+function quiet(platforms?: readonly string[]): string[] {
   const enabling = modules()
+    .filter((module) => !platforms?.length || platforms.includes(module.id))
     .flatMap((module) => (module.enableSteps ? [`${module.label}: ${module.enableSteps}`] : []))
     .join('. ');
   return [
@@ -24,10 +25,10 @@ export interface EmptyScan {
   hints: string[];
 }
 
-/** Why a scan came back empty, most likely cause first. */
-export async function diagnoseEmptyScan(): Promise<EmptyScan> {
-  if (!(await localNetworkBlocked())) return { blocked: false, hints: quiet() };
+/** Why a scan for the platforms given came back empty, most likely cause first. */
+export async function diagnoseEmptyScan(platforms?: readonly string[]): Promise<EmptyScan> {
+  if (!(await localNetworkBlocked())) return { blocked: false, hints: quiet(platforms) };
 
   const app = (await responsibleApp()) ?? 'this terminal';
-  return { blocked: true, hints: [...blocked(app), ...quiet()] };
+  return { blocked: true, hints: [...blocked(app), ...quiet(platforms)] };
 }

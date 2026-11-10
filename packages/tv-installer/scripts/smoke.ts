@@ -2,8 +2,9 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { $ } from 'bun';
+import { PUBLISHED_PACKAGE } from '../src/published.ts';
 
-const PACKAGE = '@kromatv/installer';
+const PACKAGE = PUBLISHED_PACKAGE;
 const COMMAND = 'kroma-tv';
 const SHIPPED = ['LICENSE', 'README.md', 'cli.js', 'package.json'];
 

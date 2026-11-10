@@ -7,9 +7,17 @@ needs, then sideloads KROMA onto the sets you pick.
 bun run tv
 ```
 
-With no argument the picker opens straight away and fills itself as the scan
-finds sets. Arrow keys move, space ticks, enter stops the scan and installs onto
-whatever is ticked. It installs the toolchain a set needs before touching it.
+With no argument it asks two questions, then opens the picker:
+
+1. **Which version of KROMA?** Stable, canary, and in a checkout the build made
+   here or a fresh one. `--source` or `--package` answers it.
+2. **Which kind of TV?** Samsung, LG, Android TV, or every kind. The tool then
+   shows what that kind needs once on the TV, with this computer's address
+   where the TV asks for it. `--host` skips the question and the steps.
+
+The picker lists the TVs of that kind as the scan finds them. Arrow keys move,
+space ticks, enter stops the scan and installs onto whatever is ticked. It
+installs the toolchain a TV needs before touching it.
 
 It runs on Bun or on Node 22 and later, and needs no checkout of this
 repository: with nothing built here it takes the package from the latest

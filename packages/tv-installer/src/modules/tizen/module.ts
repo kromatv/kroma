@@ -12,6 +12,12 @@ export const tizen: TvModule = {
   package: '.wgt',
   notReadyHint: 'developer mode off',
   enableSteps: 'Apps, then 1 2 3 4 5',
+  setup: (computer) => [
+    'Open Apps, then type 1 2 3 4 5 with the remote.',
+    `Turn Developer mode on, and enter ${computer ?? "this computer's address"} as the host PC IP.`,
+    'Turn the TV off, then on again.',
+  ],
+  guide: 'samsung-tv',
   ports: TIZEN_PORTS,
   flags: {
     profile: {

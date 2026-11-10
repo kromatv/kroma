@@ -7,10 +7,11 @@ Linux computer:
 npx @kromatv/installer
 ```
 
-The command finds the Samsung, LG and Android TV sets on your network, downloads
-the KROMA app for each one from the
-[latest release](https://github.com/kromatv/kroma/releases/latest), and installs
-it on the sets you choose.
+The command asks which version of KROMA and which kind of TV you have: Samsung,
+LG or Android TV. It shows what to do once on the TV, then finds those TVs on
+your network. It downloads the KROMA app for each one from the
+[latest release](https://github.com/kromatv/kroma/releases/latest), and
+installs it on the TVs you tick.
 
 To update KROMA later, on every TV you installed it on:
 

@@ -27,6 +27,8 @@ export interface TvModule {
   package: string;
   notReadyHint: string;
   enableSteps?: string;
+  setup?(computer: string | null): readonly string[];
+  guide?: string;
   ports?: ModulePorts;
   searchTargets?: readonly string[];
   flags?: ArgsDef;

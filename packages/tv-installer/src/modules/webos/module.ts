@@ -12,6 +12,12 @@ export const webos: TvModule = {
   package: '.ipk',
   notReadyHint: 'Dev Mode app not running',
   enableSteps: 'the Dev Mode app',
+  setup: () => [
+    'Install the Developer Mode app from the LG Content Store.',
+    'Open it, sign in with your LG developer account, and turn on Dev Mode.',
+    'Open it again and turn on Key Server. Keep the passphrase it shows.',
+  ],
+  guide: 'lg-tv',
   ports: WEBOS_PORTS,
   searchTargets: [WEBOS_SEARCH_TARGET],
   flags: {

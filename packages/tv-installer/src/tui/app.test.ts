@@ -3,19 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ModuleOptions } from '../modules/module';
 import { television } from '../television.fixture';
 import { runTui } from './app';
-import { askModules, chooseSource } from './choose';
+import { showBanner } from './banner';
+import { askModules, chooseKinds, chooseVersion } from './choose';
 import { discover } from './discover';
 import { installSets } from './install-sets';
+import { showSetup } from './setup';
 
 vi.mock('@clack/prompts', async (real) => ({
   ...(await real<typeof import('@clack/prompts')>()),
-  intro: vi.fn(),
   outro: vi.fn(),
   cancel: vi.fn(),
 }));
-vi.mock('./choose', () => ({ askModules: vi.fn(), chooseSource: vi.fn() }));
+vi.mock('./banner', () => ({ showBanner: vi.fn() }));
+vi.mock('./choose', () => ({ askModules: vi.fn(), chooseKinds: vi.fn(), chooseVersion: vi.fn() }));
 vi.mock('./discover', () => ({ discover: vi.fn() }));
 vi.mock('./install-sets', () => ({ installSets: vi.fn() }));
+vi.mock('./setup', () => ({ showSetup: vi.fn() }));
 
 const salon = television();
 const cuisine = television({ host: '192.168.1.11', name: 'Cuisine' });
@@ -23,17 +26,21 @@ const passphrases: Map<string, ModuleOptions> = new Map([['192.168.1.11', { pass
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(chooseVersion).mockResolvedValue('stable');
+  vi.mocked(chooseKinds).mockResolvedValue(['tizen']);
   vi.mocked(discover).mockResolvedValue([salon]);
-  vi.mocked(chooseSource).mockResolvedValue('stable');
   vi.mocked(askModules).mockResolvedValue(passphrases);
   vi.mocked(installSets).mockResolvedValue([]);
 });
 
 describe('runTui', () => {
-  it('installs onto every ticked set and answers 0', async () => {
-    const code = await runTui({ hosts: ['192.168.1.10'], launch: true });
+  it('asks the version, then the kind of TV, shows its steps, and looks for that kind', async () => {
+    const code = await runTui({ launch: true, version: '0.1.40' });
 
-    expect(discover).toHaveBeenCalledWith(['192.168.1.10']);
+    expect(showBanner).toHaveBeenCalledWith('0.1.40');
+    expect(chooseKinds).toHaveBeenCalledWith('stable');
+    expect(showSetup).toHaveBeenCalledWith(['tizen']);
+    expect(discover).toHaveBeenCalledWith(undefined, ['tizen']);
     expect(installSets).toHaveBeenCalledWith([salon], {
       artifact: undefined,
       source: 'stable',
@@ -43,24 +50,31 @@ describe('runTui', () => {
     expect(code).toBe(0);
   });
 
-  it('counts the sets that took KROMA and answers 1 when one did not', async () => {
+  it('asks no kind and shows no steps when addresses were given', async () => {
+    await runTui({ hosts: ['192.168.1.10'], launch: true });
+
+    expect(chooseKinds).not.toHaveBeenCalled();
+    expect(showSetup).not.toHaveBeenCalled();
+    expect(discover).toHaveBeenCalledWith(['192.168.1.10'], undefined);
+  });
+
+  it('counts the TVs that took KROMA and answers 1 when one did not', async () => {
     vi.mocked(discover).mockResolvedValue([salon, cuisine]);
     vi.mocked(installSets).mockResolvedValue([cuisine]);
 
     const code = await runTui({ launch: true });
 
-    expect(outro).toHaveBeenCalledWith('1 of 2 sets took KROMA, 1 failed');
+    expect(outro).toHaveBeenCalledWith('1 of 2 TVs took KROMA, 1 failed');
     expect(code).toBe(1);
   });
 
-  it('names the one set it put KROMA on', async () => {
-    const code = await runTui({ launch: true });
+  it('names the one TV it put KROMA on', async () => {
+    await runTui({ launch: true });
 
-    expect(outro).toHaveBeenCalledWith('KROMA is on 1 set');
-    expect(code).toBe(0);
+    expect(outro).toHaveBeenCalledWith('KROMA is on 1 TV');
   });
 
-  it('stops with nothing to install onto when no set was ticked', async () => {
+  it('stops with nothing to install onto when no TV was ticked', async () => {
     vi.mocked(discover).mockResolvedValue([]);
 
     const code = await runTui({ launch: true });
@@ -70,23 +84,30 @@ describe('runTui', () => {
     expect(code).toBe(1);
   });
 
-  it('answers 130 when the search itself was quit', async () => {
-    vi.mocked(discover).mockResolvedValue(null);
+  it('answers 130 and looks for nothing when the version choice was quit', async () => {
+    vi.mocked(chooseVersion).mockResolvedValue(null);
 
     const code = await runTui({ launch: true });
 
     expect(cancel).toHaveBeenCalledWith('nothing was installed');
-    expect(chooseSource).not.toHaveBeenCalled();
+    expect(chooseKinds).not.toHaveBeenCalled();
+    expect(discover).not.toHaveBeenCalled();
     expect(code).toBe(130);
   });
 
-  it('answers 130 when the package choice was cancelled', async () => {
-    vi.mocked(chooseSource).mockResolvedValue(null);
+  it('answers 130 and looks for nothing when the kind choice was quit', async () => {
+    vi.mocked(chooseKinds).mockResolvedValue(null);
 
     const code = await runTui({ launch: true });
 
-    expect(askModules).not.toHaveBeenCalled();
+    expect(discover).not.toHaveBeenCalled();
     expect(code).toBe(130);
+  });
+
+  it('answers 130 when the search itself was quit', async () => {
+    vi.mocked(discover).mockResolvedValue(null);
+
+    expect(await runTui({ launch: true })).toBe(130);
   });
 
   it('answers 130 when a module was still asking something', async () => {
@@ -98,20 +119,22 @@ describe('runTui', () => {
     expect(code).toBe(130);
   });
 
-  it('asks nothing about the package when a flag already named the source', async () => {
+  it('asks no version when a flag already named the source, and offers the kinds that take it', async () => {
     await runTui({ source: 'canary', launch: false });
 
-    expect(chooseSource).not.toHaveBeenCalled();
+    expect(chooseVersion).not.toHaveBeenCalled();
+    expect(chooseKinds).toHaveBeenCalledWith('canary');
     expect(installSets).toHaveBeenCalledWith(
       [salon],
       expect.objectContaining({ source: 'canary' }),
     );
   });
 
-  it('asks nothing about the package when a flag already named the file', async () => {
+  it('asks no version when a flag already named the file', async () => {
     await runTui({ artifact: '/out/KROMA.wgt', launch: true });
 
-    expect(chooseSource).not.toHaveBeenCalled();
+    expect(chooseVersion).not.toHaveBeenCalled();
+    expect(chooseKinds).toHaveBeenCalledWith(undefined);
     expect(installSets).toHaveBeenCalledWith(
       [salon],
       expect.objectContaining({ artifact: '/out/KROMA.wgt', source: undefined }),
