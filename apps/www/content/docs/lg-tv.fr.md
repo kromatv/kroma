@@ -68,10 +68,11 @@ répondez avec Entrée.
    l'application **Developer Mode** sur le téléviseur, puis appuyez sur
    Entrée.
 
-   La première fois, l'installeur ajoute les outils en ligne de commande de LG
-   dans le dossier `.kroma/tools` de votre dossier personnel. Il télécharge
-   ensuite la dernière version de KROMA pour LG, l'installe sur le téléviseur
-   et la démarre.
+   L'installeur obtient la clé du téléviseur avec la phrase secrète, et la
+   conserve dans le dossier `.kroma/keys/webos` de votre dossier personnel :
+   les installations et mises à jour suivantes ne la redemandent pas. Il
+   télécharge ensuite la dernière version de KROMA pour LG, l'installe sur le
+   téléviseur et la démarre. Rien d'autre n'est installé sur votre ordinateur.
 
 KROMA s'ouvre sur le téléviseur et apparaît dans sa liste d'applications.
 Suivez

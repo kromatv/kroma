@@ -60,9 +60,11 @@ Enter to answer.
 6. When the installer asks for the passphrase, type the one that the
    **Developer Mode** app shows on the TV, then press Enter.
 
-   The first time, the installer adds LG's command-line tools to the
-   `.kroma/tools` folder of your home folder. It then downloads the latest
-   KROMA for LG, installs it on the TV and starts it.
+   The installer gets the key of the TV with the passphrase, and keeps it in
+   the `.kroma/keys/webos` folder of your home folder, so later installs and
+   updates do not ask for it again. It then downloads the latest KROMA for LG,
+   installs it on the TV and starts it. Nothing else is installed on your
+   computer.
 
 KROMA opens on the TV and appears in its app list. Follow
 [Connect the TV to your server](tv.md#connect-the-tv-to-your-server).
