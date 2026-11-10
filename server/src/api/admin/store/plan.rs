@@ -127,8 +127,13 @@ impl<'a> Planner<'a> {
                 (range.as_deref(), self.by_id.get(dep_id.as_str()))
             {
                 if !kroma_module_manifest::range_matches(range, &dep_entry.version) {
+                    let offered = if dep_entry.newest.is_some() {
+                        "the newest version this server runs is"
+                    } else {
+                        "the registry has"
+                    };
                     bail!(
-                        "'{id}' needs {dep_id}@{range} but the registry has {}",
+                        "'{id}' needs {dep_id}@{range} but {offered} {}",
                         dep_entry.version,
                     );
                 }

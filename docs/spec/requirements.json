@@ -4114,7 +4114,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 86,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The Store never offers a version whose registry does not describe what",
     "file": "docs/spec/modules/README.md",
     "line": 157
@@ -4124,7 +4124,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 87,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "When a module's newest version does not run on this server, the Store",
     "file": "docs/spec/modules/README.md",
     "line": 160
@@ -4134,7 +4134,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 88,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The Store shows the version it would install and, beside it, the newest",
     "file": "docs/spec/modules/README.md",
     "line": 164
@@ -4144,7 +4144,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 89,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Installing, updating, updating everything and automatic updates all take",
     "file": "docs/spec/modules/README.md",
     "line": 167
@@ -4154,7 +4154,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 90,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The Store never downgrades an installed module unless the operator asks.",
     "file": "docs/spec/modules/README.md",
     "line": 170
@@ -4164,7 +4164,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 91,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each dependency resolves to its own newest version that runs here. A",
     "file": "docs/spec/modules/README.md",
     "line": 173

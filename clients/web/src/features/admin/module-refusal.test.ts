@@ -1,6 +1,6 @@
 import type { StoreModule } from '@kromatv/client/modules';
 import { describe, expect, it } from 'vitest';
-import { readableRange, refusalText } from '#web/features/admin/module-refusal';
+import { newestText, readableRange, refusalText } from '#web/features/admin/module-refusal';
 
 const t = ((key: string, values?: Record<string, unknown>) =>
   values ? `${key} ${JSON.stringify(values)}` : key) as Parameters<typeof refusalText>[1];
@@ -122,5 +122,33 @@ describe('readableRange', () => {
     ['^0.3.0', '^0.3.0'],
   ])('reads %j as %j', (range, readable) => {
     expect(readableRange(range)).toBe(readable);
+  });
+});
+
+describe('newestText', () => {
+  const older = (newest: StoreModule['newest']) =>
+    entry({ version: '0.4.1', compatible: true, newest });
+
+  it('says nothing for an entry that is the newest version', () => {
+    expect(newestText(entry({ compatible: true }), t)).toBeNull();
+  });
+
+  it('names the newer version, the server it needs, and the version that runs here', () => {
+    const refusal = {
+      kind: 'engine',
+      engine: 'server',
+      range: '>=0.1.39',
+      serverVersion: '0.1.38',
+    } as const;
+
+    expect(newestText(older({ version: '0.4.2', refusal }), t)).toBe(
+      'admin.modulesNewestNeedsServer {"newest":"0.4.2","range":"≥ 0.1.39","serverVersion":"0.1.38","version":"0.4.1"}',
+    );
+  });
+
+  it('names the newer version alone when it is refused for another reason', () => {
+    expect(newestText(older({ version: '0.4.2', refusal: { kind: 'native' } }), t)).toBe(
+      'admin.modulesNewestRefused {"newest":"0.4.2","version":"0.4.1"}',
+    );
   });
 });

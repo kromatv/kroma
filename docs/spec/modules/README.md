@@ -145,7 +145,7 @@ duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 
 ### The newest version that runs here
 
-Status: **AGREED**, with the full version history (MOD-85) **SHIPPED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
+Status: **SHIPPED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
 
 A module's newest version can need a newer server than the one asking. Older versions of
 the same module often ran on that server, and the Store should still offer them.
@@ -154,23 +154,23 @@ the same module often ran on that server, and the Store should still offer them.
 published, not only the newest: the server it needs, what it depends on and the permissions it
 asks for.
 
-**MOD-86** (AGREED) - The Store never offers a version whose registry does not describe what
+**MOD-86** (SHIPPED) - The Store never offers a version whose registry does not describe what
 it needs. Unknown compatibility counts as incompatible.
 
-**MOD-87** (AGREED) - When a module's newest version does not run on this server, the Store
+**MOD-87** (SHIPPED) - When a module's newest version does not run on this server, the Store
 picks the newest version that does. It considers a prerelease only when the newest version is
 one.
 
-**MOD-88** (AGREED) - The Store shows the version it would install and, beside it, the newest
+**MOD-88** (SHIPPED) - The Store shows the version it would install and, beside it, the newest
 version with what that one needs.
 
-**MOD-89** (AGREED) - Installing, updating, updating everything and automatic updates all take
+**MOD-89** (SHIPPED) - Installing, updating, updating everything and automatic updates all take
 the version MOD-87 picked, so none of them offers a version this server would refuse.
 
-**MOD-90** (AGREED) - The Store never downgrades an installed module unless the operator asks.
+**MOD-90** (SHIPPED) - The Store never downgrades an installed module unless the operator asks.
 An installed version newer than any that runs here is flagged under MOD-44 to MOD-46.
 
-**MOD-91** (AGREED) - Each dependency resolves to its own newest version that runs here. A
+**MOD-91** (SHIPPED) - Each dependency resolves to its own newest version that runs here. A
 dependant whose range that version misses is refused, naming both.
 
 ## Trust

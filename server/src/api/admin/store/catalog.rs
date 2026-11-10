@@ -17,6 +17,7 @@ use super::refusal::Refusal;
 use crate::state::SharedState;
 
 mod parse;
+mod versions;
 
 pub use parse::fetch;
 
@@ -65,6 +66,16 @@ pub struct CatalogModule {
     /// module's provenance is a fact rather than something re-derived later
     /// from an artifact URL that names a release host, not a catalog.
     pub official: bool,
+    /// Set when this server refuses the registry's newest version and this row
+    /// is the newest older version it runs instead.
+    pub newest: Option<Newest>,
+}
+
+/// The registry's newest version of a module, which this server refuses, kept
+/// beside the older version offered in its place.
+pub struct Newest {
+    pub version: String,
+    pub refusal: Refusal,
 }
 
 /// The `moduleRegistryUrl` setting, or the built-in default when unset/blank.
@@ -160,6 +171,11 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "source": source,
                 "widensPermissions": widens_access(m, granted(&m.id)),
                 "official": m.official,
+                "newest": m.newest.as_ref().map(|n| json!({
+                    "version": n.version,
+                    "refusal": n.refusal,
+                    "reason": n.refusal.reason(),
+                })),
             });
             if let Value::Object(fields) = &mut row {
                 fields.extend(declared_fields(m));
@@ -201,6 +217,7 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         storage: None,
         settings: None,
         helpers: None,
+        newest: None,
     }
 }
 

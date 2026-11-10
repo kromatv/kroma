@@ -84,3 +84,28 @@ export function refusalText(m: StoreModule | undefined, t: Translate): string | 
 export function useRefusalText(m: StoreModule | undefined): string | null {
   return refusalText(m, useT());
 }
+
+/**
+ * When this server refuses the registry's newest version of a module and the
+ * entry is an older one that runs instead, which newer version exists and what
+ * it needs, in the reader's language. Null when the entry is the newest.
+ */
+export function newestText(m: StoreModule | undefined, t: Translate): string | null {
+  const newest = m?.newest;
+  if (!m || !newest) return null;
+  const refusal = newest.refusal;
+  if (refusal?.kind === 'engine' && refusal.engine === 'server') {
+    return t('admin.modulesNewestNeedsServer', {
+      newest: newest.version,
+      range: readableRange(refusal.range),
+      serverVersion: refusal.serverVersion,
+      version: m.version,
+    });
+  }
+  return t('admin.modulesNewestRefused', { newest: newest.version, version: m.version });
+}
+
+/** {@link newestText} in the reader's language. */
+export function useNewestText(m: StoreModule | undefined): string | null {
+  return newestText(m, useT());
+}
