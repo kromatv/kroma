@@ -118,7 +118,7 @@ describe('discover', () => {
 
     await within(discover());
 
-    expect(lastStatus()).toBe('scanning · 2 televisions');
+    expect(lastStatus()).toBe('scanning · 2 TVs');
   });
 
   it('stops the scan as soon as the picker answers', async () => {
@@ -142,7 +142,7 @@ describe('discover', () => {
     await within(discover());
 
     expect(rounds).toBe(41);
-    expect(lastStatus()).toBe('stopped looking · no television yet');
+    expect(lastStatus()).toBe('stopped looking · no TV yet');
   });
 
   it('says why the network is quiet after two rounds that found nothing', async () => {
@@ -156,9 +156,9 @@ describe('discover', () => {
     await within(discover());
 
     expect(picker.notice).toHaveBeenCalledExactlyOnceWith(
-      'a set that has not answered by now is off, or has no developer mode on',
+      'a TV that has not answered by now is off, or its developer mode is off',
     );
-    expect(lastStatus()).toBe('nothing new · no television yet');
+    expect(lastStatus()).toBe('nothing new · no TV yet');
   });
 
   it('counts a round that found something as a reason to keep going', async () => {
@@ -173,7 +173,7 @@ describe('discover', () => {
     await within(discover());
 
     expect(picker.notice).not.toHaveBeenCalled();
-    expect(lastStatus()).toBe('scanning again · 1 television');
+    expect(lastStatus()).toBe('scanning again · 1 TV');
   });
 
   it('collapses a burst of progress into a handful of redraws', async () => {
@@ -200,7 +200,7 @@ describe('discover', () => {
 
     await within(discover());
 
-    expect(lastStatus()).toBe('scanning 78% · no television yet');
+    expect(lastStatus()).toBe('scanning 78% · no TV yet');
   });
 
   it('reports no progress at all past the first round', async () => {
@@ -213,7 +213,38 @@ describe('discover', () => {
 
     await within(discover());
 
-    expect(lastStatus()).toBe('nothing new · no television yet');
+    expect(lastStatus()).toBe('nothing new · no TV yet');
+  });
+
+  it('looks for the kinds of TV it was given, and names a single kind in its status', async () => {
+    scanReports();
+    picker.reply([]);
+
+    await within(discover(undefined, ['tizen']));
+
+    expect(vi.mocked(watch).mock.calls[0]?.[0].platforms).toEqual(['tizen']);
+    expect(liveMultiselect).toHaveBeenCalledWith({
+      message: 'Which TVs get KROMA?',
+      status: 'scanning · no Samsung TV yet',
+    });
+  });
+
+  it('counts what it found under the one kind it looks for', async () => {
+    scanReports(({ onFound }) => onFound?.(salon));
+    picker.reply([]);
+
+    await within(discover(undefined, ['tizen']));
+
+    expect(lastStatus()).toBe('scanning · 1 Samsung TV');
+  });
+
+  it('explains an empty scan with the steps of the kinds it looked for', async () => {
+    scanReports();
+    picker.reply([]);
+
+    await within(discover(undefined, ['webos']));
+
+    expect(diagnoseEmptyScan).toHaveBeenCalledWith(['webos']);
   });
 
   it('explains a scan that came back empty, and drops the hosts it never saw', async () => {

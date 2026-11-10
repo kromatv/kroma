@@ -5,9 +5,10 @@ import { site } from '@kromatv/site-meta';
 import { $ } from 'bun';
 import { z } from 'zod';
 import { tv } from '../src/cli.ts';
+import { PUBLISHED_PACKAGE } from '../src/published.ts';
 import { injectUsage, renderUsage } from '../src/usage.ts';
 
-const PACKAGE = '@kromatv/installer';
+const PACKAGE = PUBLISHED_PACKAGE;
 const COMMAND = 'kroma-tv';
 const NODE_SHEBANG = '#!/usr/bin/env node\n';
 const BUN_PREAMBLE = /^#!.*\n(?:\/\/ @bun\n)?/;

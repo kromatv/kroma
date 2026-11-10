@@ -3,85 +3,148 @@ import type { Source } from '../install/artifact';
 import type { ModuleOptions } from '../modules/module';
 import type { Television } from '../television';
 import { television } from '../television.fixture';
-import { askModules, chooseSource } from './choose';
+import { askModules, chooseKinds, chooseVersion } from './choose';
 
 interface Ask {
   message: string;
-  options: { value: Source; label: string; hint: string }[];
-  initialValue?: Source;
+  options: { value: string; label: string; hint?: string }[];
+  initialValue?: string;
 }
 
-const fake = vi.hoisted(() => {
-  const sources: Record<string, Source[]> = {};
-  return {
-    sources,
-    CANCELLED: Symbol('cancelled'),
-    select: vi.fn<(ask: Ask) => Promise<unknown>>(),
-    askLg: vi.fn<(sets: readonly Television[]) => Promise<Map<string, ModuleOptions> | null>>(),
-  };
-});
+interface FakeModule {
+  id: string;
+  label: string;
+  brands: string;
+  sources: () => Source[];
+  prompt?: (sets: readonly Television[]) => Promise<Map<string, ModuleOptions> | null>;
+}
 
-vi.mock('../modules/registry', () => ({
-  moduleFor: (platform: string) => ({ sources: () => fake.sources[platform] ?? [] }),
-  modules: () => [{ id: 'tizen' }, { id: 'webos', prompt: fake.askLg }],
+const fake = vi.hoisted(() => ({
+  CANCELLED: Symbol('cancelled'),
+  select: vi.fn<(ask: Ask) => Promise<unknown>>(),
+  askLg: vi.fn<(sets: readonly Television[]) => Promise<Map<string, ModuleOptions> | null>>(),
+  modules: [] as FakeModule[],
 }));
+
+vi.mock('../modules/registry', () => ({ modules: () => fake.modules }));
 vi.mock('@clack/prompts', () => ({
   isCancel: (value: unknown) => value === fake.CANCELLED,
   select: fake.select,
 }));
 
+const samsung = (sources: Source[]): FakeModule => ({
+  id: 'tizen',
+  label: 'Samsung',
+  brands: 'Samsung',
+  sources: () => sources,
+});
+const lg = (sources: Source[]): FakeModule => ({
+  id: 'webos',
+  label: 'LG',
+  brands: 'LG',
+  sources: () => sources,
+  prompt: fake.askLg,
+});
+const android = (sources: Source[]): FakeModule => ({
+  id: 'androidtv',
+  label: 'Android TV',
+  brands: 'Google TV, Sony',
+  sources: () => sources,
+});
+
 const salon = television();
-const chambre = television({ host: '192.168.1.11', name: 'Chambre' });
 const cuisine = television({ host: '192.168.1.12', name: 'Cuisine', platform: 'webos' });
 const bureau = television({ host: '192.168.1.13', name: 'Bureau', platform: 'webos' });
 
-const offered = () => fake.select.mock.calls[0]?.[0].options.map((option) => option.value);
+const asked = () => fake.select.mock.calls[0]?.[0];
+const offered = () => asked()?.options.map((option) => option.value);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  fake.sources = { tizen: ['local', 'stable', 'build'], webos: ['stable', 'canary'] };
+  fake.modules = [samsung(['stable', 'canary']), lg(['stable', 'canary']), android(['stable'])];
 });
 
-describe('chooseSource', () => {
-  it('offers only what every chosen platform can serve', async () => {
+describe('chooseVersion', () => {
+  it('offers stable first, and starts on it', async () => {
+    fake.select.mockResolvedValue('canary');
+
+    await expect(chooseVersion()).resolves.toBe('canary');
+    expect(asked()).toMatchObject({ message: 'Which version of KROMA?', initialValue: 'stable' });
+    expect(offered()).toEqual(['stable', 'canary']);
+  });
+
+  it('offers what any kind of TV can take, in a fixed order', async () => {
+    fake.modules = [samsung(['local', 'stable', 'canary', 'build']), android(['stable'])];
+    fake.select.mockResolvedValue('build');
+
+    await chooseVersion();
+
+    expect(offered()).toEqual(['stable', 'canary', 'local', 'build']);
+  });
+
+  it('labels each version by what it is', async () => {
     fake.select.mockResolvedValue('stable');
 
-    await expect(chooseSource([salon, cuisine])).resolves.toBe('stable');
-    expect(offered()).toEqual(['stable']);
+    await chooseVersion();
+
+    expect(asked()?.options[0]).toEqual({
+      value: 'stable',
+      label: 'Stable',
+      hint: 'the latest release, recommended',
+    });
   });
 
-  it('asks even when a single source is all there is', async () => {
-    fake.sources = { tizen: ['stable'] };
-    fake.select.mockResolvedValue('stable');
+  it('answers null when the choice is quit', async () => {
+    fake.select.mockResolvedValue(fake.CANCELLED);
 
-    await expect(chooseSource([salon])).resolves.toBe('stable');
-    expect(fake.select).toHaveBeenCalledTimes(1);
+    await expect(chooseVersion()).resolves.toBeNull();
+  });
+});
+
+describe('chooseKinds', () => {
+  it('answers the one kind of TV that was picked', async () => {
+    fake.select.mockResolvedValue('webos');
+
+    await expect(chooseKinds('stable')).resolves.toEqual(['webos']);
+    expect(asked()?.message).toBe('Which kind of TV?');
   });
 
-  it('asks once about several sets of the same platform', async () => {
-    fake.select.mockResolvedValue('local');
+  it('answers every kind that takes the version when every kind is picked', async () => {
+    fake.select.mockResolvedValue('every');
 
-    await chooseSource([salon, chambre]);
-
-    expect(offered()).toEqual(['local', 'stable', 'build']);
+    await expect(chooseKinds('canary')).resolves.toEqual(['tizen', 'webos']);
+    expect(offered()).toEqual(['tizen', 'webos', 'every']);
   });
 
-  it('asks nothing when the chosen platforms share no source', async () => {
-    fake.sources = { tizen: ['local'], webos: ['canary'] };
+  it('offers every kind when no version was named', async () => {
+    fake.select.mockResolvedValue('every');
 
-    await expect(chooseSource([salon, cuisine])).resolves.toBeUndefined();
-    expect(fake.select).not.toHaveBeenCalled();
+    await expect(chooseKinds()).resolves.toEqual(['tizen', 'webos', 'androidtv']);
   });
 
-  it('asks nothing when no set was chosen', async () => {
-    await expect(chooseSource([])).resolves.toBeUndefined();
+  it('gives the brands as a hint only where they say more than the name', async () => {
+    fake.select.mockResolvedValue('tizen');
+
+    await chooseKinds('stable');
+
+    expect(asked()?.options.slice(0, 3)).toEqual([
+      { value: 'tizen', label: 'Samsung', hint: undefined },
+      { value: 'webos', label: 'LG', hint: undefined },
+      { value: 'androidtv', label: 'Android TV', hint: 'Google TV, Sony' },
+    ]);
+  });
+
+  it('asks nothing when a single kind takes the version', async () => {
+    fake.modules = [samsung(['stable', 'build']), lg(['stable'])];
+
+    await expect(chooseKinds('build')).resolves.toEqual(['tizen']);
     expect(fake.select).not.toHaveBeenCalled();
   });
 
   it('answers null when the choice is quit', async () => {
     fake.select.mockResolvedValue(fake.CANCELLED);
 
-    await expect(chooseSource([salon])).resolves.toBeNull();
+    await expect(chooseKinds('stable')).resolves.toBeNull();
   });
 });
 

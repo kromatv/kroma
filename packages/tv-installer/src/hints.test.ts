@@ -70,4 +70,10 @@ describe('diagnoseEmptyScan', () => {
 
     expect(hints.join(' ')).toContain('LG: install Developer Mode and sign in');
   });
+
+  it('names only the kinds of TV that were looked for', async () => {
+    const { hints } = await diagnoseEmptyScan(['lg']);
+
+    expect(hints.at(-1)).toBe('LG: install Developer Mode and sign in.');
+  });
 });

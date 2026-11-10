@@ -1,37 +1,53 @@
 import * as p from '@clack/prompts';
 import type { Source } from '../install/artifact';
 import type { ModuleOptions } from '../modules/module';
-import { moduleFor, modules } from '../modules/registry';
+import { modules } from '../modules/registry';
 import type { Television } from '../television';
 
-const SOURCE_LABELS: Record<Source, { label: string; hint: string }> = {
-  local: { label: 'the build in this checkout', hint: 'whatever was built here last' },
-  stable: { label: 'the latest release', hint: 'what everyone else runs' },
-  canary: { label: 'the canary build', hint: 'newest, straight off main, less tested' },
-  build: { label: 'build it now from source', hint: 'a few minutes' },
+const VERSIONS: Record<Source, { label: string; hint: string }> = {
+  stable: { label: 'Stable', hint: 'the latest release, recommended' },
+  canary: { label: 'Canary', hint: 'the newest build, less tested' },
+  local: { label: 'Built here', hint: 'what this checkout built last' },
+  build: { label: 'Build it now', hint: 'from this checkout, a few minutes' },
 };
+const ORDER: readonly Source[] = ['stable', 'canary', 'local', 'build'];
+const EVERY_KIND = 'every';
 
-/**
- * Where the package comes from, out of the sources every chosen platform can serve.
- * Undefined means the default: the newest build here, else the latest release.
- */
-export async function chooseSource(
-  sets: readonly Television[],
-): Promise<Source | undefined | null> {
-  const platforms = [...new Set(sets.map((tv) => tv.platform))];
-  const [first = [], ...rest] = platforms.map((platform) => [...moduleFor(platform).sources()]);
-  const shared = rest.reduce(
-    (all, sources) => all.filter((source) => sources.includes(source)),
-    first,
-  );
-  if (shared.length === 0) return undefined;
-
+/** The version to install, out of what at least one kind of TV can take. Null when cancelled. */
+export async function chooseVersion(): Promise<Source | null> {
+  const served = new Set(modules().flatMap((module) => module.sources()));
   const chosen = await p.select({
-    message: 'which package',
-    options: shared.map((source) => ({ value: source, ...SOURCE_LABELS[source] })),
-    initialValue: shared[0],
+    message: 'Which version of KROMA?',
+    options: ORDER.filter((source) => served.has(source)).map((value) => ({
+      value,
+      ...VERSIONS[value],
+    })),
+    initialValue: 'stable' as Source,
   });
   return p.isCancel(chosen) ? null : chosen;
+}
+
+/**
+ * The platforms to look for, out of those that take the version chosen. A
+ * single one is answered without asking. Null when cancelled.
+ */
+export async function chooseKinds(source?: Source): Promise<string[] | null> {
+  const kinds = modules().filter((module) => !source || module.sources().includes(source));
+  if (kinds.length <= 1) return kinds.map((module) => module.id);
+
+  const chosen = await p.select({
+    message: 'Which kind of TV?',
+    options: [
+      ...kinds.map((module) => ({
+        value: module.id,
+        label: module.label,
+        hint: module.brands === module.label ? undefined : module.brands,
+      })),
+      { value: EVERY_KIND, label: 'Every kind' },
+    ],
+  });
+  if (p.isCancel(chosen)) return null;
+  return chosen === EVERY_KIND ? kinds.map((module) => module.id) : [chosen];
 }
 
 /** What the chosen sets still need from their own modules, by host. Null when cancelled. */

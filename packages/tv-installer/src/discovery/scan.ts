@@ -15,6 +15,7 @@ const BETWEEN_ROUNDS_MS = 1500;
 
 export interface ScanOptions {
   hosts?: readonly string[];
+  platforms?: readonly string[];
   signal?: AbortSignal;
   onProgress?: (done: number, total: number) => void;
   onFound?: (tv: Television) => void;
@@ -27,7 +28,13 @@ export interface WatchOptions extends ScanOptions {
 /** One pass over the network. */
 export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   const found: Television[] = [];
-  const discovered = Promise.all(modules().map(async (module) => module.discover?.() ?? []));
+  const wanted = (platform: string) =>
+    !options.platforms?.length || options.platforms.includes(platform);
+  const discovered = Promise.all(
+    modules()
+      .filter((module) => wanted(module.id))
+      .map(async (module) => module.discover?.() ?? []),
+  );
   const announced = ssdpSearch(SSDP_WINDOW_MS, options.signal, searchTargets());
   const targets = options.hosts?.length ? [...options.hosts] : await sweepTargets();
 
@@ -42,7 +49,7 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   const visit = async (host: string) => {
     const television = await examine(host, upnp.get(host), options.signal);
     options.onProgress?.(Math.min(++done, targets.length), targets.length);
-    if (!television) return;
+    if (!television || !wanted(television.platform)) return;
     found.push(television);
     options.onFound?.(television);
   };
@@ -56,7 +63,7 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   for (const [host, device] of await describe(await announced)) {
     upnp.set(host, device);
     const television = await examine(host, device, options.signal);
-    if (!television) continue;
+    if (!television || !wanted(television.platform)) continue;
 
     const at = found.findIndex((seen) => seen.host === host);
     if (at === -1) found.push(television);

@@ -15,6 +15,7 @@ export const appletv: TvModule = {
   brands: 'Apple',
   package: '.app',
   notReadyHint: 'not paired',
+  setup: () => ['Pair the Apple TV with this Mac in Xcode, under Devices and Simulators.'],
   discover: pairedTelevisions,
   tools: () => [],
   sources: appleTvSources,

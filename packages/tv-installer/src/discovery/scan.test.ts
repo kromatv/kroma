@@ -161,6 +161,40 @@ describe('scan', () => {
     expect(await scan({ hosts: ['10.0.0.5'] })).toEqual([]);
   });
 
+  it('asks only the modules of the kinds of TV it looks for to find sets of their own', async () => {
+    const discover = vi.fn(async () => [television('Salon.coredevice.local')]);
+    vi.mocked(modules).mockReturnValue([{ ...tvModule(), discover }]);
+
+    expect(await scan({ platforms: ['tizen'] })).toEqual([]);
+    expect(discover).not.toHaveBeenCalled();
+  });
+
+  it('leaves out a set that answered a probe but is not of a kind it looks for', async () => {
+    vi.mocked(localSubnets).mockReturnValue([
+      { iface: 'en0', address: '10.0.0.2', prefix: '10.0.0' },
+    ]);
+    vi.mocked(tcpOpen).mockImplementation(async (host) => host === '10.0.0.5');
+    vi.mocked(identify).mockResolvedValue(television('10.0.0.5'));
+
+    expect(await scan({ hosts: ['10.0.0.5'], platforms: ['tizen'] })).toEqual([]);
+  });
+
+  it('keeps a set of a kind it looks for', async () => {
+    const salon = television('10.0.0.5');
+    vi.mocked(tcpOpen).mockImplementation(async (host) => host === '10.0.0.5');
+    vi.mocked(identify).mockResolvedValue(salon);
+
+    expect(await scan({ hosts: ['10.0.0.5'], platforms: ['tizen', 'webos'] })).toEqual([salon]);
+  });
+
+  it('leaves out a set that answered the SSDP search but is not of a kind it looks for', async () => {
+    vi.mocked(ssdpSearch).mockResolvedValue([reply('10.0.0.7')]);
+    vi.mocked(fetchDeviceDescription).mockResolvedValue(device);
+    vi.mocked(identify).mockResolvedValue(television('10.0.0.7', 'Chambre'));
+
+    expect(await scan({ hosts: ['10.0.0.5'], platforms: ['androidtv'] })).toEqual([]);
+  });
+
   it('identifies a set that answered the SSDP search but no probe', async () => {
     const chambre = television('10.0.0.7', 'Chambre');
     vi.mocked(ssdpSearch).mockResolvedValue([reply('10.0.0.7')]);

@@ -158,7 +158,13 @@ export const tv = defineCommand({
       return exitAfter(scanCommand({ hosts, json: args.json, launch: args.launch }));
     }
     return exitAfter(
-      runTui({ hosts, artifact: args.package, source: asSource(args.source), launch: args.launch }),
+      runTui({
+        hosts,
+        artifact: args.package,
+        source: asSource(args.source),
+        launch: args.launch,
+        version: process.env.KROMA_TV_VERSION,
+      }),
     );
   },
 });

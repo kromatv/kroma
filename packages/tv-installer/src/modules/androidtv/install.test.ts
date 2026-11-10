@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Television } from '../../television';
 import type { InstallContext } from '../module';
 import { installAndroid, installFailure, parseAdbState } from './install';
@@ -54,6 +54,8 @@ const argv = () => [
   ...runOk.mock.calls.map(([command]) => command),
   ...run.mock.calls.map(([command]) => command),
 ];
+
+afterEach(() => vi.useRealTimers());
 
 beforeEach(() => {
   run.mockReset();
@@ -118,12 +120,37 @@ describe('installAndroid', () => {
     expect(argv().flat()).not.toContain('monkey');
   });
 
-  it('tells the owner to accept the prompt a set is still showing', async () => {
-    await expect(
-      installAndroid(context({ tv: { ...shield, host: '192.168.1.44' } })),
-    ).rejects.toThrow(
-      'the TV is asking to allow this computer: accept the prompt on screen, then run this again',
+  it('waits for the owner to allow this computer on the TV, then installs', async () => {
+    vi.useFakeTimers();
+    const lines: string[] = [];
+    let asked = 0;
+    runOk.mockImplementation(async (command) => {
+      if (!command.includes('devices')) return '';
+      asked += 1;
+      return `List of devices attached\n192.168.1.34:5555\t${asked < 3 ? 'unauthorized' : 'device'}`;
+    });
+
+    const installing = installAndroid(context({ log: (line) => lines.push(line) }));
+    await vi.advanceTimersByTimeAsync(4_000);
+    await installing;
+
+    expect(lines).toContain(
+      'the TV asks to allow this computer: accept the prompt on the TV, and tick Always allow',
     );
+    expect(run.mock.calls.some(([command]) => command.includes('install'))).toBe(true);
+  });
+
+  it('gives up when nobody allows this computer within two minutes', async () => {
+    vi.useFakeTimers();
+
+    const installing = installAndroid(context({ tv: { ...shield, host: '192.168.1.44' } }));
+    const refused = expect(installing).rejects.toThrow(
+      'nobody allowed this computer on the TV within two minutes',
+    );
+    await vi.advanceTimersByTimeAsync(122_000);
+    await refused;
+
+    expect(run).not.toHaveBeenCalled();
   });
 
   it('refuses a set adb holds in any other state', async () => {

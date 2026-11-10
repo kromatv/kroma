@@ -11,7 +11,7 @@ const MAX_ROUNDS = 40;
 // a line that says the same thing. The terminal keeps every one of them.
 const REDRAW_MS = 150;
 const QUIET_ROUNDS_BEFORE_NOTICE = 2;
-const WHY_SILENT = 'a set that has not answered by now is off, or has no developer mode on';
+const WHY_SILENT = 'a TV that has not answered by now is off, or its developer mode is off';
 type Doing =
   | 'scanning'
   | `scanning ${number}%`
@@ -19,21 +19,28 @@ type Doing =
   | 'nothing new'
   | 'stopped looking';
 
-/** The sets ticked, or null when the user cancelled. */
-export async function discover(hosts?: readonly string[]): Promise<Television[] | null> {
+/**
+ * The sets ticked, out of those of the platforms given, or of every platform
+ * when none is. Null when the user cancelled.
+ */
+export async function discover(
+  hosts?: readonly string[],
+  platforms?: readonly string[],
+): Promise<Television[] | null> {
   await askForLocalNetwork();
 
   const found = new Map<string, Television>();
+  const kind = kindOf(platforms);
   let doing: Doing = 'scanning';
 
   const picker = liveMultiselect<string>({
-    message: 'which sets get KROMA',
-    status: line(doing, found.size),
+    message: 'Which TVs get KROMA?',
+    status: line(doing, found.size, kind),
   });
   let drawn = '';
   let drawnAt = 0;
   const say = (now = false) => {
-    const status = line(doing, found.size);
+    const status = line(doing, found.size, kind);
     const at = performance.now();
     if (!now && (status === drawn || at - drawnAt < REDRAW_MS)) return;
     drawn = status;
@@ -48,6 +55,7 @@ export async function discover(hosts?: readonly string[]): Promise<Television[] 
 
   const scanning = watch({
     hosts,
+    platforms,
     signal: controller.signal,
     onRound: (current) => {
       round = current;
@@ -81,15 +89,15 @@ export async function discover(hosts?: readonly string[]): Promise<Television[] 
   await scanning;
 
   if (ticked === null) return null;
-  if (found.size === 0) await explain();
+  if (found.size === 0) await explain(platforms);
   return ticked.flatMap((host) => {
     const tv = found.get(host);
     return tv ? [tv] : [];
   });
 }
 
-async function explain(): Promise<void> {
-  const { blocked, hints } = await diagnoseEmptyScan();
+async function explain(platforms?: readonly string[]): Promise<void> {
+  const { blocked, hints } = await diagnoseEmptyScan(platforms);
   p.note(hints.join('\n'), 'why nothing answered');
   if (!blocked) return;
 
@@ -114,7 +122,12 @@ function state(tv: Television): string {
   return tv.developerMode === 'on' ? 'ready' : moduleFor(tv.platform).notReadyHint;
 }
 
-function line(doing: Doing, found: number): string {
-  if (found === 0) return `${doing} · no television yet`;
-  return `${doing} · ${found} television${found === 1 ? '' : 's'}`;
+function kindOf(platforms?: readonly string[]): string {
+  const [only] = platforms ?? [];
+  return platforms?.length === 1 && only ? `${moduleFor(only).label} TV` : 'TV';
+}
+
+function line(doing: Doing, found: number, kind: string): string {
+  if (found === 0) return `${doing} · no ${kind} yet`;
+  return `${doing} · ${found} ${kind}${found === 1 ? '' : 's'}`;
 }

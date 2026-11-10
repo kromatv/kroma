@@ -7,9 +7,17 @@ needs, then sideloads KROMA onto the sets you pick.
 bun run tv
 ```
 
-With no argument the picker opens straight away and fills itself as the scan
-finds sets. Arrow keys move, space ticks, enter stops the scan and installs onto
-whatever is ticked. It installs the toolchain a set needs before touching it.
+With no argument it asks two questions, then opens the picker:
+
+1. **Which version of KROMA?** Stable, canary, and in a checkout the build made
+   here or a fresh one. `--source` or `--package` answers it.
+2. **Which kind of TV?** Samsung, LG, Android TV, or every kind. The tool then
+   shows what that kind needs once on the TV, with this computer's address
+   where the TV asks for it. `--host` skips the question and the steps.
+
+The picker lists the TVs of that kind as the scan finds them. Arrow keys move,
+space ticks, enter stops the scan and installs onto whatever is ticked. It
+installs the toolchain a TV needs before touching it.
 
 It runs on Bun or on Node 22 and later, and needs no checkout of this
 repository: with nothing built here it takes the package from the latest
@@ -283,8 +291,9 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   thing: `adb uninstall tv.kroma.app`, then install again.
 - **`INSTALL_FAILED_VERSION_DOWNGRADE`.** The set already has a newer build.
   Uninstall it, or install a newer `.apk`.
-- **adb sees the TV as `unauthorized`.** The prompt is on the television. Accept
-  it and run the install again.
+- **`nobody allowed this computer on the TV within two minutes`.** An Android
+  TV asks once to allow each computer, and the install waits two minutes for it.
+  Accept the prompt on the TV, tick **Always allow**, and run the install again.
 - **The LG install cannot get a key.** `ares` needs the passphrase from the Dev
   Mode app, and a session that ran out needs that app opened again first.
 - **`the stable release carries no KROMA-tizen-*.wgt`, and the same for the
