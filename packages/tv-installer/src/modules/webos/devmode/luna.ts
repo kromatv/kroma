@@ -103,15 +103,16 @@ export function lunaCall<T>(
       }
     };
 
-    session.stream(lunaCommand(call), onData).then(
-      (command) => {
-        running = command;
-        if (settled) command.close();
-        void command.exited.then((code) =>
-          settle(() => reject(new Error(`${service} ended with no answer (exit ${code})`))),
-        );
-      },
-      (error: unknown) => settle(() => reject(error)),
-    );
+    const started = (command: RunningCommand) => {
+      running = command;
+      if (settled) command.close();
+      return command.exited;
+    };
+    const ended = (code: number) =>
+      settle(() => reject(new Error(`${service} ended with no answer (exit ${code})`)));
+    session
+      .stream(lunaCommand(call), onData)
+      .then(started)
+      .then(ended, (error: unknown) => settle(() => reject(error)));
   });
 }
