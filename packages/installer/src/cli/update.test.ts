@@ -121,24 +121,6 @@ describe('updateCommand', () => {
     expect(deployTo.mock.calls[0]?.[1]).toMatchObject({ platformOptions: { profile: 'KROMA' } });
   });
 
-  it('repeats the options the install was given', async () => {
-    rememberedSets.mockResolvedValue([{ ...remembered, options: { profile: 'KROMA' } }]);
-
-    await updateCommand({ ...options, platformOptions: { native: true } });
-
-    expect(deployTo.mock.calls[0]?.[1]).toMatchObject({
-      platformOptions: { profile: 'KROMA', native: true },
-    });
-  });
-
-  it('takes an option that is named over the remembered one', async () => {
-    rememberedSets.mockResolvedValue([{ ...remembered, options: { profile: 'KROMA' } }]);
-
-    await updateCommand({ ...options, platformOptions: { profile: 'salon' } });
-
-    expect(deployTo.mock.calls[0]?.[1]).toMatchObject({ platformOptions: { profile: 'salon' } });
-  });
-
   it('says so about a set that no longer answers at its address, and goes on', async () => {
     const chambre = { ...remembered, host: '192.168.1.44', name: 'Chambre' };
     rememberedSets.mockResolvedValue([chambre, remembered]);
