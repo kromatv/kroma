@@ -22,6 +22,13 @@ bun does not link it.
 A local module carries its Tizen implementation in its own `tizen/` folder,
 declared in its `expo-module.config.json`; `server-discovery` is one.
 
+Voice search on Tizen is `expo-speech-recognition`, which react-native-tizen
+implements on the TV's speech engine, with the Smart Remote's mic button held
+through `MicButton` (`src/lib/voice-search.tizen.tsx`). Hold the button
+anywhere in the app: search opens listening, and letting go searches what was
+heard. The package is left out of autolinking on Android and Apple, where the
+local `voice-search` module and Siri do the same job.
+
 ## LG webOS
 
 webOS runs this same app through

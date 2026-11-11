@@ -34,7 +34,39 @@ export function createSearchRequests() {
     return q;
   }
 
-  return { requestSearch, onSearchRequest, takePendingSearch };
+  let listening = false;
+  const listenListeners = new Set<() => void>();
+
+  /** Ask the app to open the search screen already listening. Called by a shell, from outside React. */
+  function requestListening(): void {
+    listening = true;
+    for (const listener of listenListeners) listener();
+  }
+
+  /** A request that arrived before anyone was listening is replayed immediately. */
+  function onListenRequest(listener: () => void): () => void {
+    listenListeners.add(listener);
+    if (listening) listener();
+    return () => {
+      listenListeners.delete(listener);
+    };
+  }
+
+  /** Whether a listen request is waiting, once: reading it clears it. */
+  function takePendingListen(): boolean {
+    const was = listening;
+    listening = false;
+    return was;
+  }
+
+  return {
+    requestSearch,
+    onSearchRequest,
+    takePendingSearch,
+    requestListening,
+    onListenRequest,
+    takePendingListen,
+  };
 }
 export type SearchRequests = ReturnType<typeof createSearchRequests>;
 const Context = createContext<SearchRequests | null>(null);

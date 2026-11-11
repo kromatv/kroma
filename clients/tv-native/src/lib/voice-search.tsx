@@ -84,3 +84,6 @@ const androidVoiceSearch: VoiceSearchBackend = {
 /** Null on a platform with no microphone to offer, which is what removes the mic button. */
 export const nativeVoiceSearch: VoiceSearchBackend | null =
   Platform.OS === 'android' ? androidVoiceSearch : null;
+
+/** The remote's push-to-talk key: only a Samsung remote has one, so here it does nothing. */
+export function useVoiceKey(_onHold: () => void): void {}

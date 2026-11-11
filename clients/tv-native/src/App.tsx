@@ -30,7 +30,7 @@ import { nativeLauncher } from './lib/native-launcher';
 import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
-import { nativeVoiceSearch } from './lib/voice-search';
+import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search';
 
 // What the set is called, when the platform will say. On Android TV this is the
 // name typed in setup. On tvOS it is `UIDevice.current.name`, which since
@@ -71,6 +71,7 @@ export function App() {
   const [frameLimits] = useState(decoderFrameLimits);
   const [deepLinks] = useState(createDeepLinks);
   const [searchRequests] = useState(createSearchRequests);
+  useVoiceKey(searchRequests.requestListening);
   // A TV must never sleep mid-film, and unlike a phone there is no user
   // interaction to keep it awake.
   useKeepAwake();
