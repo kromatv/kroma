@@ -39,7 +39,7 @@ async function updateSet(
     artifact,
     source,
     launch: options.launch,
-    platformOptions: { ...set.options, ...options.platformOptions },
+    platformOptions: options.platformOptions,
   });
   console.log(style.green(`  updated to ${basename(artifact)}`));
 }

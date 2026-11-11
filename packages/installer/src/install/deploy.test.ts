@@ -3,12 +3,13 @@ import type { Platform } from '../platforms/platform';
 import type { Television } from '../shared/television';
 import { deployTo } from './deploy';
 
-const { platformFor, rememberSet } = vi.hoisted(() => ({
+const { platformFor, rememberSet, rememberedSets } = vi.hoisted(() => ({
   platformFor: vi.fn((_platform: string): unknown => undefined),
   rememberSet: vi.fn(async (_set: unknown) => {}),
+  rememberedSets: vi.fn(async (): Promise<unknown[]> => []),
 }));
 vi.mock('../platforms/registry', () => ({ platformFor }));
-vi.mock('./remembered', () => ({ rememberSet }));
+vi.mock('./remembered', () => ({ rememberSet, rememberedSets }));
 
 const shield: Television = {
   host: '192.168.1.36',
@@ -39,12 +40,23 @@ const androidtv: Platform = {
 
 const log = () => {};
 
+const remembered = (fields: Record<string, unknown>) => ({
+  host: shield.host,
+  platform: shield.platform,
+  name: shield.name,
+  model: shield.model,
+  package: 'KROMA.apk',
+  installedAt: '2026-11-10T12:00:00.000Z',
+  ...fields,
+});
+
 beforeEach(() => {
   steps.length = 0;
   resolve.mockClear();
   install.mockClear();
   rememberSet.mockReset();
   rememberSet.mockResolvedValue(undefined);
+  rememberedSets.mockResolvedValue([]);
   resolve.mockImplementation(async () => {
     steps.push('resolve');
     return '/out/KROMA.apk';
@@ -100,6 +112,43 @@ describe('deployTo', () => {
     platformFor.mockReturnValue({ ...androidtv, remembers: ['profile', 'serial'] });
 
     await deployTo(shield, { log, platformOptions: { profile: 'KROMA', passphrase: 'AB12CD' } });
+
+    expect(rememberSet.mock.calls[0]?.[0]).toMatchObject({ options: { profile: 'KROMA' } });
+  });
+
+  it('installs with the options remembered for that set', async () => {
+    rememberedSets.mockResolvedValue([remembered({ options: { profile: 'KROMA' } })]);
+
+    await deployTo(shield, { log, platformOptions: { native: true } });
+
+    expect(install.mock.calls[0]?.[0]).toMatchObject({
+      options: { profile: 'KROMA', native: true },
+    });
+  });
+
+  it('takes an option that is named over the remembered one', async () => {
+    rememberedSets.mockResolvedValue([remembered({ options: { profile: 'KROMA' } })]);
+
+    await deployTo(shield, { log, platformOptions: { profile: 'salon' } });
+
+    expect(install.mock.calls[0]?.[0]).toMatchObject({ options: { profile: 'salon' } });
+  });
+
+  it('ignores what was remembered for another kind of set at the same address', async () => {
+    rememberedSets.mockResolvedValue([
+      remembered({ platform: 'tizen', options: { profile: 'KROMA' } }),
+    ]);
+
+    await deployTo(shield, { log });
+
+    expect(install.mock.calls[0]?.[0]).toMatchObject({ options: {} });
+  });
+
+  it('keeps remembering the options it reused', async () => {
+    platformFor.mockReturnValue({ ...androidtv, remembers: ['profile'] });
+    rememberedSets.mockResolvedValue([remembered({ options: { profile: 'KROMA' } })]);
+
+    await deployTo(shield, { log });
 
     expect(rememberSet.mock.calls[0]?.[0]).toMatchObject({ options: { profile: 'KROMA' } });
   });
