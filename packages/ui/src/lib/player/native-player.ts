@@ -21,6 +21,7 @@ const PLAYERS = {
   ios: { plane: 'AVPlayer', device: 'Apple TV' },
   android: { plane: 'media3', device: 'Android TV' },
   tizen: { plane: 'capi-media-player', device: 'Samsung TV' },
+  webos: { plane: 'uMediaServer', device: 'LG TV' },
 } as const;
 
 type NativePlayerOs = keyof typeof PLAYERS;
@@ -32,7 +33,7 @@ function isNativePlayerOs(os: string): os is NativePlayerOs {
 }
 
 /** The OS whose platform player plays natively: AVPlayer on `ios`, Media3 on
- * `android`, capi-media-player on `tizen`. */
+ * `android`, capi-media-player on `tizen`, uMediaServer on `webos`. */
 export function nativePlayerOs(): NativePlayerOs {
   const os: string = Platform.OS;
   return isNativePlayerOs(os) ? os : 'android';

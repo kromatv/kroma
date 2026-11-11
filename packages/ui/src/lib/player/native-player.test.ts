@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const rn = vi.hoisted(() => ({ os: 'android' as 'ios' | 'android' | 'tizen' | 'web' }));
+const rn = vi.hoisted(() => ({
+  os: 'android' as 'ios' | 'android' | 'tizen' | 'webos' | 'web',
+}));
 vi.mock('react-native', () => ({
   Platform: {
     get OS() {
@@ -40,6 +42,15 @@ describe('the native player', () => {
     expect(nativePlayerOs()).toBe('tizen');
     expect(nativePlayerDevice()).toBe('Samsung TV');
     expect(nativePlayerPlane()).toBe('capi-media-player');
+  });
+
+  it('names an lg set by its own player, never by android', () => {
+    rn.os = 'webos';
+
+    expect(nativePlayerOs()).toBe('webos');
+    expect(nativePlayerDevice()).toBe('LG TV');
+    expect(nativePlayerPlane()).toBe('uMediaServer');
+    expect(nativeBufferBudget()).toBeNull();
   });
 
   it('names an apple tv and an android tv by theirs', () => {

@@ -20,6 +20,10 @@ describe('GPU_MASKS', () => {
     expect(await masksOn('tizen')).toBe(true);
   });
 
+  it('masks on webOS, whose host draws a mask on the GPU', async () => {
+    expect(await masksOn('webos')).toBe(true);
+  });
+
   it('leaves Android unmasked, where a mask redraws the page through a bitmap', async () => {
     expect(await masksOn('android')).toBe(false);
   });

@@ -31,7 +31,7 @@ const rn = vi.hoisted(() => ({
   back: [] as Array<() => boolean>,
   enableTVMenuKey: vi.fn(),
   disableTVMenuKey: vi.fn(),
-  os: 'ios' as 'ios' | 'android' | 'tizen',
+  os: 'ios' as 'ios' | 'android' | 'tizen' | 'webos',
   isTV: true,
 }));
 
@@ -213,6 +213,17 @@ describe('Back on tvOS, where BackHandler is the Menu event wearing a hat', () =
 describe('Back on Tizen, whose host emits hardwareBackPress', () => {
   it('runs the screen’s handler from BackHandler', () => {
     rn.os = 'tizen';
+    const onBack = vi.fn();
+    renderHook(() => useFocusNav({ onBack }));
+
+    expect(pressBack()).toBe(true);
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+});
+
+describe('Back on webOS, whose host emits hardwareBackPress', () => {
+  it('runs the handler of the screen from BackHandler', () => {
+    rn.os = 'webos';
     const onBack = vi.fn();
     renderHook(() => useFocusNav({ onBack }));
 

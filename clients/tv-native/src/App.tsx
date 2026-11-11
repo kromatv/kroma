@@ -61,7 +61,11 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // the design falls back to anyway.
 const NATIVE_KIT = configureKit({ image: expoImageBackend, frost: BlurView, ground: 'dark' });
 
-const PLATFORM_LABELS: Record<string, string> = { ios: 'AppleTV', tizen: 'Tizen' };
+const PLATFORM_LABELS: Record<string, string> = {
+  ios: 'AppleTV',
+  tizen: 'Tizen',
+  webos: 'webOS',
+};
 
 export function App() {
   const [frameLimits] = useState(decoderFrameLimits);

@@ -45,6 +45,20 @@ describe('nativeDevice', () => {
     expect(nativeDevice()).toEqual({ model: 'Samsung TV', os: 'Tizen' });
   });
 
+  it('names an lg set by its model and its webos release', () => {
+    rn.os = 'webos';
+    rn.constants = { Model: 'OLED55C4', Release: '9.2.0', uiMode: 'tv', Brand: 'LG' };
+
+    expect(nativeDevice()).toEqual({ model: 'OLED55C4', os: 'webOS 9.2.0' });
+  });
+
+  it('still says webos when the set reports no constants at all', () => {
+    rn.os = 'webos';
+    rn.constants = undefined;
+
+    expect(nativeDevice()).toEqual({ model: 'LG TV', os: 'webOS' });
+  });
+
   it('names an android tv by its own constants', () => {
     rn.os = 'android';
     rn.constants = { Model: 'BRAVIA 4K', Release: '14', uiMode: 'tv' };

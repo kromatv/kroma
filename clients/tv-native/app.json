@@ -60,6 +60,10 @@
         }
       ],
       [
+        "@kromatv/react-native-webos",
+        { "package": "tv.kroma.app", "title": "KROMA", "locales": ["fr", "en"] }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0A0A0C",
