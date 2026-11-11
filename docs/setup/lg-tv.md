@@ -2,7 +2,7 @@
 
 An LG TV installs apps from outside its store through LG's **Developer Mode**
 app, sent from a computer on the same network. This guide turns Developer Mode
-on and installs KROMA, in about 15 minutes.
+on, then installs KROMA with its own installer, in about 15 minutes.
 
 One KROMA file works on every LG TV with webOS 4.0 or later, which means sets
 from 2018 onward. Sets from 2016 and 2017 cannot run it.
@@ -10,13 +10,14 @@ from 2018 onward. Sets from 2016 and 2017 cannot run it.
 ## Before you begin
 
 - An LG TV from 2018 or later.
-- A Mac, Windows or Linux computer on the same network as the TV.
+- A Mac or a Linux computer on the same network as the TV, with
+  [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
+  version. On Windows, follow
+  [Optional: install with webOS Dev Manager](#optional-install-with-webos-dev-manager)
+  instead.
 - A free LG developer account. Create it on
   [webostv.developer.lge.com](https://webostv.developer.lge.com) with
   **Sign In** > **Create Account**.
-- The KROMA file for LG, `tv.kroma.webos_VERSION_all.ipk`, from
-  [kroma.tv/download](https://kroma.tv/download) or from the
-  [releases](https://github.com/kromatv/kroma/releases).
 
 ## Turn on Developer Mode on the TV
 
@@ -27,54 +28,43 @@ from 2018 onward. Sets from 2016 and 2017 cannot run it.
 4. Open **Developer Mode** again and switch **Key Server** to **On**.
 
 The app now shows the TV's IP address and a six-character passphrase. Keep it
-open: you need both in the next step.
+open: the installer asks for the passphrase.
 
 ## Install KROMA
 
-Choose one of the two ways below. The first needs no command line.
+The installer asks its questions in English. Use the arrow keys to move and
+Enter to answer.
 
-### With webOS Dev Manager
-
-[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) is a
-free desktop app for Windows, macOS and Linux, made by the webOS Homebrew
-community. It is not an LG product.
-
-1. Download it from its
-   [releases page](https://github.com/webosbrew/dev-manager-desktop/releases)
-   and open it.
-2. Add your TV with the IP address and the passphrase that **Developer Mode**
-   shows.
-3. Open the **Apps** tab, choose to install a package, and select the `.ipk`
-   file you downloaded.
-
-### With LG's command-line tools
-
-1. Install the webOS CLI. It needs [Node.js](https://nodejs.org) 20 or later:
+1. In a terminal on your computer, start the installer:
 
    ```bash
-   npm install -g @webos-tools/cli
+   npx @kromatv/installer
    ```
 
-2. Register the TV:
+   The first time, `npx` asks to download the installer. Type `y`, then press
+   Enter. The installer shows the KROMA name and a short help. To stop it at
+   any time, press Ctrl+C.
 
-   ```bash
-   ares-setup-device --add tv -i "host=192.168.1.60" -i "port=9922" -i "username=prisoner"
-   ```
+2. At **Which version of KROMA?**, choose **Stable**.
+3. At **Which kind of TV?**, choose **LG**.
 
-   Replace `192.168.1.60` with the IP address that **Developer Mode** shows.
+   The installer repeats the steps for the TV. You already did them in
+   [Turn on Developer Mode on the TV](#turn-on-developer-mode-on-the-tv).
 
-3. Get the TV's key. Enter the passphrase when asked:
+4. At **Which TVs get KROMA?**, wait for your TV to appear.
 
-   ```bash
-   ares-novacom --device tv --getkey
-   ```
+   The installer looks for LG TVs on your network. A TV with Developer Mode on
+   shows **ready** and is already ticked. Press Space to tick or untick a TV.
 
-4. Install and start KROMA:
+5. Press Enter to install.
+6. When the installer asks for the passphrase, type the one that the
+   **Developer Mode** app shows on the TV, then press Enter.
 
-   ```bash
-   ares-install --device tv tv.kroma.webos_*_all.ipk
-   ares-launch --device tv tv.kroma.webos
-   ```
+   The installer gets the key of the TV with the passphrase, and keeps it in
+   the `.kroma/keys/webos` folder of your home folder, so later installs and
+   updates do not ask for it again. It then downloads the latest KROMA for LG,
+   installs it on the TV and starts it. Nothing else is installed on your
+   computer.
 
 KROMA opens on the TV and appears in its app list. Follow
 [Connect the TV to your server](tv.md#connect-the-tv-to-your-server).
@@ -94,18 +84,56 @@ webOS Dev Manager can extend the session for you on a schedule.
 
 ## Update KROMA
 
-Install the new `.ipk` the same way. The TV keeps your server address and your
-sign-in.
+Update KROMA on every TV that this computer installed it on:
+
+```bash
+npx @kromatv/installer update
+```
+
+The installer asks nothing. The TV keeps your server address and your sign-in.
+
+## Optional: install with webOS Dev Manager
+
+[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) is a
+free desktop app for Windows, macOS and Linux, made by the webOS Homebrew
+community. It is not an LG product. Use it on Windows, where KROMA's installer
+does not run. It replaces [Install KROMA](#install-kroma) and
+[Update KROMA](#update-kroma) above.
+
+You also need the KROMA file for LG, `tv.kroma.webos_VERSION_all.ipk`, from
+[kroma.tv/download](https://kroma.tv/download) or from the
+[releases](https://github.com/kromatv/kroma/releases).
+
+1. Download webOS Dev Manager from its
+   [releases page](https://github.com/webosbrew/dev-manager-desktop/releases)
+   and open it.
+2. Add your TV with the IP address and the passphrase that **Developer Mode**
+   shows.
+3. Open the **Apps** tab, choose to install a package, and select the `.ipk`
+   file you downloaded.
+
+KROMA appears in the TV's app list. Follow
+[Connect the TV to your server](tv.md#connect-the-tv-to-your-server).
+
+To update KROMA, install the new `.ipk` the same way. The TV keeps your server
+address and your sign-in.
 
 ## Troubleshooting
 
-### The computer cannot reach the TV
+### The TV does not appear in the installer
 
-Check that **Key Server** is on in the **Developer Mode** app, and that the
-address you entered is the one the app shows now. A TV that restarted may have
-a new address.
+Check that **Dev Mode Status** and **Key Server** are on in the
+**Developer Mode** app, and that the TV and the computer are on the same
+network. If the TV still does not appear, install on it by its address:
 
-### `ares-novacom` asks for a passphrase it refuses
+```bash
+npx @kromatv/installer install 192.168.1.60 --passphrase A1B2C3
+```
+
+Replace `192.168.1.60` with the IP address that **Developer Mode** shows, and
+`A1B2C3` with its passphrase. A TV that restarted may have a new address.
+
+### The TV refuses the passphrase
 
 The passphrase is case-sensitive and changes when you turn Developer Mode off
 and on. Copy it again from the **Developer Mode** app.

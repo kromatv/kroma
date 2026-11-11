@@ -9,9 +9,9 @@ se connecte à votre compte une fois l'application installée.
 
 | Votre téléviseur ou boîtier | Guide | Ce qu'il vous faut |
 | --- | --- | --- |
-| Samsung, 2017 ou plus récent | [Téléviseur Samsung](samsung-tv.md) | un ordinateur, un compte Samsung gratuit, environ 30 minutes la première fois |
+| Samsung, 2017 ou plus récent | [Téléviseur Samsung](samsung-tv.md) | un ordinateur, un compte Samsung gratuit, environ 10 minutes la première fois |
 | LG, webOS 4.0 (2018) ou plus récent | [Téléviseur LG](lg-tv.md) | un ordinateur, un compte développeur LG gratuit |
-| Android TV, Google TV, NVIDIA Shield, Philips, Sony, TCL | [Android TV](android-tv.md) | un compte Google, ou le fichier `.apk` |
+| Android TV, Google TV, NVIDIA Shield, Philips, Sony, TCL | [Android TV](android-tv.md) | un compte Google, le fichier `.apk` ou un ordinateur |
 | Amazon Fire TV avec Fire OS | [Android TV : Fire TV](android-tv.md#amazon-fire-tv) | l'application Downloader |
 | Apple TV | [Apple TV](apple-tv.md) | un iPhone ou un iPad, et TestFlight |
 
@@ -21,6 +21,33 @@ plus récents, qui fonctionnent sous Vega OS et non sous Fire OS. Sur ces
 appareils, utilisez un boîtier de streaming, par exemple un Google TV, une
 Apple TV ou un Fire TV sous Fire OS, ou ouvrez KROMA dans le navigateur web du
 téléviseur.
+
+## Installer depuis un ordinateur
+
+Les téléviseurs Samsung, LG et Android TV installent KROMA depuis un ordinateur
+Mac ou Linux, avec l'installeur de KROMA. Il nécessite
+[Node.js](https://nodejs.org) 22 ou plus récent. Chaque guide ci-dessus indique
+ce qu'il faut d'abord activer sur le téléviseur. Lancez ensuite l'installeur :
+
+```bash
+npx @kromatv/installer
+```
+
+L'installeur, en anglais, demande quelle version de KROMA installer et quel
+type de téléviseur vous avez, trouve les téléviseurs de votre réseau et
+installe KROMA sur ceux que vous cochez. Si vous avez des téléviseurs de
+plusieurs marques, choisissez **Every kind** à la question
+**Which kind of TV?**.
+
+Par la suite, mettez à jour KROMA sur tous les téléviseurs où cet ordinateur
+l'a installé :
+
+```bash
+npx @kromatv/installer update
+```
+
+L'installeur ne fonctionne pas sur Windows. Chaque guide propose une autre
+méthode pour Windows.
 
 ## Connecter le téléviseur à votre serveur
 
