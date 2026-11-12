@@ -19,7 +19,7 @@ const base64url = (bytes: ArrayBuffer | string) =>
   );
 
 /** The signing key in an App Store Connect `.p8` file, armored or as its bare base64 body. */
-export async function importP8(p8: string): Promise<CryptoKey> {
+export function importP8(p8: string): Promise<CryptoKey> {
   const body = p8.replaceAll(/-----[A-Z ]+-----/g, '').replaceAll(/\s+/g, '');
   const der = Buffer.from(body, 'base64');
   return crypto.subtle.importKey(
