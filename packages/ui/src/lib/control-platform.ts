@@ -3,8 +3,10 @@ import { usePressScale } from './focus-transition';
 import { WEB } from './platform';
 import { useFlatPress } from './press-dip';
 
-/** True on an Android TV box, whose air mice and trackpad remotes point; tvOS has none. */
-export const TV_HAS_POINTER = Platform.isTV && Platform.OS === 'android';
+const POINTING_TVS: ReadonlySet<string> = new Set(['android', 'webos']);
+
+/** True on a television whose remote points: an Android TV box with an air mouse or a trackpad remote, an LG set with its Magic Remote. tvOS has none. */
+export const TV_HAS_POINTER = Platform.isTV && POINTING_TVS.has(Platform.OS);
 
 /** True where the spatial navigator is the only way in: a native television. */
 export const NAVIGATED = Platform.isTV === true;

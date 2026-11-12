@@ -1,6 +1,6 @@
 # tv-native
 
-The Apple TV / Android TV / Samsung Tizen shell. It is platform glue: the
+The Apple TV / Android TV / Samsung Tizen / LG webOS shell. It is platform glue: the
 10-foot experience itself lives in [`@kromatv/tv`](../../packages/tv).
 
 ## Samsung Tizen
@@ -21,6 +21,22 @@ bun does not link it.
 
 A local module carries its Tizen implementation in its own `tizen/` folder,
 declared in its `expo-module.config.json`; `server-discovery` is one.
+
+## LG webOS
+
+webOS runs this same app through
+[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos),
+which reads its config plugin's props in `app.json` and the Metro config's
+`withWebOS`. From this directory:
+
+```bash
+bunx rn-webos simulator run --instance <name>   # the aarch64 simulator
+bunx rn-webos package                           # webos/<id>_<version>_arm.ipk
+bunx rn-webos run --device <tv-ip>              # a TV in Developer Mode
+```
+
+No local module has a webOS implementation yet: `server-discovery` finds
+nothing on an LG set, so a server is added by its address there.
 
 ## Testing the voice and launcher doors
 

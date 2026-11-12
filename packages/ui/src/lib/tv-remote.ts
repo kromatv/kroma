@@ -15,11 +15,11 @@ export function isRemoteKeyUp(evt: HWEvent): boolean {
   return Platform.OS === 'android' && evt.eventKeyAction === 1;
 }
 
-const BACK_HANDLER_PLATFORMS: ReadonlySet<string> = new Set(['android', 'tizen']);
+const BACK_HANDLER_PLATFORMS: ReadonlySet<string> = new Set(['android', 'tizen', 'webos']);
 
 /**
  * Whether the remote's Back reaches JavaScript as `hardwareBackPress` on
- * `BackHandler`, as it does on Android and Tizen. tvOS reports it as the `menu`
+ * `BackHandler`, as it does on Android, Tizen and webOS. tvOS reports it as the `menu`
  * remote event instead, and builds its `BackHandler` on top of that event.
  */
 export function backThroughBackHandler(): boolean {
