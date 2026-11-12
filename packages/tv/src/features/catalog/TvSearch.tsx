@@ -12,6 +12,7 @@ import {
   BackButton,
   Box,
   Chip,
+  CONTROL,
   Field,
   FocusColumn,
   FocusRegion,
@@ -51,7 +52,8 @@ export function TvSearch() {
   const storage = useDeviceStore();
   const s = useStyles(sDefinition);
 
-  const { onSearchRequest, takePendingSearch } = useSearchRequests();
+  const { onSearchRequest, takePendingSearch, onListenRequest, takePendingListen } =
+    useSearchRequests();
   const { movies, shows } = useConnection();
   const client = useClient();
   const t = useT();
@@ -67,7 +69,7 @@ export function TvSearch() {
   // Null on every shell that cannot hear (the browser TVs today, an Android TV
   // whose recogniser is missing): then no mic is shown at all.
   const voice = useVoiceSearchBackend();
-  const [speaking, setSpeaking] = useState(false);
+  const [speaking, setSpeaking] = useState(takePendingListen);
   const stopSpeaking = useCallback(() => setSpeaking(false), []);
   // Null on every shell that types on our keyboard, which is all but Apple TV.
   const shell = useSearchShell();
@@ -75,6 +77,15 @@ export function TvSearch() {
   // Asking Siri again while the screen is already open re-targets it rather than
   // reopening it, so the second request is not silently dropped.
   useEffect(() => onSearchRequest(setQuery), [onSearchRequest]);
+
+  useEffect(
+    () =>
+      onListenRequest(() => {
+        takePendingListen();
+        setSpeaking(true);
+      }),
+    [onListenRequest, takePendingListen],
+  );
 
   // A search "counts" once the user opens one of its results, and `found` is the
   // query that produced that result, not the prefix left in the box by then.
@@ -249,7 +260,7 @@ export function TvSearch() {
                 voice ? (
                   <IconButton
                     icon="microphone"
-                    control="tv"
+                    diameter={CONTROL.tv.line}
                     glyph={24}
                     variant="ghost"
                     label={t('search.voice')}

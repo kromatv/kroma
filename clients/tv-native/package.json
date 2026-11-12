@@ -29,7 +29,7 @@
     "@kromatv/core": "workspace:*",
     "@kromatv/lan-beacon": "workspace:*",
     "@kromatv/media3-ffmpeg": "workspace:*",
-    "@kromatv/react-native-tizen": "0.1.0-alpha.2",
+    "@kromatv/react-native-tizen": "0.1.0-alpha.3",
     "@kromatv/react-native-webos": "0.1.0-alpha.1",
     "@kromatv/tv": "workspace:*",
     "@kromatv/ui": "workspace:*",
@@ -42,6 +42,7 @@
     "expo-font": "~58.0.9",
     "expo-image": "~58.0.16",
     "expo-keep-awake": "~58.0.3",
+    "expo-speech-recognition": "~58.0.1",
     "expo-splash-screen": "~58.0.10",
     "expo-status-bar": "~58.0.3",
     "expo-video": "~58.0.12",
@@ -57,5 +58,19 @@
     "babel-preset-expo": "~58.0.18",
     "expo-atlas": "^0.4.3",
     "typescript": "^7.0.2"
+  },
+  "expo": {
+    "autolinking": {
+      "apple": {
+        "exclude": [
+          "expo-speech-recognition"
+        ]
+      },
+      "android": {
+        "exclude": [
+          "expo-speech-recognition"
+        ]
+      }
+    }
   }
 }

@@ -54,6 +54,23 @@ describe('searchRequest', () => {
     expect(requests.takePendingSearch()).toBeNull();
   });
 
+  it('opens the search screen listening, whether the screen is there yet or not', () => {
+    const requests = createSearchRequests();
+    requests.requestListening();
+    const late = vi.fn();
+    const stopLate = requests.onListenRequest(late);
+    const early = vi.fn();
+    expect(requests.takePendingListen()).toBe(true);
+    const stopEarly = requests.onListenRequest(early);
+    requests.requestListening();
+    stopLate();
+    stopEarly();
+    expect(late).toHaveBeenCalledTimes(2);
+    expect(early).toHaveBeenCalledTimes(1);
+    expect(requests.takePendingListen()).toBe(true);
+    expect(requests.takePendingListen()).toBe(false);
+  });
+
   it('stops delivering once unsubscribed', () => {
     const requests = createSearchRequests();
     const heard = vi.fn();

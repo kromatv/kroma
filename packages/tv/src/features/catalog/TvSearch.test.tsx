@@ -229,6 +229,19 @@ describe('TvSearch', () => {
     expect(screen.getByText('Speak now…')).toBeTruthy();
   });
 
+  it('opens already listening when the remote asked for it, and again when asked while open', () => {
+    const requests = createSearchRequests();
+    requests.requestListening();
+    mount({ voiceSearch: { available: () => true, Session: () => null }, requests });
+
+    expect(screen.getByText('Speak now…')).toBeTruthy();
+    expect(requests.takePendingListen()).toBe(false);
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByText('Speak now…')).toBeNull();
+    act(() => requests.requestListening());
+    expect(screen.getByText('Speak now…')).toBeTruthy();
+  });
+
   it('hands the whole screen to the platform’s own chrome where there is one', () => {
     const searchShell = {
       available: () => true,

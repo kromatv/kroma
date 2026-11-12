@@ -55,10 +55,10 @@
           "package": "tv.kroma.app",
           "label": "KROMA",
           "locales": ["fr", "en"],
-          "voice": { "searchUrl": "kroma://search?q={query}" },
           "preview": { "refreshMinutes": 30 }
         }
       ],
+      "expo-speech-recognition",
       [
         "@kromatv/react-native-webos",
         { "package": "tv.kroma.app", "title": "KROMA", "locales": ["fr", "en"] }

@@ -273,7 +273,7 @@ const SCREENS: Omit<TvScreens, 'player' | 'trailer'> = {
 };
 
 function TvRouterGuard() {
-  const { onSearchRequest } = useSearchRequests();
+  const { onSearchRequest, onListenRequest } = useSearchRequests();
   const nav = useNav();
   const { deepLink, movies, shows, clearDeepLink } = useConnection();
   const { user, ready } = useAuth();
@@ -291,6 +291,13 @@ function TvRouterGuard() {
     if (!user) return;
     return onSearchRequest(() => nav.reset('search'));
   }, [user, nav, onSearchRequest]);
+
+  useEffect(() => {
+    if (!user) return;
+    return onListenRequest(() => {
+      if (nav.route.name !== 'search') nav.reset('search');
+    });
+  }, [user, nav, onListenRequest]);
 
   useEffect(() => {
     if (!user || !deepLink) return;
