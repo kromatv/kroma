@@ -43,3 +43,10 @@ static PROCESS_START: OnceLock<Instant> = OnceLock::new();
 pub fn process_started() -> Instant {
     *PROCESS_START.get_or_init(Instant::now)
 }
+
+/// A random id this process draws once, so a client waiting out a restart can
+/// tell the server that answers from the one it asked to stop.
+pub fn boot_id() -> &'static str {
+    static BOOT_ID: OnceLock<String> = OnceLock::new();
+    BOOT_ID.get_or_init(kroma_primitives::random_token)
+}

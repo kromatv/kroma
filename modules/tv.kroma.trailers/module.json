@@ -1,0 +1,39 @@
+{
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
+  "id": "tv.kroma.trailers",
+  "name": "Trailers",
+  "version": "0.1.1",
+  "description": "Plays a title's trailer in the KROMA player: fetches the YouTube video TMDB lists and remuxes it into one MP4, in Rust, with no helper program.",
+  "component": {
+    "instances": 2
+  },
+  "engines": {
+    "server": ">=0.1.39"
+  },
+  "contributes": [
+    {
+      "point": "trailer"
+    }
+  ],
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "trailer",
+          "to": ["www.youtube.com", "*.googlevideo.com"],
+          "ports": [443]
+        },
+        {
+          "purpose": "trailer-profiles",
+          "to": ["raw.githubusercontent.com"],
+          "ports": [443]
+        }
+      ]
+    },
+    "fs": {
+      "read": ["module"],
+      "write": ["module"]
+    }
+  }
+}

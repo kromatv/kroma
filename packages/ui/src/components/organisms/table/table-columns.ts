@@ -7,7 +7,8 @@ interface TableColumn {
   /** The name this column answers to in the Root's `sort`. Without one it is
    *  not a sort control. */
   column?: string;
-  /** Fixed px. A column stating one neither grows nor shrinks. */
+  /** Fixed px, the cell's 12 of padding either side included. A column stating
+   *  one neither grows nor shrinks, and clips what does not fit. */
   width?: number;
   /** Share of the width the fixed columns leave, defaulting to 1. */
   flex?: number;
@@ -25,6 +26,7 @@ interface TableGrid {
   columns: readonly TableColumn[];
   boxes: readonly ViewStyle[];
   step: number;
+  minWidth: number;
 }
 
 const GridContext = createContext<TableGrid | null>(null);
@@ -84,5 +86,23 @@ function lastDrawn(columns: readonly TableColumn[], count: number, step: number)
   return -1;
 }
 
+function minWidthOf(columns: readonly TableColumn[], step: number): number {
+  let total = 0;
+  for (const column of columns) {
+    if (drawn(column, step)) total += column.width ?? column.min ?? 0;
+  }
+  return total;
+}
+
 export type { TableColumn, TableGrid };
-export { breakpointMask, columnBox, drawn, FILL, GridContext, lastDrawn, NO_COLUMNS, useTableGrid };
+export {
+  breakpointMask,
+  columnBox,
+  drawn,
+  FILL,
+  GridContext,
+  lastDrawn,
+  minWidthOf,
+  NO_COLUMNS,
+  useTableGrid,
+};

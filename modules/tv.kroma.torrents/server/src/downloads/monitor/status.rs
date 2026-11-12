@@ -6,6 +6,7 @@ use kroma_module_sdk::primitives::now_ms;
 use serde_json::json;
 
 use super::super::DownloadManager;
+use super::notice;
 
 fn human_bytes(n: u64) -> String {
     const U: [&str; 4] = ["B", "KB", "MB", "GB"];
@@ -93,6 +94,7 @@ impl DownloadManager {
                 "download.completed",
                 json!({ "id": row.id, "title": row.release_title }),
             ));
+            host.notify(&notice::audience(), &notice::completed(row));
             return true;
         }
         false

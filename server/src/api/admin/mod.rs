@@ -15,6 +15,7 @@ mod libraries;
 mod llm;
 mod logs;
 mod modules;
+mod network;
 mod notifications;
 mod pipeline;
 mod reports;
@@ -41,10 +42,11 @@ use serde_json::json;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+pub(crate) use crate::api::permission::require;
 use crate::api::util::{blocking, query};
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::{Permission, User};
+use crate::model::User;
 use crate::state::SharedState;
 
 /// Compose the admin subtree. Nested under `/api/admin` by [`crate::api::router`],
@@ -72,6 +74,7 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(jobs::routes())
         .merge(llm::routes())
         .merge(logs::routes())
+        .merge(network::routes())
         .merge(diagnostics::routes())
         .merge(modules::routes())
         .merge(notifications::routes())
@@ -80,8 +83,8 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(backup::routes())
         .merge(updates::routes());
     router = router.merge(kroma_module_kernel::mount_admin(state.clone()));
-    // Out-of-process modules with admin routes: `/api/admin/m/<id>/*` is
-    // reverse-proxied to that module's sidecar. The mount is the module's id, so
+    // Installed modules with admin routes: `/api/admin/m/<id>/*` is
+    // reverse-proxied to that module. The mount is the module's id, so
     // it needs no declaration and two modules cannot claim the same path.
     // Explicit wildcard routes rather than a `.fallback`: axum 0.8's `nest`
     // drops the nested router's fallback, and its matchit allows a param route
@@ -91,10 +94,10 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .route("/m/{id}/{*rest}", axum::routing::any(admin_module_proxy))
 }
 
-// Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`'s sidecar; 404 when no
-// such module is running. The sidecar sees the path below its own mount, so it
+// Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`; 404 when no
+// such module is running. The module sees the path below its own mount, so it
 // serves the same routes whether or not the core still proxies to it. The
-// sidecar gates the specific capability itself; the floor is applied here so an
+// module gates the specific capability itself; the floor is applied here so an
 // unauthenticated caller never reaches one that forgot to.
 async fn admin_module_proxy(
     Extension(sup): Extension<Arc<Supervisor>>,
@@ -105,10 +108,10 @@ async fn admin_module_proxy(
     require_any_admin(&user)?;
     let tail = uri.path().strip_prefix("/api/admin/m/").unwrap_or_default();
     let (id, rest) = tail.split_once('/').unwrap_or((tail, ""));
-    match sup.port_of(id) {
-        Some(port) => {
+    match sup.endpoint_of(id) {
+        Some(endpoint) => {
             let query = uri.query().map(|q| format!("?{q}")).unwrap_or_default();
-            Ok(kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await)
+            Ok(kroma_module_supervisor::proxy_to(&endpoint, &format!("/{rest}{query}"), req).await)
         }
         None => Ok((StatusCode::NOT_FOUND, "not found").into_response()),
     }
@@ -138,18 +141,6 @@ fn relay_url(state: &SharedState) -> &str {
         .mail_relay_url
         .as_deref()
         .unwrap_or(crate::services::email::RELAY_URL)
-}
-
-pub(crate) fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        Err(lerr(
-            user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 // Any management capability unlocks the read-only dashboard panels.

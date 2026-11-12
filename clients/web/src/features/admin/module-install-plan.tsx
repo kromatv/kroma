@@ -1,26 +1,11 @@
-// The install dialog's plan stage: the resolved module list, the opt-in
-// groups (optional deps + point contributors) and the unanswerable-
-// requirement warnings. The dialog itself lives in module-install.tsx.
-
-import type {
-  StoreMissingPoint,
-  StoreOptionalModule,
-  StorePlan,
-  StorePlanModule,
-} from '@kromatv/client/modules';
-import { useFormat, useT } from '@kromatv/ui';
-import {
-  Badge,
-  Box,
-  Button,
-  Callout,
-  ChoiceList,
-  Dialog,
-  ListRow,
-  Row,
-  Spinner,
-  Text,
-} from '@kromatv/ui/kit';
+import type { StoreMissingPoint, StoreOptionalModule, StorePlan } from '@kromatv/client/modules';
+import type { Translate } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { Box, Callout, Row, Spinner, Text } from '@kromatv/ui/kit';
+import type { AdminModule } from '#web/features/admin/module-api';
+import { InstallList } from '#web/features/admin/module-install-list';
+import { ConsentSummary } from '#web/features/admin/module-permissions-consent';
+import { consentOf } from '#web/features/admin/module-permissions-sources';
 
 /** The dialog title already says the install failed, so the server's
  * `install failed:` prefix is dropped and the detail (which module, which
@@ -36,92 +21,13 @@ export function ErrorBox({ text }: Readonly<{ text: string }>) {
   );
 }
 
-function PlanRow({ m }: Readonly<{ m: StorePlanModule }>) {
-  const t = useT();
-  const fmt = useFormat();
-  return (
-    <ListRow.Root size="sm">
-      <Row gap={8}>
-        <ListRow.Label>{m.name}</ListRow.Label>
-        {m.requested ? null : <Badge tone="neutral">{t('admin.modulesInstallDependency')}</Badge>}
-      </Row>
-      <ListRow.Hint>
-        {m.installedVersion ? `v${m.installedVersion} → v${m.version}` : `v${m.version}`}
-      </ListRow.Hint>
-      {m.size ? (
-        <ListRow.Trailing>
-          <Text variant="meta" color="textMuted">
-            {fmt.bytes(m.size)}
-          </Text>
-        </ListRow.Trailing>
-      ) : null}
-    </ListRow.Root>
-  );
-}
-
-function OptInGroup({
-  title,
-  rows,
-  include,
-  onIncludeChange,
-}: Readonly<{
-  title: string;
-  rows: StoreOptionalModule[];
-  include: string[];
-  onIncludeChange: (next: string[]) => void;
-}>) {
-  const t = useT();
-  const fmt = useFormat();
-  if (rows.length === 0) return null;
-  const hint = (m: StoreOptionalModule) =>
-    [
-      m.point && m.for ? t('admin.modulesInstallAnswersFor', { point: m.point, name: m.for }) : '',
-      m.description,
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  return (
-    <>
-      <Text variant="overline" color="textDim" mt={16}>
-        {title}
-      </Text>
-      <Box mt={4}>
-        <ChoiceList.Root
-          mode="multiple"
-          size="sm"
-          label={title}
-          value={include}
-          onValueChange={onIncludeChange}
-        >
-          {rows.map((m) => (
-            <ChoiceList.Item
-              key={m.id}
-              value={m.id}
-              actions={
-                m.size ? (
-                  <Text variant="meta" color="textMuted">
-                    {fmt.bytes(m.size)}
-                  </Text>
-                ) : undefined
-              }
-            >
-              <ChoiceList.Label>{`${m.name} v${m.version}`}</ChoiceList.Label>
-              {hint(m) ? <ChoiceList.Hint>{hint(m)}</ChoiceList.Hint> : null}
-            </ChoiceList.Item>
-          ))}
-        </ChoiceList.Root>
-      </Box>
-    </>
-  );
-}
-
 function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingPoint[] }>) {
   const t = useT();
   if (missing.length === 0) return null;
   return (
-    <Box mt={16} gap={8}>
+    <Box gap={8}>
       {missing.map((m) => (
-        <Callout.Root key={`${m.point}:${m.for}`} tone="accent">
+        <Callout.Root key={`${m.point}:${m.for}`} icon="info-circle">
           <Callout.Title>
             {t('admin.modulesInstallMissing', {
               point: m.id ? `${m.point}:${m.id}` : m.point,
@@ -134,37 +40,45 @@ function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingPoint[] }>
   );
 }
 
-export function PlanStage({
+/** The line under an install's title: how many modules it requires and what
+ *  it downloads in all. */
+export function planSubtitle(
+  plan: StorePlan,
+  optional: readonly StoreOptionalModule[],
+  bytes: (count: number) => string,
+  t: Translate,
+): string | undefined {
+  const optionalIds = new Set(optional.map((module) => module.id));
+  const required = plan.modules.filter(
+    (module) => module.id !== plan.requested && !optionalIds.has(module.id),
+  ).length;
+  const brings = required > 0 ? t('admin.modulesInstallWith', { count: required }) : null;
+  const size = plan.totalSize > 0 ? bytes(plan.totalSize) : null;
+  if (brings && size) return t('admin.modulesInstallSubtitle', { required: brings, size });
+  return brings ?? size ?? undefined;
+}
+
+/** What an install will do before it starts: the modules it brings, and what
+ *  they will be able to do. */
+export function PlanBody({
   plan,
-  busy,
   error,
   optional,
   include,
   onIncludeChange,
-  onCancel,
-  onRun,
+  icons,
+  installed,
 }: Readonly<{
   plan: StorePlan | null;
-  busy: boolean;
   error: string | null;
   optional: StoreOptionalModule[];
   include: string[];
   onIncludeChange: (next: string[]) => void;
-  onCancel: () => void;
-  onRun: () => void;
+  icons: Readonly<Record<string, string | null | undefined>>;
+  installed: readonly AdminModule[];
 }>) {
   const t = useT();
-  const fmt = useFormat();
-  if (error) {
-    return (
-      <>
-        <ErrorBox text={error} />
-        <Dialog.Actions>
-          <Button variant="ghost" size="sm" label={t('common.close')} onPress={onCancel} />
-        </Dialog.Actions>
-      </>
-    );
-  }
+  if (error) return <ErrorBox text={error} />;
   if (!plan) {
     return (
       <Row gap={12} py={8}>
@@ -177,46 +91,15 @@ export function PlanStage({
   }
   return (
     <>
-      <Text variant="overline" color="textDim">
-        {t('admin.modulesInstallPlanIntro')}
-      </Text>
-      <Box mt={4}>
-        <ListRow.Group size="sm">
-          {plan.modules.map((m) => (
-            <PlanRow key={m.id} m={m} />
-          ))}
-        </ListRow.Group>
-      </Box>
-      <OptInGroup
-        title={t('admin.modulesInstallContributors')}
-        rows={optional.filter((m) => m.point)}
+      <InstallList
+        plan={plan}
+        optional={optional}
         include={include}
         onIncludeChange={onIncludeChange}
-      />
-      <OptInGroup
-        title={t('admin.modulesInstallOptional')}
-        rows={optional.filter((m) => !m.point)}
-        include={include}
-        onIncludeChange={onIncludeChange}
+        icons={icons}
       />
       <MissingWarnings missing={plan.missing} />
-      <Row between gap={12} mt={16}>
-        <Text variant="meta" color="textDim">
-          {plan.totalSize > 0
-            ? t('admin.modulesInstallTotal', { size: fmt.bytes(plan.totalSize) })
-            : ''}
-        </Text>
-        <Row gap={10}>
-          <Button variant="ghost" size="sm" label={t('common.cancel')} onPress={onCancel} />
-          <Button
-            variant="primary"
-            size="sm"
-            label={t('admin.modulesInstall')}
-            onPress={onRun}
-            disabled={busy}
-          />
-        </Row>
-      </Row>
+      <ConsentSummary {...consentOf(plan.modules, plan.requested, installed)} />
     </>
   );
 }

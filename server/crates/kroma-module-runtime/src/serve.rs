@@ -1,16 +1,26 @@
+#[cfg(any(target_family = "wasm", test))]
 use std::sync::Arc;
 
+#[cfg(any(target_family = "wasm", test))]
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::ServerModule;
 
-use crate::env::Env;
-use crate::events::register_events;
-use crate::events::{event_router, wanted_topics, Subscribers};
-use crate::jobs::{collect_jobs, job_router, register_jobs, JobSpec};
+#[cfg(any(target_family = "wasm", test))]
+use crate::env::{Env, Startup};
+#[cfg(any(target_family = "wasm", test))]
+use crate::events::{event_router, register_events, wanted_topics, Subscribers};
+#[cfg(any(target_family = "wasm", test))]
+use crate::jobs::{collect_jobs, job_router, register_jobs};
+#[cfg(any(target_family = "wasm", test))]
 use crate::migrations::apply_module_migrations;
 use crate::remote_host::RemoteHost;
 
-/// Run a module process serving one `ServerModule`. Convenience over [`serve`].
+#[cfg(not(target_family = "wasm"))]
+const NATIVE: &str = "a KROMA module runs only as a WebAssembly component inside the server";
+
+type Modules = Vec<Box<dyn ServerModule<RemoteHost>>>;
+
+/// Run a module serving one `ServerModule`. Convenience over [`serve`].
 pub async fn serve_one(
     setup: impl FnOnce(&RemoteHost),
     module: Box<dyn ServerModule<RemoteHost>>,
@@ -25,10 +35,65 @@ pub async fn serve_one(
     .await
 }
 
-// A module is a separate process, so it does not inherit the core's subscriber:
-// without this it logged at a hardcoded `info` and there was no way to turn it
-// up. `KROMA_MODULE_LOG` overrides `RUST_LOG` for the sidecars alone, so the
-// core can stay quiet while one module is put under a microscope.
+/// Run a module: `wire` builds its own services and port providers against the
+/// live host and hands back whatever extra routes it serves, and each module's
+/// `admin_routes` are mounted beside them. Every module's `on_enable` runs on the
+/// host's primary instance only, and the host has applied the migrations and
+/// registered the jobs and topics before it starts one. A component may host
+/// several modules or none (a port-provider-only one).
+///
+/// `wire` takes the host rather than running before it, because a provider that
+/// answers out of a database has to be built holding that database: the port
+/// contract it implements names only [`HostCtx`](kroma_module_host::HostCtx), so
+/// the pools cannot arrive through the call.
+///
+/// A module runs only as a WebAssembly component: built for any other target,
+/// this refuses to start it.
+pub async fn serve(
+    wire: impl FnOnce(&RemoteHost) -> axum::Router<RemoteHost>,
+    modules: Modules,
+) -> anyhow::Result<()> {
+    #[cfg(target_family = "wasm")]
+    {
+        let env = Env::from_process()?;
+        let enables = env.startup.enables();
+        let (app, modules, host) = started(env, wire, modules).await?;
+        crate::guest::install_router(app);
+        if enables {
+            crate::guest::on_stop(move || {
+                let modules = modules.clone();
+                let host = host.clone();
+                Box::pin(async move {
+                    for module in modules.iter() {
+                        module.on_disable(host.clone()).await;
+                    }
+                })
+            });
+        }
+        Ok(())
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    {
+        let _ = (wire, modules);
+        anyhow::bail!(NATIVE)
+    }
+}
+
+/// The `main` [`module_main!`](crate::module_main) gives a module built for any
+/// target but a WebAssembly component: it says that a module runs only as one,
+/// and fails.
+#[cfg(not(target_family = "wasm"))]
+pub fn refuse_native(
+    wire: impl FnOnce(&RemoteHost) -> axum::Router<RemoteHost>,
+    modules: Modules,
+) -> std::process::ExitCode {
+    let _ = (wire, modules);
+    eprintln!("{NATIVE}");
+    std::process::ExitCode::FAILURE
+}
+
+#[cfg(any(target_family = "wasm", test))]
 fn init_tracing() {
     let filter = std::env::var("KROMA_MODULE_LOG")
         .or_else(|_| std::env::var("RUST_LOG"))
@@ -40,33 +105,27 @@ fn init_tracing() {
         .ok();
 }
 
-/// Run a module process: `wire` builds the process's own services and port
-/// providers against the live host and hands back whatever extra routes it
-/// serves, each module's `admin_routes` are mounted beside them on the assigned
-/// port, and every module's `on_enable` runs. A process may host several modules
-/// or none (a port-provider-only process).
-///
-/// `wire` takes the host rather than running before it, because a provider that
-/// answers out of a database has to be built holding that database: the port
-/// contract it implements names only [`HostCtx`], so the pools cannot arrive
-/// through the call.
-pub async fn serve(
+#[cfg(any(target_family = "wasm", test))]
+pub(crate) async fn started(
+    env: Env,
     wire: impl FnOnce(&RemoteHost) -> axum::Router<RemoteHost>,
-    modules: Vec<Box<dyn ServerModule<RemoteHost>>>,
-) -> anyhow::Result<()> {
+    modules: Modules,
+) -> anyhow::Result<(axum::Router, Arc<Modules>, RemoteHost)> {
     init_tracing();
-    let env = Env::from_process()?;
     let host = RemoteHost::new(&env)?;
-    tracing::info!(module = %env.module_id, port = env.port, "module process starting");
 
-    apply_module_migrations(&host, &modules)?;
+    if env.startup == Startup::Own {
+        apply_module_migrations(&host, &modules)?;
+    }
     // Shared from here on: the event delivery route dispatches to a module at
     // request time, so the set has to outlive this function.
     let modules = Arc::new(modules);
     let extra = wire(&host);
 
-    for module in modules.iter() {
-        module.on_enable(host.clone()).await;
+    if env.startup.enables() {
+        for module in modules.iter() {
+            module.on_enable(host.clone()).await;
+        }
     }
 
     let (job_fns, job_specs) = collect_jobs(&modules);
@@ -98,44 +157,22 @@ pub async fn serve(
         let subscribers = Arc::new(Subscribers::new(modules.clone(), &topics));
         app = app.merge(event_router(subscribers, env.host_token.clone()));
     }
-    let shutdown_host = host.clone();
-    let app = app.with_state(host);
+    let app = app.with_state(host.clone());
 
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], env.port));
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    tracing::info!(%addr, "module listening");
-
-    announce_to_core(&env, job_specs, &topics);
-
-    let module_id = env.module_id.clone();
-    axum::serve(listener, app)
-        .with_graceful_shutdown(async move {
-            stop_signal().await;
-            // The hooks run BEFORE the connection drain, not after: draining can
-            // take as long as the slowest in-flight request, and the supervisor
-            // only waits so long before killing us. Whatever a module owns
-            // outside this process (the remote module's `cloudflared` child)
-            // must be released while we still have a process to release it from.
-            tracing::info!(module = %module_id, "stopping: releasing module resources");
-            for module in modules.iter() {
-                module.on_disable(shutdown_host.clone()).await;
-            }
-        })
-        .await?;
-    Ok(())
+    if env.startup == Startup::Own {
+        announce_to_core(&env, job_specs, &topics);
+    }
+    Ok((app, modules, host))
 }
 
-// Jobs and event topics, announced only after the listener is bound, so a run the
-// core fires immediately queues on the accept backlog rather than failing to
-// connect. Best-effort: a failed registration leaves the job or the subscription
-// absent until respawn.
-fn announce_to_core(env: &Env, job_specs: Vec<JobSpec>, topics: &[String]) {
+#[cfg(any(target_family = "wasm", test))]
+fn announce_to_core(env: &Env, job_specs: Vec<kroma_module_wire::JobSpec>, topics: &[String]) {
     let host_url = |path: &str| format!("{}/api/_host/{path}", env.core_url.trim_end_matches('/'));
     if !job_specs.is_empty() {
         let url = host_url("register-job");
         let module_id = env.module_id.clone();
         let host_token = env.host_token.clone();
-        tokio::task::spawn_blocking(move || {
+        off_the_runtime(move || {
             register_jobs(&url, &module_id, &host_token, &job_specs);
         });
     }
@@ -144,32 +181,19 @@ fn announce_to_core(env: &Env, job_specs: Vec<JobSpec>, topics: &[String]) {
         let module_id = env.module_id.clone();
         let host_token = env.host_token.clone();
         let topics = topics.to_vec();
-        tokio::task::spawn_blocking(move || {
+        off_the_runtime(move || {
             register_events(&url, &module_id, &host_token, &topics);
         });
     }
 }
 
-/// Resolves when the supervisor asks this process to stop. A sidecar is a plain
-/// child process, so SIGTERM is the only notice it gets before SIGKILL.
-async fn stop_signal() {
-    #[cfg(unix)]
-    {
-        use tokio::signal::unix::{signal, SignalKind};
-        let mut term = match signal(SignalKind::terminate()) {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::warn!(error = %e, "cannot listen for SIGTERM; no clean shutdown");
-                return std::future::pending().await;
-            }
-        };
-        tokio::select! {
-            _ = term.recv() => {}
-            _ = tokio::signal::ctrl_c() => {}
-        }
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = tokio::signal::ctrl_c().await;
-    }
+#[cfg(all(test, not(target_family = "wasm")))]
+fn off_the_runtime(work: impl FnOnce() + Send + 'static) {
+    tokio::task::spawn_blocking(work);
+}
+
+// A component has one thread, and its host answers a call before returning.
+#[cfg(target_family = "wasm")]
+fn off_the_runtime(work: impl FnOnce() + Send + 'static) {
+    work();
 }

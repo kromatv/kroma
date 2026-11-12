@@ -3,6 +3,7 @@ use std::process::Command;
 use std::time::Duration;
 
 use crate::ffmpeg_run::run_capturing;
+use crate::input;
 
 use super::tile::TILE_PATTERN;
 use super::Plan;
@@ -23,9 +24,8 @@ pub fn montage(scratch: &Path, plan: &Plan, out: &Path) -> Result<(), String> {
         "-y",
         "-start_number",
         "0",
-        "-i",
     ])
-    .arg(scratch.join(TILE_PATTERN))
+    .args(input::file(scratch.join(TILE_PATTERN)))
     .args([
         "-frames:v",
         "1",
@@ -44,8 +44,8 @@ pub fn montage(scratch: &Path, plan: &Plan, out: &Path) -> Result<(), String> {
 /// that wants one sheet in one pass.
 pub fn encode_jpeg(src: &Path, out: &Path) -> Result<(), String> {
     let mut cmd = Command::new("ffmpeg");
-    cmd.args(["-y", "-v", "error", "-threads", "1", "-i"])
-        .arg(src)
+    cmd.args(["-y", "-v", "error", "-threads", "1"])
+        .args(input::file(src))
         .args(["-c:v", "mjpeg", "-q:v", JPEG_QUALITY, "-huffman", "optimal"])
         .arg(out);
     run_capturing(cmd, TIMEOUT)
@@ -64,8 +64,8 @@ mod tests {
     fn ten_bit_clip(dir: &Path) -> Option<PathBuf> {
         let clip = dir.join("clip.mp4");
         let made = Command::new("ffmpeg")
-            .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
-            .arg("testsrc=size=320x180:rate=10:duration=1")
+            .args(["-v", "error", "-y"])
+            .args(input::generated("testsrc=size=320x180:rate=10:duration=1"))
             .args(["-c:v", "libx264", "-pix_fmt", "yuv420p10le"])
             .arg(&clip)
             .status()
@@ -75,8 +75,8 @@ mod tests {
 
     fn brightest(image: &Path) -> u8 {
         let read = Command::new("ffmpeg")
-            .args(["-v", "error", "-i"])
-            .arg(image)
+            .args(["-v", "error"])
+            .args(input::file(image))
             .args(["-f", "rawvideo", "-pix_fmt", "gray", "-"])
             .output()
             .expect("ffmpeg reads back what it wrote");
@@ -93,7 +93,7 @@ mod tests {
                 "-of",
                 "csv=p=0",
             ])
-            .arg(image)
+            .args(input::file(image))
             .output()
             .expect("ffprobe reads what ffmpeg wrote");
         String::from_utf8_lossy(&read.stdout).trim().to_string()

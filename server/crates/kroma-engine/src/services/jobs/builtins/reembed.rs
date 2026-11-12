@@ -1,6 +1,7 @@
 //! `recommendations.reembed` manual-only: re-embed every title from its **stored**
 //! metadata with the active embedder after an embedder switch, without re-hitting
-//! TMDB. Recommendations stay empty until a dimension change is reconciled here.
+//! TMDB. The hourly `pipeline.embed` pass reconciles a dimension change too; this
+//! does it at once.
 
 use super::prelude::*;
 use crate::services::embeddings;
@@ -53,7 +54,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         consider(&s.id, &s.title, s.year, s.metadata.as_ref());
     }
 
-    const CHUNK: usize = 128;
+    const CHUNK: usize = 32;
     let mut done = skipped;
     for chunk in pending.chunks(CHUNK) {
         if ctx.cancelled() {
@@ -61,9 +62,15 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
             return Ok(());
         }
         let docs: Vec<String> = chunk.iter().map(|(_, doc)| doc.clone()).collect();
-        // An absent sidecar returns an empty batch, so the zip yields nothing and
-        // the pass is a graceful no-op.
-        for ((id, _), vec) in chunk.iter().zip(embeddings::embed_batch(&embedder, &docs)) {
+        let vectors = embeddings::embed_batch(&embedder, &docs);
+        if vectors.len() < chunk.len() && target > 0 {
+            ctx.warn(format!(
+                "the embedder answered {} of {} titles",
+                vectors.len(),
+                chunk.len()
+            ));
+        }
+        for ((id, _), vec) in chunk.iter().zip(vectors) {
             match crate::db::set_item_vector(&state.db, id, &vec) {
                 Ok(()) => embedded += 1,
                 Err(e) => ctx.error(format!("{id}: failed to store vector: {e}")),
@@ -276,7 +283,7 @@ mod tests {
     #[test]
     fn a_module_that_answers_no_vectors_stores_nothing_instead_of_failing() {
         // It reports a width but hands back an empty batch, which is what a
-        // sidecar mid-restart does. A hard error here would be a red job.
+        // module mid-restart does. A hard error here would be a red job.
         let state =
             test_state_with_embedder(crate::point::Point::stub(
                 "embedder",

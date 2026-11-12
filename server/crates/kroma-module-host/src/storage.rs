@@ -2,7 +2,7 @@
 //! helper for running a query off the async runtime.
 //!
 //! This is deliberately NOT on [`HostCtx`](crate::HostCtx). A pool on the base
-//! trait is ambient authority: every sidecar gets unrestricted read/write on the
+//! trait is ambient authority: every module gets unrestricted read/write on the
 //! whole core database whether or not it has a single table, and it links the
 //! bundled SQLite amalgamation to get it. Behind a capability, a module that
 //! declares no storage neither links SQLite nor can reach a row.
@@ -26,8 +26,8 @@ pub trait HostStorage: HostCtx {
     /// The shared core database, scoped to the module's declared grant.
     fn db(&self) -> &Pool;
 
-    /// The module's private database (`<data>/modules/<id>/module.sqlite`), where
-    /// its own `migrations()` are applied. No authorizer: it is the module's file.
+    /// The module's private database, kept by the host in `<data>/databases/<id>/`,
+    /// where its own `migrations()` are applied. No authorizer: it is the module's file.
     fn store(&self) -> &Pool;
 }
 

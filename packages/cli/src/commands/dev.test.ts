@@ -13,7 +13,7 @@ const project: Project = {
 const part = (rel: string) => partOf(project, join(project.dir, rel));
 
 describe('partOf', () => {
-  it('rebuilds the sidecar for a source file or the crate manifest', () => {
+  it('rebuilds the component for a source file or the crate manifest', () => {
     expect(part('server/src/lib.rs')).toBe('server');
     expect(part('server/Cargo.toml')).toBe('server');
     expect(part('server/src/notes.txt')).toBeNull();

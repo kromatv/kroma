@@ -10,12 +10,12 @@ afterAll(() => rmSync(staging, { recursive: true, force: true }));
 
 mkdirSync(join(staging, 'fe', 'assets'), { recursive: true });
 writeFileSync(join(staging, 'module.json'), '{"id":"tv.kroma.notes"}');
-writeFileSync(join(staging, 'module'), 'ELF');
+writeFileSync(join(staging, 'module.wasm'), '\0asm');
 writeFileSync(join(staging, 'icon.svg'), '<svg/>');
 writeFileSync(join(staging, 'fe', 'remoteEntry.js'), 'export default 1;');
 writeFileSync(join(staging, 'fe', 'assets', 'chunk.js'), 'export const a = 1;');
 
-const ENTRIES = ['module.json', 'module', 'icon.svg', 'fe'];
+const ENTRIES = ['module.json', 'module.wasm', 'icon.svg', 'fe'];
 
 const text = (bytes: Uint8Array | null) => (bytes ? new TextDecoder().decode(bytes) : null);
 
@@ -60,12 +60,12 @@ describe('deterministicTar', () => {
       'fe/assets/chunk.js',
       'fe/remoteEntry.js',
       'icon.svg',
-      'module',
       'module.json',
+      'module.wasm',
     ]);
   });
 
-  it('makes the sidecar executable and leaves every other file readable', () => {
+  it('makes every directory traversable and every file, the component too, readable only', () => {
     const tar = deterministicTar(staging, ENTRIES);
 
     expect(modes(tar)).toEqual({
@@ -74,8 +74,8 @@ describe('deterministicTar', () => {
       'fe/assets/chunk.js': 0o644,
       'fe/remoteEntry.js': 0o644,
       'icon.svg': 0o644,
-      module: 0o755,
       'module.json': 0o644,
+      'module.wasm': 0o644,
     });
   });
 

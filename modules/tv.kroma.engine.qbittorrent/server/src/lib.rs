@@ -35,6 +35,7 @@ impl QBittorrent {
 
     fn fetch(&self) -> kroma_module_sdk::http::Fetch {
         kroma_module_sdk::http::Fetch::new()
+            .purpose("download-client")
             .max_time(60)
             .cookie_jar(&self.jar)
     }
@@ -392,6 +393,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn test_reports_the_server_version() {
         let s = FakeQbit::start(healthy);
         // Exercises login + GET over a real socket, cookie jar included.
@@ -402,6 +404,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_login_the_server_does_not_confirm_is_an_error() {
         // qBittorrent answers 200 with "Fails." on bad credentials, so the STATUS
         // is not enough - the body has to be read.
@@ -414,6 +417,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_204_login_response_is_success() {
         // qBittorrent >= 4.6 returns 204 No Content (empty body) on success.
         let s = FakeQbit::start(|key, _| match key {
@@ -425,6 +429,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_403_re_logs_in_and_replays_the_request() {
         // The SID cookie expires; the connector must recover silently rather than
         // surfacing a 403 to the user mid-download.
@@ -447,6 +452,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn status_maps_a_live_torrent_onto_the_port_shape() {
         let s = FakeQbit::start(healthy);
         let st = s.client().status("abc").unwrap().expect("a status");
@@ -465,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn status_is_none_for_a_hash_the_server_does_not_know() {
         let s = FakeQbit::start(|key, _| match key {
             "GET /api/v2/torrents/info" => (200, "[]".into()),
@@ -476,6 +483,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_errored_torrent_carries_its_state_as_the_error() {
         let s = FakeQbit::start(|key, _| match key {
             "GET /api/v2/torrents/info" => (
@@ -490,6 +498,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn add_takes_the_hash_straight_from_a_magnet() {
         let s = FakeQbit::start(healthy);
         let req = AddTorrentReq {
@@ -511,6 +520,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn add_fails_loudly_when_the_server_rejects_the_torrent() {
         let s = FakeQbit::start(|key, _| match key {
             "POST /api/v2/torrents/add" => (200, "Fails.".into()),
@@ -530,6 +540,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn the_lifecycle_verbs_hit_their_endpoints() {
         let s = FakeQbit::start(healthy);
         let c = s.client();

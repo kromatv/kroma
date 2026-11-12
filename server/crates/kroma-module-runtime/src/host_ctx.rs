@@ -110,10 +110,16 @@ impl HostCtx for RemoteHost {
     ) -> usize {
         // The core resolves, filters, persists and pushes; this only ships the intent.
         let body = serde_json::json!({ "audience": audience, "spec": spec });
-        self.callback()
-            .post_json(&self.host_url("notify"), &body)
+        let Ok(answer) = self.callback().post_json(&self.host_url("notify"), &body) else {
+            return 0;
+        };
+        if answer.status == 403 {
+            tracing::error!(refusal = %answer.text(), "the host refused a notification");
+            return 0;
+        }
+        answer
+            .json::<serde_json::Value>()
             .ok()
-            .and_then(|r| r.json::<serde_json::Value>().ok())
             .and_then(|v| v.get("sent").and_then(serde_json::Value::as_u64))
             .unwrap_or(0) as usize
     }
@@ -148,6 +154,14 @@ impl HostCtx for RemoteHost {
             .and_then(|v| v.get("enabled").and_then(serde_json::Value::as_bool))
             // A module process only runs while enabled, so default to true.
             .unwrap_or(true)
+    }
+
+    fn network_seal(&self) -> kroma_module_host::NetworkSeal {
+        self.callback()
+            .post_json(&self.host_url("network/seal"), &serde_json::json!({}))
+            .and_then(|response| response.ensure_ok())
+            .and_then(|response| response.json())
+            .unwrap_or(kroma_module_host::NetworkSeal::Down)
     }
 
     fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
@@ -208,7 +222,7 @@ impl HostCtx for RemoteHost {
             .unwrap_or_default()
     }
 
-    // Asked of the core, which owns the supervisor: a sidecar cannot see which
+    // Asked of the core, which owns the supervisor: a module cannot see which
     // of its peers is installed or running, and must not care.
     fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {
         self.callback()

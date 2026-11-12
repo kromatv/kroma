@@ -21,21 +21,31 @@ kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
 serde_json = "1"
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
 quick-xml = "0.42"
+
+[dev-dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+
 # The point's routes: this module mounts them itself, so it holds the axum it
 # needs rather than a shared contract crate holding it on everyone's behalf.
-axum = { version = "0.8", features = ["macros"] }
 
-# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
-# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
-# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
-# process and the supervisor respawns it. Defined per module because a profile is
-# only honoured at a workspace root, and each module is now its own workspace.
+# The profile `kroma build` builds this component with: release + `panic =
+# "abort"`, which drops the unwinding tables at no speed cost (opt-level stays
+# 3). Safe for a component: a panic traps its instance, and the host starts a
+# fresh one. Defined per module because a profile is only honoured at a
+# workspace root, and each module is its own workspace.
 # Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
 # workspace root, and this module is its own workspace, so `inherits = "release"`
 # below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
 # units, unstripped.
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+
 [profile.release]
 opt-level = 3
 # ThinLTO, not fat: measured at 1116 vs 1117 ns/pair on the parse+score hot path

@@ -48,6 +48,31 @@ describe('ModuleCard', () => {
     expect(getComputedStyle(header).flexWrap).toBe('wrap');
   });
 
+  it('offers the one bundle, its size and the digest it is checked by', () => {
+    const sha256 = '5770e4a5'.padEnd(64, '0');
+    render(
+      <ModuleCard
+        module={entry({
+          artifacts: [
+            {
+              url: 'https://modules.kroma.tv/tv.kroma.torrents.kmod',
+              size: 1572864,
+              sha256,
+              contentHash: sha256,
+            },
+          ],
+        })}
+      />,
+    );
+
+    const links = screen.getAllByRole('link', { name: 'Download' });
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      'https://modules.kroma.tv/tv.kroma.torrents.kmod',
+    ]);
+    expect(screen.getByText('1.5 MB')).toBeDefined();
+    expect(screen.getByText('sha256 5770e4a5…00000000')).toBeDefined();
+  });
+
   it('shows the module id and its version', () => {
     render(<ModuleCard module={entry()} />);
 

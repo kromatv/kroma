@@ -31,11 +31,42 @@ impl Content {
         self.files
             .iter()
             .filter(|path| {
-                kroma_module_sdk::media::video::has_video_extension(path) && !is_a_sample(path)
+                kroma_module_sdk::primitives::video::has_video_extension(path) && !is_a_sample(path)
             })
             .cloned()
             .collect()
     }
+}
+
+#[derive(Debug)]
+pub(super) struct FilesGone(pub(super) String);
+
+impl std::fmt::Display for FilesGone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "the downloaded files are gone, {} no longer exists",
+            self.0
+        )
+    }
+}
+
+impl std::error::Error for FilesGone {}
+
+pub(super) fn is_gone(save_path: &Path) -> bool {
+    let absent = matches!(save_path.try_exists(), Ok(false));
+    absent
+        && save_path
+            .parent()
+            .is_some_and(|parent| matches!(parent.try_exists(), Ok(true)))
+}
+
+pub(super) fn is_held(save_path: &Path) -> bool {
+    held_by(save_path, |dir| matches!(dir.try_exists(), Ok(true)))
+}
+
+fn held_by(save_path: &Path, opens: impl Fn(&Path) -> bool) -> bool {
+    save_path.ancestors().any(opens)
 }
 
 pub(super) fn largest(files: &[PathBuf]) -> Option<&Path> {
@@ -183,6 +214,45 @@ mod tests {
             largest(&content.videos()),
             Some(scratch.path().join("feature.mkv").as_path())
         );
+    }
+
+    #[test]
+    fn a_download_folder_removed_from_a_folder_still_there_is_gone() {
+        let downloads = kroma_module_sdk::testing::temp_dir("content-gone");
+
+        let gone = is_gone(&downloads.path().join("68165ad60353d090"));
+
+        assert!(gone);
+    }
+
+    #[test]
+    fn a_download_folder_whose_whole_drive_is_missing_is_not_called_gone() {
+        let downloads = kroma_module_sdk::testing::temp_dir("content-offline");
+
+        let gone = is_gone(&downloads.path().join("unmounted/68165ad60353d090"));
+
+        assert!(!gone);
+    }
+
+    #[test]
+    fn an_empty_download_folder_is_not_gone() {
+        let downloads = kroma_module_sdk::testing::temp_dir("content-empty");
+
+        let gone = is_gone(downloads.path());
+
+        assert!(!gone);
+    }
+
+    #[test]
+    fn a_save_path_under_no_folder_the_module_holds_is_not_held() {
+        let opens = |dir: &Path| dir.starts_with("/volume1/video");
+
+        let held = (
+            held_by(Path::new("/volume1/downloads/Film.2024"), opens),
+            held_by(Path::new("/volume1/video/incoming/Film.2024"), opens),
+        );
+
+        assert_eq!(held, (false, true));
     }
 
     #[test]

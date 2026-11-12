@@ -36,6 +36,13 @@ vi.mock('#web/features/admin/shell', async () => {
     usePoll: () => ({ data: mocks.data, failed: mocks.failed, reload: mocks.reload }),
   };
 });
+vi.mock('#web/features/admin/server-restart-dialog', () => ({
+  ServerRestartDialog: ({ onClose }: { onClose: () => void }) => (
+    <button type="button" onClick={onClose}>
+      Restart dialog
+    </button>
+  ),
+}));
 vi.mock('#web/shared/ui/route-link', () => ({
   RouteLink: () => <a href="/admin/backup">Backup</a>,
 }));
@@ -62,12 +69,13 @@ beforeEach(() => {
     },
     installer: { platform: 'docker', ready: true },
     operation: null,
+    restartable: false,
   };
 });
-function show() {
+function show(props: Parameters<typeof ServerUpdatesPage>[0] = {}) {
   render(
     <I18nProvider locale="en">
-      <ServerUpdatesPage />
+      <ServerUpdatesPage {...props} />
     </I18nProvider>,
   );
 }
@@ -147,4 +155,39 @@ it('does not request updates when the viewer cannot manage settings', () => {
   show();
   expect(screen.getByText('Denied')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Update server' })).toBeNull();
+});
+
+it('offers no restart where nothing would start the server again', () => {
+  show();
+  expect(screen.queryByRole('button', { name: 'Restart server' })).toBeNull();
+});
+
+it('asks before restarting a server that can restart itself', () => {
+  mocks.data!.restartable = true;
+  show();
+  expect(screen.queryByText('Restart dialog')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Restart server' }));
+  expect(screen.getByText('Restart dialog')).toBeTruthy();
+});
+
+it('offers no restart while an update is being applied', () => {
+  mocks.data!.restartable = true;
+  mocks.data!.operation = {
+    id: 'request',
+    target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
+    phase: 'installing',
+    requestedAt: '2026-10-29T10:01:00Z',
+  };
+  show({ restartAsked: true });
+  expect(screen.queryByRole('button', { name: 'Restart server' })).toBeNull();
+  expect(screen.queryByText('Restart dialog')).toBeNull();
+});
+
+it('opens the restart the command menu asked for, and forgets the request once closed', () => {
+  const closed = vi.fn();
+  mocks.data!.restartable = true;
+  show({ restartAsked: true, onRestartClosed: closed });
+  expect(closed).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('Restart dialog'));
+  expect(closed).toHaveBeenCalledTimes(1);
 });

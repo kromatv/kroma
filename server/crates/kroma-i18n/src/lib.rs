@@ -9,6 +9,7 @@
 use std::collections::HashMap;
 
 mod builder;
+mod catalogs;
 mod interpolate;
 mod locale;
 mod nest;
@@ -17,6 +18,7 @@ mod plural;
 mod test_support;
 
 pub use builder::{BuildError, Builder};
+pub use catalogs::from_catalogs;
 pub use interpolate::interpolate;
 pub(crate) use nest::expand_refs;
 pub use nest::has_unresolved_ref;

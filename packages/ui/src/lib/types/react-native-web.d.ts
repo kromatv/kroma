@@ -11,6 +11,7 @@ declare module 'react-native' {
     /** Physical-keyboard key handling; react-native-web forwards it to the
      *  element, and DOM events bubble to it from any focused child. */
     onKeyDown?: ((event: KeyboardBubble) => void) | undefined;
+    onClick?: ((event: { stopPropagation: () => void }) => void) | undefined;
     /** The active-row wiring of the aria-activedescendant listbox pattern. */
     'aria-activedescendant'?: string | undefined;
   }

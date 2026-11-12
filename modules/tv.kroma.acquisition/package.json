@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA Acquisition module (frontend half): the acquisition settings page. A settings-view module (no dedicated backend routes).",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

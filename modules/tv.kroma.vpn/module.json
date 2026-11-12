@@ -1,9 +1,9 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.vpn",
   "name": "VPN",
-  "version": "0.4.16",
+  "version": "0.4.31",
   "description": "Managed WireGuard bridge (any provider) that torrent traffic routes through, with a live seal test. Disable it to stop the bridge and hide its page + routes.",
   "engines": {
     "server": ">=0.1.39"
@@ -15,21 +15,78 @@
   "feRemote": {
     "module": "./remoteEntry.js"
   },
-  "definesPoints": [
-    {
-      "name": "proxy",
-      "methods": ["url"]
-    }
-  ],
-  "contributes": [
-    {
-      "point": "tv.kroma.vpn/proxy"
-    }
-  ],
+  "contributes": [{ "point": "network" }],
   "consumes": [
     {
       "point": "tv.kroma.torrents/vpn",
       "optional": true
     }
-  ]
+  ],
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "binary-download",
+          "to": ["github.com", "*.githubusercontent.com"],
+          "ports": [443]
+        },
+        {
+          "purpose": "vpn-provider",
+          "to": ["api.mullvad.net"],
+          "ports": [443]
+        },
+        {
+          "purpose": "tunnel",
+          "to": ["public"],
+          "proto": ["udp"]
+        }
+      ],
+      "listen": [
+        {
+          "purpose": "proxy",
+          "proto": ["tcp"],
+          "port": "setting:vpnLocalPort",
+          "count": 5
+        }
+      ],
+      "host": true
+    },
+    "fs": {
+      "read": ["module"],
+      "write": ["module"]
+    },
+    "run": ["wireproxy"]
+  },
+  "dataDirs": ["vpn"],
+  "helpers": {
+    "wireproxy": {
+      "assets": {
+        "linux-x86_64": {
+          "url": "https://github.com/windtf/wireproxy/releases/download/v1.1.2/wireproxy_linux_amd64.tar.gz",
+          "sha256": "b7dcff8f6e9d3410364e432aff24154eaa8db8206e0c6faac35d6c6ab06dac51",
+          "member": "wireproxy"
+        },
+        "linux-aarch64": {
+          "url": "https://github.com/windtf/wireproxy/releases/download/v1.1.2/wireproxy_linux_arm64.tar.gz",
+          "sha256": "aa234db9ef0b2774cb04a79f391bd41c2ededd815fc1a1c720cfdc693c70898d",
+          "member": "wireproxy"
+        },
+        "linux-arm": {
+          "url": "https://github.com/windtf/wireproxy/releases/download/v1.1.2/wireproxy_linux_arm.tar.gz",
+          "sha256": "6d3c8c803a7fdeef6083d7f98b960e40925ab0139a138c3c991e1ca55cd8535e",
+          "member": "wireproxy"
+        },
+        "macos-x86_64": {
+          "url": "https://github.com/windtf/wireproxy/releases/download/v1.1.2/wireproxy_darwin_amd64.tar.gz",
+          "sha256": "044db5c94e1558845f793542f26d490a369f50b422c0b5d6f59f341e0d498b68",
+          "member": "wireproxy"
+        },
+        "macos-aarch64": {
+          "url": "https://github.com/windtf/wireproxy/releases/download/v1.1.2/wireproxy_darwin_arm64.tar.gz",
+          "sha256": "30c6cd19221f1fc37c6c0ccf4efedb8c727d358846463c8f68b8b9931eefe35a",
+          "member": "wireproxy"
+        }
+      }
+    }
+  }
 }

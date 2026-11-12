@@ -1,0 +1,256 @@
+use super::*;
+use crate::services::network::flow::Verdict;
+
+const AT_MS: i64 = 1_800_000_000_000;
+
+fn report(purpose: &str, route: FlowRoute) -> FlowReport {
+    FlowReport {
+        purpose: purpose.to_string(),
+        method: "GET".to_string(),
+        host: "api.example".to_string(),
+        port: 443,
+        route,
+        status: None,
+        bytes_in: 0,
+        bytes_out: 0,
+        duration_ms: 0,
+        error: None,
+        rule: None,
+    }
+}
+
+fn everything(limit: usize) -> FlowFilter {
+    FlowFilter {
+        limit,
+        ..FlowFilter::default()
+    }
+}
+
+fn numbered(journal: &Journal, count: i64) {
+    for n in 0..count {
+        journal.record("core", report("metadata", FlowRoute::Direct), AT_MS + n);
+    }
+}
+
+fn ids(page: &FlowPage) -> Vec<u64> {
+    page.flows.iter().map(|flow| flow.id).collect()
+}
+
+#[test]
+fn a_page_skips_its_offset_and_counts_every_match() {
+    let journal = Journal::default();
+    numbered(&journal, 5);
+
+    let page = journal.page(&FlowFilter {
+        limit: 2,
+        offset: 2,
+        ..FlowFilter::default()
+    });
+
+    assert_eq!(ids(&page), [3, 2]);
+    assert_eq!(page.total, 5);
+}
+
+#[test]
+fn pages_taken_from_an_anchor_stay_put_when_new_flows_arrive() {
+    let journal = Journal::default();
+    numbered(&journal, 4);
+    let second_page = FlowFilter {
+        limit: 2,
+        offset: 2,
+        before: Some(5),
+        ..FlowFilter::default()
+    };
+    let before = journal.page(&second_page);
+
+    numbered(&journal, 3);
+
+    let after = journal.page(&second_page);
+    assert_eq!(ids(&after), ids(&before));
+    assert_eq!(after.total, 4);
+}
+
+#[test]
+fn a_host_search_finds_a_flow_by_its_name_or_its_port() {
+    let journal = Journal::default();
+    let mut tracker = report("indexer", FlowRoute::Direct);
+    tracker.host = "Tracker.example.org".to_string();
+    tracker.port = 1337;
+    journal.record("tv.kroma.indexer", tracker, AT_MS);
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS);
+
+    let by_name = journal.page(&FlowFilter {
+        limit: 10,
+        host: Some("tracker".to_string()),
+        ..FlowFilter::default()
+    });
+    let by_port = journal.page(&FlowFilter {
+        limit: 10,
+        host: Some("org:1337".to_string()),
+        ..FlowFilter::default()
+    });
+
+    assert_eq!(by_name.total, 1);
+    assert_eq!(by_port.total, 1);
+    assert_eq!(by_name.flows[0].caller, "tv.kroma.indexer");
+}
+
+#[test]
+fn a_purpose_filter_reaches_the_purposes_named_under_it() {
+    let journal = Journal::default();
+    journal.record("core", report("metadata.search", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("metadatas", FlowRoute::Direct), AT_MS);
+
+    let page = journal.page(&FlowFilter {
+        limit: 10,
+        purpose: Some("metadata".to_string()),
+        ..FlowFilter::default()
+    });
+
+    assert_eq!(page.total, 2);
+}
+
+#[test]
+fn the_newest_flow_comes_first() {
+    let journal = Journal::default();
+    journal.record("core", report("first", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("second", FlowRoute::Direct), AT_MS + 1);
+
+    let flows = journal.page(&everything(10)).flows;
+
+    let purposes: Vec<&str> = flows.iter().map(|f| f.purpose.as_str()).collect();
+    assert_eq!(purposes, ["second", "first"]);
+    assert!(flows[0].id > flows[1].id);
+}
+
+#[test]
+fn the_oldest_flows_fall_off_past_capacity() {
+    let journal = Journal::default();
+    for i in 0..=RECENT_CAPACITY {
+        journal.record(
+            "core",
+            report("metadata", FlowRoute::Direct),
+            AT_MS + i as i64,
+        );
+    }
+
+    let flows = journal.page(&everything(usize::MAX)).flows;
+
+    assert_eq!(flows.len(), RECENT_CAPACITY);
+    assert_eq!(flows.last().unwrap().at, AT_MS + 1);
+}
+
+#[test]
+fn every_filter_set_must_match() {
+    let journal = Journal::default();
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("metadata", FlowRoute::Blocked), AT_MS);
+    journal.record(
+        "tv.kroma.indexer",
+        report("indexer", FlowRoute::Blocked),
+        AT_MS,
+    );
+    let filter = FlowFilter {
+        limit: 10,
+        caller: Some("core".to_string()),
+        purpose: Some("metadata".to_string()),
+        verdict: Some(Verdict::Blocked),
+        ..FlowFilter::default()
+    };
+
+    let flows = journal.page(&filter).flows;
+
+    assert_eq!(flows.len(), 1);
+    assert_eq!(flows[0].route, FlowRoute::Blocked);
+}
+
+#[test]
+fn a_long_field_a_module_reports_is_clipped() {
+    let journal = Journal::default();
+    let long = FlowReport {
+        host: "h".repeat(1000),
+        error: Some("e".repeat(1000)),
+        ..report(&"p".repeat(1000), FlowRoute::Direct)
+    };
+
+    journal.record("tv.kroma.indexer", long, AT_MS);
+
+    let flow = &journal.page(&everything(1)).flows[0];
+    assert_eq!(flow.purpose.len(), MAX_PURPOSE_CHARS);
+    assert_eq!(flow.host.len(), MAX_HOST_CHARS);
+    assert_eq!(flow.error.as_ref().unwrap().len(), MAX_ERROR_CHARS);
+}
+
+#[test]
+fn a_flush_writes_one_tally_per_day_caller_purpose_host_and_route() {
+    let pool = crate::db::testing::temp_pool("journal-flush");
+    let journal = Journal::default();
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS);
+    journal.record("core", report("metadata", FlowRoute::Direct), AT_MS + 5);
+    journal.record("core", report("metadata", FlowRoute::Blocked), AT_MS);
+
+    journal.flush(&pool).unwrap();
+    journal.flush(&pool).unwrap();
+
+    let tallies = network_flows::since(&pool, network_flows::day_of(AT_MS), None, 10).unwrap();
+    let counts: Vec<(&str, &str, i64)> = tallies
+        .iter()
+        .map(|t| (t.route.as_str(), t.verdict.as_str(), t.count))
+        .collect();
+    assert_eq!(
+        counts,
+        [("direct", "allowed", 2), ("blocked", "blocked", 1)]
+    );
+    assert_eq!(tallies[0].last_at, AT_MS + 5);
+}
+
+fn connection(host: &str) -> FlowReport {
+    FlowReport {
+        host: host.to_string(),
+        method: CARRIED_METHOD.to_string(),
+        status: None,
+        ..report("peers", FlowRoute::Direct)
+    }
+}
+
+fn tallied_hosts(journal: &Journal) -> Vec<String> {
+    let mut hosts: Vec<String> = journal
+        .pending
+        .lock()
+        .unwrap()
+        .keys()
+        .map(|key| key.host.clone())
+        .collect();
+    hosts.sort();
+    hosts
+}
+
+#[test]
+fn public_addresses_are_tallied_as_one_host() {
+    let journal = Journal::default();
+
+    journal.record("tv.kroma.torrents", connection("1.1.1.1"), 1);
+    journal.record("tv.kroma.torrents", connection("8.8.8.8"), 2);
+
+    assert_eq!(tallied_hosts(&journal), [TALLIED_PUBLIC_ADDRESS]);
+}
+
+#[test]
+fn a_name_and_a_private_address_are_tallied_as_themselves() {
+    let journal = Journal::default();
+
+    journal.record("tv.kroma.torrents", connection("tracker.example"), 1);
+    journal.record("tv.kroma.torrents", connection("192.168.1.2"), 2);
+
+    assert_eq!(tallied_hosts(&journal), ["192.168.1.2", "tracker.example"]);
+}
+
+#[test]
+fn a_recent_connection_keeps_its_address() {
+    let journal = Journal::default();
+
+    journal.record("tv.kroma.torrents", connection("1.1.1.1"), 1);
+
+    assert_eq!(journal.page(&everything(1)).flows[0].host, "1.1.1.1");
+}

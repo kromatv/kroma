@@ -11,6 +11,8 @@ use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Duration;
 
+use crate::input;
+
 use super::super::ffmpeg::ffmpeg_output;
 use super::super::naming::contains;
 use super::{render_node, HwAccel};
@@ -174,7 +176,8 @@ fn usable(accel: HwAccel) -> Result<(), String> {
         }
         _ => {}
     }
-    cmd.args(["-f", "lavfi", "-i", TEST_SOURCE, "-frames:v", "3"]);
+    cmd.args(input::generated(TEST_SOURCE))
+        .args(["-frames:v", "3"]);
     if matches!(accel, HwAccel::Qsv | HwAccel::Vaapi) {
         cmd.args(["-vf", "format=nv12,hwupload"]);
     }

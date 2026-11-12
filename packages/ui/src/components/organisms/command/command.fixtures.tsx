@@ -12,13 +12,21 @@ import { Command } from './command';
 
 import { useCommandResults } from './command-context';
 
+import { CommandKeys } from './command-keys';
+
 import type { CommandItem } from './command-list';
 
 export const LIBRARY: CommandItem[] = [
   { id: 'films', label: 'Films', group: 'Libraries', icon: 'movie', meta: '412 titles' },
   { id: 'series', label: 'Series', group: 'Libraries', icon: 'device-tv', meta: '78 titles' },
   { id: 'music', label: 'Music', group: 'Libraries', icon: 'music', meta: '2,104 titles' },
-  { id: 'resume', label: 'Resume playback', group: 'Actions', icon: 'player-play' },
+  {
+    id: 'resume',
+    label: 'Resume playback',
+    subtitle: 'Dune · 1h12 left',
+    group: 'Actions',
+    icon: 'player-play',
+  },
   { id: 'scan', label: 'Scan the folders', group: 'Actions', icon: 'refresh' },
   { id: 'downloads', label: 'Downloads', group: 'Actions', icon: 'download' },
   { id: 'accounts', label: 'Accounts', group: 'Settings', icon: 'users', keywords: 'profiles' },
@@ -50,7 +58,7 @@ export function Palette() {
           label="Search"
           onPress={() => setOpen(true)}
         />
-        <Kbd>⌘ K</Kbd>
+        <CommandKeys />
         <Box flex />
         <Text variant="meta" color="textDim">
           {picked}
@@ -67,12 +75,12 @@ export function Palette() {
           <Command.List />
           <Command.Empty>No results.</Command.Empty>
           <Command.Footer>
-            <Kbd>↑</Kbd>
-            <Kbd>↓</Kbd>
+            <Kbd icon="arrow-up" />
+            <Kbd icon="arrow-down" />
             <Text variant="meta" color="textDim">
               browse
             </Text>
-            <Kbd>↵</Kbd>
+            <Kbd icon="corner-down-left" />
             <Text variant="meta" color="textDim">
               open
             </Text>

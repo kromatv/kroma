@@ -78,11 +78,22 @@ interface TableCellProps extends Omit<BoxProps, 'children'> {
   children?: ReactNode;
 }
 
-/** One column of one row. The box props lay its content out; the column's own
- *  width and place come from the Root's `columns`. */
+/** One column of one row. The box props lay its content out, and a `row` centres
+ *  it across the row unless it says `align`; the column's own width and place come
+ *  from the Root's `columns`. */
 function Cell({ children, ...box }: Readonly<TableCellProps>) {
   const laid = Object.keys(box).length > 0;
-  return <Kit.Cell>{laid ? <Box {...box}>{children}</Box> : children}</Kit.Cell>;
+  return (
+    <Kit.Cell>
+      {laid ? (
+        <Box align={box.row ? 'center' : undefined} {...box}>
+          {children}
+        </Box>
+      ) : (
+        children
+      )}
+    </Kit.Cell>
+  );
 }
 
 interface TableColumnProps {
@@ -104,7 +115,8 @@ interface TableActionProps {
   disabled?: boolean;
 }
 
-/** A shortcut sitting in a row, next to whatever the row's own press does.
+/** A shortcut sitting in a row, next to whatever the row's own press does. Its
+ *  column is 64 wide for one: 40 of button and the cell's 12 of padding either side.
  *
  *  The kit's ghost icon button, with only the GLYPH tinted: the surface, the
  *  hover wash, the press and the focus ring all come from the one control every
@@ -131,7 +143,7 @@ function Action({ tone, icon, label, onPress, disabled = false }: Readonly<Table
  * An aligned admin table.
  *
  * ```tsx
- * <Table.Root columns={[{}, { width: 190, from: 'md' }, { width: 76 }]}>
+ * <Table.Root columns={[{}, { width: 190, from: 'md' }, { width: 64 }]}>
  *   <Table.Header>
  *     <Table.Column>Titre</Table.Column>
  *     <Table.Column>Demandeur</Table.Column>

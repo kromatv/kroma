@@ -8,10 +8,7 @@ import {
   FocusRegion,
   FocusSlot,
   gradient,
-  Icon,
   NavPill,
-  Spinner,
-  StatusDot,
   shade,
   style,
   styles,
@@ -21,6 +18,7 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { CastRemotes } from '#tv/features/cast/CastRemotes';
+import { ConnectionStatus } from '#tv/features/catalog/home/connection-status';
 import { KromaMark, WallClock } from '#tv/shared/ui';
 
 export type NavKey = 'home' | 'films' | 'series' | 'genres' | 'mylist' | 'search';
@@ -129,20 +127,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
           ) : null}
         </Box>
       </FocusRegion>
-    </Box>
-  );
-}
-
-function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: string }>) {
-  if (online) return <StatusDot online overArt />;
-  return (
-    <Box w={36} h={36} center accessibilityLabel={label} accessibilityRole="progressbar">
-      <Box absolute>
-        <Spinner size={34} thickness={2} color="danger/80" />
-      </Box>
-      <Box w={28} h={28} center radius="pill" bg="danger">
-        <Icon name="wifi-off" size={16} thickness={2.2} color="white" />
-      </Box>
     </Box>
   );
 }

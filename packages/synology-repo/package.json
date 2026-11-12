@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Generate a Synology package-source repository (catalog.json + landing page) from a built .spk, for static hosting (GitHub Pages, Cloudflare Pages, any static host).",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

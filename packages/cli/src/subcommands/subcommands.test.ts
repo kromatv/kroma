@@ -6,7 +6,6 @@ import { create } from './create';
 import { dev } from './dev';
 import { install } from './install';
 import { login } from './login';
-import { plan } from './plan';
 import { registry } from './registry';
 import { release } from './release';
 import { serve } from './serve';
@@ -18,7 +17,6 @@ const handlers = vi.hoisted(() => ({
   check: vi.fn(),
   install: vi.fn(),
   login: vi.fn(),
-  plan: vi.fn(),
   cargo: vi.fn(),
   registry: vi.fn(),
   serve: vi.fn(),
@@ -32,7 +30,6 @@ vi.mock('../commands/build', () => ({ buildCommand: handlers.build }));
 vi.mock('../commands/check', () => ({ checkCommand: handlers.check }));
 vi.mock('../commands/install', () => ({ installCommand: handlers.install }));
 vi.mock('../commands/login', () => ({ loginCommand: handlers.login }));
-vi.mock('../commands/plan', () => ({ planCommand: handlers.plan }));
 vi.mock('../commands/cargo', () => ({ cargoCommand: handlers.cargo }));
 vi.mock('../commands/registry', () => ({ registryCommand: handlers.registry }));
 vi.mock('../commands/serve', () => ({ serveCommand: handlers.serve }));
@@ -75,21 +72,21 @@ describe('create', () => {
 });
 
 describe('dev', () => {
-  it('hands the directory, target and server flags on', async () => {
-    await runOf(dev)({ args: { dir: 'm', target: 't', server: 's', token: 'k' }, rawArgs: [] });
+  it('hands the directory and server flags on', async () => {
+    await runOf(dev)({ args: { dir: 'm', server: 's', token: 'k' }, rawArgs: [] });
 
-    expect(handlers.dev).toHaveBeenCalledWith({ dir: 'm', target: 't', server: 's', token: 'k' });
+    expect(handlers.dev).toHaveBeenCalledWith({ dir: 'm', server: 's', token: 'k' });
   });
 });
 
 describe('build', () => {
   it('picks the release profile by default and the dev one with debug', async () => {
-    await runOf(build)({ args: { _: ['a'], out: 'o', 'skip-build': true }, rawArgs: [] });
+    await runOf(build)({ args: { _: ['a'], out: 'o' }, rawArgs: [] });
     await runOf(build)({ args: { _: [], debug: true }, rawArgs: [] });
 
     expect(handlers.build.mock.calls).toEqual([
-      [{ dirs: ['a'], out: 'o', target: undefined, profile: 'release-kmod', skipBuild: true }],
-      [{ dirs: [], out: undefined, target: undefined, profile: 'dev', skipBuild: undefined }],
+      [{ dirs: ['a'], out: 'o', profile: 'release-kmod' }],
+      [{ dirs: [], out: undefined, profile: 'dev' }],
     ]);
   });
 });
@@ -125,14 +122,6 @@ describe('login', () => {
     await runOf(login)({ args: { server: 's', email: 'e', password: 'p' }, rawArgs: [] });
 
     expect(handlers.login).toHaveBeenCalledWith({ server: 's', email: 'e', password: 'p' });
-  });
-});
-
-describe('plan', () => {
-  it('hands the directories and target on', async () => {
-    await runOf(plan)({ args: { _: ['a'], target: 't' }, rawArgs: [] });
-
-    expect(handlers.plan).toHaveBeenCalledWith(['a'], 't');
   });
 });
 

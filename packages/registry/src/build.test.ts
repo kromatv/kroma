@@ -14,7 +14,6 @@ function entry(over: Partial<DescribedModule> = {}): DescribedModule {
     contributes: [{ point: 'tv.kroma.torrents/download-client', id: 'builtin' }],
     artifacts: [
       {
-        target: 'x86_64-linux',
         file: 'x.kmod',
         url: 'https://h/x.kmod',
         size: 10,
@@ -120,6 +119,27 @@ describe('buildModuleRecord', () => {
     expect(buildModuleRecord(entry()).versions['0.1.7']?.dependencies).toBeUndefined();
   });
 
+  it('describes the one bundle of a component without naming a platform', () => {
+    const [artifact] = buildModuleRecord(entry()).versions['0.1.7']?.artifacts ?? [];
+
+    expect(artifact).toEqual({
+      url: 'https://h/x.kmod',
+      size: 10,
+      integrity: sriFromHex('ab'.repeat(32)),
+      contentHash: sriFromHex('cd'.repeat(32)),
+    });
+  });
+
+  it('passes on the platform a per-platform build names, which a released server picks by', () => {
+    const native = { ...entry().artifacts[0], target: 'x86_64-unknown-linux-musl' };
+
+    const record = buildModuleRecord(
+      entry({ artifacts: [native] as DescribedModule['artifacts'] }),
+    );
+
+    expect(record.versions['0.1.7']?.artifacts[0]?.target).toBe('x86_64-unknown-linux-musl');
+  });
+
   it('drops an artifact with no usable checksum instead of describing it', () => {
     const record = buildModuleRecord(
       entry({
@@ -148,5 +168,81 @@ describe('buildDescriptor / buildIndex', () => {
     expect(index[0]?.version).toBe('0.1.7');
     expect(index[0]?.artifacts[0]?.integrity).toBe(sriFromHex('ab'.repeat(32)));
     expect(index[0]).not.toHaveProperty('versions');
+  });
+});
+
+describe('permissions', () => {
+  const permissions = { net: { connect: [{ purpose: 'indexer', to: ['public'] }] } };
+
+  it('a catalog entry carries what its version may do', () => {
+    const [row] = buildIndex([entry({ permissions })]);
+
+    expect(row?.permissions).toEqual(permissions);
+    expect(RegistryIndex.parse([row])[0]?.permissions?.net?.connect?.[0]?.purpose).toBe('indexer');
+  });
+
+  it('a module that declares nothing has no permissions in its entry', () => {
+    const [row] = buildIndex([entry()]);
+
+    expect(row?.permissions).toBeUndefined();
+  });
+
+  it('a module record carries them per version', () => {
+    const record = buildModuleRecord(entry({ permissions }));
+
+    expect(record.versions['0.1.7']?.permissions).toEqual(permissions);
+  });
+});
+
+describe('what a version reaches', () => {
+  const storage = { core: { read: ['users.email', 'requests'], write: ['requests'] } };
+  const settings = { read: ['namingCase'], write: ['namingCase'] };
+  const rqbit = { assets: { 'linux-x86_64': { url: 'https://h/rqbit', sha256: 'ab'.repeat(32) } } };
+
+  it('a catalog entry carries the storage, settings and helpers its manifest declares', () => {
+    const declared = entry({
+      storage,
+      settings,
+      helpers: { rqbit },
+      permissions: { run: ['rqbit', 'curl'] },
+    });
+
+    const [row] = RegistryIndex.parse(buildIndex([declared]));
+
+    expect(row?.storage).toEqual(storage);
+    expect(row?.settings).toEqual(settings);
+    expect(row?.helpers).toEqual({ rqbit });
+  });
+
+  it('a module that runs only programs of the server says it pins none', () => {
+    const [row] = buildIndex([entry({ permissions: { run: ['ffmpeg'] } })]);
+
+    expect(row?.helpers).toEqual({});
+  });
+
+  it('a module that reaches nothing carries none of them', () => {
+    const [row] = buildIndex([entry()]);
+
+    expect(row?.storage).toBeUndefined();
+    expect(row?.settings).toBeUndefined();
+    expect(row?.helpers).toBeUndefined();
+  });
+
+  it('an entry from a catalog that predates them still parses', () => {
+    const [row] = buildIndex([entry({ permissions: { fs: { read: ['media'] } } })]);
+    const { storage: _s, settings: _t, helpers: _h, ...older } = row ?? {};
+
+    const [parsed] = RegistryIndex.parse([older]);
+
+    expect(parsed?.permissions).toEqual({ fs: { read: ['media'] } });
+    expect(parsed?.storage).toBeUndefined();
+    expect(parsed?.settings).toBeUndefined();
+  });
+
+  it('a module record carries them per version', () => {
+    const record = buildModuleRecord(entry({ storage, settings }));
+
+    expect(record.versions['0.1.7']?.storage).toEqual(storage);
+    expect(record.versions['0.1.7']?.settings).toEqual(settings);
   });
 });

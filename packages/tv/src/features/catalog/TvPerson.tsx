@@ -1,22 +1,24 @@
-import type { Metadata } from '@kromatv/client/media';
-import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kromatv/core';
+import type { SearchHit } from '@kromatv/client/media';
+import { personInvolvement, posterColors, roleLabels } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, Text, TopFade, useFocusNav } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
-import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 import { PersonHeader } from '#tv/features/catalog/person/PersonHeader';
+import { usePersonCredits } from '#tv/features/catalog/person/use-person-credits';
 import { usePersonDetail } from '#tv/features/catalog/person/usePersonDetail';
 import { EMPTY } from '#tv/features/catalog/screenStyle';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
-/** Everything one cast/crew person is credited in. The filmography is filtered
- * out of the already-loaded catalogue (no request); the biography comes from the
- * metadata provider and lands a moment later. */
+const NO_CREDITS: SearchHit[] = [];
+
+/** Everything one cast/crew person is credited in, as the server ranks it
+ * (best-known first); the biography comes from the metadata provider and lands
+ * a moment later. */
 export function TvPerson() {
   const { name } = useParams('person');
-  const { movies, shows } = useConnection();
+  const credits = usePersonCredits(name);
   const client = useClient();
   const t = useT();
   const nav = useNav();
@@ -25,42 +27,37 @@ export function TvPerson() {
   const hold = titleMenu.open;
 
   const { cards, involvement } = useMemo(() => {
-    const mine = (meta?: Metadata | null) => creditsPerson(meta, name);
-    const rank = (a: { rating: number; year: number }, b: { rating: number; year: number }) =>
-      b.rating - a.rating || b.year - a.year;
-
-    const matchedMovies = movies.filter((m) => mine(m.metadata));
-    const matchedShows = shows.filter((s) => mine(s.metadata));
-
-    const movieCards = matchedMovies.map((m) => ({
-      sort: { rating: m.metadata?.rating ?? 0, year: m.year ?? 0 },
-      card: {
-        id: m.id,
-        title: m.title,
-        poster: (width: number) => client.media.artwork.posterFor(m, width),
-        colors: posterColors(m.id),
-        onClick: () => nav.go('movie', { item: m }),
-        onLongPress: () => hold({ kind: 'movie', item: m }),
-      } satisfies GridCard,
-    }));
-    const showCards = matchedShows.map((s) => ({
-      sort: { rating: s.metadata?.rating ?? 0, year: s.year ?? 0 },
-      card: {
-        id: s.id,
-        title: s.title,
-        poster: (width: number) => client.media.artwork.showPosterFor(s, width),
-        colors: posterColors(s.id),
-        onClick: () => nav.go('show', { show: s }),
-        onLongPress: () => hold({ kind: 'show', item: s }),
-      } satisfies GridCard,
-    }));
-
-    const cards = [...movieCards, ...showCards]
-      .sort((a, b) => rank(a.sort, b.sort))
-      .map((c) => c.card);
-    const metas = [...matchedMovies, ...matchedShows].map((it) => it.metadata);
+    const hits = credits ?? NO_CREDITS;
+    const cards = hits.flatMap((hit): GridCard[] => {
+      if (hit.type === 'show') {
+        const s = hit.show;
+        return [
+          {
+            id: s.id,
+            title: s.title,
+            poster: (width: number) => client.media.artwork.showPosterFor(s, width),
+            colors: posterColors(s.id),
+            onClick: () => nav.go('show', { show: s }),
+            onLongPress: () => hold({ kind: 'show', item: s }),
+          },
+        ];
+      }
+      if (hit.type !== 'movie') return [];
+      const m = hit.item;
+      return [
+        {
+          id: m.id,
+          title: m.title,
+          poster: (width: number) => client.media.artwork.posterFor(m, width),
+          colors: posterColors(m.id),
+          onClick: () => nav.go('movie', { item: m }),
+          onLongPress: () => hold({ kind: 'movie', item: m }),
+        },
+      ];
+    });
+    const metas = hits.map((hit) => (hit.type === 'show' ? hit.show.metadata : hit.item.metadata));
     return { cards, involvement: personInvolvement(metas, name) };
-  }, [movies, shows, name, client, nav, hold]);
+  }, [credits, name, client, nav, hold]);
 
   const detail = usePersonDetail(name);
   // The provider's portrait is the better one; the credit's photo is the instant
@@ -70,6 +67,18 @@ export function TvPerson() {
     PORTRAIT_W,
   );
   const roles = roleLabels(t, involvement);
+
+  const grid = cards.length ? (
+    <TopFade>
+      <PosterGrid cards={cards} />
+    </TopFade>
+  ) : (
+    <Box flex center px={64}>
+      <Text style={EMPTY} color="textDim">
+        {t('person.empty')}
+      </Text>
+    </Box>
+  );
 
   return (
     <Box fill bg="bg" overflow="hidden">
@@ -81,17 +90,7 @@ export function TvPerson() {
         detail={detail}
       />
 
-      {cards.length ? (
-        <TopFade>
-          <PosterGrid cards={cards} />
-        </TopFade>
-      ) : (
-        <Box flex center px={64}>
-          <Text style={EMPTY} color="textDim">
-            {t('person.empty')}
-          </Text>
-        </Box>
-      )}
+      {credits === null ? null : grid}
       {titleMenu.menu}
     </Box>
   );

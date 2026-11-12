@@ -1,5 +1,5 @@
 use axum::http::StatusCode;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::testing::StubHost;
 use kroma_module_sdk::host::HostStorage;
 use serde_json::{json, Value};

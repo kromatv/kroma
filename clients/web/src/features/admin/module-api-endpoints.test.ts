@@ -38,12 +38,12 @@ describe('the module endpoints', () => {
 
   it('POSTs the enabled flag under the url-encoded id and parses the verdict', async () => {
     stubFetch(
-      new Response(JSON.stringify({ id: 'tv.kroma.vpn', enabled: true, warning: 'sidecar died' }), {
+      new Response(JSON.stringify({ id: 'tv.kroma.vpn', enabled: true, warning: 'module died' }), {
         status: 200,
       }),
     );
     const res = await setModuleEnabled('tv.kroma.vpn', true);
-    expect(res.warning).toBe('sidecar died');
+    expect(res.warning).toBe('module died');
     expect(calls[0]?.url.endsWith('/api/admin/modules/tv.kroma.vpn/enabled')).toBe(true);
     expect(bodyOf(calls[0]?.init)).toEqual({ enabled: true });
   });
@@ -57,7 +57,6 @@ describe('the module endpoints', () => {
     const catalog = {
       schema: 1,
       serverVersion: '0.1.3',
-      target: 'darwin-arm64',
       registryUrl: 'https://modules.kroma.tv',
       registries: [],
       modules: [],
@@ -103,7 +102,7 @@ describe('the module endpoints', () => {
   it('updates the named modules, or every outdated one when none are named', async () => {
     const result = { updated: [{ id: 'a', from: '1.0.0', to: '1.1.0' }], failed: [] };
     stubFetch(new Response(JSON.stringify(result), { status: 200 }));
-    await expect(updateModules(['a'])).resolves.toEqual(result);
+    await expect(updateModules(['a'])).resolves.toEqual({ ...result, needsConsent: [] });
     expect(bodyOf(calls[0]?.init)).toEqual({ ids: ['a'] });
 
     calls.length = 0;

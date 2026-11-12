@@ -1,13 +1,14 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installCommand } from './install';
 
 let dir: string;
 const calls: { url: string; method: string; body: Uint8Array | null }[] = [];
 
-function stubServer(target: string | null) {
+function stubServer() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
@@ -16,25 +17,19 @@ function stubServer(target: string | null) {
         method: init?.method ?? 'GET',
         body: init?.body instanceof Uint8Array ? init.body : null,
       });
-      if (url.endsWith('/api/admin/store/platform')) {
-        return target
-          ? Response.json({ target, serverVersion: '0.1.40' })
-          : new Response('', { status: 404 });
-      }
       return new Response('{"id":"tv.acme.notes","version":"0.1.0"}', { status: 200 });
     }),
   );
 }
 
+const uploaded = () =>
+  new TextDecoder().decode(calls.find((c) => c.method === 'POST')?.body ?? new Uint8Array());
+
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'kroma-install-'));
   calls.length = 0;
   mkdirSync(join(dir, 'dist', 'modules'), { recursive: true });
-  writeFileSync(join(dir, 'dist', 'modules', 'tv.acme.notes-aarch64-apple-darwin.kmod'), 'mac');
-  writeFileSync(
-    join(dir, 'dist', 'modules', 'tv.acme.notes-x86_64-unknown-linux-musl.kmod'),
-    'linux',
-  );
+  writeFileSync(join(dir, 'dist', 'modules', 'tv.acme.notes.kmod'), 'component');
   vi.stubEnv('KROMA_TOKEN', 'tok');
   vi.stubEnv('KROMA_SERVER', 'http://server.test:4040/');
   vi.stubEnv('KROMA_CLI_CONFIG', join(dir, 'none.json'));
@@ -49,59 +44,53 @@ afterEach(() => {
 });
 
 describe('installCommand', () => {
-  it("uploads the bundle built for the server's platform", async () => {
-    stubServer('x86_64-unknown-linux-musl');
+  it('uploads the one bundle of the module, and asks the server nothing else', async () => {
+    stubServer();
 
     const code = await installCommand({ id: 'tv.acme.notes', cwd: dir });
 
     expect(code).toBe(0);
-    const upload = calls.find((c) => c.method === 'POST');
-    expect(upload?.url).toBe('http://server.test:4040/api/admin/store/install');
-    expect(new TextDecoder().decode(upload?.body ?? new Uint8Array())).toBe('linux');
+    expect(calls.map((c) => [c.method, c.url])).toEqual([
+      ['POST', 'http://server.test:4040/api/admin/store/install'],
+    ]);
+    expect(uploaded()).toBe('component');
   });
 
   it('takes the module id from the cwd when it is a module', async () => {
-    stubServer('aarch64-apple-darwin');
+    stubServer();
     writeFileSync(
       join(dir, 'module.json'),
-      JSON.stringify({ schemaVersion: 2, id: 'tv.acme.notes', name: 'Notes', version: '0.1.0' }),
+      JSON.stringify({
+        schemaVersion: MODULE_SCHEMA_VERSION,
+        id: 'tv.acme.notes',
+        name: 'Notes',
+        version: '0.1.0',
+      }),
     );
 
     await installCommand({ cwd: dir });
 
-    const upload = calls.find((c) => c.method === 'POST');
-    expect(new TextDecoder().decode(upload?.body ?? new Uint8Array())).toBe('mac');
+    expect(uploaded()).toBe('component');
   });
 
-  it('refuses a bundle built for another platform and names the flag', async () => {
-    stubServer('x86_64-unknown-linux-musl');
+  it('uploads the file it is given, whatever it is named', async () => {
+    stubServer();
+    const file = join(dir, 'notes-from-ci.kmod');
+    writeFileSync(file, 'downloaded');
 
-    await expect(
-      installCommand({
-        file: join(dir, 'dist', 'modules', 'tv.acme.notes-aarch64-apple-darwin.kmod'),
-        cwd: dir,
-      }),
-    ).rejects.toThrow('--target x86_64-unknown-linux-musl');
-    expect(calls.some((c) => c.method === 'POST')).toBe(false);
-  });
+    await installCommand({ file, cwd: dir });
 
-  it('uploads whatever matches this machine when the server is too old to say', async () => {
-    stubServer(null);
-
-    const code = await installCommand({ id: 'tv.acme.notes', cwd: dir });
-
-    expect(code).toBe(0);
-    expect(calls.some((c) => c.method === 'POST')).toBe(true);
+    expect(uploaded()).toBe('downloaded');
   });
 
   it('says what to run when nothing was packed for the id', async () => {
-    stubServer('aarch64-apple-darwin');
+    stubServer();
 
     await expect(installCommand({ id: 'tv.acme.other', cwd: dir })).rejects.toThrow('kroma build');
   });
 
   it('needs an id when the cwd is not a module and none is given', async () => {
-    stubServer('aarch64-apple-darwin');
+    stubServer();
 
     await expect(installCommand({ cwd: dir })).rejects.toThrow('usage: kroma install');
   });

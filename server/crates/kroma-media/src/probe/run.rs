@@ -8,6 +8,8 @@ use tracing::debug;
 
 use kroma_module_wire::VideoStream;
 
+use crate::input;
+
 use super::parse::build_result;
 use super::ProbeResult;
 
@@ -36,7 +38,7 @@ pub(super) const DURATION_ARGS: [&str; 6] = [
 pub fn probe_duration_ms(path: &Path) -> Option<u64> {
     let out = Command::new("ffprobe")
         .args(DURATION_ARGS)
-        .arg(path)
+        .args(input::file(path))
         .output()
         .ok()?;
     if !out.status.success() {
@@ -89,7 +91,7 @@ fn run_ffprobe(path: &Path) -> Outcome {
             "-of",
             "json",
         ])
-        .arg(path)
+        .args(input::file(path))
         .output()
     {
         Ok(output) => output,

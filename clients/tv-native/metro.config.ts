@@ -3,14 +3,20 @@
 // @kromatv/tv uses internally (it mirrors tsconfig.base paths).
 
 import path from 'node:path';
+import { withTizen } from '@kromatv/react-native-tizen/metro';
+import { withWebOS } from '@kromatv/react-native-webos/metro';
 import { expoWorkspaceConfig } from '../expo-build/metro-workspace.ts';
 
-export default expoWorkspaceConfig(import.meta.dirname, {
-  '#tv/features/playback/player/vlcPlane': path.resolve(
-    import.meta.dirname,
-    'src/lib/vlc-plane.ts',
+export default withWebOS(
+  withTizen(
+    expoWorkspaceConfig(import.meta.dirname, {
+      '#tv/features/playback/player/vlcPlane': path.resolve(
+        import.meta.dirname,
+        'src/lib/vlc-plane.ts',
+      ),
+      '#tv/app/clientHardware': path.resolve(import.meta.dirname, 'src/hardware.ts'),
+      '#tv/app/clientBuild': path.resolve(import.meta.dirname, 'src/build-info.ts'),
+      '#tv': path.resolve(import.meta.dirname, '../../packages/tv/src'),
+    }),
   ),
-  '#tv/app/clientHardware': path.resolve(import.meta.dirname, 'src/hardware.ts'),
-  '#tv/app/clientBuild': path.resolve(import.meta.dirname, 'src/build-info.ts'),
-  '#tv': path.resolve(import.meta.dirname, '../../packages/tv/src'),
-});
+);

@@ -1,13 +1,15 @@
-import type { KromaClient } from '@kromatv/client';
+import type { ModuleInfo } from '@kromatv/client/modules';
 import { addCatalogs } from '@kromatv/core';
 import { createEventBus, ModuleRegistry } from '@kromatv/module-sdk';
 import { createRuntimeRemotes } from './remotes';
 
-/** One registry, bus and loader for the lifetime of a mounted web module host. */
-export function createModuleRuntime(client?: KromaClient) {
+/** One registry, bus and loader for the lifetime of a mounted web module host.
+ *  `listModules` is how it reads the installed set; a host with a query cache
+ *  passes one that reads through it. */
+export function createModuleRuntime(listModules: () => Promise<readonly ModuleInfo[]>) {
   const registry = new ModuleRegistry(addCatalogs);
   const bus = createEventBus();
-  const remotes = createRuntimeRemotes(client);
+  const remotes = createRuntimeRemotes(listModules);
   let holds = 0;
   let generation = 0;
   function retain(): () => void {
@@ -26,6 +28,6 @@ export function createModuleRuntime(client?: KromaClient) {
       });
     };
   }
-  return { registry, bus, remotes, retain };
+  return { registry, bus, remotes, listModules, retain };
 }
 export type ModuleRuntime = ReturnType<typeof createModuleRuntime>;

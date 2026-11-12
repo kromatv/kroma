@@ -5,7 +5,7 @@ import { useKromaClient, useWebRuntime } from '#web/shared/lib/web-runtime';
 // fold is a pure reducer so it is testable without a socket. One admin root
 // owns the socket and history shared by its page, install dialog, and detail
 // drawer, so a late dialog sees earlier frames without opening another socket. Plus the
-// sidecar restart, the one module op the server answers in a single call.
+// module restart, the one module op the server answers in a single call.
 
 import { KromaEvents, type ServerEvent, type StoreOpEvent } from '@kromatv/client/events';
 import type { ModuleId } from '@kromatv/client/modules';
@@ -212,14 +212,14 @@ export function useStoreOps(): {
 
 export interface ModuleRestart {
   busy: boolean;
-  /** The last attempt came back with the sidecar up again. */
+  /** The last attempt came back with the module up again. */
   done: boolean;
   /** The server's own failure text, verbatim. */
   error: string | null;
   restart: () => Promise<void>;
 }
 
-/** Stop a module's sidecar and start it again, surfacing what the server
+/** Stop a module and start it again, surfacing what the server
  * answered; `onDone` fires after every attempt, so the caller can re-read the
  * module's running state either way. */
 export function useModuleRestart(id: string, onDone?: () => void): ModuleRestart {

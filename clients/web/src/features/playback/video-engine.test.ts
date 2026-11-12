@@ -2,7 +2,7 @@
 
 import { decodableVideoCodecs, type EngineDecision } from '@kromatv/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fakeVideo } from '#web/features/playback/fake-video.fixture';
+import { fakeVideo } from '@kromatv/core/test';
 import type { MovieView } from '#web/shared/lib/api';
 import { createWebTestClient } from '#web/shared/lib/web-runtime.fixture';
 import {

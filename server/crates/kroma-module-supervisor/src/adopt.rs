@@ -44,7 +44,7 @@ pub fn adopt_tables(
     .context("attach the module's own database")?;
     let outcome = move_each(core, &pending);
     // Detach whatever happened: a connection that keeps the module's file
-    // attached would block the sidecar's own writes.
+    // attached would block the module's own writes.
     let _ = core.execute("DETACH DATABASE store", []);
     outcome
 }

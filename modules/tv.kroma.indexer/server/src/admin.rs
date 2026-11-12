@@ -8,6 +8,7 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use crate::db::IndexerRow;
 use kroma_module_sdk::db::Pool;
@@ -24,9 +25,16 @@ pub const KIND_BUILTIN: &str = "builtin";
 
 pub use crate::peers::endpoint_of;
 
+const CAPS_FRESH_FOR: Duration = Duration::from_secs(15 * 60);
+
+struct ProbedCaps {
+    at: Instant,
+    caps: Caps,
+}
+
 // Capabilities are static per indexer, and every search would otherwise pay an
 // extra round-trip; keyed by id + url so re-pointing an indexer refreshes.
-static CAPS_CACHE: Mutex<Option<HashMap<String, Caps>>> = Mutex::new(None);
+static CAPS_CACHE: Mutex<Option<HashMap<String, ProbedCaps>>> = Mutex::new(None);
 
 /// `store` is this module's own database, where the last-result column lives.
 /// Passed rather than taken off `host`, because the callers reach this through a
@@ -38,7 +46,8 @@ pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyho
         .unwrap()
         .as_ref()
         .and_then(|m| m.get(&key))
-        .cloned()
+        .filter(|probed| probed.at.elapsed() < CAPS_FRESH_FOR)
+        .map(|probed| probed.caps.clone())
     {
         return Ok(caps);
     }
@@ -63,7 +72,13 @@ pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyho
         .lock()
         .unwrap()
         .get_or_insert_with(HashMap::new)
-        .insert(key, caps.clone());
+        .insert(
+            key,
+            ProbedCaps {
+                at: Instant::now(),
+                caps: caps.clone(),
+            },
+        );
     Ok(caps)
 }
 
@@ -86,6 +101,17 @@ pub fn definition_store(host: &dyn HostCtx) -> DefinitionStore {
     store.routed(route)
 }
 
+/// The job that keeps the definition catalog current.
+pub const SYNC_JOB: &str = "indexer.definitions";
+
+/// Start a sync when the catalog is still empty, so it fills while the admin
+/// is on the page instead of waiting for the daily run.
+pub fn fetch_catalog_if_empty(host: &dyn HostCtx) {
+    if definition_store(host).claim_first_sync(now_ms()) {
+        host.trigger_job(SYNC_JOB, "catalog-empty");
+    }
+}
+
 // Keyed so a config change (url / settings / VPN / FlareSolverr) yields a fresh
 // session. Reusing one session across a sweep is what makes `requestDelay`
 // throttling + the login cookie jar persist across the sweep's requests.
@@ -98,7 +124,11 @@ fn session_key(host: &dyn HostCtx, row: &IndexerRow, proxy: Option<&str>) -> Str
 }
 
 /// Get (or build + cache) the shared session for a `builtin` indexer row.
-pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Arc<Session>> {
+pub fn builtin_session(
+    host: &dyn HostCtx,
+    store: &Pool,
+    row: &IndexerRow,
+) -> anyhow::Result<Arc<Session>> {
     let proxy = peers::route_for(host, &row.url)?;
     let key = session_key(host, row, proxy.as_deref());
     if let Some(s) = SESSION_CACHE
@@ -110,7 +140,7 @@ pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<A
     {
         return Ok(s);
     }
-    let session = Arc::new(build_builtin_session(host, row, proxy)?);
+    let session = Arc::new(build_builtin_session(host, store, row, proxy)?);
     SESSION_CACHE
         .lock()
         .unwrap()
@@ -140,6 +170,7 @@ fn flaresolverr_url(host: &dyn HostCtx, behind_vpn: bool) -> Option<String> {
 /// given. Prefer [`builtin_session`] (cached) on hot paths.
 pub fn build_builtin_session(
     host: &dyn HostCtx,
+    store: &Pool,
     row: &IndexerRow,
     proxy: Option<String>,
 ) -> anyhow::Result<Session> {
@@ -156,6 +187,7 @@ pub fn build_builtin_session(
     let flaresolverr = flaresolverr_url(host, proxy.is_some());
 
     Ok(Session::new(
+        store.clone(),
         host.data_dir(),
         &row.id,
         def,
@@ -181,5 +213,82 @@ pub fn any_indexer_caps(
         Ok(Caps::from_definition(&def))
     } else {
         indexer_caps(host, store, row)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use axum::routing::post;
+    use axum::{Json, Router};
+    use kroma_module_sdk::host::testing::StubHost;
+    use kroma_module_sdk::host::HostStorage as _;
+    use serde_json::json;
+
+    use super::*;
+    use crate::db;
+
+    static PROBES: AtomicUsize = AtomicUsize::new(0);
+
+    async fn answer_caps() -> Json<serde_json::Value> {
+        PROBES.fetch_add(1, Ordering::SeqCst);
+        Json(json!({ "Ok": { "search_tmdb": true } }))
+    }
+
+    fn row(id: &str) -> IndexerRow {
+        IndexerRow {
+            id: id.into(),
+            name: id.into(),
+            url: "http://tracker.example/api".into(),
+            api_key: String::new(),
+            categories: vec![2000],
+            enabled: true,
+            priority: 0,
+            kind: "torznab".into(),
+            definition_id: None,
+            settings: "{}".into(),
+            last_ok_at: None,
+            last_error: None,
+            created_at: 0,
+        }
+    }
+
+    fn age_every_probe() {
+        for probed in CAPS_CACHE.lock().unwrap().as_mut().unwrap().values_mut() {
+            probed.at = Instant::now() - CAPS_FRESH_FOR;
+        }
+    }
+
+    async fn host_with_an_engine() -> StubHost {
+        let pool = kroma_module_sdk::db::testing::temp_pool("indexer-admin");
+        kroma_module_sdk::db::apply_migrations(&pool.get().unwrap(), db::MIGRATIONS).unwrap();
+        let engine = Router::new().route("/_port/tv.kroma.indexer/engine/caps", post(answer_caps));
+        let resolve = kroma_module_sdk::testing::serve(engine, ()).await;
+        let (base, token) = resolve().unwrap();
+        StubHost::with_store((*pool).clone()).with_point(
+            peers::ENGINE,
+            Some("torznab"),
+            &base,
+            &token,
+        )
+    }
+
+    #[tokio::test]
+    async fn a_probe_is_reused_while_fresh_and_made_again_once_it_is_not() {
+        let host = host_with_an_engine().await;
+        let row = row("caps-ttl");
+
+        let probes = kroma_module_sdk::testing::blocking(move || {
+            indexer_caps(&host, host.store(), &row).unwrap();
+            indexer_caps(&host, host.store(), &row).unwrap();
+            let while_fresh = PROBES.load(Ordering::SeqCst);
+            age_every_probe();
+            indexer_caps(&host, host.store(), &row).unwrap();
+            (while_fresh, PROBES.load(Ordering::SeqCst))
+        })
+        .await;
+
+        assert_eq!(probes, (1, 2));
     }
 }

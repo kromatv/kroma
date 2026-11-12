@@ -30,31 +30,54 @@ function relativeFormat(locale: Locale): Intl.RelativeTimeFormat | null {
   RELATIVE.set(locale, made);
   return made;
 }
-const NUMBERS = new Map<string, Intl.NumberFormat>();
+const DECIMAL_SEPARATOR: Record<Locale, string> = { fr: ',', en: '.' };
+const GROUP_SEPARATOR: Record<Locale, string> = { fr: '\u202F', en: ',' };
 
-function numberFormat(locale: Locale, digits: number): Intl.NumberFormat {
+function built<T>(make: () => T): T | null {
+  try {
+    return make();
+  } catch {
+    return null;
+  }
+}
+
+const NUMBERS = new Map<string, Intl.NumberFormat | null>();
+
+function numberFormat(locale: Locale, digits: number): Intl.NumberFormat | null {
   const key = `${locale}${digits}`;
   const cached = NUMBERS.get(key);
-  if (cached) return cached;
-  const made = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-    useGrouping: false,
-  });
+  if (cached !== undefined) return cached;
+  const made = built(
+    () =>
+      new Intl.NumberFormat(locale, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+        useGrouping: false,
+      }),
+  );
   NUMBERS.set(key, made);
   return made;
 }
 
-const COUNTS = new Map<Locale, Intl.NumberFormat>();
+const COUNTS = new Map<Locale, Intl.NumberFormat | null>();
+
+function groupDigits(n: number, locale: Locale): string {
+  const [whole = '', fraction] = String(Math.abs(n)).split('.');
+  const head = whole.length % 3 || 3;
+  const groups = [whole.slice(0, head)];
+  for (let at = head; at < whole.length; at += 3) groups.push(whole.slice(at, at + 3));
+  const tail = fraction ? `${DECIMAL_SEPARATOR[locale]}${fraction.slice(0, 3)}` : '';
+  return `${n < 0 ? '-' : ''}${groups.join(GROUP_SEPARATOR[locale])}${tail}`;
+}
 
 /** A count with the locale's grouping: `1 064` in French, `1,064` in English. */
 export function formatCount(n: number, locale: Locale): string {
   let made = COUNTS.get(locale);
-  if (!made) {
-    made = new Intl.NumberFormat(locale);
+  if (made === undefined) {
+    made = built(() => new Intl.NumberFormat(locale));
     COUNTS.set(locale, made);
   }
-  return made.format(n);
+  return made?.format(n) ?? groupDigits(n, locale);
 }
 
 // `dateStyle` is Chromium 76, and the legacy television tier runs engines older
@@ -90,7 +113,26 @@ function pad(n: number): string {
  *  `1.5` in English. Grouping is off: these sit in tabular columns beside a
  *  unit, where a thousands separator reads as a second number. */
 export function decimal(n: number, locale: Locale, digits = 1): string {
-  return numberFormat(locale, digits).format(n);
+  return (
+    numberFormat(locale, digits)?.format(n) ??
+    n.toFixed(digits).replace('.', DECIMAL_SEPARATOR[locale])
+  );
+}
+
+const CLOCKS = new Map<'device', Intl.DateTimeFormat | null>();
+
+/** The wall clock's reading, `20:15`: 24-hour, two-digit, in the device's
+ *  locale, falling back to plain digits on an engine without `Intl`. */
+export function formatClock(date: Date): string {
+  let clock = CLOCKS.get('device');
+  if (clock === undefined) {
+    clock = built(
+      () =>
+        new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }),
+    );
+    CLOCKS.set('device', clock);
+  }
+  return clock?.format(date) ?? `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 /** A byte size in the locale's units: `1,5 Go` in French, `1.5 GB` in English.

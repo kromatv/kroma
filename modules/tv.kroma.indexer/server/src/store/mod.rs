@@ -10,9 +10,14 @@ use serde::{Deserialize, Serialize};
 use crate::definition::{self, Definition};
 
 mod heal;
+mod lock;
+mod status;
 mod sync;
 #[cfg(test)]
 mod test_support;
+mod unpack;
+
+pub use status::SyncRecord;
 
 // The `master` tarball, in one request instead of ~600 per-file fetches.
 // Overridable so a deployment can pin a fork/mirror.
@@ -32,6 +37,8 @@ pub struct DefinitionMeta {
     pub description: String,
     #[serde(default)]
     pub links: Vec<String>,
+    #[serde(default)]
+    pub language: String,
 }
 
 /// Outcome of a sync, for the admin toast.
@@ -114,8 +121,9 @@ impl DefinitionStore {
     /// before it is joined onto a path.
     ///
     /// A definition the cache has lost is fetched by one sync of the whole set,
-    /// which every caller racing on it shares and which no id retries more than
-    /// once every 15 minutes. Blocking, and for that sync's duration.
+    /// which every caller racing on it shares, across this module's instances, and
+    /// which no id retries more than once every 15 minutes. Blocking, and for that
+    /// sync's duration.
     pub fn load(&self, id: &str) -> Result<Definition> {
         let path = self.path_for(id)?;
         let bytes = match std::fs::read(&path) {
@@ -152,177 +160,4 @@ pub(super) fn is_yml(entry: &std::fs::DirEntry) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::test_support::{scratch, store_for, tmpdir, valid_definition, DEMO_YML};
-    use super::*;
-
-    // A fresh install has never synced, so the cache directory does not exist at
-    // all. Reading it has to come back EMPTY rather than as an error: the module
-    // lists its definitions on the settings screen before anyone has pressed
-    // sync, and an error there reads as a broken module rather than a new one.
-    #[test]
-    fn a_store_that_has_never_synced_is_empty_rather_than_broken() {
-        let dir = kroma_module_sdk::testing::temp_dir("defs-empty");
-        let store = DefinitionStore::new(dir.path());
-        assert!(!store.is_populated());
-        assert!(store
-            .list()
-            .expect("listing a store that never synced")
-            .is_empty());
-    }
-
-    #[test]
-    fn meta_parses_minimal_yaml() {
-        let yaml = br#"
-id: example
-name: Example Tracker
-type: public
-description: "A test"
-links:
-  - https://example.org/
-"#;
-        let meta: DefinitionMeta = serde_yaml::from_slice(yaml).unwrap();
-        assert_eq!(meta.id, "example");
-        assert_eq!(meta.kind, "public");
-        assert_eq!(meta.links, vec!["https://example.org/"]);
-    }
-
-    #[test]
-    fn dir_is_under_the_data_dir() {
-        let data = tmpdir("dir");
-        let store = DefinitionStore::new(data.path());
-        assert_eq!(store.dir(), data.path().join("indexer-defs"));
-    }
-
-    #[test]
-    fn is_populated_reflects_presence_of_yaml_files() {
-        let data = tmpdir("pop");
-        let store = DefinitionStore::new(data.path());
-        assert!(!store.is_populated());
-
-        std::fs::create_dir_all(store.dir()).unwrap();
-        assert!(!store.is_populated());
-        std::fs::write(store.dir().join("readme.txt"), b"hi").unwrap();
-        assert!(!store.is_populated());
-        std::fs::write(store.dir().join("t.yml"), b"name: T").unwrap();
-        assert!(store.is_populated());
-    }
-
-    #[test]
-    fn list_returns_empty_when_unsynced() {
-        let data = tmpdir("unsynced");
-        let store = DefinitionStore::new(data.path());
-        assert!(store.list().unwrap().is_empty());
-    }
-
-    #[test]
-    fn list_sorts_by_name_keys_on_stem_and_skips_non_yaml() {
-        let data = tmpdir("list");
-        let store = DefinitionStore::new(data.path());
-        std::fs::create_dir_all(store.dir()).unwrap();
-        std::fs::write(store.dir().join("zebra.yml"), b"id: zebra\nname: Zebra").unwrap();
-        std::fs::write(store.dir().join("apple.yml"), b"id: apple\nname: apple").unwrap();
-        // Internal id differs from the file stem: the stem must win.
-        std::fs::write(
-            store.dir().join("darkpeers-api.yml"),
-            b"id: darkpeers\nname: Dark",
-        )
-        .unwrap();
-        std::fs::write(store.dir().join("notes.txt"), b"skip me").unwrap();
-
-        let metas = store.list().unwrap();
-        assert_eq!(metas.len(), 3);
-        // Case-insensitive name sort: apple, Dark, Zebra.
-        assert_eq!(metas[0].name, "apple");
-        assert_eq!(metas[1].name, "Dark");
-        assert_eq!(metas[2].name, "Zebra");
-        assert_eq!(metas[1].id, "darkpeers-api");
-    }
-
-    #[test]
-    fn load_parses_a_cached_definition() {
-        let data = tmpdir("load");
-        let store = DefinitionStore::new(data.path());
-        std::fs::create_dir_all(store.dir()).unwrap();
-        std::fs::write(
-            store.dir().join("mytracker.yml"),
-            valid_definition("t").as_bytes(),
-        )
-        .unwrap();
-
-        let def = store.load("mytracker").expect("loads and parses");
-        // The id comes from the file body, not the file name.
-        assert_eq!(def.id, "t");
-        assert_eq!(def.name, "My Tracker");
-    }
-
-    #[test]
-    fn yaml_extension_is_recognized_like_yml() {
-        let data = tmpdir("yaml-ext");
-        let store = DefinitionStore::new(data.path());
-        std::fs::create_dir_all(store.dir()).unwrap();
-        // `.yaml` counts for population + listing; `load` resolves `.yml` only.
-        std::fs::write(
-            store.dir().join("tracker.yaml"),
-            valid_definition("t").as_bytes(),
-        )
-        .unwrap();
-        assert!(store.is_populated());
-        let metas = store.list().unwrap();
-        assert_eq!(metas.len(), 1);
-        assert_eq!(metas[0].id, "tracker");
-    }
-
-    #[test]
-    fn listing_a_cache_that_was_never_synced_is_empty_not_an_error() {
-        // The admin opens the browse page before ever syncing.
-        let empty = scratch("empty");
-        let store = DefinitionStore {
-            dir: empty.path().join("never-created"),
-            source: String::new(),
-            route: Ok(None),
-        };
-        assert!(store.list().unwrap().is_empty());
-        assert!(!store.is_populated());
-    }
-
-    #[test]
-    fn a_definition_file_that_does_not_parse_is_skipped_rather_than_fatal() {
-        // One bad file upstream must not blank the whole browse list.
-        let store = store_for(String::new());
-        std::fs::create_dir_all(store.dir()).unwrap();
-        std::fs::write(store.dir().join("good.yml"), DEMO_YML).unwrap();
-        std::fs::write(store.dir().join("broken.yml"), "\t- : :\n").unwrap();
-        std::fs::write(store.dir().join("notes.txt"), "ignored").unwrap();
-
-        let listed = store.list().unwrap();
-        assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].id, "good");
-    }
-
-    #[test]
-    fn an_id_that_escapes_the_cache_directory_is_refused() {
-        let store = store_for(String::new());
-        std::fs::create_dir_all(store.dir()).unwrap();
-        let outside = store.dir().parent().unwrap().join("secret.yml");
-        std::fs::write(&outside, DEMO_YML).unwrap();
-
-        let err = store.load("../secret").unwrap_err().to_string();
-
-        assert!(err.contains("not a definition id"), "{err}");
-        assert!(store.load("..%2Fsecret").is_err());
-        assert!(store.load("sub/secret").is_err());
-        assert!(store.load("").is_err());
-    }
-
-    #[test]
-    fn a_yml_entry_that_cannot_be_read_is_skipped_rather_than_fatal() {
-        let store = store_for(String::new());
-        std::fs::create_dir_all(store.dir().join("interrupted.yml")).unwrap();
-        std::fs::write(store.dir().join("good.yml"), DEMO_YML).unwrap();
-
-        let listed = store.list().unwrap();
-        assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].id, "good");
-    }
-}
+mod tests;

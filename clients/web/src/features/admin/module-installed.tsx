@@ -21,6 +21,7 @@ import {
 } from '@kromatv/ui/kit';
 import {
   type AdminModule,
+  declaresNothing,
   canUpdate,
   type ModuleOrigin,
   matchesQuery,
@@ -70,8 +71,8 @@ function InstalledRow({
   const { busy, error, toggle } = useModuleToggle(m.id, onChanged);
   const answers = m.contributes ?? [];
   const localBuild = m.origin?.localBuild === true;
-  // Only a module that HAS a process can be stopped. A library module is code
-  // co-linked into another sidecar, so "not running" is its normal state.
+  // Only a module that HAS code to run can be stopped. A library module is code
+  // co-linked into another module, so "not running" is its normal state.
   const stalled = m.enabled && m.hasSidecar && !m.running;
   // Running but useless: something it needs is not installed or is switched off.
   // Only worth saying while it is enabled, since a disabled module is inert by
@@ -91,6 +92,13 @@ function InstalledRow({
               <Text variant="label" lines={1}>
                 {m.name}
               </Text>
+              {declaresNothing(m) && (
+                <Tooltip label={t('admin.modulesUndeclaredHint')}>
+                  <Pill ink="accentText" bg="accentSoft" variant="overline">
+                    {t('admin.modulesUndeclared')}
+                  </Pill>
+                </Tooltip>
+              )}
               {localBuild && (
                 <Tooltip label={t('admin.modulesLocalBuildHint')}>
                   <Pill ink="danger" bg="danger/13" variant="overline">

@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # KROMA
 
-Self-hosted, direct-play media stack: a Rust server (axum + SQLite + out-of-process
-module sidecars) and a Bun workspace monorepo of web, TV, mobile and desktop clients
+Self-hosted, direct-play media stack: a Rust server (axum + SQLite + modules run
+as WebAssembly components) and a Bun workspace monorepo of web, TV, mobile and desktop clients
 sharing one universal component library.
 
 See [`README.md`](README.md) for the product overview, [`ARCHITECTURE.md`](ARCHITECTURE.md)
@@ -28,9 +28,18 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   `asChild` means here (`<Slot>`, with a written-down merge). Read it before
   adding a component or changing one's props.
 - [`modules/README.md`](modules/README.md) for authoring a module.
+- [`docs/command-menu.md`](docs/command-menu.md) for adding a page or an action to the
+  web client's `⌘K` / `Ctrl+K` menu.
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) for the three roads a television
   takes to an account, what "the same network" means, and which shells can hear
   a television on the link rather than being told about it.
+- [`docs/writing-docs.md`](docs/writing-docs.md) for how the setup guides in
+  [`docs/setup/`](docs/setup/README.md) are written, and how the website renders
+  the same files at kroma.tv/docs. A change to a screen, a setting or a default
+  they describe updates them in the same pull request.
+- [`docs/direct-connection.md`](docs/direct-connection.md) for the route a
+  signed-in client takes straight to its server on the same network, what
+  proves it is the same server, and what each shell does with it.
 
 ## Checks
 
@@ -43,6 +52,7 @@ bun run test             # vitest (two projects: web + native)
 bun run check            # oxlint + oxfmt  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
+bun run modules:test:wasm  # every module's tests again, each one a component
 ```
 
 `bun run ci <command>` is `packages/ci-tools`, the CLI every workflow step
@@ -71,7 +81,7 @@ bun run dev:tizen        # :5174   Samsung   (arrow keys + Enter act as the remo
 bun run dev:webos        # :5175   LG
 bun run dev:kit          # design-system workbench
 bun run server           # cargo run  (no feature flags: the ML backends are the
-                         # whisper and vector sidecars' own build choice)
+                         # whisper and vector modules' own build choice)
 ```
 
 With no media configured the server seeds demo titles. Point it at real files with
@@ -120,29 +130,36 @@ server/
     kroma-media       ffprobe · the ffmpeg budget · the HLS engine and the
                       per-request program over it. No db, no domain, so the
                       published SDK carries it and a module transcodes too
-    kroma-http kroma-i18n kroma-push
+    kroma-requests    the request and monitoring workflows, with no engine
+                      under them, so the acquisition component runs them
+    kroma-http kroma-i18n kroma-push kroma-egress
     kroma-module-*    the module host: kernel, manifest, macros, sdk, runtime,
                       host, supervisor, wire. It carries the
                       MECHANISM and never the meaning: nothing here names a
                       module's domain (see docs/module-plugin-model.md)
+    kroma-wasm-host   wasmtime and the WIT world every module is built against
+    kroma-sqlite-guest  rusqlite's API for a component; the host runs each statement
 modules/<id>/       NOT in this workspace, see below
-modules/lib/        shared Rust libraries, not modules: naming (and scene, in its own dir)
+modules/lib/        shared Rust libraries, not modules: naming, weights (and scene, in its own dir)
 ```
 
-A sidecar links a strict subset: `kroma-module-{sdk,runtime,host,manifest,
+A module links a strict subset: `kroma-module-{sdk,runtime,host,manifest,
 macros,wire}`, `kroma-sqlite`, `kroma-http`, `kroma-primitives`,
-`kroma-testing`. It never links `kroma-db` or `kroma-domain`, which is why the
-JSON both sides exchange lives in `kroma-module-wire` and the pool in
-`kroma-sqlite`, each re-exported by the crate that used to own it.
+`kroma-testing`. A first-party module may go further through the SDK's in-repo
+features: `core` and `domain` link `kroma-db` and `kroma-domain`, which build for
+wasm, and `requests` links `kroma-requests`. `engine` (all of `kroma-engine`)
+exists and no module enables it. The published SDK carries none of these, which
+is why the JSON both sides exchange lives in `kroma-module-wire` and the pool in
+`kroma-sqlite`, and the core crates re-export both.
 
 `api/` translates HTTP↔services and holds no business logic; `main.rs` and the
 engine's `state.rs` are the only composition points. Integration tests live beside
 the handlers as `src/api/it_*.rs`.
 
-### Modules are out-of-process sidecars
+### Modules are WebAssembly components
 
 KROMA's core is playback + catalog; everything else (downloads, indexers,
-acquisition, VPN, whisper, vector, mDNS, remote, scene) is a **module** with a
+acquisition, VPN, whisper, vector, mDNS, remote, scene, trailers) is a **module** with a
 reverse-DNS id like `tv.kroma.torrents`.
 
 No module is a dependency of the server binary, and no crate under `server/`
@@ -153,25 +170,31 @@ separate tags.
 
 A point is named by whoever defines it: a module writes `definesPoints` for what
 it invents (`<its id>/<local name>`), `contributes` for what it answers, and
-`consumes` for what it calls. The three the CORE calls are bare — `acquisition`,
-`transcriber`, `embedder` — because the core has no manifest to define one in and
-nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
+`consumes` for what it calls. The five the CORE calls, `acquisition`,
+`transcriber`, `embedder`, `network` and `trailer`, are bare because the core has no manifest
+to define one in and nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
 for the model and what is still missing from it, and
 [`modules/README.md`](modules/README.md#calling-another-module) for how to write
 one end.
 
 Nothing is compiled into the server: this is the zero-module base build. Every
 first-party module ships as an installable `.kmod` (a zstd bundle of
-`module.json` + a native `module` binary + icon + `fe/`, the frontend the web
-client loads at runtime).
-`kroma-module-supervisor` scans `<data>/modules/*`, spawns each enabled module as
-its own process on a free localhost port, and reverse-proxies
-`/api/module/<id>/*` to it; modules call back into the core over the token-authed
-`/api/_host/*` API for settings/events/jobs/session. A database is a **declared
-capability**, not something every sidecar gets: a module with no `storage` in its
-`module.json` does not link SQLite at all, and one that has it gets its own file
-plus whatever slice of the core database it declared, enforced per connection by
-SQLite's authorizer. See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md) and
+`module.json`, `module.wasm`, the icon, `locales/` and `fe/`, the frontend the
+web client loads at runtime), built once for `wasm32-wasip2`: one bundle for
+every platform. `kroma-module-supervisor` scans `<data>/installed/*`, runs each enabled
+module as a component inside the server (wasmtime, `kroma-wasm-host`), serves it
+on a Unix socket under `<data>/run`, and reverse-proxies `/api/module/<id>/*` to
+it. A component reaches the core's token-authed `/api/_host/*` API
+(settings/events/jobs/session) and its peers only through its `host-api` import,
+on `<data>/run/host.sock`, and the network, files and programs only through the
+host imports its `permissions` grant (see
+[`docs/module-security.md`](docs/module-security.md)). A server refuses a bundle
+whose manifest schema is not 3 or that carries a native `module` binary. A
+database is a **declared capability**, not something every module gets: a module
+with no `storage` in its `module.json` has none, and one that has it gets its own
+file plus whatever slice of the core database it declared, both held by the host,
+the slice enforced per connection by SQLite's authorizer. See
+[`docs/modules-as-kmod.md`](docs/modules-as-kmod.md) and
 [`modules/README.md`](modules/README.md#storage).
 
 Modules release **independently of the server**, each on its own tag
@@ -185,14 +208,13 @@ by comparing versions, so a silent republish reaches nobody).
 metadata, its own `Cargo.lock`, its own `release-kmod` profile), so it builds and
 tests standalone (`cd modules/<id>/server && cargo build`). Cargo members must be
 hierarchically below their workspace root, which is exactly why modules cannot be
-members of `server/`. The server reaches the only three it still links (scene via
-the SDK, whisper and vector behind their features) as path deps across the
-workspace boundary, which cargo *does* allow.
+members of `server/`. A module reaches the server's crates as path deps across
+the workspace boundary, which cargo *does* allow, and the server links no module.
 
 Consequences worth knowing: features are **bare** (`--features local`, never
 `kroma-whisper/local`, inside its own single-package workspace that names a
-dependency); one `cargo build` can no longer select every module, so
-`bun run kroma plan` emits one per module against a shared
+dependency); one `cargo build` cannot select every module, so
+`bun run kroma build` runs one per module for `wasm32-wasip2` against a shared
 `CARGO_TARGET_DIR` (`target/kmod`); and any container that builds the server or a
 module must mount the **whole repo**, not `server/`.
 
@@ -328,6 +350,10 @@ the build on anything a legacy engine cannot parse.
 - **Secrets never live in the server or the app**: the server's source is public and
   self-hosted, so anything Apple or Google issued to the published app lives in the
   relay Worker's secrets (`packages/push-relay/`).
+- **An image in a PR or issue is a GitHub attachment.** `bun run shots:attach
+  <file...>` uploads it with the gh CLI's token and prints the markdown (see
+  [`packages/shots/README.md`](packages/shots/README.md#attaching-any-image)).
+  Never commit an image, push a branch or create a release to host one.
 - **English for code, comments, identifiers and commit messages.** User-facing copy
   is French. That is content, not code. No emoji in the product.
 - Every user-visible string is a translation key. The core catalogs are one

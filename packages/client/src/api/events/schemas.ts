@@ -57,8 +57,12 @@ export const ServerEvent = z.discriminatedUnion('type', [
   frame('report.updated', { id: ReportId, status: z.string() }),
   // Addressed: the server sends these only to sockets signed in as the
   // recipient, so receiving one always means "this is yours".
-  frame('notification.created', { id: NotificationId, unread: z.number() }),
-  frame('notification.read', { unread: z.number() }),
+  frame('notification.created', {
+    id: NotificationId,
+    unread: z.number(),
+    unseen: z.number().optional(),
+  }),
+  frame('notification.read', { unread: z.number(), unseen: z.number().optional() }),
 ]);
 export type ServerEvent = z.infer<typeof ServerEvent>;
 

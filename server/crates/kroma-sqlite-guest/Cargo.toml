@@ -1,0 +1,10 @@
+[package]
+name = "kroma-sqlite-guest"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "The part of rusqlite's API a module is written against, for a WebAssembly component: every statement goes to the host, which holds the database and enforces the grant."
+license.workspace = true
+
+[dev-dependencies]
+real-rusqlite = { package = "rusqlite", version = "0.40", features = ["bundled"] }

@@ -2,13 +2,13 @@ import { SKIP_BACK_ICON, SKIP_FORWARD_ICON } from '@kromatv/ui';
 import { Box, Icon, IconButton, Spinner, styles, useStyles } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { colors } from '#mobile/lib/theme';
-import type { Engine } from '#mobile/player/engine';
+import type { Transport } from '#mobile/player/engine';
 
 export function TransportControls({
   engine,
   poke,
   compact,
-}: Readonly<{ engine: Engine; poke(): void; compact: boolean }>) {
+}: Readonly<{ engine: Transport; poke(): void; compact: boolean }>) {
   const s = useStyles(definition);
   const t = useT();
   return (

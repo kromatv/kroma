@@ -21,6 +21,7 @@
   "error.notFoundBody": "Cette page a été déplacée ou n'a jamais existé. Retournons à votre bibliothèque.",
   "error.notFoundTitle": "Page introuvable",
   "error.permissionDenied": "Permission refusée",
+  "error.pushBadEndpoint": "Cette adresse de notification n'est pas acceptée",
   "error.reportNotFound": "Signalement introuvable",
   "error.requestNotFound": "Demande introuvable",
   "error.retry": "Réessayer",

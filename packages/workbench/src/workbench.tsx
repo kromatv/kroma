@@ -8,11 +8,12 @@ import {
   KitProvider,
   Resizable,
   styles,
+  useCommandKey,
   useStyles,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useMemo, useState } from 'react';
 import { RULE } from './chrome';
-import { CommandPalette, useCommandKey } from './command';
+import { CommandPalette } from './command';
 import { type Registry, storyEntries, useStory } from './entry';
 import { DOCK_COLLAPSED, MIN_CANVAS, REGION_MIN, useLayout } from './layout';
 import type { Page } from './page';

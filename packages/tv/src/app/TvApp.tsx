@@ -155,7 +155,10 @@ export function TvApp({
   const [ownedSearchRequests] = useState(createSearchRequests);
   const searchRequests = suppliedSearchRequests ?? ownedSearchRequests;
   const name = useDeviceName(deviceName, platform);
-  const screens = useMemo(() => ({ ...SCREENS, player: playback.Player }), [playback.Player]);
+  const screens = useMemo(
+    () => ({ ...SCREENS, player: playback.Player, trailer: playback.Trailer }),
+    [playback.Player, playback.Trailer],
+  );
 
   return (
     <DevicePreferencesProvider value={devicePreferences}>
@@ -248,7 +251,7 @@ export function TvApp({
   );
 }
 
-const SCREENS: Omit<TvScreens, 'player'> = {
+const SCREENS: Omit<TvScreens, 'player' | 'trailer'> = {
   connect: TvConnect,
   profiles: TvProfiles,
   addProfile: TvAddProfile,
@@ -270,7 +273,7 @@ const SCREENS: Omit<TvScreens, 'player'> = {
 };
 
 function TvRouterGuard() {
-  const { onSearchRequest } = useSearchRequests();
+  const { onSearchRequest, onListenRequest } = useSearchRequests();
   const nav = useNav();
   const { deepLink, movies, shows, clearDeepLink } = useConnection();
   const { user, ready } = useAuth();
@@ -288,6 +291,13 @@ function TvRouterGuard() {
     if (!user) return;
     return onSearchRequest(() => nav.reset('search'));
   }, [user, nav, onSearchRequest]);
+
+  useEffect(() => {
+    if (!user) return;
+    return onListenRequest(() => {
+      if (nav.route.name !== 'search') nav.reset('search');
+    });
+  }, [user, nav, onListenRequest]);
 
   useEffect(() => {
     if (!user || !deepLink) return;

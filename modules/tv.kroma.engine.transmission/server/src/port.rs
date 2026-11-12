@@ -120,7 +120,7 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     State(_host): State<S>,
     Json(call): Json<Call>,
 ) -> Json<Option<Status>> {
-    let found = tokio::task::spawn_blocking(move || {
+    let found = kroma_module_sdk::host::run_blocking(move || {
         engine(&call.client)
             .status(&call.args.client_ref)
             .ok()

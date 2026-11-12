@@ -17,14 +17,31 @@ export interface NativeBufferBudget {
   maxBufferBytes: number;
 }
 
-/** The OS whose platform player plays natively: AVPlayer on `ios`, Media3 on `android`. */
-export function nativePlayerOs(): 'ios' | 'android' {
-  return Platform.OS === 'ios' ? 'ios' : 'android';
+const PLAYERS = {
+  ios: { plane: 'AVPlayer', device: 'Apple TV' },
+  android: { plane: 'media3', device: 'Android TV' },
+  tizen: { plane: 'capi-media-player', device: 'Samsung TV' },
+  webos: { plane: 'uMediaServer', device: 'LG TV' },
+} as const;
+
+type NativePlayerOs = keyof typeof PLAYERS;
+
+type NativePlayer = (typeof PLAYERS)[NativePlayerOs];
+
+function isNativePlayerOs(os: string): os is NativePlayerOs {
+  return Object.hasOwn(PLAYERS, os);
+}
+
+/** The OS whose platform player plays natively: AVPlayer on `ios`, Media3 on
+ * `android`, capi-media-player on `tizen`, uMediaServer on `webos`. */
+export function nativePlayerOs(): NativePlayerOs {
+  const os: string = Platform.OS;
+  return isNativePlayerOs(os) ? os : 'android';
 }
 
 /** The platform player's name, as the stats panel and the logs spell it. */
-export function nativePlayerPlane(): 'media3' | 'AVPlayer' {
-  return Platform.OS === 'android' ? 'media3' : 'AVPlayer';
+export function nativePlayerPlane(): NativePlayer['plane'] {
+  return PLAYERS[nativePlayerOs()].plane;
 }
 
 /** The buffer bounds to hand expo-video's `bufferOptions`, or null where the
@@ -38,6 +55,6 @@ export function nativeBufferBudget(): NativeBufferBudget | null {
 }
 
 /** The device a native build runs on, as the player names it to the server. */
-export function nativePlayerDevice(): 'Apple TV' | 'Android TV' {
-  return Platform.OS === 'ios' ? 'Apple TV' : 'Android TV';
+export function nativePlayerDevice(): NativePlayer['device'] {
+  return PLAYERS[nativePlayerOs()].device;
 }

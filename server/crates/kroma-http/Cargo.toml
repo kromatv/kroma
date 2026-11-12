@@ -3,21 +3,26 @@ name = "kroma-http"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "KROMA's two HTTP transports: a curl process per call for the outside world, and a pooled client for the loopback seam between the core and its module sidecars"
+description = "KROMA's two HTTP transports: a curl process per call for the outside world, and a pooled client for the loopback seam between the core and its modules"
 license.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-# curl's header dump goes to a guarded temp file, so a failed spawn leaves none.
-tempfile = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+form_urlencoded = "1"
+http = "1"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# curl's header dump goes to a guarded temp file, so a failed spawn leaves none.
+tempfile = { workspace = true }
 hyper = { workspace = true }
 hyper-util = { workspace = true }
 http-body-util = { workspace = true }
 bytes = { workspace = true }
 tokio = { workspace = true }
-form_urlencoded = "1"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
 
 [dev-dependencies]
 kroma-testing = { workspace = true }

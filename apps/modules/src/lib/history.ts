@@ -45,8 +45,6 @@ export function foldReleases(releases: z.infer<typeof Release>[]): Index {
     const id = release.tag_name.slice(0, at);
     const version = release.tag_name.slice(at + 1);
     if (!version) continue;
-    // Any bundle will do for a download link; they differ only by target, and
-    // the page's own artifact table is where a visitor picks one.
     const asset = release.assets.find((a) => a.name.endsWith('.kmod')) ?? null;
     const rows = index[id] ?? [];
     rows.push({

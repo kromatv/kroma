@@ -1,8 +1,31 @@
 use std::path::PathBuf;
 
+use kroma_module_wire::Role;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Startup {
+    Own,
+    Run(Role),
+}
+
+impl Startup {
+    pub(crate) fn of(role: Option<&str>) -> anyhow::Result<Self> {
+        let Some(role) = role else {
+            return Ok(Self::Own);
+        };
+        Role::parse(role).map(Self::Run).ok_or_else(|| {
+            anyhow::anyhow!("the host gave this instance a role it does not know: {role}")
+        })
+    }
+
+    pub(crate) fn enables(self) -> bool {
+        self != Self::Run(Role::Worker)
+    }
+}
+
 pub(crate) struct Env {
+    pub(crate) startup: Startup,
     pub(crate) module_id: String,
-    pub(crate) port: u16,
     pub(crate) core_url: String,
     pub(crate) host_token: String,
     pub(crate) module_token: String,
@@ -14,16 +37,14 @@ pub(crate) struct Env {
 }
 
 impl Env {
+    #[cfg(target_family = "wasm")]
     pub(crate) fn from_process() -> anyhow::Result<Self> {
         let get = |k: &str| std::env::var(k).map_err(|_| anyhow::anyhow!("{k} not set"));
         Ok(Self {
+            startup: Startup::of(std::env::var(kroma_module_wire::ROLE_ENV).ok().as_deref())?,
             module_id: get("KROMA_MODULE_ID")?,
-            port: get("KROMA_MODULE_PORT")?.parse()?,
             core_url: get("KROMA_CORE_URL")?,
             host_token: get("KROMA_HOST_TOKEN")?,
-            // A host that predates per-module tokens sends none, and the fabric
-            // token still authenticates; it just does not name this module, so
-            // the callback answers it nothing that wants a declaration.
             module_token: std::env::var("KROMA_MODULE_TOKEN")
                 .or_else(|_| get("KROMA_HOST_TOKEN"))?,
             #[cfg(feature = "storage")]
@@ -32,21 +53,6 @@ impl Env {
         })
     }
 
-    /// The grant the core spawned this module with, as its manifest declared it.
-    /// Absent or unreadable is the empty grant: a pool that answers nothing,
-    /// never an unscoped one.
-    #[cfg(feature = "storage")]
-    pub(crate) fn grant(&self) -> kroma_sqlite::Grant {
-        let Ok(json) = std::env::var("KROMA_MODULE_GRANT") else {
-            return kroma_sqlite::Grant::none();
-        };
-        serde_json::from_str(&json).unwrap_or_else(|error| {
-            tracing::error!(%error, "core sent a storage grant this build cannot read; denying all");
-            kroma_sqlite::Grant::none()
-        })
-    }
-
-    /// The module's own database, beside the files the core unpacked it into.
     #[cfg(feature = "storage")]
     pub(crate) fn store_path(&self) -> PathBuf {
         self.data_dir

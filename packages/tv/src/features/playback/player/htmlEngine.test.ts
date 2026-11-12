@@ -4,6 +4,8 @@ import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { decodableAudioCodecs, decodableVideoCodecs } from '@kromatv/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { type FakeVideo, fakeVideo } from '@kromatv/core/test';
+import { fakeListeners } from './engine.fixture';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';
 
@@ -64,89 +66,6 @@ vi.mock('hls.js', () => ({
   },
 }));
 
-interface FakeVideo {
-  el: HTMLVideoElement;
-  fire(type: string): void;
-  setBuffered(ranges: [number, number][]): void;
-  set(key: string, value: unknown): void;
-  get(key: string): unknown;
-  listenerCount(type: string): number;
-}
-
-function fakeVideo(init: Record<string, unknown> = {}): FakeVideo {
-  const listeners = new Map<string, Set<EventListener>>();
-  let ranges: [number, number][] = [];
-  const buffered = {
-    get length() {
-      return ranges.length;
-    },
-    start: (i: number) => ranges[i]?.[0] ?? 0,
-    end: (i: number) => ranges[i]?.[1] ?? 0,
-  };
-  const v: Record<string, unknown> = {
-    currentTime: 0,
-    duration: Number.NaN,
-    paused: true,
-    preload: '',
-    src: '',
-    buffered,
-    canPlayType: (_t: string) => '',
-    play() {
-      v.paused = false;
-      return Promise.resolve();
-    },
-    pause() {
-      v.paused = true;
-    },
-    load() {},
-    removeAttribute(_n: string) {
-      v.src = '';
-    },
-    addEventListener(t: string, fn: EventListener) {
-      let s = listeners.get(t);
-      if (!s) {
-        s = new Set();
-        listeners.set(t, s);
-      }
-      s.add(fn);
-    },
-    removeEventListener(t: string, fn: EventListener) {
-      listeners.get(t)?.delete(fn);
-    },
-    ...init,
-  };
-  return {
-    el: v as unknown as HTMLVideoElement,
-    fire: (t: string) => {
-      for (const fn of [...(listeners.get(t) ?? [])]) fn(new Event(t));
-    },
-    setBuffered: (r) => {
-      ranges = r;
-    },
-    set: (k, val) => {
-      v[k] = val;
-    },
-    get: (k) => v[k],
-    listenerCount: (t) => listeners.get(t)?.size ?? 0,
-  };
-}
-
-function mkListeners(): EngineListeners {
-  return {
-    onTime: vi.fn(),
-    onDuration: vi.fn(),
-    onBuffered: vi.fn(),
-    onPlay: vi.fn(),
-    onPause: vi.fn(),
-    onWaiting: vi.fn(),
-    onPlaying: vi.fn(),
-    onEnded: vi.fn(),
-    onError: vi.fn(),
-    onReady: vi.fn(),
-    onAspect: vi.fn(),
-  };
-}
-
 const item = { id: 'vid1' } as unknown as MediaItem;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -175,7 +94,7 @@ function makeEngine(opts: {
   listeners?: EngineListeners;
 }) {
   const { client, hlsMasterUrl, streamUrl } = mkClient();
-  const listeners = opts.listeners ?? mkListeners();
+  const listeners = opts.listeners ?? fakeListeners();
   const engine = new HtmlEngine({
     video: opts.fv.el,
     client,
@@ -691,7 +610,7 @@ describe('HtmlEngine destroy', () => {
   });
 
   it('reports the display aspect on metadata and on a variant switch', () => {
-    const listeners = mkListeners();
+    const listeners = fakeListeners();
     const fv = fakeVideo({ videoWidth: 1920, videoHeight: 816 });
     const { engine } = makeEngine({ fv, direct: true, listeners });
     fv.fire('loadedmetadata');
@@ -704,7 +623,7 @@ describe('HtmlEngine destroy', () => {
   });
 
   it('stays quiet about the aspect while the stream has no dimensions yet', () => {
-    const listeners = mkListeners();
+    const listeners = fakeListeners();
     const fv = fakeVideo({ videoWidth: 0, videoHeight: 0 });
     const { engine } = makeEngine({ fv, direct: true, listeners });
     fv.fire('loadedmetadata');

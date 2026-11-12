@@ -51,6 +51,7 @@ const TABLES: &[&str] = &[
     "my_list",
     "passkeys",
     "notification_prefs",
+    "notification_type_prefs",
     "reports",
     "tmdb_pin",
     "acq_file_tmdb",

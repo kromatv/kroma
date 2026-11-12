@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   decimal,
   formatBytes,
+  formatClock,
   formatCount,
   formatDuration,
   formatElapsed,
@@ -36,6 +37,18 @@ describe('formatCount', () => {
     for (const n of [0, 7, 1064, 1234567])
       for (const locale of ['fr', 'en'] as const)
         expect(formatCount(n, locale)).toBe(n.toLocaleString(locale));
+  });
+});
+
+describe('formatClock', () => {
+  it('reads the time on a 24-hour clock, as toLocaleTimeString does', () => {
+    const evening = new Date(2024, 5, 15, 20, 5);
+    const morning = new Date(2024, 5, 15, 9, 7);
+
+    expect(formatClock(evening)).toBe(
+      evening.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }),
+    );
+    expect(formatClock(morning)).toBe('09:07');
   });
 });
 
@@ -215,5 +228,21 @@ describe('an engine without the Intl constructors', () => {
       expect(formatElapsed(fr, 'fr', '2024-05-06T12:00:00Z', NOW)).toBe('2024-05-06');
       expect(formatStamp('fr', '2024-05-06T12:00:00Z')).toBe('2024-05-06 12:00');
     });
+  });
+
+  it('reads the clock, the decimals and the counts with no Intl at all', async () => {
+    vi.resetModules();
+    vi.stubGlobal('Intl', undefined);
+    try {
+      const intl = await import('./intl');
+
+      expect(intl.formatClock(new Date(2024, 5, 15, 20, 5))).toBe('20:05');
+      expect(intl.decimal(1.25, 'fr', 1)).toBe('1,3');
+      expect(intl.decimal(1.5, 'en')).toBe('1.5');
+      expect(intl.formatCount(1234567, 'fr')).toBe((1234567).toLocaleString('fr'));
+      expect(intl.formatCount(1064, 'en')).toBe('1,064');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

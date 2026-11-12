@@ -24,13 +24,13 @@ build/
 
 # Rust
 server/target/
-# The shared build dir `kroma build` / `kroma plan` point every module
-# workspace at (KMOD_TARGET_DIR, see packages/cli).
+# The shared build dir `kroma build` points every module workspace at
+# (KMOD_TARGET_DIR, see packages/cli).
 /target/
 # Each module under modules/<id> is its own cargo workspace, so it builds into
 # its OWN target/ which the rule above does not cover. Its Cargo.lock IS
-# committed: a module ships as a native binary in a `.kmod`, and a lock is what
-# makes that artifact reproducible. Plus the built frontend remote and the
+# committed: a module ships as a compiled component in a `.kmod`, and a lock is
+# what makes that artifact reproducible. Plus the built frontend remote and the
 # staging dir `kroma build` assembles bundles in.
 modules/*/server/target/
 # The shared-library workspace (modules/lib) is one workspace, not one per crate.

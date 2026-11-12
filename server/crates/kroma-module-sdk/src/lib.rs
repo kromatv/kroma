@@ -5,10 +5,38 @@
 
 pub use kroma_module_manifest::*;
 
+#[doc(hidden)]
+pub use kroma_module_macros::embedded_module as __embedded_module;
+
 /// `embedded_module!()` builds a module's `MODULE` const by discovering its
 /// `module.json` + `icon.<ext>` at compile time. Write
 /// `pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();`.
-pub use kroma_module_macros::embedded_module;
+/// Under the `testing` feature it also links the hook that holds the crate's
+/// tests to that manifest (see [`testing`]).
+#[macro_export]
+macro_rules! embedded_module {
+    () => {{
+        $crate::__link_test_hook!();
+        $crate::__embedded_module!()
+    }};
+}
+
+#[cfg(feature = "testing")]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __link_test_hook {
+    () => {
+        #[used]
+        static LINKED_TEST_HOOK: fn() = $crate::testing::hook::hold_this_test_binary_to_its_module;
+    };
+}
+
+#[cfg(not(feature = "testing"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __link_test_hook {
+    () => {};
+}
 
 /// `embedded_locales!()` collects a module's `locales/<code>.json` at compile
 /// time into the `&[(code, json)]` [`i18n::engine`] takes. Write
@@ -21,11 +49,12 @@ pub mod host {
     pub use kroma_module_host::*;
 }
 
-/// The application surface: `state::SharedState`, `services::*`, `model::*`.
-/// Behind the `engine` feature: this is the whole core.
-#[cfg(feature = "engine")]
-pub mod engine {
-    pub use kroma_engine::*;
+/// The core's request and monitoring workflows, over [`host::HostStorage`]: the
+/// same code the core runs. Behind the `requests` feature, which brings the core's
+/// queries and shapes and no engine, so a component can hold it.
+#[cfg(feature = "requests")]
+pub mod requests {
+    pub use kroma_requests::*;
 }
 
 /// What the host and a module exchange: the session user and its permissions,
@@ -42,7 +71,7 @@ pub mod domain {
 }
 
 /// Reading and re-encoding one media input. Behind the `transcode` feature,
-/// which brings no database and no catalog with it: an input is a path or a URL,
+/// which brings no database and no catalog with it: an input is a local file,
 /// and a module tells the engine which directory it may write its sessions in.
 #[cfg(feature = "transcode")]
 pub mod media {
@@ -56,7 +85,7 @@ pub mod http {
 
 /// The catalogs a module ships in `locales/`, resolved by the same engine the
 /// core resolves its own with, so a plural or a `{name}` behaves the same in a
-/// sidecar as it does on a screen.
+/// module as it does on a screen.
 pub mod i18n {
     pub use kroma_i18n::*;
 
@@ -67,19 +96,7 @@ pub mod i18n {
     /// ships none at all is an error rather than an engine answering every key
     /// with itself.
     pub fn engine(catalogs: &[(&str, &str)]) -> Result<I18n, BuildError> {
-        let fallback = catalogs
-            .iter()
-            .map(|(code, _)| *code)
-            .find(|code| *code == FALLBACK_LOCALE)
-            .or_else(|| catalogs.first().map(|(code, _)| *code))
-            .unwrap_or(FALLBACK_LOCALE);
-        catalogs
-            .iter()
-            .fold(
-                I18n::builder().default_locale(fallback).plural_rule(cldr),
-                |builder, (code, json)| builder.catalog_json(*code, *json),
-            )
-            .build()
+        from_catalogs(FALLBACK_LOCALE, catalogs)
     }
 
     #[cfg(test)]
@@ -121,11 +138,11 @@ pub mod i18n {
 /// Direct SQLite access: the pool, the grant and a module's own migrations.
 /// Behind the `storage` feature, which a module turns on when its `module.json`
 /// declares `storage`; the pools themselves come from `host::HostStorage`, not
-/// from here. Under `engine`, every query the core makes of its own database as
+/// from here. Under `core`, every query the core makes of its own database as
 /// well.
 #[cfg(feature = "storage")]
 pub mod db {
-    #[cfg(feature = "engine")]
+    #[cfg(feature = "core")]
     pub use kroma_db::*;
     pub use kroma_sqlite::{
         apply_migrations, init_scoped, migrate_store, open, open_with, Grant, Pool, PoolInner,
@@ -139,6 +156,10 @@ pub mod db {
     pub use kroma_db::testing;
 }
 
+/// Files a module downloads once and keeps, each pinned by the sha256 of its
+/// bytes: model weights, a dataset, anything too large to ship in the bundle.
+pub mod pinned;
+
 /// Small shared primitives (`now_ms`, ...).
 pub mod primitives {
     pub use kroma_primitives::*;
@@ -148,8 +169,9 @@ pub mod primitives {
 /// on a real socket for a test that drives both ends, and `TempDir` / `temp_dir`
 /// are the self-deleting scratch dir. The `StubHost` double is
 /// `host::testing::StubHost`, and a throwaway pool is `db::testing::temp_pool`.
+///
+/// Every test binary built with the feature holds its module's code to the
+/// purposes its `module.json` declares ([`testing::DeclaredPurposes`]), and as a
+/// WebAssembly component it reaches its host the way a running module does.
 #[cfg(any(test, feature = "testing"))]
-pub mod testing {
-    pub use kroma_module_host::test_serve::*;
-    pub use kroma_testing::*;
-}
+pub mod testing;

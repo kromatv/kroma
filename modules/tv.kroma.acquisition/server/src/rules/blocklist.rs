@@ -7,7 +7,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get};
 use axum::{Json, Router};
 use kroma_module_sdk::db::Pool;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage};
 use rusqlite::params;
 use serde::Serialize;
@@ -143,11 +143,7 @@ mod tests {
 
     fn pool() -> kroma_module_sdk::db::testing::TempPool {
         let pool = kroma_module_sdk::db::testing::temp_pool("acq-blocklist");
-        kroma_module_sdk::db::apply_migrations(
-            &pool.get().unwrap(),
-            super::super::schema::MIGRATIONS,
-        )
-        .unwrap();
+        super::super::schema::install(&pool);
         pool
     }
 

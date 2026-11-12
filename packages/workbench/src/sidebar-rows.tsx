@@ -6,17 +6,16 @@
 
 import {
   Box,
+  CommandKeys,
   Focusable,
   Icon,
   IconButton,
-  Kbd,
   styles,
   sv,
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
-import { commandHint } from './command';
 import { glyphFor } from './registry';
 
 // Who this is, at the top of the tree rather than in a bar over the whole page. That is
@@ -72,7 +71,7 @@ function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
         Search
       </Text>
       <Box flex />
-      <Kbd>{commandHint()}</Kbd>
+      <CommandKeys />
     </Focusable>
   );
 }

@@ -138,6 +138,47 @@ describe('replaying what is queued', () => {
     expect(await queue.pending()).toEqual([]);
   });
 
+  it('sends the oldest position first, whatever order it was queued in', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position({ itemId: 'later' as ItemId, capturedAt: CAPTURED_AT + 1 }));
+    await queue.remember(position({ itemId: 'earlier' as ItemId, capturedAt: CAPTURED_AT }));
+    const target = server();
+
+    await queue.replay(ACCOUNT, target);
+
+    expect(target.saved.map(([itemId]) => itemId)).toEqual(['earlier', 'later']);
+  });
+
+  it('drops a title the server turned down as a bad request', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position());
+    const target = server({
+      save: async () => {
+        throw new KromaApiError(400, 'PUT /progress/itm-1 failed (400)');
+      },
+    });
+
+    const report = await queue.replay(ACCOUNT, target);
+
+    expect(report).toEqual({ saved: 0, dropped: 1, kept: 0 });
+    expect(await queue.pending()).toEqual([]);
+  });
+
+  it('keeps a title the server answered with a 500, because that is the server failing', async () => {
+    const queue = createProgressQueue(memoryStore());
+    await queue.remember(position());
+    const target = server({
+      save: async () => {
+        throw new KromaApiError(500, 'PUT /progress/itm-1 failed (500)');
+      },
+    });
+
+    const report = await queue.replay(ACCOUNT, target);
+
+    expect(report).toEqual({ saved: 0, dropped: 0, kept: 1 });
+    expect(await queue.pending()).toHaveLength(1);
+  });
+
   it('keeps a title the server failed on, because a later pass may get through', async () => {
     const queue = createProgressQueue(memoryStore());
     await queue.remember(position({ itemId: 'itm-1' as ItemId, capturedAt: CAPTURED_AT }));

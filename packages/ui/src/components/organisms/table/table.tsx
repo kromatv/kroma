@@ -9,6 +9,7 @@ import {
   breakpointMask,
   columnBox,
   GridContext,
+  minWidthOf,
   NO_COLUMNS,
   type TableColumn,
 } from './table-columns';
@@ -25,7 +26,8 @@ interface TableRootProps {
   /** Names the table to assistive tech. Draws nothing. */
   label?: string;
   /** One entry per column, in the order the cells are written. Left out, every
-   *  cell takes an equal share. */
+   *  cell takes an equal share. When the `width`s and `min`s of the columns
+   *  drawn add up to more than the room, the table scrolls sideways. */
   columns?: readonly TableColumn[];
   /** The columns the rows are ordered by, first key first. The table never
    *  reorders its own rows: they are the caller's. */
@@ -132,7 +134,10 @@ function GridScope({
   const step = useBreakpointStep(breakpoints);
   const layout = useColumnLayout({ columns, step, resizable, autoSaveId, storage });
   const dragged = layout.boxes ?? boxes;
-  const value = useMemo(() => ({ columns, boxes: dragged, step }), [columns, dragged, step]);
+  const value = useMemo(
+    () => ({ columns, boxes: dragged, step, minWidth: minWidthOf(columns, step) }),
+    [columns, dragged, step],
+  );
   return (
     <ResizeContext.Provider value={layout.resize}>
       <GridContext.Provider value={value}>{children}</GridContext.Provider>

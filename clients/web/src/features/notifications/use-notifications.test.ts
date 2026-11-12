@@ -12,6 +12,7 @@ import {
   type Listener,
   listNotifications,
   markNotificationsRead,
+  markNotificationsSeen,
   push,
   render,
   stream,
@@ -50,8 +51,14 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-const { useNotificationStream, usePanelState, useReadState, useUnreadCount } =
-  await import('#web/features/notifications/use-notifications');
+const {
+  useMarkSeen,
+  useNotificationStream,
+  usePanelState,
+  useReadState,
+  useUnreadCount,
+  useUnseenCount,
+} = await import('#web/features/notifications/use-notifications');
 const { createQueries } = await import('#web/shared/lib/queries');
 const { createWebTestClient } = await import('#web/shared/lib/web-runtime.fixture');
 const { userQueries } = createQueries(createWebTestClient(client));
@@ -80,6 +87,61 @@ describe('the unread badge', () => {
       await H.client.invalidateQueries({ queryKey: userQueries.notifications().queryKey });
     });
     await expectBadge(() => result.current, 2);
+  });
+});
+
+describe('the bell badge', () => {
+  it('counts the rows not seen yet, not the unread ones', async () => {
+    listNotifications.mockResolvedValue(view(5, 2));
+    const { result } = render(() => useUnseenCount());
+    await expectBadge(() => result.current, 2);
+  });
+
+  it('moves with the unseen count an event carries', async () => {
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    H.client.setQueryData(userQueries.notifications().queryKey, view(5, 2));
+    const { result } = render(() => {
+      useNotificationStream();
+      return useUnseenCount();
+    });
+
+    await push({ type: 'notification.created', unread: 6, unseen: 3 });
+
+    await expectBadge(() => result.current, 3);
+  });
+
+  it('takes the unread count from a server that sends no unseen one', async () => {
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    H.client.setQueryData(userQueries.notifications().queryKey, view(5, 2));
+    const { result } = render(() => {
+      useNotificationStream();
+      return useUnseenCount();
+    });
+
+    await push({ type: 'notification.read', unread: 4 });
+
+    await expectBadge(() => result.current, 4);
+  });
+
+  it('clears as the panel opens, before the server answers', async () => {
+    markNotificationsSeen.mockReturnValue(new Promise(() => {}));
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    H.client.setQueryData(userQueries.notifications().queryKey, view(5, 2));
+    const { result } = render(() => ({ seen: useMarkSeen(), badge: useUnseenCount() }));
+
+    act(() => result.current.seen());
+
+    await expectBadge(() => result.current.badge, 0);
+    expect(markNotificationsSeen).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the server nothing when nothing is new', () => {
+    H.client.setQueryData(userQueries.notifications().queryKey, view(5, 0));
+    const { result } = render(() => useMarkSeen());
+
+    act(() => result.current());
+
+    expect(markNotificationsSeen).not.toHaveBeenCalled();
   });
 });
 

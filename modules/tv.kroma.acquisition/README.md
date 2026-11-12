@@ -19,7 +19,8 @@ Disabling the module removes search, grab and the automatic pass, and hides that
 page with them.
 
 Its `storage.core` grant is read on the catalog tables plus the user columns the
-requester needs, and write on `requests`, `wanted` and `acq_file_tmdb`.
+requester needs, and write on `requests`, `wanted`, `monitored` and
+`acq_file_tmdb`.
 
 Layout: `server/` (backend crate), `ui/` (frontend), `locales/` (i18n),
 `module.json` (manifest). See `modules/README.md` for the module authoring guide.

@@ -1,15 +1,26 @@
 //! The registry client: fetching a catalog and an artifact under hard byte
 //! ceilings, and the URL and checksum rules a download is held to.
 
+#![expect(
+    clippy::disallowed_types,
+    reason = "the module registry client: fetch_bounded asks the egress gate before every request and records its exchange"
+)]
+
+use kroma_http::egress::{self, Exchange};
 use serde_json::Value;
 
 use super::Supervisor;
+
+const PURPOSE: &str = "registry";
+// This client has no SOCKS support, and a call the rules send through the VPN
+// must never go direct instead.
+const NO_PROXY: &str = "the module registry cannot be reached through a proxy";
 
 // A registry catalog is a small JSON index (the first-party one is a few kB);
 // anything approaching this is a misconfigured or hostile host, not a catalog.
 const MAX_CATALOG_BYTES: u64 = 4 * 1024 * 1024;
 const CATALOG_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
-/// Ceiling on an installable `.kmod`: a sidecar binary plus a small frontend
+/// Ceiling on an installable `.kmod`: a component plus a small frontend
 /// bundle. The upload route bounds its body with this too, so a bundle that can
 /// be uploaded can also be fetched by URL.
 pub const MAX_BUNDLE_BYTES: u64 = 64 * 1024 * 1024;
@@ -22,17 +33,51 @@ const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15
 /// `total` is the advisory Content-Length when the server sent one.
 pub type FetchProgress<'a> = &'a (dyn Fn(u64, Option<u64>) + Send + Sync);
 
-/// Read a response body with a hard ceiling, enforced as it arrives.
-///
-/// Content-Length is advisory (absent under chunked encoding), so the header
-/// check is only an early exit; the running total is what actually bounds it.
+#[derive(Default)]
+pub(crate) struct Clients {
+    catalog: std::sync::OnceLock<reqwest::Client>,
+    artifact: std::sync::OnceLock<reqwest::Client>,
+}
+
 async fn fetch_bounded(
     client: &reqwest::Client,
     url: &str,
     max_bytes: u64,
     on_progress: Option<FetchProgress<'_>>,
 ) -> anyhow::Result<Vec<u8>> {
-    let mut response = client.get(url).send().await?.error_for_status()?;
+    let started = std::time::Instant::now();
+    let (target, ruling) = egress::rule_url(PURPOSE, "GET", url);
+    let (host, port) = target.map_or((String::new(), 0), |t| (t.host, t.port));
+    let (mut exchange, refusal) =
+        Exchange::direct_only(PURPOSE, "GET", host, port, ruling, NO_PROXY);
+    let outcome = match refusal {
+        Some(refusal) => Err(anyhow::anyhow!(refusal)),
+        None => read_bounded(client, url, max_bytes, on_progress, &mut exchange.status).await,
+    };
+    exchange.bytes_in = outcome.as_ref().map_or(0, |body| body.len() as u64);
+    exchange.duration_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+    exchange.error = outcome
+        .as_ref()
+        .err()
+        .map(|e| egress::scrubbed(&format!("{e:#}"), url, &exchange.host));
+    egress::record(exchange);
+    outcome
+}
+
+/// Read a response body with a hard ceiling, enforced as it arrives.
+///
+/// Content-Length is advisory (absent under chunked encoding), so the header
+/// check is only an early exit; the running total is what actually bounds it.
+async fn read_bounded(
+    client: &reqwest::Client,
+    url: &str,
+    max_bytes: u64,
+    on_progress: Option<FetchProgress<'_>>,
+    status: &mut Option<u16>,
+) -> anyhow::Result<Vec<u8>> {
+    let response = client.get(url).send().await?;
+    *status = Some(response.status().as_u16());
+    let mut response = response.error_for_status()?;
     let total = response.content_length();
     if let Some(len) = total {
         if len > max_bytes {
@@ -126,7 +171,7 @@ impl Supervisor {
     }
 
     fn catalog_client(&self) -> &reqwest::Client {
-        self.catalog_client.get_or_init(|| {
+        self.registry_clients.catalog.get_or_init(|| {
             reqwest::Client::builder()
                 .timeout(CATALOG_TIMEOUT)
                 .redirect(no_downgrade())
@@ -135,10 +180,10 @@ impl Supervisor {
         })
     }
 
-    // https_only: the artifact produces an executable, and a redirect from https
+    // https_only: the artifact is code this server runs, and a redirect from https
     // to http would otherwise undo the caller's scheme check.
     fn artifact_client(&self) -> &reqwest::Client {
-        self.artifact_client.get_or_init(|| {
+        self.registry_clients.artifact.get_or_init(|| {
             reqwest::Client::builder()
                 .timeout(ARTIFACT_TIMEOUT)
                 .https_only(true)

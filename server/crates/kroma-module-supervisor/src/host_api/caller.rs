@@ -1,5 +1,5 @@
 //! Which module made a callback, resolved from the token it presented, and what
-//! that module declared about the settings it reads.
+//! that module declared about the settings it reads and writes.
 
 use std::sync::Arc;
 
@@ -13,7 +13,7 @@ use crate::Supervisor;
 /// Who made a callback, and what that caller declared about itself.
 ///
 /// `module` is `None` for a caller holding the fabric token rather than one minted
-/// per module process: authenticated, but not named. A bundle built before
+/// per module: authenticated, but not named. A bundle built before
 /// per-module tokens existed is in that position, and so is a module presenting
 /// the fabric token on purpose, so an unnamed caller reaches nothing that wants a
 /// declaration.
@@ -32,12 +32,31 @@ impl Caller {
         self.declaration().is_some_and(|scope| scope.writes(key))
     }
 
-    pub(super) fn declares_nothing(&self) -> bool {
-        self.declaration().is_none()
+    pub(super) fn declares_notification(&self, name: &str) -> bool {
+        self.module
+            .as_deref()
+            .is_some_and(|module| self.supervisor.declares_notification(module, name))
+    }
+
+    pub(super) fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {
+        match &self.module {
+            Some(module) => self.supervisor.contributions_for(module, point),
+            None => self.supervisor.contributions(point),
+        }
+    }
+
+    pub(super) fn module(&self) -> Option<&str> {
+        self.module.as_deref()
     }
 
     pub(super) fn name(&self) -> &str {
         self.module.as_deref().unwrap_or("an unnamed caller")
+    }
+
+    pub(super) fn say(&self, line: &str) {
+        if let Some(module) = &self.module {
+            self.supervisor.say(module, line);
+        }
     }
 
     fn declaration(&self) -> Option<kroma_module_manifest::SettingsScope> {

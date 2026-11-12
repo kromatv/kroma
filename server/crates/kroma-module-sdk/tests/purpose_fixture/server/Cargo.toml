@@ -1,0 +1,13 @@
+[workspace]
+
+[package]
+name = "purpose-fixture"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+kroma-module-sdk = { path = "../../../../kroma-module-sdk" }
+
+[dev-dependencies]
+kroma-module-sdk = { path = "../../../../kroma-module-sdk", features = ["testing"] }

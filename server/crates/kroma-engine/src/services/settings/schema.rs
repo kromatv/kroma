@@ -217,7 +217,7 @@ pub fn groups(
                         Some(t("admin.updateChannelHint")),
                         "select",
                         &["Stable", "Canary"],
-                        g("updateChannel"),
+                        json!(crate::services::updates::channel(settings)),
                         true,
                     ),
                     row(
@@ -312,6 +312,15 @@ pub fn groups(
                         "text",
                         &[],
                         g("localNetworks"),
+                        true,
+                    ),
+                    row(
+                        crate::services::direct::ENABLED_KEY,
+                        t("admin.directConnections"),
+                        Some(t("admin.directConnectionsHint")),
+                        "toggle",
+                        &[],
+                        g(crate::services::direct::ENABLED_KEY),
                         true,
                     ),
                     row(
@@ -498,6 +507,15 @@ pub fn groups(
                             "toggle",
                             &[],
                             g("acqReplaceOnUpgrade"),
+                            true,
+                        ),
+                        row(
+                            "downloadFolders",
+                            t("admin.downloadFolders"),
+                            Some(t("admin.downloadFoldersHint")),
+                            "text",
+                            &[],
+                            g("downloadFolders"),
                             true,
                         ),
                         row(

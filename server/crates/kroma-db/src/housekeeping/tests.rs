@@ -45,7 +45,8 @@ fn a_pass_drops_expired_credentials_and_work_whose_subject_is_gone() {
             sessions: 1,
             access_tokens: 1,
             pipeline_tasks: 2,
-            deliveries: 0
+            deliveries: 0,
+            flow_tallies: 0
         }
     );
     assert_eq!(count(&pool, "SELECT COUNT(*) FROM sessions"), 1);
@@ -75,6 +76,27 @@ fn a_pass_drops_a_push_record_past_its_retention_and_keeps_a_recent_one() {
         count(&pool, "SELECT COUNT(*) FROM notification_deliveries"),
         1
     );
+}
+
+#[test]
+fn a_pass_drops_the_flow_tallies_past_their_retention() {
+    let pool = seeded();
+    let today = crate::network_flows::day_of(NOW * 1_000);
+    pool.get()
+        .unwrap()
+        .execute_batch(&format!(
+            "INSERT INTO network_flows_daily \
+                 (day, caller, purpose, host, route, verdict, count, bytes_in, bytes_out, last_at) VALUES
+                 ({stale}, 'core', 'metadata', 'a', 'direct', 'allowed', 1, 0, 0, 0),
+                 ({today}, 'core', 'metadata', 'a', 'direct', 'allowed', 1, 0, 0, 0);",
+            stale = today - crate::network_flows::RETENTION_DAYS - 1,
+        ))
+        .unwrap();
+
+    let tidied = tidy(&pool, NOW).unwrap();
+
+    assert_eq!(tidied.flow_tallies, 1);
+    assert_eq!(count(&pool, "SELECT COUNT(*) FROM network_flows_daily"), 1);
 }
 
 #[test]

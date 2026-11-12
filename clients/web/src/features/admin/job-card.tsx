@@ -39,7 +39,7 @@ function JobMeta({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }
   const t = useT();
   const locale = useLocale();
   return (
-    <Box minW={0}>
+    <Box grow={1} shrink={1} basis={280} minW={0}>
       <Row gap={10}>
         <Text variant="title">{t(job.name as MessageKey)}</Text>
         <StatusPill job={job} />
@@ -170,7 +170,7 @@ export function JobCard({
 
   return (
     <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
-      <Row between gap={16} px={22} py={18}>
+      <Row wrap between gap={16} px={22} py={18}>
         <JobMeta job={job} onEdit={canManage ? () => void editSchedule() : undefined} />
         <JobActions
           job={job}

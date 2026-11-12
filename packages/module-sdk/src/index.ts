@@ -53,16 +53,19 @@ export type {
   ModuleStatus,
 } from './registry';
 export { depEntries, ModuleRegistry } from './registry';
-export { ModuleScope, moduleApiHook, useModuleApi, useT } from './scope';
+export { ModuleScope, ModuleSharedProvider, moduleApiHook, useModuleApi, useT } from './scope';
 export type { SharedModule } from './shared';
 export {
   PUBLIC_NAME,
   REMOTE_ENTRY,
+  REMOTE_SHARED,
   REMOTE_STYLES,
   remoteEntryUrl,
+  remoteSharedUrl,
   SHARED_GLOBAL,
   SHARED_MODULES,
   sharedKey,
+  WHOLE_NAMESPACE,
 } from './shared';
 export { ModuleSlot, ModuleSlotProvider, useSlotEntries } from './slot';
 export type {

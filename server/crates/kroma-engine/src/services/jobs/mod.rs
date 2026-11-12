@@ -27,8 +27,8 @@ use time::OffsetDateTime;
 use crate::model::Category;
 use crate::state::SharedState;
 
-/// The run logic of a remote (out-of-process module) job, injected from
-/// `server/src`: `kroma-engine` must not depend on the sidecar supervisor, so it
+/// The run logic of a remote (module) job, injected from
+/// `server/src`: `kroma-engine` must not depend on the module supervisor, so it
 /// only ever sees this boxed closure.
 pub type RemoteRun = Arc<dyn Fn(&JobContext) -> anyhow::Result<()> + Send + Sync>;
 
@@ -106,8 +106,8 @@ struct ScheduleState {
 pub struct JobManager {
     order: Vec<JobKey>,
     jobs: HashMap<JobKey, &'static Builtin>,
-    // Interior-mutable because a sidecar registers (and re-registers on every
-    // respawn) long after startup, unlike the `'static` built-in `jobs` map.
+    // Interior-mutable because a module registers (and re-registers on every
+    // start) long after startup, unlike the `'static` built-in `jobs` map.
     remote: RwLock<HashMap<&'static str, RemoteJob>>,
     remote_order: RwLock<Vec<JobKey>>,
     schedules: RwLock<HashMap<JobKey, ScheduleState>>,

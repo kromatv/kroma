@@ -10,7 +10,7 @@ pub mod host_token;
 
 /// The `storage` capability: the module-private and scoped-core databases. Off
 /// unless the module declares storage, which is what keeps SQLite out of the
-/// eight sidecars that never open one.
+/// eight modules that never open one.
 #[cfg(feature = "storage")]
 pub mod storage;
 
@@ -23,14 +23,25 @@ pub mod testing;
 pub mod test_serve;
 
 mod auth;
+pub mod files;
 mod host_ctx;
+pub mod lan;
+pub mod media;
 mod module;
+mod network_policy;
+mod notifications;
+pub mod outside;
+#[cfg(not(target_family = "wasm"))]
+mod outside_native;
 mod port;
+pub mod process;
 mod setting_reach;
 
 pub use auth::*;
 pub use host_ctx::*;
 pub use module::*;
+pub use network_policy::*;
+pub use notifications::*;
 pub use port::*;
 pub use setting_reach::*;
 
@@ -40,8 +51,10 @@ use axum::Json;
 
 pub use async_trait::async_trait;
 pub use kroma_module_wire::{
-    ActionKind, ActionSpec, ActionStyle, Audience, NotificationCategory, NotificationEvent,
-    NotificationSpec, NotificationSubject, PushCategory,
+    ActionKind, ActionSpec, ActionStyle, Audience, NetworkAction, NetworkAnswer, NetworkAsk,
+    NetworkCarries, NetworkEndpoint, NetworkFlow, NetworkHealth, NetworkOffer, NetworkRoute,
+    NetworkSeal, NotificationCategory, NotificationEvent, NotificationSpec,
+    NotificationSubject, NotificationType, PushCategory,
 };
 
 /// Build a JSON error response `{ "error": "<message>" }` with the given status.
@@ -56,7 +69,7 @@ where
     F: FnOnce() -> anyhow::Result<T> + Send + 'static,
     T: Send + 'static,
 {
-    match tokio::task::spawn_blocking(f).await {
+    match crate::run_blocking(f).await {
         Ok(Ok(v)) => Ok(v),
         Ok(Err(e)) => {
             tracing::error!(error = %e, "database error");
@@ -102,6 +115,35 @@ pub struct LibraryFolders {
     pub kind: String,
     pub name: String,
     pub folders: Vec<String>,
+}
+
+/// A task that could not finish.
+#[derive(Debug)]
+pub struct BlockingFailed;
+
+impl std::fmt::Display for BlockingFailed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("the blocking task panicked")
+    }
+}
+
+impl std::error::Error for BlockingFailed {}
+
+/// Run blocking work from a route: on a thread of its own in a process, and in
+/// place in a WebAssembly component, which has only the one.
+pub async fn run_blocking<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Result<T, BlockingFailed> {
+    #[cfg(not(target_family = "wasm"))]
+    {
+        tokio::task::spawn_blocking(work)
+            .await
+            .map_err(|_| BlockingFailed)
+    }
+    #[cfg(target_family = "wasm")]
+    {
+        Ok(work())
+    }
 }
 
 #[cfg(test)]

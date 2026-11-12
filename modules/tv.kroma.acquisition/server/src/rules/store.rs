@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use kroma_module_sdk::db::Pool;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_scene::{CustomFormat, QualityProfile, Sizes};
 use rusqlite::{OptionalExtension, params};
 
@@ -206,7 +206,7 @@ fn upgrade_delay(attempts: i64) -> i64 {
 /// Stamps an upgrade search; one that grabbed nothing stretches the next wait.
 pub fn record_upgrade_search(
     pool: &Pool,
-    title: &kroma_module_sdk::engine::model::MonitoredTitle,
+    title: &kroma_module_sdk::domain::MonitoredTitle,
     now_ms: i64,
     grabbed: bool,
 ) -> Result<()> {

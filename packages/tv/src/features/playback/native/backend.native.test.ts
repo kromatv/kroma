@@ -6,7 +6,7 @@ import type { PlayEnv } from '@kromatv/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EnginePref } from '#tv/app/enginePref';
 
-const rn = vi.hoisted(() => ({ os: 'ios' as 'ios' | 'android' }));
+const rn = vi.hoisted(() => ({ os: 'ios' as 'ios' | 'android' | 'tizen' }));
 vi.mock('react-native', () => ({
   Platform: {
     get OS() {
@@ -89,6 +89,10 @@ describe('the one question it asks', () => {
     rn.os = 'android';
     plan();
     expect(nativeDirectPlayable).toHaveBeenLastCalledWith(item, 'android');
+
+    rn.os = 'tizen';
+    plan();
+    expect(nativeDirectPlayable).toHaveBeenLastCalledWith(item, 'tizen');
   });
 
   it('opens the original file when the player can', () => {
@@ -155,6 +159,8 @@ describe('what the plan reports', () => {
     expect(plan().deviceLabel).toBe('Apple TV');
     rn.os = 'android';
     expect(plan().deviceLabel).toBe('Android TV');
+    rn.os = 'tizen';
+    expect(plan().deviceLabel).toBe('Samsung TV');
   });
 
   it('always renders to the one native surface', () => {

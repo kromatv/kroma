@@ -1,7 +1,49 @@
 # tv-native
 
-The Apple TV / Android TV shell. It is platform glue: the 10-foot experience
-itself lives in [`@kromatv/tv`](../../packages/tv).
+The Apple TV / Android TV / Samsung Tizen / LG webOS shell. It is platform glue: the
+10-foot experience itself lives in [`@kromatv/tv`](../../packages/tv).
+
+## Samsung Tizen
+
+Tizen runs this same app through
+[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen),
+which reads its config plugin's props in `app.json` and the Metro config's
+`withTizen`. From this directory:
+
+```bash
+bunx expo start                                 # then shift+m, Run on TV
+bunx rn-tizen simulator run --instance <name>   # the aarch64 simulator
+bunx rn-tizen run --device <tv-ip>              # a TV in Developer Mode
+```
+
+Use `bunx`, not `npx`: npm resolves `rn-tizen` from the workspace root, where
+bun does not link it.
+
+A local module carries its Tizen implementation in its own `tizen/` folder,
+declared in its `expo-module.config.json`; `server-discovery` is one.
+
+Voice search on Tizen is `expo-speech-recognition`, which react-native-tizen
+implements on the TV's speech engine, with the Smart Remote's mic button held
+through `MicButton` (`src/lib/voice-search.tizen.tsx`). Hold the button
+anywhere in the app: search opens listening, and letting go searches what was
+heard. The package is left out of autolinking on Android and Apple, where the
+local `voice-search` module and Siri do the same job.
+
+## LG webOS
+
+webOS runs this same app through
+[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos),
+which reads its config plugin's props in `app.json` and the Metro config's
+`withWebOS`. From this directory:
+
+```bash
+bunx rn-webos simulator run --instance <name>   # the aarch64 simulator
+bunx rn-webos package                           # webos/<id>_<version>_arm.ipk
+bunx rn-webos run --device <tv-ip>              # a TV in Developer Mode
+```
+
+No local module has a webOS implementation yet: `server-discovery` finds
+nothing on an LG set, so a server is added by its address there.
 
 ## Testing the voice and launcher doors
 

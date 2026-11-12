@@ -140,13 +140,7 @@ export function RequestsQueue() {
       </Row>
 
       <Table.Root
-        columns={[
-          {},
-          { width: 190, from: 'md' },
-          { width: 110, from: 'md' },
-          { width: 132, from: 'md' },
-          { width: 76 },
-        ]}
+        columns={[{ min: 200 }, { width: 190 }, { width: 110 }, { width: 132 }, { width: 110 }]}
       >
         <Table.Header>
           <Table.Column>{t('requests.colTitle')}</Table.Column>

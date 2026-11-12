@@ -1,0 +1,295 @@
+use std::collections::BTreeMap;
+
+use kroma_domain::{
+    ActionKind, ActionSpec, ActionStyle, NotificationCategory, NotificationEvent, ParamValue,
+};
+
+use super::*;
+use crate::services::notify::types::test_support;
+
+fn stored() -> StoredNotification {
+    StoredNotification {
+        id: "n1".into(),
+        category: NotificationCategory::Requests,
+        event: NotificationEvent::RequestAvailable,
+        title_key: "notifications.request.available.title".into(),
+        body_key: "notifications.request.available.body".into(),
+        params: BTreeMap::from([("title".to_string(), ParamValue::Text("Dune".into()))]),
+        subject: None,
+        actor_id: None,
+        data: None,
+        dedupe_key: None,
+        group_key: None,
+        module_type: None,
+        resolved_at: None,
+        resolved_by: None,
+        count: 1,
+        updated_at: 1_700_000_000_000,
+        link: Some("/movie/ab12".into()),
+        image_url: Some("https://img/p.jpg".into()),
+        actions: vec![ActionSpec {
+            id: "watch".into(),
+            label_key: "notifications.action.watch".into(),
+            kind: ActionKind::Link,
+            href: "/watch/ab12".into(),
+            method: None,
+            style: ActionStyle::Primary,
+        }],
+        push_category: None,
+        read: false,
+        created_at: 1_700_000_000_000,
+    }
+}
+
+#[test]
+fn interpolates_params_into_title_and_body() {
+    let out = render(
+        &stored(),
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    // The catalogs carry these keys, so the title must not come back as the
+    // raw key and must have the film's name substituted in.
+    assert!(
+        out.title.contains("Dune") || out.body.contains("Dune"),
+        "{out:?}"
+    );
+    assert!(
+        !out.title.starts_with("notifications."),
+        "unresolved key: {}",
+        out.title
+    );
+}
+
+#[test]
+fn renders_the_same_notification_differently_per_locale() {
+    let s = stored();
+    let fr = render(
+        &s,
+        "fr",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    let en = render(
+        &s,
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    // Same row, two readers, two languages this is why text is not stored.
+    assert_ne!(
+        fr.body, en.body,
+        "fr/en catalogs should differ for this key"
+    );
+}
+
+#[test]
+fn carries_image_link_and_actions_through_untouched() {
+    let out = render(
+        &stored(),
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    assert_eq!(out.link.as_deref(), Some("/movie/ab12"));
+    assert_eq!(out.image_url.as_deref(), Some("https://img/p.jpg"));
+    assert_eq!(out.actions.len(), 1);
+    assert_eq!(out.actions[0].id, "watch");
+    assert_eq!(out.actions[0].href, "/watch/ab12");
+    assert_eq!(out.actions[0].style, ActionStyle::Primary);
+    // The button label is resolved, not left as a key.
+    assert!(!out.actions[0].label.starts_with("notifications."));
+}
+
+#[test]
+fn a_key_param_is_translated_into_the_readers_locale() {
+    let mut s = stored();
+    s.title_key = "notifications.system.job.failed.title".into();
+    s.body_key = "notifications.system.job.failed.body".into();
+    // The jobs domain names its display strings by key, and says so.
+    s.params = BTreeMap::from([(
+        "job".to_string(),
+        ParamValue::Key("jobs.library.scan.name".into()),
+    )]);
+    let out = render(
+        &s,
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    assert!(
+        !out.body.contains("jobs.library.scan.name"),
+        "raw key leaked: {}",
+        out.body
+    );
+}
+
+#[test]
+fn ordinary_param_text_is_left_alone() {
+    // A film title must never be mistaken for a key and rewritten.
+    let out = render(
+        &stored(),
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    assert!(out.body.contains("Dune"), "{}", out.body);
+}
+
+#[test]
+fn text_that_happens_to_spell_a_catalog_key_is_still_interpolated_verbatim() {
+    // The whole point of the typed param. A username or a moderator's note
+    // that collides with a real catalog key used to be silently replaced by
+    // that key's UI string; declared as Text, it survives untouched.
+    let mut s = stored();
+    s.body_key = "notifications.report.submitted.body".into();
+    s.params = BTreeMap::from([
+        ("user".to_string(), ParamValue::Text("reports.sheet".into())),
+        ("title".to_string(), ParamValue::Text("Dune".into())),
+    ]);
+    let out = render(
+        &s,
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    assert!(
+        out.body.contains("reports.sheet"),
+        "collided param was rewritten: {}",
+        out.body
+    );
+    // Sanity: that key really does resolve to something else, so the test
+    // would fail under the old value-shape heuristic.
+    assert_ne!(crate::i18n::t("en", "reports.sheet", &[]), "reports.sheet");
+}
+
+#[test]
+fn a_row_written_before_params_were_typed_still_resolves_its_key() {
+    // Rows from before the upgrade stored a key as a bare string, and there
+    // are up to 200 of them per user with nothing to migrate them. Read back
+    // as plain Text they rendered "Job jobs.library.scan.name failed".
+    let mut s = stored();
+    s.body_key = "notifications.report.submitted.body".into();
+    s.params = BTreeMap::from([
+        (
+            "user".to_string(),
+            ParamValue::Legacy("reports.sheet".into()),
+        ),
+        ("title".to_string(), ParamValue::Text("Dune".into())),
+    ]);
+    let out = render(
+        &s,
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    let resolved = crate::i18n::t("en", "reports.sheet", &[]);
+    assert!(
+        out.body.contains(&resolved),
+        "legacy key left raw: {}",
+        out.body
+    );
+}
+
+#[test]
+fn a_legacy_param_that_is_not_a_key_is_left_exactly_as_it_was() {
+    // The other half: most of those bare strings were ordinary text (a film
+    // title, a note), and resolving is only ever a lookup, never a guess.
+    let mut s = stored();
+    s.params = BTreeMap::from([("title".to_string(), ParamValue::Legacy("Dune".into()))]);
+    let out = render(
+        &s,
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    assert!(out.body.contains("Dune"), "{}", out.body);
+}
+
+#[test]
+fn an_unknown_key_degrades_to_the_key_itself() {
+    let mut s = stored();
+    s.title_key = "notifications.does.not.exist".into();
+    let out = render(
+        &s,
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+    // i18n falls back to the raw key rather than panicking or emptying the
+    // row: a notification with an odd title still beats a missing one.
+    assert_eq!(out.title, "notifications.does.not.exist");
+}
+
+fn raised_by_torrents() -> StoredNotification {
+    StoredNotification {
+        category: NotificationCategory::Downloads,
+        event: NotificationEvent::Custom,
+        title_key: "notifications.completed.title".into(),
+        body_key: "notifications.completed.body".into(),
+        module_type: Some(test_support::COMPLETED.into()),
+        params: BTreeMap::from([("title".to_string(), ParamValue::Text("Dune.2021".into()))]),
+        link: None,
+        image_url: None,
+        actions: Vec::new(),
+        ..stored()
+    }
+}
+
+#[test]
+fn a_row_a_module_raised_reads_in_each_readers_language() {
+    let types = test_support::declaring_torrents();
+    let row = raised_by_torrents();
+
+    let fr = render(&row, "fr", &Subjects::default(), &types);
+    let en = render(&row, "en", &Subjects::default(), &types);
+
+    assert_eq!(fr.title, "Téléchargement terminé");
+    assert_eq!(fr.body, "Dune.2021 a fini de télécharger.");
+    assert_eq!(en.title, "Download finished");
+}
+
+#[test]
+fn a_key_the_module_has_no_word_for_in_a_language_falls_back_to_its_english() {
+    let types = test_support::declaring_torrents();
+    let mut row = raised_by_torrents();
+    row.params = BTreeMap::from([(
+        "title".to_string(),
+        ParamValue::Key("notifications.completed.size".into()),
+    )]);
+
+    let fr = render(&row, "fr", &Subjects::default(), &types);
+
+    assert!(fr.body.contains("{size} on disk"), "{}", fr.body);
+}
+
+#[test]
+fn a_module_row_still_reads_the_core_for_a_key_its_module_does_not_hold() {
+    let types = test_support::declaring_torrents();
+    let mut row = raised_by_torrents();
+    row.actions = vec![ActionSpec {
+        id: "view".into(),
+        label_key: "notifications.action.view".into(),
+        kind: ActionKind::Link,
+        href: "/admin/downloads".into(),
+        method: None,
+        style: ActionStyle::Default,
+    }];
+
+    let out = render(&row, "en", &Subjects::default(), &types);
+
+    assert_eq!(out.actions[0].label, "View");
+}
+
+#[test]
+fn a_module_row_with_its_module_gone_shows_its_keys_rather_than_nothing() {
+    let out = render(
+        &raised_by_torrents(),
+        "en",
+        &Subjects::default(),
+        &NotificationTypes::default(),
+    );
+
+    assert_eq!(out.title, "notifications.completed.title");
+}

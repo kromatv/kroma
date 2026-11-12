@@ -35,11 +35,7 @@ const Metadata = z.object({
 export type Metadata = z.infer<typeof Metadata>;
 type Package = Metadata['packages'][number];
 
-/**
- * The crates a program links: those its root reaches through normal
- * dependencies, never only a build or dev one, less the workspace's own.
- */
-export function linkedCrates(metadata: Metadata): Package[] {
+function reached(metadata: Metadata): Package[] {
   const nodes = new Map(metadata.resolve.nodes.map((node) => [node.id, node]));
   const root = metadata.resolve.root;
   const seen = new Set<string>(root ? [root] : []);
@@ -57,10 +53,15 @@ export function linkedCrates(metadata: Metadata): Package[] {
 }
 
 /**
- * The notices of the crates `manifestPath` links when built for `targets`
- * (every target when empty), read with `cargo metadata`.
+ * The crates a program links: those its root reaches through normal
+ * dependencies, never only a build or dev one, less the workspace's own.
+ * Takes one graph per target, and lists a crate several of them link once.
  */
-export function cargoNotices(manifestPath: string, targets: readonly string[] = []): Notice[] {
+export function linkedCrates(graphs: readonly Metadata[]): Package[] {
+  return [...new Map(graphs.flatMap(reached).map((pkg) => [pkg.id, pkg])).values()];
+}
+
+function cargoMetadata(manifestPath: string, target: string | undefined): Metadata {
   const json = execFileSync(
     'cargo',
     [
@@ -70,11 +71,22 @@ export function cargoNotices(manifestPath: string, targets: readonly string[] = 
       '--locked',
       '--manifest-path',
       manifestPath,
-      ...targets.flatMap((target) => ['--filter-platform', target]),
+      ...(target ? ['--filter-platform', target] : []),
     ],
     { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  return linkedCrates(Metadata.parse(JSON.parse(json))).map((pkg) => ({
+  return Metadata.parse(JSON.parse(json));
+}
+
+/**
+ * The notices of the crates `manifestPath` links when built for `targets`
+ * (every target when empty), read with `cargo metadata`.
+ */
+export function cargoNotices(manifestPath: string, targets: readonly string[] = []): Notice[] {
+  const graphs = (targets.length > 0 ? targets : [undefined]).map((target) =>
+    cargoMetadata(manifestPath, target),
+  );
+  return linkedCrates(graphs).map((pkg) => ({
     name: pkg.name,
     version: pkg.version,
     license: pkg.license,

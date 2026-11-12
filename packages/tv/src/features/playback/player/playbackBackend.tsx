@@ -68,10 +68,12 @@ export interface PlaybackBackend<P extends EnginePlan = EnginePlan> {
   pictureInPicture(surface: Surface): boolean;
 }
 
-/** What a shell hands `TvApp` for playback: the player screen, already wired to
- * its backend, and loaded however that shell loads it. */
+/** What a shell hands `TvApp` for playback: the player screen and the trailer
+ * screen, each already wired to its backend, and loaded however that shell loads
+ * it. */
 export interface PlaybackPlatform {
   Player: ComponentType;
+  Trailer: ComponentType;
 }
 
 const PlaybackBackendContext = createContext<PlaybackBackend | null>(null);

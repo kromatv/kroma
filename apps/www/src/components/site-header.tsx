@@ -19,6 +19,7 @@ function useNav() {
     { id: 'platforms', kind: 'anchor', label: m.nav_platforms(), href: `${home}#plateformes` },
     { id: 'modules', kind: 'route', label: m.nav_modules(), to: '/modules' },
     { id: 'install', kind: 'route', label: m.nav_install(), to: '/download' },
+    { id: 'docs', kind: 'route', label: m.nav_docs(), to: '/docs' },
     { id: 'blog', kind: 'route', label: m.nav_blog(), to: '/blog' },
   ] as const;
 }

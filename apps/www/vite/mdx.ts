@@ -4,7 +4,11 @@ import rehypeSlug from 'rehype-slug';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
+import { site } from '@kromatv/site-meta';
 import type { Plugin } from 'vite';
+import { remarkAlerts } from './alerts.ts';
+import { remarkDocLinks } from './doc-links.ts';
+import { remarkDocMeta } from './doc-meta.ts';
 import { remarkReadingTime } from './reading-time.ts';
 
 // MDX must compile BEFORE the React transform, hence `enforce: 'pre'`.
@@ -14,7 +18,15 @@ export function mdxPlugin(): Plugin {
   return {
     enforce: 'pre',
     ...mdx({
-      remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter, remarkGfm, remarkReadingTime],
+      remarkPlugins: [
+        remarkFrontmatter,
+        remarkMdxFrontmatter,
+        remarkGfm,
+        remarkAlerts,
+        [remarkDocLinks, { repoUrl: site.repo }],
+        remarkDocMeta,
+        remarkReadingTime,
+      ],
       rehypePlugins: [
         rehypeSlug,
         [

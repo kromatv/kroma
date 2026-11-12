@@ -1,87 +1,90 @@
-use std::num::NonZeroU32;
+use std::sync::PoisonError;
 
-use librqbit::limits::Limits;
-
-use super::RqbitEngine;
+use super::{RqbitEngine, wanted_limits};
 
 impl RqbitEngine {
-    /// A torrent already in flight picks the new ceiling up on its next block,
-    /// and `None` is unlimited. Safe to call on a timer, because a ceiling that
-    /// has not moved is left alone rather than pushed again onto a fresh token
-    /// bucket.
+    /// A torrent already in flight picks the new ceiling up on its next block, and
+    /// `None` is unlimited. Safe to call on a timer, because a ceiling that has not
+    /// moved is left alone rather than pushed again onto a fresh token bucket.
     pub fn set_rate_limits(&self, download_bps: Option<u32>, upload_bps: Option<u32>) {
-        set_if_moved(&self.session().ratelimits, download_bps, upload_bps);
-    }
-}
-
-fn set_if_moved(limits: &Limits, download_bps: Option<u32>, upload_bps: Option<u32>) {
-    let down = download_bps.and_then(NonZeroU32::new);
-    let up = upload_bps.and_then(NonZeroU32::new);
-    if limits.get_download_bps() != down {
-        limits.set_download_bps(down);
-    }
-    if limits.get_upload_bps() != up {
-        limits.set_upload_bps(up);
+        let wanted = wanted_limits(download_bps, upload_bps);
+        let mut applied = self.limits.lock().unwrap_or_else(PoisonError::into_inner);
+        if *applied == wanted {
+            return;
+        }
+        match self.api.set_limits(wanted.0, wanted.1) {
+            Ok(()) => *applied = wanted,
+            Err(error) => {
+                tracing::warn!(error = %format!("{error:#}"), "rqbit refused a rate limit")
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use crate::rqbit::RqbitConfig;
+    use crate::rqbit::test_support::{StubApi, engine_over};
 
-    use librqbit::limits::LimitsConfig;
-
-    use super::*;
-
+    const LIMITS: &str = "POST /torrents/limits";
     const CEILING_BPS: u32 = 64;
 
-    fn ceiling() -> NonZeroU32 {
-        NonZeroU32::new(CEILING_BPS).unwrap()
+    fn stub() -> StubApi {
+        StubApi::serving(&[(LIMITS, 200, "{}")])
     }
 
-    async fn drained() -> Limits {
-        let limits = Limits::new(LimitsConfig {
-            download_bps: Some(ceiling()),
-            upload_bps: None,
-        });
-        limits.prepare_for_download(ceiling()).await.unwrap();
-        limits
+    #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+    fn a_ceiling_re_asserted_unchanged_is_not_pushed_again() {
+        let api = stub();
+        let engine = engine_over(
+            &api,
+            RqbitConfig {
+                download_bps: Some(CEILING_BPS),
+                ..RqbitConfig::default()
+            },
+        );
+
+        engine.set_rate_limits(Some(CEILING_BPS), None);
+
+        assert!(api.seen(LIMITS).is_empty());
     }
 
-    async fn makes_the_next_block_wait(limits: &Limits) -> bool {
-        tokio::time::timeout(
-            Duration::from_millis(100),
-            limits.prepare_for_download(ceiling()),
-        )
-        .await
-        .is_err()
+    #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+    fn a_ceiling_that_moved_is_pushed_through() {
+        let api = stub();
+        let engine = engine_over(&api, RqbitConfig::default());
+
+        engine.set_rate_limits(None, Some(CEILING_BPS));
+
+        let body = String::from_utf8(api.seen(LIMITS).remove(0).body).unwrap();
+        let sent: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(sent["download_bps"], serde_json::Value::Null);
+        assert_eq!(sent["upload_bps"], CEILING_BPS);
     }
 
-    #[tokio::test]
-    async fn librqbit_hands_out_a_whole_second_of_burst_on_every_set() {
-        let limits = drained().await;
+    #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+    fn a_ceiling_pushed_once_is_not_pushed_a_second_time() {
+        let api = stub();
+        let engine = engine_over(&api, RqbitConfig::default());
 
-        limits.set_download_bps(Some(ceiling()));
+        engine.set_rate_limits(Some(CEILING_BPS), None);
+        engine.set_rate_limits(Some(CEILING_BPS), None);
 
-        assert!(!makes_the_next_block_wait(&limits).await);
+        assert_eq!(api.seen(LIMITS).len(), 1);
     }
 
-    #[tokio::test]
-    async fn a_ceiling_re_asserted_unchanged_leaves_the_bucket_where_it_was() {
-        let limits = drained().await;
+    #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+    fn a_ceiling_rqbit_refused_is_tried_again_next_time() {
+        let api = StubApi::serving(&[(LIMITS, 500, "{}")]);
+        let engine = engine_over(&api, RqbitConfig::default());
 
-        set_if_moved(&limits, Some(CEILING_BPS), None);
+        engine.set_rate_limits(Some(CEILING_BPS), None);
+        engine.set_rate_limits(Some(CEILING_BPS), None);
 
-        assert!(makes_the_next_block_wait(&limits).await);
-    }
-
-    #[tokio::test]
-    async fn a_ceiling_that_moved_is_pushed_through() {
-        let limits = drained().await;
-
-        set_if_moved(&limits, None, Some(CEILING_BPS));
-
-        assert_eq!(limits.get_download_bps(), None);
-        assert_eq!(limits.get_upload_bps(), Some(ceiling()));
+        assert_eq!(api.seen(LIMITS).len(), 2);
     }
 }

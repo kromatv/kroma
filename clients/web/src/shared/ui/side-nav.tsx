@@ -1,5 +1,4 @@
-import { Box, Focusable, Text } from '@kromatv/ui/kit';
-import type { TablerIcon } from '@tabler/icons-react';
+import { Box, Focusable, Icon, type IconName, Text } from '@kromatv/ui/kit';
 import { useMatchRoute } from '@tanstack/react-router';
 import { createContext, type ReactNode, useContext } from 'react';
 import { useNavActions } from '#web/shared/ui/nav-actions';
@@ -19,7 +18,17 @@ const RowContext = createContext<RowSlots | null>(null);
 function Header({ children }: Readonly<{ children: ReactNode }>) {
   const actions = useNavActions();
   return (
-    <Box shrink={0} row align="center" between gap={8} px={SIDE_NAV_BAND_X} pt={24} pb={16}>
+    <Box
+      shrink={0}
+      row
+      align="center"
+      between
+      gap={8}
+      pl={SIDE_NAV_BAND_X}
+      pr={SIDE_NAV_GUTTER}
+      pt={24}
+      pb={16}
+    >
       {children}
       {actions}
     </Box>
@@ -57,18 +66,12 @@ function Group({ label, children }: Readonly<SideNavGroupProps>) {
 interface SideNavItemProps {
   to: string;
   exact?: boolean;
-  icon: TablerIcon;
+  icon: IconName;
   disabled?: boolean;
   children: ReactNode;
 }
 
-function Item({
-  to,
-  exact = false,
-  icon: Glyph,
-  disabled = false,
-  children,
-}: Readonly<SideNavItemProps>) {
+function Item({ to, exact = false, icon, disabled = false, children }: Readonly<SideNavItemProps>) {
   const matchRoute = useMatchRoute();
   const current = matchRoute({ to, fuzzy: !exact }) !== false;
   return (
@@ -82,7 +85,7 @@ function Item({
       {({ slots }) => (
         <RouteLink to={to}>
           <RowContext.Provider value={slots}>
-            <Glyph size={SIDE_NAV_GLYPH} stroke={1.7} color={slots.glyph.color} />
+            <Icon name={icon} size={SIDE_NAV_GLYPH} thickness={1.7} color={slots.glyph.color} />
             {children}
           </RowContext.Provider>
         </RouteLink>

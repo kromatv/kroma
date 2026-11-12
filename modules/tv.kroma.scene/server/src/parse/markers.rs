@@ -91,9 +91,9 @@ impl EpisodeMarker {
     }
 }
 
-pub(super) fn parse_episode_marker(t: &str) -> Option<EpisodeMarker> {
+pub(super) fn parse_episode_marker(t: &str, next: Option<&str>) -> Option<EpisodeMarker> {
     if let Some(rest) = t.strip_prefix('s') {
-        return parse_s_marker(rest);
+        return parse_s_marker(rest, next);
     }
     // NxMM: small left side only, so 1920x1080 stays a resolution.
     if let Some((s, e)) = t.split_once('x') {
@@ -102,7 +102,7 @@ pub(super) fn parse_episode_marker(t: &str) -> Option<EpisodeMarker> {
     None
 }
 
-fn parse_s_marker(rest: &str) -> Option<EpisodeMarker> {
+fn parse_s_marker(rest: &str, next: Option<&str>) -> Option<EpisodeMarker> {
     let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
     if digits.is_empty() || digits.len() > 2 {
         return None;
@@ -110,7 +110,8 @@ fn parse_s_marker(rest: &str) -> Option<EpisodeMarker> {
     let season: u32 = digits.parse().ok()?;
     let tail = &rest[digits.len()..];
     if tail.is_empty() {
-        return Some(EpisodeMarker::whole_season(season));
+        let apart = next.and_then(|next| parse_episodes(season, &next.to_ascii_lowercase()));
+        return Some(apart.unwrap_or_else(|| EpisodeMarker::whole_season(season)));
     }
     if let Some(end) = last_season(tail, season) {
         return Some(EpisodeMarker::seasons(season, end));

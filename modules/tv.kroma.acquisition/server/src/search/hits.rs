@@ -4,14 +4,13 @@
 
 use std::collections::HashMap;
 
-use anyhow::Result;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::Judged;
 
 use crate::dtos::{IndexerReport, ScoredReleaseView};
-use crate::peers::indexers::{IndexerRef, Release};
+use crate::peers::indexers::{IndexerRef, Query, Release};
 use crate::search::judge::Judge;
-use crate::search::sweep::sweep;
+use crate::search::sweep::sweep_queries;
 use crate::search::targets::SearchTarget;
 
 /// A judged release and the link a grab of it can use.
@@ -28,29 +27,6 @@ struct Hit {
     indexer_id: String,
     target: usize,
     release: Release,
-}
-
-fn ask_indexer<S: HostStorage>(
-    state: &S,
-    indexer: &IndexerRef,
-    targets: &[SearchTarget],
-) -> Result<Vec<Hit>> {
-    let mut found: Vec<Hit> = Vec::new();
-    let mut errors: Vec<String> = Vec::new();
-    for (target, st) in targets.iter().enumerate() {
-        match crate::search_indexer(state, indexer, &st.query) {
-            Ok(releases) => found.extend(releases.into_iter().map(|release| Hit {
-                indexer_id: indexer.id.clone(),
-                target,
-                release,
-            })),
-            Err(e) => errors.push(format!("{e:#}")),
-        }
-    }
-    if found.is_empty() && !errors.is_empty() {
-        anyhow::bail!("{}", errors.join("; "));
-    }
-    Ok(found)
 }
 
 fn scored_hits(
@@ -107,7 +83,12 @@ pub(crate) fn collect_search_hits<S: HostStorage>(
     judge: &Judge,
     tmdb_id: u64,
 ) -> (Vec<CachedRelease>, Vec<IndexerReport>) {
-    let (hits, reports) = sweep(indexers, |indexer| ask_indexer(state, indexer, targets));
+    let queries: Vec<&Query> = targets.iter().map(|target| &target.query).collect();
+    let (hits, reports) = sweep_queries(state, indexers, &queries, |indexer, target, release| Hit {
+        indexer_id: indexer.id.clone(),
+        target,
+        release,
+    });
     (
         scored_hits(hits, indexers, targets, judge, tmdb_id),
         reports,
@@ -117,8 +98,10 @@ pub(crate) fn collect_search_hits<S: HostStorage>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::search::best::test_world::{host, Fakes};
     use crate::search::test_support::{episode_target, indexer, release, TestRules};
     use kroma_module_sdk::host::testing::StubHost;
+    use kroma_module_sdk::testing::blocking;
 
     fn score_release(
         release: &Release,
@@ -289,6 +272,26 @@ mod tests {
         assert_eq!(reports[0].id, "idx1");
         assert_eq!(reports[0].found, 0);
         assert!(reports[0].error.is_some());
+    }
+
+    #[tokio::test]
+    async fn a_release_the_provider_offers_comes_back_judged_against_the_target_it_was_asked_for() {
+        let fakes = Fakes::new().offering(&["Show.S01E01.1080p.WEB-DL.x265-GRP"]);
+        let host = host(&fakes).await;
+
+        let (found, reports) = blocking(move || {
+            let rules = TestRules::new();
+            let (found, reports) =
+                collect_search_hits(&host, &[indexer(0)], &[episode_target()], &rules.judge(), 42);
+            let views: Vec<ScoredReleaseView> = found.into_iter().map(|c| c.view).collect();
+            (views, reports)
+        })
+        .await;
+
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].target, "episode");
+        assert_eq!((reports.len(), reports[0].found), (1, 1));
+        assert_eq!(reports[0].error, None);
     }
 
     #[test]

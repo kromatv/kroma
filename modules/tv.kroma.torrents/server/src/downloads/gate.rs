@@ -10,6 +10,7 @@ use crate::VpnStatusView;
 use super::DownloadManager;
 
 const VPN_FAIL_GRACE: u32 = 2;
+const KILL_SWITCH_KEY: &str = "vpnKillSwitch";
 
 impl DownloadManager {
     pub fn gate_open(&self) -> bool {
@@ -30,7 +31,7 @@ impl DownloadManager {
         let check_url = host.setting_str("vpnCheckUrl", "https://api.ipify.org");
         let check = crate::proxycheck::check(&proxy, &check_url);
         let sealed = check.sealed();
-        let kill_switch = host.setting_bool("vpnKillSwitch", false);
+        let kill_switch = kill_switch_on(host);
         let was_open = self.gate_open.load(Ordering::Relaxed);
 
         // One blip must not block downloads; only a sustained failure does.
@@ -99,12 +100,20 @@ impl DownloadManager {
     }
 }
 
-/// The local wireproxy SOCKS5 bridge peers are routed through (librqbit only
-/// proxies via SOCKS5). `None` = no VPN, torrent traffic goes out directly.
+/// The SOCKS5 route peers take while a network carries them. `None` while none is
+/// up, which lets torrent traffic out directly only when no network is on offer and
+/// the kill switch is off.
 pub fn active_proxy_url(host: &dyn HostCtx) -> Option<String> {
     crate::port::vpn::proxy_url(host)
 }
 
 pub(super) fn vpn_sealed_expected(host: &dyn HostCtx) -> bool {
-    host.module_enabled("tv.kroma.vpn") && !host.setting_str("vpnWgConfig", "").trim().is_empty()
+    crate::port::vpn::must_stay_behind_a_network(host) || kill_switch_on(host)
 }
+
+fn kill_switch_on(host: &dyn HostCtx) -> bool {
+    host.setting_bool(KILL_SWITCH_KEY, false)
+}
+
+#[cfg(test)]
+mod tests;

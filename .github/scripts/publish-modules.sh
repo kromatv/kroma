@@ -4,13 +4,16 @@
 #
 # Inputs (env): GH_TOKEN, GH_REPO, SHA
 # Inputs (files): dist/registry/plan.json, dist/registry/modules.json,
-#                 dist/modules/<the .kmod files the plan names>
+#                 dist/registry/history.json,
+#                 dist/modules/<the .kmod and .sha256 each release names>
 set -euo pipefail
 
 plan=dist/registry/plan.json
 catalog=dist/registry/modules.json
+history=dist/registry/history.json
 [[ -f $plan ]] || { echo "::error::$plan is missing; run \`kroma release\` first"; exit 1; }
 [[ -f $catalog ]] || { echo "::error::$catalog is missing"; exit 1; }
+[[ -f $history ]] || { echo "::error::$history is missing"; exit 1; }
 
 # The per-module releases go up FIRST. The catalog published below points every
 # updated module's download URL at its own tag, so publishing the catalog before
@@ -39,10 +42,10 @@ for i in $(seq 0 $((count - 1))); do
     gh release create "$tag" \
       --target "$SHA" \
       --title "$id $version" \
-      --notes "Installable \`.kmod\` bundles for \`$id\` $version.
+      --notes "The \`.kmod\` bundle for \`$id\` $version, which installs on every platform.
 
 Install from **Admin → Modules** in KROMA; the Store resolves this from the
-catalog at https://modules.kroma.tv/modules.json and verifies each SHA-256." \
+catalog at https://modules.kroma.tv/modules.json and verifies its SHA-256." \
       --prerelease >/dev/null
     # A prerelease so a module never becomes the repo's `latest` release and
     # displaces the server's.
@@ -58,12 +61,13 @@ if ! gh release view modules >/dev/null 2>&1; then
     --target "$SHA" \
     --title 'Module registry' \
     --notes 'The merged module catalog: `modules.json`, describing the newest
-release of every KROMA module. Served by https://modules.kroma.tv.
+release of every KROMA module, and `history.json`, describing every version
+ever released. Served by https://modules.kroma.tv.
 
 This release is a rolling container, not a snapshot - the individual bundles
 live on their own `<module-id>@<version>` releases.' \
     --prerelease >/dev/null
   echo "created the rolling catalog release"
 fi
-gh release upload modules "$catalog" --clobber
+gh release upload modules "$catalog" "$history" --clobber
 echo "published $(jq '.modules | length' "$catalog") module(s) in the catalog"

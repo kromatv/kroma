@@ -13,14 +13,17 @@ pub mod ws;
 mod accounts;
 mod cast;
 mod diagnostics;
+mod direct;
 mod discover;
 mod downloads_overlay;
+mod etag;
 mod extract;
 mod handoff;
 mod home;
 pub mod host_events;
 mod host_jobs;
 mod images;
+mod inbound;
 mod invites;
 mod mail;
 mod media;
@@ -33,6 +36,7 @@ pub mod online_subs;
 mod origin;
 mod passkeys;
 mod people;
+mod permission;
 mod pin;
 mod plugin;
 mod point;
@@ -41,10 +45,13 @@ mod releases;
 mod rematch;
 mod reports;
 mod requests;
+pub mod seam;
 mod search;
+mod server_status;
 mod stream;
 mod suggest;
 mod themes;
+mod trailers;
 mod util;
 mod visibility;
 
@@ -70,6 +77,10 @@ mod it_cast;
 mod it_content;
 #[cfg(test)]
 mod it_diagnostics;
+#[cfg(test)]
+mod it_direct;
+#[cfg(test)]
+mod it_direct_reach;
 #[cfg(test)]
 mod it_external_subtitles;
 #[cfg(test)]
@@ -97,17 +108,29 @@ mod it_media_bearer;
 #[cfg(test)]
 mod it_media_ticket;
 #[cfg(test)]
+mod it_home;
+#[cfg(test)]
+mod it_movie_cards;
+#[cfg(test)]
 mod it_member_reach;
 #[cfg(test)]
 mod it_monitoring;
 #[cfg(test)]
+mod it_network;
+#[cfg(test)]
 mod it_notification_images;
+#[cfg(test)]
+mod it_notification_inbox;
+#[cfg(test)]
+mod it_notification_types;
 #[cfg(test)]
 mod it_notifications;
 #[cfg(test)]
 mod it_online_subs;
 #[cfg(test)]
 mod it_passkeys;
+#[cfg(test)]
+mod it_people;
 #[cfg(test)]
 mod it_pin;
 #[cfg(test)]
@@ -131,23 +154,32 @@ mod it_reset;
 #[cfg(test)]
 mod it_reset_faults;
 #[cfg(test)]
+mod it_saved_titles;
+#[cfg(test)]
+mod it_server_restart;
+#[cfg(test)]
+mod it_server_status;
+#[cfg(test)]
+mod it_store_versions;
+#[cfg(test)]
 mod it_stream_hls;
 #[cfg(test)]
 mod it_suggest;
+#[cfg(test)]
+mod it_trailers;
 #[cfg(test)]
 mod it_updates;
 #[cfg(test)]
 mod it_verify_email;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 
-use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::extract::{ConnectInfo, Path, Request, State};
+use axum::extract::{Path, Request, State};
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::StatusCode;
-use axum::middleware::{from_fn, from_fn_with_state, Next};
+use axum::middleware::{from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
@@ -181,20 +213,6 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
     }
 }
 
-// The host callback surface is for local sidecars only. A request from any
-// non-loopback peer is answered 404, so the surface is not advertised off-host.
-async fn host_loopback_only(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    req: Request,
-    next: Next,
-) -> Response {
-    if addr.ip().to_canonical().is_loopback() {
-        next.run(req).await
-    } else {
-        json_error(StatusCode::NOT_FOUND, "not found")
-    }
-}
-
 // Reverse-proxies to the installed module's process; the module validates the
 // forwarded bearer itself against the shared DB.
 async fn module_proxy(
@@ -202,27 +220,24 @@ async fn module_proxy(
     Path((id, rest)): Path<(String, String)>,
     req: Request,
 ) -> Response {
-    match sup.port_of(&id) {
-        Some(port) => {
+    match sup.endpoint_of(&id) {
+        Some(endpoint) => {
             let query = req
                 .uri()
                 .query()
                 .map(|q| format!("?{q}"))
                 .unwrap_or_default();
-            kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await
+            kroma_module_supervisor::proxy_to(&endpoint, &format!("/{rest}{query}"), req).await
         }
         None => (StatusCode::NOT_FOUND, "module not running").into_response(),
     }
 }
 
 /// Build the application router: `/api` route groups (public + session-gated),
-/// the module reverse proxy and host callbacks, static module/SPA assets, then
-/// CORS, compression and tracing layers.
-pub fn router(
-    state: SharedState,
-    supervisor: Arc<Supervisor>,
-    subscriptions: Arc<host_events::Subscriptions>,
-) -> Router {
+/// the module reverse proxy, static module/SPA assets, then CORS, compression
+/// and tracing layers. The host callbacks are on the core's own socket only
+/// ([`seam::router`]).
+pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // Public endpoints reachable before (or without) a session: the auth
     // handshake + roster + invites, uploaded avatars/art, liveness, and the media
     // byte streams. The byte routes sit outside this middleware because a
@@ -237,9 +252,12 @@ pub fn router(
         .merge(mail::routes())
         .merge(images::routes())
         .merge(media::public_routes())
+        .merge(server_status::public_routes())
+        .merge(direct::public_routes())
         .merge(stream::routes())
         .merge(online_subs::public_routes())
         .merge(themes::routes())
+        .merge(trailers::public_routes())
         .merge(modules::public_routes())
         .merge(diagnostics::routes())
         .merge(ws::routes());
@@ -251,6 +269,8 @@ pub fn router(
     // is not library bytes.
     let content = Router::new()
         .merge(media::routes())
+        .merge(server_status::routes())
+        .merge(direct::routes())
         .merge(stream::protected_routes())
         .merge(search::routes())
         .merge(people::routes())
@@ -263,6 +283,7 @@ pub fn router(
         .merge(cast::routes())
         .merge(handoff::routes())
         .merge(discover::routes())
+        .merge(trailers::routes())
         .merge(rematch::routes())
         .merge(monitoring::routes())
         .merge(requests::routes())
@@ -274,23 +295,8 @@ pub fn router(
 
     // The admin subtree self-gates per-handler (permission checks), so it lives
     // outside the blanket content layer.
-    // The sidecar callbacks always come from a module process on 127.0.0.1
-    // (KROMA_CORE_URL is loopback), so they are refused from any other peer:
-    // the shared host token is then the second line, not the only one.
-    let host = kroma_module_supervisor::host_router::<SharedState>(
-        supervisor.clone(),
-        kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
-    )
-    .merge(host_jobs::routes(supervisor.host_token().to_string()))
-    .merge(host_events::routes(
-        supervisor.host_token().to_string(),
-        subscriptions.clone(),
-    ))
-    .layer(from_fn(host_loopback_only));
-
     let api = public
         .merge(content)
-        .merge(host)
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
         .nest("/admin", admin::routes(state.clone()))
         .layer(Extension(supervisor));
@@ -338,8 +344,9 @@ pub fn router(
             .and(NotForContentType::new("application/vnd.apple.mpegurl")),
     );
 
-    app.layer(origin::cors(&state.config.allowed_origins))
+    app.layer(origin::cors(&state.config, state.direct.origins()))
         .layer(compression)
+        .layer(from_fn_with_state(state.clone(), inbound::tally))
         .layer(axum::middleware::from_fn(spa_cache_headers))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
@@ -376,8 +383,9 @@ fn accepts_html(headers: &axum::http::HeaderMap) -> bool {
         .is_some_and(|v| v.contains("text/html"))
 }
 
-// A Vite content-hashed asset (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`):
-// a `-<hash>` stem suffix of 8+ [A-Za-z0-9_] chars and a non-HTML extension.
+// A Vite content-hashed asset (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`,
+// `cast-B6-ecRbX.js`): a `-<hash>` stem suffix and a non-HTML extension. The hash
+// is base64url, so it may itself hold a `-`.
 fn is_hashed_asset(path: &str) -> bool {
     let name = path.rsplit('/').next().unwrap_or("");
     if name.ends_with(".html") {
@@ -386,9 +394,26 @@ fn is_hashed_asset(path: &str) -> bool {
     let Some((stem, _ext)) = name.rsplit_once('.') else {
         return false;
     };
-    stem.rsplit_once('-').is_some_and(|(_, h)| {
-        h.len() >= 8 && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
-    })
+    let plain = stem.rsplit_once('-').is_some_and(|(_, h)| {
+        h.len() >= HASH_LEN && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+    });
+    plain || ends_in_base64url_hash(stem.as_bytes())
+}
+
+const HASH_LEN: usize = 8;
+
+fn ends_in_base64url_hash(stem: &[u8]) -> bool {
+    let Some(sep) = stem.len().checked_sub(HASH_LEN + 1) else {
+        return false;
+    };
+    let hash = &stem[sep + 1..];
+    stem[sep] == b'-'
+        && hash
+            .iter()
+            .all(|&b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+        && hash
+            .iter()
+            .any(|&b| b.is_ascii_uppercase() || b.is_ascii_digit())
 }
 
 #[cfg(test)]
@@ -445,5 +470,15 @@ mod tests {
         assert!(!is_hashed_asset("/movies"));
         assert!(!is_hashed_asset("/favicon.ico"));
         assert!(!is_hashed_asset("/assets/logo-dark.svg"));
+    }
+
+    #[test]
+    fn a_hash_holding_a_dash_is_still_a_content_hash() {
+        assert!(is_hashed_asset("/assets/cast-B6-ecRbX.js"));
+        assert!(is_hashed_asset("/assets/ui-L_FT-_o-.js"));
+        assert!(is_hashed_asset("/assets/nav-UvXRyM2-.js"));
+        assert!(is_hashed_asset("/assets/use-focus-ring-DTxN-gJP.js"));
+        assert!(!is_hashed_asset("/assets/sun-and-moon.svg"));
+        assert!(!is_hashed_asset("/assets/x-ab.js"));
     }
 }

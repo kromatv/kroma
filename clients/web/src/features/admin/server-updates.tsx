@@ -3,21 +3,27 @@ import type { UpdateTarget, UpdateStatus, UpdateOperation } from '@kromatv/clien
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout, Dialog, EmptyState, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { useAuth } from '#web/shared/lib/auth';
 import {
   UpdateHero,
   UpdateProgress,
   ChannelSettings,
   InstallMethod,
 } from '#web/features/admin/server-update-cards';
+import { ServerRestartDialog } from '#web/features/admin/server-restart-dialog';
+import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import { useAuth } from '#web/shared/lib/auth';
 
-export function ServerUpdatesPage() {
-  const allowed = useCap('settings.manage');
-  return allowed ? <UpdatesContent /> : <Denied />;
+interface RestartProps {
+  restartAsked?: boolean;
+  onRestartClosed?: () => void;
 }
 
-function UpdatesContent() {
+export function ServerUpdatesPage(props: Readonly<RestartProps>) {
+  const allowed = useCap('settings.manage');
+  return allowed ? <UpdatesContent {...props} /> : <Denied />;
+}
+
+function UpdatesContent({ restartAsked = false, onRestartClosed }: Readonly<RestartProps>) {
   const t = useT();
   const { client } = useAuth();
   const { data, failed, reload } = usePoll(
@@ -59,6 +65,12 @@ function UpdatesContent() {
             loading={busy}
             disabled={busy || active}
             onPress={() => void action(() => client.admin.checkUpdates())}
+          />
+          <RestartAction
+            offered={!!data?.restartable && !active}
+            asked={restartAsked}
+            disabled={busy}
+            onClosed={onRestartClosed}
           />
         </PageHeader.Actions>
       </PageHeader.Root>
@@ -128,7 +140,12 @@ function UpdatesContent() {
           width="md"
           onClose={() => !busy && setConfirm(null)}
         >
-          <Text>{t('admin.updatesConfirmHint', { version: confirm.version })}</Text>
+          <Text>
+            {t('admin.updatesConfirmHint', {
+              version: confirm.version,
+              build: String(confirm.build),
+            })}
+          </Text>
           <Text variant="meta" color="textDim" mt={12}>
             {t('admin.updatesBackupHint')}
           </Text>
@@ -145,6 +162,40 @@ function UpdatesContent() {
             }
           />
         </Dialog.Root>
+      ) : null}
+    </>
+  );
+}
+
+function RestartAction({
+  offered,
+  asked,
+  disabled,
+  onClosed,
+}: Readonly<{ offered: boolean; asked: boolean; disabled: boolean; onClosed?: () => void }>) {
+  const t = useT();
+  const [pressed, setPressed] = useState(false);
+  const open = pressed || (asked && offered);
+  return (
+    <>
+      {offered ? (
+        <Button
+          variant="outline"
+          size="sm"
+          icon="power"
+          label={t('admin.serverRestart')}
+          disabled={disabled}
+          onPress={() => setPressed(true)}
+        />
+      ) : null}
+      {open ? (
+        <ServerRestartDialog
+          onClose={() => {
+            setPressed(false);
+            onClosed?.();
+          }}
+          onRestarted={() => globalThis.location.assign(globalThis.location.pathname)}
+        />
       ) : null}
     </>
   );

@@ -4,13 +4,17 @@
 
 use super::{params, Pool, Result};
 
+mod activity;
 mod genre_guard;
+mod hero_candidates;
 mod hydration;
 
 #[cfg(test)]
 mod test_support;
 
+pub use activity::*;
 pub use genre_guard::*;
+pub use hero_candidates::*;
 pub use hydration::*;
 
 /// Top `n` *entity* ids by recency-weighted play count over the last 30 days a

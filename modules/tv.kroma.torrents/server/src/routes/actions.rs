@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use kroma_module_sdk::domain::User;
-use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
+use kroma_module_sdk::host::{blocking, json_error, run_blocking, AuthUser, HostStorage};
 
 use super::{dm, require_downloads};
 use crate::db;
@@ -149,7 +149,9 @@ pub async fn retry<S: HostStorage + Clone + Send + Sync + 'static>(
         }
         Err(e) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
     };
-    tokio::task::spawn_blocking(move || dm(&state).activate(&state, &row));
+    tokio::spawn(async move {
+        let _ = run_blocking(move || dm(&state).activate(&state, &row)).await;
+    });
     Ok(Json(json!({ "ok": true })).into_response())
 }
 

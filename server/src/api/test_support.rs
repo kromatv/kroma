@@ -3,9 +3,11 @@
 //! [`test_app`] builds the real application router over a fresh temp-file
 //! SQLite DB, seeds the demo catalogue + search index, and mints an
 //! all-permissions owner session. Requests run in-process via
-//! [`tower::ServiceExt::oneshot`]: no socket, no network, no module sidecar.
+//! [`tower::ServiceExt::oneshot`]: no socket, no network, no module.
 
+mod direct;
 mod media;
+mod modules;
 mod requests;
 
 use std::collections::HashMap;
@@ -22,18 +24,26 @@ use crate::model::Permission;
 use crate::services::settings::{self, LibraryDef, Settings};
 use crate::state::{AppState, SharedState};
 
+pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
-pub use requests::{get, raw, send, text};
+pub use modules::{installed_module, read_setting, store_settings, write_settings};
+pub use requests::{get, get_from, raw, send, text};
 
 static SEQ: AtomicU32 = AtomicU32::new(0);
 
 const FUTURE: i64 = 9_999_999_999;
 
+/// A password every account rule accepts, for a test that registers or signs in.
+pub const PASSWORD: &str = "a-test-password";
+
 /// A fully wired app under test plus the handles a test needs to drive + assert.
+/// `app` is the TCP listener's router, `seam` the one on the core's own socket
+/// that modules on the socket seam call back on.
 pub struct TestApp {
     pub app: Router,
+    pub seam: Router,
     pub state: SharedState,
     pub token: String,
     pub user_id: String,
@@ -66,7 +76,7 @@ fn test_config(data_dir: PathBuf) -> Config {
 fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> {
     kroma_module_supervisor::Supervisor::new(kroma_module_supervisor::SupervisorConfig {
         modules_dir: data_dir.join("modules"),
-        core_url: "http://127.0.0.1:0".into(),
+        core_port: 0,
         host_token: "test-host-token".into(),
         db_path: data_dir.join("kroma.db"),
         data_dir: data_dir.to_path_buf(),
@@ -89,7 +99,29 @@ pub fn test_app_with_mail_relay(relay_url: &str) -> TestApp {
 /// Like [`test_app`] but reading releases from `releases_url`, a stub a test
 /// runs on a local port.
 pub fn test_app_with_releases(releases_url: &str) -> TestApp {
-    build_app_with(None, &[], None, Some(releases_url))
+    build_app_with(None, &[], |config| {
+        config.releases_url = Some(releases_url.to_string());
+    })
+}
+
+/// Like [`test_app`] but with a public address and an echo that names this
+/// server's public IPv4, either of which a test may leave out.
+pub fn test_app_served_at(web_url: Option<&str>, public_ip_url: Option<&str>) -> TestApp {
+    build_app_with(None, &[], |config| {
+        config.web_url = web_url.map(str::to_string);
+        config.public_ip_url = public_ip_url.map(str::to_string);
+    })
+}
+
+/// Like [`test_app`] but installed as the Synology package, whose service
+/// script starts the server again when it exits to restart.
+pub fn test_app_as_package() -> TestApp {
+    build_app_with(None, &[], |config| {
+        let releases = config.data_dir.join("releases");
+        std::fs::create_dir_all(&releases).expect("releases dir");
+        config.self_update_dir = Some(releases);
+        config.install = crate::config::Install::Synology;
+    })
 }
 
 /// Like [`test_app`] but with a fake TMDB key, so handlers clear their
@@ -106,14 +138,17 @@ pub fn test_app_with_web(files: &[(&str, &str)]) -> TestApp {
 }
 
 fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option<&str>) -> TestApp {
-    build_app_with(tmdb_api_key, web, relay_url, None)
+    build_app_with(tmdb_api_key, web, |config| {
+        if let Some(url) = relay_url {
+            config.mail_relay_url = Some(url.to_string());
+        }
+    })
 }
 
 fn build_app_with(
     tmdb_api_key: Option<&str>,
     web: &[(&str, &str)],
-    relay_url: Option<&str>,
-    releases_url: Option<&str>,
+    configure: impl FnOnce(&mut Config),
 ) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
@@ -130,12 +165,7 @@ fn build_app_with(
 
     let mut config = test_config(data_dir.clone());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
-    if let Some(url) = relay_url {
-        config.mail_relay_url = Some(url.to_string());
-    }
-    if let Some(url) = releases_url {
-        config.releases_url = Some(url.to_string());
-    }
+    configure(&mut config);
     if !web.is_empty() {
         let web_dir = data_dir.join("web");
         for (name, contents) in web {
@@ -146,6 +176,22 @@ fn build_app_with(
         config.web_dir = Some(web_dir);
     }
     let settings = Settings::load(&db);
+    let supervisor = test_supervisor(&data_dir);
+    let services: HashMap<std::any::TypeId, Arc<dyn std::any::Any + Send + Sync>> =
+        HashMap::from([
+            (
+                std::any::TypeId::of::<kroma_module_supervisor::Supervisor>(),
+                supervisor.clone() as Arc<_>,
+            ),
+            (
+                std::any::TypeId::of::<kroma_engine::services::notify::types::DeclaredTypes>(),
+                Arc::new(crate::boot::state::declared_types(&supervisor)) as Arc<_>,
+            ),
+            (
+                std::any::TypeId::of::<kroma_engine::services::trailers::Trailers>(),
+                Arc::new(kroma_engine::services::trailers::Trailers::in_data_dir(&data_dir)) as Arc<_>,
+            ),
+        ]);
     let state = AppState::new(
         config,
         false,
@@ -153,10 +199,13 @@ fn build_app_with(
         settings,
         kroma_engine::point::Point::absent("embedder"),
         kroma_engine::state::ModuleWiring {
-            services: HashMap::new(),
+            services,
             jobs: &[],
             contributions: std::sync::Arc::new(|_| Vec::new()),
             official_modules: std::sync::Arc::new(Vec::new),
+            permissions: std::sync::Arc::new(|_| None),
+            network_providers: std::sync::Arc::new(Vec::new),
+            network_listeners: std::sync::Arc::new(Vec::new),
         },
     );
 
@@ -164,15 +213,16 @@ fn build_app_with(
     db::sync_all(&db, &data.libraries, &data.shows, &data.items, &data.mtimes).expect("seed demo");
     state.search.reindex_from_db(&db).expect("reindex search");
 
-    let supervisor = test_supervisor(&data_dir);
     // No delivery task: a handler test publishes nothing a module would hear, and
     // spawning one would need a runtime the plain `#[test]` cases do not have.
     let subscriptions = std::sync::Arc::new(crate::api::host_events::Subscriptions::default());
-    let app = crate::api::router(state.clone(), supervisor.clone(), subscriptions);
+    let app = crate::api::router(state.clone(), supervisor.clone());
+    let seam = crate::api::seam::router(state.clone(), supervisor.clone(), subscriptions);
 
     let (user_id, token) = seed_session(&state, "owner@test.dev", "owner", &Permission::all());
     TestApp {
         app,
+        seam,
         state,
         token,
         user_id,

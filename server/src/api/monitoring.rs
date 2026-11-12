@@ -8,15 +8,14 @@ use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde_json::json;
 
-use crate::api::error::{json_error, lerr};
+use crate::api::error::json_error;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::{query, service};
 use crate::db;
-use crate::i18n;
 use crate::i18n::AskedLocale;
 use crate::model::{
     BulkMonitorBody, EpisodeMonitoringBody, MonitorBody, Permission, RequestKind, SearchUnitsBody,
-    User,
 };
 use crate::services::{monitoring, settings};
 use crate::state::SharedState;
@@ -39,17 +38,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/monitoring/{kind}/{tmdb_id}/search", post(search))
 }
 
-fn require(user: &User) -> Result<(), Response> {
-    if user.can(Permission::LibraryManage) {
-        return Ok(());
-    }
-    Err(lerr(
-        i18n::user_locale(user),
-        StatusCode::FORBIDDEN,
-        "error.permissionDenied",
-    ))
-}
-
 fn kind_of(raw: &str) -> Result<RequestKind, Response> {
     RequestKind::parse(raw).ok_or_else(|| json_error(StatusCode::BAD_REQUEST, "unknown kind"))
 }
@@ -58,7 +46,7 @@ pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let today = crate::services::requests::today_ymd();
     let titles = query(&state.db, move |pool| {
         let conn = pool.get()?;
@@ -72,7 +60,7 @@ pub async fn library(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let today = crate::services::requests::today_ymd();
     let rows = query(&state.db, move |pool| {
         let conn = pool.get()?;
@@ -88,7 +76,7 @@ pub async fn one(
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let kind = kind_of(&kind)?;
     let title = query(&state.db, move |pool| {
         let conn = pool.get()?;
@@ -117,7 +105,7 @@ pub async fn monitor(
     Path((kind, tmdb_id)): Path<(String, u64)>,
     Json(body): Json<MonitorBody>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let kind = kind_of(&kind)?;
     let result = service(move || {
         let title = monitoring::monitor(&state, kind, tmdb_id, &body, Some(&user.id))?;
@@ -136,7 +124,7 @@ pub async fn unmonitor(
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let kind = kind_of(&kind)?;
     let removed = service(move || monitoring::unmonitor(&state, kind, tmdb_id)).await?;
     Ok(Json(json!({ "ok": removed })).into_response())
@@ -148,7 +136,7 @@ pub async fn episodes(
     Path((kind, tmdb_id)): Path<(String, u64)>,
     Json(body): Json<EpisodeMonitoringBody>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     if kind_of(&kind)? != RequestKind::Show {
         return Err(json_error(
             StatusCode::BAD_REQUEST,
@@ -168,7 +156,7 @@ pub async fn search(
     Path((kind, tmdb_id)): Path<(String, u64)>,
     body: Option<Json<SearchUnitsBody>>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let kind = kind_of(&kind)?;
     let units = body.map(|Json(b)| b.units).unwrap_or_default();
     let answer = service(move || monitoring::search_now(&state, kind, tmdb_id, &units)).await?;
@@ -180,7 +168,7 @@ pub async fn bulk(
     AuthUser(user): AuthUser,
     Json(body): Json<BulkMonitorBody>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     if body.titles.len() > 500 {
         return Err(json_error(
             StatusCode::BAD_REQUEST,
@@ -205,7 +193,7 @@ pub async fn ledger(
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let kind = kind_of(&kind)?;
     let language = settings::metadata_language_for(&state.settings, &state.config, reader);
     let view = service(move || {
@@ -221,7 +209,7 @@ pub async fn season_ledger(
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id, season)): Path<(String, u64, u32)>,
 ) -> Result<Response, Response> {
-    require(&user)?;
+    require(&user, Permission::LibraryManage)?;
     kind_of(&kind)?;
     let language = settings::metadata_language_for(&state.settings, &state.config, reader);
     let view = service(move || {

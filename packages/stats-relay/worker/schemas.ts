@@ -56,6 +56,13 @@ const PingV3 = Base.extend({
   titles: Count.optional(),
 });
 
+// Schema 4 adds the CI build number, minutes since 2020, which a server built
+// outside the release pipeline does not have and leaves out.
+const PingV4 = PingV3.extend({
+  schema: z.literal(4),
+  build: z.int().min(1).max(100_000_000).optional(),
+});
+
 /**
  * `POST /v1/ping`: what one install says about itself, once a day.
  *
@@ -73,7 +80,7 @@ const PingV3 = Base.extend({
  * its operator decides to, so refusing the shape they still send drops them out
  * of the count for as long as they take.
  */
-export const Ping = z.discriminatedUnion('schema', [PingV2, PingV3]);
+export const Ping = z.discriminatedUnion('schema', [PingV2, PingV3, PingV4]);
 export type Ping = z.infer<typeof Ping>;
 
 /**
@@ -82,7 +89,15 @@ export type Ping = z.infer<typeof Ping>;
  * number would invent one.
  */
 export function size(ping: Ping): { users?: number; titles?: number } {
-  return ping.schema === 3 ? { users: ping.users, titles: ping.titles } : {};
+  return ping.schema === 2 ? {} : { users: ping.users, titles: ping.titles };
+}
+
+/**
+ * The CI build this install runs, 0 for one built from source, or nothing for a
+ * shape that cannot say.
+ */
+export function buildOf(ping: Ping): number | undefined {
+  return ping.schema === 4 ? (ping.build ?? 0) : undefined;
 }
 
 /**

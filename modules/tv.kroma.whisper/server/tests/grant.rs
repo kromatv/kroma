@@ -3,12 +3,13 @@
 //! `whisper_jobs` is a channel, not a table this module owns: a transcription
 //! runs for minutes and drives live progress plus a mid-run cancel, which do not
 //! fit the buffered request/response the port bridge speaks. The core writes
-//! `cancel` and polls the rest; this sidecar does the reverse. Shared by
+//! `cancel` and polls the rest; this module does the reverse. Shared by
 //! definition, so it lives in the core schema and this module holds a grant.
 
 use kroma_module_sdk::db;
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_covers_both_ends_of_the_progress_channel() {
     let core = db::testing::temp_pool("whisper-grant");
     let grant = db::testing::grant_from_manifest(include_str!("../../module.json"));

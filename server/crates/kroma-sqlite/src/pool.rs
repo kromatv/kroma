@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
+#[cfg(not(target_family = "wasm"))]
 use crate::PRAGMAS;
 
 /// A small, cheap-to-clone WAL connection pool. Cloning shares the same idle
@@ -21,7 +22,8 @@ pub struct PoolInner {
     pub(crate) max_idle: usize,
     // `None` for the core's own pool: the app is not scoped against itself. A
     // module's pool carries the grant its manifest declared (see [`Grant`]).
-    pub(crate) scope: Option<crate::grant::Scope>,
+    #[cfg(not(target_family = "wasm"))]
+    pub(crate) scope: Option<crate::authorizer::Scope>,
 }
 
 impl PoolInner {
@@ -30,8 +32,15 @@ impl PoolInner {
         &self.path
     }
 
+    // In a component the host opens the file, applies the pragmas and the grant.
+    #[cfg(target_family = "wasm")]
     fn open(&self) -> Result<Connection> {
-        let conn = Connection::open(&self.path).context("open sqlite connection")?;
+        Connection::open(&self.path).context("open sqlite connection")
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    fn open(&self) -> Result<Connection> {
+        let conn = crate::own_file::connect(&self.path, self.scope.as_ref())?;
         conn.execute_batch(PRAGMAS).context("apply pragmas")?;
         // After the pragmas, never before: the authorizer denies PRAGMA, and
         // these are the host's own, not the module's.

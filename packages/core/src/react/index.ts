@@ -26,3 +26,5 @@ export type { NearbyTvs } from './nearby-tvs';
 export { useNearbyTvs } from './nearby-tvs';
 export type { HeldSeekTransport } from './seek-hold';
 export { useHeldSeek } from './seek-hold';
+export type { TrailerState } from './trailer-preparation';
+export { useTrailerPreparation } from './trailer-preparation';

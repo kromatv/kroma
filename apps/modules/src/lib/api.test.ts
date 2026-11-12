@@ -309,6 +309,39 @@ describe('the RFC-110 documents', () => {
     expect(record.latest).toBe('1.0.0');
   });
 
+  it('describes what an older version needs, from the version history', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.startsWith('https://api.github.com/')) return new Response('[]');
+        if (url.endsWith('/history.json')) {
+          return Response.json({
+            schema: 1,
+            modules: {
+              'tv.kroma.demo': {
+                '0.9.0': {
+                  schemaVersion: 3,
+                  engines: { server: '>=0.1.38' },
+                  artifacts: [
+                    { target: null, url: 'https://dl/old.kmod', size: 9, integrity: SRI },
+                  ],
+                },
+              },
+            },
+          });
+        }
+        return Response.json(CATALOG);
+      }),
+    );
+
+    const record = (await (await machine('/m/tv.kroma.demo.json')).json()) as {
+      versions: Record<string, { engines?: Record<string, string> }>;
+    };
+
+    expect(record.versions['0.9.0']?.engines).toEqual({ server: '>=0.1.38' });
+  });
+
   it('404s a module the registry does not carry', async () => {
     upstreamServing(CATALOG);
     expect((await machine('/m/tv.kroma.nope.json')).status).toBe(404);
@@ -357,6 +390,23 @@ describe('the RFC-110 documents', () => {
     };
     expect(pinned.$id).toBe('https://modules.kroma.tv/schemas/2/manifest.json');
     expect(await machineResponse(req('/schemas/9/manifest.json'), {}, ctx())).toBeNull();
+  });
+
+  it('serves schema 3, the component manifest, beside the native schema 2 it replaced', async () => {
+    upstreamServing(CATALOG);
+    const served = async (path: string) =>
+      (await (await machine(path)).json()) as { $id: string; properties: Record<string, unknown> };
+
+    const native = await served('/schemas/2/manifest.json');
+    const component = await served('/schemas/3/manifest.json');
+    const current = await served('/schemas/manifest.json');
+
+    expect(component.$id).toBe('https://modules.kroma.tv/schemas/3/manifest.json');
+    expect(component.properties).toHaveProperty('helpers');
+    expect(component.properties).toHaveProperty('component');
+    expect(component.properties).not.toHaveProperty('seam');
+    expect(native.properties).toHaveProperty('seam');
+    expect(current.$id).toBe(component.$id);
   });
 
   it('leaves any other /m/ path to the rendered site', async () => {

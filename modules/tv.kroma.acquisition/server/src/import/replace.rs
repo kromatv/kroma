@@ -47,9 +47,7 @@ pub(super) fn drop_replaced<S: HostStorage>(
 }
 
 fn canonical(path: &str) -> String {
-    std::fs::canonicalize(path)
-        .map(|p| p.to_string_lossy().into_owned())
-        .unwrap_or_else(|_| path.to_string())
+    kroma_module_sdk::host::files::canonical(path).unwrap_or_else(|| path.to_string())
 }
 
 fn superseded<S: HostStorage>(

@@ -692,7 +692,7 @@ pub(crate) const SCHEMA: &str = "
     -- The transcription progress channel. A whisper run is minutes long and
     -- drives live progress plus a mid-run cancel, which do not fit the buffered
     -- request/response the port bridge speaks: the core writes `cancel` and
-    -- polls the rest, the sidecar does the reverse.
+    -- polls the rest, the module does the reverse.
     CREATE TABLE IF NOT EXISTS whisper_jobs (
         id     TEXT PRIMARY KEY,
         stage  TEXT NOT NULL DEFAULT '',

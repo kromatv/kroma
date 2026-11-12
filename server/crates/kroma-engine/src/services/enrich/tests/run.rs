@@ -1,5 +1,7 @@
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use super::super::run::jobs_after_scan;
 use super::super::{enrich_one, maybe_spawn, run_tracked};
 use super::support::*;
 use crate::test_support::{test_state, test_state_enriching};
@@ -221,7 +223,7 @@ fn maybe_spawn_enriches_in_the_background_and_announces_completion() {
     crate::test_support::seed_movie(&state, MOVIE_ID);
     let mut events = state.events.subscribe();
 
-    maybe_spawn(&state, &scanned(&state));
+    maybe_spawn(&state, &HashSet::new());
 
     loop {
         let event = events.blocking_recv().unwrap();
@@ -240,10 +242,9 @@ fn maybe_spawn_stays_idle_without_a_key_or_the_toggle() {
     let keyless = test_state();
     let toggled_off = state();
     crate::test_support::seed_movie(&toggled_off, MOVIE_ID);
-    let walked = scanned(&toggled_off);
 
-    maybe_spawn(&keyless, &walked);
-    maybe_spawn(&toggled_off, &walked);
+    maybe_spawn(&keyless, &HashSet::new());
+    maybe_spawn(&toggled_off, &HashSet::new());
 
     assert_eq!(tmdb_id_of_movie(&toggled_off), None);
 }
@@ -252,9 +253,48 @@ fn maybe_spawn_stays_idle_without_a_key_or_the_toggle() {
 fn maybe_spawn_with_an_empty_catalog_does_nothing() {
     let state = test_state_enriching("key");
 
-    maybe_spawn(&state, &crate::services::scan::ScanData::default());
+    maybe_spawn(&state, &HashSet::new());
 
     assert_eq!(tmdb_id_of_movie(&state), None);
+}
+
+#[test]
+fn a_scan_that_moved_nothing_leaves_a_matched_catalog_alone() {
+    let _tmdb = tmdb();
+    let movie = state_with_movie();
+    enrich_one(&movie, MOVIE_ID, false).unwrap();
+    let show = state_with_show();
+    enrich_one(&show, SHOW_ID, true).unwrap();
+
+    let movie_jobs = jobs_after_scan(&movie, &HashSet::new()).unwrap();
+    let show_jobs = jobs_after_scan(&show, &HashSet::new()).unwrap();
+
+    assert!(movie_jobs.is_empty());
+    assert!(show_jobs.is_empty());
+}
+
+#[test]
+fn a_scan_hands_tmdb_the_title_it_never_matched() {
+    let state = state_with_movie();
+
+    let jobs = jobs_after_scan(&state, &HashSet::new()).unwrap();
+
+    assert_eq!(jobs.len(), 1);
+    assert_eq!(jobs[0].id, MOVIE_ID);
+    assert_eq!(jobs[0].resolved_tmdb, None);
+}
+
+#[test]
+fn a_scan_hands_tmdb_the_matched_show_whose_episodes_moved() {
+    let _tmdb = tmdb();
+    let state = state_with_show();
+    enrich_one(&state, SHOW_ID, true).unwrap();
+    let moved = HashSet::from([SHOW_ID.to_string()]);
+
+    let jobs = jobs_after_scan(&state, &moved).unwrap();
+
+    assert_eq!(jobs.len(), 1);
+    assert_eq!(jobs[0].resolved_tmdb, Some(SHOW_TMDB));
 }
 
 #[test]

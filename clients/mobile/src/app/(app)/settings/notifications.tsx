@@ -11,18 +11,24 @@ import {
   useThemeVersion,
 } from '@kromatv/ui/kit';
 
-// Notification settings: push on THIS device, and the per-category matrix for
-// the account. A push subscription belongs to one device; the categories
-// travel with the account.
+// Notification settings: push on THIS device, and the delivery matrix for the
+// account. A push subscription belongs to one device; the categories and the
+// kinds under them travel with the account.
 
 import {
-  type CategoryPref,
   disablePush,
   enablePush,
-  type NotificationCategory,
+  type PrefsUpdate,
   type PushBlocker,
 } from '@kromatv/client/notifications';
-import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
+import {
+  blockerOf,
+  categorySwitched,
+  NOTIFICATION_CATEGORY_LABEL,
+  PUSH_BLOCKER_LABEL,
+  prefsSections,
+  typeSwitched,
+} from '@kromatv/core';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
@@ -77,17 +83,10 @@ export default function NotificationSettings() {
   });
 
   const savePrefs = useMutation({
-    mutationFn: (categories: CategoryPref[]) => client.notifications.setPrefs({ categories }),
+    mutationFn: (update: PrefsUpdate) => client.notifications.setPrefs(update),
     // The PUT returns the saved matrix, so seed the cache instead of refetching.
     onSuccess: (saved) => qc.setQueryData(prefsQuery.queryKey, saved),
   });
-
-  const setPref = (category: NotificationCategory, patch: Partial<CategoryPref>) => {
-    if (!prefs.data) return;
-    savePrefs.mutate(
-      prefs.data.categories.map((c) => (c.category === category ? { ...c, ...patch } : c)),
-    );
-  };
 
   return (
     <Screen padded={false}>
@@ -120,30 +119,62 @@ export default function NotificationSettings() {
         </Box>
 
         <Text style={s.group}>{t('notifications.settings')}</Text>
-        <Box style={s.card}>
-          <Box style={s.headerRow}>
-            <Text style={s.headerSpacer} />
-            <Text style={s.headerCell}>{t('notifications.channelInApp')}</Text>
-            <Text style={s.headerCell}>{t('notifications.channelPush')}</Text>
-          </Box>
-          {prefs.data?.categories.map((pref) => (
-            <Box key={pref.category} style={s.row}>
-              <Text style={s.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Text>
-              <Box style={s.cell}>
-                <Switch
-                  checked={pref.inApp}
-                  onCheckedChange={(inApp) => setPref(pref.category, { inApp })}
-                />
-              </Box>
-              <Box style={s.cell}>
-                <Switch
-                  checked={pref.push}
-                  onCheckedChange={(push) => setPref(pref.category, { push })}
-                />
-              </Box>
-            </Box>
-          ))}
+        <Box style={s.headerRow}>
+          <Text style={s.headerSpacer} />
+          <Text style={s.headerCell}>{t('notifications.channelInApp')}</Text>
+          <Text style={s.headerCell}>{t('notifications.channelPush')}</Text>
         </Box>
+        {prefs.data
+          ? prefsSections(prefs.data).map(({ category, types }) => (
+              <Box key={category.category} style={s.card}>
+                <Box style={s.row}>
+                  <Box style={s.rowText}>
+                    <Text style={s.rowLabel}>
+                      {t(NOTIFICATION_CATEGORY_LABEL[category.category])}
+                    </Text>
+                    {types.length > 0 ? (
+                      <Text style={s.hint}>{t('notifications.categoryHint')}</Text>
+                    ) : null}
+                  </Box>
+                  <Box style={s.cell}>
+                    <Switch
+                      checked={category.inApp}
+                      onCheckedChange={(inApp) =>
+                        savePrefs.mutate(categorySwitched(category, { inApp }))
+                      }
+                    />
+                  </Box>
+                  <Box style={s.cell}>
+                    <Switch
+                      checked={category.push}
+                      onCheckedChange={(push) =>
+                        savePrefs.mutate(categorySwitched(category, { push }))
+                      }
+                    />
+                  </Box>
+                </Box>
+                {types.map((type) => (
+                  <Box key={type.type} style={s.row}>
+                    <Box style={s.rowText}>
+                      <Text style={s.typeLabel}>{type.label}</Text>
+                    </Box>
+                    <Box style={s.cell}>
+                      <Switch
+                        checked={type.inApp}
+                        onCheckedChange={(inApp) => savePrefs.mutate(typeSwitched(type, { inApp }))}
+                      />
+                    </Box>
+                    <Box style={s.cell}>
+                      <Switch
+                        checked={type.push}
+                        onCheckedChange={(push) => savePrefs.mutate(typeSwitched(type, { push }))}
+                      />
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ))
+          : null}
       </ScrollView>
     </Screen>
   );
@@ -168,7 +199,7 @@ const sDefinition = styles({
   action: { align: 'center', minW: 88, px: 14, py: 8, bg: 'accentSoft', radius: radius.md },
   actionPressed: { opacity: 0.7 },
   actionLabel: { ...type.small, color: 'accentText', fontWeight: '600' },
-  headerRow: { row: true, align: 'center', pb: 6 },
+  headerRow: { row: true, align: 'center', px: 12 },
   headerSpacer: { flex: true },
   headerCell: {
     ...type.small,
@@ -180,6 +211,8 @@ const sDefinition = styles({
     fontSize: textSizes.micro,
   },
   row: { row: true, align: 'center', py: 10 },
-  rowLabel: { ...type.body, flex: true, color: 'text' },
+  rowText: { flex: true, gap: 2 },
+  rowLabel: { ...type.body, color: 'text' },
+  typeLabel: { ...type.body, color: 'textDim' },
   cell: { align: 'center', w: 64 },
 });

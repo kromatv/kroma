@@ -189,7 +189,6 @@ const STATE_TONE = {
   ready: 'success',
   starting: 'text/45',
   stopped: 'text/30',
-  notCompiled: 'text/30',
   unknown: 'text/30',
 } as const;
 

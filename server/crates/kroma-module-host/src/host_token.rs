@@ -2,12 +2,12 @@
 //!
 //! One random token the supervisor mints at boot authenticates the hops where
 //! the caller's identity does not change the answer: the core's
-//! `/_host/register-job` and `/_host/register-events` endpoints, and a sidecar's
+//! `/_host/register-job` and `/_host/register-events` endpoints, and a module's
 //! `/_job/run/*`, `/_event/*` and `/_port/*` routes. A peer holds it too, which
 //! is why it cannot also name its holder.
 //!
 //! The `/api/_host/*` callbacks are the exception and are guarded by the
-//! supervisor instead, against a token minted per module process, because what a
+//! supervisor instead, against a token minted per module, because what a
 //! module may read of the settings store depends on which module is asking.
 
 use axum::extract::{Request, State};

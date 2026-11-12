@@ -3,7 +3,7 @@
 // items arrive we render them in the same Poster/Rail as the home + similar rails.
 
 import type { ItemId } from '@kromatv/client/media';
-import { useAiSuggest, useT } from '@kromatv/ui';
+import { useAiSuggest, useEstimatedProgress, useT } from '@kromatv/ui';
 import { Box, classes, ProgressRing, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
@@ -21,7 +21,7 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
 
   const t = useT();
   const { ready, user, client } = useAuth();
-  const { section, pending, progress } = useAiSuggest(client, id, { active: ready && !!user });
+  const { section, pending } = useAiSuggest(client, id, { active: ready && !!user });
 
   if (section && section.items.length > 0) {
     return (
@@ -62,7 +62,7 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
         </h2>
         <div className={classes(pageScoped.gutter)}>
           <Row gap={12} mt={12}>
-            <ProgressRing value={progress} />
+            <PendingRing />
             <Text variant="meta" color="white/40">
               {t('content.aiSuggestionsLoading')}
             </Text>
@@ -72,4 +72,9 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
     );
   }
   return null;
+}
+
+function PendingRing() {
+  const progress = useEstimatedProgress();
+  return <ProgressRing value={progress} />;
 }

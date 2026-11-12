@@ -27,6 +27,7 @@ For this repository that means [`CLAUDE.md`](../../CLAUDE.md),
 |-------|--------------|
 | `file-structure` | One file, one job: the size policy, what a natural seam is, where a split lands against the project's dependency rules, and the signals a file is already two files. |
 | `naming` | A file named after its export, a suffix that is a resolution instruction, index files that only re-export, and the symbol names that are always wrong. |
+| `reference-first` | Platform and integration code grounded in documented facts: read the project reference first, research and cite what is missing, record what hardware shows. |
 | `typescript-best-practices` | Discriminated unions, branded types, `unknown` over `any`, no `as`, exhaustiveness, strict compiler options, errors as values, no floating promises. Examples in `references/patterns.md`. |
 | `rust-best-practices` | The same table one language over: enums with data, newtypes, errors by layer, borrow in and own out, nothing blocking the async runtime, `SAFETY:` on every unsafe. |
 | `no-comments` | Runs the comment hunter over a diff and acts on what it finds. Slash-only, it never fires on its own. |

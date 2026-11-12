@@ -89,6 +89,8 @@ const LEVEL_TONE: Record<string, { bg: ColorValue; ink: ColorValue }> = {
 
 const INFO_TONE = { bg: 'tint/6', ink: 'textMuted' } as const;
 
+const MESSAGE_MIN = 160;
+
 function sameDay(a: number | undefined, b: number): boolean {
   if (!a) return false;
   return new Date(a).toDateString() === new Date(b).toDateString();
@@ -127,15 +129,15 @@ function LogLine({ entry }: Readonly<{ entry: LogEntry }>) {
           {entry.level}
         </Text>
       </Box>
-      <Row align="baseline" gap={8}>
+      <Row wrap align="baseline" gapX={8} gapY={4} minW={0}>
         {entry.source === 'core' ? null : (
-          <Box shrink={0} radius="xs" bg="accentSoft" px={6}>
+          <Box shrink={0} maxW="100%" radius="xs" bg="accentSoft" px={6}>
             <Text variant="overline" color="accentText" lines={1}>
               {entry.source.replace(/^dev\.kroma\./, '')}
             </Text>
           </Box>
         )}
-        <Text variant="meta" font="mono" color="textMuted" flex={1} minW={0}>
+        <Text variant="meta" font="mono" color="textMuted" flex={1} minW={MESSAGE_MIN}>
           {entry.target ? <Text color="textDim">{entry.target}: </Text> : null}
           {entry.message}
         </Text>

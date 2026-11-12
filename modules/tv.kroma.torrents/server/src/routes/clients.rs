@@ -81,7 +81,6 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
             .collect();
         Ok(DownloadClientsView {
             clients,
-            rqbit_compiled: crate::RQBIT_COMPILED,
         })
     })
     .await?;
@@ -165,19 +164,15 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
     if !updated {
         return Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.clientNotFound"));
     }
-    // Toggling the embedded engine fully starts/stops its BitTorrent session, so
-    // "disabled" means zero traffic (no download, no seed, no DHT), not just a
-    // gate on new grabs.
     if let Some(enabled) = body.enabled {
         if id == EMBEDDED_CLIENT_ID {
             if enabled {
-                dm(&state).ensure_rqbit(&state).await;
                 let downloads = dm(&state);
-                blocking(move || {
+                let host = state.clone();
+                tokio::spawn(async move {
+                    downloads.ensure_rqbit(&host).await;
                     downloads.resume_after_enable();
-                    Ok(())
-                })
-                .await?;
+                });
             } else {
                 let downloads = dm(&state);
                 blocking(move || {

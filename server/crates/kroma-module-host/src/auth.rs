@@ -21,7 +21,7 @@ pub struct AuthUser(pub User);
 async fn resolve_session<S: HostCtx + Clone>(parts: &Parts, state: &S) -> Option<User> {
     let token = bearer_from_headers(&parts.headers)?;
     let state = state.clone();
-    tokio::task::spawn_blocking(move || state.session_user(&token))
+    crate::run_blocking(move || state.session_user(&token))
         .await
         .ok()
         .flatten()

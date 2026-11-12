@@ -1,24 +1,15 @@
 import { existsSync, watch } from 'node:fs';
 import { join, relative } from 'node:path';
 import { packForDev } from '../bundle/pack';
-import { buildSidecar, targetDir } from '../cargo';
+import { buildComponent, targetDir } from '../cargo';
 import { buildFrontend } from '../fe/build';
 import { openProject, type Project } from '../project';
-import {
-  bundleRunsOn,
-  hostTriplePart,
-  resolveServer,
-  type Server,
-  type ServerOptions,
-  serverPlatform,
-  uploadBundle,
-} from '../server';
+import { resolveServer, type Server, type ServerOptions, uploadBundle } from '../server';
 import { style } from '../style';
 import { feOutDir } from './build';
 
 export interface DevOptions extends ServerOptions {
   dir?: string;
-  target?: string;
   cwd?: string;
 }
 
@@ -48,7 +39,6 @@ class Loop {
     private readonly project: Project,
     private readonly server: Server,
     private readonly dir: string,
-    private readonly target: string | null,
   ) {}
 
   request(parts: Iterable<Part>): void {
@@ -66,10 +56,7 @@ class Loop {
     const started = Date.now();
     try {
       if (parts.has('server')) {
-        this.binPath = await buildSidecar(this.project, this.dir, {
-          target: this.target,
-          profile: 'dev',
-        });
+        this.binPath = await buildComponent(this.project, this.dir, 'dev');
       }
       if (parts.has('ui')) {
         this.hasFe = await buildFrontend(this.project, feOutDir(this.project), 'development');
@@ -79,7 +66,6 @@ class Loop {
         binPath: this.binPath,
         feDir: this.hasFe ? feOutDir(this.project) : null,
         outDir: join(this.project.dir, 'dist', 'dev'),
-        target: this.target,
       });
       await uploadBundle(this.server, packed.path);
       console.log(`  ${style.green('installed')} ${packed.file} in ${Date.now() - started}ms`);
@@ -97,20 +83,8 @@ export async function devCommand(options: DevOptions): Promise<number> {
   const cwd = options.cwd ?? process.cwd();
   const project = openProject(options.dir ? join(cwd, options.dir) : cwd);
   const server = resolveServer(options);
-  const platform = await serverPlatform(server);
-  const target = options.target?.trim() || null;
-  const host = hostTriplePart();
-  if (platform && !target && !platform.target.startsWith(host)) {
-    throw new Error(
-      `${server.url} runs ${platform.target} and this machine builds ${host}; pass --target ${platform.target}`,
-    );
-  }
-  if (platform && target && !bundleRunsOn(`x-${target}.kmod`, platform)) {
-    throw new Error(`${server.url} runs ${platform.target}, not ${target}`);
-  }
-
   const dir = targetDir(cwd, [project]);
-  const loop = new Loop(project, server, dir, target);
+  const loop = new Loop(project, server, dir);
   console.log(`${style.bold(project.manifest.id)} -> ${server.url}`);
   loop.request(['server', 'ui']);
 

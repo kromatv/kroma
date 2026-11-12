@@ -10,6 +10,7 @@ import {
 // television would otherwise list itself as an unknown desktop.
 
 import { deviceLocale } from '@kromatv/core';
+import { mediaFollowsDirectRoute, withLocalAddressSpace } from '@kromatv/ui';
 import { nativeDevice } from '@kromatv/ui/kit';
 import { buildInfo } from '#tv/app/clientBuild';
 
@@ -29,6 +30,8 @@ export function makeClient(
   const identity = tvIdentity(version);
   return createKromaClient({
     baseUrl,
+    directMedia: mediaFollowsDirectRoute(),
+    fetch: withLocalAddressSpace(globalThis.fetch.bind(globalThis)),
     artworkScale,
     locale: deviceLocale(storage),
     ...(identity ? { userAgent: clientUserAgent(identity) } : {}),

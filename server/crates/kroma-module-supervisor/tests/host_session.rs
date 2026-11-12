@@ -1,4 +1,4 @@
-//! The `/_host/session` callback: how a sidecar authenticates the caller of one
+//! The `/_host/session` callback: how a module authenticates the caller of one
 //! of its routes now that it has no `sessions` table to read.
 //!
 //! Every authenticated module request goes through this, so its wire shape (a
@@ -59,7 +59,7 @@ async fn post(host: StubHost, token: Option<&str>, body: &str) -> (StatusCode, S
 
 #[tokio::test]
 async fn a_live_token_comes_back_as_the_whole_account() {
-    // The whole `User`, because the sidecar gates on its permissions and
+    // The whole `User`, because the module gates on its permissions and
     // localizes for it; a bare id would cost a second round-trip per request.
     let host = StubHost::new().with_session("sess-1", ana());
     let (status, body) = post(host, Some(FABRIC), r#"{"token":"sess-1"}"#).await;

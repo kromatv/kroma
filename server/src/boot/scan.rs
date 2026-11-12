@@ -142,7 +142,7 @@ fn apply_startup_scan(state: &state::SharedState, data: &services::scan::ScanDat
         data.items.len(),
         services::scan::now_iso8601(),
     );
-    services::enrich::maybe_spawn(state, data);
+    services::enrich::maybe_spawn(state, &data.changed_shows);
     infra::watch::spawn(
         state.clone(),
         infra::watch::signature(&data.items, &data.mtimes),

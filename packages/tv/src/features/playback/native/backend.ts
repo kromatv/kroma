@@ -1,8 +1,9 @@
-// The native playback backend (Apple TV, Android TV): expo-video is the
-// platform player (AVPlayer on tvOS, Media3/ExoPlayer on Android TV), so
-// this backend is one engine and the decision collapses to "direct-play the
-// original file, or ask the server to remux it". See backend.web.ts for the
-// browser half; the hook that drives playback never learns which it got.
+// The native playback backend (Apple TV, Android TV, Samsung Tizen): expo-video
+// is the platform player (AVPlayer on tvOS, Media3/ExoPlayer on Android TV,
+// capi-media-player on Tizen), so this backend is one engine and the decision
+// collapses to "direct-play the original file, or ask the server to remux it".
+// See backend.web.ts for the browser half; the hook that drives playback never
+// learns which it got.
 
 import type { MediaItem } from '@kromatv/client/media';
 import {
@@ -70,7 +71,7 @@ export function planEngine(
       eng: 'vlc',
       surface: 'vlc',
       playbackMode: 'direct',
-      deviceLabel: 'Android TV',
+      deviceLabel: nativePlayerDevice(),
       rebuildKey: 'vlc',
     };
   }

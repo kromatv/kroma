@@ -1,6 +1,6 @@
-//! Serving, and stopping: the HTTP listener (plus the optional HTTPS one), and
-//! the shutdown that must outlive the process — sidecars survive their parent,
-//! so failing to stop them orphans them.
+//! Serving, and stopping: the HTTP listener (plus the optional HTTPS one), the
+//! socket modules call back on, and the shutdown that lets every module run its
+//! own before the process ends.
 
 use anyhow::Context;
 use kroma_engine::state;
@@ -10,8 +10,9 @@ use crate::api;
 use crate::boot::https::{
     build_https, cert_download_route, https_redirect_router, spawn_https_listener,
 };
+use crate::boot::seam::{SeamSocket, Served};
 
-/// Serve until a shutdown signal, then stop the jobs and every module process.
+/// Serve until a shutdown signal, then stop the jobs and every module.
 /// Takes ownership of both: nothing outlives this call.
 pub async fn run(
     state: state::SharedState,
@@ -23,7 +24,7 @@ pub async fn run(
     // spawn anything, and this outlives it.
     let subscriptions = std::sync::Arc::new(api::host_events::Subscriptions::default());
     api::host_events::deliver(state.clone(), supervisor.clone(), subscriptions.clone());
-    let mut app = api::router(state.clone(), supervisor.clone(), subscriptions);
+    let mut app = api::router(state.clone(), supervisor.clone());
 
     // Built before serving so the cert-download route can be merged into the router.
     let https = build_https(&state).await;
@@ -57,6 +58,12 @@ pub async fn run(
         info!("KROMA listening on http://{addr}  (API under /api)");
     }
 
+    supervisor.serve_gateways(
+        kroma_module_host::NetworkPolicyOf(state.network.clone()),
+        tokio::runtime::Handle::current(),
+        crate::boot::folders::folder_roots(&state),
+    );
+    let seam = open_seam(&state, &supervisor, subscriptions);
     supervisor.spawn_enabled(&*state);
     supervisor.spawn_watchdog();
     supervisor.spawn_hot_reload();
@@ -74,23 +81,48 @@ pub async fn run(
         app
     };
 
+    let stopping = std::sync::Arc::new(tokio::sync::Notify::new());
+    let signalled = stopping.clone();
     // Connect-info so handlers can read the client address (LAN/WAN classification).
-    axum::serve(
+    let server = axum::serve(
         listener,
         http_app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .context("server error")?;
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        signalled.notify_one();
+    });
+    until_drained(server, &stopping)
+        .await
+        .context("server error")?;
 
     https_handle.graceful_shutdown(Some(std::time::Duration::from_secs(3)));
 
-    info!("shutting down: cancelling running jobs + stopping module processes");
+    info!("shutting down: cancelling running jobs + stopping modules");
     state.jobs.cancel_all();
     await_jobs_drained(&state).await;
-    // Blocking: each sidecar gets a grace period to run its own shutdown hooks.
+    // Blocking: each module runs its own shutdown hooks.
     let _ = tokio::task::spawn_blocking(move || supervisor.stop_all()).await;
+    drop(seam);
+    let network = state.network.clone();
+    if let Ok(Err(e)) = tokio::task::spawn_blocking(move || network.flush()).await {
+        tracing::warn!("the last network tallies could not be written: {e:#}");
+    }
     Ok(())
+}
+
+fn open_seam(
+    state: &state::SharedState,
+    supervisor: &std::sync::Arc<kroma_module_supervisor::Supervisor>,
+    subscriptions: std::sync::Arc<api::host_events::Subscriptions>,
+) -> (SeamSocket, Option<Served>) {
+    let socket = SeamSocket::bind(supervisor);
+    let served = socket.serve(api::seam::router(
+        state.clone(),
+        supervisor.clone(),
+        subscriptions,
+    ));
+    (socket, served)
 }
 
 fn spawn_module_auto_update(
@@ -111,6 +143,23 @@ fn spawn_module_auto_update(
             );
         }
     });
+}
+
+async fn until_drained(
+    server: impl std::future::IntoFuture<Output = std::io::Result<()>>,
+    stopping: &tokio::sync::Notify,
+) -> std::io::Result<()> {
+    let window = async {
+        stopping.notified().await;
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+    };
+    tokio::select! {
+        served = server => served,
+        () = window => {
+            info!("connections still open after the drain window; stopping anyway");
+            Ok(())
+        }
+    }
 }
 
 async fn await_jobs_drained(state: &state::SharedState) {
@@ -138,6 +187,84 @@ pub(super) async fn shutdown_signal() {
     tokio::select! {
         () = ctrl_c => {}
         () = terminate => {}
+        () = kroma_engine::services::updates::wait_for_restart() => {}
     }
     info!("shutdown signal received");
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use tokio::sync::Notify;
+    use tokio::time::Instant;
+
+    use super::until_drained;
+
+    fn never_drains() -> std::future::Pending<std::io::Result<()>> {
+        std::future::pending()
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn an_open_connection_holds_a_stop_for_ten_seconds_at_most() {
+        let stopping = Notify::new();
+        stopping.notify_one();
+        let started = Instant::now();
+
+        let stopped = until_drained(never_drains(), &stopping).await;
+
+        assert!(stopped.is_ok());
+        assert_eq!(started.elapsed(), Duration::from_secs(10));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_server_that_drains_in_time_stops_without_waiting() {
+        let stopping = Notify::new();
+        stopping.notify_one();
+        let started = Instant::now();
+
+        let stopped = until_drained(std::future::ready(Ok(())), &stopping).await;
+
+        assert!(stopped.is_ok());
+        assert_eq!(started.elapsed(), Duration::ZERO);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn the_window_opens_only_once_the_stop_is_signalled() {
+        let stopping = Notify::new();
+        let serving = until_drained(never_drains(), &stopping);
+
+        let waited = tokio::time::timeout(Duration::from_secs(3600), serving).await;
+
+        assert!(waited.is_err());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_module_reaches_the_host_callbacks_on_the_cores_socket_and_no_route_a_client_reaches()
+    {
+        let t = crate::api::test_support::test_app();
+        let socket = t.supervisor.host_socket();
+        let base = kroma_http::loopback::unix_url(&socket);
+        let seam = super::open_seam(&t.state, &t.supervisor, std::sync::Arc::default());
+
+        let (callback, client_route) = tokio::task::spawn_blocking(move || {
+            let callback = kroma_http::Loopback::new()
+                .header("authorization", "Bearer test-host-token")
+                .get(&format!("{base}/api/_host/enabled?id=tv.kroma.vpn"))
+                .map(|resp| resp.status);
+            let client_route = kroma_http::Loopback::new()
+                .get(&format!("{base}/api/auth/config"))
+                .map(|resp| resp.status);
+            (callback.unwrap(), client_route.unwrap())
+        })
+        .await
+        .unwrap();
+        drop(seam);
+
+        assert_eq!(callback, 200);
+        assert_eq!(client_route, 404);
+        assert!(!socket.exists(), "the socket goes when the server stops");
+        let _ = std::fs::remove_dir(socket.parent().unwrap());
+    }
 }

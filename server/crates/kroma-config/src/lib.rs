@@ -5,6 +5,8 @@ use std::env;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 
+const DEFAULT_PUBLIC_IP_URL: &str = "https://api.ipify.org";
+
 // Public app key, safe to commit; KROMA_TMDB_API_KEY overrides it per install.
 const BUILTIN_TMDB_API_KEY: &str = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiYjI2M2YzMGNlNGY5MjJjYzkxODAwMTc4NzIyYmQ2ZiIsIm5iZiI6MTU1NTQyMzg5MS4yNDg5OTk4LCJzdWIiOiI1Y2I1ZTI5MzBlMGEyNjZiOWJlZDJjNTEiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.n7C78ISAFNtk1To3rCSqwdGcM2c72jPslotoU3UCtxc";
 
@@ -35,6 +37,9 @@ pub struct Config {
     pub releases_url: Option<String>,
     /// Private directory shared with the separately supervised host updater.
     pub update_dir: Option<PathBuf>,
+    /// Where the Synology package keeps the server payloads the server
+    /// downloads for itself. The package's service script starts the newest.
+    pub self_update_dir: Option<PathBuf>,
     pub web_dir: Option<PathBuf>,
     // Every `*_override` is `None` = defer to the stored admin setting, `Some` =
     // env pins it and wins over the toggle.
@@ -65,6 +70,10 @@ pub struct Config {
     /// Naming an origin lets any page served from it act as a client of this
     /// server, so name only origins you publish yourself.
     pub allowed_origins: Vec<String>,
+    /// An echo answering with the caller's public IPv4 as plain text, which is
+    /// how the server tells a client leaving through the same router. `None`
+    /// never asks.
+    pub public_ip_url: Option<String>,
     /// How this server was installed. Reported with the anonymous statistics
     /// and nowhere else.
     pub install: Install,
@@ -176,6 +185,11 @@ impl Config {
             .filter(|s| !s.trim().is_empty())
             .map(PathBuf::from);
 
+        let self_update_dir = env::var("KROMA_SELF_UPDATE_DIR")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from);
+
         let https_override = env::var("KROMA_HTTPS")
             .ok()
             .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off" | ""));
@@ -198,6 +212,11 @@ impl Config {
                     .collect()
             })
             .unwrap_or_default();
+
+        let public_ip_url = match env::var("KROMA_PUBLIC_IP_URL") {
+            Ok(raw) => Some(raw.trim().to_string()).filter(|url| !url.is_empty()),
+            Err(_) => Some(DEFAULT_PUBLIC_IP_URL.to_string()),
+        };
 
         let tls_extra_sans = env::var("KROMA_TLS_SANS")
             .ok()
@@ -228,6 +247,7 @@ impl Config {
             mail_relay_url,
             releases_url,
             update_dir,
+            self_update_dir,
             web_dir,
             https_override,
             https_port_override,
@@ -235,6 +255,7 @@ impl Config {
             https_redirect_override,
             trusted_proxies,
             allowed_origins,
+            public_ip_url,
             install,
         }
     }
@@ -378,6 +399,7 @@ mod tests {
         "KROMA_MAIL_RELAY_URL",
         "KROMA_RELEASES_URL",
         "KROMA_UPDATE_DIR",
+        "KROMA_SELF_UPDATE_DIR",
         "KROMA_WEB_DIR",
         "KROMA_TRUSTED_PROXIES",
         "KROMA_ALLOWED_ORIGINS",
@@ -386,6 +408,7 @@ mod tests {
         "KROMA_HTTPS_REDIRECT",
         "KROMA_TLS_SANS",
         "KROMA_INSTALL",
+        "KROMA_PUBLIC_IP_URL",
     ];
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -442,7 +465,23 @@ mod tests {
         assert!(c.https_redirect_override.is_none());
         assert_eq!(c.install, Install::Unknown);
         assert!(c.tls_extra_sans.is_empty());
+        assert_eq!(c.public_ip_url.as_deref(), Some(DEFAULT_PUBLIC_IP_URL));
 
+        clear_env();
+    }
+
+    #[test]
+    fn an_empty_public_ip_url_never_asks() {
+        let _g = env_guard();
+        clear_env();
+
+        env::set_var("KROMA_PUBLIC_IP_URL", " ");
+        let silent = Config::from_env().public_ip_url;
+        env::set_var("KROMA_PUBLIC_IP_URL", "https://echo.example ");
+        let named = Config::from_env().public_ip_url;
+
+        assert_eq!(silent, None);
+        assert_eq!(named.as_deref(), Some("https://echo.example"));
         clear_env();
     }
 
@@ -514,6 +553,7 @@ mod tests {
         env::set_var("KROMA_WEB_URL", "https://kroma.example/");
         env::set_var("KROMA_MAIL_RELAY_URL", "http://127.0.0.1:9/");
         env::set_var("KROMA_RELEASES_URL", "http://127.0.0.1:8/releases/");
+        env::set_var("KROMA_SELF_UPDATE_DIR", "/var/packages/kroma/var/releases");
         env::set_var("KROMA_WEB_DIR", web.path().to_str().unwrap());
 
         let c = Config::from_env();
@@ -534,6 +574,10 @@ mod tests {
         assert_eq!(
             c.releases_url.as_deref(),
             Some("http://127.0.0.1:8/releases")
+        );
+        assert_eq!(
+            c.self_update_dir,
+            Some(PathBuf::from("/var/packages/kroma/var/releases"))
         );
         assert_eq!(c.web_dir.as_deref(), Some(web.path()));
 

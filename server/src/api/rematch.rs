@@ -12,6 +12,7 @@ use serde::Deserialize;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::util::blocking;
 use crate::i18n;
 use crate::model::{Permission, User};
@@ -22,18 +23,6 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/rematch/{kind}/{id}/candidates", get(candidates))
         .route("/rematch/{kind}/{id}", post(apply))
-}
-
-fn require_manage(user: &User) -> Result<(), Response> {
-    if user.can(Permission::LibraryManage) {
-        Ok(())
-    } else {
-        Err(lerr(
-            i18n::user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 fn subject_of(user: &User, kind: &str) -> Result<Subject, Response> {
@@ -54,7 +43,7 @@ pub async fn candidates(
     Path((kind, id)): Path<(String, String)>,
     Query(params): Query<CandidateParams>,
 ) -> Result<Response, Response> {
-    require_manage(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let subject = subject_of(&user, &kind)?;
     let out =
         blocking(move || rematch::candidates(&state, subject, &id, params.q.as_deref())).await?;
@@ -75,7 +64,7 @@ pub async fn apply(
     Path((kind, id)): Path<(String, String)>,
     Json(body): Json<ApplyBody>,
 ) -> Result<Response, Response> {
-    require_manage(&user)?;
+    require(&user, Permission::LibraryManage)?;
     let subject = subject_of(&user, &kind)?;
     blocking(move || rematch::apply(&state, subject, &id, body.tmdb_id)).await?;
     Ok(StatusCode::ACCEPTED.into_response())

@@ -2,12 +2,18 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
+use super::{Channel, Target};
+
 #[derive(Debug, Deserialize)]
 pub(super) struct Release {
     tag_name: String,
     html_url: String,
     #[serde(default)]
     published_at: Option<String>,
+    #[serde(default)]
+    draft: bool,
+    #[serde(default)]
+    prerelease: bool,
     #[serde(default)]
     assets: Vec<Asset>,
 }
@@ -17,6 +23,10 @@ struct Asset {
     name: String,
     #[serde(default)]
     created_at: Option<String>,
+    #[serde(default)]
+    browser_download_url: Option<String>,
+    #[serde(default)]
+    digest: Option<String>,
 }
 
 /// The newest build a channel offers: its version, the CI build number its
@@ -28,6 +38,12 @@ pub struct Latest {
     pub build: Option<u64>,
     pub url: String,
     pub published_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Package {
+    pub url: String,
+    pub sha256: String,
 }
 
 pub(super) fn stable(release: Release) -> Option<Latest> {
@@ -62,7 +78,31 @@ pub(super) fn canary(release: Release) -> Option<Latest> {
                 published_at: asset.created_at,
             })
         })
-        .max_by(|a, b| order(a, &b.version, b.build.unwrap_or(0)))
+        .max_by_key(|latest| latest.build)
+}
+
+pub(super) fn ships(release: Release, version: &str, build: u64) -> bool {
+    if release.draft || release.prerelease {
+        return false;
+    }
+    stable(release).is_some_and(|latest| latest.version == version && latest.build == Some(build))
+}
+
+pub(super) fn package(release: &Release, target: &Target, arch: &str) -> Option<Package> {
+    if release.draft || target.channel == Channel::Stable && release.prerelease {
+        return None;
+    }
+    let name = format!("kroma-{}.{}-{arch}.spk", target.version, target.build);
+    let asset = release.assets.iter().find(|asset| asset.name == name)?;
+    let sha256 = asset.digest.as_deref()?.strip_prefix("sha256:")?;
+    let valid = sha256.len() == 64
+        && sha256
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
+    Some(Package {
+        url: asset.browser_download_url.clone()?,
+        sha256: valid.then(|| sha256.to_owned())?,
+    })
 }
 
 fn server_package(name: &str) -> Option<(String, u64)> {

@@ -2,7 +2,7 @@
 
 A Samsung set in developer mode listens on tcp/26101 and speaks sdb, which is
 adb's wire protocol with a handful of Samsung differences. `sdb install` is a
-few hundred bytes of framing over that socket, so `packages/tv-installer` does
+few hundred bytes of framing over that socket, so `packages/installer` does
 not need the 260 MB SDK to sideload a `.wgt`.
 
 Everything below is either **confirmed** (bytes captured, or read out of a
@@ -328,7 +328,7 @@ dependency list by the back door.
 
 ## Where the code is
 
-`packages/tv-installer/src/modules/tizen/sdb/`, dependency-free apart from `node:net`
+`packages/installer/src/platforms/tizen/sdb/`, dependency-free apart from `node:net`
 and `node:fs`:
 
 | file | what it owns |

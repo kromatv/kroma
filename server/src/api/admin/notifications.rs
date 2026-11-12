@@ -124,7 +124,8 @@ fn preview(event: NotificationEvent, admin: &str, locale: &str) -> Notification 
     let spec = sample(event, admin);
     let stored = StoredNotification::from_spec(event.as_str(), &spec, 0);
     let subjects = kroma_engine::services::notify::subject::Subjects::default();
-    kroma_engine::services::notify::render::render(&stored, locale, &subjects)
+    let types = kroma_engine::services::notify::types::NotificationTypes::default();
+    kroma_engine::services::notify::render::render(&stored, locale, &subjects, &types)
 }
 
 #[derive(Debug, Deserialize)]

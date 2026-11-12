@@ -116,22 +116,14 @@ pub async fn exchange_token(
 
     // Also refreshes the device's labels: the UA captured at sign-in may be
     // unnameable, and a reader can change the device's language after it.
-    let uid = user.id.clone();
     let hints = device_hints(&headers);
-    let seen = access.clone();
-    let _ = query(&state.db, move |pool| {
-        let _ = db::touch_last_seen(&pool, &uid);
-        let _ = db::touch_access_token(&pool, &seen, &hints);
-        Ok(())
-    })
-    .await;
     let token = auth::random_token();
     let expires_at = time::OffsetDateTime::now_utc().unix_timestamp() + auth::SESSION_TTL_SECS;
     let token_db = token.clone();
     let uid = user.id.clone();
     let sess_access = access.clone();
     if let Err(resp) = query(&state.db, move |pool| {
-        db::create_session(&pool, &token_db, &uid, expires_at, Some(&sess_access))
+        db::renew_session(&pool, &token_db, &uid, expires_at, &sess_access, &hints)
     })
     .await
     {

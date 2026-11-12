@@ -8,6 +8,7 @@ import type {
   CastMember,
   CrewMember,
   ListedEpisode,
+  MediaCard,
   MediaItem,
   Season,
   Show,
@@ -77,7 +78,7 @@ export interface TitleView {
 /** `discover` overlays availability + request state onto owned content; it is
  * null when unavailable or the viewer lacks permission. */
 export type TitleInput =
-  | { source: 'movie'; item: MediaItem; similar: MediaItem[]; discover: DiscoverDetail | null }
+  | { source: 'movie'; item: MediaItem; similar: MediaCard[]; discover: DiscoverDetail | null }
   | {
       source: 'show';
       detail: ShowDetail;
@@ -86,6 +87,23 @@ export type TitleInput =
       discover: DiscoverDetail | null;
     }
   | { source: 'discover'; detail: DiscoverDetail };
+
+/** The "more like this" tiles for a movie, from its neighbours' cards. */
+export function movieSimilarTargets(
+  c: KromaClient,
+  t: Translate,
+  cards: readonly MediaCard[],
+): SimilarTarget[] {
+  return cards.map((m) => ({
+    key: m.id,
+    title: m.title,
+    poster: c.media.artwork.posterFor(m),
+    genre: genreLabels(t, m.metadata)[0] ?? t('content.film'),
+    localId: m.id,
+    tmdbId: null,
+    kind: 'movie',
+  }));
+}
 
 export function buildTitleView(
   c: KromaClient,
@@ -123,15 +141,7 @@ export function buildTitleView(
       requestStatus: discover?.requestStatus ?? null,
       requestProgress: discover?.requestProgress ?? null,
       canRequest: false,
-      similar: similar.map((m) => ({
-        key: m.id,
-        title: m.title,
-        poster: c.media.artwork.posterFor(m),
-        genre: genreLabels(t, m.metadata)[0] ?? t('content.film'),
-        localId: m.id,
-        tmdbId: null,
-        kind: 'movie' as const,
-      })),
+      similar: movieSimilarTargets(c, t, similar),
     };
   }
 

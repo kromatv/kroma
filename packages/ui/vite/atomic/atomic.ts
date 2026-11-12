@@ -1,5 +1,6 @@
 import { sep } from 'node:path';
 import { sourceRoots } from '../../bundler/index.ts';
+import { hashOf } from './compile.ts';
 import { ModuleLoader } from './module-scope.ts';
 import { RuleSheet } from './sheet.ts';
 import { type Skip, transformModule } from './transform.ts';
@@ -10,10 +11,20 @@ const NOT_SHIPPED = /\.(test|spec)\.tsx?$/;
 
 const TOKENS_MARKER = '--kroma-bg:';
 
+const ASSET_NAMES = 'assets/[name]-[hash][extname]';
+
 interface BundleAsset {
   type: string;
   fileName: string;
   source?: unknown;
+}
+
+interface NamedAsset {
+  source?: unknown;
+}
+
+interface OutputOptions {
+  assetFileNames?: string | ((asset: NamedAsset) => string);
 }
 
 interface ResolvedConfig {
@@ -31,6 +42,9 @@ export interface AtomicPlugin {
   enforce: 'pre';
   configResolved(config: ResolvedConfig): void;
   buildStart(): void;
+  outputOptions<Options extends OutputOptions>(
+    options: Options,
+  ): Options & { assetFileNames: (asset: NamedAsset) => string };
   transform(this: PluginContext, code: string, id: string): { code: string; map: unknown } | null;
   generateBundle: {
     order: 'post';
@@ -82,6 +96,17 @@ export function kromaAtomic({ repoRoot }: AtomicOptions): AtomicPlugin {
     buildStart() {
       compiled = 0;
       skipped.length = 0;
+    },
+    outputOptions(options) {
+      const { assetFileNames: names = ASSET_NAMES } = options;
+      return {
+        ...options,
+        assetFileNames: (asset) => {
+          const name = typeof names === 'function' ? names(asset) : names;
+          if (sheet.size === 0 || !textOf(asset.source)?.includes(TOKENS_MARKER)) return name;
+          return name.replace('[hash]', `${hashOf(sheet.toCss())}-[hash]`);
+        },
+      };
     },
     transform(code, id) {
       const [file = ''] = id.split('?');

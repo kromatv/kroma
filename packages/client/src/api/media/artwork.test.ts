@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { recordingClient } from '../../kroma-client.fixture';
+import { recordingClient, ticketedClient } from '../../kroma-client.fixture';
 import { artworkWidth } from './artwork-scale';
 import { ItemId, ShowId } from './ids';
 
@@ -49,21 +49,8 @@ describe('artwork resolution setting', () => {
 });
 
 describe('a media-byte path the server composed itself', () => {
-  const SIGNED_IN_USER = {
-    id: 'u1',
-    email: 'a@b.c',
-    username: 'alice',
-    permissions: ['playback'],
-    createdAt: '2026-01-01T00:00:00Z',
-    hasPin: false,
-  };
-
   async function ticketed() {
-    const { client: signedIn } = recordingClient(() => ({
-      json: { token: 'tok', mediaTicket: 'dev.999.sig', user: SIGNED_IN_USER },
-    }));
-    await signedIn.accounts.exchangeToken('access-token');
-    return signedIn.media.artwork;
+    return (await ticketedClient()).media.artwork;
   }
 
   it('gains the media ticket, keeping the query the server already wrote', async () => {

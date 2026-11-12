@@ -21,6 +21,7 @@
   "error.notFoundBody": "This page has moved or never existed. Let's get you back to your library.",
   "error.notFoundTitle": "Page not found",
   "error.permissionDenied": "Permission denied",
+  "error.pushBadEndpoint": "This notification address is not accepted",
   "error.reportNotFound": "Report not found",
   "error.requestNotFound": "Request not found",
   "error.retry": "Try again",

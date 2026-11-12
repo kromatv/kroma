@@ -244,8 +244,8 @@ jobs:
   # web SPA + pinned ffmpeg), not compiled again: this replaced a ~13-minute
   # from-source docker.yml build with a copy + push. linux/amd64 reuses the .spk
   # payload, linux/arm64 the payload from the arm64 job; Dockerfile.runtime
-  # picks per platform via TARGETARCH. Runs for main pushes and tags alike,
-  # same tag scheme as before (latest + <version> on main, semver on tags).
+  # picks per platform via TARGETARCH. Pushed as latest + <version>.<build>;
+  # deploy.yml adds the release tags when a candidate is promoted.
   docker:
     name: Docker image (multi-arch, from prebuilt payloads)
     needs: [build, arm64]
@@ -283,7 +283,7 @@ jobs:
           mv spk-payload/web docker-ctx/web
           mv spk-payload/bin spk-payload/ffmpeg docker-ctx/amd64/
           mv arm64-payload/bin arm64-payload/ffmpeg docker-ctx/arm64/
-          chmod +x docker-ctx/*/bin/* docker-ctx/*/ffmpeg/bin/*
+          chmod +x docker-ctx/*/bin/* docker-ctx/*/ffmpeg/bin/* docker-ctx/*/ffmpeg/libexec/*
           echo "epoch=$(git log -1 --format=%ct)" >> "$GITHUB_OUTPUT"
           # Diagnostic only: `|| true` so the SIGPIPE `ls` takes when `head`
           # closes the pipe early can't trip `set -o pipefail` and fail the step.
@@ -313,8 +313,6 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ steps.payload.outputs.version }},enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
       # Every file in a layer is stamped with the commit time, so a layer whose
       # content did not move (ffmpeg, between two pins) keeps its digest and an

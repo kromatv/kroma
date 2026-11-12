@@ -8,7 +8,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
-use kroma_module_supervisor::Supervisor;
+use kroma_module_manifest::Permissions;
+use kroma_module_supervisor::{Accept, AsksForMore, Supervisor};
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -31,7 +32,7 @@ pub async fn install_with_deps(
     let mut planner = Planner::new(state, &modules);
     planner.roots(&root_list(root_id, include))?;
     let op = Op::begin(state, "install", root_id, plan_brief(&planner.plan));
-    match run_plan(sup, &op, &planner.plan).await {
+    match run_plan(sup, &op, &planner.plan, Unattended::No).await {
         Ok(installed) => {
             op.finish(None);
             Ok(json!({ "op": op.id(), "requested": root_id, "installed": installed }))
@@ -43,7 +44,28 @@ pub async fn install_with_deps(
     }
 }
 
-async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Result<Vec<Value>> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Unattended {
+    Yes,
+    No,
+}
+
+// What this install may declare: what the catalog row showed the operator, and
+// nothing wider than what is installed when nobody is looking.
+fn accepting(declared: Option<&Permissions>, unattended: Unattended) -> Accept<'_> {
+    match (declared, unattended) {
+        (declared, Unattended::Yes) => Accept::NoWider(declared),
+        (Some(declared), Unattended::No) => Accept::Exactly(declared),
+        (None, Unattended::No) => Accept::Anything,
+    }
+}
+
+async fn run_plan(
+    sup: &Arc<Supervisor>,
+    op: &Op,
+    plan: &[Planned<'_>],
+    unattended: Unattended,
+) -> Result<Vec<Value>> {
     let mut installed = Vec::new();
     for p in plan {
         let entry = p.entry;
@@ -66,6 +88,7 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
         let manifest = {
             let sup = sup.clone();
             let expected = entry.id.clone();
+            let declared = entry.permissions.clone();
             tokio::task::spawn_blocking(move || {
                 sup.install(
                     &bytes,
@@ -74,12 +97,13 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
                         kind: "registry",
                         url: Some(&url),
                         official,
+                        accept: accepting(declared.as_ref(), unattended),
                     },
                 )
             })
             .await
             .map_err(|_| anyhow!("install task panicked"))?
-            .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
+            .map_err(|e| e.context(format!("installing '{}' failed", entry.id)))?
         };
         op.done(&entry.id, &entry.version);
         installed.push(installed_row(&manifest));
@@ -87,11 +111,11 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
     Ok(installed)
 }
 
-/// `(artifact_url, bytes)` for `entry`'s build on this platform, downloaded only
+/// `(artifact_url, bytes)` for `entry`'s component, downloaded only
 /// once the transport and the checksum are the ones a first install insists on.
 ///
-/// Every path that fetches native code goes through here: registry installs
-/// download and run a binary, so requiring HTTPS and a published checksum (RFC
+/// Every path that fetches module code goes through here: registry installs
+/// download and run it, so requiring HTTPS and a published checksum (RFC
 /// 110 `integrity`, or the legacy flat `sha256`, both normalized by
 /// [`super::catalog`]) in ONE place is what stops a second caller from quietly
 /// skipping either.
@@ -101,7 +125,7 @@ async fn verified_artifact(
     on_progress: kroma_module_supervisor::FetchProgress<'_>,
 ) -> Result<(String, Vec<u8>)> {
     let artifact = catalog::pick_artifact(entry)
-        .ok_or_else(|| anyhow!("'{}' has no build for this server's platform", entry.id))?;
+        .ok_or_else(|| anyhow!("'{}' is {}", entry.id, super::refusal::Refusal::Native.reason()))?;
     if !artifact.url.starts_with("https://") {
         bail!(
             "'{}' artifact URL must be https (got '{}')",
@@ -137,6 +161,18 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
     let entry = modules.iter().find(|m| m.id == id).ok_or_else(|| {
         anyhow!("'{id}' is not in any configured registry, so it cannot be verified")
     })?;
+    let installed = kroma_module_kernel::manifests(state)
+        .into_iter()
+        .find(|m| m.id == id)
+        .map(|m| m.version);
+    if let Some(current) =
+        installed.filter(|current| kroma_module_manifest::is_newer(current, &entry.version))
+    {
+        bail!(
+            "'{id}' {current} is installed, and the newest version this server runs is {}; reinstalling would downgrade it",
+            entry.version
+        );
+    }
     let official = entry.official;
     let (url, bytes) = verified_artifact(sup, entry, &|_, _| {}).await?;
     let manifest = {
@@ -150,6 +186,7 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
                     kind: "registry",
                     url: Some(&url),
                     official,
+                    accept: Accept::NoWider(None),
                 },
             )
         })
@@ -179,9 +216,13 @@ pub struct FailedUpdate {
 
 /// `POST /store/update`'s wire shape.
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateOutcome {
     pub updated: Vec<UpdatedModule>,
     pub failed: Vec<FailedUpdate>,
+    /// Updates that ask for more than the installed version. Nothing updates
+    /// these without an operator accepting them through the install plan.
+    pub needs_consent: Vec<String>,
 }
 
 /// The enabled modules a candidate version would strand: they hard-depend on
@@ -226,6 +267,7 @@ pub async fn update_all(
     let mut outcome = UpdateOutcome {
         updated: Vec::new(),
         failed: Vec::new(),
+        needs_consent: Vec::new(),
     };
     let mut targets: Vec<(&CatalogModule, String)> = Vec::new();
     let installed = sup.installed_manifests();
@@ -236,6 +278,10 @@ pub async fn update_all(
         }
         let Some(entry) = by_id.get(id) else { continue };
         if !takes_update(entry, cur) {
+            continue;
+        }
+        if catalog::widens_access(entry, Some(manifest)) {
+            outcome.needs_consent.push(id.to_string());
             continue;
         }
         let stranded = stranded_dependents(
@@ -272,7 +318,7 @@ pub async fn update_all(
         // this one no longer needs to.
         let mut planner = Planner::new(state, &modules);
         let result = match planner.roots(&[entry.id.as_str()]) {
-            Ok(()) => run_plan(sup, &op, &planner.plan).await.map(|_| ()),
+            Ok(()) => run_plan(sup, &op, &planner.plan, Unattended::Yes).await.map(|_| ()),
             Err(e) => Err(e),
         };
         match result {
@@ -281,6 +327,9 @@ pub async fn update_all(
                 from,
                 to: entry.version.clone(),
             }),
+            Err(e) if e.downcast_ref::<AsksForMore>().is_some() => {
+                outcome.needs_consent.push(entry.id.clone());
+            }
             Err(e) => outcome.failed.push(FailedUpdate {
                 id: entry.id.clone(),
                 error: format!("{e:#}"),

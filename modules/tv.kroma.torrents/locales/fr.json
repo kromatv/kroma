@@ -25,7 +25,6 @@
   "dlclients.password": "Mot de passe",
   "dlclients.passwordKept": "Un mot de passe est enregistré. Laisser vide pour le conserver.",
   "dlclients.sectionTitle": "Clients de téléchargement",
-  "dlclients.state.notCompiled": "Absent de cette version",
   "dlclients.state.ready": "En marche",
   "dlclients.state.starting": "Démarrage…",
   "dlclients.state.startingSlow": "Démarrage depuis {minutes} min. En attente du swarm pour un torrent sans métadonnées.",
@@ -220,5 +219,8 @@
   "naming.seriesFolder": "Dossier des séries",
   "naming.tokens": "Jetons",
   "naming.tokensTitle": "Jetons de nom de fichier",
-  "nav.downloads": "Téléchargements"
+  "nav.downloads": "Téléchargements",
+  "notifications.completed.body": "{title} a fini de télécharger.",
+  "notifications.completed.label": "Téléchargements terminés",
+  "notifications.completed.title": "Téléchargement terminé"
 }

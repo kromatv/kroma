@@ -1,11 +1,11 @@
-import { type Ping, size } from './schemas';
+import { buildOf, type Ping, size } from './schemas';
 import type { DailyRow, InstanceRow, Store } from './store';
 
-type Current = Extract<Ping, { schema: 3 }>;
+type Current = Extract<Ping, { schema: 4 }>;
 
 export function ping(overrides: Partial<Current> = {}): Current {
   return {
-    schema: 3,
+    schema: 4,
     id: 'a'.repeat(64),
     version: '1.4.2',
     commit: 'cafed00d',
@@ -16,6 +16,7 @@ export function ping(overrides: Partial<Current> = {}): Current {
     modules: ['tv.kroma.torrents'],
     users: 3,
     titles: 1240,
+    build: 3_488_516,
     ...overrides,
   };
 }
@@ -60,6 +61,7 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
         locales: p.locales === undefined ? undefined : [...p.locales],
         modules: p.modules === undefined ? undefined : [...p.modules],
         ...size(p),
+        build: buildOf(p),
         flagged: existing?.flagged ?? false,
       });
       return Promise.resolve();
@@ -80,8 +82,8 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
       }
       return Promise.resolve();
     },
-    record(day, instances, clients) {
-      days.set(day, { day, instances, clients });
+    record(entry) {
+      days.set(entry.day, { ...entry });
       return Promise.resolve();
     },
     prune(before) {

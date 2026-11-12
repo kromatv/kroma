@@ -60,7 +60,7 @@ pub struct SecretQuery {
 /// Canonical, because a dual-stack bind (`KROMA_HOST=::`) hands an IPv4 proxy
 /// over as `::ffff:127.0.0.1`, which is neither loopback nor equal to
 /// `127.0.0.1` nor inside any IPv4 CIDR until it is unmapped.
-fn trusted(ip: IpAddr, list: &[String]) -> bool {
+pub(crate) fn trusted(ip: IpAddr, list: &[String]) -> bool {
     let ip = ip.to_canonical();
     ip.is_loopback()
         || list.iter().any(|entry| {
@@ -129,6 +129,12 @@ pub(crate) fn client_ip(headers: &HeaderMap, addr: &SocketAddr, list: &[String])
         }
     }
     addr.ip().to_string()
+}
+
+/// Whether a Cloudflare tunnel carried this request: its edge stamps `CF-Ray`, and
+/// only a peer worth believing can pass that along.
+pub(crate) fn tunnelled(headers: &HeaderMap, addr: &SocketAddr, list: &[String]) -> bool {
+    trusted(addr.ip(), list) && headers.contains_key("cf-ray")
 }
 
 /// Delete the tokens minted for a pairing request nobody will ever collect.

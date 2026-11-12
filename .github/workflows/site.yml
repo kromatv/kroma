@@ -14,6 +14,7 @@ on:
     branches: [main]
     paths:
       - 'apps/www/**'
+      - 'docs/setup/**'
       - 'packages/bundler/**'
       - 'packages/registry/**'
       - 'packages/site-kit/**'
@@ -30,15 +31,12 @@ on:
   pull_request:
     paths:
       - 'apps/www/**'
+      - 'docs/setup/**'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: site-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -48,6 +46,12 @@ jobs:
     if: >-
       github.event_name != 'workflow_run'
       || github.event.workflow_run.conclusion == 'success'
+    # On the job, not the workflow: a run whose job is skipped never joins the
+    # group, so it cannot cancel a deploy that is building. At the workflow
+    # level, a workflow_run that then skipped cancelled the push deploy of #617.
+    concurrency:
+      group: site-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -70,6 +70,10 @@ pub trait HostCtx: Send + Sync + 'static {
     // Resolved core-side from the persisted `libraries` setting, falling back to
     // the env-configured media dirs on first run. Empty when none configured.
     fn library_folders(&self) -> Vec<LibraryFolders>;
+    /// Whether a module that must never go direct can leave right now.
+    fn network_seal(&self) -> kroma_module_wire::NetworkSeal {
+        kroma_module_wire::NetworkSeal::None
+    }
 
     // A credential the operator configured, by name (`"tmdb"`). `None` when that
     // one is not set up.
@@ -165,6 +169,9 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     }
     fn library_folders(&self) -> Vec<LibraryFolders> {
         (**self).library_folders()
+    }
+    fn network_seal(&self) -> kroma_module_wire::NetworkSeal {
+        (**self).network_seal()
     }
     fn secret(&self, name: &str) -> Option<String> {
         (**self).secret(name)

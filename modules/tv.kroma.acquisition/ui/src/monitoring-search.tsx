@@ -43,7 +43,7 @@ export function MonitoringSearch({
   };
 
   return (
-    <Row wrap={!compact} gap={6} align="center">
+    <Row wrap={!compact} gap={6} align="center" maxW="100%">
       {compact ? (
         <>
           <IconButton

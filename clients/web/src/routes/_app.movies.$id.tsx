@@ -1,29 +1,26 @@
-import { ItemId } from '@kromatv/client/media';
-import { genreSlugs } from '@kromatv/core';
+import { type MediaCard, type MediaItem, ItemId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { TitleDetail } from '#web/features/catalog/title-detail';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { buildTitleView } from '#web/shared/lib/titleView';
+import { buildTitleView, movieSimilarTargets } from '#web/shared/lib/titleView';
 import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
+
+const SIMILAR_COUNT = 12;
 
 export const Route = createFileRoute('/_app/movies/$id')({
   loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
     // Catalogue is auth-gated: a signed-out deep-link goes to the gate (the
     // AuthGate overlay covers /, and its loader is guarded too).
     if (!isAuthed()) throw redirect({ to: '/' });
-    // Warm the cache the component reads from (item + full list for the
-    // similar-items fallback + embedding neighbours).
     const id = ItemId.parse(params.id);
-    await Promise.all([
-      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.item(id)),
-      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.movies()),
-      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.similar(id)),
-    ]);
+    const { catalogQueries } = webRuntime.queries;
+    void queryClient.prefetchQuery(catalogQueries.similar(id));
+    await queryClient.ensureQueryData(catalogQueries.item(id));
   },
   pendingComponent: DetailSkeleton,
   component: MovieDetailPage,
@@ -32,25 +29,31 @@ export const Route = createFileRoute('/_app/movies/$id')({
 function MovieDetailPage() {
   const webRuntime = useWebRuntime();
 
-  const t = useT();
-  const { client, user } = useAuth();
   const id = ItemId.parse(Route.useParams().id);
   // Re-enrichment (incl. a corrected TMDB match) lands via the event stream.
   useCatalogLiveRefresh('item', id);
   const { data: item } = useSuspenseQuery(webRuntime.queries.catalogQueries.item(id));
-  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.movies());
-  const { data: embed } = useSuspenseQuery(webRuntime.queries.catalogQueries.similar(id));
+  const { data: similar } = useQuery(webRuntime.queries.catalogQueries.similar(id));
+  return <MovieDetail item={item} similar={similar?.slice(0, SIMILAR_COUNT)} />;
+}
 
-  // "Titres similaires" prefers content-embedding neighbours, falling back to
-  // genre overlap, then any other movie.
-  const genres = new Set(genreSlugs(item.metadata));
-  const others = movies.filter((m) => m.id !== item.id);
-  const related = others.filter((m) => genreSlugs(m.metadata).some((g) => genres.has(g)));
-  let pool = others;
-  if (embed.length >= 3) pool = embed;
-  else if (related.length >= 3) pool = related;
-  const similar = pool.slice(0, 12);
-
-  const view = buildTitleView(client, t, user, { source: 'movie', item, similar, discover: null });
-  return <TitleDetail key={item.id} initial={view} />;
+function MovieDetail({
+  item,
+  similar,
+}: Readonly<{ item: MediaItem; similar: MediaCard[] | undefined }>) {
+  const t = useT();
+  const { client, user } = useAuth();
+  const view = buildTitleView(client, t, user, {
+    source: 'movie',
+    item,
+    similar: [],
+    discover: null,
+  });
+  return (
+    <TitleDetail
+      key={item.id}
+      initial={view}
+      similar={similar && movieSimilarTargets(client, t, similar)}
+    />
+  );
 }

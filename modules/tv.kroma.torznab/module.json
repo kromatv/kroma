@@ -1,9 +1,10 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.torznab",
   "name": "Torznab indexers",
-  "version": "0.3.9",
+  "version": "0.3.19",
+  "component": { "instances": 8 },
   "description": "External Torznab / Newznab indexers (Jackett, Prowlarr).",
   "engines": {
     "server": ">=0.1.39"
@@ -38,5 +39,15 @@
         }
       ]
     }
-  ]
+  ],
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "torznab",
+          "to": ["public", "lan"]
+        }
+      ]
+    }
+  }
 }

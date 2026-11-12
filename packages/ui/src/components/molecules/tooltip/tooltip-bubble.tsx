@@ -11,10 +11,21 @@ import type { TooltipProps } from './tooltip-props';
 
 const SHOW_DELAY_MS = 300;
 const GAP = 8;
+const ROOM_ABOVE = 48;
 
 interface Spot {
   left: number;
   top: number;
+  under: boolean;
+}
+
+function spotBeside(rect: DOMRect): Spot {
+  const under = rect.top < ROOM_ABOVE;
+  return {
+    left: rect.left + rect.width / 2,
+    top: under ? rect.bottom + GAP : rect.top - GAP,
+    under,
+  };
 }
 
 const sDefinition = styles({
@@ -23,6 +34,7 @@ const sDefinition = styles({
     position: 'fixed',
     transform: [{ translateX: '-50%' }, { translateY: '-100%' }],
     zIndex: OVERLAY_Z.tooltip,
+    width: 'max-content',
     maxWidth: 280,
     py: 6,
     px: 10,
@@ -50,7 +62,7 @@ function TooltipBubble({ label, children }: Readonly<TooltipProps>) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       const rect = box.current?.getBoundingClientRect();
-      if (rect) setSpot({ left: rect.left + rect.width / 2, top: rect.top - GAP });
+      if (rect) setSpot(spotBeside(rect));
     }, SHOW_DELAY_MS);
   };
   const hide = () => {
@@ -71,7 +83,7 @@ function TooltipBubble({ label, children }: Readonly<TooltipProps>) {
     if (!shown) return;
     const settle = () => {
       const rect = box.current?.getBoundingClientRect();
-      if (rect) setSpot({ left: rect.left + rect.width / 2, top: rect.top - GAP });
+      if (rect) setSpot(spotBeside(rect));
     };
     const view = webWindow();
     if (!view) return;
@@ -110,7 +122,11 @@ function Bubble({ id, label, spot }: Readonly<{ id: string; label: string; spot:
         id={id}
         role="tooltip"
         className={classes(s.tip)}
-        style={{ left: spot.left, top: spot.top }}
+        style={{
+          left: spot.left,
+          top: spot.top,
+          transform: spot.under ? 'translateX(-50%)' : undefined,
+        }}
       >
         {label}
       </span>

@@ -4,6 +4,7 @@
 
 mod credentials;
 mod deliver;
+mod endpoint;
 mod transports;
 
 #[cfg(test)]
@@ -11,6 +12,7 @@ mod test_support;
 
 pub use credentials::{public_key, sender};
 pub use deliver::{deliver, send_test};
+pub use endpoint::accepts_web_push_endpoint;
 
 use kroma_module_host::HostStorage;
 use kroma_push::Urgency;

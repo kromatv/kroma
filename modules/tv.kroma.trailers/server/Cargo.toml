@@ -1,0 +1,54 @@
+# This module is its own cargo workspace: it builds standalone, outside the
+# server tree, and is packed into a `.kmod` on its own. Package metadata and
+# dependency versions are explicit here rather than inherited.
+[workspace]
+
+[package]
+name = "kroma-trailers"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Trailers for the KROMA player: an InnerTube client and an ISO-BMFF remuxer, pure Rust"
+license = "AGPL-3.0-or-later"
+
+[[bin]]
+name = "kroma-module-trailers"
+path = "src/bin/module.rs"
+
+[dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+tracing = "0.1"
+
+[dev-dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+tower = { version = "0.5", features = ["util"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+
+# The profile `kroma build` builds this component with: release + `panic =
+# "abort"`, which drops the unwinding tables at no speed cost (opt-level stays
+# 3). Safe for a component: a panic traps its instance, and the host starts a
+# fresh one. Defined per module because a profile is only honoured at a
+# workspace root, and each module is its own workspace.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 16
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"
+
+[profile.dev]
+debug = false

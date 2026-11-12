@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkEndpoint, type Endpoint } from '../../endpoints.fixture';
-import { recordingClient } from '../../kroma-client.fixture';
+import { recordingClient, ticketedClient } from '../../kroma-client.fixture';
 import { ItemId, LibraryId, ShowId } from './ids';
 
 const item = ItemId.parse('i1');
@@ -26,7 +26,19 @@ describe('the media endpoints', () => {
       method: 'GET',
       path: '/movies?library=lib1',
     },
+    {
+      name: 'movieCards',
+      call: (c) => c.media.movieCards(),
+      method: 'GET',
+      path: '/movies?view=card',
+    },
     { name: 'shows', call: (c) => c.media.shows(), method: 'GET', path: '/shows' },
+    {
+      name: 'showCards',
+      call: (c) => c.media.showCards(),
+      method: 'GET',
+      path: '/shows?view=card',
+    },
     { name: 'show', call: (c) => c.media.show(show), method: 'GET', path: '/shows/s1' },
     { name: 'item', call: (c) => c.media.item(spaced), method: 'GET', path: '/items/i%201' },
     {
@@ -36,12 +48,24 @@ describe('the media endpoints', () => {
       path: '/items/i%201/similar',
     },
     {
+      name: 'similarCards',
+      call: (c) => c.media.similarCards(spaced),
+      method: 'GET',
+      path: '/items/i%201/similar?view=card',
+    },
+    {
       name: 'themed',
       call: (c) => c.media.themed('christmas & co'),
       method: 'GET',
       path: '/themed?q=christmas+%26+co',
     },
     { name: 'home', call: (c) => c.media.home(), method: 'GET', path: '/home' },
+    {
+      name: 'homeCards',
+      call: (c) => c.media.homeCards(),
+      method: 'GET',
+      path: '/home?view=card',
+    },
     { name: 'featured', call: (c) => c.media.featured(), method: 'GET', path: '/home/featured' },
     {
       name: 'aiSuggest',
@@ -116,24 +140,6 @@ describe('the URL builders, which make no request', () => {
     expect(url).toBe(`http://kroma.test/api${path}`);
   });
 });
-
-const SIGNED_IN_USER = {
-  id: 'u1',
-  email: 'a@b.c',
-  username: 'alice',
-  permissions: ['playback'],
-  createdAt: '2026-01-01T00:00:00Z',
-  hasPin: false,
-};
-
-/** A client that has signed in and so holds the media ticket its byte URLs carry. */
-async function ticketedClient(ticket = 'dev.999.sig') {
-  const { client } = recordingClient(() => ({
-    json: { token: 'tok', mediaTicket: ticket, user: SIGNED_IN_USER },
-  }));
-  await client.accounts.exchangeToken('access-token');
-  return client;
-}
 
 describe('the URLs a player fetches for itself', () => {
   it('carries the account media ticket, because the element cannot send a header', async () => {

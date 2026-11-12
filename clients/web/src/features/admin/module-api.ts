@@ -5,6 +5,7 @@
 
 import type { KromaClient } from '@kromatv/client';
 import {
+  StoreBundleInspection,
   ModuleEnabledResult,
   ModuleRestartResult,
   StoreCatalog,
@@ -25,10 +26,10 @@ export interface AdminModule extends ModuleManifest {
   removable: boolean;
   /** Where the module came from. Absent for a compile-time module. */
   origin?: ModuleOrigin;
-  /** The supervisor is running this sidecar right now. */
+  /** The supervisor is running this module right now. */
   running: boolean;
-  /** This module ships a process at all. `false` for a library module, whose
-   *  code is co-linked into another sidecar: it is never running, and showing
+  /** This module ships code to run at all. `false` for a library module, whose
+   *  code is co-linked into another module: it is never running, and showing
    *  it as stopped would be a false alarm. */
   hasSidecar: boolean;
   /** Points this module needs that no enabled module answers, as
@@ -46,9 +47,16 @@ export interface ModuleOrigin {
   /** The binary on disk is newer than the installed artifact, i.e. a local
    *  build replaced it. */
   localBuild: boolean;
+  /** The official registry listed it. False too for an install that predates
+   *  this record. */
+  official: boolean;
 }
 
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** A module with a process of its own that does not say what it does. */
+export const declaresNothing = (m: Pick<AdminModule, 'hasSidecar' | 'permissions'>): boolean =>
+  m.hasSidecar && !m.permissions;
 
 /** The one search rule for module lists: id, name and description. */
 export function matchesQuery(
@@ -163,6 +171,15 @@ export function createAdminApi(client: KromaClient) {
 
   /** The manual escape hatch: upload a `.kmod` directly, no registry involved.
    *  The body is the raw file, so this skips `adminApi`'s JSON content type. */
+  /** What a `.kmod` declares, read without installing it. */
+  async function inspectBundle(file: File): Promise<StoreBundleInspection> {
+    const res = await adminFetch('/store/inspect', { method: 'POST', body: file });
+    if (!res.ok) {
+      throw new Error((await res.text().catch(() => '')) || `inspect failed (${res.status})`);
+    }
+    return StoreBundleInspection.parse(await res.json());
+  }
+
   async function installBundle(file: File): Promise<void> {
     const res = await adminFetch('/store/install', { method: 'POST', body: file });
     if (!res.ok) {
@@ -170,7 +187,7 @@ export function createAdminApi(client: KromaClient) {
     }
   }
 
-  /** Stop a module's sidecar and start it again from the binary on disk. */
+  /** Stop a module and start it again from the component on disk. */
   async function restartModule(id: string): Promise<ModuleRestartResult> {
     const res = await adminFetch(`/modules/${encodeURIComponent(id)}/restart`, { method: 'POST' });
     if (!res.ok) {
@@ -203,6 +220,7 @@ export function createAdminApi(client: KromaClient) {
     previewRegistry,
     uninstallModule,
     installBundle,
+    inspectBundle,
     restartModule,
   };
 }

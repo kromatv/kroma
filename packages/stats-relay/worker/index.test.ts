@@ -99,6 +99,26 @@ describe('POST /v1/ping', () => {
     expect(stored?.titles).toBeUndefined();
   });
 
+  it('stores the CI build a server runs, and 0 for one built from source', async () => {
+    const store = memoryStore();
+    const { build: _b, ...fromSource } = ping({ id: OTHER_ID });
+
+    await send(store, post(ping()));
+    await send(store, post(fromSource));
+
+    expect(store.rows.get(ping().id)?.build).toBe(ping().build);
+    expect(store.rows.get(OTHER_ID)?.build).toBe(0);
+  });
+
+  it('stores no build for a server on the shape before this one', async () => {
+    const store = memoryStore();
+    const { build: _b, ...rest } = ping();
+
+    await send(store, post({ ...rest, schema: 3 }));
+
+    expect(store.rows.get(rest.id)?.build).toBeUndefined();
+  });
+
   it('refuses a payload shape it has not been taught', async () => {
     const store = memoryStore();
 
@@ -295,7 +315,7 @@ describe('GET /v1/stats', () => {
     const now = Math.floor(Date.now() / 1000);
     const settled = { firstSeen: now - 30 * DAY, lastSeen: now - DAY };
     const store = memoryStore([
-      ...Array.from({ length: SOME }, (_, i) => row({ id: `full-${i}`, ...settled })),
+      ...Array.from({ length: SOME }, (_, i) => row({ id: `full-${i}`, ...settled, build: 0 })),
       row({
         id: 'base-only',
         ...settled,
@@ -315,7 +335,7 @@ describe('GET /v1/stats', () => {
       clients: { total: number };
     };
     expect(body.instances).toBe(SOME + 1);
-    expect(body.reports).toEqual({ usage: SOME, statistics: SOME, sizes: SOME });
+    expect(body.reports).toEqual({ usage: SOME, statistics: SOME, sizes: SOME, builds: SOME });
     expect(body.clients.total).toBe(SOME * 3);
   });
 
@@ -381,7 +401,28 @@ describe('sweep', () => {
     expect(store.rows.get('fleet-0')?.flagged).toBe(true);
     expect(store.rows.get(OTHER_ID)?.flagged).toBe(false);
     expect(store.rows.has('c'.repeat(64))).toBe(false);
-    expect(await store.daily()).toEqual([{ day: '2027-01-15', instances: 1, clients: 3 }]);
+    expect(await store.daily()).toEqual([
+      { day: '2027-01-15', instances: 1, clients: 3, users: null, titles: null },
+    ]);
+  });
+
+  it('writes down the accounts and titles of the day once enough servers report a size', async () => {
+    const store = memoryStore([
+      row({
+        id: 'a'.repeat(64),
+        firstSeen: NOW - 30 * DAY,
+        lastSeen: NOW - DAY,
+        users: 2,
+        titles: 10,
+      }),
+      row({ id: OTHER_ID, firstSeen: NOW - 30 * DAY, lastSeen: NOW - DAY, users: 5, titles: 90 }),
+    ]);
+
+    await sweep(store, NOW);
+
+    expect(await store.daily()).toEqual([
+      { day: '2027-01-15', instances: 2, clients: 6, users: 7, titles: 100 },
+    ]);
   });
 });
 

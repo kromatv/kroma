@@ -15,7 +15,8 @@ import { useClient } from '#mobile/lib/session';
 import { useKromaEngine } from '#mobile/player/engine';
 import { useHeartbeat } from '#mobile/player/heartbeat';
 import { PlayerLayout } from '#mobile/player/player-layout';
-import { PlayerVideo, type PlayerVideoHandle } from '#mobile/player/player-video';
+import { PlayerVideo } from '#mobile/player/player-video';
+import type { PlayerVideoHandle } from '#mobile/player/video-surface';
 import { PlayerDetails } from '#mobile/player/player-details';
 import { usePlayerPresentation } from '#mobile/player/use-player-presentation';
 import { PlayerStatusScreen } from '#mobile/player/player-status-screen';
@@ -189,7 +190,7 @@ export function PlayerBody({
       transport={
         <PortraitPlaybackStrip
           engine={engine}
-          item={item}
+          markers={item.markers?.map((marker) => marker.startMs / 1000)}
           tileFor={tileFor}
           onFullscreen={presentation.toggle}
         />

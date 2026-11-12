@@ -27,6 +27,7 @@ pub async fn spawn(state: &state::SharedState) {
         .spawn_reaper(state.db.clone(), state.events.clone());
     state.cast.spawn_reaper(state.events.clone());
     state.metrics.spawn_sampler();
+    state.network.clone().spawn_flusher();
     state.jobs.clone().spawn_scheduler(state.clone());
     let upgrading = state.clone();
     tokio::task::spawn_blocking(move || {

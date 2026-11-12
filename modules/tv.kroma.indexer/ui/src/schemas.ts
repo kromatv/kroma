@@ -63,13 +63,19 @@ export const IndexerDefinitionView = z.object({
   kind: z.string(),
   description: z.string(),
   links: z.array(z.string()),
+  /** A BCP 47 tag (`fr-FR`), empty when the definition names none. */
+  language: z.string(),
 });
 export type IndexerDefinitionView = z.infer<typeof IndexerDefinitionView>;
 
-/** `GET /indexers/definitions`. */
+/** `GET /indexers/definitions`. The module keeps the catalog current on its own;
+ * `failure` is why the latest sync failed, `null` once one succeeds. */
 export const IndexerDefinitionsView = z.object({
   definitions: z.array(IndexerDefinitionView),
   synced: z.boolean(),
+  syncedAt: z.number().nullable(),
+  failedAt: z.number().nullable(),
+  failure: z.string().nullable(),
 });
 export type IndexerDefinitionsView = z.infer<typeof IndexerDefinitionsView>;
 
@@ -93,10 +99,3 @@ export const IndexerDefinitionDetailView = z.object({
   settings: z.array(IndexerDefinitionSettingView),
 });
 export type IndexerDefinitionDetailView = z.infer<typeof IndexerDefinitionDetailView>;
-
-/** `POST /indexers/definitions/sync` result. */
-export const SyncDefinitionsResult = z.object({
-  count: z.number(),
-  version: z.string(),
-});
-export type SyncDefinitionsResult = z.infer<typeof SyncDefinitionsResult>;

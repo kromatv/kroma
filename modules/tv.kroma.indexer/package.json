@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA Indexers module (frontend half): the Indexers admin page. Paired with the kroma-indexer backend at ../server via the shared module.json.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

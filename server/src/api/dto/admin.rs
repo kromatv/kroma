@@ -18,6 +18,9 @@ pub struct Health {
     pub instance_id: String,
     pub version: &'static str,
     pub build: u64,
+    pub commit: String,
+    #[serde(rename = "bootId")]
+    pub boot_id: &'static str,
     #[serde(rename = "activeStreams", skip_serializing_if = "Option::is_none")]
     pub active_streams: Option<usize>,
     #[serde(rename = "autoInstallUpdates", skip_serializing_if = "Option::is_none")]

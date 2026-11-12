@@ -122,6 +122,29 @@ pub fn is_newer(candidate: &str, current: &str) -> bool {
     }
 }
 
+/// The versions older than `latest` a store may offer in its place, newest
+/// first. A prerelease is one only when `latest` is itself a prerelease, and a
+/// version that is not semver never is, since it cannot be ordered against
+/// `latest`.
+pub fn fallbacks_newest_first<'a>(
+    versions: impl IntoIterator<Item = &'a str>,
+    latest: &str,
+) -> Vec<&'a str> {
+    let Ok(latest) = semver::Version::parse(latest.trim()) else {
+        return Vec::new();
+    };
+    let mut older: Vec<(semver::Version, &str)> = versions
+        .into_iter()
+        .filter_map(|raw| {
+            let version = semver::Version::parse(raw.trim()).ok()?;
+            let channel_ok = version.pre.is_empty() || !latest.pre.is_empty();
+            (version < latest && channel_ok).then_some((version, raw))
+        })
+        .collect();
+    older.sort_by(|a, b| b.0.cmp(&a.0));
+    older.into_iter().map(|(_, raw)| raw).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,6 +184,45 @@ mod tests {
         assert!(err.contains("cannot check"), "{err}");
         assert!(err.contains("ffmpeg"), "{err}");
         assert!(err.contains("known: server"), "{err}");
+    }
+
+    #[test]
+    fn fallbacks_are_the_older_versions_newest_first() {
+        let versions = ["0.4.29", "0.4.31", "0.4.9", "0.4.30"];
+
+        let fallbacks = fallbacks_newest_first(versions, "0.4.31");
+
+        assert_eq!(fallbacks, ["0.4.30", "0.4.29", "0.4.9"]);
+    }
+
+    #[test]
+    fn a_prerelease_is_no_fallback_for_a_stable_version() {
+        let versions = ["1.1.0-beta.2", "1.0.0"];
+
+        let fallbacks = fallbacks_newest_first(versions, "1.1.0");
+
+        assert_eq!(fallbacks, ["1.0.0"]);
+    }
+
+    #[test]
+    fn a_prerelease_newest_version_may_fall_back_to_an_older_prerelease() {
+        let versions = ["2.0.0-rc.1", "2.0.0-rc.2", "1.9.0"];
+
+        let fallbacks = fallbacks_newest_first(versions, "2.0.0-rc.3");
+
+        assert_eq!(fallbacks, ["2.0.0-rc.2", "2.0.0-rc.1", "1.9.0"]);
+    }
+
+    #[test]
+    fn a_version_that_is_not_semver_is_never_a_fallback() {
+        let fallbacks = fallbacks_newest_first(["nightly", "0.1.0"], "0.2.0");
+
+        assert_eq!(fallbacks, ["0.1.0"]);
+    }
+
+    #[test]
+    fn nothing_falls_back_from_a_newest_version_that_is_not_semver() {
+        assert!(fallbacks_newest_first(["0.1.0"], "nightly").is_empty());
     }
 
     #[test]

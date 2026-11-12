@@ -9,6 +9,7 @@
 //! `module.json`, so adding a call site that reaches further fails HERE.
 
 use kroma_module_sdk::db::{self, Pool, testing::TempPool};
+use kroma_module_sdk::domain::{RequestKind, RequestStatus};
 
 // The core database plus the pool this module's process is actually handed:
 // same file, scoped to the grant its own `module.json` ships.
@@ -40,6 +41,7 @@ fn seed(pool: &Pool) {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_covers_every_core_query_this_module_makes() {
     let (core, scoped) = scoped();
     seed(&core);
@@ -69,8 +71,51 @@ fn the_grant_covers_every_core_query_this_module_makes() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
+fn the_grant_covers_what_the_request_and_monitoring_passes_write() {
+    let (core, scoped) = scoped();
+    seed(&core);
+    core.get()
+        .unwrap()
+        .execute_batch(
+            "INSERT INTO monitored (kind,tmdb_id,title,seasons,monitor_new_seasons,min_availability,\
+                                    known_episodes,aliases,added_at,updated_at) \
+             VALUES ('movie',603,'The Matrix','[]',0,'released','{}','[]',1,1);",
+        )
+        .unwrap();
+    let wt1 = ["wt1".to_string()];
+
+    let conn = scoped.get().unwrap();
+    let title = db::get_monitored(&conn, RequestKind::Movie, 603)
+        .unwrap()
+        .expect("monitored");
+    let row = db::wanted_for_title(&conn, RequestKind::Movie, 603).unwrap()[0].clone();
+    assert_eq!(db::list_monitored(&conn).unwrap().len(), 1);
+    assert_eq!(db::list_requests(&conn, None).unwrap().len(), 1);
+    db::available_movies(&conn).unwrap();
+    db::movie_item_by_tmdb(&conn, 603).unwrap();
+    db::acquired_file_present(&conn, 603).unwrap();
+    db::episodes_present(&conn, "sh1").unwrap();
+    db::wanted_vanished_before(&conn, &wt1, 1).unwrap();
+    drop(conn);
+
+    db::upsert_monitored(&scoped, &title).unwrap();
+    db::claim_wanted(&scoped, "rq1", std::slice::from_ref(&row), 1).unwrap();
+    db::insert_wanted(&scoped, std::slice::from_ref(&row), 1).unwrap();
+    db::set_wanted_status(&scoped, &wt1, "available", 1).unwrap();
+    db::mark_wanted_vanished(&scoped, &wt1, 1).unwrap();
+    db::clear_wanted_vanished(&scoped, &wt1).unwrap();
+    db::reset_wanted_search(&scoped, &wt1, 1).unwrap();
+    db::set_wanted_air_date(&scoped, "wt1", "2020-01-01", 1).unwrap();
+    db::set_movie_air_date(&scoped, 603, Some("2020-01-01"), 1).unwrap();
+    db::set_request_air(&scoped, "rq1", Some("Released"), None, 1).unwrap();
+    db::set_request_status(&scoped, "rq1", RequestStatus::Approved, None, None, 1).unwrap();
+}
+
+#[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_stops_at_the_tables_this_module_has_no_business_in() {
-    // The point of declaring one. A sidecar used to be handed the whole database
+    // The point of declaring one. A module used to be handed the whole database
     // ambiently, session token hashes included.
     let (core, scoped) = scoped();
     seed(&core);

@@ -1,16 +1,14 @@
+import type { ReactNode } from 'react';
+
 import { Box } from '#ui/components/atoms/box';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Kbd } from './kbd';
-
-export function Chord({ keys, label }: Readonly<{ keys: readonly string[]; label: string }>) {
+export function Chord({ children, label }: Readonly<{ children: ReactNode; label: string }>) {
   return (
-    <Box row align="center" gap={5}>
-      {keys.map((key) => (
-        <Kbd key={key}>{key}</Kbd>
-      ))}
-      <Text variant="meta" color="textDim">
+    <Box row align="center" gap={3}>
+      {children}
+      <Text variant="meta" color="textDim" ml={3}>
         {label}
       </Text>
     </Box>

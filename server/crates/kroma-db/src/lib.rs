@@ -14,6 +14,9 @@
 //! the per-domain query submodules below as a flat namespace so
 //! `db::list_movies(...)` etc. resolve unchanged.
 
+#[cfg(target_family = "wasm")]
+extern crate kroma_sqlite_guest as rusqlite;
+
 use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 
@@ -38,6 +41,8 @@ mod rows;
 // would clash with `media::counts`, and the call sites read clearer scoped.
 pub mod audio_analysis;
 mod curated;
+pub mod network_flows;
+pub mod network_inbound;
 pub mod notification_deliveries;
 pub mod notifications;
 pub mod pipeline;

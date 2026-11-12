@@ -111,17 +111,31 @@ export function NowPlayingCard({
   const { color: stateColor, label: stateLabel } = transportTone(s.state, t);
   const pipe = pipeTone(s.mode, t);
   const sub = subtitleOf(s, t);
+  const heading = s.showTitle ?? s.title;
 
   return (
-    <Surface elevated pad="none" border="border" row gap={18} px={20} py={18}>
+    <Surface
+      elevated
+      pad="none"
+      border="border"
+      row={{ base: false, md: true }}
+      gap={18}
+      px={20}
+      py={18}
+    >
       <NowPlayingThumb s={s} />
 
       <Box flex minW={0} gap={12}>
-        <Box row between align="flex-start" gap={18}>
-          <Box minW={0}>
-            <Row gap={10}>
-              <Text variant="title" accessibilityRole="header" lines={1}>
-                {s.showTitle ? `${s.showTitle}` : s.title}
+        <Box
+          row={{ base: false, lg: true }}
+          between
+          align={{ base: 'stretch', lg: 'flex-start' }}
+          gap={18}
+        >
+          <Box flex minW={0}>
+            <Box row={{ base: false, md: true }} gap={10}>
+              <Text variant="title" accessibilityRole="header" lines={1} shrink={1} minW={0}>
+                <span title={heading}>{heading}</span>
               </Text>
               <Row gap={6} shrink={0}>
                 <PillDot tone={stateColor} pulse={playing || buffering} />
@@ -129,15 +143,17 @@ export function NowPlayingCard({
                   {stateLabel}
                 </Text>
               </Row>
-            </Row>
+            </Box>
             <Text variant="meta" color="textDim" mt={4}>
               {[sub, s.videoLabel].filter((part) => part && part !== '-').join(' · ')}
             </Text>
           </Box>
-          <Row shrink={0} gap={11}>
-            <Box align="flex-end">
-              <Text variant="label">{s.username}</Text>
-              <Text variant="meta" color="textDim">
+          <Row shrink={0} gap={11} justify="flex-end" maxW={{ base: '100%', lg: '45%' }}>
+            <Box align="flex-end" shrink={1} minW={0}>
+              <Text variant="label" lines={1}>
+                {s.username}
+              </Text>
+              <Text variant="meta" color="textDim" lines={1}>
                 {s.player} · {s.device}
               </Text>
             </Box>

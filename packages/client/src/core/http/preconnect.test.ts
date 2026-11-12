@@ -21,6 +21,12 @@ describe('preconnect', () => {
     expect(document.head.querySelectorAll('link[rel="preconnect"]')).toHaveLength(1);
   });
 
+  it('adds nothing for the origin the page itself was served from', () => {
+    preconnect(`${document.location.origin}/api`);
+
+    expect(document.head.querySelectorAll('link[rel="preconnect"]')).toHaveLength(0);
+  });
+
   it('ignores an address that is not a URL', () => {
     preconnect('not a url');
     expect(document.head.querySelectorAll('link[rel="preconnect"]')).toHaveLength(0);

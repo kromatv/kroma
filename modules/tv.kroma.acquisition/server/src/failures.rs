@@ -5,8 +5,8 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use kroma_module_sdk::engine::model::RequestKind;
-use kroma_module_sdk::engine::services::jobs::now_ms;
+use kroma_module_sdk::domain::RequestKind;
+use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::host::HostStorage;
 use rusqlite::params;
 

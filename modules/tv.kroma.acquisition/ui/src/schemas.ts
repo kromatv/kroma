@@ -80,7 +80,8 @@ export type ManualSearchBody = z.infer<typeof ManualSearchBody>;
 
 /** What one indexer made of a sweep. Every enabled indexer answers, whether it
  * found something, found nothing, or failed: `error` is what separates the last
- * two. `elapsedMs` is that indexer's own round trip, not the sweep's. */
+ * two. `elapsedMs` is the round trip of the batch it was asked in, so the
+ * slowest indexer of that batch sets it. */
 export const IndexerReport = z.object({
   id: z.string(),
   name: z.string(),

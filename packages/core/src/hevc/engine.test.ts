@@ -18,6 +18,20 @@ describe('nativeDirectPlayable', () => {
     expect(nativeDirectPlayable(mp4, 'android')).toBe(true);
   });
 
+  it('opens Matroska on a samsung set, as its own player does', () => {
+    const mkv = makeItem({ container: 'mkv', videoCodec: 'hevc', audio: [] });
+    expect(nativeDirectPlayable(mkv, 'tizen')).toBe(true);
+  });
+
+  it('opens Matroska and MPEG-TS on an lg set, and leaves WebM to the remux', () => {
+    const mkv = makeItem({ container: 'mkv', videoCodec: 'hevc', audio: [] });
+    const ts = makeItem({ container: 'ts', videoCodec: 'h264', audio: [] });
+    const webm = makeItem({ container: 'webm', videoCodec: 'h264', audio: [] });
+    expect(nativeDirectPlayable(mkv, 'webos')).toBe(true);
+    expect(nativeDirectPlayable(ts, 'webos')).toBe(true);
+    expect(nativeDirectPlayable(webm, 'webos')).toBe(false);
+  });
+
   it('refuses AV1 on either, whatever the container', () => {
     const av1 = makeItem({ container: 'mp4', videoCodec: 'av1', audio: [] });
     expect(nativeDirectPlayable(av1, 'ios')).toBe(false);

@@ -1,7 +1,7 @@
 import type { DiscoverEntry } from '@kromatv/client/discovery';
 import type { MessageKey } from '@kromatv/i18n';
 import type { IconName } from '@kromatv/ui/kit';
-import type { MovieView, ShowView } from '#web/shared/lib/api';
+import type { MovieCardView, ShowView } from '#web/shared/lib/api';
 
 export const SAVED_SORTS = ['recent', 'title', 'year', 'rating'] as const;
 
@@ -24,7 +24,7 @@ export const isSavedTab = (v: unknown): v is SavedTab => SAVED_TABS.includes(v a
 export const isSavedKind = (v: unknown): v is SavedKind => SAVED_KINDS.includes(v as SavedKind);
 
 export type SavedSource =
-  | { from: 'movie'; movie: MovieView }
+  | { from: 'movie'; movie: MovieCardView }
   | { from: 'show'; show: ShowView }
   | { from: 'discover'; entry: DiscoverEntry };
 

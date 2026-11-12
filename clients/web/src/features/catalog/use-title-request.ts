@@ -2,7 +2,7 @@ import { apiErrorText } from '@kromatv/client';
 import type { EpisodeRef } from '@kromatv/client/requests';
 import { useT } from '@kromatv/ui';
 import { useState } from 'react';
-import { EPISODES_ANCHOR } from '#web/features/catalog/episode-list';
+import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 import { epKey, toEpisodeRefs, toggle } from '#web/features/catalog/episode-selection';
 import { useAuth } from '#web/shared/lib/auth';
 import type { TitleView } from '#web/shared/lib/titleView';

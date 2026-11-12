@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { channelOf, compareRaw, parse, satisfies } from './semver.ts';
+import { channelOf, compareRaw, floorOf, parse, satisfies } from './semver.ts';
 
 const sorted = (...versions: string[]) => [...versions].sort(compareRaw);
 
@@ -95,6 +95,30 @@ describe('satisfies', () => {
   it('satisfies nothing when either side is unreadable', () => {
     expect(satisfies('nightly', '^1.0.0')).toBe(false);
     expect(satisfies('1.0.0', '^nightly')).toBe(false);
+  });
+});
+
+describe('floorOf', () => {
+  it('reads the floor of every comparator a manifest writes', () => {
+    expect(
+      ['>=0.1.39', '^0.1.39', '~0.1.39', '=0.1.39', '0.1.39', '>= 0.1.39'].map(floorOf),
+    ).toEqual(Array(6).fill('0.1.39'));
+  });
+
+  it('takes the highest lower bound of a compound range', () => {
+    expect(floorOf('>=0.1.38, <0.2.0 >=0.1.39')).toBe('0.1.39');
+  });
+
+  it('keeps a canary floor as the prerelease it is', () => {
+    expect(floorOf('>=0.1.39-canary.3607377')).toBe('0.1.39-canary.3607377');
+  });
+
+  it('finds no floor in a range that sets none', () => {
+    expect([floorOf('*'), floorOf('<0.2.0'), floorOf('')]).toEqual([null, null, null]);
+  });
+
+  it('refuses to guess at a comparator it cannot read', () => {
+    expect(floorOf('>0.1.38')).toBeNull();
   });
 });
 

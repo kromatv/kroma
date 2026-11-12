@@ -10,6 +10,7 @@ mod ddl;
 mod legacy;
 mod migrations;
 mod steps;
+mod stored_tokens;
 mod titled_wanted;
 
 pub(crate) use ddl::{FILE_COLS, ITEM_COLS, SCHEMA};

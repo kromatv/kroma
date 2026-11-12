@@ -333,6 +333,12 @@
       }
     },
     {
+      "files": ["packages/core/src/direct/direct.fixture.ts"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
       "files": ["packages/core/src/discover.ts"],
       "rules": {
         "sonarjs/no-clear-text-protocols": "off"
@@ -357,13 +363,13 @@
       }
     },
     {
-      "files": ["packages/tv-installer/src/discovery/ssdp.ts"],
+      "files": ["packages/installer/src/discovery/ssdp.ts"],
       "rules": {
         "sonarjs/no-hardcoded-ip": "off"
       }
     },
     {
-      "files": ["packages/tv-installer/src/local-network.ts"],
+      "files": ["packages/installer/src/discovery/local-network.ts"],
       "rules": {
         "sonarjs/no-hardcoded-ip": "off"
       }

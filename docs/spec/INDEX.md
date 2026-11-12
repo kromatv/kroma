@@ -3,7 +3,7 @@
 
 # Requirement index
 
-509 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+540 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -63,21 +63,24 @@
 - **ACCT-54** (SHIPPED) - Settling a row leaves a banner already delivered to a device alone. <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-55** (SHIPPED) - The inbox opens from the bell on any screen, lists rows newest first <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go, <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-60** (AGREED) - What goes first is archived rows, then the oldest rows that were read. <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-57** (SHIPPED) - The badge counts rows the person has **not seen**: opening the panel <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-58** (SHIPPED) - A reader **archives** a row rather than deleting it. An archived row <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that rows go in the <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-60** (SHIPPED) - What goes first is archived rows, then the oldest rows that were read. <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-61** (SHIPPED) - The inbox is on the web client and on the phone. The television has <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-62** (AGREED) - The television routes no subject kinds. It gains them with the inbox, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-64** (SHIPPED) - A category whose inbox switch is off writes no row at all. Muting is <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-65** (AGREED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-65** (SHIPPED) - The same choice is available per notification type, a module's own <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-66** (SHIPPED) - A device asks to receive banners, and nothing is sent to a device that <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-67** (SHIPPED) - A banner that cannot be delivered costs the banner, never the <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-68** (AGREED) - Every delivery attempt is recorded with its outcome (delivered, failed, <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-70** (SHIPPED) - A module addresses the audiences the core addresses and no others: one <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-71** (AGREED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-71** (SHIPPED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
+- **ACCT-72** (AGREED) - The device list shows the app version each device last used <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-73** (AGREED) - A device whose app is older than the oldest version its server serves <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-74** (AGREED) - A device that never sent its app version shows "version unknown", never <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
@@ -347,19 +350,19 @@
 
 - **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and <sub>[README.md](modules/README.md)</sub>
 - **MOD-2** (SHIPPED) - A module is a self-contained capability with a reverse-DNS id <sub>[README.md](modules/README.md)</sub>
-- **MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers <sub>[README.md](modules/README.md)</sub>
+- **MOD-3** (SHIPPED) - Within its own component a module has wide latitude: it registers <sub>[README.md](modules/README.md)</sub>
 - **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module <sub>[README.md](modules/README.md)</sub>
 - **MOD-5** (SHIPPED) - It may not reach into the server's process or another module's <sub>[README.md](modules/README.md)</sub>
 - **MOD-6** (SHIPPED) - It may not replace core. Playback, catalogue, accounts and the <sub>[README.md](modules/README.md)</sub>
 - **MOD-7** (SHIPPED) - It may not claim a first-party module id it does not own. <sub>[README.md](modules/README.md)</sub>
 - **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable, <sub>[README.md](modules/README.md)</sub>
 - **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that <sub>[README.md](modules/README.md)</sub>
-- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native <sub>[README.md](modules/README.md)</sub>
+- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the backend as <sub>[README.md](modules/README.md)</sub>
 - **MOD-11** (SHIPPED) - **Identity and version.** The reverse-DNS id and a hand-set version. <sub>[README.md](modules/README.md)</sub>
 - **MOD-12** (SHIPPED) - The release process refuses to publish changed bytes under an <sub>[README.md](modules/README.md)</sub>
 - **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version <sub>[README.md](modules/README.md)</sub>
 - **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and <sub>[README.md](modules/README.md)</sub>
-- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only <sub>[README.md](modules/README.md)</sub>
+- **MOD-15** (SHIPPED) - **No target.** The backend is a WebAssembly component, so one bundle <sub>[README.md](modules/README.md)</sub>
 - **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256 <sub>[README.md](modules/README.md)</sub>
 - **MOD-17** (SHIPPED) - Integrity is not safety: a matching checksum proves the bytes are the <sub>[README.md](modules/README.md)</sub>
 - **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies <sub>[README.md](modules/README.md)</sub>
@@ -370,16 +373,16 @@
 - **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the <sub>[README.md](modules/README.md)</sub>
 - **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is <sub>[README.md](modules/README.md)</sub>
 - **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one <sub>[README.md](modules/README.md)</sub>
-- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary <sub>[README.md](modules/README.md)</sub>
+- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is code the server <sub>[README.md](modules/README.md)</sub>
 - **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so <sub>[README.md](modules/README.md)</sub>
-- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes, <sub>[README.md](modules/README.md)</sub>
-- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and <sub>[README.md](modules/README.md)</sub>
-- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is <sub>[README.md](modules/README.md)</sub>
+- **MOD-28** (SHIPPED) - **Enable.** The server starts the module, and its routes, jobs and UI <sub>[README.md](modules/README.md)</sub>
+- **MOD-29** (SHIPPED) - **Disable.** The module is stopped, and its **data is kept <sub>[README.md](modules/README.md)</sub>
+- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the module is <sub>[README.md](modules/README.md)</sub>
 - **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the <sub>[README.md](modules/README.md)</sub>
 - **MOD-32** (SHIPPED) - **Uninstall.** The module is removed entirely. It is the one <sub>[README.md](modules/README.md)</sub>
 - **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still <sub>[README.md](modules/README.md)</sub>
 - **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module <sub>[README.md](modules/README.md)</sub>
-- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a <sub>[README.md](modules/README.md)</sub>
+- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** A module runs in <sub>[README.md](modules/README.md)</sub>
 - **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is <sub>[README.md](modules/README.md)</sub>
 - **MOD-37** (SHIPPED) - **Failure is visible, not silent.** A module that will not start or <sub>[README.md](modules/README.md)</sub>
 - **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares <sub>[README.md](modules/README.md)</sub>
@@ -397,7 +400,7 @@
 - **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged <sub>[README.md](modules/README.md)</sub>
 - **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. A settings key <sub>[README.md](modules/README.md)</sub>
 - **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled <sub>[README.md](modules/README.md)</sub>
-- **MOD-53** (SHIPPED) - A credential whose consumer *is* a module reaches the module that <sub>[README.md](modules/README.md)</sub>
+- **MOD-53** (SHIPPED) - A module reads and writes only the core settings it declared. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-54** (AGREED) - An admin can change every rule below while the server runs: qualities and <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-55** (AGREED) - A **quality** is a source at a resolution, from a fixed vocabulary: cam, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-56** (AGREED) - Each quality has a size range in megabytes per minute of runtime, <sub>[acquisition.md](modules/acquisition.md)</sub>
@@ -428,7 +431,17 @@
 - **MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
-- **MOD-84** (AGREED) - A module that still ships as a native program runs under the strongest <sub>[README.md](modules/README.md)</sub>
+- **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never <sub>[README.md](modules/README.md)</sub>
+- **MOD-85** (SHIPPED) - The official registry describes every version of a module it has <sub>[README.md](modules/README.md)</sub>
+- **MOD-86** (SHIPPED) - The Store never offers a version whose registry does not describe what <sub>[README.md](modules/README.md)</sub>
+- **MOD-87** (SHIPPED) - When a module's newest version does not run on this server, the Store <sub>[README.md](modules/README.md)</sub>
+- **MOD-88** (SHIPPED) - The Store shows the version it would install and, beside it, the newest <sub>[README.md](modules/README.md)</sub>
+- **MOD-89** (SHIPPED) - Installing, updating, updating everything and automatic updates all take <sub>[README.md](modules/README.md)</sub>
+- **MOD-90** (SHIPPED) - The Store never downgrades an installed module unless the operator asks. <sub>[README.md](modules/README.md)</sub>
+- **MOD-91** (SHIPPED) - Each dependency resolves to its own newest version that runs here. A <sub>[README.md](modules/README.md)</sub>
+- **MOD-92** (AGREED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
+- **MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
+- **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 
@@ -485,6 +498,13 @@
 - **PLAY-51** (SHIPPED) - A **fatal** failure, a source gone, a transcode that cannot start, or
 - **PLAY-52** (SHIPPED) - When a television's older decoder cannot play a file a modern phone
 - **PLAY-53** (AGREED) - A settled seek also reports, so jumping and then losing the client does
+- **PLAY-54** (SHIPPED) - A detail page offers a trailer button only when the server can play the
+- **PLAY-55** (SHIPPED) - The trailer offered is the best one for the viewer's language: spoken in
+- **PLAY-56** (SHIPPED) - The button says when the trailer is not spoken in the viewer's language:
+- **PLAY-57** (SHIPPED) - A trailer never plays an AI-dubbed audio track. It plays the track its
+- **PLAY-58** (SHIPPED) - The first play of a trailer may wait while the server fetches it, and the
+- **PLAY-59** (SHIPPED) - A trailer saves no progress, marks nothing watched and offers no next
+- **PLAY-60** (SHIPPED) - When a trailer cannot be fetched, the player says so plainly. Where the
 
 ## SURF - [surfaces](surfaces/)
 
@@ -537,3 +557,14 @@
 - **SURF-47** (SHIPPED) - The input model is the one thing a surface may *not* copy from web,
 - **SURF-48** (SHIPPED) - A download is a single progressive file: the raw original when the
 - **SURF-49** (SHIPPED) - A remote, a gamepad and a keyboard's arrow keys are the same input
+- **SURF-50** (SHIPPED) - From anywhere on web, one key combination (Command+K on a Mac,
+- **SURF-51** (SHIPPED) - A row in the command menu says what Enter will do, and can offer
+- **SURF-52** (SHIPPED) - The command menu forgives typos, word order and missing accents,
+- **SURF-53** (AGREED) - Every app tells its server which app it is and which version, on every
+- **SURF-54** (AGREED) - A server states the oldest app version it serves, where an app can read
+- **SURF-55** (SHIPPED) - A server states its own version where an app can read it before
+- **SURF-56** (AGREED) - The release that raises the oldest app version a server serves says so
+- **SURF-57** (AGREED) - An app older than the oldest version its server serves shows one screen
+- **SURF-58** (AGREED) - An app never reports being too old as a playback or feature error.
+- **SURF-59** (AGREED) - A server treats a request that names no app version as coming from an
+- **SURF-60** (AGREED) - An app that needs a newer server than the one it reached shows one

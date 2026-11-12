@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA 10-foot TV experience served from the web (tv.kroma.tv) thin shell over @kromatv/tv.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

@@ -11,7 +11,7 @@ import {
 } from '#ui/components/organisms/player/lib/player-keys';
 import { useRemoteKeys } from '#ui/lib/focus-remote';
 import type { RemoteKey } from '#ui/lib/remote-keys';
-import { isRemoteKeyUp } from '#ui/lib/tv-remote';
+import { backThroughBackHandler, isRemoteKeyUp } from '#ui/lib/tv-remote';
 import { useMenuKeys } from '#ui/lib/use-menu-keys';
 
 // Both the clickpad (up/down/left/right) and the touch-surface swipes
@@ -101,13 +101,13 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   // player has to claim it here or Android finishes the activity and quits the
   // app. Returning true keeps the press inside the player (mirrors focus-nav).
   //
-  // Android TV and nothing else. NOT `Platform.isTV` alone: on tvOS this fork
-  // implements BackHandler *on top of* the same `menu` event REMOTE_KEYS already
-  // maps to Back, so a claim there routes one press twice. NOT `OS` alone
-  // either: on a phone the back button belongs to the navigator.
-  const onBack = useEffectEvent(() => route('Back', 'host'));
+  // Android TV and Tizen, nothing else. NOT `Platform.isTV` alone: on tvOS this
+  // fork implements BackHandler *on top of* the same `menu` event REMOTE_KEYS
+  // already maps to Back, so a claim there routes one press twice. NOT `OS`
+  // alone either: on a phone the back button belongs to the navigator.
+  const onBack = useEffectEvent(() => routeRemoteKey(params, 'Back'));
   useEffect(() => {
-    if (!active || Platform.OS !== 'android' || !Platform.isTV) return;
+    if (!active || !backThroughBackHandler() || !Platform.isTV) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       onBack();
       return true;

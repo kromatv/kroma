@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated } from 'react-native';
+import { Animated, View } from 'react-native';
+import { NAVIGATED } from './control-platform';
 import { ease } from './ease';
 import type { GlideBoxProps, GlideRect } from './glide-box-types';
 
@@ -11,8 +12,7 @@ interface Motion {
   shown: Animated.Value;
 }
 
-/** A box that travels to each rect it is given and fades out on null. */
-export function GlideBox({ rect, durationMs, slideX = false, style }: Readonly<GlideBoxProps>) {
+function TravellingBox({ rect, durationMs, slideX = false, style }: Readonly<GlideBoxProps>) {
   const [motion] = useState<Motion>(() => ({
     left: new Animated.Value(0),
     top: new Animated.Value(0),
@@ -61,3 +61,13 @@ export function GlideBox({ rect, durationMs, slideX = false, style }: Readonly<G
   const vertical = slideX ? { top: box.y, height: box.height } : { top, height };
   return <Animated.View style={[style, { left, width, opacity: shown }, vertical]} />;
 }
+
+function JumpingBox({ rect, style }: Readonly<GlideBoxProps>) {
+  if (!rect) return null;
+  const place = { left: rect.x, top: rect.y, width: rect.width, height: rect.height };
+  return <View style={[style, place]} />;
+}
+
+/** A box that travels to each rect it is given and fades out on null. On a native
+ *  television, where each frame of a layout prop is a commit, it jumps instead. */
+export const GlideBox = NAVIGATED ? JumpingBox : TravellingBox;

@@ -1,5 +1,6 @@
 import { domains } from './api/discover';
 import type { Domains } from './core/client';
+import { createRoute } from './core/http';
 import { createSessionScope } from './core/session';
 import { type ClientControls, createKromaClient, type KromaClient } from './kroma-client';
 
@@ -23,9 +24,29 @@ const BASE = 'http://kroma.test';
 /** The session bearer `recordRequest` signs its calls with. */
 export const BEARER = 'session-bearer';
 
-function requestUrl(input: RequestInfo | URL): string {
+/** The URL a `fetch` call names, whichever of its three spellings it was given. */
+export function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   return input instanceof URL ? input.href : input.url;
+}
+
+const SIGNED_IN_USER = {
+  id: 'u1',
+  email: 'a@b.c',
+  username: 'alice',
+  permissions: ['playback'],
+  createdAt: '2026-01-01T00:00:00Z',
+  hasPin: false,
+};
+
+/** A client that has signed in, and so holds the media ticket its byte URLs
+ * carry. */
+export async function ticketedClient(ticket = 'dev.999.sig') {
+  const { client } = recordingClient(() => ({
+    json: { token: 'tok', mediaTicket: ticket, user: SIGNED_IN_USER },
+  }));
+  await client.accounts.exchangeToken('access-token');
+  return client;
 }
 
 /** A `KromaClient` over a fetch that records every request and answers with
@@ -115,6 +136,7 @@ export function fakeClient(parts: PartialClient = {}): KromaClient {
   );
   const controls: ClientControls = {
     baseUrl: BASE,
+    route: createRoute(BASE),
     session: createSessionScope(),
     locale: undefined,
     setAuthToken: () => undefined,

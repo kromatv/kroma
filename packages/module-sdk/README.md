@@ -52,8 +52,11 @@ A module's frontend is built on its own (`kroma build`) and loaded by the web
 client at runtime. It does not carry React, this package, `@kromatv/ui`,
 `@kromatv/core`, `@kromatv/client` or the query cache: the build rewrites those
 imports to read the host's copy, so one React and one theme live on the page.
-The list is `SHARED_MODULES` here; the host fills `SHARED_GLOBAL` before it
-imports `remoteEntry.js`. Outside this repository this package and the kit ship
+The list is `SHARED_MODULES` here. Before it imports `remoteEntry.js`, the host
+fills `SHARED_GLOBAL` with what the build's `shared.json` (`REMOTE_SHARED`) says
+the entry reads as it loads, and with everything else before a module page, slot
+or panel renders: `ModuleScope` waits for it. A bundle without `shared.json` gets
+everything up front. Outside this repository this package and the kit ship
 as declarations only, built into the public `@kromatv/sdk` package (which a module
 imports the SDK by), so a page can import nothing from them the host does not
 provide. Everything else a module imports is bundled with it.

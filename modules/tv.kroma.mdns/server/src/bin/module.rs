@@ -3,7 +3,7 @@
 
 use kroma_module_runtime::RemoteHost;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve_one(|_host| {}, kroma_mdns::server_module::<RemoteHost>()).await
-}
+kroma_module_runtime::module_main!(
+    |_host: &RemoteHost| axum::Router::new(),
+    vec![kroma_mdns::server_module::<RemoteHost>()],
+);

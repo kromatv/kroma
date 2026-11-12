@@ -1,123 +1,43 @@
-//! Self-provisioning of the `cloudflared` binary the connector runs.
-//!
-//! On first enable the server downloads the official `cloudflared` for its
-//! platform into `<data_dir>/bin` using `curl` (the same HTTP path as the rest of
-//! the server). The download is validated by running `--version` before it is
-//! accepted, and served over HTTPS from Cloudflare's official GitHub releases.
-//!
-//! We track the `latest` release for robustness (a hardcoded tag can 404 as
-//! releases roll); swap `RELEASE` for a versioned URL to pin.
+//! The `cloudflared` the connector runs. The manifest pins each platform's build,
+//! and the host fetches and checks it.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use tokio::process::Command;
+/// The name `permissions.run` and `helpers` declare it under.
+pub(crate) const PROGRAM: &str = "cloudflared";
 
-// `latest/download/<asset>` always resolves to the newest build for that asset
-// name.
-const RELEASE: &str = "https://github.com/cloudflare/cloudflared/releases/latest/download";
+/// Have the host fetch the pinned build.
+#[cfg(not(test))]
+pub(crate) async fn fetch() -> Result<(), String> {
+    use kroma_module_sdk::host::{process, run_blocking};
 
-/// The cached binary's file name.
-pub fn bin_name() -> &'static str {
-    if cfg!(windows) {
-        "cloudflared.exe"
+    run_blocking(|| process::ensure(PROGRAM))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+#[cfg(test)]
+pub(crate) async fn fetch() -> Result<(), String> {
+    Ok(())
+}
+
+/// Where a test puts its stand-in.
+#[cfg(test)]
+pub(crate) fn cached_path(data_dir: &Path) -> std::path::PathBuf {
+    data_dir.join("bin").join(PROGRAM)
+}
+
+#[cfg(test)]
+pub(crate) fn program(data_dir: &Path) -> String {
+    let cached = cached_path(data_dir);
+    if cached.is_file() {
+        cached.to_string_lossy().into_owned()
     } else {
-        "cloudflared"
+        PROGRAM.to_string()
     }
 }
 
-/// Where a self-provisioned copy lives.
-pub fn cached_path(data_dir: &Path) -> PathBuf {
-    data_dir.join("bin").join(bin_name())
-}
-
-// The release asset for this platform + whether it's a gzip tarball (macOS) as
-// opposed to a directly-usable binary (Linux / Windows).
-fn asset() -> Option<(&'static str, bool)> {
-    let a = match (std::env::consts::OS, std::env::consts::ARCH) {
-        ("linux", "x86_64") => ("cloudflared-linux-amd64", false),
-        ("linux", "aarch64") => ("cloudflared-linux-arm64", false),
-        ("linux", "arm") => ("cloudflared-linux-arm", false),
-        ("linux", "x86") => ("cloudflared-linux-386", false),
-        ("macos", "x86_64") => ("cloudflared-darwin-amd64.tgz", true),
-        ("macos", "aarch64") => ("cloudflared-darwin-arm64.tgz", true),
-        ("windows", "x86_64") => ("cloudflared-windows-amd64.exe", false),
-        ("windows", "x86") => ("cloudflared-windows-386.exe", false),
-        _ => return None,
-    };
-    Some(a)
-}
-
-/// Download + install cloudflared into `<data_dir>/bin`, returning its path.
-/// Validates the result by running `--version` (a corrupt/partial download is
-/// rejected and removed).
-pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
-    let (asset, is_tgz) = asset().ok_or_else(|| {
-        format!(
-            "no cloudflared build for {}/{}",
-            std::env::consts::OS,
-            std::env::consts::ARCH
-        )
-    })?;
-    let bindir = data_dir.join("bin");
-    tokio::fs::create_dir_all(&bindir)
-        .await
-        .map_err(|e| format!("create bin dir: {e}"))?;
-    let dest = bindir.join(bin_name());
-    let tmp = bindir.join(format!("cloudflared.download.{}", std::process::id()));
-    let url = format!("{RELEASE}/{asset}");
-
-    let ok = Command::new("curl")
-        .args(["-fSL", "--max-time", "180", "-o"])
-        .arg(&tmp)
-        .arg(&url)
-        .status()
-        .await
-        .map(|s| s.success())
-        .unwrap_or(false);
-    if !ok {
-        let _ = tokio::fs::remove_file(&tmp).await;
-        return Err(format!("download failed: {url}"));
-    }
-
-    if is_tgz {
-        // The macOS asset is a tarball holding a single `cloudflared`; extract it
-        // straight into bindir (== dest for macOS).
-        let extracted = Command::new("tar")
-            .arg("-xzf")
-            .arg(&tmp)
-            .arg("-C")
-            .arg(&bindir)
-            .arg("cloudflared")
-            .status()
-            .await
-            .map(|s| s.success())
-            .unwrap_or(false);
-        let _ = tokio::fs::remove_file(&tmp).await;
-        if !extracted {
-            return Err("failed to extract cloudflared archive".to_string());
-        }
-    } else {
-        tokio::fs::rename(&tmp, &dest)
-            .await
-            .map_err(|e| format!("install cloudflared: {e}"))?;
-    }
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = tokio::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700)).await;
-    }
-
-    // Validate: it must actually run, else discard the (partial/corrupt) file.
-    let runs = Command::new(&dest)
-        .arg("--version")
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false);
-    if !runs {
-        let _ = tokio::fs::remove_file(&dest).await;
-        return Err("downloaded cloudflared is not runnable".to_string());
-    }
-    Ok(dest)
+#[cfg(not(test))]
+pub(crate) fn program(_data_dir: &Path) -> String {
+    PROGRAM.to_string()
 }

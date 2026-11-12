@@ -22,7 +22,7 @@ pub struct DeviceInfo {
 }
 
 fn ecp() -> Fetch {
-    Fetch::new().max_time(TIMEOUT_SECS)
+    Fetch::new().purpose("roku").max_time(TIMEOUT_SECS)
 }
 
 pub fn device_info(address: DeviceAddress) -> Result<DeviceInfo> {

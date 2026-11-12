@@ -10,6 +10,7 @@ export default defineConfig({
       alias: { '#web': './src' },
       dedupe: ['react-call'],
       start: { spa: { enabled: true } },
+      precompress: true,
     }),
     kromaModule(),
     standaloneScript(swScript),

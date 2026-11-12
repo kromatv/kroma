@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -8,7 +9,6 @@ use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::infra::metadata::Target;
 use crate::model::{MediaItem, Show};
-use crate::services::scan::ScanData;
 use crate::services::activity::{self, Shared as Activity};
 use crate::services::search::SearchEngine;
 use crate::state::SharedState;
@@ -40,20 +40,20 @@ pub struct EnrichSummary {
 /// matched and kept its art is left alone, and so is a show whose episodes the
 /// scan did not move. The sweep that does revisit everything is the nightly
 /// `pipeline.metadata` stage.
-pub fn maybe_spawn(state: &SharedState, scanned: &ScanData) {
+pub fn maybe_spawn(state: &SharedState, changed_shows: &HashSet<String>) {
     let Some(api_key) = state.config.tmdb_api_key.clone() else {
         return;
     };
     if !state.config.tmdb_enrich {
         return;
     }
-    let mut jobs = build_jobs(
-        &scanned.items,
-        &scanned.shows,
-        &load_pins(&state.db),
-        &state.config.data_dir,
-    );
-    jobs.retain(|job| job.fetches(&scanned.changed_shows));
+    let jobs = match jobs_after_scan(state, changed_shows) {
+        Ok(jobs) => jobs,
+        Err(e) => {
+            warn!(error = %e, "could not read the catalog; enrichment waits for the nightly stage");
+            return;
+        }
+    };
     if jobs.is_empty() {
         return;
     }
@@ -66,6 +66,17 @@ pub fn maybe_spawn(state: &SharedState, scanned: &ScanData) {
         state.search.clone(),
         jobs,
     );
+}
+
+pub(super) fn jobs_after_scan(
+    state: &SharedState,
+    changed_shows: &HashSet<String>,
+) -> anyhow::Result<Vec<Job>> {
+    let items = db::list_items(&state.db, None)?;
+    let shows = db::list_shows(&state.db, None)?;
+    let mut jobs = build_jobs(&items, &shows, &load_pins(&state.db), &state.config.data_dir);
+    jobs.retain(|job| job.fetches(changed_shows));
+    Ok(jobs)
 }
 
 pub(super) fn spawn(eng: Engine, activity: Activity, search: Arc<SearchEngine>, jobs: Vec<Job>) {

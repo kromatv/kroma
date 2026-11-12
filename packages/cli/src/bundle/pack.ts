@@ -15,13 +15,11 @@ import { deterministicTar } from './tar';
 
 export interface PackInput {
   project: Project;
-  /** The built sidecar, or `null` for a library module. */
+  /** The built component (`<bin>.wasm`), or `null` for a library module. */
   binPath: string | null;
   /** The built frontend (`remoteEntry.js` + chunks), or `null` when there is none. */
   feDir: string | null;
   outDir: string;
-  /** The cross-compile triple, which suffixes a sidecar bundle's name. */
-  target: string | null;
 }
 
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
@@ -29,22 +27,24 @@ const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest(
 const zstd = (bytes: Uint8Array, level: number) =>
   zstdCompressSync(bytes, { params: { [constants.ZSTD_c_compressionLevel]: level } });
 
-/** `<id>.kmod`, or `<id>-<triple>.kmod` for a sidecar built for one platform. */
-export function bundleName(id: string, hasBinary: boolean, target: string | null): string {
-  const suffix = hasBinary && target ? `-${target}` : '';
-  return `${id}${suffix}.kmod`;
+/** `<id>.kmod`: one bundle per module, the same on every platform. */
+export function bundleName(id: string): string {
+  return `${id}.kmod`;
 }
 
 function stage(input: PackInput): { staging: string; entries: string[] } {
   const { project, binPath, feDir } = input;
+  if (binPath && !binPath.endsWith('.wasm')) {
+    throw new Error(`${project.manifest.id}: ${binPath} is not a WebAssembly component`);
+  }
   const staging = join(project.dir, '.bundle');
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(staging, { recursive: true });
   const entries = ['module.json'];
   copyFileSync(join(project.dir, 'module.json'), join(staging, 'module.json'));
   if (binPath) {
-    copyFileSync(binPath, join(staging, 'module'));
-    entries.push('module');
+    copyFileSync(binPath, join(staging, 'module.wasm'));
+    entries.push('module.wasm');
   }
   for (const icon of ['icon.svg', 'icon.png']) {
     if (existsSync(join(project.dir, icon))) {
@@ -55,6 +55,14 @@ function stage(input: PackInput): { staging: string; entries: string[] } {
   if (feDir && existsSync(feDir)) {
     cpSync(feDir, join(staging, 'fe'), { recursive: true });
     entries.push('fe');
+  }
+  const catalogs = join(project.dir, 'locales');
+  if (existsSync(catalogs)) {
+    cpSync(catalogs, join(staging, 'locales'), {
+      recursive: true,
+      filter: (path) => path === catalogs || path.endsWith('.json'),
+    });
+    entries.push('locales');
   }
   return { staging, entries };
 }
@@ -67,15 +75,15 @@ export interface Packed {
 }
 
 /**
- * Stages a module's bundle and writes `<out>/<file>.kmod` beside a `.sha256`
+ * Stages a module's bundle and writes `<out>/<id>.kmod` beside a `.sha256`
  * sidecar. The tar is deterministic, so an unchanged module hashes to what is
  * on disk already and skips the slow level-19 recompression.
  */
 export function packBundle(input: PackInput): Packed {
-  const { project, outDir, target, binPath } = input;
+  const { project, outDir } = input;
   const { staging, entries } = stage(input);
   mkdirSync(outDir, { recursive: true });
-  const file = bundleName(project.manifest.id, binPath !== null, target);
+  const file = bundleName(project.manifest.id);
   const kmod = join(outDir, file);
   const tar = deterministicTar(staging, entries);
   rmSync(staging, { recursive: true, force: true });
@@ -94,10 +102,10 @@ export function packBundle(input: PackInput): Packed {
 /** A quick, uncompressed-ish bundle for the dev loop: the same tar, zstd at a
  *  level that costs milliseconds rather than seconds. */
 export function packForDev(input: PackInput): Packed {
-  const { project, outDir, target, binPath } = input;
+  const { project, outDir } = input;
   const { staging, entries } = stage(input);
   mkdirSync(outDir, { recursive: true });
-  const file = bundleName(project.manifest.id, binPath !== null, target);
+  const file = bundleName(project.manifest.id);
   const kmod = join(outDir, file);
   const tar = deterministicTar(staging, entries);
   rmSync(staging, { recursive: true, force: true });

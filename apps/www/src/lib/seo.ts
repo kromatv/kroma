@@ -8,6 +8,7 @@ export interface SeoInput {
   description?: string;
   path?: string;
   image?: string;
+  markdown?: string;
   type?: 'website' | 'article';
 }
 
@@ -23,7 +24,15 @@ const ogCard: Record<Lang, string> = { en: '/og.png', fr: '/og.fr.png' };
  *  A page passes its locale and the bits it changes; the brand suffix, Open
  *  Graph, Twitter card, canonical URL and hreflang alternates are filled in
  *  here. */
-export function seo({ lang, title, description, path = '/', image, type = 'website' }: SeoInput) {
+export function seo({
+  lang,
+  title,
+  description,
+  path = '/',
+  image,
+  markdown,
+  type = 'website',
+}: SeoInput) {
   // Straight from the catalog for the locale being rendered: a per-language
   // ternary here would silently serve English to a third language, in the
   // two strings a search result actually shows.
@@ -67,6 +76,9 @@ export function seo({ lang, title, description, path = '/', image, type = 'websi
         hrefLang: 'x-default',
         href: `${site.url}${localizePath(path, defaultLocale)}`,
       },
+      ...(markdown
+        ? [{ rel: 'alternate', type: 'text/markdown', href: `${site.url}${markdown}` }]
+        : []),
     ],
   };
 }

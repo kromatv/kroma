@@ -36,14 +36,15 @@ struct AdminModule {
     config_values: BTreeMap<String, Value>,
     removable: bool,
     /// Where this module came from, and whether a local build has replaced its
-    /// binary since. `None` for a compile-time module (it came from the server).
+    /// component since. `None` for a compile-time module (it came from the server).
     #[serde(skip_serializing_if = "Option::is_none")]
     origin: Option<kroma_module_supervisor::Origin>,
-    /// A sidecar the supervisor is running right now.
+    /// A module the supervisor is running right now.
     running: bool,
-    /// This module ships a process at all. `false` for a library module, whose
-    /// code is co-linked into another sidecar: it is never "running", and
-    /// reporting it as stopped would be a false alarm.
+    /// This module ships code to run at all, a native build that will not start
+    /// included. `false` for a library module, whose code is co-linked into
+    /// another module: it is never "running", and reporting it as stopped would
+    /// be a false alarm.
     has_sidecar: bool,
     /// Points this module `consumes` that no ENABLED module answers, as `point` or
     /// `point#id`. A module with entries here is installed, running and inert,
@@ -83,8 +84,9 @@ async fn list_modules(
                 })
                 .collect();
             let origin = removable.then(|| supervisor.origin(&m.id));
-            let running = supervisor.port_of(&m.id).is_some();
-            let has_sidecar = removable && supervisor.has_binary(&m.id);
+            let running = supervisor.is_running(&m.id);
+            let has_sidecar =
+                removable && (supervisor.has_component(&m.id) || supervisor.is_native_build(&m.id));
             AdminModule {
                 manifest: m,
                 enabled,
@@ -123,19 +125,19 @@ async fn set_enabled(
             module.on_disable(state.clone()).await;
         }
     }
-    // A runtime-installed sidecar follows the toggle too: its process comes up
-    // or goes down now, not at the next server restart. A failed start is
+    // A runtime-installed module follows the toggle too: it comes up or goes
+    // down now, not at the next server restart. A failed start is
     // reported but does not undo the flag: the admin asked for "enabled".
     let mut warning = None;
     if sup.installed_ids().iter().any(|installed| installed == &id) {
         let sup = sup.clone();
-        let sidecar_id = id.clone();
+        let module_id = id.clone();
         let enabled = body.enabled;
         let outcome = tokio::task::spawn_blocking(move || {
             if enabled {
-                sup.start_installed(&sidecar_id)
+                sup.start_installed(&module_id)
             } else {
-                sup.stop(&sidecar_id);
+                sup.stop(&module_id);
                 Ok(())
             }
         })
@@ -178,9 +180,9 @@ fn bad(msg: &str) -> Response {
     (StatusCode::BAD_REQUEST, msg.to_string()).into_response()
 }
 
-/// `POST /admin/modules/{id}/restart`: stop the sidecar and start it again from
-/// what is currently on disk. This is how a locally rebuilt binary is picked up
-/// without touching the enable toggle, and how a crashed sidecar is revived.
+/// `POST /admin/modules/{id}/restart`: stop the module and start it again from
+/// what is currently on disk. This is how a locally rebuilt component is picked
+/// up without touching the enable toggle.
 async fn restart_module(
     State(state): State<SharedState>,
     Extension(supervisor): Extension<Arc<Supervisor>>,
@@ -200,7 +202,7 @@ async fn restart_module(
     .map_err(|_| bad("restart task panicked"))?;
     match started {
         Ok(id) => {
-            let running = supervisor.port_of(&id).is_some();
+            let running = supervisor.is_running(&id);
             Ok(Json(json!({ "restarted": true, "running": running })).into_response())
         }
         Err(e) => Err(bad(&format!("restart failed: {e:#}"))),
@@ -212,7 +214,7 @@ async fn restart_module(
 ///
 /// Only possible when that source is refetchable: a module installed by
 /// uploading a `.kmod` has no URL to go back to, and says so rather than
-/// pretending. Use restart when the binary is already the one you want.
+/// pretending. Use restart when the component is already the one you want.
 async fn reinstall_module(
     State(state): State<SharedState>,
     Extension(supervisor): Extension<Arc<Supervisor>>,
@@ -220,8 +222,8 @@ async fn reinstall_module(
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
-    // Unpacking spawns the module when it ships a binary, which would start a
-    // sidecar the operator has switched off.
+    // Unpacking starts the module when it ships a component, which would start
+    // a module the operator has switched off.
     if !kroma_engine::modules::module_enabled(&state.settings, &id) {
         return Err(bad("module is disabled"));
     }
@@ -231,7 +233,7 @@ async fn reinstall_module(
     let installed = super::store::install::reinstall(&state, &supervisor, &id)
         .await
         .map_err(|e| bad(&format!("reinstall failed: {e:#}")))?;
-    let running = supervisor.port_of(&id).is_some();
+    let running = supervisor.is_running(&id);
     Ok(
         Json(json!({ "reinstalled": true, "running": running, "module": installed }))
             .into_response(),

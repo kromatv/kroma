@@ -1,6 +1,6 @@
 import type { ItemId, SectionItem } from '@kromatv/client/media';
 import { genreLabels, posterColors } from '@kromatv/core';
-import { useAiSuggest, useT } from '@kromatv/ui';
+import { useAiSuggest, useEstimatedProgress, useT } from '@kromatv/ui';
 import {
   Box,
   MediaCard,
@@ -42,7 +42,7 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: ItemId }>) {
   const t = useT();
   const client = useClient();
   const { go } = useNav();
-  const { section, pending, progress } = useAiSuggest(client, id);
+  const { section, pending } = useAiSuggest(client, id);
 
   const card = (e: SectionItem) => {
     if (e.type === 'show') {
@@ -101,11 +101,25 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: ItemId }>) {
       <Box mt={40} gap={16}>
         <Text style={s.label}>{t('content.aiSuggestions')}</Text>
         <Box row align="center" gap={16}>
-          <ProgressRing value={progress} size={26} thickness={3} track="text/15" fill="text/70" />
+          <PendingRing />
           <Text color="textDim">{t('content.aiSuggestionsLoading')}</Text>
         </Box>
       </Box>
     );
   }
   return null;
+}
+
+function PendingRing() {
+  const progress = useEstimatedProgress();
+  return (
+    <ProgressRing
+      value={progress}
+      size={26}
+      thickness={3}
+      track="text/15"
+      fill="text/70"
+      eased={false}
+    />
+  );
 }

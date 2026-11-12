@@ -34,58 +34,31 @@ KROMA gives ffmpeg) against it, and publishes a `vendor-ffmpeg-kroma-*` release.
 Moving `ffmpeg.lock` onto a new one is a PR. A feature that needs a codec or a
 filter the recipe leaves out adds it to `configure.args` and a line to `check.sh`. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
 
-## Install via the package source (recommended, auto-updates)
+## Installing it
 
-KROMA runs a **dynamic package source** (SynoCommunity-style: a Cloudflare Worker,
-`apps/packages`) that answers DSM directly and lists EVERY
-release, both channels, live from the GitHub Releases API. Nothing is rebuilt
-or redeployed when a release ships. The `.spk` itself is hosted on the GitHub
-Release (GitHub's CDN).
+How a user installs the package, grants the `kroma` user access to their
+shared folders and updates it is in
+[Install KROMA on a Synology NAS](../../docs/setup/synology.md). Facts that
+guide relies on, which the package below has to keep true:
 
-1. **Package Center → Settings → Package Sources → Add**
-   - Name: `KROMA`
-   - Location: the bare worker URL (e.g. `https://kroma-packages.<account>.workers.dev/`)
-2. **Settings → General → Trust Level → Any publisher** (KROMA is not Synology-signed).
-3. Open the **Community** tab, install **KROMA**, and follow the wizard (below).
+- The package source is a Cloudflare Worker (`apps/packages`, served at
+  `https://packages.kroma.tv`) that lists every release of both channels live
+  from the GitHub Releases API. Nothing is rebuilt or redeployed when a release
+  ships, and the `.spk` itself stays on the GitHub Release. Opening the URL in a
+  browser shows a landing page with every version. With *Settings > General >
+  beta packages* on, DSM rides whichever channel is newest: a canary uses a 4th
+  feature segment, so it outranks its stable base until the next tag.
+- DSM 7 has no trust level setting: Package Center warns about any package
+  Synology did not sign, and the user confirms. DSM 7 also never runs an
+  unsigned package as root, so `conf/privilege` cannot make the package read
+  every share by itself.
+- The package runs as the `kroma` user (`"run-as": "package"`), which has no
+  access to shared folders until the user grants it in Control Panel.
+- The wizard writes `var/kroma.conf`, which the service script sources. A
+  variable added there by hand needs `export` to reach the server.
 
-New releases then show an **Update** button automatically. Opening the same URL
-in a browser shows a landing page listing every published version with download
-links.
-
-**Canary channel (optional):** every push to `main` publishes a canary `.spk`
-to the rolling `canary` prerelease. Enable *Settings → General → beta packages*
-on the SAME source and DSM rides whichever channel is newest (a canary uses a
-4th feature segment, so it outranks its stable base until the next tag).
-
-The dynamic worker is the only package source now (the old GitHub Pages static
-catalogs were retired). To self-host a static catalog anyway, the generator
-still exists: `bun run --filter @kromatv/synology-repo gen` (see that package's
-README).
-
-## Install on the NAS (manual `.spk`)
-
-1. **Package Center → Manual Install →** pick the `.spk`. (It's unsigned/3rd-party,
-   so first enable *Package Center → Settings → Trust Level → Any publisher*.)
-2. The install **wizard** asks for your **Movies folder(s)** and **TV Shows
-   folder(s)** (absolute NAS paths, e.g. `/volume1/video/Films`; colon- or
-   semicolon-separated for several, and leave a field empty if you don't have
-   that type) and the **port** (default `4040`). The wizard can't browse folders,
-   so type the paths here you'll be able to browse your NAS and reorganize
-   libraries (add folders, change each library's type) in the web admin under
-   **Bibliothèques** after install.
-3. Open `http://<nas-ip>:4040/`.
-
-### One manual permission step (required)
-The package runs as its own least-privilege user, which can't read your shares by
-default. Grant it read access to the media folder:
-
-**Control Panel → Shared Folder → (your media share) → Edit → Permissions →**
-set the system user **`kroma`** (or `sc-kroma`) to **Read-only**, then restart the
-package.
-
-> Prefer zero setup over least-privilege? Change `spk/conf/privilege` to
-> `{ "defaults": { "run-as": "root" } }` and rebuild it then reads everything
-> without granting permissions (less safe; your call for a personal NAS).
+The generator for a static catalog still exists, for anyone who wants to host
+one: `bun run --filter @kromatv/synology-repo gen` (see that package's README).
 
 ## Hardware transcoding (Intel models)
 
@@ -124,14 +97,11 @@ picks it up from `/var/packages/synocli-videodriver/target/lib` on restart.
 ## Notes
 - **x86_64 only** for now (covers DS2xx+/DS9xx+/DS16xx+ etc.). ARM models need an
   `aarch64-musl` build ask and I'll add the target.
-- **Libraries:** the wizard's Movies/TV Shows fields just seed your first two
-  libraries. Everything else lives in the **web admin > Bibliothèques**, where a
-  folder picker lets you add more folders and set each library's type (Movies or
-  TV Shows) without editing paths by hand.
+- **Libraries:** the wizard's Movies/TV Shows fields only seed the first two
+  libraries. Everything else lives in the web admin under **Sources**.
 - Data (SQLite DB, image cache, logs) lives in `/var/packages/kroma/var/data` by
   default (or the optional data folder you chose in the wizard) and survives
   upgrades.
-- The TV apps (Tizen/webOS) connect to this server over the LAN via mDNS, unchanged.
 
 ## Publishing a release (and how updates work)
 

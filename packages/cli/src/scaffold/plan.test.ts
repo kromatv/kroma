@@ -169,7 +169,7 @@ describe('templateVars', () => {
 });
 
 describe('manifestFor', () => {
-  it('declares a remote entry for a module with a page and none for a sidecar', () => {
+  it('declares a remote entry for a module with a page and none for one without', () => {
     expect(manifestFor(answers(), V).feRemote).toEqual({ module: './remoteEntry.js' });
     expect(manifestFor(answers({ kind: 'ui' }), V).feRemote).toEqual({
       module: './remoteEntry.js',
@@ -189,7 +189,7 @@ describe('manifestFor', () => {
 });
 
 describe('packageJsonFor', () => {
-  it('is nothing for a sidecar, which has no frontend to install', () => {
+  it('is nothing for a module with no page, which has no frontend to install', () => {
     expect(packageJsonFor(answers({ kind: 'server' }), V)).toBeNull();
   });
 
@@ -219,7 +219,7 @@ describe('packageJsonFor', () => {
 });
 
 describe('tsconfigFor', () => {
-  it('is nothing for a sidecar', () => {
+  it('is nothing for a module with no page', () => {
     expect(tsconfigFor(answers({ kind: 'server' }), 0)).toBeNull();
   });
 

@@ -1,24 +1,31 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { buildSidecar, cargoBuild, targetDir } from './cargo';
+import { buildComponent, cargoBuild, COMPONENT_TARGET, targetDir } from './cargo';
 import type { Project } from './project';
+
+const exec = vi.hoisted(() => vi.fn());
+
+vi.mock('./exec', () => ({ exec }));
 
 const work = mkdtempSync(join(tmpdir(), 'kroma-cargo-'));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  exec.mockReset();
+});
 
 const project = (dir: string): Project => ({
   dir,
-  manifest: { schemaVersion: 2, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' },
+  manifest: { schemaVersion: 3, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' },
   server: null,
   ui: null,
 });
 
-const withCrate = (dir: string): Project => ({
+const withCrate = (dir: string, bin: string | null = 'module'): Project => ({
   ...project(dir),
-  server: { dir: join(dir, 'server'), crate: 'kroma-notes', bin: 'module', features: [] },
+  server: { dir: join(dir, 'server'), crate: 'kroma-notes', bin, features: [] },
 });
 
 describe('targetDir', () => {
@@ -47,14 +54,8 @@ describe('targetDir', () => {
 });
 
 describe('cargoBuild', () => {
-  it('names the features bare and leaves the binary under the triple', () => {
-    const built = cargoBuild(
-      'module',
-      ['local', 'gpu'],
-      'aarch64-apple-darwin',
-      'release-kmod',
-      '/target',
-    );
+  it('names the features bare and builds for the component target', () => {
+    const built = cargoBuild('module', ['local', 'gpu'], 'release-kmod', '/target');
 
     expect(built.args).toEqual([
       'build',
@@ -65,52 +66,70 @@ describe('cargoBuild', () => {
       '--features',
       'local,gpu',
       '--target',
-      'aarch64-apple-darwin',
+      'wasm32-wasip2',
     ]);
-    expect(built.binPath).toBe(join('/target', 'aarch64-apple-darwin', 'release-kmod', 'module'));
+    expect(built.binPath).toBe(join('/target', COMPONENT_TARGET, 'release-kmod', 'module.wasm'));
   });
 
-  it('builds a dev sidecar with nothing but the binary, into debug', () => {
-    const built = cargoBuild('module', [], null, 'dev', '/target');
+  it('builds a dev component with nothing but the binary and the target, into debug', () => {
+    const built = cargoBuild('module', [], 'dev', '/target');
 
-    expect(built.args).toEqual(['build', '--bin', 'module']);
-    expect(built.binPath).toBe(join('/target', 'debug', 'module'));
+    expect(built.args).toEqual(['build', '--bin', 'module', '--target', 'wasm32-wasip2']);
+    expect(built.binPath).toBe(join('/target', COMPONENT_TARGET, 'debug', 'module.wasm'));
   });
 });
 
-describe('buildSidecar', () => {
-  it('builds nothing for a library module, which spawns no process', async () => {
-    const options = { target: null, profile: 'dev' } as const;
-    const library = { ...withCrate('/work'), server: { ...withCrate('/work').server, bin: null } };
+describe('buildComponent', () => {
+  it('builds nothing for a library module, which runs nothing', async () => {
+    const library = withCrate('/work', null);
+    library.manifest.library = true;
 
-    await expect(buildSidecar(library as Project, '/target', options)).resolves.toBeNull();
+    await expect(buildComponent(library, '/target', 'dev')).resolves.toBeNull();
+    expect(exec).not.toHaveBeenCalled();
   });
 
   it('builds nothing for a module with no server crate', async () => {
-    const options = { target: null, profile: 'dev' } as const;
-
-    await expect(buildSidecar(project('/work'), '/target', options)).resolves.toBeNull();
+    await expect(buildComponent(project('/work'), '/target', 'dev')).resolves.toBeNull();
+    expect(exec).not.toHaveBeenCalled();
   });
 
-  it('locates a binary built out of band instead of building it again', async () => {
-    const dir = join(work, 'prebuilt');
-    mkdirSync(join(dir, 'debug'), { recursive: true });
-    writeFileSync(join(dir, 'debug', 'module'), 'ELF');
+  it('refuses a crate with no binary in a module that is not a library, naming it', async () => {
+    await expect(buildComponent(withCrate('/work', null), '/target', 'dev')).rejects.toThrow(
+      /tv\.kroma\.notes: server\/Cargo\.toml declares no \[\[bin\]\]/,
+    );
+  });
 
-    const built = await buildSidecar(withCrate('/work'), dir, {
-      target: null,
-      profile: 'dev',
-      skipBuild: true,
+  it('builds the component in the crate and hands back the .wasm cargo left', async () => {
+    const wasm = join(work, COMPONENT_TARGET, 'release-kmod', 'module.wasm');
+    exec.mockImplementation(async () => {
+      mkdirSync(dirname(wasm), { recursive: true });
+      writeFileSync(wasm, '\0asm');
+      return { exitCode: 0, stdout: '', stderr: '' };
     });
 
-    expect(built).toBe(join(dir, 'debug', 'module'));
+    const built = await buildComponent(withCrate('/work'), work, 'release-kmod');
+
+    expect(built).toBe(wasm);
+    expect(exec).toHaveBeenCalledWith(
+      'cargo',
+      cargoBuild('module', [], 'release-kmod', work).args,
+      expect.objectContaining({ cwd: join('/work', 'server') }),
+    );
   });
 
-  it('says where the prebuilt binary was meant to be when it is missing', async () => {
-    const options = { target: null, profile: 'dev', skipBuild: true } as const;
+  it('says which module cargo failed to build', async () => {
+    exec.mockResolvedValue({ exitCode: 101 });
 
-    await expect(buildSidecar(withCrate('/work'), join(work, 'empty'), options)).rejects.toThrow(
-      /KMOD_SKIP_BUILD is set but there is no prebuilt binary/,
+    await expect(buildComponent(withCrate('/work'), work, 'dev')).rejects.toThrow(
+      'tv.kroma.notes: cargo build failed',
+    );
+  });
+
+  it('names the module whose build left no component where cargo puts one', async () => {
+    exec.mockResolvedValue({ exitCode: 0 });
+
+    await expect(buildComponent(withCrate('/work'), work, 'dev')).rejects.toThrow(
+      `tv.kroma.notes: cargo built no component at ${join(work, COMPONENT_TARGET, 'debug', 'module.wasm')}`,
     );
   });
 });

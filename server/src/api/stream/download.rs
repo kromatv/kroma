@@ -7,6 +7,7 @@ use axum::body::Body;
 use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::Response;
+use kroma_media::input;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
@@ -71,8 +72,8 @@ pub async fn download_item(
         (Some(_), None) => false,
     };
     let mut cmd = tokio::process::Command::new("ffmpeg");
-    cmd.args(["-v", "error", "-nostdin", "-i"])
-        .arg(&abs)
+    cmd.args(["-v", "error", "-nostdin"])
+        .args(input::file(&abs))
         .args(["-map", "0:v:0"]);
     if video_copy {
         cmd.args(["-c:v", "copy"]);

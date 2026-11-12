@@ -104,6 +104,34 @@ describe('boot', () => {
     expect(client.setAuthToken).toHaveBeenCalledWith('session-1');
   });
 
+  it('adopts the exchange the router already settled instead of asking again', async () => {
+    saveSession(stored());
+    const client = sessionClient();
+    await client.session.sharedTokenExchange(async () => ({ token: 'session-0', user: user() }));
+    client.session.setSessionToken('session-0');
+
+    const { result } = renderHook(() => useAuthSession(client));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+
+    expect(client.accounts.exchangeToken).not.toHaveBeenCalled();
+    expect(client.setAuthToken).toHaveBeenCalledWith('session-0');
+    expect(result.current.user?.id).toBe('u1');
+  });
+
+  it('asks again when the settled exchange signed in somebody else', async () => {
+    saveSession(stored());
+    const client = sessionClient();
+    const other = user({ id: UserId.parse('u2') });
+    await client.session.sharedTokenExchange(async () => ({ token: 'session-0', user: other }));
+    client.session.setSessionToken('session-0');
+
+    const { result } = renderHook(() => useAuthSession(client));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+
+    expect(client.accounts.exchangeToken).toHaveBeenCalledWith('access-1');
+    expect(result.current.user?.id).toBe('u1');
+  });
+
   // The account stays REMEMBERED: a PIN profile, or a token that needs a fresh
   // login, should land on the picker rather than be forgotten.
   it('drops to the picker when the boot exchange fails', async () => {

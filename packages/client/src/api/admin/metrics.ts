@@ -130,6 +130,7 @@ export const LiveTranscode = z.object({
   targetWidth: z.number().nullish(),
   targetHeight: z.number().nullish(),
   anchorSecs: z.number(),
+  startSecs: z.number().nullish(),
   startedAt: z.number(),
   speed: z.number(),
   fps: z.number(),

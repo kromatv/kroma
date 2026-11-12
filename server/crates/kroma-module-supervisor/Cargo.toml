@@ -3,7 +3,7 @@ name = "kroma-module-supervisor"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "The core side of the out-of-process module system: spawn + supervise each installed module binary, reverse-proxy its HTTP, and serve the /api/_host/* callback API modules use for settings / events / jobs."
+description = "The core side of the module system: run each installed module, a WebAssembly component, inside the server on a socket of its own, reverse-proxy its HTTP, and serve the /api/_host/* callback API modules use for settings / events / jobs."
 license.workspace = true
 
 [dependencies]
@@ -19,16 +19,17 @@ kroma-db = { workspace = true }
 rusqlite = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
-# Async client: reverse-proxy to module processes on localhost + fetch .kmod /
+# Async client: reverse-proxy to module sockets + fetch .kmod /
 # catalog.json from a registry over https (rustls keeps the musl build C-free).
 reqwest = { workspace = true, features = ["json", "rustls-tls", "stream"] }
+kroma-http = { workspace = true }
 futures-util = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 rand = "0.10"
-# Unpacking installed .kmod bundles (gzip tar of module.json + module + fe/ + icon).
+# Unpacking installed .kmod bundles (a tar of module.json + module.wasm + fe/ + icon).
 tar = "0.4"
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 # Pure-Rust zstd decoder for the (smaller) zstd `.kmod` bundles. Decompress-only +
@@ -39,9 +40,14 @@ ruzstd = "0.9"
 sha2 = { workspace = true }
 hex = { workspace = true }
 
-# SIGTERM to a sidecar so it can run its shutdown hooks before being killed.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+kroma-egress = { workspace = true }
+kroma-wasm-host = { path = "../kroma-wasm-host" }
+kroma-media = { workspace = true }
+kroma-sqlite = { workspace = true }
+kroma-module-wire = { workspace = true }
+mdns-sd = "0.21"
 
 [dev-dependencies]
 # The install/stop tests scratch in a directory that removes itself.

@@ -17,8 +17,12 @@ kroma-i18n = { workspace = true }
 semver = "1"
 # `storage` unconditionally: the engine IS the core database.
 kroma-module-host = { workspace = true, features = ["storage"] }
+kroma-module-manifest = { workspace = true }
 kroma-http = { workspace = true }
 kroma-push = { workspace = true }
+# The request and monitoring workflows and the TMDB lookups under them, re-exported
+# under `services::` and `infra::metadata`. A module runs the same code.
+kroma-requests = { workspace = true }
 # ffprobe, the ffmpeg budget and the HLS engine, re-exported under `infra::`.
 kroma-media = { workspace = true }
 # The heavy/optional adapters (embeddings, whisper transcription, mDNS) are no
@@ -45,10 +49,14 @@ walkdir = { workspace = true }
 jwalk = { workspace = true }
 chacha20poly1305 = { workspace = true }
 zip = { workspace = true }
+tar = "0.4"
+lzma-rust2 = { version = "0.24", default-features = false, features = ["std", "xz"] }
 notify = { workspace = true }
 sysinfo = { workspace = true }
 tantivy = { workspace = true }
 rusty-chromaprint = { workspace = true }
+# The interfaces and addresses this machine holds, for the direct LAN route.
+if-addrs = "0.15"
 
 [dev-dependencies]
 # The shared HostCtx doubles: `testing::Recording` taps a real app host's bus,
@@ -56,7 +64,11 @@ rusty-chromaprint = { workspace = true }
 kroma-module-host = { workspace = true, features = ["testing"] }
 # `db::testing::temp_pool`, the throwaway database the service tests run against.
 kroma-db = { workspace = true, features = ["testing"] }
+# `testing::FakeTmdb`, and the base override it needs.
+kroma-requests = { workspace = true, features = ["testing"] }
 kroma-testing = { workspace = true }
 # `test-util` gives the runtime a clock a test can advance, so the loops that
 # sleep between sweeps are reachable without waiting out their interval.
 tokio = { workspace = true, features = ["test-util"] }
+# The encoder builds the xz payload of a test server package.
+lzma-rust2 = { version = "0.24", default-features = false, features = ["std", "xz", "encoder"] }

@@ -46,7 +46,7 @@ And one it cannot even see, which is why it is configuration rather than a
 limit: a reverse proxy the server has not been told about. Its requests arrive
 from its own address, the forwarding headers are discarded, and every client
 looks like that one address, so the rule answers yes for every pair. Name it in
-`KROMA_TRUSTED_PROXIES` (see [server/README.md](../server/README.md)); a proxy
+`KROMA_TRUSTED_PROXIES` (see [network](setup/network.md#behind-your-own-reverse-proxy)); a proxy
 on the same host is loopback and needs nothing. Note that a beacon heard on the
 link is unaffected either way, since it never asks the server where anyone is.
 
@@ -74,7 +74,7 @@ proof can only push *their own* account onto a television, never take one.
 | mobile (iOS, Android) | no | yes | `@kromatv/lan-beacon` |
 | web, tv-web, desktop | no | no | server source only |
 | tizen | cannot | no | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
-| roku (`tv.kroma.roku`) | no | no | Quick Connect only: the sidecar that sideloads the channel hands it the server's address at launch |
+| roku (`tv.kroma.roku`) | no | no | Quick Connect only: the module that sideloads the channel hands it the server's address at launch |
 
 A browser has no DNS-SD API, so neither television shell can raise the record
 from its UI. webOS can host one anyway: it lets an app ship a **JS Service**

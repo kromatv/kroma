@@ -1,41 +1,15 @@
-//! The `vpn-proxy` point this module answers, and the `download-vpn` point it
-//! calls.
-//!
-//! Two points, pointing opposite ways: a consumer routes its traffic through the
-//! bridge this module runs, and this module's own admin page reads the
-//! kill-switch state off whichever download engine is running. Neither end names
-//! the other's crate, and the structs below are this module's own.
+//! The `download-vpn` point this module calls: its admin page reads the
+//! kill-switch state off whichever download engine is running. Neither end
+//! names the other's crate, and the structs below are this module's own.
 
-use axum::extract::State;
-use axum::routing::post;
-use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::json;
 
 use kroma_module_sdk::host::{call_raw, pinned_resolver, HostCtx};
 
-/// The point this module answers: the local SOCKS5 URL of its WireGuard bridge.
-pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
-
 /// The download engine's kill-switch surface, which this module's admin page
 /// reads and restarts. Answered by whichever module runs downloads.
 pub const DOWNLOAD_VPN: &str = "tv.kroma.torrents/vpn";
-
-/// The routes this module mounts for [`VPN_PROXY`].
-pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
-    Router::new().route("/_port/tv.kroma.vpn/proxy/url", post(url::<S>))
-}
-
-async fn url<S: HostCtx + Clone + Send + Sync + 'static>(
-    State(host): State<S>,
-) -> Json<Option<String>> {
-    Json(
-        tokio::task::spawn_blocking(move || crate::proxy_url(&host))
-            .await
-            .ok()
-            .flatten(),
-    )
-}
 
 /// What the download engine reports about the tunnel, as this module's admin card
 /// draws it. Tolerant: the engine is a separately released module, so a field it

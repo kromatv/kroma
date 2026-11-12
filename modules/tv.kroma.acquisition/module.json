@@ -1,9 +1,13 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.4.9",
+  "version": "0.4.26",
+  "component": {
+    "instances": 4,
+    "cpuSeconds": 300
+  },
   "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
   "engines": {
     "server": ">=0.1.39"
@@ -83,7 +87,22 @@
         "users.audio_language",
         "users.subtitle_language"
       ],
-      "write": ["requests", "wanted", "acq_file_tmdb"]
+      "write": ["requests", "wanted", "monitored", "acq_file_tmdb"]
+    }
+  },
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "metadata",
+          "to": ["api.themoviedb.org"],
+          "ports": [443]
+        }
+      ]
+    },
+    "fs": {
+      "read": ["downloads", "media"],
+      "write": ["downloads", "media"]
     }
   }
 }

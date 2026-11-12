@@ -13,7 +13,7 @@ describe('matchLanes', () => {
     expect(matchLanes(['server/src/main.rs'])).toEqual(only('code', 'rust', 'synology'));
   });
 
-  it('puts a module sidecar change in rust and synology, and its ui in the fleet too', () => {
+  it('puts a module server change in rust and synology, and its ui in the fleet too', () => {
     expect(matchLanes(['modules/tv.kroma.vpn/server/src/lib.rs'])).toEqual(
       only('code', 'rust', 'synology'),
     );
@@ -66,6 +66,12 @@ describe('matchLanes', () => {
 
   it('puts the site in its own lane', () => {
     expect(matchLanes(['apps/www/src/routes/download.tsx'])).toEqual(only('code', 'fleet', 'site'));
+  });
+
+  it('builds the site for a setup guide, the one prose it renders', () => {
+    expect(matchLanes(['docs/setup/docker.md'])).toEqual(only('site'));
+    expect(matchLanes(['apps/www/content/docs/docker.fr.md'])).toEqual(only('site'));
+    expect(matchLanes(['docs/writing-docs.md'])).toEqual(only());
   });
 
   it('puts a spec chapter in the spec lane, where no other prose goes', () => {

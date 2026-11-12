@@ -28,6 +28,8 @@ const SHORT_LIVED: &[&str] = &[
     "email_verifications",
     "job_logs",
     "job_runs",
+    "network_flows_daily",
+    "network_inbound_daily",
     "notification_deliveries",
     "notifications",
     "pin_attempts",

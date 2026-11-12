@@ -25,7 +25,6 @@
   "dlclients.password": "Password",
   "dlclients.passwordKept": "A password is stored. Leave empty to keep it.",
   "dlclients.sectionTitle": "Download clients",
-  "dlclients.state.notCompiled": "Not in this build",
   "dlclients.state.ready": "Running",
   "dlclients.state.starting": "Starting…",
   "dlclients.state.startingSlow": "Starting for {minutes} min. Waiting on the swarm for a torrent it has no metadata for.",
@@ -220,5 +219,8 @@
   "naming.seriesFolder": "Series folder",
   "naming.tokens": "Tokens",
   "naming.tokensTitle": "Filename tokens",
-  "nav.downloads": "Downloads"
+  "nav.downloads": "Downloads",
+  "notifications.completed.body": "{title} finished downloading.",
+  "notifications.completed.label": "Finished downloads",
+  "notifications.completed.title": "Download finished"
 }

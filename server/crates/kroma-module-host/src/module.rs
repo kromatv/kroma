@@ -6,8 +6,8 @@ use super::HostCtx;
 use async_trait::async_trait;
 
 /// One scheduled job a module contributes to the core JobManager. Its `run` pass
-/// executes in-process on the sidecar, which serves the `/_job/run/{key}`
-/// endpoint the core scheduler calls.
+/// executes inside the module, which serves the `/_job/run/{key}` endpoint the
+/// core scheduler calls.
 pub struct ModuleJob<S> {
     // `key` is dotted (`"acquisition.import"`) and doubles as DB key, URL segment
     // and i18n base. `category` is one of `maintenance`, `library`,

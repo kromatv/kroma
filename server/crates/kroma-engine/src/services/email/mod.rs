@@ -20,6 +20,8 @@ use serde_json::json;
 use crate::db::Pool;
 use crate::services::settings::{email_delivery, EmailDelivery, Settings};
 
+const PURPOSE: &str = "email";
+
 /// Which email the skeleton carries. All share the layout; only a reset has
 /// an out-of-band code, so the others drop the code-note block.
 #[derive(Clone, Copy, PartialEq, Eq)]

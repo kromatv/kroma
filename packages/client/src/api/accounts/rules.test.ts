@@ -23,9 +23,9 @@ describe('emailRule', () => {
 });
 
 describe('passwordRule', () => {
-  it('requires at least 4 characters', () => {
-    expect(passwordRule.safeParse('abcd').success).toBe(true);
-    expect(passwordRule.safeParse('abc').success).toBe(false);
+  it('requires at least 8 characters, as the server does', () => {
+    expect(passwordRule.safeParse('abcdefgh').success).toBe(true);
+    expect(passwordRule.safeParse('abcdefg').success).toBe(false);
   });
 });
 
@@ -51,7 +51,7 @@ describe('convenience booleans', () => {
   it('mirror the rules without throwing', () => {
     expect(isEmail('a@b.co')).toBe(true);
     expect(isEmail('x')).toBe(false);
-    expect(isPassword('abcd')).toBe(true);
+    expect(isPassword('abcdefgh')).toBe(true);
     expect(isPassword('a')).toBe(false);
     expect(isUsername('bob')).toBe(true);
     expect(isUsername('  ')).toBe(false);

@@ -1,8 +1,7 @@
-import type { MediaItem } from '@kromatv/client/media';
 import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, styles, Text, fontSizes, useStyles } from '@kromatv/ui/kit';
 import { useControlsHold } from './useControlsHold';
-import type { Engine } from '#mobile/player/engine';
+import type { Transport } from '#mobile/player/engine';
 import { ScrubBar } from '#mobile/player/ScrubBar';
 import type { StoryboardTile } from '#mobile/player/useStoryboard';
 
@@ -11,17 +10,16 @@ export function PlayerScrubRow({
   onInteract,
   hold,
   tileFor,
-  item,
+  markers,
 }: Readonly<{
-  engine: Engine;
+  engine: Transport;
   onInteract(): void;
   hold?: () => () => void;
   tileFor?: (abs: number) => StoryboardTile | null;
-  item: MediaItem;
+  markers?: number[];
 }>) {
   const s = useStyles(definition);
 
-  const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
   const scrub = useControlsHold(hold);
   return (
     <Box>

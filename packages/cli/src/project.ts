@@ -26,7 +26,7 @@ const CargoManifest = z.object({
 export interface ServerCrate {
   dir: string;
   crate: string;
-  /** The sidecar's binary name; `null` for a library module, which spawns nothing. */
+  /** The component's binary name; `null` for a library module, which runs nothing. */
   bin: string | null;
   /** Cargo features the `.kmod` build enables (`[package.metadata.kmod] features`). */
   features: string[];

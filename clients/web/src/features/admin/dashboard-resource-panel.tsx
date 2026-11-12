@@ -1,6 +1,6 @@
 import type { MetricRange, MetricsSnapshot } from '@kromatv/client/admin';
 import { useT } from '@kromatv/ui';
-import { EmptyState, Row, Section } from '@kromatv/ui/kit';
+import { EmptyState, Section } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import {
   type ChartScope,
@@ -75,10 +75,8 @@ export function ResourceSection<S extends ChartScope>({
       <Section.Header>
         <Section.Title>{title}</Section.Title>
         <Section.Actions>
-          <Row gap={10}>
-            <FilterSelect label={title} choice={scope} />
-            <FilterSelect label={title} choice={range} />
-          </Row>
+          <FilterSelect label={title} choice={scope} />
+          <FilterSelect label={title} choice={range} />
         </Section.Actions>
       </Section.Header>
       {complete ? (

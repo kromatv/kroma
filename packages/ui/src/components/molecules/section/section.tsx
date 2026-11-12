@@ -44,7 +44,7 @@ function Root({ gap = 16, children, ...box }: Readonly<SectionRootProps>) {
 function Header({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <Box gap={12}>
-      <Box row align="center" gap={12}>
+      <Box row wrap align="center" gap={12}>
         {children}
       </Box>
       <Divider />
@@ -76,7 +76,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const PUSH = style({ marginLeft: 'auto' });
+const PUSH = style({ marginLeft: 'auto', maxW: '100%' });
 
 /**
  * A titled band: an overline, a rule, and the content under both.

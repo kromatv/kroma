@@ -24,6 +24,7 @@ pub enum Outcome {
 pub fn install(address: DeviceAddress, password: &str, zip: &Path) -> Result<Outcome> {
     let base = address.url(INSTALLER_PORT);
     let reply = Fetch::new()
+        .purpose("roku")
         .max_time(TIMEOUT_SECS)
         .digest(USER, password)
         .post_multipart(

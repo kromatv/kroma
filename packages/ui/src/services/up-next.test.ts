@@ -1,0 +1,137 @@
+// @vitest-environment jsdom
+
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
+import type { Translate } from '@kromatv/i18n';
+import { renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { useUpNext } from './up-next';
+
+const t: Translate = ((key: string) => key) as unknown as Translate;
+
+const MOVIE = {
+  id: 'm1',
+  title: 'Arrival',
+  durationMs: 6_960_000,
+  metadata: { genres: ['Science-Fiction'] },
+} as unknown as MediaItem;
+
+const EPISODE = {
+  id: 'e1',
+  title: 'Severance',
+  episodeTitle: 'Good News About Hell',
+  showId: 's1',
+  season: 1,
+  episode: 1,
+  durationMs: 3_180_000,
+} as unknown as MediaItem;
+
+type Media = KromaClient['media'];
+
+function stubClient(recommendations: MediaItem[] = []) {
+  const similar = vi.fn<Media['similar']>(async () => recommendations);
+  const backdropFor = vi.fn<Media['artwork']['backdropFor']>((_item, w) => `/backdrop?w=${w}`);
+  const posterFor = vi.fn<Media['artwork']['posterFor']>((item, w) => `/poster/${item.id}?w=${w}`);
+  const client = fakeClient({ media: { similar, artwork: { backdropFor, posterFor } } });
+  return { client, similar, backdropFor };
+}
+
+describe('what it recommends against', () => {
+  it('asks about the SHOW when the thing playing is an episode', async () => {
+    const { client, similar } = stubClient();
+    renderHook(() => useUpNext(client, t, EPISODE));
+    await waitFor(() => expect(similar).toHaveBeenCalledWith('s1'));
+  });
+
+  it('asks about the title itself for a movie', async () => {
+    const { client, similar } = stubClient();
+    renderHook(() => useUpNext(client, t, MOVIE));
+    await waitFor(() => expect(similar).toHaveBeenCalledWith('m1'));
+  });
+
+  it('says nothing rather than throwing when the server will not answer', async () => {
+    const { client, similar } = stubClient();
+    similar.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE));
+    await waitFor(() => expect(result.current.data.recommendations).toEqual([]));
+  });
+});
+
+describe('the cards', () => {
+  it("titles an episode by the episode's own name, with the runtime on the sub-line", () => {
+    const { client } = stubClient();
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE, [EPISODE]));
+    const card = result.current.data.nextEpisodes[0];
+    expect(card?.title).toBe('Good News About Hell');
+    expect(card?.subtitle).toBe('S1 E1 · 53min');
+  });
+
+  it('falls back to the show title for an episode that has no name of its own', () => {
+    const { client } = stubClient();
+    const unnamed = { ...EPISODE, episodeTitle: undefined } as unknown as MediaItem;
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE, [unnamed]));
+    expect(result.current.data.nextEpisodes[0]?.title).toBe('Severance');
+  });
+
+  it('asks for artwork at the width the card is drawn', () => {
+    const { client, backdropFor } = stubClient();
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE, [MOVIE]));
+    expect(result.current.data.nextEpisodes[0]?.posterUrl).toContain('?w=');
+    expect(backdropFor).toHaveBeenCalledWith(MOVIE, expect.any(Number));
+  });
+
+  it('falls back to the poster where there is no backdrop', () => {
+    const { client, backdropFor } = stubClient();
+    backdropFor.mockReturnValue(null);
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE, [MOVIE]));
+    expect(result.current.data.nextEpisodes[0]?.posterUrl).toContain('/poster/');
+  });
+
+  it('carries the first genre as the category label', () => {
+    const { client } = stubClient();
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE, [MOVIE]));
+    expect(result.current.data.nextEpisodes[0]?.categoryLabel).toBe('genre.science-fiction');
+  });
+});
+
+describe('the id map the router is handed', () => {
+  it('holds every card that was drawn, episodes and recommendations alike', async () => {
+    const reco = { ...MOVIE, id: 'm2' } as MediaItem;
+    const { client } = stubClient([reco]);
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE, [EPISODE]));
+    await waitFor(() => expect(result.current.byId.size).toBe(2));
+    expect(result.current.byId.get('e1')).toBe(EPISODE);
+    expect(result.current.byId.get('m2')).toBe(reco);
+  });
+
+  it('stops at eighteen recommendations, however many came back', async () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({ ...MOVIE, id: `r${i}` }) as MediaItem);
+    const { client } = stubClient(many);
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE));
+    await waitFor(() => expect(result.current.data.recommendations).toHaveLength(18));
+  });
+});
+
+describe('the film the end of this one offers', () => {
+  it('offers the nearest neighbour that is not the title that just finished', async () => {
+    const twin = { ...MOVIE } as MediaItem;
+    const next = { ...MOVIE, id: 'm2', title: 'Contact' } as MediaItem;
+    const { client } = stubClient([twin, next]);
+
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE));
+
+    await waitFor(() => expect(result.current.postPlay?.id).toBe('m2'));
+    expect(result.current.postPlay?.title).toBe('Contact');
+    expect(result.current.byId.get('m2')).toBe(next);
+  });
+
+  it('offers nothing when the only neighbour is the title itself', async () => {
+    const { client } = stubClient([{ ...MOVIE } as MediaItem]);
+
+    const { result } = renderHook(() => useUpNext(client, t, MOVIE));
+
+    await waitFor(() => expect(result.current.data.recommendations).toHaveLength(1));
+    expect(result.current.postPlay).toBeNull();
+  });
+});

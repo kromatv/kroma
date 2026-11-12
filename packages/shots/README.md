@@ -71,11 +71,60 @@ Each is checked before the shutter, because every one of them fails as a
 
 ## Publishing
 
-`--publish` uploads to the `issue-assets` GitHub release, replacing an asset of
-the same name so re-running a capture updates the image a PR already links, then
+`--publish` uploads every capture as a GitHub attachment of the repository and
 prints the markdown with working URLs. Without it, the run stays local under
-`.shots/<slug>/` (gitignored) and prints the same block with the URLs it *would*
-have. The release is a plain asset bucket: nothing in the repo grows a binary.
+`.shots/<slug>/` (gitignored) and prints the same block pointing at the local
+files. An attachment is never replaced: a re-run uploads new ones, so paste the
+new block over the old one.
+
+## Attaching any image
+
+A screenshot taken some other way (a Playwright script, a simulator, a crop)
+goes into a PR or issue the same way:
+
+```bash
+bun run shots:attach before.png after.png
+bun run shots:attach clip.mp4 --repo owner/name
+```
+
+It prints one `![name](https://github.com/user-attachments/assets/<uuid>)` line
+per file. Paste them into the body, or into a file for `gh pr edit --body-file`.
+
+Never host a PR image anywhere else. A pushed branch, a committed file or a
+release all leave something in the repository, and a release is worse than it
+looks: the server's update check and the Synology package source both read this
+repo's `/releases`, and `gh release create` marks a new one latest.
+
+### The endpoint
+
+It is the one the web editor calls when an image is dropped into a comment,
+and it is not documented, so it can change without notice.
+
+```bash
+RID=$(gh api repos/kromatv/kroma --jq .id)
+curl -sS -X POST \
+  "https://uploads.github.com/user-attachments/assets?name=shot.png&content_type=image%2Fpng&repository_id=$RID" \
+  -H "Authorization: Bearer $(gh auth token)" \
+  -H "Accept: application/json" \
+  -H "Content-Type: image/png" \
+  --data-binary @shot.png
+# 201 {"url":"https://github.com/user-attachments/assets/<uuid>"}
+```
+
+- The body is the file's raw bytes, and `Content-Type` must name its type.
+- It takes images and video only. Anything else answers 422.
+- The token needs push access to the repository. Without it the answer is 404.
+- The gh CLI's own token is enough. The browser session cookie some tools ask
+  for (the three-step flow through `github.com/upload/policies/assets`) is only
+  needed for files that are not images or video.
+- The URL answers 404 to an anonymous request. That is expected: GitHub's
+  markdown renderer rewrites it to a signed `private-user-images` link, so it
+  shows in a PR or issue body. Check one with
+  `gh api -X POST markdown -f text='![x](<url>)' -f mode=gfm`.
+
+`bun run shots:attach` (`src/attach.ts`) is this request, with the token passed
+in a header rather than on a command line. `curl -H "Authorization: …"` as above
+puts it in the process list for as long as the upload runs.
 
 ## Verified
 

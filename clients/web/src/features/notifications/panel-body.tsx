@@ -34,7 +34,12 @@ export function PanelBody({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const { data, isPending } = useQuery(webRuntime.queries.userQueries.notifications());
+  const shelf = filter === 'archived';
+  const { data, isPending } = useQuery(
+    shelf
+      ? webRuntime.queries.userQueries.archivedNotifications()
+      : webRuntime.queries.userQueries.notifications(),
+  );
   // Held across renders on purpose: the set is what keeps a row the reader just
   // marked read from vanishing before they can undo it, and an effect would
   // only decide that a frame after it had already gone.
@@ -53,16 +58,8 @@ export function PanelBody({
   }
 
   if (rows.length === 0) {
-    const bare = filter === 'unread' && all.length > 0;
     return (
-      <EmptyState.Root size="sm" layout="fill" icon={bare ? 'checks' : 'bell'}>
-        <EmptyState.Title>
-          {t(bare ? 'notifications.emptyUnread' : 'notifications.empty')}
-        </EmptyState.Title>
-        <EmptyState.Hint>
-          {t(bare ? 'notifications.emptyUnreadHint' : 'notifications.emptyHint')}
-        </EmptyState.Hint>
-      </EmptyState.Root>
+      <PanelEmpty shelf={shelf} unreadOnly={filter === 'unread'} inboxEmpty={all.length === 0} />
     );
   }
 
@@ -82,7 +79,7 @@ export function PanelBody({
           </h3>
           <ListRow.Group size="sm">
             {group.items.map((one) => (
-              <NotificationEntry key={one.id} one={one} onNavigate={onNavigate} />
+              <NotificationEntry key={one.id} one={one} archived={shelf} onNavigate={onNavigate} />
             ))}
           </ListRow.Group>
         </section>
@@ -92,6 +89,30 @@ export function PanelBody({
 }
 
 const sDefinition = styles({ dayLabel: { position: 'sticky', top: 0, zIndex: 10, m: 0 } });
+
+const EMPTY = {
+  archived: ['archive', 'notifications.emptyArchived', 'notifications.emptyArchivedHint'],
+  allRead: ['checks', 'notifications.emptyUnread', 'notifications.emptyUnreadHint'],
+  none: ['bell', 'notifications.empty', 'notifications.emptyHint'],
+} as const;
+
+function PanelEmpty({
+  shelf,
+  unreadOnly,
+  inboxEmpty,
+}: Readonly<{ shelf: boolean; unreadOnly: boolean; inboxEmpty: boolean }>) {
+  const t = useT();
+  let kind: keyof typeof EMPTY = 'none';
+  if (shelf) kind = 'archived';
+  else if (unreadOnly && !inboxEmpty) kind = 'allRead';
+  const [icon, title, hint] = EMPTY[kind];
+  return (
+    <EmptyState.Root size="sm" layout="fill" icon={icon}>
+      <EmptyState.Title>{t(title)}</EmptyState.Title>
+      <EmptyState.Hint>{t(hint)}</EmptyState.Hint>
+    </EmptyState.Root>
+  );
+}
 
 function PanelSkeleton() {
   return (

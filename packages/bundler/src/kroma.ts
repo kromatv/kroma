@@ -4,6 +4,7 @@ import { collectBuildInfo, productVersion } from '@kromatv/build-info';
 import { buildInfoPlugin } from '@kromatv/bundler/build-info';
 import { depsWithoutMaps } from '@kromatv/bundler/deps-without-maps';
 import { exitAfterBuild } from '@kromatv/bundler/exit-after-build';
+import { finishBuild } from '@kromatv/bundler/finish-build';
 import { kromaMdx } from '@kromatv/bundler/mdx';
 import { reactCompiler } from '@kromatv/bundler/react-compiler';
 import {
@@ -30,9 +31,14 @@ export interface KromaOptions {
   dedupe?: string[];
   /** Compile the kit's `.docs.mdx`, for a shell that mounts the workbench. */
   mdx?: boolean;
-  /** TanStack Start, placed before React as it requires, with the build made
-   *  to exit once its prerender has finished. */
+  /** TanStack Start, placed before React as it requires. Once its prerender
+   *  has finished, every page preloads its entry script at high priority and
+   *  the build exits. */
   start?: Parameters<typeof tanstackStart>[0];
+  /** With `start`: write a `.br` and a `.gz` beside the client's built assets,
+   *  for a server that serves them precompressed. Off by default, because a
+   *  CDN compresses on its own. */
+  precompress?: boolean;
 }
 
 function buildDefine(dir: string): Record<string, string> {
@@ -74,7 +80,7 @@ function shell({ alias = {}, dedupe }: KromaOptions): Plugin {
  * own.
  */
 export function kroma(options: KromaOptions = {}): PluginOption[] {
-  const { mdx = false, start } = options;
+  const { mdx = false, start, precompress = false } = options;
   return [
     shell(options),
     depsWithoutMaps(),
@@ -83,7 +89,7 @@ export function kroma(options: KromaOptions = {}): PluginOption[] {
     kromaUI(),
     kromaI18nDevtools(),
     mdx ? kromaMdx() : [],
-    start ? [tanstackStart(start), exitAfterBuild()] : [],
+    start ? [tanstackStart(start), finishBuild({ precompress }), exitAfterBuild()] : [],
     reactCompiler(),
     react(),
   ];

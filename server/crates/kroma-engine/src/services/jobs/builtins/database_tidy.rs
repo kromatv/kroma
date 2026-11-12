@@ -17,8 +17,8 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
     let tidied = housekeeping::tidy(&ctx.state.db, now)?;
     ctx.info(format!(
-        "removed {} expired sessions, {} expired device tokens, {} pipeline tasks whose subject is gone, {} push records past their retention",
-        tidied.sessions, tidied.access_tokens, tidied.pipeline_tasks, tidied.deliveries
+        "removed {} expired sessions, {} expired device tokens, {} pipeline tasks whose subject is gone, {} push records and {} daily flow tallies past their retention",
+        tidied.sessions, tidied.access_tokens, tidied.pipeline_tasks, tidied.deliveries, tidied.flow_tallies
     ));
     housekeeping::optimize(&ctx.state.db)?;
     ctx.info("refreshed the query planner's statistics and checkpointed the write-ahead log");

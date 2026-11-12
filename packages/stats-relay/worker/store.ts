@@ -1,7 +1,7 @@
 // Every SQL statement the collector runs, behind one narrow interface so the
 // routes and the rules can be tested against an in-memory stand-in.
 
-import { type Ping, size } from './schemas';
+import { buildOf, type Ping, size } from './schemas';
 
 export interface InstanceRow {
   id: string;
@@ -17,6 +17,8 @@ export interface InstanceRow {
   modules?: string[];
   users?: number;
   titles?: number;
+  /** The CI build number, 0 for a server built from source, absent on an older shape. */
+  build?: number;
   flagged: boolean;
 }
 
@@ -24,6 +26,9 @@ export interface DailyRow {
   day: string;
   instances: number;
   clients: number;
+  /** Null on a day fewer than `SIZE_REPORTERS` counted installs reported a size. */
+  users: number | null;
+  titles: number | null;
 }
 
 export interface Store {
@@ -35,7 +40,7 @@ export interface Store {
   all(): Promise<InstanceRow[]>;
   daily(): Promise<DailyRow[]>;
   flag(ids: string[]): Promise<void>;
-  record(day: string, instances: number, clients: number): Promise<void>;
+  record(row: DailyRow): Promise<void>;
   /** Forget rows nobody has heard from since `before`. */
   prune(before: number): Promise<void>;
   /** Forget one install on its own request. */
@@ -75,6 +80,7 @@ interface StoredRow {
   modules: string | null;
   users: number | null;
   titles: number | null;
+  build: number | null;
   flagged: number;
 }
 
@@ -110,6 +116,7 @@ function toRow(row: StoredRow): InstanceRow {
     modules: parseList(row.modules),
     users: row.users ?? undefined,
     titles: row.titles ?? undefined,
+    build: row.build ?? undefined,
     flagged: row.flagged !== 0,
   };
 }
@@ -117,8 +124,8 @@ function toRow(row: StoredRow): InstanceRow {
 const UPSERT = `INSERT INTO instances
   (id, first_seen, last_seen, version, commit_hash, target, install, country,
    clients_tv, clients_mobile, clients_desktop, locales, modules,
-   users, titles, flagged)
-  VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 0)
+   users, titles, build, flagged)
+  VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, 0)
   ON CONFLICT(id) DO UPDATE SET
     last_seen = excluded.last_seen,
     version = excluded.version,
@@ -132,7 +139,8 @@ const UPSERT = `INSERT INTO instances
     locales = excluded.locales,
     modules = excluded.modules,
     users = excluded.users,
-    titles = excluded.titles`;
+    titles = excluded.titles,
+    build = excluded.build`;
 
 export function d1Store(db: D1Database): Store {
   return {
@@ -155,6 +163,7 @@ export function d1Store(db: D1Database): Store {
           ping.modules === undefined ? null : JSON.stringify(ping.modules),
           reported.users ?? null,
           reported.titles ?? null,
+          buildOf(ping) ?? null,
         )
         .run();
     },
@@ -170,7 +179,7 @@ export function d1Store(db: D1Database): Store {
         .prepare(
           `SELECT id, first_seen, last_seen, version, target, install, country,
                   clients_tv, clients_mobile, clients_desktop, locales, modules,
-                  users, titles, flagged
+                  users, titles, build, flagged
              FROM instances`,
         )
         .all<StoredRow>();
@@ -178,7 +187,7 @@ export function d1Store(db: D1Database): Store {
     },
     async daily() {
       const { results } = await db
-        .prepare('SELECT day, instances, clients FROM daily ORDER BY day')
+        .prepare('SELECT day, instances, clients, users, titles FROM daily ORDER BY day')
         .all<DailyRow>();
       return results;
     },
@@ -188,13 +197,14 @@ export function d1Store(db: D1Database): Store {
         ids.map((id) => db.prepare('UPDATE instances SET flagged = 1 WHERE id = ?1').bind(id)),
       );
     },
-    async record(day, instances, clients) {
+    async record({ day, instances, clients, users, titles }) {
       await db
         .prepare(
-          `INSERT INTO daily (day, instances, clients) VALUES (?1, ?2, ?3)
-             ON CONFLICT(day) DO UPDATE SET instances = excluded.instances, clients = excluded.clients`,
+          `INSERT INTO daily (day, instances, clients, users, titles) VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(day) DO UPDATE SET instances = excluded.instances,
+               clients = excluded.clients, users = excluded.users, titles = excluded.titles`,
         )
-        .bind(day, instances, clients)
+        .bind(day, instances, clients, users, titles)
         .run();
     },
     async prune(before) {

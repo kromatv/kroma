@@ -46,6 +46,7 @@ pub struct StubHost {
     metadata_candidates: Vec<MatchCandidate>,
     metadata_episodes: Vec<EpisodeInfo>,
     module_enabled: bool,
+    network_seal: kroma_module_wire::NetworkSeal,
     libraries: Vec<LibraryFolders>,
     settings: Arc<Mutex<BTreeMap<String, serde_json::Value>>>,
     string_settings: Option<StringSettings>,
@@ -96,6 +97,7 @@ impl StubHost {
             metadata_candidates: Vec::new(),
             metadata_episodes: Vec::new(),
             module_enabled: true,
+            network_seal: kroma_module_wire::NetworkSeal::None,
             libraries: Vec::new(),
             settings: Arc::new(Mutex::new(BTreeMap::new())),
             string_settings: None,
@@ -199,6 +201,12 @@ impl StubHost {
     /// which is what makes the un-configured host neutral.
     pub fn with_setting(self, key: &str, value: serde_json::Value) -> Self {
         self.settings.lock().unwrap().insert(key.into(), value);
+        self
+    }
+
+    /// Answer [`HostCtx::network_seal`] with `seal`.
+    pub fn with_network_seal(mut self, seal: kroma_module_wire::NetworkSeal) -> Self {
+        self.network_seal = seal;
         self
     }
 

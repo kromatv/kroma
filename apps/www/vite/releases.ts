@@ -14,10 +14,12 @@ const VIRTUAL_ID = 'virtual:kroma-releases';
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
 
 // A page of a hundred releases runs to ~4 MB, most of it the module `.kmod`
-// assets every product tag also carries. Two pages hold the whole history and
-// the third is empty; the ceiling is per page, checked on the text before it is
-// parsed because the body is held in memory either way.
-const PAGES = 3;
+// assets every product tag also carries. Every module version is a release of
+// its own, so module releases outnumber product tags several to one and push
+// them down the list; ten pages leave years of room. The ceiling is per page,
+// checked on the text before it is parsed because the body is held in memory
+// either way.
+const PAGES = 10;
 const MAX_BYTES = 16 * 1024 * 1024;
 const TIMEOUT_MS = 30_000;
 

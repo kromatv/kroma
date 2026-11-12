@@ -388,6 +388,10 @@ fn endpoints_without_a_usable_key_are_skipped_rather_than_re_keyed() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "opens and drops one connection to the test's own fake service on loopback"
+)]
 fn a_caller_that_says_nothing_is_not_counted_as_a_push() {
     let service = FakeService::answering(201);
     let addr = service.endpoint.trim_start_matches("http://");
@@ -513,4 +517,23 @@ fn a_service_that_quotes_the_address_back_does_not_get_it_written_down() {
     assert!(said.contains("BadDeviceToken"), "{said}");
     assert!(!said.contains(ADDRESS), "{said}");
     assert!(!said.contains(&service.endpoint), "{said}");
+}
+
+#[test]
+fn a_web_push_endpoint_on_a_private_address_is_never_contacted() {
+    crate::services::notify::push::endpoint::test_reach::refuse_private();
+    let service = FakeService::answering(201);
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+
+    let sent = deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    assert_eq!(sent, 0);
+    assert_eq!(service.hits(), 0);
+    let said = records(&state, &user)[0].error.clone().unwrap_or_default();
+    assert!(said.contains("not a public internet address"), "{said}");
 }

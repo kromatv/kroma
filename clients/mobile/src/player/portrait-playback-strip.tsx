@@ -1,20 +1,19 @@
-import type { MediaItem } from '@kromatv/client/media';
 import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, IconButton, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
-import type { Engine } from './engine';
+import type { Transport } from './engine';
 import { ScrubBar } from './ScrubBar';
 import type { StoryboardTile } from './useStoryboard';
 
 export function PortraitPlaybackStrip({
   engine,
-  item,
+  markers,
   tileFor,
   onFullscreen,
 }: Readonly<{
-  engine: Engine;
-  item: MediaItem;
+  engine: Transport;
+  markers?: number[];
   tileFor?: (abs: number) => StoryboardTile | null;
   onFullscreen(): void;
 }>) {
@@ -29,7 +28,7 @@ export function PortraitPlaybackStrip({
         buffered={engine.buffered}
         onSeek={engine.seekTo}
         tileFor={tileFor}
-        markers={item.markers?.map((marker) => marker.startMs / 1000)}
+        markers={markers}
       />
       <Box style={s.row}>
         <Text style={s.time}>

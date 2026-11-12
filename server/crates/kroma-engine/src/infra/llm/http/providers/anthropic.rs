@@ -23,7 +23,6 @@ impl Provider for Anthropic {
     }
     fn headers(&self, api_key: &str) -> Vec<(&'static str, String)> {
         vec![
-            ("content-type", "application/json".to_string()),
             ("x-api-key", api_key.to_string()),
             ("anthropic-version", ANTHROPIC_VERSION.to_string()),
         ]

@@ -19,6 +19,8 @@ import { Route as SupportRouteImport } from './routes/support'
 import { Route as BetaAndroidRouteImport } from './routes/beta.android'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DownloadArchiveRouteImport } from './routes/download_.archive'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +73,16 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSlugRoute = DocsSlugRouteImport.update({
+  id: '/docs/$slug',
+  path: '/docs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DownloadArchiveRoute = DownloadArchiveRouteImport.update({
   id: '/download_/archive',
   path: '/download/archive',
@@ -87,8 +99,10 @@ export interface FileRoutesByFullPath {
   '/support': typeof SupportRoute
   '/beta/android': typeof BetaAndroidRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/download/archive': typeof DownloadArchiveRoute
   '/blog/': typeof BlogIndexRoute
+  '/docs/': typeof DocsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,8 +114,10 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/beta/android': typeof BetaAndroidRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/download/archive': typeof DownloadArchiveRoute
   '/blog': typeof BlogIndexRoute
+  '/docs': typeof DocsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,8 +130,10 @@ export interface FileRoutesById {
   '/support': typeof SupportRoute
   '/beta/android': typeof BetaAndroidRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/download_/archive': typeof DownloadArchiveRoute
   '/blog/': typeof BlogIndexRoute
+  '/docs/': typeof DocsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,8 +147,10 @@ export interface FileRouteTypes {
     | '/support'
     | '/beta/android'
     | '/blog/$slug'
+    | '/docs/$slug'
     | '/download/archive'
     | '/blog/'
+    | '/docs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,8 +162,10 @@ export interface FileRouteTypes {
     | '/support'
     | '/beta/android'
     | '/blog/$slug'
+    | '/docs/$slug'
     | '/download/archive'
     | '/blog'
+    | '/docs'
   id:
     | '__root__'
     | '/'
@@ -155,8 +177,10 @@ export interface FileRouteTypes {
     | '/support'
     | '/beta/android'
     | '/blog/$slug'
+    | '/docs/$slug'
     | '/download_/archive'
     | '/blog/'
+    | '/docs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -169,8 +193,10 @@ export interface RootRouteChildren {
   SupportRoute: typeof SupportRoute
   BetaAndroidRoute: typeof BetaAndroidRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  DocsSlugRoute: typeof DocsSlugRoute
   DownloadArchiveRoute: typeof DownloadArchiveRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  DocsIndexRoute: typeof DocsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -245,6 +271,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$slug': {
+      id: '/docs/$slug'
+      path: '/docs/$slug'
+      fullPath: '/docs/$slug'
+      preLoaderRoute: typeof DocsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/download_/archive': {
       id: '/download_/archive'
       path: '/download/archive'
@@ -265,8 +305,10 @@ const rootRouteChildren: RootRouteChildren = {
   SupportRoute: SupportRoute,
   BetaAndroidRoute: BetaAndroidRoute,
   BlogSlugRoute: BlogSlugRoute,
+  DocsSlugRoute: DocsSlugRoute,
   DownloadArchiveRoute: DownloadArchiveRoute,
   BlogIndexRoute: BlogIndexRoute,
+  DocsIndexRoute: DocsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

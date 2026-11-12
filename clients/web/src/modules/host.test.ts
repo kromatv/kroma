@@ -10,6 +10,7 @@ import {
   fetchMock,
   hasPermission,
   installHarness,
+  listModules,
   loadRuntimeRemotes,
   locale,
   navigate,
@@ -30,6 +31,7 @@ vi.mock('#web/modules/registry', () => ({
     registry,
     bus: createEventBus(),
     remotes: { loadRuntimeRemotes },
+    listModules,
     retain: () => () => {},
   }),
 }));
@@ -86,6 +88,22 @@ describe('starting the modules', () => {
     const skip = registry.start.mock.calls.at(-1)?.[1] as Set<string>;
     expect(skip.has('torrents')).toBe(true);
     expect(skip.has('vpn')).toBe(false);
+  });
+
+  it('reads which modules are switched off while the remotes load, not after them', async () => {
+    let release = () => {};
+    loadRuntimeRemotes.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve(undefined);
+        }),
+    );
+    renderHook(() => useModuleHost());
+    await waitFor(() => expect(loadRuntimeRemotes).toHaveBeenCalled());
+
+    expect(listModules).toHaveBeenCalledOnce();
+    release();
+    await waitFor(() => expect(registry.start).toHaveBeenCalled());
   });
 
   it('sets up EVERYTHING when the enabled state cannot be fetched', async () => {

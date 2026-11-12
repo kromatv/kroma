@@ -3,7 +3,7 @@ mod support;
 use std::sync::Arc;
 
 use kroma_wasm_host::{
-    FetchCall, FetchRecord, ModuleInstance, NetPolicy, Outcome, Response, Settings, Verdict,
+    FetchCall, FetchRecord, FetchRequest, ModuleInstance, NetPolicy, Outcome, Response, Settings, Verdict,
 };
 use support::{instance, probe, text, LIMITS};
 
@@ -14,12 +14,13 @@ const BLOCKED_REASON: &str = "telemetry is not a declared purpose";
 struct OnePurpose;
 
 impl NetPolicy for OnePurpose {
-    fn decide(&self, call: &FetchCall) -> Verdict {
-        if call.purpose != ALLOWED_PURPOSE {
+    fn fetch(&self, request: &FetchRequest) -> Verdict {
+        if request.purpose != ALLOWED_PURPOSE {
             return Verdict::Block(BLOCKED_REASON.into());
         }
         Verdict::Allow(Response {
             status: 200,
+            headers: Vec::new(),
             body: b"stubbed answer".to_vec(),
         })
     }
@@ -73,7 +74,7 @@ fn a_fetch_the_policy_blocks_fails_inside_the_component_with_its_reason() {
 }
 
 #[test]
-fn the_journal_holds_every_fetch_with_its_verdict_in_call_order() {
+fn the_journal_holds_each_fetch_with_its_verdict_in_call_order() {
     let mut module = fetching_module();
     probe(&mut module, "/fetch", ALLOWED_PURPOSE);
 
@@ -81,7 +82,7 @@ fn the_journal_holds_every_fetch_with_its_verdict_in_call_order() {
 
     assert_eq!(
         module.fetches(),
-        [
+        &[
             FetchRecord {
                 call: call_for(ALLOWED_PURPOSE),
                 outcome: Outcome::Allowed,
@@ -92,6 +93,22 @@ fn the_journal_holds_every_fetch_with_its_verdict_in_call_order() {
             },
         ]
     );
+}
+
+#[test]
+fn the_journal_keeps_the_last_256_fetches_and_drops_the_oldest() {
+    let mut module = fetching_module();
+    probe(&mut module, "/fetch", BLOCKED_PURPOSE);
+
+    for _ in 0..256 {
+        probe(&mut module, "/fetch", ALLOWED_PURPOSE);
+    }
+
+    assert_eq!(module.fetches().len(), 256);
+    assert!(module
+        .fetches()
+        .iter()
+        .all(|record| record.outcome == Outcome::Allowed));
 }
 
 #[test]

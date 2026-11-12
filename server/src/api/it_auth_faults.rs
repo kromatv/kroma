@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{get, raw, seed_access_token, send, test_app, TestApp};
+use crate::api::test_support::{get, raw, seed_access_token, send, test_app, TestApp, PASSWORD};
 use crate::model::Permission;
 
 const FUTURE: i64 = 9_999_999_999;
@@ -33,7 +33,7 @@ fn invite(t: &TestApp, token: &str) {
 }
 
 async fn register(t: &TestApp, email: &str, token: Option<&str>) -> StatusCode {
-    let mut body = json!({ "email": email, "username": "newcomer", "password": "hunter2!" });
+    let mut body = json!({ "email": email, "username": "newcomer", "password": PASSWORD });
     if let Some(token) = token {
         body["inviteToken"] = json!(token);
     }
@@ -108,7 +108,7 @@ async fn login_refuses_when_the_account_lookup_fails() {
         "POST",
         "/api/auth/login",
         None,
-        Some(json!({ "email": "owner@test.dev", "password": "hunter2!" })),
+        Some(json!({ "email": "owner@test.dev", "password": PASSWORD })),
         &[("cf-connecting-ip", "10.9.0.1")],
     )
     .await;

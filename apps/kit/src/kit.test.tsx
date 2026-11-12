@@ -21,7 +21,7 @@ function shownOf(tally: string): [number, number] {
 }
 
 function commandKey(): void {
-  fireEvent.keyDown(document, { key: 'k', metaKey: true });
+  fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
 }
 
 // jsdom lays nothing out, so react-native-web reads the window through the

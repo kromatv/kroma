@@ -1,52 +1,32 @@
 // Resolves a module's declared `icon` name (a plain string in its manifest/nav)
-// to a Tabler icon component. Keeps a small curated set relevant to modules;
+// to a glyph the kit draws. Keeps a small curated set relevant to modules;
 // anything unknown falls back to the generic apps icon.
 
-import {
-  IconAntenna,
-  IconApps,
-  IconChartBar,
-  IconCloud,
-  IconDatabase,
-  IconDeviceTv,
-  IconDownload,
-  IconFileText,
-  IconLanguage,
-  IconMagnet,
-  IconMovie,
-  IconPuzzle,
-  IconRss,
-  IconServer,
-  IconShieldLock,
-  IconSparkles,
-  IconSubtask,
-  IconWorld,
-  type TablerIcon,
-} from '@tabler/icons-react';
+import type { IconName } from '@kromatv/ui/kit';
 
-const ICONS: Record<string, TablerIcon> = {
-  apps: IconApps,
-  puzzle: IconPuzzle,
-  download: IconDownload,
-  'file-text': IconFileText,
-  magnet: IconMagnet,
-  antenna: IconAntenna,
-  rss: IconRss,
-  movie: IconMovie,
-  tv: IconDeviceTv,
-  chart: IconChartBar,
-  stats: IconChartBar,
-  database: IconDatabase,
-  world: IconWorld,
-  cloud: IconCloud,
-  ai: IconSparkles,
-  vpn: IconShieldLock,
-  server: IconServer,
-  subtitles: IconLanguage,
-  task: IconSubtask,
+const ICONS: Record<string, IconName> = {
+  apps: 'apps',
+  puzzle: 'puzzle',
+  download: 'download',
+  'file-text': 'file-text',
+  magnet: 'magnet',
+  antenna: 'antenna',
+  rss: 'rss',
+  movie: 'movie',
+  tv: 'device-tv',
+  chart: 'chart-bar',
+  stats: 'chart-bar',
+  database: 'database',
+  world: 'world',
+  cloud: 'cloud',
+  ai: 'sparkles',
+  vpn: 'shield-lock',
+  server: 'server',
+  subtitles: 'language',
+  task: 'subtask',
 };
 
-/** Resolve a module `icon` name to a Tabler icon component (fallback: apps). */
-export function resolveModuleIcon(name?: string): TablerIcon {
-  return (name ? ICONS[name] : undefined) ?? IconApps;
+/** Resolve a module `icon` name to a kit glyph name (fallback: apps). */
+export function resolveModuleIcon(name?: string): IconName {
+  return (name ? ICONS[name] : undefined) ?? 'apps';
 }

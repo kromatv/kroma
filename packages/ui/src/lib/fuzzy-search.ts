@@ -10,11 +10,18 @@ const LEAD = 1;
 
 const NONE = Number.NEGATIVE_INFINITY;
 
-/** The query as the matcher reads it: lower-cased, with the separators dropped.
- * Empty means there is nothing to match on, and everything is a hit. */
+const MARKS = /[\u0300-\u036f]/g;
+
+function folded(text: string): string {
+  return text.normalize('NFD').replace(MARKS, '').toLowerCase();
+}
+
+/** The query as the matcher reads it: lower-cased, with its accents and its
+ * separators dropped. Empty means there is nothing to match on, and everything
+ * is a hit. */
 function fuzzyQuery(query: string): string {
   let out = '';
-  for (const char of query.toLowerCase()) {
+  for (const char of folded(query)) {
     if (!SEPARATORS.has(char)) out += char;
   }
   return out;
@@ -69,12 +76,13 @@ function scoreOf(text: string, needle: string): number {
 
 /** How well `query` matches `text`, higher being better, or `null` when the
  * query's letters are not all present in order. Separators in the query are
- * ignored, so `player pause` scores as `playerpause` does. An empty query
- * scores 0 against anything. */
+ * ignored, so `player pause` scores as `playerpause` does, and so are accents on
+ * either side, so `reseau` scores as `réseau` does. An empty query scores 0
+ * against anything. */
 function fuzzyScore(text: string, query: string): number | null {
   const needle = fuzzyQuery(query);
   if (!needle) return 0;
-  const hay = text.toLowerCase();
+  const hay = folded(text);
   if (!holdsInOrder(hay, needle)) return null;
   return scoreOf(hay, needle);
 }
@@ -94,7 +102,7 @@ function fuzzySearch<T extends string>(candidates: readonly T[], query: string):
   if (!needle) return candidates.map((text) => ({ text, score: 0 }));
   const hits: FuzzyHit<T>[] = [];
   for (const candidate of candidates) {
-    const hay = candidate.toLowerCase();
+    const hay = folded(candidate);
     if (holdsInOrder(hay, needle)) hits.push({ text: candidate, score: scoreOf(hay, needle) });
   }
   hits.sort((a, b) => b.score - a.score || a.text.length - b.text.length);

@@ -163,6 +163,17 @@ web is where the pointer model lives.
 - **SURF-23** (SHIPPED) - **Pointer**, on web, is the reference model: dense layouts, hover
   affordances, a visible cursor, right-click and keyboard shortcuts. Every other model is a
   deliberate departure from it. Web is the only pointer surface.
+- **SURF-50** (SHIPPED) - From anywhere on web, one key combination (Command+K on a Mac,
+  Ctrl+K on Windows and Linux) opens a command menu that reaches every page and action the
+  viewer is allowed, and finds titles in the library. It offers nothing the viewer's
+  permissions would refuse once chosen, and it gives way to fullscreen playback and to any
+  dialog already waiting for an answer.
+- **SURF-51** (SHIPPED) - A row in the command menu says what Enter will do, and can offer
+  more than that one action: Enter runs the first, Command+Enter or Ctrl+Enter the second,
+  and the menu's key lists them all. An admin can turn a module off, restart it or uninstall
+  it from its row, and a destructive action asks first.
+- **SURF-52** (SHIPPED) - The command menu forgives typos, word order and missing accents,
+  and puts first what this profile chose before on this device for the same letters.
 - **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
   scrub and dismiss, no hover state to depend on, and layouts that reflow to a held phone.
   Anything that only works with a cursor is redesigned, not shrunk.
@@ -236,8 +247,41 @@ Each surface ships and updates the way its host expects. Deploy mechanics are
   channel. KROMA never self-updates a television; the platform does, on its terms.
 - **SURF-39** (AGREED) - **NAS.** The Synology package installs and updates through Package
   Center. It ships the *server*, so everything it serves follows the web rule above. Today a
-  person installs it by hand from a downloaded package ([`INSTALL.md`](../../../INSTALL.md));
+  person installs it by hand from a downloaded package ([setup guides](../../setup/README.md));
   a published source URL is what turns this SHIPPED.
+
+### Version skew
+
+Status: **AGREED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
+
+A television updates on its vendor's schedule (SURF-38) and a server on its operator's, so an
+app and its server are often from different releases. Each side has to know when the gap is
+too wide, and say so in words a person can act on. Apps released before these rules send no
+version, so the rules hold from the release that adds them. Whether the oldest version is one
+number for every app or one per app is decided with that work.
+
+**SURF-53** (AGREED) - Every app tells its server which app it is and which version, on every
+request.
+
+**SURF-54** (AGREED) - A server states the oldest app version it serves, where an app can read
+it before signing in.
+
+**SURF-55** (SHIPPED) - A server states its own version where an app can read it before
+signing in.
+
+**SURF-56** (AGREED) - The release that raises the oldest app version a server serves says so
+in its release notes.
+
+**SURF-57** (AGREED) - An app older than the oldest version its server serves shows one screen
+saying so, with how to update it.
+
+**SURF-58** (AGREED) - An app never reports being too old as a playback or feature error.
+
+**SURF-59** (AGREED) - A server treats a request that names no app version as coming from an
+unknown version, never as too old.
+
+**SURF-60** (AGREED) - An app that needs a newer server than the one it reached shows one
+screen saying so, naming the server version it needs.
 
 ## Deprecation
 

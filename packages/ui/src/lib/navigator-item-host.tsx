@@ -6,6 +6,7 @@ import {
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import type { splitBoxLayers } from './box-layers';
+import { TV_HAS_POINTER } from './control-platform';
 import { GROUNDED, LIFTED } from './focus-lift';
 import { radiusOf, useFocusTarget } from './focus-target';
 
@@ -49,9 +50,13 @@ export function NavigatorItemHost({
   onKey,
   onSelect,
   painted,
+  pointer,
   viewProps,
 }: Readonly<NavigatorItemHostProps>): ReactNode {
   const target = useFocusTarget(focused, radiusOf(painted), 'child');
+  const hover = TV_HAS_POINTER
+    ? { onPointerEnter: pointer.onHoverIn, onPointerLeave: pointer.onHoverOut }
+    : null;
   return (
     <NavigatorItem
       ref={entry}
@@ -65,6 +70,7 @@ export function NavigatorItemHost({
         {
           ...viewProps,
           ...target.hostProps,
+          ...hover,
         } as NavigatorItemProps['viewProps']
       }
     >

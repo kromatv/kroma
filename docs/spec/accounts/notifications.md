@@ -88,7 +88,8 @@ identical failures is a line saying how many.
 
 **ACCT-49** (SHIPPED) - A repeat folds into the row the person already has: its count rises,
 it comes back unread at the top of the inbox, and the banner it raises on a device replaces
-the earlier one instead of stacking beside it.
+the earlier one instead of stacking beside it. A repeat of something already settled starts a
+new row, because it needs someone again.
 
 **ACCT-50** (SHIPPED) - A folded group raises a banner at most once an hour, and repeats in
 between update the inbox silently.
@@ -124,20 +125,21 @@ back to unread, or mark everything read at once.
 **ACCT-56** (SHIPPED) - Every open screen agrees on the badge within a moment of one of them
 changing it: reading a row on the phone drops the number in the browser.
 
-**ACCT-57** (AGREED) - The badge counts rows the person has **not seen**: opening the panel
+**ACCT-57** (SHIPPED) - The badge counts rows the person has **not seen**: opening the panel
 clears it, whether or not they then open each row. Each row still shows whether it was read,
 and the unread filter still works on that.
 
-Today the badge counts unread rows, so it stays lit until every row has been opened one by
-one. Unseen is the number a person can actually clear, which is what a badge is for.
+A badge that counted unread rows stayed lit until every row had been opened one by one.
+Unseen is the number a person can actually clear, which is what a badge is for.
 
-**ACCT-58** (AGREED) - A reader **archives** a row rather than deleting it. An archived row
-leaves the default list and stays findable.
+**ACCT-58** (SHIPPED) - A reader **archives** a row rather than deleting it. An archived row
+leaves the default list and stays findable, and can be brought back. The phone archives one row
+at a time; the web panel archives every row already read at once.
 
-**ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that the oldest go,
-whatever state they are in.
+**ACCT-59** (SHIPPED) - An inbox holds two hundred rows per person. Beyond that rows go in the
+order ACCT-60 sets, so an inbox holds more only while the extra rows are unread.
 
-**ACCT-60** (AGREED) - What goes first is archived rows, then the oldest rows that were read.
+**ACCT-60** (SHIPPED) - What goes first is archived rows, then the oldest rows that were read.
 An unread row is never dropped for being old, so a burst of job failures cannot push out the
 request nobody has answered yet.
 
@@ -150,7 +152,7 @@ if it ever gets one.
 
 ## Preferences
 
-Status: **SHIPPED**, with per-type choice **AGREED**.
+Status: **SHIPPED**
 
 **ACCT-63** (SHIPPED) - Each person decides, per category (requests, media, reports,
 downloads, server), whether it reaches their inbox and whether it reaches their devices.
@@ -160,7 +162,7 @@ Everything starts on, so a new category needs no visit to the settings to work.
 not a filter over a pile that was kept anyway: what a person muted was never recorded against
 their account.
 
-**ACCT-65** (AGREED) - The same choice is available per notification type, a module's own
+**ACCT-65** (SHIPPED) - The same choice is available per notification type, a module's own
 types included, listed under their category. A type the person never touched follows its
 category, so nothing changes for someone who never opens the setting.
 
@@ -182,7 +184,7 @@ exposes a device's address.
 
 ## What a module may send
 
-Status: **SHIPPED** in part; each requirement carries its own.
+Status: **SHIPPED**
 
 **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing
 one. Its notifications obey the reader's preferences, reach their devices on the same terms,
@@ -192,6 +194,6 @@ and sit in the list beside the core's ([`modules/`](../modules/)).
 account, everyone, the holders of a permission, or a show's followers. It cannot invent a
 reach of its own.
 
-**ACCT-71** (AGREED) - A module declares the kinds of notification it sends and ships their
+**ACCT-71** (SHIPPED) - A module declares the kinds of notification it sends and ships their
 wording in each language it supports, so a module's row reads in the reader's language like a
 core one. A kind it did not declare is refused rather than sent as raw text.

@@ -40,7 +40,7 @@ const LOCAL_SUFFIXES: [&str; 7] = [
 /// The target of an absolute `http` or `https` URL. `None` for any other scheme,
 /// no host, or credentials (`user@host`), which can disguise where a URL goes.
 pub fn web_target(url: &str) -> Option<WebTarget> {
-    let uri: hyper::Uri = url.parse().ok()?;
+    let uri: http::Uri = url.parse().ok()?;
     let authority = uri.authority()?;
     if authority.as_str().contains('@') {
         return None;
@@ -120,6 +120,18 @@ fn embedded_v4(ip: Ipv6Addr) -> Option<Ipv4Addr> {
         return Some(tail(s[1], s[2]));
     }
     None
+}
+
+/// The address this machine reaches the internet from, read off the routing
+/// table. `None` on a machine with no route out, which would otherwise report
+/// loopback or the wildcard.
+#[cfg(not(target_family = "wasm"))]
+pub fn primary_address() -> Option<IpAddr> {
+    // Connecting a UDP socket sends no packets; it only consults the routing table.
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    let ip = socket.local_addr().ok()?.ip();
+    (!ip.is_loopback() && !ip.is_unspecified()).then_some(ip)
 }
 
 #[cfg(test)]

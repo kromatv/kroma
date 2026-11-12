@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 
 use crate::peers::downloads::DownloadRow;
 use kroma_module_sdk::db;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::host::HostStorage;
 use kroma_naming as naming;
 

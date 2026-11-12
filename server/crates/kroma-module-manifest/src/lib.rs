@@ -4,13 +4,21 @@
 //! `@kromatv/module-sdk` mirrors.
 
 mod compat;
+mod consent;
 mod embedded;
 mod event;
+mod helpers;
 mod manifest;
+mod matching;
+mod notifications;
+mod permissions;
 mod registry;
+mod settings_scope;
+mod widening;
 
 pub use compat::{
-    engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
+    engines_satisfied, fallbacks_newest_first, is_newer, range_matches, version_satisfies,
+    EngineRefusal, KNOWN_ENGINES,
 };
 pub use embedded::EmbeddedModule;
 pub use event::ModuleEvent;
@@ -19,12 +27,20 @@ pub use event::ModuleEvent;
 /// `kroma_module_sdk`) so the modules that sit below the SDK facade (e.g. scene)
 /// can use it without depending on the facade.
 pub use kroma_module_macros::embedded_module;
+pub use kroma_module_wire::NotificationType;
 pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
-    ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,
-    SettingsScope, Storage, Version,
+    ComponentNeeds, ConfigField, Contribution, CoreScope, Dependency, FeRemote, Helper, HelperAsset, ModuleManifest, PointDef, PointReq,
+    Storage, Version,
+};
+pub use matching::{host_matches, purpose_covers};
+pub use permissions::{
+    Attempt, Connect, Discovery, FsPermissions, FsRoot, Listen, MediaTool, NetPermissions, Permissions, Proto,
+    Reach,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
+pub use settings_scope::SettingsScope;
+pub use widening::Declared;
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the
 /// module's `module.json`, embedded at build time via `include_bytes!` and

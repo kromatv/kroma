@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "The component workbench: a Storybook-shaped atelier built out of @kromatv/ui itself, plus the SDK for authoring the stories it shows. Knows no app - the brand, the stories and the extra lenses are all passed in.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

@@ -9,6 +9,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
+use kroma_media::input;
 
 pub const WIDTH: usize = 160;
 pub const HEIGHT: usize = 90;
@@ -174,8 +175,7 @@ fn decode_args(path: &Path, window_start_s: f64) -> Vec<OsString> {
     );
     args.push(OsString::from("-ss"));
     args.push(OsString::from(format!("{window_start_s:.3}")));
-    args.push(OsString::from("-i"));
-    args.push(path.as_os_str().to_os_string());
+    args.extend(input::file(path));
     args.extend(["-an", "-sn", "-vf"].map(OsString::from));
     args.push(OsString::from(format!(
         "fps=1,scale={WIDTH}:{HEIGHT},format=gray"
@@ -320,10 +320,10 @@ mod tests {
             .collect();
         let at = |flag: &str| args.iter().position(|a| a == flag).unwrap();
 
-        assert!(at("-skip_frame") < at("-i"));
-        assert!(at("-ss") < at("-i"));
+        assert!(at("-skip_frame") < at("/media/film.mkv"));
+        assert!(at("-ss") < at("/media/film.mkv"));
         assert_eq!(args[at("-ss") + 1], "5400.000");
-        assert!(at("-an") > at("-i"));
+        assert!(at("-an") > at("/media/film.mkv"));
         assert!(args[at("-vf") + 1].starts_with("fps=1,scale=160:90"));
     }
 }

@@ -131,7 +131,7 @@ pub async fn apply<S: HostStorage + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require(&state, &user)?;
-    let result: OrganizeResult = match tokio::task::spawn_blocking(move || {
+    let result: OrganizeResult = match kroma_module_sdk::host::run_blocking(move || {
         organize::apply(&state, &|line| tracing::info!(target: "organize", "{line}"))
     })
     .await

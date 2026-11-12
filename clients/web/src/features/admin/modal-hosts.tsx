@@ -5,6 +5,8 @@ import { StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { ScheduleModal } from '#web/features/admin/jobs-schedule';
 import { AddLibraryModal, ManageLibraryModal } from '#web/features/admin/libraries-modals';
 import { InstallModal } from '#web/features/admin/module-install';
+import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet';
+import { UploadConsentModal } from '#web/features/admin/module-upload-consent';
 import { RegistriesDrawer } from '#web/features/admin/module-registries';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
@@ -26,6 +28,8 @@ export function AdminModalHosts() {
       <PipelineDrawer />
       <ReportDrawer />
       <InstallModal />
+      <UploadConsentModal />
+      <PermissionsSheet />
       <RegistriesDrawer />
       {/* Lent to modules through `openMediaInfo` on the admin host. */}
       <MediaInfoModal />

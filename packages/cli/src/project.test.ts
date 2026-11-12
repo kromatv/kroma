@@ -7,7 +7,7 @@ import { findProjects, isDirectory, isModuleSet, moduleDirs, openProject } from 
 const work = mkdtempSync(join(tmpdir(), 'kroma-project-'));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
 
-const MANIFEST = { schemaVersion: 2, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' };
+const MANIFEST = { schemaVersion: 3, id: 'tv.kroma.notes', name: 'Notes', version: '1.2.0' };
 const MANIFEST_JSON = JSON.stringify(MANIFEST);
 
 const CARGO = [
@@ -50,6 +50,13 @@ describe('openProject', () => {
     expect(() => openProject(dir)).toThrow(/dependsOn/);
   });
 
+  it('refuses a permission the schema does not declare, and says where it is', () => {
+    const permissions = { net: { conect: [] } };
+    const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, permissions }) });
+
+    expect(() => openProject(dir)).toThrow(/permissions\.net: .*conect/);
+  });
+
   it('names the field a manifest got wrong', () => {
     const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, version: 1 }) });
 
@@ -60,6 +67,12 @@ describe('openProject', () => {
     const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, id: 'Notes' }) });
 
     expect(() => openProject(dir)).toThrow(/reverse-DNS/);
+  });
+
+  it('refuses the seam a native module recorded, which no component has', () => {
+    const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, seam: 'unix' }) });
+
+    expect(() => openProject(dir)).toThrow(/seam/);
   });
 
   it('refuses a manifest written against another schema version', () => {

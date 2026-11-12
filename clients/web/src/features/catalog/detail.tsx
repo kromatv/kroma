@@ -74,7 +74,7 @@ const subscribeNever = () => () => {};
 const CORNER_LEFT = { base: 16, md: 32 } as const;
 const CORNER_TOP = { base: 16, md: 26 } as const;
 const HERO_GAP = { base: 24, md: 40 } as const;
-const HERO_PAD_TOP = { base: 48, md: 90 } as const;
+const HERO_PAD_TOP = { base: 72, md: 90 } as const;
 const POSTER_W = { base: 192, lg: 240 } as const;
 
 export interface DetailHeroProps {
@@ -102,6 +102,7 @@ export interface DetailHeroProps {
   playable?: MediaItem | null;
   themeUrl?: string | null;
   adminAction?: ReactNode;
+  trailerAction?: ReactNode;
   onReport?: () => void;
 }
 
@@ -132,6 +133,7 @@ export function DetailHero({
   playable,
   themeUrl,
   adminAction,
+  trailerAction,
   onReport,
 }: Readonly<DetailHeroProps>) {
   const scope = useStyleScope();
@@ -240,6 +242,7 @@ export function DetailHero({
                     onPress={onPlay}
                   />
                 ) : null)}
+              {trailerAction}
               {castItemId ? <CastButton itemId={castItemId} /> : null}
               <WatchedButton watched={watched} onToggle={onToggleWatched} />
               <ListButton inList={inList} onToggle={onToggleList} />

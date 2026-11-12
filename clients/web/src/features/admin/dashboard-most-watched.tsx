@@ -9,7 +9,6 @@ import {
   Grid,
   Img,
   RingScopeProvider,
-  Row,
   Section,
   Surface,
   styles,
@@ -70,10 +69,8 @@ export function MostWatchedSection() {
       <Section.Header>
         <Section.Title>{t('admin.mostWatched')}</Section.Title>
         <Section.Actions>
-          <Row gap={10}>
-            <FilterSelect label={t('admin.colUser')} choice={account} />
-            <FilterSelect label={t('admin.mostWatched')} choice={range} />
-          </Row>
+          <FilterSelect label={t('admin.colUser')} choice={account} />
+          <FilterSelect label={t('admin.mostWatched')} choice={range} />
         </Section.Actions>
       </Section.Header>
       <Grid columns={2} gap={16}>

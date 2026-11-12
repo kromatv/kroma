@@ -7,7 +7,8 @@ use kroma_module_sdk::db;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::Verdict;
 
-use super::{cached_release, interactive_search, CachedRelease};
+use super::interactive_search;
+use crate::search::remembered::{recall, RememberedRelease};
 use crate::search::subject::{resolve, Subject};
 use crate::search::targets::SearchScope;
 
@@ -21,13 +22,13 @@ pub fn grab_cached<S: HostStorage>(
     guid: &str,
     indexer_id: &str,
 ) -> Result<crate::peers::downloads::DownloadRow> {
-    // The search cache is in-memory, so a restart or a direct grab with no
-    // prior search would miss it; on a miss, re-run the search and retry.
-    let cached = match cached_release(subject, scope, guid, indexer_id) {
+    let key = subject.cache_key(scope);
+    // A direct grab with no prior search misses; re-run the search and retry.
+    let cached = match recall(state.store(), &key, guid, indexer_id)? {
         Some(c) => c,
         None => {
             interactive_search(state, subject, scope)?;
-            cached_release(subject, scope, guid, indexer_id).ok_or_else(|| {
+            recall(state.store(), &key, guid, indexer_id)?.ok_or_else(|| {
                 anyhow!("release not found on the indexer anymore; run the search again")
             })?
         }
@@ -68,7 +69,7 @@ pub fn replaces(verdict: Option<Verdict>) -> bool {
     !matches!(verdict, None | Some(Verdict::Fill))
 }
 
-fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Result<String> {
+fn resolve_grab_target<S: HostStorage>(state: &S, cached: &RememberedRelease) -> Result<String> {
     let indexer = crate::peers::indexers::get(state, &cached.view.indexer_id)?;
     match indexer {
         Some(i) if i.kind == crate::peers::indexers::KIND_BUILTIN => {
@@ -85,12 +86,12 @@ fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Res
 }
 
 fn approve_if_needed<S: HostStorage>(state: &S, request_id: &str) -> Result<()> {
-    use kroma_module_sdk::engine::model::RequestStatus;
+    use kroma_module_sdk::domain::RequestStatus;
     let conn = state.db().get()?;
     let req = db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
     if matches!(req.status, RequestStatus::Pending | RequestStatus::Failed) {
-        kroma_module_sdk::engine::services::requests::approve_request(state, request_id, None)?;
+        kroma_module_sdk::requests::lifecycle::approve_request(state, request_id, None)?;
     }
     Ok(())
 }

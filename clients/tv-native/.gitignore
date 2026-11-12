@@ -37,3 +37,5 @@ yarn-error.*
 # generated native folders (recreate with `bun run prebuild`)
 /ios
 /android
+/tizen
+/webos

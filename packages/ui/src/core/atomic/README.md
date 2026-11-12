@@ -59,6 +59,11 @@ react-native-web injects at runtime, so a compiled class outranks the reset the
 renderer gives every view. A build that loads no token sheet is warned and
 paints its compiled styles with nothing.
 
+They land after the bundler has hashed that file, so its own hash never sees them.
+Its name therefore also carries a digest of the rules. Without it, a release that adds
+rules keeps the same name, and a browser holding the file as immutable pairs the new
+JavaScript with the old sheet: every class only the new code uses paints nothing.
+
 A `styles()` set compiles per entry: the entries the reader cannot see stay as
 written and resolve at runtime beside the compiled ones. A recipe compiles per
 slot, whole or not at all, because a slot's layers are then merged without

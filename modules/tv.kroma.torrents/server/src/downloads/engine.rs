@@ -1,16 +1,20 @@
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::time::Duration;
 
 use kroma_module_sdk::host::HostCtx;
 
 use kroma_module_sdk::primitives::now_ms;
 
 use crate::db;
+use crate::rqbit::ports;
 use crate::{RqbitConfig, RqbitEngine};
 
-const SLOW_START: std::time::Duration = std::time::Duration::from_secs(30);
+const SLOW_START: Duration = Duration::from_secs(30);
 
 use super::gate::{active_proxy_url, vpn_sealed_expected};
 use super::DownloadManager;
+
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct LiveStat {
@@ -31,9 +35,9 @@ impl DownloadManager {
         self.bring_up(host).await;
     }
 
-    /// Replaces the running engine, e.g. after a VPN change. The old session is
-    /// stopped before the new one opens the same persistence directory, so a
-    /// failed start leaves no engine and the monitor retries. Errors are logged.
+    /// Replaces the running engine, e.g. after a VPN change. The old helper has
+    /// ended before the new one opens the same persistence directory, so a failed
+    /// start leaves no engine and the monitor retries. Errors are logged.
     pub async fn restart_rqbit(&self, host: &dyn HostCtx) {
         let _gate = self.engine_gate.lock().await;
         let old = self.rqbit.write().unwrap().take();
@@ -48,8 +52,6 @@ impl DownloadManager {
         if let Some(old) = retiring {
             old.shutdown().await;
         }
-        // Never bring the engine up while the embedded client is disabled; a
-        // missing row means first boot before seeding, treated as enabled.
         if let Ok(conn) = self.store().get() {
             if let Ok(Some(c)) = db::get_download_client(&conn, db::EMBEDDED_CLIENT_ID) {
                 if !c.enabled {
@@ -59,21 +61,28 @@ impl DownloadManager {
                 }
             }
         }
-        // A missing proxy can also mean the VPN sidecar has not answered yet.
-        // Peer traffic must stay sealed, so defer the start (the monitor
-        // retries) rather than run on the raw connection.
         let proxy = active_proxy_url(host);
         if proxy.is_none() && vpn_sealed_expected(host) {
-            tracing::warn!(
-                "VPN is configured but its proxy is not resolvable; embedded engine start deferred (never runs unsealed)"
-            );
+            if !self.start_deferred.swap(true, Ordering::Relaxed) {
+                tracing::warn!(
+                    "no network is up to carry the peers, and the VPN or the kill switch forbids \
+                     going direct; embedded engine start deferred (never runs unsealed)"
+                );
+            }
             return;
         }
+        self.start_deferred.store(false, Ordering::Relaxed);
+        let sealed = proxy.is_some();
+        let chosen = ports::chosen(&self.state_dir);
         let cfg = RqbitConfig {
+            program: self.helper.clone(),
             session_dir: self.state_dir.join("session"),
             download_dir: self.downloads_dir.clone(),
-            socks_proxy_url: proxy,
-            listen_port: u16::try_from(host.setting_i64("rqbitPort", 0).max(0)).ok(),
+            work_dir: self.state_dir.join("adding"),
+            socks_proxy_url: Some(crate::port::vpn::gateway_placeholder(sealed)),
+            sealed,
+            api_port: chosen.api,
+            listen_port: named_port(host).unwrap_or(chosen.peers),
             download_bps: super::bps_setting(host, super::DOWN_KBPS_KEY),
             upload_bps: super::bps_setting(host, super::UP_KBPS_KEY),
         };
@@ -84,20 +93,19 @@ impl DownloadManager {
         if began.elapsed() >= SLOW_START {
             tracing::warn!(
                 seconds = began.elapsed().as_secs(),
-                "the embedded engine took a long time to restore its session; a torrent with no \
+                "the rqbit helper took a long time to restore its session; a torrent with no \
                  cached metadata blocks the restore until the DHT answers for it"
             );
         }
         match outcome {
             Ok(engine) => {
-                tracing::info!(
-                    proxy = cfg.socks_proxy_url.is_some(),
-                    "embedded torrent engine started"
-                );
+                tracing::info!(sealed, api_port = cfg.api_port, "rqbit helper started");
                 *self.rqbit.write().unwrap() = Some(engine);
             }
             Err(e) => {
-                tracing::warn!(error = %format!("{e:#}"), "embedded torrent engine start failed");
+                self.start_failures.fetch_add(1, Ordering::Relaxed);
+                ports::rotate(&self.state_dir);
+                tracing::warn!(error = %format!("{e:#}"), "rqbit helper start failed");
             }
         }
     }
@@ -115,9 +123,6 @@ impl DownloadManager {
     /// `None` for an external engine: that one is a daemon this process can only
     /// learn about by asking it, which is what the Test button is for.
     pub fn embedded_state(&self, enabled: bool) -> Option<crate::EngineState> {
-        if !crate::RQBIT_COMPILED {
-            return Some(crate::EngineState::NotCompiled);
-        }
         if !enabled {
             return Some(crate::EngineState::Stopped);
         }
@@ -167,66 +172,12 @@ impl DownloadManager {
         out
     }
 
-    /// Announce through the proxy ourselves and inject the peers, for torrents
-    /// stuck at 0 peers. Blocking.
-    #[cfg(feature = "rqbit")]
-    pub fn reseed_stalled(&self, _host: &dyn HostCtx) {
-        let Some(engine) = self.rqbit() else { return };
-        if !engine.is_sealed() {
-            return;
-        }
-        let client = engine.client();
-        let session_dir = self.state_dir.join("session");
-        let rows = match self
-            .core()
-            .get()
-            .and_then(|c| Ok(db::active_downloads(&c)?))
-        {
-            Ok(rows) => rows,
-            Err(_) => return,
-        };
-        for row in rows {
-            if row.client_id != db::EMBEDDED_CLIENT_ID || row.client_ref.is_empty() {
-                continue;
-            }
-            let Ok(Some(status)) = client.status(&row.client_ref) else {
-                continue;
-            };
-            if !status.is_stalled_at_start() {
-                continue;
-            }
-            // librqbit persists `<info_hash>.torrent`; client_ref is that hex.
-            let path = session_dir.join(format!("{}.torrent", row.client_ref));
-            let Ok(bytes) = std::fs::read(&path) else {
-                continue;
-            };
-            let peers = engine.proxied_peers(Some(&bytes), "");
-            if peers.is_empty() {
-                continue;
-            }
-            match engine.reseed(&row.client_ref, bytes, row.save_path.as_deref(), &peers) {
-                Ok(()) => tracing::info!(
-                    id = %row.id,
-                    peers = peers.len(),
-                    "re-seeded a stalled torrent with peers from our proxied tracker announce"
-                ),
-                Err(e) => {
-                    tracing::warn!(id = %row.id, error = %format!("{e:#}"), "torrent re-seed failed")
-                }
-            }
-        }
-    }
-
-    /// Transmission and qBittorrent announce for themselves.
-    #[cfg(not(feature = "rqbit"))]
-    pub fn reseed_stalled(&self, _host: &dyn HostCtx) {}
-
-    /// Drops the session: no download, no seed, no DHT. Idempotent.
+    /// Ends the helper: no download, no seed, no DHT. Idempotent.
     pub fn stop_rqbit(&self) {
         if let Some(engine) = self.rqbit.write().unwrap().take() {
             engine.stop();
             *self.retiring.lock().unwrap() = Some(engine);
-            tracing::info!("embedded torrent engine stopped");
+            tracing::info!("rqbit helper stopped");
         }
     }
 
@@ -250,11 +201,28 @@ impl DownloadManager {
         tracing::warn!("embedded engine disabled: session stopped, downloads paused");
     }
 
-    /// The caller must have restarted the session first.
+    /// The caller must have restarted the helper first. A row that had not reached
+    /// the engine yet goes back to the queue, where the monitor adds it.
     pub fn resume_after_enable(&self) {
         let held = std::mem::take(&mut *self.paused_by_disable.lock().unwrap());
         for id in held {
-            let _ = db::set_download_status(self.core(), &id, "downloading", None);
+            let never_added = self
+                .core()
+                .get()
+                .ok()
+                .and_then(|c| db::get_download(&c, &id).ok().flatten())
+                .is_some_and(|row| row.never_reached_an_engine());
+            let status = if never_added { "queued" } else { "downloading" };
+            let _ = db::set_download_status(self.core(), &id, status, None);
         }
     }
 }
+
+fn named_port(host: &dyn HostCtx) -> Option<u16> {
+    u16::try_from(host.setting_i64("rqbitPort", 0))
+        .ok()
+        .filter(|port| *port > 0)
+}
+
+#[cfg(test)]
+mod tests;

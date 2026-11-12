@@ -99,11 +99,11 @@ function UsersPageInner() {
         </Section.Header>
         <Table.Root
           columns={[
-            { flex: 2.4 },
-            { flex: 1, from: 'md' },
-            { flex: 1.3, from: 'md' },
-            { flex: 1.2, from: 'md' },
-            { width: 44 },
+            { flex: 2.4, min: 200 },
+            { flex: 1, min: 110 },
+            { flex: 1.3, min: 140 },
+            { flex: 1.2, min: 130 },
+            { width: 64 },
           ]}
         >
           <Table.Header>

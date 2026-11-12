@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { fakeVideo } from '#web/features/playback/fake-video.fixture';
+import { fakeVideo } from '@kromatv/core/test';
 import { bindMediaEvents, type MediaEventSetters } from '#web/features/playback/media-events';
 import type { MovieView } from '#web/shared/lib/api';
 

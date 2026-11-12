@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.2" baseProfile="tiny-ps" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <title>KROMA</title>
+  <desc>KROMA multicolor wheel brand mark on a solid dark square background.</desc>
+  <rect width="100" height="100" fill="#0A0A0C"/>
+  <path d="M50 32.96V0a50 50 0 0 1 43.3 25L64.76 41.48A17.045 17.045 0 0 0 50 32.96Z" fill="#F2685C"/>
+  <path d="m64.76 41.48 28.54-16.48a50 50 0 0 1 0 50L64.76 58.52a17.045 17.045 0 0 0 0-17.04Z" fill="#F4B642"/>
+  <path d="m64.76 58.52 28.54 16.48A50 50 0 0 1 50 100V67.05a17.045 17.045 0 0 0 14.76-8.53Z" fill="#5FBF8F"/>
+  <path d="M50 67.05V100A50 50 0 0 1 6.7 75l28.54-16.48A17.045 17.045 0 0 0 50 67.05Z" fill="#4F9DE0"/>
+  <path d="M35.24 58.52 6.7 75a50 50 0 0 1 0-50l28.54 16.48a17.045 17.045 0 0 0 0 17.04Z" fill="#6366F1"/>
+  <path d="M35.24 41.48 6.7 25A50 50 0 0 1 50 0v32.96a17.045 17.045 0 0 0-14.76 8.52Z" fill="#A855F7"/>
+</svg>

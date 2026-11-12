@@ -7,7 +7,7 @@ import { Faq } from '#site/components/contact/faq';
 import { PageShell } from '#site/components/contact/page-shell';
 import { L } from '#site/components/localized-link';
 import { Rich } from '#site/components/rich';
-import { getLocale } from '#site/lib/i18n';
+import { getLocale, localizePath, useLang } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';
 
@@ -32,7 +32,7 @@ const channels = [
   },
   {
     icon: IconBook,
-    href: `${site.repo}/blob/main/INSTALL.md`,
+    href: '/docs',
     title: m.support_channel_install_title,
     description: m.support_channel_install_description,
     action: m.support_channel_install_action,
@@ -53,9 +53,8 @@ const bugItems = [
   m.support_bug_item4,
 ] as const;
 
-const installHref = `${site.repo}/blob/main/INSTALL.md`;
-
 function Support() {
+  const lang = useLang();
   // Built here, not at module scope, so every string resolves in the locale
   // being rendered.
   const faqItems = [
@@ -65,10 +64,7 @@ function Support() {
       question: m.support_faq_q3(),
       answer: (
         <>
-          {m.support_faq_a3_before()}{' '}
-          <a href={installHref} target="_blank" rel="noreferrer noopener">
-            {m.support_faq_a3_link()}
-          </a>{' '}
+          {m.support_faq_a3_before()} <L to="/docs">{m.support_faq_a3_link()}</L>{' '}
           {m.support_faq_a3_after()}
         </>
       ),
@@ -108,7 +104,7 @@ function Support() {
           <ContactCard
             key={href}
             icon={icon}
-            href={href}
+            href={href.startsWith('/') ? localizePath(href, lang) : href}
             title={title()}
             description={description()}
             action={action()}

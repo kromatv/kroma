@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Artifact, Catalog, Entry } from './catalog';
 
 const ARTIFACT = {
-  target: 'aarch64-apple-darwin',
-  file: 'tv.kroma.notes-aarch64-apple-darwin.kmod',
-  url: 'https://modules.kroma.tv/tv.kroma.notes-aarch64-apple-darwin.kmod',
+  file: 'tv.kroma.notes.kmod',
+  url: 'https://modules.kroma.tv/tv.kroma.notes.kmod',
   size: 4096,
   sha256: 'aa',
   contentHash: 'bb',
@@ -22,7 +21,7 @@ const ENTRY = {
 };
 
 describe('Artifact', () => {
-  it('keeps the target, the file and both hashes', () => {
+  it('keeps the file and both hashes', () => {
     expect(Artifact.parse(ARTIFACT)).toEqual(ARTIFACT);
   });
 
@@ -32,9 +31,10 @@ describe('Artifact', () => {
     expect(() => Artifact.parse(without)).toThrow();
   });
 
-  it('reads a universal build, whose target is null rather than missing', () => {
-    expect(Artifact.parse({ ...ARTIFACT, target: null }).target).toBeNull();
-    expect(() => Artifact.parse({ ...ARTIFACT, target: undefined })).toThrow();
+  it('keeps the platform a published per-platform build names, so carrying it forward is exact', () => {
+    const native = { ...ARTIFACT, target: 'aarch64-apple-darwin' };
+
+    expect(Artifact.parse(native)).toEqual(native);
   });
 });
 

@@ -1,9 +1,12 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use kroma_media::input;
+use kroma_media::tmp_file::unique_tmp;
+
 use super::encode::probe_width;
 use super::images_dir;
-use super::scratch::{finalize, unique_tmp};
+use super::scratch::finalize;
 
 /// A title logo (alpha preserved), scaled to fit ≤300×120 (`scale` 1) or
 /// ≤600×240 (`scale` 2, the Apple TV Top Shelf card) and cached as
@@ -114,8 +117,8 @@ fn ffmpeg_rendition(src: &Path, out: &Path, vf: &str, extra: &[&str]) -> Option<
     }
     let tmp = unique_tmp(out);
     let ok = Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-threads", "1", "-i"])
-        .arg(src)
+        .args(["-y", "-loglevel", "error", "-threads", "1"])
+        .args(input::file(src))
         .args(["-vf", vf, "-frames:v", "1"])
         .args(extra)
         .arg(&tmp)

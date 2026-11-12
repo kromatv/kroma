@@ -613,6 +613,33 @@ async fn subscribing_registers_the_endpoint_and_flips_the_toggle() {
 }
 
 #[tokio::test]
+async fn a_web_push_endpoint_pointing_inside_the_network_is_refused() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "push-ssrf");
+
+    for endpoint in [
+        "http://push.example/wpush/v2/plain",
+        "https://127.0.0.1:4040/api/_host/settings",
+        "https://192.168.1.1/admin",
+        "https://ana@push.example/wpush/v2/x",
+    ] {
+        let (status, body) = send(
+            &t.app,
+            "POST",
+            "/api/push/subscribe",
+            Some(&ana),
+            Some(subscription(endpoint)),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{endpoint}");
+        assert_eq!(body["code"], json!("error.pushBadEndpoint"), "{endpoint}");
+    }
+    let (_, key) = get(&t.app, "/api/push/key", Some(&ana)).await;
+    assert_eq!(key["subscribed"], json!(false));
+}
+
+#[tokio::test]
 async fn re_subscribing_the_same_browser_does_not_duplicate_it() {
     let t = test_app();
     let (_id, ana) = member(&t, "push3");

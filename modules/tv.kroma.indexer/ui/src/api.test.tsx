@@ -89,11 +89,9 @@ describe('useIndexerApi', () => {
     const a = api();
     await a.definitions();
     await a.definition('the tracker');
-    await a.syncDefinitions();
     expect(calls).toEqual([
       { method: 'GET', path: '/indexers/definitions', body: undefined },
       { method: 'GET', path: '/indexers/definitions/the%20tracker', body: undefined },
-      { method: 'POST', path: '/indexers/definitions/sync', body: undefined },
     ]);
   });
 });

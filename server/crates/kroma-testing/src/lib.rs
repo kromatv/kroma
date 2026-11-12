@@ -1,16 +1,22 @@
-//! Scratch directories and media fixtures for test harnesses.
+//! Scratch directories, media fixtures, source scans and nested cargo runs
+//! for test harnesses.
 //!
 //! A hand-built `env::temp_dir().join(pid)` is a path, not a resource: nothing
 //! removes it when the test ends, panics, or is killed. A [`TempDir`] goes when
 //! its holder drops, unwinding included.
 
+mod cargo;
 mod media;
+mod sources;
 
+pub use cargo::cargo;
 pub use media::clip;
+pub use sources::{findings, rust_sources, Finding};
 pub use tempfile::TempDir;
 
 /// A fresh, empty directory under `$TMPDIR`, named `kroma-<tag>-<random>` so a
-/// stray one is still identifiable.
+/// stray one is still identifiable. WASI has no temp dir of its own, so a
+/// component reads `$TMPDIR` itself, and `/tmp` when it is unset.
 ///
 /// The directory is removed when the returned guard drops, so bind the guard
 /// for as long as the path is used: a caller that keeps only `path()` is
@@ -18,8 +24,18 @@ pub use tempfile::TempDir;
 pub fn temp_dir(tag: &str) -> TempDir {
     tempfile::Builder::new()
         .prefix(&format!("kroma-{tag}-"))
-        .tempdir()
+        .tempdir_in(scratch_root())
         .expect("create temp dir")
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn scratch_root() -> std::path::PathBuf {
+    std::env::temp_dir()
+}
+
+#[cfg(target_family = "wasm")]
+fn scratch_root() -> std::path::PathBuf {
+    std::env::var_os("TMPDIR").map_or_else(|| "/tmp".into(), Into::into)
 }
 
 #[cfg(test)]

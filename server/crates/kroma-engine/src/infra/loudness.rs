@@ -9,6 +9,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use kroma_domain::{AudioAnalysis, AudioVerdict};
+use kroma_media::input;
 
 // LRA above this (LU) = the "quiet dialogue, loud explosions" mix.
 const LRA_HIGH: f64 = 15.0;
@@ -42,7 +43,7 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
     let mut cmd = Command::new("ffmpeg");
     // `loudnorm` prints its measurement JSON on stderr at the `info` log level.
     cmd.args(["-hide_banner", "-v", "info", "-nostdin", "-threads", "1"]);
-    cmd.arg("-i").arg(path);
+    cmd.args(input::file(path));
     if with_center {
         // One decode, two measurements: full mix + centre channel. The graph is
         // built mix-first, so the mix loudnorm always has the LOWER filter

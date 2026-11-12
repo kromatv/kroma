@@ -1,9 +1,18 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { dependenciesOf, optionalDependenciesOf, satisfies } from '@kromatv/registry';
-import { cargo, targetDir } from '../cargo';
+import {
+  dependenciesOf,
+  type Manifest,
+  notificationsProblem,
+  optionalDependenciesOf,
+  satisfies,
+} from '@kromatv/registry';
+import { z } from 'zod';
+import { COMPONENT_TARGET, cargo, targetDir } from '../cargo';
 import { exec } from '../exec';
 import { findProjects, type Project } from '../project';
+import { versions } from '../scaffold/plan';
+import { floorBeyondRelease } from '../server-floor';
 import { style } from '../style';
 
 export interface CheckOptions {
@@ -69,6 +78,24 @@ async function checkTs(project: Project): Promise<string[]> {
   return problems;
 }
 
+async function checkRust(project: Project, dir: string): Promise<string[]> {
+  const server = project.server;
+  if (!server) return [];
+  const id = project.manifest.id;
+  const problems: string[] = [];
+  const lints = ['--', '-D', 'warnings'];
+  if ((await cargo(server.dir, ['clippy', '--all-targets', ...lints], dir)) !== 0) {
+    problems.push(`${id}: clippy failed`);
+  }
+  if (!server.bin) return problems;
+  const features = server.features.length ? ['--features', server.features.join(',')] : [];
+  const component = ['clippy', '--bin', server.bin, ...features, '--target', COMPONENT_TARGET];
+  if ((await cargo(server.dir, [...component, ...lints], dir)) !== 0) {
+    problems.push(`${id}: clippy failed for ${COMPONENT_TARGET}`);
+  }
+  return problems;
+}
+
 /** A declared range no peer in this tree satisfies. A module's real contract is
  *  the point it consumes, but a range is what the Store resolves an install
  *  against, so one that has rotted past its peer blocks the update rather than
@@ -87,8 +114,47 @@ export function unsatisfiableRanges(projects: readonly Project[]): string[] {
   return problems;
 }
 
-/** `kroma check`: every manifest valid and unique, the frontend typed and its
- *  imports in bounds, the crate clean under clippy. */
+const Catalog = z.record(z.string(), z.unknown());
+type Catalogs = Readonly<Record<string, z.infer<typeof Catalog>>>;
+
+function catalogsOf(dir: string): Catalogs {
+  const at = join(dir, 'locales');
+  if (!existsSync(at)) return {};
+  const files = readdirSync(at).filter((name) => name.endsWith('.json'));
+  return Object.fromEntries(
+    files.map((name) => [
+      name.slice(0, -'.json'.length),
+      Catalog.parse(JSON.parse(readFileSync(join(at, name), 'utf8'))),
+    ]),
+  );
+}
+
+/** What a module's declared notification types get wrong: a type outside its
+ *  namespace or declared twice, and a key one of the catalogs it ships has no
+ *  words for. `catalogs` maps a locale to its parsed `locales/<code>.json`. */
+export function notificationProblems(manifest: Manifest, catalogs: Catalogs): string[] {
+  const declared = manifest.notifications ?? [];
+  if (declared.length === 0) return [];
+  const id = manifest.id;
+  const named = notificationsProblem(id, declared);
+  const problems = named === null ? [] : [`${id}: ${named}`];
+  const locales = Object.entries(catalogs);
+  if (locales.length === 0) problems.push(`${id}: declares notifications but ships no locales`);
+  for (const type of declared) {
+    const keys = new Set([type.titleKey, type.bodyKey, type.labelKey ?? type.titleKey]);
+    for (const key of keys) {
+      for (const [locale, catalog] of locales) {
+        if (key in catalog || `${key}_other` in catalog) continue;
+        problems.push(`${id}: ${type.type} names "${key}", which locales/${locale}.json lacks`);
+      }
+    }
+  }
+  return problems;
+}
+
+/** `kroma check`: every manifest valid and unique, its notification types
+ *  worded in every catalog, the frontend typed and its imports in bounds, the
+ *  crate clean under clippy here and for the component target. */
 export async function checkCommand(options: CheckOptions): Promise<number> {
   const cwd = options.cwd ?? process.cwd();
   const projects = findProjects(options.dirs, cwd);
@@ -102,18 +168,17 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     seen.set(p.manifest.id, p.dir);
   }
   problems.push(...unsatisfiableRanges(projects));
+  const release = versions(cwd).server;
+  for (const p of projects) {
+    const beyond = floorBeyondRelease(p.manifest, release);
+    if (beyond) problems.push(beyond);
+  }
 
   for (const project of projects) {
     console.log(`\n${style.bold(project.manifest.id)}`);
+    problems.push(...notificationProblems(project.manifest, catalogsOf(project.dir)));
     if (options.ts !== false) problems.push(...(await checkTs(project)));
-    if (options.rust !== false && project.server) {
-      const code = await cargo(
-        project.server.dir,
-        ['clippy', '--all-targets', '--', '-D', 'warnings'],
-        dir,
-      );
-      if (code !== 0) problems.push(`${project.manifest.id}: clippy failed`);
-    }
+    if (options.rust !== false) problems.push(...(await checkRust(project, dir)));
   }
 
   if (problems.length > 0) {

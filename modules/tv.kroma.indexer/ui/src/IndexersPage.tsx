@@ -88,7 +88,8 @@ export default function IndexersPage() {
 
   // Built-in flow: browse/pick a Cardigann definition, then fill its settings.
   const openPicker = async () => {
-    const definitionId = await DefinitionPickerModal.call();
+    const added = indexers.flatMap((ix) => (ix.definitionId ? [ix.definitionId] : []));
+    const definitionId = await DefinitionPickerModal.call({ added });
     if (!definitionId) return;
     if (await BuiltinIndexerModal.call({ definitionId, indexer: null })) await reload();
   };

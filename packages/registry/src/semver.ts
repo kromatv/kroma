@@ -132,6 +132,31 @@ export function satisfies(version: string, range: string): boolean {
   return compare(v, base) >= 0 && compare(v, upperBound(operator, base)) < 0;
 }
 
+const LOWER_BOUND = /^(?:>=|\^|~|=)?v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/;
+
+/**
+ * The lowest version a range admits: the base of a `>=`, `^`, `~` or exact
+ * comparator, or a bare version, which a server reads as a floor. With several
+ * comparators (`>=0.2.0, <0.4.0`), the highest of their lower bounds. `null`
+ * when the range sets no floor (`*`, `<1.0.0`) or has a comparator this cannot
+ * read, so a caller never refuses on a guess.
+ */
+export function floorOf(range: string): string | null {
+  const tokens = range
+    .trim()
+    .replaceAll(/(>=|<=|[<>=^~])\s+/g, '$1')
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  let floor: string | null = null;
+  for (const token of tokens) {
+    if (token.startsWith('<') || token === '*') continue;
+    const base = LOWER_BOUND.exec(token)?.[1];
+    if (!base) return null;
+    if (floor === null || compareRaw(base, floor) > 0) floor = base;
+  }
+  return floor;
+}
+
 /**
  * The named channel a version belongs to: `latest` for a stable release, its
  * first pre-release identifier (`beta`, `rc`, `nightly`…) otherwise, and `null`

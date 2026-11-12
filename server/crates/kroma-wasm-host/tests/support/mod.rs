@@ -1,14 +1,12 @@
 #![allow(dead_code)]
 
-use std::ffi::OsStr;
 use std::path::Path;
-use std::process::Command;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use kroma_wasm_host::{
-    FetchCall, Grant, Limits, ModuleComponent, ModuleInstance, NetPolicy, Request, Response,
-    Settings, Verdict, WasmHost,
+    FetchRequest, Grant, Limits, Media, ModuleComponent, ModuleInstance, NetPolicy, Request,
+    Response, Settings, Verdict, WasmHost,
 };
 
 pub const MEMORY_CEILING_BYTES: usize = 32 * 1024 * 1024;
@@ -29,28 +27,77 @@ const GUEST_TARGET: &str = "wasm32-wasip2";
 pub struct BlockEverything;
 
 impl NetPolicy for BlockEverything {
-    fn decide(&self, call: &FetchCall) -> Verdict {
-        Verdict::Block(format!("{} is not declared", call.purpose))
+    fn fetch(&self, request: &FetchRequest) -> Verdict {
+        Verdict::Block(format!("{} is not declared", request.purpose))
     }
+}
+
+pub fn guest_wasm() -> &'static [u8] {
+    static WASM: OnceLock<Vec<u8>> = OnceLock::new();
+    WASM.get_or_init(build_guest)
 }
 
 pub fn component() -> &'static ModuleComponent {
     static COMPONENT: OnceLock<ModuleComponent> = OnceLock::new();
     COMPONENT.get_or_init(|| {
         let host = WasmHost::new().expect("build the wasm host");
-        host.compile(&build_guest())
-            .expect("compile the test guest")
+        host.compile(guest_wasm()).expect("compile the test guest")
     })
 }
 
+pub fn sandboxed_from(component: &ModuleComponent) -> ModuleInstance {
+    component
+        .instantiate(grant(
+            Arc::new(BlockEverything),
+            Settings::default(),
+            LIMITS,
+            None,
+        ))
+        .expect("instantiate the test guest")
+}
+
 pub fn instance(policy: Arc<dyn NetPolicy>, settings: Settings, limits: Limits) -> ModuleInstance {
-    let grant = Grant {
+    granted(policy, settings, limits, None)
+}
+
+pub fn with_media(media: Arc<dyn Media>) -> ModuleInstance {
+    granted(
+        Arc::new(BlockEverything),
+        Settings::default(),
+        LIMITS,
+        Some(media),
+    )
+}
+
+fn grant(
+    policy: Arc<dyn NetPolicy>,
+    settings: Settings,
+    limits: Limits,
+    media: Option<Arc<dyn Media>>,
+) -> Grant {
+    Grant {
         policy,
         settings,
         limits,
-    };
+        env: Vec::new(),
+        log: None,
+        preopens: Vec::new(),
+        databases: None,
+        processes: None,
+        lan: None,
+        files: None,
+        media,
+    }
+}
+
+fn granted(
+    policy: Arc<dyn NetPolicy>,
+    settings: Settings,
+    limits: Limits,
+    media: Option<Arc<dyn Media>>,
+) -> ModuleInstance {
     component()
-        .instantiate(grant)
+        .instantiate(grant(policy, settings, limits, media))
         .expect("instantiate the test guest")
 }
 
@@ -62,6 +109,7 @@ pub fn request(path: &str, argument: &str) -> Request {
     Request {
         method: "POST".into(),
         path: path.into(),
+        headers: Vec::new(),
         body: argument.as_bytes().to_vec(),
     }
 }
@@ -79,20 +127,14 @@ pub fn text(response: &Response) -> String {
 fn build_guest() -> Vec<u8> {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/guest/Cargo.toml");
     let target_dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("wasm-guest");
-    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let mut command = Command::new(cargo);
-    command
+    let output = kroma_testing::cargo()
         .args(["build", "--release", "--locked", "--target", GUEST_TARGET])
         .arg("--manifest-path")
         .arg(&manifest)
         .arg("--target-dir")
-        .arg(&target_dir);
-    for (key, _) in std::env::vars_os() {
-        if is_host_build_setting(&key) {
-            command.env_remove(key);
-        }
-    }
-    let output = command.output().expect("run cargo to build the test guest");
+        .arg(&target_dir)
+        .output()
+        .expect("run cargo to build the test guest");
     assert!(
         output.status.success(),
         "building the test guest failed; is the target installed (`rustup target add {GUEST_TARGET}`)?\n{}",
@@ -100,22 +142,4 @@ fn build_guest() -> Vec<u8> {
     );
     let wasm = target_dir.join(format!("{GUEST_TARGET}/release/kroma_wasm_host_guest.wasm"));
     std::fs::read(&wasm).expect("read the built test guest")
-}
-
-fn is_host_build_setting(key: &OsStr) -> bool {
-    let Some(key) = key.to_str() else {
-        return false;
-    };
-    key.ends_with("RUSTFLAGS")
-        || key.ends_with("RUSTDOCFLAGS")
-        || key.starts_with("CARGO_LLVM_COV")
-        || matches!(
-            key,
-            "RUSTC_WRAPPER"
-                | "RUSTC_WORKSPACE_WRAPPER"
-                | "CARGO_TARGET_DIR"
-                | "CARGO_BUILD_TARGET_DIR"
-                | "CARGO_BUILD_TARGET"
-                | "LLVM_PROFILE_FILE"
-        )
 }

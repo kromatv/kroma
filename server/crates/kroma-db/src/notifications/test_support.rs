@@ -34,6 +34,7 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
         data: Some(serde_json::json!({ "requestId": "req-1" })),
         dedupe_key: None,
         group_key: None,
+        module_type: None,
         count: 1,
         updated_at: created_at,
         resolved_at: None,
@@ -57,4 +58,15 @@ pub(super) fn new(id: &str, created_at: i64) -> StoredNotification {
 pub(super) fn insert(p: &Pool, id: &str, user: &str, at: i64) -> u32 {
     let conn = p.get().unwrap();
     insert_notification(&conn, user, &new(id, at)).unwrap().unread
+}
+
+pub(super) fn insert_read(p: &Pool, id: &str, user: &str, at: i64) {
+    insert(p, id, user, at);
+    p.get()
+        .unwrap()
+        .execute(
+            "UPDATE notifications SET read_at = ?2 WHERE id = ?1",
+            rusqlite::params![id, at],
+        )
+        .unwrap();
 }

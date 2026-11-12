@@ -17,13 +17,17 @@ export { Chart } from './chart';
 export type { CodeBlockProps } from './code-block';
 export { CodeBlock } from './code-block';
 export type {
+  CommandAction,
+  CommandActionsProps,
+  CommandBoost,
   CommandInputProps,
   CommandItem,
   CommandResults,
   CommandRootProps,
   CommandSection,
+  CommandTriggerProps,
 } from './command';
-export { COMMAND_METRICS, Command, useCommandResults } from './command';
+export { COMMAND_METRICS, Command, CommandKeys, useCommandResults } from './command';
 export type {
   ConfirmDialogProps,
   ConfirmOptions,

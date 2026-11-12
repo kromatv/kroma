@@ -11,26 +11,27 @@
 
 import type { z } from 'zod';
 import { Manifest as V2 } from './v2.ts';
+import { Manifest as V3 } from './v3.ts';
 
 /** The manifest schema this build speaks. Distinct from the documents'
  *  `apiVersion`: one versions a file a module author writes, the other versions
  *  the documents a registry serves, and they move independently. */
-export const MODULE_SCHEMA_VERSION = 2;
+export const MODULE_SCHEMA_VERSION = 3;
 
 /** Every published manifest version, so a schema URL keeps resolving after the
  *  current one moves on. */
-export const MANIFEST_SCHEMAS: Record<number, z.ZodType> = { 2: V2 };
+export const MANIFEST_SCHEMAS: Record<number, z.ZodType> = { 2: V2, 3: V3 };
 
+export { Helpers } from './helpers.ts';
+export { SettingsScope } from './settings-scope.ts';
+export { CoreScope, Storage } from './storage.ts';
 export {
   ArtifactRef,
   ConfigField,
-  CoreScope,
-  DescribedModule,
   dependenciesOf,
-  Manifest,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
-  SettingsScope,
-  Storage,
-  speaksCurrentSchema,
 } from './v2.ts';
+export { DescribedModule, Manifest, speaksCurrentSchema } from './v3.ts';
+export { notificationsProblem } from './notifications.ts';
+export { Permissions } from './permissions.ts';

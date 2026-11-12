@@ -90,6 +90,7 @@ mod tests {
             data: None,
             dedupe_key: None,
             group_key: None,
+            module_type: None,
             resolved_at: None,
             resolved_by: None,
             count: 1,

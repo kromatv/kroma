@@ -1,10 +1,10 @@
 {
-  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
-  "schemaVersion": 2,
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.6.22",
-  "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
+  "version": "0.6.39",
+  "description": "The rqbit download engine, run as a pinned helper, + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
     "server": ">=0.1.39"
   },
@@ -21,8 +21,7 @@
       "rqbitUpKbps",
       "torrentMaxActive",
       "vpnCheckUrl",
-      "vpnKillSwitch",
-      "vpnWgConfig"
+      "vpnKillSwitch"
     ],
     "write": [
       "namingCase",
@@ -41,9 +40,6 @@
   },
   "dependencies": {
     "tv.kroma.indexer": "^0.4.0"
-  },
-  "optionalDependencies": {
-    "tv.kroma.vpn": "^0.4.0"
   },
   "definesPoints": [
     {
@@ -89,8 +85,18 @@
       "point": "tv.kroma.indexer/db"
     },
     {
-      "point": "tv.kroma.vpn/proxy",
+      "point": "network",
       "optional": true
+    }
+  ],
+  "notifications": [
+    {
+      "type": "tv.kroma.torrents/download.completed",
+      "category": "downloads",
+      "push": false,
+      "labelKey": "notifications.completed.label",
+      "titleKey": "notifications.completed.title",
+      "bodyKey": "notifications.completed.body"
     }
   ],
   "storage": {
@@ -118,5 +124,78 @@
       "write": ["downloads", "wanted"]
     },
     "adopt": ["download_clients"]
+  },
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "peers",
+          "to": ["public", "lan"],
+          "proto": ["tcp", "udp"]
+        },
+        {
+          "purpose": "peers-announce",
+          "to": ["public"],
+          "proto": ["tcp", "udp"]
+        },
+        {
+          "purpose": "torrent-file",
+          "to": ["public", "lan"]
+        },
+        {
+          "purpose": "seal-check",
+          "to": ["setting:vpnCheckUrl", "api.ipify.org"]
+        },
+        {
+          "purpose": "engine-api",
+          "to": ["lan"]
+        },
+        {
+          "purpose": "binary-download",
+          "to": ["github.com", "*.githubusercontent.com"],
+          "ports": [443]
+        }
+      ],
+      "listen": [
+        {
+          "purpose": "peers",
+          "proto": ["tcp"],
+          "port": "setting:rqbitPort"
+        }
+      ],
+      "host": true
+    },
+    "fs": {
+      "read": ["module", "downloads", "media"],
+      "write": ["module", "downloads", "media"]
+    },
+    "run": ["rqbit", "curl"]
+  },
+  "dataDirs": ["torrents"],
+  "helpers": {
+    "rqbit": {
+      "assets": {
+        "linux-x86_64": {
+          "url": "https://github.com/ikatson/rqbit/releases/download/v9.1.0/rqbit-linux-amd64",
+          "sha256": "921061a82ee6a6b26754c6367886b5b6b4ce5916d3edd5db79c6cd5f2c23499f"
+        },
+        "linux-aarch64": {
+          "url": "https://github.com/ikatson/rqbit/releases/download/v9.1.0/rqbit-linux-arm64",
+          "sha256": "5247a363df062f429e53661b7242373bf70603e93efc4d0b459017e6fd209def"
+        },
+        "linux-arm": {
+          "url": "https://github.com/ikatson/rqbit/releases/download/v9.1.0/rqbit-linux-arm-v7",
+          "sha256": "7386e7abd052dc3f46a0af6081e66acc5d1bda4b5c95882fd5133ea3088c5856"
+        },
+        "macos-x86_64": {
+          "url": "https://github.com/ikatson/rqbit/releases/download/v9.1.0/rqbit-osx-universal",
+          "sha256": "de978a3ddd9732181745a76d054faccd4df3e3caaae98e487292fea6637f1f73"
+        },
+        "macos-aarch64": {
+          "url": "https://github.com/ikatson/rqbit/releases/download/v9.1.0/rqbit-osx-universal",
+          "sha256": "de978a3ddd9732181745a76d054faccd4df3e3caaae98e487292fea6637f1f73"
+        }
+      }
+    }
   }
 }

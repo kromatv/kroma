@@ -100,6 +100,12 @@ pub fn icon(state: &SharedState, id: &str) -> Option<(&'static str, Vec<u8>)> {
     supervisor(state).and_then(|s| s.icon(id))
 }
 
+/// An installed module's frontend, when its bundle carries one, for the module
+/// list and the `/modules/<id>@<revision>/*` route.
+pub fn frontend(state: &SharedState, id: &str) -> Option<kroma_module_supervisor::Frontend> {
+    supervisor(state).and_then(|s| s.frontend(id))
+}
+
 /// The backend behavior for a module id, if it has any (for the enable/disable
 /// lifecycle driven by the admin toggle).
 pub fn find_server(id: &str) -> Option<&'static dyn ServerModule<SharedState>> {
@@ -155,10 +161,10 @@ pub async fn apply_enabled_states(state: &SharedState) {
 /// The admin routers of every backend module, each behind its enabled-gate and
 /// nested under `/m/<id>`, merged into one router for the `/api/admin` subtree.
 ///
-/// The mount is the module's id for the same reason the out-of-process proxy
-/// uses it: a module declares no paths, so it can neither collide with a core
-/// route nor shadow another module, and an in-process module and a sidecar are
-/// reachable at the same URL.
+/// The mount is the module's id for the same reason the module proxy uses it:
+/// a module declares no paths, so it can neither collide with a core route nor
+/// shadow another module, and a module linked in-process and an installed one
+/// are reachable at the same URL.
 pub fn mount_admin(state: SharedState) -> Router<SharedState> {
     let mut router = Router::new();
     for module in &registry().servers {
@@ -292,6 +298,9 @@ mod gate_tests {
                 jobs: &[],
                 contributions: Arc::new(|_| Vec::new()),
                 official_modules: Arc::new(Vec::new),
+                permissions: Arc::new(|_| None),
+                network_providers: Arc::new(Vec::new),
+                network_listeners: Arc::new(Vec::new),
             },
         );
         (state, dir)
@@ -438,18 +447,19 @@ mod gate_tests {
     fn state_with_installed_modules() -> (SharedState, kroma_testing::TempDir) {
         state_with_services(|data_dir| {
             let modules_dir = data_dir.join("modules");
+            let installed = data_dir.join(kroma_module_supervisor::INSTALLED_DIR);
             install_module(
-                &modules_dir,
+                &installed,
                 "tv.kroma.notes",
                 r#"{ "id": "tv.kroma.notes", "name": "Notes", "version": "1.2.3" }"#,
             );
             install_module(
-                &modules_dir,
+                &installed,
                 "tv.kroma.broken",
                 r#"{ "name": "no id, no version" }"#,
             );
             std::fs::write(
-                modules_dir.join("tv.kroma.notes").join("icon.svg"),
+                installed.join("tv.kroma.notes").join("icon.svg"),
                 b"<svg/>",
             )
             .unwrap();
@@ -457,7 +467,7 @@ mod gate_tests {
             let supervisor = kroma_module_supervisor::Supervisor::new(
                 kroma_module_supervisor::SupervisorConfig {
                     modules_dir,
-                    core_url: "http://127.0.0.1:0".into(),
+                    core_port: 0,
                     host_token: "token".into(),
                     db_path: data_dir.join("kroma.db"),
                     data_dir: data_dir.to_path_buf(),

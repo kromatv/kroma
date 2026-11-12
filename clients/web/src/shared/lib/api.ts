@@ -5,10 +5,11 @@ import { makeQueryClient } from './query';
 
 import type { KromaClient } from '@kromatv/client';
 import { loadSession } from '@kromatv/client/accounts';
-import type { MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, MediaItem, Show } from '@kromatv/client/media';
 import { createQueryClient, type QueryClient } from '@kromatv/client/query';
 import type { SubtitleId } from '@kromatv/client/subtitles';
 import { deviceLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
+import { withLocalAddressSpace } from '@kromatv/ui';
 
 declare global {
   interface Window {
@@ -52,7 +53,12 @@ export function isAuthed(): boolean {
 /** Request state and query factories belong to one router, including SSR. */
 export function createWebRuntime(options: { client?: QueryClient } = {}) {
   const client =
-    options.client ?? createQueryClient({ baseUrl: apiBase(), locale: deviceLocale() });
+    options.client ??
+    createQueryClient({
+      baseUrl: apiBase(),
+      locale: deviceLocale(),
+      fetch: withLocalAddressSpace(globalThis.fetch.bind(globalThis)),
+    });
   const queryClient = makeQueryClient();
   async function exchangeStoredSession(): Promise<string | undefined> {
     const active = loadSession();
@@ -101,6 +107,13 @@ export interface SubtitleView {
   provider?: string;
 }
 
+/** A movie as a grid draws it, with its art pre-resolved to absolute KROMA URLs.
+ *  Every `MovieView` is one. */
+export interface MovieCardView extends MediaCard {
+  poster: string;
+  backdrop: string | null;
+}
+
 /** A movie/episode with art + stream + subtitle URLs pre-resolved to absolute KROMA URLs. */
 export interface MovieView extends MediaItem {
   poster: string;
@@ -113,6 +126,14 @@ export interface MovieView extends MediaItem {
 export interface ShowView extends Show {
   poster: string;
   backdrop: string | null;
+}
+
+export function toMovieCardView(c: KromaClient, card: MediaCard): MovieCardView {
+  return {
+    ...card,
+    poster: c.media.artwork.posterFor(card),
+    backdrop: c.media.artwork.backdropFor(card),
+  };
 }
 
 export function toMovieView(c: KromaClient, item: MediaItem): MovieView {

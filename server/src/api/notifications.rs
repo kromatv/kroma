@@ -1,5 +1,6 @@
 //! `/api/notifications` the per-user notification centre: read the inbox,
-//! mark rows read, drop one, and manage the per-category delivery matrix.
+//! move its rows between states (see [`inbox`]), and manage the per-category
+//! delivery matrix.
 //!
 //! Every route here is scoped to the CALLER. There is no admin view of someone
 //! else's inbox and no way to name another account: the user id always comes
@@ -9,22 +10,27 @@
 //! Rows are stored as i18n keys and rendered here in the caller's language (see
 //! `services::notify::render`), which is why reading is not a plain SELECT.
 
-use axum::extract::{Path, State};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
+use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::model::{DeliveriesView, NotificationPrefs, NotificationsView, SubscribeBody};
+use crate::i18n;
+use crate::model::{DeliveriesView, NotificationsView, PushTransport, SubscribeBody};
 use crate::services::auth::random_token;
 use crate::services::jobs::now_ms;
 use crate::services::notify;
 use crate::services::scan::short_hash;
 use crate::state::SharedState;
+
+mod inbox;
+mod prefs;
 
 // The store keeps 200 rows per user (`db::notifications::RETENTION_PER_USER`);
 // the bell only ever shows a page.
@@ -34,35 +40,59 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/notifications", get(list))
         .route("/notifications/deliveries", get(deliveries))
-        .route("/notifications/read", post(read))
-        .route("/notifications/unread", post(unread))
-        .route("/notifications/{id}", axum::routing::delete(remove))
-        .route("/notifications/prefs", get(get_prefs).put(put_prefs))
+        .route("/notifications/read", post(inbox::read))
+        .route("/notifications/unread", post(inbox::unread))
+        .route("/notifications/seen", post(inbox::seen))
+        .route("/notifications/archive", post(inbox::archive))
+        .route("/notifications/archive/read", post(inbox::archive_read))
+        .route("/notifications/unarchive", post(inbox::unarchive))
+        .route("/notifications/{id}", axum::routing::delete(inbox::remove))
+        .route("/notifications/{id}/interacted", post(inbox::interacted))
+        .route(
+            "/notifications/prefs",
+            get(prefs::get_prefs).put(prefs::put_prefs),
+        )
         .route("/push/key", get(push_key))
         .route("/push/subscribe", post(subscribe).delete(unsubscribe))
         .route("/push/test", post(push_test))
 }
 
-/// `GET /api/notifications` the caller's inbox, newest first, plus the unread
-/// tally that drives the bell badge.
+/// `GET /api/notifications` query. `archived=true` lists the rows the caller
+/// put away instead of the inbox.
+#[derive(Debug, Default, Deserialize)]
+pub struct ListQuery {
+    #[serde(default)]
+    pub archived: bool,
+}
+
+/// `GET /api/notifications` the caller's inbox (or archive), newest first, plus
+/// the unread tally and the unseen one that drives the bell badge.
 pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
+    Query(shelf): Query<ListQuery>,
 ) -> Result<Response, Response> {
     let locale = notify::render::locale_of(&user).to_string();
     let uid = user.id.clone();
+    let types = notify::types::types_of(&state);
     let view = query(&state.db, move |pool| {
         let conn = pool.get()?;
-        let stored = db::notifications::list_notifications(&conn, &uid, PAGE, false)?;
+        let stored = if shelf.archived {
+            db::notifications::list_archived(&conn, &uid, PAGE)?
+        } else {
+            db::notifications::list_notifications(&conn, &uid, PAGE, false)?
+        };
         let unread = db::notifications::unread_count(&conn, &uid)?;
+        let unseen = db::notifications::unseen_count(&conn, &uid)?;
         let subjects =
             notify::subject::Subjects::from(db::notifications::subject_facts(&conn, &stored)?);
         Ok(NotificationsView {
             notifications: stored
                 .iter()
-                .map(|s| notify::render::render(s, &locale, &subjects))
+                .map(|s| notify::render::render(s, &locale, &subjects, &types))
                 .collect(),
             unread,
+            unseen,
         })
     })
     .await?;
@@ -88,119 +118,6 @@ pub async fn deliveries(
     })
     .await?;
     Ok(Json(view).into_response())
-}
-
-/// `POST /api/notifications/read` body. Omitting `ids` marks everything read
-/// (the "mark all as read" affordance).
-#[derive(Debug, Deserialize)]
-pub struct ReadBody {
-    #[serde(default)]
-    pub ids: Option<Vec<String>>,
-}
-
-/// `POST /api/notifications/read` mark some (or all) of the caller's
-/// notifications read, and tell their other devices so every badge agrees.
-pub async fn read(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Json(body): Json<ReadBody>,
-) -> Result<Response, Response> {
-    let ids = bounded(body.ids.as_deref())?;
-    let uid = user.id.clone();
-    let unread = query(&state.db, move |pool| {
-        db::notifications::mark_read(&pool, &uid, ids.as_deref(), now_ms())?;
-        let conn = pool.get()?;
-        db::notifications::unread_count(&conn, &uid).map_err(Into::into)
-    })
-    .await?;
-    notify::publish_unread(&state, &user.id, unread);
-    Ok(Json(serde_json::json!({ "unread": unread })).into_response())
-}
-
-/// `POST /api/notifications/unread` body. Unlike the read side there is no
-/// "all": the affordance is per-row, so a list of ids is always required.
-#[derive(Debug, Deserialize)]
-pub struct UnreadBody {
-    pub ids: Vec<String>,
-}
-
-/// `POST /api/notifications/unread` put rows back in the unread pile, so a
-/// reader can undo a read without waiting for the event to happen again, and
-/// tell their other devices so every badge agrees.
-pub async fn unread(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Json(body): Json<UnreadBody>,
-) -> Result<Response, Response> {
-    let ids = bounded(Some(&body.ids))?.unwrap_or_default();
-    let uid = user.id.clone();
-    let unread = query(&state.db, move |pool| {
-        db::notifications::mark_unread(&pool, &uid, &ids)?;
-        let conn = pool.get()?;
-        db::notifications::unread_count(&conn, &uid).map_err(Into::into)
-    })
-    .await?;
-    notify::publish_unread(&state, &user.id, unread);
-    Ok(Json(serde_json::json!({ "unread": unread })).into_response())
-}
-
-// A caller can own at most `RETENTION_PER_USER` rows, so a longer list is not a
-// request anyone can mean: refuse it before it becomes that many SQL bindings.
-fn bounded(ids: Option<&[String]>) -> Result<Option<Vec<String>>, Response> {
-    match ids {
-        None => Ok(None),
-        Some(ids) if ids.len() <= db::notifications::RETENTION_PER_USER => Ok(Some(ids.to_vec())),
-        Some(_) => Err((StatusCode::BAD_REQUEST, "too many ids").into_response()),
-    }
-}
-
-/// `DELETE /api/notifications/:id` drop one of the caller's own rows.
-pub async fn remove(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path(id): Path<String>,
-) -> Result<Response, Response> {
-    let uid = user.id.clone();
-    let unread = query(&state.db, move |pool| {
-        db::notifications::delete_notification(&pool, &uid, &id)?;
-        let conn = pool.get()?;
-        db::notifications::unread_count(&conn, &uid).map_err(Into::into)
-    })
-    .await?;
-    notify::publish_unread(&state, &user.id, unread);
-    Ok(axum::http::StatusCode::NO_CONTENT.into_response())
-}
-
-/// `GET /api/notifications/prefs` the full per-category matrix, defaults
-/// filled in, so the settings screen can render every switch without knowing
-/// which ones were explicitly set.
-pub async fn get_prefs(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    let uid = user.id.clone();
-    let categories = query(&state.db, move |pool| {
-        let conn = pool.get()?;
-        db::notifications::prefs(&conn, &uid).map_err(Into::into)
-    })
-    .await?;
-    Ok(Json(NotificationPrefs { categories }).into_response())
-}
-
-/// `PUT /api/notifications/prefs` replace the caller's matrix.
-pub async fn put_prefs(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Json(body): Json<NotificationPrefs>,
-) -> Result<Response, Response> {
-    let uid = user.id.clone();
-    let categories = query(&state.db, move |pool| {
-        db::notifications::set_prefs(&pool, &uid, &body.categories)?;
-        let conn = pool.get()?;
-        db::notifications::prefs(&conn, &uid).map_err(Into::into)
-    })
-    .await?;
-    Ok(Json(NotificationPrefs { categories }).into_response())
 }
 
 /// `GET /api/push/key` the server's VAPID public key (`applicationServerKey`),
@@ -230,6 +147,15 @@ pub async fn subscribe(
     AuthUser(user): AuthUser,
     Json(body): Json<SubscribeBody>,
 ) -> Result<Response, Response> {
+    if body.transport == PushTransport::WebPush
+        && !notify::push::accepts_web_push_endpoint(&body.endpoint)
+    {
+        return Err(lerr(
+            i18n::user_locale(&user),
+            StatusCode::BAD_REQUEST,
+            "error.pushBadEndpoint",
+        ));
+    }
     let uid = user.id.clone();
     query(&state.db, move |pool| {
         let id = short_hash(&format!("push|{uid}|{}|{}", body.endpoint, random_token()));

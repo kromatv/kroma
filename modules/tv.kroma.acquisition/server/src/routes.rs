@@ -12,7 +12,7 @@ use axum::{Json, Router};
 use serde_json::json;
 
 use kroma_module_sdk::domain::{Permission, User};
-use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
+use kroma_module_sdk::host::{blocking, json_error, run_blocking, AuthUser, HostStorage};
 
 use crate::dtos::{
     AnalyzeBody, ManualAddBody, ManualSearchBody, ManualSearchView, TorrentAnalysis,
@@ -42,7 +42,7 @@ pub async fn manual_search<S: HostStorage + Clone + Send + Sync + 'static>(
     Json(body): Json<ManualSearchBody>,
 ) -> Result<Response, Response> {
     require_acquisition(&state, &user)?;
-    let view: ManualSearchView = match tokio::task::spawn_blocking(move || {
+    let view: ManualSearchView = match run_blocking(move || {
         crate::search::manual_search(&state, &body)
     })
     .await
@@ -75,7 +75,7 @@ pub async fn analyze<S: HostStorage + Clone + Send + Sync + 'static>(
             "a magnet or .torrent URL is required",
         ));
     }
-    let analysis = match tokio::task::spawn_blocking(move || {
+    let analysis = match run_blocking(move || {
         let entries = crate::peers::downloads::list_files(&state, &magnet)?;
         let files: Vec<(String, u64)> = entries
             .iter()
@@ -170,7 +170,7 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
         Ok(row) => {
             let id = row.id.clone();
             // Slow engine add runs in the background so the request returns now.
-            tokio::task::spawn_blocking(move || crate::peers::downloads::activate(&state, &row.id));
+            crate::peers::downloads::activate_later(state, row.id);
             Ok(Json(json!({ "id": id })).into_response())
         }
         Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),

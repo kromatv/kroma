@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tarNames, toTar } from '../bundle/tar';
 import { buildCommand, feOutDir } from './build';
@@ -12,7 +13,13 @@ function libraryModule(root: string, id: string): string {
   mkdirSync(project, { recursive: true });
   writeFileSync(
     join(project, 'module.json'),
-    JSON.stringify({ schemaVersion: 2, id, name: id, version: '0.1.0', library: true }),
+    JSON.stringify({
+      schemaVersion: MODULE_SCHEMA_VERSION,
+      id,
+      name: id,
+      version: '0.1.0',
+      library: true,
+    }),
   );
   writeFileSync(join(project, 'icon.svg'), '<svg/>');
   return project;
@@ -29,7 +36,7 @@ afterEach(() => {
 });
 
 describe('buildCommand', () => {
-  it('packs every library module under modules/ into dist/modules with sidecars', async () => {
+  it('packs every library module under modules/ into dist/modules with its checksum', async () => {
     libraryModule(dir, 'tv.acme.b');
     libraryModule(dir, 'tv.acme.a');
 
@@ -50,11 +57,11 @@ describe('buildCommand', () => {
     }
   });
 
-  it('packs one given module into the directory asked for, without a target suffix', async () => {
+  it('packs one given module into the directory asked for', async () => {
     const project = libraryModule(dir, 'tv.acme.solo');
     const out = join(dir, 'elsewhere');
 
-    await buildCommand({ dirs: [project], out, target: 'x86_64-unknown-linux-musl', cwd: dir });
+    await buildCommand({ dirs: [project], out, cwd: dir });
 
     expect(existsSync(join(out, 'tv.acme.solo.kmod'))).toBe(true);
     expect(existsSync(feOutDir({ dir: project } as never))).toBe(false);

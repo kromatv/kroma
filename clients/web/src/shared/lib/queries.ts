@@ -6,7 +6,13 @@ import type { ItemId, Show, ShowDetail, ShowId, UpNext } from '@kromatv/client/m
 import type { QueryClient } from '@kromatv/client/query';
 import { genreSlugs } from '@kromatv/core';
 import { queryOptions } from '@tanstack/react-query';
-import { type MovieView, type ShowView, toMovieView, toShowView } from '#web/shared/lib/api';
+import {
+  type MovieCardView,
+  type ShowView,
+  toMovieCardView,
+  toMovieView,
+  toShowView,
+} from '#web/shared/lib/api';
 
 /** Everything the show-detail page needs, in one cache entry. It's inherently
  * two-stage (the TMDB discover overlay keys off the show's tmdbId, known only
@@ -22,18 +28,18 @@ export interface ShowBundle {
 /** What the featured banner spotlights: the mapped hero (the server's daily pick
  * with art/stream URLs resolved, or the local movie fallback wrapped in the same
  * shape). The queries that can come up empty spell the `| null` themselves. */
-export type HeroEntry = { type: 'movie'; movie: MovieView } | { type: 'show'; show: ShowView };
+export type HeroEntry = { type: 'movie'; movie: MovieCardView } | { type: 'show'; show: ShowView };
 
 /** Query factories capture the API client owned by this router. */
 export function createQueries(client: QueryClient) {
   const catalogQueries = {
-    /** All movies, art/stream URLs pre-resolved. */
+    /** All movies as a grid draws them, art pre-resolved. */
     moviesView: () =>
       queryOptions({
         queryKey: ['movies', 'view'] as const,
-        queryFn: async (): Promise<MovieView[]> => {
+        queryFn: async (): Promise<MovieCardView[]> => {
           const c = client;
-          return (await c.media.movies()).map((m) => toMovieView(c, m));
+          return (await c.media.movieCards()).map((m) => toMovieCardView(c, m));
         },
       }),
 
@@ -43,7 +49,7 @@ export function createQueries(client: QueryClient) {
         queryKey: ['shows', 'view'] as const,
         queryFn: async (): Promise<ShowView[]> => {
           const c = client;
-          return (await c.media.shows()).map((s) => toShowView(c, s));
+          return (await c.media.showCards()).map((s) => toShowView(c, s));
         },
       }),
 
@@ -63,9 +69,6 @@ export function createQueries(client: QueryClient) {
         },
       }),
 
-    /** Raw movie list (unmapped) used where the id-only data is enough. */
-    movies: () => client.query.media.movies(),
-
     shows: () => client.query.media.shows(),
 
     item: (id: ItemId) => client.query.media.item(id),
@@ -79,7 +82,7 @@ export function createQueries(client: QueryClient) {
         queryKey: [...client.query.media.show(id).queryKey, 'bundle'],
         queryFn: async (): Promise<ShowBundle> => {
           const c = client;
-          const [detail, shows] = await Promise.all([c.media.show(id), c.media.shows()]);
+          const [detail, shows] = await Promise.all([c.media.show(id), c.media.showCards()]);
           const show = detail.show;
           const tmdbId = show.metadata?.tmdbId ?? null;
           // The discover overlay (season availability + request state) is fetched
@@ -102,9 +105,9 @@ export function createQueries(client: QueryClient) {
     similar: (id: ItemId) =>
       queryOptions({
         queryKey: ['similar', id] as const,
-        // The catalogue tolerates a missing similar list (falls back to genre
-        // overlap), so swallow failures into an empty array here.
-        queryFn: () => client.media.similar(id).catch(() => []),
+        // A title page renders without its "more like this" rail, so a failure
+        // resolves to an empty one rather than to the route's error boundary.
+        queryFn: () => client.media.similarCards(id).catch(() => []),
       }),
 
     personCredits: (person: string) => client.query.media.people(person),
@@ -138,7 +141,7 @@ export function createQueries(client: QueryClient) {
 
   // Only mount once `ready && user`.
   const userQueries = {
-    home: () => client.query.media.home(),
+    home: () => client.query.media.homeCards(),
 
     continueWatching: () => client.query.playback.continueWatching(),
 
@@ -162,6 +165,9 @@ export function createQueries(client: QueryClient) {
     /** The notification centre. No poll: the server pushes `notification.created`
      * over the (addressed) event stream, so the bell invalidates on demand. */
     notifications: () => client.query.notifications.list(),
+
+    /** The rows the reader put away, fetched only while the panel shows them. */
+    archivedNotifications: () => client.query.notifications.list({ archived: true }),
 
     /** The per-category delivery matrix (for the /account settings section). */
     notificationPrefs: () => client.query.notifications.prefs(),

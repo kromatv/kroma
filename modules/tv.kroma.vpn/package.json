@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA VPN module (frontend half): the VPN admin page (WireGuard bridge card + network settings). Paired with the VpnModule ServerModule via the shared module.json.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kromatv/client": "workspace:*",
     "@kromatv/module-sdk": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "zod": "^4.6.7"

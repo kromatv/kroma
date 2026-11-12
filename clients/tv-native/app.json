@@ -50,6 +50,20 @@
         }
       ],
       [
+        "@kromatv/react-native-tizen",
+        {
+          "package": "tv.kroma.app",
+          "label": "KROMA",
+          "locales": ["fr", "en"],
+          "preview": { "refreshMinutes": 30 }
+        }
+      ],
+      "expo-speech-recognition",
+      [
+        "@kromatv/react-native-webos",
+        { "package": "tv.kroma.app", "title": "KROMA", "locales": ["fr", "en"] }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0A0A0C",

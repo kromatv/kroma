@@ -1,25 +1,23 @@
-//! The downloads monitor: a resident tokio task. Each tick polls the engines on
-//! a blocking thread, mirrors progress into the ledger, publishes
-//! `download.progress` frames, and flips finished torrents to `completed`.
+//! The downloads monitor: a resident tokio task. Each tick watches the helper, polls
+//! the engines, mirrors progress into the ledger, publishes `download.progress`
+//! frames, and flips finished torrents to `completed`.
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::db;
-use kroma_module_sdk::host::{Event, HostCtx};
+use kroma_module_sdk::host::{run_blocking, Event, HostCtx};
 use serde_json::json;
 
 use super::DownloadManager;
 
+mod notice;
 mod status;
 
 const ACTIVE_TICK: Duration = Duration::from_secs(5);
 const IDLE_TICK: Duration = Duration::from_secs(30);
 const VPN_CHECK_EVERY: Duration = Duration::from_secs(60);
-const START_RETRY: Duration = Duration::from_secs(6);
-// Slow: each reseed pass removes+re-adds the stalled torrents, so it must give
-// injected peers time to connect before trying again.
-const RESEED_EVERY: Duration = Duration::from_secs(120);
+const RESEED_EVERY: Duration = Duration::from_secs(30);
 
 impl DownloadManager {
     /// Spawn the resident monitor. Call once.
@@ -30,20 +28,20 @@ impl DownloadManager {
 
     async fn monitor_loop(self: Arc<Self>, host: Arc<dyn HostCtx>) {
         let mut last_vpn_check = std::time::Instant::now() - VPN_CHECK_EVERY;
-        // Start the reseed clock at "now" (not in the past): give the add-time
-        // peer seed + librqbit a full interval before intervening.
         let mut last_reseed = std::time::Instant::now();
-        let mut last_start_try = std::time::Instant::now() - START_RETRY;
+        let mut last_start_try: Option<std::time::Instant> = None;
         loop {
             if !host.module_enabled(crate::MODULE_ID) {
                 tokio::time::sleep(IDLE_TICK).await;
                 continue;
             }
-            // At boot the VPN sidecar may not answer yet, so ensure_rqbit defers to
-            // stay sealed. Retry every few seconds so the engine comes up right
-            // after the VPN resolves.
-            if self.awaiting_engine() && last_start_try.elapsed() >= START_RETRY {
-                last_start_try = std::time::Instant::now();
+            self.watch_helper();
+            if self.helper_on_the_wrong_side(&*host) {
+                self.restart_rqbit(&*host).await;
+            }
+            let start_due = last_start_try.is_none_or(|at| at.elapsed() >= self.start_retry());
+            if self.awaiting_engine() && start_due {
+                last_start_try = Some(std::time::Instant::now());
                 self.ensure_rqbit(&*host).await;
             }
             let vpn_due = last_vpn_check.elapsed() >= VPN_CHECK_EVERY;
@@ -54,7 +52,7 @@ impl DownloadManager {
             if reseed_due {
                 last_reseed = std::time::Instant::now();
             }
-            let had_active = tokio::task::spawn_blocking({
+            let had_active = run_blocking({
                 let manager = self.clone();
                 let host = host.clone();
                 move || manager.poll_once(&*host, vpn_due, reseed_due)
@@ -67,17 +65,15 @@ impl DownloadManager {
     }
 
     fn awaiting_engine(&self) -> bool {
-        crate::RQBIT_COMPILED && self.rqbit().is_none()
+        self.rqbit().is_none()
     }
 
-    // Same thread as `tick`, so the remove/re-add window a reseed opens is never
-    // observed by a concurrent poll.
     fn poll_once(&self, host: &dyn HostCtx, vpn_due: bool, reseed_due: bool) -> bool {
         if vpn_due {
             let _ = self.vpn_check(host);
         }
         if reseed_due {
-            self.reseed_stalled(host);
+            self.reseed_stalled();
         }
         let had_active = self.tick(host);
         self.sample_bandwidth(host);
@@ -109,8 +105,6 @@ impl DownloadManager {
         }
         self.link_unresolved(host, &rows);
         self.sample_throughput(host, &rows);
-        // Re-asserted every tick rather than only at session start, so a
-        // ceiling changed while a torrent is mid-flight takes hold without one.
         self.apply_rate_limits(host);
         self.fill_free_slots(host);
 

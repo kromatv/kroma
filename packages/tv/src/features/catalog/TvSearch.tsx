@@ -1,5 +1,4 @@
 import type { DiscoverEntry } from '@kromatv/client/discovery';
-import type { SearchHit } from '@kromatv/client/media';
 import {
   genreLabels,
   posterColors,
@@ -13,6 +12,7 @@ import {
   BackButton,
   Box,
   Chip,
+  CONTROL,
   Field,
   FocusColumn,
   FocusRegion,
@@ -39,7 +39,7 @@ import {
 } from '#tv/features/catalog/TvSearchResults';
 
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
-import { useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
+import { type LibraryHit, useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 import { KromaMark, SearchKeyboard, WallClock } from '#tv/shared/ui';
 
@@ -52,7 +52,8 @@ export function TvSearch() {
   const storage = useDeviceStore();
   const s = useStyles(sDefinition);
 
-  const { onSearchRequest, takePendingSearch } = useSearchRequests();
+  const { onSearchRequest, takePendingSearch, onListenRequest, takePendingListen } =
+    useSearchRequests();
   const { movies, shows } = useConnection();
   const client = useClient();
   const t = useT();
@@ -68,7 +69,7 @@ export function TvSearch() {
   // Null on every shell that cannot hear (the browser TVs today, an Android TV
   // whose recogniser is missing): then no mic is shown at all.
   const voice = useVoiceSearchBackend();
-  const [speaking, setSpeaking] = useState(false);
+  const [speaking, setSpeaking] = useState(takePendingListen);
   const stopSpeaking = useCallback(() => setSpeaking(false), []);
   // Null on every shell that types on our keyboard, which is all but Apple TV.
   const shell = useSearchShell();
@@ -77,10 +78,19 @@ export function TvSearch() {
   // reopening it, so the second request is not silently dropped.
   useEffect(() => onSearchRequest(setQuery), [onSearchRequest]);
 
+  useEffect(
+    () =>
+      onListenRequest(() => {
+        takePendingListen();
+        setSpeaking(true);
+      }),
+    [onListenRequest, takePendingListen],
+  );
+
   // A search "counts" once the user opens one of its results, and `found` is the
   // query that produced that result, not the prefix left in the box by then.
   const toHit = useCallback(
-    (hit: SearchHit, found: string): SearchResult => {
+    (hit: LibraryHit, found: string): SearchResult => {
       const remember = () => setRecent(addRecentSearch(found, storage));
       if (hit.type === 'show') {
         const show = hit.show;
@@ -97,10 +107,10 @@ export function TvSearch() {
           onLongPress: () => hold({ kind: 'show', item: show }),
         };
       }
-      const m = hit.item; // movie | episode both navigate to the item detail
+      const m = hit.item;
       return {
         id: m.id,
-        title: m.episodeTitle ?? m.title,
+        title: hit.type === 'episode' ? (hit.item.episodeTitle ?? m.title) : m.title,
         badge: qualityBadge(m),
         poster: client.media.artwork.posterFor(m, RESULT_W),
         colors: posterColors(m.id),
@@ -109,7 +119,11 @@ export function TvSearch() {
           nav.go('movie', { item: m });
         },
         onLongPress: () =>
-          hold(m.kind === 'episode' ? { kind: 'episode', item: m } : { kind: 'movie', item: m }),
+          hold(
+            hit.type === 'episode'
+              ? { kind: 'episode', item: hit.item }
+              : { kind: 'movie', item: hit.item },
+          ),
       };
     },
     [client, nav, hold, storage],
@@ -132,7 +146,7 @@ export function TvSearch() {
 
   // Offline fallback: filter the already-loaded catalogue by title / genre.
   const localHits = useCallback(
-    (q: string): SearchHit[] => {
+    (q: string): LibraryHit[] => {
       const needle = q.toLowerCase();
       const match = (title: string, meta?: TitleGenres | null) =>
         title.toLowerCase().includes(needle) ||
@@ -140,10 +154,10 @@ export function TvSearch() {
       return [
         ...movies
           .filter((m) => match(m.title, m.metadata))
-          .map((item): SearchHit => ({ type: 'movie', item })),
+          .map((item): LibraryHit => ({ type: 'movie', item })),
         ...shows
           .filter((show) => match(show.title, show.metadata))
-          .map((show): SearchHit => ({ type: 'show', show })),
+          .map((show): LibraryHit => ({ type: 'show', show })),
       ];
     },
     [movies, shows, t],
@@ -246,7 +260,7 @@ export function TvSearch() {
                 voice ? (
                   <IconButton
                     icon="microphone"
-                    control="tv"
+                    diameter={CONTROL.tv.line}
                     glyph={24}
                     variant="ghost"
                     label={t('search.voice')}

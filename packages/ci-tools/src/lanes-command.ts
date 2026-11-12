@@ -29,7 +29,9 @@ export async function main(argv: string[]): Promise<void> {
     return;
   }
 
-  const rust = verdict.rust ? shards(affected(files, dependencyGraph())) : [];
+  const reached = verdict.rust ? affected(files, dependencyGraph()) : [];
+  const rust = shards(reached);
+  const modules = reached.filter((id) => id !== 'server');
 
   if (values.json) {
     console.log(JSON.stringify({ files, lanes: verdict, rust }, null, 2));
@@ -38,6 +40,7 @@ export async function main(argv: string[]): Promise<void> {
 
   for (const name of LANE_NAMES) setOutput(name, verdict[name]);
   setOutput('rust_shards', JSON.stringify(rust));
+  setOutput('rust_modules', modules.join(','));
 
   const on = LANE_NAMES.filter((name) => verdict[name]);
   const count = files === 'all' ? 'every file' : `${files.length} file(s)`;

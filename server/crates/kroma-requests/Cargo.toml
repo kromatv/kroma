@@ -1,0 +1,30 @@
+[package]
+name = "kroma-requests"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "The request and monitoring workflows and the TMDB lookups they read: core domain logic over HostStorage, with no engine under it, so a module runs it in a WebAssembly component."
+license.workspace = true
+
+[features]
+# `testing::FakeTmdb` and the TMDB base override it points at a local server.
+# Off by default so nothing reaches a release build.
+testing = []
+
+[dependencies]
+kroma-domain = { workspace = true }
+kroma-db = { workspace = true }
+kroma-http = { workspace = true }
+kroma-module-host = { workspace = true, features = ["storage"] }
+kroma-primitives = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+time = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+axum = { workspace = true }
+kroma-db = { workspace = true, features = ["testing"] }
+kroma-module-host = { workspace = true, features = ["testing"] }
+tokio = { workspace = true }

@@ -90,6 +90,8 @@ pub struct Transcode {
     pub target_width: Option<u32>,
     pub target_height: Option<u32>,
     pub anchor_secs: f64,
+    /// The keyframe ffmpeg really starts from, at or before `anchor_secs`.
+    pub start_secs: f64,
     /// Unix seconds, server clock.
     pub started_at: i64,
     /// Multiple of realtime. Under 1.0 the encoder is losing to the film.
@@ -117,13 +119,14 @@ impl Sessions {
                     session.plan.clone(),
                     session.dir.clone(),
                     !session.finished().await,
+                    session.start,
                 ));
             }
         }
         let mut out: Vec<Transcode> = tokio::task::spawn_blocking(move || {
             plans
                 .into_iter()
-                .map(|(plan, dir, running)| report(&plan, &dir, running))
+                .map(|(plan, dir, running, start)| report(&plan, &dir, running, start))
                 .collect()
         })
         .await
@@ -133,7 +136,7 @@ impl Sessions {
     }
 }
 
-fn report(plan: &Plan, dir: &Path, running: bool) -> Transcode {
+fn report(plan: &Plan, dir: &Path, running: bool, start_secs: f64) -> Transcode {
     let p = progress::read(dir).unwrap_or_default();
     let (segments, bytes) = dir_stats(dir);
     let (target_width, target_height) = split(plan.mode.video.box_size());
@@ -155,6 +158,7 @@ fn report(plan: &Plan, dir: &Path, running: bool) -> Transcode {
         target_width,
         target_height,
         anchor_secs: plan.anchor_secs,
+        start_secs,
         started_at: plan.started_at,
         speed: p.speed,
         fps: p.fps,

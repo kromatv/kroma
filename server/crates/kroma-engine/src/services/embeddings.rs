@@ -65,7 +65,7 @@ fn meta(point: &Point) -> Option<Meta> {
 mod tests {
     use super::*;
 
-    // The state this module exists for: no vector sidecar installed, so nothing
+    // The state this module exists for: no vector module installed, so nothing
     // resolves and every call has to answer with something harmless.
     fn absent() -> Point {
         Point::absent("embedder")

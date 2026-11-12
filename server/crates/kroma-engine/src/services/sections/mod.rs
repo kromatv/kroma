@@ -9,10 +9,12 @@ pub mod curate;
 pub mod featured;
 pub mod generate;
 mod math;
+mod memo;
 mod phrases;
 pub mod taste;
 
 pub use cache::VectorCache;
+pub use memo::{hero, home, HomeMemo};
 
 use std::collections::HashSet;
 

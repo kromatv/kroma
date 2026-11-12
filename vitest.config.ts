@@ -78,9 +78,11 @@ const setupFiles = [dir('./vitest.setup.ts')];
 // Every workspace, at the four places a test is allowed to live: the package
 // root (`@kromatv/lan-beacon`, whose entry point IS its root), its source tree,
 // and the build-time trees beside it (`worker/`, `bundler/`, `vite/`, `audit/`).
+// A client's native module is tested in its own folder, beside its sources.
 const include = [
   '{apps,packages,clients}/*/*.test.ts',
   '{apps,packages,clients}/*/{src,worker,bundler,vite,audit}/**/*.test.{ts,tsx}',
+  'clients/*/modules/*/*.test.ts',
   'modules/*/ui/src/**/*.test.{ts,tsx}',
 ];
 

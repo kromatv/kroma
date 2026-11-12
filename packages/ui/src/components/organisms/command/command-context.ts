@@ -5,7 +5,8 @@
 // opens, and where the cursor is decides where the list has scrolled to.
 
 import { partContext } from '#ui/lib/part-context';
-import type { CommandItem, CommandSection } from './command-list';
+import type { CommandAction, CommandItem, CommandSection } from './command-list';
+import type { useActionPanel } from './use-action-panel';
 
 /** What the palette is currently showing. */
 interface CommandResults {
@@ -14,6 +15,8 @@ interface CommandResults {
   /** Rows there are in total. */
   total: number;
   query: string;
+  /** The row under the cursor. */
+  current: CommandItem | undefined;
 }
 
 interface CommandState extends CommandResults {
@@ -26,6 +29,8 @@ interface CommandState extends CommandResults {
   /** The pointer moves the SAME cursor the arrows do. */
   point: (item: CommandItem) => void;
   choose: (item: CommandItem | undefined) => void;
+  chooseAction: (action: CommandAction) => void;
+  actions: ReturnType<typeof useActionPanel>;
   close: () => void;
   /** Where the list should be, recomputed whenever the cursor moves. */
   scroll: (offset: number, viewport: number) => number | null;
@@ -38,8 +43,8 @@ const [CommandContext, useCommand] = partContext<CommandState>('Command.Root');
  * at any depth under a `<Command.Root>`; throws outside one.
  */
 function useCommandResults(): CommandResults {
-  const { shown, total, query } = useCommand('Root');
-  return { shown, total, query };
+  const { shown, total, query, current } = useCommand('Root');
+  return { shown, total, query, current };
 }
 
 export type { CommandResults, CommandState };

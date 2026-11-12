@@ -17,7 +17,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { configFrom, verify } from './access';
-import { aggregate, settling } from './aggregate';
+import { aggregate } from './aggregate';
 import { burstIds, dayOf } from './integrity';
 import { Forget, type Parsed, Ping, parse } from './schemas';
 import { type D1Database, d1Store, type Store } from './store';
@@ -245,7 +245,6 @@ export function createApp(storeFor: (env: Env) => Store) {
         ...aggregate(rows, history, now),
         stored: rows.length,
         flagged: rows.filter((row) => row.flagged).length,
-        settling: rows.filter((row) => settling(row, now)).length,
         viewer: verdict.email,
       },
       200,
@@ -279,7 +278,13 @@ export function createApp(storeFor: (env: Env) => Store) {
 export async function sweep(store: Store, now: number): Promise<void> {
   await store.flag(burstIds(await store.all(), now));
   const counts = aggregate(await store.all(), [], now);
-  await store.record(dayOf(now), counts.instances, counts.clients.total);
+  await store.record({
+    day: dayOf(now),
+    instances: counts.instances,
+    clients: counts.clients.total,
+    users: counts.sizes?.users ?? null,
+    titles: counts.sizes?.titles ?? null,
+  });
   await store.prune(now - RETAIN_DAYS * DAY);
 }
 

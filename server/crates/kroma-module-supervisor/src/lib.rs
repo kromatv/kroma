@@ -1,5 +1,6 @@
-//! The core side of the out-of-process module system: spawns each installed
-//! module's binary, reverse-proxies to it, and serves the `/api/_host/*` callback API.
+//! The core side of the module system: runs each installed module, a WebAssembly
+//! component, inside the server on a socket of its own, reverse-proxies to it,
+//! and serves the `/api/_host/*` callback API.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -10,35 +11,63 @@ use kroma_module_manifest::ModuleManifest;
 use serde_json::Value;
 
 mod adopt;
+#[cfg(unix)]
+mod component;
+#[cfg(unix)]
+mod databases;
+mod endpoint;
+mod frontend;
+#[cfg(unix)]
+mod gateway;
 mod host_api;
 mod install;
+mod layout;
+mod lifecycle;
 mod manifests;
+mod notifications;
 mod origin;
-mod process;
+mod permissions;
+#[cfg(unix)]
+mod private_folder;
+mod program_env;
 mod proxy;
 mod registry;
+mod run_dir;
+mod tokens;
 mod watch;
 
+#[cfg(unix)]
+pub use component::{FolderRoots, Folders};
+pub use endpoint::Endpoint;
+pub use frontend::Frontend;
 pub use host_api::host_router;
-pub use origin::{BinStamp, Origin, Source};
+pub use origin::{Accept, AsksForMore, BinStamp, Origin, Source};
 pub use proxy::proxy_to;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
 
-use manifests::{check_manifest_schema, grant_json};
-use process::Proc;
+use lifecycle::Proc;
+use manifests::check_manifest_schema;
+use run_dir::RunDir;
 
-pub const MODULE_BIN: &str = "module";
+pub const MODULE_COMPONENT: &str = "module.wasm";
 pub const MODULE_STORE: &str = "module.sqlite";
+/// Under the data directory, what the host installed of each module and reads to
+/// decide what it may do: its manifest, origin record, component and compiled
+/// copy, frontend, icon and catalogs. No module holds it. A module's own data
+/// stays in `modules/<id>`.
+pub const INSTALLED_DIR: &str = "installed";
+const NATIVE_BINARY: &str = "module";
+const HELPERS_DIR: &str = "helpers";
+const LOCALES_DIR: &str = "locales";
 const STAGING_PREFIX: &str = ".staging-";
 
-/// Where a module's own log lines go, as `(module_id, line)`. `None` leaves the
-/// sidecar's stdout and stderr inherited by the core process.
+/// Where a module's own log lines go, as `(module_id, line)`. `None` drops them.
 pub type LogSink = Arc<dyn Fn(&str, &str) + Send + Sync>;
 
 #[derive(Clone)]
 pub struct SupervisorConfig {
     pub modules_dir: PathBuf,
-    pub core_url: String,
+    pub core_port: u16,
     pub host_token: String,
     pub db_path: PathBuf,
     pub data_dir: PathBuf,
@@ -49,48 +78,81 @@ pub struct SupervisorConfig {
 
 pub struct Supervisor {
     cfg: SupervisorConfig,
+    run: RunDir,
     procs: RwLock<HashMap<String, Proc>>,
     module_tokens: RwLock<HashMap<String, String>>,
+    port_tokens: RwLock<HashMap<String, String>>,
     manifests_cache: RwLock<Option<Vec<ModuleManifest>>>,
+    notifications_cache: RwLock<Option<Arc<Vec<kroma_module_host::ModuleNotifications>>>>,
+    frontends: RwLock<frontend::FrontendCache>,
     // Short-TTL catalog cache: the admin flow sweeps EVERY registry from the
     // catalog view, the plan dialog (once per opt-in toggle) and the install
     // itself in quick succession; within the TTL they share one fetch.
     catalog_cache: RwLock<HashMap<String, (std::time::Instant, Value)>>,
-    // Built once each: constructing a client parses the whole root certificate
-    // store, and the catalog path builds one per registry in the list.
-    catalog_client: std::sync::OnceLock<reqwest::Client>,
-    artifact_client: std::sync::OnceLock<reqwest::Client>,
+    registry_clients: registry::Clients,
+    #[cfg(unix)]
+    gateway: gateway::Slot,
+    #[cfg(unix)]
+    wasm: std::sync::OnceLock<kroma_wasm_host::WasmHost>,
+    #[cfg(unix)]
+    worker_lifetime: RwLock<std::time::Duration>,
 }
 
 impl Supervisor {
+    /// Builds the supervisor, first moving an install laid out before the host
+    /// kept its own files apart from each module's data.
     pub fn new(cfg: SupervisorConfig) -> Arc<Self> {
-        Arc::new(Self {
+        let supervisor = Arc::new(Self {
+            run: RunDir::for_data_dir(&cfg.data_dir),
             cfg,
             procs: RwLock::new(HashMap::new()),
             module_tokens: RwLock::new(HashMap::new()),
+            port_tokens: RwLock::new(HashMap::new()),
             manifests_cache: RwLock::new(None),
+            notifications_cache: RwLock::new(None),
+            frontends: frontend::FrontendCache::new(),
             catalog_cache: RwLock::new(HashMap::new()),
-            catalog_client: std::sync::OnceLock::new(),
-            artifact_client: std::sync::OnceLock::new(),
-        })
+            registry_clients: registry::Clients::default(),
+            #[cfg(unix)]
+            gateway: gateway::Slot::new(),
+            #[cfg(unix)]
+            wasm: std::sync::OnceLock::new(),
+            #[cfg(unix)]
+            worker_lifetime: RwLock::new(component::WORKER_LIFETIME),
+        });
+        supervisor.keep_installs_apart();
+        supervisor
     }
 
-    fn dir(&self, id: &str) -> PathBuf {
+    fn own_dir(&self, id: &str) -> PathBuf {
         self.cfg.modules_dir.join(id)
     }
 
+    fn installed_root(&self) -> PathBuf {
+        self.cfg.data_dir.join(INSTALLED_DIR)
+    }
+
+    fn installed_dir(&self, id: &str) -> PathBuf {
+        self.installed_root().join(id)
+    }
+
     /// Move any table `id` declared as its own out of the core database and into
-    /// its own file, before the process that will read it starts. Best-effort:
+    /// its own file, before the component that will read it starts. Best-effort:
     /// a failure leaves the rows in the core database and is logged, because a
     /// module that starts without its old rows is worse than one that starts late.
-    fn adopt_declared_tables(&self, id: &str, storage: Option<&kroma_module_manifest::Storage>) {
+    fn adopt_declared_tables(
+        &self,
+        id: &str,
+        storage: Option<&kroma_module_manifest::Storage>,
+        databases: &std::path::Path,
+    ) {
         let Some(tables) = storage
             .map(|s| s.adopt.as_slice())
             .filter(|t| !t.is_empty())
         else {
             return;
         };
-        let store = self.dir(id).join(MODULE_STORE);
+        let store = databases.join(MODULE_STORE);
         let moved = kroma_db::init(&self.cfg.db_path)
             .and_then(|pool| pool.get())
             .and_then(|conn| adopt::adopt_tables(&conn, &store, tables));
@@ -112,21 +174,43 @@ impl Supervisor {
 
     /// A lifecycle line in the module's OWN log stream. `tracing` would file it
     /// under the core, where nobody looking at that module would find it: a
-    /// restart has to read as one story next to the sidecar's own output.
+    /// restart has to read as one story next to the module's own output.
     fn say(&self, id: &str, line: &str) {
         if let Some(log_line) = &self.cfg.log_line {
             log_line(id, line);
         }
     }
 
-    pub fn port_of(&self, id: &str) -> Option<u16> {
-        self.procs.read().unwrap().get(id).map(|p| p.port)
+    /// Where `id` answers, while it runs.
+    pub fn endpoint_of(&self, id: &str) -> Option<Endpoint> {
+        self.procs
+            .read()
+            .unwrap()
+            .get(id)
+            .map(|p| p.endpoint.clone())
+    }
+
+    pub fn is_running(&self, id: &str) -> bool {
+        self.procs.read().unwrap().contains_key(id)
+    }
+
+    /// Every running module and where it answers, by id.
+    pub fn running(&self) -> Vec<(String, Endpoint)> {
+        let mut running: Vec<(String, Endpoint)> = self
+            .procs
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(id, proc)| (id.clone(), proc.endpoint.clone()))
+            .collect();
+        running.sort_by(|a, b| a.0.cmp(&b.0));
+        running
     }
 
     /// Every running module that contributes `point`, found by reading the
-    /// installed manifests. Resolved per call, so a contributor that was just
-    /// installed, restarted, or moved to a different localhost port is picked up
-    /// with nothing re-wired, and no caller anywhere names a module id.
+    /// installed manifests, as the core reaches it. Resolved per call, so a
+    /// contributor that was just installed or restarted is picked up with
+    /// nothing re-wired, and no caller anywhere names a module id.
     ///
     /// A manifest that declares the point but whose module is not running is
     /// passed over rather than answered with, so a second contributor still
@@ -137,6 +221,10 @@ impl Supervisor {
     /// failing a request an hour later. The definer is found from the point's own
     /// name, which is why a point carries one.
     pub fn contributions(&self, point: &str) -> Vec<Contribution> {
+        self.answers(point, false)
+    }
+
+    fn answers(&self, point: &str, via_core: bool) -> Vec<Contribution> {
         let installed = self.installed_manifests();
         let defined_at = point_major(&installed, point);
         let mut out = Vec::new();
@@ -146,10 +234,10 @@ impl Supervisor {
             if answers.is_empty() {
                 continue;
             }
-            let Some(live) = self.port_of(&m.id) else {
+            let Some(live) = self.endpoint_of(&m.id) else {
                 continue;
             };
-            let base = format!("http://127.0.0.1:{live}");
+            let base = self.peer_base(&m.id, &live, via_core);
             for answer in answers {
                 if defined_at.is_some_and(|major| answer.version != major) {
                     self.say(
@@ -166,7 +254,7 @@ impl Supervisor {
                     module_id: m.id.clone(),
                     instance: answer.id.clone(),
                     base_url: base.clone(),
-                    token: self.cfg.host_token.clone(),
+                    token: self.port_token(&m.id),
                 });
             }
         }
@@ -177,40 +265,8 @@ impl Supervisor {
         &self.cfg.host_token
     }
 
-    /// The token `id`'s process calls back with, minted on first ask and then
-    /// stable for the life of this server. It names its holder, which is what lets
-    /// a callback answer for the module that made it rather than for "a module".
-    ///
-    /// A sidecar's own routes are NOT guarded by this: a peer reaching one holds
-    /// the fabric token from [`Self::host_token`], and handing it this instead
-    /// would hand one module another's identity.
-    pub fn module_token(&self, id: &str) -> String {
-        if let Some(token) = self.module_tokens.read().unwrap().get(id) {
-            return token.clone();
-        }
-        let mut tokens = self.module_tokens.write().unwrap();
-        tokens
-            .entry(id.to_string())
-            .or_insert_with(kroma_primitives::random_token)
-            .clone()
-    }
-
-    /// The module `token` was minted for, or `None` for the fabric token and for
-    /// anything else: a caller the callback cannot name holds no declaration, so it
-    /// reaches nothing that wants one.
-    pub fn module_of_token(&self, token: &str) -> Option<String> {
-        self.module_tokens
-            .read()
-            .unwrap()
-            .iter()
-            .find(|(_, minted)| {
-                kroma_module_host::host_token::ct_eq(minted.as_bytes(), token.as_bytes())
-            })
-            .map(|(id, _)| id.clone())
-    }
-
-    /// What `id` declared under `settings`, or `None` when its manifest predates
-    /// the field, which is a module that keeps the reach it had.
+    /// What `id` declared under `settings`, or `None` when it declared nothing,
+    /// which reaches no setting.
     pub fn settings_scope(&self, id: &str) -> Option<kroma_module_manifest::SettingsScope> {
         self.installed_manifests()
             .into_iter()

@@ -9,6 +9,7 @@ use axum::{Json, Router};
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::permission::require;
 use crate::api::visibility;
 use crate::api::util::query;
 use crate::db;
@@ -17,7 +18,7 @@ use crate::infra::events::ServerEvent;
 use crate::model::{
     Audience, CreateReportBody, Kind, MediaItem, NotificationEvent, NotificationSpec,
     NotificationSubject, Permission,
-    ReportSubjectKind, User,
+    ReportSubjectKind,
 };
 use crate::services::auth::random_token;
 use crate::services::jobs::now_ms;
@@ -30,18 +31,6 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/reports", post(create))
         .route("/reports/mine", get(list_mine))
-}
-
-fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        Err(lerr(
-            i18n::user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 fn subject_label(item: &MediaItem) -> String {

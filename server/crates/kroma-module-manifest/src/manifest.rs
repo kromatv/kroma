@@ -4,9 +4,46 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::settings_scope::SettingsScope;
+
 /// A module's reported version, unparsed: ranges are checked against it by
 /// [`crate::range_matches`], which treats anything unparseable as no constraint.
 pub type Version = String;
+
+/// An upstream program, one pinned build per platform. The key is `<os>-<arch>` as
+/// Rust names them, such as `linux-x86_64`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Helper {
+    pub assets: BTreeMap<String, HelperAsset>,
+}
+
+/// One platform's build of a [`Helper`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct HelperAsset {
+    pub url: String,
+    pub sha256: String,
+    /// The file to take out of a `.tar.gz`. Absent when the download is the binary.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub member: Option<String>,
+}
+
+/// What a component needs that is not the default.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ComponentNeeds {
+    /// Calls answered at once. Each instance has its own memory, so more than one
+    /// fits only a module whose state lives in its database. Default 1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instances: Option<u32>,
+    /// The memory one instance may grow to, in MiB. Default 512.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory_mib: Option<u32>,
+    /// The seconds of its own time one call may spend. Default 60.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu_seconds: Option<u32>,
+}
 
 /// A point this module DEFINES: somewhere other modules can plug in. `name` is
 /// local, and the point's full name is `<this module's id>/<name>`, so ownership
@@ -262,14 +299,14 @@ pub struct PointReq {
 /// versions parse as *absent*, never as errors: a v1 bundle still spelling its
 /// dependencies `dependsOn` would install with an empty dependency set and fail
 /// at runtime, somewhere else, with nothing pointing back here.
-pub const MODULE_SCHEMA_VERSION: u32 = 2;
+pub const MODULE_SCHEMA_VERSION: u32 = 3;
 
 /// A module's declared storage, and the capability itself: a manifest with no
-/// `storage` object gets no database at all, and the sidecar built for it does
+/// `storage` object gets no database at all, and the module built for it does
 /// not link SQLite.
 ///
-/// Presence alone grants the module its own file
-/// (`<data>/modules/<id>/module.sqlite`), which it owns outright. Reaching the
+/// Presence alone grants the module its own database, which the host keeps in
+/// `<data>/databases/<id>/` and the module owns outright. Reaching the
 /// SHARED core database is separate and narrower: only what [`core`](Self::core)
 /// lists, enforced per connection by SQLite's authorizer.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -306,36 +343,6 @@ impl CoreScope {
     }
 }
 
-/// The CORE settings keys a module reads and writes, as the keys themselves.
-///
-/// The core decides which keys a module may reach at all; this narrows that to
-/// the caller. A key the core hands out only to the module that consumes it
-/// reaches a module that named it here and no other, which is the difference
-/// between a credential reaching the tunnel and reaching everything installed.
-///
-/// Absent is not the same as empty: a manifest with no `settings` object
-/// predates the field, so it keeps every ordinary preference and reaches none of
-/// the keys that want a declaration. One that declares reaches exactly what it
-/// lists.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SettingsScope {
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub read: Vec<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub write: Vec<String>,
-}
-
-impl SettingsScope {
-    pub fn reads(&self, key: &str) -> bool {
-        self.read.iter().any(|k| k == key)
-    }
-
-    pub fn writes(&self, key: &str) -> bool {
-        self.write.iter().any(|k| k == key)
-    }
-}
-
 /// The public description of a module.
 ///
 /// This is the serde shape served at `GET /api/modules` and mirrored by the
@@ -346,6 +353,13 @@ impl SettingsScope {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModuleManifest {
+    /// Upstream programs the host fetches and starts for this module, by the name
+    /// `permissions.run` declares them under.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub helpers: BTreeMap<String, Helper>,
+    /// What this module needs from the host to run as a component.
+    #[serde(default)]
+    pub component: ComponentNeeds,
     /// Which manifest contract this module was built against. `0` when absent,
     /// which is every bundle predating the field and therefore every bundle
     /// this build refuses.
@@ -377,11 +391,19 @@ pub struct ModuleManifest {
     /// Absent for a module that touches no database, which is most of them.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage: Option<Storage>,
-    /// Absent for a module that predates the field, which keeps the reach it had.
+    /// Absent for a module that declares no setting, which reaches none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub settings: Option<SettingsScope>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<crate::Permissions>,
+    /// Directories under the data directory that hold this module's own state.
+    /// The server opens them only to a module the official registry shipped.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub data_dirs: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notifications: Vec<kroma_module_wire::NotificationType>,
 }
 
 impl ModuleManifest {
@@ -393,6 +415,8 @@ impl ModuleManifest {
         version: impl Into<Version>,
     ) -> Self {
         Self {
+            helpers: BTreeMap::new(),
+            component: ComponentNeeds::default(),
             schema_version: MODULE_SCHEMA_VERSION,
             id: id.into(),
             name: name.into(),
@@ -409,6 +433,9 @@ impl ModuleManifest {
             storage: None,
             settings: None,
             library: false,
+            permissions: None,
+            data_dirs: Vec::new(),
+            notifications: Vec::new(),
         }
     }
 
@@ -470,15 +497,13 @@ mod tests {
             serde_json::from_str(r#"{ "id": "a", "name": "A", "version": "1.0.0" }"#).unwrap();
         assert!(
             plain.settings.is_none(),
-            "a manifest predating the field keeps the reach it had"
+            "a manifest that declares no setting reaches none"
         );
         assert!(serde_json::to_value(&plain)
             .unwrap()
             .get("settings")
             .is_none());
 
-        // An empty object is NOT the same as an absent one: it declares, and
-        // declares nothing.
         let nothing: ModuleManifest = serde_json::from_str(
             r#"{ "id": "a", "name": "A", "version": "1.0.0", "settings": {} }"#,
         )

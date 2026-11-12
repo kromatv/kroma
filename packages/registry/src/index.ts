@@ -35,15 +35,20 @@ export {
   CoreScope,
   DescribedModule,
   dependenciesOf,
+  Helpers,
   MANIFEST_SCHEMAS,
   Manifest,
+  Permissions,
   MODULE_SCHEMA_VERSION,
+  notificationsProblem,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
+  SettingsScope,
   Storage,
   speaksCurrentSchema,
 } from './manifest/index.ts';
-export { channelOf, compareRaw, parse, satisfies, type Version } from './semver.ts';
+export { foldHistory, HISTORY_SCHEMA, type HistoryVersions, VersionHistory } from './history.ts';
+export { channelOf, compareRaw, floorOf, parse, satisfies, type Version } from './semver.ts';
 export {
   type JsonSchema,
   jsonSchema,

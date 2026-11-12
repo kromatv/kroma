@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "A fast, offline stand-in for the SonarCloud rules this repo keeps tripping, so a regression is caught before the push rather than ten minutes into CI.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",

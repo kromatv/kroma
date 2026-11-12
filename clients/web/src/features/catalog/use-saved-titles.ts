@@ -2,7 +2,7 @@ import type { DiscoverDetail, DiscoverEntry } from '@kromatv/client/discovery';
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { SavedTitle, SavedTitles } from '#web/features/catalog/saved-titles';
-import type { MovieView, ShowView, WebRuntime } from '#web/shared/lib/api';
+import type { MovieCardView, ShowView, WebRuntime } from '#web/shared/lib/api';
 import { TMDB_PREFIX } from '#web/shared/lib/saved-title-id';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -68,7 +68,7 @@ function useDiscoverEntries(tmdbIds: readonly number[]) {
   return { entries, loading };
 }
 
-function fromMovie(movie: MovieView): SavedTitle {
+function fromMovie(movie: MovieCardView): SavedTitle {
   return {
     key: movie.id,
     kind: 'movie',
@@ -109,7 +109,7 @@ function fromDiscover(entry: DiscoverEntry): SavedTitle {
 
 function collect(
   ids: readonly string[],
-  movieById: ReadonlyMap<string, MovieView>,
+  movieById: ReadonlyMap<string, MovieCardView>,
   showById: ReadonlyMap<string, ShowView>,
   entries: readonly DiscoverEntry[],
 ): SavedTitle[] {
@@ -142,7 +142,7 @@ function collect(
 export function useSavedTitles(
   ids: readonly string[],
   ready: boolean,
-  movieById: ReadonlyMap<string, MovieView>,
+  movieById: ReadonlyMap<string, MovieCardView>,
   showById: ReadonlyMap<string, ShowView>,
 ): SavedTitles {
   const tmdbIds = useMemo(() => tmdbIdsIn(ids), [ids]);

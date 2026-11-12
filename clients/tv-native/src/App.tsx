@@ -30,7 +30,7 @@ import { nativeLauncher } from './lib/native-launcher';
 import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
-import { nativeVoiceSearch } from './lib/voice-search';
+import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search';
 
 // What the set is called, when the platform will say. On Android TV this is the
 // name typed in setup. On tvOS it is `UIDevice.current.name`, which since
@@ -61,10 +61,17 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // the design falls back to anyway.
 const NATIVE_KIT = configureKit({ image: expoImageBackend, frost: BlurView, ground: 'dark' });
 
+const PLATFORM_LABELS: Record<string, string> = {
+  ios: 'AppleTV',
+  tizen: 'Tizen',
+  webos: 'webOS',
+};
+
 export function App() {
   const [frameLimits] = useState(decoderFrameLimits);
   const [deepLinks] = useState(createDeepLinks);
   const [searchRequests] = useState(createSearchRequests);
+  useVoiceKey(searchRequests.requestListening);
   // A TV must never sleep mid-film, and unlike a phone there is no user
   // interaction to keep it awake.
   useKeepAwake();
@@ -110,7 +117,7 @@ export function App() {
           searchShell={nativeSearchShell}
           launcher={nativeLauncher}
           serverBrowse={browseForServers}
-          platform={Platform.OS === 'ios' ? 'AppleTV' : 'AndroidTV'}
+          platform={PLATFORM_LABELS[Platform.OS] ?? 'AndroidTV'}
           // This television announces itself on its own link, so a phone in the
           // room can sign it in without the server having to place the two by
           // their addresses. Null on a shell without the native module.

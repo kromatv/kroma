@@ -17,7 +17,7 @@ export function locales(): string[] {
   return readdirSync(CATALOGS, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
 }
 
 /**

@@ -20,7 +20,7 @@ import {
   patchCore,
 } from './types';
 
-export type { AudioFilterMode, Engine, EngineState } from './types';
+export type { AudioFilterMode, Engine, EngineState, Transport } from './types';
 
 // Must be read before `started` is cleared for the new source.
 function resumeOnLoad(core: EngineCore, player: VideoPlayer): boolean {

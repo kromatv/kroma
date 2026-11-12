@@ -1,6 +1,8 @@
 //! Installed-module frontend assets: serves an installed module's Module
-//! Federation remote (`remoteEntry.js` + chunks) from `<data>/modules/:id/fe/*`,
-//! public like the icon route.
+//! Federation remote (`remoteEntry.js` + chunks) from `<data>/installed/:id/fe/*`,
+//! public like the icon route. Under `/modules/<id>@<revision>/*`, the revision
+//! the module list names, every file is immutable; the bare `/modules/<id>/*`
+//! revalidates.
 
 use std::path::{Component, PathBuf};
 
@@ -19,14 +21,20 @@ pub fn asset_routes() -> Router<SharedState> {
     Router::new().route("/modules/{id}/{*path}", get(serve_fe))
 }
 
+const IMMUTABLE: &str = "public, max-age=31536000, immutable";
+
 async fn serve_fe(
     State(state): State<SharedState>,
-    Path((id, path)): Path<(String, String)>,
+    Path((module, path)): Path<(String, String)>,
     req: Request,
 ) -> Response {
+    let (id, pinned) = match module.split_once('@') {
+        Some((id, revision)) => (id, Some(revision)),
+        None => (module.as_str(), None),
+    };
     // Rebuild both id and path from Normal components so neither can escape the
     // module's fe dir.
-    let Some(id) = safe_segment(&id) else {
+    let Some(id) = safe_segment(id) else {
         return StatusCode::NOT_FOUND.into_response();
     };
     let rel: PathBuf = PathBuf::from(&path)
@@ -42,7 +50,7 @@ async fn serve_fe(
     let file = state
         .config
         .data_dir
-        .join("modules")
+        .join(kroma_module_supervisor::INSTALLED_DIR)
         .join(id)
         .join("fe")
         .join(&rel);
@@ -55,7 +63,15 @@ async fn serve_fe(
         header::CONTENT_TYPE,
         HeaderValue::from_static(content_type_for(&rel)),
     );
+    if pinned.is_some_and(|revision| is_current(&state, id, revision)) {
+        res.headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static(IMMUTABLE));
+    }
     res
+}
+
+fn is_current(state: &SharedState, id: &str, revision: &str) -> bool {
+    kroma_module_kernel::frontend(state, id).is_some_and(|f| f.revision == revision)
 }
 
 // A plain path segment: rejects `.`, `..`, and separators to block traversal.

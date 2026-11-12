@@ -15,7 +15,7 @@ use crate::services::jobs::JobManager;
 use crate::services::pairing::{handoff, quickconnect, Handoff, QuickConnect};
 use crate::services::playback::Registry;
 use crate::services::search::SearchEngine;
-use crate::services::sections::VectorCache;
+use crate::services::sections::{HomeMemo, VectorCache};
 use crate::services::settings::Settings;
 use crate::services::subtitles::GenRegistry;
 use kroma_media::hls;
@@ -41,6 +41,9 @@ pub struct ModuleWiring {
     pub jobs: &'static [crate::services::jobs::Builtin],
     pub contributions: Contributions,
     pub official_modules: OfficialModules,
+    pub permissions: crate::services::network::DeclaredPermissions,
+    pub network_providers: crate::services::network::NetworkProviders,
+    pub network_listeners: crate::services::network::DeclaredListeners,
 }
 
 pub struct AppState {
@@ -61,11 +64,15 @@ pub struct AppState {
     pub cast: crate::services::cast::Registry,
     pub metrics: Metrics,
     pub embedder: crate::point::Point,
+    pub network: Arc<crate::services::network::Network>,
+    pub direct: crate::services::direct::Direct,
     pub search: Arc<SearchEngine>,
     pub vectors: Arc<VectorCache>,
+    pub home: HomeMemo,
     pub jobs: Arc<JobManager>,
     pub subtitle_gen: Arc<GenRegistry>,
     pub instance_id: String,
+    pub library_counts: Arc<crate::services::library_counts::LibraryCounts>,
     // Signs the media tickets the byte routes accept in a URL. Never served.
     pub media_ticket_key: String,
     // Semaphore for offline-download remuxes; a full gate returns `503`
@@ -109,6 +116,9 @@ impl AppState {
             jobs: module_jobs,
             contributions,
             official_modules,
+            permissions,
+            network_providers,
+            network_listeners,
         } = wiring;
         let hls = hls::HlsEngine::new(
             config.data_dir.join("hls"),
@@ -141,6 +151,16 @@ impl AppState {
         let _ = crate::db::reconcile_running_runs(&db);
         crate::services::pipeline::recover_on_boot(&db);
         let metrics = Metrics::new(db.clone());
+        let network = Arc::new(crate::services::network::Network::new(
+            db.clone(),
+            settings.clone(),
+            crate::point::Point::new(crate::services::network::NETWORK_POINT, contributions.clone()),
+        )
+        .with_providers(network_providers)
+        .with_listeners(network_listeners)
+        .with_core_ports(config.port, config.https_port_override)
+        .with_declared(permissions));
+        let direct = crate::services::direct::Direct::new(config.public_ip_url.clone());
         Arc::new_cyclic(|weak| AppState {
             config,
             ffprobe_available,
@@ -159,11 +179,15 @@ impl AppState {
             cast: crate::services::cast::Registry::new(),
             metrics,
             embedder,
+            network,
+            direct,
             search: Arc::new(SearchEngine::new().expect("init search index")),
             vectors: Arc::new(VectorCache::new()),
+            home: HomeMemo::default(),
             jobs: Arc::new(jobs),
             subtitle_gen: Arc::new(GenRegistry::default()),
             instance_id,
+            library_counts: Default::default(),
             media_ticket_key,
             downloads,
             me: weak.clone(),
@@ -231,6 +255,9 @@ mod tests {
                 jobs: MODULE_JOB,
                 contributions: Arc::new(|_| Vec::new()),
                 official_modules: Arc::new(Vec::new),
+                permissions: Arc::new(|_| None),
+                network_providers: Arc::new(Vec::new),
+                network_listeners: Arc::new(Vec::new),
             },
         );
         state.own_scratch_dir(dir);

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { DiscoverEntry, DiscoverResponse } from '@kromatv/client/discovery';
-import type { MediaItem, SearchResponse, Show } from '@kromatv/client/media';
+import type { MediaCard, MediaItem, SearchResponse, Show } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -66,7 +66,7 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 function mount({
   search = vi.fn(async () => found()),
   discover = vi.fn(async () => known()),
-  movies = [] as MediaItem[],
+  movies = [] as MediaCard[],
   shows = [] as Show[],
   requests = createSearchRequests(),
   voiceSearch = null,
@@ -74,7 +74,7 @@ function mount({
 }: {
   search?: () => Promise<SearchResponse>;
   discover?: () => Promise<DiscoverResponse>;
-  movies?: MediaItem[];
+  movies?: MediaCard[];
   shows?: Show[];
   requests?: SearchRequests;
   voiceSearch?: VoiceSearchBackend | null;
@@ -226,6 +226,19 @@ describe('TvSearch', () => {
     mount({ voiceSearch: { available: () => true, Session: () => null } });
 
     fireEvent.click(screen.getByLabelText('Voice search'));
+    expect(screen.getByText('Speak now…')).toBeTruthy();
+  });
+
+  it('opens already listening when the remote asked for it, and again when asked while open', () => {
+    const requests = createSearchRequests();
+    requests.requestListening();
+    mount({ voiceSearch: { available: () => true, Session: () => null }, requests });
+
+    expect(screen.getByText('Speak now…')).toBeTruthy();
+    expect(requests.takePendingListen()).toBe(false);
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByText('Speak now…')).toBeNull();
+    act(() => requests.requestListening());
     expect(screen.getByText('Speak now…')).toBeTruthy();
   });
 

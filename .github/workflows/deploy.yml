@@ -135,6 +135,42 @@ jobs:
         env:
           NOTES_FILE: release-notes.md
 
+  # The image synology.yml pushed for the promoted commit, under the release's
+  # names: X.Y.Z, and for a stable release X.Y and `stable` too. Nothing is
+  # rebuilt, so a pinned tag serves the approved bytes. Before this job, no
+  # release tag existed on ghcr and the download page's stable command failed.
+  docker:
+    name: Tag the Docker image
+    needs: [verify, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # download the Synology run's artifact
+      contents: read
+      packages: write # add tags to the image on ghcr
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      PRERELEASE: ${{ inputs.prerelease }}
+      IMAGE: ghcr.io/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Collect the Synology .spk
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: spk
+          name: kroma-synology-spk
+          run-id: ${{ needs.verify.outputs.synology_run }}
+          github-token: ${{ github.token }}
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - name: Log in to ghcr.io
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag the image
+        run: .github/scripts/tag-release-image.sh
+
   # The desktop apps on the stable channel self-update from desktop-stable.
   # It serves the candidate's own installers and the signatures the release
   # build wrote for them, so a stable update installs the approved bytes (on

@@ -362,26 +362,6 @@ async fn store_catalog_requires_settings_manage() {
 }
 
 #[tokio::test]
-async fn store_platform_requires_settings_manage() {
-    let t = test_app();
-    let m = member(&t, "platform-member");
-    let (status, _) = get(&t.app, "/api/admin/store/platform", Some(&m)).await;
-    assert_eq!(status, StatusCode::FORBIDDEN);
-}
-
-#[tokio::test]
-async fn store_platform_names_the_build_target_and_the_server_version() {
-    let t = test_app();
-
-    let (status, body) = get(&t.app, "/api/admin/store/platform", Some(&t.token)).await;
-
-    assert_eq!(status, StatusCode::OK);
-    let target = body["target"].as_str().expect("a target triple");
-    assert!(target.contains('-'), "{target}");
-    assert_eq!(body["serverVersion"], json!(crate::VERSION));
-}
-
-#[tokio::test]
 async fn store_catalog_reports_an_unreachable_registry_cleanly() {
     let t = test_app();
     // Point the store at a local port that refuses instantly: the fetch fails,
@@ -453,17 +433,17 @@ async fn spawn_degraded_registry() -> String {
 async fn store_catalog_enriches_a_reachable_registry() {
     let t = test_app();
     let url = spawn_registry(json!([
-            // Universal (library) bundle: satisfies any host -> compatible.
-            { "schemaVersion": 2, "id": "tv.kroma.lib", "name": "Lib", "version": "1.0.0", "library": true,
+            // A library bundle, which names no target -> compatible.
+            { "schemaVersion": 3, "id": "tv.kroma.lib", "name": "Lib", "version": "1.0.0", "library": true,
               "dependencies": { "tv.kroma.dep": "^0.1.0" },
               "artifacts": [{ "target": null, "url": "https://x/lib.kmod", "size": 10, "sha256": "aa" }] },
             // An engine range no server satisfies -> incompatible with a reason.
-            { "schemaVersion": 2, "id": "tv.kroma.future", "name": "Future", "version": "2.0.0",
+            { "schemaVersion": 3, "id": "tv.kroma.future", "name": "Future", "version": "2.0.0",
               "engines": { "server": ">=999.0.0" },
               "artifacts": [{ "target": null, "url": "https://x/future.kmod" }] },
-            // Only a foreign-arch build -> no artifact for this platform.
-            { "schemaVersion": 2, "id": "tv.kroma.alien", "name": "Alien", "version": "1.0.0",
-              "artifacts": [{ "target": "sparc-unknown-none-elf", "url": "https://x/alien.kmod" }] }
+            // Only a native build -> refused as one.
+            { "schemaVersion": 3, "id": "tv.kroma.alien", "name": "Alien", "version": "1.0.0",
+              "artifacts": [{ "target": "x86_64-unknown-linux-musl", "url": "https://x/alien.kmod" }] }
         ]))
     .await;
     t.state.settings.set_patch(
@@ -478,7 +458,7 @@ async fn store_catalog_enriches_a_reachable_registry() {
     assert_eq!(body["schema"], json!(2));
     assert_eq!(body["registryUrl"], json!(url));
     assert!(body["serverVersion"].is_string());
-    assert!(body["target"].is_string());
+    assert!(body.get("target").is_none());
 
     let mods = body["modules"].as_array().expect("modules");
     assert_eq!(mods.len(), 3);
@@ -489,7 +469,7 @@ async fn store_catalog_enriches_a_reachable_registry() {
     assert_eq!(lib["library"], json!(true));
     assert!(
         lib["url"].is_string(),
-        "a universal artifact resolves an install URL"
+        "an artifact naming no target resolves an install URL"
     );
     assert!(lib["installedVersion"].is_null());
     assert_eq!(lib["updateAvailable"], json!(false));
@@ -508,11 +488,8 @@ async fn store_catalog_enriches_a_reachable_registry() {
 
     let alien = by_id("tv.kroma.alien");
     assert_eq!(alien["compatible"], json!(false));
-    assert!(
-        alien["url"].is_null(),
-        "no build for this platform -> no install URL"
-    );
-    assert_eq!(alien["refusal"]["kind"], json!("platform"));
+    assert!(alien["url"].is_null(), "a native build -> no install URL");
+    assert_eq!(alien["refusal"]["kind"], json!("native"));
 }
 
 // An RFC 110 registry: a descriptor that fronts the one-request index beside it.
@@ -550,7 +527,7 @@ async fn the_store_reads_an_rfc_110_registry_through_its_descriptor() {
             "modules": ["com.acme.app"]
         }),
         json!([
-            { "schemaVersion": 2, "id": "com.acme.app", "name": "App", "version": "1.2.0", "library": true,
+            { "schemaVersion": 3, "id": "com.acme.app", "name": "App", "version": "1.2.0", "library": true,
               "dependencies": { "com.acme.lib": "^1.0.0" },
               "optionalDependencies": { "com.acme.vpn": "*" },
               "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 10,
@@ -585,7 +562,7 @@ async fn a_registry_speaking_a_contract_this_server_does_not_know_is_not_read() 
     let t = test_app();
     let url = spawn_rfc_registry(
         json!({ "apiVersion": 99, "name": "Future", "url": "https://f", "modules": ["com.acme.app"] }),
-        json!([{ "schemaVersion": 2, "id": "com.acme.app", "name": "App", "version": "1.2.0", "artifacts": [] }]),
+        json!([{ "schemaVersion": 3, "id": "com.acme.app", "name": "App", "version": "1.2.0", "artifacts": [] }]),
     )
     .await;
     point_store_at(&t, &url);
@@ -615,16 +592,16 @@ fn point_store_at(t: &crate::api::test_support::TestApp, url: &str) {
 async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
     let t = test_app();
     let url = spawn_registry(json!([
-        { "schemaVersion": 2, "id": "tv.x.app", "name": "App", "version": "1.0.0",
+        { "schemaVersion": 3, "id": "tv.x.app", "name": "App", "version": "1.0.0",
           "dependencies": { "tv.x.lib": "^1.0.0" },
           "optionalDependencies": { "tv.x.vpn": "*" },
           "consumes": [{ "point": "tv.x.app/download-client" }],
           "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 30 }] },
-        { "schemaVersion": 2, "id": "tv.x.lib", "name": "Lib", "version": "1.4.0", "library": true,
+        { "schemaVersion": 3, "id": "tv.x.lib", "name": "Lib", "version": "1.4.0", "library": true,
           "artifacts": [{ "target": null, "url": "https://x/lib.kmod", "size": 12 }] },
-        { "schemaVersion": 2, "id": "tv.x.vpn", "name": "VPN", "version": "1.0.0",
+        { "schemaVersion": 3, "id": "tv.x.vpn", "name": "VPN", "version": "1.0.0",
           "artifacts": [{ "target": null, "url": "https://x/vpn.kmod", "size": 7 }] },
-        { "schemaVersion": 2, "id": "tv.x.engine", "name": "Engine", "version": "1.0.0",
+        { "schemaVersion": 3, "id": "tv.x.engine", "name": "Engine", "version": "1.0.0",
           "contributes": [{ "point": "tv.x.app/download-client", "id": "rqbit" }],
           "artifacts": [{ "target": null, "url": "https://x/engine.kmod", "size": 5 }] }
     ]))
@@ -636,7 +613,7 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "schemaVersion": 2, "id": "tv.x.app" })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.x.app" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -671,7 +648,7 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "schemaVersion": 2, "id": "tv.x.app", "include": ["tv.x.app", "tv.x.vpn"] })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.x.app", "include": ["tv.x.app", "tv.x.vpn"] })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -696,7 +673,7 @@ async fn planning_a_module_the_registry_does_not_offer_is_a_client_error() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "schemaVersion": 2, "id": "tv.x.ghost" })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.x.ghost" })),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -713,7 +690,7 @@ async fn an_official_registry_that_is_down_stops_a_plan_rather_than_offering_les
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "schemaVersion": 2, "id": "tv.kroma.torrents" })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.kroma.torrents" })),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -724,7 +701,7 @@ async fn an_official_registry_that_is_down_stops_a_plan_rather_than_offering_les
 async fn an_added_registry_that_is_down_leaves_the_official_catalog_usable() {
     let t = test_app();
     let url = spawn_registry(json!([
-        { "schemaVersion": 2, "id": "tv.x.app", "name": "App", "version": "1.0.0",
+        { "schemaVersion": 3, "id": "tv.x.app", "name": "App", "version": "1.0.0",
           "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 3 }] }
     ]))
     .await;
@@ -747,7 +724,7 @@ async fn an_added_registry_that_is_down_leaves_the_official_catalog_usable() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "schemaVersion": 2, "id": "tv.x.app" })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.x.app" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -775,7 +752,7 @@ async fn the_install_plan_is_closed_to_anyone_who_cannot_manage_the_server() {
         "POST",
         "/api/admin/store/plan",
         Some(&m),
-        Some(json!({ "schemaVersion": 2, "id": "tv.x.app" })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.x.app" })),
     )
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
@@ -932,7 +909,7 @@ async fn an_official_catalog_that_reports_its_own_outage_is_a_failure_not_an_emp
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "schemaVersion": 2, "id": "tv.kroma.torrents" })),
+        Some(json!({ "schemaVersion": 3, "id": "tv.kroma.torrents" })),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);

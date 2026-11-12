@@ -47,7 +47,7 @@ export function Control({
   }
   // value (read-only)
   return (
-    <Box maxW={380}>
+    <Box maxW={380} shrink={1} minW={0}>
       <Text variant="meta" color="text/60" textAlign="right">
         {asText(row.value)}
       </Text>

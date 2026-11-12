@@ -12,6 +12,10 @@ import { classes } from '#ui/lib/classed';
 import { ease } from '#ui/lib/ease';
 import type { RingGeometry } from '#ui/lib/ring';
 
+interface ProgressArcProps extends RingGeometry {
+  eased: boolean;
+}
+
 export interface ProgressFillProps {
   value: number;
   style: StyleProp<ViewStyle>;
@@ -29,7 +33,8 @@ const FILL_TRANSITION = style({
   transitionTimingFunction: ease.out.css,
 });
 
-/** The arc of a <ProgressRing>, easing to a new length when the value changes. */
+/** The arc of a <ProgressRing>, easing to a new length when the value changes
+ *  unless `eased` is off. */
 export function ProgressArc({
   centre,
   radius,
@@ -37,7 +42,8 @@ export function ProgressArc({
   fill,
   circumference,
   dashOffset,
-}: Readonly<RingGeometry>) {
+  eased,
+}: Readonly<ProgressArcProps>) {
   return (
     <circle
       cx={centre}
@@ -49,7 +55,7 @@ export function ProgressArc({
       strokeLinecap="round"
       strokeDasharray={circumference}
       strokeDashoffset={dashOffset}
-      className={classes(ARC_TRANSITION)}
+      className={eased ? classes(ARC_TRANSITION) : undefined}
     />
   );
 }

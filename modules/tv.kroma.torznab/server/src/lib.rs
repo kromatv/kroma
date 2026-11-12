@@ -17,7 +17,9 @@ mod xml;
 const MAX_TIME_SECS: u32 = 40;
 
 fn fetch_xml(endpoint: &IndexerEndpoint, params: &[(&str, String)]) -> anyhow::Result<Vec<u8>> {
-    let mut req = kroma_module_sdk::http::Fetch::new().max_time(MAX_TIME_SECS);
+    let mut req = kroma_module_sdk::http::Fetch::new()
+        .purpose("torznab")
+        .max_time(MAX_TIME_SECS);
     if let Some(proxy) = &endpoint.proxy {
         req = req.socks5(proxy.as_str());
     }
@@ -501,6 +503,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn caps_are_fetched_with_the_api_key() {
         let jackett = FakeJackett::always(CAPS_XML);
         let got = caps(&jackett.endpoint()).unwrap();
@@ -514,6 +517,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_search_stops_at_the_first_attempt_that_returns_anything() {
         // The strongest parameter set the indexer supports comes first; once it
         // answers there is no reason to spend the weaker calls.
@@ -543,6 +547,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_id_that_finds_nothing_falls_through_to_the_next_attempt() {
         // Not every tracker behind Jackett resolves external ids, and an id miss
         // must not hide releases a text query would find.
@@ -571,6 +576,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_indexer_that_supports_no_ids_is_only_asked_for_text() {
         // Spending an id call on an indexer whose caps say it cannot answer one
         // is a wasted round trip against a tracker that is already slow.
@@ -586,6 +592,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn a_genuinely_empty_indexer_is_not_an_error() {
         // "No releases" is a normal answer; erroring would mark a healthy
         // indexer as broken in the admin list.
@@ -600,6 +607,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_indexer_that_fails_every_attempt_surfaces_the_failure() {
         // Auth and network problems must NOT read as "no releases found" - that
         // is how a misconfigured tracker sits silently broken for weeks.
@@ -632,6 +640,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_endpoint_routed_through_a_proxy_never_goes_out_directly() {
         let jackett = FakeJackett::always(CAPS_XML);
         let endpoint = IndexerEndpoint {
@@ -645,6 +654,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn an_endpoint_without_a_key_sends_none() {
         // Public Jackett instances take no key, and sending an empty apikey= is
         // rejected by some of them.
@@ -664,6 +674,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
     fn caps_then_search_is_one_probe_and_one_query() {
         let jackett = FakeJackett::routed(|q| {
             if q.contains("t=caps") {

@@ -69,6 +69,22 @@ export const MediaItem = CatalogEntry.extend(Tracks.shape).extend({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 
+/** A movie as a list draws it (`GET /api/movies?view=card`): what a grid sorts,
+ * filters and paints, without the files, tracks, cast and crew only its own page
+ * reads. Every `MediaItem` is one. `showId` is present only on an episode. */
+export const MediaCard = MediaItem.pick({
+  id: true,
+  title: true,
+  kind: true,
+  year: true,
+  durationMs: true,
+  video: true,
+  library: true,
+  addedAt: true,
+  metadata: true,
+}).extend({ showId: ShowId.nullish() });
+export type MediaCard = z.infer<typeof MediaCard>;
+
 /** An episode the provider lists that the library does not hold: enough to show
  * the gap with a title, a still and the day it airs. */
 export const ListedEpisode = z.object({
@@ -141,20 +157,34 @@ export const EpisodeHit = z.object({ type: z.literal('episode'), item: MediaItem
 export const SectionItem = z.discriminatedUnion('type', [MovieHit, ShowHit]);
 export type SectionItem = z.infer<typeof SectionItem>;
 
-export const Section = z.object({
+const SectionRail = z.object({
   id: z.string(),
   title: z.string(),
   reason: z.string().nullish(),
-  items: z.array(SectionItem),
 });
+
+export const Section = SectionRail.extend({ items: z.array(SectionItem) });
 export type Section = z.infer<typeof Section>;
+
+const SectionCard = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('movie'), item: MediaCard }),
+  ShowHit,
+]);
+
+/** A home rail as a poster grid draws it (`GET /api/home?view=card`): a movie
+ * is its `MediaCard`, a show keeps its shape without cast or crew. */
+export const CardSection = SectionRail.extend({ items: z.array(SectionCard) });
+export type CardSection = z.infer<typeof CardSection>;
 
 /** `GET /api/health`. */
 export const Health = z.object({
   status: z.string(),
   name: z.string().optional(),
   instanceId: z.string().optional(),
+  bootId: z.string().optional(),
   version: z.string(),
+  build: z.number().optional(),
+  commit: z.string().optional(),
   ffprobe: z.boolean(),
   libraries: z.number(),
   items: z.number(),

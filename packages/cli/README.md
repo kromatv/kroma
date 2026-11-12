@@ -1,7 +1,7 @@
 # @kromatv/sdk
 
 Build KROMA modules. One package: the SDK, the design system's types, the Rust
-crates a sidecar links, and the `kroma` CLI.
+crates a module links, and the `kroma` CLI.
 
 ```bash
 bunx @kromatv/sdk create                 # a few questions, then a project ready to run
@@ -13,8 +13,8 @@ bunx kroma build                  # dist/modules/tv.acme.notes.kmod (+ .sha256)
 bunx kroma install --server http://kroma.local:4040
 ```
 
-Bun 1.4 or newer, and a Rust toolchain for a module with a sidecar (the
-scaffold pins one in `rust-toolchain.toml`). The project depends on `@kromatv/sdk`
+Bun 1.4 or newer, and a Rust toolchain with the `wasm32-wasip2` target for a
+module with a server crate (the scaffold pins both in `rust-toolchain.toml`). The project depends on `@kromatv/sdk`
 and nothing else of KROMA's: the SDK and the kit as declarations (a page's
 runtime is the KROMA app's, injected when the module loads), and the Rust SDK
 crates under `node_modules/@kromatv/sdk/rust`, which the scaffolded `Cargo.toml`
@@ -28,40 +28,37 @@ tv.acme.notes/
   icon.svg
   locales/{en,fr}.json every user-visible string is a key
   ui/src/module.tsx    export default defineModule({ pages: [...] })
-  server/              a cargo workspace: the sidecar the server spawns
+  server/              a cargo workspace: the component the server runs
   package.json         depends on @kromatv/sdk
   tsconfig.json        extends @kromatv/sdk/tsconfig
 ```
 
-`kroma build` compiles the sidecar with the `release-kmod` profile, builds the
-frontend into `fe/` (a bundle that takes React, the design system and the SDK
-from the host at load time, so a page renders inside the host's theme with one
-React on the page), and packs `module.json` + `module` + the icon + `fe/` into a
-zstd tar. A `.kmod` carries a native binary, so it matches one platform:
-`--target x86_64-unknown-linux-musl` cross-compiles for a NAS, and the server
-tells `kroma install` which target it runs.
+`kroma build` compiles the server crate to a WebAssembly component
+(`wasm32-wasip2`, the `release-kmod` profile), builds the frontend into `fe/` (a
+bundle that takes React, the design system and the SDK from the host at load
+time, so a page renders inside the host's theme with one React on the page), and
+packs `module.json` + `module.wasm` + the icon + `fe/` into a zstd tar. The same
+`<id>.kmod` installs on every platform a server runs on.
 
 `kroma dev` uploads a debug build to the server and re-uploads whatever half
-changed on every save: the server stops the old process, keeps the module's
-database, and spawns the new one. The server can be this machine or another
-one on the network.
+changed on every save: the server replaces the running module and keeps its
+database. The server can be this machine or another one on the network.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `create [dir]` | Scaffold a module. `--yes` takes every default; `--kind full\|server\|ui`, `--storage`. |
-| `dev` | Build once, install, then rebuild and reinstall on every save. `--target` for a server on another platform. |
-| `build [dirs]` | Pack `.kmod` bundles into `dist/modules`. `--target`, `--debug`, `--skip-build` (CI's prebuilt binaries). |
-| `check [dirs]` | Manifest valid, frontend typed and its imports in bounds, clippy clean. `--no-rust`, `--no-ts`. |
+| `dev` | Build once, install, then rebuild and reinstall on every save. |
+| `build [dirs]` | Pack `.kmod` bundles into `dist/modules`. `--out`, `--debug`. |
+| `check [dirs]` | Manifest valid, frontend typed and its imports in bounds, clippy clean here and for `wasm32-wasip2`. `--no-rust`, `--no-ts`. |
 | `install [id]` | Upload a packed bundle to a server. `--file`, `--from`, `--server`, `--token`. |
 | `login [server]` | Sign in once; the token is kept in `~/.config/kroma/cli.json`. |
-| `plan` | The cargo lines CI runs in its cross-compile container. |
 | `cargo <sub>` | One cargo subcommand in every module workspace. |
 | `registry` / `serve` | A directory of bundles as a static or live RFC 110 registry. |
 | `release` | Which packed modules publish on their own tags, against the live catalog. |
 
-With no directory given, `build`, `check`, `plan` and `cargo` run over the
+With no directory given, `build`, `check` and `cargo` run over the
 module in the current directory, or over every `modules/*` below it: the same
 CLI drives one module and the KROMA repository's twelve.
 

@@ -19,9 +19,9 @@ export const create = defineCommand({
     kind: {
       type: 'string',
       valueHint: 'full|server|ui',
-      description: 'A page and a sidecar, a sidecar, or a page',
+      description: 'A page and a component, a component, or a page',
     },
-    storage: { type: 'boolean', description: 'The sidecar keeps its own database' },
+    storage: { type: 'boolean', description: 'The component keeps its own database' },
     'in-repo': {
       type: 'boolean',
       description: 'Path deps into this checkout (the default inside it)',

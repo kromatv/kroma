@@ -20,6 +20,7 @@ use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
+use kroma_media::input;
 use kroma_media::stream::stream_file;
 
 mod download;
@@ -242,8 +243,8 @@ fn vtt_response(bytes: Vec<u8>) -> Response {
 /// through [`subtitles::extract_batch_blocking`].
 pub(crate) async fn extract_webvtt(path: &str, index: usize) -> Option<Vec<u8>> {
     let child = tokio::process::Command::new("ffmpeg")
-        .args(["-v", "error", "-nostdin", "-i"])
-        .arg(path)
+        .args(["-v", "error", "-nostdin"])
+        .args(input::file(path))
         .args(["-map", &format!("0:s:{index}"), "-f", "webvtt", "pipe:1"])
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())

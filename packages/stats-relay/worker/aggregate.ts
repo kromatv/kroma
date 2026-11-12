@@ -3,6 +3,7 @@
 // Nothing here reads a row out to a caller: every number below is a count over
 // installs, never an install.
 
+import { buildAges } from './build-age';
 import type { DailyRow, InstanceRow } from './store';
 
 const DAY = 86_400;
@@ -11,9 +12,10 @@ const DAY = 86_400;
 export const ACTIVE_DAYS = 30;
 
 /**
- * And only once it has been around this long. A fake fleet has to survive a
- * week before it moves the number, which is the difference between minting ids
- * and maintaining them.
+ * And only once its first and latest reports are this far apart. A fake fleet
+ * has to keep reporting for a week before it moves the number, which is the
+ * difference between minting ids and maintaining them, and an install that
+ * reports once and is never heard from again never counts at all.
  */
 export const SETTLE_DAYS = 7;
 
@@ -40,6 +42,7 @@ export interface Reports {
   usage: number;
   statistics: number;
   sizes: number;
+  builds: number;
 }
 
 /** Accounts and titles summed over the installs that report a size, or null
@@ -58,6 +61,7 @@ export interface Located {
 
 interface Aggregate {
   instances: number;
+  settling: number;
   reports: Reports;
   clients: { tv: number; mobile: number; desktop: number; total: number };
   sizes: Sizes | null;
@@ -65,6 +69,7 @@ interface Aggregate {
   versions: Counted[];
   platforms: Counted[];
   installs: Counted[];
+  builds: Counted[];
   countries: Counted[];
   locales: Counted[];
   modules: Counted[];
@@ -77,18 +82,30 @@ export function active(row: InstanceRow, now: number): boolean {
   return row.lastSeen >= now - ACTIVE_DAYS * DAY;
 }
 
-/** Active, but not around long enough to count yet. Not the same as dead: a row
- * that went quiet two months ago is neither counted nor settling. */
+/** A daily heartbeat is never further apart than this, so a row heard from inside it
+ * is still reporting. */
+export const REPORTING_DAYS = 2;
+
+/** First seen inside the settling window and still reporting: a server that will
+ * count if it keeps going. A trial run that reported once and went quiet is
+ * neither counted nor settling. */
 export function settling(row: InstanceRow, now: number): boolean {
-  return !row.flagged && active(row, now) && row.firstSeen > now - SETTLE_DAYS * DAY;
+  return (
+    !row.flagged &&
+    row.firstSeen > now - SETTLE_DAYS * DAY &&
+    row.lastSeen >= now - REPORTING_DAYS * DAY
+  );
 }
 
-/** The rows that count: heard from recently, around long enough to be real, and
- * not flagged by the nightly sweep. */
+/** Reported across the whole settling window, from its first report to its latest. */
+export function settled(row: InstanceRow): boolean {
+  return row.lastSeen - row.firstSeen >= SETTLE_DAYS * DAY;
+}
+
+/** The rows that count: heard from recently, reporting for long enough to be
+ * real, and not flagged by the nightly sweep. */
 export function counted(rows: InstanceRow[], now: number): InstanceRow[] {
-  return rows.filter(
-    (row) => !row.flagged && active(row, now) && row.firstSeen <= now - SETTLE_DAYS * DAY,
-  );
+  return rows.filter((row) => !row.flagged && active(row, now) && settled(row));
 }
 
 // One install counts once for a language or a module, however many of its
@@ -146,6 +163,7 @@ function sizes(rows: InstanceRow[]): Sizes | null {
 export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number): Aggregate {
   const live = counted(rows, now);
   const placed = live.flatMap((row) => (row.country ? [row.country] : []));
+  const builds = live.flatMap((row) => (row.build === undefined ? [] : [row.build]));
   const clients = live.reduce(
     (total, row) => ({
       tv: total.tv + (row.clients?.tv ?? 0),
@@ -156,10 +174,12 @@ export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number)
   );
   return {
     instances: live.length,
+    settling: rows.filter((row) => settling(row, now)).length,
     reports: {
       usage: live.filter((row) => row.modules !== undefined || row.locales !== undefined).length,
       statistics: live.filter((row) => row.clients !== undefined).length,
       sizes: live.filter((row) => row.users !== undefined && row.titles !== undefined).length,
+      builds: builds.length,
     },
     clients: { ...clients, total: clients.tv + clients.mobile + clients.desktop },
     sizes: sizes(live),
@@ -167,6 +187,7 @@ export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number)
     versions: ranked(tally(live.map((row) => row.version))),
     platforms: ranked(tally(live.map((row) => platform(row.target)))),
     installs: ranked(tally(live.map((row) => row.install))),
+    builds: buildAges(builds, now),
     countries: ranked(tally(placed)),
     locales: ranked(tally(live.flatMap((row) => unique(row.locales ?? [])))),
     modules: ranked(tally(live.flatMap((row) => unique(row.modules ?? [])))),

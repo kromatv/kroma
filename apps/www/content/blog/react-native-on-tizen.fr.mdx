@@ -1,0 +1,209 @@
+---
+title: "Comment on a fait tourner React Native en natif sur les TV Samsung"
+excerpt: "Sur une TV Samsung, KROMA était un site web déguisé en app. Voici comment on l'a remplacé par une vraie app React Native, alors que le store de Samsung n'accepte que des sites web et des apps .NET."
+tags: ["Technique", "Télévision", "Open source"]
+---
+
+Sur une Apple TV ou une Android TV, KROMA est une vraie app. Le code React Native
+tourne directement sur la machine, et chaque élément à l'écran est dessiné par le
+système.
+
+Sur une TV Samsung, c'était autre chose. L'app était un site web. La TV ouvrait
+son navigateur intégré, et react-native-web traduisait nos composants en HTML.
+Ça marchait, mais on maintenait en réalité deux apps : une qui tourne en natif,
+et une qui tourne dans un navigateur, avec ses propres bugs et ses propres
+lenteurs. Sur une TV d'entrée de gamme, faire défiler une grille d'affiches sans
+à-coups nous a demandé toute une série d'optimisations.
+
+On voulait que Samsung passe dans le même camp qu'Apple et Google. C'est devenu
+[react-native-tizen](https://github.com/kromatv/react-native-tizen), un paquet
+open source qui fait tourner une app React Native ou Expo en natif sur une TV
+Samsung. Voici comment on y est arrivés.
+
+![L'app d'exemple de react-native-tizen sur une Samsung The Frame de 2024](/blog/react-native-on-tizen/home.png)
+
+## Le store de Samsung n'accepte pas les apps natives
+
+Samsung n'accepte que deux types d'apps sur ses TV : des sites web empaquetés, et
+des apps .NET écrites en C#. Une app compilée en C++, comme React Native l'est
+sur Android ou iOS, n'a pas sa place.
+
+Il existe pourtant une porte. Une app .NET a le droit d'emporter une
+bibliothèque native et de la charger au démarrage. Flutter passe déjà par là sur
+Tizen, et on a fait pareil.
+
+L'app qu'on installe sur la TV est donc une petite coquille .NET. Son seul
+travail est de charger notre vraie app :
+
+```
+App .NET, la seule chose que le store voit
+└── libreact-native-tizen.so
+    ├── Hermes, le moteur JavaScript de React Native
+    ├── le cœur de React Native : Fabric pour le rendu, Yoga pour la mise en page
+    └── notre couche Tizen, qui dessine avec EFL, la bibliothèque graphique de la TV
+```
+
+Il n'y a plus de navigateur. Quand React affiche une `<View>`, c'est un vrai
+objet graphique de la TV qui apparaît à l'écran, comme une `UIView` sur iPhone.
+
+Cette porte a une limite. Sur les TV d'avant 2021, Samsung bloque les
+bibliothèques natives qu'une app apporte avec elle, et on n'y peut rien. Ces
+TV-là gardent la version web de KROMA.
+
+## Une seule app pour six ans de TV
+
+Chaque année, Samsung sort une nouvelle version de Tizen, avec ses propres
+versions des bibliothèques système. Une app compilée pour une TV de 2025 risque
+de ne pas démarrer sur une TV de 2021, parce que des fonctions lui manquent.
+
+On a pris le problème à l'envers. On compile contre la plus vieille version
+visée, Tizen 6.0, celle des TV de 2021. Ce qui marche sur la plus ancienne
+marche sur toutes les suivantes. Pour le peu qui manquait, on embarque nos
+propres copies dans l'app.
+
+Sur le papier, un seul paquet couvre ainsi toutes les TV de 2021 à 2026. Dans
+les faits, on ne l'a encore vérifié que sur une seule TV. On y revient à la fin.
+
+## Le jour où Hermes a écrit "uppered"
+
+Les langues nous ont réservé la meilleure surprise. KROMA est d'abord une app
+française. Il lui faut des dates comme "12 novembre", des pluriels justes
+("1 épisode", "3 épisodes") et des titres triés dans le bon ordre, accents
+compris.
+
+Sur un téléphone, c'est le système qui fournit tout ça, grâce à une
+bibliothèque qui s'appelle ICU. La TV a aussi la sienne, mais elle change de
+version chaque année, et il faudrait recompiler Hermes pour chacune. On ne
+pouvait pas s'appuyer dessus.
+
+On a donc compilé ICU directement dans l'app. Au passage, on a découvert que le
+`toLocaleUpperCase` de Hermes ne met pas le texte en majuscules. Il renvoie le
+mot "uppered". On a remplacé cette partie, ajouté FormatJS pour les pluriels et
+les nombres, et réduit les données d'ICU aux seules langues de l'app. Pour une
+app en anglais, elles pèsent 2,5 Mo.
+
+## Faire croire à React Native que Tizen est un Android
+
+React Native connaît deux plateformes, Android et iOS. Dans React Native comme
+dans les bibliothèques, beaucoup de code fait des tests du genre
+`if (Platform.OS === 'android')`.
+
+On a choisi de présenter Tizen comme un Android qui porte un autre nom.
+`Platform.OS` vaut `'tizen'`, pour qu'une app puisse le reconnaître. Mais quand
+React Native cherche un fichier, il prend la version Android, sauf s'il trouve
+une version `.tizen` à côté. De tout ce que React Native sait faire, c'est le
+code Android qui se rapproche le plus d'une TV.
+
+Quand ça ne suffit pas, on corrige au cas par cas. Le champ de saisie, par
+exemple, choisit toute son implémentation selon `Platform.OS`. Dans ces deux
+fichiers-là, et seulement là, on fait lire `'android'` au code au moment de la
+compilation.
+
+## La télécommande
+
+Notre code TV avait été écrit pour Apple TV et Android TV, avec
+[react-native-tvos](https://github.com/react-native-tvos/react-native-tvos), la
+version de React Native pour les TV. On a gardé les mêmes règles sur Samsung. Un
+appui sur une touche envoie un événement. Une touche tenue 300 ms envoie
+`longSelect`. Le bouton Retour passe par `BackHandler`, comme sur Android. Pour
+notre code, une TV Samsung se comporte comme une Apple TV.
+
+Tizen n'a pas de gestion du focus intégrée, contrairement à tvOS. Ça ne nous a
+pas gênés, KROMA déplace déjà le focus lui-même.
+
+## Développer sans Tizen Studio
+
+Normalement, développer pour une TV Samsung passe par Tizen Studio,
+l'environnement officiel de Samsung, et ses outils en ligne de commande pour
+installer et signer les apps. On voulait que ce soit aussi simple que pour
+Android.
+
+On a donc réécrit en TypeScript les deux choses qu'on lui demandait : parler à la
+TV pour y installer l'app, et signer le paquet. Samsung chiffre ses certificats
+avec un vieil algorithme, RC2, que Node ne sait plus lire. On l'a réécrit lui
+aussi. Tizen Studio ne sert plus qu'une fois, pour obtenir le certificat de
+Samsung.
+
+Pour un développeur Expo, ça donne ça :
+
+```sh
+npx expo install @kromatv/react-native-tizen
+npx rn-tizen init
+npx expo start   # puis t pour ouvrir l'app sur la TV
+```
+
+On retrouve ce qu'on a sur Android : le rechargement à chaud, les logs dans le
+terminal, les erreurs affichées sur la TV et les DevTools de React Native.
+
+Et quand on n'a pas de TV sous la main, il y a un simulateur. L'émulateur de
+Samsung ne tourne pas sur les Mac Apple silicon, alors on fait tourner notre
+moteur dans une machine virtuelle Linux, directement sur le Mac. Seule la vidéo
+n'y marche pas.
+
+## Les chiffres
+
+On a mesuré sur une Samsung The Frame de 2024, avec un écran qui ressemble à un
+catalogue : une liste de 1 000 lignes et une douzaine d'animations. On a comparé
+avec le même écran en version web.
+
+- L'app native affiche sa première image en 1,2 seconde, contre 2,1 secondes
+  pour la version web.
+- Les animations suivent le rythme de l'écran, 50 images par seconde, sans une
+  image perdue.
+- Pendant que le focus descend dans la liste, on perd 22 images en près de deux
+  minutes.
+- L'app pèse 8 Mo, contre 160 Ko pour la version web.
+
+Le dernier chiffre est le prix à payer. L'app emporte son moteur JavaScript,
+React Native et ICU, alors que la version web s'appuie sur le navigateur de la
+TV. Mais on ne la télécharge qu'une fois, et elle démarre presque deux fois plus
+vite à chaque lancement.
+
+Le détail des mesures est dans
+[les benchmarks](https://github.com/kromatv/react-native-tizen/blob/main/docs/benchmarks.md).
+
+## Un bug qui touchait aussi Apple TV
+
+À un moment, une liste est restée vide. Une `FlatList` avec `flex: 1` faisait
+1 pixel de haut, et rien ne s'affichait.
+
+On pensait à un bug chez nous. Il venait en fait de react-native-tvos. Sur TV,
+chaque liste est enveloppée dans un composant invisible qui gère le focus, et ce
+composant ne recevait pas le `flex: 1` de la liste. Il prenait donc sa taille
+minimale, 1 pixel. Le bug touchait aussi Apple TV et Android TV.
+
+On l'a corrigé de notre côté
+([#57](https://github.com/kromatv/react-native-tizen/pull/57)), puis on a envoyé
+l'analyse à react-native-tvos
+([#1175](https://github.com/react-native-tvos/react-native-tvos/issues/1175)).
+Douglas Lowder, qui maintient le projet, a ouvert une correction pour toutes les
+TV ([#1176](https://github.com/react-native-tvos/react-native-tvos/pull/1176)).
+Elle est encore en cours de revue au moment où on écrit.
+
+C'est aussi pour ça qu'on publie ce travail. Un bug trouvé sur une Samsung peut
+en corriger un sur une Apple TV.
+
+## Pourquoi un projet à part
+
+KROMA est sous licence AGPL, qui oblige tout projet réutilisant le code à
+publier le sien sous la même licence. Pour que n'importe quelle app puisse s'en
+servir, react-native-tizen a
+[son propre dépôt](https://github.com/kromatv/react-native-tizen), sous licence
+MIT, et il est publié sur npm sous le nom `@kromatv/react-native-tizen`.
+
+KROMA en est le premier utilisateur. Notre app TV l'installe depuis npm, comme
+n'importe quel projet. Quand il manque quelque chose, on le corrige dans le
+paquet, jamais dans KROMA.
+
+## Ce qui reste à faire
+
+C'est une version alpha, et elle n'a tourné que sur une seule TV, une The Frame
+de 2024 sous Tizen 9.0. En théorie, elle couvre les TV de 2021 à 2026, mais on
+n'a pas encore pu le vérifier sur d'autres modèles. Le rendu SVG est incomplet,
+et certaines commandes d'Expo, comme `expo prebuild`, ne connaissent pas encore
+Tizen.
+
+Si vous avez une TV Samsung de 2021 ou plus récente,
+[le guide de démarrage](https://github.com/kromatv/react-native-tizen#quick-start)
+explique comment y lancer une app Expo. Et si quelque chose casse,
+[dites-le-nous](https://github.com/kromatv/react-native-tizen/issues).

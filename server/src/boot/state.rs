@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use kroma_config::Config;
 use kroma_db as db;
+use kroma_engine::services::notify::types::DeclaredTypes;
 use kroma_engine::services::settings::Settings;
 use kroma_engine::{infra, state};
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
@@ -39,6 +40,10 @@ pub fn build(
         std::any::TypeId::of::<Supervisor>(),
         supervisor.clone() as Arc<dyn std::any::Any + Send + Sync>,
     );
+    services.insert(
+        std::any::TypeId::of::<DeclaredTypes>(),
+        Arc::new(declared_types(&supervisor)),
+    );
 
     // The first of the two things the core knows about modules: how to reach
     // whoever contributes a named point. Which module that is, or whether one is
@@ -62,6 +67,30 @@ pub fn build(
         })
     };
 
+    let permissions: kroma_engine::services::network::DeclaredPermissions = {
+        let supervisor = supervisor.clone();
+        Arc::new(move |id: &str| supervisor.permissions_of(id))
+    };
+
+    let network_providers: kroma_engine::services::network::NetworkProviders = {
+        let supervisor = supervisor.clone();
+        let settings = settings.clone();
+        Arc::new(move || {
+            supervisor
+                .installed_manifests()
+                .into_iter()
+                .filter(|m| m.contributes.iter().any(|c| c.point == "network"))
+                .filter(|m| kroma_engine::modules::module_enabled(&settings, &m.id))
+                .map(|m| m.id)
+                .collect()
+        })
+    };
+
+    let network_listeners = {
+        let settings = settings.clone();
+        supervisor.listeners_of(move |id| kroma_engine::modules::module_enabled(&settings, id))
+    };
+
     // Transcription is long-running and rides a DB row for progress, so the core
     // holds a client for it. The embedder needs none: the state builds that point
     // from the same resolver.
@@ -70,8 +99,12 @@ pub fn build(
         db.clone(),
     ));
     services.insert(std::any::TypeId::of::<TranscriberClient>(), transcriber);
+    services.insert(
+        std::any::TypeId::of::<kroma_engine::services::trailers::Trailers>(),
+        Arc::new(kroma_engine::services::trailers::Trailers::in_data_dir(&config.data_dir)),
+    );
 
-    // Empty job roster: sidecars register their own jobs over `/_host/register-job`.
+    // Empty job roster: modules register their own jobs over `/_host/register-job`.
     let state = state::AppState::new(
         config,
         ffprobe_available,
@@ -83,9 +116,22 @@ pub fn build(
             jobs: &[],
             contributions,
             official_modules,
+            permissions,
+            network_providers,
+            network_listeners,
         },
     );
+    if let Err(e) = state.network.install() {
+        tracing::error!("the network policy could not be installed: {e:#}");
+    }
     (state, supervisor)
+}
+
+/// The notification types installed modules declare, read off the supervisor's
+/// listing on every ask so an install or an upgrade is picked up unwired.
+pub(crate) fn declared_types(supervisor: &Arc<Supervisor>) -> DeclaredTypes {
+    let supervisor = supervisor.clone();
+    DeclaredTypes::new(move || supervisor.notification_types())
 }
 
 /// A resolver for one point name. It re-asks on every call, so a module installed
@@ -101,12 +147,12 @@ fn point(resolve: &state::Contributions, name: &'static str) -> kroma_module_hos
 fn supervisor_config(config: &Config, host_token: String) -> SupervisorConfig {
     SupervisorConfig {
         modules_dir: config.data_dir.join("modules"),
-        core_url: format!("http://127.0.0.1:{}", config.port),
+        core_port: config.port,
         host_token,
         db_path: config.db_path(),
         data_dir: config.data_dir.clone(),
         // An in-core backend can't be shadowed by an installed `.kmod` of the
-        // same id (two live backends); sidecar-only modules are not reserved.
+        // same id (two live backends); installed-only modules are not reserved.
         reserved_ids: kroma_module_kernel::backend_ids(),
         server_version: crate::VERSION.to_string(),
         log_line: Some(Arc::new(|id: &str, line: &str| {

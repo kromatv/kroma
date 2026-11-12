@@ -65,7 +65,7 @@ fn grab_at(
 
 /// `POST /api/requests/search-missing` (requests.manage) "Search all missing":
 /// kick the acquisition search pass now, which auto-grabs the best release for
-/// every aired-but-open wanted row. Requires the Acquisition module (its sidecar
+/// every aired-but-open wanted row. Requires the Acquisition module (it
 /// registered the `acquisition.search` job); returns the job run id, or 409 when
 /// a pass is already running.
 pub async fn search_all_missing(

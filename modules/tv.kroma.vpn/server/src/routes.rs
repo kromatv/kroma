@@ -17,7 +17,8 @@ use kroma_module_sdk::domain::Permission;
 
 use crate::bandwidth::{engine_bandwidth, range_or_default};
 use crate::{SaveVpnBody, VpnAdminView, VpnTestResult};
-use kroma_module_sdk::host::{blocking, service, AuthUser, HostCtx};
+use axum::http::StatusCode;
+use kroma_module_sdk::host::{blocking, json_error, run_blocking, service, AuthUser, HostCtx};
 
 use crate::wg_configured;
 
@@ -31,6 +32,8 @@ where
         .route("/vpn", get(status::<S>).put(save::<S>))
         .route("/vpn/test", post(test::<S>))
         .route("/vpn/bandwidth", get(bandwidth::<S>))
+        .merge(crate::mullvad::routes::routes::<S>())
+        .merge(crate::saved::routes::routes::<S>())
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -56,15 +59,31 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    let bridge_running = match service::<Vpn>(&state) {
+    let vpn = service::<Vpn>(&state);
+    let bridge_running = match &vpn {
         Some(vpn) => vpn.running().await,
         None => false,
     };
+    let status = crate::port::engine_status(&state);
+    if let Some(vpn) = &vpn {
+        vpn.remember_exit(status.as_ref().and_then(|status| status.exit_ip.clone()));
+    }
+    let provider = crate::provider::provider_of(
+        &state.data_dir().join("vpn"),
+        &state.setting_str("vpnWgConfig", ""),
+    );
+    let saved = crate::saved::views(
+        &state.data_dir().join("vpn"),
+        &state.setting_str("vpnWgConfig", ""),
+    );
     let view = VpnAdminView {
+        provider,
+        saved,
+        router_slots: crate::saved::ROUTER_SLOTS,
         wg_configured: wg_configured(&state),
         bridge_running,
         local_port: state.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16,
-        status: crate::port::engine_status(&state),
+        status,
     };
     Ok(Json(view).into_response())
 }
@@ -80,6 +99,15 @@ async fn save<S: HostCtx + Clone + Send + Sync + 'static>(
     state.require(&user, Permission::SettingsManage)?;
     let mut patch: BTreeMap<String, Value> = BTreeMap::new();
     if let Some(wg) = body.wg_config {
+        let held = state.data_dir().join("vpn");
+        run_blocking(move || crate::mullvad::forget(&held))
+            .await
+            .map_err(|_| {
+                json_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "the request did not finish",
+                )
+            })?;
         patch.insert("vpnWgConfig".into(), json!(wg.trim()));
     }
     if let Some(port) = body.local_port {
@@ -119,4 +147,19 @@ async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
     })
     .await?;
     Ok(Json(result).into_response())
+}
+
+/// Make `config` the tunnel's ("" stops it), then restart the bridge and the
+/// engine so the new route applies at once.
+pub(crate) async fn bring_up<S: HostCtx + Clone + Send + Sync + 'static>(
+    state: &S,
+    config: String,
+) {
+    let mut patch: BTreeMap<String, Value> = BTreeMap::new();
+    patch.insert("vpnWgConfig".into(), json!(config));
+    state.set_settings(patch);
+    if let Some(vpn) = service::<Vpn>(state) {
+        vpn.apply(state).await;
+    }
+    crate::port::restart_engine(state);
 }

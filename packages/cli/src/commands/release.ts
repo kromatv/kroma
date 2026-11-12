@@ -1,12 +1,13 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compareRaw, parse } from '@kromatv/registry';
-import { Catalog, type Entry } from '../bundle/catalog';
+import { compareRaw, foldHistory, parse } from '@kromatv/registry';
+import type { Catalog, Entry } from '../bundle/catalog';
 import { type Bundle, readBundles, toEntries } from '../bundle/read';
+import { versions } from '../scaffold/plan';
+import { floorBeyondRelease } from '../server-floor';
 import { byCodeUnit } from '../sort';
+import { DEFAULT_CATALOG, defaultHistory, loadHistory, loadPublished } from './published';
 import { resolveDir } from './registry';
-
-const DEFAULT_REGISTRY = 'https://modules.kroma.tv/modules.json';
 
 /** The git tag a module's release is cut under. Kept in one place: the workflow,
  *  the catalog URLs and the recovery path must all agree on it. */
@@ -30,13 +31,13 @@ export type Verdict =
   | { kind: 'new' }
   | { kind: 'publish'; from: string }
   | { kind: 'unchanged' }
-  | { kind: 'stale'; published: string; targets: string[] }
+  | { kind: 'stale'; published: string }
   | { kind: 'backwards'; published: string };
 
 /**
  * What should happen to one module, given what is live and what was just packed.
- * Targets are compared one by one, and only those present on BOTH sides: a
- * target this run did not build says nothing about whether the module changed.
+ * At the same version, the bundle's content hash is compared with the published
+ * one; a published entry that recorded none says nothing either way.
  */
 export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
   if (!live) return { kind: 'new' };
@@ -44,32 +45,11 @@ export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
   if (order < 0) return { kind: 'backwards', published: live.version };
   if (order > 0) return { kind: 'publish', from: live.version };
 
-  const liveHashes = new Map(live.artifacts.map((a) => [a.target ?? '', a.contentHash]));
-  const stale = local.artifacts
-    .filter((a) => {
-      const published = liveHashes.get(a.target ?? '');
-      return published !== undefined && published !== a.contentHash;
-    })
-    .map((a) => a.target ?? 'universal');
-  stale.sort(byCodeUnit);
-  if (stale.length > 0) {
-    return { kind: 'stale', published: live.version, targets: stale };
+  const published = live.artifacts[0]?.contentHash;
+  if (published && published !== local.artifacts[0]?.contentHash) {
+    return { kind: 'stale', published: live.version };
   }
   return { kind: 'unchanged' };
-}
-
-async function loadPublished(source: string): Promise<Catalog> {
-  if (!/^https?:\/\//.test(source)) {
-    if (!existsSync(source)) throw new Error(`--published ${source} does not exist`);
-    return Catalog.parse(JSON.parse(readFileSync(source, 'utf8')));
-  }
-  const res = await fetch(source, { headers: { 'user-agent': 'kroma-cli' } });
-  if (res.status === 404) {
-    console.warn(`  ! ${source} is 404: treating every module as a first release`);
-    return { schema: 2, modules: [] };
-  }
-  if (!res.ok) throw new Error(`${source}: HTTP ${res.status}`);
-  return Catalog.parse(await res.json());
 }
 
 export interface PlannedRelease {
@@ -104,6 +84,7 @@ export function decide(
   published: Catalog,
   repo: string,
   now: string,
+  release?: string,
 ): Decisions {
   const live = new Map((published.modules ?? []).map((m) => [m.id, m]));
   const local = toEntries(
@@ -122,6 +103,13 @@ export function decide(
       errors.push(
         `${entry.id}: version ${JSON.stringify(entry.version)} is not semver, so it cannot be ordered against what is published`,
       );
+      continue;
+    }
+    const beyond = release ? floorBeyondRelease(entry, release) : null;
+    if (beyond) {
+      errors.push(beyond);
+      const kept = live.get(entry.id);
+      if (kept) entries.push(underRepo(kept, repo));
       continue;
     }
     const verdict = verdictFor(entry, live.get(entry.id));
@@ -146,7 +134,6 @@ export function decide(
           [
             `${entry.id}: the bundle changed but the version did not.`,
             `    module.json says ${entry.version}, which is already published`,
-            `    differing target(s): ${verdict.targets.join(', ')}`,
             `    Bump the module's version past ${verdict.published} and re-push.`,
           ].join('\n'),
         );
@@ -176,7 +163,7 @@ export function decide(
 function report(plan: Plan, stale: string[], errors: string[], strict: boolean): void {
   for (const r of plan.publish) {
     const label = r.reason === 'new' ? 'new' : 'update';
-    console.log(`  publish  ${r.tag}  (${label}, ${r.files.length / 2} artifact(s))`);
+    console.log(`  publish  ${r.tag}  (${label})`);
   }
   for (const id of plan.unchanged) console.log(`  unchanged ${id}`);
   for (const id of plan.carried) console.log(`  carried  ${id} (not built in this run)`);
@@ -198,6 +185,7 @@ function report(plan: Plan, stale: string[], errors: string[], strict: boolean):
 export interface ReleaseOptions {
   repo?: string;
   published?: string;
+  publishedHistory?: string;
   from?: string;
   out?: string;
   dryRun?: boolean;
@@ -206,8 +194,8 @@ export interface ReleaseOptions {
 }
 
 /** `kroma release`: decide which packed modules publish on their own tags, and
- *  merge the catalog against what is already live. Writes `modules.json` and
- *  `plan.json` under `--out`. */
+ *  merge the catalog against what is already live. Writes `modules.json`,
+ *  `history.json` and `plan.json` under `--out`. */
 export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   const repo = options.repo ?? process.env.GITHUB_REPOSITORY;
   if (!repo) throw new Error('--repo owner/name is required (or set GITHUB_REPOSITORY)');
@@ -216,12 +204,15 @@ export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   const outDir = resolveDir(options.out, 'dist/registry', cwd);
 
   const bundles = readBundles(modulesDir);
-  const published = await loadPublished(options.published ?? DEFAULT_REGISTRY);
+  const published = await loadPublished(options.published ?? DEFAULT_CATALOG);
+  const publishedHistory = await loadHistory(options.publishedHistory ?? defaultHistory(repo));
+  const now = new Date().toISOString();
   const { plan, catalog, stale, errors } = decide(
     bundles,
     published,
     repo,
-    new Date().toISOString(),
+    now,
+    versions(cwd).server,
   );
   report(plan, stale, errors, options.strict === true);
   if (errors.length > 0) return 1;
@@ -232,6 +223,8 @@ export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   }
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, 'modules.json'), `${JSON.stringify(catalog, null, 2)}\n`);
+  const history = foldHistory(publishedHistory, catalog.modules, now);
+  writeFileSync(join(outDir, 'history.json'), `${JSON.stringify(history, null, 2)}\n`);
   writeFileSync(join(outDir, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
   console.log(
     `\n${plan.publish.length} release(s) to cut; catalog describes ${catalog.modules.length} module(s) -> ${outDir}`,

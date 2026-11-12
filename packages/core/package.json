@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "KROMA shared core API client, media types, HEVC capability detection, remote-control mapping, direct-play helpers.",
-  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
@@ -15,7 +15,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
-    "./vite": "./vite/index.ts"
+    "./vite": "./vite/index.ts",
+    "./test": "./src/fake-video.fixture.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

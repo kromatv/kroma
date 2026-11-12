@@ -88,6 +88,7 @@ fn the_grant_covers_the_ledger_this_module_owns_in_the_core_database() {
 }
 
 #[test]
+#[cfg_attr(target_family = "wasm", ignore = "the host enforces the grant, not a component's own pool")]
 fn the_grant_reaches_neither_accounts_nor_the_client_credentials_that_moved_out() {
     let (_core, scoped) = scoped();
     let conn = scoped.get().unwrap();
@@ -162,19 +163,7 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
     let manager =
         kroma_torrent::DownloadManager::new(host, dir.path(), (*core).clone(), store.clone());
 
-    // Seeding the embedded engine writes the module's own file. Without the
-    // `rqbit` feature there is no embedded engine to seed, so the seed is a
-    // no-op by design and the row below is the one this test puts there.
     manager.seed_embedded_client();
-    if !kroma_torrent::RQBIT_COMPILED {
-        let conn = store.get().unwrap();
-        conn.execute(
-            "INSERT INTO download_clients (id,kind,name,password,enabled,priority,created_at) \
-             VALUES ('qb','qbittorrent','qBit','hunter2',1,0,1)",
-            [],
-        )
-        .unwrap();
-    }
     let seeded = kroma_torrent::db::list_download_clients(&store.get().unwrap()).unwrap();
     assert_eq!(
         seeded.len(),

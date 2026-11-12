@@ -10,10 +10,12 @@
 
 pub mod art;
 pub mod digest;
+pub mod preferences;
 pub mod push;
 pub mod record;
 pub mod render;
 pub mod subject;
+pub mod types;
 
 use kroma_db::notifications::StoredNotification;
 use kroma_module_host::{Event, HostStorage};
@@ -80,10 +82,18 @@ pub fn emit_to<S: HostStorage>(state: &S, recipients: &[User], spec: &Notificati
     if recipients.is_empty() {
         return 0;
     }
+    let types = types::types_of(state);
+    let Some(spec) = types.complete(spec) else {
+        tracing::warn!(
+            r#type = spec.module_type.as_deref().unwrap_or_default(),
+            "notify: no installed module declares this type"
+        );
+        return 0;
+    };
     let push = push::sender(state);
     let mut sent = 0;
     for user in recipients {
-        match deliver(state, user, spec, &push) {
+        match deliver(state, user, &spec, &push, &types) {
             Ok(true) => sent += 1,
             Ok(false) => {}
             Err(e) => {
@@ -97,19 +107,22 @@ pub fn emit_to<S: HostStorage>(state: &S, recipients: &[User], spec: &Notificati
     sent
 }
 
-// `Ok(false)` means they have this category muted, or were told this already.
+// `Ok(false)` means they have this category or type muted, or were told this
+// already.
 fn deliver<S: HostStorage>(
     state: &S,
     user: &User,
     spec: &NotificationSpec,
     push: &push::Sender,
+    types: &types::NotificationTypes,
 ) -> anyhow::Result<bool> {
     let category = spec.category();
     // One connection for the whole DB half of the delivery: the checks and the
     // insert run on it instead of taking two from the pool. It is released
     // before the push, which is blocking network I/O with bookkeeping of its own.
     let conn = state.db().get()?;
-    let (in_app, push_allowed) = db::notifications::allows(&conn, &user.id, category)?;
+    let (in_app, push_allowed) =
+        db::notifications::allows(&conn, &user.id, category, types.kind_of(spec))?;
     if !in_app {
         return Ok(false);
     }
@@ -140,7 +153,7 @@ fn deliver<S: HostStorage>(
         &user.id,
         Event::new(
             "notification.created",
-            json!({ "id": stored.id, "unread": written.unread }),
+            json!({ "id": stored.id, "unread": written.unread, "unseen": written.unseen }),
         ),
     );
 
@@ -161,6 +174,7 @@ fn deliver<S: HostStorage>(
             &stored,
             render::locale_of(user),
             &subjects,
+            types,
         ));
         drop(conn);
         push::deliver(state, push, &user.id, &rendered);
@@ -196,18 +210,20 @@ pub fn resolve<S: HostStorage>(
     }
 }
 
-/// Tell a user's clients that their unread count moved (they read or deleted
-/// something elsewhere), so a second open device updates its badge.
-///
-/// Takes the count rather than reading it: callers have just done the write that
-/// changed it and already know the answer, which keeps this a pure bus publish
-/// and therefore safe to call straight from an async handler.
-pub fn publish_unread<S: HostStorage>(state: &S, user_id: &str, unread: u32) {
+/// Tell a user's clients that their counts moved (they read, saw, archived or
+/// deleted something), so every open device's badge agrees.
+pub fn publish_counts<S: HostStorage>(state: &S, user_id: &str, unread: u32, unseen: u32) {
     state.publish_to(
         user_id,
-        Event::new("notification.read", json!({ "unread": unread })),
+        Event::new(
+            "notification.read",
+            json!({ "unread": unread, "unseen": unseen }),
+        ),
     );
 }
+
+#[cfg(test)]
+mod request_news;
 
 #[cfg(test)]
 mod tests {
@@ -334,6 +350,7 @@ mod tests {
                 in_app: false,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
 
@@ -358,6 +375,7 @@ mod tests {
                 in_app: false,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
         // The spec is a `requests` event, which is untouched by the media mute.
@@ -377,6 +395,7 @@ mod tests {
                 in_app: true,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
 
@@ -401,6 +420,7 @@ mod tests {
                 in_app: true,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
 
@@ -535,6 +555,7 @@ mod tests {
                 in_app: true,
                 push: false,
             }],
+            &[],
         )
         .unwrap();
 
@@ -602,7 +623,12 @@ mod tests {
         let conn = host.db().get().unwrap();
         for who in [&ana, &bo] {
             let row = &db::notifications::list_notifications(&conn, who, 10, false).unwrap()[0];
-            let rendered = render::render(row, "en", &subject::Subjects::default());
+            let rendered = render::render(
+                row,
+                "en",
+                &subject::Subjects::default(),
+                &types::NotificationTypes::default(),
+            );
             assert!(rendered.resolved);
             assert!(rendered.actions.is_empty());
         }
@@ -665,7 +691,12 @@ mod tests {
 
         let conn = host.db().get().unwrap();
         let row = &db::notifications::list_notifications(&conn, &ana, 10, false).unwrap()[0];
-        let rendered = render::render(row, "en", &subject::Subjects::default());
+        let rendered = render::render(
+            row,
+            "en",
+            &subject::Subjects::default(),
+            &types::NotificationTypes::default(),
+        );
 
         assert!(!rendered.resolved);
         assert_eq!(rendered.actions.len(), 1);
@@ -690,7 +721,12 @@ mod tests {
         let conn = host.db().get().unwrap();
         let rows = db::notifications::list_notifications(&conn, &ana, 10, false).unwrap();
         let facts = db::notifications::subject_facts(&conn, &rows).unwrap();
-        let rendered = render::render(&rows[0], "en", &subject::Subjects::from(facts));
+        let rendered = render::render(
+            &rows[0],
+            "en",
+            &subject::Subjects::from(facts),
+            &types::NotificationTypes::default(),
+        );
 
         assert_eq!(rendered.resolved_by.map(|a| a.name), Some("Ana".to_string()));
     }

@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
-use crate::{Legacy, Migrated, Pool, PoolInner, Schema, Step};
+use crate::{Change, Legacy, Migrated, Pool, PoolInner, Schema, SqlStep, Step};
 
 /// A pool over `path` with the pragmas applied and NO schema.
 ///
@@ -15,13 +15,29 @@ use crate::{Legacy, Migrated, Pool, PoolInner, Schema, Step};
 /// whose tables come from that module's `migrations()`. [`init`] would stamp the
 /// whole core schema into it, which is forty tables it will never read.
 pub fn open(path: &Path) -> Result<Pool> {
-    pool_at(path, 4, None)
+    pool_at(path, 4)
 }
 
 /// A pool over `path` keeping up to `max_idle` connections warm, for a database
 /// whose owner applies its own schema afterwards.
 pub fn open_with(path: &Path, max_idle: usize) -> Result<Pool> {
-    pool_at(path, max_idle, None)
+    pool_at(path, max_idle)
+}
+
+#[cfg(target_family = "wasm")]
+pub(crate) fn pool_at(path: &Path, max_idle: usize) -> Result<Pool> {
+    let pool = Arc::new(PoolInner {
+        path: path.to_path_buf(),
+        idle: Mutex::new(Vec::new()),
+        max_idle,
+    });
+    let _ = pool.get()?;
+    Ok(pool)
+}
+
+#[cfg(not(target_family = "wasm"))]
+pub(crate) fn pool_at(path: &Path, max_idle: usize) -> Result<Pool> {
+    scoped_pool_at(path, max_idle, None)
 }
 
 /// The one place a [`Pool`] is built. `scope` is `None` for a database its owner
@@ -29,10 +45,11 @@ pub fn open_with(path: &Path, max_idle: usize) -> Result<Pool> {
 ///
 /// Opens one connection before returning, so a path that cannot be opened fails
 /// here rather than at whatever query happens to run first.
-pub(crate) fn pool_at(
+#[cfg(not(target_family = "wasm"))]
+pub(crate) fn scoped_pool_at(
     path: &Path,
     max_idle: usize,
-    scope: Option<crate::grant::Scope>,
+    scope: Option<crate::authorizer::Scope>,
 ) -> Result<Pool> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).ok();
@@ -44,6 +61,7 @@ pub(crate) fn pool_at(
         scope,
     });
     let _ = pool.get()?;
+    crate::private::keep_private(path);
     Ok(pool)
 }
 
@@ -60,6 +78,16 @@ pub fn apply_migrations(conn: &Connection, sql: &str) -> Result<()> {
 /// module had steps runs it once more (it is `IF NOT EXISTS` DDL) before taking
 /// them.
 pub fn migrate_store(store: &Pool, name: &str, baseline: &str, steps: &[Step]) -> Result<Migrated> {
+    migrate_own(store, name, baseline, steps)
+}
+
+/// [`migrate_store`] for a schema read at run time, the way the host applies a
+/// module's.
+pub fn migrate_store_sql(store: &Pool, name: &str, baseline: &str, steps: &[SqlStep]) -> Result<Migrated> {
+    migrate_own(store, name, baseline, steps)
+}
+
+fn migrate_own<C: Change>(store: &Pool, name: &str, baseline: &str, steps: &[C]) -> Result<Migrated> {
     let schema = Schema {
         name,
         baseline,

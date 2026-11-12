@@ -49,17 +49,26 @@ export function avplayDirectPlayable(item: MediaItem): boolean {
 // no WebM, no MPEG-TS, and no framework flag turns one on.
 const APPLE_CONTAINERS = new Set(['mp4', 'mov', 'm4v']);
 
-const MEDIA3_CONTAINERS = AVPLAY_CONTAINERS;
+// LG's AV format tables for webOS TV name the QuickTime family, Matroska and
+// MPEG-TS; WebM and M2TS are in none of them, so those take the remux.
+const LG_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'mkv', 'ts']);
+
+const NATIVE_CONTAINERS = {
+  ios: APPLE_CONTAINERS,
+  android: AVPLAY_CONTAINERS,
+  tizen: AVPLAY_CONTAINERS,
+  webos: LG_CONTAINERS,
+} as const;
 
 /**
- * Whether the native clients (AVPlayer on Apple TV, Media3 on Android TV) can
- * open the ORIGINAL file rather than the server's remux. Split by platform
- * because container support is where the two players differ.
+ * Whether the native clients (AVPlayer on Apple TV, Media3 on Android TV,
+ * capi-media-player on a Samsung set, uMediaServer on an LG set) can open the
+ * ORIGINAL file rather than the server's remux. Split by platform because
+ * container support is where the players differ.
  */
-export function nativeDirectPlayable(item: MediaItem, os: 'ios' | 'android'): boolean {
+export function nativeDirectPlayable(item: MediaItem, os: keyof typeof NATIVE_CONTAINERS): boolean {
   const container = (item.container ?? '').toLowerCase();
-  const containers = os === 'ios' ? APPLE_CONTAINERS : MEDIA3_CONTAINERS;
-  if (!containers.has(container)) return false;
+  if (!NATIVE_CONTAINERS[os].has(container)) return false;
   return canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay;
 }
 

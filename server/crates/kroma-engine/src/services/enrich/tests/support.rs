@@ -124,13 +124,3 @@ pub(super) fn catalog(
     )
 }
 
-pub(super) fn scanned(state: &SharedState) -> crate::services::scan::ScanData {
-    let (items, shows) = catalog(state);
-    let changed_shows = shows.iter().map(|s| s.id.clone()).collect();
-    crate::services::scan::ScanData {
-        items,
-        shows,
-        changed_shows,
-        ..crate::services::scan::ScanData::default()
-    }
-}

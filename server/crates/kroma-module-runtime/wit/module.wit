@@ -1,0 +1,169 @@
+package kroma:module@0.2.0;
+
+interface types {
+  record header {
+    name: string,
+    value: string,
+  }
+
+  record request {
+    method: string,
+    path: string,
+    headers: list<header>,
+    body: list<u8>,
+  }
+
+  record response {
+    status: u16,
+    headers: list<header>,
+    body: list<u8>,
+  }
+}
+
+interface net {
+  use types.{header, response};
+
+  record fetch-request {
+    purpose: string,
+    method: string,
+    url: string,
+    headers: list<header>,
+    body: list<u8>,
+    max-time-secs: u32,
+    max-bytes: option<u64>,
+    max-redirects: option<u8>,
+    follow-redirects: bool,
+    public-only: bool,
+    https-only: bool,
+    sealed: bool,
+    http2: bool,
+    digest: option<tuple<string, string>>,
+  }
+
+  fetch: func(request: fetch-request) -> result<response, string>;
+  fetch-all: func(requests: list<fetch-request>) -> list<result<response, string>>;
+  download: func(request: fetch-request, destination: string) -> result<response, string>;
+}
+
+interface host-api {
+  use types.{request, response};
+
+  call: func(request: request) -> result<response, string>;
+  call-all: func(requests: list<request>) -> list<result<response, string>>;
+}
+
+interface sql {
+  variant value {
+    null,
+    integer(s64),
+    real(f64),
+    text(string),
+    blob(list<u8>),
+  }
+
+  record failure {
+    code: s32,
+    message: string,
+  }
+
+  record outcome {
+    columns: list<string>,
+    rows: list<list<value>>,
+    changes: u64,
+    last-insert-rowid: s64,
+  }
+
+  open: func(path: string) -> result<u32, failure>;
+  close: func(connection: u32);
+  run: func(connection: u32, statement: string, params: list<value>) -> result<outcome, failure>;
+  batch: func(connection: u32, statements: string) -> result<_, failure>;
+  snapshot: func(connection: u32, target: string) -> result<_, failure>;
+}
+
+interface process {
+  record command {
+    program: string,
+    args: list<string>,
+    env: list<tuple<string, string>>,
+    cwd: option<string>,
+  }
+
+  enum output {
+    stdout,
+    stderr,
+  }
+
+  ensure: func(program: string) -> result<_, string>;
+  spawn: func(command: command) -> result<u64, string>;
+  wait: func(child: u64, timeout-ms: u32) -> result<option<s32>, string>;
+  read: func(child: u64, which: output, max-bytes: u32) -> result<list<u8>, string>;
+  kill: func(child: u64, force: bool) -> result<_, string>;
+}
+
+interface files {
+  canonical: func(path: string) -> option<string>;
+  copy: func(source: string, destination: string) -> result<u64, string>;
+}
+
+interface media {
+  enum sample-format {
+    f32le,
+    s16le,
+  }
+
+  record audio-decode {
+    source: string,
+    track: u32,
+    sample-rate: u32,
+    channels: u8,
+    format: sample-format,
+    destination: string,
+  }
+
+  decode-audio: func(request: audio-decode) -> result<u64, string>;
+}
+
+interface lan {
+  record service {
+    kind: string,
+    name: string,
+    host: string,
+    port: u16,
+    properties: list<tuple<string, string>>,
+  }
+
+  record reply {
+    source: string,
+    headers: list<tuple<string, string>>,
+  }
+
+  announce: func(service: service) -> result<u64, string>;
+  withdraw: func(announcement: u64);
+  search: func(target: string, wait-ms: u32) -> result<list<reply>, string>;
+  addresses: func() -> list<string>;
+}
+
+interface settings {
+  get: func(key: string) -> option<string>;
+}
+
+interface route {
+  use types.{request, response};
+
+  handle: func(request: request) -> response;
+  tick: func() -> bool;
+  stop: func();
+}
+
+world module {
+  import net;
+  import host-api;
+  import settings;
+  import sql;
+  import process;
+  import files;
+  import media;
+  import lan;
+
+  export route;
+}

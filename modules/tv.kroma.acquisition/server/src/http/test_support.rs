@@ -35,11 +35,7 @@ pub(crate) fn host() -> StubHost {
     let host = signed_in(StubHost::with_core(
         kroma_module_sdk::db::testing::temp_pool("acq-routes"),
     ));
-    kroma_module_sdk::db::apply_migrations(
-        &host.store().get().unwrap(),
-        crate::rules::schema::MIGRATIONS,
-    )
-    .unwrap();
+    crate::rules::schema::install(host.store());
     host
 }
 

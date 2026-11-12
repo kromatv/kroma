@@ -4,7 +4,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use serde::Serialize;
-use tokio::process::Child;
+use kroma_module_sdk::host::process::Child;
 use tokio::sync::Mutex;
 use tracing::info;
 
@@ -57,44 +57,24 @@ impl RemoteAccess {
         })
     }
 
-    // Resolution order: packaged next to the server executable, a copy cached
-    // under `<data_dir>/bin`, then `cloudflared` from `PATH` (dev fallback).
-    // Never an admin-configured path.
     pub(crate) fn resolve_binary(&self) -> String {
-        let name = provision::bin_name();
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(p) = exe.parent().map(|d| d.join(name)) {
-                if p.is_file() {
-                    return p.to_string_lossy().into_owned();
-                }
-            }
-        }
-        let cached = provision::cached_path(&self.data_dir);
-        if cached.is_file() {
-            return cached.to_string_lossy().into_owned();
-        }
-        name.to_string()
+        provision::program(&self.data_dir)
     }
 
-    // Downloads + caches a runnable `cloudflared` under the data dir if the
-    // server doesn't already provide one. Called from the background launch
-    // task, so a multi-MB download never blocks a request.
+    // Called from the background launch task, so a multi-MB download never blocks
+    // a request.
     pub(crate) async fn ensure_binary(&self) -> Result<String, String> {
         let bin = self.resolve_binary();
-        if std::path::Path::new(&bin).is_absolute() {
-            return Ok(bin);
-        }
         if binary_version(&bin).await.is_some() {
             return Ok(bin);
         }
         self.push_log("cloudflared not found, downloading…".to_string())
             .await;
         info!("remote access: downloading cloudflared");
-        let path = provision::download(&self.data_dir).await?;
-        self.push_log(format!("cloudflared installed at {}", path.display()))
-            .await;
-        info!("remote access: cloudflared installed at {}", path.display());
-        Ok(path.to_string_lossy().into_owned())
+        provision::fetch().await?;
+        self.push_log("cloudflared installed".to_string()).await;
+        info!("remote access: cloudflared installed");
+        Ok(self.resolve_binary())
     }
 
     pub(crate) async fn push_log(&self, line: String) {
@@ -109,12 +89,11 @@ impl RemoteAccess {
     pub async fn status(&self) -> RemoteStatus {
         let (running, connecting) = {
             let mut g = self.inner.lock().await;
-            if let Some(child) = g.child.as_mut() {
-                if let Ok(Some(status)) = child.try_wait() {
-                    g.running = false;
-                    g.child = None;
-                    g.last_error = Some(format!("cloudflared exited ({status})"));
-                }
+            let exited = g.child.as_ref().and_then(|child| child.try_wait().ok().flatten());
+            if let Some(status) = exited {
+                g.running = false;
+                g.child = None;
+                g.last_error = Some(format!("cloudflared exited ({status})"));
             }
             (g.running, g.starting)
         };
@@ -160,7 +139,7 @@ mod tests {
 
         let resolved = remote.resolve_binary();
 
-        assert_eq!(resolved, provision::bin_name());
+        assert_eq!(resolved, provision::PROGRAM);
     }
 
     #[tokio::test]

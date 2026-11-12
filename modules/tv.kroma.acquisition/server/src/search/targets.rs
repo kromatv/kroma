@@ -3,7 +3,7 @@
 //! themselves).
 
 use kroma_module_sdk::db::WantedRow;
-use kroma_module_sdk::engine::model::RequestKind;
+use kroma_module_sdk::domain::RequestKind;
 use serde::{Deserialize, Serialize};
 
 mod build;

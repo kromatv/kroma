@@ -1,19 +1,20 @@
-//! The out-of-process provider side of the embedder: HTTP routes the vector
-//! `.kmod` serves so the core (and any module) can embed text over the port
-//! bridge. `embed_batch` is the important one: a catalog-wide reembed sends every
-//! document in ONE request, so the sidecar stays fast despite living in another
-//! process (per-item IPC would be thousands of round-trips).
+//! The provider side of the embedder: HTTP routes the vector `.kmod` serves so
+//! the core (and any module) can embed text over the port bridge. `embed_batch`
+//! is the important one: a catalog-wide reembed sends every document in ONE
+//! request, so the module stays fast (per-item calls would be thousands of
+//! round-trips).
 
 use std::sync::Arc;
 
 use axum::routing::post;
 use axum::{Extension, Json, Router};
+use kroma_module_sdk::host::run_blocking;
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::Embedder;
 
-/// The routes the vector sidecar mounts for the embedder port. Generic over the
+/// The routes the vector module mounts for the embedder port. Generic over the
 /// process state `S` (the runtime's `RemoteHost`); the embedder is stateless
 /// compute, so it rides in an `Extension` rather than needing the host.
 pub fn embedder_routes<S: Clone + Send + Sync + 'static>(emb: Arc<dyn Embedder>) -> Router<S> {
@@ -33,8 +34,7 @@ async fn embed_h(
     Extension(emb): Extension<Arc<dyn Embedder>>,
     Json(req): Json<EmbedReq>,
 ) -> Json<Vec<f32>> {
-    // Embedding is CPU work; run it off the async runtime.
-    let v = tokio::task::spawn_blocking(move || emb.embed(&req.text))
+    let v = run_blocking(move || emb.embed(&req.text))
         .await
         .unwrap_or_default();
     Json(v)
@@ -49,11 +49,9 @@ async fn embed_batch_h(
     Extension(emb): Extension<Arc<dyn Embedder>>,
     Json(req): Json<EmbedBatchReq>,
 ) -> Json<Vec<Vec<f32>>> {
-    let out = tokio::task::spawn_blocking(move || {
-        req.texts.iter().map(|t| emb.embed(t)).collect::<Vec<_>>()
-    })
-    .await
-    .unwrap_or_default();
+    let out = run_blocking(move || req.texts.iter().map(|t| emb.embed(t)).collect::<Vec<_>>())
+        .await
+        .unwrap_or_default();
     Json(out)
 }
 
@@ -150,7 +148,7 @@ mod tests {
     #[tokio::test]
     async fn the_meta_endpoint_reports_what_the_caller_needs_to_decide_with() {
         // `dim` is what the reembed job compares against to decide whether a
-        // stored vector is stale, and the floor is backend-specific - a sidecar
+        // stored vector is stale, and the floor is backend-specific - a module
         // that misreported either would leave recommendations quietly wrong.
         let (status, meta) = post("/_port/embedder/meta", json!({})).await;
         assert_eq!(status, StatusCode::OK);

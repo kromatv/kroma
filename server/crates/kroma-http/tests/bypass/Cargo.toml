@@ -1,0 +1,9 @@
+[package]
+name = "kroma-http-bypass"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "The crate kroma-http's no_bypass test hands clippy: one connection the egress gate never sees."
+license = "AGPL-3.0-or-later"
+
+[workspace]

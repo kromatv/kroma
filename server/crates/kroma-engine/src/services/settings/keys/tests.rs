@@ -2,6 +2,7 @@ use super::*;
 
 const CREDENTIAL_WORDS: [&str; 4] = ["password", "token", "secret", "credential"];
 const CREDENTIAL_COMPOUNDS: [&str; 4] = ["apikey", "privatekey", "serviceaccount", "keyp8"];
+const MODULE_CREDENTIALS: [&str; 2] = ["vpnWgConfig", "remoteAccessToken"];
 
 fn words(key: &str) -> Vec<String> {
     let mut spaced = String::new();
@@ -37,26 +38,30 @@ fn every_key_that_carries_a_default_declares_who_may_reach_it() {
 
     assert!(
         undeclared.is_empty(),
-        "a key reaches the store through one of public(), core_only() and \
-         sidecar_credential(), each of which declares a reach: {undeclared:?}"
+        "a key reaches the store through core_only() or module_declared(), each of \
+         which declares a reach: {undeclared:?}"
     );
 }
 
 #[test]
-fn a_key_that_reads_like_a_credential_is_never_reachable_by_any_module() {
+fn a_key_that_reads_like_a_credential_is_the_cores_unless_a_module_runs_on_it() {
     let declared = declared();
 
-    let served: Vec<&&str> = declared
+    let handed_out: Vec<&&str> = declared
         .reach
         .iter()
-        .filter(|(key, reach)| reads_like_a_credential(key) && **reach == SettingReach::Any)
+        .filter(|(key, reach)| {
+            reads_like_a_credential(key)
+                && **reach != SettingReach::CoreOnly
+                && !MODULE_CREDENTIALS.contains(key)
+        })
         .map(|(key, _)| key)
         .collect();
 
     assert!(
-        served.is_empty(),
-        "a credential is the core's alone unless the module that uses it declared \
-         it; declare these with core_only() or sidecar_credential(): {served:?}"
+        handed_out.is_empty(),
+        "a credential is the core's alone unless it is the one a module runs on; \
+         declare these with core_only(): {handed_out:?}"
     );
 }
 
@@ -137,25 +142,16 @@ fn the_identities_the_server_mints_for_itself_are_declared_and_withheld() {
 }
 
 #[test]
-fn a_credential_the_sidecar_that_uses_it_configures_wants_a_declaration() {
-    assert_eq!(reach_of_setting("vpnWgConfig"), SettingReach::Declared);
-    assert_eq!(
-        reach_of_setting("remoteAccessToken"),
-        SettingReach::Declared
-    );
-}
-
-#[test]
-fn an_ordinary_preference_reaches_any_module() {
-    for key in [
+fn a_credential_and_a_preference_alike_reach_only_a_module_that_declares_them() {
+    for key in MODULE_CREDENTIALS.into_iter().chain([
         "acqEnabled",
         "namingEpisodeFile",
         "notifications.vapid.publicKey",
         "smtpHost",
         "vpnLocalPort",
         "localDiscovery",
-    ] {
-        assert_eq!(reach_of_setting(key), SettingReach::Any, "{key}");
+    ]) {
+        assert_eq!(reach_of_setting(key), SettingReach::Declared, "{key}");
     }
 }
 
@@ -175,4 +171,11 @@ fn defaults_carry_known_keys() {
     assert_eq!(d.get("llmTemperature"), Some(&json!(0.7)));
     assert_eq!(d.get("smtpPassword"), Some(&json!("")));
     assert!(!d.contains_key("nonexistentKey"));
+}
+
+#[test]
+fn a_key_naming_folders_a_module_holds_is_written_only_by_the_core_or_its_declarer() {
+    assert_eq!(reach_of_setting("libraries"), SettingReach::CoreOnly);
+    assert_eq!(reach_of_setting("downloadFolders"), SettingReach::CoreOnly);
+    assert_eq!(reach_of_setting("acqRecycleBin"), SettingReach::Declared);
 }

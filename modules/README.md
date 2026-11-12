@@ -1,9 +1,9 @@
 # Modules
 
 KROMA's core is playback + catalog. Everything else (downloads, indexers,
-acquisition, VPN, transcription, embeddings, discovery, remote access) is a
-module: a separate program with a reverse-DNS id (`tv.kroma.torrents`) that
-the server installs, spawns and reverse-proxies.
+acquisition, VPN, transcription, embeddings, discovery, remote access,
+trailers) is a module: a WebAssembly component with a reverse-DNS id
+(`tv.kroma.torrents`) that the server installs, runs and reverse-proxies.
 
 Modules are NOT compiled into the server: the base build carries none, and a
 module reaches users as a `.kmod` bundle installed from Admin → Modules, either
@@ -11,8 +11,8 @@ from a registry or by upload. A module is written the same way inside this
 repository (under `modules/`) and outside it (`bunx @kromatv/sdk create`, against the
 public `kroma` package).
 
-A module is meant to reach the network, the filesystem and the core only through
-what it declares. That containment is still being built. Read
+A module reaches the network, the filesystem and the core only through what it
+declares. Read
 [module security](../docs/module-security.md) for the permissions it declares and
 how they are enforced, [networking](../docs/networking.md) for how its
 connections are decided and recorded, and
@@ -27,7 +27,7 @@ standalone, with its own `Cargo.lock`, outside the server tree:
 ```
 modules/<id>/
   module.json      manifest: id, version, engines, dependencies, points, config
-  server/          the Rust backend: a [[bin]] makes it a spawned sidecar
+  server/          the Rust backend: a [[bin]] makes it a component
   ui/src/module.ts optional React frontend (a KromaModule: pages, nav, slots)
   locales/         optional en.json, fr.json, this module's own catalog
   package.json     with a frontend: its dependencies (@kromatv/module-sdk, @kromatv/ui)
@@ -36,7 +36,7 @@ modules/<id>/
 ```
 
 `ui/`, `locales/` and `package.json` are optional and travel together: 5 of
-the 12 first-party modules have a frontend.
+the 13 first-party modules have a frontend.
 
 ## Build one
 
@@ -51,34 +51,29 @@ bun run kroma check                           # manifests, frontend types, clipp
 cd modules/tv.kroma.remote/server && cargo build   # a normal standalone crate
 ```
 
-`kroma build` compiles the `[[bin]]` with the `release-kmod` profile (release +
-`panic = "abort"`: a sidecar aborts and the supervisor respawns it, which drops
-the unwinding tables for ~11% smaller binaries), builds the `ui/` into `fe/`
-(see [Frontend](#frontend)), and packs `module.json` + the `module` binary + the
-icon + `fe/` into a zstd tarball.
+`kroma build` compiles the `[[bin]]` for `wasm32-wasip2` with the
+`release-kmod` profile (release + `panic = "abort"`: a panic loses that instance,
+and the next call gets a fresh one), builds the `ui/` into `fe/` (see
+[Frontend](#frontend)), and packs `module.json` + `module.wasm` + the icon +
+`fe/` + `locales/` into a zstd tarball. The same `<id>.kmod` installs on every
+platform a server runs on. The repository's `rust-toolchain.toml` installs the
+target, and so does the scaffold's.
 
 Every module workspace shares one build directory (`target/kmod`), so the
-dependency graph they have in common (axum, tokio, candle, librqbit) compiles
-once rather than once per module. Cargo holds an exclusive lock on it, so module
-builds run in sequence.
-
-A `.kmod` carries a native binary, so it must match the server's platform.
-Cross-compile with `--target`, which also suffixes the bundle with the triple:
-
-```bash
-bun run kroma build --target x86_64-unknown-linux-musl
-```
+dependency graph they have in common (axum, tokio, candle) compiles once rather
+than once per module. Cargo holds an exclusive lock on it, so module builds run
+in sequence.
 
 Declare cargo features the bundle needs in the manifest, not on the command
 line, because `kroma build` reads them:
 
 ```toml
 [package.metadata.kmod]
-features = ["rqbit"]
+features = ["local"]
 ```
 
 A module with no `[[bin]]` is a *library module*: manifest + frontend only, no
-spawned process. Whatever uses it links its Rust code (`tv.kroma.scene`, the
+component. Whatever uses it links its Rust code (`tv.kroma.scene`, the
 release-name parser, is one).
 
 ### Iterating against a server
@@ -89,9 +84,9 @@ cd modules/tv.kroma.remote && bunx kroma dev  # build, install, rebuild on every
 ```
 
 `kroma dev` uploads a debug build to the server and re-uploads whichever half
-changed on every save: the server stops the old process, keeps the module's
-database, and spawns the new one. The server can be this machine or the NAS
-(`--server http://kroma.local:4040`, with `--target` for its platform).
+changed on every save: the server replaces the running module and keeps its
+database. The server can be this machine or the NAS
+(`--server http://kroma.local:4040`), and the bundle is the same for both.
 `kroma install` uploads a `kroma build` bundle the same way.
 
 ## Write one
@@ -100,7 +95,7 @@ database, and spawns the new one. The server can be this machine or the NAS
 bun run kroma create tv.kroma.notes          # a few questions; lands in modules/
 ```
 
-The scaffold is the layout above: a manifest, a page, a sidecar crate with one
+The scaffold is the layout above: a manifest, a page, a server crate with one
 admin route, both locales, and the `package.json` that links the SDK. Outside
 this repository `bunx @kromatv/sdk create` produces the same project against the one
 public package, `kroma`, declarations only (`docs/module-sdk-publishing.md`). Use
@@ -114,28 +109,28 @@ use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 ```
 
-A sidecar's whole `main()` is one `serve_one` call: the runtime builds the
-out-of-process host, applies the module's migrations to its own database, runs
-`on_enable` and serves the module's admin routes on the port the supervisor
-assigned. The closure takes the live host and wires the process's own services
-into it:
+A module's whole `main` is one `module_main!`: the runtime builds the host, runs
+`on_enable` and answers the module's admin routes through the component's `route`
+export. The host applies the module's migrations to its own database and
+registers its jobs and event topics first, once, however many instances it runs
+(see [Instances](#instances)). The closure takes the live host, wires the
+module's own services into it, and returns an `axum::Router` of its own, mounted
+beside every module's `admin_routes`:
 
 ```rust
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve_one(
-        |host| host.register_service(kroma_remote::RemoteAccess::new(host.data_dir().into())),
-        kroma_remote::server_module::<RemoteHost>(),
-    )
-    .await
-}
+kroma_module_runtime::module_main!(
+    |host: &RemoteHost| {
+        host.register_service(kroma_remote::RemoteAccess::new(host.data_dir().to_path_buf()));
+        axum::Router::new()
+    },
+    vec![kroma_remote::server_module::<RemoteHost>()],
+);
 ```
 
-Reach past `serve_one` to `serve` when one process hosts several modules, or
-serves routes of its own: its closure returns an `axum::Router` that is mounted
-beside every module's `admin_routes`.
+Built for any target but `wasm32-wasip2` the crate still compiles, so its tests
+run natively, but the module refuses to start.
 
-Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`**,
+Depend on **`kroma-module-sdk`** and, for a server crate, **`kroma-module-runtime`**,
 never on core crates directly. The SDK re-exports everything a module is allowed
 to touch, its `testing` feature included (`host::testing::StubHost`,
 `testing::serve`, `db::testing::temp_pool`, `testing::temp_dir`). In this repo
@@ -150,7 +145,7 @@ Shared *computation* is different. `modules/lib/naming` holds the naming engine
 `kroma-naming`, and the release parser `kroma-scene` is the library module
 `tv.kroma.scene`. Both are ordinary crates their consumers link, because a
 function called once per imported file or once per scored release cannot be a
-localhost round trip.
+round trip through the core.
 
 ### Calling another module
 
@@ -177,12 +172,16 @@ pub fn routes<S: Clone + Send + Sync + 'static>() -> Router<S> {
 }
 ```
 
+The POST leaves through the component's `host-api` import and reaches the
+answering module through the core's `/api/module/<id>` proxy, with the port
+token the core handed the caller for that point.
+
 Three manifest verbs, and any module may use all three:
 
 - **`definesPoints: [{ name, version?, methods? }]`** invents a point. `name` is
   local: the full name is `<this module's id>/<name>`, so ownership reads off the
   name and two authors cannot collide. The handful the CORE calls (`acquisition`,
-  `transcriber`, `embedder`) are bare, and nothing but the core may define one.
+  `transcriber`, `embedder`, `network`, `trailer`) are bare, and nothing but the core may define one.
 - **`contributes: [{ point, version?, id?, label?, fields?, flow? }]`** answers a
   point, its own included. `id` is the instance name for a point several modules
   answer at once, the way a download client is picked, and absent for a point
@@ -243,11 +242,12 @@ it also carries playback, cast and progress traffic, which is high-rate and
 rarely what a module wants. Another module's events arrive the same way, under
 whatever name it published (`download.completed`, `vpn.status`).
 
-The runtime registers them at boot and serves `/_event/{topic}`. The core reads
-its bus and POSTs each matching event to every subscriber. Three things to know:
+The host registers them once when the module starts, and the runtime serves
+`/_event/{topic}`. The core reads its bus and POSTs each matching event to every
+subscriber. Three things to know:
 
 - **Opt in one topic at a time.** The bus carries high-rate traffic (playback
-  progress) and each delivery is an HTTP call to the module's process.
+  progress) and each delivery is an HTTP call into the module.
 - **Delivery is best-effort and unordered.** A module that was restarting missed
   what fired. Anything that must not be missed belongs in a job that reconciles
   state, not in a handler.
@@ -284,8 +284,9 @@ main sidebar. `icon` is a name from `clients/web/src/modules/module-icons.ts`;
 `requires` gates the link by capability.
 
 `kroma build` bundles the frontend into `fe/` and `module.json` declares it with
-`"feRemote": { "module": "./remoteEntry.js" }`. The web client fetches
-`/modules/<id>/remoteEntry.js` for every enabled module at boot. The bundle
+`"feRemote": { "module": "./remoteEntry.js" }`. The web client imports the
+entry of every enabled module at boot, from `/modules/<id>@<revision>/`, a URL
+that moves with the bundle's bytes and is cached for a year. The bundle
 carries none of `react`, `@kromatv/ui`, `@kromatv/module-sdk`, `@kromatv/core`,
 `@kromatv/client`, `@tanstack/react-query` or `react-call`: it reads them from
 the host at load time (`SHARED_MODULES` in `@kromatv/module-sdk`), so one React,
@@ -295,12 +296,19 @@ declarations only, and a `@kromatv/*` import the host does not provide fails the
 build. Anything else a page imports (`zod`, an icon set) is bundled. Import
 components from `@kromatv/ui/kit`; a deeper kit path is folded onto it.
 
+Keep the entry to `defineModule` and `lazy()`. The build writes `fe/shared.json`
+beside `remoteEntry.js`, naming what the entry and the chunks it imports
+statically read from the host as they load; the server folds it into the module
+list, and the host hands over only that at boot. The rest, the kit included, arrives when a module page, slot or panel
+first renders. An entry that imports the kit at its top level makes every page
+of the app load it, whether or not the module shows anything there.
+
 ### Strings
 
 Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve
 against the module's own catalog first, then the core ones.
 
-The sidecar reads those same files, so a module has one store and not one per
+The server crate reads those same files, so a module has one store and not one per
 half. `embedded_locales!()` finds every `locales/<code>.json` at compile time
 and `i18n::engine` resolves them with the engine the core resolves its own
 with, which is what makes a plural and a `{name}` behave the same in a row
@@ -326,31 +334,111 @@ falls back to it, and then to the key itself. Resolve for a person with the
 session user's `language`, which is what every other surface reads.
 
 A module whose strings also have to reach something that is not the web
-frontend or the sidecar, a device channel it installs, ships the same JSON
+frontend or the server crate, a device channel it installs, ships the same JSON
 there rather than restating it in that language.
+
+### Notifications
+
+A module tells people through the core's inbox, never one of its own. Declare
+each kind it sends in `module.json`, in its own namespace, with the keys of its
+wording in `locales/{en,fr}.json`:
+
+```jsonc
+"notifications": [
+  {
+    "type": "tv.kroma.torrents/download.completed",
+    "category": "downloads",
+    "push": false,
+    "labelKey": "notifications.completed.label",
+    "titleKey": "notifications.completed.title",
+    "bodyKey": "notifications.completed.body"
+  }
+]
+```
+
+Then raise it by type. The host fills in the category and the keys from the
+declaration:
+
+```rust
+host.notify(
+    &Audience::permission(Permission::LibraryManage),
+    &NotificationSpec::declared("tv.kroma.torrents/download.completed")
+        .param("title", &row.release_title)
+        .subject(NotificationSubject::new("tv.kroma.torrents/download", &row.id))
+        .dedupe_key(format!("tv.kroma.torrents/download.completed:{}", row.id)),
+);
+```
+
+- **`type`** is `<module id>/<name>`, and it is what a reader mutes in their
+  settings. The host answers `403` to a type the calling module did not
+  declare, and `kroma check` refuses one outside the namespace.
+- **`category`** is one of `requests`, `media`, `reports`, `downloads` and
+  `system`. The type is listed under it, and follows the reader's switch for it
+  until they set the type on its own.
+- **`push`** defaults to true. `false` keeps the type off a reader's devices
+  until they turn it on.
+- **`labelKey`** names the type in the reader's settings and defaults to the
+  title, which suits a title with no `{param}` in it.
+- The bundle carries `locales/`, and the server renders every key in the
+  reader's language from the module's catalog first, then the core's. `kroma
+  check` refuses a key that a catalog the module ships has no words for.
+- **`subject`** says what the row is about. A repeat about the same subject
+  folds into the row the reader already has; `group_key` names another fold,
+  and `dedupe_key` drops a repeat the reader still holds.
+  `host.resolve_notifications(&subject, NotificationEvent::Custom, by)` settles
+  every row of the module about that subject, for every reader.
+
+`NotificationSpec::custom` still takes literal text, for a module built before
+declared types. Every reader gets those words whatever their language.
 
 ## Runtime contract
 
-The supervisor scans `<data>/modules/*`, spawns each enabled module as its own
-process on a free localhost port, and reverse-proxies `/api/module/<id>/*` to it.
-A module calls back into the core over the token-authed `/api/_host/*` API for
-settings, events, jobs and session lookup (`AuthUser` resolves through the
-host, so authenticating a caller costs no database).
+The supervisor scans `<data>/installed/*`, runs each enabled module's
+`module.wasm` as a component inside the server, and reverse-proxies
+`/api/module/<id>/*` to it. A module calls back into the core over the
+token-authed `/api/_host/*` API for settings, events, jobs and session lookup
+(`AuthUser` resolves through the host, so authenticating a caller costs no
+database).
 
-The settings callback reads and writes the operator's preferences, **not the
-core's own credentials**. A key reaches you only when the core declared that it
-may: the mail password, the LLM API key, the Web Push / APNs / FCM private
-material and the registry list the Store installs from are the core's alone, and
-so is every key no declaration mentions, which is what an identity the server
-minted for itself is. A read answers the default you asked with, and a patch
-naming one is refused whole with a `403`. For a vendor credential the operator
-configured, ask `GET /_host/secret?name=` by name.
+A component reaches the core only through its `host-api` import: `/api/_host/*`
+and a peer's `/api/module/<id>/*` on the core's own socket, `<run>/host.sock`,
+which serves no route a client of the server reaches. The host adds the module's
+token on the way out. The module itself is served on
+`<run>/modules/<id>/module.sock`, in a directory only the server's user can open.
+`<run>` is `<data>/run`. When `<data>` is too deep for a socket path to fit
+(`sun_path` holds 108 bytes on Linux, 104 on macOS), it is a short private
+directory under `/tmp` named after the data directory, and the server logs
+which one at boot.
 
-A credential a module is the thing that uses (the WireGuard config the bridge
-brings up, the tunnel token the connector runs on) reaches **the module that
-declared it**, because the core knows which module is calling: every sidecar is
-spawned with its own `KROMA_MODULE_TOKEN` and the callback resolves it. Declare
-yours in `module.json`:
+The component's environment holds only what the host puts there:
+
+| Variable | What it is |
+| --- | --- |
+| `KROMA_MODULE_ID` | the module's id |
+| `KROMA_HOST_TOKEN` | the port token the module's own routes accept |
+| `KROMA_CORE_URL` | `http://core`, the base the runtime sends through `host-api` |
+| `KROMA_CORE_PORT` | the port the core's web listener answers on: what a device on the LAN dials |
+| `KROMA_DATA_DIR` | the server's data directory |
+| `KROMA_DB_PATH` | `/kroma/core.sqlite`, the name the `sql` import answers for the core database. The runtime reads it only with `storage` |
+| `TMPDIR` | `/tmp`, the module's private scratch folder |
+| `KROMA_MODULE_LOG`, `RUST_LOG` | the server's log filters, when it has them |
+| `KROMA_MODULE_ROLE` | `primary` or `worker`, see [Instances](#instances). A runtime that finds none runs its whole startup itself, as a server from before roles expects |
+
+and each variable `permissions.env` names, when the server has it. The runtime
+reads these: a module never does unless it has a reason of its own.
+
+The primary instance starts when the module does, so `on_enable` runs without
+waiting for a first call. Work a module leaves running advances on a 100 ms tick
+between calls. Stopping runs `on_disable`, then stops every program the module
+started. An instance lost to a panic or a limit takes the programs it started
+with it. When that was the primary, the next call starts a new one, which runs
+`on_enable` again.
+
+The settings callback reads and writes the operator's preferences, and only
+**the ones your manifest declares**. The core knows which module is calling (the
+host adds the module's own token to every callback), so it answers a read of a key
+in your `settings.read` and a write of a key in your `settings.write`, and refuses
+everything else:
 
 ```jsonc
 "settings": {
@@ -359,11 +447,27 @@ yours in `module.json`:
 }
 ```
 
-A read declaration is not a write declaration, and a bundle that declares nothing
-keeps every ordinary preference and reaches none of these credentials. Ordinary
-preferences are not scoped by the declaration yet, so write down the full truth
-today: reaching a key you did not declare logs a line at `debug` level, which is
-the reach that will be refused when it is.
+A read declaration is not a write declaration, and a module that declares no
+`settings` reaches no setting. There is no namespace of your own that skips the
+list: every key you touch is a core key, so every one is on it. A refusal is a
+`403` whose error names the key and what to add
+(`settings.read: "smtpHost" is not declared; add it to settings.read in
+module.json`), and it goes on your module's log. `setting_str` and its siblings
+then answer the default you passed, and `set_settings` writes nothing: a patch
+naming one refused key is refused whole.
+
+Some keys are the core's alone and are refused even when declared: the mail
+password, the LLM API key, the Web Push / APNs / FCM private material, the key
+that signs a media ticket, the registry list the Store installs from, the library
+and download folders, every module's state and the identities the server mints
+for itself. For a vendor credential the operator configured, ask
+`GET /_host/secret?name=` by name. A credential a module is the thing that uses
+(the WireGuard config the bridge brings up, the tunnel token the connector runs
+on) is an ordinary declared key, and reaches the module that declares it.
+
+An update that adds a key to `settings.write` asks for more, like one that widens
+`permissions`: no automatic update takes it, and the operator accepts it from the
+install plan.
 
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   The backend enforces it, and the Store installs missing ones automatically.
@@ -373,17 +477,60 @@ the reach that will be refused when it is.
   rather than who has to do it.
 - **`engines`** is what the module needs from its host (`{ "server": ">=0.1.4" }`),
   enforced at install **and** at spawn, so a stale bundle fails with a clear
-  message instead of proxy errors.
+  message instead of proxy errors. The floor names a released server or the
+  release being prepared (the version in `server/Cargo.toml`, or the SDK's
+  outside this repository), never a later one: no server could run that module,
+  so `kroma check` and `kroma release` refuse it. A canary build is a prerelease
+  of the release being prepared, so a floor of `0.1.39` already covers the
+  `0.1.39-canary.<build>` servers.
 - **`settings`** is the core settings keys you read and write, as
-  `{ "read": [...], "write": [...] }`. Absent is not empty: a manifest without it
-  predates the field and keeps the reach it had.
+  `{ "read": [...], "write": [...] }`. Absent is the same as empty: a module
+  without it reaches no setting.
+- **`component`** is what one module asks of the host: `instances` answering at
+  once (default 1; they share no memory, so more than one suits a module whose
+  state is in its database, see [Instances](#instances)), `memoryMib` one may
+  grow to (default 512) and `cpuSeconds` one call may spend (default 60, its own
+  CPU time, not the time it waits on the host).
+- **`helpers`** pins the upstream build of a program `permissions.run` names, per
+  `<os>-<arch>`: a `url`, its `sha256`, and the `member` to take out of a
+  `.tar.gz`. The host fetches it and checks it against the pin, once at the fetch
+  and again before every start. Only a first-party module starts a
+  program at all; see [module security](../docs/module-security.md#what-the-component-does-not-contain).
+
+### Instances
+
+`component.instances` above 1 lets a module answer that many calls at once. The
+first instance is the **primary**. The others are **workers**, started when a
+call finds every instance busy.
+
+- Before the primary starts, the host asks the module what it declares
+  (`migrations()` and `steps()`, `jobs()`, `events()`), applies the migrations to
+  the module's own database, keeps one copy of the file before an upgrade, and
+  registers the jobs and topics with the core. This happens once per start,
+  however many instances the module runs, and no worker starts before it is done.
+- `on_enable` and `on_disable` run on the primary only. A worker runs `wire` and
+  serves every route, jobs and events included.
+- **Memory is per instance.** What `on_enable` starts or fills lives on the
+  primary: a bridge, a download engine, an advertisement, a service it reaches
+  through `register_service`. A worker builds the same services in `wire`, and
+  they stay as `wire` left them, enabled by no one. Any instance may answer any
+  call. The host hands a call to the primary when it is free, which is a
+  preference, not a promise. So a module that keeps state in memory declares one
+  instance, and a module that declares more keeps everything a call must see in
+  its database.
+- A worker is dropped once a minute has passed since its last call with
+  nothing left running in it. The primary is kept.
+
+A bundle built against an SDK from before this runs its whole startup itself, in
+every instance. The host runs one instance of it until it is rebuilt, and says
+so in the module's log.
 
 ## Storage
 
 **A module has no database unless it declares one.** `storage` in `module.json`
 is that declaration, and leaving it out is the normal case: eight of the twelve
-first-party modules never open a database, and a sidecar that declares none does
-not link SQLite at all, which is half of what its binary used to be.
+first-party modules never open a database. A component carries no SQLite either
+way: the host holds the files and runs every statement.
 
 ```jsonc
 "storage": {
@@ -406,14 +553,29 @@ kroma-module-runtime = { path = "...", features = ["storage"] }
 
 The capability gives a module TWO databases, and they are not interchangeable:
 
-- `host.store()` is the module's own file, `<data>/modules/<id>/module.sqlite`.
-  It owns it outright, `migrations()` are applied there, and nothing else reads
-  it. This is where a table only that module uses belongs, especially one
-  holding credentials.
+- `host.store()` is the module's own database, `module.sqlite`. The host keeps
+  it in `<data>/databases/<id>/`, a folder no module holds, so it is not a file
+  in the module's own folder. The module owns it outright, `migrations()` are
+  applied there, and nothing else reads it. This is where a table only that
+  module uses belongs, especially one holding credentials.
 - `host.db()` is the shared core database, and every statement prepared on it
   passes an authorizer built from the `core` grant above. A module that declared
   no grant still gets the pool. It answers nothing, and says which table it
   refused.
+
+Both are held by the host. `kroma-sqlite-guest` is rusqlite's API for a
+component: the SDK's pool runs on it, and every statement goes to the host's
+`sql` import, which opens the files, enforces the grant, and refuses `ATTACH`
+and every `PRAGMA` but a short allowlist on the module's own file. A module names
+its databases and never a path: `sql.open` takes a file name of letters, digits,
+`.`, `_` and `-` (or that name under the module's own folder, which is what the
+runtime sends), and the host opens it in the folder it keeps for the module,
+following no link. The copy a schema upgrade takes is kept there too, the last
+two of them. A database a module kept in `<data>/modules/<id>/` before moves
+there once, at its next start (see [module security](../docs/module-security.md)).
+A crate that writes SQL through `rusqlite` itself depends on `kroma-sqlite-guest`
+for `wasm32` and names it there with `extern crate kroma_sqlite_guest as
+rusqlite;`, as `tv.kroma.indexer` does.
 
 ### Changing the module's own schema
 
@@ -433,11 +595,14 @@ fn steps(&self) -> &'static [Step] {
 }
 ```
 
-`Step` and `Run` come from `kroma_module_sdk::db`. A store written before the
-module had steps runs its baseline once more and then takes them. A step that
-has shipped is never edited, and a store a newer version of the module wrote is
-refused at startup instead of read with the wrong shape. The core database
-works the same way; see [`docs/database-migrations.md`](../docs/database-migrations.md).
+`Step` and `Run` come from `kroma_module_sdk::db`. The host applies them, through
+the same guard as every other statement on the file. It is handed SQL, so a
+`Run::Code` step cannot reach it: a module with one does not start, and its log
+names the step. A store written before the module had steps runs its baseline
+once more and then takes them. A step that has shipped is never edited, and a
+store a newer version of the module wrote is refused at startup instead of read
+with the wrong shape. The core database works the same way; see
+[`docs/database-migrations.md`](../docs/database-migrations.md).
 
 Two rules about a grant come from SQLite rather than from us, and both have bitten:
 a column named in a `WHERE` is reached as much as one that is projected, and a
@@ -487,9 +652,9 @@ KROMA_TOKEN=<a token with settings.manage> \
 bun run kroma install tv.kroma.vpn --server http://192.168.1.20:4040
 ```
 
-It picks this machine's build out of `dist/modules` when a module was packed for
-several targets, and the server applies the same gates the Store does. It refuses
-a bundle built against an older manifest schema, with what to do about it.
+The server applies the same gates the Store does. It refuses a bundle built
+against another manifest schema, or one that carries a native binary, with what
+to do about it.
 
 To serve modules to others, host them: `bun run kroma registry` writes the same
 documents to disk (`catalog.json`, `registry.json`, `index.json`, `m/*.json` and
@@ -513,8 +678,28 @@ versions, so a silent republish reaches nobody. `bun run kroma release
 ```bash
 bun run modules:check      # every manifest valid, every frontend typed, clippy clean
 bun run modules:test       # cargo test in every module workspace
+bun run modules:test:wasm  # the same tests built for wasm32-wasip2, each one a component
 bun run modules:clippy     # cargo clippy --all-targets in every module workspace
 ```
+
+`modules:test:wasm` runs every test the way the module runs: as a component on
+the server's own host, in an instance of its own, with one thread, no socket,
+a real database behind `sql`, and each folder at its own path (WASI refuses an
+absolute symlink that a native build follows). `testing::serve` answers
+in-process there, so a point's round-trip test still runs. A test that cannot
+run in a component says why, and the reason shows in the report:
+
+```rust
+#[test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+fn every_call_carries_the_credential() {}
+```
+
+Every test binary built with the SDK's `testing` feature is also held to its
+module's `module.json`: a `Fetch` made for a purpose that no
+`permissions.net.connect` entry declares panics where it is made, naming the
+purpose, because the host refuses every such call. Only the purpose is
+compared, since a test server on loopback never matches a declared host.
 
 `id` must be reverse-DNS (`^[a-z0-9]+(?:\.[a-z0-9-]+)+$`) and unique, and
 `version` semver: `kroma check` refuses a manifest that is not, and `kroma

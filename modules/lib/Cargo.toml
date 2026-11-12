@@ -12,7 +12,7 @@
 # its own root.
 [workspace]
 resolver = "2"
-members = ["naming"]
+members = ["naming", "weights"]
 
 [workspace.package]
 version = "0.1.0"

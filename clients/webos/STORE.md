@@ -250,28 +250,24 @@ the server does, because it is checkable.
 no acquisition features, and renders only what the viewer's own server serves.
 That is the whole of what is being submitted, and it is defensible on its own.
 
-**What is true of the server:** the acquisition features run **out of process**.
-The indexer, Torznab, VPN, Transmission, qBittorrent, mdns, scene and remote
-crates are workspace declarations only, not dependencies of the `kroma-server`
-binary. The core holds port *clients* that resolve to sidecars
-(`kroma_port_bridge::TorrentFetchClient::new(local_resolver("tv.kroma.indexer"))`
-and friends in `main.rs`); the download engine and acquisition's search/import/
-match jobs each run in their own sidecar. Modules install as `.kmod` binaries into
-`<data>/modules/` and nothing installs them by default, so a stock server does no
-indexing or downloading until an operator installs them. See
+**What is true of the server:** the acquisition features are **modules**, not
+part of the server. The indexer, Torznab, VPN, Transmission, qBittorrent, mdns,
+scene and remote modules each live in their own cargo workspace under `modules/`,
+and none is a dependency of the `kroma-server` binary. The core reaches a module
+by the point name it answers and names none of them. A module installs as a
+`.kmod`, a WebAssembly component the server runs, into `<data>/installed/`, and
+nothing installs one by default, so a stock server does no indexing or
+downloading until an operator installs them. See
 [`docs/modules-as-kmod.md`](../../docs/modules-as-kmod.md).
 
 So the accurate statement is: *KROMA is a client for a personal media server. What
 that server can do depends on modules its operator chooses to install; the app
 does neither indexing nor downloading.*
 
-**The binary now matches the architecture.** `kroma-torrent` and
-`kroma-acquisition` used to linger as non-optional `[dependencies]` of
-`kroma-server` after both verticals moved out of process, and `default = […
-"torrent-rqbit"]` dragged the BitTorrent library in with them. Both are gone; the
-sidecar still gets a real engine from its own
-`[package.metadata.kmod] features = ["rqbit"]`, which `kroma build` forwards.
-The check anyone can repeat:
+**The binary matches the architecture.** No BitTorrent library is linked into
+`kroma-server`. The torrents module starts the upstream `rqbit` program, which the
+server downloads, checked against the sha256 the module's manifest pins, only on a
+server whose operator installed that module. The check anyone can repeat:
 
 ```
 $ cargo tree -p kroma-server -e normal -i librqbit

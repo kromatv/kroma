@@ -1,4 +1,5 @@
 //! How one `multipart/form-data` part is spelled for curl.
+#![cfg_attr(target_family = "wasm", allow(dead_code))]
 
 use std::path::Path;
 
@@ -10,6 +11,15 @@ use crate::config::option_line;
 pub enum FormPart<'a> {
     Text(&'a str),
     File(&'a Path),
+}
+
+impl FormPart<'_> {
+    pub(crate) fn size(&self) -> u64 {
+        match self {
+            FormPart::Text(value) => value.len() as u64,
+            FormPart::File(path) => std::fs::metadata(path).map_or(0, |meta| meta.len()),
+        }
+    }
 }
 
 // `form` reads a leading `@` as a file path and a leading `<` as a file to take

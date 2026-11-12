@@ -7,6 +7,7 @@ import type { Plugin } from 'vite';
  */
 export interface BuildInfo {
   version: string;
+  build: number | null;
   commit: string;
   commitFull: string;
   branch: string;
@@ -35,7 +36,7 @@ export function buildInfoPlugin(): Plugin {
         branch: collected.branch ?? 'unknown',
       };
       const json = JSON.stringify(info);
-      const names = 'version, commit, commitFull, branch, dirty, buildDate, repository';
+      const names = 'version, build, commit, commitFull, branch, dirty, buildDate, repository';
       code = `export default ${json};\nexport const { ${names} } = ${json};\n`;
     },
     resolveId: (source) => (source === virtualId ? resolvedId : null),

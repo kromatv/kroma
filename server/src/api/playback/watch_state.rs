@@ -17,13 +17,13 @@ use crate::state::SharedState;
 pub async fn mark_watched(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Path(item_id): Path<String>,
+    Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::mark_watched(&pool, &user.id, &item_id)
+        db::mark_watched(&pool, &user.id, &subject_id)
     })
     .await
     {
@@ -36,13 +36,13 @@ pub async fn mark_watched(
 pub async fn unmark_watched(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Path(item_id): Path<String>,
+    Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::unmark_watched(&pool, &user.id, &item_id)
+        db::unmark_watched(&pool, &user.id, &subject_id)
     })
     .await
     {
@@ -64,13 +64,13 @@ pub async fn list_watched(State(state): State<SharedState>, AuthUser(user): Auth
 pub async fn add_to_list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Path(item_id): Path<String>,
+    Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::add_to_list(&pool, &user.id, &item_id)
+        db::add_to_list(&pool, &user.id, &subject_id)
     })
     .await
     {
@@ -83,13 +83,13 @@ pub async fn add_to_list(
 pub async fn remove_from_list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Path(item_id): Path<String>,
+    Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::remove_from_list(&pool, &user.id, &item_id)
+        db::remove_from_list(&pool, &user.id, &subject_id)
     })
     .await
     {
@@ -108,7 +108,7 @@ pub async fn list_my_list(State(state): State<SharedState>, AuthUser(user): Auth
 }
 
 async fn visible_ids(state: &SharedState, user: &User, ids: Vec<String>) -> Response {
-    match visibility::visible_item_ids(state, user, ids.clone()).await {
+    match visibility::visible_saved_ids(state, user, ids.clone()).await {
         Ok(visible) => {
             let kept: Vec<String> = ids.into_iter().filter(|id| visible.contains(id)).collect();
             Json(kept).into_response()

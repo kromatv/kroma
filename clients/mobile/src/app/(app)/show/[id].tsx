@@ -13,6 +13,7 @@ import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native
 import { CastRail, DetailHero, GenreChips, MetaBadge } from '#mobile/components/detail';
 import { type PopoverAnchor, PopoverMenu } from '#mobile/components/PopoverMenu';
 import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showEpisodes';
+import { TrailerButton } from '#mobile/components/TrailerButton';
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
@@ -115,6 +116,7 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
                 onPress={() => void play(next.id)}
               />
             ) : null}
+            <TrailerButton kind="tv" tmdbId={show.metadata?.tmdbId} title={title} />
 
             {next ? <UpNextCard next={next} frac={nextFrac} /> : null}
 
