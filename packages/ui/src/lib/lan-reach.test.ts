@@ -44,6 +44,7 @@ describe('lanPermission', () => {
 
 describe('withLocalAddressSpace', () => {
   it('names the local address space on a request to a private address, and only there', async () => {
+    onPage('https:');
     const fetchFn = vi.fn(async () => new Response());
     const lanFetch = withLocalAddressSpace(fetchFn as unknown as typeof fetch);
 
@@ -54,6 +55,20 @@ describe('withLocalAddressSpace', () => {
       ['http://192.168.1.2:4040/api/health', { method: 'GET', targetAddressSpace: 'local' }],
       ['https://kroma.example/api/health', undefined],
     ]);
+  });
+
+  it('hands back the fetch it was given anywhere but an https page', () => {
+    const fetchFn = vi.fn(async () => new Response()) as unknown as typeof fetch;
+    onPage('file:');
+    const packaged = withLocalAddressSpace(fetchFn);
+    onPage('http:');
+    const onHttp = withLocalAddressSpace(fetchFn);
+    vi.unstubAllGlobals();
+    const native = withLocalAddressSpace(fetchFn);
+
+    expect(packaged).toBe(fetchFn);
+    expect(onHttp).toBe(fetchFn);
+    expect(native).toBe(fetchFn);
   });
 });
 
