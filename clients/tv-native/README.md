@@ -3,12 +3,16 @@
 The Apple TV / Android TV / Samsung Tizen / LG webOS shell. It is platform glue: the
 10-foot experience itself lives in [`@kromatv/tv`](../../packages/tv).
 
+Samsung and LG TVs each come from one package. `metro.config.ts` calls `withTV`
+once, and Metro learns the platform of every dependency that declares one. A
+third TV is then one more dependency and its config plugin's entry in
+`app.json`, with no change to the Metro config.
+
 ## Samsung Tizen
 
 Tizen runs this same app through
 [`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen),
-which reads its config plugin's props in `app.json` and the Metro config's
-`withTizen`. From this directory:
+which reads its config plugin's props in `app.json`. From this directory:
 
 ```bash
 bunx expo start                                 # then shift+m, Run on TV
@@ -33,8 +37,7 @@ local `voice-search` module and Siri do the same job.
 
 webOS runs this same app through
 [`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos),
-which reads its config plugin's props in `app.json` and the Metro config's
-`withWebOS`. From this directory:
+which reads its config plugin's props in `app.json`. From this directory:
 
 ```bash
 bunx rn-webos simulator run --instance <name>   # the aarch64 simulator
