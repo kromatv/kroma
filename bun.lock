@@ -323,7 +323,7 @@
         "@kromatv/lan-beacon": "workspace:*",
         "@kromatv/media3-ffmpeg": "workspace:*",
         "@kromatv/react-native-tizen": "0.1.0-alpha.2",
-        "@kromatv/react-native-webos": "0.1.0-alpha.0",
+        "@kromatv/react-native-webos": "0.1.0-alpha.1",
         "@kromatv/tv": "workspace:*",
         "@kromatv/ui": "workspace:*",
         "@react-native-masked-view/masked-view": "0.3.2",
@@ -1745,7 +1745,7 @@
 
     "@kromatv/react-native-tizen": ["@kromatv/react-native-tizen@0.1.0-alpha.2", "", { "dependencies": { "@formatjs/intl-numberformat": "10.0.2", "@formatjs/intl-pluralrules": "7.0.2", "@formatjs/intl-relativetimeformat": "13.0.1", "ws": "8.22.1", "zod": "^4.6.7" }, "peerDependencies": { "react-native": ">=0.88.0-0" }, "bin": { "rn-tizen": "dist/cli/main.js" } }, "sha512-CVSriZtBEo0ZOd+MYsABnmTVwf7cVF2QCP5dXIzUeJftSALzJUqpVleuIlRS/TQYaeOFj/yhib39/zaT1uM0Yw=="],
 
-    "@kromatv/react-native-webos": ["@kromatv/react-native-webos@0.1.0-alpha.0", "", { "dependencies": { "@formatjs/intl-numberformat": "10.0.2", "@formatjs/intl-pluralrules": "7.0.2", "@formatjs/intl-relativetimeformat": "13.0.1", "ssh2": "1.17.0", "ws": "8.22.1", "zod": "^4.6.7" }, "peerDependencies": { "react-native": ">=0.88.0-0" }, "bin": { "rn-webos": "dist/cli/main.js" } }, "sha512-OTv73irnaqp6kfsIlx3SdwCAD+MK70QOVc78YTVT6S1QQyp0daA4QQP6wsjBsuvqPrW4kgpaVMC8NAVRwZIjfw=="],
+    "@kromatv/react-native-webos": ["@kromatv/react-native-webos@0.1.0-alpha.1", "", { "dependencies": { "@formatjs/intl-numberformat": "10.0.2", "@formatjs/intl-pluralrules": "7.0.2", "@formatjs/intl-relativetimeformat": "13.0.1", "ssh2": "1.17.0", "ws": "8.22.2", "zod": "^4.6.7" }, "peerDependencies": { "react-native": ">=0.88.0-0" }, "bin": { "rn-webos": "dist/cli/main.js" } }, "sha512-k2DP7R9i2HkNMeLyk/OaXoNWyJp+3ubQ4DCav9M1T8GAqi9EDyrHvSbos5/5P8L1ey8CAk8VF/OlKHzCiuKKlA=="],
 
     "@kromatv/registry": ["@kromatv/registry@workspace:packages/registry"],
 
@@ -4109,7 +4109,7 @@
 
     "@kromatv/react-native-tizen/ws": ["ws@8.22.1", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g=="],
 
-    "@kromatv/react-native-webos/ws": ["ws@8.22.1", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g=="],
+    "@kromatv/react-native-webos/ws": ["ws@8.22.2", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA=="],
 
     "@kromatv/shots/playwright": ["playwright@1.62.1", "", { "dependencies": { "playwright-core": "1.62.1" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg=="],
 
