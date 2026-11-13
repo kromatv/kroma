@@ -4,7 +4,8 @@
 - PR: #657
 - Issue: #653
 - Affects: `docs/spec/accounts/README.md`, `docs/setup/single-sign-on.md`,
-  `docs/setup/configuration.md`. Areas `area/server`, `area/web`, `area/docs`
+  `docs/setup/configuration.md`, `docs/reference/sign-in-providers.md`. Areas
+  `area/server`, `area/web`, `area/mobile`, `area/docs`
 
 ## Summary
 
@@ -19,8 +20,9 @@ approves with one tap, choosing their permissions and libraries the way an invit
 does. An operator who manages membership at the provider can skip the approval, require
 a group, or take new people by invitation only.
 
-The same page decides which ways in the server offers at all: passwords and passkeys
-each have a switch beside the providers.
+The same page decides which ways in the server offers at all. Passwords, passkeys and
+each provider are one ordered list of sign-in methods: an admin turns each on or off
+and puts them in the order the sign-in screen shows them.
 
 The server is the OIDC client. It lives in the core and adds no new kind of session.
 Televisions need no change, because they already borrow a session from a signed-in
@@ -123,7 +125,23 @@ One provider can also come from the environment (`KROMA_OIDC_ISSUER`,
 keep their setup in a compose file. It is live without a test, and Admin edits who it
 lets in but not its connection.
 
-A server takes up to eight providers. Each has a name and an icon for its button.
+A server takes up to eight providers. Each picks a **preset** (Keycloak, Authentik,
+Microsoft Entra ID, Google, Okta, Auth0, Authelia, Pocket ID, or none), which gives the
+button that provider's logo and the form an example of its address. A preset changes
+nothing about how the provider is spoken to. An admin can upload a picture of their own
+in the logo's place: an SVG, PNG, JPEG or WebP of 256 KiB at most, kept as the bytes
+sent and served under a policy that runs nothing in it.
+
+### One list of methods
+
+The password form, the passkey button and each provider are entries of one list, of
+three kinds. The list's order decides the sign-in screen: the buttons are one group, the
+password form another, the group listed first leads and carries the main action, and the
+buttons keep the list's order. There is always exactly
+one password entry and one passkey entry, which can be turned off and never removed.
+The sign-in screen is told the usable entries in order, each with its kind, and draws
+by kind. A kind a client does not know is skipped, so a later one does not break an
+older app.
 
 ### The flow
 
@@ -186,18 +204,37 @@ list, and it revokes like any other.
 
 ### Passwords and passkeys
 
-Each has a switch in Admin → Sign-in. Passwords go off only while a provider is live.
+Each has a switch on its row in Admin → Sign-in. Passwords go off only while a provider
+is live.
 An account that can change server settings keeps its password whatever the switch says,
 so a provider that is down or misconfigured never locks the server. An account without
 a password that needs one gets it through the existing reset link (ADMIN-79).
 
 ### Each shell
 
-- **Web.** Shipped with this change. The sign-in gate shows a button per live provider.
-  The browser leaves for the provider and comes back to a page that collects the flow.
-- **Phone and desktop.** Not in this change. The app will open the system browser and
-  come back on the `kroma://` scheme, which carries the one-time code to the app that
-  started the flow. Polling is not an option, for the reason given under "The flow".
+Every shell signs in through one object, `createAuth` in `@kromatv/core`:
+
+```ts
+const methods = await auth.methods();
+await auth.signIn.password(identifier, password);
+await auth.signIn.passkey();
+const end = await auth.signIn.with(provider);
+```
+
+A shell supplies two things: how it opens a browser, and where it keeps the half of a
+flow it holds. Everything else is shared.
+
+- **Web.** The sign-in gate draws the two groups with a rule between them. A provider's
+  button takes the tab to the provider, and the page it comes back to resumes the flow.
+- **Phone.** The app opens the provider in the system's authentication browser and
+  comes back on `kroma://sso`, which carries the one-time code to the app that began
+  the flow. A route in the app collects a return that reaches it as a link instead.
+  The app tells the server which address it reaches it on, since an app has no origin,
+  and that address passes the same check a browser's origin does. Polling is not an
+  option, for the reason given under "The flow". This is built from Expo's
+  documentation and has not been run on a phone: see
+  `docs/reference/sign-in-providers.md`.
+- **Desktop.** Not in this change.
 - **Television.** Nothing new. A television signs in through Quick Connect or a
   handoff, approved from a phone or a browser, and it does not matter how that device
   signed in.
@@ -217,15 +254,21 @@ already configured, with a page that asks which made-up person to sign in as.
   is our code and not a library's, so its tests are the only review it gets for free.
 - **Whoever runs the provider can sign in as any linked account**, the owner's
   included if the owner linked it. That is what trusting a provider means.
-- **Provider quirks become our bug reports.** No real provider has been tested yet.
-  The guide promises the standard and names no provider until one has been run.
+- **Provider quirks become our bug reports.** Keycloak 26.4 and Authentik 2025.10 were
+  run end to end. Every other provider rests on the standard, and the guide names only
+  those two as tested.
 - **Removing someone at the provider does not end their sessions here.** With a
   required group it stops their next sign-in. Sessions already open live until an admin
   ends them, which follows from ACCT-7 and from storing no provider tokens.
 - **A dead provider locks out accounts that have no password**, until it returns or an
   admin issues a reset link.
 - **Join requests are a new list an admin has to look at.**
-- **Phone and desktop users see no provider button** until those shells get the flow.
+- **Desktop users see no provider button** until that shell gets the flow.
+- **The server is not yet a library.** The sketch of one method per trait behind an
+  `Auth::builder` was not built. The three kinds flow too differently for one trait to
+  carry more than a name today, so the server keeps plain handlers over one settings
+  model, and the uniform surface is the HTTP one and `createAuth`. Extracting a
+  `kroma-auth` crate is a later step, once this has run.
 
 ## Compatibility
 
@@ -285,5 +328,8 @@ The owner decides these in review.
 3. **Group claims granting permissions.** Left out on purpose, see Alternatives.
 4. **A first password for an account created through a provider.** Today that takes a
    reset link from an admin.
-5. **Real providers.** Authentik, Keycloak, Pocket ID and Synology SSO Server each need
-   one run before the guide names them.
+5. **More real providers.** Pocket ID, Authelia, Entra ID and Synology SSO Server each
+   need one run before the guide names them as tested.
+6. **A phone.** The phone flow needs one run on iOS and one on Android.
+7. **Bundled logos.** The provider marks come from Simple Icons, whose data is CC0. The
+   marks belong to their owners. Whether to ship them is the owner's call.

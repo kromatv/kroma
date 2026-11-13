@@ -467,3 +467,25 @@ async fn an_app_cannot_begin_a_flow_under_an_origin_the_operator_did_not_name() 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(refused["code"], json!("sso.originInvalid"));
 }
+
+#[tokio::test]
+async fn a_waiting_request_is_listed_under_a_name_no_account_has() {
+    let round = at_provider(|_| {});
+    seed_session(&round.t.state, "other@test.dev", "lea", &[Permission::Playback]);
+    round.sign_in(lea()).await;
+
+    let (_, requests) = get(&round.t.app, "/api/admin/join-requests", Some(&round.t.token)).await;
+    let waiting = &requests["waiting"][0];
+    let (status, approved) = send(
+        &round.t.app,
+        "POST",
+        &format!("/api/admin/join-requests/{}/approve", waiting["id"].as_str().unwrap()),
+        Some(&round.t.token),
+        Some(json!({ "username": waiting["username"], "permissions": ["playback"] })),
+    )
+    .await;
+
+    assert_eq!(waiting["username"], json!("lea2"));
+    assert_eq!(status, StatusCode::OK, "{approved}");
+    assert_eq!(approved["user"]["username"], json!("lea2"));
+}

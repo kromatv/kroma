@@ -6,7 +6,6 @@ import {
   Button,
   Callout,
   CopyButton,
-  EmptyState,
   Row,
   Section,
   styles,
@@ -18,16 +17,19 @@ import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import {
   emptyProvider,
   isDirty,
+  type MethodForm,
+  moved,
   type ProviderForm,
+  providersOf,
   type SignInForm,
   toForm,
   toSave,
 } from '#web/features/admin/sign-in-form';
-import { MethodSwitches } from '#web/features/admin/sign-in-methods';
+import { BuiltInRow } from '#web/features/admin/sign-in-methods';
 import { ProviderCard } from '#web/features/admin/sign-in-provider-card';
 import { useAuth } from '#web/shared/lib/auth';
 import { takeOutcome } from '#web/shared/lib/sso-flow';
-import { useProviderFlow } from '#web/shared/lib/use-provider-flow';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 
 const sDefinition = styles({ mono: { fontFamily: 'monospace' } });
 
@@ -60,13 +62,14 @@ function RedirectUris({ named }: Readonly<{ named: readonly string[] }>) {
   );
 }
 
-/** Admin → Sign-in: which ways into the server are on, and the OpenID Connect
- * providers people can sign in through. Backed by `/api/admin/sign-in*`. */
+/** Admin → Sign-in: every way into the server as one ordered list, with the
+ * password form, the passkey button and the OpenID Connect providers people
+ * can sign in through. Backed by `/api/admin/sign-in*`. */
 export function SignInPage() {
   const t = useT();
   const { client } = useAuth();
   const canManage = useCap('settings.manage');
-  const startFlow = useProviderFlow();
+  const flows = useAuthFlows();
 
   const keySeq = useRef(0);
   const [outcome] = useState(() => takeOutcome('test'));
@@ -100,17 +103,25 @@ export function SignInPage() {
   if (!canManage) return <Denied />;
   if (!form || !saved) return null;
   const unsaved = isDirty(form, saved);
+  const last = form.methods.length - 1;
 
-  const update = (patch: Partial<SignInForm>) => {
-    setForm({ ...form, ...patch });
+  const update = (methods: MethodForm[]) => {
+    setForm({ methods });
     setFlash(false);
   };
-  const patchProvider = (key: string, patch: Partial<ProviderForm>) =>
-    update({ providers: form.providers.map((p) => (p.key === key ? { ...p, ...patch } : p)) });
+  const patch = (key: string, change: Partial<MethodForm>) =>
+    update(form.methods.map((m) => (m.key === key ? ({ ...m, ...change } as MethodForm) : m)));
   const addProvider = () => {
     const added = emptyProvider(`draft-${keySeq.current++}`);
-    update({ providers: [...form.providers, added] });
+    update([...form.methods, added]);
     setExpandedKey(added.key);
+  };
+
+  const adopt = async () => {
+    const config = await client.sso.config();
+    setSaved(toForm(config));
+    setRedirectUris(config.redirectUris);
+    return toForm(config);
   };
 
   const save = async () => {
@@ -118,12 +129,10 @@ export function SignInPage() {
     setError(null);
     try {
       await client.sso.save(toSave(form));
-      const config = await client.sso.config();
-      const expanded = form.providers.findIndex((p) => p.key === expandedKey);
-      setSaved(toForm(config));
-      setForm(toForm(config));
-      setRedirectUris(config.redirectUris);
-      setExpandedKey(toForm(config).providers[expanded]?.key ?? null);
+      const expanded = form.methods.findIndex((m) => m.key === expandedKey);
+      const fresh = await adopt();
+      setForm(fresh);
+      setExpandedKey(fresh.methods[expanded]?.key ?? null);
       setFlash(true);
     } catch (e) {
       setError(apiErrorText(e, t('jobs.saveFailed')));
@@ -132,12 +141,22 @@ export function SignInPage() {
     }
   };
 
+  const refreshPictures = async () => {
+    const fresh = providersOf(await adopt());
+    update(
+      form.methods.map((m) => {
+        const now = m.kind === 'oidc' ? fresh.find((p) => p.id === m.id) : undefined;
+        return m.kind === 'oidc' && now ? { ...m, image: now.image, hasImage: now.hasImage } : m;
+      }),
+    );
+  };
+
   const test = async (provider: ProviderForm) => {
     if (!provider.id) return;
     setTesting(provider.key);
     setError(null);
     try {
-      await startFlow('test', provider.id, { returnTo: '/admin/sign-in' });
+      await flows.test(provider.id, { returnTo: '/admin/sign-in' });
     } catch (e) {
       setError(apiErrorText(e, t('admin.signInTestFailed')));
       setTesting(null);
@@ -154,13 +173,6 @@ export function SignInPage() {
       <Section.Root mt={24}>
         <Section.Header>
           <Section.Title>{t('admin.signInMethods')}</Section.Title>
-        </Section.Header>
-        <MethodSwitches form={form} update={update} />
-      </Section.Root>
-
-      <Section.Root mt={28}>
-        <Section.Header>
-          <Section.Title>{t('admin.signInProviders')}</Section.Title>
           <Section.Actions>
             <Button
               variant="glass"
@@ -172,42 +184,40 @@ export function SignInPage() {
           </Section.Actions>
         </Section.Header>
         <Text variant="meta" color="textDim" mt={-8} mb={16}>
-          {t('admin.signInProvidersHint')}
+          {t('admin.signInMethodsHint')}
         </Text>
-        {form.providers.length === 0 ? (
-          <EmptyState.Root icon="login-2">
-            <EmptyState.Title>{t('admin.signInNoProviders')}</EmptyState.Title>
-            <EmptyState.Actions>
-              <Button
-                variant="glass"
-                size="sm"
-                icon="plus"
-                label={t('admin.signInAddProvider')}
-                onPress={addProvider}
-              />
-            </EmptyState.Actions>
-          </EmptyState.Root>
-        ) : (
-          <Box gap={12}>
-            <RedirectUris named={redirectUris} />
-            {form.providers.map((p) => (
+        <Box gap={12}>
+          {form.methods.map((method, index) =>
+            method.kind === 'oidc' ? (
               <ProviderCard
-                key={p.key}
-                provider={p}
-                expanded={expandedKey === p.key}
+                key={method.key}
+                provider={method}
+                expanded={expandedKey === method.key}
+                first={index === 0}
+                last={index === last}
                 unsaved={unsaved}
-                testing={testing === p.key}
-                result={outcome && outcome.provider === p.id ? outcome.result : null}
-                onToggle={() => setExpandedKey((open) => (open === p.key ? null : p.key))}
-                onChange={(patch) => patchProvider(p.key, patch)}
-                onTest={() => void test(p)}
-                onRemove={() =>
-                  update({ providers: form.providers.filter((other) => other.key !== p.key) })
-                }
+                testing={testing === method.key}
+                result={outcome && outcome.provider === method.id ? outcome.result : null}
+                onToggle={() => setExpandedKey((open) => (open === method.key ? null : method.key))}
+                onMove={(by) => update(moved(form.methods, index, by))}
+                onChange={(change) => patch(method.key, change)}
+                onPicture={() => void refreshPictures()}
+                onTest={() => void test(method)}
+                onRemove={() => update(form.methods.filter((other) => other.key !== method.key))}
               />
-            ))}
-          </Box>
-        )}
+            ) : (
+              <BuiltInRow
+                key={method.key}
+                method={method}
+                first={index === 0}
+                last={index === last}
+                onMove={(by) => update(moved(form.methods, index, by))}
+                onEnabled={(enabled) => patch(method.key, { enabled })}
+              />
+            ),
+          )}
+          {providersOf(form).length > 0 ? <RedirectUris named={redirectUris} /> : null}
+        </Box>
       </Section.Root>
 
       <Row wrap gap={12} mt={24}>

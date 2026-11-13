@@ -2,7 +2,7 @@ import { apiErrorText } from '@kromatv/client';
 import type { LibraryId } from '@kromatv/client/media';
 import type { JoinRequest } from '@kromatv/client/sso';
 import { useT } from '@kromatv/ui';
-import { Box, Dialog, Field, Text } from '@kromatv/ui/kit';
+import { Dialog, Field, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { LibraryVisibility } from '#web/features/admin/library-visibility';
@@ -44,17 +44,11 @@ export const ApproveJoinModal = createCallable<{ request: JoinRequest }, boolean
         <Text variant="meta" color="textDim">
           {t('admin.joinApproveIntro', { email: request.email, provider: request.provider })}
         </Text>
-        <Field.Root label={t('admin.name')}>
+        <Field.Root label={t('admin.name')} error={error ?? undefined}>
           <Field.Input icon="user" value={name} onValueChange={setName} />
+          <Field.Hint />
         </Field.Root>
-        <Box>
-          <PermPicker selected={perms} toggle={toggle} />
-          {error ? (
-            <Text variant="meta" color="danger" mt={12}>
-              {error}
-            </Text>
-          ) : null}
-        </Box>
+        <PermPicker selected={perms} toggle={toggle} />
         <LibraryVisibility granted={granted} onChange={setGranted} />
         <Dialog.Footer>
           <Dialog.Actions

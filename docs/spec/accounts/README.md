@@ -66,7 +66,7 @@ The television rule below is the hard case this policy is built around.
 
 ### Sign-in providers
 
-Status: **SHIPPED** on the web. The phone and desktop apps are **AGREED**.
+Status: **SHIPPED** on the web and the phone. The desktop app is **AGREED**.
 
 A household that already runs an identity provider can let it prove who people are
 ([RFC 657](../../rfcs/657-oidc-sign-in.md)). The provider says who someone is. Whether they come
@@ -99,6 +99,14 @@ until the admin lifts it.
 **ACCT-82** (SHIPPED) - An admin may turn password sign-in and passkey sign-in off. Passwords
 go off only while a provider is live.
 
+**ACCT-87** (SHIPPED) - Passwords, passkeys and each provider are one list of sign-in methods.
+The sign-in screen draws the buttons as one group and the password form as another. The
+group an admin listed first comes first and carries the main action, and the buttons keep
+the list's order.
+
+**ACCT-88** (SHIPPED) - A provider's button shows the logo of the provider it was set up as,
+or a picture an admin uploaded in its place, or an icon when it has neither.
+
 **ACCT-83** (SHIPPED) - An account that can change server settings keeps its password
 whatever ACCT-82 says, so a provider that is down never locks the server.
 
@@ -107,8 +115,10 @@ whatever ACCT-82 says, so a provider that is down never locks the server.
 **ACCT-85** (SHIPPED) - No claim from a provider grants a permission or a library.
 Authorisation is set in KROMA.
 
-**ACCT-86** (AGREED) - The phone and desktop apps offer the provider buttons, through the
-system browser.
+**ACCT-86** (SHIPPED) - The phone app offers the provider buttons. It opens the provider in
+the system browser and comes back signed in.
+
+**ACCT-89** (AGREED) - The desktop app offers the provider buttons the same way.
 
 Removing a person at the provider does not end the sessions they already hold here: sessions
 do not expire on a clock (ACCT-7). A required group stops their next sign-in, and deleting

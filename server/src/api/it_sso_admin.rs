@@ -445,9 +445,13 @@ async fn a_provider_cannot_take_the_id_of_a_built_in_method() {
 }
 
 async fn image(t: &TestApp, id: &str) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
+    picture(t, &format!("/api/auth/methods/{id}/image")).await
+}
+
+async fn picture(t: &TestApp, uri: &str) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
     use tower::ServiceExt;
     let request = axum::http::Request::builder()
-        .uri(format!("/api/auth/methods/{id}/image"))
+        .uri(uri)
         .extension(axum::extract::ConnectInfo(std::net::SocketAddr::from((
             [127, 0, 0, 1],
             40000,
@@ -465,7 +469,7 @@ async fn image(t: &TestApp, id: &str) -> (StatusCode, axum::http::HeaderMap, Vec
 async fn upload(t: &TestApp, token: &str, id: &str, bytes: &'static [u8]) -> StatusCode {
     use tower::ServiceExt;
     let request = axum::http::Request::builder()
-        .method("PUT")
+        .method("POST")
         .uri(format!("/api/admin/sign-in/methods/{id}/image"))
         .header("authorization", format!("Bearer {token}"))
         .extension(axum::extract::ConnectInfo(std::net::SocketAddr::from((
@@ -482,12 +486,12 @@ async fn a_known_provider_wears_its_logo_and_an_unknown_one_has_no_picture() {
     let round = at_provider(|p| p.preset = "keycloak".into());
 
     let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
-    let (status, headers, bytes) = image(&round.t, "p0").await;
-    let (missing, _, _) = image(&round.t, "nope").await;
+    let (status, headers, bytes) = picture(&round.t, "/api/auth/logos/keycloak").await;
+    let (unknown, _, _) = picture(&round.t, "/api/auth/logos/nope").await;
 
     assert_eq!(
         gate["signIn"]["methods"][2]["image"],
-        json!("/api/auth/methods/p0/image?v=keycloak")
+        json!("/api/auth/logos/keycloak")
     );
     assert_eq!(status, StatusCode::OK);
     assert_eq!(headers["content-type"], "image/svg+xml");
@@ -496,9 +500,10 @@ async fn a_known_provider_wears_its_logo_and_an_unknown_one_has_no_picture() {
         .unwrap()
         .contains("default-src 'none'"));
     assert!(bytes.starts_with(b"<svg "));
-    assert_eq!(missing, StatusCode::NOT_FOUND);
+    assert_eq!(unknown, StatusCode::NOT_FOUND);
     let plain = at_provider(|_| {});
-    assert_eq!(image(&plain.t, "p0").await.0, StatusCode::NOT_FOUND);
+    let (_, gate) = get(&plain.t.app, "/api/auth/config", None).await;
+    assert_eq!(gate["signIn"]["methods"][2].get("image"), None);
 }
 
 #[tokio::test]
@@ -514,6 +519,10 @@ async fn an_uploaded_picture_replaces_the_logo_until_it_is_removed() {
     assert_eq!(headers["content-type"], "image/png");
     assert_eq!(bytes, png);
     assert_eq!(provider_of(&config)["hasImage"], json!(true));
+    assert!(provider_of(&config)["image"]
+        .as_str()
+        .unwrap()
+        .starts_with("/api/auth/methods/p0/image?v="));
     assert_eq!(provider_of(&config)["live"], json!(true));
 
     let (removed, _) = send(
@@ -526,7 +535,11 @@ async fn an_uploaded_picture_replaces_the_logo_until_it_is_removed() {
     .await;
 
     assert_eq!(removed, StatusCode::NO_CONTENT);
-    assert_eq!(image(&round.t, "p0").await.1["content-type"], "image/svg+xml");
+    assert_eq!(image(&round.t, "p0").await.0, StatusCode::NOT_FOUND);
+    assert_eq!(
+        provider_of(&read(&round.t).await)["image"],
+        json!("/api/auth/logos/keycloak")
+    );
 }
 
 #[tokio::test]

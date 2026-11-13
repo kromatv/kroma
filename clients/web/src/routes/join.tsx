@@ -2,8 +2,10 @@ import { apiErrorText } from '@kromatv/client';
 import {
   DEFAULT_SIGN_IN_METHODS,
   InviteToken,
+  offersSignIn,
   type SignInButton,
   type SignInMethods,
+  signInButtons,
 } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import { Box, Button, classes, styles, Text, useStyles } from '@kromatv/ui/kit';
@@ -11,10 +13,10 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { Spinner } from '#web/features/accounts/auth-gate';
-import { ProviderButtons } from '#web/features/accounts/provider-buttons';
+import { ProviderButton } from '#web/features/accounts/provider-button';
 import { PublicScreen } from '#web/features/accounts/public-screen';
 import { useAuth } from '#web/shared/lib/auth';
-import { useProviderFlow } from '#web/shared/lib/use-provider-flow';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 
 // Public invitation acceptance page. An admin (with `users.manage`) shares
 // `/join?invite=TOKEN`; the invitee creates their account here. The global
@@ -42,7 +44,7 @@ function JoinPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methods, setMethods] = useState<SignInMethods>(DEFAULT_SIGN_IN_METHODS);
-  const startFlow = useProviderFlow();
+  const flows = useAuthFlows();
   const { email, username, password } = values;
 
   useEffect(() => {
@@ -63,7 +65,7 @@ function JoinPage() {
     setBusy(true);
     setError(null);
     try {
-      await startFlow('signIn', provider.id, { returnTo: '/', invite });
+      await flows.signIn.with(provider.id, { returnTo: '/', invite });
     } catch (e) {
       setError(apiErrorText(e, t('auth.providerFailed', { provider: provider.label })));
       setBusy(false);
@@ -132,7 +134,7 @@ function JoinPage() {
             {t('auth.joinKroma')}
           </Text>
 
-          {methods.password ? (
+          {offersSignIn(methods, 'password') ? (
             <RegisterFields values={values} onChange={setValues} onAvatar={setAvatar} />
           ) : (
             <Text variant="body" color="textMuted" textAlign="center">
@@ -173,9 +175,11 @@ function JoinActions({
   onProvider: (provider: SignInButton) => void;
 }>) {
   const t = useT();
+  const password = offersSignIn(methods, 'password');
+  const providers = signInButtons(methods);
   return (
     <>
-      {methods.password ? (
+      {password ? (
         <Button
           block
           size="md"
@@ -185,17 +189,20 @@ function JoinActions({
           disabled={!valid}
         />
       ) : null}
-      {methods.password && methods.providers.length > 0 ? (
+      {password && providers.length > 0 ? (
         <Text variant="meta" color="textMuted" textAlign="center">
           {t('auth.joinWithProvider')}
         </Text>
       ) : null}
-      <ProviderButtons
-        providers={methods.providers}
-        primary={!methods.password}
-        disabled={busy}
-        onPick={onProvider}
-      />
+      {providers.map((provider, index) => (
+        <ProviderButton
+          key={provider.id}
+          provider={provider}
+          primary={!password && index === 0}
+          disabled={busy}
+          onPress={() => onProvider(provider)}
+        />
+      ))}
     </>
   );
 }

@@ -3,8 +3,10 @@ import {
   type AuthConfig,
   DEFAULT_SIGN_IN_METHODS,
   type SignInMethods,
+  signInButtons,
 } from '@kromatv/client/accounts';
 import type { FlowKeys, FlowResult } from '@kromatv/client/sso';
+import { type FlowMessage, flowMessage } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
@@ -12,10 +14,10 @@ import { useEffect, useRef, useState } from 'react';
 import { LoginForm } from '#web/features/accounts/login-form';
 import { Spinner } from '#web/features/accounts/auth-gate';
 import { PublicScreen } from '#web/features/accounts/public-screen';
-import { type SsoMessage, ssoMessage } from '#web/features/accounts/sso-message';
 import { useAuth } from '#web/shared/lib/auth';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
-import { forgetFlow, leaveOutcome, pendingFlow } from '#web/shared/lib/sso-flow';
+import { leaveOutcome, tabFlowStore } from '#web/shared/lib/sso-flow';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -23,7 +25,7 @@ type Waiting = Extract<FlowResult, { status: 'requested' | 'emailTaken' | 'invit
 
 type View =
   | { kind: 'collecting' }
-  | { kind: 'message'; message: SsoMessage; reason?: string }
+  | { kind: 'message'; message: FlowMessage; reason?: string }
   | { kind: 'waiting'; status: Waiting['status']; keys: FlowKeys };
 
 const COLUMN = 380;
@@ -34,41 +36,39 @@ const COLUMN = 380;
 export function SsoReturn({ flow, code }: Readonly<{ flow?: string; code?: string }>) {
   const t = useT();
   const { client, enter, login, loginPasskey } = useAuth();
+  const flows = useAuthFlows();
   const navigate = useNavigate();
   const began = useRef(false);
-  const [pending] = useState(() => (flow && code ? pendingFlow(flow) : null));
+  const [beganHere] = useState(() => Boolean(flow && code && tabFlowStore.load(flow)));
   const [view, setView] = useState<View>(
-    pending ? { kind: 'collecting' } : { kind: 'message', message: 'elsewhere' },
+    beganHere ? { kind: 'collecting' } : { kind: 'message', message: 'elsewhere' },
   );
   const [config, setConfig] = useState<AuthConfig | null>(null);
-  const [provider, setProvider] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (began.current || !pending || !code) return;
+    if (began.current || !beganHere || !flow || !code) return;
     began.current = true;
-    const keys = { flowId: pending.flowId, secret: pending.secret, code };
-    client.accounts.config().then(
-      (loaded) => {
-        setConfig(loaded);
-        setProvider(loaded.signIn?.providers.find((p) => p.id === pending.provider)?.label ?? null);
-      },
-      () => undefined,
-    );
-    client.sso.finish(keys).then(
-      (result) => {
-        if (pending.purpose !== 'signIn') {
-          forgetFlow();
-          leaveOutcome({ purpose: pending.purpose, provider: pending.provider, result });
-          void navigate({ to: safeRedirect(pending.returnTo) ?? '/', replace: true });
+    client.accounts.config().then(setConfig, () => undefined);
+    flows.resume({ flow, code }).then(
+      (end) => {
+        if (!end) {
+          setView({ kind: 'message', message: 'elsewhere' });
+          return;
+        }
+        const { result } = end;
+        setProviderId(end.provider);
+        if (end.purpose !== 'signIn') {
+          leaveOutcome({ purpose: end.purpose, provider: end.provider, result });
+          void navigate({ to: safeRedirect(end.returnTo) ?? '/', replace: true });
           return;
         }
         if (result.status === 'signedIn') {
-          forgetFlow();
           enter(result);
-          void navigate({ to: safeRedirect(pending.returnTo) ?? '/', replace: true });
+          void navigate({ to: safeRedirect(end.returnTo) ?? '/', replace: true });
           return;
         }
         if (
@@ -76,28 +76,31 @@ export function SsoReturn({ flow, code }: Readonly<{ flow?: string; code?: strin
           result.status === 'emailTaken' ||
           result.status === 'invitationOnly'
         ) {
-          setView({ kind: 'waiting', status: result.status, keys });
+          setView({ kind: 'waiting', status: result.status, keys: end.keys });
           return;
         }
-        forgetFlow();
         setView({
           kind: 'message',
-          message: ssoMessage(result),
+          message: flowMessage(result),
           reason: result.status === 'failed' ? result.reason : undefined,
         });
       },
-      () => {
-        forgetFlow();
-        setView({ kind: 'message', message: 'expired' });
-      },
+      () => setView({ kind: 'message', message: 'expired' }),
     );
-  }, [client, code, enter, navigate, pending]);
+  }, [beganHere, client, code, enter, flow, flows, navigate]);
 
+  const offered = config?.signIn ?? DEFAULT_SIGN_IN_METHODS;
+  const provider = signInButtons(offered).find((button) => button.id === providerId)?.label;
   const words = {
-    provider: provider ?? t('sso.yourProvider'),
+    provider: provider || t('sso.yourProvider'),
     server: config?.serverName ?? 'KROMA',
   };
-  const methods: SignInMethods = config?.signIn ?? DEFAULT_SIGN_IN_METHODS;
+  const methods: SignInMethods = {
+    methods: [
+      { id: 'password', kind: 'password' },
+      ...offered.methods.filter((method) => method.kind === 'passkey'),
+    ],
+  };
 
   async function claimAfter(signIn: () => Promise<void>, keys: FlowKeys) {
     setBusy(true);
@@ -110,11 +113,10 @@ export function SsoReturn({ flow, code }: Readonly<{ flow?: string; code?: strin
       return;
     }
     try {
-      await client.sso.claim(keys);
-      forgetFlow();
+      await flows.claim(keys);
       void navigate({ to: '/', replace: true });
     } catch (e) {
-      forgetFlow();
+      tabFlowStore.clear();
       setClaiming(false);
       setView({ kind: 'message', message: 'claimFailed' });
       setError(apiErrorText(e, t('sso.claimFailed.body', words)));
@@ -148,7 +150,7 @@ export function SsoReturn({ flow, code }: Readonly<{ flow?: string; code?: strin
             error={error}
             canGoBack
             canUsePasskey={passkeysSupported()}
-            methods={{ ...methods, password: true }}
+            methods={methods}
             onBack={() => {
               setError(null);
               setClaiming(false);
@@ -163,7 +165,7 @@ export function SsoReturn({ flow, code }: Readonly<{ flow?: string; code?: strin
     );
   }
 
-  const message: SsoMessage = view.kind === 'waiting' ? view.status : view.message;
+  const message: FlowMessage = view.kind === 'waiting' ? view.status : view.message;
   const signedInAnyway = message === 'claimFailed';
   return (
     <PublicScreen>

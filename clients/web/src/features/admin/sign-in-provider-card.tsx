@@ -7,9 +7,7 @@ import {
   Callout,
   Divider,
   Focusable,
-  hasGlyph,
   Icon,
-  IconWell,
   Row,
   Spacer,
   Surface,
@@ -18,9 +16,11 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { type ProviderForm, reasonKey } from '#web/features/admin/sign-in-form';
+import { pictureOf, type ProviderForm, reasonKey } from '#web/features/admin/sign-in-form';
+import { MoveButtons } from '#web/features/admin/sign-in-methods';
 import { AccessFields } from '#web/features/admin/sign-in-provider-access';
 import { ConnectionFields } from '#web/features/admin/sign-in-provider-connection';
+import { ProviderMark } from '#web/shared/ui/provider-mark';
 
 const sDefinition = styles({
   header: { row: true, align: 'center', gap: 12, px: 20, py: 16 },
@@ -73,16 +73,22 @@ function TestResult({ result }: Readonly<{ result: FlowResult }>) {
 export function ProviderCard({
   provider: p,
   expanded,
+  first,
+  last,
   unsaved,
   testing,
   result,
   onToggle,
+  onMove,
   onChange,
+  onPicture,
   onTest,
   onRemove,
 }: Readonly<{
   provider: ProviderForm;
   expanded: boolean;
+  first: boolean;
+  last: boolean;
   /** The page holds changes the server has not seen, so a test would not try
    *  what is on screen. */
   unsaved: boolean;
@@ -91,7 +97,10 @@ export function ProviderCard({
    *  came back from one. */
   result: FlowResult | null;
   onToggle: () => void;
+  onMove: (by: -1 | 1) => void;
   onChange: (patch: Partial<ProviderForm>) => void;
+  /** The provider's picture changed on the server. */
+  onPicture: () => void;
   onTest: () => void;
   onRemove: () => void;
 }>) {
@@ -101,34 +110,41 @@ export function ProviderCard({
 
   return (
     <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
-      <Focusable
-        ring="focusInset"
-        style={s.header}
-        label={name}
-        expanded={expanded}
-        onPress={onToggle}
-      >
-        <IconWell name={hasGlyph(p.icon) ? p.icon : 'key'} size="sm" tone="accent" />
+      <Row gap={4} pr={12}>
         <Box flex minW={0}>
-          <Row gap={8}>
-            <Text variant="label" lines={1}>
-              {name}
-            </Text>
-            <StatusBadge provider={p} />
-            {p.fromEnv ? <Badge tone="neutral">{t('admin.signInFromEnv')}</Badge> : null}
-          </Row>
-          <Text variant="meta" color="textDim" lines={1} mt={2}>
-            {p.issuer ? hostOf(p.issuer) : t('admin.signInNoAddress')}
-          </Text>
+          <Focusable
+            ring="focusInset"
+            style={s.header}
+            label={name}
+            expanded={expanded}
+            onPress={onToggle}
+          >
+            <Box center w={38} h={38} shrink={0}>
+              <ProviderMark icon={p.icon} image={pictureOf(p)} size={30} />
+            </Box>
+            <Box flex minW={0}>
+              <Row gap={8}>
+                <Text variant="label" lines={1}>
+                  {name}
+                </Text>
+                <StatusBadge provider={p} />
+                {p.fromEnv ? <Badge tone="neutral">{t('admin.signInFromEnv')}</Badge> : null}
+              </Row>
+              <Text variant="meta" color="textDim" lines={1} mt={2}>
+                {p.issuer ? hostOf(p.issuer) : t('admin.signInNoAddress')}
+              </Text>
+            </Box>
+            <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
+          </Focusable>
         </Box>
-        <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
-      </Focusable>
+        <MoveButtons name={name} first={first} last={last} onMove={onMove} />
+      </Row>
 
       {expanded ? (
         <>
           <Divider />
           <Box px={20} pt={20}>
-            <ConnectionFields provider={p} set={onChange} />
+            <ConnectionFields provider={p} set={onChange} onPicture={onPicture} />
             <AccessFields provider={p} set={onChange} />
 
             <Row between gap={16} mb={16} maxW={560}>

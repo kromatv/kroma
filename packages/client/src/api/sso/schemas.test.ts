@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { AuthConfig, DEFAULT_SIGN_IN_METHODS } from '../accounts/schemas';
-import { FlowResult, ProviderInput, ProviderView } from './schemas';
+import {
+  AuthConfig,
+  DEFAULT_SIGN_IN_METHODS,
+  offersSignIn,
+  signInButtons,
+} from '../accounts/schemas';
+import { FlowResult, MethodView, ProviderInput, ProviderView } from './schemas';
 
 const user = {
   id: 'u1',
@@ -13,9 +18,13 @@ const user = {
 };
 
 const provider = {
+  kind: 'oidc',
   id: 'p0',
   label: 'Home',
+  preset: 'keycloak',
   icon: 'key',
+  image: '/api/auth/logos/keycloak',
+  hasImage: false,
   issuer: 'https://id.example',
   clientId: 'kroma',
   hasSecret: true,
@@ -94,31 +103,52 @@ describe('a provider', () => {
     expect(input.id).toBe('');
     expect('live' in input).toBe(false);
     expect('hasSecret' in input).toBe(false);
+    expect('image' in input).toBe(false);
+  });
+
+  it('is one kind of method beside the two built-in ones', () => {
+    expect(MethodView.parse({ kind: 'password', id: 'password', enabled: false })).toEqual({
+      kind: 'password',
+      id: 'password',
+      enabled: false,
+    });
+    expect(MethodView.parse(provider).kind).toBe('oidc');
+    expect(MethodView.safeParse({ kind: 'magic', id: 'x', enabled: true }).success).toBe(false);
   });
 });
 
 describe('the gate config', () => {
-  it('reads the ways in from a server that names them', () => {
-    const config = AuthConfig.parse({
-      publicUserList: false,
-      hasAccounts: true,
-      signIn: {
-        password: false,
-        passkeys: true,
-        providers: [{ id: 'p0', label: 'Home', icon: 'key' }],
-      },
-    });
+  const offered = {
+    methods: [
+      { id: 'p0', kind: 'oidc', label: 'Home', icon: 'key', image: '/api/auth/logos/keycloak' },
+      { id: 'passkey', kind: 'passkey' },
+      { id: 'future', kind: 'magic-link' },
+    ],
+  };
 
-    expect(config.signIn?.providers[0]?.label).toBe('Home');
+  it('reads the ways in from a server that names them, in its order', () => {
+    const config = AuthConfig.parse({ publicUserList: false, hasAccounts: true, signIn: offered });
+    const methods = config.signIn ?? DEFAULT_SIGN_IN_METHODS;
+
+    expect(signInButtons(methods)).toEqual([
+      { id: 'p0', label: 'Home', icon: 'key', image: '/api/auth/logos/keycloak' },
+    ]);
+    expect(offersSignIn(methods, 'passkey')).toBe(true);
+    expect(offersSignIn(methods, 'password')).toBe(false);
+  });
+
+  it('keeps a kind it does not know, for a client that will', () => {
+    const config = AuthConfig.parse({ publicUserList: false, hasAccounts: true, signIn: offered });
+
+    expect(config.signIn?.methods[2]).toEqual({ id: 'future', kind: 'magic-link' });
   });
 
   it('reads a server too old to name them, which offers passwords and passkeys', () => {
     const config = AuthConfig.parse({ publicUserList: false, hasAccounts: true });
+    const methods = config.signIn ?? DEFAULT_SIGN_IN_METHODS;
 
-    expect(config.signIn ?? DEFAULT_SIGN_IN_METHODS).toEqual({
-      password: true,
-      passkeys: true,
-      providers: [],
-    });
+    expect(offersSignIn(methods, 'password')).toBe(true);
+    expect(offersSignIn(methods, 'passkey')).toBe(true);
+    expect(signInButtons(methods)).toEqual([]);
   });
 });

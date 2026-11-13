@@ -38,6 +38,7 @@ pub fn routes() -> Router<SharedState> {
         )
         .route("/auth/me/identities/{id}", delete(identities::unlink))
         .route("/auth/methods/{id}/image", get(image::serve))
+        .route("/auth/logos/{preset}", get(image::logo))
 }
 
 pub(crate) fn sign_in_config(state: &SharedState) -> SignIn {

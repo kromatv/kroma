@@ -14,10 +14,20 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { PROVIDER_ICONS, type ProviderForm, reasonKey } from '#web/features/admin/sign-in-form';
+import {
+  PROVIDER_ICONS,
+  PROVIDER_PRESETS,
+  type ProviderForm,
+  pictureOf,
+  presetOf,
+  reasonKey,
+} from '#web/features/admin/sign-in-form';
+import { PictureField } from '#web/features/admin/sign-in-provider-picture';
 import { useAuth } from '#web/shared/lib/auth';
 
 const sDefinition = styles({ mono: { fontFamily: 'monospace' } });
+
+const OTHER = 'other';
 
 function said(found: Discovered, t: Translate): string {
   if (found.ok) return t('admin.signInAddressFound', { issuer: found.issuer ?? '' });
@@ -48,7 +58,13 @@ function AddressCheck({ found }: Readonly<{ found: Discovered }>) {
 export function ConnectionFields({
   provider: p,
   set,
-}: Readonly<{ provider: ProviderForm; set: (patch: Partial<ProviderForm>) => void }>) {
+  onPicture,
+}: Readonly<{
+  provider: ProviderForm;
+  set: (patch: Partial<ProviderForm>) => void;
+  /** The provider's picture changed on the server. */
+  onPicture: () => void;
+}>) {
   const s = useStyles(sDefinition);
   const t = useT();
   const { client } = useAuth();
@@ -66,8 +82,37 @@ export function ConnectionFields({
     }
   };
 
+  const preset = presetOf(p.preset);
+  const choosePreset = (id: string) => {
+    const chosen = presetOf(id);
+    set({
+      preset: id,
+      icon: chosen?.icon ?? p.icon,
+      label: p.label.trim() && p.label !== preset?.name ? p.label : (chosen?.name ?? p.label),
+    });
+  };
+
   return (
     <>
+      <Field.Root label={t('admin.signInPreset')} maxW={320} mb={16}>
+        <Select.Root
+          label={t('admin.signInPreset')}
+          value={p.preset || OTHER}
+          onValueChange={(id) => choosePreset(id === OTHER ? '' : id)}
+        >
+          <Select.Trigger block />
+          {PROVIDER_PRESETS.map((known) => (
+            <Select.Item key={known.id} value={known.id} icon={known.icon}>
+              {known.name}
+            </Select.Item>
+          ))}
+          <Select.Item value={OTHER} icon="key">
+            {t('admin.signInPresetOther')}
+          </Select.Item>
+        </Select.Root>
+        <Field.Hint>{preset?.note ? t(preset.note) : t('admin.signInPresetHint')}</Field.Hint>
+      </Field.Root>
+
       <Row wrap gap={16} mb={16} align="flex-start">
         <Field.Root label={t('admin.signInName')} flex minW={220} maxW={320}>
           <Field.Input
@@ -78,20 +123,22 @@ export function ConnectionFields({
           />
           <Field.Hint>{t('admin.signInNameHint')}</Field.Hint>
         </Field.Root>
-        <Field.Root label={t('admin.signInIcon')} w={200}>
-          <Select.Root
-            label={t('admin.signInIcon')}
-            value={p.icon}
-            onValueChange={(icon) => set({ icon })}
-          >
-            <Select.Trigger block />
-            {PROVIDER_ICONS.map((choice) => (
-              <Select.Item key={choice.icon} value={choice.icon} icon={choice.icon}>
-                {t(choice.labelKey)}
-              </Select.Item>
-            ))}
-          </Select.Root>
-        </Field.Root>
+        {pictureOf(p) ? null : (
+          <Field.Root label={t('admin.signInIcon')} w={200}>
+            <Select.Root
+              label={t('admin.signInIcon')}
+              value={p.icon}
+              onValueChange={(icon) => set({ icon })}
+            >
+              <Select.Trigger block />
+              {PROVIDER_ICONS.map((choice) => (
+                <Select.Item key={choice.icon} value={choice.icon} icon={choice.icon}>
+                  {t(choice.labelKey)}
+                </Select.Item>
+              ))}
+            </Select.Root>
+          </Field.Root>
+        )}
       </Row>
 
       <Field.Root label={t('admin.signInIssuer')} maxW={560} mb={16}>
@@ -104,7 +151,7 @@ export function ConnectionFields({
                 set({ issuer });
                 setFound(null);
               }}
-              placeholder="https://auth.example.com/application/o/kroma/"
+              placeholder={preset?.issuer ?? 'https://id.example.com'}
               keyboardType="url"
               textStyle={s.mono}
               readOnly={p.fromEnv}
@@ -149,6 +196,8 @@ export function ConnectionFields({
           </Field.Root>
         )}
       </Row>
+
+      <PictureField provider={p} onChanged={onPicture} />
 
       <Disclosure.Root>
         <Disclosure.Trigger>{t('admin.signInAdvanced')}</Disclosure.Trigger>

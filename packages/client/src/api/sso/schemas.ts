@@ -16,6 +16,14 @@ export const FlowStarted = z.object({
 });
 export type FlowStarted = z.infer<typeof FlowStarted>;
 
+/** What a client that is not a browser page says when it starts a flow: the
+ * server address it is talking to, and that it wants to come back on the
+ * app's own scheme. A browser page says nothing. */
+export interface FlowReturn {
+  returnTo: 'app';
+  origin: string;
+}
+
 /** The two halves that collect a flow: the secret its start returned and the
  * code its redirect carried. */
 export interface FlowKeys {
@@ -70,9 +78,17 @@ export type NewPeople = z.infer<typeof NewPeople>;
 /** A provider as the admin page reads it. The secret never travels: `hasSecret`
  * says one is stored, and `live` that people can sign in with the provider. */
 export const ProviderView = z.object({
+  kind: z.literal('oidc'),
   id: ProviderId,
+  enabled: z.boolean(),
   label: z.string(),
+  /** Which known provider this is (`keycloak`, `authentik`, ...), or blank. */
+  preset: z.string(),
   icon: z.string(),
+  /** A server path to the button's picture, when it has one. */
+  image: z.string().nullish(),
+  /** Whether that picture is one an admin uploaded. */
+  hasImage: z.boolean(),
   issuer: z.string(),
   clientId: z.string(),
   hasSecret: z.boolean(),
@@ -83,7 +99,6 @@ export const ProviderView = z.object({
   permissions: z.array(Permission),
   /** `null` is every library. */
   libraries: z.array(LibraryId).nullable(),
-  enabled: z.boolean(),
   tested: z.boolean(),
   live: z.boolean(),
   /** Its connection comes from `KROMA_OIDC_*` and cannot be edited here. */
@@ -91,10 +106,23 @@ export const ProviderView = z.object({
 });
 export type ProviderView = z.infer<typeof ProviderView>;
 
+const BuiltInView = z.object({
+  kind: z.enum(['password', 'passkey']),
+  id: z.string(),
+  enabled: z.boolean(),
+});
+
+/** One sign-in method as the admin page lists it: a built-in one with its
+ * switch, or a provider. */
+export const MethodView = z.discriminatedUnion('kind', [BuiltInView, ProviderView]);
+export type MethodView = z.infer<typeof MethodView>;
+
 /** A provider as the admin page saves it. A blank `id` is a new provider; a
  * blank or absent `clientSecret` keeps the stored one. */
 export const ProviderInput = ProviderView.omit({
   id: true,
+  image: true,
+  hasImage: true,
   hasSecret: true,
   tested: true,
   live: true,
@@ -105,11 +133,13 @@ export const ProviderInput = ProviderView.omit({
 });
 export type ProviderInput = z.infer<typeof ProviderInput>;
 
-/** `GET /admin/sign-in`. */
+/** One method as the admin page saves it. */
+export type MethodInput = { kind: 'password' | 'passkey'; enabled: boolean } | ProviderInput;
+
+/** `GET /admin/sign-in`: the methods in the order the sign-in screen offers
+ * them. */
 export const SignInAdmin = z.object({
-  password: z.boolean(),
-  passkeys: z.boolean(),
-  providers: z.array(ProviderView),
+  methods: z.array(MethodView),
   /** What to register at a provider as this server's redirect URI, for each
    * origin the operator named. Empty when they named none: the redirect URI is
    * then {@link SSO_CALLBACK_PATH} under whatever origin the browser is on. */
@@ -119,9 +149,7 @@ export type SignInAdmin = z.infer<typeof SignInAdmin>;
 
 /** `PUT /admin/sign-in`. */
 export interface SignInSave {
-  password: boolean;
-  passkeys: boolean;
-  providers: ProviderInput[];
+  methods: MethodInput[];
 }
 
 /** What reading a provider's address found. `reason` names what failed. */

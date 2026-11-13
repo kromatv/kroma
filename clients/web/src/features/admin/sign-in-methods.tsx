@@ -1,60 +1,97 @@
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Divider, type IconName, IconWell, Row, Surface, Switch, Text } from '@kromatv/ui/kit';
-import type { SignInForm } from '#web/features/admin/sign-in-form';
+import {
+  Box,
+  IconButton,
+  type IconName,
+  IconWell,
+  Row,
+  Surface,
+  Switch,
+  Text,
+} from '@kromatv/ui/kit';
+import type { BuiltInForm } from '#web/features/admin/sign-in-form';
 
-function MethodRow({
-  icon,
-  labelKey,
-  hintKey,
-  checked,
-  onChange,
-}: Readonly<{
-  icon: IconName;
-  labelKey: MessageKey;
-  hintKey: MessageKey;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}>) {
+const BUILT_IN: Record<
+  BuiltInForm['kind'],
+  { icon: IconName; label: MessageKey; hint: MessageKey }
+> = {
+  password: {
+    icon: 'lock',
+    label: 'admin.signInPassword',
+    hint: 'admin.signInPasswordHint',
+  },
+  passkey: {
+    icon: 'fingerprint',
+    label: 'admin.signInPasskeys',
+    hint: 'admin.signInPasskeysHint',
+  },
+};
+
+/** The two arrows that move a method one place up or down the sign-in
+ * screen. An arrow that has nowhere to go is off. */
+export function MoveButtons({
+  name,
+  first,
+  last,
+  onMove,
+}: Readonly<{ name: string; first: boolean; last: boolean; onMove: (by: -1 | 1) => void }>) {
   const t = useT();
   return (
-    <Row between gap={16} px={22} py={18}>
-      <Row gap={14} flex minW={0}>
-        <IconWell name={icon} size="sm" tone="accent" />
-        <Box flex minW={0}>
-          <Text variant="label">{t(labelKey)}</Text>
-          <Text variant="meta" color="textDim" mt={2}>
-            {t(hintKey)}
-          </Text>
-        </Box>
-      </Row>
-      <Switch checked={checked} onCheckedChange={onChange} label={t(labelKey)} />
+    <Row gap={2} shrink={0}>
+      <IconButton
+        variant="ghost"
+        diameter={30}
+        glyph={16}
+        icon="arrow-up"
+        label={t('admin.signInMoveUp', { name })}
+        disabled={first}
+        onPress={() => onMove(-1)}
+      />
+      <IconButton
+        variant="ghost"
+        diameter={30}
+        glyph={16}
+        icon="arrow-down"
+        label={t('admin.signInMoveDown', { name })}
+        disabled={last}
+        onPress={() => onMove(1)}
+      />
     </Row>
   );
 }
 
-/** The two ways in that every server has, each with its switch. */
-export function MethodSwitches({
-  form,
-  update,
-}: Readonly<{ form: SignInForm; update: (patch: Partial<SignInForm>) => void }>) {
+/** A built-in method in the list: what it is, its place, and its switch. */
+export function BuiltInRow({
+  method,
+  first,
+  last,
+  onMove,
+  onEnabled,
+}: Readonly<{
+  method: BuiltInForm;
+  first: boolean;
+  last: boolean;
+  onMove: (by: -1 | 1) => void;
+  onEnabled: (enabled: boolean) => void;
+}>) {
+  const t = useT();
+  const words = BUILT_IN[method.kind];
   return (
-    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
-      <MethodRow
-        icon="lock"
-        labelKey="admin.signInPassword"
-        hintKey="admin.signInPasswordHint"
-        checked={form.password}
-        onChange={(password) => update({ password })}
-      />
-      <Divider />
-      <MethodRow
-        icon="fingerprint"
-        labelKey="admin.signInPasskeys"
-        hintKey="admin.signInPasskeysHint"
-        checked={form.passkeys}
-        onChange={(passkeys) => update({ passkeys })}
-      />
+    <Surface elevated pad="none" radius="xl" border="border">
+      <Row between gap={12} px={20} py={16}>
+        <Row gap={12} flex minW={0}>
+          <IconWell name={words.icon} size="sm" tone="accent" />
+          <Box flex minW={0}>
+            <Text variant="label">{t(words.label)}</Text>
+            <Text variant="meta" color="textDim" mt={2}>
+              {t(words.hint)}
+            </Text>
+          </Box>
+        </Row>
+        <MoveButtons name={t(words.label)} first={first} last={last} onMove={onMove} />
+        <Switch checked={method.enabled} onCheckedChange={onEnabled} label={t(words.label)} />
+      </Row>
     </Surface>
   );
 }

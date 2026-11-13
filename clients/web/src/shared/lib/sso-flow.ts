@@ -1,4 +1,5 @@
 import { FlowId, FlowResult, ProviderId } from '@kromatv/client/sso';
+import type { FlowStore } from '@kromatv/core';
 import { z } from 'zod';
 
 const PENDING_KEY = 'kroma.sso.flow';
@@ -14,7 +15,6 @@ const PendingFlow = z.object({
   provider: ProviderId,
   returnTo: z.string(),
 });
-export type PendingFlow = z.infer<typeof PendingFlow>;
 
 const FlowOutcome = z.object({
   purpose: FlowPurpose,
@@ -50,22 +50,17 @@ function remove(key: string): void {
   }
 }
 
-/** Keeps the half of a flow that never leaves this tab, for the page the
- * provider sends the person back to. */
-export function rememberFlow(flow: PendingFlow): void {
-  write(PENDING_KEY, flow);
-}
-
-/** The flow this tab began under `flowId`, or `null` when it began none: the
- * address was opened in another tab or another browser. */
-export function pendingFlow(flowId: string): PendingFlow | null {
-  const flow = read(PENDING_KEY, PendingFlow);
-  return flow?.flowId === flowId ? flow : null;
-}
-
-export function forgetFlow(): void {
-  remove(PENDING_KEY);
-}
+/** Keeps a pending flow in this tab, which is the one that goes to the
+ * provider and comes back. A flow opened in another tab or another browser
+ * finds nothing here. */
+export const tabFlowStore: FlowStore = {
+  save: (flow) => write(PENDING_KEY, flow),
+  load: (flowId) => {
+    const flow = read(PENDING_KEY, PendingFlow);
+    return flow?.flowId === flowId ? flow : null;
+  },
+  clear: () => remove(PENDING_KEY),
+};
 
 /** Hands a flow's result to the page that began it. */
 export function leaveOutcome(outcome: FlowOutcome): void {

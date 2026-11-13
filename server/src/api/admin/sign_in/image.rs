@@ -5,7 +5,7 @@ use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::put;
+use axum::routing::post;
 use axum::Router;
 
 use crate::api::error::lerr;
@@ -21,13 +21,13 @@ use crate::state::SharedState;
 pub(super) fn routes() -> Router<SharedState> {
     Router::new().route(
         "/sign-in/methods/{id}/image",
-        put(upload)
+        post(upload)
             .delete(remove)
             .layer(DefaultBodyLimit::max(MAX_IMAGE_BYTES)),
     )
 }
 
-/// `PUT /api/admin/sign-in/methods/:id/image` (body = the raw image) → 204.
+/// `POST /api/admin/sign-in/methods/:id/image` (body = the raw image) → 204.
 /// A PNG, a JPEG, a WebP or an SVG of at most 256 KiB. `415` for anything
 /// else, `404` for a provider that is not saved yet.
 pub async fn upload(

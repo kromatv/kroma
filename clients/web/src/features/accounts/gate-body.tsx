@@ -14,7 +14,7 @@ import { PinEntry } from '#web/features/accounts/pin-entry';
 import { type ProfileChoice, ProfilePicker } from '#web/features/accounts/profile-picker';
 import { useAuth } from '#web/shared/lib/auth';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
-import { useProviderFlow } from '#web/shared/lib/use-provider-flow';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
 
 type Mode =
@@ -47,7 +47,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   const [forgotSent, setForgotSent] = useState(false);
   const canPick = config.publicUserList;
   const methods = config.signIn ?? DEFAULT_SIGN_IN_METHODS;
-  const startFlow = useProviderFlow();
+  const flows = useAuthFlows();
   const listsProfiles = config.hasAccounts && config.publicUserList;
 
   if (entryAccounts !== accounts) {
@@ -115,7 +115,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     setBusy(true);
     setError(null);
     try {
-      await startFlow('signIn', provider.id, { returnTo: pathToReturnTo() });
+      await flows.signIn.with(provider.id, { returnTo: pathToReturnTo() });
     } catch (e) {
       setError(apiErrorText(e, t('auth.providerFailed', { provider: provider.label })));
       setBusy(false);
@@ -161,6 +161,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     return (
       <LoginForm
         profile={mode.user}
+        server={config.serverName && config.serverName !== 'KROMA' ? config.serverName : null}
         busy={busy}
         error={error}
         notice={mode.expired ? t('auth.sessionExpiredHint') : null}

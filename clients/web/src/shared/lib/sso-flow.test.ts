@@ -1,13 +1,7 @@
 // @vitest-environment jsdom
 import { FlowId, ProviderId } from '@kromatv/client/sso';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  forgetFlow,
-  leaveOutcome,
-  pendingFlow,
-  rememberFlow,
-  takeOutcome,
-} from '#web/shared/lib/sso-flow';
+import { leaveOutcome, tabFlowStore, takeOutcome } from '#web/shared/lib/sso-flow';
 
 const flow = {
   flowId: FlowId.parse('f1'),
@@ -23,31 +17,31 @@ afterEach(() => {
 
 describe('the flow a tab began', () => {
   it('is found again under its own id', () => {
-    rememberFlow(flow);
+    tabFlowStore.save(flow);
 
-    expect(pendingFlow('f1')).toEqual(flow);
+    expect(tabFlowStore.load('f1')).toEqual(flow);
   });
 
   it('is not found under another id, so a link opened elsewhere collects nothing', () => {
-    rememberFlow(flow);
+    tabFlowStore.save(flow);
 
-    expect(pendingFlow('f2')).toBeNull();
+    expect(tabFlowStore.load('f2')).toBeNull();
   });
 
   it('is gone once forgotten', () => {
-    rememberFlow(flow);
+    tabFlowStore.save(flow);
 
-    forgetFlow();
+    tabFlowStore.clear();
 
-    expect(pendingFlow('f1')).toBeNull();
+    expect(tabFlowStore.load('f1')).toBeNull();
   });
 
   it('reads as none when what is stored is not a flow', () => {
     window.sessionStorage.setItem('kroma.sso.flow', '{"flowId":"f1"}');
-    expect(pendingFlow('f1')).toBeNull();
+    expect(tabFlowStore.load('f1')).toBeNull();
 
     window.sessionStorage.setItem('kroma.sso.flow', 'not json');
-    expect(pendingFlow('f1')).toBeNull();
+    expect(tabFlowStore.load('f1')).toBeNull();
   });
 });
 

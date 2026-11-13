@@ -3,7 +3,7 @@
 
 # Requirement index
 
-552 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+555 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -92,7 +92,10 @@
 - **ACCT-83** (SHIPPED) - An account that can change server settings keeps its password <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-84** (SHIPPED) - An account cannot remove its last way to sign in. <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-85** (SHIPPED) - No claim from a provider grants a permission or a library. <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-86** (AGREED) - The phone and desktop apps offer the provider buttons, through the <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-86** (SHIPPED) - The phone app offers the provider buttons. It opens the provider in <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-87** (SHIPPED) - Passwords, passkeys and each provider are one list of sign-in methods. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-88** (SHIPPED) - A provider's button shows the logo of the provider it was set up as, <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-89** (AGREED) - The desktop app offers the provider buttons the same way. <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 

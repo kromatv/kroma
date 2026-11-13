@@ -83,7 +83,9 @@ impl Outcome {
     }
 }
 
-fn free_username(pool: &Pool, suggested: &str) -> Result<String> {
+/// `suggested` when no account has it, else the first of `suggested2`,
+/// `suggested3`, ... that none has.
+pub fn free_username(pool: &Pool, suggested: &str) -> Result<String> {
     if !db::username_taken(pool, suggested, None)? {
         return Ok(suggested.to_string());
     }

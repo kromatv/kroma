@@ -17,7 +17,7 @@ use crate::db;
 use crate::i18n::ReqLocale;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
-use crate::services::sso::admit::{approve, Approval, Approved};
+use crate::services::sso::admit::{approve, free_username, Approval, Approved};
 use crate::state::SharedState;
 
 pub fn routes() -> Router<SharedState> {
@@ -28,7 +28,9 @@ pub fn routes() -> Router<SharedState> {
         .route("/join-requests/{id}/decline", post(decline))
 }
 
-/// `GET /api/admin/join-requests` → `{ waiting, declined }`, oldest first.
+/// `GET /api/admin/join-requests` → `{ waiting, declined }`, oldest first. A
+/// waiting request's `username` is a name no account has yet, ready to be
+/// approved as it stands.
 pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -36,10 +38,11 @@ pub async fn list(
     super::require(&user, Permission::UsersManage)?;
     let config = sign_in_config(&state);
     let (waiting, declined) = query(&state.db, |pool| {
-        Ok((
-            db::list_join_requests(&pool, false)?,
-            db::list_join_requests(&pool, true)?,
-        ))
+        let mut waiting = db::list_join_requests(&pool, false)?;
+        for request in &mut waiting {
+            request.username = free_username(&pool, &request.username)?;
+        }
+        Ok((waiting, db::list_join_requests(&pool, true)?))
     })
     .await?;
     let view = |request: db::JoinRequest| JoinRequestView {

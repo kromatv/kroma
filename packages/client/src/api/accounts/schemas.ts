@@ -46,28 +46,55 @@ export function hasPermission(user: Pick<User, 'permissions'>, permission: Permi
 export const PublicUser = User.pick({ id: true, username: true, avatarUrl: true, hasPin: true });
 export type PublicUser = z.infer<typeof PublicUser>;
 
-/** One "Continue with …" button on the login gate. */
-export const SignInButton = z.object({
-  id: ProviderId,
-  label: z.string(),
-  icon: z.string(),
+/** One way into a server, as the sign-in screen draws it. `kind` says which
+ * control it is: `password` is the form, `passkey` its button, `oidc` a
+ * provider's button, which alone carries a label, an icon and maybe a picture.
+ * The kind is an open string: a client built before a new one skips it. */
+export const SignInMethod = z.object({
+  id: z.string(),
+  kind: z.string(),
+  label: z.string().optional(),
+  icon: z.string().optional(),
+  /** A server path to the button's picture, when it has one. */
+  image: z.string().optional(),
 });
-export type SignInButton = z.infer<typeof SignInButton>;
+export type SignInMethod = z.infer<typeof SignInMethod>;
 
-/** The ways into a server: its two built-in methods and its live providers. */
-export const SignInMethods = z.object({
-  password: z.boolean(),
-  passkeys: z.boolean(),
-  providers: z.array(SignInButton),
-});
+/** The ways into a server, in the order the sign-in screen offers them. */
+export const SignInMethods = z.object({ methods: z.array(SignInMethod) });
 export type SignInMethods = z.infer<typeof SignInMethods>;
 
 /** What a server that predates `signIn` offers. */
 export const DEFAULT_SIGN_IN_METHODS: SignInMethods = {
-  password: true,
-  passkeys: true,
-  providers: [],
+  methods: [
+    { id: 'password', kind: 'password' },
+    { id: 'passkey', kind: 'passkey' },
+  ],
 };
+
+/** A provider's button: an `oidc` method, with the fields only it has. */
+export interface SignInButton {
+  id: ProviderId;
+  label: string;
+  icon: string;
+  image?: string;
+}
+
+/** Whether `methods` offers a method of `kind`. */
+export function offersSignIn(methods: SignInMethods, kind: 'password' | 'passkey'): boolean {
+  return methods.methods.some((method) => method.kind === kind);
+}
+
+/** The provider buttons of `methods`, in their order. */
+export function signInButtons(methods: SignInMethods): SignInButton[] {
+  return methods.methods.flatMap((method) => {
+    const id = ProviderId.safeParse(method.id);
+    if (method.kind !== 'oidc' || !id.success) return [];
+    return [
+      { id: id.data, label: method.label ?? '', icon: method.icon ?? 'key', image: method.image },
+    ];
+  });
+}
 
 /** Public login-gate config. */
 export const AuthConfig = z.object({

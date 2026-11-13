@@ -5,7 +5,8 @@ Keycloak or Pocket ID. When you finish, the KROMA sign-in screen has a
 "Continue with" button for it, and you decide who that button lets in.
 
 KROMA speaks OpenID Connect. Any provider that publishes a discovery document
-and signs its ID tokens with RS256 or ES256 works.
+and signs its ID tokens with RS256 or ES256 works. It has been run against
+Keycloak 26 and Authentik 2025.10.
 
 ## Before you begin
 
@@ -18,7 +19,7 @@ and signs its ID tokens with RS256 or ES256 works.
 ## Create the application at your provider
 
 1. In KROMA, open **Admin → Sign-in** and select **Add a provider**.
-2. Copy the **Redirect URI** shown above the provider.
+2. Copy the **Redirect URI** shown under the list.
 3. At your provider, create an OpenID Connect application for KROMA. Paste the
    redirect URI where the provider asks for it.
 4. Choose a signing key for the application if your provider asks. KROMA
@@ -32,13 +33,16 @@ address first, so KROMA lists the addresses it accepts.
 
 ## Add the provider in KROMA
 
-1. In **Name**, type what the button should say after "Continue with".
-2. In **Provider address (issuer)**, paste the issuer URL and select
+1. In **Provider**, choose yours. This sets the button's logo and shows an
+   example of the address KROMA expects. Choose **Another provider** if yours
+   is not listed: it works the same way.
+2. In **Name**, type what the button should say after "Continue with".
+3. In **Provider address (issuer)**, paste the issuer URL and select
    **Check**. KROMA reads the provider and says what it found, or what is
    wrong with the address.
-3. Paste the **Client ID** and the **Client secret**. Leave the secret empty
+4. Paste the **Client ID** and the **Client secret**. Leave the secret empty
    if your provider registered KROMA as a public client.
-4. Select **Save**.
+5. Select **Save**.
 
 The provider now shows **Not tested**. Nobody sees its button yet.
 
@@ -78,6 +82,21 @@ With **Create their account**, anyone your provider lets through gets in.
 Restrict who can reach the KROMA application at your provider, or set a
 required group.
 
+## Choose the order and the look
+
+**Admin → Sign-in** is one list: the password form, the passkey button and
+each provider. Use the arrows on a row to move it.
+
+The sign-in screen keeps the buttons together and the password form together,
+with "or" between the two. Whichever you list first goes on top and gets the
+highlighted button: put a provider above the password form and people see
+"Continue with" your provider first. The buttons stay in the list's order.
+
+A provider's button shows the logo of the provider you chose. To use a picture
+of your own, open the provider and drop an SVG, PNG, JPEG or WebP file of at
+most 256 KB on **Button picture**. Save the provider first: a picture is
+stored at once.
+
 ## Link the accounts you already have
 
 An existing account does not link itself by email. Each person links their
@@ -93,8 +112,8 @@ and sign in once with their password to link it.
 
 ## Turn other methods off
 
-In **Admin → Sign-in**, the **Built-in methods** switches turn password and
-passkey sign-in off.
+In **Admin → Sign-in**, the switches on the **Password** and **Passkeys** rows
+turn each one off.
 
 Passwords can only go off while a provider is live. Accounts that can change
 settings keep their password whatever the switch says, so a provider that is
@@ -117,8 +136,18 @@ provider is live without a test, and its address cannot be edited in Admin.
 Nothing changes. Sign in on your phone or in a browser, with the provider if
 you like, then approve the TV from there. [TVs](tv.md) explains how.
 
-The phone and desktop apps do not show the provider button yet. Sign in to
-them with a password, or approve them from a browser the same way as a TV.
+## Sign in on a phone
+
+The phone app shows the provider buttons under the password form. A button
+opens your phone's browser on the provider, and brings you back to KROMA when
+you have signed in. The app must reach the server on an address KROMA accepts:
+the one you registered a redirect URI for.
+
+The phone app does not sign in with passkeys, and you link a provider to an
+existing account from the web.
+
+The desktop app does not show the provider buttons yet. Sign in to it with a
+password.
 
 ## If the test fails
 
@@ -128,8 +157,19 @@ them with a password, or approve them from a browser the same way as a TV.
 | The address answers, but it serves no OpenID Connect discovery document | The issuer URL. It is the address that, followed by `/.well-known/openid-configuration`, returns a document. |
 | The provider refused the client ID or the client secret | Both values, copied again from the provider. |
 | The provider refused the sign-in code | The redirect URI at the provider. It must match the one KROMA shows, character for character. |
-| The provider signs with an algorithm this server refuses | The application's signing key at the provider. Choose RS256 or ES256. |
+| The provider signs with an algorithm this server refuses | The application's signing key at the provider. Choose RS256 or ES256. Authentik signs with a shared secret until you give the provider a signing key. |
 | The ID token had already expired | The clock of the KROMA server and of the provider. |
+
+## Provider notes
+
+These come from running KROMA against each provider.
+
+**Keycloak.** The issuer is `https://HOST/realms/REALM`. To use required
+groups, add a **Group Membership** mapper to the client, name its claim
+`groups` and turn **Full group path** off.
+
+**Authentik.** The issuer is `https://HOST/application/o/SLUG/`. Select a
+**signing key** on the provider. Groups need no setup.
 
 ## What KROMA does not do
 

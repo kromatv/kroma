@@ -1,14 +1,19 @@
 import { apiErrorText } from '@kromatv/client';
-import type { SignInButton } from '@kromatv/client/accounts';
+import {
+  DEFAULT_SIGN_IN_METHODS,
+  type SignInButton,
+  signInButtons,
+} from '@kromatv/client/accounts';
 import type { IdentityInfo } from '@kromatv/client/sso';
+import { flowMessage } from '@kromatv/core';
 import { useFormat, useT } from '@kromatv/ui';
-import { Button, hasGlyph, IconWell, ListRow, Text } from '@kromatv/ui/kit';
+import { Box, Button, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ssoMessage } from '#web/features/accounts/sso-message';
 import { takeOutcome } from '#web/shared/lib/sso-flow';
-import { useProviderFlow } from '#web/shared/lib/use-provider-flow';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
+import { ProviderMark } from '#web/shared/ui/provider-mark';
 
 function IdentityRow({
   identity,
@@ -69,7 +74,9 @@ function ProviderRow({
       <ListRow.Label>{provider.label}</ListRow.Label>
       <ListRow.Hint>{t('account.identityNotLinked')}</ListRow.Hint>
       <ListRow.Leading>
-        <IconWell name={hasGlyph(provider.icon) ? provider.icon : 'key'} size="sm" tone="neutral" />
+        <Box center w={38} h={38}>
+          <ProviderMark icon={provider.icon} image={provider.image} size={26} />
+        </Box>
       </ListRow.Leading>
       <ListRow.Trailing>
         <Button
@@ -91,20 +98,20 @@ export function IdentitiesCard() {
   const webRuntime = useWebRuntime();
   const t = useT();
   const qc = useQueryClient();
-  const startFlow = useProviderFlow();
+  const flows = useAuthFlows();
   const { data: identities } = useQuery(webRuntime.queries.userQueries.identities());
   const { data: config } = useQuery(webRuntime.client.query.accounts.config());
   const [linking, setLinking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const outcome = takeOutcome('link');
     if (!outcome || outcome.result.status === 'linked') return null;
-    return t(`sso.${ssoMessage(outcome.result)}.body`, {
+    return t(`sso.${flowMessage(outcome.result)}.body`, {
       provider: t('sso.yourProvider'),
       server: 'KROMA',
     });
   });
 
-  const providers = config?.signIn?.providers ?? [];
+  const providers = signInButtons(config?.signIn ?? DEFAULT_SIGN_IN_METHODS);
   const linked = identities ?? [];
   if (providers.length === 0 && linked.length === 0) return null;
 
@@ -112,7 +119,7 @@ export function IdentitiesCard() {
     setLinking(provider.id);
     setError(null);
     try {
-      await startFlow('link', provider.id, { returnTo: '/account' });
+      await flows.link(provider.id, { returnTo: '/account' });
     } catch (e) {
       setError(apiErrorText(e, t('account.identityLinkFailed', { provider: provider.label })));
       setLinking(null);

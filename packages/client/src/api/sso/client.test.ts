@@ -11,11 +11,20 @@ describe('the sign-in flow endpoints', () => {
   it.each<Endpoint>([
     {
       name: 'start with the invitation the person arrived on',
-      call: (c) => c.sso.start(provider, InviteToken.parse('inv1')),
+      call: (c) => c.sso.start(provider, { invite: InviteToken.parse('inv1') }),
       method: 'POST',
       path: '/auth/sso/start',
       auth: 'public',
       body: { provider: 'p0', invite: 'inv1' },
+    },
+    {
+      name: 'start from an app, which names its server and asks to come back on its scheme',
+      call: (c) =>
+        c.sso.start(provider, { from: { returnTo: 'app', origin: 'https://kroma.example' } }),
+      method: 'POST',
+      path: '/auth/sso/start',
+      auth: 'public',
+      body: { provider: 'p0', returnTo: 'app', origin: 'https://kroma.example' },
     },
     {
       name: 'finish',
@@ -64,10 +73,10 @@ describe("the admin's sign-in endpoints", () => {
     { name: 'config', call: (c) => c.sso.config(), method: 'GET', path: '/admin/sign-in' },
     {
       name: 'save',
-      call: (c) => c.sso.save({ password: true, passkeys: false, providers: [] }),
+      call: (c) => c.sso.save({ methods: [{ kind: 'password', enabled: true }] }),
       method: 'PUT',
       path: '/admin/sign-in',
-      body: { password: true, passkeys: false, providers: [] },
+      body: { methods: [{ kind: 'password', enabled: true }] },
     },
     {
       name: 'discover',
@@ -82,6 +91,18 @@ describe("the admin's sign-in endpoints", () => {
       method: 'POST',
       path: '/admin/sign-in/test',
       body: { provider: 'p0' },
+    },
+    {
+      name: 'uploadImage',
+      call: (c) => c.sso.uploadImage(provider, new Blob(['<svg/>'], { type: 'image/svg+xml' })),
+      method: 'POST',
+      path: '/admin/sign-in/methods/p0/image',
+    },
+    {
+      name: 'removeImage',
+      call: (c) => c.sso.removeImage(provider),
+      method: 'DELETE',
+      path: '/admin/sign-in/methods/p0/image',
     },
     {
       name: 'joinRequests',

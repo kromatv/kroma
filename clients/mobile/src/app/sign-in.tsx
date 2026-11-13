@@ -12,6 +12,7 @@ import { OnboardingScreen } from '#mobile/components/OnboardingScreen';
 import { type GateTile, ProfileGate } from '#mobile/components/ProfileGate';
 import { ServerPicker } from '#mobile/components/ServerPicker';
 import { type EnterSavedDeps, enterSavedAccount, type Phase } from '#mobile/components/signInFlow';
+import { useProviderGate } from '#mobile/components/signInProviders';
 import {
   hostOf,
   keyOf,
@@ -114,12 +115,22 @@ export default function SignIn() {
   const enterSaved = (account: MobileAccount, withPin?: string) =>
     enterSavedAccount(enterDeps, account, withPin);
 
+  const providers = useProviderGate({
+    session,
+    clientFor,
+    t,
+    serverName: serverUrl ? serverLabel(serverUrl) : 'KROMA',
+    enterApp: enterDeps.enterApp,
+    setBusy,
+    setError,
+  });
+
   const submit = async (who: string) => {
     if (!who.trim() || !password) return;
     setBusy('login');
     setError(null);
     try {
-      await session.login(who.trim(), password);
+      await providers.loginAndClaim(who.trim(), password);
       router.replace('/(app)/(tabs)');
     } catch (err) {
       setBusy(null);
@@ -256,10 +267,14 @@ export default function SignIn() {
           identifier={identifier}
           password={password}
           busy={busy === 'login'}
+          providerBusy={busy === 'provider'}
           error={error}
+          notice={providers.notice}
+          methods={providers.methods}
           onIdentifier={setIdentifier}
           onPassword={setPassword}
           onSubmit={() => void submit(phase.kind === 'password' ? phase.username : identifier)}
+          onProvider={(provider) => void providers.press(provider)}
         />
       )}
     </OnboardingScreen>
