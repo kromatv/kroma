@@ -19,7 +19,7 @@
     "build": "vite build",
     "typecheck": "tsr generate && tsc --noEmit",
     "generate-routes": "tsr generate",
-    "deploy": "bun run build && bunx wrangler@4 deploy"
+    "deploy": "bun run build && bunx wrangler deploy"
   },
   "dependencies": {
     "@kromatv/site-kit": "workspace:*",

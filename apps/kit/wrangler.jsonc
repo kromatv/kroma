@@ -4,7 +4,7 @@
 // straight from the edge, so there is no script to run and nothing to keep
 // warm. Deploy from this directory:
 //   bun run deploy          (builds dist/ first, then wrangler deploy)
-//   bunx wrangler@4 deploy  (assumes dist/ is already built)
+//   bunx wrangler deploy  (assumes dist/ is already built)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "kroma-ui",

@@ -48,7 +48,10 @@ as it is.
 `lanes` lists the changed files through the GitHub API (pull request files, or
 the push's compare) and matches them against `packages/ci-tools/src/lanes.ts`.
 A change to `.github/workflows/ci.yml` or `packages/ci-tools` opens every lane;
-so does a push with no parent or a manual run. Another workflow, or a script
+so does a push with no parent or a manual run. A GitHub that answers 5xx or 429
+is asked again, four times in all, and a change that still cannot be listed
+opens every lane with a warning: one failed API call costs a longer run, not a
+red one. Another workflow, or a script
 only a release workflow calls, cannot change what CI checks: it is linted as
 code and builds nothing (`synology.yml` reaches the synology lane).
 
@@ -176,8 +179,10 @@ What a candidate does publish is the **canary channel**: the `canary` job
 copies the sideloadable installers (Samsung `.wgt`, LG `.ipk`, Android TV and
 Android `.apk`, the macOS, Windows and Linux installers) onto the rolling
 `canary` prerelease, with the dated version in the name
-(`KROMA-tizen-0.1.39-canary.3493975.wgt`). The Synology `.spk` lands on the
-same tag from `synology.yml`. `ci canary publish` keeps, per kind of file, the
+(`KROMA-tizen-0.1.39-canary.3493975.wgt`). Each platform lands on its own: the
+job runs whatever the builds ended as and publishes the installers that exist,
+so a platform whose build failed keeps its previous canary and holds back
+nobody else's. The Synology `.spk` lands on the same tag from `synology.yml`. `ci canary publish` keeps, per kind of file, the
 newest five whatever their age and anything younger than two weeks; the rest
 is retired. That window stays above the seven-day stale copy
 `packages.kroma.tv` serves when the GitHub API is down, which is what made an
@@ -274,6 +279,12 @@ all of them: it adds the `wasm32-wasip2` target to the pinned toolchain, runs
 `bun run kroma build`, and uploads `dist/modules`, one `<id>.kmod` and its
 `.sha256` per module. The bundle is the same on every platform a server runs
 on, so nothing is built twice.
+
+Beside it, `test` runs every module's tests as the component it ships as
+(`bun run ci rust wasm-test`). A push to `main` is not held by the CI run
+beside it, and the catalog is what every server reads its updates from, so the
+tests that decide a publish run in this workflow and `publish` waits for both
+jobs.
 
 `publish` then runs `kroma release` against the live catalog at
 `modules.kroma.tv`. A module whose version moved publishes on its own

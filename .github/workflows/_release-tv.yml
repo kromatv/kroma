@@ -20,10 +20,6 @@ on:
         description: 'Sanitized x.y.z the TV stores require (appinfo.json / config.xml reject suffixes).'
         type: string
         required: true
-      channel:
-        description: 'stable | candidate | none. Only `stable` attaches to a Release.'
-        type: string
-        required: true
       build:
         description: 'The monotonic build number every store-bound package in this run carries (minutes since 2020).'
         type: string
@@ -35,7 +31,7 @@ jobs:
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write # attach assets to the Release
+      contents: read
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -77,24 +73,12 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Attach to the Release
-        # Only a STABLE release attaches here. A candidate build (push to main)
-        # uploads its artifacts and stops; deploy.yml publishes them later.
-        if: inputs.channel == 'stable'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          # Attach into a DRAFT: `releases/latest` ignores drafts, so the
-          # previous complete release keeps serving modules.json until the
-          # publish job below flips this one live with every asset present.
-          draft: true
-          files: clients/webos/out/*.ipk
-
   tizen:
     name: Tizen .wgt (dev-certificate signed)
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write # attach assets to the Release
+      contents: read
     timeout-minutes: 45
     env:
       TIZEN_STUDIO_VER: '6.0'
@@ -174,24 +158,12 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Attach to the Release
-        # Only a STABLE release attaches here. A candidate build (push to main)
-        # uploads its artifacts and stops; deploy.yml publishes them later.
-        if: inputs.channel == 'stable'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          # Attach into a DRAFT: `releases/latest` ignores drafts, so the
-          # previous complete release keeps serving modules.json until the
-          # publish job below flips this one live with every asset present.
-          draft: true
-          files: clients/tizen/out/*.wgt
-
   tv-native:
     name: Android TV (APK + Play bundle)
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write # attach assets to the Release
+      contents: read
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -292,15 +264,3 @@ jobs:
           path: out/*.aab
           if-no-files-found: error
           retention-days: 30
-
-      - name: Attach to the Release
-        # Only a STABLE release attaches here. A candidate build (push to main)
-        # uploads its artifacts and stops; deploy.yml publishes them later.
-        if: inputs.channel == 'stable'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          # Attach into a DRAFT: `releases/latest` ignores drafts, so the
-          # previous complete release keeps serving modules.json until the
-          # publish job below flips this one live with every asset present.
-          draft: true
-          files: out/*.apk

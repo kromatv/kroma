@@ -113,4 +113,4 @@ jobs:
         working-directory: clients/tv-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bunx wrangler@4 deploy
+        run: bunx wrangler deploy

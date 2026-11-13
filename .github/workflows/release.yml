@@ -171,10 +171,9 @@ jobs:
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tools"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-tools.yml
     permissions:
-      contents: write # passed down to the called workflow
+      contents: read # passed down to the called workflow
     with:
       version: ${{ needs.version.outputs.version }}
-      channel: ${{ needs.version.outputs.channel }}
     secrets: inherit
 
   # -------------------------------------------------------------------- TV ---
@@ -186,11 +185,10 @@ jobs:
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-tv.yml
     permissions:
-      contents: write # passed down to the called workflow
+      contents: read # passed down to the called workflow
     with:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
-      channel: ${{ needs.version.outputs.channel }}
       build: ${{ needs.version.outputs.build }}
     secrets: inherit
 
@@ -224,7 +222,7 @@ jobs:
     if: ${{ (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile","android"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-mobile.yml
     permissions:
-      contents: write # passed down to the called workflow
+      contents: read # passed down to the called workflow
       actions: write # the DerivedData cache prune
     with:
       version: ${{ needs.version.outputs.version }}
@@ -262,7 +260,7 @@ jobs:
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","desktop"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-desktop.yml
     permissions:
-      contents: write # passed down to the called workflow
+      contents: read # passed down to the called workflow
     with:
       version: ${{ needs.version.outputs.version }}
       channel: ${{ needs.version.outputs.channel }}
@@ -474,7 +472,9 @@ jobs:
   # prerelease: Samsung, LG, Android TV, Android, and the three desktop
   # installers. Not the two .ipa bundles (TestFlight is the only way onto an
   # Apple device) and not a gate: a canary that fails to upload must not make a
-  # candidate look unpromotable. The files keep the candidate's bytes and take a
+  # candidate look unpromotable. Nor is it held by one: each platform that built
+  # lands, and one that failed (Apple refusing a notarization, say) keeps its
+  # previous canary. The files keep the candidate's bytes and take a
   # dated version in their name, so two pushes of 0.1.39 stay two builds;
   # `bun run ci canary` retires what is older than two weeks past the newest
   # five of each kind. apps/www reads this tag into /download/archive.
@@ -484,8 +484,6 @@ jobs:
     if: >-
       !cancelled()
       && needs.version.outputs.channel == 'candidate'
-      && needs.tv.result == 'success'
-      && needs.desktop.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -508,14 +506,23 @@ jobs:
           pattern: kroma-{tizen-wgt,webos-ipk,androidtv-apk,mobile-apk,desktop-macos,desktop-macos-intel,desktop-windows,desktop-linux}
           path: canary
           merge-multiple: true
-      - run: |
+      - id: publish
+        run: |
           files=()
-          while IFS= read -r -d '' f; do files+=("$f"); done < <(find canary -type f -print0)
+          if [[ -d canary ]]; then
+            while IFS= read -r -d '' f; do files+=("$f"); done < <(find canary -type f -print0)
+          fi
+          if (( ${#files[@]} == 0 )); then
+            echo "::warning::No platform built this push; the canary stays where it was."
+            exit 0
+          fi
           bun run ci canary publish --rename \
             --triplet "${{ needs.version.outputs.triplet }}" \
             --version "${{ needs.version.outputs.canary }}" \
             "${files[@]}"
+          echo "published=true" >> "$GITHUB_OUTPUT"
       - name: Canary notes
+        if: steps.publish.outputs.published == 'true'
         continue-on-error: true
         env:
           ANTHROPIC_FEDERATION_RULE_ID: fdrl_01SKjkxdn6pfKsK4aQDajSRL
