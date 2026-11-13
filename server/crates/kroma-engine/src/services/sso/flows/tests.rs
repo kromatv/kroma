@@ -10,6 +10,7 @@ fn new_flow() -> NewFlow {
         fingerprint: "fp".into(),
         intent: Intent::SignIn { invite: None },
         origin: "https://kroma.test".into(),
+        return_to: ReturnTo::Web,
         redirect_uri: "https://kroma.test/api/auth/sso/callback".into(),
     }
 }

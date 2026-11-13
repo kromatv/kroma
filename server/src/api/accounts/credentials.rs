@@ -59,7 +59,7 @@ pub async fn register(
         Err(resp) => return resp,
     };
 
-    if count > 0 && !crate::api::sso::sign_in_config(&state).password {
+    if count > 0 && !crate::api::sso::sign_in_config(&state).password() {
         return lerr(loc, StatusCode::FORBIDDEN, "sso.passwordOff");
     }
 
@@ -210,7 +210,7 @@ pub async fn login(
 // Whoever can change the sign-in settings keeps their password whatever those
 // settings say, so a provider that is down never locks the server.
 fn password_admits(state: &SharedState, user: &crate::model::User) -> bool {
-    crate::api::sso::sign_in_config(state).password
+    crate::api::sso::sign_in_config(state).password()
         || user
             .permissions
             .contains(&crate::model::Permission::SettingsManage)

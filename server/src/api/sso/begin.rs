@@ -7,25 +7,50 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
-use super::{now, request_origin, sign_in_config, CALLBACK_PATH};
+use super::{accepted_origin, now, request_origin, sign_in_config, CALLBACK_PATH};
 use crate::api::dto::FlowStarted;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, client_ip};
 use crate::i18n::{self, ReqLocale};
-use crate::services::sso::flows::{Intent, NewFlow, FLOW_TTL_SECS};
+use crate::services::sso::flows::{Intent, NewFlow, ReturnTo, FLOW_TTL_SECS};
 use crate::services::sso::identify::authorize_url;
 use crate::state::SharedState;
+
+/// What a client says about itself when it starts a flow. A browser says
+/// nothing: its `Origin` header is where the flow begins and ends. A native
+/// app has no origin, so it names the server address it is talking to and
+/// asks to be sent back on its own scheme.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FlowClient {
+    #[serde(default)]
+    pub return_to: Option<String>,
+    #[serde(default)]
+    pub origin: Option<String>,
+}
+
+impl FlowClient {
+    fn return_to(&self) -> ReturnTo {
+        match self.return_to.as_deref() {
+            Some("app") => ReturnTo::App,
+            _ => ReturnTo::Web,
+        }
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct StartBody {
     pub provider: String,
     #[serde(default)]
     pub invite: Option<String>,
+    #[serde(flatten)]
+    pub client: FlowClient,
 }
 
-/// `POST /api/auth/sso/start` `{ provider, invite? }` → `{ flowId, secret,
-/// authorizeUrl, expiresInSec }`. Public: this is how a sign-in begins.
+/// `POST /api/auth/sso/start` `{ provider, invite?, returnTo?, origin? }` →
+/// `{ flowId, secret, authorizeUrl, expiresInSec }`. Public: this is how a
+/// sign-in begins.
 pub async fn start(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -35,12 +60,14 @@ pub async fn start(
 ) -> Response {
     let invite = body.invite.filter(|token| !token.trim().is_empty());
     let intent = Intent::SignIn { invite };
-    begin(&state, loc, &headers, &addr, &body.provider, intent).await
+    begin(&state, loc, &headers, &addr, &body.provider, intent, &body.client).await
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LinkBody {
     pub provider: String,
+    #[serde(flatten)]
+    pub client: FlowClient,
 }
 
 /// `POST /api/auth/me/identities` (Bearer) `{ provider }` → a flow that ends
@@ -54,7 +81,7 @@ pub async fn link(
     Json(body): Json<LinkBody>,
 ) -> Response {
     let intent = Intent::Link { user_id: user.id };
-    begin(&state, loc, &headers, &addr, &body.provider, intent).await
+    begin(&state, loc, &headers, &addr, &body.provider, intent, &body.client).await
 }
 
 /// Opens a flow for `intent` at `provider_id`. A test may run against a
@@ -67,8 +94,15 @@ pub(crate) async fn begin(
     addr: &SocketAddr,
     provider_id: &str,
     intent: Intent,
+    client: &FlowClient,
 ) -> Response {
-    let Some(origin) = request_origin(state, headers) else {
+    let origin = request_origin(state, headers).or_else(|| {
+        client
+            .origin
+            .as_deref()
+            .and_then(|named| accepted_origin(state, named))
+    });
+    let Some(origin) = origin else {
         return lerr(loc, StatusCode::BAD_REQUEST, "sso.originInvalid");
     };
     let testing = matches!(intent, Intent::Test { .. });
@@ -115,6 +149,7 @@ pub(crate) async fn begin(
             fingerprint: provider.fingerprint(),
             intent,
             origin,
+            return_to: client.return_to(),
             redirect_uri: redirect_uri.clone(),
         },
         &address,

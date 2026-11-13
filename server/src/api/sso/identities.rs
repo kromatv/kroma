@@ -41,9 +41,9 @@ pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) ->
 /// passwords are on, or always for whoever can change that setting, and a
 /// passkey counts while passkeys are on.
 pub(crate) fn has_a_way_in(config: &SignIn, user: &User, means: db::SignInMeans) -> bool {
-    let password_works = config.password || user.permissions.contains(&Permission::SettingsManage);
+    let password_works = config.password() || user.permissions.contains(&Permission::SettingsManage);
     (means.password && password_works)
-        || (config.passkeys && means.passkeys > 0)
+        || (config.passkeys() && means.passkeys > 0)
         || means.identities > 0
 }
 

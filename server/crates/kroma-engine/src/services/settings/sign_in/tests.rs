@@ -17,10 +17,20 @@ fn provider(id: &str) -> Provider {
 }
 
 fn with(providers: Vec<Provider>) -> SignIn {
-    SignIn {
-        providers,
-        ..SignIn::default()
-    }
+    let mut config = SignIn::default();
+    config
+        .methods
+        .extend(providers.into_iter().map(|p| Method::Oidc(Box::new(p))));
+    config
+}
+
+fn without_passwords(mut config: SignIn) -> SignIn {
+    config.methods[0] = Method::Password(BuiltIn { enabled: false });
+    config
+}
+
+fn first_provider(config: &SignIn) -> &Provider {
+    config.providers().next().expect("a provider")
 }
 
 fn env() -> ProviderEnv {
@@ -43,8 +53,12 @@ fn a_server_nobody_configured_offers_passwords_and_passkeys_and_no_provider() {
 
     let config = sign_in(&Settings::load(&pool), None);
 
-    assert!(config.password && config.passkeys);
-    assert!(config.providers.is_empty());
+    assert!(config.password() && config.passkeys());
+    assert_eq!(config.providers().count(), 0);
+    assert_eq!(
+        config.methods.iter().map(Method::id).collect::<Vec<_>>(),
+        [PASSWORD_ID, PASSKEY_ID]
+    );
 }
 
 #[test]
@@ -99,12 +113,12 @@ fn a_blank_secret_keeps_the_stored_one_and_a_new_one_replaces_it() {
     let mut blank = provider("p0");
     blank.client_secret = String::new();
     set_sign_in(&settings, &pool, None, with(vec![blank])).unwrap();
-    assert_eq!(sign_in(&settings, None).providers[0].client_secret, "s3cret");
+    assert_eq!(first_provider(&sign_in(&settings, None)).client_secret, "s3cret");
 
     let mut rotated = provider("p0");
     rotated.client_secret = "next".to_string();
     set_sign_in(&settings, &pool, None, with(vec![rotated])).unwrap();
-    assert_eq!(sign_in(&settings, None).providers[0].client_secret, "next");
+    assert_eq!(first_provider(&sign_in(&settings, None)).client_secret, "next");
 }
 
 #[test]
@@ -124,7 +138,7 @@ fn a_test_against_a_connection_that_has_since_changed_is_not_recorded() {
     let pool = pool();
     let settings = Settings::load(&pool);
     set_sign_in(&settings, &pool, None, with(vec![provider("p0")])).unwrap();
-    let before = sign_in(&settings, None).providers[0].fingerprint();
+    let before = first_provider(&sign_in(&settings, None)).fingerprint();
     let mut moved = provider("p0");
     moved.client_id = "other".to_string();
     set_sign_in(&settings, &pool, None, with(vec![moved])).unwrap();
@@ -138,18 +152,17 @@ fn a_test_against_a_connection_that_has_since_changed_is_not_recorded() {
 fn passwords_cannot_be_turned_off_while_no_provider_is_live() {
     let pool = pool();
     let settings = Settings::load(&pool);
-    let mut without = with(vec![provider("p0")]);
-    without.password = false;
+    let without = without_passwords(with(vec![provider("p0")]));
 
     let refused = set_sign_in(&settings, &pool, None, without.clone());
     assert_eq!(refused, Err(SignInRefused::PasswordNeedsProvider));
-    assert!(sign_in(&settings, None).password);
+    assert!(sign_in(&settings, None).password());
 
     set_sign_in(&settings, &pool, None, with(vec![provider("p0")])).unwrap();
     tested(&settings, &pool, "p0");
 
     assert_eq!(set_sign_in(&settings, &pool, None, without), Ok(()));
-    assert!(!sign_in(&settings, None).password);
+    assert!(!sign_in(&settings, None).password());
 }
 
 #[test]
@@ -168,17 +181,34 @@ fn two_providers_under_one_id_are_refused() {
 }
 
 #[test]
-fn the_environments_provider_comes_first_and_is_live_without_a_test() {
+fn the_environments_provider_is_listed_last_and_is_live_without_a_test() {
     let pool = pool();
     let settings = Settings::load(&pool);
     set_sign_in(&settings, &pool, None, with(vec![provider("p0")])).unwrap();
 
     let config = sign_in(&settings, Some(&env()));
 
-    assert_eq!(config.providers[0].id, ENV_PROVIDER_ID);
-    assert_eq!(config.providers[0].issuer, "https://env.test");
-    assert!(config.providers[0].is_live());
-    assert_eq!(config.providers[1].id, "p0");
+    let ids: Vec<&str> = config.methods.iter().map(Method::id).collect();
+    assert_eq!(ids, [PASSWORD_ID, PASSKEY_ID, "p0", ENV_PROVIDER_ID]);
+    let from_env = config.provider(ENV_PROVIDER_ID).unwrap();
+    assert_eq!(from_env.issuer, "https://env.test");
+    assert!(from_env.is_live());
+}
+
+#[test]
+fn the_environments_provider_keeps_the_place_an_admin_gave_it() {
+    let pool = pool();
+    let settings = Settings::load(&pool);
+    let mut reordered = SignIn::default();
+    reordered
+        .methods
+        .insert(0, Method::Oidc(Box::new(provider(ENV_PROVIDER_ID))));
+    set_sign_in(&settings, &pool, Some(&env()), reordered).unwrap();
+
+    let config = sign_in(&settings, Some(&env()));
+
+    let ids: Vec<&str> = config.methods.iter().map(Method::id).collect();
+    assert_eq!(ids, [ENV_PROVIDER_ID, PASSWORD_ID, PASSKEY_ID]);
 }
 
 #[test]
@@ -195,8 +225,8 @@ fn the_environments_provider_keeps_its_policy_and_never_stores_its_connection() 
     assert!(!stored.contains("env-secret"));
     assert!(!stored.contains("typed-over"));
     let read = sign_in(&settings, Some(&env()));
-    assert_eq!(read.providers[0].issuer, "https://env.test");
-    assert_eq!(read.providers[0].new_people, NewPeople::Invite);
+    assert_eq!(first_provider(&read).issuer, "https://env.test");
+    assert_eq!(first_provider(&read).new_people, NewPeople::Invite);
 }
 
 #[test]
@@ -213,7 +243,7 @@ fn a_policy_left_behind_by_the_environment_is_not_a_provider() {
 
     let without_env = sign_in(&settings, None);
 
-    assert!(without_env.providers.is_empty());
+    assert_eq!(without_env.providers().count(), 0);
 }
 
 #[test]
@@ -238,4 +268,58 @@ fn a_stored_blob_that_no_longer_parses_reads_as_the_defaults() {
     );
 
     assert_eq!(sign_in(&settings, None), SignIn::default());
+}
+
+#[test]
+fn the_order_an_admin_chose_is_the_order_read_back() {
+    let pool = pool();
+    let settings = Settings::load(&pool);
+    let reordered = SignIn {
+        methods: vec![
+            Method::Oidc(Box::new(provider("p0"))),
+            Method::Passkey(BuiltIn { enabled: false }),
+            Method::Password(BuiltIn::default()),
+        ],
+    };
+
+    set_sign_in(&settings, &pool, None, reordered.clone()).unwrap();
+
+    let read = sign_in(&settings, None);
+    let ids: Vec<&str> = read.methods.iter().map(Method::id).collect();
+    assert_eq!(ids, ["p0", PASSKEY_ID, PASSWORD_ID]);
+    assert!(read.password() && !read.passkeys());
+}
+
+#[test]
+fn a_list_missing_a_built_in_method_gets_it_back_and_a_doubled_one_is_dropped() {
+    let pool = pool();
+    let settings = Settings::load(&pool);
+    let odd = SignIn {
+        methods: vec![
+            Method::Passkey(BuiltIn { enabled: false }),
+            Method::Passkey(BuiltIn { enabled: true }),
+        ],
+    };
+
+    set_sign_in(&settings, &pool, None, odd).unwrap();
+
+    let read = sign_in(&settings, None);
+    let ids: Vec<&str> = read.methods.iter().map(Method::id).collect();
+    assert_eq!(ids, [PASSWORD_ID, PASSKEY_ID]);
+    assert!(read.password() && !read.passkeys());
+}
+
+#[test]
+fn an_image_is_kept_across_saves_and_never_taken_from_the_client() {
+    let pool = pool();
+    let settings = Settings::load(&pool);
+    let mut claimed = provider("p0");
+    claimed.image = "forged".to_string();
+    set_sign_in(&settings, &pool, None, with(vec![claimed])).unwrap();
+    assert_eq!(first_provider(&sign_in(&settings, None)).image, "");
+
+    set_provider_image(&settings, &pool, "p0", "abc123");
+    set_sign_in(&settings, &pool, None, with(vec![provider("p0")])).unwrap();
+
+    assert_eq!(first_provider(&sign_in(&settings, None)).image, "abc123");
 }

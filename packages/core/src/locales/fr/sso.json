@@ -32,6 +32,7 @@
   "sso.providerUnknown": "Ce fournisseur de connexion n'est pas disponible",
   "sso.providerUnreachable": "Impossible de joindre le fournisseur de connexion",
   "sso.reason.discovery.address": "L'adresse doit être en https, ou un hôte du réseau local.",
+  "sso.reason.discovery.algorithm": "Le fournisseur signe avec un algorithme que ce serveur refuse. Donnez une clé de signature à l'application, pour qu'elle signe en RS256 ou ES256.",
   "sso.reason.discovery.endpoint": "Le fournisseur indique une adresse que ce serveur n'appellera pas : du http simple hors du réseau local.",
   "sso.reason.discovery.issuerMismatch": "Le fournisseur décrit un autre issuer que l'adresse saisie.",
   "sso.reason.discovery.noDocument": "L'adresse répond, mais ne sert aucun document de découverte OpenID Connect. Vérifiez l'URL de l'issuer.",

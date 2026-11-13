@@ -14,6 +14,7 @@ use crate::services::sso::testing::{FakeProvider, CLIENT_ID, CLIENT_SECRET};
 
 fn provider_input(idp: &FakeProvider) -> Value {
     json!({
+        "kind": "oidc",
         "label": "Home",
         "issuer": idp.issuer,
         "clientId": CLIENT_ID,
@@ -23,7 +24,31 @@ fn provider_input(idp: &FakeProvider) -> Value {
 }
 
 fn config_with(providers: Value) -> Value {
-    json!({ "password": true, "passkeys": true, "providers": providers })
+    methods(true, true, providers)
+}
+
+fn methods(password: bool, passkeys: bool, providers: Value) -> Value {
+    let mut list = vec![
+        json!({ "kind": "password", "enabled": password }),
+        json!({ "kind": "passkey", "enabled": passkeys }),
+    ];
+    list.extend(providers.as_array().cloned().unwrap_or_default());
+    json!({ "methods": list })
+}
+
+fn provider_of(config: &Value) -> &Value {
+    config["methods"]
+        .as_array()
+        .and_then(|all| all.iter().find(|m| m["kind"] == "oidc"))
+        .expect("a provider")
+}
+
+fn enabled(config: &Value, kind: &str) -> Value {
+    config["methods"]
+        .as_array()
+        .and_then(|all| all.iter().find(|m| m["kind"] == kind))
+        .map(|m| m["enabled"].clone())
+        .unwrap_or(Value::Null)
 }
 
 async fn save(t: &TestApp, token: &str, body: Value) -> (StatusCode, Value) {
@@ -64,7 +89,7 @@ async fn a_saved_provider_is_offline_until_tested_and_its_secret_never_comes_bac
     let config = read(&t).await;
 
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let provider = &config["providers"][0];
+    let provider = provider_of(&config);
     assert_eq!(provider["id"], json!("p0"));
     assert_eq!(provider["hasSecret"], json!(true));
     assert_eq!(provider["tested"], json!(false));
@@ -72,12 +97,9 @@ async fn a_saved_provider_is_offline_until_tested_and_its_secret_never_comes_bac
     assert_eq!(provider["groupClaim"], json!("groups"));
     assert_eq!(provider["newPeople"], json!("ask"));
     assert!(!config.to_string().contains(CLIENT_SECRET));
-    assert_eq!(
-        config["redirectUris"],
-        json!([format!("{ORIGIN}/api/auth/sso/callback")])
-    );
+    assert_eq!(config["redirectUris"], json!([]));
     let (_, gate) = get(&t.app, "/api/auth/config", None).await;
-    assert_eq!(gate["signIn"]["providers"], json!([]));
+    assert_eq!(gate["signIn"]["methods"].as_array().unwrap().len(), 2);
 }
 
 #[tokio::test]
@@ -109,9 +131,9 @@ async fn a_test_sign_in_takes_the_provider_live_and_shows_what_it_said() {
     assert_eq!(result["report"]["email"], json!("me@id.test"));
     assert_eq!(result["report"]["groups"], json!(["family"]));
     assert_eq!(result["report"]["admitted"], json!(false));
-    assert_eq!(read(&round.t).await["providers"][0]["live"], json!(true));
+    assert_eq!(provider_of(&read(&round.t).await)["live"], json!(true));
     let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
-    assert_eq!(gate["signIn"]["providers"][0]["id"], json!("p0"));
+    assert_eq!(gate["signIn"]["methods"][2]["id"], json!("p0"));
     assert_eq!(crate::db::user_count(&round.t.state.db).unwrap(), 1);
 }
 
@@ -138,7 +160,7 @@ async fn a_test_that_fails_leaves_the_provider_offline() {
         result,
         json!({ "status": "failed", "reason": "exchange.invalid_client" })
     );
-    assert_eq!(read(&round.t).await["providers"][0]["live"], json!(false));
+    assert_eq!(provider_of(&read(&round.t).await)["live"], json!(false));
 }
 
 #[tokio::test]
@@ -152,7 +174,8 @@ async fn saving_with_a_blank_secret_keeps_a_tested_provider_live() {
     let (status, _) = save(&round.t, &round.t.token, config_with(json!([input]))).await;
 
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let provider = &read(&round.t).await["providers"][0];
+    let config = read(&round.t).await;
+    let provider = provider_of(&config);
     assert_eq!(provider["label"], json!("Family"));
     assert_eq!(provider["live"], json!(true));
 }
@@ -161,14 +184,13 @@ async fn saving_with_a_blank_secret_keeps_a_tested_provider_live() {
 async fn passwords_go_off_only_once_a_provider_is_live() {
     let t = test_app();
     let idp = FakeProvider::start();
-    let mut off = config_with(json!([provider_input(&idp)]));
-    off["password"] = json!(false);
+    let off = methods(false, true, json!([provider_input(&idp)]));
 
     let (status, body) = save(&t, &t.token, off).await;
 
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(body["code"], json!("sso.passwordNeedsProvider"));
-    assert_eq!(read(&t).await["password"], json!(true));
+    assert_eq!(enabled(&read(&t).await, "password"), json!(true));
 }
 
 #[tokio::test]
@@ -190,8 +212,7 @@ async fn with_passwords_off_a_member_is_refused_and_an_admin_still_gets_in() {
     );
     let mut input = provider_input(&round.idp);
     input["id"] = json!("p0");
-    let mut off = config_with(json!([input]));
-    off["password"] = json!(false);
+    let off = methods(false, true, json!([input]));
     assert_eq!(save(&round.t, &round.t.token, off).await.0, StatusCode::NO_CONTENT);
 
     let (member, body) = password_login(&round.t, "member").await;
@@ -223,15 +244,16 @@ async fn with_passwords_off_a_member_is_refused_and_an_admin_still_gets_in() {
     assert_eq!(admin, StatusCode::OK);
     assert_eq!(register, StatusCode::FORBIDDEN);
     let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
-    assert_eq!(gate["signIn"]["password"], json!(false));
+    assert_eq!(
+        gate["signIn"]["methods"][0],
+        json!({ "id": "passkey", "kind": "passkey" })
+    );
 }
 
 #[tokio::test]
 async fn with_passkeys_off_no_passkey_ceremony_begins() {
     let t = test_app();
-    let mut off = config_with(json!([]));
-    off["passkeys"] = json!(false);
-    save(&t, &t.token, off).await;
+    save(&t, &t.token, methods(true, false, json!([]))).await;
 
     let (sign_in, _, body) = raw(
         &t.app,
@@ -321,7 +343,7 @@ async fn a_provider_that_is_not_valid_is_not_saved() {
         assert_eq!(status, StatusCode::BAD_REQUEST, "{code}");
         assert_eq!(refused["code"], json!(code));
     }
-    assert_eq!(read(&t).await["providers"], json!([]));
+    assert_eq!(read(&t).await["methods"].as_array().unwrap().len(), 2);
 }
 
 #[tokio::test]
@@ -370,7 +392,7 @@ async fn a_provider_from_the_environment_is_live_at_once_and_keeps_its_connectio
     let config = read(&t).await;
 
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let provider = &config["providers"][0];
+    let provider = provider_of(&config);
     assert_eq!(provider["fromEnv"], json!(true));
     assert_eq!(provider["live"], json!(true));
     assert_eq!(provider["issuer"], json!(idp.issuer));
@@ -383,4 +405,151 @@ async fn a_provider_from_the_environment_is_live_at_once_and_keeps_its_connectio
         )
         .await;
     assert_eq!(result["status"], json!("signedIn"));
+}
+
+#[tokio::test]
+async fn the_sign_in_screen_offers_methods_in_the_order_an_admin_saved() {
+    let round = at_provider(|_| {});
+    let mut provider = provider_input(&round.idp);
+    provider["id"] = json!("p0");
+    let reordered = json!({ "methods": [
+        provider,
+        { "kind": "passkey", "enabled": true },
+        { "kind": "password", "enabled": true },
+    ] });
+
+    let (status, _) = save(&round.t, &round.t.token, reordered).await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
+    let order: Vec<&str> = gate["signIn"]["methods"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(order, ["p0", "passkey", "password"]);
+}
+
+#[tokio::test]
+async fn a_provider_cannot_take_the_id_of_a_built_in_method() {
+    let t = test_app();
+    let idp = FakeProvider::start();
+    let mut input = provider_input(&idp);
+    input["id"] = json!("password");
+
+    let (status, refused) = save(&t, &t.token, config_with(json!([input]))).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(refused["code"], json!("sso.providerInvalid"));
+}
+
+async fn image(t: &TestApp, id: &str) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
+    use tower::ServiceExt;
+    let request = axum::http::Request::builder()
+        .uri(format!("/api/auth/methods/{id}/image"))
+        .extension(axum::extract::ConnectInfo(std::net::SocketAddr::from((
+            [127, 0, 0, 1],
+            40000,
+        ))))
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let response = t.app.clone().oneshot(request).await.unwrap();
+    let (status, headers) = (response.status(), response.headers().clone());
+    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    (status, headers, bytes.to_vec())
+}
+
+async fn upload(t: &TestApp, token: &str, id: &str, bytes: &'static [u8]) -> StatusCode {
+    use tower::ServiceExt;
+    let request = axum::http::Request::builder()
+        .method("PUT")
+        .uri(format!("/api/admin/sign-in/methods/{id}/image"))
+        .header("authorization", format!("Bearer {token}"))
+        .extension(axum::extract::ConnectInfo(std::net::SocketAddr::from((
+            [127, 0, 0, 1],
+            40000,
+        ))))
+        .body(axum::body::Body::from(bytes))
+        .unwrap();
+    t.app.clone().oneshot(request).await.unwrap().status()
+}
+
+#[tokio::test]
+async fn a_known_provider_wears_its_logo_and_an_unknown_one_has_no_picture() {
+    let round = at_provider(|p| p.preset = "keycloak".into());
+
+    let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
+    let (status, headers, bytes) = image(&round.t, "p0").await;
+    let (missing, _, _) = image(&round.t, "nope").await;
+
+    assert_eq!(
+        gate["signIn"]["methods"][2]["image"],
+        json!("/api/auth/methods/p0/image?v=keycloak")
+    );
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers["content-type"], "image/svg+xml");
+    assert!(headers["content-security-policy"]
+        .to_str()
+        .unwrap()
+        .contains("default-src 'none'"));
+    assert!(bytes.starts_with(b"<svg "));
+    assert_eq!(missing, StatusCode::NOT_FOUND);
+    let plain = at_provider(|_| {});
+    assert_eq!(image(&plain.t, "p0").await.0, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn an_uploaded_picture_replaces_the_logo_until_it_is_removed() {
+    let round = at_provider(|p| p.preset = "keycloak".into());
+    let png: &[u8] = b"\x89PNG\r\n\x1a\nnot really pixels";
+
+    let uploaded = upload(&round.t, &round.t.token, "p0", png).await;
+    let (_, headers, bytes) = image(&round.t, "p0").await;
+    let config = read(&round.t).await;
+
+    assert_eq!(uploaded, StatusCode::NO_CONTENT);
+    assert_eq!(headers["content-type"], "image/png");
+    assert_eq!(bytes, png);
+    assert_eq!(provider_of(&config)["hasImage"], json!(true));
+    assert_eq!(provider_of(&config)["live"], json!(true));
+
+    let (removed, _) = send(
+        &round.t.app,
+        "DELETE",
+        "/api/admin/sign-in/methods/p0/image",
+        Some(&round.t.token),
+        None,
+    )
+    .await;
+
+    assert_eq!(removed, StatusCode::NO_CONTENT);
+    assert_eq!(image(&round.t, "p0").await.1["content-type"], "image/svg+xml");
+}
+
+#[tokio::test]
+async fn a_picture_takes_a_real_image_from_whoever_manages_settings() {
+    let round = at_provider(|_| {});
+    let (_, member) = seed_session(&round.t.state, "m@test.dev", "m", &[Permission::Playback]);
+    let png: &[u8] = b"\x89PNG\r\n\x1a\nnot really pixels";
+
+    assert_eq!(
+        upload(&round.t, &member, "p0", png).await,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        upload(&round.t, &round.t.token, "p0", b"<html>hello</html>").await,
+        StatusCode::UNSUPPORTED_MEDIA_TYPE
+    );
+    assert_eq!(
+        upload(&round.t, &round.t.token, "p0", b"<svg><script>x</script></svg>").await,
+        StatusCode::UNSUPPORTED_MEDIA_TYPE
+    );
+    assert_eq!(
+        upload(&round.t, &round.t.token, "nope", png).await,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(image(&round.t, "p0").await.0, StatusCode::NOT_FOUND);
 }

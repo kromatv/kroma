@@ -3,14 +3,14 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 
-use super::{now, sign_in_config};
+use super::{now, sign_in_config, APP_RETURN};
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::{Audience, NotificationEvent, NotificationSpec, Permission};
 use crate::services::settings::{self, Provider};
 use crate::services::sso::admit::{admit, Outcome, Waiting};
-use crate::services::sso::flows::Flow;
+use crate::services::sso::flows::{Flow, ReturnTo};
 use crate::services::sso::identify::{identify, provider_said};
 use crate::services::sso::person::Person;
 use crate::state::SharedState;
@@ -53,8 +53,11 @@ pub async fn callback(
     };
     match state.sso.flows.settle(&flow.id, outcome) {
         Some(code) => {
-            Redirect::to(&format!("{}/sso?flow={}&code={code}", flow.origin, flow.id))
-                .into_response()
+            let back = match flow.return_to {
+                ReturnTo::Web => format!("{}/sso", flow.origin),
+                ReturnTo::App => APP_RETURN.to_string(),
+            };
+            Redirect::to(&format!("{back}?flow={}&code={code}", flow.id)).into_response()
         }
         None => (
             StatusCode::BAD_REQUEST,

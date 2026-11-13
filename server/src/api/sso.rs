@@ -8,15 +8,18 @@ use axum::routing::{delete, get, post};
 use axum::Router;
 use kroma_http::address::web_target;
 
-use crate::services::settings::{self, SignIn};
+use crate::api::dto::{GateMethod, SignInMethods};
+use crate::services::settings::{self, Method, SignIn, PASSKEY_ID, PASSWORD_ID};
 use crate::state::SharedState;
 
 mod begin;
 mod callback;
 mod finish;
 mod identities;
+mod image;
 
-pub(crate) use begin::begin;
+pub(crate) use begin::{begin, FlowClient};
+pub(crate) use image::method_image;
 pub(crate) use identities::has_a_way_in;
 
 /// The callback's path under an origin, which is what a provider is given as
@@ -34,26 +37,53 @@ pub fn routes() -> Router<SharedState> {
             get(identities::list).post(begin::link),
         )
         .route("/auth/me/identities/{id}", delete(identities::unlink))
+        .route("/auth/methods/{id}/image", get(image::serve))
 }
 
 pub(crate) fn sign_in_config(state: &SharedState) -> SignIn {
     settings::sign_in(&state.settings, state.config.sign_in_provider.as_ref())
 }
 
+/// The methods a person can use right now, in the admin's order: a built-in
+/// one that is on, and a provider that is live.
+pub(crate) fn gate_methods(state: &SharedState) -> SignInMethods {
+    let built_in = |id: &str, kind: &'static str| GateMethod {
+        id: id.to_string(),
+        kind,
+        label: None,
+        icon: None,
+        image: None,
+    };
+    let methods = sign_in_config(state)
+        .methods
+        .iter()
+        .filter_map(|method| match method {
+            Method::Password(on) => on.enabled.then(|| built_in(PASSWORD_ID, "password")),
+            Method::Passkey(on) => on.enabled.then(|| built_in(PASSKEY_ID, "passkey")),
+            Method::Oidc(provider) => provider.is_live().then(|| GateMethod {
+                id: provider.id.clone(),
+                kind: "oidc",
+                label: Some(provider.label.clone()),
+                icon: Some(provider.icon.clone()),
+                image: method_image(provider),
+            }),
+        })
+        .collect();
+    SignInMethods { methods }
+}
+
 pub(crate) fn now() -> i64 {
     time::OffsetDateTime::now_utc().unix_timestamp()
 }
 
-/// The origin a browser is calling from, when a flow may begin and end there:
-/// a bare http(s) origin, and one of the operator's own when they named any
-/// (the rule passkeys follow).
-pub(crate) fn request_origin(state: &SharedState, headers: &HeaderMap) -> Option<String> {
-    let origin = headers
-        .get(axum::http::header::ORIGIN)?
-        .to_str()
-        .ok()?
-        .trim()
-        .trim_end_matches('/');
+/// The address scheme the native apps register, which a flow begun in one
+/// comes back on.
+pub(crate) const APP_RETURN: &str = "kroma://sso";
+
+/// `origin` when a flow may begin and end there: a bare http(s) origin, and
+/// one of the operator's own when they named any (the rule passkeys follow).
+pub(crate) fn accepted_origin(state: &SharedState, origin: &str) -> Option<String> {
+    let origin = origin.trim().trim_end_matches('/');
     let bare = origin.split_once("://").is_some_and(|(_, rest)| !rest.contains('/'));
     if !bare || web_target(origin).is_none() {
         return None;
@@ -62,12 +92,17 @@ pub(crate) fn request_origin(state: &SharedState, headers: &HeaderMap) -> Option
     (allowed.is_empty() || allowed.iter().any(|o| o == origin)).then(|| origin.to_string())
 }
 
+/// The origin a browser is calling from, when [`accepted_origin`] takes it.
+pub(crate) fn request_origin(state: &SharedState, headers: &HeaderMap) -> Option<String> {
+    let origin = headers.get(axum::http::header::ORIGIN)?.to_str().ok()?;
+    accepted_origin(state, origin)
+}
+
 /// The name a provider goes by where an issuer is all that was stored.
 pub(crate) fn provider_name(config: &SignIn, issuer: &str) -> String {
     let same = |typed: &str| typed.trim().trim_end_matches('/') == issuer.trim_end_matches('/');
     config
-        .providers
-        .iter()
+        .providers()
         .find(|p| same(&p.issuer))
         .map(|p| p.label.clone())
         .filter(|label| !label.is_empty())

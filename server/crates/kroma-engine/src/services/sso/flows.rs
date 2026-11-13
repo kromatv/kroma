@@ -27,6 +27,15 @@ pub enum Intent {
     Test { user_id: String },
 }
 
+/// Where the browser is sent once the provider is done with it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReturnTo {
+    /// The web client, on the origin the flow began from.
+    Web,
+    /// A native app, on the address scheme it registers with the system.
+    App,
+}
+
 /// What the callback needs to finish the conversation a start began.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Flow {
@@ -36,8 +45,10 @@ pub struct Flow {
     /// a change to it.
     pub fingerprint: String,
     pub intent: Intent,
-    /// Where the browser left from, and where it is sent back.
+    /// The origin the flow began from, which the provider's redirect comes
+    /// back under.
     pub origin: String,
+    pub return_to: ReturnTo,
     pub redirect_uri: String,
     pub nonce: String,
     pub verifier: String,
@@ -59,6 +70,7 @@ pub struct NewFlow {
     pub fingerprint: String,
     pub intent: Intent,
     pub origin: String,
+    pub return_to: ReturnTo,
     pub redirect_uri: String,
 }
 
@@ -126,6 +138,7 @@ impl Flows {
                     fingerprint: new.fingerprint,
                     intent: new.intent,
                     origin: new.origin,
+                    return_to: new.return_to,
                     redirect_uri: new.redirect_uri,
                     nonce: started.nonce.clone(),
                     verifier,

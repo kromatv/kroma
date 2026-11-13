@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use kroma_http::address::web_target;
 use serde::Deserialize;
 
-use super::keys::KeySet;
+use super::keys::{Algorithm, KeySet};
 
 pub const PURPOSE: &str = "sign-in";
 const MAX_TIME_SECS: u32 = 10;
@@ -29,6 +29,8 @@ pub struct Metadata {
     pub scopes_supported: Vec<String>,
     #[serde(default)]
     pub token_endpoint_auth_methods_supported: Vec<String>,
+    #[serde(default)]
+    pub id_token_signing_alg_values_supported: Vec<String>,
 }
 
 /// Why a provider could not be read, in terms an operator can act on.
@@ -44,6 +46,8 @@ pub enum DiscoveryError {
     IssuerMismatch(String),
     /// One of the provider's own endpoints is not an address this server calls.
     Endpoint(&'static str),
+    /// The provider signs ID tokens with nothing this server accepts.
+    Algorithm,
     NoKeys,
 }
 
@@ -97,6 +101,10 @@ pub fn discover(issuer: &str) -> Result<Metadata, DiscoveryError> {
         if url.is_some_and(|url| !is_callable(url)) {
             return Err(DiscoveryError::Endpoint(name));
         }
+    }
+    let signs = &metadata.id_token_signing_alg_values_supported;
+    if !signs.is_empty() && !signs.iter().any(|alg| Algorithm::parse(alg).is_some()) {
+        return Err(DiscoveryError::Algorithm);
     }
     Ok(metadata)
 }

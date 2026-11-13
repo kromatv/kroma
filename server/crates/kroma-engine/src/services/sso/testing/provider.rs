@@ -49,6 +49,7 @@ pub(super) struct Book {
     pub(super) claims_in_user_info_only: bool,
     pub(super) posts_its_secret: bool,
     pub(super) scopes: Vec<String>,
+    pub(super) algorithms: Vec<String>,
     pub(super) calls: Vec<String>,
 }
 
@@ -140,6 +141,7 @@ impl FakeProvider {
             book: Mutex::new(Book {
                 key_id: KEY_ID.to_string(),
                 scopes: vec!["openid".into(), "profile".into(), "email".into()],
+                algorithms: vec!["RS256".into()],
                 ..Book::default()
             }),
         });
@@ -198,6 +200,11 @@ impl FakeProvider {
 
     pub fn accept_the_secret_in_the_body_only(&self) {
         self.book().posts_its_secret = true;
+    }
+
+    /// Says it signs ID tokens with `algorithms` only.
+    pub fn advertise_algorithms(&self, algorithms: &[&str]) {
+        self.book().algorithms = algorithms.iter().map(|alg| alg.to_string()).collect();
     }
 
     pub fn offer_scope(&self, scope: &str) {

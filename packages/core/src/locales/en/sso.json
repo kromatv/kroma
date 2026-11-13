@@ -32,6 +32,7 @@
   "sso.providerUnknown": "This sign-in provider is not available",
   "sso.providerUnreachable": "The sign-in provider could not be reached",
   "sso.reason.discovery.address": "The address must be https, or a host on the local network.",
+  "sso.reason.discovery.algorithm": "The provider signs with an algorithm this server refuses. Give the application a signing key, so it signs with RS256 or ES256.",
   "sso.reason.discovery.endpoint": "The provider lists an address this server will not call: plain http outside the local network.",
   "sso.reason.discovery.issuerMismatch": "The provider describes another issuer than the address you typed.",
   "sso.reason.discovery.noDocument": "The address answers, but it serves no OpenID Connect discovery document. Check the issuer URL.",

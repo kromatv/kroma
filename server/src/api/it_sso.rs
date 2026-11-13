@@ -33,11 +33,13 @@ async fn the_gate_offers_a_live_provider_and_never_its_connection() {
     let (status, config) = get(&round.t.app, "/api/auth/config", None).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(config["signIn"]["password"], json!(true));
-    assert_eq!(config["signIn"]["passkeys"], json!(true));
     assert_eq!(
-        config["signIn"]["providers"],
-        json!([{ "id": "p0", "label": "Home", "icon": "key" }])
+        config["signIn"]["methods"],
+        json!([
+            { "id": "password", "kind": "password" },
+            { "id": "passkey", "kind": "passkey" },
+            { "id": "p0", "kind": "oidc", "label": "Home", "icon": "key" },
+        ])
     );
 }
 
@@ -47,7 +49,13 @@ async fn a_server_with_no_provider_offers_none() {
 
     let (_, config) = get(&t.app, "/api/auth/config", None).await;
 
-    assert_eq!(config["signIn"]["providers"], json!([]));
+    assert_eq!(
+        config["signIn"]["methods"],
+        json!([
+            { "id": "password", "kind": "password" },
+            { "id": "passkey", "kind": "passkey" },
+        ])
+    );
 }
 
 #[tokio::test]
@@ -409,4 +417,53 @@ async fn a_new_join_request_is_told_once_to_whoever_manages_users() {
     assert!(told["body"].as_str().unwrap().contains("Home"), "{told}");
     let (_, member_inbox) = get(&round.t.app, "/api/notifications", Some(&member)).await;
     assert_eq!(member_inbox["unread"], json!(0));
+}
+
+#[tokio::test]
+async fn a_native_app_names_its_server_and_comes_back_on_its_own_scheme() {
+    let round = creates_accounts();
+    let (status, started) = send(
+        &round.t.app,
+        "POST",
+        "/api/auth/sso/start",
+        None,
+        Some(json!({ "provider": "p0", "returnTo": "app", "origin": ORIGIN })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{started}");
+    let redirect = round
+        .idp
+        .approve(started["authorizeUrl"].as_str().unwrap(), lea());
+
+    let (status, location) = round.follow(&redirect).await;
+
+    assert_eq!(status, StatusCode::SEE_OTHER);
+    assert!(location.starts_with("kroma://sso?flow="), "{location}");
+    let code = location.split("code=").nth(1).unwrap();
+    let (_, result) = send(
+        &round.t.app,
+        "POST",
+        "/api/auth/sso/finish",
+        None,
+        Some(json!({ "flowId": started["flowId"], "secret": started["secret"], "code": code })),
+    )
+    .await;
+    assert_eq!(result["status"], json!("signedIn"));
+}
+
+#[tokio::test]
+async fn an_app_cannot_begin_a_flow_under_an_origin_the_operator_did_not_name() {
+    let t = test_app_served_at(Some("https://kroma.example"), None);
+
+    let (status, refused) = send(
+        &t.app,
+        "POST",
+        "/api/auth/sso/start",
+        None,
+        Some(json!({ "provider": "p0", "returnTo": "app", "origin": "https://evil.example" })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(refused["code"], json!("sso.originInvalid"));
 }

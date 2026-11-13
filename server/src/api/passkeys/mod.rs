@@ -20,7 +20,7 @@ use crate::state::SharedState;
 
 /// Refuses while an admin has turned passkey sign-in off.
 pub(super) fn require_passkeys_on(state: &SharedState, loc: &str) -> Result<(), Response> {
-    if crate::api::sso::sign_in_config(state).passkeys {
+    if crate::api::sso::sign_in_config(state).passkeys() {
         Ok(())
     } else {
         Err(crate::api::error::lerr(

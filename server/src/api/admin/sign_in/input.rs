@@ -1,16 +1,28 @@
-//! A provider as the admin page sends it, and the stored form it becomes.
+//! The sign-in methods as the admin page sends them, and the stored form they
+//! become.
 
 use std::collections::HashSet;
 
 use serde::Deserialize;
 
 use crate::model::Permission;
-use crate::services::settings::{NewPeople, Provider};
+use crate::services::settings::{
+    BuiltIn, Method, NewPeople, Provider, ENV_PROVIDER_ID, PASSKEY_ID, PASSWORD_ID,
+};
 use crate::services::sso::discovery::is_callable;
 
 const MAX_LABEL_CHARS: usize = 40;
 const MAX_FIELD_CHARS: usize = 512;
 const MAX_LIST_ENTRIES: usize = 32;
+
+/// One method as the admin page sends it, in the order it should be offered.
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum MethodInput {
+    Password { enabled: bool },
+    Passkey { enabled: bool },
+    Oidc(Box<ProviderInput>),
+}
 
 /// A provider as the admin page sends it. A blank `id` is a new provider, and
 /// a blank or absent `clientSecret` keeps the stored one.
@@ -20,6 +32,8 @@ pub struct ProviderInput {
     #[serde(default)]
     pub id: String,
     pub label: String,
+    #[serde(default)]
+    pub preset: String,
     #[serde(default)]
     pub icon: String,
     #[serde(default)]
@@ -58,6 +72,10 @@ fn is_scope_token(scope: &str) -> bool {
         .all(|b| matches!(b, 0x21 | 0x23..=0x5b | 0x5d..=0x7e))
 }
 
+fn is_reserved_id(id: &str) -> bool {
+    id == PASSWORD_ID || id == PASSKEY_ID
+}
+
 fn is_icon_name(icon: &str) -> bool {
     icon.len() <= 32
         && icon
@@ -67,8 +85,12 @@ fn is_icon_name(icon: &str) -> bool {
 
 /// The stored form of one input, or the message key that says what is wrong
 /// with it.
-pub(super) fn provider_from(input: ProviderInput, from_env: bool) -> Result<Provider, &'static str> {
+fn provider_from(input: ProviderInput, from_env: bool) -> Result<Provider, &'static str> {
     let defaults = Provider::default();
+    let preset = input.preset.trim().to_string();
+    if is_reserved_id(input.id.trim()) || !is_icon_name(&preset) {
+        return Err("sso.providerInvalid");
+    }
     let label = input.label.trim().to_string();
     if label.is_empty() || label.chars().count() > MAX_LABEL_CHARS {
         return Err("sso.labelInvalid");
@@ -101,7 +123,9 @@ pub(super) fn provider_from(input: ProviderInput, from_env: bool) -> Result<Prov
     Ok(Provider {
         id: input.id.trim().to_string(),
         label,
+        preset,
         icon,
+        image: String::new(),
         issuer,
         client_id: input.client_id.trim().to_string(),
         client_secret: input.client_secret.unwrap_or_default(),
@@ -122,14 +146,20 @@ pub(super) fn provider_from(input: ProviderInput, from_env: bool) -> Result<Prov
 }
 
 /// New providers arrive with a blank id and get the lowest free `p{n}`.
-pub(super) fn with_ids(mut providers: Vec<Provider>) -> Vec<Provider> {
-    let mut taken: HashSet<String> = providers
+fn with_ids(mut methods: Vec<Method>) -> Vec<Method> {
+    let mut taken: HashSet<String> = methods
         .iter()
-        .map(|p| p.id.clone())
+        .map(|m| m.id().to_string())
         .filter(|id| !id.is_empty())
         .collect();
     let mut next = 0usize;
-    for provider in providers.iter_mut().filter(|p| p.id.is_empty()) {
+    for method in &mut methods {
+        let Method::Oidc(provider) = method else {
+            continue;
+        };
+        if !provider.id.is_empty() {
+            continue;
+        }
         provider.id = loop {
             let candidate = format!("p{next}");
             next += 1;
@@ -138,5 +168,27 @@ pub(super) fn with_ids(mut providers: Vec<Provider>) -> Vec<Provider> {
             }
         };
     }
-    providers
+    methods
+}
+
+/// The stored methods for what the admin page sent, in its order, or the
+/// message key that says which provider is wrong. `has_env` says whether the
+/// environment names a provider, whose connection is then not the page's to
+/// set.
+pub(super) fn methods_from(
+    inputs: Vec<MethodInput>,
+    has_env: bool,
+) -> Result<Vec<Method>, &'static str> {
+    let methods = inputs
+        .into_iter()
+        .map(|input| match input {
+            MethodInput::Password { enabled } => Ok(Method::Password(BuiltIn { enabled })),
+            MethodInput::Passkey { enabled } => Ok(Method::Passkey(BuiltIn { enabled })),
+            MethodInput::Oidc(provider) => {
+                let from_env = has_env && provider.id.trim() == ENV_PROVIDER_ID;
+                provider_from(*provider, from_env).map(|p| Method::Oidc(Box::new(p)))
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(with_ids(methods))
 }

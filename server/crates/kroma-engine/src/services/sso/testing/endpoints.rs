@@ -37,7 +37,7 @@ pub(super) async fn discovery(State(shared): State<Arc<Shared>>) -> Json<Value> 
         "userinfo_endpoint": format!("{issuer}/userinfo"),
         "scopes_supported": book.scopes,
         "token_endpoint_auth_methods_supported": methods,
-        "id_token_signing_alg_values_supported": ["RS256"],
+        "id_token_signing_alg_values_supported": book.algorithms,
     }))
 }
 

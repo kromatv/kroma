@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use serde_json::{json, Value};
 
 use super::{raw, test_app, TestApp};
-use crate::services::settings::{self, Provider, SignIn};
+use crate::services::settings::{self, Method, Provider, SignIn};
 use crate::services::sso::testing::FakeProvider;
 
 /// The origin the browser in these tests is on.
@@ -36,16 +36,10 @@ pub fn at_provider(configure: impl FnOnce(&mut Provider)) -> ProviderRound {
     let mut provider = idp.settings("p0");
     configure(&mut provider);
     let fingerprint = provider.fingerprint();
-    settings::set_sign_in(
-        &t.state.settings,
-        &t.state.db,
-        None,
-        SignIn {
-            providers: vec![provider],
-            ..SignIn::default()
-        },
-    )
-    .expect("store the provider");
+    let mut config = SignIn::default();
+    config.methods.push(Method::Oidc(Box::new(provider)));
+    settings::set_sign_in(&t.state.settings, &t.state.db, None, config)
+        .expect("store the provider");
     settings::mark_provider_tested(&t.state.settings, &t.state.db, "p0", &fingerprint);
     ProviderRound { t, idp }
 }

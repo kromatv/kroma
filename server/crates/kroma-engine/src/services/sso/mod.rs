@@ -7,7 +7,9 @@ pub mod exchange;
 pub mod flows;
 pub mod id_token;
 pub mod identify;
+pub mod images;
 pub mod keys;
+pub mod logos;
 pub mod person;
 
 #[cfg(any(test, feature = "testing"))]

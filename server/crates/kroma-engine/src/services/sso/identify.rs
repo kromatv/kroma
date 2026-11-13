@@ -33,6 +33,7 @@ impl DiscoveryError {
             DiscoveryError::Unreadable => "discovery.unreadable",
             DiscoveryError::IssuerMismatch(_) => "discovery.issuerMismatch",
             DiscoveryError::Endpoint(_) => "discovery.endpoint",
+            DiscoveryError::Algorithm => "discovery.algorithm",
             DiscoveryError::NoKeys => "discovery.noKeys",
         }
     }

@@ -125,20 +125,8 @@ pub async fn auth_config(State(state): State<SharedState>) -> Response {
     };
     let relay = crate::services::settings::email_delivery(&state.settings)
         == crate::services::settings::EmailDelivery::Relay;
-    let sign_in = crate::api::sso::sign_in_config(&state);
     Json(crate::api::dto::AuthConfig {
-        sign_in: crate::api::dto::SignInMethods {
-            password: sign_in.password,
-            passkeys: sign_in.passkeys,
-            providers: sign_in
-                .live()
-                .map(|p| crate::api::dto::SignInButton {
-                    id: p.id.clone(),
-                    label: p.label.clone(),
-                    icon: p.icon.clone(),
-                })
-                .collect(),
-        },
+        sign_in: crate::api::sso::gate_methods(&state),
         public_user_list: state.settings.get_bool("publicUserList", false),
         has_accounts,
         server_name: crate::services::settings::server_name(&state.settings),

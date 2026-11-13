@@ -4,22 +4,27 @@ use super::AuthResult;
 use crate::model::{LibraryScope, Permission};
 use crate::services::settings::NewPeople;
 
-/// The ways into this server, as the sign-in screen needs them.
+/// The ways into this server, in the order the sign-in screen offers them.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignInMethods {
-    pub password: bool,
-    pub passkeys: bool,
-    pub providers: Vec<SignInButton>,
+    pub methods: Vec<GateMethod>,
 }
 
-/// One "Continue with …" button.
+/// One way in, as the sign-in screen draws it. `kind` says which control it
+/// is: the password form, the passkey button, or a provider's button, which
+/// alone carries a label, an icon and maybe a picture.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SignInButton {
+pub struct GateMethod {
     pub id: String,
-    pub label: String,
-    pub icon: String,
+    pub kind: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
 }
 
 /// What a start hands the client: the two things it keeps, and where to send
@@ -77,8 +82,14 @@ pub struct IdentityView {
 #[serde(rename_all = "camelCase")]
 pub struct ProviderView {
     pub id: String,
+    pub enabled: bool,
     pub label: String,
+    pub preset: String,
     pub icon: String,
+    /// Where the button's picture is fetched, when it has one.
+    pub image: Option<String>,
+    /// Whether that picture is one an admin uploaded.
+    pub has_image: bool,
     pub issuer: String,
     pub client_id: String,
     pub has_secret: bool,
@@ -88,18 +99,24 @@ pub struct ProviderView {
     pub new_people: NewPeople,
     pub permissions: Vec<Permission>,
     pub libraries: LibraryScope,
-    pub enabled: bool,
     pub tested: bool,
     pub live: bool,
     pub from_env: bool,
 }
 
+/// One sign-in method as the admin page lists it.
+#[derive(Serialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum MethodView {
+    Password { id: &'static str, enabled: bool },
+    Passkey { id: &'static str, enabled: bool },
+    Oidc(Box<ProviderView>),
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignInAdmin {
-    pub password: bool,
-    pub passkeys: bool,
-    pub providers: Vec<ProviderView>,
+    pub methods: Vec<MethodView>,
     /// What to register at a provider as this server's redirect URI.
     pub redirect_uris: Vec<String>,
 }

@@ -2,7 +2,7 @@ use serde_json::{json, Value};
 
 use super::*;
 use crate::services::sso::discovery::discover;
-use crate::services::sso::flows::{Flows, Intent, NewFlow};
+use crate::services::sso::flows::{Flows, Intent, NewFlow, ReturnTo};
 use crate::services::sso::testing::{FakeProvider, Forgery};
 
 const REDIRECT: &str = "https://kroma.test/api/auth/sso/callback";
@@ -48,6 +48,7 @@ impl Round {
                     fingerprint: self.provider.fingerprint(),
                     intent: Intent::SignIn { invite: None },
                     origin: "https://kroma.test".into(),
+                    return_to: ReturnTo::Web,
                     redirect_uri: REDIRECT.into(),
                 },
                 "10.0.0.1",
@@ -314,6 +315,24 @@ fn every_failure_has_a_code_and_the_providers_word_is_stripped_to_plain_text() {
         IdentifyError::Discovery(DiscoveryError::IssuerMismatch("x".into())).code(),
         "discovery.issuerMismatch"
     );
+    assert_eq!(
+        IdentifyError::Discovery(DiscoveryError::Algorithm).code(),
+        "discovery.algorithm"
+    );
     assert_eq!(provider_said("access_denied"), "provider.access_denied");
     assert_eq!(provider_said("a b\"c"), "provider.abc");
+}
+
+#[test]
+fn a_provider_that_signs_with_nothing_this_server_accepts_is_refused_when_read() {
+    let hmac_only = FakeProvider::start();
+    hmac_only.advertise_algorithms(&["HS256"]);
+    let mixed = FakeProvider::start();
+    mixed.advertise_algorithms(&["HS256", "ES256"]);
+    let silent = FakeProvider::start();
+    silent.advertise_algorithms(&[]);
+
+    assert_eq!(discover(&hmac_only.issuer), Err(DiscoveryError::Algorithm));
+    assert!(discover(&mixed.issuer).is_ok());
+    assert!(discover(&silent.issuer).is_ok());
 }
