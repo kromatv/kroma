@@ -346,7 +346,7 @@ jobs:
           # Not fatal: a mint failure should fall back to the stored secret
           # rather than fail a release outright.
           if ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
-             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles"; then
+             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles" --only ios; then
             echo "minted=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::minting failed; falling back to the stored profile secret"
