@@ -80,6 +80,7 @@ Run the server:
 
 - [Hardware transcoding](hardware-transcoding.md)
 - [HTTPS, reverse proxies and remote access](network.md)
+- [Sign in with your identity provider](single-sign-on.md)
 - [Updates and backups](updates.md)
 - [Configuration reference](configuration.md)
 - [Troubleshooting](troubleshooting.md)

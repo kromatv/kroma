@@ -68,6 +68,19 @@ managed there and the variables are ignored.
 | `KROMA_TRUSTED_PROXIES` | none | Addresses or IPv4 ranges of reverse proxies whose `X-Forwarded-For` header KROMA believes. See [reverse proxies](network.md#behind-your-own-reverse-proxy). |
 | `KROMA_ALLOWED_ORIGINS` | none | Extra web addresses whose pages may use the API. See [another address](network.md#serve-the-web-app-from-another-address). |
 
+## Sign-in provider
+
+These name one OpenID Connect provider, for a setup kept in a compose file.
+See [Sign in with your identity provider](single-sign-on.md). Providers added
+in **Admin → Sign-in** need none of them.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `KROMA_OIDC_ISSUER` | none | The provider's issuer URL. The provider exists only when this and the client ID are both set. |
+| `KROMA_OIDC_CLIENT_ID` | none | The client ID the provider gave KROMA. |
+| `KROMA_OIDC_CLIENT_SECRET` | none | The client secret. Leave it out for a public client. |
+| `KROMA_OIDC_LABEL` | none | What the sign-in button says after "Continue with". |
+
 ## Logs
 
 | Variable | Default | What it does |

@@ -3,15 +3,15 @@
 
 # Requirement index
 
-540 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+552 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
 - **ACCT-1** (SHIPPED) - An **account** is a person. It has credentials, its own watch state, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-2** (SHIPPED) - The first account created at first-run is the **owner**, an account <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, created by invitation <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, admitted by an admin: <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-4** (SHIPPED) - There are no profiles under an account, and there will not be. A person <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**, a <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-6** (SHIPPED) - A successful authentication mints a **session**: a long-lived, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-7** (SHIPPED) - **Sessions do not expire on a clock.** A session lives until it is <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-8** (SHIPPED) - A session is per device, not per account, so one can be revoked without <sub>[README.md](accounts/README.md)</sub>
@@ -81,6 +81,18 @@
 - **ACCT-72** (AGREED) - The device list shows the app version each device last used <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-73** (AGREED) - A device whose app is older than the oldest version its server serves <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-74** (AGREED) - A device that never sent its app version shows "version unknown", never <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-75** (SHIPPED) - An admin may add sign-in providers that speak OpenID Connect. Each one <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-76** (SHIPPED) - A provider's button appears only after an admin's test sign-in passed <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-77** (SHIPPED) - A provider sign-in ends in an ordinary session (ACCT-6), like a <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-78** (SHIPPED) - An account is tied to a person at a provider by that provider's own <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-79** (SHIPPED) - A person the provider vouches for and the server has never seen gets <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-80** (SHIPPED) - A provider may require a group. A person outside it is refused at every <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-81** (SHIPPED) - An admin who declines a join request stops that person asking again, <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-82** (SHIPPED) - An admin may turn password sign-in and passkey sign-in off. Passwords <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-83** (SHIPPED) - An account that can change server settings keeps its password <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-84** (SHIPPED) - An account cannot remove its last way to sign in. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-85** (SHIPPED) - No claim from a provider grants a permission or a library. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-86** (AGREED) - The phone and desktop apps offer the provider buttons, through the <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
