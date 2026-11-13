@@ -18,9 +18,9 @@ name: Release Apple TV beta channel
 # iOS and tvOS as two platforms of one listing (a universal purchase), which is
 # why both sign as `tv.kroma.app` - see clients/tv-native/app.config.ts.
 #
-# Stable tags or an explicit manual run, never an untagged build: a TestFlight
-# number is spent for good, and a build that burned one would also mail every
-# tester about it.
+# The .ipa is built and validated here, never uploaded: a TestFlight number is
+# spent for good, and every upload mails the testers. beta.yml and deploy.yml
+# ship it through _distribute.yml.
 #
 # `expo prebuild` runs under NODE, never under the bun runtime: bun's runtime
 # corrupts the template extraction (NUL-padded files). bun stays the package
@@ -42,7 +42,7 @@ on:
         type: string
         required: true
       channel:
-        description: 'stable | candidate | none. Only `stable` reaches TestFlight.'
+        description: 'stable | candidate | none.'
         type: string
         required: true
       build:
@@ -346,26 +346,6 @@ jobs:
           IPA: out/KROMA-appletv-${{ inputs.version }}.ipa
           PLATFORM: tvos
           MODE: validate
-        run: .github/scripts/upload-to-testflight.sh
-
-      - name: Upload to TestFlight
-        # A CANDIDATE from a push to main goes to TestFlight too, where only the
-        # internal group picks it up: the public-link testers get a build when
-        # it is added to their group by hand.
-        # `targets` says what to BUILD; it must not also mean "ship it".
-        # A dispatch with targets=mobile, run to time the archive, pushed a
-        # real build to TestFlight and burned a build number - distribution
-        # was riding on a selector that only ever meant scope. It now needs
-        # the explicit `distribute` input, so a build-only run stays one.
-        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || (inputs.channel == 'candidate' && github.event_name == 'push') || github.event.inputs.distribute == 'true') }}
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          IPA: out/KROMA-appletv-${{ inputs.version }}.ipa
-          PLATFORM: tvos
         run: .github/scripts/upload-to-testflight.sh
 
       - name: Upload .ipa artifact

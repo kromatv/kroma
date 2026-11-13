@@ -1,9 +1,9 @@
 name: Release mobile beta channels
 
-# The phone/tablet client: a signed bundle for Google Play (uploaded by
-# _release-play.yml) and an .ipa for TestFlight. TestFlight takes stable tags or
-# an explicit manual run - never an untagged build, which would burn a TestFlight
-# build number and spam every tester.
+# The phone/tablet client: a signed bundle for Google Play and an .ipa for
+# TestFlight. Neither is uploaded here: beta.yml and deploy.yml ship them
+# through _distribute.yml, so a push spends no TestFlight build number and
+# mails no tester.
 #
 # Both legs stamp the release version and a monotonic build number INTO
 # app.json before `expo prebuild`, because that is the only moment the values
@@ -35,7 +35,7 @@ on:
         type: string
         required: true
       channel:
-        description: 'stable | candidate | none. Only `stable` reaches the beta channels.'
+        description: 'stable | candidate | none.'
         type: string
         required: true
       build:
@@ -467,24 +467,6 @@ jobs:
           IPA: out/KROMA-mobile-${{ inputs.version }}.ipa
           PLATFORM: ios
           MODE: validate
-        run: .github/scripts/upload-to-testflight.sh
-
-      - name: Upload to TestFlight
-        # See the Apple TV job: a candidate from a push reaches the internal group.
-        # `targets` says what to BUILD; it must not also mean "ship it".
-        # A dispatch with targets=mobile, run to time the archive, pushed a
-        # real build to TestFlight and burned a build number - distribution
-        # was riding on a selector that only ever meant scope. It now needs
-        # the explicit `distribute` input, so a build-only run stays one.
-        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || (inputs.channel == 'candidate' && github.event_name == 'push') || github.event.inputs.distribute == 'true') }}
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          IPA: out/KROMA-mobile-${{ inputs.version }}.ipa
-          PLATFORM: ios
         run: .github/scripts/upload-to-testflight.sh
 
       - name: Upload .ipa artifact
