@@ -147,3 +147,36 @@ async fn a_private_address_claims_a_fresh_server() {
 
     assert_eq!(status, StatusCode::OK);
 }
+
+#[tokio::test]
+async fn a_device_on_the_servers_own_ipv6_link_claims_a_fresh_server() {
+    let t = test_app();
+    empty_of_accounts(&t);
+
+    let (status, _) = register_from(
+        &t.app,
+        "fe80::1c2d:3e4f:5a6b:7c8d",
+        "first@test.dev",
+        "first",
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_public_ipv6_address_cannot_claim_a_fresh_server() {
+    let t = test_app();
+    empty_of_accounts(&t);
+
+    let (status, _) = register_from(
+        &t.app,
+        "2001:4860:4860::8888",
+        "intruder@test.dev",
+        "intruder",
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert!(crate::db::list_users(&t.state.db).expect("the roster").is_empty());
+}

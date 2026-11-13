@@ -18,10 +18,15 @@ pub fn same_network(client: IpAddr, public_v4: Option<Ipv4Addr>, own_v6: &[Ipv6A
     }
     match client.to_canonical() {
         IpAddr::V4(v4) => public_v4 == Some(v4),
-        IpAddr::V6(v6) => own_v6
-            .iter()
-            .any(|own| own.segments()[..4] == v6.segments()[..4]),
+        IpAddr::V6(v6) => shares_a_prefix(v6, own_v6),
     }
+}
+
+/// Whether `client` is inside the /64 of one of `own_v6`.
+pub fn shares_a_prefix(client: Ipv6Addr, own_v6: &[Ipv6Addr]) -> bool {
+    own_v6
+        .iter()
+        .any(|own| own.segments()[..4] == client.segments()[..4])
 }
 
 // fc00::/7; stable std has no predicate for it.
