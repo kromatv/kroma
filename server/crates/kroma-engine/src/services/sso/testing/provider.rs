@@ -10,7 +10,7 @@ use axum::Router;
 use serde_json::{Map, Value};
 
 use super::endpoints::{discovery, keys, token, user_info};
-use super::signing::KEY_ID;
+use super::signing::{rsa_key, stranger_rsa_key, KEY_ID};
 use crate::services::auth::random_token;
 use crate::services::settings::Provider;
 
@@ -113,8 +113,11 @@ fn serve(listener: std::net::TcpListener, shared: Arc<Shared>) {
 
 impl FakeProvider {
     /// Serves on a free local port, on a thread of its own, so a test that
-    /// blocks on curl is still answered.
+    /// blocks on curl is still answered. Its signing key exists before it
+    /// listens: generating one is slow in an unoptimised build, and a request
+    /// that waited on it would outlast the caller's timeout.
     pub fn start() -> FakeProvider {
+        rsa_key();
         let (provider, listener) = FakeProvider::bound(0);
         let shared = provider.shared.clone();
         std::thread::spawn(move || serve(listener, shared));
@@ -189,6 +192,9 @@ impl FakeProvider {
     }
 
     pub fn forge(&self, forgery: Forgery) {
+        if forgery == Forgery::StrangerKey {
+            stranger_rsa_key();
+        }
         self.book().forgery = forgery;
     }
 
