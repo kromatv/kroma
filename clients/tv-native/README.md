@@ -3,21 +3,28 @@
 The Apple TV / Android TV / Samsung Tizen / LG webOS shell. It is platform glue: the
 10-foot experience itself lives in [`@kromatv/tv`](../../packages/tv).
 
-Samsung and LG TVs each come from one package. `metro.config.ts` calls `withTV`
-once, and Metro learns the platform of every dependency that declares one. A
-third TV is then one more dependency and its config plugin's entry in
-`app.json`, with no change to the Metro config.
+Every TV platform is set up by one entry in `app.json`, the config plugin of
+[`@kromatv/react-native-tv`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tv).
+It hands `@react-native-tvos/config-tv` the `tvos` block for Apple TV and
+Android TV, gives each TV platform package among the dependencies the shared
+props and its own block (`tizen`, `webos`), and teaches Metro their platforms,
+so `metro.config.ts` names no TV. A third TV is then one more dependency.
+
+The same package adds `run:tizen` and `run:webos` to Expo CLI, through the
+patch in `patches/@expo%2Fcli@<version>.patch`. After an Expo upgrade that
+changes `@expo/cli`, run `bunx rn-tv expo-patch` here and commit what it names.
 
 ## Samsung Tizen
 
 Tizen runs this same app through
-[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen),
-which reads its config plugin's props in `app.json`. From this directory:
+[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen),
+which reads the shared props and the `tizen` block in `app.json`. From this
+directory:
 
 ```bash
-bunx expo start                                 # then shift+m, Run on TV
+bunx expo start                                 # then t, or shift+t to pick a TV
+bunx expo run:tizen --device <tv-ip>            # a TV in Developer Mode
 bunx rn-tizen simulator run --instance <name>   # the aarch64 simulator
-bunx rn-tizen run --device <tv-ip>              # a TV in Developer Mode
 ```
 
 Use `bunx`, not `npx`: npm resolves `rn-tizen` from the workspace root, where
@@ -36,13 +43,14 @@ local `voice-search` module and Siri do the same job.
 ## LG webOS
 
 webOS runs this same app through
-[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos),
-which reads its config plugin's props in `app.json`. From this directory:
+[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos),
+which reads the shared props and the `webos` block in `app.json`. From this
+directory:
 
 ```bash
+bunx expo run:webos --device <tv-ip>            # a TV in Developer Mode
 bunx rn-webos simulator run --instance <name>   # the aarch64 simulator
 bunx rn-webos package                           # webos/<id>_<version>_arm.ipk
-bunx rn-webos run --device <tv-ip>              # a TV in Developer Mode
 ```
 
 No local module has a webOS implementation yet: `server-discovery` finds

@@ -30,6 +30,7 @@
     "@kromatv/lan-beacon": "workspace:*",
     "@kromatv/media3-ffmpeg": "workspace:*",
     "@kromatv/react-native-tizen": "0.1.0-alpha.5",
+    "@kromatv/react-native-tv": "0.1.0-alpha.0",
     "@kromatv/react-native-webos": "0.1.0-alpha.3",
     "@kromatv/tv": "workspace:*",
     "@kromatv/ui": "workspace:*",
