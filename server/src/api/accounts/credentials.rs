@@ -59,6 +59,10 @@ pub async fn register(
         Err(resp) => return resp,
     };
 
+    if count > 0 && !crate::api::sso::sign_in_config(&state).password {
+        return lerr(loc, StatusCode::FORBIDDEN, "sso.passwordOff");
+    }
+
     if count > 0 {
         let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
             return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
@@ -197,7 +201,19 @@ pub async fn login(
         return login_failed(&ip, loc);
     }
     loginguard::reset(&ip);
+    if !password_admits(&state, &user) {
+        return lerr(loc, StatusCode::FORBIDDEN, "sso.passwordOff");
+    }
     issue_tokens(state, user, device_hints(&headers)).await
+}
+
+// Whoever can change the sign-in settings keeps their password whatever those
+// settings say, so a provider that is down never locks the server.
+fn password_admits(state: &SharedState, user: &crate::model::User) -> bool {
+    crate::api::sso::sign_in_config(state).password
+        || user
+            .permissions
+            .contains(&crate::model::Permission::SettingsManage)
 }
 
 fn login_failed(ip: &str, loc: &str) -> Response {

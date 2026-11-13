@@ -11,6 +11,7 @@
 mod backup;
 mod diagnostics;
 mod jobs;
+mod join_requests;
 mod libraries;
 mod llm;
 mod logs;
@@ -20,6 +21,7 @@ mod notifications;
 mod pipeline;
 mod reports;
 mod settings;
+mod sign_in;
 mod stats;
 mod storage;
 pub mod store;
@@ -65,6 +67,8 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .route("/sessions/{id}/stop", post(terminate_session))
         .route("/metrics", get(metrics))
         .merge(users::routes())
+        .merge(join_requests::routes())
+        .merge(sign_in::routes())
         .merge(reports::routes())
         .merge(libraries::routes())
         .merge(settings::routes())

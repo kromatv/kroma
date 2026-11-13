@@ -26,6 +26,9 @@ pub async fn register_start(
     headers: HeaderMap,
     AuthUser(user): AuthUser,
 ) -> Response {
+    if let Err(resp) = super::require_passkeys_on(&state, loc) {
+        return resp;
+    }
     let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,

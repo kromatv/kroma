@@ -108,6 +108,13 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: 'settings',
       },
       {
+        to: '/admin/sign-in',
+        labelKey: 'admin.navSignIn',
+        cap: 'settings.manage',
+        icon: 'login-2',
+        keywords: 'sso oidc openid connect authentik keycloak connexion',
+      },
+      {
         to: '/admin/network',
         labelKey: 'admin.navNetwork',
         cap: 'settings.manage',

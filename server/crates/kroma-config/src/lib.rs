@@ -77,6 +77,35 @@ pub struct Config {
     /// How this server was installed. Reported with the anonymous statistics
     /// and nowhere else.
     pub install: Install,
+    /// A sign-in provider the environment names, for an operator who keeps the
+    /// setup in a compose file. `None` unless both the issuer and the client id
+    /// are set.
+    pub sign_in_provider: Option<ProviderEnv>,
+}
+
+/// The `KROMA_OIDC_*` variables: an OpenID Connect provider's address and this
+/// server's registration there.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ProviderEnv {
+    pub issuer: String,
+    pub client_id: String,
+    /// Empty for a public client.
+    pub client_secret: String,
+    /// What the sign-in button says. Empty leaves the default.
+    pub label: String,
+}
+
+impl ProviderEnv {
+    fn from_env() -> Option<Self> {
+        let read = |key: &str| env::var(key).unwrap_or_default().trim().to_string();
+        let provider = ProviderEnv {
+            issuer: read("KROMA_OIDC_ISSUER"),
+            client_id: read("KROMA_OIDC_CLIENT_ID"),
+            client_secret: read("KROMA_OIDC_CLIENT_SECRET"),
+            label: read("KROMA_OIDC_LABEL"),
+        };
+        (!provider.issuer.is_empty() && !provider.client_id.is_empty()).then_some(provider)
+    }
 }
 
 /// How a server got onto the box, as its packaging declares in `KROMA_INSTALL`.
@@ -257,6 +286,7 @@ impl Config {
             allowed_origins,
             public_ip_url,
             install,
+            sign_in_provider: ProviderEnv::from_env(),
         }
     }
 
@@ -408,6 +438,10 @@ mod tests {
         "KROMA_HTTPS_REDIRECT",
         "KROMA_TLS_SANS",
         "KROMA_INSTALL",
+        "KROMA_OIDC_ISSUER",
+        "KROMA_OIDC_CLIENT_ID",
+        "KROMA_OIDC_CLIENT_SECRET",
+        "KROMA_OIDC_LABEL",
         "KROMA_PUBLIC_IP_URL",
     ];
 
@@ -439,6 +473,30 @@ mod tests {
         clear_env();
         assert_eq!(Config::default().install, Install::Unknown);
         assert_eq!(Install::default().as_str(), "unknown");
+    }
+
+    #[test]
+    fn a_sign_in_provider_needs_both_its_issuer_and_its_client_id() {
+        let _g = env_guard();
+        clear_env();
+        assert_eq!(Config::from_env().sign_in_provider, None);
+
+        env::set_var("KROMA_OIDC_ISSUER", " https://id.example/ ");
+        assert_eq!(Config::from_env().sign_in_provider, None);
+
+        env::set_var("KROMA_OIDC_CLIENT_ID", "kroma");
+        env::set_var("KROMA_OIDC_LABEL", "Home");
+        assert_eq!(
+            Config::from_env().sign_in_provider,
+            Some(ProviderEnv {
+                issuer: "https://id.example/".into(),
+                client_id: "kroma".into(),
+                client_secret: String::new(),
+                label: "Home".into(),
+            })
+        );
+
+        clear_env();
     }
 
     #[test]

@@ -7,6 +7,7 @@ mod admin;
 mod auth;
 mod pairing;
 mod search;
+mod sso;
 
 pub use admin::{
     AdminLibrary, AdminOverview, AdminUsers, CacheInfo, Health, HistoryBucket, HistoryStats,
@@ -18,4 +19,8 @@ pub use auth::{
     SessionResult, VerificationCreated,
 };
 pub use pairing::{PairingPoll, QuickConnectInit};
+pub use sso::{
+    Discovered, FlowResult, FlowStarted, IdentityView, JoinRequestView, JoinRequests, ProviderView,
+    SignInAdmin, SignInButton, SignInMethods, TestReportView,
+};
 pub use search::{PersonDetailResponse, PersonResponse, SearchHit, SearchResponse};

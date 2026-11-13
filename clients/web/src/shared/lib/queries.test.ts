@@ -119,6 +119,7 @@ describe('the plain reads', () => {
     ['user.missing', () => userQueries.missing(), c.requests.missing, { mine: true }],
     ['user.sessions', () => userQueries.sessions(), c.accounts.sessions],
     ['user.passkeys', () => userQueries.passkeys(), c.accounts.passkeys.list],
+    ['user.identities', () => userQueries.identities(), c.sso.identities],
     ['user.notifications', () => userQueries.notifications(), c.notifications.list],
     ['user.notificationPrefs', () => userQueries.notificationPrefs(), c.notifications.prefs],
     ['user.pushKey', () => userQueries.pushKey(), c.notifications.push.key],

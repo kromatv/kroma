@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { InviteToken, PasskeyId, SessionId, UserId } from './ids';
+import { ProviderId } from '../sso/ids';
 
 /** The known capability keys (mirror of the Rust `Permission` enum). */
 export const Permission = z.enum([
@@ -45,6 +46,29 @@ export function hasPermission(user: Pick<User, 'permissions'>, permission: Permi
 export const PublicUser = User.pick({ id: true, username: true, avatarUrl: true, hasPin: true });
 export type PublicUser = z.infer<typeof PublicUser>;
 
+/** One "Continue with …" button on the login gate. */
+export const SignInButton = z.object({
+  id: ProviderId,
+  label: z.string(),
+  icon: z.string(),
+});
+export type SignInButton = z.infer<typeof SignInButton>;
+
+/** The ways into a server: its two built-in methods and its live providers. */
+export const SignInMethods = z.object({
+  password: z.boolean(),
+  passkeys: z.boolean(),
+  providers: z.array(SignInButton),
+});
+export type SignInMethods = z.infer<typeof SignInMethods>;
+
+/** What a server that predates `signIn` offers. */
+export const DEFAULT_SIGN_IN_METHODS: SignInMethods = {
+  password: true,
+  passkeys: true,
+  providers: [],
+};
+
 /** Public login-gate config. */
 export const AuthConfig = z.object({
   publicUserList: z.boolean(),
@@ -53,6 +77,8 @@ export const AuthConfig = z.object({
   /** Where the activation page posts the owner's yes: present only while
    * account email goes through the kroma.tv relay. */
   mailRelayUrl: z.string().optional(),
+  /** Absent from a server too old to know providers. */
+  signIn: SignInMethods.optional(),
 });
 export type AuthConfig = z.infer<typeof AuthConfig>;
 

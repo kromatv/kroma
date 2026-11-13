@@ -22,6 +22,7 @@ export const KnownNotificationEvent = z.enum([
   'download.failed',
   'system.job.failed',
   'system.disk.low',
+  'system.join.requested',
   'system.test',
   'custom',
 ]);

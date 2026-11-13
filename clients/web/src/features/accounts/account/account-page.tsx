@@ -19,6 +19,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
+import { IdentitiesCard } from '#web/features/accounts/account/identities-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
 import { PinCard } from '#web/features/accounts/account/pin-card';
 import { NONE, PreferencesCard } from '#web/features/accounts/account/preferences-card';
@@ -176,6 +177,7 @@ function ProfileEditor() {
           <SecurityCard />
           <PinCard />
           <PasskeysCard />
+          <IdentitiesCard />
           <SessionsCard />
         </Section.Root>
       </Box>
