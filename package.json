@@ -92,6 +92,7 @@
     "check:fix": "oxlint --ignore-path .gitignore --fix . && oxlint -c .oxlintrc.sonar.json --ignore-path .gitignore --fix . && oxfmt .",
     "server": "bun server/preflight.ts && cd server && cargo run",
     "server:watch": "bun server/preflight.ts && bun server/dev.ts",
+    "server:preset": "bun server/preset.ts",
     "server:build": "cd server && cargo build --release",
     "prepare": "(git config core.hooksPath .githooks || true) && bun run gen:types",
     "hooks:install": "git config core.hooksPath .githooks",

@@ -1,0 +1,10 @@
+{
+  "name": "Yahoo",
+  "issuer": "https://api.login.yahoo.com",
+  "console": "https://developer.yahoo.com/apps/",
+  "docs": "https://developer.yahoo.com/sign-in-with-yahoo/",
+  "sources": {
+    "mark": "Iconify `logos:yahoo`, via https://api.iconify.design/logos/yahoo.svg, read 2026-11-13 (SVG Logos, CC0 1.0)",
+    "issuer": "https://api.login.yahoo.com/.well-known/openid-configuration, read 2026-11-13: RS256, with the profile and email scopes"
+  }
+}

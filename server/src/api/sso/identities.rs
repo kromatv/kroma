@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use super::finish::FlowKeys;
-use super::{now, provider_name, sign_in_config};
+use super::{now, provider_name, providers_at, sign_in_config};
 use crate::api::dto::IdentityView;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
@@ -12,7 +12,7 @@ use crate::api::util::query;
 use crate::db;
 use crate::i18n::ReqLocale;
 use crate::model::{Permission, User};
-use crate::services::settings::SignIn;
+use crate::services::settings::{Provider, SignIn};
 use crate::services::sso::admit::{self, Outcome};
 use crate::services::sso::flows::Collected;
 use crate::state::SharedState;
@@ -25,6 +25,9 @@ pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) ->
             rows.into_iter()
                 .map(|row| IdentityView {
                     provider: provider_name(&config, &row.issuer),
+                    provider_id: providers_at(&config, &row.issuer)
+                        .next()
+                        .map(|p| p.id.clone()),
                     id: row.id,
                     name: row.label,
                     created_at: row.created_at,
@@ -38,13 +41,17 @@ pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) ->
 }
 
 /// Whether `means` still lets `user` sign in: a password counts while
-/// passwords are on, or always for whoever can change that setting, and a
-/// passkey counts while passkeys are on.
-pub(crate) fn has_a_way_in(config: &SignIn, user: &User, means: db::SignInMeans) -> bool {
+/// passwords are on, or always for whoever can change that setting, a passkey
+/// counts while passkeys are on, and an identity counts while a provider at
+/// its issuer is live.
+pub(crate) fn has_a_way_in(config: &SignIn, user: &User, means: &db::SignInMeans) -> bool {
     let password_works = config.password() || user.permissions.contains(&Permission::SettingsManage);
+    let signs_in = |identity: &db::LinkedIdentity| {
+        providers_at(config, &identity.issuer).any(Provider::is_live)
+    };
     (means.password && password_works)
         || (config.passkeys() && means.passkeys > 0)
-        || means.identities > 0
+        || means.identities.iter().any(signs_in)
 }
 
 /// `DELETE /api/auth/me/identities/:id` (Bearer) → 204. `409` when it is the
@@ -58,8 +65,8 @@ pub async fn unlink(
     let config = sign_in_config(&state);
     let removed = query(&state.db, move |pool| {
         let mut means = db::sign_in_means(&pool, &user.id)?;
-        means.identities -= 1;
-        if !has_a_way_in(&config, &user, means) {
+        means.identities.retain(|identity| identity.id != id);
+        if !has_a_way_in(&config, &user, &means) {
             return Ok(None);
         }
         db::unlink_identity(&pool, &user.id, &id).map(Some)
@@ -101,11 +108,11 @@ pub async fn claim(
     })
     .await;
     match linked {
-        Ok(Outcome::Linked) => {
+        Ok(true) => {
             state.sso.flows.close(&flow.id);
             StatusCode::NO_CONTENT.into_response()
         }
-        Ok(_) => lerr(loc, StatusCode::CONFLICT, "sso.linkedElsewhere"),
+        Ok(false) => lerr(loc, StatusCode::CONFLICT, "sso.linkedElsewhere"),
         Err(resp) => resp,
     }
 }

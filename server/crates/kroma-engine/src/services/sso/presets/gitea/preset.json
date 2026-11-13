@@ -1,0 +1,9 @@
+{
+  "name": "Gitea",
+  "issuer": "https://gitea.example.com",
+  "docs": "https://docs.gitea.com/development/oauth2-provider/",
+  "sources": {
+    "mark": "selfh.st/icons `gitea` (CC BY 4.0), via https://api.iconify.design/selfhst/gitea.svg, read 2026-11-13",
+    "issuer": "https://docs.gitea.com/development/oauth2-provider/, read 2026-11-13: the instance's own address"
+  }
+}

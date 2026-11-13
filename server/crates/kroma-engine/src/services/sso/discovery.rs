@@ -13,6 +13,7 @@ pub const PURPOSE: &str = "sign-in";
 const MAX_TIME_SECS: u32 = 10;
 const MAX_DOCUMENT_BYTES: u64 = 512 * 1024;
 const REMEMBERED_SECS: i64 = 3600;
+const RETRY_SECS: i64 = 30;
 // A token naming an unknown key triggers a refetch, and anyone can send one.
 const KEY_REFETCH_SECS: i64 = 60;
 
@@ -57,7 +58,9 @@ pub fn is_callable(url: &str) -> bool {
     web_target(url).is_some_and(|target| target.https || target.is_local())
 }
 
-fn same_issuer(typed: &str, published: &str) -> bool {
+/// Whether the issuer an operator typed is the one a provider publishes. The
+/// two may differ by a trailing slash.
+pub fn same_issuer(typed: &str, published: &str) -> bool {
     typed.trim().trim_end_matches('/') == published.trim_end_matches('/')
 }
 
@@ -126,10 +129,21 @@ struct Known {
     keys_read_at: i64,
 }
 
+enum Reading {
+    Out,
+    Failed(DiscoveryError),
+}
+
+struct Attempt {
+    at: i64,
+    reading: Reading,
+}
+
 /// The providers this server has read, by the issuer the operator typed.
 #[derive(Default)]
 pub struct Directory {
     known: Mutex<HashMap<String, Known>>,
+    attempts: Mutex<HashMap<String, Attempt>>,
 }
 
 impl Directory {
@@ -143,21 +157,57 @@ impl Directory {
         }
     }
 
-    /// The provider's document and keys, read again once an hour. Blocks on the
-    /// network when they are not remembered.
-    pub fn lookup(&self, issuer: &str, now: i64) -> Result<(Metadata, KeySet), DiscoveryError> {
-        if let Some(known) = self.remembered(issuer) {
-            if now - known.read_at < REMEMBERED_SECS {
-                return Ok((known.metadata, known.keys));
+    fn begin_reading(&self, issuer: &str, now: i64) -> Result<(), Option<DiscoveryError>> {
+        let Ok(mut attempts) = self.attempts.lock() else {
+            return Ok(());
+        };
+        match attempts.get(issuer).filter(|last| now - last.at < RETRY_SECS) {
+            Some(Attempt { reading: Reading::Failed(failed), .. }) => Err(Some(failed.clone())),
+            Some(Attempt { reading: Reading::Out, .. }) => Err(None),
+            None => {
+                let reading = Reading::Out;
+                attempts.insert(issuer.to_string(), Attempt { at: now, reading });
+                Ok(())
             }
         }
-        self.read(issuer, now)
+    }
+
+    /// The provider's document and keys, read again once an hour. Blocks on the
+    /// network when they are not remembered, one caller at a time: while that
+    /// read is out the others get what was remembered, and a read that failed
+    /// is the answer for the next half minute.
+    pub fn lookup(&self, issuer: &str, now: i64) -> Result<(Metadata, KeySet), DiscoveryError> {
+        let known = self.remembered(issuer);
+        if let Some(known) = known.as_ref().filter(|known| now - known.read_at < REMEMBERED_SECS) {
+            return Ok((known.metadata.clone(), known.keys.clone()));
+        }
+        match self.begin_reading(issuer, now) {
+            Ok(()) => self.read(issuer, now),
+            Err(Some(failed)) => Err(failed),
+            Err(None) => known
+                .map(|known| (known.metadata, known.keys))
+                .ok_or_else(|| DiscoveryError::Unreachable("already being read".to_string())),
+        }
     }
 
     /// Reads the provider afresh, whatever is remembered.
     pub fn read(&self, issuer: &str, now: i64) -> Result<(Metadata, KeySet), DiscoveryError> {
-        let metadata = discover(issuer)?;
-        let keys = fetch_keys(&metadata)?;
+        let read = discover(issuer).and_then(|metadata| {
+            let keys = fetch_keys(&metadata)?;
+            Ok((metadata, keys))
+        });
+        if let Ok(mut attempts) = self.attempts.lock() {
+            match &read {
+                Ok(_) => {
+                    attempts.remove(issuer);
+                }
+                Err(failed) => {
+                    let reading = Reading::Failed(failed.clone());
+                    attempts.insert(issuer.to_string(), Attempt { at: now, reading });
+                }
+            }
+        }
+        let (metadata, keys) = read?;
         self.remember(
             issuer,
             Known {
@@ -185,3 +235,6 @@ impl Directory {
         Some(known.keys)
     }
 }
+
+#[cfg(test)]
+mod tests;

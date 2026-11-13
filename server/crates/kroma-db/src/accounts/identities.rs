@@ -32,12 +32,18 @@ pub struct ProviderIdentity<'a> {
     pub label: &'a str,
 }
 
-/// How many ways an account has left to prove itself.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LinkedIdentity {
+    pub id: String,
+    pub issuer: String,
+}
+
+/// The ways an account has left to prove itself.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignInMeans {
     pub password: bool,
     pub passkeys: i64,
-    pub identities: i64,
+    pub identities: Vec<LinkedIdentity>,
 }
 
 fn identity_id() -> String {
@@ -116,19 +122,26 @@ pub fn unlink_identity(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
 
 pub fn sign_in_means(pool: &Pool, user_id: &str) -> Result<SignInMeans> {
     let conn = pool.get()?;
-    Ok(conn.query_row(
+    let (password, passkeys) = conn.query_row(
         "SELECT (SELECT password_hash <> '' FROM users WHERE id = ?1),\
-         (SELECT COUNT(*) FROM passkeys WHERE user_id = ?1),\
-         (SELECT COUNT(*) FROM identities WHERE user_id = ?1)",
+         (SELECT COUNT(*) FROM passkeys WHERE user_id = ?1)",
         params![user_id],
-        |r| {
-            Ok(SignInMeans {
-                password: r.get::<_, Option<bool>>(0)?.unwrap_or(false),
-                passkeys: r.get(1)?,
-                identities: r.get(2)?,
+        |r| Ok((r.get::<_, Option<bool>>(0)?.unwrap_or(false), r.get(1)?)),
+    )?;
+    let mut stmt = conn.prepare("SELECT id,issuer FROM identities WHERE user_id = ?1")?;
+    let identities = stmt
+        .query_map(params![user_id], |r| {
+            Ok(LinkedIdentity {
+                id: r.get(0)?,
+                issuer: r.get(1)?,
             })
-        },
-    )?)
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(SignInMeans {
+        password,
+        passkeys,
+        identities,
+    })
 }
 
 /// An account that has no password and signs in as `identity`, written with its
@@ -270,14 +283,10 @@ mod tests {
             .expect("a new account");
 
         assert_eq!(user.libraries, films);
-        assert_eq!(
-            sign_in_means(&p, &user.id).unwrap(),
-            SignInMeans {
-                password: false,
-                passkeys: 0,
-                identities: 1
-            }
-        );
+        let means = sign_in_means(&p, &user.id).unwrap();
+        assert_eq!((means.password, means.passkeys), (false, 0));
+        assert_eq!(means.identities.len(), 1);
+        assert_eq!(means.identities[0].issuer, ISSUER);
         let found = identity_user(&p, ISSUER, "sub-lea").unwrap().unwrap();
         assert_eq!(found.libraries, films);
     }
@@ -314,7 +323,8 @@ mod tests {
         let means = sign_in_means(&p, &user.id).unwrap();
 
         assert!(means.password);
-        assert_eq!((means.passkeys, means.identities), (0, 0));
+        assert_eq!(means.passkeys, 0);
+        assert!(means.identities.is_empty());
     }
 
     #[test]

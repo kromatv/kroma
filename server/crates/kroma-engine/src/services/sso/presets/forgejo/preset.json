@@ -1,0 +1,9 @@
+{
+  "name": "Forgejo",
+  "issuer": "https://forgejo.example.com",
+  "docs": "https://forgejo.org/docs/latest/user/authentication/oauth2-provider/",
+  "sources": {
+    "mark": "selfh.st/icons `forgejo` (CC BY 4.0), via https://api.iconify.design/selfhst/forgejo.svg, read 2026-11-13",
+    "issuer": "https://forgejo.org/docs/latest/user/authentication/oauth2-provider/, read 2026-11-13: the instance's own address"
+  }
+}

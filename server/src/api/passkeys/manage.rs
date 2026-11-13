@@ -43,7 +43,7 @@ pub async fn remove(
     let removed = query(&state.db, move |pool| {
         let mut means = db::sign_in_means(&pool, &user.id)?;
         means.passkeys -= 1;
-        if !crate::api::sso::has_a_way_in(&config, &user, means) {
+        if !crate::api::sso::has_a_way_in(&config, &user, &means) {
             return Ok(None);
         }
         db::delete_passkey(&pool, &user.id, &id).map(Some)

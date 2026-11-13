@@ -10,7 +10,6 @@ use super::keys::{Algorithm, KeySet, SignatureError};
 
 const MAX_TOKEN_BYTES: usize = 64 * 1024;
 const MAX_SUBJECT_BYTES: usize = 255;
-/// How far this server's clock and the provider's may disagree.
 pub const CLOCK_SKEW_SECS: i64 = 60;
 
 /// What a token must say to be this sign-in's.

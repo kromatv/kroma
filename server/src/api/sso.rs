@@ -9,7 +9,8 @@ use axum::Router;
 use kroma_http::address::web_target;
 
 use crate::api::dto::{GateMethod, SignInMethods};
-use crate::services::settings::{self, Method, SignIn, PASSKEY_ID, PASSWORD_ID};
+use crate::services::settings::{self, Method, Provider, SignIn, PASSKEY_ID, PASSWORD_ID};
+use crate::services::sso::discovery::same_issuer;
 use crate::state::SharedState;
 
 mod begin;
@@ -19,7 +20,7 @@ mod identities;
 mod image;
 
 pub(crate) use begin::{begin, FlowClient};
-pub(crate) use image::method_image;
+pub(crate) use image::{method_brand, method_image, preset_views};
 pub(crate) use identities::has_a_way_in;
 
 /// The callback's path under an origin, which is what a provider is given as
@@ -37,8 +38,7 @@ pub fn routes() -> Router<SharedState> {
             get(identities::list).post(begin::link),
         )
         .route("/auth/me/identities/{id}", delete(identities::unlink))
-        .route("/auth/methods/{id}/image", get(image::serve))
-        .route("/auth/logos/{preset}", get(image::logo))
+        .route("/auth/logos/{preset}/{file}", get(image::logo))
 }
 
 pub(crate) fn sign_in_config(state: &SharedState) -> SignIn {
@@ -54,6 +54,7 @@ pub(crate) fn gate_methods(state: &SharedState) -> SignInMethods {
         label: None,
         icon: None,
         image: None,
+        brand: None,
     };
     let methods = sign_in_config(state)
         .methods
@@ -67,6 +68,7 @@ pub(crate) fn gate_methods(state: &SharedState) -> SignInMethods {
                 label: Some(provider.label.clone()),
                 icon: Some(provider.icon.clone()),
                 image: method_image(provider),
+                brand: method_brand(provider),
             }),
         })
         .collect();
@@ -99,12 +101,21 @@ pub(crate) fn request_origin(state: &SharedState, headers: &HeaderMap) -> Option
     accepted_origin(state, origin)
 }
 
-/// The name a provider goes by where an issuer is all that was stored.
-pub(crate) fn provider_name(config: &SignIn, issuer: &str) -> String {
-    let same = |typed: &str| typed.trim().trim_end_matches('/') == issuer.trim_end_matches('/');
+/// The providers the operator pointed at `issuer`, which is all an identity
+/// stores of where it came from.
+pub(crate) fn providers_at<'a>(
+    config: &'a SignIn,
+    issuer: &'a str,
+) -> impl Iterator<Item = &'a Provider> {
     config
         .providers()
-        .find(|p| same(&p.issuer))
+        .filter(move |p| same_issuer(&p.issuer, issuer))
+}
+
+/// The name a provider goes by where an issuer is all that was stored.
+pub(crate) fn provider_name(config: &SignIn, issuer: &str) -> String {
+    providers_at(config, issuer)
+        .next()
         .map(|p| p.label.clone())
         .filter(|label| !label.is_empty())
         .or_else(|| web_target(issuer).map(|target| target.host))

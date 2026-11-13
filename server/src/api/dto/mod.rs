@@ -20,7 +20,8 @@ pub use auth::{
 };
 pub use pairing::{PairingPoll, QuickConnectInit};
 pub use sso::{
-    Discovered, FlowResult, FlowStarted, GateMethod, IdentityView, JoinRequestView, JoinRequests,
-    MethodView, ProviderView, SignInAdmin, SignInMethods, TestReportView,
+    BrandView, Discovered, FlowResult, FlowStarted, GateMethod, IdentityView, JoinRequestView,
+    JoinRequests, LookView, MethodView, PresetView, ProviderView, SignInAdmin, SignInMethods,
+    TestReportView,
 };
 pub use search::{PersonDetailResponse, PersonResponse, SearchHit, SearchResponse};

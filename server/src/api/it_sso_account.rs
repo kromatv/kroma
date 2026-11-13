@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use crate::api::test_support::{at_provider, get, seed_session, send, ProviderRound};
 use crate::db;
 use crate::model::Permission;
-use crate::services::settings::NewPeople;
+use crate::services::settings::{self, NewPeople, SignIn};
 
 fn lea() -> Value {
     json!({ "sub": "sub-lea", "preferred_username": "lea", "email": "lea@id.test" })
@@ -41,6 +41,7 @@ async fn an_account_links_a_provider_and_then_signs_in_with_it() {
 
     assert_eq!(linked, json!({ "status": "linked" }));
     assert_eq!(listed[0]["provider"], json!("Home"));
+    assert_eq!(listed[0]["providerId"], json!("p0"));
     assert_eq!(listed[0]["name"], json!("lea@id.test"));
     assert_eq!(signed_in["status"], json!("signedIn"));
     assert_eq!(signed_in["user"]["id"], json!(user_id));
@@ -55,6 +56,37 @@ async fn linking_needs_a_session() {
         .await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn a_link_flow_someone_else_went_through_links_nothing_until_its_starter_collects_it() {
+    let round = at_provider(|_| {});
+    let (_, starter) = member(&round, "a@test.dev", "a");
+    let (status, started) = round
+        .begin(
+            "/api/auth/me/identities",
+            Some(&starter),
+            json!({ "provider": "p0" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{started}");
+
+    let returned = round.through(&started, lea()).await;
+    let without_the_code = json!({ "flowId": returned.flow_id, "secret": returned.secret });
+    let (pending, _) = send(
+        &round.t.app,
+        "POST",
+        "/api/auth/sso/finish",
+        None,
+        Some(without_the_code),
+    )
+    .await;
+    let listed = identities(&round, &starter).await;
+    let signed_in = round.sign_in(lea()).await;
+
+    assert_eq!(pending, StatusCode::NOT_FOUND);
+    assert_eq!(listed, json!([]));
+    assert_eq!(signed_in, json!({ "status": "requested" }));
 }
 
 #[tokio::test]
@@ -197,6 +229,36 @@ async fn an_account_cannot_remove_its_last_way_in() {
     .await;
 
     assert_eq!(with_passkey, StatusCode::NO_CONTENT);
+    assert_eq!(last_passkey, StatusCode::CONFLICT);
+    assert_eq!(body["code"], json!("sso.lastWayIn"));
+}
+
+#[tokio::test]
+async fn an_identity_at_a_provider_the_server_no_longer_has_is_no_way_in() {
+    let round = at_provider(|p| p.new_people = NewPeople::Create);
+    let created = round.sign_in(lea()).await;
+    let token = created["token"].as_str().unwrap();
+    let user_id = created["user"]["id"].as_str().unwrap();
+    db::insert_passkey(&round.t.state.db, "pk1", user_id, "Phone", "{}").unwrap();
+    settings::set_sign_in(
+        &round.t.state.settings,
+        &round.t.state.db,
+        None,
+        SignIn::default(),
+    )
+    .unwrap();
+
+    let listed = identities(&round, token).await;
+    let (last_passkey, body) = send(
+        &round.t.app,
+        "DELETE",
+        "/api/auth/me/passkeys/pk1",
+        Some(token),
+        None,
+    )
+    .await;
+
+    assert_eq!(listed[0]["providerId"], Value::Null);
     assert_eq!(last_passkey, StatusCode::CONFLICT);
     assert_eq!(body["code"], json!("sso.lastWayIn"));
 }

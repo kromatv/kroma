@@ -9,7 +9,7 @@ use crate::api::test_support::{
 };
 use crate::db;
 use crate::model::Permission;
-use crate::services::settings::NewPeople;
+use crate::services::settings::{self, Method, NewPeople};
 use crate::services::sso::testing::Forgery;
 
 fn lea() -> Value {
@@ -218,6 +218,32 @@ async fn a_person_outside_the_required_group_is_refused() {
 
     assert_eq!(result, json!({ "status": "refused", "reason": "group" }));
     assert_eq!(db::user_count(&round.t.state.db).unwrap(), 1);
+}
+
+#[tokio::test]
+async fn a_provider_turned_off_while_a_person_is_at_it_lets_nobody_in() {
+    let round = creates_accounts();
+    let (status, started) = round
+        .begin("/api/auth/sso/start", None, json!({ "provider": "p0" }))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{started}");
+    let state = &round.t.state;
+    let mut config = settings::sign_in(&state.settings, None);
+    for method in &mut config.methods {
+        if let Method::Oidc(provider) = method {
+            provider.enabled = false;
+        }
+    }
+    settings::set_sign_in(&state.settings, &state.db, None, config).unwrap();
+
+    let returned = round.through(&started, lea()).await;
+    let (_, result) = round.finish(&returned).await;
+
+    assert_eq!(
+        result,
+        json!({ "status": "failed", "reason": "provider.changed" })
+    );
+    assert_eq!(db::user_count(&state.db).unwrap(), 1);
 }
 
 #[tokio::test]

@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 
 use kroma_config::ProviderEnv;
+use kroma_http::address::web_target;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -77,8 +78,6 @@ impl Default for SignIn {
 }
 
 impl SignIn {
-    /// The list with exactly one password and one passkey method: a second of
-    /// either is dropped, and a missing one comes back at the front, on.
     fn normalised(mut self) -> SignIn {
         let (mut password, mut passkey) = (false, false);
         self.methods.retain(|method| match method {
@@ -165,6 +164,9 @@ pub fn sign_in(settings: &Settings, env: Option<&ProviderEnv>) -> SignIn {
         provider.client_secret = env.client_secret.clone();
         if !env.label.is_empty() {
             provider.label = env.label.clone();
+        } else if provider.label.is_empty() {
+            provider.label =
+                web_target(&env.issuer).map_or_else(|| env.issuer.clone(), |issuer| issuer.host);
         }
         provider.from_env = true;
     }
@@ -173,8 +175,8 @@ pub fn sign_in(settings: &Settings, env: Option<&ProviderEnv>) -> SignIn {
 
 /// Saves `incoming` over the stored configuration. A provider that arrives with
 /// a blank secret keeps the one stored under its id, and every provider keeps
-/// the test it passed and the image it was given: none of the three travels
-/// to the client, so none can come back from it.
+/// the test it passed: neither travels to the client, so neither can come
+/// back from it.
 pub fn set_sign_in(
     settings: &Settings,
     pool: &Pool,
@@ -205,7 +207,6 @@ pub fn set_sign_in(
             }
         }
         provider.tested = previous.map(|p| p.tested.clone()).unwrap_or_default();
-        provider.image = previous.map(|p| p.image.clone()).unwrap_or_default();
     }
     let mut ids: Vec<&str> = incoming.methods.iter().map(Method::id).collect();
     ids.sort_unstable();
@@ -246,13 +247,5 @@ pub fn mark_provider_tested(settings: &Settings, pool: &Pool, id: &str, fingerpr
         if provider.fingerprint() == fingerprint {
             provider.tested = fingerprint.to_string();
         }
-    });
-}
-
-/// Records the image an admin gave a provider's button, or with a blank
-/// `image` that they took it away.
-pub fn set_provider_image(settings: &Settings, pool: &Pool, id: &str, image: &str) {
-    update_provider(settings, pool, id, |provider| {
-        provider.image = image.to_string();
     });
 }

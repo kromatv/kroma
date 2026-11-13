@@ -61,7 +61,8 @@ A provider identity is the pair (issuer, subject). Each sign-in ends one of four
    provider button beside the password form. The account takes the invitation's
    permissions and is linked to the identity. Invitations work exactly as today.
 3. **The identity is unknown.** What happens is the provider's **New people** setting:
-   - **Ask me first**, the default. The server files a join request and tells the
+   - **Invitation only**, the default. The person is turned away unless case 2 applies.
+   - **Ask me first.** The server files a join request and tells the
      person it was sent. Accounts holding `users.manage` get a notification, and
      Admin → Users shows the request with the name and email the provider gave.
      Approving opens the invitation form (name, permissions, libraries) and creates the
@@ -69,7 +70,6 @@ A provider identity is the pair (issuer, subject). Each sign-in ends one of four
      it. The person signs in again after approval and is in.
    - **Create their account.** The account is created at once with the permissions
      and libraries the admin picked in this setting.
-   - **Invitation only.** The person is turned away unless case 2 applies.
 4. **The identity is unknown and the person already has a KROMA account.** The screen
    that says so offers "I already have an account". They sign in once with their
    password or passkey, and the identity is linked to that account. Account settings
@@ -125,12 +125,20 @@ One provider can also come from the environment (`KROMA_OIDC_ISSUER`,
 keep their setup in a compose file. It is live without a test, and Admin edits who it
 lets in but not its connection.
 
-A server takes up to eight providers. Each picks a **preset** (Keycloak, Authentik,
-Microsoft Entra ID, Google, Okta, Auth0, Authelia, Pocket ID, or none), which gives the
-button that provider's logo and the form an example of its address. A preset changes
-nothing about how the provider is spoken to. An admin can upload a picture of their own
-in the logo's place: an SVG, PNG, JPEG or WebP of 256 KiB at most, kept as the bytes
-sent and served under a policy that runs nothing in it.
+A server takes up to eight providers. Each picks a **preset** or none. A preset is a
+provider the server knows by name: it fills the form with what that provider starts from
+(its name, the shape of its address, the claim its groups are in), links to the page
+where the provider has an application made and to its guide, and gives the button that
+provider's mark and look. A preset changes nothing about how the provider is spoken to.
+Each is a folder of the server's source, a manifest and its marks, so adding one touches
+no list: `server/crates/kroma-engine/src/services/sso/presets/README.md` says how. The look belongs to the preset: the
+server holds it beside the mark, and nobody sets one. Google's and Microsoft's buttons
+follow the guidelines each publishes, with a dark and a light form. A provider that
+publishes a brand colour and a mark for dark grounds gets the one under the other. Any
+other preset, and a provider with none, has the screen's own button, with its mark on a
+white tile or an icon the admin picks from a short list.
+Nobody uploads a picture: the marks ship with the server, which serves them under a
+policy that runs nothing in them.
 
 ### One list of methods
 
@@ -161,7 +169,9 @@ on carries the code and not the secret, so a proxy log or a browser history hold
 nothing that redeems a session. And whoever started a flow holds the secret and not the
 code: an attacker who starts one and sends the provider's link to a victim gets nothing
 when the victim signs in, because the code went to the victim's browser. An earlier
-draft let the starter collect by polling, which is exactly that attack.
+draft let the starter collect by polling, which is exactly that attack. A link to an
+account is written when the flow is collected and not when the provider answers, so
+it falls under the same rule.
 
 ### Security rules
 
@@ -281,8 +291,8 @@ already configured, with a page that asks which made-up person to sign in as.
 - The database gains two tables: the (issuer, subject) links, and the join requests
   with the blocked identities. Changing a provider's issuer orphans the links to it,
   with no warning today.
-- ACCT-3 ("never self-signup") is reworded. With "Ask me first" an admin still
-  admits every person. With "Create their account" the provider's access policy and
+- ACCT-3 ("never self-signup") is reworded. With "Invitation only", the default,
+  nothing changes. With "Ask me first" an admin still admits every person. With "Create their account" the provider's access policy and
   the required group stand in for the invitation.
 
 ## Alternatives
@@ -299,7 +309,8 @@ official apps do not offer it.
 
 **Invitation only, as the one rule.** The first draft of this RFC. It is safe, and it
 makes the operator invite by hand everyone the provider already knows, then explain why
-the button refused them. It stays available as a setting.
+the button refused them. It is the default, and the two other settings are one click
+away for an operator who wants the provider to bring people in.
 
 **Create an account for anyone the provider lets through, by default.** What most
 self-hosted apps do. It is safe only when the operator restricted the application at
@@ -331,5 +342,12 @@ The owner decides these in review.
 5. **More real providers.** Pocket ID, Authelia, Entra ID and Synology SSO Server each
    need one run before the guide names them as tested.
 6. **A phone.** The phone flow needs one run on iOS and one on Android.
-7. **Bundled logos.** The provider marks come from Simple Icons, whose data is CC0. The
-   marks belong to their owners. Whether to ship them is the owner's call.
+7. **Bundled logos.** Each preset's `preset.json` says where its mark was read. Google's,
+   Microsoft's, Keycloak's, authentik's and Authelia's are their owners' own files. The
+   others come from icon sets that follow the owner: SVG Logos (CC0), selfh.st/icons
+   (CC BY 4.0), theSVG (MIT) and Simple Icons (CC0). The marks belong to their owners.
+   Whether to ship them is the owner's call.
+8. **Untested presets.** Only Keycloak and Authentik were run against KROMA. Every other
+   preset's address was read from the provider's documentation or its live discovery
+   document, and Synology's from neither. A preset is a starting point, and the test
+   sign-in is what takes a provider live.

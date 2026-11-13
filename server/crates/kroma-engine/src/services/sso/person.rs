@@ -68,15 +68,21 @@ impl Person {
 
     /// The name a new account starts with: the provider's username (the part
     /// before the `@` when it is an address), else the person's name, else the
-    /// start of their email.
+    /// start of their email. Never blank.
     pub fn suggested_username(&self) -> String {
-        let local = |address: &str| address.split('@').next().unwrap_or(address).to_string();
+        let local = |address: &str| {
+            address
+                .split('@')
+                .map(str::trim)
+                .find(|part| !part.is_empty())
+                .map(str::to_string)
+        };
         let suggested = self
             .username
             .as_deref()
-            .map(local)
+            .and_then(local)
             .or_else(|| self.name.clone())
-            .or_else(|| self.email.as_deref().map(local))
+            .or_else(|| self.email.as_deref().and_then(local))
             .unwrap_or_else(|| "member".to_string());
         suggested.chars().take(MAX_USERNAME_CHARS).collect()
     }
@@ -181,6 +187,15 @@ mod tests {
         assert_eq!(from_name.suggested_username(), "Léa Martin");
         assert_eq!(from_email.suggested_username(), "lea.m");
         assert_eq!(long.suggested_username().chars().count(), 40);
+    }
+
+    #[test]
+    fn a_username_that_starts_with_an_at_sign_never_suggests_a_blank_name() {
+        let handle = person(json!({ "preferred_username": "@lea" }));
+        let bare = person(json!({ "preferred_username": "@", "email": "l@id.test" }));
+
+        assert_eq!(handle.suggested_username(), "lea");
+        assert_eq!(bare.suggested_username(), "l");
     }
 
     #[test]

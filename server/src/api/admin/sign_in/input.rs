@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 use crate::model::Permission;
 use crate::services::settings::{
-    BuiltIn, Method, NewPeople, Provider, ENV_PROVIDER_ID, PASSKEY_ID, PASSWORD_ID,
+    BuiltIn, Method, NewPeople, Provider, SignIn, ENV_PROVIDER_ID, PASSKEY_ID, PASSWORD_ID,
 };
 use crate::services::sso::discovery::is_callable;
 
@@ -83,8 +83,6 @@ fn is_icon_name(icon: &str) -> bool {
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
 }
 
-/// The stored form of one input, or the message key that says what is wrong
-/// with it.
 fn provider_from(input: ProviderInput, from_env: bool) -> Result<Provider, &'static str> {
     let defaults = Provider::default();
     let preset = input.preset.trim().to_string();
@@ -125,7 +123,6 @@ fn provider_from(input: ProviderInput, from_env: bool) -> Result<Provider, &'sta
         label,
         preset,
         icon,
-        image: String::new(),
         issuer,
         client_id: input.client_id.trim().to_string(),
         client_secret: input.client_secret.unwrap_or_default(),
@@ -145,10 +142,10 @@ fn provider_from(input: ProviderInput, from_env: bool) -> Result<Provider, &'sta
     })
 }
 
-/// New providers arrive with a blank id and get the lowest free `p{n}`.
-fn with_ids(mut methods: Vec<Method>) -> Vec<Method> {
+fn with_ids(mut methods: Vec<Method>, stored: &SignIn) -> Vec<Method> {
     let mut taken: HashSet<String> = methods
         .iter()
+        .chain(&stored.methods)
         .map(|m| m.id().to_string())
         .filter(|id| !id.is_empty())
         .collect();
@@ -173,11 +170,12 @@ fn with_ids(mut methods: Vec<Method>) -> Vec<Method> {
 
 /// The stored methods for what the admin page sent, in its order, or the
 /// message key that says which provider is wrong. `has_env` says whether the
-/// environment names a provider, whose connection is then not the page's to
-/// set.
+/// environment names a provider, whose connection the page cannot set. A new
+/// provider gets an id neither the page nor `stored` uses.
 pub(super) fn methods_from(
     inputs: Vec<MethodInput>,
     has_env: bool,
+    stored: &SignIn,
 ) -> Result<Vec<Method>, &'static str> {
     let methods = inputs
         .into_iter()
@@ -190,5 +188,5 @@ pub(super) fn methods_from(
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(with_ids(methods))
+    Ok(with_ids(methods, stored))
 }

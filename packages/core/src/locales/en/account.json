@@ -71,6 +71,5 @@
   "account.uiLanguage": "Interface language",
   "account.uiLanguageDesc": "The language of menus and buttons.",
   "account.unknownDevice": "Unknown device",
-  "account.unsaved": "Unsaved changes",
   "account.updatePassword": "Update password"
 }

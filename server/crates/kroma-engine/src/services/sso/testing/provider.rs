@@ -12,7 +12,7 @@ use serde_json::{Map, Value};
 use super::endpoints::{discovery, keys, token, user_info};
 use super::signing::{rsa_key, stranger_rsa_key, KEY_ID};
 use crate::services::auth::random_token;
-use crate::services::settings::Provider;
+use crate::services::settings::{NewPeople, Provider};
 
 pub const CLIENT_ID: &str = "kroma";
 pub const CLIENT_SECRET: &str = "s3cret & more";
@@ -155,7 +155,8 @@ impl FakeProvider {
         self.shared.book.lock().expect("the provider's book")
     }
 
-    /// The settings entry of a provider an operator pointed at this one.
+    /// The settings entry of a provider an operator pointed at this one and
+    /// set to ask before letting a new person in.
     pub fn settings(&self, id: &str) -> Provider {
         Provider {
             id: id.to_string(),
@@ -163,6 +164,7 @@ impl FakeProvider {
             issuer: self.issuer.clone(),
             client_id: CLIENT_ID.to_string(),
             client_secret: CLIENT_SECRET.to_string(),
+            new_people: NewPeople::Ask,
             ..Provider::default()
         }
     }

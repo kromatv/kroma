@@ -310,16 +310,15 @@ fn a_list_missing_a_built_in_method_gets_it_back_and_a_doubled_one_is_dropped() 
 }
 
 #[test]
-fn an_image_is_kept_across_saves_and_never_taken_from_the_client() {
+fn the_environments_provider_is_named_after_its_host_until_it_is_given_a_label() {
     let pool = pool();
     let settings = Settings::load(&pool);
-    let mut claimed = provider("p0");
-    claimed.image = "forged".to_string();
-    set_sign_in(&settings, &pool, None, with(vec![claimed])).unwrap();
-    assert_eq!(first_provider(&sign_in(&settings, None)).image, "");
 
-    set_provider_image(&settings, &pool, "p0", "abc123");
-    set_sign_in(&settings, &pool, None, with(vec![provider("p0")])).unwrap();
+    let unnamed = sign_in(&settings, Some(&env()));
+    let mut labelled = env();
+    labelled.label = "Home".to_string();
+    let named = sign_in(&settings, Some(&labelled));
 
-    assert_eq!(first_provider(&sign_in(&settings, None)).image, "abc123");
+    assert_eq!(first_provider(&unnamed).label, "env.test");
+    assert_eq!(first_provider(&named).label, "Home");
 }

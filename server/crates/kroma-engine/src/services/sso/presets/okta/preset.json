@@ -1,0 +1,9 @@
+{
+  "name": "Okta",
+  "issuer": "https://YOUR_DOMAIN.okta.com",
+  "console": "https://developer.okta.com/login/",
+  "docs": "https://help.okta.com/en-us/content/topics/apps/apps_app_integration_wizard_oidc.htm",
+  "sources": {
+    "mark": "SVG Logos `okta-icon` (CC0 1.0), via https://api.iconify.design/logos/okta-icon.svg, read 2026-11-13. It is the Aura of the press kit at https://www.okta.com/press-room/media-assets/, which ships lockups only."
+  }
+}

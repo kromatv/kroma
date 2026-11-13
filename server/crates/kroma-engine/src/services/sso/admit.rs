@@ -72,7 +72,10 @@ pub enum Outcome {
     /// The conversation with the provider broke down. Carries a code that
     /// names where, see [`super::identify::IdentifyError::code`].
     Failed(String),
-    Linked,
+    /// The identity is `user_id`'s once the flow is collected. Nothing is
+    /// written before that: whoever holds both halves of the flow is the one
+    /// who began it, and the person at the provider may be somebody else.
+    Linking { user_id: String, identity: Identity },
     Tested(TestReport),
 }
 
@@ -127,19 +130,19 @@ fn create(
     })
 }
 
-/// Gives `identity` to `user_id`. Linking the identity an account already
-/// holds is not an error; one that belongs to somebody else is.
-pub fn link(pool: &Pool, user_id: &str, identity: &Identity) -> Result<Outcome> {
+/// Gives `identity` to `user_id`, and says whether it is theirs now. Linking
+/// the identity an account already holds is not an error; `false` is for one
+/// that belongs to somebody else.
+pub fn link(pool: &Pool, user_id: &str, identity: &Identity) -> Result<bool> {
     let label = identity.person.label();
     let linked = db::link_identity(pool, user_id, &identity.stored(&label))?;
     let ours = linked
         || db::identity_user(pool, &identity.issuer, &identity.person.subject)?
             .is_some_and(|owner| owner.id == user_id);
-    if !ours {
-        return Ok(Outcome::Refused(Refusal::LinkedElsewhere));
+    if ours {
+        db::settle_join_request(pool, &identity.issuer, &identity.person.subject)?;
     }
-    db::settle_join_request(pool, &identity.issuer, &identity.person.subject)?;
-    Ok(Outcome::Linked)
+    Ok(ours)
 }
 
 fn sign_in(
@@ -264,7 +267,8 @@ pub fn approve(pool: &Pool, request_id: &str, approval: &Approval) -> Result<App
 }
 
 /// Decides what a verified identity gets. A test admits nobody and reports
-/// what it saw; anything else passes the provider's required groups first.
+/// what it saw; anything else passes the provider's required groups first. A
+/// link is decided here and written by [`link`] when the flow is collected.
 pub fn admit(
     pool: &Pool,
     provider: &Provider,
@@ -279,7 +283,10 @@ pub fn admit(
             admitted,
         })),
         _ if !admitted => Ok(Outcome::Refused(Refusal::Group)),
-        Intent::Link { user_id } => link(pool, user_id, &identity),
+        Intent::Link { user_id } => Ok(Outcome::Linking {
+            user_id: user_id.clone(),
+            identity,
+        }),
         Intent::SignIn { invite } => sign_in(pool, provider, identity, invite.as_deref(), now),
     }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "Keycloak",
+  "issuer": "https://auth.example.com/realms/REALM",
+  "docs": "https://www.keycloak.org/docs/latest/server_admin/index.html#_oidc_clients",
+  "brand": {
+    "fill": "#4d4d4d",
+    "ink": "#ffffff",
+    "mark": "white.svg"
+  },
+  "sources": {
+    "mark": "Keycloak's own icon.svg and icon-white.svg, untouched, https://github.com/keycloak/keycloak-misc/tree/main/logo, read 2026-11-13",
+    "brand": "The grey of the icon's own hexagon. Keycloak publishes no rule for a button.",
+    "issuer": "docs/reference/sign-in-providers.md, run against Keycloak 26.4"
+  }
+}

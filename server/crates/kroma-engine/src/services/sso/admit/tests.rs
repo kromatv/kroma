@@ -13,6 +13,7 @@ fn pool() -> TempPool {
 fn provider() -> Provider {
     Provider {
         id: "p0".into(),
+        new_people: NewPeople::Ask,
         ..Provider::default()
     }
 }
@@ -167,6 +168,19 @@ fn an_email_another_account_holds_never_creates_or_links_anything() {
 }
 
 #[test]
+fn a_provider_nobody_changed_turns_a_stranger_away() {
+    let p = pool();
+    let untouched = Provider {
+        id: "p0".into(),
+        ..Provider::default()
+    };
+
+    let outcome = admitted(&p, &untouched, lea(), &signing_in());
+
+    assert_eq!(outcome, Outcome::Waiting(Waiting::InvitationOnly, lea()));
+}
+
+#[test]
 fn an_invitation_only_provider_turns_a_stranger_away_without_filing_anything() {
     let p = pool();
     let mut closed = provider();
@@ -254,13 +268,33 @@ fn linking_gives_the_identity_to_the_account_and_drops_its_join_request() {
     admitted(&p, &provider(), lea(), &signing_in());
     let user = member(&p, "lea@test.dev", "lea");
 
-    let outcome = admitted(&p, &provider(), lea(), &Intent::Link { user_id: user.clone() });
-    let again = admitted(&p, &provider(), lea(), &Intent::Link { user_id: user.clone() });
+    let linked = link(&p, &user, &lea()).unwrap();
+    let again = link(&p, &user, &lea()).unwrap();
 
-    assert_eq!(outcome, Outcome::Linked);
-    assert_eq!(again, Outcome::Linked);
+    assert!(linked);
+    assert!(again);
     assert!(db::list_join_requests(&p, false).unwrap().is_empty());
     assert_eq!(db::list_identities(&p, &user).unwrap()[0].label, "lea@id.test");
+}
+
+#[test]
+fn a_link_flow_that_comes_back_from_the_provider_writes_nothing_yet() {
+    let p = pool();
+    let user = member(&p, "lea@test.dev", "lea");
+    let intent = Intent::Link {
+        user_id: user.clone(),
+    };
+
+    let outcome = admitted(&p, &provider(), lea(), &intent);
+
+    assert_eq!(
+        outcome,
+        Outcome::Linking {
+            user_id: user.clone(),
+            identity: lea()
+        }
+    );
+    assert!(db::list_identities(&p, &user).unwrap().is_empty());
 }
 
 #[test]
@@ -270,9 +304,9 @@ fn an_identity_that_belongs_to_someone_else_cannot_be_linked() {
     let second = member(&p, "b@test.dev", "b");
     link(&p, &first, &lea()).unwrap();
 
-    let outcome = admitted(&p, &provider(), lea(), &Intent::Link { user_id: second });
+    let linked = link(&p, &second, &lea()).unwrap();
 
-    assert_eq!(outcome, Outcome::Refused(Refusal::LinkedElsewhere));
+    assert!(!linked);
 }
 
 #[test]

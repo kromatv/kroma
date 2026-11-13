@@ -25,7 +25,6 @@ use crate::services::sso::discovery::{discover, fetch_keys};
 use crate::services::sso::flows::Intent;
 use crate::state::SharedState;
 
-mod image;
 mod input;
 
 use input::{methods_from, MethodInput};
@@ -37,13 +36,10 @@ pub fn routes() -> Router<SharedState> {
         .route("/sign-in", get(get_sign_in).put(save_sign_in))
         .route("/sign-in/discover", post(discover_provider))
         .route("/sign-in/test", post(test_provider))
-        .merge(image::routes())
 }
 
 fn provider_view(p: Provider) -> ProviderView {
     ProviderView {
-        image: sso::method_image(&p),
-        has_image: !p.image.is_empty(),
         has_secret: !p.client_secret.is_empty(),
         tested: p.is_tested(),
         live: p.is_live(),
@@ -78,9 +74,6 @@ fn method_view(method: Method) -> MethodView {
     }
 }
 
-/// The redirect URIs to register at a provider: one per origin the operator
-/// named. Empty when they named none: the redirect URI is then the callback
-/// under whatever origin the browser is on.
 fn redirect_uris(state: &SharedState) -> Vec<String> {
     crate::api::passkeys::allowed_origins(state)
         .into_iter()
@@ -101,6 +94,7 @@ pub async fn get_sign_in(
             .map(method_view)
             .collect(),
         redirect_uris: redirect_uris(&state),
+        presets: sso::preset_views(),
     })
     .into_response())
 }
@@ -129,14 +123,11 @@ pub async fn save_sign_in(
         return Err(lerr(loc, StatusCode::BAD_REQUEST, "sso.tooManyProviders"));
     }
     let env = state.config.sign_in_provider.as_ref();
-    let methods = methods_from(body.methods, env.is_some())
-        .map_err(|key| lerr(loc, StatusCode::BAD_REQUEST, key))?;
     let before = sign_in_config(&state);
+    let methods = methods_from(body.methods, env.is_some(), &before)
+        .map_err(|key| lerr(loc, StatusCode::BAD_REQUEST, key))?;
     match settings::set_sign_in(&state.settings, &state.db, env, SignIn { methods }) {
-        Ok(()) => {
-            image::drop_orphans(&state, &before).await;
-            Ok(StatusCode::NO_CONTENT.into_response())
-        }
+        Ok(()) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(SignInRefused::PasswordNeedsProvider) => {
             Err(lerr(loc, StatusCode::CONFLICT, "sso.passwordNeedsProvider"))
         }

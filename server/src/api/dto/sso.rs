@@ -11,9 +11,51 @@ pub struct SignInMethods {
     pub methods: Vec<GateMethod>,
 }
 
+/// How a provider's button is painted on one screen: its fill, its edge when
+/// the provider draws one, the ink of its label, and where the mark that sits
+/// on the fill is fetched.
+#[derive(Serialize)]
+pub struct LookView {
+    pub fill: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke: Option<String>,
+    pub ink: String,
+    pub logo: String,
+}
+
+/// A provider's button as its owner asks for it, on a dark screen and on a
+/// light one.
+#[derive(Serialize)]
+pub struct BrandView {
+    pub dark: LookView,
+    pub light: LookView,
+}
+
+/// A provider the server knows by name, as the admin page offers it: what
+/// its form starts with, where its owner has an application made (`console`)
+/// and explains how (`docs`), where its mark is fetched, and its button's
+/// look when its owner asks for one.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetView {
+    pub id: String,
+    pub name: String,
+    pub label: String,
+    pub icon: String,
+    pub issuer: String,
+    pub scopes: Vec<String>,
+    pub group_claim: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub console: Option<String>,
+    pub docs: String,
+    pub logo: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub brand: Option<BrandView>,
+}
+
 /// One way in, as the sign-in screen draws it. `kind` says which control it
 /// is: the password form, the passkey button, or a provider's button, which
-/// alone carries a label, an icon and maybe a picture.
+/// alone carries a label, an icon, and maybe a mark and a look of its own.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GateMethod {
@@ -25,6 +67,8 @@ pub struct GateMethod {
     pub icon: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub brand: Option<BrandView>,
 }
 
 /// What a start hands the client: the two things it keeps, and where to send
@@ -71,6 +115,7 @@ pub struct TestReportView {
 pub struct IdentityView {
     pub id: String,
     pub provider: String,
+    pub provider_id: Option<String>,
     pub name: String,
     pub created_at: String,
     pub last_used: Option<String>,
@@ -86,10 +131,6 @@ pub struct ProviderView {
     pub label: String,
     pub preset: String,
     pub icon: String,
-    /// Where the button's picture is fetched, when it has one.
-    pub image: Option<String>,
-    /// Whether that picture is one an admin uploaded.
-    pub has_image: bool,
     pub issuer: String,
     pub client_id: String,
     pub has_secret: bool,
@@ -119,6 +160,8 @@ pub struct SignInAdmin {
     pub methods: Vec<MethodView>,
     /// What to register at a provider as this server's redirect URI.
     pub redirect_uris: Vec<String>,
+    /// Every provider the server knows by name, by name.
+    pub presets: Vec<PresetView>,
 }
 
 /// What reading a provider's address found.

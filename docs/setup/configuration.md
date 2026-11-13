@@ -79,7 +79,7 @@ in **Admin → Sign-in** need none of them.
 | `KROMA_OIDC_ISSUER` | none | The provider's issuer URL. The provider exists only when this and the client ID are both set. |
 | `KROMA_OIDC_CLIENT_ID` | none | The client ID the provider gave KROMA. |
 | `KROMA_OIDC_CLIENT_SECRET` | none | The client secret. Leave it out for a public client. |
-| `KROMA_OIDC_LABEL` | none | What the sign-in button says after "Continue with". |
+| `KROMA_OIDC_LABEL` | the issuer's host name | What the sign-in button says after "Continue with". |
 
 ## Logs
 

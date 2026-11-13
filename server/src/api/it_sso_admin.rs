@@ -95,7 +95,7 @@ async fn a_saved_provider_is_offline_until_tested_and_its_secret_never_comes_bac
     assert_eq!(provider["tested"], json!(false));
     assert_eq!(provider["live"], json!(false));
     assert_eq!(provider["groupClaim"], json!("groups"));
-    assert_eq!(provider["newPeople"], json!("ask"));
+    assert_eq!(provider["newPeople"], json!("invite"));
     assert!(!config.to_string().contains(CLIENT_SECRET));
     assert_eq!(config["redirectUris"], json!([]));
     let (_, gate) = get(&t.app, "/api/auth/config", None).await;
@@ -444,8 +444,39 @@ async fn a_provider_cannot_take_the_id_of_a_built_in_method() {
     assert_eq!(refused["code"], json!("sso.providerInvalid"));
 }
 
-async fn image(t: &TestApp, id: &str) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
-    picture(t, &format!("/api/auth/methods/{id}/image")).await
+#[tokio::test]
+async fn the_settings_endpoint_cannot_write_the_sign_in_configuration() {
+    let t = test_app();
+    let forged = json!({ "signIn": { "methods": [{ "kind": "password", "enabled": false }] } });
+
+    let (status, written) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/settings",
+        Some(&t.token),
+        Some(forged),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(written["updated"], json!([]));
+    assert_eq!(enabled(&read(&t).await, "password"), json!(true));
+}
+
+#[tokio::test]
+async fn a_provider_added_as_another_is_removed_takes_nothing_from_it() {
+    let round = at_provider(|_| {});
+    let mut public = provider_input(&round.idp);
+    public["clientSecret"] = json!("");
+
+    let (status, _) = save(&round.t, &round.t.token, config_with(json!([public]))).await;
+    let config = read(&round.t).await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let provider = provider_of(&config);
+    assert_eq!(provider["id"], json!("p1"));
+    assert_eq!(provider["hasSecret"], json!(false));
+    assert_eq!(provider["live"], json!(false));
 }
 
 async fn picture(t: &TestApp, uri: &str) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
@@ -466,103 +497,106 @@ async fn picture(t: &TestApp, uri: &str) -> (StatusCode, axum::http::HeaderMap, 
     (status, headers, bytes.to_vec())
 }
 
-async fn upload(t: &TestApp, token: &str, id: &str, bytes: &'static [u8]) -> StatusCode {
-    use tower::ServiceExt;
-    let request = axum::http::Request::builder()
-        .method("POST")
-        .uri(format!("/api/admin/sign-in/methods/{id}/image"))
-        .header("authorization", format!("Bearer {token}"))
-        .extension(axum::extract::ConnectInfo(std::net::SocketAddr::from((
-            [127, 0, 0, 1],
-            40000,
-        ))))
-        .body(axum::body::Body::from(bytes))
-        .unwrap();
-    t.app.clone().oneshot(request).await.unwrap().status()
+fn preset_of<'a>(config: &'a Value, id: &str) -> &'a Value {
+    config["presets"]
+        .as_array()
+        .and_then(|all| all.iter().find(|p| p["id"] == id))
+        .expect("the preset")
 }
 
 #[tokio::test]
-async fn a_known_provider_wears_its_logo_and_an_unknown_one_has_no_picture() {
+async fn a_known_provider_wears_its_mark_and_an_unknown_one_has_none() {
     let round = at_provider(|p| p.preset = "keycloak".into());
 
     let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
-    let (status, headers, bytes) = picture(&round.t, "/api/auth/logos/keycloak").await;
-    let (unknown, _, _) = picture(&round.t, "/api/auth/logos/nope").await;
+    let address = gate["signIn"]["methods"][2]["image"].as_str().unwrap();
+    let (status, headers, bytes) = picture(&round.t, address).await;
+    let (unknown, _, _) = picture(&round.t, "/api/auth/logos/keycloak/nope.svg").await;
+    let (bare, _, _) = picture(&round.t, "/api/auth/logos/keycloak/mark").await;
+    let (manifest, _, _) = picture(&round.t, "/api/auth/logos/keycloak/preset.json").await;
 
-    assert_eq!(
-        gate["signIn"]["methods"][2]["image"],
-        json!("/api/auth/logos/keycloak")
-    );
+    assert!(address.starts_with("/api/auth/logos/keycloak/mark.svg?v="));
     assert_eq!(status, StatusCode::OK);
     assert_eq!(headers["content-type"], "image/svg+xml");
     assert!(headers["content-security-policy"]
         .to_str()
         .unwrap()
         .contains("default-src 'none'"));
-    assert!(bytes.starts_with(b"<svg "));
+    assert!(String::from_utf8_lossy(&bytes).contains("<svg"));
     assert_eq!(unknown, StatusCode::NOT_FOUND);
+    assert_eq!(bare, StatusCode::NOT_FOUND);
+    assert_eq!(manifest, StatusCode::NOT_FOUND);
     let plain = at_provider(|_| {});
     let (_, gate) = get(&plain.t.app, "/api/auth/config", None).await;
     assert_eq!(gate["signIn"]["methods"][2].get("image"), None);
 }
 
 #[tokio::test]
-async fn an_uploaded_picture_replaces_the_logo_until_it_is_removed() {
-    let round = at_provider(|p| p.preset = "keycloak".into());
-    let png: &[u8] = b"\x89PNG\r\n\x1a\nnot really pixels";
+async fn a_button_is_painted_the_way_its_providers_owner_asks() {
+    let round = at_provider(|p| p.preset = "google".into());
 
-    let uploaded = upload(&round.t, &round.t.token, "p0", png).await;
-    let (_, headers, bytes) = image(&round.t, "p0").await;
+    let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
     let config = read(&round.t).await;
 
-    assert_eq!(uploaded, StatusCode::NO_CONTENT);
-    assert_eq!(headers["content-type"], "image/png");
-    assert_eq!(bytes, png);
-    assert_eq!(provider_of(&config)["hasImage"], json!(true));
-    assert!(provider_of(&config)["image"]
+    let brand = &gate["signIn"]["methods"][2]["brand"];
+    assert_eq!(brand["dark"]["fill"], json!("#131314"));
+    assert_eq!(brand["dark"]["stroke"], json!("#8e918f"));
+    assert_eq!(brand["light"]["ink"], json!("#1f1f1f"));
+    assert!(brand["dark"]["logo"]
         .as_str()
         .unwrap()
-        .starts_with("/api/auth/methods/p0/image?v="));
-    assert_eq!(provider_of(&config)["live"], json!(true));
-
-    let (removed, _) = send(
-        &round.t.app,
-        "DELETE",
-        "/api/admin/sign-in/methods/p0/image",
-        Some(&round.t.token),
-        None,
-    )
-    .await;
-
-    assert_eq!(removed, StatusCode::NO_CONTENT);
-    assert_eq!(image(&round.t, "p0").await.0, StatusCode::NOT_FOUND);
-    assert_eq!(
-        provider_of(&read(&round.t).await)["image"],
-        json!("/api/auth/logos/keycloak")
-    );
+        .starts_with("/api/auth/logos/google/mark.svg?v="));
+    assert_eq!(preset_of(&config, "google")["brand"], *brand);
+    assert_eq!(preset_of(&config, "pocket-id").get("brand"), None);
+    let plain = at_provider(|_| {});
+    let (_, gate) = get(&plain.t.app, "/api/auth/config", None).await;
+    assert_eq!(gate["signIn"]["methods"][2].get("brand"), None);
 }
 
 #[tokio::test]
-async fn a_picture_takes_a_real_image_from_whoever_manages_settings() {
-    let round = at_provider(|_| {});
-    let (_, member) = seed_session(&round.t.state, "m@test.dev", "m", &[Permission::Playback]);
-    let png: &[u8] = b"\x89PNG\r\n\x1a\nnot really pixels";
+async fn a_brand_with_a_white_mark_wears_it_on_its_colour() {
+    let round = at_provider(|p| p.preset = "authentik".into());
 
-    assert_eq!(
-        upload(&round.t, &member, "p0", png).await,
-        StatusCode::FORBIDDEN
-    );
-    assert_eq!(
-        upload(&round.t, &round.t.token, "p0", b"<html>hello</html>").await,
-        StatusCode::UNSUPPORTED_MEDIA_TYPE
-    );
-    assert_eq!(
-        upload(&round.t, &round.t.token, "p0", b"<svg><script>x</script></svg>").await,
-        StatusCode::UNSUPPORTED_MEDIA_TYPE
-    );
-    assert_eq!(
-        upload(&round.t, &round.t.token, "nope", png).await,
-        StatusCode::NOT_FOUND
-    );
-    assert_eq!(image(&round.t, "p0").await.0, StatusCode::NOT_FOUND);
+    let (_, gate) = get(&round.t.app, "/api/auth/config", None).await;
+    let look = &gate["signIn"]["methods"][2]["brand"]["dark"];
+    let (status, _, _) = picture(&round.t, look["logo"].as_str().unwrap()).await;
+
+    assert_eq!(look["fill"], json!("#fd4b2d"));
+    assert_eq!(look.get("stroke"), None);
+    assert!(look["logo"]
+        .as_str()
+        .unwrap()
+        .starts_with("/api/auth/logos/authentik/white.svg?v="));
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_preset_says_what_its_form_starts_with_and_where_to_set_it_up() {
+    let t = test_app();
+
+    let config = read(&t).await;
+
+    let google = preset_of(&config, "google");
+    assert_eq!(google["name"], json!("Google"));
+    assert_eq!(google["issuer"], json!("https://accounts.google.com"));
+    assert_eq!(google["groupClaim"], json!("groups"));
+    assert!(google["console"].as_str().unwrap().starts_with("https://console.cloud.google.com/"));
+    assert!(google["docs"].as_str().unwrap().starts_with("https://developers.google.com/"));
+    assert_eq!(preset_of(&config, "entra")["label"], json!("Microsoft"));
+    assert_eq!(preset_of(&config, "gitlab")["groupClaim"], json!("groups_direct"));
+    assert_eq!(preset_of(&config, "keycloak").get("console"), None);
+}
+
+#[tokio::test]
+async fn a_colour_sent_with_a_provider_is_not_kept() {
+    let t = test_app();
+    let idp = FakeProvider::start();
+    let mut input = provider_input(&idp);
+    input["color"] = json!("#ff00ff");
+
+    let (saved, _) = save(&t, &t.token, config_with(json!([input]))).await;
+    let config = read(&t).await;
+
+    assert_eq!(saved, StatusCode::NO_CONTENT);
+    assert_eq!(provider_of(&config).get("color"), None);
 }

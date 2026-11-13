@@ -10,11 +10,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 pub enum NewPeople {
     /// An admin approves each one.
-    #[default]
     Ask,
     /// They get an account at once, with the provider's defaults.
     Create,
     /// They are turned away unless they hold an invitation.
+    #[default]
     Invite,
 }
 
@@ -26,12 +26,9 @@ pub struct Provider {
     pub id: String,
     pub label: String,
     /// Which known provider this is (`keycloak`, `authentik`, ...), or blank.
-    /// It picks the button's logo and nothing about the connection.
+    /// It picks the button's mark and look, and nothing about the connection.
     pub preset: String,
     pub icon: String,
-    /// Names the image an admin uploaded for the button, blank when they
-    /// uploaded none. It changes with the image, so a client can cache on it.
-    pub image: String,
     pub issuer: String,
     pub client_id: String,
     pub client_secret: String,
@@ -59,14 +56,13 @@ impl Default for Provider {
             label: String::new(),
             preset: String::new(),
             icon: "key".to_string(),
-            image: String::new(),
             issuer: String::new(),
             client_id: String::new(),
             client_secret: String::new(),
             scopes: Vec::new(),
             group_claim: "groups".to_string(),
             required_groups: Vec::new(),
-            new_people: NewPeople::Ask,
+            new_people: NewPeople::Invite,
             permissions: vec![Permission::Playback],
             libraries: LibraryScope::All,
             enabled: true,

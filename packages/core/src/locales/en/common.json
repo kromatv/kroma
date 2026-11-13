@@ -25,5 +25,6 @@
   "common.save": "Save",
   "common.saved": "Saved",
   "common.saving": "Saving…",
-  "common.space": "Space"
+  "common.space": "Space",
+  "common.unsaved": "Unsaved changes"
 }

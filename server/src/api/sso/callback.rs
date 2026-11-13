@@ -10,10 +10,12 @@ use crate::i18n::{self, ReqLocale};
 use crate::model::{Audience, NotificationEvent, NotificationSpec, Permission};
 use crate::services::settings::{self, Provider};
 use crate::services::sso::admit::{admit, Outcome, Waiting};
-use crate::services::sso::flows::{Flow, ReturnTo};
+use crate::services::sso::flows::{Flow, Intent, ReturnTo};
 use crate::services::sso::identify::{identify, provider_said};
 use crate::services::sso::person::Person;
 use crate::state::SharedState;
+
+const SERVER_FAILED: &str = "server.failed";
 
 #[derive(Debug, Deserialize)]
 pub struct CallbackQuery {
@@ -46,10 +48,9 @@ pub async fn callback(
     let outcome = match (q.error, q.code) {
         (Some(error), _) => Outcome::Failed(provider_said(&error)),
         (None, None) => Outcome::Failed(provider_said("no_code")),
-        (None, Some(code)) => match settle(&state, &flow, code).await {
-            Ok(outcome) => outcome,
-            Err(resp) => return resp,
-        },
+        (None, Some(code)) => settle(&state, &flow, code)
+            .await
+            .unwrap_or_else(|_| Outcome::Failed(SERVER_FAILED.to_string())),
     };
     match state.sso.flows.settle(&flow.id, outcome) {
         Some(code) => {
@@ -68,9 +69,10 @@ pub async fn callback(
 }
 
 async fn settle(state: &SharedState, flow: &Flow, code: String) -> Result<Outcome, Response> {
+    let testing = matches!(flow.intent, Intent::Test { .. });
     let provider = sign_in_config(state)
         .provider(&flow.provider_id)
-        .filter(|p| p.fingerprint() == flow.fingerprint)
+        .filter(|p| p.fingerprint() == flow.fingerprint && (testing || p.is_live()))
         .cloned();
     let Some(provider) = provider else {
         return Ok(Outcome::Failed(provider_said("changed")));

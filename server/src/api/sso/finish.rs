@@ -11,7 +11,7 @@ use crate::api::error::lerr;
 use crate::api::util::query;
 use crate::db;
 use crate::i18n::ReqLocale;
-use crate::services::sso::admit::{Outcome, Refusal, TestReport, Waiting};
+use crate::services::sso::admit::{self, Outcome, Refusal, TestReport, Waiting};
 use crate::services::sso::flows::Collected;
 use crate::state::SharedState;
 
@@ -50,8 +50,9 @@ fn report_view(report: TestReport) -> TestReportView {
 
 /// `POST /api/auth/sso/finish` `{ flowId, secret, code }` → `{ status, … }`.
 /// A sign-in answers with the shape a password sign-in returns, under
-/// `status: "signedIn"`. `404` for a flow that is unknown, lapsed or already
-/// collected, and for either half being wrong: the four read alike.
+/// `status: "signedIn"`, and a link is written here, for whoever holds both
+/// halves. `404` for a flow that is unknown, lapsed or already collected, and
+/// for either half being wrong: the four read alike.
 pub async fn finish(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -86,7 +87,18 @@ pub async fn finish(
             reason: refusal_word(refusal),
         },
         Outcome::Failed(reason) => FlowResult::Failed { reason },
-        Outcome::Linked => FlowResult::Linked,
+        Outcome::Linking { user_id, identity } => {
+            let linked = query(&state.db, move |pool| {
+                admit::link(&pool, &user_id, &identity)
+            });
+            match linked.await {
+                Ok(true) => FlowResult::Linked,
+                Ok(false) => FlowResult::Refused {
+                    reason: refusal_word(Refusal::LinkedElsewhere),
+                },
+                Err(resp) => return resp,
+            }
+        }
         Outcome::Tested(report) => FlowResult::Tested {
             report: report_view(report),
         },

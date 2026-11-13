@@ -19,12 +19,17 @@ Keycloak 26 and Authentik 2025.10.
 ## Create the application at your provider
 
 1. In KROMA, open **Admin → Sign-in** and select **Add a provider**.
-2. Copy the **Redirect URI** shown under the list.
-3. At your provider, create an OpenID Connect application for KROMA. Paste the
-   redirect URI where the provider asks for it.
-4. Choose a signing key for the application if your provider asks. KROMA
+2. In **Provider**, choose yours. KROMA fills the form with what that provider
+   starts from. Choose **Another provider** if yours is not listed: it works
+   the same way.
+3. Copy the **Redirect URI** shown under **Connection**.
+4. At your provider, create an OpenID Connect application for KROMA. Paste the
+   redirect URI where the provider asks for it. Under the redirect URI, two
+   links open the provider's page for creating the application and its own
+   guide.
+5. Choose a signing key for the application if your provider asks. KROMA
    refuses a token signed with a shared secret (HS256).
-5. Keep the provider's page open. You need three values from it: the issuer
+6. Keep the provider's page open. You need three values from it: the issuer
    URL, the client ID and the client secret.
 
 If people open KROMA on two addresses, one at home and one from outside,
@@ -33,16 +38,17 @@ address first, so KROMA lists the addresses it accepts.
 
 ## Add the provider in KROMA
 
-1. In **Provider**, choose yours. This sets the button's logo and shows an
-   example of the address KROMA expects. Choose **Another provider** if yours
-   is not listed: it works the same way.
-2. In **Name**, type what the button should say after "Continue with".
-3. In **Provider address (issuer)**, paste the issuer URL and select
-   **Check**. KROMA reads the provider and says what it found, or what is
-   wrong with the address.
-4. Paste the **Client ID** and the **Client secret**. Leave the secret empty
+1. In **Name**, check what the button says after "Continue with". Your
+   provider's name is already there.
+2. In **Provider address (issuer)**, check the issuer URL and select
+   **Check**. For a provider everybody reaches at one address, such as Google,
+   the address is already right. For any other, KROMA writes the shape the
+   address takes: replace `example.com` with your own host, and anything in
+   capitals, such as `TENANT_ID`, with your own value. KROMA reads the
+   provider and says what it found, or what is wrong with the address.
+3. Paste the **Client ID** and the **Client secret**. Leave the secret empty
    if your provider registered KROMA as a public client.
-5. Select **Save**.
+4. Select **Save**.
 
 The provider now shows **Not tested**. Nobody sees its button yet.
 
@@ -66,17 +72,17 @@ The provider proves who someone is. KROMA decides whether they come in. Two
 settings on the provider control it.
 
 **Required groups.** Leave it empty to accept everyone your provider lets
-through. Type one or more group names, separated by commas, to accept only
-their members. KROMA checks this at every sign-in, so removing someone from
+through. To accept only the members of some groups, type each group's name and
+press Enter. Select a name to take it away. KROMA checks this at every sign-in, so removing someone from
 the group stops their next sign-in. Use the names the test showed you.
 
 **New people** decides what happens to someone KROMA has never seen:
 
 | Setting | What happens |
 | --- | --- |
-| Ask me first | They file a join request. You approve it in **Admin → Users** and choose their permissions and libraries. This is the default. |
+| Invitation only | They are turned away unless they open an invitation link first. This is the default. |
+| Ask me first | They file a join request. You approve it in **Admin → Users** and choose their permissions and libraries. |
 | Create their account | They get an account at once, with the permissions and libraries you choose here. |
-| Invitation only | They are turned away unless they open an invitation link first. |
 
 With **Create their account**, anyone your provider lets through gets in.
 Restrict who can reach the KROMA application at your provider, or set a
@@ -92,10 +98,16 @@ with "or" between the two. Whichever you list first goes on top and gets the
 highlighted button: put a provider above the password form and people see
 "Continue with" your provider first. The buttons stay in the list's order.
 
-A provider's button shows the logo of the provider you chose. To use a picture
-of your own, open the provider and drop an SVG, PNG, JPEG or WebP file of at
-most 256 KB on **Button picture**. Save the provider first: a picture is
-stored at once.
+A provider's button looks the way that provider asks. Google's and Microsoft's
+follow the guidelines each publishes. The others are filled with the brand's
+colour, under its logo. None of it can be changed. A provider that is not in
+the list has no logo and no colour: choose its **Icon** instead, and its
+button looks like the others on the screen.
+
+Select **Preview** to see the sign-in screen as it will be once you save.
+
+The switch on a provider's row takes its button off the sign-in screen
+without removing the provider.
 
 ## Link the accounts you already have
 
@@ -115,9 +127,12 @@ and sign in once with their password to link it.
 In **Admin → Sign-in**, the switches on the **Password** and **Passkeys** rows
 turn each one off.
 
-Passwords can only go off while a provider is live. Accounts that can change
-settings keep their password whatever the switch says, so a provider that is
-down never locks you out of your server.
+Passwords can only go off while a provider is live: until then the switch
+stays on. Accounts that can change settings keep their password whatever the
+switch says, so a provider that is down never locks you out of your server.
+
+Ask every member to link the provider first. Once passwords are off, a member
+who has only a password cannot sign in to link it.
 
 ## Set it up from the environment
 
@@ -129,7 +144,7 @@ provider is live without a test, and its address cannot be edited in Admin.
 | `KROMA_OIDC_ISSUER` | The issuer URL |
 | `KROMA_OIDC_CLIENT_ID` | The client ID |
 | `KROMA_OIDC_CLIENT_SECRET` | The client secret. Leave it out for a public client. |
-| `KROMA_OIDC_LABEL` | What the button says after "Continue with" |
+| `KROMA_OIDC_LABEL` | What the button says after "Continue with". Left out, it is the issuer's host name. |
 
 ## Sign in on a TV
 
