@@ -11,9 +11,9 @@ none of them. The entry hands `config-tv` the `tvos` block for Apple TV and
 Android TV, gives each TV platform the shared props and its own block (`tizen`,
 `webos`), and teaches Metro their platforms, so `metro.config.ts` names no TV.
 
-The Tizen files here import `@kromatv/react-native-tizen` directly
-(`/preview`, `/preview-json`, `/mic-button`). That resolves because Bun hoists
-the package; an install that does not hoist would need it listed.
+What only one platform has is imported under its name, as in
+`@kromatv/react-native-tv/tizen/preview`, and a platform's own command line is
+`rn-tv <platform>`: `bunx rn-tv tizen doctor`.
 
 The same package adds `run:tizen` and `run:webos` to Expo CLI, through the
 patch in `patches/@expo%2Fcli@<version>.patch`. After an Expo upgrade that
@@ -29,10 +29,10 @@ directory:
 ```bash
 bunx expo start                                 # then t, or shift+t to pick a TV
 bunx expo run:tizen --device <tv-ip>            # a TV in Developer Mode
-bunx rn-tizen simulator run --instance <name>   # the aarch64 simulator
+bunx rn-tv tizen simulator run --instance <name>   # the aarch64 simulator
 ```
 
-Use `bunx`, not `npx`: npm resolves `rn-tizen` from the workspace root, where
+Use `bunx`, not `npx`: npm resolves `rn-tv` from the workspace root, where
 bun does not link it.
 
 A local module carries its Tizen implementation in its own `tizen/` folder,
@@ -54,8 +54,8 @@ directory:
 
 ```bash
 bunx expo run:webos --device <tv-ip>            # a TV in Developer Mode
-bunx rn-webos simulator run --instance <name>   # the aarch64 simulator
-bunx rn-webos package                           # webos/<id>_<version>_arm.ipk
+bunx rn-tv webos simulator run --instance <name>   # the aarch64 simulator
+bunx rn-tv webos package                           # webos/<id>_<version>_arm.ipk
 ```
 
 No local module has a webOS implementation yet: `server-discovery` finds
