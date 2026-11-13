@@ -1,4 +1,4 @@
-import type { Discovered } from '@kromatv/client/sso';
+import type { Discovered, PresetView } from '@kromatv/client/sso';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
@@ -13,7 +13,6 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import type { PresetView } from '@kromatv/client/sso';
 import { type ProviderForm, reasonKey } from '#web/features/admin/sign-in-form';
 import { RedirectUris } from '#web/features/admin/sign-in-redirect-uris';
 import { useAuth } from '#web/shared/lib/auth';
