@@ -95,4 +95,4 @@ jobs:
         working-directory: apps/www
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bunx wrangler deploy -c dist/server/wrangler.json
+        run: bun run wrangler deploy -c dist/server/wrangler.json

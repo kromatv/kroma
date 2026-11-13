@@ -18,8 +18,8 @@
     "dev": "vite dev --port 3100",
     "build": "vite build",
     "preview": "vite preview --port 3100",
-    "preview:edge": "bunx wrangler dev",
-    "deploy": "bun run build && bunx wrangler deploy -c dist/server/wrangler.json",
+    "preview:edge": "wrangler dev",
+    "deploy": "bun run build && wrangler deploy -c dist/server/wrangler.json",
     "typecheck": "bun run paraglide && tsc --noEmit",
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
   },
