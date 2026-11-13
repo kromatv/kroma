@@ -218,7 +218,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/asc"
           printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
           if ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
-             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles"; then
+             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles" --only tvos,tvos-topshelf; then
             echo "minted=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::minting failed; falling back to the stored profile secrets"

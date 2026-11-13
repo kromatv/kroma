@@ -5,17 +5,18 @@ capabilities change and Apple does not re-issue it.
 
 Usage:
   ASC_KEY_ID=... ASC_ISSUER_ID=... ASC_PRIVATE_KEY_PATH=AuthKey_X.p8 \
-    python3 .github/scripts/asc-mint-profiles.py [--out DIR]
+    python3 .github/scripts/asc-mint-profiles.py [--out DIR] [--only ios,tvos]
 
 Then:
-  gh secret set MOBILE_IOS_PROVISIONING_PROFILE < DIR/ios.b64
-  gh secret set TVOS_PROVISIONING_PROFILE      < DIR/tvos.b64
+  gh secret set MOBILE_IOS_PROVISIONING_PROFILE --env release < DIR/ios.b64
+  gh secret set TVOS_PROVISIONING_PROFILE --env release      < DIR/tvos.b64
 """
 
 import argparse
 import datetime
 import os
 import sys
+import urllib.parse
 
 import asc_api as asc
 
@@ -30,6 +31,12 @@ WANTED = [
     (BUNDLE, "TVOS_APP_STORE", "tvos"),
     (f"{BUNDLE}.TopShelf", "TVOS_APP_STORE", "tvos-topshelf"),
 ]
+
+SECRET_OF = {
+    "ios": "MOBILE_IOS_PROVISIONING_PROFILE",
+    "tvos": "TVOS_PROVISIONING_PROFILE",
+    "tvos-topshelf": "TVOS_TOPSHELF_PROVISIONING_PROFILE",
+}
 
 # A profile only ever contains what the App ID had AT MINT TIME: minting against
 # an App ID missing a capability produces a profile that installs cleanly and
@@ -79,8 +86,20 @@ def ensure_capabilities(bundle: str, bundle_id: str, jwt: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=".", help="where to write the .b64 files")
+    ap.add_argument(
+        "--only",
+        default="",
+        help="comma-separated output basenames to mint (ios, tvos, tvos-topshelf); all when empty",
+    )
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
+
+    only = {name for name in args.only.split(",") if name}
+    unknown = only - {basename for _, _, basename in WANTED}
+    if unknown:
+        print(f"::error::--only names no profile: {', '.join(sorted(unknown))}")
+        return 1
+    wanted = [w for w in WANTED if not only or w[2] in only]
 
     jwt = asc.token()
 
@@ -107,13 +126,13 @@ def main() -> int:
 
     # Capabilities FIRST, for every App ID: enabling one invalidates every
     # existing profile for that App ID, including any minted earlier in a loop.
-    for bundle in {b for b, _, _ in WANTED}:
+    for bundle in {b for b, _, _ in wanted}:
         bundle_id = found.get(bundle)
         if bundle_id:
             ensure_capabilities(bundle, bundle_id, jwt)
 
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
-    for bundle, profile_type, basename in WANTED:
+    for bundle, profile_type, basename in wanted:
         bundle_id = found.get(bundle)
         if not bundle_id:
             print(f"::error::no App ID registered for {bundle}")
@@ -132,21 +151,26 @@ def main() -> int:
             }
         }
         # Re-runnable: a same-day rerun would hit the 409 on the duplicate name,
-        # so an existing profile of this exact name is reused instead.
-        same_name = [
-            p
-            for p in asc.get("profiles?limit=200", jwt).get("data", [])
-            if p["attributes"].get("name") == name
-        ]
+        # so an existing profile of this exact name is reused instead. Asked for
+        # by name, because the account holds more profiles than one page lists.
+        listed = asc.get(f"profiles?filter[name]={urllib.parse.quote(name)}&limit=200", jwt)
+        same_name = sorted(
+            (p for p in listed.get("data", []) if p["attributes"].get("name") == name),
+            key=lambda p: p["id"],
+        )
         existing = next(
             (p for p in same_name if p["attributes"].get("profileState") == "ACTIVE"), None
         )
-        # A same-named INVALID profile can neither be reused nor left in place
-        # (409 on the duplicate name), and it can sign nothing anyway.
-        if not existing:
-            for dead in same_name:
-                asc.delete(f"profiles/{dead['id']}", jwt)
-                print(f"  (removed the invalidated profile of this name: {dead['id']})")
+        # Every other profile of this name goes: it signs nothing this run
+        # uses, and while it holds the name Apple refuses a new one (409).
+        for spare in same_name:
+            if spare is existing:
+                continue
+            try:
+                asc.delete(f"profiles/{spare['id']}", jwt)
+                print(f"  (removed a spare profile of this name: {spare['id']})")
+            except SystemExit:
+                print(f"  (a spare profile of this name was already gone: {spare['id']})")
         attrs = (existing or asc.post("profiles", jwt, body)["data"])["attributes"]
         if existing:
             print("  (reusing the still-ACTIVE profile of this name)")
@@ -159,9 +183,8 @@ def main() -> int:
 
     print()
     print("Now update the secrets:")
-    print(f"  gh secret set MOBILE_IOS_PROVISIONING_PROFILE     < {args.out}/ios.b64")
-    print(f"  gh secret set TVOS_PROVISIONING_PROFILE           < {args.out}/tvos.b64")
-    print(f"  gh secret set TVOS_TOPSHELF_PROVISIONING_PROFILE  < {args.out}/tvos-topshelf.b64")
+    for _, _, basename in wanted:
+        print(f"  gh secret set {SECRET_OF[basename]} --env release < {args.out}/{basename}.b64")
     return 0
 
 
