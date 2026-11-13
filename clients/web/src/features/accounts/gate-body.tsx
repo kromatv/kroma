@@ -118,6 +118,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
       await flows.signIn.with(provider.id, { returnTo: pathToReturnTo() });
     } catch (e) {
       setError(apiErrorText(e, t('auth.providerFailed', { provider: provider.label })));
+    } finally {
       setBusy(false);
     }
   }

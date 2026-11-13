@@ -7,7 +7,14 @@ import { getPasskey } from '#web/shared/lib/webauthn';
 const pageBrowser: FlowBrowser = {
   open: (url) => {
     window.location.assign(url);
-    return new Promise(() => undefined);
+    return new Promise((resolve) => {
+      const restored = (event: PageTransitionEvent) => {
+        if (!event.persisted) return;
+        window.removeEventListener('pageshow', restored);
+        resolve(null);
+      };
+      window.addEventListener('pageshow', restored);
+    });
   },
 };
 

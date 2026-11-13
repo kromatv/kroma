@@ -13,7 +13,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { Spinner } from '#web/features/accounts/auth-gate';
-import { ProviderButton } from '#web/features/accounts/provider-button';
+import { ProviderButton } from '#web/shared/ui/provider-button';
 import { PublicScreen } from '#web/features/accounts/public-screen';
 import { useAuth } from '#web/shared/lib/auth';
 import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
@@ -68,6 +68,7 @@ function JoinPage() {
       await flows.signIn.with(provider.id, { returnTo: '/', invite });
     } catch (e) {
       setError(apiErrorText(e, t('auth.providerFailed', { provider: provider.label })));
+    } finally {
       setBusy(false);
     }
   }

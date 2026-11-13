@@ -46,17 +46,39 @@ export function hasPermission(user: Pick<User, 'permissions'>, permission: Permi
 export const PublicUser = User.pick({ id: true, username: true, avatarUrl: true, hasPin: true });
 export type PublicUser = z.infer<typeof PublicUser>;
 
+const BrandColor = z.string().regex(/^#[0-9a-f]{6}$/i);
+
+/** How a provider's button is painted on one screen: its fill, its edge when
+ * the provider draws one, the ink of its label, and a server path to the mark
+ * that sits on the fill. */
+export const ButtonLook = z.object({
+  fill: BrandColor,
+  stroke: BrandColor.optional(),
+  ink: BrandColor,
+  logo: z.string(),
+});
+export type ButtonLook = z.infer<typeof ButtonLook>;
+
+/** A provider's button as its owner asks for it, on a dark screen and on a
+ * light one. */
+export const ButtonBrand = z.object({ dark: ButtonLook, light: ButtonLook });
+export type ButtonBrand = z.infer<typeof ButtonBrand>;
+
 /** One way into a server, as the sign-in screen draws it. `kind` says which
  * control it is: `password` is the form, `passkey` its button, `oidc` a
- * provider's button, which alone carries a label, an icon and maybe a picture.
+ * provider's button, which alone carries a label, an icon, and maybe a mark and
+ * a look of its own.
  * The kind is an open string: a client built before a new one skips it. */
 export const SignInMethod = z.object({
   id: z.string(),
   kind: z.string(),
   label: z.string().optional(),
   icon: z.string().optional(),
-  /** A server path to the button's picture, when it has one. */
+  /** A server path to the provider's mark, when the server knows one. */
   image: z.string().optional(),
+  /** The look the provider's owner asks for its button. One this client
+   * cannot read is dropped, and the button looks like the others. */
+  brand: ButtonBrand.optional().catch(undefined),
 });
 export type SignInMethod = z.infer<typeof SignInMethod>;
 
@@ -78,6 +100,7 @@ export interface SignInButton {
   label: string;
   icon: string;
   image?: string;
+  brand?: ButtonBrand;
 }
 
 /** Whether `methods` offers a method of `kind`. */
@@ -91,7 +114,13 @@ export function signInButtons(methods: SignInMethods): SignInButton[] {
     const id = ProviderId.safeParse(method.id);
     if (method.kind !== 'oidc' || !id.success) return [];
     return [
-      { id: id.data, label: method.label ?? '', icon: method.icon ?? 'key', image: method.image },
+      {
+        id: id.data,
+        label: method.label ?? '',
+        icon: method.icon ?? 'key',
+        image: method.image,
+        brand: method.brand,
+      },
     ];
   });
 }

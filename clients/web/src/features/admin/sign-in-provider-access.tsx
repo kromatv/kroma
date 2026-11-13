@@ -5,6 +5,7 @@ import { Box, Field, SegmentGroup, Text } from '@kromatv/ui/kit';
 import { LibraryVisibility } from '#web/features/admin/library-visibility';
 import type { ProviderForm } from '#web/features/admin/sign-in-form';
 import { PermPicker } from '#web/features/admin/users-permissions';
+import { TagsInput } from '#web/shared/ui/tags-input';
 
 const NEW_PEOPLE_HINT = {
   ask: 'admin.signInNewAskHint',
@@ -28,16 +29,21 @@ export function AccessFields({
 
   return (
     <>
-      <Text variant="overline" color="textDim" mt={8} mb={12}>
+      <Text variant="overline" color="textDim" mb={12}>
         {t('admin.signInWhoGetsIn')}
       </Text>
 
       <Field.Root label={t('admin.signInRequiredGroups')} maxW={560} mb={16}>
-        <Field.Input
+        <TagsInput
+          label={t('admin.signInRequiredGroups')}
           icon="users-group"
           value={p.requiredGroups}
           onValueChange={(requiredGroups) => set({ requiredGroups })}
-          placeholder={t('admin.signInRequiredGroupsPlaceholder')}
+          placeholder={
+            p.requiredGroups.length > 0
+              ? t('admin.signInRequiredGroupsAdd')
+              : t('admin.signInRequiredGroupsPlaceholder')
+          }
         />
         <Field.Hint>{t('admin.signInRequiredGroupsHint')}</Field.Hint>
       </Field.Root>
@@ -47,14 +53,14 @@ export function AccessFields({
           value={p.newPeople}
           onValueChange={(value) => set({ newPeople: NewPeople.parse(value) })}
         >
+          <SegmentGroup.Item value="invite">
+            <SegmentGroup.Label>{t('admin.signInNewInvite')}</SegmentGroup.Label>
+          </SegmentGroup.Item>
           <SegmentGroup.Item value="ask">
             <SegmentGroup.Label>{t('admin.signInNewAsk')}</SegmentGroup.Label>
           </SegmentGroup.Item>
           <SegmentGroup.Item value="create">
             <SegmentGroup.Label>{t('admin.signInNewCreate')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-          <SegmentGroup.Item value="invite">
-            <SegmentGroup.Label>{t('admin.signInNewInvite')}</SegmentGroup.Label>
           </SegmentGroup.Item>
         </SegmentGroup.Root>
         <Field.Hint>{t(NEW_PEOPLE_HINT[p.newPeople])}</Field.Hint>

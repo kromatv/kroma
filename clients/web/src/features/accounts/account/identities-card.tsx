@@ -122,6 +122,7 @@ export function IdentitiesCard() {
       await flows.link(provider.id, { returnTo: '/account' });
     } catch (e) {
       setError(apiErrorText(e, t('account.identityLinkFailed', { provider: provider.label })));
+    } finally {
       setLinking(null);
     }
   };
@@ -156,7 +157,7 @@ export function IdentitiesCard() {
         />
       ))}
       {providers
-        .filter((provider) => !linked.some((identity) => identity.provider === provider.label))
+        .filter((provider) => !linked.some((identity) => identity.providerId === provider.id))
         .map((provider) => (
           <ProviderRow
             key={provider.id}

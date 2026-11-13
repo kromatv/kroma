@@ -23,8 +23,6 @@ const provider = {
   label: 'Home',
   preset: 'keycloak',
   icon: 'key',
-  image: '/api/auth/logos/keycloak',
-  hasImage: false,
   issuer: 'https://id.example',
   clientId: 'kroma',
   hasSecret: true,
@@ -103,7 +101,6 @@ describe('a provider', () => {
     expect(input.id).toBe('');
     expect('live' in input).toBe(false);
     expect('hasSecret' in input).toBe(false);
-    expect('image' in input).toBe(false);
   });
 
   it('is one kind of method beside the two built-in ones', () => {
@@ -118,9 +115,18 @@ describe('a provider', () => {
 });
 
 describe('the gate config', () => {
+  const look = { fill: '#4d4d4d', ink: '#ffffff', logo: '/api/auth/logos/keycloak-white.svg?v=1' };
+  const brand = { dark: look, light: { ...look, stroke: '#747775' } };
   const offered = {
     methods: [
-      { id: 'p0', kind: 'oidc', label: 'Home', icon: 'key', image: '/api/auth/logos/keycloak' },
+      {
+        id: 'p0',
+        kind: 'oidc',
+        label: 'Home',
+        icon: 'key',
+        image: '/api/auth/logos/keycloak.svg?v=1',
+        brand,
+      },
       { id: 'passkey', kind: 'passkey' },
       { id: 'future', kind: 'magic-link' },
     ],
@@ -131,10 +137,33 @@ describe('the gate config', () => {
     const methods = config.signIn ?? DEFAULT_SIGN_IN_METHODS;
 
     expect(signInButtons(methods)).toEqual([
-      { id: 'p0', label: 'Home', icon: 'key', image: '/api/auth/logos/keycloak' },
+      {
+        id: 'p0',
+        label: 'Home',
+        icon: 'key',
+        image: '/api/auth/logos/keycloak.svg?v=1',
+        brand,
+      },
     ]);
     expect(offersSignIn(methods, 'passkey')).toBe(true);
     expect(offersSignIn(methods, 'password')).toBe(false);
+  });
+
+  it('drops a look it cannot paint and keeps the button', () => {
+    const odd = {
+      ...offered.methods[0],
+      brand: { dark: { ...look, fill: 'url(x)' }, light: look },
+    };
+    const config = AuthConfig.parse({
+      publicUserList: false,
+      hasAccounts: true,
+      signIn: { methods: [odd] },
+    });
+
+    const [button] = signInButtons(config.signIn ?? DEFAULT_SIGN_IN_METHODS);
+
+    expect(button?.label).toBe('Home');
+    expect(button?.brand).toBeUndefined();
   });
 
   it('keeps a kind it does not know, for a client that will', () => {

@@ -61,16 +61,6 @@ export default function ssoApi(ctx: RequestContext) {
     discover: (issuer: string) =>
       ctx.post('/admin/sign-in/discover', Discovered, { body: { issuer } }),
 
-    /** Give a saved provider's button a picture: a PNG, a JPEG, a WebP or an
-     * SVG of at most 256 KiB. Rejects 415 for anything else. */
-    uploadImage: (provider: ProviderId, image: Blob) =>
-      ctx.upload('/admin/sign-in/methods/:id/image', image, { params: { id: provider } }),
-
-    /** Take the uploaded picture away: the button goes back to its preset's
-     * logo, or to its icon. */
-    removeImage: (provider: ProviderId) =>
-      ctx.delete('/admin/sign-in/methods/:id/image', { params: { id: provider } }),
-
     /** Begin a test sign-in at a saved provider. A flow that comes back
      * verified takes the provider live. */
     test: (provider: ProviderId) =>

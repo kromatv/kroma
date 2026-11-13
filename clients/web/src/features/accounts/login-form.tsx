@@ -8,13 +8,9 @@ import { type SignInPress, signInLayout } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, classes, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import {
-  FormLinks,
-  Notices,
-  OrRule,
-  PasswordFields,
-  PressButtons,
-} from '#web/features/accounts/login-methods';
+import { FormLinks, Notices, PasswordFields } from '#web/features/accounts/login-methods';
+import { OrRule } from '#web/shared/ui/or-rule';
+import { PressButtons } from '#web/shared/ui/press-buttons';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 const sDefinition = styles({ form: { width: '100%' } });
@@ -68,7 +64,6 @@ export function LoginForm({
   onForgot,
 }: Readonly<{
   profile: PublicUser | null;
-  /** The server's own name, shown under the title when it has one. */
   server?: string | null;
   busy: boolean;
   error: string | null;
@@ -87,7 +82,8 @@ export function LoginForm({
   const [password, setPassword] = useState('');
   const layout = signInLayout(methods, { passkey: canUsePasskey && Boolean(onPasskey) });
   const presses = layout.presses.filter((press) => press.kind === 'passkey' || onProvider);
-  const [typing, setTyping] = useState(layout.password);
+  const [opened, setOpened] = useState(false);
+  const typing = layout.password || opened;
   const formLeads = layout.lead === 'password' || presses.length === 0;
 
   const submit = () => {
@@ -143,7 +139,7 @@ export function LoginForm({
           typing={typing}
           canGoBack={canGoBack}
           busy={busy}
-          onType={() => setTyping(true)}
+          onType={() => setOpened(true)}
           onBack={onBack}
         />
       </Box>

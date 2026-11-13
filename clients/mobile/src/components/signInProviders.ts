@@ -62,7 +62,7 @@ export function useProviderGate(deps: ProviderGateDeps) {
       end.result.status === 'requested' ||
       end.result.status === 'emailTaken' ||
       end.result.status === 'invitationOnly';
-    setWaiting(left ? end.keys : null);
+    setWaiting(end.result.status === 'emailTaken' ? end.keys : null);
     if (left) setNotice(said);
     else setError(said);
   };
@@ -82,9 +82,10 @@ export function useProviderGate(deps: ProviderGateDeps) {
     }
   };
 
-  /** Signs in with a password and, when a provider flow left an identity
-   * waiting, links that identity to the account that just signed in. A link
-   * that fails does not undo the sign-in. */
+  /** Signs in with a password and, when a provider flow just said an account
+   * already uses the person's email address, links that identity to the
+   * account that signed in: the notice on screen says it will. A link that
+   * fails does not undo the sign-in. */
   const loginAndClaim = async (identifier: string, password: string) => {
     if (!serverUrl) throw new Error('no server');
     const signedIn = makeClient(serverUrl, session.requestLocale());

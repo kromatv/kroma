@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AuthResult, Permission, User } from '../accounts/schemas';
+import { AuthResult, ButtonBrand, Permission, User } from '../accounts/schemas';
 import { LibraryId } from '../media/ids';
 import { FlowId, IdentityId, JoinRequestId, ProviderId } from './ids';
 
@@ -63,6 +63,7 @@ export type FlowResult = z.infer<typeof FlowResult>;
 export const IdentityInfo = z.object({
   id: IdentityId,
   provider: z.string(),
+  providerId: ProviderId.nullish(),
   name: z.string(),
   createdAt: z.string(),
   lastUsed: z.string().nullish(),
@@ -85,10 +86,6 @@ export const ProviderView = z.object({
   /** Which known provider this is (`keycloak`, `authentik`, ...), or blank. */
   preset: z.string(),
   icon: z.string(),
-  /** A server path to the button's picture, when it has one. */
-  image: z.string().nullish(),
-  /** Whether that picture is one an admin uploaded. */
-  hasImage: z.boolean(),
   issuer: z.string(),
   clientId: z.string(),
   hasSecret: z.boolean(),
@@ -121,8 +118,6 @@ export type MethodView = z.infer<typeof MethodView>;
  * blank or absent `clientSecret` keeps the stored one. */
 export const ProviderInput = ProviderView.omit({
   id: true,
-  image: true,
-  hasImage: true,
   hasSecret: true,
   tested: true,
   live: true,
@@ -136,6 +131,28 @@ export type ProviderInput = z.infer<typeof ProviderInput>;
 /** One method as the admin page saves it. */
 export type MethodInput = { kind: 'password' | 'passkey'; enabled: boolean } | ProviderInput;
 
+const WebAddress = z.string().regex(/^https:\/\/\S+$/);
+
+/** A provider the server knows by name, as the admin page offers it: what its
+ * form starts with, where its owner has an application made (`console`) and
+ * explains how (`docs`), a server path to its mark, and its button's look when
+ * its owner asks for one. `issuer` is the real address where every server
+ * shares one, else a pattern whose capitals are to be replaced. */
+export const PresetView = z.object({
+  id: z.string(),
+  name: z.string(),
+  label: z.string(),
+  icon: z.string(),
+  issuer: z.string(),
+  scopes: z.array(z.string()),
+  groupClaim: z.string(),
+  console: WebAddress.optional(),
+  docs: WebAddress,
+  logo: z.string(),
+  brand: ButtonBrand.optional(),
+});
+export type PresetView = z.infer<typeof PresetView>;
+
 /** `GET /admin/sign-in`: the methods in the order the sign-in screen offers
  * them. */
 export const SignInAdmin = z.object({
@@ -144,6 +161,8 @@ export const SignInAdmin = z.object({
    * origin the operator named. Empty when they named none: the redirect URI is
    * then {@link SSO_CALLBACK_PATH} under whatever origin the browser is on. */
   redirectUris: z.array(z.string()),
+  /** Every provider the server knows by name, by name. */
+  presets: z.array(PresetView).default([]),
 });
 export type SignInAdmin = z.infer<typeof SignInAdmin>;
 

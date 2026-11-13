@@ -4,22 +4,27 @@ import {
   Badge,
   Box,
   Button,
-  Callout,
   Divider,
   Focusable,
   Icon,
   Row,
-  Spacer,
   Surface,
   Switch,
   styles,
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { pictureOf, type ProviderForm, reasonKey } from '#web/features/admin/sign-in-form';
+import {
+  markOf,
+  type PresetCatalog,
+  type ProviderForm,
+  presetOf,
+} from '#web/features/admin/sign-in-form';
 import { MoveButtons } from '#web/features/admin/sign-in-methods';
 import { AccessFields } from '#web/features/admin/sign-in-provider-access';
+import { ButtonFields } from '#web/features/admin/sign-in-provider-button';
 import { ConnectionFields } from '#web/features/admin/sign-in-provider-connection';
+import { TestFields } from '#web/features/admin/sign-in-provider-test';
 import { ProviderMark } from '#web/shared/ui/provider-mark';
 
 const sDefinition = styles({
@@ -41,37 +46,14 @@ function StatusBadge({ provider: p }: Readonly<{ provider: ProviderForm }>) {
   return <Badge tone="warning">{t('admin.signInNotTested')}</Badge>;
 }
 
-function TestResult({ result }: Readonly<{ result: FlowResult }>) {
-  const t = useT();
-  if (result.status === 'tested') {
-    const { report } = result;
-    const who = report.email ?? report.username ?? report.name ?? report.subject;
-    return (
-      <Callout.Root tone={report.admitted ? 'success' : 'accent'} icon="circle-check">
-        <Callout.Title>{t('admin.signInTestPassed', { who })}</Callout.Title>
-        <Callout.Detail>
-          {report.groups.length > 0
-            ? t('admin.signInTestGroups', { groups: report.groups.join(', ') })
-            : t('admin.signInTestNoGroups')}{' '}
-          {report.admitted ? t('admin.signInTestAdmitted') : t('admin.signInTestNotAdmitted')}
-        </Callout.Detail>
-      </Callout.Root>
-    );
-  }
-  const reason = result.status === 'failed' || result.status === 'refused' ? result.reason : '';
-  const key = reasonKey(reason);
-  return (
-    <Callout.Root tone="danger" icon="alert-triangle">
-      <Callout.Title>{t('admin.signInTestFailed')}</Callout.Title>
-      <Callout.Detail>{key ? t(key) : t('sso.reason.other', { reason })}</Callout.Detail>
-    </Callout.Root>
-  );
-}
-
-/** One provider as an expandable card: who it is and whether people can use
- * it, then everything an admin sets about it. */
+/** One provider as an expandable card. The row says who it is, whether people
+ * can use it, where it sits and whether it is on, like a built-in method's.
+ * Opened, it holds everything an admin sets about it, in the order they need
+ * it: the button, the connection, the test, then who gets in. */
 export function ProviderCard({
   provider: p,
+  catalog,
+  redirectUris,
   expanded,
   first,
   last,
@@ -81,26 +63,21 @@ export function ProviderCard({
   onToggle,
   onMove,
   onChange,
-  onPicture,
   onTest,
   onRemove,
 }: Readonly<{
   provider: ProviderForm;
+  catalog: PresetCatalog;
+  redirectUris: readonly string[];
   expanded: boolean;
   first: boolean;
   last: boolean;
-  /** The page holds changes the server has not seen, so a test would not try
-   *  what is on screen. */
   unsaved: boolean;
   testing: boolean;
-  /** What the last test sign-in at this provider returned, if this page load
-   *  came back from one. */
   result: FlowResult | null;
   onToggle: () => void;
   onMove: (by: -1 | 1) => void;
   onChange: (patch: Partial<ProviderForm>) => void;
-  /** The provider's picture changed on the server. */
-  onPicture: () => void;
   onTest: () => void;
   onRemove: () => void;
 }>) {
@@ -110,7 +87,7 @@ export function ProviderCard({
 
   return (
     <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
-      <Row gap={4} pr={12}>
+      <Row gap={12} pr={20}>
         <Box flex minW={0}>
           <Focusable
             ring="focusInset"
@@ -120,7 +97,7 @@ export function ProviderCard({
             onPress={onToggle}
           >
             <Box center w={38} h={38} shrink={0}>
-              <ProviderMark icon={p.icon} image={pictureOf(p)} size={30} />
+              <ProviderMark icon={p.icon} image={markOf(catalog, p.preset)} size={30} />
             </Box>
             <Box flex minW={0}>
               <Row gap={8}>
@@ -138,52 +115,40 @@ export function ProviderCard({
           </Focusable>
         </Box>
         <MoveButtons name={name} first={first} last={last} onMove={onMove} />
+        <Switch
+          checked={p.enabled}
+          onCheckedChange={(enabled) => onChange({ enabled })}
+          label={t('admin.signInShow', { name })}
+        />
       </Row>
 
       {expanded ? (
         <>
           <Divider />
-          <Box px={20} pt={20}>
-            <ConnectionFields provider={p} set={onChange} onPicture={onPicture} />
-            <AccessFields provider={p} set={onChange} />
-
-            <Row between gap={16} mb={16} maxW={560}>
-              <Box minW={0}>
-                <Text variant="label">{t('admin.signInEnabled')}</Text>
-                <Text variant="meta" color="textDim" mt={2}>
-                  {t('admin.signInEnabledHint')}
-                </Text>
-              </Box>
-              <Switch
-                checked={p.enabled}
-                onCheckedChange={(enabled) => onChange({ enabled })}
-                label={t('admin.signInEnabled')}
+          <Box p={20} gap={24}>
+            <Box>
+              <ButtonFields provider={p} catalog={catalog} set={onChange} />
+            </Box>
+            <Box>
+              <ConnectionFields
+                provider={p}
+                preset={presetOf(catalog, p.preset)}
+                redirectUris={redirectUris}
+                set={onChange}
               />
-            </Row>
-
-            {result ? (
-              <Box mb={16} maxW={560}>
-                <TestResult result={result} />
-              </Box>
-            ) : null}
-
-            <Row wrap gap={10} mt={8} mb={20}>
-              <Button
-                variant="glass"
-                size="sm"
-                icon="plug-connected"
-                label={testing ? t('admin.signInTesting') : t('admin.signInTest')}
-                onPress={onTest}
-                loading={testing}
-                disabled={testing || unsaved || !p.id}
-              />
-              {unsaved || !p.id ? (
-                <Text variant="meta" color="textDim">
-                  {t('admin.signInSaveFirst')}
-                </Text>
-              ) : null}
-              <Spacer />
-              {p.fromEnv ? null : (
+            </Box>
+            <TestFields
+              provider={p}
+              unsaved={unsaved}
+              testing={testing}
+              result={result}
+              onTest={onTest}
+            />
+            <Box>
+              <AccessFields provider={p} set={onChange} />
+            </Box>
+            {p.fromEnv ? null : (
+              <Row justify="flex-end">
                 <Button
                   variant="dangerGhost"
                   size="sm"
@@ -191,8 +156,8 @@ export function ProviderCard({
                   label={t('admin.signInRemove')}
                   onPress={onRemove}
                 />
-              )}
-            </Row>
+              </Row>
+            )}
           </Box>
         </>
       ) : null}

@@ -93,18 +93,6 @@ describe("the admin's sign-in endpoints", () => {
       body: { provider: 'p0' },
     },
     {
-      name: 'uploadImage',
-      call: (c) => c.sso.uploadImage(provider, new Blob(['<svg/>'], { type: 'image/svg+xml' })),
-      method: 'POST',
-      path: '/admin/sign-in/methods/p0/image',
-    },
-    {
-      name: 'removeImage',
-      call: (c) => c.sso.removeImage(provider),
-      method: 'DELETE',
-      path: '/admin/sign-in/methods/p0/image',
-    },
-    {
       name: 'joinRequests',
       call: (c) => c.sso.joinRequests(),
       method: 'GET',

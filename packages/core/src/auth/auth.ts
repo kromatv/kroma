@@ -45,7 +45,7 @@ export interface FlowBrowser {
    * came back on, or `null` when it closed with none. The flow is kept either
    * way: on some systems the return reaches the app as a link after the
    * browser has reported itself closed, and `resume` then collects it. A web
-   * page that leaves for the provider never resolves, and resumes on return. */
+   * page resumes on return, and resolves `null` only if the person goes back. */
   open(url: string): Promise<string | null>;
   /** What to tell the server about coming back. A web page leaves it out. */
   from?: FlowReturn;

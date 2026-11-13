@@ -61,22 +61,27 @@ export function MoveButtons({
   );
 }
 
-/** A built-in method in the list: what it is, its place, and its switch. */
+/** A built-in method in the list: what it is, its place, and its switch.
+ * `locked` holds the switch on and says why, for the password while turning
+ * it off would be refused. */
 export function BuiltInRow({
   method,
   first,
   last,
+  locked = false,
   onMove,
   onEnabled,
 }: Readonly<{
   method: BuiltInForm;
   first: boolean;
   last: boolean;
+  locked?: boolean;
   onMove: (by: -1 | 1) => void;
   onEnabled: (enabled: boolean) => void;
 }>) {
   const t = useT();
   const words = BUILT_IN[method.kind];
+  const held = locked && method.enabled;
   return (
     <Surface elevated pad="none" radius="xl" border="border">
       <Row between gap={12} px={20} py={16}>
@@ -85,12 +90,17 @@ export function BuiltInRow({
           <Box flex minW={0}>
             <Text variant="label">{t(words.label)}</Text>
             <Text variant="meta" color="textDim" mt={2}>
-              {t(words.hint)}
+              {t(held ? 'admin.signInPasswordLocked' : words.hint)}
             </Text>
           </Box>
         </Row>
         <MoveButtons name={t(words.label)} first={first} last={last} onMove={onMove} />
-        <Switch checked={method.enabled} onCheckedChange={onEnabled} label={t(words.label)} />
+        <Switch
+          checked={method.enabled}
+          onCheckedChange={onEnabled}
+          label={t(words.label)}
+          disabled={held}
+        />
       </Row>
     </Surface>
   );

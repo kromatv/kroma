@@ -141,6 +141,16 @@ describe('the provider gate', () => {
     );
   });
 
+  it('links nothing after a join request, whose notice promises no link', async () => {
+    const { hook, deps, calls } = gate({ status: 'requested' });
+    await act(() => hook.result.current.press(keycloak));
+
+    await act(() => hook.result.current.loginAndClaim('lea', 'pw'));
+
+    expect(calls.some((call) => call.path === '/auth/sso/claim')).toBe(false);
+    expect(deps.session.adopt).toHaveBeenCalled();
+  });
+
   it('signs in with a password alone when nothing is waiting', async () => {
     const { hook, deps, calls } = gate({ status: 'signedIn', ...session });
 

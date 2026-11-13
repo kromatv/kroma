@@ -4,6 +4,7 @@ import type {
   MethodInput,
   MethodView,
   NewPeople,
+  PresetView,
   ProviderId,
   SignInAdmin,
   SignInSave,
@@ -20,8 +21,8 @@ export interface BuiltInForm {
 }
 
 /** A provider while the admin edits it. `id` is the server's, blank until
- * saved; `key` is this page's own handle. The two lists are kept as the text
- * being typed, and `clientSecret` is blank unless a new one was typed. */
+ * saved; `key` is this page's own handle, and `clientSecret` is blank unless
+ * a new one was typed. */
 export interface ProviderForm {
   kind: 'oidc';
   key: string;
@@ -30,15 +31,13 @@ export interface ProviderForm {
   label: string;
   preset: string;
   icon: string;
-  image: string | null;
-  hasImage: boolean;
   issuer: string;
   clientId: string;
   clientSecret: string;
   hasSecret: boolean;
-  scopes: string;
+  scopes: string[];
   groupClaim: string;
-  requiredGroups: string;
+  requiredGroups: string[];
   newPeople: NewPeople;
   permissions: Permission[];
   libraries: LibraryId[] | null;
@@ -54,77 +53,57 @@ export interface SignInForm {
   methods: MethodForm[];
 }
 
-/** A provider KROMA knows by name. A preset gives the button its logo and the
- * form its example address; it changes nothing about how the provider is
- * spoken to. `note` is said only for a provider that was run against KROMA. */
-export interface ProviderPreset {
-  id: string;
-  name: string;
-  icon: IconName;
-  /** Whether the server has a logo for it. */
-  logo: boolean;
-  issuer: string;
-  note?: MessageKey;
+/** Every provider the server knows by name. A preset fills the form for its
+ * provider and says how the button looks; it changes nothing about how the
+ * provider is spoken to. */
+export type PresetCatalog = readonly PresetView[];
+
+/** What is said under the picker for a provider that was run against KROMA. */
+export const PRESET_NOTES: Readonly<Record<string, MessageKey>> = {
+  keycloak: 'admin.signInPresetKeycloak',
+  authentik: 'admin.signInPresetAuthentik',
+};
+
+/** The preset `id` names, or `undefined` for a provider with no preset and
+ * for a preset the server does not know. */
+export function presetOf(catalog: PresetCatalog, id: string): PresetView | undefined {
+  return catalog.find((preset) => preset.id === id);
 }
 
-export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
-  {
-    id: 'keycloak',
-    name: 'Keycloak',
-    icon: 'key',
-    logo: true,
-    issuer: 'https://auth.example.com/realms/home',
-    note: 'admin.signInPresetKeycloak',
-  },
-  {
-    id: 'authentik',
-    name: 'Authentik',
-    icon: 'key',
-    logo: true,
-    issuer: 'https://auth.example.com/application/o/kroma/',
-    note: 'admin.signInPresetAuthentik',
-  },
-  {
-    id: 'entra',
-    name: 'Microsoft Entra ID',
-    icon: 'brand-windows',
-    logo: true,
-    issuer: 'https://login.microsoftonline.com/TENANT_ID/v2.0',
-  },
-  {
-    id: 'google',
-    name: 'Google',
-    icon: 'brand-google',
-    logo: true,
-    issuer: 'https://accounts.google.com',
-  },
-  { id: 'okta', name: 'Okta', icon: 'key', logo: true, issuer: 'https://example.okta.com' },
-  { id: 'auth0', name: 'Auth0', icon: 'key', logo: true, issuer: 'https://example.auth0.com/' },
-  {
-    id: 'authelia',
-    name: 'Authelia',
-    icon: 'shield-lock',
-    logo: true,
-    issuer: 'https://auth.example.com',
-  },
-  {
-    id: 'pocket-id',
-    name: 'Pocket ID',
-    icon: 'fingerprint',
-    logo: false,
-    issuer: 'https://id.example.com',
-  },
-];
-
-export function presetOf(id: string): ProviderPreset | undefined {
-  return PROVIDER_PRESETS.find((preset) => preset.id === id);
+/** A server path to the mark of the preset `id`, or `null` when it has none. */
+export function markOf(catalog: PresetCatalog, id: string): string | null {
+  return presetOf(catalog, id)?.logo ?? null;
 }
 
-/** The picture a provider's button shows on this page: its own, else its
- * preset's logo, which a provider not saved yet can already wear. */
-export function pictureOf(provider: ProviderForm): string | null {
-  if (provider.hasImage) return provider.image;
-  return presetOf(provider.preset)?.logo ? `/api/auth/logos/${provider.preset}` : null;
+const DEFAULT_GROUP_CLAIM = 'groups';
+
+function sameList(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+/** What choosing the preset `next` changes in `provider`, which `previous`
+ * had shaped: the preset itself, and each field still as `previous` left it.
+ * A field the admin made their own stays, and so does the address of a
+ * provider from the environment. */
+export function presetPatch(
+  provider: ProviderForm,
+  previous: PresetView | undefined,
+  next: PresetView | undefined,
+): Partial<ProviderForm> {
+  const untouched = (value: string, start: string) => !value.trim() || value === start;
+  const patch: Partial<ProviderForm> = {
+    preset: next?.id ?? '',
+    icon: next?.icon ?? provider.icon,
+  };
+  if (next && untouched(provider.label, previous?.label ?? '')) patch.label = next.label;
+  if (!provider.fromEnv && untouched(provider.issuer, previous?.issuer ?? '')) {
+    patch.issuer = next?.issuer ?? '';
+  }
+  if (untouched(provider.groupClaim, previous?.groupClaim ?? DEFAULT_GROUP_CLAIM)) {
+    patch.groupClaim = next?.groupClaim ?? DEFAULT_GROUP_CLAIM;
+  }
+  if (sameList(provider.scopes, previous?.scopes ?? [])) patch.scopes = [...(next?.scopes ?? [])];
+  return patch;
 }
 
 /** The icons a provider's button can carry when it has no picture. */
@@ -146,10 +125,7 @@ function fromView(method: MethodView): MethodForm {
   return {
     ...method,
     key: `provider-${method.id}`,
-    image: method.image ?? null,
     clientSecret: '',
-    scopes: method.scopes.join(' '),
-    requiredGroups: method.requiredGroups.join(', '),
   };
 }
 
@@ -157,27 +133,24 @@ export function toForm(config: SignInAdmin): SignInForm {
   return { methods: config.methods.map(fromView) };
 }
 
-/** A new provider, shaped by the preset the admin picked. */
-export function emptyProvider(key: string, preset = ''): ProviderForm {
-  const known = presetOf(preset);
+/** A new provider, filled by the preset the admin picked. */
+export function emptyProvider(key: string, preset?: PresetView): ProviderForm {
   return {
     kind: 'oidc',
     key,
     id: '',
     enabled: true,
-    label: known?.name ?? '',
-    preset,
-    icon: known?.icon ?? 'key',
-    image: null,
-    hasImage: false,
-    issuer: '',
+    label: preset?.label ?? '',
+    preset: preset?.id ?? '',
+    icon: preset?.icon ?? 'key',
+    issuer: preset?.issuer ?? '',
     clientId: '',
     clientSecret: '',
     hasSecret: false,
-    scopes: '',
-    groupClaim: 'groups',
-    requiredGroups: '',
-    newPeople: 'ask',
+    scopes: [...(preset?.scopes ?? [])],
+    groupClaim: preset?.groupClaim ?? DEFAULT_GROUP_CLAIM,
+    requiredGroups: [],
+    newPeople: 'invite',
     permissions: ['playback'],
     libraries: null,
     tested: false,
@@ -201,20 +174,6 @@ export function providersOf(form: SignInForm): ProviderForm[] {
   return form.methods.filter((method) => method.kind === 'oidc');
 }
 
-/** Scopes are separated by spaces, as OAuth writes them. */
-export function scopeList(text: string): string[] {
-  return text.split(/\s+/).filter(Boolean);
-}
-
-/** Groups are separated by commas or new lines: a group's name may hold a
- * space. */
-export function groupList(text: string): string[] {
-  return text
-    .split(/[,\n]/)
-    .map((group) => group.trim())
-    .filter(Boolean);
-}
-
 function toInput(method: MethodForm): MethodInput {
   if (method.kind !== 'oidc') return { kind: method.kind, enabled: method.enabled };
   return {
@@ -226,9 +185,9 @@ function toInput(method: MethodForm): MethodInput {
     icon: method.icon,
     issuer: method.issuer.trim(),
     clientId: method.clientId.trim(),
-    scopes: scopeList(method.scopes),
+    scopes: method.scopes,
     groupClaim: method.groupClaim.trim(),
-    requiredGroups: groupList(method.requiredGroups),
+    requiredGroups: method.requiredGroups,
     newPeople: method.newPeople,
     permissions: method.permissions,
     libraries: method.libraries,

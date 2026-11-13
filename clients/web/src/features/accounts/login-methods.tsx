@@ -1,22 +1,6 @@
 import type { PublicUser } from '@kromatv/client/accounts';
-import type { SignInPress } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout, Field, Text } from '@kromatv/ui/kit';
-import { ProviderButton } from '#web/features/accounts/provider-button';
-
-/** The rule between the two groups of a sign-in screen. */
-export function OrRule() {
-  const t = useT();
-  return (
-    <Box row align="center" gap={14} w="100%" accessibilityRole="none">
-      <Box flex={1} h={1} bg="border" />
-      <Text variant="meta" color="textDim">
-        {t('auth.or')}
-      </Text>
-      <Box flex={1} h={1} bg="border" />
-    </Box>
-  );
-}
 
 /** What the screen has to say before anyone presses anything: why they are
  * here again, and what went wrong last time. */
@@ -82,49 +66,6 @@ export function FormLinks({
   );
 }
 
-/** The ways in that take one press, stacked in the server's order. `primary`
- * gives the first one the screen's main action. */
-export function PressButtons({
-  presses,
-  primary,
-  disabled,
-  onPress,
-}: Readonly<{
-  presses: readonly SignInPress[];
-  primary: boolean;
-  disabled: boolean;
-  onPress: (press: SignInPress) => void;
-}>) {
-  const t = useT();
-  return (
-    <Box w="100%" gap={10}>
-      {presses.map((press, index) => {
-        const leads = primary && index === 0;
-        return press.kind === 'provider' ? (
-          <ProviderButton
-            key={press.id}
-            provider={press.provider}
-            primary={leads}
-            disabled={disabled}
-            onPress={() => onPress(press)}
-          />
-        ) : (
-          <Button
-            key={press.id}
-            block
-            size="md"
-            variant={leads ? 'primary' : 'glass'}
-            icon="key"
-            label={t('auth.continueWithPasskey')}
-            disabled={disabled}
-            onPress={() => onPress(press)}
-          />
-        );
-      })}
-    </Box>
-  );
-}
-
 /** The password form: who, the password, and its submit. `primary` gives the
  * submit the screen's main action; `focused` puts the caret in it on arrival. */
 export function PasswordFields({
@@ -146,7 +87,6 @@ export function PasswordFields({
   busy: boolean;
   primary: boolean;
   focused: boolean;
-  /** Passwords are off on this server, and the form is here for an admin. */
   restricted: boolean;
   onIdentifier: (value: string) => void;
   onPassword: (value: string) => void;

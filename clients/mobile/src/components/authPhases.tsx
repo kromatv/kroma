@@ -202,7 +202,8 @@ export function CredentialsPhase({
   const providers = onProvider
     ? layout.presses.flatMap((press) => (press.kind === 'provider' ? [press.provider] : []))
     : [];
-  const [typing, setTyping] = useState(layout.password);
+  const [opened, setOpened] = useState(false);
+  const typing = layout.password || opened;
   const formLeads = layout.lead === 'password' || providers.length === 0;
   const buttons =
     providers.length > 0 ? (
@@ -249,7 +250,7 @@ export function CredentialsPhase({
       {first && second ? <OrRule /> : null}
       {second}
       {typing ? null : (
-        <Button variant="ghost" label={t('auth.usePassword')} onPress={() => setTyping(true)} />
+        <Button variant="ghost" label={t('auth.usePassword')} onPress={() => setOpened(true)} />
       )}
     </OnboardingBox>
   );

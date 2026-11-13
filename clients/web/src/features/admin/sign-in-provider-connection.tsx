@@ -8,26 +8,19 @@ import {
   Field,
   Icon,
   Row,
-  Select,
   styles,
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import {
-  PROVIDER_ICONS,
-  PROVIDER_PRESETS,
-  type ProviderForm,
-  pictureOf,
-  presetOf,
-  reasonKey,
-} from '#web/features/admin/sign-in-form';
-import { PictureField } from '#web/features/admin/sign-in-provider-picture';
+import type { PresetView } from '@kromatv/client/sso';
+import { type ProviderForm, reasonKey } from '#web/features/admin/sign-in-form';
+import { RedirectUris } from '#web/features/admin/sign-in-redirect-uris';
 import { useAuth } from '#web/shared/lib/auth';
+import { OutsideLink } from '#web/shared/ui/outside-link';
+import { TagsInput } from '#web/shared/ui/tags-input';
 
 const sDefinition = styles({ mono: { fontFamily: 'monospace' } });
-
-const OTHER = 'other';
 
 function said(found: Discovered, t: Translate): string {
   if (found.ok) return t('admin.signInAddressFound', { issuer: found.issuer ?? '' });
@@ -52,18 +45,48 @@ function AddressCheck({ found }: Readonly<{ found: Discovered }>) {
   );
 }
 
-/** How the server reaches a provider: its name and button, its address, and
- * this server's registration there. A provider from the environment shows its
- * address and client without letting them be edited. */
+function SetupLinks({ preset }: Readonly<{ preset: PresetView }>) {
+  const t = useT();
+  return (
+    <Row wrap gap={10} mb={16}>
+      {preset.console ? (
+        <Button
+          variant="glass"
+          size="sm"
+          icon="external-link"
+          label={t('admin.signInConsole', { provider: preset.label })}
+          asChild
+        >
+          <OutsideLink to={preset.console} />
+        </Button>
+      ) : null}
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="book"
+        label={t('admin.signInDocs', { provider: preset.label })}
+        asChild
+      >
+        <OutsideLink to={preset.docs} />
+      </Button>
+    </Row>
+  );
+}
+
+/** How the server reaches a provider: the address to register there, where
+ * the provider has its application made and explains how, the provider's own
+ * address, and this server's registration. A provider from the environment
+ * shows its address and client without letting them be edited. */
 export function ConnectionFields({
   provider: p,
+  preset,
+  redirectUris,
   set,
-  onPicture,
 }: Readonly<{
   provider: ProviderForm;
+  preset: PresetView | undefined;
+  redirectUris: readonly string[];
   set: (patch: Partial<ProviderForm>) => void;
-  /** The provider's picture changed on the server. */
-  onPicture: () => void;
 }>) {
   const s = useStyles(sDefinition);
   const t = useT();
@@ -82,64 +105,16 @@ export function ConnectionFields({
     }
   };
 
-  const preset = presetOf(p.preset);
-  const choosePreset = (id: string) => {
-    const chosen = presetOf(id);
-    set({
-      preset: id,
-      icon: chosen?.icon ?? p.icon,
-      label: p.label.trim() && p.label !== preset?.name ? p.label : (chosen?.name ?? p.label),
-    });
-  };
-
   return (
     <>
-      <Field.Root label={t('admin.signInPreset')} maxW={320} mb={16}>
-        <Select.Root
-          label={t('admin.signInPreset')}
-          value={p.preset || OTHER}
-          onValueChange={(id) => choosePreset(id === OTHER ? '' : id)}
-        >
-          <Select.Trigger block />
-          {PROVIDER_PRESETS.map((known) => (
-            <Select.Item key={known.id} value={known.id} icon={known.icon}>
-              {known.name}
-            </Select.Item>
-          ))}
-          <Select.Item value={OTHER} icon="key">
-            {t('admin.signInPresetOther')}
-          </Select.Item>
-        </Select.Root>
-        <Field.Hint>{preset?.note ? t(preset.note) : t('admin.signInPresetHint')}</Field.Hint>
-      </Field.Root>
+      <Text variant="overline" color="textDim" mb={12}>
+        {t('admin.signInSectionConnection')}
+      </Text>
 
-      <Row wrap gap={16} mb={16} align="flex-start">
-        <Field.Root label={t('admin.signInName')} flex minW={220} maxW={320}>
-          <Field.Input
-            icon="tag"
-            value={p.label}
-            onValueChange={(label) => set({ label })}
-            placeholder={t('admin.signInNamePlaceholder')}
-          />
-          <Field.Hint>{t('admin.signInNameHint')}</Field.Hint>
-        </Field.Root>
-        {pictureOf(p) ? null : (
-          <Field.Root label={t('admin.signInIcon')} w={200}>
-            <Select.Root
-              label={t('admin.signInIcon')}
-              value={p.icon}
-              onValueChange={(icon) => set({ icon })}
-            >
-              <Select.Trigger block />
-              {PROVIDER_ICONS.map((choice) => (
-                <Select.Item key={choice.icon} value={choice.icon} icon={choice.icon}>
-                  {t(choice.labelKey)}
-                </Select.Item>
-              ))}
-            </Select.Root>
-          </Field.Root>
-        )}
-      </Row>
+      <Box maxW={560} mb={preset ? 12 : 16}>
+        <RedirectUris named={redirectUris} />
+      </Box>
+      {preset ? <SetupLinks preset={preset} /> : null}
 
       <Field.Root label={t('admin.signInIssuer')} maxW={560} mb={16}>
         <Row gap={10}>
@@ -197,16 +172,16 @@ export function ConnectionFields({
         )}
       </Row>
 
-      <PictureField provider={p} onChanged={onPicture} />
-
       <Disclosure.Root>
         <Disclosure.Trigger>{t('admin.signInAdvanced')}</Disclosure.Trigger>
         <Disclosure.Panel>
           <Field.Root label={t('admin.signInScopes')} maxW={560} mb={16}>
-            <Field.Input
+            <TagsInput
+              label={t('admin.signInScopes')}
               value={p.scopes}
               onValueChange={(scopes) => set({ scopes })}
               placeholder="offline_access"
+              separators={' ,\n'}
               textStyle={s.mono}
             />
             <Field.Hint>{t('admin.signInScopesHint')}</Field.Hint>
