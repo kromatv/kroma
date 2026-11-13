@@ -19,8 +19,16 @@ const ACTIVATE = [{ name: 'activate' }] as const;
 const SELECTED = { selected: true };
 const UNSELECTED = { selected: false };
 
+interface InDocument {
+  getBoundingClientRect?: () => { left: number; top: number; width: number; height: number };
+}
+
 function onScreen(view: View | null): Rect | null {
   if (view === null) return null;
+  // A browser says where an element is at once, where react-native-web's
+  // `measureInWindow` answers a tick too late for the move that asked.
+  const box = (view as InDocument).getBoundingClientRect?.();
+  if (box) return { x: box.left, y: box.top, width: box.width, height: box.height };
   // Fabric answers before `measureInWindow` returns; a platform that answers
   // later leaves the rect unknown, and the navigator to its own order.
   const found: { rect: Rect | null } = { rect: null };
