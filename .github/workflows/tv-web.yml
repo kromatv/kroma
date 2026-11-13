@@ -46,6 +46,9 @@ concurrency:
 jobs:
   deploy:
     name: Build + deploy (tv.kroma.tv)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'sites' || '' }}
+      deployment: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

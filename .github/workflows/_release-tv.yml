@@ -188,6 +188,9 @@ jobs:
 
   tv-native:
     name: Android TV (APK + Play bundle)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:

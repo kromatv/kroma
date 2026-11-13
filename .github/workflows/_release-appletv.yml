@@ -53,6 +53,9 @@ on:
 jobs:
   appletv:
     name: Apple TV .ipa (TestFlight)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     # macos-26, NOT macos-15, for the reason the phone job spells out: Expo SDK
     # 57 pulls Swift packages built with Swift tools 6.2 (expo-modules-jsi), and

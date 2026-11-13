@@ -263,9 +263,10 @@ libmpv, since tauri-action packs its bundle before anything could be embedded.
 off. It is the release's macOS leg (libmpv embedded, the styled dmg, the
 launch check) stamped `<X.Y.Z>-pr.<number>`, without an updater bundle and
 publishing nothing. The dmg is a run artifact kept seven days, and one comment
-on the pull request links the newest. A pull request from this repository is
-signed and notarized; a fork's run has no secrets, so it gets an unsigned dmg
-and no comment. It reads the release build's Rust cache and never writes one.
+on the pull request links the newest. The dmg is unsigned, because the job
+runs the pull request's own scripts and the signing secrets are out of its
+reach (see [Secrets](#secrets-only-main-can-read-them)); a fork's run also
+gets no comment. It reads the release build's Rust cache and never writes one.
 
 ## modules.yml: the module train
 
@@ -287,6 +288,38 @@ The workflow runs on a push to `main` that touches `modules/`, the module
 crates under `server/crates`, `packages/cli`, `packages/module-sdk` or the
 toolchain pin. No lane reaches it: like the other release workflows, a change
 to it is linted as code in `ci.yml` and builds nothing there.
+
+## Secrets: only `main` can read them
+
+A repository secret reaches a workflow on any branch, so anyone who can push
+a branch can print it. The signing and publishing secrets are therefore
+environment secrets, and both environments allow one branch, `main`:
+
+| environment | holds | read by |
+|---|---|---|
+| `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
+| `sites` | `CLOUDFLARE_API_TOKEN` | `kit.yml`, `site.yml`, `tv-web.yml`, `repo-worker.yml` |
+| `production` | nothing: it is the approval before a Release | `deploy.yml`'s `publish` |
+
+A job that needs one declares it the same way everywhere:
+
+```yaml
+environment:
+  name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+  deployment: false
+```
+
+On `main` the job gets the environment and its secrets. Anywhere else the name
+is empty, so the job runs with no environment and every secret reads as empty,
+which each workflow already treats as "build unsigned" or "skip the deploy". A
+branch that writes `environment: release` itself is refused before it starts:
+`Branch "x" is not allowed to deploy to release`. `deployment: false` keeps
+those jobs from filling the repository's deployment history.
+
+Two secrets stay at the repository level because pull requests need them:
+`SONAR_TOKEN`, and the `SCCACHE_R2_*` four if the cache below is ever turned
+on. Neither signs or publishes anything. A new secret goes in an environment
+(`gh secret set NAME --env release`) unless a pull request has to read it.
 
 ## Caches and the 10 GB budget
 

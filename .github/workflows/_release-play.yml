@@ -16,6 +16,9 @@ concurrency:
 jobs:
   play:
     name: Mobile + Android TV drafts
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
