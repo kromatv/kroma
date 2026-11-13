@@ -210,7 +210,7 @@ impl FakeProvider {
 
     /// Says it signs ID tokens with `algorithms` only.
     pub fn advertise_algorithms(&self, algorithms: &[&str]) {
-        self.book().algorithms = algorithms.iter().map(|alg| alg.to_string()).collect();
+        self.book().algorithms = algorithms.iter().copied().map(String::from).collect();
     }
 
     pub fn offer_scope(&self, scope: &str) {

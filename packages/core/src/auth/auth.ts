@@ -126,9 +126,9 @@ export function createAuth({ client, browser, store, passkey }: AuthOptions) {
         keys,
         result,
       };
-    } catch (failure) {
+    } catch (error) {
       store.clear();
-      throw failure;
+      throw error;
     }
   }
 
