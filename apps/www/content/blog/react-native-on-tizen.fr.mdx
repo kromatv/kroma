@@ -16,9 +16,9 @@ lenteurs. Sur une TV d'entrée de gamme, faire défiler une grille d'affiches sa
 à-coups nous a demandé toute une série d'optimisations.
 
 On voulait que Samsung passe dans le même camp qu'Apple et Google. C'est devenu
-[react-native-tizen](https://github.com/kromatv/react-native-tizen), un paquet
-open source qui fait tourner une app React Native ou Expo en natif sur une TV
-Samsung. Voici comment on y est arrivés.
+[react-native-tizen](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen),
+un paquet open source qui fait tourner une app React Native ou Expo en natif sur
+une TV Samsung. Voici comment on y est arrivés.
 
 ![L'app d'exemple de react-native-tizen sur une Samsung The Frame de 2024](/blog/react-native-on-tizen/home.png)
 
@@ -160,7 +160,7 @@ TV. Mais on ne la télécharge qu'une fois, et elle démarre presque deux fois p
 vite à chaque lancement.
 
 Le détail des mesures est dans
-[les benchmarks](https://github.com/kromatv/react-native-tizen/blob/main/docs/benchmarks.md).
+[les benchmarks](https://github.com/kromatv/react-native-tv/blob/main/packages/react-native-tizen/docs/benchmarks.md).
 
 ## Un bug qui touchait aussi Apple TV
 
@@ -187,8 +187,8 @@ en corriger un sur une Apple TV.
 
 KROMA est sous licence AGPL, qui oblige tout projet réutilisant le code à
 publier le sien sous la même licence. Pour que n'importe quelle app puisse s'en
-servir, react-native-tizen a
-[son propre dépôt](https://github.com/kromatv/react-native-tizen), sous licence
+servir, react-native-tizen vit dans
+[un dépôt séparé](https://github.com/kromatv/react-native-tv), sous licence
 MIT, et il est publié sur npm sous le nom `@kromatv/react-native-tizen`.
 
 KROMA en est le premier utilisateur. Notre app TV l'installe depuis npm, comme
@@ -204,6 +204,6 @@ et certaines commandes d'Expo, comme `expo prebuild`, ne connaissent pas encore
 Tizen.
 
 Si vous avez une TV Samsung de 2021 ou plus récente,
-[le guide de démarrage](https://github.com/kromatv/react-native-tizen#quick-start)
+[le guide de démarrage](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen#quick-start)
 explique comment y lancer une app Expo. Et si quelque chose casse,
-[dites-le-nous](https://github.com/kromatv/react-native-tizen/issues).
+[dites-le-nous](https://github.com/kromatv/react-native-tv/issues).
