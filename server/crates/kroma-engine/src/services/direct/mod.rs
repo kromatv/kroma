@@ -3,6 +3,7 @@
 //! `docs/direct-connection.md`.
 
 mod challenge;
+mod neighbourhood;
 mod origins;
 mod public_ip;
 mod reach;
@@ -16,6 +17,7 @@ pub use origins::{PublicOrigins, origin_of};
 pub use reach::is_private_client;
 
 use challenge::Challenges;
+use neighbourhood::Neighbourhood;
 use reach::same_network;
 use routes::{global_v6, lan_addresses, local_addresses};
 
@@ -34,6 +36,19 @@ const PROOFS_PER_MINUTE: u32 = 30;
 // Each route costs every client a probe, and the client refuses an offer of
 // more than 32.
 const MAX_ROUTES: usize = 16;
+
+static NEIGHBOURHOOD: Neighbourhood = Neighbourhood::new();
+
+/// Whether `client` is inside a /64 this machine holds a global IPv6 address
+/// in, which places it in the same house as the server.
+pub fn is_neighbour(client: IpAddr) -> bool {
+    match client.to_canonical() {
+        IpAddr::V6(v6) => NEIGHBOURHOOD.holds(v6, kroma_primitives::now_ms(), || {
+            global_v6(&local_addresses())
+        }),
+        IpAddr::V4(_) => false,
+    }
+}
 
 /// What a signed-in client is offered: where to try, whether the server places
 /// it in the same house, and the challenge a route has to answer.

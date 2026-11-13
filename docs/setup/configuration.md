@@ -17,7 +17,7 @@ Lists take commas. The folder lists also take the system's path separator,
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `KROMA_HOST` | `0.0.0.0` | The network interface to listen on. `0.0.0.0` is every interface. |
+| `KROMA_HOST` | `0.0.0.0` | The network interface to listen on. `0.0.0.0` is every interface, over IPv4. `::` is every interface, over IPv6 and IPv4. See [IPv6](network.md#over-ipv6). |
 | `KROMA_PORT` | `4040` | The HTTP port. The apps search the network on `4040`, so with another port you may have to type the address in each app. |
 | `KROMA_WEB_URL` | none | The public address of KROMA, such as `https://kroma.example.com`. Invitation, password reset and TV sign-in links use it, and browsers on that address may use the API. |
 | `KROMA_PUBLIC_IP_URL` | `https://api.ipify.org` | A service that returns the server's public IPv4 address, used to recognize apps on the same home network. Empty turns it off. |
@@ -65,7 +65,7 @@ managed there and the variables are ignored.
 | `KROMA_HTTPS_PORT` | `4443` | The HTTPS port. |
 | `KROMA_TLS_SANS` | none | Extra addresses and names for the certificate, such as `192.168.1.50,nas.home`. Needed in Docker. |
 | `KROMA_HTTPS_REDIRECT` | `0` | `1` sends every HTTP visitor to HTTPS. Breaks TV apps that cannot trust the certificate. |
-| `KROMA_TRUSTED_PROXIES` | none | Addresses or IPv4 ranges of reverse proxies whose `X-Forwarded-For` header KROMA believes. See [reverse proxies](network.md#behind-your-own-reverse-proxy). |
+| `KROMA_TRUSTED_PROXIES` | none | Addresses or ranges of reverse proxies whose `X-Forwarded-For` header KROMA believes. See [reverse proxies](network.md#behind-your-own-reverse-proxy). |
 | `KROMA_ALLOWED_ORIGINS` | none | Extra web addresses whose pages may use the API. See [another address](network.md#serve-the-web-app-from-another-address). |
 
 ## Logs

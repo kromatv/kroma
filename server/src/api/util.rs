@@ -348,6 +348,21 @@ mod tests {
     }
 
     #[test]
+    fn a_proxy_named_by_an_ipv6_range_is_believed() {
+        let proxy: IpAddr = "fd00:dead:beef::2".parse().unwrap();
+        let forwarded = [("x-forwarded-for", "203.0.113.7")];
+
+        assert_eq!(
+            seen_from(proxy, &forwarded, &["fd00:dead:beef::/48".to_string()]),
+            "203.0.113.7"
+        );
+        assert_eq!(
+            seen_from(proxy, &forwarded, &["fd00:dead:beee::/48".to_string()]),
+            "fd00:dead:beef::2"
+        );
+    }
+
+    #[test]
     fn loopback_is_believed_without_being_named() {
         // A proxy on the same host is the ordinary case, and naming it would be
         // a step every single-box install had to take for nothing.

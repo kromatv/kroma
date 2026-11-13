@@ -20,7 +20,7 @@ Windows.
 
 | Variable | Valeur par défaut | Rôle |
 | --- | --- | --- |
-| `KROMA_HOST` | `0.0.0.0` | L'interface réseau sur laquelle écouter. `0.0.0.0` désigne toutes les interfaces. |
+| `KROMA_HOST` | `0.0.0.0` | L'interface réseau sur laquelle écouter. `0.0.0.0` désigne toutes les interfaces, en IPv4. `::` désigne toutes les interfaces, en IPv6 et en IPv4. Consultez [IPv6](network.md#en-ipv6). |
 | `KROMA_PORT` | `4040` | Le port HTTP. Les apps cherchent un serveur sur `4040` : avec un autre port, vous devrez peut-être saisir l'adresse dans chaque app. |
 | `KROMA_WEB_URL` | aucune | L'adresse publique de KROMA, comme `https://kroma.example.com`. Les liens d'invitation, de réinitialisation du mot de passe et de connexion d'un téléviseur l'utilisent, et les navigateurs sur cette adresse peuvent utiliser l'API. |
 | `KROMA_PUBLIC_IP_URL` | `https://api.ipify.org` | Un service qui renvoie l'adresse IPv4 publique du serveur, utilisée pour reconnaître les apps sur le même réseau local. Une valeur vide le désactive. |
@@ -68,7 +68,7 @@ Ensuite, les bibliothèques se gèrent là, et les variables sont ignorées.
 | `KROMA_HTTPS_PORT` | `4443` | Le port HTTPS. |
 | `KROMA_TLS_SANS` | aucune | Adresses et noms supplémentaires pour le certificat, comme `192.168.1.50,nas.home`. Nécessaire dans Docker. |
 | `KROMA_HTTPS_REDIRECT` | `0` | `1` redirige chaque visiteur HTTP vers HTTPS. Bloque les apps TV qui ne peuvent pas faire confiance au certificat. |
-| `KROMA_TRUSTED_PROXIES` | aucune | Adresses ou plages IPv4 des reverse proxys dont KROMA croit l'en-tête `X-Forwarded-For`. Consultez [reverse proxy](network.md#derrière-votre-propre-reverse-proxy). |
+| `KROMA_TRUSTED_PROXIES` | aucune | Adresses ou plages des reverse proxys dont KROMA croit l'en-tête `X-Forwarded-For`. Consultez [reverse proxy](network.md#derrière-votre-propre-reverse-proxy). |
 | `KROMA_ALLOWED_ORIGINS` | aucune | Adresses web supplémentaires dont les pages peuvent utiliser l'API. Consultez [une autre adresse](network.md#servir-lapplication-web-depuis-une-autre-adresse). |
 
 ## Journaux
