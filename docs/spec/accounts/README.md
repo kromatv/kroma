@@ -69,7 +69,7 @@ The television rule below is the hard case this policy is built around.
 Status: **SHIPPED** on the web. The phone and desktop apps are **AGREED**.
 
 A household that already runs an identity provider can let it prove who people are
-([RFC](../../rfcs/NNNN-oidc-sign-in.md)). The provider says who someone is. Whether they come
+([RFC 657](../../rfcs/657-oidc-sign-in.md)). The provider says who someone is. Whether they come
 in, and what they may see, stays this server's decision.
 
 **ACCT-75** (SHIPPED) - An admin may add sign-in providers that speak OpenID Connect. Each one

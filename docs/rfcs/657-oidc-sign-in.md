@@ -1,7 +1,7 @@
-# RFC NNNN: sign in with an OpenID Connect provider
+# RFC 657: sign in with an OpenID Connect provider
 
 - Status: **DRAFT**
-- PR: #NNNN
+- PR: #657
 - Issue: #653
 - Affects: `docs/spec/accounts/README.md`, `docs/setup/single-sign-on.md`,
   `docs/setup/configuration.md`. Areas `area/server`, `area/web`, `area/docs`
