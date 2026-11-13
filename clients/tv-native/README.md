@@ -3,12 +3,17 @@
 The Apple TV / Android TV / Samsung Tizen / LG webOS shell. It is platform glue: the
 10-foot experience itself lives in [`@kromatv/tv`](../../packages/tv).
 
-Every TV platform is set up by one entry in `app.json`, the config plugin of
-[`@kromatv/react-native-tv`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tv).
-It hands `@react-native-tvos/config-tv` the `tvos` block for Apple TV and
-Android TV, gives each TV platform package among the dependencies the shared
-props and its own block (`tizen`, `webos`), and teaches Metro their platforms,
-so `metro.config.ts` names no TV. A third TV is then one more dependency.
+Every TV comes from one dependency,
+[`@kromatv/react-native-tv`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tv),
+and one entry in `app.json`, its config plugin. The package brings the Samsung
+and LG packages and `@react-native-tvos/config-tv`, so `package.json` lists
+none of them. The entry hands `config-tv` the `tvos` block for Apple TV and
+Android TV, gives each TV platform the shared props and its own block (`tizen`,
+`webos`), and teaches Metro their platforms, so `metro.config.ts` names no TV.
+
+The Tizen files here import `@kromatv/react-native-tizen` directly
+(`/preview`, `/preview-json`, `/mic-button`). That resolves because Bun hoists
+the package; an install that does not hoist would need it listed.
 
 The same package adds `run:tizen` and `run:webos` to Expo CLI, through the
 patch in `patches/@expo%2Fcli@<version>.patch`. After an Expo upgrade that

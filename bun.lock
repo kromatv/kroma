@@ -322,9 +322,7 @@
         "@kromatv/core": "workspace:*",
         "@kromatv/lan-beacon": "workspace:*",
         "@kromatv/media3-ffmpeg": "workspace:*",
-        "@kromatv/react-native-tizen": "0.1.0-alpha.5",
-        "@kromatv/react-native-tv": "0.1.0-alpha.0",
-        "@kromatv/react-native-webos": "0.1.0-alpha.3",
+        "@kromatv/react-native-tv": "0.1.0-alpha.1",
         "@kromatv/tv": "workspace:*",
         "@kromatv/ui": "workspace:*",
         "@react-native-masked-view/masked-view": "0.3.2",
@@ -346,7 +344,6 @@
       },
       "devDependencies": {
         "@babel/core": "^7.29.7",
-        "@react-native-tvos/config-tv": "^0.1.7",
         "@types/node": "^22.20.5",
         "@types/react": "^19.3.0",
         "babel-preset-expo": "~58.0.18",
@@ -1748,7 +1745,7 @@
 
     "@kromatv/react-native-tizen": ["@kromatv/react-native-tizen@0.1.0-alpha.5", "", { "dependencies": { "@formatjs/intl-numberformat": "10.0.2", "@formatjs/intl-pluralrules": "7.0.2", "@formatjs/intl-relativetimeformat": "13.0.1", "ws": "8.22.1", "zod": "^4.6.7" }, "peerDependencies": { "react-native": ">=0.88.0-0" }, "bin": { "rn-tizen": "dist/cli/main.js" } }, "sha512-iTeVjmFUGutVLYHr6VFZFGRmSqFqN8/WtdCahAGYi53fp7z5pTTwPgzaPyoY5KpD54Ttq12kdlgt++Dx+7g4lg=="],
 
-    "@kromatv/react-native-tv": ["@kromatv/react-native-tv@0.1.0-alpha.0", "", { "dependencies": { "zod": "^4.6.7" }, "bin": { "rn-tv": "dist/cli/main.js" } }, "sha512-ClrMupSqWYTD2f05cyAuXdd9JclnjDFPd16l7ayunGwXQNQSc1pgtk9o5YLEU7F9ZzupOxhDGeMDGAY4aPKyCA=="],
+    "@kromatv/react-native-tv": ["@kromatv/react-native-tv@0.1.0-alpha.1", "", { "dependencies": { "@kromatv/react-native-tizen": "^0.1.0-alpha.5", "@kromatv/react-native-webos": "^0.1.0-alpha.3", "@react-native-tvos/config-tv": "^0.1.7", "zod": "^4.6.7" }, "bin": { "rn-tv": "dist/cli/main.js" } }, "sha512-Ne20nKbfcIHr74StKoY4OOJLW/YwqCEEXJ3iwi3Wd467CmiHoVJ7C1yPV/i9sby12Nsn7KT3NPi4cNmyl/F3dQ=="],
 
     "@kromatv/react-native-webos": ["@kromatv/react-native-webos@0.1.0-alpha.3", "", { "dependencies": { "@formatjs/intl-numberformat": "10.0.2", "@formatjs/intl-pluralrules": "7.0.2", "@formatjs/intl-relativetimeformat": "13.0.1", "ssh2": "1.17.0", "ws": "8.22.2", "zod": "^4.6.7" }, "peerDependencies": { "react-native": ">=0.88.0-0" }, "bin": { "rn-webos": "dist/cli/main.js" } }, "sha512-9AFpnShk05uYaM6xGjbK16WJVgezzQXauDpDv4qCQpium8Hz02/sNSQ4ta+rHf51yKJyhqzJsEzAbB2xz7PVew=="],
 
