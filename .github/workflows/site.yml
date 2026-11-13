@@ -41,6 +41,9 @@ permissions:
 jobs:
   deploy:
     name: Build + deploy (kroma.tv)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'sites' || '' }}
+      deployment: false
     # A finished run that failed published nothing, so there is nothing new to
     # bake. Every other trigger always builds: the build IS the gate.
     if: >-

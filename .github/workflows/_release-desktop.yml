@@ -25,6 +25,9 @@ on:
 jobs:
   desktop:
     name: Desktop ${{ matrix.label }}
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","desktop"]'), github.event.inputs.targets)) }}
     strategy:
       fail-fast: false

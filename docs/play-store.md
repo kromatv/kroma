@@ -19,7 +19,8 @@ two version codes share one namespace, so both must be unique across tracks.
 ## Build and signing
 
 Build & Release produces both APKs and Play-ready AABs. Both Android jobs restore
-the same upload identity from the existing repository secrets:
+the same upload identity from the secrets of the `release` environment, which
+only `main` can read (see [`ci.md`](ci.md#secrets-only-main-can-read-them)):
 
 - `ANDROID_KEYSTORE`: base64-encoded keystore.
 - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
@@ -78,7 +79,9 @@ account, then installs from the Play listing's device list.
 
 After the manual setup, configure a dedicated Google Play publisher service
 account with access to this app's testing releases and the Android Publisher API.
-Store its JSON credential as `PLAY_SERVICE_ACCOUNT_JSON`. Set repository variables:
+Store its JSON credential as `PLAY_SERVICE_ACCOUNT_JSON` in the `release`
+environment (`gh secret set PLAY_SERVICE_ACCOUNT_JSON --env release`). Set
+repository variables:
 
 - `PLAY_MOBILE_TRACK`: the mobile testing-track ID returned by Play.
 - `PLAY_TV_TRACK`: the dedicated TV testing-track ID, prefixed `tv:`.

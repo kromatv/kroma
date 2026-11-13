@@ -222,6 +222,9 @@ jobs:
   distribute:
     name: Push to the beta channels
     needs: [verify, publish]
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     runs-on: macos-26 # xcrun altool
     permissions:
       actions: read # download the candidate's artifacts

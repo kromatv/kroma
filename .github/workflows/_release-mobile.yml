@@ -46,6 +46,9 @@ on:
 jobs:
   mobile-android:
     name: Mobile Android (APK + Play bundle)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile","android"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
@@ -169,6 +172,9 @@ jobs:
 
   mobile-ios:
     name: Mobile .ipa (TestFlight)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     # macos-26, NOT macos-15: Expo SDK 57 pulls Swift packages built with Swift
     # tools 6.2 (expo-modules-jsi), and the macos-15 image tops out at Xcode 16.4
