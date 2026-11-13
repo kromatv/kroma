@@ -1,5 +1,5 @@
-import type { Direction } from '@kromatv/spatial-nav';
-import type { ReactNode, Ref } from 'react';
+import type { Direction, Rect } from '@kromatv/spatial-nav';
+import { type ReactNode, type Ref, type RefObject, useMemo, useRef } from 'react';
 import {
   Platform,
   type PointerEvent,
@@ -8,6 +8,7 @@ import {
   type ViewProps,
   type ViewStyle,
 } from 'react-native';
+import { bothRefs } from './both-refs';
 import { useNodeHost } from './navigator-context';
 import { usePointerDevice } from './pointer-device';
 import { usePointerHold } from './pointer-hold';
@@ -17,6 +18,17 @@ const WEB = Platform.OS === 'web';
 const ACTIVATE = [{ name: 'activate' }] as const;
 const SELECTED = { selected: true };
 const UNSELECTED = { selected: false };
+
+function onScreen(view: View | null): Rect | null {
+  if (view === null) return null;
+  // Fabric answers before `measureInWindow` returns; a platform that answers
+  // later leaves the rect unknown, and the navigator to its own order.
+  const found: { rect: Rect | null } = { rect: null };
+  view.measureInWindow((x, y, width, height) => {
+    found.rect = { x, y, width, height };
+  });
+  return found.rect;
+}
 
 interface PointerProps {
   onMouseEnter?: () => void;
@@ -61,9 +73,11 @@ function NavigatorItem({
   viewProps,
   ref,
 }: Readonly<NavigatorItemProps>) {
+  const view = useRef<View>(null);
   return (
     <SpatialNode
       focusable
+      rect={() => onScreen(view.current)}
       index={index}
       onSelect={onSelect}
       onLongSelect={onLongSelect}
@@ -74,6 +88,7 @@ function NavigatorItem({
     >
       {(state) => (
         <ItemView
+          view={view}
           state={state}
           style={style}
           viewProps={viewProps}
@@ -89,6 +104,7 @@ function NavigatorItem({
 
 interface ItemViewProps {
   children: NavigatorItemProps['children'];
+  view: RefObject<View | null>;
   state: ItemState;
   style: StyleProp<ViewStyle>;
   viewProps: NavigatorItemProps['viewProps'];
@@ -98,6 +114,7 @@ interface ItemViewProps {
 
 function ItemView({
   children,
+  view,
   state,
   style,
   viewProps,
@@ -122,6 +139,10 @@ function ItemView({
     else host.requestFocus(id);
   };
 
+  const { ref: given, ...rest } = (viewProps ?? {}) as ViewProps &
+    PointerProps & { ref?: Ref<View> };
+  const attach = useMemo(() => bothRefs(view, given), [view, given]);
+
   const pointer: PointerProps | null = WEB
     ? {
         onMouseEnter: () => {
@@ -143,8 +164,9 @@ function ItemView({
       onAccessibilityAction={activate}
       accessibilityState={state.focused ? SELECTED : UNSELECTED}
       style={style}
-      {...viewProps}
+      {...rest}
       {...pointer}
+      ref={attach}
     >
       {typeof children === 'function' ? children(state) : children}
     </View>

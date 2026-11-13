@@ -9,6 +9,10 @@ interface NavigatorNodeProps {
   children: ReactNode | ((state: NodeState) => ReactNode);
   orientation?: Orientation;
   alignInGrid?: boolean;
+  /** A move across this container's children lands on the control nearest on
+   *  screen to the one it leaves, instead of the one the next child was last
+   *  left on: the rows of a page, whose rails scroll each on their own. */
+  spatial?: boolean;
   /** This node's slot among its siblings. Omitted, it takes the one after the
    *  highest declared so far, so a tile that remounts at the head of a sliding
    *  window keeps its place only if it says where that is. */

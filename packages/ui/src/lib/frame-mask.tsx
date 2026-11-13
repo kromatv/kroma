@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
-import { GPU_MASKS } from '#ui/lib/gpu-masks';
+import { PAGE_MASKS } from '#ui/lib/gpu-masks';
 import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
 /** Whether a page frame can mask what scrolls inside it: see {@link GPU_MASKS}. */
-export const FRAME_MASKS = GPU_MASKS;
+export const FRAME_MASKS = PAGE_MASKS;
 
 const RAMP = 80;
 const ROOM = 24;
