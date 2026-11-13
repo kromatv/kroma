@@ -28,9 +28,20 @@ function Capture() {
 
 type Measured = (x: number, y: number, width: number, height: number) => void;
 
-/** Puts the tile `id` at `x` of the window, answered at once as Fabric does. */
+interface FabricView {
+  getBoundingClientRect: undefined;
+  measureInWindow: (done: Measured) => void;
+}
+
+/** Puts the tile `id` at `x` of the window, as a browser reports an element. */
 function showAt(id: string, x: number, y: number) {
-  const tile = screen.getByTestId(id) as unknown as { measureInWindow: (done: Measured) => void };
+  screen.getByTestId(id).getBoundingClientRect = () => new DOMRect(x, y, 90, 150);
+}
+
+/** Puts the tile `id` at `x` of the window as Fabric reports a view: no element to ask, and `measureInWindow` answered at once. */
+function showOnFabric(id: string, x: number, y: number) {
+  const tile = screen.getByTestId(id) as unknown as FabricView;
+  tile.getBoundingClientRect = undefined;
   tile.measureInWindow = (done) => done(x, y, 90, 150);
 }
 
@@ -83,6 +94,14 @@ describe('the rows of a spatial node', () => {
     render(<Page spatial />);
     ['a0', 'a1', 'a2'].forEach((id, index) => showAt(id, index * 100, 0));
     ['b0', 'b1', 'b2'].forEach((id, index) => showAt(id, 100 + index * 100, 200));
+
+    expect(down()).toBe('b1');
+  });
+
+  it('ask a view that is no element where it shows through measureInWindow', () => {
+    render(<Page spatial />);
+    ['a0', 'a1', 'a2'].forEach((id, index) => showOnFabric(id, index * 100, 0));
+    ['b0', 'b1', 'b2'].forEach((id, index) => showOnFabric(id, 100 + index * 100, 200));
 
     expect(down()).toBe('b1');
   });

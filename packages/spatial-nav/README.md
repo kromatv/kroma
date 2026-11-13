@@ -136,10 +136,11 @@ wrong for a page of rails that each scroll on their own: after three steps
 right, Down lands on the first tile of the rail below. `spatial` on the
 container lands the move on the focusable nearest on screen to the one it
 leaves, the one facing it and, among several, the one whose centre is closest.
-Each `<NavigatorItem>` says where it shows by measuring its view in the window;
-an item that cannot say yet (not laid out, or a platform that answers a measure
-later) is skipped, and when the item being left cannot say, the order of the
-tree decides as before. `<FocusScroll>` in `@kromatv/ui` puts its rows under a
+Each `<NavigatorItem>` says where it shows: in a browser by asking its element,
+since react-native-web answers a measure a tick later, and elsewhere by
+measuring its view in the window. An item that cannot say yet (not laid out, or
+a platform that answers a measure later) is skipped, and when the item being
+left cannot say, the order of the tree decides as before. `<FocusScroll>` in `@kromatv/ui` puts its rows under a
 spatial node.
 
 **Registration order does not have to match the tree.** A node registered under a
