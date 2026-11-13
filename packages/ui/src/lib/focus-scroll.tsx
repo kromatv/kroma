@@ -14,9 +14,7 @@ import {
 import {
   Animated,
   type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  ScrollView,
+  type ScrollView,
   type StyleProp,
   type View,
   type ViewStyle,
@@ -38,6 +36,7 @@ import {
 } from '#ui/lib/reveal-contexts';
 import { nearestOffset, pageOffset } from '#ui/lib/scroll-offsets';
 import { ringRoom } from '#ui/lib/scroll-ring-room';
+import { useScrollOffset } from '#ui/lib/use-scroll-offset';
 
 type Reveal = 'start' | 'nearest';
 
@@ -93,6 +92,7 @@ function AxisScroll({
     offset: new Animated.Value(0),
     content: inner,
   }));
+  const nativeOffset = !WEB && !horizontal;
 
   const reveal = useCallback(
     (anchor: Anchor) => {
@@ -130,10 +130,27 @@ function AxisScroll({
 
   const room = ringRoom(flat(style), flat(contentStyle), horizontal);
 
+  const reportOffset = useCallback(
+    (offset: number) => {
+      current.current = offset;
+      if (!nativeOffset) position.offset.setValue(offset);
+      const scrolled = offset > 1;
+      if (scrolled === wasScrolled.current) return;
+      wasScrolled.current = scrolled;
+      onScrolledChange?.(scrolled);
+    },
+    [nativeOffset, position, onScrolledChange],
+  );
+  const { onScroll, Scroller } = useScrollOffset(
+    horizontal ? 'x' : 'y',
+    reportOffset,
+    nativeOffset ? position.offset : null,
+  );
+
   return (
     <RevealContext.Provider value={reveal}>
       <ScrollPositionContext.Provider value={horizontal ? null : position}>
-        <ScrollView
+        <Scroller
           ref={scroller}
           horizontal={horizontal}
           // React 19 types a ref as nullable; React Native's prop does not.
@@ -147,16 +164,7 @@ function AxisScroll({
             extent.current.viewport = horizontal ? width : height;
           }}
           scrollEventThrottle={16}
-          onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
-            const { x, y } = e.nativeEvent.contentOffset;
-            current.current = horizontal ? x : y;
-            position.offset.setValue(current.current);
-            const scrolled = current.current > 1;
-            if (scrolled !== wasScrolled.current) {
-              wasScrolled.current = scrolled;
-              onScrolledChange?.(scrolled);
-            }
-          }}
+          onScroll={onScroll}
           onContentSizeChange={(width: number, height: number) => {
             extent.current.content = horizontal ? width : height;
             // Re-reveal: the content may only now be long enough to bring the
@@ -169,7 +177,7 @@ function AxisScroll({
           scrollEnabled={WEB}
         >
           {children}
-        </ScrollView>
+        </Scroller>
       </ScrollPositionContext.Provider>
     </RevealContext.Provider>
   );
@@ -232,7 +240,11 @@ function FocusScroll(props: Readonly<FocusScrollProps>) {
         onScrolledChange={props.onScrolledChange ?? report ?? undefined}
         horizontal={false}
         context={PageScrollContext}
-      />
+      >
+        {/* Rails scroll each on their own, so the tile under the focus is the
+            one that shows there, not the one a rail was last left on. */}
+        <NavigatorNode spatial>{props.children}</NavigatorNode>
+      </AxisScroll>
     </ScrolledReport.Provider>
   );
 }

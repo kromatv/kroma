@@ -7,6 +7,13 @@ async function masksOn(os: string): Promise<boolean> {
   return GPU_MASKS;
 }
 
+async function pageMasksOn(os: string): Promise<boolean> {
+  vi.resetModules();
+  vi.doMock('react-native', () => ({ Platform: { OS: os } }));
+  const { PAGE_MASKS } = await import('./gpu-masks');
+  return PAGE_MASKS;
+}
+
 afterEach(() => {
   vi.doUnmock('react-native');
 });
@@ -26,5 +33,20 @@ describe('GPU_MASKS', () => {
 
   it('leaves Android unmasked, where a mask redraws the page through a bitmap', async () => {
     expect(await masksOn('android')).toBe(false);
+  });
+});
+
+describe('PAGE_MASKS', () => {
+  it('masks a whole page on Apple TV and webOS', async () => {
+    expect(await pageMasksOn('ios')).toBe(true);
+    expect(await pageMasksOn('webos')).toBe(true);
+  });
+
+  it('keeps a page-sized mask off Tizen, where every rounded clip under it is redrawn each frame', async () => {
+    expect(await pageMasksOn('tizen')).toBe(false);
+  });
+
+  it('masks no page where nothing is masked at all', async () => {
+    expect(await pageMasksOn('android')).toBe(false);
   });
 });

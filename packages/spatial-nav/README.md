@@ -130,6 +130,18 @@ container is enough; the rows do not also need LRUD's `useMeForIndexAlign`. When
 the aligned index has no node in the row being entered, the nearest lower index
 takes the focus.
 
+**One flag makes a container walk by place.** A container enters its next
+child at the child that one was last left on, which is right for a menu and
+wrong for a page of rails that each scroll on their own: after three steps
+right, Down lands on the first tile of the rail below. `spatial` on the
+container lands the move on the focusable nearest on screen to the one it
+leaves, the one facing it and, among several, the one whose centre is closest.
+Each `<NavigatorItem>` says where it shows by measuring its view in the window;
+an item that cannot say yet (not laid out, or a platform that answers a measure
+later) is skipped, and when the item being left cannot say, the order of the
+tree decides as before. `<FocusScroll>` in `@kromatv/ui` puts its rows under a
+spatial node.
+
 **Registration order does not have to match the tree.** A node registered under a
 parent that does not exist yet is held and attached when the parent arrives,
 because React runs a child's mount effect before its parent's. A held node that
