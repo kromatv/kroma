@@ -18,8 +18,8 @@
     "dev": "vite dev --port 3100",
     "build": "vite build",
     "preview": "vite preview --port 3100",
-    "preview:edge": "bunx wrangler@4 dev",
-    "deploy": "bun run build && bunx wrangler@4 deploy -c dist/server/wrangler.json",
+    "preview:edge": "wrangler dev",
+    "deploy": "bun run build && wrangler deploy -c dist/server/wrangler.json",
     "typecheck": "bun run paraglide && tsc --noEmit",
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
   },
@@ -63,6 +63,7 @@
     "topojson-client": "^3.1.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "world-atlas": "^2.0.2"
+    "world-atlas": "^2.0.2",
+    "wrangler": "^4.151.3"
   }
 }

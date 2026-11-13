@@ -85,7 +85,7 @@ jobs:
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb.sig
     runs-on: ${{ matrix.os }}
     permissions:
-      contents: write # attach assets to the Release
+      contents: read
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -370,15 +370,3 @@ jobs:
           path: ${{ matrix.updater }}
           if-no-files-found: error
           retention-days: 30
-
-      - name: Attach to the Release
-        # Only a STABLE release attaches here. A candidate build (push to main)
-        # uploads its artifacts and stops; deploy.yml publishes them later.
-        if: inputs.channel == 'stable'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          # Attach into a DRAFT: `releases/latest` ignores drafts, so the
-          # previous complete release keeps serving modules.json until the
-          # publish job below flips this one live with every asset present.
-          draft: true
-          files: ${{ matrix.files }}

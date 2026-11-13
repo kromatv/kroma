@@ -1,10 +1,11 @@
 name: Security scan
 
-# Static analysis (CodeQL) for the JS/TS surface + a RustSec advisory audit of the
-# Cargo dependency graph. Runs on pushes/PRs to main and weekly (catches new CVEs
-# on unchanged code).
-# Docs-only changes reach neither analyzer (CodeQL scans JS/TS, cargo-audit
-# reads Cargo.lock); the weekly schedule keeps full coverage of unchanged code.
+# Static analysis (CodeQL) for the JS/TS surface and the workflows themselves +
+# a RustSec advisory audit of every Cargo lockfile that ships. Runs on
+# pushes/PRs to main and weekly (catches new CVEs on unchanged code).
+# Docs-only changes reach neither analyzer (CodeQL scans JS/TS and workflows,
+# cargo-audit reads Cargo.lock); the weekly schedule keeps full coverage of
+# unchanged code.
 on:
   push:
     branches: [main]
@@ -32,7 +33,7 @@ permissions:
 
 jobs:
   codeql:
-    name: CodeQL (JS/TS)
+    name: CodeQL (JS/TS + workflows)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -46,7 +47,7 @@ jobs:
       # buys seconds on a three-minute scan.
       - uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
         with:
-          languages: javascript-typescript
+          languages: javascript-typescript, actions
         env:
           CODEQL_OVERLAY_DATABASE_MODE: none
       - uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
@@ -65,11 +66,28 @@ jobs:
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2
         with:
           tool: cargo-audit
-      # Informational (non-gating) for now: today's findings are all unmaintained /
-      # unsound / yanked TRANSITIVE deps with no available fix (paste, ttf-parser,
-      # lru, spin, instant, ...). Surfaced as a warning annotation + full log so
-      # new/fixable advisories are visible; tighten to a hard gate with a triaged
-      # ignore-list once the transitive noise is addressed upstream.
-      - name: Audit the dependency graph (RustSec)
-        working-directory: server
-        run: cargo audit || echo "::warning title=cargo audit::advisories found (transitive; see the step log)"
+      # Every lockfile that ships: the server, each module (its own workspace,
+      # so its own lock), the desktop shell. The fixtures under tests/ build
+      # nothing a user runs. An advisory fails the job unless it is listed here,
+      # and each line says what lifts it. Unmaintained and yanked crates stay
+      # warnings in the log.
+      - name: Audit every shipped lockfile (RustSec)
+        run: |
+          known=(
+            RUSTSEC-2026-0459 # libsqlite3-sys 0.38, the bundled SQLite: needs a rusqlite built on 0.39
+            RUSTSEC-2023-0071 # rsa 0.9 under kroma-push (Marvin): no patched 0.9 exists
+            RUSTSEC-2026-0387 # crypto-bigint 0.5 under p256 0.13: patched from 0.7.6, which 0.13 cannot take
+            RUSTSEC-2026-0385 # ctutils 0.4.3 under chacha20poly1305: `cargo update -p ctutils` in server/
+          )
+          ignore=()
+          for id in "${known[@]}"; do ignore+=(--ignore "$id"); done
+          failed=0
+          while IFS= read -r lock; do
+            echo "::group::$lock"
+            cargo audit --file "$lock" "${ignore[@]}" || failed=1
+            echo "::endgroup::"
+          done < <(git ls-files '*Cargo.lock' ':!:*/tests/*')
+          if (( failed )); then
+            echo "::error title=cargo audit::an advisory no line of the known list covers; see the groups above"
+          fi
+          exit "$failed"

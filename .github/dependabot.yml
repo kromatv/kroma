@@ -1,0 +1,15 @@
+version: 2
+
+# Every action is pinned to a commit, so nothing moves until something proposes
+# the move. One grouped pull request a week, under the `ci` prefix a workflow
+# change takes here.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci

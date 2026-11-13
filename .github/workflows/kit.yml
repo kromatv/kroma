@@ -127,4 +127,4 @@ jobs:
         working-directory: apps/kit
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bunx wrangler@4 deploy
+        run: bun run wrangler deploy
