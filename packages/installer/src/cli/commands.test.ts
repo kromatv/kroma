@@ -89,7 +89,7 @@ describe('scanCommand', () => {
 
     expect(code).toBe(0);
     expect(printed[0]).toContain('192.168.1.31');
-    expect(printed[0]).toContain('Samsung .wgt');
+    expect(printed[0]).toContain('Samsung .tpk');
     expect(printed[0]).toContain('[TV] Salon');
   });
 

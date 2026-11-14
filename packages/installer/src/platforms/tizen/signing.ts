@@ -9,6 +9,7 @@ import { randomPassword } from './certificate/password';
 import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
 import { duidAt } from './duid';
+import { readTizenPackage, type TizenPackage } from './package-manifest';
 import { activeProfile, type SigningProfile } from './profiles';
 import { obtainCertificates } from './samsung/obtain';
 import { coversSet, readSamsungProfile } from './samsung/profile';
@@ -17,13 +18,13 @@ const SIGNATURES = ['author-signature.xml', 'signature1.xml', 'signature2.xml'];
 const KROMA_PROFILE = 'kroma';
 
 const CERTIFICATES = join(homedir(), '.kroma', 'certificates');
-const PACKAGE_NAME = 'KROMA.wgt';
 const DUID_TIMEOUT_MS = 20_000;
 
 export interface Signed {
   path: string;
   /** A staged copy the caller has to delete, rather than a directory it owns. */
   staged: boolean;
+  package: TizenPackage;
 }
 
 /**
@@ -68,9 +69,10 @@ async function generatedProfile(log: LogLine): Promise<SigningProfile> {
 }
 
 /**
- * Signs the package with this machine's own certificate and answers where the
- * new one is. A retail Samsung refuses every other signature, so the one a
- * release carries is never the one that installs.
+ * Signs the package, a native `.tpk` or a web `.wgt`, with this machine's own
+ * certificate and answers where the new one is. A retail Samsung refuses every
+ * other signature, so the one a release carries is never the one that
+ * installs. Both kinds take the same signature over the same files.
  */
 export async function resign(
   artifact: string,
@@ -78,16 +80,17 @@ export async function resign(
   log: LogLine,
 ): Promise<Signed> {
   log(`signing with profile ${profile.name}`);
-  const workspace = await mkdtemp(join(tmpdir(), 'kroma-wgt-'));
+  const workspace = await mkdtemp(join(tmpdir(), 'kroma-tizen-'));
   const stage = join(workspace, 'app');
   await stageInto(artifact, stage);
+  const tizenPackage = readTizenPackage(stage);
 
   await Promise.all(SIGNATURES.map((file) => rm(join(stage, file), { force: true })));
   await signWidget({ directory: stage, author: profile.author, distributor: profile.distributor });
 
-  const path = join(workspace, PACKAGE_NAME);
+  const path = join(workspace, `KROMA.${tizenPackage.type}`);
   await packZip(stage, path);
-  return { path, staged: true };
+  return { path, staged: true, package: tizenPackage };
 }
 
 /** What Samsung binds a distributor certificate to, read off the set itself. */

@@ -1,4 +1,4 @@
-import type { Platform } from '../platform';
+import { type Platform, WEB_FLAG } from '../platform';
 import { resolveWebosArtifact, webosSources } from './artifact';
 import { identifyWebos, WEBOS_PORTS, WEBOS_SEARCH_TARGET } from './identify';
 import { installWebos } from './install';
@@ -25,7 +25,9 @@ export const webos: Platform = {
       valueHint: 'passphrase',
       description: 'The LG Dev Mode passphrase, so the install asks nothing',
     },
+    ...WEB_FLAG,
   },
+  remembers: ['web'],
   identify: identifyWebos,
   prompt: askPassphrases,
   sources: webosSources,

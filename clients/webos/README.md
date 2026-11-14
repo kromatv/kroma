@@ -5,6 +5,12 @@
 Thin shell over `@kromatv/tv`, the shared 10-foot experience. webOS TVs decode
 HEVC/H.265 (incl. HDR) in hardware, so playback is direct-play.
 
+This is the **web** LG app. What a sideloaded LG set gets is the native app of
+[`clients/tv-native`](../tv-native) (`KROMA-webos-<v>.ipk`), which reaches the
+same webOS 4+ sets. This shell is still built on every release, as
+`tv.kroma.webos_<v>_all.ipk`, for the LG Content Store and for
+`npx @kromatv/installer install <address> --web`.
+
 ## Two bundles, one package (old-TV support)
 
 LG freezes Chromium per webOS major (webOS 4.x = 53, 5.0 = 68, 6 = 79, 22 = 87,

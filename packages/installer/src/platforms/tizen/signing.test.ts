@@ -9,6 +9,7 @@ import { writeProfile } from './certificate/profile';
 import { signWidget } from './certificate/widget';
 import { activeProfile } from './profiles';
 import { duidAt } from './duid';
+import { readTizenPackage, type TizenPackage } from './package-manifest';
 import { obtainCertificates } from './samsung/obtain';
 import { coversSet, readSamsungProfile } from './samsung/profile';
 import { profileFor, readDuid, resign } from './signing';
@@ -31,6 +32,7 @@ vi.mock('./certificate/profile', () => ({ writeProfile: vi.fn() }));
 vi.mock('./certificate/widget', () => ({ signWidget: vi.fn() }));
 vi.mock('./profiles', () => ({ activeProfile: vi.fn() }));
 vi.mock('./duid', () => ({ duidAt: vi.fn() }));
+vi.mock('./package-manifest', () => ({ readTizenPackage: vi.fn() }));
 vi.mock('./samsung/obtain', () => ({ obtainCertificates: vi.fn() }));
 vi.mock('./samsung/profile', () => ({
   readSamsungProfile: vi.fn(() => null),
@@ -43,14 +45,18 @@ const kroma = {
   distributor: { archive: '/certs/distributor.p12', password: 'other' },
 };
 
+const widget: TizenPackage = { type: 'wgt', packageId: 'KromaTV001', appId: 'KromaTV001.KROMA' };
+const native: TizenPackage = { type: 'tpk', packageId: 'tv.kroma.app', appId: 'tv.kroma.app' };
+
 const lines: string[] = [];
 const log = (line: string) => lines.push(line);
 
 beforeEach(() => {
   lines.length = 0;
   directories.clear();
-  vi.mocked(mkdtemp).mockResolvedValue('/tmp/kroma-wgt-1');
+  vi.mocked(mkdtemp).mockResolvedValue('/tmp/kroma-tizen-1');
   vi.mocked(writeProfile).mockResolvedValue('/tizen-studio-data/profile/profiles.xml');
+  vi.mocked(readTizenPackage).mockReturnValue(widget);
 });
 
 afterEach(() => {
@@ -197,7 +203,7 @@ describe('resign', () => {
 
     expect(vi.mocked(extractZip)).toHaveBeenCalledWith(
       '/out/KROMA-tizen-0.1.33.wgt',
-      '/tmp/kroma-wgt-1/app',
+      '/tmp/kroma-tizen-1/app',
     );
   });
 
@@ -208,7 +214,7 @@ describe('resign', () => {
 
     expect(vi.mocked(cp)).toHaveBeenCalledWith(
       '/kroma/clients/tizen/dist',
-      '/tmp/kroma-wgt-1/app',
+      '/tmp/kroma-tizen-1/app',
       {
         recursive: true,
       },
@@ -220,9 +226,9 @@ describe('resign', () => {
     await resign('/out/KROMA.wgt', kroma, log);
 
     expect(vi.mocked(rm).mock.calls.map(([path]) => path)).toEqual([
-      '/tmp/kroma-wgt-1/app/author-signature.xml',
-      '/tmp/kroma-wgt-1/app/signature1.xml',
-      '/tmp/kroma-wgt-1/app/signature2.xml',
+      '/tmp/kroma-tizen-1/app/author-signature.xml',
+      '/tmp/kroma-tizen-1/app/signature1.xml',
+      '/tmp/kroma-tizen-1/app/signature2.xml',
     ]);
   });
 
@@ -230,7 +236,7 @@ describe('resign', () => {
     await resign('/out/KROMA.wgt', kroma, log);
 
     expect(vi.mocked(signWidget)).toHaveBeenCalledWith({
-      directory: '/tmp/kroma-wgt-1/app',
+      directory: '/tmp/kroma-tizen-1/app',
       author: kroma.author,
       distributor: kroma.distributor,
     });
@@ -241,10 +247,24 @@ describe('resign', () => {
     const signed = await resign('/out/KROMA.wgt', kroma, log);
 
     expect(vi.mocked(packZip)).toHaveBeenCalledWith(
-      '/tmp/kroma-wgt-1/app',
-      '/tmp/kroma-wgt-1/KROMA.wgt',
+      '/tmp/kroma-tizen-1/app',
+      '/tmp/kroma-tizen-1/KROMA.wgt',
     );
-    expect(signed).toEqual({ path: '/tmp/kroma-wgt-1/KROMA.wgt', staged: true });
+    expect(signed).toEqual({ path: '/tmp/kroma-tizen-1/KROMA.wgt', staged: true, package: widget });
+  });
+
+  it('signs a native .tpk the same way and keeps its kind in the name', async () => {
+    vi.mocked(readTizenPackage).mockReturnValue(native);
+
+    const signed = await resign('/out/KROMA-tizen-0.1.40.tpk', kroma, log);
+
+    expect(vi.mocked(readTizenPackage)).toHaveBeenCalledWith('/tmp/kroma-tizen-1/app');
+    expect(vi.mocked(signWidget)).toHaveBeenCalledWith({
+      directory: '/tmp/kroma-tizen-1/app',
+      author: kroma.author,
+      distributor: kroma.distributor,
+    });
+    expect(signed).toEqual({ path: '/tmp/kroma-tizen-1/KROMA.tpk', staged: true, package: native });
   });
 });
 

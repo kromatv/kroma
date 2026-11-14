@@ -19,9 +19,15 @@ import type { IconComponent } from '#site/components/download/icon';
  * beside them. None is here: an App Store `.ipa` cannot be installed by whoever
  * downloads it, the modules have their own page, and a checksum is not a
  * product. Anything absent from this table is absent from the page.
+ *
+ * Samsung and LG get the native app, a `.tpk` and an `.ipk` built from
+ * `clients/tv-native`. Samsung's web `.wgt` stays for the 2017-2020 sets that
+ * refuse a native library. LG's web `.ipk` (`tv.kroma.webos_*`) has no row: the
+ * native one reaches every set it did.
  */
 export const TARGET_IDS = [
   'tizen',
+  'tizen-web',
   'webos',
   'androidtv',
   'macos',
@@ -47,16 +53,23 @@ interface Target {
 export const TARGETS: Readonly<Record<TargetId, Target>> = {
   tizen: {
     label: 'Samsung',
-    ext: '.wgt',
+    ext: '.tpk',
     arch: null,
-    asset: /^KROMA-tizen-.+\.wgt$/,
+    asset: /^KROMA-tizen-\d.*\.tpk$/,
+    icon: SamsungIcon,
+  },
+  'tizen-web': {
+    label: 'Samsung',
+    ext: '.wgt',
+    arch: '2017-2020',
+    asset: /^KROMA-tizen-\d.*\.wgt$/,
     icon: SamsungIcon,
   },
   webos: {
     label: 'LG',
     ext: '.ipk',
     arch: null,
-    asset: /^tv\.kroma\.webos_.+_all\.ipk$/,
+    asset: /^KROMA-webos-\d.*\.ipk$/,
     icon: LgIcon,
   },
   androidtv: {

@@ -3,7 +3,6 @@ import { basename, dirname } from 'node:path';
 import { run, runOk } from '../../shared/run';
 import { requireTool } from '../../toolchain/detect';
 import { booleanOption, type InstallContext, stringOption } from '../platform';
-import { tizenAppId } from './app-id';
 import { installFailure, refusedChain } from './install-failure';
 import { installOverSdb } from './native';
 import { readProfile, type SigningProfile } from './profiles';
@@ -14,9 +13,8 @@ import { SDB, TIZEN_CLI } from './tools';
 const CONNECT_TIMEOUT_MS = 25_000;
 const INSTALL_TIMEOUT_MS = 300_000;
 
-interface Package extends Partial<Signed> {
-  path: string;
-  profile: SigningProfile | null;
+interface Package extends Signed {
+  profile: SigningProfile;
 }
 
 export function parseSdbSerial(devices: string, host: string): string | null {
@@ -29,12 +27,12 @@ export function parseSdbSerial(devices: string, host: string): string | null {
 
 export async function installTizen(context: InstallContext): Promise<void> {
   const native = booleanOption(context.options, 'native') ?? true;
-  const wgt = await sign(context);
+  const signed = await sign(context);
   try {
-    if (native) await installOverSdb(context, wgt.path, wgt.profile?.name ?? null);
-    else await installOverCli(context, wgt);
+    if (native) await installOverSdb(context, signed.path, signed.package, signed.profile.name);
+    else await installOverCli(context, signed);
   } finally {
-    if (wgt.staged) await rm(dirname(wgt.path), { recursive: true, force: true });
+    if (signed.staged) await rm(dirname(signed.path), { recursive: true, force: true });
   }
 }
 
@@ -51,7 +49,7 @@ async function namedProfile(name: string): Promise<SigningProfile> {
   return profile;
 }
 
-async function installOverCli(context: InstallContext, wgt: Package): Promise<void> {
+async function installOverCli(context: InstallContext, signed: Package): Promise<void> {
   const { tv, log, launch } = context;
   const sdb = requireTool(SDB);
   const tizen = requireTool(TIZEN_CLI);
@@ -69,7 +67,7 @@ async function installOverCli(context: InstallContext, wgt: Package): Promise<vo
   }
 
   const installed = await run(
-    [tizen, 'install', '-n', basename(wgt.path), '--', dirname(wgt.path)],
+    [tizen, 'install', '-n', basename(signed.path), '--', dirname(signed.path)],
     {
       log,
       timeoutMs: INSTALL_TIMEOUT_MS,
@@ -77,11 +75,11 @@ async function installOverCli(context: InstallContext, wgt: Package): Promise<vo
   );
   if (installed.code !== 0) {
     const duid = refusedChain(installed.output) ? await readDuid(sdb, log) : null;
-    throw new Error(installFailure(installed.output, wgt.profile?.name ?? null, duid));
+    throw new Error(installFailure(installed.output, signed.profile.name, duid));
   }
   if (!launch) return;
 
-  const application = tizenAppId();
+  const application = signed.package.appId;
   const started = await run([tizen, 'run', '-p', application], { log });
   if (started.code !== 0) await run([sdb, 'shell', '0', 'was_execute', application], { log });
 }

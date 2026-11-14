@@ -30,6 +30,7 @@ directory:
 bunx expo start                                 # then t, or shift+t to pick a TV
 bunx expo run:tizen --device <tv-ip>            # a TV in Developer Mode
 bunx rn-tv tizen simulator run --instance <name>   # the aarch64 simulator
+bunx rn-tv tizen package                           # tizen/bin/Release/tizen80/<id>-<version>.tpk
 ```
 
 Use `bunx`, not `npx`: npm resolves `rn-tv` from the workspace root, where
@@ -60,6 +61,28 @@ bunx rn-tv webos package                           # webos/<id>_<version>_arm.ip
 
 No local module has a webOS implementation yet: `server-discovery` finds
 nothing on an LG set, so a server is added by its address there.
+
+## Release builds
+
+Every push to `main` builds both TV packages here, in the `tizen-native` and
+`webos-native` jobs of `.github/workflows/_release-tv.yml`, on a stock Ubuntu
+runner:
+
+| Package | Command | Release file | Runs on |
+| --- | --- | --- | --- |
+| Samsung | `bunx rn-tv tizen package --arch armv7l --platform 6.0` | `KROMA-tizen-<v>.tpk` | Tizen 6.0 (2021) and later |
+| LG | `bunx rn-tv webos package` | `KROMA-webos-<v>.ipk` | webOS 4 (2018) and later |
+
+`KROMA_VERSION` is the release triplet, so both manifests carry a plain
+`x.y.z`. Neither job installs Tizen Studio or an LG tool. The Samsung build
+reads two Tizen packages, the IoT Headed 6.0 armv7 rootstrap and the GCC 14.2
+runtime, fetched by checksum and unpacked into `$TIZEN_SDK_DIR`. It signs with
+a self-signed author certificate made for the run: a retail set takes only
+Samsung's certificates for itself, so `@kromatv/installer` signs the package
+again for each TV.
+
+Samsung's sets before 2021 refuse a native library, so they keep the web app
+of [`clients/tizen`](../tizen). The installer sends them the `.wgt` by itself.
 
 ## Testing the voice and launcher doors
 

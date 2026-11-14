@@ -1,6 +1,7 @@
 import { statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
+import type { PlatformOptions } from '../platforms/platform';
 import { root } from '../shared/root';
 import type { LogLine } from '../shared/run';
 import type { Television } from '../shared/television';
@@ -8,6 +9,8 @@ import { matchesWildcard, matchingPaths } from './matching-paths';
 import { type Channel, fetchAsset, releaseAssets } from './release';
 
 export type Source = 'local' | 'stable' | 'canary' | 'build';
+
+const SOURCE_ORDER: readonly Source[] = ['local', 'stable', 'canary', 'build'];
 
 export interface PackageKind {
   globs: readonly string[];
@@ -20,6 +23,7 @@ export interface ArtifactRequest {
   tv: Television;
   given?: string;
   source?: Source;
+  options?: PlatformOptions;
   log: LogLine;
 }
 
@@ -62,6 +66,11 @@ export function availableSources(kind: PackageKind, buildable: boolean): Source[
   sources.push('stable', 'canary');
   if (buildable) sources.push('build');
   return sources;
+}
+
+/** Every source one of a platform's packages can come from, in the usual order. */
+export function anySource(...lists: readonly (readonly Source[])[]): Source[] {
+  return SOURCE_ORDER.filter((source) => lists.some((list) => list.includes(source)));
 }
 
 export async function resolveArtifact(

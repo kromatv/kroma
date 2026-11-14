@@ -2,9 +2,10 @@ name: Release Apple TV beta channel
 
 # The Apple TV client, to TestFlight.
 #
-# WHY THIS IS NOT IN _release-tv.yml, WHICH BUILDS EVERY OTHER TELEVISION. The
-# other three TV clients produce a FILE - a webOS .ipk, a Tizen .wgt, an Android
-# TV .apk - which is attached to the GitHub Release and sideloaded by hand, so
+# WHY THIS IS NOT IN _release-tv.yml OR _release-androidtv.yml, WHICH BUILD THE
+# OTHER TELEVISIONS. The other three TV clients produce a FILE - a webOS .ipk, a
+# Tizen .tpk or .wgt, an Android TV .apk - which is attached to the GitHub
+# Release and sideloaded by hand, so
 # `publish` rightly waits on them: the release is not complete without its
 # assets. This one produces nothing a user can install; an App Store .ipa is
 # only reachable through TestFlight. Leaving it in that workflow would put the

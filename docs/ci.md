@@ -176,10 +176,10 @@ it attaches, so `sha256sum -c SHA256SUMS` checks a whole download folder.
 that same number.
 
 What a candidate does publish is the **canary channel**: the `canary` job
-copies the sideloadable installers (Samsung `.wgt`, LG `.ipk`, Android TV and
-Android `.apk`, the macOS, Windows and Linux installers) onto the rolling
-`canary` prerelease, with the dated version in the name
-(`KROMA-tizen-0.1.39-canary.3493975.wgt`). Each platform lands on its own: the
+copies the sideloadable installers (Samsung `.tpk` and `.wgt`, LG `.ipk`,
+Android TV and Android `.apk`, the macOS, Windows and Linux installers) onto
+the rolling `canary` prerelease, with the dated version in the name
+(`KROMA-tizen-0.1.39-canary.3493975.tpk`). Each platform lands on its own: the
 job runs whatever the builds ended as and publishes the installers that exist,
 so a platform whose build failed keeps its previous canary and holds back
 nobody else's. The Synology `.spk` lands on the same tag from `synology.yml`. `ci canary publish` keeps, per kind of file, the
@@ -192,13 +192,30 @@ The two `.ipa` bundles are not on the channel: TestFlight is the only way onto
 an Apple device. The channel is not a gate either: a failed upload does not
 make a candidate unpromotable.
 
-Samsung ships as four files from one build (`clients/tizen/scripts/package-all.ts`):
-`KROMA-tizen-<v>.wgt` with every engine tier for the Store, and one package
-per Tizen version for sideloading (`KROMA-tizen8-`, `KROMA-tizen4to7-`,
-`KROMA-tizen3-`), each floored at its own `required_version`. The site's
-`release-targets.ts` matches `KROMA-tizen-` only, so the per-version files are
-on the tag and in the candidate but not yet on the page: offering them there
-is the channel-switch work below.
+Android TV builds in `_release-androidtv.yml`, apart from the other TVs, so
+that the Google Play job waits for the Android TV bundle alone: a Samsung or
+LG package that fails to build does not hold the Play drafts back.
+
+Samsung and LG ship the native app first: `KROMA-tizen-<v>.tpk` and
+`KROMA-webos-<v>.ipk`, built from `clients/tv-native` by the `tizen-native`
+and `webos-native` jobs of `_release-tv.yml`. Neither job installs an SDK. The
+Samsung job fetches two Tizen packages by the SHA-256 Tizen's package lists
+give, the IoT Headed 6.0 armv7 rootstrap and the GCC 14.2 runtime, unpacks
+them into `$TIZEN_SDK_DIR`, and signs with a self-signed pair made for the
+run, which the installer replaces per TV. The LG job needs nothing from LG:
+`rn-webos` downloads its sysroot and writes the `.ipk` itself. Both keep
+`ccache` and the packages' downloads in one cache entry each, pruned to the
+newest.
+
+The web apps are still built beside them. Samsung's ships as four files from
+one build (`clients/tizen/scripts/package-all.ts`): `KROMA-tizen-<v>.wgt` with
+every engine tier for the Store, and one package per Tizen version for
+sideloading (`KROMA-tizen8-`, `KROMA-tizen4to7-`, `KROMA-tizen3-`), each
+floored at its own `required_version`. The site offers `KROMA-tizen-<v>.wgt`
+for the 2017-2020 sets the `.tpk` cannot reach, and matches no per-version
+file, so those are on the tag and in the candidate but not on the page. LG's
+web `tv.kroma.webos_<v>_all.ipk` is on the tag for `--web` in the installer
+and not on the page: the native `.ipk` reaches every set it did.
 
 ### How the site reads the channels
 

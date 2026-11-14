@@ -22,7 +22,9 @@ const artifact = (name: string, over: Partial<Artifact> = {}): Artifact => ({
 
 // Every artifact a green push to main leaves behind, spelled as CI names them.
 const PUSH_ARTIFACTS = [
+  artifact('kroma-tizen-tpk'),
   artifact('kroma-tizen-wgt'),
+  artifact('kroma-webos-native-ipk'),
   artifact('kroma-webos-ipk'),
   artifact('kroma-androidtv-apk'),
   artifact('kroma-mobile-apk'),
@@ -77,13 +79,27 @@ describe('toBuild', () => {
 
     expect(build?.version).toBe('0.1.39');
     expect(build?.commit.short).toBe('aaaaaaa');
-    expect(build?.files.map((f) => f.target)).toEqual(['android', 'androidtv', 'tizen', 'webos']);
+    expect(build?.files.map((f) => f.target)).toEqual([
+      'android',
+      'androidtv',
+      'tizen',
+      'tizen-web',
+      'webos',
+    ]);
+  });
+
+  it('offers the native Samsung and LG apps, the web .wgt for older sets, and not the web .ipk', () => {
+    const build = toBuild(run(), PUSH_ARTIFACTS, null, 'https://kroma.tv/api/canary');
+
+    expect(build?.files.find((f) => f.target === 'tizen')?.contains).toEqual(['.tpk']);
+    expect(build?.files.find((f) => f.target === 'tizen-web')?.contains).toEqual(['.wgt']);
+    expect(build?.files.filter((f) => f.label === 'LG')).toHaveLength(1);
   });
 
   it('points every file at this origin, so no caller needs a token', () => {
     const build = toBuild(
       run(),
-      [artifact('kroma-tizen-wgt')],
+      [artifact('kroma-tizen-tpk')],
       null,
       'https://kroma.tv/api/canary',
     );
@@ -94,7 +110,7 @@ describe('toBuild', () => {
   it('drops an artifact no platform here installs', () => {
     const build = toBuild(
       run(),
-      [artifact('kroma-tizen-wgt'), artifact('kroma-web-spa'), artifact('sonar-report')],
+      [artifact('kroma-tizen-tpk'), artifact('kroma-web-spa'), artifact('sonar-report')],
       null,
       'https://kroma.tv/api/canary',
     );
@@ -118,7 +134,7 @@ describe('toBuild', () => {
 
 describe('artifactFor', () => {
   it('finds the artifact CI uploaded for a platform', () => {
-    expect(artifactFor(PUSH_ARTIFACTS, 'webos')?.name).toBe('kroma-webos-ipk');
+    expect(artifactFor(PUSH_ARTIFACTS, 'webos')?.name).toBe('kroma-webos-native-ipk');
   });
 
   it('answers undefined for a run that carries none', () => {

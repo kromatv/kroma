@@ -2,7 +2,7 @@
   "name": "@kromatv/tv-native",
   "version": "0.0.0",
   "private": true,
-  "description": "KROMA native TV client (Apple TV + Android TV): the shared @kromatv/tv experience compiled by React Native instead of rendered in a WebView.",
+  "description": "KROMA native TV client (Apple TV, Android TV, Samsung Tizen, LG webOS): the shared @kromatv/tv experience compiled by React Native instead of rendered in a WebView.",
   "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {
