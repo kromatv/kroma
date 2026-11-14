@@ -83,23 +83,26 @@ Store its JSON credential as `PLAY_SERVICE_ACCOUNT_JSON` in the `release`
 environment (`gh secret set PLAY_SERVICE_ACCOUNT_JSON --env release`). Set
 repository variables:
 
-- `PLAY_MOBILE_TRACK`: the mobile testing-track ID returned by Play.
-- `PLAY_TV_TRACK`: the dedicated TV testing-track ID, prefixed `tv:`.
-- `PLAY_STORE_READY=true` only after the app and both tracks are ready.
+- `PLAY_MOBILE_TRACK`: the mobile testing tracks, comma-separated.
+- `PLAY_TV_TRACK`: the Android TV testing tracks, comma-separated, each prefixed `tv:`.
+- `PLAY_STORE_READY=true` only after the app and its tracks are ready.
 
 Track names must match the API; consult Google's
 [form-factor track documentation](https://developers.google.com/android-publisher/tracks#ff-track-name).
-The workflow permits internal (`internal`/`qa`), alpha or beta testing tracks,
-with the corresponding `tv:` prefix, and refuses production tracks.
+A custom closed track keeps the name it was created with. The workflow refuses
+`production` and `tv:production`. The upload action checks every name before it
+uploads, and a name Play does not know fails the job with the list of the
+app's tracks.
+
+| Variable | Value today | Who gets each push to `main` |
+| --- | --- | --- |
+| `PLAY_MOBILE_TRACK` | `internal,alpha` | internal testers at once; the beta group (closed track "Alpha") after Google's review |
+| `PLAY_TV_TRACK` | `tv:internal,tv:Android TV beta` | internal testers at once; the beta group (closed track "Android TV beta") after Google's review |
 
 `_release-play.yml` waits for both Android artifacts and serializes uploads. A
 push candidate, a stable release or a manual build run with `distribute` uploads
-to both tracks:
-
-| Track | What the upload makes |
-| --- | --- |
-| `internal`, `qa` (and `tv:internal`, `tv:qa`) | a finished release: internal testers get every push to `main`, with no step in Play Console |
-| `alpha`, `beta` (and their `tv:` tracks) | a draft: review and roll it out in Play Console |
+each bundle once and gives it to every track its variable names, as a finished
+release, with no step in Play Console.
 
 The workflow does not set `changesNotSentForReview`. This app sends its changes
 for review automatically, and Play refuses a commit that sets it ("Changes are

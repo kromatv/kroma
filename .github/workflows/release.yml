@@ -34,7 +34,7 @@ name: Build & Release
 #     job in the TV one, because unlike the .ipk/.wgt/.apk it is not a file a
 #     tester can sideload.
 #   - Mobile .apk + .aab + .ipa: the bundle goes to Google Play (a finished
-#     release on an internal track, a draft on alpha or beta), the .ipa to
+#     release on each testing track the Play variables name), the .ipa to
 #     TestFlight.
 #
 # Module .kmod bundles are NOT in that set: they release independently from
