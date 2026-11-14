@@ -45,6 +45,9 @@ tokio = { workspace = true }
 lettre = { workspace = true }
 # The server's identity at the mail relay: a P-256 key that signs every call.
 p256 = { version = "0.13", features = ["ecdsa"] }
+# ES384 and EdDSA ID tokens. Already in the tree under rustls, so it adds no
+# crate: the RustCrypto p384 and ed25519 stacks would add two.
+ring = "0.17"
 # RS256, the algorithm every OpenID Connect provider signs ID tokens with.
 rsa = { version = "0.9", features = ["sha2"] }
 # The authorize URL's query and the token endpoint's client credentials.

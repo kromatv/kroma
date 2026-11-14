@@ -43,6 +43,28 @@ pub fn ec_key() -> &'static p256::ecdsa::SigningKey {
     &KEY
 }
 
+pub fn p384_key() -> &'static ring::signature::EcdsaKeyPair {
+    use ring::signature::{EcdsaKeyPair, ECDSA_P384_SHA384_FIXED_SIGNING};
+    static KEY: LazyLock<EcdsaKeyPair> = LazyLock::new(|| {
+        let rng = ring::rand::SystemRandom::new();
+        let pkcs8 = EcdsaKeyPair::generate_pkcs8(&ECDSA_P384_SHA384_FIXED_SIGNING, &rng)
+            .expect("generate a P-384 key");
+        EcdsaKeyPair::from_pkcs8(&ECDSA_P384_SHA384_FIXED_SIGNING, pkcs8.as_ref(), &rng)
+            .expect("read the P-384 key back")
+    });
+    &KEY
+}
+
+pub fn ed25519_key() -> &'static ring::signature::Ed25519KeyPair {
+    use ring::signature::Ed25519KeyPair;
+    static KEY: LazyLock<Ed25519KeyPair> = LazyLock::new(|| {
+        let pkcs8 = Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())
+            .expect("generate an Ed25519 key");
+        Ed25519KeyPair::from_pkcs8(pkcs8.as_ref()).expect("read the Ed25519 key back")
+    });
+    &KEY
+}
+
 fn b64(bytes: &[u8]) -> String {
     URL_SAFE_NO_PAD.encode(bytes)
 }
@@ -66,6 +88,28 @@ pub fn ec_jwk(key: &p256::ecdsa::SigningKey, kid: &str) -> Value {
         "kid": kid,
         "x": b64(point.x().expect("an x coordinate")),
         "y": b64(point.y().expect("a y coordinate")),
+    })
+}
+
+pub fn p384_jwk(key: &ring::signature::EcdsaKeyPair, kid: &str) -> Value {
+    use ring::signature::KeyPair;
+    let point = key.public_key().as_ref();
+    json!({
+        "kty": "EC",
+        "crv": "P-384",
+        "kid": kid,
+        "x": b64(&point[1..49]),
+        "y": b64(&point[49..]),
+    })
+}
+
+pub fn ed25519_jwk(key: &ring::signature::Ed25519KeyPair, kid: &str) -> Value {
+    use ring::signature::KeyPair;
+    json!({
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": kid,
+        "x": b64(key.public_key().as_ref()),
     })
 }
 
@@ -94,6 +138,19 @@ pub fn sign_es256(key: &p256::ecdsa::SigningKey, header: &Value, claims: &Value)
     let input = signing_input(header, claims);
     let signature: p256::ecdsa::Signature = key.sign(input.as_bytes());
     format!("{input}.{}", b64(&signature.to_bytes()))
+}
+
+pub fn sign_es384(key: &ring::signature::EcdsaKeyPair, header: &Value, claims: &Value) -> String {
+    let input = signing_input(header, claims);
+    let signature = key
+        .sign(&ring::rand::SystemRandom::new(), input.as_bytes())
+        .expect("sign with the P-384 key");
+    format!("{input}.{}", b64(signature.as_ref()))
+}
+
+pub fn sign_eddsa(key: &ring::signature::Ed25519KeyPair, header: &Value, claims: &Value) -> String {
+    let input = signing_input(header, claims);
+    format!("{input}.{}", b64(key.sign(input.as_bytes()).as_ref()))
 }
 
 /// A token keyed with a shared secret: what an attacker builds from the

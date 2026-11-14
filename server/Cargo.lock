@@ -2171,6 +2171,7 @@ dependencies = [
  "notify",
  "p256",
  "rand_core 0.6.4",
+ "ring",
  "rsa",
  "rusty-chromaprint",
  "semver",
