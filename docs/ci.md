@@ -192,6 +192,10 @@ The two `.ipa` bundles are not on the channel: TestFlight is the only way onto
 an Apple device. The channel is not a gate either: a failed upload does not
 make a candidate unpromotable.
 
+Android TV builds in `_release-androidtv.yml`, apart from the other TVs, so
+that the Google Play job waits for the Android TV bundle alone: a Samsung or
+LG package that fails to build does not hold the Play drafts back.
+
 Samsung and LG ship the native app first: `KROMA-tizen-<v>.tpk` and
 `KROMA-webos-<v>.ipk`, built from `clients/tv-native` by the `tizen-native`
 and `webos-native` jobs of `_release-tv.yml`. Neither job installs an SDK. The

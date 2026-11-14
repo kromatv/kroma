@@ -182,11 +182,11 @@ jobs:
 
   # -------------------------------------------------------------------- TV ---
 
-  # Native Tizen .tpk + webOS .ipk, web webOS .ipk + Tizen .wgt, Android TV .apk.
+  # Native Tizen .tpk + webOS .ipk, web webOS .ipk + Tizen .wgt.
   tv:
     name: TV
     needs: version
-    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-tv.yml
     permissions:
       contents: read # passed down to the called workflow
@@ -194,6 +194,20 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
+      build: ${{ needs.version.outputs.build }}
+    secrets: inherit
+
+  # Android TV .apk + Play bundle, apart from the job above so that Google Play
+  # waits for this bundle alone, not for every Samsung and LG package.
+  androidtv:
+    name: Android TV
+    needs: version
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
+    uses: ./.github/workflows/_release-androidtv.yml
+    permissions:
+      contents: read # passed down to the called workflow
+    with:
+      version: ${{ needs.version.outputs.version }}
       build: ${{ needs.version.outputs.build }}
     secrets: inherit
 
@@ -240,11 +254,11 @@ jobs:
   # manual upload and form-factor setup before PLAY_STORE_READY can be enabled.
   play:
     name: Google Play
-    needs: [version, mobile, tv]
+    needs: [version, mobile, androidtv]
     if: >-
       !cancelled()
       && needs.mobile.result == 'success'
-      && needs.tv.result == 'success'
+      && needs.androidtv.result == 'success'
       && (needs.version.outputs.channel == 'stable'
           || (needs.version.outputs.channel == 'candidate' && github.event_name == 'push')
           || github.event.inputs.distribute == 'true')
@@ -293,7 +307,7 @@ jobs:
   # that a broken pipeline costs a re-push rather than a version number.
   gate:
     name: Candidate gate
-    needs: [version, tv, desktop, appletv, mobile]
+    needs: [version, tv, androidtv, desktop, appletv, mobile]
     if: needs.version.outputs.channel == 'candidate'
     runs-on: ubuntu-latest
     permissions:
@@ -485,7 +499,7 @@ jobs:
   # five of each kind. apps/www reads this tag into /download/archive.
   canary:
     name: Canary channel
-    needs: [version, tv, desktop, mobile]
+    needs: [version, tv, androidtv, desktop, mobile]
     if: >-
       !cancelled()
       && needs.version.outputs.channel == 'candidate'

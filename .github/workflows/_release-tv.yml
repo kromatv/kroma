@@ -2,9 +2,10 @@ name: Release TV clients
 
 # TV half of the release fleet, called by release.yml: the native Samsung .tpk
 # and LG .ipk (clients/tv-native, through react-native-tizen and
-# react-native-webos), the web Samsung .wgt and LG .ipk they replace on every
-# set that can run them, and the Android TV .apk. Never triggered on its own;
-# the version/channel decisions all come from the caller's `version` job.
+# react-native-webos), and the web Samsung .wgt and LG .ipk they replace on
+# every set that can run them. Never triggered on its own; the version/channel
+# decisions all come from the caller's `version` job. Android TV is in
+# _release-androidtv.yml, so that Google Play does not wait for these.
 #
 # The web packages stay for the sets the native ones cannot reach: Samsung
 # refuses the native library a .tpk carries below Tizen 6.0 (2017-2020 models),
@@ -340,115 +341,5 @@ jobs:
         with:
           name: kroma-webos-native-ipk
           path: out/*.ipk
-          if-no-files-found: error
-          retention-days: 30
-
-  tv-native:
-    name: Android TV (APK + Play bundle)
-    environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
-      deployment: false
-    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv","android"]'), github.event.inputs.targets)) }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-          no-cache: true
-
-      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-        with:
-          gradle-version: '9.4.1'
-          # Transforms (extracted AARs, instrumented jars) are derived from the
-          # dependencies and come back in about a minute; as a cache entry they
-          # were 0.6 GB per app, the largest single item in the repository's
-          # 10 GB quota after the Rust trees.
-          gradle-home-cache-excludes: |
-            caches/transforms-*
-            caches/*/transforms*
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # `android/` is generated and gitignored, so the project is built from the
-      # Expo config every time. EXPO_TV=1 is what makes it a LEANBACK app (see
-      # @react-native-tvos/config-tv); without it this silently produces a phone
-      # APK that no television will show.
-      - name: Prebuild the Android project
-        run: |
-          export KROMA_VERSION_CODE=${{ inputs.build }}
-          bun run --filter '@kromatv/tv-native' prebuild -- --platform android
-
-      - name: Restore Android upload signing
-        id: android-signing
-        env:
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bash .github/scripts/prepare-android-signing.sh
-
-      # One Play listing, separate mobile/TV tracks: the same package and upload
-      # identity, with a TV-specific version code and required leanback feature.
-      # --build-cache reuses task OUTPUTS across runs, which the dependency cache
-      # alone does not: setup-gradle persists ~/.gradle, but without this every
-      # task still re-executes. The heap is raised because the generated
-      # gradle.properties asks for 2GB - a sensible default for a laptop, and a
-      # third of what this runner has, which costs GC time on the C++ and Hermes
-      # steps.
-      # -PreactNativeArchitectures drops 32-bit x86. The generated
-      # gradle.properties asks for four ABIs, and the React Native C++ layer is
-      # compiled once per ABI, so that one is a quarter of the native build.
-      #
-      # Nothing runs it: every Android TV device ever shipped is ARM, and Google
-      # retired the 32-bit x86 emulator images in favour of x86_64 years ago.
-      # x86_64 is KEPT so an Intel Mac can still run the APK in an emulator -
-      # dropping that one too would halve the build again, but it is a real
-      # capability rather than dead weight.
-      - name: Build APK and signed Play bundle
-        env:
-          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
-          KROMA_ANDROID_KEYSTORE_PATH: ${{ steps.android-signing.outputs.keystore_path }}
-          KROMA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KROMA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KROMA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          SIGNING_READY: ${{ steps.android-signing.outputs.ready }}
-        run: |
-          tasks=(assembleRelease)
-          if [[ "$SIGNING_READY" = true ]]; then tasks+=(bundleRelease); fi
-          gradle -p clients/tv-native/android "${tasks[@]}" --build-cache \
-            -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64
-          mkdir -p out
-          cp clients/tv-native/android/app/build/outputs/apk/release/app-release.apk \
-            "out/KROMA-androidtv-${{ inputs.version }}.apk"
-          if [[ "$SIGNING_READY" = true ]]; then
-            cp clients/tv-native/android/app/build/outputs/bundle/release/app-release.aab \
-              "out/KROMA-androidtv-${{ inputs.version }}.aab"
-          fi
-
-      - name: Upload .apk artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: kroma-androidtv-apk
-          path: out/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload signed Play bundle
-        if: steps.android-signing.outputs.ready == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: kroma-androidtv-aab
-          path: out/*.aab
           if-no-files-found: error
           retention-days: 30
