@@ -5,8 +5,10 @@ Keycloak or Pocket ID. When you finish, the KROMA sign-in screen has a
 "Continue with" button for it, and you decide who that button lets in.
 
 KROMA speaks OpenID Connect. Any provider that publishes a discovery document
-and signs its ID tokens with RS256 or ES256 works. It has been run against
-Keycloak 26 and Authentik 2025.10.
+and signs its ID tokens with RS256, ES256, ES384 or EdDSA works. It has been
+run against Authelia, Authentik, Casdoor, Dex, Forgejo, FusionAuth, Gitea,
+Keycloak, Logto, Nextcloud, Pocket ID, Rauthy and ZITADEL. The versions are
+under [Provider notes](#provider-notes).
 
 ## Before you begin
 
@@ -168,23 +170,59 @@ password.
 
 | KROMA says | What to check |
 | --- | --- |
-| Nothing answered at this address | The issuer URL, and that the KROMA server can reach the provider. |
+| Nothing answered at this address | The issuer URL, and that the KROMA server can reach the provider. A provider whose certificate comes from your own CA answers only once that CA is in the certificate store of the machine or container KROMA runs in. |
 | The address answers, but it serves no OpenID Connect discovery document | The issuer URL. It is the address that, followed by `/.well-known/openid-configuration`, returns a document. |
 | The provider refused the client ID or the client secret | Both values, copied again from the provider. |
 | The provider refused the sign-in code | The redirect URI at the provider. It must match the one KROMA shows, character for character. |
-| The provider signs with an algorithm this server refuses | The application's signing key at the provider. Choose RS256 or ES256. Authentik signs with a shared secret until you give the provider a signing key. |
+| The provider signs with an algorithm this server refuses | The application's signing key at the provider. Choose RS256, ES256, ES384 or EdDSA. Authentik and FusionAuth sign with a shared secret until you give the application a signing key. |
 | The ID token had already expired | The clock of the KROMA server and of the provider. |
 
 ## Provider notes
 
 These come from running KROMA against each provider.
 
-**Keycloak.** The issuer is `https://HOST/realms/REALM`. To use required
+**Authelia** (4.39). Authelia answers over HTTPS only, so the KROMA server has
+to trust its certificate. List `groups` among the client's scopes to use
+required groups.
+
+**Authentik** (2025.10). The issuer is `https://HOST/application/o/SLUG/`.
+Select a **signing key** on the provider. Groups need no setup.
+
+**Casdoor** (4.27). The issuer is the address Casdoor is opened on. A group
+reaches KROMA written `organisation/group`, so type required groups that way.
+
+**Dex** (2.47). The issuer is the one in Dex's configuration, path included.
+
+**FusionAuth** (1.70). Set the tenant's **Issuer** to the address FusionAuth
+is opened on: a new tenant has `https://example.com`. Choose an RSA or EC key
+as the application's **Id token signing key**: a new application signs with a
+shared secret. Roles reach KROMA as groups when the application's **Scope
+handling policy** is **Compatibility**.
+
+**Gitea and Forgejo** (Gitea 28.3, Forgejo 11.0). The issuer is the instance's
+address.
+People are asked to authorize KROMA the first time.
+
+**Keycloak** (26). The issuer is `https://HOST/realms/REALM`. To use required
 groups, add a **Group Membership** mapper to the client, name its claim
 `groups` and turn **Full group path** off.
 
-**Authentik.** The issuer is `https://HOST/application/o/SLUG/`. Select a
-**signing key** on the provider. Groups need no setup.
+**Logto** (1.46). Create a **Traditional web** application. The issuer is the
+Logto endpoint followed by `/oidc`. A person's roles reach KROMA as groups.
+
+**Nextcloud** (35, with the OIDC Identity Provider app 2.6). Install the app,
+then add a client in its section of Nextcloud's administration settings. The
+issuer is the address Nextcloud is opened on. People are asked to approve
+KROMA the first time, and again every 90 days.
+
+**Pocket ID** (2.19). A new client lets nobody in. Open the client and allow
+all users, or the groups you choose, before the test.
+
+**Rauthy** (0.37). The issuer is `https://HOST/auth/v1/`, with the slash at
+the end.
+
+**ZITADEL** (4.20). Create a web application that authenticates with a client
+secret. The issuer is the instance's address.
 
 ## What KROMA does not do
 

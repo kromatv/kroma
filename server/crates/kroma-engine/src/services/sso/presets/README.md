@@ -8,7 +8,8 @@ web client. The admin page reads the whole catalog from the server.
 presets/
   google/
     preset.json    what the form starts with, the two links, the button's look
-    mark.svg       the provider's mark
+    light.png      the G on the light theme's fill
+    dark.png       the G on the dark theme's fill
   authentik/
     preset.json
     mark.svg
@@ -26,16 +27,17 @@ bun run server:preset zitadel \
 ```
 
 That writes the folder. `--mark` takes an icon from
-[Iconify](https://icones.js.org) as `set:name`, or a path to an SVG you
-downloaded from the provider. Then check it:
+[Iconify](https://icones.js.org) as `set:name`, or a path to an SVG or a PNG
+you downloaded from the provider. Then check it:
 
 ```bash
 cd server && cargo test -p kroma-engine presets
 ```
 
 The tests read every folder and name what is wrong with one: a field the
-manifest does not know, a colour that is not `#rrggbb`, a mark that is missing
-or carries a script, a link that is not https.
+manifest does not know, a colour that is not `#rrggbb`, a mark that is
+missing, carries a script or is not the kind of file its name says, a link
+that is not https.
 
 ## `preset.json`
 
@@ -49,7 +51,7 @@ or carries a script, a link that is not https.
 | `scopes` | no | Scopes to ask for on top of `openid profile email`. The server adds `groups` by itself when the provider offers it. |
 | `groupClaim` | no | The claim that lists a person's groups in the ID token. `groups` when left out. |
 | `icon` | no | The kit glyph a client draws where it cannot draw the mark. `key` when left out. |
-| `mark` | no | The file drawn on a white tile, where no button is. `mark.svg` when left out. |
+| `mark` | no | The file drawn on a white tile, where no button is. `mark.svg` when left out. An SVG, or a PNG where the owner publishes its mark as nothing else. |
 | `brand` | no | How the button is painted. Left out, it looks like the others on the screen. |
 | `sources` | yes | Where the facts were read. `mark` is asked of every preset; `brand` and `issuer` say where those came from. |
 
@@ -82,8 +84,14 @@ Never recolour a mark, redraw one or keep an old one. Take it from the owner
 first, then from an icon set that follows the owner, and write which in
 `sources`.
 
+A phone draws a mark with its system's SVG renderer, which knows paths,
+shapes, gradients and masks. It does not draw a blur filter or a
+`foreignObject`. A mark that needs either ships as the owner's PNG: Google's
+does.
+
 ## What a preset does not do
 
 It changes nothing about how the provider is spoken to. A provider KROMA
-cannot sign in with gets no preset: one whose tokens are not signed RS256 or
-ES256, or that publishes no discovery document under its issuer.
+cannot sign in with gets no preset: one whose tokens are not signed RS256,
+ES256, ES384 or EdDSA, or that publishes no discovery document under its
+issuer.

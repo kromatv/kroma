@@ -1,0 +1,9 @@
+{
+  "name": "Rauthy",
+  "issuer": "https://auth.example.com/auth/v1/",
+  "docs": "https://sebadob.github.io/rauthy/",
+  "sources": {
+    "mark": "Rauthy's own favicon.svg, untouched (Apache-2.0), https://github.com/sebadob/rauthy/blob/main/frontend/static/assets/favicon.svg, read 2026-11-14",
+    "issuer": "docs/reference/sign-in-providers.md, run against Rauthy 0.37.2: the address ends in /auth/v1/, slash included"
+  }
+}

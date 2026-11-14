@@ -4,22 +4,23 @@
   "issuer": "https://accounts.google.com",
   "console": "https://console.cloud.google.com/apis/credentials",
   "docs": "https://developers.google.com/identity/openid-connect/openid-connect",
+  "mark": "light.png",
   "brand": {
     "dark": {
       "fill": "#131314",
       "stroke": "#8e918f",
       "ink": "#e3e3e3",
-      "mark": "mark.svg"
+      "mark": "dark.png"
     },
     "light": {
       "fill": "#ffffff",
       "stroke": "#747775",
       "ink": "#1f1f1f",
-      "mark": "mark.svg"
+      "mark": "light.png"
     }
   },
   "sources": {
-    "mark": "Google's signin-assets.zip, the G cut out of a button file untouched, https://developers.google.com/static/identity/images/signin-assets.zip, read 2026-11-13",
+    "mark": "Google's signin-assets.zip, the G cut out of the 4x icon-only button PNGs of the light and the dark theme, its pixels untouched and each on its theme's fill. PNGs because the G in the SVG files is drawn with blur filters and an HTML gradient, which the SVG renderers on iOS and Android do not draw. https://developers.google.com/static/identity/images/signin-assets.zip, read 2026-11-14",
     "brand": "https://developers.google.com/identity/branding-guidelines, dark and light themes, read 2026-11-13",
     "issuer": "https://accounts.google.com/.well-known/openid-configuration"
   }

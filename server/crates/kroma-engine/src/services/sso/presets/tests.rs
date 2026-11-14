@@ -1,3 +1,4 @@
+use super::folder::{svg_fault, MANIFEST};
 use super::*;
 
 const SVG: &str = "<svg viewBox=\"0 0 1 1\"><path d=\"M0 0\"/></svg>";
@@ -9,10 +10,12 @@ fn manifest(extra: &str) -> String {
     )
 }
 
-fn folder(id: &'static str, manifest: String, marks: &[&'static str]) -> Vec<(&'static str, &'static str, &'static str)> {
+type Files = Vec<(&'static str, &'static str, &'static [u8])>;
+
+fn folder(id: &'static str, manifest: String, marks: &[&'static str]) -> Files {
     let manifest: &'static str = Box::leak(manifest.into_boxed_str());
-    let mut files = vec![(id, "mark.svg", SVG), (id, MANIFEST, manifest)];
-    files.extend(marks.iter().map(|name| (id, *name, SVG)));
+    let mut files = vec![(id, "mark.svg", SVG.as_bytes()), (id, MANIFEST, manifest.as_bytes())];
+    files.extend(marks.iter().map(|name| (id, *name, SVG.as_bytes())));
     files
 }
 
@@ -28,7 +31,7 @@ fn every_preset_in_the_tree_reads_cleanly() {
     let (catalog, problems) = read(files::PRESET_FILES);
 
     assert_eq!(problems, Vec::<String>::new());
-    assert!(catalog.presets.len() >= 19);
+    assert!(catalog.presets.len() >= 32);
 }
 
 #[test]
@@ -74,7 +77,7 @@ fn a_bare_manifest_takes_the_defaults() {
     let home = &catalog.presets[0];
     assert_eq!((home.label.as_str(), home.icon.as_str()), ("Home", "key"));
     assert_eq!(home.group_claim, "groups");
-    assert_eq!(home.mark, "home/mark");
+    assert_eq!(home.mark, "home/mark.svg");
     assert!(home.brand.is_none() && home.console.is_none() && home.scopes.is_empty());
     assert_eq!(catalog.marks.len(), 1);
 }
@@ -90,9 +93,9 @@ fn one_look_paints_both_grounds_and_two_paint_one_each() {
     let one = one.presets[0].brand.clone().unwrap();
     let two = two.presets[0].brand.clone().unwrap();
     assert_eq!(one.dark, one.light);
-    assert_eq!(one.dark.mark, "home/white");
+    assert_eq!(one.dark.mark, "home/white.svg");
     assert_eq!(two.light.stroke.as_deref(), Some("#cccccc"));
-    assert_eq!(two.light.mark, "home/mark");
+    assert_eq!(two.light.mark, "home/mark.svg");
 }
 
 #[test]
@@ -124,11 +127,27 @@ fn a_mark_that_runs_or_fetches_something_is_refused() {
 }
 
 #[test]
+fn a_png_is_a_mark_too_and_a_file_that_is_not_one_is_refused() {
+    const PNG: &[u8] = b"\x89PNG\r\n\x1a\n\0";
+    let named: &'static str = Box::leak(manifest(r#","mark":"mark.png""#).into_boxed_str());
+
+    let (real, _) = read(&[("home", "mark.png", PNG), ("home", MANIFEST, named.as_bytes())]);
+    let (fake, problems) = read(&[("home", "mark.png", SVG.as_bytes()), ("home", MANIFEST, named.as_bytes())]);
+
+    assert_eq!(real.presets[0].mark, "home/mark.png");
+    assert_eq!(real.marks[0].media, "image/png");
+    assert!(fake.presets.is_empty());
+    assert!(problems[0].contains("`mark.png` is not a PNG"));
+    assert_eq!(mark("jumpcloud/mark.png").unwrap().media, "image/png");
+    assert_eq!(mark("keycloak/mark.svg").unwrap().media, "image/svg+xml");
+}
+
+#[test]
 fn a_provider_the_server_does_not_know_has_no_preset() {
     assert!(preset("keycloak").is_some());
     assert!(preset("zitadel").is_some());
     assert!(preset("nope").is_none());
     assert!(preset("").is_none());
     assert!(mark("../presets").is_none());
-    assert!(mark("keycloak/white").is_some());
+    assert!(mark("keycloak/white.svg").is_some());
 }

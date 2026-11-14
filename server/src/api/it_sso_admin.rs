@@ -514,6 +514,7 @@ async fn a_known_provider_wears_its_mark_and_an_unknown_one_has_none() {
     let (unknown, _, _) = picture(&round.t, "/api/auth/logos/keycloak/nope.svg").await;
     let (bare, _, _) = picture(&round.t, "/api/auth/logos/keycloak/mark").await;
     let (manifest, _, _) = picture(&round.t, "/api/auth/logos/keycloak/preset.json").await;
+    let (_, png, drawn) = picture(&round.t, "/api/auth/logos/jumpcloud/mark.png").await;
 
     assert!(address.starts_with("/api/auth/logos/keycloak/mark.svg?v="));
     assert_eq!(status, StatusCode::OK);
@@ -526,6 +527,8 @@ async fn a_known_provider_wears_its_mark_and_an_unknown_one_has_none() {
     assert_eq!(unknown, StatusCode::NOT_FOUND);
     assert_eq!(bare, StatusCode::NOT_FOUND);
     assert_eq!(manifest, StatusCode::NOT_FOUND);
+    assert_eq!(png["content-type"], "image/png");
+    assert!(drawn.starts_with(b"\x89PNG"));
     let plain = at_provider(|_| {});
     let (_, gate) = get(&plain.t.app, "/api/auth/config", None).await;
     assert_eq!(gate["signIn"]["methods"][2].get("image"), None);
@@ -545,7 +548,11 @@ async fn a_button_is_painted_the_way_its_providers_owner_asks() {
     assert!(brand["dark"]["logo"]
         .as_str()
         .unwrap()
-        .starts_with("/api/auth/logos/google/mark.svg?v="));
+        .starts_with("/api/auth/logos/google/dark.png?v="));
+    assert!(brand["light"]["logo"]
+        .as_str()
+        .unwrap()
+        .starts_with("/api/auth/logos/google/light.png?v="));
     assert_eq!(preset_of(&config, "google")["brand"], *brand);
     assert_eq!(preset_of(&config, "pocket-id").get("brand"), None);
     let plain = at_provider(|_| {});

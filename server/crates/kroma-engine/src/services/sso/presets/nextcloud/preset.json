@@ -1,0 +1,16 @@
+{
+  "name": "Nextcloud",
+  "icon": "cloud",
+  "issuer": "https://cloud.example.com",
+  "docs": "https://github.com/H2CK/oidc",
+  "brand": {
+    "fill": "#0082c9",
+    "ink": "#ffffff",
+    "mark": "white.svg"
+  },
+  "sources": {
+    "mark": "Nextcloud's own nextcloud-logo-icon-blue.svg and nextcloud-icon-white-noBG.svg, untouched, linked from https://nextcloud.com/brand/, read 2026-11-14",
+    "brand": "https://nextcloud.com/brand/, read 2026-11-14: the white logo on Nextcloud blue #0082C9 is the preferred scheme, and the mark alone is for where the name does not fit",
+    "issuer": "docs/reference/sign-in-providers.md, run against Nextcloud 35.0.2 with the OIDC Identity Provider app 2.6.2: the instance's own address, with no slash after it"
+  }
+}

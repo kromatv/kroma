@@ -44,7 +44,7 @@ export const PRESETS: PresetView[] = [
     groupClaim: 'groups',
     console: 'https://console.cloud.google.com/apis/credentials',
     docs: 'https://developers.google.com/identity',
-    logo: '/api/auth/logos/google/mark.svg?v=1',
+    logo: '/api/auth/logos/google/light.png?v=1',
   },
 ];
 

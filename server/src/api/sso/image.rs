@@ -12,7 +12,7 @@ use crate::services::sso::presets::{mark, preset, presets, Brand, Look};
 /// Where a client fetches the mark filed under `name`. The address changes
 /// with the file, so a browser never draws a mark the server has replaced.
 fn mark_url(name: &str) -> Option<String> {
-    mark(name).map(|mark| format!("/api/auth/logos/{name}.svg?v={}", mark.version))
+    mark(name).map(|mark| format!("/api/auth/logos/{name}?v={}", mark.version))
 }
 
 fn look_view(look: &Look) -> Option<LookView> {
@@ -68,19 +68,16 @@ pub(crate) fn preset_views() -> Vec<PresetView> {
         .collect()
 }
 
-/// `GET /api/auth/logos/:preset/:name.svg` → a mark the server has on file.
+/// `GET /api/auth/logos/:preset/:file` → a mark the server has on file.
 /// Public, like the button it is drawn on, and sent under a policy that runs
 /// nothing in it, however it is opened.
 pub async fn logo(Path((preset, file)): Path<(String, String)>) -> Response {
-    let found = file
-        .strip_suffix(".svg")
-        .and_then(|name| mark(&format!("{preset}/{name}")));
-    let Some(found) = found else {
+    let Some(found) = mark(&format!("{preset}/{file}")) else {
         return StatusCode::NOT_FOUND.into_response();
     };
     (
         [
-            (header::CONTENT_TYPE, "image/svg+xml"),
+            (header::CONTENT_TYPE, found.media),
             (header::CACHE_CONTROL, "public, max-age=86400"),
             (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
             (
@@ -88,7 +85,7 @@ pub async fn logo(Path((preset, file)): Path<(String, String)>) -> Response {
                 "default-src 'none'; style-src 'unsafe-inline'; sandbox",
             ),
         ],
-        found.svg,
+        found.body,
     )
         .into_response()
 }

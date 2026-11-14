@@ -60,8 +60,19 @@ export type PresetCatalog = readonly PresetView[];
 
 /** What is said under the picker for a provider that was run against KROMA. */
 export const PRESET_NOTES: Readonly<Record<string, MessageKey>> = {
-  keycloak: 'admin.signInPresetKeycloak',
+  authelia: 'admin.signInPresetAuthelia',
   authentik: 'admin.signInPresetAuthentik',
+  casdoor: 'admin.signInPresetCasdoor',
+  dex: 'admin.signInPresetDex',
+  forgejo: 'admin.signInPresetForgejo',
+  fusionauth: 'admin.signInPresetFusionauth',
+  gitea: 'admin.signInPresetGitea',
+  keycloak: 'admin.signInPresetKeycloak',
+  logto: 'admin.signInPresetLogto',
+  nextcloud: 'admin.signInPresetNextcloud',
+  'pocket-id': 'admin.signInPresetPocketId',
+  rauthy: 'admin.signInPresetRauthy',
+  zitadel: 'admin.signInPresetZitadel',
 };
 
 /** The preset `id` names, or `undefined` for a provider with no preset and

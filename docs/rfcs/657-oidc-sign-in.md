@@ -177,9 +177,10 @@ it falls under the same rule.
 
 These are requirements, each with a test.
 
-- The ID token's signature is checked against the provider's published keys. RS256 and
-  ES256 are accepted. `none` and every HMAC algorithm are refused, whatever the
-  discovery document advertises. An RSA key under 2048 bits verifies nothing.
+- The ID token's signature is checked against the provider's published keys. RS256,
+  ES256, ES384 and EdDSA over Ed25519 are accepted. `none` and every HMAC algorithm are
+  refused, whatever the discovery document advertises. An RSA key under 2048 bits
+  verifies nothing.
 - Issuer, audience (with `azp` when a token is shared), expiry and nonce are checked.
   The issuer in the discovery document must equal the one the operator typed.
 - `state`, the nonce and the PKCE verifier are random per flow and never leave the
@@ -339,15 +340,15 @@ The owner decides these in review.
 3. **Group claims granting permissions.** Left out on purpose, see Alternatives.
 4. **A first password for an account created through a provider.** Today that takes a
    reset link from an admin.
-5. **More real providers.** Pocket ID, Authelia, Entra ID and Synology SSO Server each
-   need one run before the guide names them as tested.
+5. **More real providers.** Thirteen were run, each named with its version in
+   `docs/reference/sign-in-providers.md`. The hosted ones, Entra ID, Google, Okta and
+   the like, and Synology SSO Server and Kanidm, were not.
 6. **A phone.** The phone flow needs one run on iOS and one on Android.
-7. **Bundled logos.** Each preset's `preset.json` says where its mark was read. Google's,
-   Microsoft's, Keycloak's, authentik's and Authelia's are their owners' own files. The
-   others come from icon sets that follow the owner: SVG Logos (CC0), selfh.st/icons
-   (CC BY 4.0), theSVG (MIT) and Simple Icons (CC0). The marks belong to their owners.
-   Whether to ship them is the owner's call.
-8. **Untested presets.** Only Keycloak and Authentik were run against KROMA. Every other
-   preset's address was read from the provider's documentation or its live discovery
-   document, and Synology's from neither. A preset is a starting point, and the test
-   sign-in is what takes a provider live.
+7. **Bundled logos.** Each preset's `preset.json` says where its mark was read. Most are
+   their owners' own files. The others come from icon sets that follow the owner: SVG
+   Logos (CC0), selfh.st/icons (CC BY 4.0), theSVG (MIT) and Simple Icons (CC0). The
+   marks belong to their owners. Whether to ship them is the owner's call.
+8. **Untested presets.** A preset that was not run has its address from the provider's
+   documentation or its live discovery document, and Synology's from neither. Each
+   `preset.json` says which. A preset is a starting point, and the test sign-in is what
+   takes a provider live.

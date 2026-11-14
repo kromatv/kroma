@@ -96,20 +96,21 @@ fn write_preset_parts(manifest: &Path, out_dir: &Path) {
             let name = file_name(&file);
             let rel = format!("{PRESETS}/{id}/{name}");
             parts.push(format!(
-                "    ({id:?}, {name:?}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{rel}\"))),"
+                "    ({id:?}, {name:?}, include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{rel}\"))),"
             ));
         }
     }
 
     let body = format!(
-        "pub(crate) const PRESET_FILES: &[(&str, &str, &str)] = &[\n{}\n];\n",
+        "pub(crate) const PRESET_FILES: &[(&str, &str, &[u8])] = &[\n{}\n];\n",
         parts.join("\n")
     );
     fs::write(out_dir.join("preset_parts.rs"), body).expect("write preset_parts.rs");
 }
 
 fn is_preset_file(path: &Path) -> bool {
-    path.extension().is_some_and(|e| e == "svg") || path.file_name() == Some(OsStr::new("preset.json"))
+    path.extension().is_some_and(|e| e == "svg" || e == "png")
+        || path.file_name() == Some(OsStr::new("preset.json"))
 }
 
 fn is_release_file(path: &Path) -> bool {

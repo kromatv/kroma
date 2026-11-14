@@ -140,7 +140,7 @@ describe('moving a method', () => {
 describe('a preset', () => {
   it('is found by its id, with its mark', () => {
     expect(presetOf(PRESETS, 'google')?.name).toBe('Google');
-    expect(markOf(PRESETS, 'google')).toBe('/api/auth/logos/google/mark.svg?v=1');
+    expect(markOf(PRESETS, 'google')).toBe('/api/auth/logos/google/light.png?v=1');
   });
 
   it('is nothing for an id the server does not know and for no id', () => {

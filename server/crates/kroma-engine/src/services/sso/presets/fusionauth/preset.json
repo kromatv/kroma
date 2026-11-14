@@ -1,0 +1,10 @@
+{
+  "name": "FusionAuth",
+  "issuer": "https://auth.example.com",
+  "groupClaim": "roles",
+  "docs": "https://fusionauth.io/docs/concepts/types/applications",
+  "sources": {
+    "mark": "FusionAuth's own fa_logo_purple_orange.svg, untouched, https://github.com/FusionAuth/fusionauth-site/blob/main/astro/src/img/fa_logo_purple_orange.svg, read 2026-11-14",
+    "issuer": "docs/reference/sign-in-providers.md, run against FusionAuth 1.70.2: the tenant's Issuer field, which has to be set to the instance's address, and a person's roles in the roles claim"
+  }
+}
