@@ -102,6 +102,7 @@ function Root({
     onTransportLayout,
     bottomInset,
     introLift,
+    cueClearance,
     sheetOpen,
     peekVisible,
     chromeShown,
@@ -132,7 +133,7 @@ function Root({
             stageSize={stageSize}
             settingsShrink={settingsShrink}
             appearance={appearance}
-            raised={nav.revealed}
+            clearance={cueClearance}
             locked={locked}
             onPress={input.onStagePress}
             onLongPress={input.onStageLongPress}

@@ -19,7 +19,7 @@ function stage(settingsShrink: boolean, controller: PlayerController = fakeContr
         stageSize={{ width: 1920, height: 1080 }}
         settingsShrink={settingsShrink}
         appearance={DEFAULT_SUB_APPEARANCE}
-        raised={false}
+        clearance={0}
         locked={false}
         onPress={() => {}}
         onLongPress={() => {}}

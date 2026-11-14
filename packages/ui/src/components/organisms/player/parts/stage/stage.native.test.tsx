@@ -20,7 +20,7 @@ function stage(settingsShrink: boolean) {
         stageSize={{ width: 1920, height: 1080 }}
         settingsShrink={settingsShrink}
         appearance={DEFAULT_SUB_APPEARANCE}
-        raised={false}
+        clearance={0}
         locked={false}
         onPress={() => {}}
         onLongPress={() => {}}

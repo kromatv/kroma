@@ -44,6 +44,7 @@ export function ControlsFrame({
   poke,
   hold,
   onBack,
+  onBarLayout,
   start,
   end,
 }: Readonly<{
@@ -56,6 +57,7 @@ export function ControlsFrame({
   poke(): void;
   hold?(): () => void;
   onBack(): void;
+  onBarLayout(height: number): void;
   start?: ReactNode;
   end?: ReactNode;
 }>) {
@@ -122,6 +124,7 @@ export function ControlsFrame({
             paddingRight: Math.max(insets.right, spacing.md),
           },
         ]}
+        onLayout={(e) => onBarLayout(Math.round(e.nativeEvent.layout.height))}
       >
         <PlayerScrubRow
           engine={engine}
