@@ -101,9 +101,15 @@ to both tracks:
 | `internal`, `qa` (and `tv:internal`, `tv:qa`) | a finished release: internal testers get every push to `main`, with no step in Play Console |
 | `alpha`, `beta` (and their `tv:` tracks) | a draft: review and roll it out in Play Console |
 
-Changes are never sent for review by the workflow. Without
-`PLAY_STORE_READY`, builds still produce signed AAB artifacts, with no Play
-upload.
+The workflow does not set `changesNotSentForReview`. This app sends its changes
+for review automatically, and Play refuses a commit that sets it ("Changes are
+sent for review automatically"). Without `PLAY_STORE_READY`, builds still
+produce signed AAB artifacts, with no Play upload.
+
+The key in use today belongs to the Firebase Admin service account of the
+`kroma-media` Google Cloud project, where the Google Play Android Developer API
+is on. In Play Console it has access to `tv.kroma.app` only, and may release to
+and manage the testing tracks, never production.
 
 ## Older Android TV installs
 

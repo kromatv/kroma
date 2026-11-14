@@ -83,7 +83,6 @@ jobs:
           releaseName: KROMA ${{ inputs.version }} mobile
           tracks: ${{ vars.PLAY_MOBILE_TRACK }}
           status: ${{ steps.configuration.outputs.mobile_status }}
-          changesNotSentForReview: true
 
       - name: Release Android TV
         if: steps.configuration.outputs.ready == 'true'
@@ -95,4 +94,3 @@ jobs:
           releaseName: KROMA ${{ inputs.version }} Android TV
           tracks: ${{ vars.PLAY_TV_TRACK }}
           status: ${{ steps.configuration.outputs.tv_status }}
-          changesNotSentForReview: true
