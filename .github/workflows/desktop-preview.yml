@@ -32,7 +32,7 @@ jobs:
     env:
       PR: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -43,7 +43,7 @@ jobs:
 
       # The release build's entry, read and never written: a pull request's
       # copy would only evict main's.
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2
         with:
           workspaces: clients/desktop/src-tauri
           shared-key: desktop-release
@@ -77,7 +77,7 @@ jobs:
         run: bash clients/desktop/scripts/smoke-dmg-macos.sh "$(find clients/desktop/src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n1)"
 
       - id: upload
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kroma-preview-pr${{ github.event.pull_request.number }}
           path: clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
