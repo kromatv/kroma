@@ -8,7 +8,9 @@ use kroma_domain::PublicUser;
 
 mod access_tokens;
 mod credentials;
+mod identities;
 mod invites;
+mod join_requests;
 mod pin_attempts;
 mod preferences;
 mod resets;
@@ -21,7 +23,9 @@ mod test_support;
 
 pub use access_tokens::*;
 pub use credentials::*;
+pub use identities::*;
 pub use invites::*;
+pub use join_requests::*;
 pub use pin_attempts::*;
 pub use preferences::*;
 pub use resets::*;

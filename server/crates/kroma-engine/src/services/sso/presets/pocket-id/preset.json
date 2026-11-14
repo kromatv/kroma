@@ -1,0 +1,9 @@
+{
+  "name": "Pocket ID",
+  "icon": "fingerprint",
+  "issuer": "https://id.example.com",
+  "docs": "https://pocket-id.org/docs/client-examples",
+  "sources": {
+    "mark": "selfh.st/icons `pocket-id` (CC BY 4.0), via https://api.iconify.design/selfhst/pocket-id.svg, read 2026-11-13"
+  }
+}

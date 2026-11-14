@@ -86,7 +86,7 @@ pub(super) fn user_uuid(user_id: &str) -> Uuid {
 /// port from relaying an assertion for this server. Empty when neither is set:
 /// a fresh install then trusts the request origin, so passkeys work out of the
 /// box and a LAN-only server is not locked out.
-pub(super) fn allowed_origins(state: &SharedState) -> Vec<String> {
+pub(crate) fn allowed_origins(state: &SharedState) -> Vec<String> {
     let trim = |s: String| s.trim().trim_end_matches('/').to_string();
     let mut out = Vec::new();
     if let Some(web) = state.config.web_url.clone() {

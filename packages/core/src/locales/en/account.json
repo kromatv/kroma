@@ -12,6 +12,14 @@
   "account.confirmPin": "Confirm PIN",
   "account.currentPassword": "Current password",
   "account.currentPin": "Current PIN",
+  "account.identities": "Sign-in providers",
+  "account.identitiesDesc": "Sign in to this account through a provider this server trusts.",
+  "account.identityLink": "Link",
+  "account.identityLinkFailed": "Could not start linking {provider}",
+  "account.identityNeverUsed": "Never used",
+  "account.identityNotLinked": "Not linked to this account",
+  "account.identityUnlink": "Unlink",
+  "account.identityUnlinkFailed": "Could not unlink this sign-in",
   "account.langSearch": "Search a language",
   "account.newPassword": "New password",
   "account.newPin": "New PIN",
@@ -63,6 +71,5 @@
   "account.uiLanguage": "Interface language",
   "account.uiLanguageDesc": "The language of menus and buttons.",
   "account.unknownDevice": "Unknown device",
-  "account.unsaved": "Unsaved changes",
   "account.updatePassword": "Update password"
 }

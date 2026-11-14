@@ -1,11 +1,20 @@
 import { apiErrorText, KromaApiError } from '@kromatv/client';
-import type { AuthConfig, PublicUser, StoredSession } from '@kromatv/client/accounts';
+import {
+  type AuthConfig,
+  DEFAULT_SIGN_IN_METHODS,
+  type PublicUser,
+  type SignInButton,
+  type StoredSession,
+} from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
-import { ForgotForm, LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
+import { ForgotForm, RegisterForm } from '#web/features/accounts/auth-forms';
+import { LoginForm } from '#web/features/accounts/login-form';
 import { PinEntry } from '#web/features/accounts/pin-entry';
 import { type ProfileChoice, ProfilePicker } from '#web/features/accounts/profile-picker';
 import { useAuth } from '#web/shared/lib/auth';
+import { safeRedirect } from '#web/shared/lib/safe-redirect';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
 
 type Mode =
@@ -14,6 +23,12 @@ type Mode =
   | { kind: 'register' }
   | { kind: 'forgot'; identifier: string }
   | { kind: 'pin'; account: StoredSession };
+
+function pathToReturnTo(): string {
+  const { pathname, search } = window.location;
+  const asked = new URLSearchParams(search).get('redirect');
+  return safeRedirect(pathname === '/login' ? asked : `${pathname}${search}`) ?? '/';
+}
 
 function entryMode(config: AuthConfig, accounts: readonly StoredSession[]): Mode {
   if (!config.hasAccounts) return { kind: 'register' };
@@ -31,6 +46,8 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   const [error, setError] = useState<string | null>(null);
   const [forgotSent, setForgotSent] = useState(false);
   const canPick = config.publicUserList;
+  const methods = config.signIn ?? DEFAULT_SIGN_IN_METHODS;
+  const flows = useAuthFlows();
   const listsProfiles = config.hasAccounts && config.publicUserList;
 
   if (entryAccounts !== accounts) {
@@ -94,6 +111,18 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     }
   }
 
+  async function doProvider(provider: SignInButton) {
+    setBusy(true);
+    setError(null);
+    try {
+      await flows.signIn.with(provider.id, { returnTo: pathToReturnTo() });
+    } catch (e) {
+      setError(apiErrorText(e, t('auth.providerFailed', { provider: provider.label })));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function doRegister(
     email: string,
     username: string,
@@ -133,11 +162,14 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     return (
       <LoginForm
         profile={mode.user}
+        server={config.serverName && config.serverName !== 'KROMA' ? config.serverName : null}
         busy={busy}
         error={error}
         notice={mode.expired ? t('auth.sessionExpiredHint') : null}
         canGoBack={canPick}
         canUsePasskey={passkeysSupported()}
+        methods={methods}
+        onProvider={(provider) => void doProvider(provider)}
         onBack={() => {
           setError(null);
           setMode({ kind: 'pick' });

@@ -1,0 +1,10 @@
+{
+  "name": "Casdoor",
+  "issuer": "https://casdoor.example.com",
+  "docs": "https://casdoor.ai/docs/how-to-connect/oidc-client/",
+  "mark": "mark.png",
+  "sources": {
+    "mark": "Casdoor's own favicon.png, untouched, the icon Casdoor 4.27.1 serves as its own, a PNG because Casdoor publishes no SVG of it, https://cdn.casbin.org/img/favicon.png, read 2026-11-14",
+    "issuer": "docs/reference/sign-in-providers.md, run against Casdoor 4.27.1: the instance's own address, with no slash after it"
+  }
+}

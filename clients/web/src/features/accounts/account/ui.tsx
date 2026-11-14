@@ -8,6 +8,7 @@ import { useT } from '@kromatv/ui';
 import { type ColorValue, type IconName, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { SaveStatus } from '#web/shared/ui/save-dock';
 
 /** A preference row inside a {@link ListRow.Group}: an amber-tinted glyph, a
  * label with a muted description, and a right-aligned control. */
@@ -55,8 +56,6 @@ export function passwordStrength(pw: string): Strength {
   } as const;
   return { score, ...map[score] };
 }
-
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 /** Async-save state machine: `run(fn, fallbackMsg)` flips to `saving`, then
  * `saved` (auto-clearing after ~2.5s) or `error` with the server's message. */

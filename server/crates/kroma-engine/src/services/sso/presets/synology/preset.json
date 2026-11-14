@@ -1,0 +1,10 @@
+{
+  "name": "Synology SSO Server",
+  "label": "Synology",
+  "issuer": "https://nas.example.com:5001/webman/sso",
+  "docs": "https://kb.synology.com/en-global/DSM/help/SSOServer/sso_server_application_list?version=7",
+  "sources": {
+    "mark": "selfh.st/icons `synology` (CC BY 4.0), via https://api.iconify.design/selfhst/synology.svg, read 2026-11-13",
+    "issuer": "Not read from Synology: its help pages returned no text on 2026-11-13. The address is the one setup guides give for SSO Server, and wants a run against a NAS."
+  }
+}

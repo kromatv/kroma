@@ -1,0 +1,10 @@
+{
+  "name": "Slack",
+  "issuer": "https://slack.com",
+  "console": "https://api.slack.com/apps",
+  "docs": "https://docs.slack.dev/authentication/sign-in-with-slack/",
+  "sources": {
+    "mark": "Iconify `logos:slack-icon`, via https://api.iconify.design/logos/slack-icon.svg, read 2026-11-13 (SVG Logos, CC0 1.0)",
+    "issuer": "https://slack.com/.well-known/openid-configuration, read 2026-11-13: RS256, with the profile and email scopes"
+  }
+}

@@ -1,13 +1,33 @@
 // Presentation only; auth calls and phase switching stay in sign-in.
 
-import { Box, Button, Field, OtpField, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
+import {
+  DEFAULT_SIGN_IN_METHODS,
+  type SignInButton,
+  type SignInMethods,
+} from '@kromatv/client/accounts';
+import { signInLayout } from '@kromatv/core';
+import {
+  Box,
+  Button,
+  Field,
+  hasGlyph,
+  OtpField,
+  Spinner,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
+import { useState } from 'react';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
+import { ProviderButton } from './ProviderButton';
 import { ErrorBanner } from './ui';
 
 export type Identity = { name: string; avatarUri: string | null };
+
+const noImage = () => null;
 
 function IdentityHeader({
   identity,
@@ -66,35 +86,30 @@ export function PinPhase({
   );
 }
 
-export function CredentialsPhase({
+function PasswordFields({
   identity,
-  serverLabel,
   identifier,
   password,
   busy,
-  error,
+  primary,
+  focused,
   onIdentifier,
   onPassword,
   onSubmit,
 }: Readonly<{
   identity: Identity | null;
-  serverLabel: string | null;
   identifier: string;
   password: string;
   busy: boolean;
-  error: string | null;
+  primary: boolean;
+  focused: boolean;
   onIdentifier(next: string): void;
   onPassword(next: string): void;
   onSubmit(): void;
 }>) {
   const t = useT();
   return (
-    <OnboardingBox>
-      {identity ? (
-        <IdentityHeader identity={identity} />
-      ) : (
-        <OnboardingTitle title={t('auth.signinTitle')} subtitle={serverLabel} />
-      )}
+    <>
       {identity ? null : (
         <Field.Root
           w="100%"
@@ -108,7 +123,7 @@ export function CredentialsPhase({
             placeholder={t('auth.emailOrUsername')}
             keyboardType="email-address"
             autoComplete="username"
-            autoFocus
+            autoFocus={focused}
           />
         </Field.Root>
       )}
@@ -124,17 +139,124 @@ export function CredentialsPhase({
           placeholder={t('auth.password')}
           type="password"
           autoComplete="current-password"
-          autoFocus={identity !== null}
+          autoFocus={focused && identity !== null}
           onSubmit={onSubmit}
         />
       </Field.Root>
-      <ErrorBanner message={error} />
       <Button
+        variant={primary ? 'primary' : 'glass'}
         label={busy ? t('auth.loggingIn') : t('auth.login')}
         onPress={onSubmit}
         loading={busy}
         disabled={!password || (!identity && !identifier.trim())}
       />
+    </>
+  );
+}
+
+function OrRule() {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  return (
+    <Box style={s.rule}>
+      <Box style={s.line} />
+      <Text style={s.or}>{t('auth.or')}</Text>
+      <Box style={s.line} />
+    </Box>
+  );
+}
+
+/** The sign-in form. The providers' buttons form one group and the password
+ * fields another, in the order the server lists them, and the group that comes
+ * first carries the main action. A server with passwords off shows a link that
+ * opens the fields for an admin. Passkeys have no prompt on this app. */
+export function CredentialsPhase({
+  identity,
+  serverLabel,
+  identifier,
+  password,
+  busy,
+  providerBusy = false,
+  error,
+  notice = null,
+  methods = DEFAULT_SIGN_IN_METHODS,
+  resolveImage = noImage,
+  onIdentifier,
+  onPassword,
+  onSubmit,
+  onProvider,
+}: Readonly<{
+  identity: Identity | null;
+  serverLabel: string | null;
+  identifier: string;
+  password: string;
+  busy: boolean;
+  providerBusy?: boolean;
+  error: string | null;
+  notice?: string | null;
+  methods?: SignInMethods;
+  resolveImage?: (path: string) => string | null;
+  onIdentifier(next: string): void;
+  onPassword(next: string): void;
+  onSubmit(): void;
+  onProvider?(provider: SignInButton): void;
+}>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  const layout = signInLayout(methods, { passkey: false });
+  const providers = onProvider
+    ? layout.presses.flatMap((press) => (press.kind === 'provider' ? [press.provider] : []))
+    : [];
+  const [opened, setOpened] = useState(false);
+  const typing = layout.password || opened;
+  const formLeads = layout.lead === 'password' || providers.length === 0;
+  const buttons =
+    providers.length > 0 ? (
+      <Box style={s.group}>
+        {providers.map((provider, index) => (
+          <ProviderButton
+            key={provider.id}
+            provider={provider}
+            primary={!formLeads && index === 0}
+            disabled={busy || providerBusy}
+            loading={providerBusy}
+            resolve={resolveImage}
+            onPress={() => onProvider?.(provider)}
+          />
+        ))}
+      </Box>
+    ) : null;
+  const fields = typing ? (
+    <Box style={s.group}>
+      <PasswordFields
+        identity={identity}
+        identifier={identifier}
+        password={password}
+        busy={busy}
+        primary={formLeads}
+        focused={formLeads || !layout.password}
+        onIdentifier={onIdentifier}
+        onPassword={onPassword}
+        onSubmit={onSubmit}
+      />
+    </Box>
+  ) : null;
+  const [first, second] = formLeads ? [fields, buttons] : [buttons, fields];
+  return (
+    <OnboardingBox>
+      {identity ? (
+        <IdentityHeader identity={identity} />
+      ) : (
+        <OnboardingTitle title={t('auth.signinTitle')} subtitle={serverLabel} />
+      )}
+      {notice ? <Text style={s.notice}>{notice}</Text> : null}
+      <ErrorBanner message={error} />
+      {first}
+      {first && second ? <OrRule /> : null}
+      {second}
+      {typing ? null : (
+        <Button variant="ghost" label={t('auth.usePassword')} onPress={() => setOpened(true)} />
+      )}
     </OnboardingBox>
   );
 }
@@ -143,4 +265,9 @@ const sDefinition = styles({
   identity: { align: 'center', gap: spacing.xs, mb: spacing.xs },
   name: { ...type.heading, mt: 6 },
   subtitle: { ...type.caption, mt: 4, textAlign: 'center' },
+  notice: { ...type.caption, textAlign: 'center' },
+  group: { gap: spacing.sm },
+  rule: { row: true, align: 'center', gap: spacing.sm },
+  line: { flex: 1, h: 1, bg: 'border' },
+  or: { ...type.caption, color: 'textDim' },
 });

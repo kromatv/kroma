@@ -24,6 +24,9 @@ pub async fn authenticate_start(
     ReqLocale(loc): ReqLocale,
     headers: HeaderMap,
 ) -> Response {
+    if let Err(resp) = super::require_passkeys_on(&state, loc) {
+        return resp;
+    }
     let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,
@@ -59,6 +62,9 @@ pub async fn authenticate_finish(
     headers: HeaderMap,
     Json(body): Json<AuthFinishBody>,
 ) -> Response {
+    if let Err(resp) = super::require_passkeys_on(&state, loc) {
+        return resp;
+    }
     let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,

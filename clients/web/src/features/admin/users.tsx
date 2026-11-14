@@ -19,6 +19,7 @@ import { Pill, PillDot } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal } from '#web/features/admin/users-edit-modal';
 import { InviteModal } from '#web/features/admin/users-invite-modal';
+import { JoinRequests } from '#web/features/admin/users-join-requests';
 import { PendingInvite } from '#web/features/admin/users-pending-invite';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
@@ -92,6 +93,8 @@ function UsersPageInner() {
           </StatCard.Root>
         </Grid>
       </Box>
+
+      <JoinRequests onApproved={() => void reload()} />
 
       <Section.Root mt={28}>
         <Section.Header>

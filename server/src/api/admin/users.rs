@@ -172,7 +172,7 @@ pub async fn update_user(
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
-fn library_scope(granted: Option<Vec<String>>) -> Option<LibraryScope> {
+pub(super) fn library_scope(granted: Option<Vec<String>>) -> Option<LibraryScope> {
     let Some(ids) = granted else {
         return Some(LibraryScope::All);
     };

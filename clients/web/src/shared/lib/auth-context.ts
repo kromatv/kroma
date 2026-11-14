@@ -1,4 +1,10 @@
-import type { InviteToken, StoredSession, User, UserId } from '@kromatv/client/accounts';
+import type {
+  AuthResult,
+  InviteToken,
+  StoredSession,
+  User,
+  UserId,
+} from '@kromatv/client/accounts';
 import type { QueryClient } from '@kromatv/client/query';
 import type { ActivateResult } from '@kromatv/ui';
 import { createContext, useContext } from 'react';
@@ -10,6 +16,8 @@ export interface AuthValue {
   accounts: StoredSession[];
   login: (email: string, password: string) => Promise<void>;
   loginPasskey: () => Promise<void>;
+  /** Opens the session a sign-in made elsewhere returned. */
+  enter: (result: AuthResult) => void;
   register: (
     email: string,
     username: string,

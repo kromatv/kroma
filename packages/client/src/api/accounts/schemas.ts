@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { InviteToken, PasskeyId, SessionId, UserId } from './ids';
+import { ProviderId } from '../sso/ids';
 
 /** The known capability keys (mirror of the Rust `Permission` enum). */
 export const Permission = z.enum([
@@ -45,6 +46,85 @@ export function hasPermission(user: Pick<User, 'permissions'>, permission: Permi
 export const PublicUser = User.pick({ id: true, username: true, avatarUrl: true, hasPin: true });
 export type PublicUser = z.infer<typeof PublicUser>;
 
+const BrandColor = z.string().regex(/^#[0-9a-f]{6}$/i);
+
+/** How a provider's button is painted on one screen: its fill, its edge when
+ * the provider draws one, the ink of its label, and a server path to the mark
+ * that sits on the fill. */
+export const ButtonLook = z.object({
+  fill: BrandColor,
+  stroke: BrandColor.optional(),
+  ink: BrandColor,
+  logo: z.string(),
+});
+export type ButtonLook = z.infer<typeof ButtonLook>;
+
+/** A provider's button as its owner asks for it, on a dark screen and on a
+ * light one. */
+export const ButtonBrand = z.object({ dark: ButtonLook, light: ButtonLook });
+export type ButtonBrand = z.infer<typeof ButtonBrand>;
+
+/** One way into a server, as the sign-in screen draws it. `kind` says which
+ * control it is: `password` is the form, `passkey` its button, `oidc` a
+ * provider's button, which alone carries a label, an icon, and maybe a mark and
+ * a look of its own.
+ * The kind is an open string: a client built before a new one skips it. */
+export const SignInMethod = z.object({
+  id: z.string(),
+  kind: z.string(),
+  label: z.string().optional(),
+  icon: z.string().optional(),
+  /** A server path to the provider's mark, when the server knows one. */
+  image: z.string().optional(),
+  /** The look the provider's owner asks for its button. One this client
+   * cannot read is dropped, and the button looks like the others. */
+  brand: ButtonBrand.optional().catch(undefined),
+});
+export type SignInMethod = z.infer<typeof SignInMethod>;
+
+/** The ways into a server, in the order the sign-in screen offers them. */
+export const SignInMethods = z.object({ methods: z.array(SignInMethod) });
+export type SignInMethods = z.infer<typeof SignInMethods>;
+
+/** What a server that predates `signIn` offers. */
+export const DEFAULT_SIGN_IN_METHODS: SignInMethods = {
+  methods: [
+    { id: 'password', kind: 'password' },
+    { id: 'passkey', kind: 'passkey' },
+  ],
+};
+
+/** A provider's button: an `oidc` method, with the fields only it has. */
+export interface SignInButton {
+  id: ProviderId;
+  label: string;
+  icon: string;
+  image?: string;
+  brand?: ButtonBrand;
+}
+
+/** Whether `methods` offers a method of `kind`. */
+export function offersSignIn(methods: SignInMethods, kind: 'password' | 'passkey'): boolean {
+  return methods.methods.some((method) => method.kind === kind);
+}
+
+/** The provider buttons of `methods`, in their order. */
+export function signInButtons(methods: SignInMethods): SignInButton[] {
+  return methods.methods.flatMap((method) => {
+    const id = ProviderId.safeParse(method.id);
+    if (method.kind !== 'oidc' || !id.success) return [];
+    return [
+      {
+        id: id.data,
+        label: method.label ?? '',
+        icon: method.icon ?? 'key',
+        image: method.image,
+        brand: method.brand,
+      },
+    ];
+  });
+}
+
 /** Public login-gate config. */
 export const AuthConfig = z.object({
   publicUserList: z.boolean(),
@@ -53,6 +133,8 @@ export const AuthConfig = z.object({
   /** Where the activation page posts the owner's yes: present only while
    * account email goes through the kroma.tv relay. */
   mailRelayUrl: z.string().optional(),
+  /** Absent from a server too old to know providers. */
+  signIn: SignInMethods.optional(),
 });
 export type AuthConfig = z.infer<typeof AuthConfig>;
 

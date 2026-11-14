@@ -1,0 +1,10 @@
+{
+  "name": "Ory",
+  "issuer": "https://PROJECT_SLUG.projects.oryapis.com",
+  "console": "https://console.ory.sh/",
+  "docs": "https://www.ory.com/docs/hydra/guides/oauth2-clients",
+  "sources": {
+    "mark": "Simple Icons 16.37.0 `ory` (CC0 1.0), filled with the colour that release lists, https://simpleicons.org",
+    "issuer": "https://www.ory.com/docs/hydra/guides/oauth2-clients, read 2026-11-13"
+  }
+}

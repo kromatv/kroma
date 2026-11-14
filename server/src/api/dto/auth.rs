@@ -64,6 +64,7 @@ pub struct AuthConfig {
     /// account email goes through the relay.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mail_relay_url: Option<String>,
+    pub sign_in: super::SignInMethods,
 }
 
 /// `POST /api/invites` result the invite plus a ready-to-share join URL.

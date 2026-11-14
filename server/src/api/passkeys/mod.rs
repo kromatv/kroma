@@ -8,13 +8,28 @@ mod manage;
 mod register;
 
 pub use authenticate::{authenticate_finish, authenticate_start};
+pub(crate) use ceremony::allowed_origins;
 pub use manage::{list, remove};
 pub use register::{register_finish, register_start};
 
+use axum::response::Response;
 use axum::routing::{get, post};
 use axum::Router;
 
 use crate::state::SharedState;
+
+/// Refuses while an admin has turned passkey sign-in off.
+pub(super) fn require_passkeys_on(state: &SharedState, loc: &str) -> Result<(), Response> {
+    if crate::api::sso::sign_in_config(state).passkeys() {
+        Ok(())
+    } else {
+        Err(crate::api::error::lerr(
+            loc,
+            axum::http::StatusCode::FORBIDDEN,
+            "sso.passkeysOff",
+        ))
+    }
+}
 
 /// The `/auth/me/*` routes self-gate via [`AuthUser`]; the
 /// `/auth/passkeys/authenticate/*` pair is public (it *is* the login).

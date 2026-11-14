@@ -1,0 +1,9 @@
+{
+  "name": "Kanidm",
+  "issuer": "https://idm.example.com/oauth2/openid/CLIENT_ID",
+  "docs": "https://kanidm.github.io/kanidm/stable/integrations/oauth2.html",
+  "sources": {
+    "mark": "selfh.st/icons `kanidm` (CC BY 4.0), via https://api.iconify.design/selfhst/kanidm.svg, read 2026-11-13",
+    "issuer": "https://kanidm.github.io/kanidm/stable/integrations/oauth2.html, read 2026-11-13: one issuer for each client, signed ES256"
+  }
+}

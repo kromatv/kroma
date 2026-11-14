@@ -1,0 +1,9 @@
+{
+  "name": "Authelia",
+  "icon": "shield-lock",
+  "issuer": "https://auth.example.com",
+  "docs": "https://www.authelia.com/configuration/identity-providers/openid-connect/clients/",
+  "sources": {
+    "mark": "Authelia's own logo-cropped.svg, untouched (Apache 2.0), https://www.authelia.com/reference/guides/branding/, read 2026-11-13"
+  }
+}

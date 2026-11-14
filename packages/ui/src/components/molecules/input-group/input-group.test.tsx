@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { createRef } from 'react';
+import type { TextInput } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { breakpoint } from '#ui/core/tokens';
@@ -88,6 +90,27 @@ describe('<InputGroup>', () => {
     expect(document.activeElement).not.toBe(entry);
     fireEvent.click(screen.getByText('@'));
     expect(document.activeElement).toBe(entry);
+  });
+
+  it('hands the entry to a caller that gave it a ref, and still focuses it from the padding', () => {
+    const entry = createRef<TextInput>();
+    render(
+      <InputGroup.Root label="Amount">
+        <InputGroup.Addon>
+          <Text>$</Text>
+        </InputGroup.Addon>
+        <InputGroup.Input placeholder="0.00" physicalKeyboard entryRef={entry} />
+      </InputGroup.Root>,
+    );
+    const input = screen.getByPlaceholderText('0.00');
+
+    entry.current?.focus();
+    const byRef = document.activeElement;
+    entry.current?.blur();
+    fireEvent.click(screen.getByText('$'));
+
+    expect(byRef).toBe(input);
+    expect(document.activeElement).toBe(input);
   });
 
   it("leaves an addon press of the caller's own working", () => {

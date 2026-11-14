@@ -33,4 +33,5 @@ pub(super) const STEPS: &[Step] = &[
         rebuilds: false,
     },
     sql_step!("0014_notification_engagement"),
+    sql_step!("0015_sign_in_identities"),
 ];

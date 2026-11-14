@@ -162,6 +162,9 @@ export function createQueries(client: QueryClient) {
     /** The account's registered passkeys (for the /account security section). */
     passkeys: () => client.query.accounts.passkeys.list(),
 
+    /** The account's provider identities (for the /account security section). */
+    identities: () => client.query.sso.identities(),
+
     /** The notification centre. No poll: the server pushes `notification.created`
      * over the (addressed) event stream, so the bell invalidates on demand. */
     notifications: () => client.query.notifications.list(),

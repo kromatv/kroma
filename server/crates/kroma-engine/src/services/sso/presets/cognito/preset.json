@@ -1,0 +1,12 @@
+{
+  "name": "Amazon Cognito",
+  "label": "Amazon",
+  "issuer": "https://cognito-idp.REGION.amazonaws.com/USER_POOL_ID",
+  "groupClaim": "cognito:groups",
+  "console": "https://console.aws.amazon.com/cognito/v2/idp/user-pools",
+  "docs": "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-client-apps.html",
+  "sources": {
+    "mark": "SVG Logos `aws-cognito` (CC0 1.0), via https://api.iconify.design/logos/aws-cognito.svg, read 2026-11-13",
+    "issuer": "https://docs.aws.amazon.com/cognito/latest/developerguide/federation-endpoints.html, read 2026-11-13: the original issuer, which is the one the discovery document is listed under"
+  }
+}

@@ -5,7 +5,7 @@ import { useDeviceStore } from '@kromatv/ui/device-store';
 // accessToken is stored and exchanged on demand for a short-lived bearer kept
 // in memory; a 401 mid-flight silently re-exchanges.
 
-import { normalizeServerUrl, type User } from '@kromatv/client/accounts';
+import type { AuthResult, User } from '@kromatv/client/accounts';
 import type { QueryClient } from '@kromatv/client/query';
 import {
   createContext,
@@ -25,6 +25,7 @@ import {
   setBiometricLockEnabled,
 } from '#mobile/lib/storage';
 import { useBootRestore } from './boot';
+import { findServer } from './find-server';
 import { sameAccount, useAccountStore, useServerStore } from './stores';
 
 export interface AuthSession {
@@ -38,6 +39,8 @@ export interface AuthSession {
   selectServer(url: string): void;
   renameServer(url: string, name: string): void;
   login(identifier: string, password: string): Promise<void>;
+  /** Opens the session a sign-in made another way returned. */
+  adopt(serverUrl: string, result: AuthResult): void;
   // PIN-locked profiles need `pin` (401 body `pinRequired: true` otherwise).
   switchAccount(account: MobileAccount, pin?: string): Promise<void>;
   /** Clear the PIN-verified flag the server keeps on a stored credential, so
@@ -125,43 +128,28 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
 
   const connect = useCallback(
     async (url: string) => {
-      // A bare host ("kroma.example.com") tries https first, then http, so users
-      // never have to type the scheme. Each probe validates that this really
-      // is a Kroma server before saving.
-      const raw = url.trim();
-      const candidates = /^https?:\/\//i.test(raw) ? [raw] : [`https://${raw}`, `http://${raw}`];
-      let lastError: unknown;
-      for (const candidate of candidates) {
-        const normalized = normalizeServerUrl(candidate);
-        const abort = new AbortController();
-        const timer = setTimeout(() => abort.abort(), 5000);
-        try {
-          const health = await requestClient(normalized).media.health({ signal: abort.signal });
-          setServerUrl(normalized);
-          // `name` is LAN-only: a server reached over the internet answers
-          // without one, and `touch` then keeps whatever label we already had.
-          servers.touch(normalized, health.name);
-          return;
-        } catch (err) {
-          lastError = err;
-        } finally {
-          clearTimeout(timer);
-        }
-      }
-      throw lastError ?? new Error('unreachable');
+      const found = await findServer(url, requestClient);
+      setServerUrl(found.url);
+      // `name` is LAN-only: a server reached over the internet answers
+      // without one, and `touch` then keeps whatever label we already had.
+      servers.touch(found.url, found.name);
     },
     [servers, requestClient],
   );
 
   const selectServer = useCallback((url: string) => setServerUrl(url), []);
 
+  const adopt = useCallback(
+    (url: string, result: AuthResult) =>
+      enterSession(url, result.accessToken, result.token, result.user, result.mediaTicket),
+    [enterSession],
+  );
   const login = useCallback(
     async (identifier: string, password: string) => {
       if (!serverUrl) throw new Error('no server');
-      const result = await requestClient(serverUrl).accounts.login(identifier, password);
-      enterSession(serverUrl, result.accessToken, result.token, result.user, result.mediaTicket);
+      adopt(serverUrl, await requestClient(serverUrl).accounts.login(identifier, password));
     },
-    [serverUrl, enterSession, requestClient],
+    [serverUrl, adopt, requestClient],
   );
 
   const switchAccount = useCallback(
@@ -262,6 +250,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       selectServer,
       renameServer,
       login,
+      adopt,
       switchAccount,
       relockAccount,
       switchProfile,
@@ -281,6 +270,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       selectServer,
       renameServer,
       login,
+      adopt,
       switchAccount,
       relockAccount,
       switchProfile,
