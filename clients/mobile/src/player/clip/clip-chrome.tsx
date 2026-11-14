@@ -43,6 +43,7 @@ export function ClipChrome({
         poke={frame.poke}
         hold={frame.hold}
         onBack={onBack}
+        onBarLayout={frame.onBarLayout}
         end={
           <>
             <RowShortcut

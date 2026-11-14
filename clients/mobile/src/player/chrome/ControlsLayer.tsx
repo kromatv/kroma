@@ -21,6 +21,7 @@ export function ControlsLayer({
   onPip,
   onCast,
   onFullscreen,
+  onBarLayout,
 }: Readonly<{
   engine: Engine;
   item: MediaItem;
@@ -35,6 +36,7 @@ export function ControlsLayer({
   onPip?(): void;
   onCast?(): void;
   onFullscreen?(): void;
+  onBarLayout(height: number): void;
 }>) {
   const t = useT();
   const title = item.showTitle ?? item.metadata?.title ?? item.title;
@@ -63,6 +65,7 @@ export function ControlsLayer({
       poke={poke}
       hold={hold}
       onBack={onBack}
+      onBarLayout={onBarLayout}
       start={
         <>
           {audioCount > 1 ? (

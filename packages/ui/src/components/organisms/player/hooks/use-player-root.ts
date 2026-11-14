@@ -195,7 +195,9 @@ function usePlayerRoot({
   }, []);
   const transport = transportHeight || px(TRANSPORT_HEIGHT);
   const bottomInset = peekVisible ? PEEK_HEIGHT : px(28);
-  const introLift = chromeShown ? bottomInset + transport + px(SKIP_GAP) : px(SKIP_REST);
+  const clearance = bottomInset + transport + px(SKIP_GAP);
+  const introLift = chromeShown ? clearance : px(SKIP_REST);
+  const cueClearance = chromeShown ? clearance : 0;
   const input = playerInputHandlers(nav, c, flags, locked);
 
   const { openOverlay } = nav;
@@ -246,6 +248,7 @@ function usePlayerRoot({
     onTransportLayout,
     bottomInset,
     introLift,
+    cueClearance,
     sheetOpen,
     peekVisible,
     chromeShown,

@@ -71,7 +71,7 @@ interface StageProps {
    *  surface here (../../lib/surface-shrink), not decided by the caller. */
   settingsShrink: boolean;
   appearance: SubtitleAppearance;
-  raised: boolean;
+  clearance: number;
   locked: boolean;
   onPress: () => void;
   onLongPress: () => void;
@@ -133,7 +133,7 @@ function Stage({
   stageSize,
   settingsShrink,
   appearance,
-  raised,
+  clearance,
   locked,
   onPress,
   onLongPress,
@@ -206,7 +206,7 @@ function Stage({
             subtitles={c.subtitles}
             activeIndex={c.subtitleIndex}
             appearance={appearance}
-            raised={raised}
+            clearance={clearance}
             onTrackFailed={c.markSubtitleFailed}
           />
           {locked ? null : (
