@@ -21,6 +21,20 @@ npx @kromatv/installer update
 
 The installer keeps the list of those TVs, so this command asks nothing.
 
+## Which KROMA app it installs
+
+On a Samsung TV from 2021 or later and on an LG TV from 2018 or later, the
+installer puts the native KROMA app: a `.tpk` on Samsung, an `.ipk` on LG. It
+runs on the TV directly, with no browser.
+
+A Samsung TV from 2017 to 2020 cannot run the native app. On those TVs, the
+installer puts the web app, a `.wgt`, and says why.
+
+To install the web app on any Samsung or LG TV, install by the address of the
+TV with `--web`: `npx @kromatv/installer install TV_ADDRESS --web`. The
+installer remembers it for that TV, and `update` keeps it. To go back to the
+native app, use `--no-web` the same way.
+
 ## Before you begin
 
 - [Node.js](https://nodejs.org) 22 or later, on macOS or Linux.
@@ -85,6 +99,11 @@ address of the TV, and sign in to your Samsung account when the browser opens.
 A KROMA signed with another certificate is already on the TV. Delete it: in
 **Apps**, hold the select button on the KROMA tile, then choose **Delete**.
 Install again.
+
+### A Samsung TV from 2020 or earlier refuses the app
+
+The installer could not find the year of the TV, so it sent the native app,
+which these TVs cannot run. Install again with `--web`.
 
 ### An LG TV refuses the key
 

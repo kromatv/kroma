@@ -6,10 +6,19 @@ import { TARGETS, type TargetId } from '#site/lib/release-targets';
 import { megabytes } from '#site/lib/releases';
 import { m } from '#site/paraglide/messages';
 
-/** One clearly labeled installer per device, with an honest unavailable state. */
-export function PlatformDownload({ target, label }: Readonly<{ target: TargetId; label: string }>) {
+/**
+ * One clearly labeled installer per device, with an honest unavailable state.
+ * A `secondary` installer, for older devices, is drawn quieter and simply left
+ * out when the release has none.
+ */
+export function PlatformDownload({
+  target,
+  label,
+  secondary = false,
+}: Readonly<{ target: TargetId; label: string; secondary?: boolean }>) {
   const release = useDownloadRelease();
   const download = release?.downloads.find((file) => file.target === target);
+  if (!download && secondary) return null;
   if (!download)
     return (
       <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
@@ -26,7 +35,7 @@ export function PlatformDownload({ target, label }: Readonly<{ target: TargetId;
         meta: `${TARGETS[target].ext} · ${megabytes(download.bytes)}`,
       }}
       label={label}
-      prominent
+      prominent={!secondary}
       showChecksum={false}
     />
   );

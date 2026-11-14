@@ -55,8 +55,8 @@ la donne : [Synology](synology.md#mettre-à-jour-le-conteneur) et
 | iPhone, iPad, Apple TV | TestFlight installe les nouvelles versions |
 | Android depuis Google Play | Google Play installe les nouvelles versions |
 | Android depuis un fichier `.apk` | installez le nouveau fichier par-dessus l'ancien |
-| Téléviseur Samsung | installez le nouveau `.wgt`, signé avec le même certificat qu'avant |
-| Téléviseur LG | installez le nouveau `.ipk` |
+| Téléviseur Samsung | `npx @kromatv/installer update`, ou installez le nouveau `.tpk` (`.wgt` sur un téléviseur de 2017 à 2020), signé avec le même certificat qu'avant |
+| Téléviseur LG | `npx @kromatv/installer update`, ou installez le nouveau `.ipk` |
 | macOS, Windows, Linux | l'app se met à jour seule |
 
 ## Sauvegarder votre serveur

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { classify, TARGET_IDS, TARGETS } from './release-targets.ts';
 
 const PRODUCT = {
-  'KROMA-tizen-0.1.38.wgt': 'tizen',
-  'tv.kroma.webos_0.1.38_all.ipk': 'webos',
+  'KROMA-tizen-0.1.40.tpk': 'tizen',
+  'KROMA-tizen-0.1.38.wgt': 'tizen-web',
+  'KROMA-webos-0.1.40.ipk': 'webos',
   'KROMA-androidtv-0.1.38.apk': 'androidtv',
   'KROMA_0.1.38_aarch64.dmg': 'macos',
   'KROMA_0.1.38_x64.dmg': 'macos-intel',
@@ -33,6 +34,10 @@ const NOT_OFFERED = [
   'KROMA_0.1.39-3490257_amd64.AppImage.sig',
   'KROMA_0.1.39-3490257_amd64.deb.sig',
   'KROMA_0.1.39-3490257_x64-setup.exe.sig',
+  'tv.kroma.webos_0.1.38_all.ipk',
+  'KROMA-tizen-store-0.1.38.wgt',
+  'KROMA-tizen8-0.1.38.wgt',
+  'KROMA-tizen4to7-0.1.38.wgt',
 ];
 
 describe('classify', () => {
@@ -46,6 +51,12 @@ describe('classify', () => {
     for (const asset of NOT_OFFERED) {
       expect(classify(asset), asset).toBeNull();
     }
+  });
+
+  it('offers the native Samsung and LG apps, and keeps the web .wgt apart for older sets', () => {
+    expect(classify('KROMA-tizen-0.1.40-canary.3571200.tpk')).toBe('tizen');
+    expect(classify('KROMA-tizen-0.1.40-canary.3571200.wgt')).toBe('tizen-web');
+    expect(classify('KROMA-webos-0.1.40-canary.3571200.ipk')).toBe('webos');
   });
 
   it('tells the two apk builds apart', () => {

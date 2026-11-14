@@ -5,9 +5,11 @@ l'application **Developer Mode** de LG, quand elle est envoyée depuis un
 ordinateur du même réseau. Ce guide active le mode développeur, puis installe
 KROMA avec son propre installeur, en 15 minutes environ.
 
-Un seul fichier KROMA fonctionne sur tous les téléviseurs LG sous webOS 4.0 ou
-plus récent, c'est-à-dire les modèles de 2018 et après. Les modèles de 2016 et
-2017 ne peuvent pas le faire fonctionner.
+Un seul fichier KROMA, `KROMA-webos-VERSION.ipk`, fonctionne sur tous les
+téléviseurs LG sous webOS 4.0 ou plus récent, c'est-à-dire les modèles de 2018
+et après. Les modèles de 2016 et 2017 ne peuvent pas le faire fonctionner.
+C'est l'app native : elle tourne directement sur le téléviseur, sans
+navigateur.
 
 ## Avant de commencer
 
@@ -104,6 +106,28 @@ npx @kromatv/installer update
 L'installeur ne demande rien. Le téléviseur conserve l'adresse de votre
 serveur et reste connecté à votre compte.
 
+### Passer de l'app web à l'app native
+
+Avant l'app native, les téléviseurs LG recevaient l'app web. La prochaine
+installation ou mise à jour ajoute l'app native à côté. Ce sont deux apps
+distinctes : le téléviseur affiche alors KROMA deux fois, et l'app native
+demande une fois votre serveur et votre connexion.
+
+Quand l'app native fonctionne, supprimez l'app web de la liste d'applications
+du téléviseur.
+
+L'app web figure toujours dans chaque version, sous le nom
+`tv.kroma.webos_VERSION_all.ipk`. Pour l'installer à la place de l'app native,
+installez avec l'adresse du téléviseur et `--web` :
+
+```bash
+npx @kromatv/installer install 192.168.1.60 --web
+```
+
+Remplacez `192.168.1.60` par l'adresse IP qu'affiche **Developer Mode**.
+L'installeur retient l'app web pour ce téléviseur, et `update` la conserve.
+Utilisez `--no-web` de la même façon pour revenir à l'app native.
+
 ## Facultatif : installer avec webOS Dev Manager
 
 [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) est une
@@ -113,8 +137,8 @@ Windows, où l'installeur de KROMA ne fonctionne pas. Elle remplace
 [Installer KROMA](#installer-kroma) et
 [Mettre à jour KROMA](#mettre-à-jour-kroma) ci-dessus.
 
-Il vous faut aussi le fichier KROMA pour LG, `tv.kroma.webos_VERSION_all.ipk`,
-sur [kroma.tv/download](https://kroma.tv/download) ou sur la
+Il vous faut aussi le fichier KROMA pour LG, `KROMA-webos-VERSION.ipk`, sur
+[kroma.tv/download](https://kroma.tv/download) ou sur la
 [page des versions](https://github.com/kromatv/kroma/releases).
 
 1. Téléchargez webOS Dev Manager depuis sa

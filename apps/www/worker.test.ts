@@ -74,7 +74,7 @@ describe('the site worker', () => {
             json: () =>
               Promise.resolve({
                 artifacts: [
-                  { id: 9, name: 'kroma-tizen-wgt', size_in_bytes: 1024, expired: false },
+                  { id: 9, name: 'kroma-tizen-tpk', size_in_bytes: 1024, expired: false },
                 ],
               }),
           });
@@ -106,7 +106,7 @@ describe('the site worker', () => {
               json: () =>
                 Promise.resolve({
                   artifacts: [
-                    { id: 9, name: 'kroma-tizen-wgt', size_in_bytes: 1024, expired: false },
+                    { id: 9, name: 'kroma-tizen-tpk', size_in_bytes: 1024, expired: false },
                   ],
                 }),
             }),
@@ -131,7 +131,7 @@ describe('the site worker', () => {
               json: () =>
                 Promise.resolve({
                   artifacts: [
-                    { id: 9, name: 'kroma-tizen-wgt', size_in_bytes: 1024, expired: false },
+                    { id: 9, name: 'kroma-tizen-tpk', size_in_bytes: 1024, expired: false },
                   ],
                 }),
             }),

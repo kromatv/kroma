@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Television } from '../shared/television';
 import {
+  anySource,
   availableSources,
   localArtifact,
   type PackageKind,
@@ -112,6 +113,21 @@ describe('availableSources', () => {
 
   it('offers both release channels where nothing is built and nothing can be', () => {
     expect(availableSources(wgt, false)).toEqual(['stable', 'canary']);
+  });
+});
+
+describe('anySource', () => {
+  it('offers every source one of the packages has, in the usual order', () => {
+    expect(anySource(['stable', 'canary', 'build'], ['local', 'stable', 'canary'])).toEqual([
+      'local',
+      'stable',
+      'canary',
+      'build',
+    ]);
+  });
+
+  it('offers nothing when no package has a source', () => {
+    expect(anySource([], [])).toEqual([]);
   });
 });
 

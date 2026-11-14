@@ -13,9 +13,11 @@ import {
 } from './devmode/fake-tv.fixture';
 import { keptKeyPath } from './devmode/key';
 import { installWebos } from './install';
+import { ipkBytes } from './ipk.fixture';
 
-const IPK = 'tv.kroma.webos_0.1.33_all.ipk';
+const IPK = 'KROMA-webos-0.1.40.ipk';
 const REMOTE = `/media/developer/temp/${IPK}`;
+const PACKAGE = ipkBytes({ payload: randomBytes(150_000) });
 
 let scratch: string;
 let ipk: string;
@@ -68,7 +70,7 @@ beforeEach(async () => {
   ipk = join(scratch, IPK);
   keys = join(scratch, 'keys');
   logged = [];
-  await writeFile(ipk, randomBytes(150_000));
+  await writeFile(ipk, PACKAGE);
 });
 
 afterEach(async () => {
@@ -87,7 +89,7 @@ describe('installWebos', () => {
     expect(set.commands[0]).toBe(
       '/usr/bin/test -d /media/developer/temp || /bin/mkdir -p /media/developer/temp',
     );
-    expect(set.received.get(REMOTE)?.byteLength).toBe(150_000);
+    expect(set.received.get(REMOTE)?.byteLength).toBe(PACKAGE.byteLength);
   });
 
   it('asks the install service for the package as ares-install does', async () => {
@@ -118,8 +120,25 @@ describe('installWebos', () => {
 
     expect(luna(set).slice(1)).toEqual([
       `/usr/bin/luna-send-pub -n 1 luna://com.webos.service.sessionmanager//getSessionList '{"subscribe":false}'`,
-      `/usr/bin/luna-send-pub -n 1 luna://com.webos.applicationManager//launch '{"id":"tv.kroma.webos","subscribe":false,"params":{"displayAffinity":0}}'`,
+      `/usr/bin/luna-send-pub -n 1 luna://com.webos.applicationManager//launch '{"id":"tv.kroma.app","subscribe":false,"params":{"displayAffinity":0}}'`,
     ]);
+  });
+
+  it('starts the web app by the id its own package names', async () => {
+    await writeFile(ipk, ipkBytes({ control: 'Package: tv.kroma.webos\nVersion: 0.1.33\n' }));
+    const set = await boot();
+
+    await install(set);
+
+    expect(luna(set).at(-1)).toContain('"id":"tv.kroma.webos"');
+  });
+
+  it('refuses a package it cannot read before it reaches the set', async () => {
+    await writeFile(ipk, randomBytes(1_000));
+    const set = await boot();
+
+    await expect(install(set)).rejects.toThrow('not an .ipk');
+    expect(set.commands).toEqual([]);
   });
 
   it('starts the app in the session of display 0 where the set has one', async () => {
@@ -129,7 +148,7 @@ describe('installWebos', () => {
     await install(set);
 
     expect(luna(set).at(-1)).toBe(
-      `/usr/bin/luna-send-pub -n 1 -c host-1 luna://com.webos.applicationManager//launch '{"id":"tv.kroma.webos","subscribe":false,"params":{}}'`,
+      `/usr/bin/luna-send-pub -n 1 -c host-1 luna://com.webos.applicationManager//launch '{"id":"tv.kroma.app","subscribe":false,"params":{}}'`,
     );
   });
 
@@ -158,7 +177,7 @@ describe('installWebos', () => {
     await install(set);
 
     expect(set.commands).toContain(`/bin/cat > "${REMOTE}"`);
-    expect(set.received.get(REMOTE)?.byteLength).toBe(150_000);
+    expect(set.received.get(REMOTE)?.byteLength).toBe(PACKAGE.byteLength);
   });
 
   it('says why the install service refused the package, and still removes it', async () => {
@@ -197,7 +216,7 @@ describe('installWebos', () => {
   it('says the set did not start the app when the launch answers anything but success', async () => {
     const set = await boot({ launchReply: { processId: '1001' } });
 
-    await expect(install(set)).rejects.toThrow('the TV did not start tv.kroma.webos');
+    await expect(install(set)).rejects.toThrow('the TV did not start tv.kroma.app');
   });
 
   it('tells the user to give the passphrase again when the set refuses the key', async () => {

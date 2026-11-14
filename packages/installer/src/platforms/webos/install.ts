@@ -1,9 +1,9 @@
 import { type InstallContext, stringOption } from '../platform';
-import { webosAppId } from './app-id';
 import { installIpk } from './devmode/install-ipk';
 import { DEFAULT_KEY_STORE, devModeKey, type KeyStore } from './devmode/key';
 import { launchApp } from './devmode/launch';
 import { DEV_MODE_PORT, openSession } from './devmode/session';
+import { ipkAppId } from './ipk';
 
 export interface DevModePorts extends KeyStore {
   sshPort: number;
@@ -20,13 +20,14 @@ export async function installWebos(
   ports: DevModePorts = DEFAULT_PORTS,
 ): Promise<void> {
   const { tv, artifact, log, launch } = context;
+  const appId = await ipkAppId(artifact);
   const privateKey = await devModeKey(tv.host, stringOption(context.options, 'passphrase'), ports);
 
   const session = await openSession({ host: tv.host, port: ports.sshPort, privateKey });
   try {
     const state = await installIpk(session, artifact, log);
     log(state);
-    if (launch) await launchApp(session, webosAppId());
+    if (launch) await launchApp(session, appId);
   } finally {
     session.end();
   }

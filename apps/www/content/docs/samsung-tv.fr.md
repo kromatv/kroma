@@ -7,6 +7,14 @@ active le mode développeur, puis installe KROMA avec son propre installeur, qui
 obtient aussi le certificat. Le premier téléviseur prend environ 10 minutes. Le
 suivant, deux.
 
+KROMA pour Samsung existe en deux fichiers. L'installeur choisit celui que
+votre téléviseur peut faire fonctionner :
+
+| Téléviseur | Fichier KROMA | Ce que c'est |
+| --- | --- | --- |
+| 2021 ou plus récent (Tizen 6.0 ou plus récent) | `KROMA-tizen-VERSION.tpk` | l'app native : elle tourne directement sur le téléviseur, sans navigateur |
+| 2017 à 2020 | `KROMA-tizen-VERSION.wgt` | l'app web : Samsung ne laisse pas une app native tourner sur ces téléviseurs |
+
 ## Avant de commencer
 
 - Un téléviseur Samsung connecté de 2017 ou plus récent.
@@ -83,10 +91,23 @@ répondez avec Entrée.
 
    Le navigateur affiche **Signed in**. L'installeur télécharge la dernière
    version de KROMA pour Samsung, la signe avec le certificat, l'envoie au
-   téléviseur et la démarre.
+   téléviseur et la démarre. Sur un téléviseur de 2021 ou plus récent, c'est
+   l'app native, le `.tpk`. Sur un téléviseur plus ancien, c'est l'app web, le
+   `.wgt`, et l'installeur indique pourquoi.
 
 KROMA apparaît dans **Applications** sur le téléviseur. Suivez
 [Connecter le téléviseur à votre serveur](tv.md#connecter-le-téléviseur-à-votre-serveur).
+
+Pour installer l'app web sur un téléviseur de 2021 ou plus récent, installez
+avec l'adresse du téléviseur et `--web` :
+
+```bash
+npx @kromatv/installer install 192.168.1.62 --web
+```
+
+Remplacez `192.168.1.62` par l'adresse de votre téléviseur. L'installeur
+retient l'app web pour ce téléviseur, et `update` la conserve. Utilisez
+`--no-web` de la même façon pour revenir à l'app native.
 
 Le certificat se trouve dans le dossier `.kroma/certificates/samsung` de votre
 dossier personnel. Samsung le délivre pour un an. Conservez ce dossier : une
@@ -106,17 +127,31 @@ L'installeur ne demande rien. Il installe la dernière version, signée avec le
 même certificat. Le téléviseur conserve l'adresse de votre serveur et reste
 connecté à votre compte.
 
+### Passer de l'app web à l'app native
+
+Avant l'app native, tous les téléviseurs Samsung recevaient l'app web. Sur un
+téléviseur de 2021 ou plus récent, la prochaine installation ou mise à jour
+ajoute l'app native à côté. Ce sont deux apps distinctes : **Applications**
+affiche alors deux vignettes KROMA, et l'app native demande une fois votre
+serveur et votre connexion.
+
+Quand l'app native fonctionne, supprimez l'app web : dans **Applications**,
+maintenez enfoncée la touche de sélection sur l'ancienne vignette KROMA, puis
+choisissez **Supprimer**.
+
 ## Facultatif : installer avec Tizen Studio
 
 Tizen Studio est l'outil de développement de Samsung. Utilisez-le sur Windows,
 où l'installeur de KROMA ne fonctionne pas. Il remplace
 [Installer KROMA](#installer-kroma) et
-[Mettre à jour KROMA](#mettre-à-jour-kroma) ci-dessus. Il vous faut aussi le fichier
-KROMA pour Samsung, `KROMA-tizen-VERSION.wgt`, sur
+[Mettre à jour KROMA](#mettre-à-jour-kroma) ci-dessus. Il vous faut aussi le
+fichier KROMA de votre téléviseur, sur
 [kroma.tv/download](https://kroma.tv/download) ou sur la
-[page des versions](https://github.com/kromatv/kroma/releases), ainsi que
-l'adresse de votre téléviseur, dans **Paramètres** > **Général** > **Réseau** >
-**État du réseau** > **Paramètres IP** sur le téléviseur.
+[page des versions](https://github.com/kromatv/kroma/releases) :
+`KROMA-tizen-VERSION.tpk` pour un téléviseur de 2021 ou plus récent,
+`KROMA-tizen-VERSION.wgt` pour un téléviseur de 2017 à 2020. Il vous faut
+enfin l'adresse de votre téléviseur, dans **Paramètres** > **Général** >
+**Réseau** > **État du réseau** > **Paramètres IP** sur le téléviseur.
 
 ### Installer les outils de Samsung
 
@@ -174,11 +209,35 @@ de Samsung.
 
 ### Signer et installer KROMA
 
-Le fichier `.wgt` que vous avez téléchargé est signé par KROMA. Signez-le à
-nouveau avec votre propre certificat, puis envoyez-le au téléviseur.
+Le fichier que vous avez téléchargé est signé par KROMA. Signez-le à nouveau
+avec votre propre certificat, puis envoyez-le au téléviseur. Dans un terminal,
+dans le dossier où vous avez téléchargé le fichier, suivez les étapes de votre
+fichier.
 
-Sur macOS ou Linux, dans un terminal, dans le dossier où vous avez téléchargé
-le fichier :
+#### L'app native, `.tpk` (2021 ou plus récent)
+
+1. Signez le fichier avec votre profil :
+
+   ```bash
+   ~/tizen-studio/tools/ide/bin/tizen package -t tpk -s kroma -- KROMA-tizen-VERSION.tpk
+   ```
+
+   Remplacez `kroma` par le nom de profil que vous avez choisi, et `VERSION`
+   par la version indiquée dans le nom du fichier. La commande signe à nouveau
+   le fichier sur place.
+
+2. Installez-le sur le téléviseur :
+
+   ```bash
+   ~/tizen-studio/tools/ide/bin/tizen install -n KROMA-tizen-VERSION.tpk -- .
+   ```
+
+Sur Windows, exécutez les deux mêmes commandes dans l'**Invite de commandes**,
+avec `C:\tizen-studio\tools\ide\bin\tizen.bat`.
+
+#### L'app web, `.wgt` (2017 à 2020)
+
+Sur macOS ou Linux :
 
 1. Décompressez le fichier et supprimez ses signatures :
 
@@ -214,9 +273,9 @@ KROMA apparaît dans **Applications** sur le téléviseur. Ouvrez-le, puis suive
 
 ### Mettre à jour avec Tizen Studio
 
-Installez le nouveau `.wgt` de la même façon, signé avec le même profil. Le
-téléviseur conserve l'adresse de votre serveur et reste connecté à votre
-compte.
+Installez le nouveau `.tpk` ou `.wgt` de la même façon, signé avec le même
+profil. Le téléviseur conserve l'adresse de votre serveur et reste connecté à
+votre compte.
 
 ## Dépannage
 
@@ -246,10 +305,23 @@ npx @kromatv/installer certificate 192.168.1.62
 
 Remplacez `192.168.1.62` par l'adresse de votre téléviseur.
 
-Avec Tizen Studio, cela arrive aussi avec le `.wgt` tel que téléchargé, ou avec
-un profil dont le certificat de distributeur ne contient pas ce téléviseur.
-Signez-le à nouveau avec votre profil Samsung, comme dans
+Avec Tizen Studio, cela arrive aussi avec le `.tpk` ou le `.wgt` tel que
+téléchargé, ou avec un profil dont le certificat de distributeur ne contient
+pas ce téléviseur. Signez-le à nouveau avec votre profil Samsung, comme dans
 [Signer et installer KROMA](#signer-et-installer-kroma).
+
+### Le téléviseur refuse le `.tpk`
+
+Un téléviseur de 2020 ou plus ancien ne peut pas faire fonctionner l'app
+native. L'installeur lui envoie l'app web quand il trouve l'année du
+téléviseur. Sinon, il envoie l'app native, et le téléviseur la refuse.
+Installez plutôt l'app web :
+
+```bash
+npx @kromatv/installer install 192.168.1.62 --web
+```
+
+Remplacez `192.168.1.62` par l'adresse de votre téléviseur.
 
 ### `Author certificate not match`
 

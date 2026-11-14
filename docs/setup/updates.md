@@ -52,8 +52,8 @@ Use your NAS's own way to update a container. Each guide gives it:
 | iPhone, iPad, Apple TV | TestFlight installs new versions |
 | Android from Google Play | Google Play installs new versions |
 | Android from an `.apk` file | install the new file over the old one |
-| Samsung TV | install the new `.wgt`, signed with the same certificate as before |
-| LG TV | install the new `.ipk` |
+| Samsung TV | `npx @kromatv/installer update`, or install the new `.tpk` (`.wgt` on a 2017 to 2020 TV), signed with the same certificate as before |
+| LG TV | `npx @kromatv/installer update`, or install the new `.ipk` |
 | macOS, Windows, Linux | the app updates itself |
 
 ## Back up your server

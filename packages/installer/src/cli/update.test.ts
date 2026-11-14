@@ -121,6 +121,22 @@ describe('updateCommand', () => {
     expect(deployTo.mock.calls[0]?.[1]).toMatchObject({ platformOptions: { profile: 'KROMA' } });
   });
 
+  it('keeps the web app on a set an earlier install asked it for', async () => {
+    rememberedSets.mockResolvedValue([{ ...remembered, options: { web: true } }]);
+
+    await updateCommand(options);
+
+    expect(resolve.mock.calls[0]?.[0]).toMatchObject({ options: { web: true } });
+  });
+
+  it('moves a set back to the native app when told to', async () => {
+    rememberedSets.mockResolvedValue([{ ...remembered, options: { web: true } }]);
+
+    await updateCommand({ ...options, platformOptions: { web: false } });
+
+    expect(resolve.mock.calls[0]?.[0]).toMatchObject({ options: { web: false } });
+  });
+
   it('says so about a set that no longer answers at its address, and goes on', async () => {
     const chambre = { ...remembered, host: '192.168.1.44', name: 'Chambre' };
     rememberedSets.mockResolvedValue([chambre, remembered]);

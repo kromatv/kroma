@@ -1,8 +1,14 @@
 name: Release TV clients
 
-# TV half of the release fleet, called by release.yml: the LG webOS .ipk, the
-# Samsung Tizen .wgt and the Android TV .apk. Never triggered on its own; the
-# version/channel decisions all come from the caller's `version` job.
+# TV half of the release fleet, called by release.yml: the native Samsung .tpk
+# and LG .ipk (clients/tv-native, through react-native-tizen and
+# react-native-webos), the web Samsung .wgt and LG .ipk they replace on every
+# set that can run them, and the Android TV .apk. Never triggered on its own;
+# the version/channel decisions all come from the caller's `version` job.
+#
+# The web packages stay for the sets the native ones cannot reach: Samsung
+# refuses the native library a .tpk carries below Tizen 6.0 (2017-2020 models),
+# and the web .ipk is the fallback while the native LG app is an alpha.
 #
 # `targets` is read straight off `github.event.inputs` rather than through a
 # workflow input: in a called workflow the `github` context is still the
@@ -27,7 +33,7 @@ on:
 
 jobs:
   webos:
-    name: webOS .ipk (modern + legacy tiers)
+    name: webOS .ipk (web, modern + legacy tiers)
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
@@ -74,7 +80,7 @@ jobs:
           retention-days: 30
 
   tizen:
-    name: Tizen .wgt (dev-certificate signed)
+    name: Tizen .wgt (web, dev-certificate signed)
     if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
@@ -155,6 +161,185 @@ jobs:
         with:
           name: kroma-tizen-wgt
           path: clients/tizen/out/*.wgt
+          if-no-files-found: error
+          retention-days: 30
+
+  # The native Samsung app: Hermes and Fabric in a .NET shell, armv7, for Tizen
+  # 6.0 (2021) and every later set. One CPU per package, and armv7 is the
+  # userland Samsung's sets run.
+  tizen-native:
+    name: Tizen .tpk (native)
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # only reads the repo and uploads run artifacts
+      actions: write # retires the previous compiler cache entry
+    timeout-minutes: 120
+    env:
+      KROMA_VERSION: ${{ inputs.triplet }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 1500M
+      # Tizen Studio is never installed: the build reads two of its packages,
+      # the IoT Headed 6.0 rootstrap it links against and the GCC 14.2 runtime
+      # it links in, fetched by the checksums Tizen's package lists give.
+      TIZEN_PACKAGES: >-
+        https://download.tizen.org/sdk/extensions/Tizen_IoT_Headed/binary/iot-headed-6.0-rs-device.core_0.0.78_ubuntu-64.zip=8cd90f988c43a6a83be24aef8e8853a5cd7153685e2e783268b46c9522cb01d8
+        https://download.tizen.org/sdk/tizenstudio/official/binary/cross-arm-gcc-14.2_0.2.16_ubuntu-64.zip=12c3aab23ff45d03d1b8b36d05cd4970d2ff7210b1940194320ce5e33e924bbd
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - name: Install the build tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends clang lld llvm cmake ninja-build ccache
+          clang --version | head -1
+          dotnet --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Fetch the Tizen rootstrap and GCC runtime
+        run: |
+          sdk="$RUNNER_TEMP/tizen-sdk"
+          zips="$RUNNER_TEMP/tizen-zips"
+          mkdir -p "$sdk" "$zips"
+          for entry in $TIZEN_PACKAGES; do
+            url="${entry%=*}"
+            sum="${entry##*=}"
+            zip="$zips/${url##*/}"
+            wget -q --https-only --max-redirect=0 --tries=3 --waitretry=10 -O "$zip" "$url"
+            echo "$sum  $zip" | sha256sum -c -
+            unzip -q -o "$zip" 'data/*' -d "$sdk"
+            rm "$zip"
+          done
+          touch "$sdk/data/sdk.version"
+          echo "TIZEN_SDK_DIR=$sdk/data" >> "$GITHUB_ENV"
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .ccache
+            ~/.cache/react-native-tizen/downloads
+          key: tizen-native-v1-${{ github.run_id }}
+          restore-keys: tizen-native-v1-
+
+      # Signed with a self-signed pair made for this run: a retail set takes only
+      # the certificates Samsung issued for it, so every install signs the
+      # package again (the installer does it on its own).
+      - name: Package .tpk
+        working-directory: clients/tv-native
+        run: |
+          bunx rn-tv tizen certificate create-author kroma-ci
+          certificate="${XDG_STATE_HOME:-$HOME/.local/state}/react-native-tizen/certificates/kroma-ci"
+          password="$(cat "$certificate/author.pwd")"
+          echo "::add-mask::$password"
+          export RN_TIZEN_AUTHOR_PASSWORD="$password" RN_TIZEN_DISTRIBUTOR_PASSWORD="$password"
+          bunx rn-tv tizen package --arch armv7l --platform 6.0 \
+            --author "$certificate/author.p12" --distributor "$certificate/author.p12"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp tizen/bin/Release/*/tv.kroma.app-*.tpk "$GITHUB_WORKSPACE/out/KROMA-tizen-${{ inputs.version }}.tpk"
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .ccache
+            ~/.cache/react-native-tizen/downloads
+          key: tizen-native-v1-${{ github.run_id }}
+
+      - name: Retire the previous compiler cache entry
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: bun run ci cache prune --prefix tizen-native-v1- --keep 1
+
+      - name: Upload .tpk artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-tizen-tpk
+          path: out/*.tpk
+          if-no-files-found: error
+          retention-days: 30
+
+  # The native LG app: one 32-bit ARM executable, for webOS TV 4 (2018) and
+  # every later set. Nothing from LG is installed: rn-webos downloads the
+  # openlgtv sysroot it links against and writes the .ipk itself, unsigned.
+  webos-native:
+    name: webOS .ipk (native)
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # only reads the repo and uploads run artifacts
+      actions: write # retires the previous compiler cache entry
+    timeout-minutes: 120
+    env:
+      KROMA_VERSION: ${{ inputs.triplet }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 1500M
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - name: Install the build tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends clang lld llvm cmake ninja-build ccache
+          clang --version | head -1
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .ccache
+            ~/.cache/react-native-webos/downloads
+          key: webos-native-v1-${{ github.run_id }}
+          restore-keys: webos-native-v1-
+
+      - name: Package .ipk
+        working-directory: clients/tv-native
+        run: |
+          bunx rn-tv webos package
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp webos/tv.kroma.app_*_arm.ipk "$GITHUB_WORKSPACE/out/KROMA-webos-${{ inputs.version }}.ipk"
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .ccache
+            ~/.cache/react-native-webos/downloads
+          key: webos-native-v1-${{ github.run_id }}
+
+      - name: Retire the previous compiler cache entry
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: bun run ci cache prune --prefix webos-native-v1- --keep 1
+
+      - name: Upload .ipk artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-webos-native-ipk
+          path: out/*.ipk
           if-no-files-found: error
           retention-days: 30
 
