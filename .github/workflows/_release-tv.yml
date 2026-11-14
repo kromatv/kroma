@@ -236,12 +236,12 @@ jobs:
       - name: Package .tpk
         working-directory: clients/tv-native
         run: |
-          bunx rn-tv tizen certificate create-author kroma-ci
+          bun run rn-tv tizen certificate create-author kroma-ci
           certificate="${XDG_STATE_HOME:-$HOME/.local/state}/react-native-tizen/certificates/kroma-ci"
           password="$(cat "$certificate/author.pwd")"
           echo "::add-mask::$password"
           export RN_TIZEN_AUTHOR_PASSWORD="$password" RN_TIZEN_DISTRIBUTOR_PASSWORD="$password"
-          bunx rn-tv tizen package --arch armv7l --platform 6.0 \
+          bun run rn-tv tizen package --arch armv7l --platform 6.0 \
             --author "$certificate/author.p12" --distributor "$certificate/author.p12"
           mkdir -p "$GITHUB_WORKSPACE/out"
           cp tizen/bin/Release/*/tv.kroma.app-*.tpk "$GITHUB_WORKSPACE/out/KROMA-tizen-${{ inputs.version }}.tpk"
@@ -315,7 +315,7 @@ jobs:
       - name: Package .ipk
         working-directory: clients/tv-native
         run: |
-          bunx rn-tv webos package
+          bun run rn-tv webos package
           mkdir -p "$GITHUB_WORKSPACE/out"
           cp webos/tv.kroma.app_*_arm.ipk "$GITHUB_WORKSPACE/out/KROMA-webos-${{ inputs.version }}.ipk"
           ls -l "$GITHUB_WORKSPACE/out"

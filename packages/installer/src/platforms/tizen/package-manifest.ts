@@ -48,8 +48,9 @@ function readManifest(path: string): string {
 }
 
 function identifier(xml: string, element: string, name: string, file: string): string {
-  const tag = new RegExp(`<${element}\\s[^>]*>`).exec(xml)?.[0];
-  const value = tag === undefined ? undefined : new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1];
+  const tag = new RegExp(String.raw`<${element}\s[^>]*>`).exec(xml)?.[0];
+  const value =
+    tag === undefined ? undefined : new RegExp(String.raw`\s${name}="([^"]*)"`).exec(tag)?.[1];
   const parsed = Identifier.safeParse(value);
   if (!parsed.success) throw new Error(`${file} names no usable ${name} on <${element}>`);
   return parsed.data;
