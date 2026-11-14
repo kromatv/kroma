@@ -1,7 +1,10 @@
 name: Prepare Google Play releases
 
 # One listing, two form-factor tracks. Upload sequentially: committing a Play
-# edit invalidates other open edits. These are drafts, never automatic rollouts.
+# edit invalidates other open edits. An internal testing track (`internal`,
+# `qa`) gets a finished release, so internal testers have each push to main
+# with no step in Play Console. An alpha or beta track gets a draft, rolled out
+# by hand. Production is refused.
 on:
   workflow_call:
     inputs:
@@ -15,7 +18,7 @@ concurrency:
 
 jobs:
   play:
-    name: Mobile + Android TV drafts
+    name: Mobile + Android TV releases
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
       deployment: false
@@ -46,7 +49,15 @@ jobs:
           # production release. Set these from the app's testing-track IDs.
           case "$PLAY_MOBILE_TRACK" in internal|qa|alpha|beta) ;; *) exit 1 ;; esac
           case "$PLAY_TV_TRACK" in tv:internal|tv:qa|tv:alpha|tv:beta) ;; *) exit 1 ;; esac
-          echo 'ready=true' >> "$GITHUB_OUTPUT"
+          status_for() {
+            case "$1" in internal|qa|tv:internal|tv:qa) echo completed ;; *) echo draft ;; esac
+          }
+          {
+            echo 'ready=true'
+            echo "mobile_status=$(status_for "$PLAY_MOBILE_TRACK")"
+            echo "tv_status=$(status_for "$PLAY_TV_TRACK")"
+          } >> "$GITHUB_OUTPUT"
+          echo "mobile: $PLAY_MOBILE_TRACK, $(status_for "$PLAY_MOBILE_TRACK"); TV: $PLAY_TV_TRACK, $(status_for "$PLAY_TV_TRACK")"
 
       - name: Download mobile bundle
         if: steps.configuration.outputs.ready == 'true'
@@ -62,7 +73,7 @@ jobs:
           name: kroma-androidtv-aab
           path: play/tv
 
-      - name: Prepare mobile draft
+      - name: Release mobile
         if: steps.configuration.outputs.ready == 'true'
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
@@ -71,10 +82,10 @@ jobs:
           releaseFiles: play/mobile/*.aab
           releaseName: KROMA ${{ inputs.version }} mobile
           tracks: ${{ vars.PLAY_MOBILE_TRACK }}
-          status: draft
+          status: ${{ steps.configuration.outputs.mobile_status }}
           changesNotSentForReview: true
 
-      - name: Prepare Android TV draft
+      - name: Release Android TV
         if: steps.configuration.outputs.ready == 'true'
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
@@ -83,5 +94,5 @@ jobs:
           releaseFiles: play/tv/*.aab
           releaseName: KROMA ${{ inputs.version }} Android TV
           tracks: ${{ vars.PLAY_TV_TRACK }}
-          status: draft
+          status: ${{ steps.configuration.outputs.tv_status }}
           changesNotSentForReview: true

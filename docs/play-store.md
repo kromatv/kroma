@@ -92,11 +92,18 @@ Track names must match the API; consult Google's
 The workflow permits internal (`internal`/`qa`), alpha or beta testing tracks,
 with the corresponding `tv:` prefix, and refuses production tracks.
 
-`_release-play.yml` waits for both Android artifacts, serializes uploads and
-creates **draft releases**, with changes not sent for review. A push candidate,
-stable release or explicitly distributed manual build can prepare drafts.
-Review and roll them out in Play Console. Without `PLAY_STORE_READY`, builds
-still produce signed AAB artifacts, with no Play upload.
+`_release-play.yml` waits for both Android artifacts and serializes uploads. A
+push candidate, a stable release or a manual build run with `distribute` uploads
+to both tracks:
+
+| Track | What the upload makes |
+| --- | --- |
+| `internal`, `qa` (and `tv:internal`, `tv:qa`) | a finished release: internal testers get every push to `main`, with no step in Play Console |
+| `alpha`, `beta` (and their `tv:` tracks) | a draft: review and roll it out in Play Console |
+
+Changes are never sent for review by the workflow. Without
+`PLAY_STORE_READY`, builds still produce signed AAB artifacts, with no Play
+upload.
 
 ## Older Android TV installs
 
