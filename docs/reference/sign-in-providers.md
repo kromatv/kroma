@@ -44,8 +44,13 @@ machine KROMA ran on, one confidential client and one person, driven through
   application.
 - **K2**: Keycloak 26.4 again, with a Group Membership mapper on the client.
 
-Nothing below was run on a phone. The phone app's flow is built from X1 and X2
-and has its return path covered twice for the part they leave unsaid.
+- **Sim**: the phone app, a development build of this branch, on an iPhone 18
+  Pro simulator with iOS 27.0 on 2026-11-14, signing in through the
+  repository's test provider.
+
+The phone app's flow is built from X1 and X2 and has its return path covered
+twice for the part they leave unsaid. It was run on iOS (Sim) and not on
+Android.
 
 ## The phone app's browser
 
@@ -80,6 +85,17 @@ and has its return path covered twice for the part they leave unsaid.
   `openAuthSessionAsync`. It is listed in `clients/mobile/app.json`.
 - X1 lists Android, iOS and Web. It does not mention tvOS or Android TV, and no
   television shell uses it.
+- On iOS the session first asks "KROMA" Wants to Use "127.0.0.1" to Sign In,
+  with Cancel and Continue. After Continue the provider's page opens in a
+  sheet over the app. Choosing a person there closes the sheet, and the app
+  has the flow's outcome: "An administrator of KROMA has to approve it" for a
+  new person at a provider that asks first, and a signed-in session once the
+  request was approved (Sim).
+- The phone app drew the SVG marks of Microsoft, Nextcloud, Keycloak and Duo
+  and the PNG marks of JumpCloud and Casdoor. It drew the G from Google's SVG
+  files, which needs blur filters and a `foreignObject`, as a small smear, and
+  the G from Google's PNG files as it is (Sim). `sips` on macOS 27.2 drew every
+  other SVG mark in the catalog, and Google's as the same smear.
 
 ## Keycloak
 

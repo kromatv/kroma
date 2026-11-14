@@ -22,9 +22,12 @@ import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
+import { ProviderButton } from './ProviderButton';
 import { ErrorBanner } from './ui';
 
 export type Identity = { name: string; avatarUri: string | null };
+
+const noImage = () => null;
 
 function IdentityHeader({
   identity,
@@ -177,6 +180,7 @@ export function CredentialsPhase({
   error,
   notice = null,
   methods = DEFAULT_SIGN_IN_METHODS,
+  resolveImage = noImage,
   onIdentifier,
   onPassword,
   onSubmit,
@@ -191,6 +195,7 @@ export function CredentialsPhase({
   error: string | null;
   notice?: string | null;
   methods?: SignInMethods;
+  resolveImage?: (path: string) => string | null;
   onIdentifier(next: string): void;
   onPassword(next: string): void;
   onSubmit(): void;
@@ -209,13 +214,13 @@ export function CredentialsPhase({
     providers.length > 0 ? (
       <Box style={s.group}>
         {providers.map((provider, index) => (
-          <Button
+          <ProviderButton
             key={provider.id}
-            variant={!formLeads && index === 0 ? 'primary' : 'glass'}
-            icon={hasGlyph(provider.icon) ? provider.icon : 'key'}
-            label={t('auth.continueWith', { provider: provider.label })}
+            provider={provider}
+            primary={!formLeads && index === 0}
             disabled={busy || providerBusy}
             loading={providerBusy}
+            resolve={resolveImage}
             onPress={() => onProvider?.(provider)}
           />
         ))}

@@ -271,6 +271,9 @@ export default function SignIn() {
           error={error}
           notice={providers.notice}
           methods={providers.methods}
+          resolveImage={(path) =>
+            serverUrl ? clientFor(serverUrl).media.artwork.resolve(path) : null
+          }
           onIdentifier={setIdentifier}
           onPassword={setPassword}
           onSubmit={() => void submit(phase.kind === 'password' ? phase.username : identifier)}

@@ -243,7 +243,7 @@ flow it holds. Everything else is shared.
   The app tells the server which address it reaches it on, since an app has no origin,
   and that address passes the same check a browser's origin does. Polling is not an
   option, for the reason given under "The flow". This is built from Expo's
-  documentation and has not been run on a phone: see
+  documentation. It was run on an iOS simulator and not on Android: see
   `docs/reference/sign-in-providers.md`.
 - **Desktop.** Not in this change.
 - **Television.** Nothing new. A television signs in through Quick Connect or a
@@ -343,7 +343,7 @@ The owner decides these in review.
 5. **More real providers.** Thirteen were run, each named with its version in
    `docs/reference/sign-in-providers.md`. The hosted ones, Entra ID, Google, Okta and
    the like, and Synology SSO Server and Kanidm, were not.
-6. **A phone.** The phone flow needs one run on iOS and one on Android.
+6. **A phone.** The phone flow was run on an iOS simulator. It needs one run on Android.
 7. **Bundled logos.** Each preset's `preset.json` says where its mark was read. Most are
    their owners' own files. The others come from icon sets that follow the owner: SVG
    Logos (CC0), selfh.st/icons (CC BY 4.0), theSVG (MIT) and Simple Icons (CC0). The
