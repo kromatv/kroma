@@ -11,12 +11,12 @@ const torrentsModule = defineModule({
   pages: [
     {
       path: 'downloads',
-      component: lazy(() => import('./DownloadsPage')),
+      component: lazy(() => import('./downloads-page')),
       nav: { label: 'nav.downloads', icon: 'download', section: 'acquisition' },
     },
     {
       path: 'naming',
-      component: lazy(() => import('./NamingPage')),
+      component: lazy(() => import('./naming-page')),
       nav: {
         label: 'admin.navNaming',
         icon: 'file-text',

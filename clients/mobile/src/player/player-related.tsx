@@ -2,7 +2,7 @@ import type { MediaItem } from '@kromatv/client/media';
 import { episodeTag, sizedImageUrl } from '@kromatv/core';
 import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable, ScrollView } from 'react-native';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { FadeImage } from '#mobile/components/fade-image';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';

@@ -1,6 +1,6 @@
 import { KROMA_WORKBENCH } from '@kromatv/ui/workbench-config';
 import { defineWorkbench } from '@kromatv/workbench';
-import { KitFooter } from './KitFooter';
+import { KitFooter } from './kit-footer';
 import { SOURCE } from './source';
 import { PAGES, STORIES } from './stories';
 

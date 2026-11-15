@@ -17,7 +17,7 @@ import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar';
 import { SeasonRequestCard } from '#web/features/catalog/season-card';
 import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 
-import type { TitleSeason } from '#web/shared/lib/titleView';
+import type { TitleSeason } from '#web/shared/lib/title-view';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both stay plain elements around kit content.

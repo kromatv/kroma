@@ -34,7 +34,7 @@ import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 
 import { wash } from '#web/shared/lib/art-styles';
-import type { SeasonGap } from '#web/shared/lib/titleView';
+import type { SeasonGap } from '#web/shared/lib/title-view';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 

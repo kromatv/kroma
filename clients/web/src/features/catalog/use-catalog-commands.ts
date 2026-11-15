@@ -1,6 +1,6 @@
 import { useT } from '@kromatv/ui';
 import { CATALOG_NAV } from '#web/features/catalog/catalog-nav';
-import { useModuleNav } from '#web/modules/ModuleHostProvider';
+import { useModuleNav } from '#web/modules/module-host-provider';
 import { modulePageCommand } from '#web/modules/module-page-command';
 import { useCommands } from '#web/shared/lib/command-menu';
 

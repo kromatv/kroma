@@ -9,7 +9,7 @@ const vpnModule = defineModule({
   pages: [
     {
       path: 'vpn',
-      component: lazy(() => import('./VpnPage')),
+      component: lazy(() => import('./vpn-page')),
       nav: { label: 'nav.vpn', icon: 'vpn', section: 'acquisition', requires: 'settings.manage' },
     },
   ],

@@ -19,7 +19,7 @@ import {
 import { useT } from '@kromatv/ui';
 
 import { IconPlus } from '@tabler/icons-react';
-import type { TitleSeason } from '#web/shared/lib/titleView';
+import type { TitleSeason } from '#web/shared/lib/title-view';
 import { page } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 

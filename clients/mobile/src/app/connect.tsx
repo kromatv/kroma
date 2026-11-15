@@ -9,7 +9,7 @@ import {
   OnboardingBox,
   OnboardingScreen,
   OnboardingTitle,
-} from '#mobile/components/OnboardingScreen';
+} from '#mobile/components/onboarding-screen';
 import { ErrorBanner } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';

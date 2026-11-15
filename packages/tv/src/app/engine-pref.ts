@@ -1,0 +1,97 @@
+import type { SessionStorage } from '@kromatv/client';
+import { useDeviceStore } from '@kromatv/ui/device-store';
+import { createContext, useContext, useState } from 'react';
+// User-selectable playback engine: a manual override of the automatic
+// `selectEngine` decision, persisted per device.
+
+import { isTizenRuntime } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+import { htmlVideoEngines } from '@kromatv/ui/kit';
+import { devicePref } from '#tv/app/device-pref';
+import type { ReactivePref } from '#tv/app/settings/store';
+import { mpvAvailable, shakaAvailable } from '#tv/features/playback/player/engine';
+import { vlcAvailable } from '#tv/features/playback/player/vlc-plane';
+
+export type EnginePref = 'auto' | 'avplay' | 'webview' | 'shaka' | 'remux' | 'mpv' | 'vlc';
+
+const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv', 'vlc'];
+
+/** The preference and failed-write fallback belong to one television root. */
+export function createEnginePref(storage?: SessionStorage | null): ReactivePref<EnginePref> {
+  const stored = devicePref('kroma:engine', ALL, 'auto', storage);
+  const listeners = new Set<() => void>();
+  let chosen: EnginePref | null = null;
+
+  /** Reads through to the device store until this session picks an engine, because
+   * the native shells install that store only once the session file has been read:
+   * a value snapshot taken while this module is evaluated is always the `auto`
+   * fallback, and would pin the engine to it for the life of the process. A choice
+   * made here wins from then on, so it still holds where the write could not land. */
+  const store: ReactivePref<EnginePref> = {
+    get: () => chosen ?? stored.get(),
+    set(value: EnginePref) {
+      if (value === (chosen ?? stored.get())) {
+        return;
+      }
+      chosen = value;
+      stored.set(value);
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+
+  return store;
+}
+const Context = createContext<ReactivePref<EnginePref> | null>(null);
+export const EnginePrefProvider = Context.Provider;
+export function useEnginePref(): ReactivePref<EnginePref> {
+  const storage = useDeviceStore();
+  const provided = useContext(Context);
+  const [owned] = useState(() => (provided ? null : createEnginePref(storage)));
+  const store = provided ?? owned;
+  if (!store) {
+    throw new Error('Engine preference requires its owning root');
+  }
+  return store;
+}
+
+/** Engines choosable on THIS platform, always starting with `auto`. An empty
+ * list hides the row. */
+export function availableEngines(): EnginePref[] {
+  const tizen = isTizenRuntime(typeof navigator === 'undefined' ? '' : navigator.userAgent);
+  return [
+    'auto',
+    ...(tizen ? (['avplay'] as const) : []),
+    ...(mpvAvailable() ? (['mpv'] as const) : []),
+    ...htmlVideoEngines<EnginePref>(tizen ? [] : ['webview']),
+    ...htmlVideoEngines<EnginePref>(shakaAvailable() ? ['shaka'] : []),
+    'remux',
+    ...(vlcAvailable() ? (['vlc'] as const) : []),
+  ];
+}
+
+/** One line saying what an engine actually does, since its name cannot. */
+export const ENGINE_NOTE_KEY: Record<EnginePref, MessageKey> = {
+  auto: 'playbackEngine.autoNote',
+  avplay: 'playbackEngine.avplayNote',
+  webview: 'playbackEngine.webviewNote',
+  shaka: 'playbackEngine.shakaNote',
+  remux: 'playbackEngine.remuxNote',
+  mpv: 'playbackEngine.mpvNote',
+  vlc: 'playbackEngine.vlcNote',
+};
+
+export const ENGINE_LABEL_KEY: Record<EnginePref, MessageKey> = {
+  auto: 'playbackEngine.auto',
+  avplay: 'playbackEngine.avplay',
+  webview: 'playbackEngine.webview',
+  shaka: 'playbackEngine.shaka',
+  remux: 'playbackEngine.remux',
+  mpv: 'playbackEngine.mpv',
+  vlc: 'playbackEngine.vlc',
+};

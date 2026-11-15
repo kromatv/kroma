@@ -1,6 +1,6 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { useMemo } from 'react';
-import { usePlayerDock } from '#tv/app/playerDock';
+import { usePlayerDock } from '#tv/app/player-dock';
 import { useNav } from '#tv/app/router';
 
 export interface DockedPlayer {

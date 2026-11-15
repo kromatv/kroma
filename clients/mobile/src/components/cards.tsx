@@ -20,7 +20,7 @@ import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { posterWidth, radius, type } from '#mobile/lib/theme';
-import { FadeImage } from './FadeImage';
+import { FadeImage } from './fade-image';
 
 const GAP = 12;
 

@@ -13,12 +13,12 @@ import {
   type PlayEnv,
 } from '@kromatv/core';
 import { nativePlayerDevice, nativePlayerOs } from '@kromatv/ui/native-player';
-import type { EnginePref } from '#tv/app/enginePref';
-import type { CreateEngineArgs } from '#tv/features/playback/player/playbackBackend';
+import type { EnginePref } from '#tv/app/engine-pref';
+import type { CreateEngineArgs } from '#tv/features/playback/player/playback-backend';
 import type { Surface, TvEngine } from '#tv/features/playback/player/engine';
-import { ExpoVideoEngine } from '#tv/features/playback/player/expoVideoEngine';
-import { VlcEngine } from '#tv/features/playback/player/vlcEngine';
-import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
+import { ExpoVideoEngine } from '#tv/features/playback/player/expo-video-engine';
+import { VlcEngine } from '#tv/features/playback/player/vlc-engine';
+import { vlcAvailable } from '#tv/features/playback/player/vlc-plane';
 
 // The video surface an engine renders to. Natively there is only one: a
 // <VideoView> that sits in the tree like any other view, which is why the chrome

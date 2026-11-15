@@ -21,9 +21,9 @@ import { Alert, FlatList, Pressable } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { FadeImage } from '#mobile/components/FadeImage';
-import { PageHeader } from '#mobile/components/PageHeader';
-import { ProgressRing } from '#mobile/components/ProgressRing';
+import { FadeImage } from '#mobile/components/fade-image';
+import { PageHeader } from '#mobile/components/page-header';
+import { ProgressRing } from '#mobile/components/progress-ring';
 import { EmptyState, Screen } from '#mobile/components/ui';
 import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';

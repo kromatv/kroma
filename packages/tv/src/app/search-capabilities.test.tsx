@@ -2,8 +2,12 @@
 import { cleanup, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type SearchShell, SearchShellProvider, useSearchShell } from './searchShell';
-import { useVoiceSearchBackend, type VoiceSearchBackend, VoiceSearchProvider } from './voiceSearch';
+import { type SearchShell, SearchShellProvider, useSearchShell } from './search-shell';
+import {
+  useVoiceSearchBackend,
+  type VoiceSearchBackend,
+  VoiceSearchProvider,
+} from './voice-search';
 
 afterEach(cleanup);
 
