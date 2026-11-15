@@ -2243,6 +2243,19 @@
     },
     {
       "files": [
+        "clients/web/src/features/catalog/whats-new-link.test.tsx",
+        "clients/web/src/shared/lib/api.ts",
+        "clients/web/src/shared/lib/web-runtime.fixture.ts",
+        "packages/tv/src/features/catalog/home/TopNav.tsx",
+        "packages/tv/src/features/playback/TvPlayer.tsx",
+        "packages/ui/src/components/molecules/select/select-options-dialog.tsx"
+      ],
+      "rules": {
+        "kroma/import-boundaries": "off"
+      }
+    },
+    {
+      "files": [
         "apps/kit/src/guides/install-check.tsx",
         "apps/packages/src/lib/api.ts",
         "apps/www/src/components/stats/globe/globe.tsx",

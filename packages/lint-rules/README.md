@@ -159,6 +159,18 @@ Write `z.string().nonempty()` for a string that may not be empty, and keep
 `z.string()` is rewritten by `bun run check:fix`. Arrays and numbers are not
 inspected.
 
+### import-boundaries
+
+A slice does not import its sibling, and a layer does not import the one above
+it. `.oxlintrc.json` names both: `slices` are the `features/` folders of the web
+client and of `@kromatv/tv`, whose direct children are isolated from each other;
+`ladders` list folders from lowest to highest (`shared`, `features`, `routes`;
+the kit's tokens, atoms, molecules, organisms, templates). Relative paths and the
+`#web/`, `#tv/`, `#ui/` aliases are followed; a package name is not, because
+`no-restricted-imports` holds the order of the packages (client, core, ui, tv,
+then the shells and the sites). A kit component's fixtures, demos and tests are
+not judged: a demo may show an atom inside a molecule.
+
 For every rule above, run `bun run --cwd packages/lint-rules rules <rule-name>` for the full scope,
 exceptions, examples, and verification steps.
 
