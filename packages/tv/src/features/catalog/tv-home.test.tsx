@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, type TvNav, TvNavProvider, useNav } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
 import { mediaCard, mediaItem } from '#tv/features/catalog/media.fixtures';
-import { TvHome } from '#tv/features/catalog/TvHome';
+import { TvHome } from '#tv/features/catalog/tv-home.component';
 
 const host = createInputTestHost();
 
@@ -43,7 +43,7 @@ vi.mock('#tv/app/providers/recommend', () => ({
 vi.mock('#tv/app/providers/watched', () => ({
   useWatched: () => ({ has: () => false, refresh: home.refresh }),
 }));
-vi.mock('#tv/app/useRootBack', () => ({ useRootBack: () => undefined }));
+vi.mock('#tv/app/use-root-back.hook', () => ({ useRootBack: () => undefined }));
 
 const film = (id: string, title: string) => mediaCard({ id, title });
 

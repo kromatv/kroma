@@ -2,7 +2,7 @@ import type { CardSection } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { describe, expect, it } from 'vitest';
 import { heroSlides } from '#tv/features/catalog/home/hero-slides';
-import type { HomeEntry } from '#tv/features/catalog/home/sectionEntry';
+import type { HomeEntry } from '#tv/features/catalog/home/section-entry';
 import { mediaCard, metadata, show, video } from '#tv/features/catalog/media.fixtures';
 
 const client = fakeClient({

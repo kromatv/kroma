@@ -2,9 +2,9 @@
 
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSearchRequests } from '#tv/app/searchRequest';
-import type { SearchShellProps } from '#tv/app/searchShell';
-import { addRecentSearch } from '#tv/features/catalog/searchHistory';
+import { createSearchRequests } from '#tv/app/search-request';
+import type { SearchShellProps } from '#tv/app/search-shell';
+import { addRecentSearch } from '#tv/features/catalog/search-history';
 import {
   clearPressGuard,
   found,
@@ -15,7 +15,7 @@ import {
   tmdb,
   tmdbInLibrary,
   type,
-} from '#tv/features/catalog/TvSearch.fixtures';
+} from '#tv/features/catalog/tv-search.fixtures';
 
 // jsdom leaves `localStorage` undefined under this runner, and the device store
 // falls back to no storage at all; the recent searches need one.
@@ -35,7 +35,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  inputHost.clearPressGuard();
+  clearPressGuard();
   vi.unstubAllGlobals();
 });
 

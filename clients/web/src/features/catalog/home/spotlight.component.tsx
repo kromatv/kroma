@@ -13,7 +13,7 @@ import {
 import { entryLink } from '#web/features/catalog/home/entry-link';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 const BACKDROP_W = 1280;
 const SYNOPSIS_BUDGET = 220;

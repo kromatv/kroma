@@ -1,6 +1,6 @@
 import { Box, radius as cornerRadius, styles, Text, useStyles, VirtualRail } from '@kromatv/ui/kit';
 import { Pressable, useWindowDimensions } from 'react-native';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { FadeImage } from '#mobile/components/fade-image.component';
 import { useGutters } from '#mobile/lib/layout';
 import { radius, type } from '#mobile/lib/theme';
 

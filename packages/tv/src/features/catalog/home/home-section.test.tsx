@@ -6,7 +6,7 @@ import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, type TvNav, TvNavProvider, useNav } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
-import { HomeSection } from '#tv/features/catalog/home/home-section';
+import { HomeSection } from '#tv/features/catalog/home/home-section.component';
 import { mediaCard, metadata, show } from '#tv/features/catalog/media.fixtures';
 
 const host = createInputTestHost();

@@ -1,10 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { SectionPoster } from '#web/features/catalog/cards';
+import { SectionPoster } from '#web/features/catalog/cards.component';
 import { entryId, type HomeSection } from '#web/features/catalog/home/entries';
-import { RankedRail } from '#web/features/catalog/home/ranked-rail';
-import { SectionHeading } from '#web/features/catalog/home/section-heading';
-import { Spotlight } from '#web/features/catalog/home/spotlight';
-import { WideRail } from '#web/features/catalog/home/wide-rail';
+import { RankedRail } from '#web/features/catalog/home/ranked-rail.component';
+import { SectionHeading } from '#web/features/catalog/home/section-heading.component';
+import { Spotlight } from '#web/features/catalog/home/spotlight.component';
+import { WideRail } from '#web/features/catalog/home/wide-rail.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { PosterRail, RailSkeleton } from '#web/shared/ui';
 

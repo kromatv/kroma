@@ -2,7 +2,7 @@
 import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { RankedTile } from '#tv/features/catalog/home/ranked-tile';
+import { RankedTile } from '#tv/features/catalog/home/ranked-tile.component';
 
 afterEach(cleanup);
 

@@ -10,10 +10,10 @@ import {
 } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CastIconButton } from '#mobile/components/cast/CastIconButton';
-import { KromaLockup } from '#mobile/components/KromaLockup';
-import { NotificationBell } from '#mobile/components/NotificationBell';
-import { ProgressRing } from '#mobile/components/ProgressRing';
+import { CastIconButton } from '#mobile/components/cast/cast-icon-button.component';
+import { KromaLockup } from '#mobile/components/kroma-lockup.component';
+import { NotificationBell } from '#mobile/components/notification-bell.component';
+import { ProgressRing } from '#mobile/components/progress-ring.component';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useGutters } from '#mobile/lib/layout';
 import { spacing } from '#mobile/lib/theme';

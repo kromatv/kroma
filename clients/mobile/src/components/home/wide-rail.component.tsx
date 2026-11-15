@@ -9,7 +9,7 @@ import {
   type RowEntry,
 } from '#mobile/lib/home-sections';
 import { useClient } from '#mobile/lib/session';
-import { LandscapeRail, landscapeWidth } from './landscape-rail';
+import { LandscapeRail, landscapeWidth } from './landscape-rail.component';
 
 /** A section drawn on backdrops, each title with the server's note under it. */
 export function WideRail({ entries }: Readonly<{ entries: readonly RowEntry[] }>) {

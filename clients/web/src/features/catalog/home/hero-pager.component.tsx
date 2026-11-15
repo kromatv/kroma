@@ -8,7 +8,7 @@ import {
   entryTitle,
   type HomeEntry,
 } from '#web/features/catalog/home/entries';
-import { type Carousel, HOLD_MS } from '#web/features/catalog/home/use-carousel';
+import { type Carousel, HOLD_MS } from '#web/features/catalog/home/use-carousel.hook';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 

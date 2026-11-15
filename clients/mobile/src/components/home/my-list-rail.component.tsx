@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useWindowDimensions } from 'react-native';
 import { MediaRail, sectionCard } from '#mobile/components/cards';
 import { SectionTitle } from '#mobile/components/ui';
-import { filterEntries, type TitleFilter } from '#mobile/lib/homeFilter';
+import { filterEntries, type TitleFilter } from '#mobile/lib/home-filter';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { posterWidth } from '#mobile/lib/theme';

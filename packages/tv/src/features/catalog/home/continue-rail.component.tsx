@@ -3,9 +3,9 @@ import { episodeTag, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { MediaCard, Rail } from '@kromatv/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
-import { HomeRow } from '#tv/features/catalog/home/home-row';
+import { HomeRow } from '#tv/features/catalog/home/home-row.component';
 import { ROW_TILE, TILE_ART_W } from '#tv/features/catalog/home/tile-metrics';
-import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
+import type { HeldTitle } from '#tv/features/catalog/title-menu.hook';
 
 const watchedFraction = (positionMs: number, duration: number) =>
   duration > 0 ? Math.min(100, Math.round((positionMs / duration) * 100)) / 100 : 0;

@@ -1,8 +1,8 @@
 import type { CardSection } from '@kromatv/client/media';
-import { RankedRail } from '#tv/features/catalog/home/ranked-rail';
-import { SectionRail } from '#tv/features/catalog/home/section-rail';
-import { SpotlightBand } from '#tv/features/catalog/home/spotlight-band';
-import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
+import { RankedRail } from '#tv/features/catalog/home/ranked-rail.component';
+import { SectionRail } from '#tv/features/catalog/home/section-rail.component';
+import { SpotlightBand } from '#tv/features/catalog/home/spotlight-band.component';
+import type { HeldTitle } from '#tv/features/catalog/title-menu.hook';
 
 interface HomeSectionProps {
   section: CardSection;

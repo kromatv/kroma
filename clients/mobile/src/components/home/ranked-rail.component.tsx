@@ -2,7 +2,7 @@ import { Box, Numeral, numeralColumn, styles, useStyles } from '@kromatv/ui/kit'
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { posterHeight, sectionCard } from '#mobile/components/cards';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { FadeImage } from '#mobile/components/fade-image.component';
 import { entryId, type RowEntry } from '#mobile/lib/home-sections';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';

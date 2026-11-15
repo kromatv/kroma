@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import type { HomeEntry } from '#web/features/catalog/home/entries';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 /** The anchor to an entry's own page, as the one element a control rendered
  * `asChild` takes: `children` is what the control then draws inside it. */

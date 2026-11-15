@@ -28,8 +28,8 @@ import {
   entryMetadata,
   entryTitle,
   type HomeEntry,
-} from '#tv/features/catalog/home/sectionEntry';
-import { useHeroPager } from '#tv/features/catalog/home/use-hero-pager';
+} from '#tv/features/catalog/home/section-entry';
+import { useHeroPager } from '#tv/features/catalog/home/use-hero-pager.hook';
 
 const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
 const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;

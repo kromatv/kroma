@@ -21,7 +21,7 @@ import {
 } from '#web/features/catalog/home/entries';
 import { entryLink } from '#web/features/catalog/home/entry-link';
 import { useMyList } from '#web/shared/lib/mylist';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 const SYNOPSIS_BUDGET = 240;
 

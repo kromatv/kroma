@@ -5,9 +5,9 @@ import { onScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { AccessibilityInfo } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Hero } from '#tv/features/catalog/home/Hero';
+import { Hero } from '#tv/features/catalog/home/hero.component';
 import type { HeroSlide } from '#tv/features/catalog/home/hero-slides';
-import { HERO_DWELL_MS } from '#tv/features/catalog/home/use-hero-pager';
+import { HERO_DWELL_MS } from '#tv/features/catalog/home/use-hero-pager.hook';
 
 const reduceMotion = () =>
   vi.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);

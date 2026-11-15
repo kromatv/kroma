@@ -3,11 +3,11 @@ import { genreLabels } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { MediaCard, Rail } from '@kromatv/ui/kit';
 import { useClient } from '#tv/app/router';
-import { HomeRow } from '#tv/features/catalog/home/home-row';
-import { entryBackdrop, entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
+import { HomeRow } from '#tv/features/catalog/home/home-row.component';
+import { entryBackdrop, entryId, entryMetadata } from '#tv/features/catalog/home/section-entry';
 import { RAIL_LIMIT, ROW_TILE, TILE_ART_W } from '#tv/features/catalog/home/tile-metrics';
-import { useHomeTile } from '#tv/features/catalog/home/use-home-tile';
-import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
+import { useHomeTile } from '#tv/features/catalog/home/use-home-tile.hook';
+import type { HeldTitle } from '#tv/features/catalog/title-menu.hook';
 
 interface SectionRailProps {
   section: CardSection;

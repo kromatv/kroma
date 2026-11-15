@@ -18,8 +18,8 @@ import {
 } from '@kromatv/ui/kit';
 
 import type { ReactNode } from 'react';
-import { DiscoverCard } from '#web/features/requests/discover-card';
-import type { DiscoverSearchState } from '#web/features/requests/use-discover-search';
+import { DiscoverCard } from '#web/features/requests/discover-card.component';
+import type { DiscoverSearchState } from '#web/features/requests/use-discover-search.hook';
 import { imageUrl } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { SkeletonRow } from '#web/shared/ui';

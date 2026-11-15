@@ -10,22 +10,22 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
-import { HeroBillboard } from '#mobile/components/HeroBillboard';
-import { HomeFilterChips } from '#mobile/components/HomeFilterChips';
-import { ContinueRail } from '#mobile/components/home/continue-rail';
-import { HomeHeader } from '#mobile/components/home/home-header';
-import { HomeSection } from '#mobile/components/home/home-section';
-import { MyListRail } from '#mobile/components/home/my-list-rail';
+import { HeroBillboard } from '#mobile/components/hero-billboard.component';
+import { HomeFilterChips } from '#mobile/components/home-filter-chips.component';
+import { ContinueRail } from '#mobile/components/home/continue-rail.component';
+import { HomeHeader } from '#mobile/components/home/home-header.component';
+import { HomeSection } from '#mobile/components/home/home-section.component';
+import { MyListRail } from '#mobile/components/home/my-list-rail.component';
 import { ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
 import { featuredProgress } from '#mobile/lib/featured';
-import { useHomeFeed } from '#mobile/lib/home-feed';
+import { useHomeFeed } from '#mobile/lib/home-feed.hook';
 import {
   drawsClientMyList,
   featuredFallback,
   planHome,
   servesHero,
 } from '#mobile/lib/home-sections';
-import { filterResume, type TitleFilter } from '#mobile/lib/homeFilter';
+import { filterResume, type TitleFilter } from '#mobile/lib/home-filter';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
