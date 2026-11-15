@@ -221,6 +221,27 @@ in the folders above the crate, and `modules/` is not under `server/`. A module
 is held at run time instead: a component opens no socket, so every call it makes
 goes through the host.
 
+## Artwork comes from this server
+
+A discover or search result used to name its poster by TMDB's own URL, so the
+device that drew the page asked `image.tmdb.org` for it, and told a third party
+its address and what it browsed. No answer from the API names one any more:
+
+- Every JSON answer under `/api` has each `https://image.tmdb.org/t/p/…` URL
+  replaced by a path on this server, `/api/images/tmdb/<signature>/<size>/<file>`.
+  That covers discover, search, requests, monitoring, season stills,
+  filmographies and the inbox, and what a module answers through the proxy.
+- The route downloads the image once, under the purpose `artwork`, and serves
+  it from `<data>/images/tmdb/` after that. The `cache.cleanup` job trims that
+  folder with the rest of the image cache.
+- The path is signed with the server's own key, so the route answers only for
+  an image this server named. It is public, like the rest of `/api/images`,
+  because an `<img>` sends no bearer.
+- A push names the same path, made absolute with the server's public address.
+  A server with no public address sends that push without a picture.
+
+Library art was already cached and served this way.
+
 ## Before the gate is installed
 
 Boot installs the network policy when it builds the app state, before the
@@ -328,6 +349,7 @@ or not.
 | Network middleware | on `main` (#493) |
 | A network that carries UDP | dropped: a tunnel carries TCP only, so behind a VPN the torrent engine keeps DHT, its trackers and its listener off (#512) |
 | ffmpeg and ffprobe open local inputs only | on `main` (#515) |
+| Discover, search and notification artwork served by this server | on `main` (#499) |
 | A call that skips the gate fails CI, and SMTP mail asks the gate as `email` | on `main` (#541) |
 | A call made before boot installs the gate is refused, and journaled once the journal starts | on `main` (#545) |
 | Every first-party module declares its permissions, and the core enforces `net.connect` on the calls it is asked about | on `main` (#546) |

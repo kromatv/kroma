@@ -234,6 +234,7 @@ Only `/api/health`, `/api/status`, `/api/splash`, the two `/poster` routes and
 | GET    | `/api/items/:id`           | One item, movie or episode (404 if missing). |
 | GET    | `/api/items/:id/stream`    | Range-streamed original file.                 |
 | GET    | `/api/items/:id/poster`    | Deterministic SVG placeholder poster.         |
+| GET    | `/api/images/tmdb/:signature/:size/:file` | TMDB artwork, downloaded once by the server and answered only for a path it signed. |
 | GET    | `/api/items/:id/metadata`  | TMDB details + IDs (episode → parent show).   |
 | POST   | `/api/scan`                | Triggers the `library.scan` job → `{"runId"}`. 409 while one runs. |
 

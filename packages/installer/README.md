@@ -53,7 +53,7 @@ where it is.
 
 ## What the scan probes
 
-Three things at once:
+Four things at once:
 
 - An SSDP `M-SEARCH` for `urn:dial-multiscreen-org:service:dial:1`, LG's
   second-screen target and `upnp:rootdevice`, over a 2.5 second window. Whatever
@@ -63,6 +63,10 @@ Three things at once:
   ports: **8001** (Samsung's REST API), **9922** (LG's Dev Mode key server),
   **1925** (JointSpace on a Philips) and **5555** (adb). A port has 700 ms to
   accept.
+- An mDNS query for `_adb-tls-connect._tcp`, the service an Android TV in
+  Wireless debugging advertises its port with, and for `_googlecast._tcp`, over
+  a 3 second window. It is sent to the network and to every address of the
+  sweep, because a set on Wi-Fi does not always hear the first.
 - CoreDevice, for the Apple TVs this Mac is paired with. They answer no probe at
   all, so they are asked for rather than swept for, and a Mac with no Xcode is
   told nothing rather than failed.
@@ -76,6 +80,7 @@ for the webOS app, 1926 for JointSpace over TLS) and identified:
 | 9922 is open, or UPnP says LG Electronics or webOS | webOS. Dev Mode is running only when 9922 is open |
 | JointSpace answers `/6/system` or `/1/system` on 1925, or `/6/system` on 1926 over TLS | Philips. Its `os_type` decides whether the set takes an app at all |
 | 5555 is open and nothing above matched | Android TV, with whatever name UPnP gave it |
+| It advertises `_adb-tls-connect._tcp`, and it casts, answered UPnP, or says over adb that it has the TV interface | Android TV in Wireless debugging. A phone advertises the same service and does none of the three |
 
 Nothing else counts as a television.
 
@@ -105,8 +110,8 @@ no table dates carries no version rather than a guess.
 
 - **It is off.**
 - **Its platform's port is still shut.** An LG without the Dev Mode app running
-  only turns up if it replied to SSDP; an Android TV with network debugging off
-  and no JointSpace answers nothing at all. A Samsung answers 8001 either way and
+  only turns up if it replied to SSDP; an Android TV with every kind of
+  debugging off and no JointSpace answers nothing at all. A Samsung answers 8001 either way and
   is listed with the step it needs.
 - **It is on another subnet.** The sweep walks the `/24`s of this machine's own
   interfaces and no further. Anything beyond them has to be named as an explicit
@@ -144,6 +149,13 @@ one that opens the network port. The first install raises a prompt on screen:
 accept it and tick "always allow", and the install, which waits two minutes for
 it, goes on. A scan never raises that prompt.
 
+A set that has **Wireless debugging** instead, as Android 13 and later may,
+takes a pairing code where the others raise a prompt. Turn it on, and when the
+TUI asks, open **Pair device with pairing code** under it and type the six
+digits. The set listens for the code only while that window is open, on a port
+it advertises then. `install` and `update` take the code as `--pairing-code`.
+One pairing lasts until the set forgets this computer, and a scan never pairs.
+
 A Philips is only an Android TV if it says so. On one running **Saphi** or
 **Titan OS** the scan lists the set and names the OS as the reason it takes no
 sideloaded app, only what its own store offers. There is nothing to enable there.
@@ -166,9 +178,9 @@ from this checkout.
 An Android TV takes this tool's own adb key, kept in `~/.kroma/adb/adbkey` and
 readable by its owner alone, made on the first install. When this computer
 already has Google's key, `~/.android/adbkey`, it is offered first, so a TV that
-trusts Google's adb asks nothing. Wireless debugging with a pairing code
-(Android 11 and later) is not spoken: it needs `adb pair` from Google's
-platform-tools. How the protocol works, with the sources, is in
+trusts Google's adb asks nothing. Wireless debugging is spoken too: adb over
+TLS 1.3 on the port the set advertises, and the pairing `adb pair` does, with
+the same key. How the protocol works, with the sources, is in
 [docs/reference/android-adb.md](../../docs/reference/android-adb.md).
 
 A Samsung set needs no tool, but it does need Samsung's certificates: a retail
@@ -344,6 +356,13 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
 - **`nobody allowed this computer on the TV within two minutes`.** An Android
   TV asks once to allow each computer, and the install waits two minutes for it.
   Accept the prompt on the TV, tick **Always allow**, and run the install again.
+- **`the TV has not been paired with this computer`.** An Android TV in
+  Wireless debugging lets in only a computer it was paired with. Open
+  **Pair device with pairing code** on the TV and install again with
+  `--pairing-code` and the six digits, or from the TUI, which asks for them.
+- **`the TV shows no pairing code`.** The set listens for a code only while
+  **Pair device with pairing code** is open, and says so over mDNS. Leave the
+  window open, and check that the computer is on the same network.
 - **The LG install cannot get a key.** Key Server has to be on in the Dev Mode
   app, and the passphrase is the one it shows now: it changes each time Dev
   Mode is turned off and on.

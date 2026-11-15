@@ -65,10 +65,11 @@ apps to their main row on their own.
 ### From a computer
 
 KROMA's installer finds the TV on your network and installs KROMA on it. It
-works when the TV has **Network debugging** or **USB debugging**. A TV that
-only has **Wireless debugging** with a pairing code needs
-[From a computer, with a pairing code](#from-a-computer-with-a-pairing-code)
-instead.
+works when the TV has **Wireless debugging**, **Network debugging** or
+**USB debugging**. Which one a TV has depends on its brand and its Android
+version. Android 13 and later, which includes the Chromecast with Google TV
+since its 2025 update and the Google TV Streamer, may offer only
+**Wireless debugging**.
 
 You need a Mac or a Linux computer on the same network as the TV, with
 [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
@@ -78,7 +79,8 @@ version. The installer does not run on Windows.
    **Android TV OS build** seven times, until the TV says that you are a
    developer.
 2. Go back to **Settings** > **System** > **Developer options** and turn on
-   **Network debugging** or **USB debugging**, depending on the brand.
+   **Wireless debugging**, **Network debugging** or **USB debugging**,
+   depending on the TV.
 3. In a terminal on your computer, start the installer:
 
    ```bash
@@ -101,7 +103,16 @@ version. The installer does not run on Windows.
    The installer talks to the TV by itself. Nothing else is installed on your
    computer.
 
-8. On the TV, accept the prompt to allow this computer, and tick
+8. If the installer asks for a pairing code, the TV uses
+   **Wireless debugging**. On the TV, open **Settings** > **System** >
+   **Developer options** > **Wireless debugging**, and select
+   **Pair device with pairing code**. Type the six digits that the TV shows
+   in the terminal, then press Enter.
+
+   The installer pairs your computer with the TV. It asks for no code again
+   while the TV remembers this computer.
+
+9. If the TV shows a prompt to allow this computer, accept it and tick
    **Always allow**.
 
    The installer downloads the latest KROMA for Android TV, installs it on the
@@ -115,39 +126,15 @@ npx @kromatv/installer install 192.168.1.61
 
 Replace `192.168.1.61` with the address of your TV.
 
-### From a computer, with a pairing code
+If that TV uses **Wireless debugging** and was never paired with your
+computer, open **Pair device with pairing code** on the TV first, and give the
+code it shows:
 
-Android 13 and later, which includes the Chromecast with Google TV since its
-2025 update and the Google TV Streamer, may offer only **Wireless debugging**,
-with a pairing code. KROMA's installer does not support it yet. Use
-[adb](https://developer.android.com/tools/releases/platform-tools), Google's
-Android tool, on a computer on the same network.
+```bash
+npx @kromatv/installer install 192.168.1.61 --pairing-code 123456
+```
 
-1. On the TV, open **Settings** > **System** > **About**, select
-   **Android TV OS build** seven times, until the TV says that you are a
-   developer.
-2. Go back to **Settings** > **System** > **Developer options**, turn on
-   **Wireless debugging**, then select **Pair device with pairing code**.
-3. On the computer, pair with the address and code the TV shows:
-
-   ```bash
-   adb pair 192.168.1.61:37199
-   ```
-
-4. Connect with the address and port shown on the **Wireless debugging**
-   screen, which is a different port:
-
-   ```bash
-   adb connect 192.168.1.61:42135
-   ```
-
-5. Install KROMA:
-
-   ```bash
-   adb install -r KROMA-androidtv-*.apk
-   ```
-
-Replace the addresses and ports with the ones your TV shows.
+Replace `123456` with the six digits on the TV.
 
 ## Amazon Fire TV
 
@@ -196,6 +183,17 @@ your server, then uninstall the old one.
 
 The TV is waiting for you to accept the computer. Accept the prompt on the TV,
 tick **Always allow**, then run the command or the installer again.
+
+### The installer says that the TV shows no pairing code
+
+The TV listens for the code only while the **Pair device with pairing code**
+window is open. Open it again, leave it on the screen, and type the code it
+shows now.
+
+### The installer says that the TV refused the pairing code
+
+The code changes each time the **Pair device with pairing code** window opens.
+Type the six digits that are on the screen now.
 
 ### `This app has been blocked`
 

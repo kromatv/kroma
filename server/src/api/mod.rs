@@ -43,6 +43,7 @@ mod point;
 mod recommend;
 mod releases;
 mod rematch;
+mod remote_art;
 mod reports;
 mod requests;
 pub mod seam;
@@ -144,6 +145,8 @@ mod it_playback_faults;
 mod it_releases;
 #[cfg(test)]
 mod it_rematch;
+#[cfg(test)]
+mod it_remote_art;
 #[cfg(test)]
 mod it_reports;
 #[cfg(test)]
@@ -259,6 +262,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(invites::routes())
         .merge(mail::routes())
         .merge(images::routes())
+        .merge(remote_art::routes())
         .merge(media::public_routes())
         .merge(server_status::public_routes())
         .merge(direct::public_routes())
@@ -307,6 +311,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(content)
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
         .nest("/admin", admin::routes(state.clone()))
+        .layer(from_fn_with_state(state.clone(), remote_art::serve_art))
         .layer(Extension(supervisor));
 
     let mut app = Router::new().nest("/api", api);

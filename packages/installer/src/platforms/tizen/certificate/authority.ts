@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { runOk } from '../../../shared/run';
 import { OPENSSL } from './openssl';
-import { type Subject, selfSignedCertificate, toPem } from './x509';
+import { type Subject, selfSignedCertificate, toPem } from '../../../shared/x509';
 
 const KEY_BITS = 2048;
 const VALID_DAYS = 1825;
