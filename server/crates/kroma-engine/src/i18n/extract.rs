@@ -1,7 +1,5 @@
 //! The locales a request is answered in, read from its `Accept-Language`.
 
-use std::convert::Infallible;
-
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
@@ -21,7 +19,7 @@ fn accept_language(parts: &Parts) -> Option<&str> {
 pub struct ReqLocale(pub &'static str);
 
 impl FromRequestParts<SharedState> for ReqLocale {
-    type Rejection = Infallible;
+    type Rejection = !;
 
     async fn from_request_parts(
         parts: &mut Parts,
@@ -37,7 +35,7 @@ impl FromRequestParts<SharedState> for ReqLocale {
 pub struct ContentLocale(pub &'static str);
 
 impl FromRequestParts<SharedState> for ContentLocale {
-    type Rejection = Infallible;
+    type Rejection = !;
 
     async fn from_request_parts(
         parts: &mut Parts,
@@ -54,7 +52,7 @@ impl FromRequestParts<SharedState> for ContentLocale {
 pub struct AskedLocale(pub Option<&'static str>);
 
 impl FromRequestParts<SharedState> for AskedLocale {
-    type Rejection = Infallible;
+    type Rejection = !;
 
     async fn from_request_parts(
         parts: &mut Parts,

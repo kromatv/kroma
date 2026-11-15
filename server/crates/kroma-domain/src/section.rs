@@ -66,10 +66,10 @@ impl From<SectionItem> for SectionCard {
     fn from(entry: SectionItem) -> Self {
         match entry {
             SectionItem::Movie { item } => Self::Movie {
-                item: Box::new(MediaCard::from(*item)),
+                item: Box::map(item, MediaCard::from),
             },
             SectionItem::Show { show } => Self::Show {
-                show: Box::new(show_card(*show)),
+                show: Box::map(show, show_card),
             },
         }
     }

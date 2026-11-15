@@ -131,7 +131,7 @@ fn failure_reason(path: &Path, stderr: &[u8], exit_code: i32) -> String {
         .rev()
         .map(str::trim)
         .find(|line| !line.is_empty())
-        .map(|line| line.strip_prefix(prefix.as_str()).unwrap_or(line))
+        .map(|line| line.trim_prefix(prefix.as_str()))
         .unwrap_or_default();
     if said.is_empty() {
         return format!("ffprobe exited with status {exit_code}");

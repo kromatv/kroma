@@ -70,7 +70,7 @@ fn method_view(method: Method) -> MethodView {
             id: PASSKEY_ID,
             enabled: on.enabled,
         },
-        Method::Oidc(provider) => MethodView::Oidc(Box::new(provider_view(*provider))),
+        Method::Oidc(provider) => MethodView::Oidc(Box::map(provider, provider_view)),
     }
 }
 

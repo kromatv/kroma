@@ -90,7 +90,7 @@ fn is_destination(to: &str) -> bool {
     if let Some(key) = to.strip_prefix("setting:") {
         return is_setting_key(key);
     }
-    let host = to.strip_prefix("*.").unwrap_or(to);
+    let host = to.trim_prefix("*.");
     !host.is_empty()
         && host.len() <= 253
         && host.contains('.')

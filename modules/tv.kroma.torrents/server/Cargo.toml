@@ -7,7 +7,7 @@
 name = "kroma-torrent"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "DownloadClient trait + torrent engines (the rqbit helper, Transmission, qBittorrent)"
 license = "AGPL-3.0-or-later"
 

@@ -2,8 +2,8 @@
 //! incoming tally. A loopback caller is this machine talking to itself (a health
 //! probe) and is left out.
 
+use std::mem::DropGuard;
 use std::net::{IpAddr, SocketAddr};
-use std::sync::Arc;
 
 use axum::body::Body;
 use axum::extract::{ConnectInfo, Request, State};
@@ -14,26 +14,9 @@ use http_body_util::BodyExt;
 
 use crate::api::accounts::user_agent;
 use crate::api::util::{client_ip, tunnelled};
-use crate::services::network::{via_of, Arrival, Network};
+use crate::services::network::{via_of, Arrival};
 use crate::services::settings;
 use crate::state::SharedState;
-
-struct Counted {
-    network: Arc<Network>,
-    arrival: Arrival,
-}
-
-impl Counted {
-    fn sent(&mut self, bytes: usize) {
-        self.arrival.bytes_out += bytes as u64;
-    }
-}
-
-impl Drop for Counted {
-    fn drop(&mut self) {
-        self.network.record_arrival(self.arrival.clone());
-    }
-}
 
 pub(super) async fn tally(
     State(state): State<SharedState>,
@@ -45,13 +28,11 @@ pub(super) async fn tally(
     };
     let response = next.run(request).await;
     let (parts, body) = response.into_parts();
-    let mut counted = Counted {
-        network: state.network.clone(),
-        arrival,
-    };
+    let network = state.network.clone();
+    let mut arrival = DropGuard::new(arrival, move |arrival| network.record_arrival(arrival));
     let body = body.map_frame(move |frame| {
         if let Some(data) = frame.data_ref() {
-            counted.sent(data.len());
+            arrival.bytes_out += data.len() as u64;
         }
         frame
     });

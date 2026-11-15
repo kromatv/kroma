@@ -7,7 +7,7 @@
 name = "kroma-torznab"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "Torznab (Jackett / Prowlarr) indexer client for the KROMA acquisition stack"
 license = "AGPL-3.0-or-later"
 

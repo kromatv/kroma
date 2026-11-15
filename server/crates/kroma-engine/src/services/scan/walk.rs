@@ -79,11 +79,7 @@ pub(super) fn scan_root(
         if !has_video_extension(&path) {
             continue;
         }
-        let rel = path
-            .strip_prefix(root)
-            .unwrap_or(&path)
-            .to_string_lossy()
-            .replace('\\', "/");
+        let rel = path.trim_prefix(root).to_string_lossy().replace('\\', "/");
         // Build the absolute path by joining the resolved root with the relative
         // path no extra stat / symlink resolution per file.
         let abs = abs_root.join(&rel);

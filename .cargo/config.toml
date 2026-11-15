@@ -21,3 +21,12 @@ LIBSQLITE3_FLAGS = { value = "-USQLITE_ENABLE_FTS3 -USQLITE_ENABLE_FTS3_PARENTHE
 # a component on the server's own host. Built on first use.
 [target.wasm32-wasip2]
 runner = "server/crates/kroma-wasm-test-runner/runner.sh"
+
+# A dependency cooldown (cargo >= 1.100): the resolver skips a version crates.io
+# published less than three days ago, so a hijacked release has that long to be
+# caught and yanked before a `cargo update` here can pick it. What a Cargo.lock
+# already names is kept. To take a fix sooner, run that one
+# `cargo update -p <crate> --precise <version>` with
+# `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`.
+[registry]
+global-min-publish-age = "3 days"

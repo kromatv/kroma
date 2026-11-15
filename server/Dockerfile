@@ -52,7 +52,7 @@ RUN NODE_OPTIONS=--dns-result-order=ipv4first bun run build:web
 # → /app/clients/web/dist/client
 
 # ---- 2) Rust server --------------------------------------------------------
-FROM rust:1.98-bookworm AS builder
+FROM rust:1.100-bookworm AS builder
 WORKDIR /src
 # Warm the dependency cache before copying sources so a code-only change reuses it.
 # The repo-root cargo config, BEFORE the warm-up build: it carries the

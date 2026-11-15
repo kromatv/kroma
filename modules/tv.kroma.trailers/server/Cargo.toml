@@ -7,7 +7,7 @@
 name = "kroma-trailers"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "Trailers for the KROMA player: an InnerTube client and an ISO-BMFF remuxer, pure Rust"
 license = "AGPL-3.0-or-later"
 

@@ -21,7 +21,7 @@ pub(crate) fn ipv4_only_wg(config: &str) -> String {
         let rewrite = |key: &str| {
             trimmed
                 .strip_prefix(key)
-                .map(|rest| rest.trim_start().strip_prefix('=').unwrap_or(rest).trim())
+                .map(|rest| rest.trim_start().trim_prefix('=').trim())
         };
         if let Some(val) = rewrite("Address") {
             match keep_v4(val) {
