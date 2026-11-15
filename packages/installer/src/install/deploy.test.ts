@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Platform } from '../platforms/platform';
+import type { Platform, PlatformOptions } from '../platforms/platform';
 import type { Television } from '../shared/television';
 import { deployTo } from './deploy';
 
@@ -25,7 +25,7 @@ const shield: Television = {
 
 const steps: string[] = [];
 const resolve = vi.fn(async () => '/out/KROMA.apk');
-const install = vi.fn(async (_context: unknown) => {});
+const install = vi.fn(async (_context: unknown): Promise<PlatformOptions | void> => {});
 
 const androidtv: Platform = {
   id: 'androidtv',
@@ -160,6 +160,26 @@ describe('deployTo', () => {
     await deployTo(shield, { log });
 
     expect(rememberSet.mock.calls[0]?.[0]).toMatchObject({ options: { profile: 'KROMA' } });
+  });
+
+  it('remembers the option an install had to change to get there', async () => {
+    platformFor.mockReturnValue({ ...androidtv, remembers: ['profile'] });
+    install.mockImplementation(async () => ({ profile: 'KROMA' }));
+
+    await deployTo(shield, { log });
+
+    expect(rememberSet.mock.calls[0]?.[0]).toMatchObject({ options: { profile: 'KROMA' } });
+  });
+
+  it('forgets an option the install got there without', async () => {
+    platformFor.mockReturnValue({ ...androidtv, remembers: ['profile', 'web'] });
+    rememberedSets.mockResolvedValue([remembered({ options: { profile: 'KROMA', web: true } })]);
+    install.mockImplementation(async () => ({ profile: undefined }));
+
+    await deployTo(shield, { log });
+
+    expect(rememberSet.mock.calls[0]?.[0]).toMatchObject({ options: { web: true } });
+    expect(rememberSet.mock.calls[0]?.[0]).not.toHaveProperty('options.profile');
   });
 
   it('remembers no option for a platform that repeats none', async () => {

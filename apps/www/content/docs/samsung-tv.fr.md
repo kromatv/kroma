@@ -327,10 +327,14 @@ Remplacez `192.168.1.62` par l'adresse de votre téléviseur.
 
 Un KROMA signé avec un autre certificat est déjà installé sur le téléviseur.
 Cela arrive quand KROMA a été installé avec Tizen Studio, ou quand vous créez
-un nouveau certificat après avoir installé KROMA.
-Supprimez KROMA : dans **Applications**, maintenez enfoncée la touche de
-sélection sur la vignette KROMA, puis choisissez **Supprimer**. Installez à
-nouveau. Le téléviseur redemande votre serveur et votre connexion.
+un nouveau certificat après avoir installé KROMA. Si votre ordinateur a aussi
+l'autre certificat, l'installeur signe KROMA à nouveau avec lui et l'installe.
+Il retient ce certificat pour ce téléviseur.
+
+Si l'erreur persiste, supprimez KROMA : dans **Applications**, maintenez
+enfoncée la touche de sélection sur la vignette KROMA, puis choisissez
+**Supprimer**. Installez à nouveau. Le téléviseur redemande votre serveur et
+votre connexion.
 
 ### `nobody signed in to Samsung within five minutes`
 

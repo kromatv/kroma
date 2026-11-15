@@ -256,7 +256,8 @@ refused, since it reaches the set's shell. The Android TV id comes from
 
 Every install that succeeds is written to `~/.kroma/televisions.json`, one
 entry per address: the set's name and model, the package put on it, the channel
-that package came from, on a Samsung the `--profile` it was signed with, and
+that package came from, on a Samsung the `--profile` it was signed with (the
+one the set took, when it refused the first), and
 `--web` where the install asked for the web app.
 `update` reads the file back and asks nothing:
 
@@ -341,8 +342,10 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   this computer as the host PC, and the set has to have been rebooted since. The
   scan prints the IP the TV currently trusts.
 - **A Samsung install fails on a signature.** A KROMA signed with a different
-  certificate is already installed: delete its tile from the Apps panel
-  (long-press > Delete) and install again.
+  certificate is already installed. The tool signs again with the other author
+  this computer holds, Samsung's certificates or the active Tizen Studio
+  profile, and remembers the one the set took. When neither is the one, delete
+  its tile from the Apps panel (long-press > Delete) and install again.
 - **A Samsung refuses the certificate chain.** The set is not one the
   distributor certificate lists, which happens with a Tizen Studio profile made
   for another set. Run `certificate` with its address.

@@ -2,7 +2,13 @@ import { rm } from 'node:fs/promises';
 import { basename, dirname } from 'node:path';
 import { run, runOk } from '../../shared/run';
 import { requireTool } from '../../toolchain/detect';
-import { booleanOption, type InstallContext, stringOption } from '../platform';
+import {
+  booleanOption,
+  type InstallContext,
+  type PlatformOptions,
+  stringOption,
+} from '../platform';
+import { eitherAuthor } from './either-author';
 import { installFailure, refusedChain } from './install-failure';
 import { installOverSdb } from './native';
 import { readProfile, type SigningProfile } from './profiles';
@@ -27,12 +33,18 @@ export function parseSdbSerial(devices: string, host: string): string | null {
   return null;
 }
 
-export async function installTizen(context: InstallContext): Promise<void> {
+export async function installTizen(context: InstallContext): Promise<PlatformOptions> {
+  const named = stringOption(context.options, 'profile');
+  const chosen = named ? await namedProfile(named) : await profileFor(context.tv.host, context.log);
+  return eitherAuthor(context, chosen, (profile) => installAs(context, profile));
+}
+
+async function installAs(context: InstallContext, profile: SigningProfile): Promise<void> {
   const native = booleanOption(context.options, 'native') ?? true;
-  const signed = await sign(context);
+  const signed = { ...(await resign(context.artifact, profile, context.log)), profile };
   try {
     if (native) {
-      await installOverSdb(context, signed.path, signed.package, signed.profile.name);
+      await installOverSdb(context, signed.path, signed.package, profile.name);
     } else {
       await installOverCli(context, signed);
     }
@@ -41,13 +53,6 @@ export async function installTizen(context: InstallContext): Promise<void> {
       await rm(dirname(signed.path), { recursive: true, force: true });
     }
   }
-}
-
-async function sign(context: InstallContext): Promise<Package> {
-  const { artifact, log } = context;
-  const named = stringOption(context.options, 'profile');
-  const profile = named ? await namedProfile(named) : await profileFor(context.tv.host, log);
-  return { ...(await resign(artifact, profile, log)), profile };
 }
 
 async function namedProfile(name: string): Promise<SigningProfile> {
@@ -84,7 +89,7 @@ async function installOverCli(context: InstallContext, signed: Package): Promise
   );
   if (installed.code !== 0) {
     const duid = refusedChain(installed.output) ? await readDuid(sdb, log) : null;
-    throw new Error(installFailure(installed.output, signed.profile.name, duid));
+    throw installFailure(installed.output, signed.profile.name, duid);
   }
   if (!launch) {
     return;
