@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { PageHeader } from './page-header';
+import { PageHeader } from './page-header.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 

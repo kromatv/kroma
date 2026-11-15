@@ -2,7 +2,7 @@
 
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ArtScrim, type ArtScrimVariant, CARD_SCRIM, POSTER_SCRIM } from './art-scrim';
+import { ArtScrim, type ArtScrimVariant, CARD_SCRIM, POSTER_SCRIM } from './art-scrim.component';
 
 afterEach(cleanup);
 

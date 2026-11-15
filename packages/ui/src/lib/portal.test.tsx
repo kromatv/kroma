@@ -2,7 +2,7 @@
 
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Portal, PortalHost } from './portal';
+import { Portal, PortalHost } from './portal.component';
 
 describe('a portal', () => {
   it('leaves for the document when nothing hosts it', () => {

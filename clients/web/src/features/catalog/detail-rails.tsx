@@ -20,7 +20,7 @@ import { useT } from '@kromatv/ui';
 import { imageUrl } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
 import { Image, Poster, PosterRail } from '#web/shared/ui';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both scrollers stay plain elements around kit content.

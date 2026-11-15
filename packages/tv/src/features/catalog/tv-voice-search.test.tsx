@@ -11,7 +11,7 @@ import {
   voiceSearchBackend,
 } from '#tv/app/voice-search';
 
-import { TvVoiceSearch } from '#tv/features/catalog/tv-voice-search';
+import { TvVoiceSearch } from '#tv/features/catalog/tv-voice-search.component';
 
 const inputHost = createInputTestHost();
 

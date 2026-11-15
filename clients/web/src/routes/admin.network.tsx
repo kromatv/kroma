@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { NetworkPage } from '#web/features/admin/network';
+import { NetworkPage } from '#web/features/admin/network.component';
 import { NETWORK_TABS } from '#web/features/admin/network-tabs';
 
 const Search = z.object({ tab: z.enum(NETWORK_TABS).optional().catch(undefined) });

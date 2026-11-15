@@ -2,16 +2,19 @@ import { LANG_OFF, langName } from '@kromatv/core';
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { type LangPickerRef, LangPickerSheet } from '#mobile/components/lang-picker-sheet';
-import { PageHeader } from '#mobile/components/page-header';
-import { IdentityForm } from '#mobile/components/profile/identity-form';
-import { PasswordForm } from '#mobile/components/profile/password-form';
-import { PrefRow } from '#mobile/components/profile/pref-row';
-import { ProfilePhoto } from '#mobile/components/profile/profile-photo';
-import { ProfileSection } from '#mobile/components/profile/profile-section';
+import {
+  type LangPickerRef,
+  LangPickerSheet,
+} from '#mobile/components/lang-picker-sheet.component';
+import { PageHeader } from '#mobile/components/page-header.component';
+import { IdentityForm } from '#mobile/components/profile/identity-form.component';
+import { PasswordForm } from '#mobile/components/profile/password-form.component';
+import { PrefRow } from '#mobile/components/profile/pref-row.component';
+import { ProfilePhoto } from '#mobile/components/profile/profile-photo.component';
+import { ProfileSection } from '#mobile/components/profile/profile-section.component';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
-import { useLangPrefs } from '#mobile/lib/lang-prefs';
+import { useLangPrefs } from '#mobile/lib/lang-prefs.hook';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useSession } from '#mobile/lib/session';
 import { radius, spacing } from '#mobile/lib/theme';

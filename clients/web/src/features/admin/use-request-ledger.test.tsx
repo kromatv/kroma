@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRequestLedger } from './use-request-ledger';
+import { useRequestLedger } from './use-request-ledger.hook';
 
 const client = { requests: { ledger: vi.fn() } };
 

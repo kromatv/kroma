@@ -13,7 +13,7 @@ import { indexVite } from './lazy';
 import { memoryRouter } from './router';
 import { story } from './story';
 import type { StoryCodes } from './story-code';
-import { Workbench } from './workbench';
+import { Workbench } from './workbench.component';
 
 const BUTTON = 'src/components/atoms/button/button.story.mdx';
 const CODES: StoryCodes = { [BUTTON]: { name: 'Button', group: 'Actions' } };

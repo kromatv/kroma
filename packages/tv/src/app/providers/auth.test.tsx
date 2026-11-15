@@ -11,8 +11,8 @@ import { EnvProvider } from '#tv/app/providers/env';
 import { MyListProvider } from '#tv/app/providers/mylist';
 import { RecommendProvider } from '#tv/app/providers/recommend';
 import { WatchedProvider } from '#tv/app/providers/watched';
-import { useCatalogue } from '#tv/app/use-catalogue';
-import { HandoffBeaconProvider } from '#tv/features/accounts/handoff-beacon-provider';
+import { useCatalogue } from '#tv/app/use-catalogue.hook';
+import { HandoffBeaconProvider } from '#tv/features/accounts/handoff-beacon-provider.component';
 
 const SERVER = 'http://tv.local';
 const ACCESS_TOKEN = 'access-1';

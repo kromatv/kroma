@@ -5,7 +5,7 @@ import { fakeVideo } from '@kromatv/core/test';
 import {
   type StallRecoveryOptions,
   useStallRecovery,
-} from '#web/features/playback/use-stall-recovery';
+} from '#web/features/playback/use-stall-recovery.hook';
 import type { HlsInstance, ShakaPlayerLike } from '#web/features/playback/video-engine';
 
 const POLL_MS = 500;

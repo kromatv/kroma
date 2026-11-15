@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTitleActions } from './use-title-actions';
+import { useTitleActions } from './use-title-actions.hook';
 
 const TITLE = 'm1' as never;
 

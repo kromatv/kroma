@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useChromeReveal } from './use-chrome-reveal';
+import { useChromeReveal } from './use-chrome-reveal.hook';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());

@@ -5,7 +5,7 @@ import type { AudioFilterMode } from '@kromatv/ui';
 import { type ComponentType, createContext, type ReactNode, use } from 'react';
 import type { EnginePref } from '#tv/app/engine-pref';
 import type { EngineListeners, Surface, TvEngine } from '#tv/features/playback/player/engine';
-import type { Playback } from '#tv/features/playback/player/use-direct-playback';
+import type { Playback } from '#tv/features/playback/player/use-direct-playback.hook';
 
 /** What the shared playback hook reads of a resolved plan; a backend's own plan
  * may carry more for its `createTvEngine`. */

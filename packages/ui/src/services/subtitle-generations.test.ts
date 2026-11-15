@@ -13,7 +13,7 @@ import { GenerationId, type SubtitleGeneration, SubtitleId } from '@kromatv/clie
 import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useSubtitleGenerations } from './subtitle-generations';
+import { useSubtitleGenerations } from './subtitle-generations.hook';
 
 const ITEM = ItemId.parse('item-1');
 const OTHER_ITEM = ItemId.parse('item-2');

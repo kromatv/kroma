@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { KitProvider } from '#ui/configure';
 import { contentRoot, declared } from '#ui/testing';
-import { Frost } from './frost';
+import { Frost } from './frost.component';
 
 function Surface({ enabled }: { enabled: boolean }) {
   return (

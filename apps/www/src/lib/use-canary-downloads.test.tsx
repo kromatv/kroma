@@ -3,7 +3,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChannelBuild } from './channels';
 import { fetchLatestDownloads } from './live-downloads';
-import { useCanaryDownloads } from './use-canary-downloads';
+import { useCanaryDownloads } from './use-canary-downloads.hook';
 
 vi.mock('./live-downloads', () => ({ fetchLatestDownloads: vi.fn() }));
 

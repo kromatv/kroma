@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NetworkInbound } from '#web/features/admin/network-inbound';
+import { NetworkInbound } from '#web/features/admin/network-inbound.component';
 
 const api = vi.hoisted(() => ({ inbound: vi.fn() }));
 

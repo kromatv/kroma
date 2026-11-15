@@ -1,6 +1,6 @@
 import { version } from 'virtual:build-info';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
-import { NotFound, RouteError } from '#web/features/errors/error-page';
+import { NotFound, RouteError } from '#web/features/errors/error-page.component';
 import { prefetchModules } from '#web/modules/remotes';
 import { routeTree } from '#web/routeTree.gen';
 import { createWebRuntime } from '#web/shared/lib/api';

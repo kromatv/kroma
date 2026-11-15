@@ -12,7 +12,7 @@ import { fakeClient } from '@kromatv/client/test';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DownloadEntry } from '#mobile/lib/downloads';
-import { useStoryboard } from './use-storyboard';
+import { useStoryboard } from './use-storyboard.hook';
 
 const POLL_MS = 5000;
 

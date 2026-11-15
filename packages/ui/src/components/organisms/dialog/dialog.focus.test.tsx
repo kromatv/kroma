@@ -6,11 +6,11 @@ import { TextInput } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 
-import { FocusScope } from '#ui/lib/focus-scope';
-import { OverlayHost } from '#ui/lib/overlay-host';
+import { FocusScope } from '#ui/lib/focus-scope.component';
+import { OverlayHost } from '#ui/lib/overlay-host.component';
 import { wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Dialog } from './dialog';
+import { Dialog } from './dialog.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

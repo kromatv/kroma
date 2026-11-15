@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { onScreen } from '#ui/testing';
-import { IconWell } from './icon-well';
+import { IconWell } from './icon-well.component';
 
 const ART = 'https://example.test/module.svg';
 

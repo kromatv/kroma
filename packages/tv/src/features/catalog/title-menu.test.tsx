@@ -7,7 +7,7 @@ import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider, TvOutlet } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
-import { type HeldTitle, useTitleMenu } from '#tv/features/catalog/title-menu';
+import { type HeldTitle, useTitleMenu } from '#tv/features/catalog/title-menu.hook';
 
 const inputHost = createInputTestHost();
 

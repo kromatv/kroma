@@ -42,13 +42,13 @@ vi.mock('#mobile/lib/orientation', () => ({
     return fullscreen ? 'landscape' : 'portrait';
   },
 }));
-vi.mock('./use-physical-orientation', () => ({
+vi.mock('./use-physical-orientation.hook', () => ({
   usePhysicalOrientation: () => ({ available: state.available, orientation: state.physical }),
 }));
 const navigation = { setOptions: state.setOptions };
 const frames = new Map<number, FrameRequestCallback>();
 
-import { usePlayerPresentation } from './use-player-presentation';
+import { usePlayerPresentation } from './use-player-presentation.hook';
 
 function nextFrame() {
   act(() => {

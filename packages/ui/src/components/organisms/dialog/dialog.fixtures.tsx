@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Button } from '#ui/components/atoms/button';
 
-import { Dialog, type DialogRootProps } from './dialog';
+import { Dialog, type DialogRootProps } from './dialog.component';
 
 export type DemoProps = Omit<DialogRootProps, 'open' | 'onClose' | 'children'>;
 

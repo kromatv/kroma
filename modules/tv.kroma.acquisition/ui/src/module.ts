@@ -5,7 +5,7 @@ const acquisitionModule = defineModule({
   pages: [
     {
       path: 'acquisition',
-      component: lazy(() => import('./acquisition-page')),
+      component: lazy(() => import('./acquisition-page.component')),
       nav: {
         label: 'nav.acquisition',
         icon: 'magnet',
@@ -17,24 +17,26 @@ const acquisitionModule = defineModule({
   slots: [
     {
       slot: 'library.upgrades',
-      component: lazy(() => import('./cutoff-view').then((m) => ({ default: m.CutoffView }))),
+      component: lazy(() =>
+        import('./cutoff-view.component').then((m) => ({ default: m.CutoffView })),
+      ),
     },
     {
       slot: 'requests.detail',
       component: lazy(() =>
-        import('./request-search-panel').then((m) => ({ default: m.RequestSearchPanel })),
+        import('./request-search-panel.component').then((m) => ({ default: m.RequestSearchPanel })),
       ),
     },
     {
       slot: 'monitoring.detail',
       component: lazy(() =>
-        import('./monitoring-panel').then((m) => ({ default: m.MonitoringPanel })),
+        import('./monitoring-panel.component').then((m) => ({ default: m.MonitoringPanel })),
       ),
     },
     {
       slot: 'monitoring.search',
       component: lazy(() =>
-        import('./monitoring-search').then((m) => ({ default: m.MonitoringSearch })),
+        import('./monitoring-search.component').then((m) => ({ default: m.MonitoringSearch })),
       ),
     },
   ],

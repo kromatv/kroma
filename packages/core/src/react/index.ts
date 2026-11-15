@@ -4,8 +4,8 @@
 // over a HOST adapter for the pieces that differ per app (session, client
 // instance). No components or styles - that is @kromatv/ui's floor.
 
-export type { AskedTitle, TitleAsk } from './ask-for-title';
-export { useAskForTitle } from './ask-for-title';
+export type { AskedTitle, TitleAsk } from './ask-for-title.hook';
+export { useAskForTitle } from './ask-for-title.hook';
 export type {
   CheckPrompt,
   CheckPromptOptions,
@@ -22,9 +22,9 @@ export {
 } from './handoff-picker';
 export type { LangPatch, LangPrefs, LangPrefsHost, LangPrefUser } from './lang-prefs';
 export { normalizeLangPref, prefValue, useLangPrefs } from './lang-prefs';
-export type { NearbyTvs } from './nearby-tvs';
-export { useNearbyTvs } from './nearby-tvs';
-export type { HeldSeekTransport } from './seek-hold';
-export { useHeldSeek } from './seek-hold';
-export type { TrailerState } from './trailer-preparation';
-export { useTrailerPreparation } from './trailer-preparation';
+export type { NearbyTvs } from './nearby-tvs.hook';
+export { useNearbyTvs } from './nearby-tvs.hook';
+export type { HeldSeekTransport } from './seek-hold.hook';
+export { useHeldSeek } from './seek-hold.hook';
+export type { TrailerState } from './trailer-preparation.hook';
+export { useTrailerPreparation } from './trailer-preparation.hook';

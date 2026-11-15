@@ -3,7 +3,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
-import { StageOverlay, type StageOverlayProps } from './stage-overlay';
+import { StageOverlay, type StageOverlayProps } from './stage-overlay.component';
 
 function overlay(props: StageOverlayProps) {
   return render(

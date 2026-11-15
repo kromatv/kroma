@@ -11,12 +11,12 @@ const torrentsModule = defineModule({
   pages: [
     {
       path: 'downloads',
-      component: lazy(() => import('./downloads-page')),
+      component: lazy(() => import('./downloads-page.component')),
       nav: { label: 'nav.downloads', icon: 'download', section: 'acquisition' },
     },
     {
       path: 'naming',
-      component: lazy(() => import('./naming-page')),
+      component: lazy(() => import('./naming-page.component')),
       nav: {
         label: 'admin.navNaming',
         icon: 'file-text',
@@ -29,7 +29,7 @@ const torrentsModule = defineModule({
     {
       slot: 'requests.episode.progress',
       component: lazy(() =>
-        import('./episode-progress').then((m) => ({ default: m.EpisodeProgress })),
+        import('./episode-progress.component').then((m) => ({ default: m.EpisodeProgress })),
       ),
     },
   ],

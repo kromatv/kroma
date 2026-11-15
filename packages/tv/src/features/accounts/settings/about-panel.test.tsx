@@ -12,7 +12,7 @@ function hardwareSource(source: HardwareSource) {
 
 import { EnvProvider } from '#tv/app/providers/env';
 import { TvNavProvider } from '#tv/app/router';
-import { AboutPanel } from './about-panel';
+import { AboutPanel } from './about-panel.component';
 
 const auth = vi.hoisted(() => {
   const session: { current: { user: { id: string } | null } | null } = { current: null };

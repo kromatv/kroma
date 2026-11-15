@@ -1,0 +1,104 @@
+// The D-pad presentation of <Menu>'s items: a <Dialog>, for the same reason
+// <Select> uses one (the remote is confined to the options).
+
+import { type ReactElement, type RefObject, useCallback, useMemo } from 'react';
+import type { View } from 'react-native';
+import { Dialog } from '#ui/components/organisms/dialog';
+import { FocusColumn } from '#ui/lib/focus-scope.component';
+import { usePointerDriving } from '#ui/lib/input-source';
+import type { SurfacePresentation } from '#ui/lib/surface-presentation.hook';
+import { type MenuDismissReason, MenuRowContext, type MenuRowState } from './menu-context';
+
+/** One actionable row, in the order the items were written. `at` is the
+ *  position among the ENTRIES, which count the separators too. `select` is
+ *  absent on a row that delegates, whose link is what activation reaches. */
+export interface MenuRowSpec {
+  at: number;
+  label: string;
+  disabled: boolean;
+  select?: () => void;
+}
+
+export interface MenuSurfaceProps {
+  open: boolean;
+  presentation: SurfacePresentation;
+  label: string | undefined;
+  /** The <Menu.Item> and <Menu.Separator> elements, in order. */
+  entries: readonly ReactElement[];
+  rows: readonly MenuRowSpec[];
+  align: 'start' | 'end';
+  onDismiss: (reason: MenuDismissReason) => void;
+  anchor: RefObject<View | null>;
+}
+
+// The dialog's two ways out, and it is handed neither: the backdrop belongs to
+// a pointer, and everything else here is Back - a remote's button, a phone's
+// system gesture, the key a browser TV shell sends.
+function dismissReason(pointerDriving: () => boolean): MenuDismissReason {
+  return pointerDriving() ? 'outside' : 'back';
+}
+
+interface DialogEntryProps {
+  entry: ReactElement;
+  spec: MenuRowSpec | undefined;
+  first: boolean;
+  onFire: (spec: MenuRowSpec) => void;
+}
+
+function DialogEntry({ entry, spec, first, onFire }: Readonly<DialogEntryProps>) {
+  const row = useMemo<MenuRowState>(
+    () => ({
+      presentation: 'dialog',
+      active: false,
+      entry: first,
+      fire: () => {
+        if (spec) {
+          onFire(spec);
+        }
+      },
+    }),
+    [spec, first, onFire],
+  );
+  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+}
+
+export function MenuSurfaceDialog({
+  open,
+  onDismiss,
+  label,
+  entries,
+  rows,
+}: Readonly<MenuSurfaceProps>) {
+  const pointerDriving = usePointerDriving();
+  const fire = useCallback(
+    (spec: MenuRowSpec) => {
+      if (spec.disabled) {
+        return;
+      }
+      onDismiss('select');
+      spec.select?.();
+    },
+    [onDismiss],
+  );
+  const opening = rows.find((row) => !row.disabled)?.at;
+  return (
+    <Dialog.Root
+      open={open}
+      onClose={() => onDismiss(dismissReason(pointerDriving))}
+      title={label}
+      width="sm"
+    >
+      <FocusColumn>
+        {entries.map((entry, at) => (
+          <DialogEntry
+            key={entry.key}
+            entry={entry}
+            spec={rows.find((row) => row.at === at)}
+            first={at === opening}
+            onFire={fire}
+          />
+        ))}
+      </FocusColumn>
+    </Dialog.Root>
+  );
+}

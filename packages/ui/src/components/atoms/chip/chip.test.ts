@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chipVariants } from './chip';
+import { chipVariants } from './chip.component';
 
 const VARIANTS = ['solid', 'subtle', 'surface'] as const;
 const SIZES = ['sm', 'tv'] as const;

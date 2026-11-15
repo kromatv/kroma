@@ -1,4 +1,4 @@
-import type { DropzoneRejection, DropzoneRootProps } from './dropzone-parts';
+import type { DropzoneRejection, DropzoneRootProps } from './dropzone-parts.component';
 
 function accepts(file: File, accept: string | undefined): boolean {
   if (!accept) {

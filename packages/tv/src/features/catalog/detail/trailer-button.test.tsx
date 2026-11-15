@@ -9,7 +9,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider, TvOutlet, useParams } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
-import { LeadActions, TrailerButton } from '#tv/features/catalog/detail/trailer-button';
+import { LeadActions, TrailerButton } from '#tv/features/catalog/detail/trailer-button.component';
 
 const noop = () => undefined;
 

@@ -3,7 +3,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { color } from '#ui/core';
-import { Legend } from './legend';
+import { Legend } from './legend.component';
 
 afterEach(cleanup);
 

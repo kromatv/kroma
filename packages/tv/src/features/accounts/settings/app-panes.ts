@@ -1,5 +1,5 @@
 import { canQuitApp, quitApp } from '#tv/app/app-quit';
-import { AboutPanel } from './about-panel';
+import { AboutPanel } from './about-panel.component';
 import type { SettingsPane } from './panes';
 
 /** About and, where the platform lets an app close itself, Quit. */

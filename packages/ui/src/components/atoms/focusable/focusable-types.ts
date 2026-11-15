@@ -12,7 +12,7 @@ import type {
 import type { AnySv, StyleDecl, SvStateName } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { A11yProps } from '#ui/lib/a11y';
-import type { KeyProps } from '#ui/lib/key-press';
+import type { KeyProps } from '#ui/lib/key-press.hook';
 
 // `option` is not in React Native's union: react-native-web passes it through
 // to the ARIA role a listbox row needs, but Android's accessibility delegate

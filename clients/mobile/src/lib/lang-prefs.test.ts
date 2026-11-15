@@ -30,7 +30,7 @@ vi.mock('#mobile/lib/session', () => ({
   useClient: () => ({ accounts: { update: session.updateAccount } }),
 }));
 
-import { useLangPrefs } from './lang-prefs';
+import { useLangPrefs } from './lang-prefs.hook';
 
 function host(): Host {
   renderHook(() => useLangPrefs());

@@ -3,7 +3,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { holdStatus, wantStatus } from '../overlay/review';
-import { TranslationStatus } from './translation-status';
+import { TranslationStatus } from './translation-status.component';
 
 const STANDING = {
   locale: 'en',

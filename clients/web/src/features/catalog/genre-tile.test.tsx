@@ -12,7 +12,7 @@ import {
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { GenreTile } from './genre-tile';
+import { GenreTile } from './genre-tile.component';
 
 // Two react-native-web facts this file is built on: it picks a mock Animated
 // that never touches the driver when NODE_ENV is `test`, and it warns about the

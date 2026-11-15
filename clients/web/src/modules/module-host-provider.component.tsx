@@ -1,0 +1,198 @@
+import { hasPermission } from '@kromatv/client/accounts';
+import type { TVars } from '@kromatv/i18n';
+import {
+  type KromaHost,
+  type ModuleNav,
+  type ModulePanel,
+  type ModuleRegistry,
+  type ModuleRoute,
+  ModuleSharedProvider,
+} from '@kromatv/module-sdk';
+import { useScopedT, useT } from '@kromatv/ui';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import { useModuleHost } from '#web/modules/host.hook';
+import { hiddenModuleIds, type ModuleRouteMatch, moduleRouteAt } from '#web/modules/module-gating';
+import { createModuleRuntime } from '#web/modules/registry';
+import { modulesQuery } from '#web/modules/remotes';
+import { useAuth } from '#web/shared/lib/auth';
+
+/** A translator bound to one module's own catalogs, falling back to the core
+ *  ones. The module's messages were registered with the engine when the module
+ *  was, so this is the scope, not a second lookup. */
+export function useModuleT(moduleId: string): (key: string, vars?: TVars) => string {
+  return useT(moduleId);
+}
+
+interface ModuleHostValue {
+  registry: ModuleRegistry | null;
+  host: KromaHost | null;
+  nav: ModuleNav[];
+  routes: ModuleRoute[];
+  panels: ModulePanel[];
+  disabledIds: ReadonlySet<string>;
+  refresh: () => Promise<void>;
+}
+
+const EMPTY: ModuleHostValue = {
+  registry: null,
+  host: null,
+  nav: [],
+  routes: [],
+  panels: [],
+  disabledIds: new Set(),
+  refresh: async () => {},
+};
+
+const ModuleHostContext = createContext<ModuleHostValue>(EMPTY);
+
+export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { client } = useAuth();
+  const queryClient = useQueryClient();
+  const [runtime] = useState(() =>
+    createModuleRuntime(() => queryClient.fetchQuery(modulesQuery(client))),
+  );
+  const { registry: moduleRegistry, remotes, listModules } = runtime;
+  const [revision, setRevision] = useState(0);
+  const host = useModuleHost(revision, runtime);
+
+  // A module is visible only when the backend lists it AND it is enabled: a
+  // compile-time-bundled UI may have no installed backend at all. The same
+  // cache entry the runtime read the remotes from, so the list is fetched once.
+  const { data: manifest } = useQuery({ ...modulesQuery(client), enabled: host != null });
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- revision re-reads the registry ids after an install/uninstall
+  const disabledIds = useMemo(
+    () => hiddenModuleIds(manifest, moduleRegistry.ids()),
+    [manifest, revision, moduleRegistry],
+  );
+
+  // The arrays hold stable lazy component refs, so panels don't retry into a
+  // Suspense loop under the compiler.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; revision re-snapshots contributions after an install/uninstall
+  const contrib = useMemo<{
+    nav: ModuleNav[];
+    routes: ModuleRoute[];
+    panels: ModulePanel[];
+  }>(() => {
+    if (!host) {
+      return { nav: [], routes: [], panels: [] };
+    }
+    try {
+      return {
+        nav: moduleRegistry.navItems(),
+        routes: moduleRegistry.routes(),
+        panels: moduleRegistry.settingsPanels(),
+      };
+    } catch {
+      // A graph that failed to resolve has no usable contributions; stay empty
+      // rather than crash the whole app.
+      return { nav: [], routes: [], panels: [] };
+    }
+  }, [host, revision, moduleRegistry]);
+
+  const refresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['modules'] });
+    await remotes.loadRuntimeRemotes(moduleRegistry);
+    try {
+      const listed = host ? await listModules() : [];
+      const present = new Set<string>(listed.map((m) => m.id));
+      for (const id of moduleRegistry.ids()) {
+        if (!present.has(id) && remotes.isLoadedRemote(id)) {
+          moduleRegistry.unregister(id);
+          remotes.forgetRemote(id);
+        }
+      }
+    } catch (e) {
+      console.warn('[modules] refresh reconcile failed', e);
+    }
+    await queryClient.invalidateQueries({ queryKey: ['admin', 'modules'] });
+    setRevision((r) => r + 1);
+  }, [host, queryClient, moduleRegistry, remotes, listModules]);
+
+  const value = useMemo<ModuleHostValue>(
+    () => ({
+      registry: moduleRegistry,
+      host,
+      nav: contrib.nav,
+      routes: contrib.routes,
+      panels: contrib.panels,
+      disabledIds,
+      refresh,
+    }),
+    [host, contrib, disabledIds, refresh, moduleRegistry],
+  );
+  return (
+    <ModuleHostContext.Provider value={value}>
+      <ModuleSharedProvider ready={remotes.ready}>{children}</ModuleSharedProvider>
+    </ModuleHostContext.Provider>
+  );
+}
+
+/** The wired module host, or null until modules finish starting. */
+export function useModuleHostValue(): KromaHost | null {
+  return useContext(ModuleHostContext).host;
+}
+
+/** Soft-reload the module set after an install/uninstall, without a page reload. */
+export function useRefreshModules(): () => Promise<void> {
+  return useContext(ModuleHostContext).refresh;
+}
+
+/** Every nav entry the current account may see (enabled module + met `requires`
+ *  capability). A `label` with no matching catalog key passes through as-is. */
+export function useModuleNavAll(): ModuleNav[] {
+  const { nav, disabledIds } = useContext(ModuleHostContext);
+  const { user } = useAuth();
+  const tOf = useScopedT();
+  return useMemo(
+    () =>
+      nav
+        .filter((n) => {
+          if (disabledIds.has(n.moduleId)) {
+            return false;
+          }
+          if (n.requires) {
+            const cap = n.requires as Parameters<typeof hasPermission>[1];
+            if (!user || !hasPermission(user, cap)) {
+              return false;
+            }
+          }
+          return true;
+        })
+        .map((n) => ({
+          ...n,
+          label: tOf(n.moduleId)(n.label),
+        })),
+    [nav, disabledIds, user, tOf],
+  );
+}
+
+/** Nav entries for one nav-group id; an entry without a `section` counts as "library". */
+export function useModuleNav(section: string): ModuleNav[] {
+  const all = useModuleNavAll();
+  return useMemo(() => all.filter((n) => (n.section ?? 'library') === section), [all, section]);
+}
+
+/** What is mounted at `path`: an enabled module's page, a page whose module is
+ *  turned off, or nothing any registered module claims. */
+export function useModuleRouteMatch(path: string): ModuleRouteMatch {
+  const { routes, disabledIds } = useContext(ModuleHostContext);
+  return useMemo(() => moduleRouteAt(routes, disabledIds, path), [routes, disabledIds, path]);
+}
+
+export function useModuleSettingsPanels(moduleId: string): {
+  host: KromaHost | null;
+  panels: ModulePanel[];
+} {
+  const { host, panels } = useContext(ModuleHostContext);
+  const forModule = useMemo(
+    () => panels.filter((p) => p.moduleId === moduleId),
+    [panels, moduleId],
+  );
+  return { host, panels: forModule };
+}
+
+/** Registry owned by this host; absent in a shell that mounts no module host. */
+export function useModuleRegistry(): ModuleRegistry | null {
+  return useContext(ModuleHostContext).registry;
+}

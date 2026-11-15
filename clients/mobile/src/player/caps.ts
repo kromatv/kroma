@@ -4,7 +4,7 @@
 //
 // iOS drives AVPlayer, Android drives ExoPlayer (both via expo-video); a
 // direct attempt the decoder rejects falls back to the HLS master at the same
-// position (see engine.ts).
+// position (see engine.hook.ts).
 
 import type { MediaItem } from '@kromatv/client/media';
 import {

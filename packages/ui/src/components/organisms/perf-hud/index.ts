@@ -1,1 +1,1 @@
-export * from './perf-hud';
+export * from './perf-hud.component';

@@ -5,7 +5,7 @@ import type { LiveTranscode, Transcodes } from '@kromatv/client/admin';
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { TranscodingSection } from '#web/features/admin/dashboard-transcoding';
+import { TranscodingSection } from '#web/features/admin/dashboard-transcoding.component';
 
 afterEach(cleanup);
 

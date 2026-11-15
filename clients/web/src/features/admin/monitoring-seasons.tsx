@@ -21,8 +21,8 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { EpisodeTable } from '#web/features/admin/monitoring-episodes';
-import { FollowToggle } from '#web/features/admin/monitoring-follow-toggle';
+import { EpisodeTable } from '#web/features/admin/monitoring-episodes.component';
+import { FollowToggle } from '#web/features/admin/monitoring-follow-toggle.component';
 import { isSpecials, seasonFollow, seasonToOpen } from '#web/features/admin/monitoring-model';
 import { type EpisodeUnit, useSeasonLedger } from '#web/features/admin/use-monitoring';
 import { Image } from '#web/shared/ui';

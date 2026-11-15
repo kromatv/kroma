@@ -6,7 +6,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { Interactions } from './interactions';
+import { Interactions } from './interactions.component';
 import { usePlay } from './play';
 import type { PlayFunction, PlayStep } from './play-types';
 

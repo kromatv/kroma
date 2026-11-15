@@ -3,7 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlayerController } from '#ui/components/organisms/player/types';
-import { useSeekNudge } from './use-seek-nudge';
+import { useSeekNudge } from './use-seek-nudge.hook';
 
 const TAP_STEP = 10;
 

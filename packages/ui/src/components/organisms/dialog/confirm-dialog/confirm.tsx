@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ConfirmDialog } from './confirm-dialog';
+import { ConfirmDialog } from './confirm-dialog.component';
 
 export interface ConfirmOptions {
   title: string;

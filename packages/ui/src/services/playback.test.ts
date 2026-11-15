@@ -13,7 +13,7 @@ import { ItemId } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { usePlaybackHeartbeat } from './playback';
+import { usePlaybackHeartbeat } from './playback.hook';
 
 const events = vi.hoisted(() => ({
   connect: vi.fn(),

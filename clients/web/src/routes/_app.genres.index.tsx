@@ -5,7 +5,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { GenreTile } from '#web/features/catalog/genre-tile';
+import { GenreTile } from '#web/features/catalog/genre-tile.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 

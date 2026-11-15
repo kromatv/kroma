@@ -78,7 +78,7 @@ vi.mock('@kromatv/client', () => ({
   }),
 }));
 
-import { useThemeAudio } from './theme-audio';
+import { useThemeAudio } from './theme-audio.hook';
 
 function player(): FakePlayer {
   const last = players.at(-1);

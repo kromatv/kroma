@@ -2,7 +2,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { GoalFormat, TargetGoal } from './quality-target';
-import { useGoalHeadline, useRungLabel, useShortfallText } from './use-goal-text';
+import { useGoalHeadline, useRungLabel, useShortfallText } from './use-goal-text.hook';
 
 const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
 

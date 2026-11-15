@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { type FocusOwner, usePlatformFocus } from '#ui/lib/focus-platform';
 import { onScreen, wearsRing } from '#ui/testing';
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 
 afterEach(cleanup);
 

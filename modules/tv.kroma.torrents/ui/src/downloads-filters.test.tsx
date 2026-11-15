@@ -4,7 +4,7 @@ import { AdminHostProvider, ModuleScope } from '@kromatv/module-sdk';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DownloadFilters } from './downloads-filters';
+import { DownloadFilters } from './downloads-filters.component';
 import type { DownloadQuery, DownloadStatsView } from './schemas';
 
 const inputHost = createInputTestHost();

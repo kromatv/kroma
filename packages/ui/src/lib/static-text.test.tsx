@@ -2,7 +2,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { StyleSheet, Text } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
-import { isStaticText, StaticText } from './static-text';
+import { isStaticText, StaticText } from './static-text.component';
 
 afterEach(cleanup);
 

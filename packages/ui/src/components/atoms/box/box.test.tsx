@@ -2,7 +2,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { declared } from '#ui/testing';
-import { Box } from './box';
+import { Box } from './box.component';
 
 afterEach(cleanup);
 

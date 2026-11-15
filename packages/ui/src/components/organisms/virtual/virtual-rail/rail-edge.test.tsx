@@ -3,7 +3,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { declared } from '#ui/testing';
-import { edgeWidth, RailEdge } from './rail-edge';
+import { edgeWidth, RailEdge } from './rail-edge.component';
 
 afterEach(cleanup);
 

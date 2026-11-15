@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { KROMA, KROMA_LIGHT } from '#ui/core/theme';
 import { onScreen } from '#ui/testing';
 import { createStyleTestHost } from '#ui/testing-style';
-import { WatchedBadge } from './watched-badge';
+import { WatchedBadge } from './watched-badge.component';
 
 const styleHost = createStyleTestHost();
 const { render, setTheme } = styleHost;

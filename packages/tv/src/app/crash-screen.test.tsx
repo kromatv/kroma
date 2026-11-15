@@ -3,7 +3,7 @@
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CrashScreen } from '#tv/app/crash-screen';
+import { CrashScreen } from '#tv/app/crash-screen.component';
 import { EnvProvider } from '#tv/app/providers/env';
 
 afterEach(cleanup);

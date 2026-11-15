@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 //
-// `./shake` under the project that picks the `.web` twin, which is the only
+// `./shake.hook` under the project that picks the `.web` twin, which is the only
 // resolution its one caller ever gets.
 
 import { cleanup, render } from '@testing-library/react';
 import { AccessibilityInfo, Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { useShake } from './shake';
+import { useShake } from './shake.hook';
 
 // Two react-native-web facts this file is built on: it picks a mock Animated
 // that never touches the driver when NODE_ENV is `test`, and it warns about the

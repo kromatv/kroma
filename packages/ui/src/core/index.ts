@@ -48,11 +48,11 @@ export type { ThemeMode } from './theme-mode';
 export { applyMode, readMode, resolveMode, writeMode } from './theme-mode';
 export * from './tokens';
 export type { AnySv, Resolved, StyleDecl, Variant, VariantProps, VariantSource } from './types';
-export { useBreakpoint, useBreakpointStep } from './use-breakpoint';
+export { useBreakpoint, useBreakpointStep } from './use-breakpoint.hook';
 export {
   ThemeProvider,
   useSystemGround,
   useTheme,
   useThemeControls,
   useThemeVersion,
-} from './use-theme';
+} from './use-theme.hook';

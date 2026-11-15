@@ -4,8 +4,8 @@ import { renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { KitProvider } from '#ui/configure';
-import { FocusScope } from '#ui/lib/focus-scope';
-import { type SurfacePresentation, useSurfacePresentation } from './surface-presentation';
+import { FocusScope } from '#ui/lib/focus-scope.component';
+import { type SurfacePresentation, useSurfacePresentation } from './surface-presentation.hook';
 
 function unscoped(presentation?: SurfacePresentation, surfaces: SurfacePresentation = 'auto') {
   return renderHook(() => useSurfacePresentation(presentation), {

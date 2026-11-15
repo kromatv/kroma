@@ -15,9 +15,9 @@ vi.mock('#tv/app/providers/connection', () => ({
   useConnection: () => ({ client: null, online: true }),
 }));
 // Late-mounting in its own right, and not what this file is about.
-vi.mock('#tv/features/cast/cast-remotes', () => ({ CastRemotes: () => null }));
+vi.mock('#tv/features/cast/cast-remotes.component', () => ({ CastRemotes: () => null }));
 
-const { TvTopNav } = await import('#tv/features/catalog/home/top-nav');
+const { TvTopNav } = await import('#tv/features/catalog/home/top-nav.component');
 
 afterEach(cleanup);
 

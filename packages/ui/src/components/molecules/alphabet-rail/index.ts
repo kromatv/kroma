@@ -3,5 +3,5 @@ export type {
   AlphabetRailRootProps,
   AlphabetRailSize,
   LetterRange,
-} from './alphabet-rail';
-export { AlphabetRail } from './alphabet-rail';
+} from './alphabet-rail.component';
+export { AlphabetRail } from './alphabet-rail.component';

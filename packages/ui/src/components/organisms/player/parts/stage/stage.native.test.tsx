@@ -6,9 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import { DEFAULT_SUB_APPEARANCE } from '../../lib/subtitle-appearance';
 import { fakeController } from '../../player.fixture';
-import { Stage } from './stage';
+import { Stage } from './stage.component';
 
-vi.mock('#ui/lib/svg', () => ({ Svg: () => null, Circle: () => null }));
+vi.mock('#ui/lib/svg.component', () => ({ Svg: () => null, Circle: () => null }));
 
 function stage(settingsShrink: boolean) {
   const timing = vi.spyOn(Animated, 'timing');

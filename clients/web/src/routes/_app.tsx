@@ -1,16 +1,16 @@
 import { CastProvider } from '@kromatv/ui';
 import { Box, classes, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
-import { MobileTopbar, Sidebar } from '#web/features/catalog/sidebar';
+import { CatalogModalHosts } from '#web/features/catalog/modal-hosts.component';
+import { MobileTopbar, Sidebar } from '#web/features/catalog/sidebar.component';
 import { useNotificationStream } from '#web/features/notifications/use-notifications';
-import { CastBar } from '#web/features/playback/cast/cast-bar';
+import { CastBar } from '#web/features/playback/cast/cast-bar.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
-import { useRequireAuth } from '#web/shared/lib/require-auth';
+import { useRequireAuth } from '#web/shared/lib/require-auth.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
-import { CastPicker } from '#web/shared/ui/cast-picker';
-import { DirectOffer } from '#web/shared/ui/direct-offer';
+import { CastPicker } from '#web/shared/ui/cast-picker.component';
+import { DirectOffer } from '#web/shared/ui/direct-offer.component';
 import { CAST_PICKER_Z } from '#web/shared/ui/page';
 
 export const Route = createFileRoute('/_app')({

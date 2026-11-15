@@ -1,6 +1,6 @@
 import { stillArt } from '#ui/lib/sample-art';
 
-import { UP_NEXT_COLUMNS } from './up-next-card';
+import { UP_NEXT_COLUMNS } from './up-next-card.component';
 
 export /** The sheet's own row, as data: an episode carries its own id, so the row keys
  *  on the episode rather than on where it happens to sit. */

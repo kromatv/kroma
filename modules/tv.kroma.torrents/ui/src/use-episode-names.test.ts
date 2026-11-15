@@ -3,7 +3,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EpisodeInfo } from './schemas';
-import { useEpisodeNames } from './use-episode-names';
+import { useEpisodeNames } from './use-episode-names.hook';
 
 const keys: (readonly unknown[] | null)[] = [];
 const episodes = vi.fn();
@@ -19,7 +19,7 @@ vi.mock('@kromatv/module-sdk', () => ({
   },
 }));
 
-vi.mock('./api', () => ({ useTorrentsApi: () => ({ episodes }) }));
+vi.mock('./api.hook', () => ({ useTorrentsApi: () => ({ episodes }) }));
 
 function info(episode: number, name: string): EpisodeInfo {
   return { episode, name, overview: null, airDate: null, stillUrl: null };

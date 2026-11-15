@@ -5,7 +5,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ModuleFailed } from './page-states';
+import { ModuleFailed } from './page-states.component';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <I18nProvider locale="en">{children}</I18nProvider>

@@ -4,7 +4,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setEngine } from '../engine/engine';
 import { testEngine } from '../testing';
-import { LocalePicker } from './locale-picker';
+import { LocalePicker } from './locale-picker.component';
 
 afterEach(() => {
   cleanup();

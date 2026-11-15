@@ -4,8 +4,12 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ServerProbe } from '#tv/app/use-servers-health';
-import { ActionRow, ServerRow, ServerRowSkeleton } from '#tv/features/accounts/server-row';
+import type { ServerProbe } from '#tv/app/use-servers-health.hook';
+import {
+  ActionRow,
+  ServerRow,
+  ServerRowSkeleton,
+} from '#tv/features/accounts/server-row.component';
 
 const inputHost = createInputTestHost();
 

@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { declared, layout } from '#ui/testing';
-import { NavPill, type NavPillRootProps } from './nav-pill';
+import { NavPill, type NavPillRootProps } from './nav-pill.component';
 
 afterEach(cleanup);
 

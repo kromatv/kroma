@@ -13,7 +13,7 @@ import {
   type TvScreens,
   useNav,
 } from '#tv/app/router';
-import { TvGenres } from '#tv/features/catalog/tv-genres';
+import { TvGenres } from '#tv/features/catalog/tv-genres.component';
 
 const inputHost = createInputTestHost();
 

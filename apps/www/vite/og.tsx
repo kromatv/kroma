@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { render } from 'takumi-js';
 import { Renderer } from 'takumi-js/node';
 import type { Plugin } from 'vite';
-import { OgCard } from './og-card.tsx';
+import { OgCard } from './og-card.component.tsx';
 import { OG_CARDS } from './og-cards.ts';
 
 // The Open Graph social cards, one PNG per locale, emitted into `dist/client`

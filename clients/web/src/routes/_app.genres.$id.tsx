@@ -13,13 +13,13 @@ import { Box, EmptyState, genreIcon, PageHeader } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useMemo } from 'react';
-import { BrowseBar } from '#web/features/catalog/browse-bar';
-import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
+import { BrowseBar } from '#web/features/catalog/browse-bar.component';
+import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 interface GenreSearch {
   sort?: SortMode;

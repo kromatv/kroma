@@ -20,7 +20,7 @@ const H = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('#tv/features/playback/player/use-stall-guard', () => ({
+vi.mock('#tv/features/playback/player/use-stall-guard.hook', () => ({
   useStallGuard: () => H.stalled,
 }));
 
@@ -42,13 +42,14 @@ const BACKEND = {
   },
 };
 
-vi.mock('#tv/features/playback/player/use-resolved-start', () => ({
+vi.mock('#tv/features/playback/player/use-resolved-start.hook', () => ({
   useResolvedStart: () => ({ startSec: 0, resumedAt: null, setStartSec: vi.fn() }),
 }));
 
 vi.mock('#tv/features/playback/player/vlc-plane', () => ({ vlcAvailable: () => H.vlc }));
 
-const { useEngineLifecycle } = await import('#tv/features/playback/player/use-engine-lifecycle');
+const { useEngineLifecycle } =
+  await import('#tv/features/playback/player/use-engine-lifecycle.hook');
 
 const CLIENT = fakeClient();
 const ITEM = { id: 'vid1', durationMs: 7_200_000 } as unknown as MediaItem;

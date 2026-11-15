@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { useIndexerApi } from './api';
+import { useIndexerApi } from './api.hook';
 import indexerModule from './module';
 
 describe('indexerModule', () => {

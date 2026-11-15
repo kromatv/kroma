@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppIdentity } from '@kromatv/client';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
-import { CompatGate } from './compat-gate';
+import { CompatGate } from './compat-gate.component';
 
 afterEach(() => {
   cleanup();

@@ -11,7 +11,7 @@ import {
   subtitleRowLabel,
   subtitleOptions,
 } from './track-options';
-import type { Subtitles } from './use-subtitles';
+import type { Subtitles } from './use-subtitles.hook';
 
 const NAMES: Record<string, string> = {
   'lang.fr': 'Français',

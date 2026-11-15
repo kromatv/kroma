@@ -1,6 +1,6 @@
 import { RequestId } from '@kromatv/client/requests';
 import { createFileRoute } from '@tanstack/react-router';
-import { RequestDetailPage } from '#web/features/admin/request-detail';
+import { RequestDetailPage } from '#web/features/admin/request-detail.component';
 
 export const Route = createFileRoute('/admin/requests/$id')({
   component: RequestDetailRoute,

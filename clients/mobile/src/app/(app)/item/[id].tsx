@@ -17,12 +17,12 @@ import {
   DetailHero,
   GenreChips,
   MetaBadge,
-} from '#mobile/components/detail';
+} from '#mobile/components/detail.component';
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { SplitColumns, useGutters } from '#mobile/lib/layout';
 import { routeParam } from '#mobile/lib/nav';
-import { usePlay } from '#mobile/lib/play';
+import { usePlay } from '#mobile/lib/play.hook';
 import { useClient } from '#mobile/lib/session';
 import { posterWidth, spacing, type } from '#mobile/lib/theme';
 

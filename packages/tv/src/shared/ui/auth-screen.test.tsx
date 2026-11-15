@@ -6,7 +6,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { type ReactNode, useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TvNavProvider, useNav } from '#tv/app/router';
-import { AuthScreen } from '#tv/shared/ui/auth-screen';
+import { AuthScreen } from '#tv/shared/ui/auth-screen.component';
 
 const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 

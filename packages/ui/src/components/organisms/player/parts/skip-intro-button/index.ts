@@ -1,1 +1,1 @@
-export * from './skip-intro-button';
+export * from './skip-intro-button.component';

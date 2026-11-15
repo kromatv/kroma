@@ -2,7 +2,7 @@
 
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useVolumeFlash } from './use-volume-flash';
+import { useVolumeFlash } from './use-volume-flash.hook';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());

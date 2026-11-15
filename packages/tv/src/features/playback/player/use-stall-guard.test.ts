@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TvEngine } from '#tv/features/playback/player/engine';
-import { useStallGuard } from '#tv/features/playback/player/use-stall-guard';
+import { useStallGuard } from '#tv/features/playback/player/use-stall-guard.hook';
 
 const POLL_MS = 500;
 const RUNG_MS = 2000;

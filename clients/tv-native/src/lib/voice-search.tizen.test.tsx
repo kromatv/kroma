@@ -36,7 +36,7 @@ vi.mock('@kromatv/react-native-tv/tizen/mic-button', () => ({ MicButton: mic.Mic
 
 async function load() {
   vi.resetModules();
-  return import('./voice-search.tizen');
+  return import('./voice-search.hook.tizen');
 }
 
 function heard(transcript: string) {

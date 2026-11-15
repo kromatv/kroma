@@ -7,7 +7,7 @@ import { I18nProvider } from '#ui/services/i18n';
 import { DEFAULT_SUB_APPEARANCE } from '../../lib/subtitle-appearance';
 import { fakeController } from '../../player.fixture';
 import type { PlayerController } from '../../types';
-import { Stage } from './stage';
+import { Stage } from './stage.component';
 
 function stage(settingsShrink: boolean, controller: PlayerController = fakeController()) {
   const timing = vi.spyOn(Animated, 'timing');

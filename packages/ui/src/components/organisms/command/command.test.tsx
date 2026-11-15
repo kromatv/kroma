@@ -5,8 +5,8 @@ import { type ReactNode, StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { layout, onScreen } from '#ui/testing';
-import { Command } from './command';
-import { useCommandResults } from './command-context';
+import { Command } from './command.component';
+import { useCommandResults } from './command-context.hook';
 import { type CommandItem, METRICS, offsetOf, sectionsOf } from './command-list';
 
 const at = (label: string, group: string): CommandItem => ({

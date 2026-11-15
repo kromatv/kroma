@@ -6,7 +6,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { IconButton } from '#ui/components/atoms/icon-button';
 
-import { ChoiceList } from './choice-list';
+import { ChoiceList } from './choice-list.component';
 
 export const QUALITIES = [
   { value: 'original', label: 'Original', hint: 'The file as it is, no transcoding' },

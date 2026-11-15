@@ -9,7 +9,7 @@ const H = vi.hoisted(() => {
 });
 vi.mock('#tv/app/router', () => ({ useClient: () => H.client }));
 
-import { usePersonCredits } from './use-person-credits';
+import { usePersonCredits } from './use-person-credits.hook';
 
 const DUNE = { type: 'movie', item: { id: 'm1', title: 'Dune' } };
 

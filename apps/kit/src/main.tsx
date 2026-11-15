@@ -3,7 +3,7 @@ import '@kromatv/ui/css';
 import { createIconLibrary, IconLibraryProvider } from '@kromatv/ui/kit';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Kit } from './config';
+import { Kit } from './config.component';
 
 function Root() {
   const [library] = useState(() =>

@@ -3,7 +3,7 @@ import { Box, Button, EmptyState, If } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
-import { MoviePoster, ShowPoster } from '#web/features/catalog/cards';
+import { MoviePoster, ShowPoster } from '#web/features/catalog/cards.component';
 import {
   filterSavedTitles,
   isSavedKind,
@@ -20,18 +20,18 @@ import {
   savedFacets,
   sortSavedTitles,
 } from '#web/features/catalog/saved-titles';
-import { SavedTitlesBar } from '#web/features/catalog/saved-titles-bar';
-import { SavedTitlesHero } from '#web/features/catalog/saved-titles-hero';
-import { useSavedTitles } from '#web/features/catalog/use-saved-titles';
-import { DiscoverCard } from '#web/features/requests/discover-card';
+import { SavedTitlesBar } from '#web/features/catalog/saved-titles-bar.component';
+import { SavedTitlesHero } from '#web/features/catalog/saved-titles-hero.component';
+import { useSavedTitles } from '#web/features/catalog/use-saved-titles.hook';
+import { DiscoverCard } from '#web/features/requests/discover-card.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useMyList } from '#web/shared/lib/mylist';
 import { useWatched } from '#web/shared/lib/watched';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
-import { RouteLink } from '#web/shared/ui/route-link';
-import { TileCaption } from '#web/shared/ui/tile-caption';
-import { TileGrid } from '#web/shared/ui/tile-grid';
+import { RouteLink } from '#web/shared/ui/route-link.component';
+import { TileCaption } from '#web/shared/ui/tile-caption.component';
+import { TileGrid } from '#web/shared/ui/tile-grid.component';
 
 const NO_FILTER: SavedFilter = { kind: 'all', unavailableOnly: false };
 

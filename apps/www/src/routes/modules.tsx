@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Container } from '#site/components/container';
-import { AccentHeading } from '#site/components/home/heading';
-import { CatalogGrid, RegistryNote } from '#site/components/modules/catalog-grid';
-import { HowItWorks, InstallFlow } from '#site/components/modules/how-it-works';
+import { Container } from '#site/components/container.component';
+import { AccentHeading } from '#site/components/home/heading.component';
+import { CatalogGrid, RegistryNote } from '#site/components/modules/catalog-grid.component';
+import { HowItWorks, InstallFlow } from '#site/components/modules/how-it-works.component';
 import { getLocale } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';

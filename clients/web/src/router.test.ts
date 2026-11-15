@@ -16,7 +16,7 @@ vi.mock('#web/routeTree.gen', async () => {
   const { createRootRoute } = await import('@tanstack/react-router');
   return { routeTree: createRootRoute() };
 });
-vi.mock('#web/features/errors/error-page', () => ({
+vi.mock('#web/features/errors/error-page.component', () => ({
   NotFound: () => null,
   RouteError: () => null,
 }));

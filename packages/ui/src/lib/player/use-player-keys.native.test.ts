@@ -59,7 +59,7 @@ vi.mock('#ui/lib/focus-remote', () => ({
   },
 }));
 
-import { usePlayerKeys } from './use-player-keys';
+import { usePlayerKeys } from './use-player-keys.hook';
 
 const params = (tag: string) => ({ tag }) as never;
 
@@ -343,7 +343,7 @@ describe('on mainline React Native, where the remote surface does not exist', ()
       useTVEventHandler: undefined,
     }));
 
-    const { usePlayerKeys: usePhoneKeys } = await import('./use-player-keys');
+    const { usePlayerKeys: usePhoneKeys } = await import('./use-player-keys.hook');
     // The phone player renders the same component tree; the hook count must not
     // change between builds, and the missing menu switch must not throw.
     const { unmount } = renderHook(() => usePhoneKeys(params('phone')));

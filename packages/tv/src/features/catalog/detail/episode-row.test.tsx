@@ -4,7 +4,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { EpisodeRow } from './episode-row';
+import { EpisodeRow } from './episode-row.component';
 
 const episode = {
   id: 'ep1',

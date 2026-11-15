@@ -11,7 +11,7 @@ vi.mock('expo-web-browser', () => browser);
 const made = vi.hoisted(() => ({ client: null as unknown }));
 vi.mock('#mobile/lib/device', () => ({ makeClient: () => made.client }));
 
-import { useProviderGate } from './sign-in-providers';
+import { useProviderGate } from './sign-in-providers.hook';
 
 const user = {
   id: 'u1',

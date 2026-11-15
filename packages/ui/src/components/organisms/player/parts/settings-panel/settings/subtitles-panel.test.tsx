@@ -13,7 +13,7 @@ import type { PlayerSubtitleGeneration } from '#ui/components/organisms/player/m
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { I18nProvider } from '#ui/services/i18n';
 import type { SubtitleGenBundle } from './gen';
-import { SubtitlesPanel } from './subtitles-panel';
+import { SubtitlesPanel } from './subtitles-panel.component';
 
 afterEach(cleanup);
 

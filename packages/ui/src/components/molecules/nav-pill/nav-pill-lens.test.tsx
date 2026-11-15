@@ -4,7 +4,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { declared } from '#ui/testing';
 import type { LensRect } from './nav-pill-context';
-import { Lens } from './nav-pill-lens';
+import { Lens } from './nav-pill-lens.component';
 
 const HOME: LensRect = { x: 8, y: 4, width: 96, height: 44 };
 const SEARCH: LensRect = { x: 128, y: 4, width: 120, height: 44 };

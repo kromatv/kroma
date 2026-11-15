@@ -5,9 +5,9 @@ import { act } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
 
-import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
 import { declared, wearsRing } from '#ui/testing';
-import { TextField } from './text-field';
+import { TextField } from './text-field.component';
 
 afterEach(cleanup);
 

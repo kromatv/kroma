@@ -7,7 +7,7 @@
 
 import type { ReactNode } from 'react';
 import { Children, isValidElement } from 'react';
-import { Actions, Media, Panel, Subtitle, Title, Warning } from './player-faces';
+import { Actions, Media, Panel, Subtitle, Title, Warning } from './player-faces.component';
 import {
   Credits,
   type PlayerCreditsProps,
@@ -25,7 +25,7 @@ import {
   Subtitles,
   Transport,
   UpNext,
-} from './player-settings';
+} from './player-settings.component';
 
 export interface PlayerSlots {
   media: ReactNode;
@@ -104,8 +104,8 @@ export type {
   PlayerSubtitleProps,
   PlayerTitleProps,
   PlayerWarningProps,
-} from './player-faces';
-export { PlayerScope } from './player-scope';
+} from './player-faces.component';
+export { PlayerScope } from './player-scope.component';
 export type {
   PlayerCreditsProps,
   PlayerPostPlayProps,

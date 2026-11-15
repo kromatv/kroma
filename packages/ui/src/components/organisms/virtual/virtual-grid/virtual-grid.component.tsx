@@ -1,0 +1,287 @@
+// <VirtualGrid>: the browse screens' poster grid, mounting only the rows near
+// the viewport out of a library of thousands.
+//
+// The columns are auto-filled from the grid's own measured box, in <Grid>'s
+// vocabulary (`min` / `columns` / `gap`), rather than computed by the caller
+// against a fixed stage: a television is 1920 wide, a desktop window is
+// whatever the user dragged it to, and a fixed column count on the second one
+// runs the last tiles off the right edge.
+
+import { NavigatorNode, NavigatorView, type NodeHandle } from '@kromatv/spatial-nav/react';
+import {
+  type ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
+import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
+import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
+import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip.component';
+import { SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
+import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { FocusReporter } from '#ui/lib/focus-report';
+import { usePerfSampler } from '#ui/lib/perf-provider.component';
+import { ScrolledReport } from '#ui/lib/scrolled-report';
+import { useStableCallback } from '#ui/lib/stable-callback.hook';
+import { useTrailingRow } from '#ui/lib/trailing-row.hook';
+import { GridRow } from './grid-row.component';
+import {
+  catchUpWindow,
+  freeOffset,
+  type GridRows,
+  rowMetrics,
+  rowTop,
+  stripOffset,
+} from './grid-rows';
+import { usePrefetchRows } from './use-prefetch-rows.hook';
+import { useWheelScroll } from './use-wheel-rows.hook';
+import type { VirtualGridProps } from './virtual-grid-props';
+
+const boxesDefinition = styles({
+  noPointer: { pointerEvents: 'none' },
+  viewport: { flex: true, minHeight: 0 },
+  row: { position: 'absolute', left: 0 },
+  header: { position: 'absolute', left: 0, top: 0 },
+});
+// Every row is placed at its own offset down the strip, so only the mounted
+// ones have to exist and they still land where the whole list would put them.
+
+// Rows left before the grid asks for more. Enough that the next page is in
+// hand by the time a held D-pad reaches it.
+const END_THRESHOLD = 3;
+
+/**
+ * A vertically scrolling grid of auto-filled tiles, rendering only the rows near
+ * the viewport.
+ *
+ * The strip is translated rather than scrolled, so nothing clips without this
+ * component's `clipStyles.column` box.
+ */
+function VirtualGrid<T>({
+  data,
+  min,
+  columns,
+  ratio = 1,
+  itemHeight,
+  gap = 24,
+  rowGap,
+  px = 0,
+  pt = 0,
+  width,
+  renderItem,
+  art,
+  header,
+  headerHeight,
+  style,
+  onEndReached,
+  initialIndex,
+  onScrolledChange,
+}: Readonly<VirtualGridProps<T>>) {
+  const clipStylesScoped = useStyles(clipStyles);
+
+  const boxes = useStyles(boxesDefinition);
+
+  const perf = usePerfSampler();
+  const viewport = useRef<View>(null);
+  // What to divide until the grid has measured its own box. A television never
+  // resizes, so the measurement settles on the first layout and never moves
+  // again; a desktop window pays one re-render per width it comes to rest at,
+  // which is why the box is rounded before it is compared.
+  const [screen] = useState(() => Dimensions.get('window').height);
+  const [box, setBox] = useState({ width: 0, height: 0 });
+  const [focusedRow, setFocusedRow] = useState(0);
+
+  const nodes = useRef(new Map<number, NodeHandle>());
+  const wanted = useRef<number | null>(null);
+  const ringed = useRef<number | null>(null);
+
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    const measured = event.nativeEvent.layout;
+    const next = { width: Math.round(measured.width), height: Math.round(measured.height) };
+    setBox((current) =>
+      current.width === next.width && current.height === next.height ? current : next,
+    );
+  }, []);
+
+  const rowGapPx = rowGap ?? gap;
+  const geometry = useMemo(() => {
+    const roomWidth = box.width > 0 ? box.width : (width ?? 0);
+    const room = Math.max(0, roomWidth - px * 2);
+    const count = Math.max(1, columns ?? (min ? columnsFor(room, min, gap) : 1));
+    const cell = cellWidth(room, count, gap);
+    return { count, cell, pitch: (itemHeight ?? Math.round(cell * ratio)) + rowGapPx };
+  }, [columns, gap, itemHeight, box.width, min, px, ratio, rowGapPx, width]);
+
+  const hasHeader = Boolean(header) && Boolean(headerHeight);
+  const metrics = useMemo(
+    () =>
+      rowMetrics({
+        rows: Math.ceil(data.length / geometry.count),
+        pitch: geometry.pitch,
+        gap: rowGapPx,
+        header: hasHeader,
+        headerSize: headerHeight ?? 0,
+        viewport: box.height || screen,
+      }),
+    [
+      data.length,
+      geometry.count,
+      geometry.pitch,
+      rowGapPx,
+      hasHeader,
+      headerHeight,
+      box.height,
+      screen,
+    ],
+  );
+
+  const focusRow = useStableCallback((row: number) => {
+    const target = Math.min(Math.max(row, 0), Math.max(metrics.count - 1, 0));
+    wanted.current = target;
+    setFocusedRow(target);
+  });
+
+  // A row asked for before it exists: the window has to render it first, so
+  // this runs after every commit until the row REPORTS the ring. Asking once is
+  // not enough - a row registers, unregisters and registers again as the window
+  // settles, and the navigator hands the focus to a neighbour each time the row
+  // holding it leaves the tree. The header registers under row 0 like any other,
+  // so a request can always name something that will answer it.
+  useEffect(() => {
+    const row = wanted.current;
+    if (row === null) {
+      return;
+    }
+    if (ringed.current === row) {
+      wanted.current = null;
+      return;
+    }
+    nodes.current.get(row)?.focus();
+  });
+
+  // Mount-only: this is where the grid OPENS. Re-running on prop change would
+  // yank focus back out from under the D-pad.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- opening position, not a binding.
+  useEffect(() => {
+    if (initialIndex !== undefined) {
+      focusRow(initialIndex);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (metrics.count > 1 && focusedRow >= metrics.count - 1 - END_THRESHOLD) {
+      onEndReached?.();
+    }
+  }, [focusedRow, metrics.count, onEndReached]);
+
+  const settledRow = useTrailingRow(focusedRow, SETTLE_MS);
+
+  const onNode = useStableCallback((row: number, node: NodeHandle | null) => {
+    if (node) {
+      nodes.current.set(row, node);
+    } else {
+      nodes.current.delete(row);
+    }
+  });
+
+  const onHeaderNode = useStableCallback((node: NodeHandle | null) => onNode(0, node));
+
+  const onHeaderFocus = useStableCallback(() => {
+    ringed.current = 0;
+    setFocusedRow(0);
+  });
+
+  const onCellFocus = useStableCallback((index: number) => {
+    const row = Math.floor(index / geometry.count);
+    // Which cell took focus, for the on-screen read-out: a remote bug on a
+    // television has no inspector to ask.
+    perf?.markGridFocus(row, index % geometry.count);
+    ringed.current = row + metrics.headerRows;
+    setFocusedRow(row + metrics.headerRows);
+  });
+
+  const cell = geometry.cell;
+  const renderCell = useCallback(
+    (item: T, index: number) => (
+      <FocusReporter onFocus={onCellFocus} index={index}>
+        {renderItem(item, index, cell)}
+      </FocusReporter>
+    ),
+    [cell, onCellFocus, renderItem],
+  );
+
+  const contentStyle = useMemo<ViewStyle>(
+    () => ({ paddingHorizontal: px, paddingTop: pt, height: metrics.height }),
+    [px, pt, metrics.height],
+  );
+  const rowStyle = useMemo<ViewStyle>(
+    () => ({ ...boxes.row, flexDirection: 'row', gap }),
+    [gap, boxes.row],
+  );
+
+  const rows = useMemo<GridRows>(() => ({ focus: focusRow, focusedRow }), [focusRow, focusedRow]);
+  const lastRow = Math.max(0, metrics.count - metrics.headerRows - 1);
+  // While a gesture runs (fraction non-null) the pointer is shut out, or the
+  // navigator would focus whatever slides beneath the stationary cursor.
+  const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
+
+  const shown = catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
+  usePrefetchRows({ data, art, focusedRow, shown, metrics, columns: geometry.count, cell });
+  const offset =
+    fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
+  const scrolled = offset > 0;
+  const report = useContext(ScrolledReport);
+  const notify = onScrolledChange ?? report;
+  useEffect(() => {
+    notify?.(scrolled);
+  }, [scrolled, notify]);
+  const mounted: ReactElement[] = [];
+  for (let row = Math.max(shown.start, metrics.headerRows); row <= shown.end; row += 1) {
+    mounted.push(
+      <GridRow
+        key={row}
+        data={data}
+        first={(row - metrics.headerRows) * geometry.count}
+        columns={geometry.count}
+        row={row}
+        top={rowTop(row, metrics)}
+        style={rowStyle}
+        renderCell={renderCell}
+        onNode={onNode}
+      />,
+    );
+  }
+
+  return (
+    <View style={style ?? boxes.viewport} ref={viewport} onLayout={onLayout}>
+      {/* Inert on the inner clip, not the viewport: the wheel listener lives on
+          the viewport's node, and pointer-events none there would drop the pan
+          events too. */}
+      <View style={[clipStylesScoped.column, fraction === null ? null : boxes.noPointer]}>
+        {cell > 0 ? (
+          <MovingStrip axis="y" offset={offset} still={fraction !== null} style={contentStyle}>
+            <NavigatorView direction="vertical" alignInGrid>
+              {hasHeader && shown.start === 0 ? (
+                <NavigatorNode ref={onHeaderNode} index={0} orientation="horizontal">
+                  <FocusReporter onFocus={onHeaderFocus}>
+                    <View style={boxes.header}>{header}</View>
+                  </FocusReporter>
+                </NavigatorNode>
+              ) : null}
+              {mounted}
+            </NavigatorView>
+          </MovingStrip>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+export type { GridRows } from './grid-rows';
+export type { VirtualGridProps };
+export { VirtualGrid };

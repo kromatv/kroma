@@ -5,7 +5,7 @@ import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { InstallModal } from '#web/features/admin/module-install';
+import { InstallModal } from '#web/features/admin/module-install.component';
 import { createWebRuntime } from '#web/shared/lib/api';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 

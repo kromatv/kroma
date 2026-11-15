@@ -9,9 +9,9 @@ import {
 } from '@tanstack/react-router';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { PosterAction } from './poster-action-bar';
-import { PosterTile } from './poster-tile';
-import { RouteLink } from './route-link';
+import type { PosterAction } from './poster-action-bar.component';
+import { PosterTile } from './poster-tile.component';
+import { RouteLink } from './route-link.component';
 
 afterEach(cleanup);
 

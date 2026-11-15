@@ -5,7 +5,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CategoryRows, SubjectRow } from '#tv/features/reports/parts';
+import { CategoryRows, SubjectRow } from '#tv/features/reports/parts.component';
 
 const inputHost = createInputTestHost();
 

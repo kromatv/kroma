@@ -12,12 +12,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Checkbox } from '#ui/components/atoms/checkbox';
 import { Radio } from '#ui/components/atoms/radio';
 import { Switch } from '#ui/components/atoms/switch';
-import { ControlledFocusMirror } from '#ui/lib/controlled-focus-mirror';
+import { ControlledFocusMirror } from '#ui/lib/controlled-focus-mirror.component';
 
-import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

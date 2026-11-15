@@ -4,7 +4,7 @@
 import type { KromaClient } from '@kromatv/client';
 import { ItemId, type SubjectId } from '@kromatv/client/media';
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';
-import { useSignedInIds } from '#tv/app/providers/signed-in-ids';
+import { useSignedInIds } from '#tv/app/providers/signed-in-ids.hook';
 
 interface Watched {
   has: (id: SubjectId) => boolean;

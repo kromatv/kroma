@@ -4,8 +4,8 @@ import { renderHook } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ease } from '#ui/lib/ease';
-import { useSheetSlide } from './sheet-slide';
-import { useSheetSlide as useSheetSlideWeb } from './sheet-slide.web';
+import { useSheetSlide } from './sheet-slide.hook';
+import { useSheetSlide as useSheetSlideWeb } from './sheet-slide.hook.web';
 
 const PARK = 420;
 

@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-router';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { TopViewerCard } from '#web/features/admin/dashboard-top-viewer-card';
+import { TopViewerCard } from '#web/features/admin/dashboard-top-viewer-card.component';
 import { validateHistorySearch } from '#web/features/admin/history-query';
 
 afterEach(cleanup);

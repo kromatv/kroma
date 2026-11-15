@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { contentRoot, layout, onScreen } from '#ui/testing';
-import { VirtualGrid } from './virtual-grid';
+import { VirtualGrid } from './virtual-grid.component';
 
 const TILES = Array.from({ length: 60 }, (_, at) => ({ id: at }));
 

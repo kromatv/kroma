@@ -1,12 +1,12 @@
 import { site } from '@kromatv/site-meta';
 import { IconBook, IconBrandGithub, IconBug, IconCircleCheck, IconMail } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Button } from '#site/components/button';
-import { ContactCard } from '#site/components/contact/contact-card';
-import { Faq } from '#site/components/contact/faq';
-import { PageShell } from '#site/components/contact/page-shell';
+import { Button } from '#site/components/button.component';
+import { ContactCard } from '#site/components/contact/contact-card.component';
+import { Faq } from '#site/components/contact/faq.component';
+import { PageShell } from '#site/components/contact/page-shell.component';
 import { L } from '#site/components/localized-link';
-import { Rich } from '#site/components/rich';
+import { Rich } from '#site/components/rich.component';
 import { getLocale, localizePath, useLang } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';

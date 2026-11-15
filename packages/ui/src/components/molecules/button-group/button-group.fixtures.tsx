@@ -8,7 +8,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import { TextField } from '#ui/components/atoms/text-field';
 
-import { ButtonGroup } from './button-group';
+import { ButtonGroup } from './button-group.component';
 
 export function Caption({ children }: Readonly<{ children: string }>) {
   return (

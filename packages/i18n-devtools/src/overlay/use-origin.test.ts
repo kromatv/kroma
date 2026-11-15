@@ -3,7 +3,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { Origin } from './origin';
-import { useOrigin } from './use-origin';
+import { useOrigin } from './use-origin.hook';
 
 const AT: Origin = {
   url: '/src/who.tsx',

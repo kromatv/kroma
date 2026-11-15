@@ -5,10 +5,10 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
 
-import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
 import { RingScopeProvider } from '#ui/lib/ring-scope';
 import { declared } from '#ui/testing';
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 
 afterEach(() => {
   cleanup();

@@ -8,7 +8,7 @@ import { Text } from '#ui/components/atoms/text';
 import { breakpoint } from '#ui/core/tokens';
 import { declared } from '#ui/testing';
 import { createStyleTestHost } from '#ui/testing-style';
-import { InputGroup } from './input-group';
+import { InputGroup } from './input-group.component';
 
 const styleHost = createStyleTestHost();
 const { render, pinDesignWidth } = styleHost;

@@ -1,7 +1,7 @@
 import { Icon, type IconName, useTheme } from '@kromatv/ui/kit';
 import { type BottomTabBarProps, Tabs } from 'expo-router/js-tabs';
 import type { ColorValue } from 'react-native';
-import { PillTabBar } from '#mobile/components/pill-tab-bar';
+import { PillTabBar } from '#mobile/components/pill-tab-bar.component';
 import { useT } from '#mobile/lib/i18n';
 
 const renderTabBar = (props: BottomTabBarProps) => <PillTabBar {...props} />;

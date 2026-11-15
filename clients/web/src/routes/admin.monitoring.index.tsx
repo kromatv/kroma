@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { LibraryHubPage, type LibraryTab } from '#web/features/admin/library-hub';
+import { LibraryHubPage, type LibraryTab } from '#web/features/admin/library-hub.component';
 import { LibraryState } from '#web/features/admin/monitoring-index-model';
 
 const Search = z.object({

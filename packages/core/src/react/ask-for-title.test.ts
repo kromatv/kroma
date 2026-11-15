@@ -2,7 +2,7 @@
 import type { KromaClient } from '@kromatv/client';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { type AskedTitle, useAskForTitle } from './ask-for-title';
+import { type AskedTitle, useAskForTitle } from './ask-for-title.hook';
 
 const SINTEL: AskedTitle = { kind: 'movie', tmdbId: 45_745, requestStatus: null };
 

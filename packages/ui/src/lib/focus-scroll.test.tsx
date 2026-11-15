@@ -11,8 +11,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { wearsRing } from '#ui/testing';
 
-import { FocusRegion, FocusScope } from './focus-scope';
-import { FocusSlot } from './focus-scroll';
+import { FocusRegion, FocusScope } from './focus-scope.component';
+import { FocusSlot } from './focus-scroll.component';
 import { nearestOffset, pageOffset } from './scroll-offsets';
 
 const page = { viewport: 1080, content: 6480 };

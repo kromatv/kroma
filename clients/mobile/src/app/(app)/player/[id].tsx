@@ -18,8 +18,8 @@ import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { goBack, routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { PlayerBody } from '#mobile/player/player-body';
-import { PlayerStatusScreen } from '#mobile/player/player-status-screen';
+import { PlayerBody } from '#mobile/player/player-body.component';
+import { PlayerStatusScreen } from '#mobile/player/player-status-screen.component';
 import { nativePlaybackFailure, playbackFailureCopy } from '#mobile/player/playback-failure';
 
 const RESUME_MIN_MS = 30_000;

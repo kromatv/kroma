@@ -9,20 +9,22 @@ import type { HeroEntry } from '#web/shared/lib/queries';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 
-vi.mock('#web/features/catalog/featured-hero', () => ({
+vi.mock('#web/features/catalog/featured-hero.component', () => ({
   Hero: ({ entry }: { entry: HeroEntry }) => (
     <p>{`hero ${entry.type === 'movie' ? entry.movie.id : entry.show.id}`}</p>
   ),
   HeroSkeleton: () => <p>hero pending</p>,
 }));
-vi.mock('#web/features/catalog/continue-row', () => ({ ContinueRow: () => <p>continue</p> }));
-vi.mock('#web/features/catalog/home-sections', () => ({
+vi.mock('#web/features/catalog/continue-row.component', () => ({
+  ContinueRow: () => <p>continue</p>,
+}));
+vi.mock('#web/features/catalog/home-sections.component', () => ({
   HomeSections: ({ excludeId }: { excludeId: string | null }) => (
     <p>{`sections without ${excludeId}`}</p>
   ),
   SectionsSkeleton: () => <p>sections pending</p>,
 }));
-vi.mock('#web/features/catalog/cards', () => ({ ShowRail: () => <p>shows</p> }));
+vi.mock('#web/features/catalog/cards.component', () => ({ ShowRail: () => <p>shows</p> }));
 
 import { Route } from './_app.index';
 

@@ -8,7 +8,7 @@ import type { SettingsGroup } from '#tv/app/settings/groups';
 import { choiceItem, toggleItem } from '#tv/app/settings/items';
 import { TvNavProvider } from '#tv/app/router';
 import type { SettingsPane } from './panes';
-import { SettingsPanes } from './settings-panes';
+import { SettingsPanes } from './settings-panes.component';
 
 vi.mock('#tv/app/providers/handoff-beacon', () => ({ useHandoffBeacon: () => null }));
 

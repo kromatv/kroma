@@ -9,7 +9,7 @@ import type { DiscoveredTv } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NearbyTvList } from './nearby-tv-list';
+import { NearbyTvList } from './nearby-tv-list.component';
 
 afterEach(cleanup);
 

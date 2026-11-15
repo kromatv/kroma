@@ -3,8 +3,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { AccessibilityInfo, Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useShake } from './shake';
-import { useShake as useShakeWeb } from './shake.web';
+import { useShake } from './shake.hook';
+import { useShake as useShakeWeb } from './shake.hook.web';
 
 type Legs = Animated.CompositeAnimation[];
 
