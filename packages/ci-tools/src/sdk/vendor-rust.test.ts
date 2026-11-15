@@ -149,6 +149,18 @@ describe('standaloneCargoToml', () => {
     expect(out).toContain('testing = ["kroma-sqlite/testing", "dep:kroma-testing"]');
   });
 
+  it('takes a dropped feature out of the list that turned it on by default', () => {
+    const defaulted = MEMBER.replace(
+      '[features]\n',
+      '[features]\ndefault = ["engine", "storage"]\n',
+    );
+
+    const standalone = standaloneCargoToml(defaulted, WORKSPACE);
+
+    expect(standalone).toContain('default = ["storage"]');
+    expect(standalone).toContain('serde = { version = "1", features = ["derive"] }');
+  });
+
   it('takes the comment that introduced a dropped dependency with it', () => {
     expect(out).not.toContain('The whole core, for the two modules');
   });

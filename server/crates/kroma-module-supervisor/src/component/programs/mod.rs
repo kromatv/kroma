@@ -22,6 +22,8 @@ use kroma_http::egress::Gateway;
 use kroma_module_manifest::Helper;
 use kroma_wasm_host::{Command as Asked, Output, Processes};
 
+use crate::asked::Watch;
+
 use capture::{capture, drained, Captured};
 pub(in crate::component) use instance_programs::InstancePrograms;
 
@@ -51,6 +53,7 @@ pub(super) struct Programs {
     helpers: BTreeMap<String, Helper>,
     gateway: Gateway,
     may_run: bool,
+    watch: Watch,
     children: Mutex<HashMap<u64, Spawned>>,
     ended: Mutex<VecDeque<u64>>,
     next: AtomicU64,
@@ -84,6 +87,7 @@ impl Programs {
             helpers,
             gateway,
             may_run,
+            watch: Watch::default(),
             children: Mutex::new(HashMap::new()),
             ended: Mutex::new(VecDeque::new()),
             next: AtomicU64::new(0),
@@ -91,7 +95,14 @@ impl Programs {
         }
     }
 
+    pub(in crate::component) fn watched(mut self, watch: Watch) -> Self {
+        self.watch = watch;
+        self
+    }
+
     pub(super) fn check_allowed(&self, program: &str) -> Result<(), String> {
+        let granted = self.may_run && self.allowed.iter().any(|allowed| allowed == program);
+        self.watch.program(program, granted);
         if !self.may_run {
             return Err(format!(
                 "{} may not start programs: a third-party module stays contained",

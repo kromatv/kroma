@@ -84,7 +84,7 @@ struct SessionBody {
 async fn session_user<S: HostCtx + Clone>(
     State(host): State<S>,
     Json(body): Json<SessionBody>,
-) -> Json<Option<kroma_domain::User>> {
+) -> Json<Option<kroma_module_wire::User>> {
     Json(
         tokio::task::spawn_blocking(move || host.session_user(&body.token))
             .await
@@ -237,13 +237,13 @@ struct EpisodesQuery {
 async fn metadata_episodes<S: HostCtx>(
     State(host): State<S>,
     axum::extract::Query(params): axum::extract::Query<EpisodesQuery>,
-) -> Json<Vec<kroma_domain::metadata::EpisodeInfo>> {
+) -> Json<Vec<kroma_module_wire::EpisodeInfo>> {
     Json(host.metadata_episodes(params.tmdb_id, params.season))
 }
 
 async fn metadata_search<S: HostCtx>(
     State(host): State<S>,
     axum::extract::Query(params): axum::extract::Query<MetadataSearchQuery>,
-) -> Json<Vec<kroma_domain::metadata::MatchCandidate>> {
+) -> Json<Vec<kroma_module_wire::MatchCandidate>> {
     Json(host.metadata_candidates(&params.q, &params.kind, params.year))
 }

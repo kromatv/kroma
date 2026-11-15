@@ -11,7 +11,7 @@ it is too.
 | `types/<pkg>/` declarations | `packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav}` |
 | `types/react-native/` | the declaration files of the React Native fork the kit is typed against, so a module installs no React Native (it and its toolchain are most of a 250 MB `node_modules`; the runtime is the host's) |
 | `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kromatv/*` specifier and `react-native` onto `types/` |
-| `rust/` | the twelve crates a module links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
+| `rust/` | the thirteen crates a module links and the four `kroma audit` runs it on, out of `server/crates` (the SDK's own, not the server's) |
 | `templates/` | what `kroma create` renders |
 
 Every workspace package stays `private: true`; `bun run ci sdk stage` assembles
@@ -47,10 +47,17 @@ cargo does not walk up looking for one. The scaffolded `Cargo.toml` reads
 `path = "../node_modules/@kromatv/sdk/rust/kroma-module-sdk"`, so one `bun install`
 delivers both halves at one version.
 
-The closure is `kroma-module-sdk`, `kroma-module-runtime`, `kroma-module-host`,
-`kroma-module-manifest`, `kroma-module-macros`, `kroma-module-wire`,
-`kroma-media`, `kroma-sqlite`, `kroma-http`, `kroma-i18n`, `kroma-primitives`,
-`kroma-testing`.
+The closure a module links is `kroma-module-sdk`, `kroma-module-runtime`,
+`kroma-module-host`, `kroma-module-manifest`, `kroma-module-macros`,
+`kroma-module-wire`, `kroma-media`, `kroma-sqlite`, `kroma-sqlite-guest`,
+`kroma-http`, `kroma-i18n`, `kroma-primitives`, `kroma-testing`.
+
+Four more ride along for `kroma audit`, which starts a module the way the
+server does: `kroma-module-audit`, `kroma-module-supervisor`, `kroma-wasm-host`
+and `kroma-egress`. No module links them. Cargo builds them on the author's
+machine the first time `kroma audit` runs, wasmtime included, into the module's
+own target directory. The supervisor ships without its `core` feature, the one
+that knows the core database, so the rule below still holds.
 
 None of it is server code, and that is the rule the split enforces.
 `kroma-domain` and `kroma-db` carry the core's forty-table schema and every query

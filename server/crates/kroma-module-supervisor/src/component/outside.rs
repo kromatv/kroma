@@ -22,6 +22,7 @@ pub(super) struct Outside {
     pub(super) network: Arc<dyn NetworkPolicy>,
     pub(super) no_network: bool,
     pub(super) roots: Vec<Preopen>,
+    pub(super) watch: crate::asked::Watch,
 }
 
 fn header_pairs(headers: &[Header]) -> impl Iterator<Item = (&str, &str)> {
@@ -133,7 +134,9 @@ impl Outside {
     }
 
     fn holds_for_writing(&self, path: &Path) -> bool {
-        super::files::is_within(path, &self.roots, true)
+        let held = super::files::is_within(path, &self.roots, true);
+        self.watch.file(&path.to_string_lossy(), true, held);
+        held
     }
 }
 

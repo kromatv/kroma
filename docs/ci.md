@@ -30,6 +30,7 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ rust (server) ┐                               rust
        ├─ rust (modules n) ┴─ rust (one lcov)           rust
        ├─ rust (modules as components)                  rust
+       ├─ module audit                                  rust
        ├─ wasm host {ubuntu, macos, windows}            rust
        ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
        └─ required ◄── lanes + every job above but wasm host and sonar
@@ -104,6 +105,13 @@ target. The job runs on the rust lane and keeps no cache, since three more
 entries would push the 10 GB budget below over. It is not part of `required`.
 Locally, run `rustup target add wasm32-wasip2` once before `cargo test
 --workspace` in `server/`.
+
+`Module audit` runs `kroma audit` on every module a change can reach: `bun run
+ci rust audit --only <id,id>`. It builds each component, starts it alone behind
+a network that records every connection and lets none out, drives it, and fails
+when a module attempted a connection, a program or a file outside what its
+manifest declares. The log names the attempt. See "Auditing a module on its
+own" in [`module-security.md`](module-security.md).
 
 `Rust (modules as components)` runs the tests of every module a change can
 reach a second time, built for `wasm32-wasip2` with the features each bundle

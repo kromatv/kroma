@@ -4,6 +4,8 @@ use std::path::{Component, Path, PathBuf};
 
 use kroma_wasm_host::{Files, Preopen};
 
+use crate::asked::Watch;
+
 fn is_plain(path: &Path) -> bool {
     path.is_absolute() && !path.components().any(|part| part == Component::ParentDir)
 }
@@ -39,11 +41,26 @@ pub(super) fn is_within(path: &Path, roots: &[Preopen], for_writing: bool) -> bo
 
 pub(super) struct ModuleFiles {
     roots: Vec<Preopen>,
+    watch: Watch,
 }
 
 impl ModuleFiles {
     pub(super) fn new(roots: Vec<Preopen>) -> Self {
-        Self { roots }
+        Self {
+            roots,
+            watch: Watch::default(),
+        }
+    }
+
+    pub(super) fn watched(mut self, watch: Watch) -> Self {
+        self.watch = watch;
+        self
+    }
+
+    fn holds(&self, path: &str, writing: bool) -> bool {
+        let held = is_within(Path::new(path), &self.roots, writing);
+        self.watch.file(path, writing, held);
+        held
     }
 }
 
@@ -72,21 +89,20 @@ fn reflink(_source: &Path, _destination: &Path) -> std::io::Result<()> {
 
 impl Files for ModuleFiles {
     fn canonical(&self, path: &str) -> Option<String> {
-        let path = Path::new(path);
-        if !is_within(path, &self.roots, false) {
+        if !self.holds(path, false) {
             return None;
         }
-        std::fs::canonicalize(path)
+        std::fs::canonicalize(Path::new(path))
             .ok()
             .map(|real| real.to_string_lossy().into_owned())
     }
 
     fn copy(&self, source: &str, destination: &str) -> Result<u64, String> {
         let (from, to) = (Path::new(source), Path::new(destination));
-        if !is_within(from, &self.roots, false) {
+        if !self.holds(source, false) {
             return Err(format!("{source} is not in a folder this module holds"));
         }
-        if !is_within(to, &self.roots, true) {
+        if !self.holds(destination, true) {
             return Err(format!("{destination} is not in a folder this module may write"));
         }
         if reflink(from, to).is_ok() {

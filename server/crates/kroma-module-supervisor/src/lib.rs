@@ -10,7 +10,9 @@ use kroma_module_host::Contribution;
 use kroma_module_manifest::ModuleManifest;
 use serde_json::Value;
 
+#[cfg(feature = "core")]
 mod adopt;
+mod asked;
 #[cfg(unix)]
 mod component;
 #[cfg(unix)]
@@ -37,6 +39,7 @@ mod tokens;
 mod watch;
 
 #[cfg(unix)]
+pub use asked::{Asked, AskedSink};
 pub use component::{FolderRoots, Folders};
 pub use endpoint::Endpoint;
 pub use frontend::Frontend;
@@ -96,6 +99,7 @@ pub struct Supervisor {
     wasm: std::sync::OnceLock<kroma_wasm_host::WasmHost>,
     #[cfg(unix)]
     worker_lifetime: RwLock<std::time::Duration>,
+    watching: std::sync::OnceLock<AskedSink>,
 }
 
 impl Supervisor {
@@ -119,9 +123,16 @@ impl Supervisor {
             wasm: std::sync::OnceLock::new(),
             #[cfg(unix)]
             worker_lifetime: RwLock::new(component::WORKER_LIFETIME),
+            watching: std::sync::OnceLock::new(),
         });
         supervisor.keep_installs_apart();
         supervisor
+    }
+
+    /// Sends every program and file a module asks the host for to `sink`, from
+    /// the next module started. Set once: a later call changes nothing.
+    pub fn watch(&self, sink: AskedSink) {
+        let _ = self.watching.set(sink);
     }
 
     fn own_dir(&self, id: &str) -> PathBuf {
@@ -140,6 +151,7 @@ impl Supervisor {
     /// its own file, before the component that will read it starts. Best-effort:
     /// a failure leaves the rows in the core database and is logged, because a
     /// module that starts without its old rows is worse than one that starts late.
+    #[cfg(feature = "core")]
     fn adopt_declared_tables(
         &self,
         id: &str,
@@ -170,6 +182,15 @@ impl Supervisor {
                 );
             }
         }
+    }
+
+    #[cfg(not(feature = "core"))]
+    fn adopt_declared_tables(
+        &self,
+        _id: &str,
+        _storage: Option<&kroma_module_manifest::Storage>,
+        _databases: &std::path::Path,
+    ) {
     }
 
     /// A lifecycle line in the module's OWN log stream. `tracing` would file it

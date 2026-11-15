@@ -125,5 +125,5 @@ anything from there.
 - Never log or forward a URL path, a query string or a credential you were given.
 - Fail closed: a network you cannot keep up says `up: false`, a check you cannot
   make answers `block` if you are required.
-- Once `kroma audit` ships (#495), run it on your module before you publish it,
-  and read what it says you attempted.
+- Run `kroma audit` on your module before you publish it, and read what it says
+  you attempted.
