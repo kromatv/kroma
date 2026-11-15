@@ -2,8 +2,10 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { $ } from 'bun';
+import { z } from 'zod';
 import { summary } from './actions';
 import { readRepo } from './event';
+import { type Alias, aliasesOf, keyAliases } from './key-aliases';
 import { root } from './root';
 import { codeSummary, DependencyReport, dependencySummary, oneRun, SarifLog } from './snyk-results';
 
@@ -25,15 +27,26 @@ async function snyk(args: string[], passing: readonly number[]): Promise<void> {
 
 const repoUrl = () => `https://github.com/${readRepo().slug}`;
 
-function requireYarnLock(): void {
+const Root = z.object({ workspaces: z.array(z.string()) });
+
+function workspaceAliases(): Alias[] {
+  const { workspaces } = Root.parse(readJson(join(root, 'package.json')));
+  const manifests = workspaces.flatMap((glob) =>
+    Array.from(new Bun.Glob(`${glob}/package.json`).scanSync({ cwd: root })),
+  );
+  return ['package.json', ...manifests].flatMap((file) => aliasesOf(readJson(join(root, file))));
+}
+
+function prepareYarnLock(): void {
   const yarn = join(root, 'yarn.lock');
   if (!existsSync(yarn) || statSync(yarn).mtimeMs < statSync(join(root, 'bun.lock')).mtimeMs) {
     throw new Error('yarn.lock is missing or older than bun.lock: run `bun install --yarn` first');
   }
+  writeFileSync(yarn, keyAliases(readFileSync(yarn, 'utf8'), workspaceAliases()));
 }
 
 async function testDependencies(): Promise<void> {
-  requireYarnLock();
+  prepareYarnLock();
   const json = join(REPORTS, 'open-source.json');
   const sarif = join(REPORTS, 'open-source.sarif');
   await snyk(

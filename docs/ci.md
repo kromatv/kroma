@@ -149,8 +149,11 @@ why these jobs exist.
 `package.json`, or `patches/**`. Snyk reads npm, pnpm and Yarn lockfiles and
 not Bun's, so the job installs with `bun install --yarn`, which writes a
 `yarn.lock` of the same tree, and `bun run ci snyk dependencies` tests it with
-`--yarn-workspaces`, one Snyk project per workspace. On a laptop, run `bun
-install --yarn` first: the command refuses a `yarn.lock` older than `bun.lock`.
+`--yarn-workspaces`, one Snyk project per workspace. Bun 1.4.0 keys the
+`react-native` alias under its target there (`react-native-tvos@npm:...`),
+which Snyk refuses as out of sync, so the command keys each alias under its
+own name first, as Yarn does. On a laptop, run `bun install --yarn` first: the
+command refuses a `yarn.lock` older than `bun.lock`.
 **Snyk Code** runs on the **code** lane and needs no install; the whole tree
 took 34 s on a laptop.
 
