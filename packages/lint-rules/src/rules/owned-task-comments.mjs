@@ -29,11 +29,15 @@ export default defineRule(
           for (const comment of context.sourceCode.getAllComments()) {
             for (const line of comment.value.split('\n')) {
               const text = line.replace(/^\s*\*?\s*/, '');
-              if (!/^(?:TODO|FIXME)\b/.test(text)) continue;
+              if (!/^(?:TODO|FIXME)\b/.test(text)) {
+                continue;
+              }
               const task = /^(?:TODO|FIXME)\(([@A-Za-z0-9][@A-Za-z0-9._/-]*)\):\s*(\S.*)$/.exec(
                 text,
               );
-              if (task && !/^(?:owner|someone|unknown|tbd)$/i.test(task[1])) continue;
+              if (task && !/^(?:owner|someone|unknown|tbd)$/i.test(task[1])) {
+                continue;
+              }
               context.report({ loc: comment.loc, messageId: 'violation' });
               break;
             }

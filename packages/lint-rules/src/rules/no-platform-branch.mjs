@@ -45,7 +45,9 @@ export default defineRule(
             context.report({ node, messageId: 'flag' });
             return;
           }
-          if (node.source.value !== 'react-native') return;
+          if (node.source.value !== 'react-native') {
+            return;
+          }
           for (const specifier of node.specifiers) {
             if (
               specifier.type === 'ImportSpecifier' &&
@@ -56,9 +58,13 @@ export default defineRule(
           }
         },
         MemberExpression(node) {
-          if (node.object.type !== 'Identifier' || !platformBindings.has(node.object.name)) return;
+          if (node.object.type !== 'Identifier' || !platformBindings.has(node.object.name)) {
+            return;
+          }
           const property = node.computed ? node.property.value : node.property.name;
-          if (PLATFORM_READS.has(property)) context.report({ node, messageId: 'flag' });
+          if (PLATFORM_READS.has(property)) {
+            context.report({ node, messageId: 'flag' });
+          }
         },
       };
     },

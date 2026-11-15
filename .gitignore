@@ -166,3 +166,6 @@ clients/web/public/sw.js
 clients/tizen/out/
 
 .oxc-comparison.json
+
+# The strict config `bun run lint:debt` writes for one run and removes after it.
+.oxlintrc.strict.tmp.json

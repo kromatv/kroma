@@ -144,6 +144,21 @@ Destructure `useState` into `[value, setValue]`, the setter named after the
 value. Keeping the value alone, `[slide]`, is allowed. Mirrors Sonar S6754,
 which accepts a lone value where `react/hook-use-state` does not.
 
+### no-boolean-flag-param
+
+A named function takes no boolean flag: a parameter typed `boolean`, or one that
+defaults to `true` or `false`. Split the function in two, or take an options
+object so the call site names the mode. Destructured parameters pass, and so do
+functions named `set*`, `on*`, `handle*`, `with*` and `toggle*`, which carry a
+value. An inline callback is not judged: its caller chose the signature.
+
+### zod-nonempty
+
+Write `z.string().nonempty()` for a string that may not be empty, and keep
+`.min(n)` for a real length rule. `.min(1)` on a chain that starts at
+`z.string()` is rewritten by `bun run check:fix`. Arrays and numbers are not
+inspected.
+
 For every rule above, run `bun run --cwd packages/lint-rules rules <rule-name>` for the full scope,
 exceptions, examples, and verification steps.
 
@@ -172,9 +187,65 @@ and gives commands that verify behavior. Keep guidance specific enough that an
 agent can act without guessing the architecture.
 
 Do not add an automatic fix unless it preserves semantics without a design
-choice. These eleven rules deliberately leave repairs to the author. A suppression
+choice. Every rule but `zod-nonempty` deliberately leaves repairs to the author. A suppression
 uses `// oxlint-disable-next-line kroma/rule-name -- concrete reason` and needs an
 actual policy exception, not a desire to make the gate green.
+
+## The strict rule set
+
+`.oxlintrc.json` turns on oxlint's `correctness`, `suspicious` and `perf`
+categories as errors, the code limits and type rules of
+[`CONVENTIONS.md`](../../CONVENTIONS.md#code-limits-are-lint-errors), and the
+import-cycle check. Lint runs with type information: `oxlint --type-aware`, which
+needs the `oxlint-tsgolint` package, pinned beside `oxlint`.
+
+A few rules of those categories are off or narrowed, each for a reason this
+codebase has and a generic web app does not:
+
+| Rule | Setting | Why |
+|---|---|---|
+| `react/react-in-jsx-scope` | off | The automatic JSX runtime needs no `React` in scope |
+| `jsx-a11y/prefer-tag-over-role` | off | Components are authored against React Native, which has roles and no tags |
+| `jsx-a11y/no-autofocus` | DOM elements only | The kit's `autoFocus` is where the D-pad lands on a television |
+| `unicorn/no-array-sort`, `unicorn/no-array-reverse` | off | Their fix is `toSorted` and `toReversed`, which the oldest TV engines lack |
+| `no-console` | off in CLIs, build scripts and configs | A command-line tool talks to the terminal |
+| `max-lines-per-function`, `max-lines` | off in tests | A long `describe` is a specification |
+| `typescript/no-floating-promises`, `typescript/no-misused-promises` | off in this package's `*.test.mjs` | `node:test` returns a promise from every `it` by design |
+
+One caveat about the rules that call something unnecessary
+(`typescript/no-unnecessary-type-assertion` and its siblings): oxlint judges a
+file under its nearest `tsconfig.json`, and a package consumed as source is also
+compiled under each shell's config. A cast one config does not need, another may.
+Run `bun run typecheck` after applying such a fix, and keep the cast when a
+consumer needs it.
+
+## The debt list
+
+The strict rules were switched on over code that predates them. `debt/` holds
+what that code still owes:
+
+- `debt/counts.json`: how many times each rule fires in each file. The record.
+- `debt/oxlintrc.json`: generated from the counts, one override per rule that
+  switches it off in the files that owe it. `.oxlintrc.json` extends it, so
+  `bun run lint` and the editor stay quiet about recorded debt and loud about
+  everything else.
+
+`bun run lint:debt` lints the repository with the debt list ignored and compares
+what it finds with the record. It fails in three cases, and says which:
+
+| Message | Meaning | Do |
+|---|---|---|
+| Worse than the recorded debt | A listed file gained a finding | Fix the new finding |
+| New findings in files that owed nothing | New code breaks a rule | Fix it |
+| Fixed | The record is behind the code | `bun run lint:debt --update`, commit both files |
+
+`--update` only ever lowers a count or removes an entry. `--baseline` rewrites
+the record from the code as it stands: use it once, in the commit that switches a
+new rule on, and never to make a failing check pass.
+
+To pay debt down, pick a rule or a folder, read the entries in `counts.json`,
+fix them, and run `--update`. The entry for a file disappears when its count
+reaches zero, and from then on the rule guards that file like any new one.
 
 ## Evaluation
 

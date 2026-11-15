@@ -26,18 +26,25 @@ export default defineRule(
     create(context) {
       return {
         TemplateLiteral(node) {
-          if (node.parent.type === 'TaggedTemplateExpression') return;
+          if (node.parent.type === 'TaggedTemplateExpression') {
+            return;
+          }
           let ancestor = node.parent;
           while (ancestor) {
             if (
               ['ArrowFunctionExpression', 'FunctionExpression', 'FunctionDeclaration'].includes(
                 ancestor.type,
               )
-            )
+            ) {
               return;
-            if (ancestor.type === 'TaggedTemplateExpression') return;
+            }
+            if (ancestor.type === 'TaggedTemplateExpression') {
+              return;
+            }
             if (ancestor.type === 'TemplateLiteral') {
-              if (ancestor.parent.type === 'TaggedTemplateExpression') return;
+              if (ancestor.parent.type === 'TaggedTemplateExpression') {
+                return;
+              }
               context.report({ node, messageId: 'violation' });
               return;
             }

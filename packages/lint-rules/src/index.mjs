@@ -1,4 +1,5 @@
 import indexReexportsOnly from './rules/index-reexports-only.mjs';
+import noBooleanFlagParam from './rules/no-boolean-flag-param.mjs';
 import noCommentBanners from './rules/no-comment-banners.mjs';
 import noEmDashes from './rules/no-em-dashes.mjs';
 import noModuleMutableBindings from './rules/no-module-mutable-bindings.mjs';
@@ -12,6 +13,7 @@ import noUnknownRecordAssertions from './rules/no-unknown-record-assertions.mjs'
 import ownedTaskComments from './rules/owned-task-comments.mjs';
 import reExportFrom from './rules/re-export-from.mjs';
 import useStatePair from './rules/use-state-pair.mjs';
+import zodNonempty from './rules/zod-nonempty.mjs';
 
 export default {
   meta: { name: 'kroma', version: '0.0.0' },
@@ -30,5 +32,7 @@ export default {
     'no-comment-banners': noCommentBanners,
     're-export-from': reExportFrom,
     'use-state-pair': useStatePair,
+    'no-boolean-flag-param': noBooleanFlagParam,
+    'zod-nonempty': zodNonempty,
   },
 };
