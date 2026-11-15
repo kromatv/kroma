@@ -29,6 +29,19 @@ export type {
 } from './command';
 export { COMMAND_METRICS, Command, CommandKeys, useCommandResults } from './command';
 export type {
+  CropOutput,
+  CropperFrameProps,
+  CropperResetProps,
+  CropperRootProps,
+  CropperRotateProps,
+  CropperShape,
+  CropperState,
+  CropperZoomProps,
+  CropRotation,
+  CropTransform,
+} from './cropper';
+export { Cropper, useCropper } from './cropper';
+export type {
   ConfirmDialogProps,
   ConfirmOptions,
   DialogActionsProps,

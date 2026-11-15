@@ -75,6 +75,10 @@ input device, never a boolean spelled as a string.
 | `List` | The scrollable container of items. | Only where a virtualiser needs a real node. |
 | `Empty` | What a collection shows in place of itself when it holds nothing. | A sibling of the `List`, never a child of it: exactly one of the two draws. Distinct from `<EmptyState>`, the molecule it is usually made of. |
 | `Handle` | The grip on a boundary a reader may move: a seam between panels. | The WHOLE strip is the control, so nothing inside it is pressable. Not `Resizer`, not `Splitter`, not `Divider`: a divider draws, a handle moves. |
+| `Frame` | The stage a subject is arranged behind: the clipped box a crop is read from. | The WHOLE frame is the control: one focus stop that owns the drag, the pinch and the keys, so nothing inside it is pressable. Not `Viewport`, which is banned below, and not `Panel`, which holds content rather than a subject. |
+| `Zoom` | Steps a view closer and further: a pair of controls. | Named for what it changes, never for the glyphs that draw it. Each end leaves the focus order when it has nowhere left to go. |
+| `Rotate` | Turns the subject one fixed step. | `direction` says which way, as the viewer sees it. |
+| `Reset` | Puts what a surface holds back to what it opened on. | Not `Clear`: a cleared selection is gone, a reset one is back at its default. Leaves the focus order while there is nothing to put back. |
 | `Addon` | A member of a group that nothing can press, shaped like the controls beside it: a protocol, a unit, a suffix. | Named for the role, not the content. `InputGroup.Addon` and `ButtonGroup.Addon` are the same thing. |
 | `Previous` / `Next` | A step backwards or forwards through a sequence. | Named for the direction, never for the glyph that draws it. |
 | `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's three. `Status` reports, it does not control; `SelectionBar.Status`, the count a selection is at, is the same role. |
