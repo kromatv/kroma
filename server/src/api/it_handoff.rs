@@ -22,7 +22,7 @@ const OTHER_SUBNET: &str = "192.168.9.9";
 const HOUSEHOLD: &str = "203.0.113.7";
 const OTHER_HOUSEHOLD: &str = "203.0.113.9";
 
-async fn from(
+pub(super) async fn from(
     t: &TestApp,
     method: &str,
     uri: &str,
@@ -35,7 +35,7 @@ async fn from(
     (status, value)
 }
 
-async fn announce(t: &TestApp, device_id: &str, name: &str, ip: &str) -> Value {
+pub(super) async fn announce(t: &TestApp, device_id: &str, name: &str, ip: &str) -> Value {
     let body = json!({ "deviceId": device_id, "name": name, "platform": "tvOS" });
     let (status, reply) = from(t, "POST", "/api/handoff/announce", None, Some(body), ip).await;
     assert_eq!(status, StatusCode::OK, "announce refused: {reply}");
@@ -99,7 +99,7 @@ async fn poll(t: &TestApp, beacon: &Value) -> Value {
     body
 }
 
-async fn poll_status(t: &TestApp, beacon: &Value) -> String {
+pub(super) async fn poll_status(t: &TestApp, beacon: &Value) -> String {
     poll(t, beacon).await["status"]
         .as_str()
         .unwrap_or_default()

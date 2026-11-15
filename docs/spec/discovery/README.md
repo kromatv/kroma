@@ -32,6 +32,10 @@ two devices'. Specified in full in
   public address, because a household leaves through one and a looser rule would rope in
   strangers.
 - **DISC-4** (SHIPPED) - Over IPv6, it means the same delegated prefix: one home's allocation.
+- **DISC-34** (SHIPPED) - In the house the server itself sits in, a device on the server's
+  network and one that left the house and came back in through its public address are on the
+  same network. A television that found the server at home is listed to a browser on the
+  server's public name.
 
 **DISC-5** (SHIPPED) - A home this cannot place, split across subnets, dual-stack with the two
 devices on different families, or behind carrier-grade NAT, falls back to Quick Connect rather

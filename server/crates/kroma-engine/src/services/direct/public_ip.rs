@@ -15,6 +15,7 @@ struct Lookup {
 pub struct PublicIp {
     url: Option<String>,
     last: tokio::sync::Mutex<Option<Lookup>>,
+    learned: std::sync::Mutex<Option<Ipv4Addr>>,
 }
 
 impl PublicIp {
@@ -22,7 +23,19 @@ impl PublicIp {
         Self {
             url,
             last: tokio::sync::Mutex::new(None),
+            learned: std::sync::Mutex::new(None),
         }
+    }
+
+    /// The address the echo last gave, however long ago, without asking again
+    /// or waiting for an answer on its way. A house keeps its address for
+    /// days, and a caller placing two devices by it cannot hold a list up for
+    /// a lookup.
+    pub fn learned(&self) -> Option<Ipv4Addr> {
+        *self
+            .learned
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// `None` when no echo is configured or it did not answer: an unknown
@@ -46,6 +59,12 @@ impl PublicIp {
             .ok()
             .flatten();
         *last = Some(Lookup { ip, at_ms: now_ms });
+        if ip.is_some() {
+            *self
+                .learned
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = ip;
+        }
         ip
     }
 }

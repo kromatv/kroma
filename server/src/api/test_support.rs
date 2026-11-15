@@ -449,3 +449,15 @@ pub fn demo_show_id(title: &str) -> String {
         .map(|s| s.id)
         .unwrap_or_else(|| panic!("demo show not found: {title}"))
 }
+
+/// An echo service on loopback that answers every request with `address`, the
+/// way the one behind `KROMA_PUBLIC_IP_URL` names a house's public address.
+pub async fn echo_answering(address: &'static str) -> String {
+    let app = axum::Router::new().route("/", axum::routing::get(move || async move { address }));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+    format!("http://{addr}/")
+}

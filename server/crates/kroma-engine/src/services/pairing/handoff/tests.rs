@@ -73,6 +73,7 @@ fn a_beacon_nobody_polls_lapses_out_of_the_list() {
     let h = Arc::new(HandoffInner {
         grants: Grants::new(0, MAX_BEACONS),
         announces: Throttle::new(MAX_ANNOUNCES_PER_MINUTE, ANNOUNCE_WINDOW_SECS),
+        home: RwLock::default(),
     });
     let tv = announce(&h, "tv-salon-01", "Salon", TV);
     assert!(h.nearby(PHONE).is_empty());

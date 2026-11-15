@@ -31,6 +31,10 @@ impl Neighbourhood {
         now_ms: i64,
         list: impl FnOnce() -> Vec<Ipv6Addr>,
     ) -> bool {
+        shares_a_prefix(client, &self.addresses(now_ms, list))
+    }
+
+    pub fn addresses(&self, now_ms: i64, list: impl FnOnce() -> Vec<Ipv6Addr>) -> Vec<Ipv6Addr> {
         let mut last = self.last.lock().unwrap_or_else(PoisonError::into_inner);
         let listing = match last.take() {
             Some(listing) if now_ms - listing.at_ms < FRESH_MS => listing,
@@ -39,7 +43,7 @@ impl Neighbourhood {
                 at_ms: now_ms,
             },
         };
-        shares_a_prefix(client, &last.insert(listing).own_v6)
+        last.insert(listing).own_v6.clone()
     }
 }
 

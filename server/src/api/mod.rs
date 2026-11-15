@@ -92,6 +92,8 @@ mod it_first_run;
 #[cfg(test)]
 mod it_handoff;
 #[cfg(test)]
+mod it_handoff_house;
+#[cfg(test)]
 mod it_host_settings;
 #[cfg(test)]
 mod it_images;
