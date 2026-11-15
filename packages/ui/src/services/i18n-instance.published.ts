@@ -14,11 +14,11 @@ export type KitI18n = I18n<Locale, Messages>;
 const echo = ((key: string) => key) as Translate;
 
 export function translatorFor(locale: Locale, instance?: KitI18n): Translate {
-  return (instance?.translator(locale) as Translate | undefined) ?? echo;
+  return instance?.translator(locale) ?? echo;
 }
 
 export function fallbackLocale(): Locale {
-  return 'en' as Locale;
+  return 'en';
 }
 
 export function providerI18n(): KitI18n | undefined {

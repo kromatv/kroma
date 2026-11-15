@@ -174,7 +174,7 @@ describe('a subtitle row', () => {
       { index: 1, language: 'fra', url: 'one' },
       { index: 4, language: 'fra', url: 'two' },
     ]);
-    expect(options.map((track) => track.label)).toEqual([
+    expect(options.map((option) => option.label)).toEqual([
       'Français · Piste 2',
       'Français · Piste 5',
     ]);

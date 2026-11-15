@@ -10,6 +10,22 @@ import { CSS_COLORS, CSS_FONTS, CSS_RADIUS, CSS_TYPE } from '#ui/core/tokens/css
 
 export * from '#ui/core/theme-create';
 
+// A ground-aware theme resolves its restated tokens through the cascade like
+// every untouched one: both grounds are published, so a literal in the store
+// would be the one value that could not follow the switch.
+function cascading(theme: Theme): Theme {
+  if (!CSS_COLORS) {
+    return theme;
+  }
+  return Object.freeze({
+    ...theme,
+    colors: { ...theme.colors, ...CSS_COLORS },
+    ...(CSS_RADIUS ? { radius: { ...theme.radius, ...CSS_RADIUS } } : null),
+    ...(CSS_FONTS ? { fonts: { ...theme.fonts, ...CSS_FONTS } } : null),
+    ...(CSS_TYPE ? { type: { ...theme.type, ...CSS_TYPE } } : null),
+  });
+}
+
 /** Mutable theme state belongs to a mounted styling root. */
 export function createThemeRuntime(initial: Theme = KROMA) {
   let active: Theme = initial;
@@ -22,13 +38,13 @@ export function createThemeRuntime(initial: Theme = KROMA) {
   const listeners = new Set<() => void>();
   let paper: Theme | undefined;
 
-  function activeTheme(): Theme {
+  function currentTheme(): Theme {
     return active;
   }
 
   /** Monotonic; bumped by every `setTheme`. Anything that caches resolved styles
    *  keys on it (see recipe.ts, styles.ts, box-style.ts). */
-  function themeVersion(): number {
+  function currentVersion(): number {
     return version;
   }
 
@@ -97,12 +113,12 @@ export function createThemeRuntime(initial: Theme = KROMA) {
       return;
     }
     // A theme given no light half paints the same values in every ground.
-    const paper = light ?? theme;
+    const lightHalf = light ?? theme;
     const systemSelector = `[data-kroma-theme="${scopeId}"]:not([data-theme])`;
     const css = [
       block(`[data-kroma-theme="${scopeId}"]`, theme, doc),
-      block(`[data-kroma-theme="${scopeId}"][data-theme="light"]`, paper, doc),
-      `@media(prefers-color-scheme:light){${block(systemSelector, paper, doc)}}`,
+      block(`[data-kroma-theme="${scopeId}"][data-theme="light"]`, lightHalf, doc),
+      `@media(prefers-color-scheme:light){${block(systemSelector, lightHalf, doc)}}`,
     ]
       .filter((rule) => !rule.endsWith('{}'))
       .join('');
@@ -114,22 +130,6 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     const sheet =
       found ?? doc.head.appendChild(Object.assign(doc.createElement('style'), { id: sheetId() }));
     sheet.textContent = css;
-  }
-
-  // A ground-aware theme resolves its restated tokens through the cascade like
-  // every untouched one: both grounds are published, so a literal in the store
-  // would be the one value that could not follow the switch.
-  function cascading(theme: Theme): Theme {
-    if (!CSS_COLORS) {
-      return theme;
-    }
-    return Object.freeze({
-      ...theme,
-      colors: { ...theme.colors, ...CSS_COLORS },
-      ...(CSS_RADIUS ? { radius: { ...theme.radius, ...CSS_RADIUS } } : null),
-      ...(CSS_FONTS ? { fonts: { ...theme.fonts, ...CSS_FONTS } } : null),
-      ...(CSS_TYPE ? { type: { ...theme.type, ...CSS_TYPE } } : null),
-    });
   }
 
   // What the STORE owns, because no custom property can carry it: the numbers
@@ -218,8 +218,8 @@ export function createThemeRuntime(initial: Theme = KROMA) {
   }
 
   return {
-    activeTheme,
-    themeVersion,
+    activeTheme: currentTheme,
+    themeVersion: currentVersion,
     onThemeChange,
     setTheme,
     applyTheme,

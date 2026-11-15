@@ -13,14 +13,14 @@ import {
 
 import { TvVoiceSearch } from '#tv/features/catalog/tv-voice-search';
 
-const { clearPressGuard, render: renderRaw } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 // Kit controls are spatial-navigator nodes, and a node needs a navigator scope.
-const render = (ui: ReactElement) => renderRaw(onScreen(ui));
+const render = (ui: ReactElement) => inputHost.render(onScreen(ui));
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 function fakeBackend(session: (props: VoiceSessionProps) => void = () => {}): VoiceSearchBackend {
@@ -93,7 +93,7 @@ describe('TvVoiceSearch', () => {
     const onDone = vi.fn();
     withI18n(<TvVoiceSearch backend={fakeBackend()} onText={() => {}} onDone={onDone} />);
     // The panel arms the press guard as it opens, so a test press must clear it.
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByText('Annuler'));
     expect(onDone).toHaveBeenCalledTimes(1);
   });

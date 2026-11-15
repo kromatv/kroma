@@ -5,8 +5,8 @@ import { buildTitleView, type TitleInput } from './title-view';
 
 // A translator that echoes the key, appending var values so we can assert
 // interpolated labels deterministically.
-const t: Translate = ((key: string, vars?: Record<string, unknown>) =>
-  vars ? `${key}:${Object.values(vars).join(',')}` : key) as unknown as Translate;
+const t: Translate = (key: string, vars?: Record<string, unknown>) =>
+  vars ? `${key}:${Object.values(vars).join(',')}` : key;
 
 // `backdropFor` and `themeFor` are handed the whole title but only declare the
 // metadata they read, so the id they are keyed on here is read off the value.

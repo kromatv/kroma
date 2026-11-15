@@ -49,12 +49,12 @@ export function usePlayerPresentation() {
   useEffect(() => {
     const current = physical.orientation;
     if (current === null) {
-      return;
+      return undefined;
     }
     const previous = previousPhysical.current;
     previousPhysical.current = current;
     if (previous === null || current === previous) {
-      return;
+      return undefined;
     }
     const revision = manualRevision.current;
     const frame = requestAnimationFrame(() => {
@@ -67,7 +67,7 @@ export function usePlayerPresentation() {
 
   useEffect(() => {
     if (physical.available !== false || requested !== false || landscape) {
-      return;
+      return undefined;
     }
     const frame = requestAnimationFrame(() => setRequested(null));
     return () => cancelAnimationFrame(frame);
@@ -77,7 +77,7 @@ export function usePlayerPresentation() {
 
   useEffect(() => {
     if (!fullscreen) {
-      return;
+      return undefined;
     }
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       collapse();

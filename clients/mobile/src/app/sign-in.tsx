@@ -87,7 +87,7 @@ export default function SignIn() {
   const [covers, setCovers] = useState<SplashCover[]>([]);
   useEffect(() => {
     if (!serverUrl) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     clientFor(serverUrl)

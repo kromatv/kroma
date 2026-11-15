@@ -21,6 +21,10 @@ function mount(i18n: ReturnType<typeof build>, locale: string, Probe: () => Reac
   );
 }
 
+function Bare() {
+  return <>{useT()('greeting')}</>;
+}
+
 describe('I18nProvider', () => {
   it('translates in the locale it is given', () => {
     const i18n = build();
@@ -39,13 +43,14 @@ describe('I18nProvider', () => {
   });
 
   it('throws outside a provider rather than translating into nothing', () => {
-    function Probe() {
-      return <>{useT()('greeting')}</>;
-    }
-
-    expect(() => render(<Probe />)).toThrow(/within <I18nProvider>/);
+    expect(() => render(<Bare />)).toThrow(/within <I18nProvider>/);
   });
 });
+
+function ScopedRows() {
+  const tOf = useScopedT();
+  return <>{['a', 'b'].map((id) => tOf(id)('label')).join('/')}</>;
+}
 
 describe('a catalog added after first paint', () => {
   it('reaches a scoped translator without a remount', () => {
@@ -72,11 +77,7 @@ describe('a catalog added after first paint', () => {
     const i18n = build();
     i18n.add('a', { en: { label: 'A' } });
 
-    function Probe() {
-      const tOf = useScopedT();
-      return <>{['a', 'b'].map((id) => tOf(id)('label')).join('/')}</>;
-    }
-    const { container } = mount(i18n, 'en', Probe);
+    const { container } = mount(i18n, 'en', ScopedRows);
     expect(container.textContent).toBe('A/label');
 
     act(() => void i18n.add('b', { en: { label: 'B' } }));

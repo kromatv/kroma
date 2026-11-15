@@ -1,6 +1,59 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getLocalIPv4 } from './local-ip';
 
+function rtcEmitting(candidates: (string | null)[]) {
+  vi.stubGlobal(
+    'RTCPeerConnection',
+    class {
+      onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
+      createDataChannel() {}
+      close() {}
+      setLocalDescription() {}
+      async createOffer() {
+        queueMicrotask(() => {
+          for (const c of candidates) {
+            this.onicecandidate?.({ candidate: c === null ? null : { candidate: c } });
+          }
+        });
+        return {};
+      }
+    },
+  );
+}
+
+function webOsWith(res: unknown, fail = false) {
+  vi.stubGlobal('webOS', {
+    service: {
+      request(_uri: string, opts: { onSuccess: (r: unknown) => void; onFailure: () => void }) {
+        if (fail) {
+          opts.onFailure();
+        } else {
+          opts.onSuccess(res);
+        }
+      },
+    },
+  });
+}
+
+function tizenWith(answers: Record<string, { ipAddress?: string } | 'error'>) {
+  vi.stubGlobal('tizen', {
+    systeminfo: {
+      getPropertyValue(
+        prop: string,
+        onSuccess: (v: { ipAddress?: string }) => void,
+        onError: () => void,
+      ) {
+        const a = answers[prop];
+        if (a === undefined || a === 'error') {
+          onError();
+        } else {
+          onSuccess(a);
+        }
+      },
+    },
+  });
+}
+
 describe('getLocalIPv4', () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -13,24 +66,6 @@ describe('getLocalIPv4', () => {
 
   // Tizen's `getPropertyValue(prop, onSuccess, onError)`. Wi-Fi is asked first: a
   // set that is plugged in AND associated answers both.
-  function tizenWith(answers: Record<string, { ipAddress?: string } | 'error'>) {
-    vi.stubGlobal('tizen', {
-      systeminfo: {
-        getPropertyValue(
-          prop: string,
-          onSuccess: (v: { ipAddress?: string }) => void,
-          onError: () => void,
-        ) {
-          const a = answers[prop];
-          if (a === undefined || a === 'error') {
-            onError();
-          } else {
-            onSuccess(a);
-          }
-        },
-      },
-    });
-  }
 
   it('takes the Tizen Wi-Fi address when there is one', async () => {
     tizenWith({ WIFI_NETWORK: { ipAddress: '192.168.1.42' } });
@@ -92,20 +127,6 @@ describe('getLocalIPv4', () => {
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
-  function webOsWith(res: unknown, fail = false) {
-    vi.stubGlobal('webOS', {
-      service: {
-        request(_uri: string, opts: { onSuccess: (r: unknown) => void; onFailure: () => void }) {
-          if (fail) {
-            opts.onFailure();
-          } else {
-            opts.onSuccess(res);
-          }
-        },
-      },
-    });
-  }
-
   it('prefers the webOS wired address over the wireless one', async () => {
     webOsWith({ wired: { ipAddress: '10.1.1.5' }, wifi: { ipAddress: '192.168.0.9' } });
     await expect(getLocalIPv4()).resolves.toBe('10.1.1.5');
@@ -144,26 +165,6 @@ describe('getLocalIPv4', () => {
     await vi.advanceTimersByTimeAsync(1500);
     await expect(pending).resolves.toBeNull();
   });
-
-  function rtcEmitting(candidates: (string | null)[]) {
-    vi.stubGlobal(
-      'RTCPeerConnection',
-      class {
-        onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
-        createDataChannel() {}
-        close() {}
-        setLocalDescription() {}
-        async createOffer() {
-          queueMicrotask(() => {
-            for (const c of candidates) {
-              this.onicecandidate?.({ candidate: c === null ? null : { candidate: c } });
-            }
-          });
-          return {};
-        }
-      },
-    );
-  }
 
   it('reads a private IPv4 out of an ICE candidate', async () => {
     rtcEmitting(['candidate:1 1 udp 2113 192.168.4.21 54321 typ host']);

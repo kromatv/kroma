@@ -119,10 +119,10 @@ describe('sdkSpec', () => {
   });
 });
 
+const names = (kind: Answers['kind']) => treesFor(kind).map((t) => basename(t));
+
 describe('treesFor', () => {
   it('renders a kind from the trees that kind has', () => {
-    const names = (kind: Answers['kind']) => treesFor(kind).map((t) => basename(t));
-
     expect(names('full')).toEqual(['base', 'ui', 'server']);
     expect(names('server')).toEqual(['base', 'server']);
     expect(names('ui')).toEqual(['base', 'ui']);

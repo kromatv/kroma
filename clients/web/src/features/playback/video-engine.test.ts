@@ -86,26 +86,26 @@ afterEach(() => {
   H.installAll.mockClear();
 });
 
-describe('attachMediaSource direct-play', () => {
-  function base(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
-    return {
-      v: fakeVideo().el,
-      item,
-      decision: { kind: 'direct', aacMaster: false } as EngineDecision,
-      useNativeHls: false,
-      useShaka: false,
-      startSec: 0,
-      audioRel: 0,
-      hlsRef: { current: null },
-      shakaRef: { current: null },
-      setUseHls: vi.fn(),
-      setReady: vi.fn(),
-      onGiveUp: vi.fn(),
-      onRefused: vi.fn(),
-      ...over,
-    };
-  }
+function base(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
+  return {
+    v: fakeVideo().el,
+    item,
+    decision: { kind: 'direct', aacMaster: false } as EngineDecision,
+    useNativeHls: false,
+    useShaka: false,
+    startSec: 0,
+    audioRel: 0,
+    hlsRef: { current: null },
+    shakaRef: { current: null },
+    setUseHls: vi.fn(),
+    setReady: vi.fn(),
+    onGiveUp: vi.fn(),
+    onRefused: vi.fn(),
+    ...over,
+  };
+}
 
+describe('attachMediaSource direct-play', () => {
   it('points a bare <video> at the original stream and marks direct', () => {
     const fv = fakeVideo();
     const opts = base({ v: fv.el });
@@ -138,26 +138,26 @@ describe('attachMediaSource direct-play', () => {
   });
 });
 
-describe('attachMediaSource HLS master', () => {
-  function hlsOpts(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
-    return {
-      v: fakeVideo().el,
-      item,
-      decision: { kind: 'web-mse', aacMaster: true } as EngineDecision,
-      useNativeHls: false,
-      useShaka: false,
-      startSec: 600,
-      audioRel: 2,
-      hlsRef: { current: null },
-      shakaRef: { current: null },
-      setUseHls: vi.fn(),
-      setReady: vi.fn(),
-      onGiveUp: vi.fn(),
-      onRefused: vi.fn(),
-      ...over,
-    };
-  }
+function hlsOpts(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
+  return {
+    v: fakeVideo().el,
+    item,
+    decision: { kind: 'web-mse', aacMaster: true } as EngineDecision,
+    useNativeHls: false,
+    useShaka: false,
+    startSec: 600,
+    audioRel: 2,
+    hlsRef: { current: null },
+    shakaRef: { current: null },
+    setUseHls: vi.fn(),
+    setReady: vi.fn(),
+    onGiveUp: vi.fn(),
+    onRefused: vi.fn(),
+    ...over,
+  };
+}
 
+describe('attachMediaSource HLS master', () => {
   it('native HLS points the element at the muxed master URL', () => {
     const fv = fakeVideo();
     const opts = hlsOpts({ v: fv.el, useNativeHls: true });
@@ -211,26 +211,26 @@ describe('attachMediaSource HLS master', () => {
   });
 });
 
-describe('attachMediaSource HLS master via Shaka', () => {
-  function shakaOpts(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
-    return {
-      v: fakeVideo().el,
-      item,
-      decision: { kind: 'web-mse', aacMaster: true } as EngineDecision,
-      useNativeHls: false,
-      useShaka: true,
-      startSec: 600,
-      audioRel: 2,
-      hlsRef: { current: null },
-      shakaRef: { current: null },
-      setUseHls: vi.fn(),
-      setReady: vi.fn(),
-      onGiveUp: vi.fn(),
-      onRefused: vi.fn(),
-      ...over,
-    };
-  }
+function shakaOpts(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
+  return {
+    v: fakeVideo().el,
+    item,
+    decision: { kind: 'web-mse', aacMaster: true } as EngineDecision,
+    useNativeHls: false,
+    useShaka: true,
+    startSec: 600,
+    audioRel: 2,
+    hlsRef: { current: null },
+    shakaRef: { current: null },
+    setUseHls: vi.fn(),
+    setReady: vi.fn(),
+    onGiveUp: vi.fn(),
+    onRefused: vi.fn(),
+    ...over,
+  };
+}
 
+describe('attachMediaSource HLS master via Shaka', () => {
   it('installs polyfills, attaches and loads the muxed master, then destroys on cleanup', async () => {
     const fv = fakeVideo();
     const opts = shakaOpts({ v: fv.el });

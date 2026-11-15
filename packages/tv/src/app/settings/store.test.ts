@@ -126,24 +126,22 @@ describe('the artwork quality row', () => {
   });
 });
 
+const reporting = (gb: number | null) => ({
+  cpuCores: () => 4,
+  memoryBytes: () => (gb === null ? null : gb * 1024 ** 3),
+  freeMemoryBytes: () => null,
+});
+
+const boot = async (gb: number | null) => {
+  vi.resetModules();
+  const hardware = await import('#tv/app/client-hardware');
+  const { readClientHardware } = await import('#tv/app/hardware-readings');
+  vi.spyOn(hardware, 'clientHardware').mockImplementation(() => readClientHardware(reporting(gb)));
+  const store = await import('./store');
+  return { hardware, store };
+};
+
 describe('the artwork default', () => {
-  const reporting = (gb: number | null) => ({
-    cpuCores: () => 4,
-    memoryBytes: () => (gb === null ? null : gb * 1024 ** 3),
-    freeMemoryBytes: () => null,
-  });
-
-  const boot = async (gb: number | null) => {
-    vi.resetModules();
-    const hardware = await import('#tv/app/client-hardware');
-    const { readClientHardware } = await import('#tv/app/hardware-readings');
-    vi.spyOn(hardware, 'clientHardware').mockImplementation(() =>
-      readClientHardware(reporting(gb)),
-    );
-    const store = await import('./store');
-    return { hardware, store };
-  };
-
   it('stays full on a set that reports enough memory', async () => {
     const { store } = await boot(4);
 

@@ -32,6 +32,9 @@ const engine = {
   serverVersion: '0.1.39',
 } as const;
 
+const blocked = (refusal: StoreModule['refusal']) =>
+  entry({ installedVersion: '0.3.13', updateBlocked: true, refusal });
+
 describe('refusalText', () => {
   it('says nothing for an entry this server can take', () => {
     expect(refusalText(entry({ compatible: true }), t)).toBeNull();
@@ -44,9 +47,9 @@ describe('refusalText', () => {
   });
 
   it('pins the requirement on the update when an older version is installed', () => {
-    const blocked = entry({ installedVersion: '0.3.13', updateBlocked: true, refusal: engine });
+    const pinned = entry({ installedVersion: '0.3.13', updateBlocked: true, refusal: engine });
 
-    expect(refusalText(blocked, t)).toBe(
+    expect(refusalText(pinned, t)).toBe(
       'admin.modulesRefusalUpdate {"range":"≥ 0.1.40","serverVersion":"0.1.39","version":"0.4.1"}',
     );
   });
@@ -97,9 +100,6 @@ describe('refusalText', () => {
   });
 
   it('names the blocked version for every kind of refusal', () => {
-    const blocked = (refusal: StoreModule['refusal']) =>
-      entry({ installedVersion: '0.3.13', updateBlocked: true, refusal });
-
     expect(refusalText(blocked({ kind: 'native' }), t)).toBe(
       'admin.modulesRefusalUpdateNative {"version":"0.4.1"}',
     );
@@ -138,10 +138,10 @@ describe('readableRange', () => {
   });
 });
 
-describe('newestText', () => {
-  const older = (newest: StoreModule['newest']) =>
-    entry({ version: '0.4.1', compatible: true, newest });
+const older = (newest: StoreModule['newest']) =>
+  entry({ version: '0.4.1', compatible: true, newest });
 
+describe('newestText', () => {
   it('says nothing for an entry that is the newest version', () => {
     expect(newestText(entry({ compatible: true }), t)).toBeNull();
   });

@@ -7,7 +7,7 @@ import { Focusable } from './focusable';
 afterEach(cleanup);
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 const host = (label: string) => screen.getByLabelText(label);

@@ -225,9 +225,9 @@ export function useHeartbeat(
         return;
       }
       live.opened = false;
-      const owner = currentClient();
+      const stoppedClient = currentClient();
       inFlight.current = inFlight.current
-        .then(() => owner.playback.stop(live.id))
+        .then(() => stoppedClient.playback.stop(live.id))
         .catch(() => undefined);
     };
   }, [item.id]);

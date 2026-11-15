@@ -303,14 +303,14 @@ function TvRouterGuard() {
   // Siri search, only once signed in: there is no catalogue before that.
   useEffect(() => {
     if (!user) {
-      return;
+      return undefined;
     }
     return onSearchRequest(() => nav.reset('search'));
   }, [user, nav, onSearchRequest]);
 
   useEffect(() => {
     if (!user) {
-      return;
+      return undefined;
     }
     return onListenRequest(() => {
       if (nav.route.name !== 'search') {

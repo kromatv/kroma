@@ -43,6 +43,8 @@ function inspected(text: string, asked: Asked = {}, over: Partial<I18n> = {}): R
   return first;
 }
 
+const inspector = () => 'x';
+
 describe('turning inspection on', () => {
   it('appends itself to the post-processor the app already named', () => {
     const { i18n } = fake({ options: { postProcess: 'sprintf' } });
@@ -100,7 +102,6 @@ describe('turning inspection on', () => {
   it('does nothing when handed the inspector it already has', () => {
     const { i18n, emitted } = fake();
     const engine = i18next(i18n);
-    const inspector = () => 'x';
 
     engine.inspect(inspector);
     engine.inspect(inspector);

@@ -73,7 +73,7 @@ export const useDownloadChannel = () => useContext(ChannelContext).channel;
 
 /** Stable or canary, with what canary costs said beside it. Available even before the first canary upload. */
 export function ChannelToggle() {
-  const { channel, choose } = useContext(ChannelContext);
+  const { channel, choose: chooseChannel } = useContext(ChannelContext);
 
   return (
     <div className="max-w-lg text-center">
@@ -82,10 +82,10 @@ export function ChannelToggle() {
         aria-label={m.download_channel_label()}
         className="inline-flex rounded-full border border-border bg-surface-1 p-1 shadow-sm"
       >
-        <Option active={channel === 'stable'} onSelect={() => choose('stable')}>
+        <Option active={channel === 'stable'} onSelect={() => chooseChannel('stable')}>
           {m.download_channel_stable()}
         </Option>
-        <Option active={channel === 'canary'} onSelect={() => choose('canary')}>
+        <Option active={channel === 'canary'} onSelect={() => chooseChannel('canary')}>
           {m.download_channel_canary()}
         </Option>
       </div>

@@ -17,7 +17,7 @@ function ranges(pairs: [number, number][]): TimeRanges {
     length: pairs.length,
     start: (i: number) => pairs[i]?.[0] ?? 0,
     end: (i: number) => pairs[i]?.[1] ?? 0,
-  } as unknown as TimeRanges;
+  };
 }
 
 function item(files: Partial<MediaFile>[], over: Partial<MediaItem> = {}): MediaItem {

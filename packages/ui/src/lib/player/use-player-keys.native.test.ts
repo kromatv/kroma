@@ -65,7 +65,7 @@ const params = (tag: string) => ({ tag }) as never;
 
 function press(eventType: string, eventKeyAction = 0) {
   act(() => {
-    rn.remote?.({ eventType, eventKeyAction } as HWEvent);
+    rn.remote?.({ eventType, eventKeyAction });
   });
 }
 
@@ -184,7 +184,7 @@ describe('the Android key host', () => {
     // this hook can read. A build where both fire routes one press twice, and
     // the player's focus then steps two controls for one press of the d-pad.
     act(() => {
-      rn.remote?.({ eventType: 'right', eventKeyAction: 0 } as HWEvent);
+      rn.remote?.({ eventType: 'right', eventKeyAction: 0 });
       host.onKey?.('Right');
     });
     expect(routed()).toEqual(['Right']);

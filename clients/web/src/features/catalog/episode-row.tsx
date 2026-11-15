@@ -245,7 +245,7 @@ function runtimeMinOf(listed: SeasonGap | null): number {
 function MissingText({
   label,
   listed,
-  color,
+  color: tone,
 }: Readonly<{ label: string; listed: SeasonGap | null; color: 'text' | 'white/70' }>) {
   const s = useStyles(sDefinition);
 
@@ -268,7 +268,7 @@ function MissingText({
   return (
     <Box minW={0} flex>
       <Box row align="center" gap={10} mb={6}>
-        <Text variant="label" lines={1} color={color} style={s.bold}>
+        <Text variant="label" lines={1} color={tone} style={s.bold}>
           {label}
         </Text>
         {facts.length > 0 ? (

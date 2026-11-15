@@ -25,12 +25,12 @@ vi.mock('#web/shared/lib/web-runtime', () => {
   };
   return { useWebRuntime: () => runtime };
 });
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 let queryClient: QueryClient;
 const view = (unseen: string | null) => ({ current: '0.1.42', unseen, releases: [] });
 beforeEach(() => {
   vi.clearAllMocks();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   api.list.mockResolvedValue(view('0.1.42'));
   api.markSeen.mockImplementation(async () => {
     api.list.mockResolvedValue(view(null));
@@ -70,7 +70,7 @@ function show() {
     routeTree: root.addChildren([home, notes]),
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />

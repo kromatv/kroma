@@ -101,7 +101,7 @@ export function useWebController(item: MovieView): WebController {
   useEffect(() => {
     const v = pb.videoRef.current;
     if (!v) {
-      return;
+      return undefined;
     }
     const onEnter = () => setPipActive(true);
     const onLeave = () => setPipActive(false);
@@ -134,7 +134,7 @@ export function useWebController(item: MovieView): WebController {
   useEffect(() => {
     const v = pb.videoRef.current;
     if (!v) {
-      return;
+      return undefined;
     }
     const read = () =>
       setDecodedAspect(v.videoHeight > 0 ? v.videoWidth / v.videoHeight : undefined);
@@ -153,7 +153,7 @@ export function useWebController(item: MovieView): WebController {
   useEffect(() => {
     const v = pb.videoRef.current;
     if (!v) {
-      return;
+      return undefined;
     }
     const onEnded = () => setEndedNonce((n) => n + 1);
     v.addEventListener('ended', onEnded);

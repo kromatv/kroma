@@ -133,12 +133,12 @@ describe('the order of the rows', () => {
   });
 });
 
-describe('the code, typed', () => {
-  function prompt(result: GrantResult) {
-    const onGrant = vi.fn(async () => result);
-    return { ...renderHook(() => useCheckPrompt({ device: UNPLACEABLE, onGrant })), onGrant };
-  }
+function prompt(result: GrantResult) {
+  const onGrant = vi.fn(async () => result);
+  return { ...renderHook(() => useCheckPrompt({ device: UNPLACEABLE, onGrant })), onGrant };
+}
 
+describe('the code, typed', () => {
   // A desktop browser capitalizes nothing by itself and what a phone keyboard
   // does is a habit rather than a guarantee, so the case is the picker's to fix.
   it('uppercases what is typed and what is sent', async () => {

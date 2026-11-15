@@ -3,8 +3,9 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useRefusalText } from './refusal-text';
 
+const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
+
 vi.mock('@kromatv/module-sdk', () => {
-  const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
   const fmt = { bytes: (n: number) => `${n}B` };
   return { useT: () => t, useFormat: () => fmt };
 });

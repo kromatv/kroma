@@ -30,7 +30,7 @@ function flat(spec = SPEC) {
 type Keyframes = Record<string, { transform?: string }>;
 
 function keyframes(spec = SPEC): Keyframes {
-  const rules = flat(spec).animationKeyframes as Keyframes[] | undefined;
+  const rules = flat(spec).animationKeyframes;
   const first = rules?.[0];
   if (!first) {
     throw new Error('the drift style carries no @keyframes rule');

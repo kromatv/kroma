@@ -16,6 +16,8 @@ function once<T>(resolve: (value: T) => void): (value: T) => void {
   };
 }
 
+const good = (ip?: string) => (ip && ip !== '0.0.0.0' ? ip : null);
+
 function tizenLocalIp(): Promise<string | null> {
   const tizen = (globalThis as { tizen?: TizenSystemInfo }).tizen;
   const si = tizen?.systeminfo;
@@ -24,7 +26,6 @@ function tizenLocalIp(): Promise<string | null> {
   }
   return new Promise((resolve) => {
     const finish = once(resolve);
-    const good = (ip?: string) => (ip && ip !== '0.0.0.0' ? ip : null);
     try {
       si.getPropertyValue(
         'WIFI_NETWORK',

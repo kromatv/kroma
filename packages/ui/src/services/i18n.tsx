@@ -51,5 +51,5 @@ export function useLocaleDefault(): Locale {
  * requirement for every consumer of a dialog. */
 export function useTDefault(): Translate {
   const ctx = useContext(I18nContext);
-  return ctx ? (ctx.translator() as Translate) : translatorFor(fallbackLocale());
+  return ctx ? ctx.translator() : translatorFor(fallbackLocale());
 }

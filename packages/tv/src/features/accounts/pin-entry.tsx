@@ -37,7 +37,7 @@ export function PinEntry({ label, onSubmit, wrongKey }: Readonly<PinEntryProps>)
 
   useEffect(() => {
     if (cooldown <= 0) {
-      return;
+      return undefined;
     }
     const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(id);

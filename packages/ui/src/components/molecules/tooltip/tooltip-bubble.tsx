@@ -89,7 +89,7 @@ function TooltipBubble({ label, children }: Readonly<TooltipProps>) {
   const shown = spot !== null;
   useEffect(() => {
     if (!shown) {
-      return;
+      return undefined;
     }
     const settle = () => {
       const rect = box.current?.getBoundingClientRect();
@@ -99,7 +99,7 @@ function TooltipBubble({ label, children }: Readonly<TooltipProps>) {
     };
     const view = webWindow();
     if (!view) {
-      return;
+      return undefined;
     }
     view.addEventListener('resize', settle);
     view.addEventListener('scroll', settle, true);

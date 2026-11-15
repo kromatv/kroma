@@ -16,19 +16,19 @@ function plugin(command: 'serve' | 'build' = 'build') {
 
 const context = () => ({ info: vi.fn(), warn: vi.fn() });
 
+function compiled(opacity: number) {
+  const atomic = plugin();
+  atomic.transform.call(
+    context(),
+    `import { styles } from '#ui/core';\nexport const s = styles({ a: { opacity: ${opacity} } });`,
+    `${REPO}/packages/ui/src/probe.ts`,
+  );
+  return atomic;
+}
+
 describe('the name of the token stylesheet', () => {
   const PATTERN = 'assets/[name]-[hash][extname]';
   const TOKENS = ':root{--kroma-bg:#0a0a0c}';
-
-  function compiled(opacity: number) {
-    const atomic = plugin();
-    atomic.transform.call(
-      context(),
-      `import { styles } from '#ui/core';\nexport const s = styles({ a: { opacity: ${opacity} } });`,
-      `${REPO}/packages/ui/src/probe.ts`,
-    );
-    return atomic;
-  }
 
   const nameOf = (atomic: ReturnType<typeof plugin>, source: unknown = TOKENS) =>
     atomic.outputOptions({ assetFileNames: PATTERN }).assetFileNames({ source });

@@ -14,8 +14,8 @@ import {
 
 export interface PlayerDock {
   docked: MediaItem | null;
-  dock(item: MediaItem, leave: () => void): void;
-  undock(): void;
+  dock: (item: MediaItem, leave: () => void) => void;
+  undock: () => void;
 }
 
 export interface PlayerSlotState {

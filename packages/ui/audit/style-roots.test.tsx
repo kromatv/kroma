@@ -5,6 +5,9 @@ import { KitProvider } from '../src/configure';
 import { createTheme, type ThemeRuntime } from '../src/core/theme';
 import { CompiledStyleRoot } from './style-roots.fixture';
 
+const paint = (container: HTMLElement, id: string) =>
+  getComputedStyle(container.querySelector(`[data-testid="${id}"]`) as Element);
+
 it('recomputes compiled declaration, shorthand and text paint only in the owning root', () => {
   const controls: { a?: ThemeRuntime } = {};
   const a = render(
@@ -25,8 +28,6 @@ it('recomputes compiled declaration, shorthand and text paint only in the owning
       <CompiledStyleRoot expose={() => {}} />
     </KitProvider>,
   );
-  const paint = (container: HTMLElement, id: string) =>
-    getComputedStyle(container.querySelector(`[data-testid="${id}"]`) as Element);
   expect(paint(a.container, 'declaration').paddingLeft).toBe('8px');
   expect(paint(b.container, 'declaration').paddingLeft).toBe('32px');
   act(() => controls.a?.setTheme(createTheme({ colors: { accent: '#00FF00' } })));

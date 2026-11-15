@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: mocks.user }) }));
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const noMenu = () => Promise.resolve(() => null);
 
@@ -52,7 +52,7 @@ async function show(commands: readonly CommandDef[]) {
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
   await router.load();
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <RouterProvider router={router} />
     </I18nProvider>,
@@ -76,7 +76,7 @@ const rows = () =>
 
 beforeEach(() => {
   localStorage.clear();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   mocks.user = { id: 'viewer', permissions: ['requests.create'] };
 });
 
@@ -149,7 +149,7 @@ describe('the command palette', () => {
   });
 
   it('says at its foot what a row says it does', async () => {
-    await show([{ ...HOME, primaryLabel: 'Back home' } as CommandDef]);
+    await show([{ ...HOME, primaryLabel: 'Back home' }]);
 
     await waitFor(() => expect(row('Back home')).not.toBeNull());
   });
@@ -175,7 +175,7 @@ describe('the command palette', () => {
     const scan = action('Analyser');
     await show([scan]);
 
-    fireEvent.click((await screen.findByRole('button', { name: 'Analyser' })) as HTMLElement);
+    fireEvent.click(await screen.findByRole('button', { name: 'Analyser' }));
 
     await waitFor(() => expect(scan.run).toHaveBeenCalledTimes(1));
   });
@@ -225,7 +225,7 @@ describe('the command palette', () => {
     });
     await router.load();
 
-    render(
+    inputHost.render(
       <I18nProvider locale="en">
         <RouterProvider router={router} />
       </I18nProvider>,

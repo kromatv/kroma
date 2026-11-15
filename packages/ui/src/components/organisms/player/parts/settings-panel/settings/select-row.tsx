@@ -8,14 +8,14 @@ import { style, useStyles } from '#ui/core';
 import { panel, ROW_FOCUS } from './panel-style';
 
 const MIN_W = style({ minWidth: 0 });
-function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
+function Line({ node, style: textStyle }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
   if (node == null) {
     return null;
   }
   if (typeof node !== 'string') {
     return node;
   }
-  return <Text style={style}>{node}</Text>;
+  return <Text style={textStyle}>{node}</Text>;
 }
 
 /**

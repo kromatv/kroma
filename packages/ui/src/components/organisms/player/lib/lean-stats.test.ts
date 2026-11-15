@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { PlayerAudioTrack } from '../media-types';
 import { buildLeanStats, type LeanStatsInput } from './lean-stats';
 
-const t: Translate = ((key: string, vars?: unknown) =>
-  vars ? `${key}(${JSON.stringify(vars)})` : key) as Translate;
+const t: Translate = (key: string, vars?: unknown) =>
+  vars ? `${key}(${JSON.stringify(vars)})` : key;
 
 const item = {
   title: 'Interstellar',
@@ -13,23 +13,22 @@ const item = {
 };
 
 const audioTracks: PlayerAudioTrack[] = [
-  { index: 0, codec: 'eac3', channels: 6, language: 'en', default: true } as PlayerAudioTrack,
-  { index: 5, codec: 'ac3', channels: 2, language: 'fr', default: false } as PlayerAudioTrack,
+  { index: 0, codec: 'eac3', channels: 6, language: 'en', default: true },
+  { index: 5, codec: 'ac3', channels: 2, language: 'fr', default: false },
 ];
 
-const input = (over: Partial<LeanStatsInput> = {}): LeanStatsInput =>
-  ({
-    item,
-    cur: 30,
-    dur: 8880,
-    bufEnd: 45,
-    audioTracks,
-    audioIndex: 0,
-    video: null, // native plane (avplay/mpv/exo): no decode counters
-    mode: 'AVPlay',
-    t,
-    ...over,
-  }) as LeanStatsInput;
+const input = (over: Partial<LeanStatsInput> = {}): LeanStatsInput => ({
+  item,
+  cur: 30,
+  dur: 8880,
+  bufEnd: 45,
+  audioTracks,
+  audioIndex: 0,
+  video: null, // native plane (avplay/mpv/exo): no decode counters
+  mode: 'AVPlay',
+  t,
+  ...over,
+});
 
 describe('buildLeanStats', () => {
   it('builds a metadata snapshot for a native surface', () => {

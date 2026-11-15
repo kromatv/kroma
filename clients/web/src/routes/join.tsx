@@ -79,7 +79,7 @@ function JoinPage() {
 
   useEffect(() => {
     if (!invite) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.accounts

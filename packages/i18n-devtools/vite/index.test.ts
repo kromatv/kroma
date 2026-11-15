@@ -416,17 +416,17 @@ async function pluginWhoseEditorFails(error: string | undefined): Promise<Plugin
   return withBadEditor();
 }
 
-describe('which engine an app translates through', () => {
-  async function speaking(manifest: object): Promise<Plugin> {
-    vi.doMock('node:fs', () => ({
-      existsSync: () => true,
-      readFileSync: () => JSON.stringify(manifest),
-    }));
-    vi.resetModules();
-    const { kromaI18nDevtools: reading } = await import('./index.ts');
-    return reading();
-  }
+async function speaking(manifest: object): Promise<Plugin> {
+  vi.doMock('node:fs', () => ({
+    existsSync: () => true,
+    readFileSync: () => JSON.stringify(manifest),
+  }));
+  vi.resetModules();
+  const { kromaI18nDevtools: reading } = await import('./index.ts');
+  return reading();
+}
 
+describe('which engine an app translates through', () => {
   it('reads paraglide off what the app depends on', async () => {
     const plugin = await speaking({ dependencies: { '@inlang/paraglide-js': '^2' } });
 

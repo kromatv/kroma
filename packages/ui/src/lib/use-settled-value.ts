@@ -9,7 +9,7 @@ export function useSettledValue<T>(value: T, delayMs: number): T {
 
   useEffect(() => {
     if (Object.is(value, settled)) {
-      return;
+      return undefined;
     }
     const id = setTimeout(() => setSettled(value), delayMs);
     return () => clearTimeout(id);

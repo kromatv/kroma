@@ -35,7 +35,7 @@ export function ScrollMask({
     const node = ref.current as unknown as HTMLElement | null;
     const scroller = node ? scrollerOf(node) : null;
     if (!node || !scroller) {
-      return;
+      return undefined;
     }
     let frame = 0;
     const onScroll = () => {

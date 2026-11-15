@@ -4,9 +4,9 @@ const HIDE_AFTER_MS = 4000;
 
 export interface ChromeReveal {
   shown: boolean;
-  poke(): void;
-  toggle(): void;
-  hold(): () => void;
+  poke: () => void;
+  toggle: () => void;
+  hold: () => () => void;
 }
 
 /** When a phone player shows its controls: up on arrival, up on a touch, and

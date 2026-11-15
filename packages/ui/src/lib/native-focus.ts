@@ -69,7 +69,7 @@ export function useNativeFocus(focused: boolean): boolean {
   const claim = useId();
   useEffect(() => {
     if (!wants || !host) {
-      return;
+      return undefined;
     }
     host.claim(claim);
     return () => host.release(claim);

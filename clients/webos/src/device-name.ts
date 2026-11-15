@@ -100,8 +100,8 @@ export function resolveWebOsDeviceName(): DeviceNameSource {
   const globals = globalThis as unknown as WebOsGlobals;
   try {
     // Only fall back to the model when there is no bus to ask for the name.
-    if (!askPreferences(globals, name.found)) {
-      askDeviceInfo(globals, name.found);
+    if (!askPreferences(globals, (value) => name.found(value))) {
+      askDeviceInfo(globals, (value) => name.found(value));
     }
   } catch {
     /* absent on this firmware */

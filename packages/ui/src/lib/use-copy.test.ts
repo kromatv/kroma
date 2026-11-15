@@ -5,11 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCopy } from './use-copy';
 
 function withClipboard(writeText: (text: string) => Promise<void>) {
+  const write = vi.fn(writeText);
   Object.defineProperty(window.navigator, 'clipboard', {
-    value: { writeText: vi.fn(writeText) },
+    value: { writeText: write },
     configurable: true,
   });
-  return window.navigator.clipboard.writeText as ReturnType<typeof vi.fn>;
+  return write;
 }
 
 function withoutClipboard() {

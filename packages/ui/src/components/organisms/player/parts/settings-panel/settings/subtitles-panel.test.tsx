@@ -61,6 +61,20 @@ const generation = (over: Partial<PlayerSubtitleGeneration> = {}): PlayerSubtitl
   ...over,
 });
 
+// The ENGINE prefix is what differs; the stage label beside it is its own
+// string and can legitimately mention Whisper either way, so asserting on
+// the whole row would pass for the wrong reason.
+const row = (mode: PlayerSubtitleGeneration['mode']) =>
+  show(
+    <SubtitlesPanel
+      subs={[]}
+      current={null}
+      onSelect={vi.fn()}
+      gen={bundle({ pending: [generation({ mode, stage: mode })] })}
+      onBack={vi.fn()}
+    />,
+  ).container.textContent ?? '';
+
 describe('SubtitlesPanel', () => {
   it('offers Off, and turning subtitles off closes the panel', () => {
     const onSelect = vi.fn();
@@ -195,20 +209,6 @@ describe('SubtitlesPanel', () => {
   });
 
   it('names the translate engine differently from transcription', () => {
-    // The ENGINE prefix is what differs; the stage label beside it is its own
-    // string and can legitimately mention Whisper either way, so asserting on
-    // the whole row would pass for the wrong reason.
-    const row = (mode: PlayerSubtitleGeneration['mode']) =>
-      show(
-        <SubtitlesPanel
-          subs={[]}
-          current={null}
-          onSelect={vi.fn()}
-          gen={bundle({ pending: [generation({ mode, stage: mode })] })}
-          onBack={vi.fn()}
-        />,
-      ).container.textContent ?? '';
-
     const transcribe = row('transcribe');
     cleanup();
     const translate = row('translate');

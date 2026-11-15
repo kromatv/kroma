@@ -51,7 +51,7 @@ async function clippy(list: Workspace[]): Promise<void> {
 }
 
 const withFeatures = (list: Workspace[]) =>
-  featured().filter((ws) => list.some((chosen) => chosen.id === ws.id));
+  featured().filter((ws) => list.some((candidate) => candidate.id === ws.id));
 
 function chosen(only: string | undefined): Workspace[] {
   const all = workspaces();
@@ -69,11 +69,12 @@ function chosen(only: string | undefined): Workspace[] {
   return all.filter((ws) => ids.includes(ws.id));
 }
 
+const partial = (ws: Workspace) => join(ws.dir, 'lcov.part.info');
+const featuredPartial = (ws: Workspace) => join(ws.dir, 'lcov.features.info');
+
 async function test(list: Workspace[]): Promise<void> {
   const report = join(root, 'server/lcov.info');
   rmSync(report, { force: true });
-  const partial = (ws: Workspace) => join(ws.dir, 'lcov.part.info');
-  const featuredPartial = (ws: Workspace) => join(ws.dir, 'lcov.features.info');
   await each(
     'test',
     (ws) => ['llvm-cov', ...scope(ws), '--lcov', '--output-path', partial(ws)],

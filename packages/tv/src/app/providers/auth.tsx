@@ -137,15 +137,15 @@ export function AuthProvider({
   // points at: a token for server A must never ride a request to server B.
   useEffect(() => {
     if (!client) {
-      return;
+      return undefined;
     }
     if (!session) {
       client.setAuthToken();
       client.setRefreshHandler();
-      return;
+      return undefined;
     }
     if (norm(session.serverUrl) !== norm(activeServerUrl)) {
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -163,7 +163,7 @@ export function AuthProvider({
           setSession((cur) => withUser(cur, res.user));
           saveSession({ ...stored, user: res.user });
           setResumed(stored.accessToken);
-          return res.token as string | undefined;
+          return res.token;
         })
         .catch((e: unknown) => {
           if (cancelled) {

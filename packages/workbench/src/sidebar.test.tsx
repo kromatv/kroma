@@ -20,6 +20,8 @@ const PAGES = [
 
 afterEach(cleanup);
 
+const open = (label: string) => screen.queryByLabelText(`Collapse ${label}`) !== null;
+
 function show(selected: string) {
   render(
     onScreen(
@@ -34,7 +36,6 @@ function show(selected: string) {
       />,
     ),
   );
-  const open = (label: string) => screen.queryByLabelText(`Collapse ${label}`) !== null;
   return { open };
 }
 

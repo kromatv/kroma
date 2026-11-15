@@ -47,7 +47,7 @@ export function ThemeSwitch({
 
   useEffect(() => {
     if (mode !== 'system') {
-      return;
+      return undefined;
     }
     const watch = Appearance.addChangeListener(() => applyMode('system', runtime));
     return () => watch.remove();

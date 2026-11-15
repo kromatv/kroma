@@ -189,15 +189,15 @@ describe('the stream table', () => {
   });
 });
 
-describe('a frame the device could not have sent', () => {
-  const streaming = async () => {
-    const set = await television();
-    set.serve('shell:', () => undefined);
-    const connection = await open(set);
-    const stream = await connection.openStream(`shell:${shellCommand()}`, PATIENT_MS);
-    return { set, stream, reading: stream.read(PATIENT_MS) };
-  };
+const streaming = async () => {
+  const set = await television();
+  set.serve('shell:', () => undefined);
+  const connection = await open(set);
+  const stream = await connection.openStream(`shell:${shellCommand()}`, PATIENT_MS);
+  return { set, stream, reading: stream.read(PATIENT_MS) };
+};
 
+describe('a frame the device could not have sent', () => {
   it('kills the connection when the magic does not invert the command', async () => {
     const { set, stream, reading } = await streaming();
     const frame = encodePacket({

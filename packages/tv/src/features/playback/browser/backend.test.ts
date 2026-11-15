@@ -85,6 +85,26 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const enginePlan = (over: Partial<EnginePlan>): EnginePlan => ({
+  eng: 'video-direct',
+  surface: 'video',
+  useMpv: false,
+  useAvplay: false,
+  avplayDirect: false,
+  direct: true,
+  masterAac: false,
+  masterShaka: true,
+  playbackMode: 'direct',
+  deviceLabel: 'TV',
+  rebuildKey: 'k',
+  ...over,
+});
+
+function tizen() {
+  vi.stubGlobal('webapis', { avplay: { play: () => {} } });
+  vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (SMART-TV; Tizen 6.0)' });
+}
+
 describe('planEngine', () => {
   it('direct-plays a plain MP4 in a browser', () => {
     webviewPlays({ 'video/mp4': 'probably' });
@@ -127,11 +147,6 @@ describe('planEngine', () => {
   });
 
   describe('on Samsung Tizen', () => {
-    function tizen() {
-      vi.stubGlobal('webapis', { avplay: { play: () => {} } });
-      vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (SMART-TV; Tizen 6.0)' });
-    }
-
     it('takes the AVPlay plane by default, for hardware surround', () => {
       tizen();
       const plan = planEngine(PLAIN_MP4, env({ platform: 'tizen' }), 'auto');
@@ -246,23 +261,8 @@ describe('createTvEngine', () => {
   const client = {} as KromaClient;
   const listeners = {} as never;
 
-  const plan = (over: Partial<EnginePlan>): EnginePlan => ({
-    eng: 'video-direct',
-    surface: 'video',
-    useMpv: false,
-    useAvplay: false,
-    avplayDirect: false,
-    direct: true,
-    masterAac: false,
-    masterShaka: true,
-    playbackMode: 'direct',
-    deviceLabel: 'TV',
-    rebuildKey: 'k',
-    ...over,
-  });
-
   const args = (over: Partial<EnginePlan>, video: HTMLVideoElement | null = null) => ({
-    plan: plan(over),
+    plan: enginePlan(over),
     client,
     item: PLAIN_MP4,
     durationSec: 100,

@@ -52,7 +52,7 @@ export function LibraryHubPage({
       <Box mt={20} mb={20} align="flex-start">
         <SegmentGroup.Root
           value={shown}
-          onValueChange={(next) => onTab(next as LibraryTab)}
+          onValueChange={(next) => onTab(next)}
           label={t('monitoring.title')}
         >
           {tabs.map((one) => (

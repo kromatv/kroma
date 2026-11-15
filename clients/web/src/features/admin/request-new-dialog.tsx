@@ -66,7 +66,7 @@ export function NewRequestDialog({
   // typing fast must not let an early, shorter query land last.
   useEffect(() => {
     if (short) {
-      return;
+      return undefined;
     }
     let live = true;
     const at = setTimeout(() => {

@@ -3,6 +3,19 @@ import { forgetMarks } from '../overlay/mark';
 import { engine } from './engine';
 import { inspectorFor } from './inspector';
 
+const apply = () => {
+  const { keys, outline, locale } = liveState();
+  const inspector = inspectorFor(keys, outline);
+  // What a mark stands for is remembered beside it, and only for as long as
+  // marks are being drawn: forgetting when the panel unmounts would take the
+  // keys off text a refresh had just marked.
+  if (!inspector) {
+    forgetMarks();
+  }
+  engine().inspect(inspector);
+  engine().overrideLocale(locale);
+};
+
 /**
  * Keep the engine set to whatever the switches say.
  *
@@ -14,18 +27,6 @@ import { inspectorFor } from './inspector';
  * Returns a disposer that stops watching and leaves the engine as it is.
  */
 export function bindEngine(): () => void {
-  const apply = () => {
-    const { keys, outline, locale } = liveState();
-    const inspector = inspectorFor(keys, outline);
-    // What a mark stands for is remembered beside it, and only for as long as
-    // marks are being drawn: forgetting when the panel unmounts would take the
-    // keys off text a refresh had just marked.
-    if (!inspector) {
-      forgetMarks();
-    }
-    engine().inspect(inspector);
-    engine().overrideLocale(locale);
-  };
   apply();
   return onLiveChange(apply);
 }

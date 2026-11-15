@@ -20,38 +20,40 @@ const get = (cookie?: string) =>
 const inlined = (html: string) =>
   /<style id="react-native-stylesheet">([\s\S]*?)<\/style>/.exec(html)?.[1] ?? '';
 
-describe('withTheme', () => {
-  const served = (body = '<html lang="fr"><head></head><body>y</body></html>') =>
-    withTheme(() => page(body));
+const serveThemed = (body = '<html lang="fr"><head></head><body>y</body></html>') =>
+  withTheme(() => page(body));
 
+describe('withTheme', () => {
   it("stamps the visitor's stored ground on the document the server sends", async () => {
-    const html = await (await served()(get(`${THEME_COOKIE}=light`))).text();
+    const html = await (await serveThemed()(get(`${THEME_COOKIE}=light`))).text();
 
     expect(html).toContain('<html data-theme="light" lang="fr">');
   });
 
   it('leaves system unstamped, so prefers-color-scheme answers it live', async () => {
-    const html = await (await served()(get(`${THEME_COOKIE}=system`))).text();
+    const html = await (await serveThemed()(get(`${THEME_COOKIE}=system`))).text();
 
     expect(html).toContain('<html lang="fr">');
     expect(html).not.toContain('data-theme');
   });
 
   it('reads a visitor with no cookie, and one with a value it does not know, as system', async () => {
-    expect(await (await served()(get())).text()).not.toContain('data-theme');
-    expect(await (await served()(get(`${THEME_COOKIE}=ocean`))).text()).not.toContain('data-theme');
+    expect(await (await serveThemed()(get())).text()).not.toContain('data-theme');
+    expect(await (await serveThemed()(get(`${THEME_COOKIE}=ocean`))).text()).not.toContain(
+      'data-theme',
+    );
   });
 
   it('finds the choice among the other cookies a visitor carries', async () => {
     const html = await (
-      await served()(get(`kroma.session=abc; ${THEME_COOKIE}=dark; consent=1`))
+      await serveThemed()(get(`kroma.session=abc; ${THEME_COOKIE}=dark; consent=1`))
     ).text();
 
     expect(html).toContain('data-theme="dark"');
   });
 
   it('varies on cookie, or a shared cache serves one visitor ground to the next', async () => {
-    const response = await served()(get(`${THEME_COOKIE}=light`));
+    const response = await serveThemed()(get(`${THEME_COOKIE}=light`));
 
     expect(response.headers.get('vary')).toContain('cookie');
     expect(response.headers.get('content-length')).toBeNull();

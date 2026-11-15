@@ -28,6 +28,8 @@ if (!output) {
 }
 const SOURCE = output.text;
 
+const respondOk = () => Promise.resolve({ ok: true });
+
 export function load(clientList: Array<Record<string, unknown>> = []): Harness {
   const listeners = new Map<string, Listener>();
   const shown: Shown[] = [];
@@ -35,8 +37,7 @@ export function load(clientList: Array<Record<string, unknown>> = []): Harness {
   const opened: string[] = [];
   const navigated: string[] = [];
   const state = { focused: 0 };
-  let fetchImpl: (url: string, init?: RequestInit) => Promise<unknown> = () =>
-    Promise.resolve({ ok: true });
+  let fetchImpl: (url: string, init?: RequestInit) => Promise<unknown> = respondOk;
 
   let pending: Promise<unknown> = Promise.resolve();
 
@@ -115,7 +116,7 @@ export function load(clientList: Array<Record<string, unknown>> = []): Harness {
       await pending;
       pending = Promise.resolve();
     },
-  } as Harness;
+  };
 }
 
 export function payload(over: Record<string, unknown> = {}) {

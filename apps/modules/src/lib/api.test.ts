@@ -256,6 +256,9 @@ describe('machineResponse', () => {
   });
 });
 
+const served = async (path: string) =>
+  (await (await machine(path)).json()) as { $id: string; properties: Record<string, unknown> };
+
 describe('the RFC-110 documents', () => {
   it('describes itself at /registry.json, naming the origin it was asked at', async () => {
     upstreamServing(CATALOG);
@@ -403,8 +406,6 @@ describe('the RFC-110 documents', () => {
 
   it('serves schema 3, the component manifest, beside the native schema 2 it replaced', async () => {
     upstreamServing(CATALOG);
-    const served = async (path: string) =>
-      (await (await machine(path)).json()) as { $id: string; properties: Record<string, unknown> };
 
     const native = await served('/schemas/2/manifest.json');
     const component = await served('/schemas/3/manifest.json');

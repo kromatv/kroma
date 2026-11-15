@@ -66,7 +66,7 @@ export function useHeldSeek<T extends HeldSeekTransport>(transport: T): T {
 
   useEffect(() => {
     if (held === null) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setHeld(null), GIVE_UP_MS);
     return () => clearTimeout(timer);

@@ -248,16 +248,17 @@ export function dsmVersion(raw: string): string {
   return suffix ? `${feat}-${suffix}` : feat;
 }
 
+const parse = (v: string) => {
+  const [feat, build] = splitBuild(v);
+  return {
+    seg: feat.split('.').map((n) => Number.parseInt(n, 10) || 0),
+    build: Number.parseInt(build ?? '', 10) || 0,
+  };
+};
+
 /** DSM's version ordering: the dotted feature version numerically, segment by
  * segment, then the -build suffix. */
 export function cmpDsmVersion(a: string, b: string): number {
-  const parse = (v: string) => {
-    const [feat, build] = splitBuild(v);
-    return {
-      seg: feat.split('.').map((n) => Number.parseInt(n, 10) || 0),
-      build: Number.parseInt(build ?? '', 10) || 0,
-    };
-  };
   const pa = parse(a);
   const pb = parse(b);
   for (let i = 0; i < Math.max(pa.seg.length, pb.seg.length); i++) {

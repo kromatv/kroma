@@ -33,7 +33,7 @@ interface Execution {
 
 export interface RunningCommand {
   readonly exited: Promise<number>;
-  close(): void;
+  close: () => void;
 }
 
 /** One SSH session on a set in Dev Mode, as the ares tools open it. */

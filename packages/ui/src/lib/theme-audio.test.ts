@@ -2,10 +2,11 @@ import type { SessionStorage } from '@kromatv/client';
 import { describe, expect, it } from 'vitest';
 import { readThemeMuted as readMuted, writeThemeMuted as writeMuted } from './theme-audio';
 
+const no = () => {
+  throw new Error('this device has no store');
+};
+
 function refusing(): SessionStorage {
-  const no = () => {
-    throw new Error('this device has no store');
-  };
   return { getItem: no, setItem: no, removeItem: no };
 }
 

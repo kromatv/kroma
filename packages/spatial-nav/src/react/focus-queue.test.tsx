@@ -43,6 +43,15 @@ function BranchArrivingWhole() {
   );
 }
 
+function Later() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- the test needs the branch to mount on a second commit
+    setReady(true);
+  }, []);
+  return ready ? <TileAskingOnMount /> : null;
+}
+
 describe('focus asked for before the tree that holds it is whole', () => {
   it('lands when the whole screen mounts at once', () => {
     render(
@@ -65,14 +74,6 @@ describe('focus asked for before the tree that holds it is whole', () => {
   });
 
   it('lands when the tile itself arrives last', () => {
-    function Later() {
-      const [ready, setReady] = useState(false);
-      useEffect(() => {
-        // oxlint-disable-next-line react-compiler/set-state-in-effect -- the test needs the branch to mount on a second commit
-        setReady(true);
-      }, []);
-      return ready ? <TileAskingOnMount /> : null;
-    }
     render(
       <NavigatorRoot>
         <NavigatorView direction="horizontal">

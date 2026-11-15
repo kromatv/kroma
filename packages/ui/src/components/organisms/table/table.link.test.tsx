@@ -7,7 +7,7 @@ import { Table } from './table';
 afterEach(cleanup);
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 function Log() {
@@ -35,7 +35,7 @@ function Log() {
   );
 }
 
-const rows = () => screen.getAllByRole('row') as HTMLElement[];
+const rows = () => screen.getAllByRole('row');
 
 const row = (at: number) => rows()[at] as HTMLElement;
 

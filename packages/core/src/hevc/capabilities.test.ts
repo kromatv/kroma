@@ -97,15 +97,15 @@ const videoCaps = (video: Partial<PlaybackCapabilities>): PlaybackCapabilities =
 
 describe('detectCapabilities (node baseline: no DOM, no MediaSource)', () => {
   it('reports nothing decodable and a bare-video-element source', () => {
-    const caps = detectCapabilities();
-    expect(caps.hevc).toBe(false);
-    expect(caps.hevc10bit).toBe(false);
-    expect(caps.h264).toBe(false);
-    expect(caps.av1).toBe(false);
-    expect(caps.hdr).toEqual(NO_HDR);
-    expect(caps.source).toBe('videoElement');
-    expect(caps.audio.aac).toBe(false);
-    expect(caps.audio.dts).toBe(false);
+    const detected = detectCapabilities();
+    expect(detected.hevc).toBe(false);
+    expect(detected.hevc10bit).toBe(false);
+    expect(detected.h264).toBe(false);
+    expect(detected.av1).toBe(false);
+    expect(detected.hdr).toEqual(NO_HDR);
+    expect(detected.source).toBe('videoElement');
+    expect(detected.audio.aac).toBe(false);
+    expect(detected.audio.dts).toBe(false);
   });
 
   it('probes a runtime that has no navigator to read a user agent from', () => {
@@ -124,9 +124,9 @@ describe('detectCapabilities (node baseline: no DOM, no MediaSource)', () => {
 describe('detectCapabilities (TV platforms)', () => {
   it('treats Tizen as fully hardware-capable (platform-tv)', () => {
     g.tizen = {};
-    const caps = detectCapabilities();
-    expect(caps.source).toBe('platform-tv');
-    expect(caps).toMatchObject({
+    const detected = detectCapabilities();
+    expect(detected.source).toBe('platform-tv');
+    expect(detected).toMatchObject({
       hevc: true,
       hevc10bit: true,
       h264: true,
@@ -135,7 +135,13 @@ describe('detectCapabilities (TV platforms)', () => {
       vp9: true,
       hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
     });
-    expect(caps.audio).toMatchObject({ aac: true, ac3: true, eac3: true, dts: true, truehd: true });
+    expect(detected.audio).toMatchObject({
+      aac: true,
+      ac3: true,
+      eac3: true,
+      dts: true,
+      truehd: true,
+    });
   });
 
   it('treats webOS as platform-tv', () => {
@@ -293,21 +299,21 @@ describe('decodableVideoCodecs', () => {
 describe('detectCapabilities (browser detection paths)', () => {
   it('detects codecs via MediaSource.isTypeSupported and reports a mediaSource source', () => {
     g.MediaSource = { isTypeSupported: (t: string) => t.includes('hvc1') || t.includes('mp4a') };
-    const caps = detectCapabilities();
-    expect(caps.hevc).toBe(true);
-    expect(caps.source).toBe('mediaSource');
-    expect(caps.audio.aac).toBe(true);
-    expect(caps.audio.ac3).toBe(false); // ac-3 not advertised by the stub
+    const detected = detectCapabilities();
+    expect(detected.hevc).toBe(true);
+    expect(detected.source).toBe('mediaSource');
+    expect(detected.audio.aac).toBe(true);
+    expect(detected.audio.ac3).toBe(false); // ac-3 not advertised by the stub
   });
 
   it('falls back to a <video> element canPlayType when there is no MediaSource', () => {
     g.document = {
       createElement: () => ({ canPlayType: (t: string) => (t.includes('avc1') ? 'probably' : '') }),
     };
-    const caps = detectCapabilities();
-    expect(caps.h264).toBe(true);
-    expect(caps.hevc).toBe(false);
-    expect(caps.source).toBe('videoElement');
+    const detected = detectCapabilities();
+    expect(detected.h264).toBe(true);
+    expect(detected.hevc).toBe(false);
+    expect(detected.source).toBe('videoElement');
   });
 
   it('detects HDR through matchMedia', () => {
@@ -334,10 +340,10 @@ describe('detectCapabilities (browser detection paths)', () => {
     g.matchMedia = () => ({ matches: false });
     g.MediaSource = { isTypeSupported: (t: string) => t.includes('dvh1') };
 
-    const caps = detectCapabilities();
+    const detected = detectCapabilities();
 
-    expect(caps.hdr.dolbyVision).toBe(true);
-    expect(caps.hdr.hdr10).toBe(false);
+    expect(detected.hdr.dolbyVision).toBe(true);
+    expect(detected.hdr.hdr10).toBe(false);
   });
 });
 

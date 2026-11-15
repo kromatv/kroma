@@ -35,7 +35,7 @@ export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: 
 
   useEffect(() => {
     if (!client.hasAuth) {
-      return;
+      return undefined;
     }
     const interval = setInterval(save, 10000);
     return () => {

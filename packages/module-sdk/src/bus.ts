@@ -30,10 +30,10 @@ export function createEventBus(): EventBus {
     },
     on(key, handler) {
       const set = handlers.get(key) ?? new Set<AnyHandler>();
-      set.add(handler as AnyHandler);
+      set.add(handler);
       handlers.set(key, set);
       return () => {
-        set.delete(handler as AnyHandler);
+        set.delete(handler);
       };
     },
   };

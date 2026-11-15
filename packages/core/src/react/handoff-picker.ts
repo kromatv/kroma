@@ -50,7 +50,7 @@ export function useHandoffPicker(opts: HandoffPickerOptions): HandoffPicker {
 
   useEffect(() => {
     if (!attempt?.outcome) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setAttempt(null), HANDOFF_OUTCOME_MS);
     return () => clearTimeout(timer);

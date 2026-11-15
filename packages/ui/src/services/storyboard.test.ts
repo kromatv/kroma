@@ -189,14 +189,14 @@ describe('polling while the server builds the sheet', () => {
   });
 });
 
-describe('tile geometry', () => {
-  async function ready(over: Partial<StoryboardManifest> = {}) {
-    const { client } = storyboardClient(manifest(over));
-    const hook = renderHook(() => useStoryboard(client, ITEM));
-    await waitFor(() => expect(hook.result.current.ready).toBe(true));
-    return hook.result;
-  }
+async function ready(over: Partial<StoryboardManifest> = {}) {
+  const { client } = storyboardClient(manifest(over));
+  const hook = renderHook(() => useStoryboard(client, ITEM));
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  return hook.result;
+}
 
+describe('tile geometry', () => {
   it('draws the first tile from the sheet origin', async () => {
     const result = await ready();
     expect(result.current.tile(0, 160)).toMatchObject({

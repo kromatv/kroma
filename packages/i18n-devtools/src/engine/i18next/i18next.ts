@@ -71,11 +71,12 @@ function nameOf(placeholder: string): string {
   return (format === -1 ? placeholder : placeholder.slice(0, format)).trim();
 }
 
+const quoted = (delimiter: string) => delimiter.replace(METACHARACTER, String.raw`\$&`);
+
 function holeScanner({
   prefix = '{{',
   suffix = '}}',
 }: NonNullable<I18nOptions['interpolation']> = {}): (text: string) => string[] {
-  const quoted = (delimiter: string) => delimiter.replace(METACHARACTER, String.raw`\$&`);
   const pattern = new RegExp(`${quoted(prefix)}.+?${quoted(suffix)}`, 'g');
   return (text) =>
     [...text.matchAll(pattern)].map(([hole]) => nameOf(hole.slice(prefix.length, -suffix.length)));

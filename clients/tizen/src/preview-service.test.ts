@@ -134,7 +134,7 @@ function load(options: Options = {}): Harness {
         await Promise.resolve();
       }
     },
-  } as Harness;
+  };
 }
 
 describe('the preview service lifecycle', () => {

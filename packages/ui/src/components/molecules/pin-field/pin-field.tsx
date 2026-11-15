@@ -124,7 +124,7 @@ function useDigitKeys(enabled: boolean, buffer: Buffer): void {
   useEffect(() => {
     const w = enabled ? webWindow() : null;
     if (!w) {
-      return;
+      return undefined;
     }
     w.addEventListener('keydown', onKey);
     return () => w.removeEventListener('keydown', onKey);

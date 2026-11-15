@@ -79,7 +79,7 @@ export const PosterCard = memo(function PosterCard({
       : { width, aspectRatio: 2 / 3 };
   return (
     <Pressable
-      onPress={() => router.push(card.route as never)}
+      onPress={() => router.push(card.route)}
       style={({ pressed }) => [{ width, opacity: pressed ? 0.75 : 1 }]}
     >
       <Box style={[size, s.art]}>

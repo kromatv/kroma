@@ -8,7 +8,7 @@ const ART =
 
 export function OverArt({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <Box row center gap={34} p={40} radius="xl" style={{ backgroundImage: ART } as object}>
+    <Box row center gap={34} p={40} radius="xl" style={{ backgroundImage: ART }}>
       {children}
     </Box>
   );

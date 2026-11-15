@@ -33,7 +33,7 @@ export function useCatalogueSync(
   // Only while signed in the picker keeps the stream (and /api/status) closed.
   useEffect(() => {
     if (!client || !signedIn) {
-      return;
+      return undefined;
     }
     const MIN_MS = 2500;
     let last = 0;

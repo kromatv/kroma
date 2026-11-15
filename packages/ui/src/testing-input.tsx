@@ -10,11 +10,11 @@ import { type ComponentType, createElement, type ReactNode } from 'react';
 import { createInputGate, type InputGate, InputGateProvider } from './lib/input-gate';
 
 export type InputTestHost = InputGate & {
-  render(ui: ReactNode, options?: RenderOptions): RenderResult;
-  renderHook<Result, Props>(
+  render: (ui: ReactNode, options?: RenderOptions) => RenderResult;
+  renderHook: <Result, Props>(
     callback: (props: Props) => Result,
     options?: RenderHookOptions<Props>,
-  ): RenderHookResult<Result, Props>;
+  ) => RenderHookResult<Result, Props>;
   inputGate: InputGate;
   Host: ComponentType<{ children: ReactNode }>;
 };
@@ -28,22 +28,22 @@ export function createInputTestHost(options?: {
     const content = createElement(InputGateProvider, { value: gate }, children);
     return options?.wrapper ? createElement(options.wrapper, null, content) : content;
   }
-  function render(ui: ReactNode, options?: RenderOptions) {
-    const Outer = options?.wrapper;
+  function render(ui: ReactNode, renderOptions?: RenderOptions) {
+    const Outer = renderOptions?.wrapper;
     function Wrapper({ children }: { children: ReactNode }) {
       return createElement(Host, null, Outer ? createElement(Outer, null, children) : children);
     }
-    return renderTree(ui, { ...options, wrapper: Wrapper });
+    return renderTree(ui, { ...renderOptions, wrapper: Wrapper });
   }
   function renderHook<Result, Props>(
     callback: (props: Props) => Result,
-    options?: RenderHookOptions<Props>,
+    hookOptions?: RenderHookOptions<Props>,
   ) {
-    const Outer = options?.wrapper;
+    const Outer = hookOptions?.wrapper;
     function Wrapper({ children }: { children: ReactNode }) {
       return createElement(Host, null, Outer ? createElement(Outer, null, children) : children);
     }
-    return renderReactHook(callback, { ...options, wrapper: Wrapper });
+    return renderReactHook(callback, { ...hookOptions, wrapper: Wrapper });
   }
   return { ...gate, render, renderHook, inputGate: gate, Host };
 }

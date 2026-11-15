@@ -70,7 +70,7 @@ describe('buildHomeChannels', () => {
   it('keeps movies only, de-duplicates ids and caps at twenty', () => {
     const many = Array.from({ length: 25 }, (_, i) => movie({ id: `m${i}` }));
     const section = movieSection('recent', 'Recently added', [movie({ id: 'dup' }), ...many]);
-    section.items.push({ type: 'movie', item: movie({ id: 'dup' }) } as Section['items'][number]);
+    section.items.push({ type: 'movie', item: movie({ id: 'dup' }) });
     section.items.push({ type: 'show', show: { id: 'sh' } } as unknown as Section['items'][number]);
     const channel = buildHomeChannels([section], launcherClient())[0] as HomeChannelSpec;
     expect(channel.items).toHaveLength(20);
@@ -113,7 +113,7 @@ function resume(
     durationMs: 4000,
     updatedAt: '2026-03-03T00:00:00Z',
     ...over,
-  } as unknown as ContinueItem;
+  };
 }
 
 describe('buildWatchNext', () => {

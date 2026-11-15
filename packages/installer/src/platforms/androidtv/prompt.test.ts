@@ -38,7 +38,8 @@ const set = (host: string, name: string): Television => ({
 const salon = set('192.168.1.78', 'Salon');
 const chambre = set('192.168.1.79', 'Chambre');
 const open = vi.spyOn(AdbConnection, 'open');
-const connection = { close: vi.fn() } as unknown as AdbConnection;
+const close = vi.fn();
+const connection = { close } as unknown as AdbConnection;
 
 beforeEach(() => {
   vi.mocked(adbKeys).mockResolvedValue([]);
@@ -69,7 +70,7 @@ describe('askPairingCodes', () => {
     await askPairingCodes([salon]);
 
     expect(p.text).not.toHaveBeenCalled();
-    expect(connection.close).toHaveBeenCalled();
+    expect(close).toHaveBeenCalled();
   });
 
   it('asks nothing of a set in Network debugging, which prompts on its own screen', async () => {

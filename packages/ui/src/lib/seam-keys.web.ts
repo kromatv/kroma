@@ -44,7 +44,7 @@ function useResizableKeys({ held, orientation, onNudge, onRelease }: ResizableKe
   useEffect(() => {
     const document = webDocument();
     if (!held || !document) {
-      return;
+      return undefined;
     }
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);

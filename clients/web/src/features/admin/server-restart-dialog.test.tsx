@@ -21,16 +21,16 @@ vi.mock('#web/shared/lib/auth', () => ({
   }),
 }));
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   mocks.restartServer.mockResolvedValue(undefined);
 });
 
 function show() {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <ServerRestartDialog onClose={mocks.onClose} onRestarted={mocks.onRestarted} />
     </I18nProvider>,
@@ -38,7 +38,7 @@ function show() {
 }
 
 function press(name: string) {
-  clearPressGuard();
+  inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
 }
 

@@ -18,13 +18,13 @@ const streams: Array<{
 
 const KromaEvents = vi.hoisted(() =>
   vi.fn(function Events(this: Record<string, unknown>, base: string, handlers: Handlers) {
-    const stream = { base, handlers, connected: 0, closed: 0 };
-    streams.push(stream);
+    const opened = { base, handlers, connected: 0, closed: 0 };
+    streams.push(opened);
     this.connect = () => {
-      stream.connected += 1;
+      opened.connected += 1;
     };
     this.close = () => {
-      stream.closed += 1;
+      opened.closed += 1;
     };
   }),
 );

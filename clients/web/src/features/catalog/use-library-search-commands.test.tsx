@@ -86,6 +86,8 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+const actionLabels = () => titles()[0]?.actions?.map((one) => one && one.label);
+
 describe('useLibrarySearchCommands', () => {
   it('offers nothing before anything is typed', () => {
     mocks.query = '';
@@ -232,8 +234,6 @@ describe('useLibrarySearchCommands', () => {
 
     expect(titles()[1]?.always).toBe(false);
   });
-
-  const actionLabels = () => titles()[0]?.actions?.map((one) => one && one.label);
 
   it('lets a movie be played, listed and marked as watched', async () => {
     await typing('dune', MOVIE);

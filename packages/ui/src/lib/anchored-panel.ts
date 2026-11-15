@@ -159,7 +159,7 @@ export function useTriggerKeys(
   useEffect(() => {
     const trigger = webTrigger(anchor);
     if (!trigger) {
-      return;
+      return undefined;
     }
     const onKey = (event: KeyboardEvent) => {
       onKeyDown({
@@ -185,7 +185,7 @@ export function useActiveDescendant(anchor: RefObject<unknown>, rowId: string): 
   useEffect(() => {
     const trigger = webTrigger(anchor);
     if (!trigger) {
-      return;
+      return undefined;
     }
     trigger.setAttribute('aria-activedescendant', rowId);
     return () => trigger.removeAttribute('aria-activedescendant');

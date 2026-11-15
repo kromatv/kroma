@@ -67,13 +67,13 @@ describe('holeShape', () => {
   });
 });
 
-describe('moved', () => {
-  const shape = (h: number, covers: HoleRect[] = []): HoleShape => ({
-    rect: { x: 0, y: 0, w: 1, h },
-    covers,
-  });
-  const cover = (y: number, h: number): HoleRect => ({ x: 0, y, w: 1, h });
+const shape = (h: number, covers: HoleRect[] = []): HoleShape => ({
+  rect: { x: 0, y: 0, w: 1, h },
+  covers,
+});
+const cover = (y: number, h: number): HoleRect => ({ x: 0, y, w: 1, h });
 
+describe('moved', () => {
   it('is false for the same shape and true across null', () => {
     expect(moved(shape(1), shape(1))).toBe(false);
     expect(moved(shape(1), null)).toBe(true);

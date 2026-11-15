@@ -159,8 +159,8 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
                 label={t('content.season', { number: season?.number ?? 1 })}
                 onPress={() =>
                   seasonButtonRef.current?.measureInWindow(
-                    (x: number, y: number, width: number, height: number) =>
-                      setSeasonAnchor({ x, y, width, height }),
+                    (x: number, y: number, w: number, h: number) =>
+                      setSeasonAnchor({ x, y, width: w, height: h }),
                   )
                 }
               />
@@ -204,10 +204,10 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
         visible={seasonAnchor !== null}
         anchor={seasonAnchor}
         onClose={() => setSeasonAnchor(null)}
-        items={seasons.map((s, i) => ({
-          key: String(s.number),
-          label: t('content.season', { number: s.number }),
-          detail: t('content.episodeCount', { count: s.episodes.length }),
+        items={seasons.map((entry, i) => ({
+          key: String(entry.number),
+          label: t('content.season', { number: entry.number }),
+          detail: t('content.episodeCount', { count: entry.episodes.length }),
           active: i === seasonIdx,
           onPress: () => setSeasonIdx(i),
         }))}

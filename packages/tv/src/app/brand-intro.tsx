@@ -9,7 +9,7 @@ export interface BrandIntroProps {
 const introSeen = sessionFlag('kroma:intro-seen');
 
 export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
-  const [done, setDone] = useState(introSeen.isSet);
+  const [done, setDone] = useState(() => introSeen.isSet());
   if (done) {
     return null;
   }

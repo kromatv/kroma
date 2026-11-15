@@ -29,7 +29,7 @@ export function useStoryboard(
 
   useEffect(() => {
     if (!enabled || localSprite) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;

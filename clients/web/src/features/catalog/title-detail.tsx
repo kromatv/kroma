@@ -215,13 +215,13 @@ export function TitleDetail({
   const overline = view.genres.length
     ? view.genres.slice(0, 3).join(' · ')
     : t(fallbackOverlineKey);
-  const similarItems: SimilarItem[] = (similar ?? view.similar).map((s) => ({
-    id: s.key,
-    title: s.title,
-    genre: s.genre,
+  const similarItems: SimilarItem[] = (similar ?? view.similar).map((entry) => ({
+    id: entry.key,
+    title: entry.title,
+    genre: entry.genre,
     badge: null,
-    poster: s.poster,
-    link: similarLink(s),
+    poster: entry.poster,
+    link: similarLink(entry),
   }));
 
   return (

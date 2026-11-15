@@ -4,20 +4,12 @@ import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PanelHandle } from './nav';
 import { type PlayerKeysParams, routeRemoteKey } from './player-keys';
 
-interface Setup {
-  locked?: boolean;
-  overlay?: PlayerNav['overlay'];
-  panel?: PanelHandle | null;
-  resume?: boolean;
-  credits?: boolean;
-  postPlay?: boolean;
-}
+const card = (active: boolean | undefined) =>
+  active === undefined ? undefined : { active, onBack: vi.fn() };
 
 function route(setup: Setup = {}) {
   const handleKey = vi.fn();
   const exit = vi.fn();
-  const card = (active: boolean | undefined) =>
-    active === undefined ? undefined : { active, onBack: vi.fn() };
   const params = {
     nav: {
       handleKey,
@@ -33,6 +25,15 @@ function route(setup: Setup = {}) {
   } as unknown as PlayerKeysParams;
   const press = (key: RemoteKey) => routeRemoteKey(params, key);
   return { params, press, handleKey, exit };
+}
+
+interface Setup {
+  locked?: boolean;
+  overlay?: PlayerNav['overlay'];
+  panel?: PanelHandle | null;
+  resume?: boolean;
+  credits?: boolean;
+  postPlay?: boolean;
 }
 
 describe('routeRemoteKey while locked', () => {

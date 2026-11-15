@@ -70,7 +70,7 @@ function Skeleton({
   lines = 1,
   variant = 'body',
   size = CIRCLE,
-  style,
+  style: placement,
   ...box
 }: Readonly<SkeletonProps>) {
   const scope = useStyleScope();
@@ -85,7 +85,7 @@ function Skeleton({
     return (
       // Half a leading top and bottom, so `lines` lines occupy exactly the
       // height the real text will and nothing shifts when it arrives.
-      <Animated.View style={[rhythmOf(leading, scope), boxOf(box, scope), style, pulse]}>
+      <Animated.View style={[rhythmOf(leading, scope), boxOf(box, scope), placement, pulse]}>
         {Array.from({ length: lines }, (_, i) => (
           <View
             // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder lines
@@ -106,7 +106,7 @@ function Skeleton({
         }
       : s[shape];
 
-  return <Animated.View style={[s.wash, shaped, boxOf(box, scope), style, pulse]} />;
+  return <Animated.View style={[s.wash, shaped, boxOf(box, scope), placement, pulse]} />;
 }
 
 function textRhythm(spec: TypeSpec): { bar: number; leading: number } {

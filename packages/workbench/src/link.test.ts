@@ -53,9 +53,9 @@ describe('permalink', () => {
   });
 });
 
-describe('openWebLink', () => {
-  const opener = () => vi.spyOn(Linking, 'openURL').mockResolvedValue(true);
+const opener = () => vi.spyOn(Linking, 'openURL').mockResolvedValue(true);
 
+describe('openWebLink', () => {
   it('hands an http(s) address to the platform', () => {
     const openURL = opener();
     openWebLink('https://github.com/kromatv/kroma');

@@ -94,11 +94,11 @@ function CastReceiver({
   // single owner.
   useEffect(() => {
     if (!signedIn || castable === 'off') {
-      return;
+      return undefined;
     }
     const publish = lan?.publish;
     if (!publish) {
-      return;
+      return undefined;
     }
     try {
       return publish({
@@ -107,13 +107,13 @@ function CastReceiver({
       });
     } catch {
       // A platform that refuses to publish still casts through the server.
-      return;
+      return undefined;
     }
   }, [signedIn, castable, platform, lan, name, deviceId]);
 
   useEffect(() => {
     if (!signedIn || castable === 'off' || !inFront) {
-      return;
+      return undefined;
     }
     const id = deviceId();
     let stopped = false;

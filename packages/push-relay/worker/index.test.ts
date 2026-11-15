@@ -224,43 +224,43 @@ describe('spending a grant', () => {
   });
 });
 
+function stubGoogle(sendStatus: number, sendBody = ''): string[] {
+  const urls: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      urls.push(String(url));
+      return String(url).includes('oauth2')
+        ? new Response(JSON.stringify({ access_token: 'ya29.fake' }), { status: 200 })
+        : new Response(sendBody, { status: sendStatus });
+    }),
+  );
+  return urls;
+}
+
+async function serviceAccount(): Promise<string> {
+  const pair = await crypto.subtle.generateKey(
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: 'SHA-256',
+    },
+    true,
+    ['sign', 'verify'],
+  );
+  const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
+  const body = btoa(String.fromCharCode(...pkcs8))
+    .match(/.{1,64}/g)
+    ?.join('\n');
+  return JSON.stringify({
+    project_id: 'kroma-push',
+    client_email: `relay-${Math.random()}@kroma-push.iam.gserviceaccount.com`,
+    private_key: `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`,
+  });
+}
+
 describe('spending a grant on Google', () => {
-  async function serviceAccount(): Promise<string> {
-    const pair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    );
-    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
-    const body = btoa(String.fromCharCode(...pkcs8))
-      .match(/.{1,64}/g)
-      ?.join('\n');
-    return JSON.stringify({
-      project_id: 'kroma-push',
-      client_email: `relay-${Math.random()}@kroma-push.iam.gserviceaccount.com`,
-      private_key: `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`,
-    });
-  }
-
-  function stubGoogle(sendStatus: number, sendBody = ''): string[] {
-    const urls: string[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        urls.push(String(url));
-        return String(url).includes('oauth2')
-          ? new Response(JSON.stringify({ access_token: 'ya29.fake' }), { status: 200 })
-          : new Response(sendBody, { status: sendStatus });
-      }),
-    );
-    return urls;
-  }
-
   it('delivers over FCM when the relay holds a service account', async () => {
     env.FCM_SERVICE_ACCOUNT = await serviceAccount();
     const urls = stubGoogle(200);

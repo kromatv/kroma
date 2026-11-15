@@ -14,18 +14,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+async function fresh(storage: unknown) {
+  vi.resetModules();
+  vi.stubGlobal('localStorage', storage);
+  const module = await import('./keyboard-layout-pref');
+  const owner = module.createKeyboardLayoutPref();
+  return { ...module, getKeyboardLayoutPref: owner.get, setKeyboardLayoutPref: owner.set };
+}
+
 describe('getKeyboardLayoutPref / setKeyboardLayoutPref', () => {
   // The pref is a reactive store (settings/store.ts) that reads storage ONCE at
   // module creation and is the in-process source of truth afterwards, so each
   // test imports a fresh module instance with its storage stub already up.
-  async function fresh(storage: unknown) {
-    vi.resetModules();
-    vi.stubGlobal('localStorage', storage);
-    const module = await import('./keyboard-layout-pref');
-    const owner = module.createKeyboardLayoutPref();
-    return { ...module, getKeyboardLayoutPref: owner.get, setKeyboardLayoutPref: owner.set };
-  }
-
   it('defaults to abc when nothing is stored', async () => {
     const m = await fresh(fakeStorage());
     expect(m.getKeyboardLayoutPref()).toBe('abc');

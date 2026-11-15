@@ -15,6 +15,10 @@ function install(root: string, name: string, manifest: object, files: Record<str
   return dir;
 }
 
+const always = () => true;
+
+const isReact = (dir: string) => dir === 'C:/repo/node_modules/react';
+
 describe('packageRoot', () => {
   it('climbs past a nested package.json that names nothing to the package', () => {
     const root = mkdtempSync(join(tmpdir(), 'npm-'));
@@ -24,16 +28,12 @@ describe('packageRoot', () => {
   });
 
   it('reads a Windows path the way it reads any other', () => {
-    const isReact = (dir: string) => dir === 'C:/repo/node_modules/react';
-
     expect(packageRoot('C:\\repo\\node_modules\\react\\cjs\\react.js', isReact)).toBe(
       'C:/repo/node_modules/react',
     );
   });
 
   it('leaves this repository and virtual modules out', () => {
-    const always = () => true;
-
     expect(packageRoot('/repo/packages/ui/src/button.tsx', always)).toBeNull();
     expect(packageRoot('\0/repo/node_modules/x/index.js', always)).toBeNull();
   });

@@ -137,7 +137,7 @@ interface DevEnvironment {
 
 interface FileChange {
   file: string;
-  read(): string | Promise<string>;
+  read: () => string | Promise<string>;
 }
 
 interface PluginList {

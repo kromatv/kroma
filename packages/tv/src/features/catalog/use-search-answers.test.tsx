@@ -9,6 +9,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider } from '#tv/app/router';
 import { useSearchAnswers } from '#tv/features/catalog/use-search-answers';
 
+const noop = () => undefined;
+
 const HIT: SearchHit = {
   type: 'movie',
   item: { id: 'item-1', title: 'Bert' } as unknown as MediaItem,
@@ -17,7 +19,7 @@ const NOTHING_LOCAL = () => [];
 const EMPTY: DiscoverResponse = { results: [], page: 1, totalPages: 1 };
 
 function deferred<T>() {
-  let settle: (value: T) => void = () => undefined;
+  let settle: (value: T) => void = noop;
   const promise = new Promise<T>((resolve) => {
     settle = resolve;
   });

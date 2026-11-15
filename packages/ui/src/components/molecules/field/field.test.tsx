@@ -171,25 +171,25 @@ describe('a part outside its Root', () => {
   });
 });
 
+const grouped = () =>
+  render(
+    <ButtonGroup.Root label="Rate">
+      <Field.Root label="Amount" hideLabel>
+        <Field.Input />
+      </Field.Root>
+      <Button label="Unlimited" />
+    </ButtonGroup.Root>,
+  );
+
+const raisedAncestor = (entry: HTMLElement) => {
+  let at: HTMLElement | null = entry;
+  while (at && !(Number(declared(at, 'z-index')) > 0)) {
+    at = at.parentElement;
+  }
+  return at;
+};
+
 describe('a field welded into a <ButtonGroup>', () => {
-  const grouped = () =>
-    render(
-      <ButtonGroup.Root label="Rate">
-        <Field.Root label="Amount" hideLabel>
-          <Field.Input />
-        </Field.Root>
-        <Button label="Unlimited" />
-      </ButtonGroup.Root>,
-    );
-
-  const raisedAncestor = (entry: HTMLElement) => {
-    let at: HTMLElement | null = entry;
-    while (at && !(Number(declared(at, 'z-index')) > 0)) {
-      at = at.parentElement;
-    }
-    return at;
-  };
-
   it('rises above the member beside it while its entry has focus', () => {
     grouped();
     const entry = screen.getByLabelText('Amount');

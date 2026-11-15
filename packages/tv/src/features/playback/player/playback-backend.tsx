@@ -41,9 +41,9 @@ export interface PipHandle {
  * says whether the film was still playing as the window closed, which is what
  * tells a viewer who expanded it from one who dismissed it. */
 export interface PipBinding {
-  attach(view: PipHandle | null): void;
-  onStart(): void;
-  onStop(playing: boolean): void;
+  attach: (view: PipHandle | null) => void;
+  onStart: () => void;
+  onStop: (playing: boolean) => void;
 }
 
 /** What a backend's surface is handed to draw. */
@@ -65,7 +65,7 @@ export interface PlaybackBackend<P extends EnginePlan = EnginePlan> {
   ): P;
   createTvEngine(args: CreateEngineArgs<P>): TvEngine | null;
   Surface: ComponentType<SurfaceProps>;
-  pictureInPicture(surface: Surface): boolean;
+  pictureInPicture: (surface: Surface) => boolean;
 }
 
 /** What a shell hands `TvApp` for playback: the player screen and the trailer

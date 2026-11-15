@@ -79,7 +79,7 @@ export function FocusLiftHost({ children }: Readonly<{ children: (held: boolean)
   // subtree twice. The cleanup is what lets go when a lifted subtree unmounts.
   useEffect(() => {
     if (!parent || !lifted) {
-      return;
+      return undefined;
     }
     parent(true);
     return () => parent(false);

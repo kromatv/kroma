@@ -139,7 +139,7 @@ export function MobileTopbar() {
 
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const step = useBreakpoint();
   const [openedAt, setOpenedAt] = useState(pathname);
   if (openedAt !== pathname) {

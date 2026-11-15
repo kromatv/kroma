@@ -262,7 +262,7 @@ describe('termination', () => {
   it('halts on a 410, which is how a ping learns it was stopped', async () => {
     const onTerminated = vi.fn();
     const { client } = heartbeatClient(async () => {
-      throw new KromaApiError(410, 'gone', undefined as never);
+      throw new KromaApiError(410, 'gone', undefined);
     });
     renderHook(() => usePlaybackHeartbeat(params({ client, onTerminated })));
     await settle();
@@ -272,7 +272,7 @@ describe('termination', () => {
   it('ignores any other failed ping', async () => {
     const onTerminated = vi.fn();
     const { client } = heartbeatClient(async () => {
-      throw new KromaApiError(500, 'boom', undefined as never);
+      throw new KromaApiError(500, 'boom', undefined);
     });
     renderHook(() => usePlaybackHeartbeat(params({ client, onTerminated })));
     await settle();

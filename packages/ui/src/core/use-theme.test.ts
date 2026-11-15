@@ -27,12 +27,12 @@ describe('useTheme', () => {
   });
 });
 
-describe('ThemeProvider', () => {
-  const wrap = (theme?: typeof KROMA) =>
-    function Wrapper({ children }: { children: ReactNode }) {
-      return createElement(ThemeProvider, { theme }, children);
-    };
+const wrap = (theme?: typeof KROMA) =>
+  function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(ThemeProvider, { theme }, children);
+  };
 
+describe('ThemeProvider', () => {
   it('applies the theme it was given', () => {
     const { result } = renderHook(() => useTheme(), { wrapper: wrap(OCEAN) });
     expect(result.current.colors.accent).toBe('#3FB6F2');
@@ -68,15 +68,15 @@ describe('ThemeProvider', () => {
   });
 });
 
+const visibility = (state: 'hidden' | 'visible') =>
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => state,
+  });
+
+const wake = () => document.dispatchEvent(new Event('visibilitychange'));
+
 describe('useSystemGround', () => {
-  const wake = () => document.dispatchEvent(new Event('visibilitychange'));
-
-  const visibility = (state: 'hidden' | 'visible') =>
-    Object.defineProperty(document, 'visibilityState', {
-      configurable: true,
-      get: () => state,
-    });
-
   afterEach(() => visibility('visible'));
 
   it('re-applies the system ground when the app comes back to the front', () => {

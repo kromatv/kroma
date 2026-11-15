@@ -34,7 +34,7 @@ export function useDiscoveredTitles(needle: string, enabled: boolean): DiscoverS
 
   useEffect(() => {
     if (!enabled || short) {
-      return;
+      return undefined;
     }
     let live = true;
     const at = setTimeout(() => {

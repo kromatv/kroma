@@ -92,6 +92,8 @@ function sameList(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
+const untouched = (value: string, start: string) => !value.trim() || value === start;
+
 /** What choosing the preset `next` changes in `provider`, which `previous`
  * had shaped: the preset itself, and each field still as `previous` left it.
  * A field the admin made their own stays, and so does the address of a
@@ -101,7 +103,6 @@ export function presetPatch(
   previous: PresetView | undefined,
   next: PresetView | undefined,
 ): Partial<ProviderForm> {
-  const untouched = (value: string, start: string) => !value.trim() || value === start;
   const patch: Partial<ProviderForm> = {
     preset: next?.id ?? '',
     icon: next?.icon ?? provider.icon,

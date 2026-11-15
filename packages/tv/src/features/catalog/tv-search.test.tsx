@@ -35,7 +35,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   vi.unstubAllGlobals();
 });
 

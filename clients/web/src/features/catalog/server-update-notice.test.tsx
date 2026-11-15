@@ -21,7 +21,7 @@ vi.mock('#web/shared/lib/auth', () => ({
     client: { admin: { updates: mocks.updates } },
   }),
 }));
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 const status = (available = true) => ({
   version: '0.1.41',
   build: 3599999,
@@ -38,7 +38,7 @@ const status = (available = true) => ({
 let queryClient: QueryClient;
 beforeEach(() => {
   vi.clearAllMocks();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   mocks.permissions = ['settings.manage'];
   mocks.updates.mockResolvedValue(status());
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -69,7 +69,7 @@ function show() {
     routeTree: root.addChildren([home, updates]),
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />

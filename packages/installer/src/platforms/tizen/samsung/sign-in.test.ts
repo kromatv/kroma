@@ -40,6 +40,17 @@ describe('signInUrl', () => {
   });
 });
 
+const afterStrayRequest = (url: string) => {
+  const back = callbackOf(url);
+  void fetch(new URL('/favicon.ico', back)).then(() =>
+    posting(`code=${encodeURIComponent(code)}`)(url),
+  );
+};
+
+const answeringInAddress = (url: string) => {
+  void fetch(`${callbackOf(url)}?code=${encodeURIComponent(code)}`);
+};
+
 describe('signIn', () => {
   it('answers what Samsung posts back once the owner has signed in', async () => {
     const body = `code=${encodeURIComponent(code)}`;
@@ -54,11 +65,7 @@ describe('signIn', () => {
   });
 
   it('takes an answer that comes back in the address instead', async () => {
-    const open = (url: string) => {
-      void fetch(`${callbackOf(url)}?code=${encodeURIComponent(code)}`);
-    };
-
-    const access = await signIn(open, { firstPort: FIRST_PORT + 20 });
+    const access = await signIn(answeringInAddress, { firstPort: FIRST_PORT + 20 });
 
     expect(access.userId).toBe('user-456');
   });
@@ -98,14 +105,7 @@ describe('signIn', () => {
   });
 
   it('ignores a request that is not the way back, and keeps waiting', async () => {
-    const open = (url: string) => {
-      const back = callbackOf(url);
-      void fetch(new URL('/favicon.ico', back)).then(() =>
-        posting(`code=${encodeURIComponent(code)}`)(url),
-      );
-    };
-
-    const access = await signIn(open, { firstPort: FIRST_PORT + 100 });
+    const access = await signIn(afterStrayRequest, { firstPort: FIRST_PORT + 100 });
 
     expect(access.accessToken).toBe('token-123');
   });

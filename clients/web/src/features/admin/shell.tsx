@@ -76,7 +76,7 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
       ev.close();
     };
-  }, [queryClient, eventClient.sessionToken, eventClient.refreshSession]);
+  }, [queryClient, eventClient.sessionToken, eventClient]);
 
   const adminValue = useMemo(() => ({ serverInfo }), [serverInfo]);
 

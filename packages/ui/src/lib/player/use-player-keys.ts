@@ -116,7 +116,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const onBack = useEffectEvent(() => routeRemoteKey(params, 'Back'));
   useEffect(() => {
     if (!active || !backThroughBackHandler() || !Platform.isTV) {
-      return;
+      return undefined;
     }
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       onBack();

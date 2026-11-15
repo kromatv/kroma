@@ -22,6 +22,14 @@ import type { TvEngine } from '#tv/features/playback/player/engine';
 // same thing the logs do.
 const PLANE: string = nativePlayerPlane();
 
+const tryRead = <T>(get: () => T): T | null => {
+  try {
+    return get();
+  } catch {
+    return null;
+  }
+};
+
 // The chrome interpolates between reports, so a coarser interval than the
 // frame rate is plenty and costs less.
 const TIME_UPDATE_SEC = 0.25;
@@ -119,7 +127,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         if (this.destroyed || this.player !== player) {
           return;
         }
-        (handler as (p: never) => void)(payload);
+        handler(payload);
       };
       this.subscriptions.push(player.addListener(event, guarded as never));
     };
@@ -259,25 +267,17 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (!player) {
       return rows;
     }
-    const read = <T>(get: () => T): T | null => {
-      try {
-        return get();
-      } catch {
-        return null;
-      }
-    };
-
-    const status = read(() => player.status);
+    const status = tryRead(() => player.status);
     if (status) {
       rows.push({ label: 'Player state', value: status });
     }
 
-    const rate = read(() => player.playbackRate);
+    const rate = tryRead(() => player.playbackRate);
     if (rate != null && rate !== 1) {
       rows.push({ label: 'Rate', value: `${rate}x` });
     }
 
-    const track = read(() => player.videoTrack);
+    const track = tryRead(() => player.videoTrack);
     if (!track) {
       return rows;
     }

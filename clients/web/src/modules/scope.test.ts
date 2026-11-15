@@ -19,16 +19,17 @@ const SCOPES: Record<string, [() => Promise<object>, () => Promise<object>]> = {
   '@kromatv/i18n/react': [() => import('./scope/i18n-react'), () => import('@kromatv/i18n/react')],
 };
 
+const keys = (ns: object) =>
+  Object.keys(ns)
+    .filter((k) => k !== 'default')
+    .sort();
+
 describe('the scope a runtime module receives', () => {
   for (const [specifier, [scope, barrel]] of Object.entries(SCOPES)) {
     it(`hands over every export of ${specifier}, as the same instances`, async () => {
       const given = await scope();
       const real = await barrel();
 
-      const keys = (ns: object) =>
-        Object.keys(ns)
-          .filter((k) => k !== 'default')
-          .sort();
       expect(keys(given)).toEqual(keys(real));
       for (const key of keys(real)) {
         expect(Reflect.get(given, key)).toBe(Reflect.get(real, key));

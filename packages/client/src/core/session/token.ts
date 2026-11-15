@@ -62,7 +62,7 @@ export function createSessionScope() {
           inflightExchange = null;
         }
       });
-    inflightExchange = p as Promise<TokenExchange>;
+    inflightExchange = p;
     return p;
   }
 

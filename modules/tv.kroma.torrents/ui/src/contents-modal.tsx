@@ -9,7 +9,7 @@ import { useEpisodeNames } from './use-episode-names';
 const POSTER_WIDTH = 46;
 const POSTER_HEIGHT = 69;
 
-export const ContentsModal = createCallable<{ dl: DownloadView }, void>(({ call, dl }) => {
+export const ContentsModal = createCallable<{ dl: DownloadView }>(({ call, dl }) => {
   const t = useT();
   const torrents = useTorrentsApi();
   const {

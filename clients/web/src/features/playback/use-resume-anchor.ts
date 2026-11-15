@@ -36,7 +36,7 @@ export function useResumeAnchor(
   const bootAnchor = user ? resolvedHere : 0;
   useEffect(() => {
     if (!user) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.playback

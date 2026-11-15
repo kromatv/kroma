@@ -44,7 +44,7 @@ function useClipState(videoRef: RefObject<HTMLVideoElement | null>, src: string 
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !src) {
-      return;
+      return undefined;
     }
     const patch = (next: Partial<ClipState>) => setState((s) => ({ ...s, ...next }));
     let started = false;
@@ -111,7 +111,7 @@ function usePip(videoRef: RefObject<HTMLVideoElement | null>, src: string | null
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !src) {
-      return;
+      return undefined;
     }
     const enter = () => setActive(true);
     const leave = () => setActive(false);

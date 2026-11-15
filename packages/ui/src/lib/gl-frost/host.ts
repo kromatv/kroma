@@ -3,10 +3,10 @@ import type { FrostLayer } from './context';
 /** The frost layers drawn now, for frosted surfaces outside any `<FrostSource>`
  *  (an app's persistent chrome): they use the newest. */
 export interface FrostHost {
-  current(): FrostLayer | null;
-  subscribe(listener: () => void): () => void;
+  current: () => FrostLayer | null;
+  subscribe: (listener: () => void) => () => void;
   /** Offers `layer` until the returned call. */
-  offer(layer: FrostLayer): () => void;
+  offer: (layer: FrostLayer) => () => void;
 }
 
 export function createFrostHost(): FrostHost {
@@ -19,11 +19,11 @@ export function createFrostHost(): FrostHost {
   };
   return {
     current: () => layers.at(-1) ?? null,
-    subscribe(listener) {
+    subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    offer(layer) {
+    offer: (layer) => {
       layers.push(layer);
       changed();
       return () => {

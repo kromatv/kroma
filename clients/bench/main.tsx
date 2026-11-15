@@ -47,7 +47,7 @@ const ROW_CHUNK = 3;
 const GRID = Array.from({ length: RAILS }, (_, row) => ({
   id: `row-${row}`,
   title: `Row ${row + 1}`,
-  tiles: Array.from({ length: TILES }, (_, col) => ({
+  tiles: Array.from({ length: TILES }, (_cell, col) => ({
     id: `tile-${row}-${col}`,
     title: `Title ${row + 1}-${col + 1}`,
     autoFocus: row === 0 && col === 0,

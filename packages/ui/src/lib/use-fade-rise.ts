@@ -23,7 +23,7 @@ function useSettled(shown: boolean): boolean {
   }
   useEffect(() => {
     if (!shown) {
-      return;
+      return undefined;
     }
     const frame = requestAnimationFrame(() => setSettled(true));
     return () => cancelAnimationFrame(frame);
@@ -45,7 +45,7 @@ function useNativeStyle(shown: boolean, ms: number, rise: number) {
   const [run] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (WEB) {
-      return;
+      return undefined;
     }
     const anim = Animated.timing(run, {
       toValue: shown ? 1 : 0,
@@ -69,7 +69,7 @@ function useMounted(shown: boolean, ms: number): boolean {
   }
   useEffect(() => {
     if (shown) {
-      return;
+      return undefined;
     }
     const out = setTimeout(() => setMounted(false), ms);
     return () => clearTimeout(out);

@@ -42,7 +42,7 @@ function useCardRadius(settingsShrink: boolean): number {
   }
   useEffect(() => {
     if (settingsShrink) {
-      return;
+      return undefined;
     }
     const out = setTimeout(() => setRounded(false), CARD_MS);
     return () => clearTimeout(out);

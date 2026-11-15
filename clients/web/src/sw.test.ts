@@ -91,9 +91,9 @@ describe('push', () => {
   });
 });
 
-describe('pushsubscriptionchange', () => {
-  const key = (bytes: number[]) => () => new Uint8Array(bytes).buffer;
+const key = (bytes: number[]) => () => new Uint8Array(bytes).buffer;
 
+describe('pushsubscriptionchange', () => {
   it('re-registers the rotated subscription with the server', async () => {
     const sw = load();
     await sw.fire('pushsubscriptionchange', {

@@ -46,7 +46,7 @@ vi.mock('#mobile/player/use-player-presentation', () => ({
   usePlayerPresentation: () => ({ fullscreen: false, collapse: vi.fn(), toggle: vi.fn() }),
 }));
 vi.mock('#mobile/player/video-surface', () => ({
-  VideoSurface: ({ children }: { children(pip: unknown): ReactNode }) =>
+  VideoSurface: ({ children }: { children: (pip: unknown) => ReactNode }) =>
     children({ inPip: false, startPip: () => undefined }),
 }));
 vi.mock('#mobile/player/clip/clip-chrome', () => ({

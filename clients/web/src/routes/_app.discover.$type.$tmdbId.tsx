@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_app/discover/$type/$tmdbId')({
     if (params.type !== 'tv' && params.type !== 'movie') {
       throw redirect({ to: '/search', search: { q: '', type: 'all' } });
     }
-    const kind = params.type as 'movie' | 'tv';
+    const kind = params.type;
     const detail = await queryClient.ensureQueryData(
       webRuntime.queries.discoverQueries.detail(kind, Number(params.tmdbId)),
     );

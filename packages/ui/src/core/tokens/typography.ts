@@ -193,7 +193,7 @@ export function toType(
   const out: Record<string, TextStyle> = {};
   for (const [role, s] of Object.entries(spec)) {
     out[role] = {
-      fontFamily: families[s.family as string] ?? (s.family as string),
+      fontFamily: families[s.family as string] ?? s.family,
       fontWeight: s.weight,
       fontSize: s.size,
       lineHeight: Math.round(s.size * s.ratio),

@@ -216,6 +216,15 @@ describe('the action panel', () => {
   });
 });
 
+function watchScroll(): number[] {
+  const asked: number[] = [];
+  const scroller = row('Action 0')?.parentElement?.parentElement?.parentElement as HTMLElement;
+  scroller.scroll = ((options: ScrollToOptions) => {
+    asked.push(options.top ?? 0);
+  }) as typeof scroller.scroll;
+  return asked;
+}
+
 describe('a panel longer than it can show', () => {
   const PANEL_IN_NO_WINDOW = METRICS.tallRow * 2 - ACTION_METRICS.chrome;
 
@@ -227,15 +236,6 @@ describe('a panel longer than it can show', () => {
       REMOVE,
     ],
   };
-
-  function watchScroll(): number[] {
-    const asked: number[] = [];
-    const scroller = row('Action 0')?.parentElement?.parentElement?.parentElement as HTMLElement;
-    scroller.scroll = ((options: ScrollToOptions) => {
-      asked.push(options.top ?? 0);
-    }) as typeof scroller.scroll;
-    return asked;
-  }
 
   it('leaves the list alone while the cursor stays on screen', () => {
     show([MANY]);
@@ -270,25 +270,25 @@ describe('a panel longer than it can show', () => {
   });
 });
 
+function showPrimary(items: readonly CommandItem[] = [ROKU, BARE]) {
+  const onSelect = vi.fn();
+  render(
+    onScreen(
+      <Command.Root modal items={items} onSelect={onSelect} onClose={vi.fn()}>
+        <Command.Input label="Search" />
+        <Command.Footer>
+          <Command.Primary />
+        </Command.Footer>
+        <Command.Actions label="Search actions" closeLabel="Close actions" />
+      </Command.Root>,
+    ),
+  );
+  return { onSelect };
+}
+
+const footer = (name: string) => screen.queryAllByRole('button', { name }).at(-1);
+
 describe('Command.Primary', () => {
-  function showPrimary(items: readonly CommandItem[] = [ROKU, BARE]) {
-    const onSelect = vi.fn();
-    render(
-      onScreen(
-        <Command.Root modal items={items} onSelect={onSelect} onClose={vi.fn()}>
-          <Command.Input label="Search" />
-          <Command.Footer>
-            <Command.Primary />
-          </Command.Footer>
-          <Command.Actions label="Search actions" closeLabel="Close actions" />
-        </Command.Root>,
-      ),
-    );
-    return { onSelect };
-  }
-
-  const footer = (name: string) => screen.queryAllByRole('button', { name }).at(-1);
-
   it('names what Enter will do for the row under the cursor', () => {
     showPrimary();
 

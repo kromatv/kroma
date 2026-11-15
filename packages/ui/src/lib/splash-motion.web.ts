@@ -65,7 +65,7 @@ function sheet(spec: Readonly<DriftSpec>): ViewStyle {
   if (held) {
     return held;
   }
-  const made = StyleSheet.create({ drift: frames(spec) as ViewStyle }).drift;
+  const made = StyleSheet.create({ drift: frames(spec) }).drift;
   sheets.set(key, made);
   return made;
 }
@@ -99,5 +99,5 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
  * full-screen still every frame it moved. Held on something that never moves,
  * it is rasterised once and the drift transforms the result. */
 export const GRADE: StyleProp<ViewStyle> = StyleSheet.create({
-  grade: { filter: 'brightness(0.86) saturate(1.02)' } as ViewStyle,
+  grade: { filter: 'brightness(0.86) saturate(1.02)' },
 }).grade;

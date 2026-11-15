@@ -21,7 +21,7 @@ export function useResumeProgress(
 
   useEffect(() => {
     if (!user) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.playback
@@ -66,7 +66,7 @@ export function useResumeProgress(
 
   useEffect(() => {
     if (!user) {
-      return;
+      return undefined;
     }
     const v = videoRef.current;
     const interval = setInterval(saveProgress, 10000);

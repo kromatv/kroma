@@ -5,6 +5,9 @@ import { notificationLink } from '#web/features/notifications/notification-link'
 const at = (over: Partial<Notification>): Notification =>
   ({ id: 'n1', event: 'media.added', title: 't', body: 'b', actions: [], ...over }) as Notification;
 
+const moved = (link: string) => notificationLink(at({ link }));
+const same = moved;
+
 describe('notificationLink', () => {
   it('takes the notification own link over an action', () => {
     const one = at({
@@ -33,8 +36,6 @@ describe('notificationLink', () => {
   // A link is stored WITH the notification, so a row written before the routes
   // were renamed still names a path the tree no longer has.
   it('carries a link this server minted before the rename to where it moved', () => {
-    const moved = (link: string) => notificationLink(at({ link }));
-
     expect(moved('/movie/abc')).toBe('/movies/abc');
     expect(moved('/show/abc')).toBe('/shows/abc');
     expect(moved('/films')).toBe('/movies');
@@ -48,7 +49,7 @@ describe('notificationLink', () => {
     const one = at({
       subject: { kind: 'show', id: 'shw' },
       link: '/requests',
-    } as Partial<Notification>);
+    });
 
     expect(notificationLink(one)).toBe('/shows/shw');
   });
@@ -57,7 +58,7 @@ describe('notificationLink', () => {
     const one = at({
       subject: { kind: 'tv.kroma.torrents/torrent', id: 'abc' },
       link: '/downloads',
-    } as Partial<Notification>);
+    });
 
     expect(notificationLink(one)).toBe('/downloads');
   });
@@ -75,8 +76,6 @@ describe('notificationLink', () => {
   });
 
   it('leaves a path that never moved alone', () => {
-    const same = (link: string) => notificationLink(at({ link }));
-
     expect(same('/movies/abc')).toBe('/movies/abc');
     expect(same('/watch/abc')).toBe('/watch/abc');
     expect(same('/requests')).toBe('/requests');

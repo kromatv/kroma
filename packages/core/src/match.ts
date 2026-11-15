@@ -24,7 +24,7 @@ class Matcher<T, R = never> {
         this.result = evaluate(produce, this.value);
       }
     }
-    return this as unknown as Matcher<T, R | U>;
+    return this;
   }
 
   otherwise<U>(fallback: Produce<T, U>): R | U {

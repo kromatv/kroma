@@ -7,7 +7,14 @@ import { type CastBridge, createCastBridge } from '#tv/features/cast/cast-bridge
 const item = (id: string) => ({ id: ItemId.parse(id), title: id }) as MediaItem;
 
 function controller(overrides: Partial<PlayerController> = {}) {
-  return {
+  const calls = {
+    togglePlay: vi.fn(),
+    seekTo: vi.fn(),
+    skip: vi.fn(),
+    setAudio: vi.fn(),
+    setSubtitle: vi.fn(),
+  };
+  const player = {
     playing: true,
     cur: 10,
     dur: 100,
@@ -17,13 +24,10 @@ function controller(overrides: Partial<PlayerController> = {}) {
     audioIndex: 0,
     subtitles: [],
     subtitleIndex: null,
-    togglePlay: vi.fn(),
-    seekTo: vi.fn(),
-    skip: vi.fn(),
-    setAudio: vi.fn(),
-    setSubtitle: vi.fn(),
+    ...calls,
     ...overrides,
   } as unknown as PlayerController;
+  return { player, calls };
 }
 
 function deps(bridge: CastBridge): CastDeps & {
@@ -56,22 +60,22 @@ describe('play', () => {
   it('seeks instead of relaunching when the TV is already on that title', async () => {
     const bridge = createCastBridge();
     const c = controller({ playing: false });
-    bridge.setCastTarget({ item: item('it1'), controller: c });
+    bridge.setCastTarget({ item: item('it1'), controller: c.player });
     const d = deps(bridge);
     await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1'), positionMs: 30_000 }, d);
     expect(d.nav.reset).not.toHaveBeenCalled();
-    expect(c.seekTo).toHaveBeenCalledWith(30);
-    expect(c.togglePlay).toHaveBeenCalled();
+    expect(c.calls.seekTo).toHaveBeenCalledWith(30);
+    expect(c.calls.togglePlay).toHaveBeenCalled();
   });
 
   it('leaves a title that is already playing exactly where it is', async () => {
     const bridge = createCastBridge();
     const c = controller({ playing: true });
-    bridge.setCastTarget({ item: item('it1'), controller: c });
+    bridge.setCastTarget({ item: item('it1'), controller: c.player });
     const d = deps(bridge);
     await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1') }, d);
-    expect(c.seekTo).not.toHaveBeenCalled();
-    expect(c.togglePlay).not.toHaveBeenCalled();
+    expect(c.calls.seekTo).not.toHaveBeenCalled();
+    expect(c.calls.togglePlay).not.toHaveBeenCalled();
     expect(d.nav.reset).not.toHaveBeenCalled();
   });
 
@@ -97,45 +101,45 @@ describe('transport', () => {
   it('pause and resume respect what the player is already doing', async () => {
     const bridge = createCastBridge();
     const playing = controller({ playing: true });
-    bridge.setCastTarget({ item: item('it1'), controller: playing });
+    bridge.setCastTarget({ item: item('it1'), controller: playing.player });
     await applyCastCommand({ type: 'resume' }, deps(bridge));
-    expect(playing.togglePlay).not.toHaveBeenCalled();
+    expect(playing.calls.togglePlay).not.toHaveBeenCalled();
     await applyCastCommand({ type: 'pause' }, deps(bridge));
-    expect(playing.togglePlay).toHaveBeenCalledTimes(1);
+    expect(playing.calls.togglePlay).toHaveBeenCalledTimes(1);
 
     const paused = controller({ playing: false });
-    bridge.setCastTarget({ item: item('it1'), controller: paused });
+    bridge.setCastTarget({ item: item('it1'), controller: paused.player });
     await applyCastCommand({ type: 'pause' }, deps(bridge));
-    expect(paused.togglePlay).not.toHaveBeenCalled();
+    expect(paused.calls.togglePlay).not.toHaveBeenCalled();
     await applyCastCommand({ type: 'resume' }, deps(bridge));
-    expect(paused.togglePlay).toHaveBeenCalledTimes(1);
+    expect(paused.calls.togglePlay).toHaveBeenCalledTimes(1);
   });
 
   it('converts the wire milliseconds into the player seconds', async () => {
     const bridge = createCastBridge();
     const c = controller();
-    bridge.setCastTarget({ item: item('it1'), controller: c });
+    bridge.setCastTarget({ item: item('it1'), controller: c.player });
     await applyCastCommand({ type: 'seek', positionMs: 90_000 }, deps(bridge));
     await applyCastCommand({ type: 'skip', deltaMs: -10_000 }, deps(bridge));
-    expect(c.seekTo).toHaveBeenCalledWith(90);
-    expect(c.skip).toHaveBeenCalledWith(-10);
+    expect(c.calls.seekTo).toHaveBeenCalledWith(90);
+    expect(c.calls.skip).toHaveBeenCalledWith(-10);
   });
 
   it('selects tracks by the index the receiver itself advertised', async () => {
     const bridge = createCastBridge();
     const c = controller();
-    bridge.setCastTarget({ item: item('it1'), controller: c });
+    bridge.setCastTarget({ item: item('it1'), controller: c.player });
     await applyCastCommand({ type: 'setAudio', index: 2 }, deps(bridge));
     await applyCastCommand({ type: 'setSubtitle', index: null }, deps(bridge));
-    expect(c.setAudio).toHaveBeenCalledWith(2);
-    expect(c.setSubtitle).toHaveBeenCalledWith(null);
+    expect(c.calls.setAudio).toHaveBeenCalledWith(2);
+    expect(c.calls.setSubtitle).toHaveBeenCalledWith(null);
   });
 });
 
 describe('skipNext / stop', () => {
   it('swaps in the next episode, keeping what is behind the player', async () => {
     const bridge = createCastBridge();
-    bridge.setCastTarget({ item: item('s01e01'), controller: controller() });
+    bridge.setCastTarget({ item: item('s01e01'), controller: controller().player });
     const d = deps(bridge);
     await applyCastCommand({ type: 'skipNext' }, d);
     expect(d.nav.swap).toHaveBeenCalledWith(
@@ -146,7 +150,7 @@ describe('skipNext / stop', () => {
 
   it('leaves the player alone when there is no next episode', async () => {
     const bridge = createCastBridge();
-    bridge.setCastTarget({ item: item('film'), controller: controller() });
+    bridge.setCastTarget({ item: item('film'), controller: controller().player });
     const d = deps(bridge);
     (d.client.playback.nextEpisode as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
     await applyCastCommand({ type: 'skipNext' }, d);
@@ -155,7 +159,7 @@ describe('skipNext / stop', () => {
 
   it('stays on the current episode when the lookup fails', async () => {
     const bridge = createCastBridge();
-    bridge.setCastTarget({ item: item('s01e01'), controller: controller() });
+    bridge.setCastTarget({ item: item('s01e01'), controller: controller().player });
     const d = deps(bridge);
     (d.client.playback.nextEpisode as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error('offline'),
@@ -170,7 +174,7 @@ describe('skipNext / stop', () => {
     await applyCastCommand({ type: 'stop' }, idle);
     expect(idle.nav.home).not.toHaveBeenCalled();
 
-    bridge.setCastTarget({ item: item('it1'), controller: controller() });
+    bridge.setCastTarget({ item: item('it1'), controller: controller().player });
     const playing = deps(bridge);
     await applyCastCommand({ type: 'stop' }, playing);
     expect(playing.nav.home).toHaveBeenCalled();

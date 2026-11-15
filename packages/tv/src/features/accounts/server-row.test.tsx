@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ServerProbe } from '#tv/app/use-servers-health';
 import { ActionRow, ServerRow, ServerRowSkeleton } from '#tv/features/accounts/server-row';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
-const show = (ui: ReactElement) => render(onScreen(ui));
+const show = (ui: ReactElement) => inputHost.render(onScreen(ui));
 
 const row = (probe?: ServerProbe, isNew?: boolean) =>
   show(
@@ -24,7 +24,7 @@ const row = (probe?: ServerProbe, isNew?: boolean) =>
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 describe('ServerRow', () => {

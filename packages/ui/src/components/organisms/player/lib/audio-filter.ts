@@ -113,11 +113,13 @@ function build(ctx: AudioContext, el: HTMLMediaElement): Graph {
   return { source, comp, gain, boost, limiter };
 }
 
+const doNothing = () => {};
+
 /** Audio graph lifetime matches the player controller that owns its video ref. */
 export function createAudioFilterOwner() {
   // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
   let sharedCtx: AudioContext | null = null;
-  let unlisten = () => {};
+  let unlisten = doNothing;
   // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
   function audioCtx(): AudioContext | null {
     // oxlint-disable-next-line no-restricted-globals -- audited - Web Audio is the browser's own leveling path; the native engines do their own (mpv af, Exo DynamicsProcessing, server-side aac-night), and this returns null there.

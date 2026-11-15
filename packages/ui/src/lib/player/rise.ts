@@ -35,12 +35,12 @@ export function useRise(): Rise {
   }, [run]);
 
   return {
-    veil: { opacity: run } as unknown as StyleProp<ViewStyle>,
+    veil: { opacity: run },
     copy: {
       opacity: run,
       transform: [
         { translateY: run.interpolate({ inputRange: [0, 1], outputRange: [RISE_PX, 0] }) },
       ],
-    } as unknown as StyleProp<ViewStyle>,
+    },
   };
 }

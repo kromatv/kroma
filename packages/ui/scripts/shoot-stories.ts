@@ -121,9 +121,9 @@ const DEADLINE_MS = 20_000;
 // landed rather than when Chrome exits, since headless Chrome keeps running as
 // long as react-native-web has a pending animation timer.
 function chrome(extraArgs: string[], isDone: (out: string) => boolean): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((finishWith) => {
     const child = spawn(CHROME as string, [...CHROME_FLAGS, ...extraArgs]);
-    let out = '';
+    let output = '';
     let settled = false;
     const finish = () => {
       if (settled) {
@@ -133,13 +133,13 @@ function chrome(extraArgs: string[], isDone: (out: string) => boolean): Promise<
       clearInterval(poll);
       clearTimeout(deadline);
       child.kill('SIGKILL');
-      resolve(out);
+      finishWith(output);
     };
     child.stdout.on('data', (chunk) => {
-      out += chunk;
+      output += chunk;
     });
     const poll = setInterval(() => {
-      if (isDone(out)) {
+      if (isDone(output)) {
         finish();
       }
     }, 150);
@@ -154,8 +154,8 @@ function chrome(extraArgs: string[], isDone: (out: string) => boolean): Promise<
 const ID_MARKER = /KROMA_STORY_IDS:([a-z0-9,-]*)/;
 
 async function discoverIds(): Promise<string[]> {
-  const dump = await chrome([`--dump-dom`, `http://localhost:${PORT}/?shot`], (out) =>
-    ID_MARKER.test(out),
+  const dump = await chrome([`--dump-dom`, `http://localhost:${PORT}/?shot`], (dom) =>
+    ID_MARKER.test(dom),
   );
   return ID_MARKER.exec(dump)?.[1]?.split(',').filter(Boolean) ?? [];
 }

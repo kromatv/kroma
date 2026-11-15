@@ -72,7 +72,7 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
 
   useEffect(() => {
     if (!enabled || !inFront || !lan?.browse) {
-      return;
+      return undefined;
     }
 
     return watchLanBeacons(lan, report);
@@ -90,7 +90,7 @@ function useStaysInFront(): boolean {
 
   useEffect(() => {
     if (inFront) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setDeparted(true), DEPARTURE_GRACE_MS);
     return () => clearTimeout(timer);

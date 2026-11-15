@@ -21,7 +21,7 @@ function title(p: {
   tmdbGenreIds?: number[];
 }): Sortable {
   const {
-    title,
+    title: name,
     year = null,
     addedAt = '2020-01-01T00:00:00Z',
     rating,
@@ -33,7 +33,7 @@ function title(p: {
     rating === undefined && releaseDate === undefined && genres === undefined
       ? null
       : ({ rating, releaseDate, genres: genres ?? [], tmdbGenreIds } as unknown as Metadata);
-  return { title, year, addedAt, metadata: meta };
+  return { title: name, year, addedAt, metadata: meta };
 }
 
 describe('isSortMode', () => {

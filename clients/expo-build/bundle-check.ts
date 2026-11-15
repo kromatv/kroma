@@ -60,7 +60,7 @@ function bytesOf(size: string): number {
   if (!match) {
     return Number.NaN;
   }
-  const scale = { B: 1, kB: 1e3, MB: 1e6, GB: 1e9 }[match[2] as string] ?? Number.NaN;
+  const scale = { B: 1, kB: 1e3, MB: 1e6, GB: 1e9 }[match[2]] ?? Number.NaN;
   return Number(match[1]) * scale;
 }
 

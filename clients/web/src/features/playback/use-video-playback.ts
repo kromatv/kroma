@@ -98,7 +98,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   useEffect(() => {
     const v = videoRef.current;
     if (!v) {
-      return;
+      return undefined;
     }
     return bindMediaEvents(
       v,
@@ -141,7 +141,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   useEffect(() => {
     const v = videoRef.current;
     if (!v || bootAnchor === null || !srcReady) {
-      return;
+      return undefined;
     }
     // Shaka is the default MSE engine; hls.js only on the explicit `remux`
     // override. Safari keeps native HLS unless the user picks Shaka.
@@ -207,7 +207,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   useEffect(() => {
     const v = videoRef.current;
     if (!v || decision.kind !== 'direct') {
-      return;
+      return undefined;
     }
     const onErr = () => {
       setAnchor(Math.max(0, Math.floor(v.currentTime)));

@@ -162,7 +162,7 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
             onToggleList={() => toggleList.mutate()}
             watched={isWatched}
             onToggleWatched={() => toggleWatched.mutate()}
-            onReport={() => router.push(reportPath(media, title) as never)}
+            onReport={() => router.push(reportPath(media, title))}
             item={media}
           />
         }

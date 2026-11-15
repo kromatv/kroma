@@ -28,7 +28,7 @@ function useSpinnerShown(waiting: boolean): boolean {
   }
   useEffect(() => {
     if (!waiting) {
-      return;
+      return undefined;
     }
     const spin = setTimeout(() => setShown(true), SPIN_AFTER_MS);
     return () => clearTimeout(spin);

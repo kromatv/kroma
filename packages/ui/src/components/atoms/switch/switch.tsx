@@ -139,13 +139,13 @@ function Flip({ on, travel, thumb }: Readonly<{ on: boolean; travel: number; thu
   const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
-  const motion = useFlipMotion(on, travel, FLIP_MS);
+  const flip = useFlipMotion(on, travel, FLIP_MS);
 
   const face = sharedStyle(`switch:thumb:${thumb}`, { w: thumb, h: thumb, radius: 'pill' }, scope);
   return (
     <>
-      <Animated.View style={[s.fill, motion.fill]} />
-      <Animated.View style={[face, s.thumb, motion.slide]} />
+      <Animated.View style={[s.fill, flip.fill]} />
+      <Animated.View style={[face, s.thumb, flip.slide]} />
     </>
   );
 }

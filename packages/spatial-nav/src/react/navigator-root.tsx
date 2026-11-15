@@ -55,7 +55,7 @@ function NavigatorRoot({ children, active = true, onEdge }: Readonly<NavigatorRo
 
   useEffect(() => {
     if (active) {
-      return;
+      return undefined;
     }
     navigator.lock();
     return () => navigator.unlock();

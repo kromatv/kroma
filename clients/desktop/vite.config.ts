@@ -38,5 +38,5 @@ export default defineConfig(({ command }): UserConfig => ({
   esbuild: {
     drop: command === 'build' ? ['console', 'debugger'] : [],
     legalComments: 'none',
-  } as UserConfig['esbuild'],
+  },
 }));

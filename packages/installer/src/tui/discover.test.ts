@@ -29,6 +29,7 @@ const cuisine = television({
   developerMode: 'off',
   runtime: null,
 });
+
 const chromecast = television({
   host: '192.168.1.12',
   platform: 'androidtv',
@@ -39,8 +40,10 @@ const chromecast = television({
   runtime: null,
 });
 
+const unset = () => undefined;
+
 function fakePicker() {
-  let reply: (ticked: string[] | null) => void = () => undefined;
+  let reply: (ticked: string[] | null) => void = unset;
   const answer = new Promise<string[] | null>((resolve) => {
     reply = resolve;
   });

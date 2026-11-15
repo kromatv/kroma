@@ -49,24 +49,23 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
   // re-issued mid-animation on every render of whatever holds the backdrop. The
   // deps only move on a genuine resize.
   return useMemo(
-    () =>
-      ({
-        transform: [
-          {
-            translateX: clock.interpolate({
-              inputRange: [0, 1],
-              outputRange: [width * x, -width * x],
-            }),
-          },
-          {
-            translateY: clock.interpolate({
-              inputRange: [0, 1],
-              outputRange: [height * y, -height * y],
-            }),
-          },
-          { scale: zoom },
-        ],
-      }) as unknown as StyleProp<ViewStyle>,
+    () => ({
+      transform: [
+        {
+          translateX: clock.interpolate({
+            inputRange: [0, 1],
+            outputRange: [width * x, -width * x],
+          }),
+        },
+        {
+          translateY: clock.interpolate({
+            inputRange: [0, 1],
+            outputRange: [height * y, -height * y],
+          }),
+        },
+        { scale: zoom },
+      ],
+    }),
     [clock, x, y, zoom, width, height],
   );
 }

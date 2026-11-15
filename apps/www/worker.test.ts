@@ -155,21 +155,21 @@ describe('the site worker', () => {
   });
 });
 
-describe('live installer downloads', () => {
-  const release = (tag: string) => ({
-    tag_name: tag,
-    prerelease: true,
-    html_url: `https://github.com/kromatv/kroma/releases/tag/${tag}`,
-    assets: [
-      {
-        name: 'KROMA_0.1.40-3580000_x64.dmg',
-        size: 1024,
-        browser_download_url: `https://github.com/kromatv/kroma/releases/download/${tag}/KROMA_0.1.40-3580000_x64.dmg`,
-        created_at: '2026-10-20T12:30:00Z',
-      },
-    ],
-  });
+const release = (tag: string) => ({
+  tag_name: tag,
+  prerelease: true,
+  html_url: `https://github.com/kromatv/kroma/releases/tag/${tag}`,
+  assets: [
+    {
+      name: 'KROMA_0.1.40-3580000_x64.dmg',
+      size: 1024,
+      browser_download_url: `https://github.com/kromatv/kroma/releases/download/${tag}/KROMA_0.1.40-3580000_x64.dmg`,
+      created_at: '2026-10-20T12:30:00Z',
+    },
+  ],
+});
 
+describe('live installer downloads', () => {
   it('finds the Intel installer without rebuilding the site and caches the response', async () => {
     const put = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal('caches', { default: { match: vi.fn().mockResolvedValue(undefined), put } });

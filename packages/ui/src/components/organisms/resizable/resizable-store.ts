@@ -40,8 +40,8 @@ function layoutsOf(value: unknown): SavedLayouts {
     return {};
   }
   const out: SavedLayouts = {};
-  for (const [key, value] of Object.entries(layouts.data)) {
-    const sizes = savedSizes.safeParse(value);
+  for (const [key, saved] of Object.entries(layouts.data)) {
+    const sizes = savedSizes.safeParse(saved);
     if (sizes.success) {
       out[key] = sizes.data;
     }

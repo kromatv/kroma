@@ -41,7 +41,7 @@ function useLinger<T>(value: T | null): T | null {
   }
   useEffect(() => {
     if (value) {
-      return;
+      return undefined;
     }
     const out = setTimeout(() => setHeld(null), FADE_MS);
     return () => clearTimeout(out);

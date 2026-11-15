@@ -7,8 +7,8 @@ export const t = vi.fn((key: string, vars?: unknown) => `t:${key}:${JSON.stringi
 export const locale = { value: 'en' };
 export const navigate = vi.fn();
 export const registry = {
-  start: vi.fn((base: unknown, _skipSetup?: ReadonlySet<string>) =>
-    Promise.resolve({ ...(base as object), getModuleApi: () => undefined }),
+  start: vi.fn((hostBase: unknown, _skipSetup?: ReadonlySet<string>) =>
+    Promise.resolve({ ...(hostBase as object), getModuleApi: () => undefined }),
   ),
 };
 export const loadRuntimeRemotes = vi.fn(() => Promise.resolve(undefined));
