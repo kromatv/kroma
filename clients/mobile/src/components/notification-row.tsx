@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable } from 'react-native';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { FadeImage } from '#mobile/components/fade-image';
 import { useT } from '#mobile/lib/i18n';
 import { mobileRoute, subjectRoute, useRefreshNotifications } from '#mobile/lib/notifications';
 import { useClient } from '#mobile/lib/session';

@@ -1,0 +1,136 @@
+import { useT } from '@kromatv/ui';
+import {
+  Avatar,
+  BackButton,
+  Box,
+  radius as cornerRadius,
+  Focusable,
+  FocusRegion,
+  FocusSlot,
+  gradient,
+  NavPill,
+  shade,
+  style,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
+import { useAuth } from '#tv/app/providers/auth';
+import { useConnection } from '#tv/app/providers/connection';
+import { useNav } from '#tv/app/router';
+import { CastRemotes } from '#tv/features/cast/cast-remotes';
+import { ConnectionStatus } from '#tv/features/catalog/home/connection-status';
+import { KromaMark, WallClock } from '#tv/shared/ui';
+
+export type NavKey = 'home' | 'films' | 'series' | 'genres' | 'mylist' | 'search';
+
+// Keeps the bar readable over bright hero art; the hero veil only darkens left
+// and bottom.
+const SCRIM = `linear-gradient(180deg, ${shade(0.72)}, ${shade(0.25)} 45%, transparent)`;
+
+/** The shared 10-foot top bar. Omitting `active` highlights nothing, which is
+ * what deep screens (detail / person) want. */
+
+const AVATAR = style({ radius: cornerRadius.control });
+export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
+  const s = useStyles(sDefinition);
+
+  const nav = useNav();
+  const t = useT();
+  const { user } = useAuth();
+  const { client, online } = useConnection();
+
+  return (
+    <Box absolute left={0} right={0} top={0} z={10} px={64} py={32}>
+      <Box
+        absolute
+        left={0}
+        right={0}
+        top={0}
+        h={144}
+        pointerEvents="none"
+        style={gradient(SCRIM)}
+      />
+      {/* One full-width focus band: a TV moves focus in a straight line, so a
+          band is what makes the centred pill reachable by Up from anywhere. */}
+      <FocusRegion style={s.band}>
+        {/* A <FocusSlot>, because this bar OUTLIVES the screens it sits on: the
+            back button appears the moment a screen has somewhere to go back to,
+            and a node that registers after the bar is built lands at the END of
+            the band's order however far left it is drawn - the button in the
+            top-left corner was reached by pressing Right past the pill and the
+            avatar. The slot is mounted from the start and holds first place. */}
+        <FocusSlot>
+          <Box row align="center" gap={16}>
+            {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
+            <KromaMark size={28} />
+          </Box>
+        </FocusSlot>
+        <NavPill.Root size="tv" label={t('nav.menu')}>
+          <NavPill.Backdrop amount={16} />
+          <NavPill.Item
+            icon="home"
+            label={t('nav.home')}
+            active={active === 'home'}
+            onPress={() => nav.home()}
+          />
+          <NavPill.Item
+            icon="movie"
+            label={t('nav.films')}
+            active={active === 'films'}
+            onPress={() => nav.reset('grid', { kind: 'films' })}
+          />
+          <NavPill.Item
+            icon="device-tv"
+            label={t('nav.series')}
+            active={active === 'series'}
+            onPress={() => nav.reset('grid', { kind: 'series' })}
+          />
+          <NavPill.Item
+            icon="category"
+            label={t('nav.genres')}
+            active={active === 'genres'}
+            onPress={() => nav.reset('genres')}
+          />
+          <NavPill.Item
+            icon="bookmark"
+            label={t('nav.myList')}
+            active={active === 'mylist'}
+            onPress={() => nav.reset('grid', { kind: 'mylist' })}
+          />
+          <NavPill.Item
+            icon="search"
+            label={t('nav.search')}
+            active={active === 'search'}
+            onPress={() => nav.reset('search')}
+          />
+        </NavPill.Root>
+        <Box row align="center" gap={18}>
+          {/* Renders only while a phone or browser is driving this set. */}
+          <CastRemotes />
+          <ConnectionStatus online={online} label={t('connection.reconnecting')} />
+          <WallClock />
+          {user ? (
+            <Focusable
+              onPress={() => nav.go('profileMenu')}
+              label={user.username}
+              focusScale={1.08}
+              style={AVATAR}
+            >
+              <Avatar
+                name={user.username}
+                seed={user.id}
+                size={44}
+                roundness={0.25}
+                src={client?.media.artwork.resolve(user.avatarUrl, 44)}
+              />
+            </Focusable>
+          ) : null}
+        </Box>
+      </FocusRegion>
+    </Box>
+  );
+}
+
+const sDefinition = styles({
+  band: { w: '100%', align: 'center', justify: 'space-between' },
+});

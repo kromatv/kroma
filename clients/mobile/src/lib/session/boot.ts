@@ -5,7 +5,7 @@ import { KromaApiError, type KromaClient } from '@kromatv/client';
 import { normalizeServerUrl } from '@kromatv/client/accounts';
 import { useEffect } from 'react';
 import { z } from 'zod';
-import { passBootBiometricGate } from '#mobile/lib/biometricGate';
+import { passBootBiometricGate } from '#mobile/lib/biometric-gate';
 import { loadAccounts, loadActive, loadServers, type MobileAccount } from '#mobile/lib/storage';
 import { type AccountStore, type ServerStore, sameAccount } from './stores';
 

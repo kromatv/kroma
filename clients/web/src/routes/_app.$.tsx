@@ -5,7 +5,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { NotFound } from '#web/features/errors/error-page';
-import { ModuleRouteOutlet } from '#web/modules/ModuleRouteOutlet';
+import { ModuleRouteOutlet } from '#web/modules/module-route-outlet';
 
 export const Route = createFileRoute('/_app/$')({
   component: ModulePage,

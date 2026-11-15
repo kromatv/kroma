@@ -33,7 +33,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
-import { PageHeader } from '#mobile/components/PageHeader';
+import { PageHeader } from '#mobile/components/page-header';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';

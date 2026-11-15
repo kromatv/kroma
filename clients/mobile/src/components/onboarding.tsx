@@ -5,7 +5,7 @@
 import { Box, Spinner, StatusDot, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { type } from '#mobile/lib/theme';
-import { Avatar } from './Avatar';
+import { Avatar } from './avatar';
 
 const TILE_AVATAR = 104;
 

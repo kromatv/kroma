@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { useClientCache } from '#mobile/components/signInHooks';
-import { authFor } from '#mobile/lib/providerSignIn';
+import { useClientCache } from '#mobile/components/sign-in-hooks';
+import { authFor } from '#mobile/lib/provider-sign-in';
 import { useSession } from '#mobile/lib/session';
 
 /** Where a provider flow comes back when the system hands its return link to

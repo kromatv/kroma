@@ -3,7 +3,7 @@ import { useT } from '@kromatv/ui';
 import { useTitleActions } from '#web/features/catalog/use-title-actions';
 import { useCommands } from '#web/shared/lib/command-menu';
 import { savedTitleId } from '#web/shared/lib/saved-title-id';
-import type { TitleView } from '#web/shared/lib/titleView';
+import type { TitleView } from '#web/shared/lib/title-view';
 
 /** What a title's page offers the command menu while it is on screen. */
 export function useTitleCommands(view: TitleView, play: (id: ItemId) => void): void {

@@ -10,7 +10,7 @@ const indexerModule = defineModule({
   pages: [
     {
       path: 'indexers',
-      component: lazy(() => import('./IndexersPage')),
+      component: lazy(() => import('./indexers-page')),
       nav: {
         label: 'nav.indexers',
         icon: 'antenna',

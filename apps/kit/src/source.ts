@@ -1,6 +1,6 @@
 import type { StorySource } from '@kromatv/workbench';
-import { BUILD } from './buildInfo';
-import { HISTORY } from './kitHistory';
+import { BUILD } from './build-info';
+import { HISTORY } from './kit-history';
 import { PAGES } from './stories';
 
 /** The kit's stories are @kromatv/ui's own files, and the link to one is pinned to

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const E = vi.hoisted(() => ({ mpv: vi.fn(), start: vi.fn(), avplay: vi.fn(), html: vi.fn() }));
 
-vi.mock('#tv/features/playback/player/mpvEngine', () => ({
+vi.mock('#tv/features/playback/player/mpv-engine', () => ({
   MpvEngine: class {
     constructor(opts: unknown) {
       E.mpv(opts);
@@ -17,14 +17,14 @@ vi.mock('#tv/features/playback/player/mpvEngine', () => ({
     }
   },
 }));
-vi.mock('#tv/features/playback/player/avplayEngine', () => ({
+vi.mock('#tv/features/playback/player/avplay-engine', () => ({
   AvplayEngine: class {
     constructor(opts: unknown) {
       E.avplay(opts);
     }
   },
 }));
-vi.mock('#tv/features/playback/player/htmlEngine', () => ({
+vi.mock('#tv/features/playback/player/html-engine', () => ({
   HtmlEngine: class {
     constructor(opts: unknown) {
       E.html(opts);

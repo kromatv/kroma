@@ -18,7 +18,7 @@ import {
   PHASE_KEY,
   runningPct,
 } from '#web/features/admin/module-ops';
-import { useModuleSettingsPanels } from '#web/modules/ModuleHostProvider';
+import { useModuleSettingsPanels } from '#web/modules/module-host-provider';
 import { apiBase } from '#web/shared/lib/api';
 import { Image } from '#web/shared/ui';
 

@@ -1,9 +1,9 @@
 import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, styles, Text, fontSizes, useStyles } from '@kromatv/ui/kit';
-import { useControlsHold } from './useControlsHold';
+import { useControlsHold } from './use-controls-hold';
 import type { Transport } from '#mobile/player/engine';
-import { ScrubBar } from '#mobile/player/ScrubBar';
-import type { StoryboardTile } from '#mobile/player/useStoryboard';
+import { ScrubBar } from '#mobile/player/scrub-bar';
+import type { StoryboardTile } from '#mobile/player/use-storyboard';
 
 export function PlayerScrubRow({
   engine,

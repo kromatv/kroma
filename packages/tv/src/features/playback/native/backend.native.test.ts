@@ -4,7 +4,7 @@
 import type { MediaItem } from '@kromatv/client/media';
 import type { PlayEnv } from '@kromatv/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EnginePref } from '#tv/app/enginePref';
+import type { EnginePref } from '#tv/app/engine-pref';
 
 const rn = vi.hoisted(() => ({ os: 'ios' as 'ios' | 'android' | 'tizen' }));
 vi.mock('react-native', () => ({
@@ -24,7 +24,7 @@ const OVERSIZED = {
 vi.mock('@kromatv/core', () => ({ beyondDecoder, nativeDirectPlayable }));
 
 const built = vi.hoisted(() => ({ args: [] as unknown[] }));
-vi.mock('#tv/features/playback/player/expoVideoEngine', () => ({
+vi.mock('#tv/features/playback/player/expo-video-engine', () => ({
   ExpoVideoEngine: class {
     constructor(args: unknown) {
       built.args.push(args);
@@ -33,10 +33,10 @@ vi.mock('#tv/features/playback/player/expoVideoEngine', () => ({
 }));
 
 const vlc = vi.hoisted(() => ({ available: false, args: [] as unknown[] }));
-vi.mock('#tv/features/playback/player/vlcPlane', () => ({
+vi.mock('#tv/features/playback/player/vlc-plane', () => ({
   vlcAvailable: () => vlc.available,
 }));
-vi.mock('#tv/features/playback/player/vlcEngine', () => ({
+vi.mock('#tv/features/playback/player/vlc-engine', () => ({
   VlcEngine: class {
     constructor(args: unknown) {
       vlc.args.push(args);

@@ -3,8 +3,8 @@ import { mountRoot } from '@kromatv/ui/mount-root';
 import { lazy, StrictMode, Suspense } from 'react';
 
 import { muteTransitionEvents } from '#tv/app/mute-transition-events';
-import { TvApp, type TvAppProps } from '#tv/app/TvApp';
-import { BROWSER_PLAYBACK } from '#tv/features/playback/browser/browserPlayback';
+import { TvApp, type TvAppProps } from '#tv/app/tv-app';
+import { BROWSER_PLAYBACK } from '#tv/features/playback/browser/browser-playback';
 
 const Workbench = lazy(async () => ({
   default: (await import('#tv/workbench')).Workbench,

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const store = new Map<string, string>();
 const readDeviceValue = vi.hoisted(() => vi.fn((_key: string) => null as string | null));
 const writeDeviceValue = vi.hoisted(() => vi.fn((_key: string, _value: string) => {}));
-vi.mock('#tv/app/devicePref', () => ({ readDeviceValue, writeDeviceValue }));
+vi.mock('#tv/app/device-pref', () => ({ readDeviceValue, writeDeviceValue }));
 
 import { createDeviceIdentity } from './device';
 

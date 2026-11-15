@@ -7,7 +7,7 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { useState } from 'react';
 import { usePoll } from '#web/features/admin/hooks';
 import { message } from '#web/features/admin/module-api';
-import { useRefreshModules } from '#web/modules/ModuleHostProvider';
+import { useRefreshModules } from '#web/modules/module-host-provider';
 
 export function useModuleData() {
   const webRuntime = useWebRuntime();

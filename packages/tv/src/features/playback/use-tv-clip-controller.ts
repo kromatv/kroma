@@ -1,8 +1,8 @@
 import { type PlayerAudioTrack, type PlayerController, type PlayerSub, useT } from '@kromatv/ui';
 import { useCallback, useMemo, useState } from 'react';
-import type { ClipEngine } from '#tv/features/playback/player/clipBackend';
-import type { ClipPlayback } from '#tv/features/playback/player/useClipPlayback';
-import { useSeekGesture } from '#tv/features/playback/player/useSeekGesture';
+import type { ClipEngine } from '#tv/features/playback/player/clip-backend';
+import type { ClipPlayback } from '#tv/features/playback/player/use-clip-playback';
+import { useSeekGesture } from '#tv/features/playback/player/use-seek-gesture';
 
 const NOOP = (): undefined => undefined;
 

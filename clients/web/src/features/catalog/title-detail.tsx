@@ -17,7 +17,7 @@ import { useTitleRequest } from '#web/features/catalog/use-title-request';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 
-import type { SimilarTarget, TitleView } from '#web/shared/lib/titleView';
+import type { SimilarTarget, TitleView } from '#web/shared/lib/title-view';
 import { useWatched } from '#web/shared/lib/watched';
 import { page } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';

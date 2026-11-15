@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { PipBinding, PipHandle } from '#tv/features/playback/player/playbackBackend';
+import type { PipBinding, PipHandle } from '#tv/features/playback/player/playback-backend';
 
 export interface TvPip {
   active: boolean;

@@ -10,7 +10,7 @@ import { StoreOpsProvider } from '#web/features/admin/module-ops';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
 import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
-import { useModuleRegistry } from '#web/modules/ModuleHostProvider';
+import { useModuleRegistry } from '#web/modules/module-host-provider';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useKromaClient } from '#web/shared/lib/web-runtime';

@@ -1,0 +1,88 @@
+import { compareTitles, genreLabel, hasGenre, type SortMode } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, Text, TopFade, useFocusNav } from '@kromatv/ui/kit';
+import { useMemo, useState } from 'react';
+import { useConnection } from '#tv/app/providers/connection';
+import { useClient, useNav, useParams } from '#tv/app/router';
+import {
+  AmbientBackdrop,
+  AmbientLayers,
+  type CatalogEntry as Entry,
+} from '#tv/features/catalog/home/ambient-backdrop';
+import { entryCard } from '#tv/features/catalog/home/entry-card';
+import { type GridCard, PosterGrid } from '#tv/features/catalog/home/poster-grid';
+import { EMPTY, TITLE } from '#tv/features/catalog/screen-style';
+import { useTitleMenu } from '#tv/features/catalog/title-menu';
+
+// Best-known titles first (rating, then year) the same ranking as the person grid.
+const SORT: SortMode = 'rating';
+
+/** Every movie + show in one genre (reached from {@link TvGenres}). Filters the
+ * already-loaded catalogue locally, ranked best-rated first, with the browse
+ * screens' ambient backdrop following the focused tile. */
+export function TvGenreGrid() {
+  const { slug } = useParams('genre');
+  const { movies, shows } = useConnection();
+  const client = useClient();
+  const t = useT();
+  const nav = useNav();
+  const titleMenu = useTitleMenu(nav.back);
+  const hold = titleMenu.open;
+  useFocusNav({ onBack: titleMenu.onBack, resetKey: slug });
+
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const [prevSlug, setPrevSlug] = useState(slug);
+  if (prevSlug !== slug) {
+    setPrevSlug(slug);
+    setFocusId(null);
+  }
+
+  const entries = useMemo<Entry[]>(() => {
+    const tagged: Entry[] = [
+      ...movies.filter((m) => hasGenre(m, slug)).map((m): Entry => ({ kind: 'movie', item: m })),
+      ...shows.filter((s) => hasGenre(s, slug)).map((s): Entry => ({ kind: 'show', item: s })),
+    ];
+    const cmp = compareTitles(SORT);
+    return tagged.sort((a, b) => cmp(a.item, b.item));
+  }, [movies, shows, slug]);
+
+  const cards = useMemo<GridCard[]>(
+    () => entries.map((e) => entryCard(e, { client, nav, openMenu: hold, focus: setFocusId })),
+    [entries, client, nav, hold],
+  );
+
+  const focused = useMemo<Entry | null>(
+    () => entries.find((e) => e.item.id === focusId) ?? entries[0] ?? null,
+    [entries, focusId],
+  );
+
+  return (
+    <Box fill bg="bg" overflow="hidden" isolate>
+      <AmbientBackdrop entry={focused} />
+      <Box px={64} pt={112} pb={24} gap={8}>
+        <Text variant="overlineTv" color="accentText">
+          {t('nav.genres')}
+        </Text>
+        <Text variant="hero" style={TITLE}>
+          {genreLabel(t, slug)}
+        </Text>
+        <Text variant="labelTv" color="textMuted">
+          {t('person.titleCount', { count: cards.length })}
+        </Text>
+      </Box>
+
+      {cards.length ? (
+        <TopFade backdrop={<AmbientLayers entry={focused} />}>
+          <PosterGrid cards={cards} />
+        </TopFade>
+      ) : (
+        <Box flex center px={64}>
+          <Text style={EMPTY} color="textDim">
+            {t('genres.empty')}
+          </Text>
+        </Box>
+      )}
+      {titleMenu.menu}
+    </Box>
+  );
+}

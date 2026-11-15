@@ -135,8 +135,8 @@ describe('the artwork default', () => {
 
   const boot = async (gb: number | null) => {
     vi.resetModules();
-    const hardware = await import('#tv/app/clientHardware');
-    const { readClientHardware } = await import('#tv/app/hardwareReadings');
+    const hardware = await import('#tv/app/client-hardware');
+    const { readClientHardware } = await import('#tv/app/hardware-readings');
     vi.spyOn(hardware, 'clientHardware').mockImplementation(() =>
       readClientHardware(reporting(gb)),
     );

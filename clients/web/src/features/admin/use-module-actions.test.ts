@@ -29,7 +29,7 @@ vi.mock('@tanstack/react-query', async (original) => ({
   ...(await original<typeof import('@tanstack/react-query')>()),
   useQuery: () => ({ data: [] }),
 }));
-vi.mock('#web/modules/ModuleHostProvider', () => ({ useRefreshModules: () => mocks.refresh }));
+vi.mock('#web/modules/module-host-provider', () => ({ useRefreshModules: () => mocks.refresh }));
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ user: { permissions: ['settings.manage'] } }),
 }));

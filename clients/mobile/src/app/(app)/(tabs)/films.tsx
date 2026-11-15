@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { CatalogueScreen } from '#mobile/components/CatalogueScreen';
+import { CatalogueScreen } from '#mobile/components/catalogue-screen';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 
