@@ -484,6 +484,12 @@ install plan.
   so `kroma check` and `kroma release` refuse it. A canary build is a prerelease
   of the release being prepared, so a floor of `0.1.39` already covers the
   `0.1.39-canary.<build>` servers.
+  The other half is the `kroma:module` interface the component imports, which
+  you never write. The server reads it from the component at install and at
+  spawn, and refuses one built against an interface it does not implement, by
+  name. `kroma build` records it in the bundled manifest as `engines.host` for a
+  module whose server floor is `0.1.40` or later, so a Store can judge a version
+  before downloading it, and `kroma check` refuses one written by hand.
 - **`settings`** is the core settings keys you read and write, as
   `{ "read": [...], "write": [...] }`. Absent is the same as empty: a module
   without it reaches no setting.

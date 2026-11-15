@@ -18,6 +18,10 @@ pub enum Refusal {
         range: String,
         server_version: String,
     },
+    Interface {
+        built: String,
+        implements: String,
+    },
     Native,
 }
 
@@ -34,6 +38,7 @@ impl From<EngineRefusal> for Refusal {
                 range,
                 server_version,
             },
+            EngineRefusal::Interface { built, implements } => Self::Interface { built, implements },
         }
     }
 }
@@ -56,6 +61,11 @@ impl Refusal {
                 engine: engine.clone(),
                 range: range.clone(),
                 server_version: server_version.clone(),
+            }
+            .to_string(),
+            Self::Interface { built, implements } => EngineRefusal::Interface {
+                built: built.clone(),
+                implements: implements.clone(),
             }
             .to_string(),
             Self::Native => "a native build, which this server no longer runs".to_string(),

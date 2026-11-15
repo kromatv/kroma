@@ -69,6 +69,19 @@ describe('refusalText', () => {
     );
   });
 
+  it('names the interface a module was built for and the one this server implements', () => {
+    const refusal = { kind: 'interface', built: '0.3.0', implements: '0.2.0' } as const;
+
+    expect(refusalText(entry({ refusal }), t)).toBe(
+      'admin.modulesRefusalInterface {"built":"0.3.0","implements":"0.2.0"}',
+    );
+    expect(
+      refusalText(entry({ installedVersion: '0.3.13', updateBlocked: true, refusal }), t),
+    ).toBe(
+      'admin.modulesRefusalUpdateInterface {"built":"0.3.0","implements":"0.2.0","version":"0.4.1"}',
+    );
+  });
+
   it('tells a module made for a newer KROMA from one that needs rebuilding', () => {
     const newer = entry({ refusal: { kind: 'schema', built: 3, speaks: 2 } });
 

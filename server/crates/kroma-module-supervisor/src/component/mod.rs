@@ -72,6 +72,7 @@ impl Supervisor {
             .ok_or_else(|| anyhow::anyhow!("'{id}' is a component, and no gateway is running"))?;
         let started = Instant::now();
         let (wasm, key) = self.verified_component(id)?;
+        super::manifests::check_interface(id, &wasm)?;
         let helpers_dir = self.cfg.data_dir.join(HELPERS_DIR).join(id);
         let (component, readied) = self
             .wasm_host()?

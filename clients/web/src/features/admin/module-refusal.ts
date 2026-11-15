@@ -48,6 +48,11 @@ function entryText(refusal: StoreRefusal, t: Translate): string {
       return refusal.built > refusal.speaks
         ? t('admin.modulesRefusalSchemaNewer')
         : t('admin.modulesRefusalSchema');
+    case 'interface':
+      return t('admin.modulesRefusalInterface', {
+        built: refusal.built,
+        implements: refusal.implements,
+      });
     case 'native':
       return t('admin.modulesRefusalNative');
   }
@@ -63,6 +68,12 @@ function updateText(refusal: StoreRefusal, version: string, t: Translate): strin
       return refusal.built > refusal.speaks
         ? t('admin.modulesRefusalUpdateSchemaNewer', { version })
         : t('admin.modulesRefusalUpdateSchema', { version });
+    case 'interface':
+      return t('admin.modulesRefusalUpdateInterface', {
+        built: refusal.built,
+        implements: refusal.implements,
+        version,
+      });
     case 'native':
       return t('admin.modulesRefusalUpdateNative', { version });
   }

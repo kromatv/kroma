@@ -11,6 +11,7 @@ import {
 import { join } from 'node:path';
 import { constants, zstdCompressSync } from 'node:zlib';
 import type { Project } from '../project';
+import { bundledManifest, interfaceOf } from './host-engine';
 import { deterministicTar } from './tar';
 
 export interface PackInput {
@@ -41,7 +42,9 @@ function stage(input: PackInput): { staging: string; entries: string[] } {
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(staging, { recursive: true });
   const entries = ['module.json'];
-  copyFileSync(join(project.dir, 'module.json'), join(staging, 'module.json'));
+  const host = binPath ? interfaceOf(readFileSync(binPath)) : null;
+  const authored = readFileSync(join(project.dir, 'module.json'), 'utf8');
+  writeFileSync(join(staging, 'module.json'), bundledManifest(authored, host));
   if (binPath) {
     copyFileSync(binPath, join(staging, 'module.wasm'));
     entries.push('module.wasm');

@@ -89,8 +89,8 @@ The manifest declares:
   unchanged version, so "there is a newer version" always means there is genuinely newer code,
   never a silent re-issue.
 - **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version
-  the module needs, as a bare version or a range. This is the whole compatibility contract
-  until MOD-92 and MOD-93 ship.
+  the module needs, as a bare version or a range. It is half of the compatibility contract:
+  the module interface (MOD-92) is the other half.
 - **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer`
   names a server newer than the release being prepared, because no server could run it. A
   canary build is a prerelease of the release being prepared, not a later one.
@@ -278,7 +278,7 @@ started, and its log says why.
 
 ## The compatibility promise
 
-Status: **SHIPPED**, with the interface check (MOD-92, MOD-93) **AGREED**.
+Status: **SHIPPED**.
 
 **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares
 the oldest server it can run against, and nothing below that floor is ever allowed to run.
@@ -290,12 +290,12 @@ because the server does not retroactively break the boundary its modules were bu
 before it is installed. The floor is checked at install and at every spawn, so a mismatch is a
 clear, upfront refusal, never a half-running module.
 
-**MOD-92** (AGREED) - A module is checked against the module interface the server implements,
+**MOD-92** (SHIPPED) - A module is checked against the module interface the server implements,
 at install and at every start. A module built against an interface version this server does
 not implement is refused by name, even when its `minServer` is met
 ([RFC 627](../../rfcs/627-version-compatibility.md)).
 
-**MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is
+**MOD-93** (SHIPPED) - `minServer` is the floor for a server capability the module needs. It is
 no longer the whole compatibility contract.
 
 ## Module UI

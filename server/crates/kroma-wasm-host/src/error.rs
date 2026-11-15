@@ -5,6 +5,8 @@ use std::time::Duration;
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum HostError {
+    #[error("the component could not be read")]
+    Unreadable(#[source] wasmparser::BinaryReaderError),
     #[error("the component did not compile")]
     Compile(#[source] wasmtime::Error),
     #[error("the host could not be built")]

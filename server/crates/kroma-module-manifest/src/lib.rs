@@ -8,6 +8,7 @@ mod consent;
 mod embedded;
 mod event;
 mod helpers;
+mod interface;
 mod manifest;
 mod matching;
 mod notifications;
@@ -17,11 +18,12 @@ mod settings_scope;
 mod widening;
 
 pub use compat::{
-    engines_satisfied, fallbacks_newest_first, is_newer, range_matches, version_satisfies,
-    EngineRefusal, KNOWN_ENGINES,
+    engines_satisfied, fallbacks_newest_first, interface_satisfied, is_newer, range_matches,
+    version_satisfies, EngineRefusal, KNOWN_ENGINES,
 };
 pub use embedded::EmbeddedModule;
 pub use event::ModuleEvent;
+pub use interface::{interface_compatible, HOST_INTERFACE};
 /// `embedded_module!()` builds a module's `MODULE` const from the `module.json`
 /// and `icon.<ext>` beside it. Re-exported here (as well as from
 /// `kroma_module_sdk`) so the modules that sit below the SDK facade (e.g. scene)

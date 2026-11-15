@@ -6,7 +6,10 @@ use std::path::Path;
 use kroma_module_manifest::{ModuleManifest, Permissions};
 
 use super::lifecycle::native_build;
-use super::{check_manifest_schema, Accept, AsksForMore, Supervisor, NATIVE_BINARY, STAGING_PREFIX};
+use super::manifests::check_interface;
+use super::{
+    check_manifest_schema, Accept, AsksForMore, Supervisor, MODULE_COMPONENT, NATIVE_BINARY, STAGING_PREFIX,
+};
 
 mod bundle;
 
@@ -43,6 +46,10 @@ impl Supervisor {
         check_manifest_schema(&id, &manifest)?;
         kroma_module_manifest::engines_satisfied(&manifest.engines, &self.cfg.server_version)
             .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
+        let component = staging.join(MODULE_COMPONENT);
+        if component.exists() {
+            check_interface(&id, &std::fs::read(&component)?)?;
+        }
         Ok((id, manifest))
     }
 
