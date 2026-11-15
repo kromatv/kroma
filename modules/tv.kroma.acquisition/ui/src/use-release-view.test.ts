@@ -2,7 +2,7 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useReleaseView } from './use-release-view';
+import { useReleaseView } from './use-release-view.hook';
 
 function release(guid: string, score: number | null, seeders: number): ScoredReleaseView {
   return { guid, score, seeders } as ScoredReleaseView;

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Chip } from '#ui/components/atoms/chip';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { Section } from './section';
+import { Section } from './section.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 

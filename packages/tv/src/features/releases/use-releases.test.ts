@@ -16,7 +16,7 @@ vi.mock('#tv/app/providers/auth', () => ({
   useAuth: () => ({ ready: app.ready, user: app.signedIn ? { id: 'u1' } : null }),
 }));
 
-import { useReleases } from './use-releases';
+import { useReleases } from './use-releases.hook';
 
 const VIEW: ReleasesView = { current: '0.1.39', unseen: null, releases: [] };
 

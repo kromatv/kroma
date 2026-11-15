@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-router';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ServerUpdateIndicator, ServerUpdateNotice } from './server-update-notice';
+import { ServerUpdateIndicator, ServerUpdateNotice } from './server-update-notice.component';
 
 const mocks = vi.hoisted(() => ({ permissions: ['settings.manage'], updates: vi.fn() }));
 vi.mock('#web/shared/lib/auth', () => ({

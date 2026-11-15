@@ -1,6 +1,6 @@
 import { classes, styles, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { FullscreenFrame } from '#web/features/playback/fullscreen-frame';
+import { FullscreenFrame } from '#web/features/playback/fullscreen-frame.component';
 import { SCRIM_Z } from '#web/shared/ui/page';
 
 export const Route = createFileRoute('/_app/_player')({

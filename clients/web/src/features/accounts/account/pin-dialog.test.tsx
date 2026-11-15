@@ -5,7 +5,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PinDialog, type PinTask } from './pin-dialog';
+import { PinDialog, type PinTask } from './pin-dialog.component';
 
 const auth = vi.hoisted(() => ({
   setPin: vi.fn(),

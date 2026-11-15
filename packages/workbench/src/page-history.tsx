@@ -10,7 +10,7 @@ import { space } from '@kromatv/ui/tokens';
 import { useState } from 'react';
 import { HistoryBlock, summaryOf } from './history-view';
 import { openWebLink } from './link';
-import { MEASURE } from './mdx';
+import { MEASURE } from './mdx.component';
 import type { Page } from './page';
 import { usePathSource } from './source';
 import type { DocComponent } from './story';

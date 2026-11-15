@@ -7,7 +7,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { choiceItem, type SettingsEntry, toggleItem } from '#tv/app/settings/items';
 import { reactivePref, useStoredPref } from '#tv/app/settings/store';
-import { SettingsRows } from './settings-rows';
+import { SettingsRows } from './settings-rows.component';
 
 const inputHost = createInputTestHost();
 

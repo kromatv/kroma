@@ -24,7 +24,7 @@ import {
   saveActive,
   setBiometricLockEnabled,
 } from '#mobile/lib/storage';
-import { useBootRestore } from './boot';
+import { useBootRestore } from './boot.hook';
 import { findServer } from './find-server';
 import { sameAccount, useAccountStore, useServerStore } from './stores';
 

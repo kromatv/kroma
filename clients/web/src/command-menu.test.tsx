@@ -1,22 +1,22 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CommandMenu } from './command-menu';
+import { CommandMenu } from './command-menu.component';
 
 const mocks = vi.hoisted(() => ({ calls: [] as string[] }));
-vi.mock('#web/features/catalog/use-catalog-commands', () => ({
+vi.mock('#web/features/catalog/use-catalog-commands.hook', () => ({
   useCatalogCommands: () => mocks.calls.push('catalog'),
 }));
-vi.mock('#web/features/accounts/use-account-commands', () => ({
+vi.mock('#web/features/accounts/use-account-commands.hook', () => ({
   useAccountCommands: () => mocks.calls.push('account'),
 }));
-vi.mock('#web/features/admin/use-admin-commands', () => ({
+vi.mock('#web/features/admin/use-admin-commands.hook', () => ({
   useAdminCommands: () => mocks.calls.push('admin'),
 }));
-vi.mock('#web/features/catalog/use-library-search-commands', () => ({
+vi.mock('#web/features/catalog/use-library-search-commands.hook', () => ({
   useLibrarySearchCommands: () => mocks.calls.push('search'),
 }));
-vi.mock('#web/shared/ui/command-palette', () => ({ CommandPalette: () => null }));
+vi.mock('#web/shared/ui/command-palette.component', () => ({ CommandPalette: () => null }));
 
 afterEach(cleanup);
 

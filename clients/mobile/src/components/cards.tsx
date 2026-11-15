@@ -18,9 +18,9 @@ import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useGutters } from '#mobile/lib/layout';
-import { usePlay } from '#mobile/lib/play';
+import { usePlay } from '#mobile/lib/play.hook';
 import { posterWidth, radius, type } from '#mobile/lib/theme';
-import { FadeImage } from './fade-image';
+import { FadeImage } from './fade-image.component';
 
 const GAP = 12;
 

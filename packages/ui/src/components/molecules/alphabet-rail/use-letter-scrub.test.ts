@@ -5,7 +5,7 @@ import type { RefObject } from 'react';
 import type { View } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { PAD } from './alphabet-rail-context';
-import { clampNum, type Slot, useLetterScrub } from './use-letter-scrub';
+import { clampNum, type Slot, useLetterScrub } from './use-letter-scrub.hook';
 
 const ROW = 20;
 const TOP = 100;

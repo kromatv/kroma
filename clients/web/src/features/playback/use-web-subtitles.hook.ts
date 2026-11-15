@@ -1,0 +1,238 @@
+import {
+  type DownloadedSub,
+  GEN_LANGS,
+  GenerationId,
+  type SubCapabilities,
+  SubtitleId,
+} from '@kromatv/client/subtitles';
+import { LANG_OFF, langName, preferredSubIndex } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
+import {
+  type PlayerSub,
+  type SubtitleGenBundle,
+  type SubtitleGenRequest,
+  useSubtitleGenerations,
+} from '@kromatv/ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { MovieView, SubtitleView } from '#web/shared/lib/api';
+import { useAuth } from '#web/shared/lib/auth';
+import { useLangPrefs } from '#web/shared/lib/lang-pref.hook';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
+export interface WebSubtitles {
+  subtitles: PlayerSub[];
+  activeIndex: number | null;
+  setActive: (index: number | null) => void;
+  markFailed: (index: number) => void;
+  subtitleGen: SubtitleGenBundle;
+  label: string;
+}
+
+/**
+ * Web subtitle state: the embedded text tracks merged with online/AI-generated
+ * ones, minus any that failed to load, the active selection (with the account's
+ * preferred language auto-applied once), plus the prop-driven generation bundle
+ * the shared Settings panel consumes. AI tracks get indices 1000+ so they never
+ * collide with embedded ones.
+ */
+export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
+  const webRuntime = useWebRuntime();
+
+  const { user } = useAuth();
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [downloaded, setDownloaded] = useState<DownloadedSub[]>([]);
+  const [caps, setCaps] = useState<SubCapabilities | null>(null);
+  const [failed, setFailed] = useState<ReadonlySet<number>>(() => new Set());
+
+  // Auto-enable the account's preferred subtitle language once, when hydrated.
+  const [prefApplied, setPrefApplied] = useState(false);
+  if (!prefApplied && user) {
+    setPrefApplied(true);
+    const idx = preferredSubIndex(
+      item.subs.map((s) => ({ ...s, generated: s.downloaded })),
+      user.subtitleLanguage,
+    );
+    if (idx != null) {
+      setActiveIndex(idx);
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    webRuntime.client.subtitles
+      .downloaded(item.id)
+      .then((d) => !cancelled && setDownloaded(d))
+      .catch(() => undefined);
+    webRuntime.client.subtitles
+      .capabilities(item.id)
+      .then((c) => !cancelled && setCaps(c))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, webRuntime.client.subtitles.downloaded, webRuntime.client.subtitles.capabilities]);
+
+  const onComplete = useCallback(
+    (subId: string) => {
+      webRuntime.client.subtitles
+        .downloaded(item.id)
+        .then((list) => {
+          setDownloaded(list);
+          const i = list.findIndex((d) => d.id === subId);
+          if (i >= 0) {
+            setActiveIndex(1000 + i);
+          }
+        })
+        .catch(() => undefined);
+    },
+    [item.id, webRuntime.client.subtitles.downloaded],
+  );
+  const { generations, cancel, refresh } = useSubtitleGenerations(webRuntime.client, item.id, {
+    active: true,
+    onComplete,
+  });
+
+  const allSubs = useMemo<SubtitleView[]>(() => {
+    const dl: SubtitleView[] = downloaded.map((d, i) => ({
+      index: 1000 + i,
+      language: d.language,
+      codec: 'SRT',
+      url: webRuntime.client.media.artwork.resolve(d.url) ?? d.url,
+      downloaded: true,
+      label: d.label,
+      subId: d.id,
+      provider: d.provider,
+    }));
+    return [...item.subs, ...dl];
+  }, [item.subs, downloaded, webRuntime.client.media.artwork.resolve]);
+
+  const subtitles = useMemo<PlayerSub[]>(
+    () =>
+      allSubs
+        .filter((s) => s.url && !failed.has(s.index))
+        .map((s) => ({
+          index: s.index,
+          language: s.language,
+          label: s.label,
+          title: s.title,
+          codec: s.codec,
+          url: s.url,
+          ai: Boolean(s.downloaded),
+          selectable: true,
+          subId: s.subId,
+        })),
+    [allSubs, failed],
+  );
+
+  const onDelete = useCallback(
+    (subId: string) => {
+      const di = downloaded.findIndex((p) => p.id === subId);
+      setDownloaded((prev) => prev.filter((p) => p.id !== subId));
+      if (di >= 0) {
+        setActiveIndex((cur) => {
+          if (cur == null || cur < 1000) {
+            return cur;
+          }
+          if (cur === 1000 + di) {
+            return null;
+          }
+          if (cur > 1000 + di) {
+            return cur - 1;
+          }
+          return cur;
+        });
+      }
+      void webRuntime.client.subtitles
+        .delete(item.id, SubtitleId.parse(subId))
+        .catch(() => undefined);
+    },
+    [item.id, downloaded, webRuntime.client.subtitles.delete],
+  );
+
+  const onStart = useCallback(
+    (req: SubtitleGenRequest) => {
+      const target = GEN_LANGS.find((l) => l.code === req.lang) ?? GEN_LANGS[0];
+      if (!target) {
+        return;
+      }
+      const done = () => {
+        webRuntime.client.subtitles
+          .downloaded(item.id)
+          .then(setDownloaded)
+          .catch(() => undefined);
+        refresh();
+      };
+      if (req.mode === 'transcribe') {
+        void webRuntime.client.subtitles
+          .generate(item.id, {
+            mode: 'transcribe',
+            lang: target.label,
+            spokenLang: target.code,
+            quality: req.quality ?? 'balanced',
+          })
+          .then(done)
+          .catch(() => undefined);
+      } else {
+        const src = allSubs.find((s) => s.index === req.sourceIndex && s.url);
+        if (!src) {
+          return;
+        }
+        void webRuntime.client.subtitles
+          .generate(item.id, {
+            mode: 'translate',
+            lang: target.label,
+            ...(src.subId ? { sourceSubId: src.subId } : { sourceTrack: src.index }),
+          })
+          .then(done)
+          .catch(() => undefined);
+      }
+    },
+    [
+      item.id,
+      allSubs,
+      refresh,
+      webRuntime.client.subtitles.generate,
+      webRuntime.client.subtitles.downloaded,
+    ],
+  );
+
+  const subtitleGen: SubtitleGenBundle = {
+    canCreate: Boolean(caps?.transcribe || caps?.translate),
+    caps,
+    pending: generations.filter((g) => g.status !== 'done'),
+    onCancel: (id) => cancel(GenerationId.parse(id)),
+    onDelete,
+    onStart,
+  };
+
+  // Turning subtitles off is a real choice and is remembered as such; picking a
+  // track whose language the file never declared leaves the preference alone.
+  const { setSubtitle } = useLangPrefs();
+  const setActive = useCallback(
+    (index: number | null) => {
+      setActiveIndex(index);
+      if (index == null) {
+        setSubtitle(LANG_OFF);
+        return;
+      }
+      const language = allSubs.find((s) => s.index === index)?.language;
+      if (language) {
+        setSubtitle(language);
+      }
+    },
+    [setSubtitle, allSubs],
+  );
+
+  const markFailed = useCallback((index: number) => {
+    setFailed((prev) => (prev.has(index) ? prev : new Set(prev).add(index)));
+    setActiveIndex((cur) => (cur === index ? null : cur));
+  }, []);
+
+  const active = activeIndex == null ? null : allSubs.find((s) => s.index === activeIndex);
+  const label =
+    activeIndex == null
+      ? t('player.subtitlesOff')
+      : active?.label || langName(t, active?.language) || t('player.langUnknown');
+
+  return { subtitles, activeIndex, setActive, markFailed, subtitleGen, label };
+}

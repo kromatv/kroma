@@ -1,1 +1,1 @@
-export * from './url-keyboard';
+export * from './url-keyboard.component';

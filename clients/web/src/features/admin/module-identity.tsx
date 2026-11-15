@@ -4,9 +4,9 @@ import { useT } from '@kromatv/ui';
 import { Row, Surface, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
-import { HeaderIcon } from '#web/features/admin/module-detail-sections';
+import { HeaderIcon } from '#web/features/admin/module-detail-sections.component';
 import { readableRange, useNewestText, useRefusalText } from '#web/features/admin/module-refusal';
-import { Pill } from '#web/features/admin/pill';
+import { Pill } from '#web/features/admin/pill.component';
 
 export function IdentityCard({
   id,

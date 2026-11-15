@@ -12,7 +12,7 @@ vi.mock('react-native', () => ({
     flatten: (style: unknown) => (Array.isArray(style) ? Object.assign({}, ...style) : style),
   },
 }));
-vi.mock('./focus-card', () => ({ HAS_FOCUS_CARD: true, FocusCard: () => null }));
+vi.mock('./focus-card.component', () => ({ HAS_FOCUS_CARD: true, FocusCard: () => null }));
 
 async function load(os: string) {
   platform.OS = os;

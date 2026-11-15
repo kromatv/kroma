@@ -15,7 +15,7 @@ vi.mock('#tv/app/router', () => ({
   useClient: () => ({ accounts: { update: H.updateAccount } }),
 }));
 
-const { useLangPrefs } = await import('#tv/app/lang-pref');
+const { useLangPrefs } = await import('#tv/app/lang-pref.hook');
 
 beforeEach(() => {
   vi.clearAllMocks();

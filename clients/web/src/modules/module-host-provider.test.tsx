@@ -14,7 +14,7 @@ vi.mock('#web/shared/lib/auth', () => ({
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 
-import { ModuleHostProvider, useModuleNavAll } from './module-host-provider';
+import { ModuleHostProvider, useModuleNavAll } from './module-host-provider.component';
 
 afterEach(cleanup);
 

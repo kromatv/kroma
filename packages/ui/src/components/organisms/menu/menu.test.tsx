@@ -7,10 +7,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Menu } from './menu';
+import { Menu } from './menu.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

@@ -1,14 +1,14 @@
 // The contract every platform focus engine implements. Two implementations:
 //
-//   focus-nav.ts      native  - Apple TV / Android TV. The OS focus engine owns
+//   focus-nav.hook.ts      native  - Apple TV / Android TV. The OS focus engine owns
 //                               directional movement; we only bridge Back and
 //                               PlayPause.
-//   focus-nav.web.ts  web     - Tizen / webOS / desktop / browser. The spatial
+//   focus-nav.hook.web.ts  web     - Tizen / webOS / desktop / browser. The spatial
 //                               navigator owns directional movement; we bridge
 //                               Back, the transport keys, and the held-OK guard.
 //
-// Metro picks focus-nav.ts, Vite picks focus-nav.web.ts (resolve.extensions puts
-// `.web.*` first). App code only ever imports from './focus-nav'.
+// Metro picks focus-nav.hook.ts, Vite picks focus-nav.hook.web.ts (resolve.extensions puts
+// `.web.*` first). App code only ever imports from './focus-nav.hook'.
 
 export interface FocusNavHandlers {
   /** Remote Back / Escape. Return `false` to say "not handled, keep the

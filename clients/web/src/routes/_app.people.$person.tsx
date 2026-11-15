@@ -17,15 +17,15 @@ import {
 } from '@kromatv/ui/kit';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
-import { initials } from '#web/features/catalog/detail';
-import { PersonProfile } from '#web/features/catalog/person-profile';
+import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards.component';
+import { initials } from '#web/features/catalog/detail.component';
+import { PersonProfile } from '#web/features/catalog/person-profile.component';
 import { imageUrl, isAuthed, toMovieView, toShowView } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 import { Image, PageFrame, PageSkeleton } from '#web/shared/ui';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 const PORTRAIT_W = 104;
 

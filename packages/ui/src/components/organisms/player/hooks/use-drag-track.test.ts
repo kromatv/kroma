@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import type { LayoutChangeEvent } from 'react-native';
 import { describe, expect, it } from 'vitest';
-import { useDragTrack } from './use-drag-track';
+import { useDragTrack } from './use-drag-track.hook';
 
 const laidOutAt = (width: number) =>
   ({ nativeEvent: { layout: { width } } }) as unknown as LayoutChangeEvent;

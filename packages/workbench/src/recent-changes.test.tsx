@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { storyEntries } from './entry';
 import type { KitHistory } from './history';
-import { RecentChanges } from './recent-changes';
+import { RecentChanges } from './recent-changes.component';
 import type { WorkbenchLocation, WorkbenchRouter } from './router';
 import { SourceProvider, type StorySource, useSourceLink } from './source';
 import { type Story, story } from './story';

@@ -48,12 +48,16 @@ function lanIp(): string | undefined {
 // engines that ignore the property outright.
 const TV_TIER = { 'globalThis.__KROMA_TV_TIER__': 'true' } as const;
 
-// `#tv/workbench` must come first: Vite matches string aliases by prefix in
+// `#tv/workbench.component` must come first: Vite matches string aliases by prefix in
 // order, and a bare `#tv` listed first would swallow it.
 function tvAlias(shellUrl: string, stubWorkbench: boolean): Record<string, string> {
   return {
     ...(stubWorkbench
-      ? { '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)) }
+      ? {
+          '#tv/workbench.component': fileURLToPath(
+            new URL('workbench-stub.component.tsx', import.meta.url),
+          ),
+        }
       : {}),
     '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
   };

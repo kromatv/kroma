@@ -3,8 +3,8 @@
 
 import { describe, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
-import type { TextBinding, ToggleBinding } from './use-form';
-import { useForm } from './use-form';
+import type { TextBinding, ToggleBinding } from './use-form.hook';
+import { useForm } from './use-form.hook';
 
 const Account = z.object({
   email: z.string(),

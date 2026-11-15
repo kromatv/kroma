@@ -9,7 +9,7 @@ import type { RefObject } from 'react';
 import type { View } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAD } from './alphabet-rail-context';
-import { type Slot, useLetterScrub } from './use-letter-scrub';
+import { type Slot, useLetterScrub } from './use-letter-scrub.hook';
 
 interface Gesture {
   dx: number;

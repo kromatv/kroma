@@ -6,9 +6,9 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { activeTheme } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { declared } from '#ui/testing';
-import { ListRow } from './list-row';
+import { ListRow } from './list-row.component';
 
 afterEach(cleanup);
 

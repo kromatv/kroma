@@ -7,7 +7,10 @@ vi.mock('#web/shared/lib/api', async (importOriginal) => ({
   isAuthed: () => H.authed,
 }));
 
-vi.mock('#web/features/catalog/sidebar', () => ({ Sidebar: () => null, MobileTopbar: () => null }));
+vi.mock('#web/features/catalog/sidebar.component', () => ({
+  Sidebar: () => null,
+  MobileTopbar: () => null,
+}));
 
 import { Route } from './_app';
 

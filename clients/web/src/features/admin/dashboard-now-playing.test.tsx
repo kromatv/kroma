@@ -7,7 +7,7 @@ import { PlaybackSessionId } from '@kromatv/client/playback';
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NowPlayingCard } from '#web/features/admin/dashboard-now-playing';
+import { NowPlayingCard } from '#web/features/admin/dashboard-now-playing.component';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 

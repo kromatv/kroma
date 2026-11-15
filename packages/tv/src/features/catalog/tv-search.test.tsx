@@ -23,7 +23,7 @@ import {
 import { type SearchShell, type SearchShellProps, SearchShellProvider } from '#tv/app/search-shell';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voice-search';
 import { addRecentSearch } from '#tv/features/catalog/search-history';
-import { TvSearch } from '#tv/features/catalog/tv-search';
+import { TvSearch } from '#tv/features/catalog/tv-search.component';
 
 const inputHost = createInputTestHost();
 

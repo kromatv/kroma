@@ -9,11 +9,11 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { styles } from '#ui/core';
-import { useCommand } from './command-context';
+import { useCommand } from './command-context.hook';
 import { type CommandItem, type CommandSection, METRICS } from './command-list';
 
-import { CommandRow, GUTTER } from './command-row';
-import { useCursorScroll } from './use-cursor-scroll';
+import { CommandRow, GUTTER } from './command-row.component';
+import { useCursorScroll } from './use-cursor-scroll.hook';
 
 interface CommandInputProps {
   placeholder?: string;

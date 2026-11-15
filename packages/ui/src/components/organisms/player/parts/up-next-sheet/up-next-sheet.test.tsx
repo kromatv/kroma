@@ -5,7 +5,7 @@ import { Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { onScreen as baseOnScreen, declared, wearsRing } from '#ui/testing';
-import { UpNextSheet } from './up-next-sheet';
+import { UpNextSheet } from './up-next-sheet.component';
 import { DATA } from './up-next-sheet.fixtures';
 
 const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });

@@ -59,7 +59,7 @@ import { createQueries } from './queries';
 
 const { catalogQueries } = createQueries(c);
 
-import { useCatalogLiveRefresh } from './use-live-refresh';
+import { useCatalogLiveRefresh } from './use-live-refresh.hook';
 
 const COALESCE_MS = 600;
 

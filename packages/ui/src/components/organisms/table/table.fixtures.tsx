@@ -3,7 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Chip } from '#ui/components/atoms/chip';
 import { Text } from '#ui/components/atoms/text';
 import type { ColorValue } from '#ui/core';
-import { type SortColumn, Table, type TableColumn, type TableVariant } from './table';
+import { type SortColumn, Table, type TableColumn, type TableVariant } from './table.component';
 
 export const MODULES = [
   { id: 'tv.kroma.torrents', port: '41310', state: 'Running' },

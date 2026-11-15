@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { switchVariants } from './switch';
+import { switchVariants } from './switch.component';
 
 // Mirrors the module's own geometry, so a drift between the two shows up here
 // rather than as a thumb that sits closer to one end than the other.

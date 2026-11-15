@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { LogsPage } from '#web/features/admin/logs';
+import { LogsPage } from '#web/features/admin/logs.component';
 
 export const Route = createFileRoute('/admin/logs')({
   validateSearch: (s: Record<string, unknown>): { source?: string } => ({

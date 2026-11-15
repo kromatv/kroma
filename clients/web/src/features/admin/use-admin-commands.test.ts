@@ -5,7 +5,7 @@ import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CommandDef } from '#web/shared/lib/command-menu';
 import { NAV_GROUPS } from './admin-nav';
-import { useAdminCommands } from './use-admin-commands';
+import { useAdminCommands } from './use-admin-commands.hook';
 
 const mocks = vi.hoisted(() => ({
   commands: [] as readonly CommandDef[],
@@ -38,7 +38,7 @@ vi.mock('@tanstack/react-query', async (original) => ({
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ user: mocks.user, client: mocks.client }),
 }));
-vi.mock('#web/modules/module-host-provider', () => ({
+vi.mock('#web/modules/module-host-provider.component', () => ({
   useModuleNavAll: () => mocks.moduleNav,
   useRefreshModules: () => vi.fn(),
 }));

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { AlphabetRail } from './alphabet-rail';
+import { AlphabetRail } from './alphabet-rail.component';
 import type { LetterRange } from './alphabet-rail-context';
 
 export const LETTERS = ['#', ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ')];

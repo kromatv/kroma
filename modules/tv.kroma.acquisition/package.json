@@ -13,7 +13,7 @@
   },
   "exports": {
     ".": "./ui/src/module.ts",
-    "./api": "./ui/src/api.ts",
+    "./api": "./ui/src/api.hook.ts",
     "./schemas": "./ui/src/schemas.ts"
   },
   "scripts": {

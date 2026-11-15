@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { BuildFile } from '#site/lib/build-file';
-import { DownloadButton } from './download-button.tsx';
+import { DownloadButton } from './download-button.component.tsx';
 
 const file = (over: Partial<BuildFile> = {}): BuildFile => ({
   key: 'k',

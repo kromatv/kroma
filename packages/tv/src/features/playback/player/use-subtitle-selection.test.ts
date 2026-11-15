@@ -4,7 +4,7 @@ import type { MediaItem, SubtitleTrack } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useSubtitleSelection } from './use-subtitle-selection';
+import { useSubtitleSelection } from './use-subtitle-selection.hook';
 
 const client = fakeClient({
   subtitles: { downloaded: async () => [] },

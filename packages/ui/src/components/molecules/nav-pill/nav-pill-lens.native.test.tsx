@@ -4,7 +4,7 @@ import { render } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LensRect } from './nav-pill-context';
-import { Lens } from './nav-pill-lens';
+import { Lens } from './nav-pill-lens.component';
 
 vi.mock('react-native', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-native')>();

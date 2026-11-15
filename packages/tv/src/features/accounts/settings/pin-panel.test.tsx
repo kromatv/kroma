@@ -4,8 +4,8 @@ import { createInputTestHost, onScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvNavProvider } from '#tv/app/router';
-import { PinPanel } from './pin-panel';
-import { SettingsPanes } from './settings-panes';
+import { PinPanel } from './pin-panel.component';
+import { SettingsPanes } from './settings-panes.component';
 
 const state = vi.hoisted(() => ({
   user: { id: 'u1', username: 'Max', hasPin: false },

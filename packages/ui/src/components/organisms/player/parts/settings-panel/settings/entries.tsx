@@ -29,7 +29,7 @@ import {
   IconSpeed,
   IconStats,
   IconSubtitles,
-} from '#ui/components/organisms/player/parts/icons';
+} from '#ui/components/organisms/player/parts/icons.component';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 import type { useT } from '#ui/services/i18n';
 

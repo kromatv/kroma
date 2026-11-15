@@ -3,7 +3,7 @@
 import { render, screen } from '@testing-library/react';
 import { AccessibilityInfo } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SelectionBar } from './selection-bar';
+import { SelectionBar } from './selection-bar.component';
 
 afterEach(() => {
   vi.restoreAllMocks();

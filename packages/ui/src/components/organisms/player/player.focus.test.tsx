@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import { wearsRing } from '#ui/testing';
 import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
-import { Player } from './player';
+import { Player } from './player.component';
 import { fakeController } from './player.fixture';
 import { NO_GEN } from './player.fixtures';
 import { type PlayerController, WEB_FLAGS } from './types';

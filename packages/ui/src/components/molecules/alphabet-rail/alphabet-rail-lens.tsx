@@ -5,7 +5,7 @@
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles, useStyles } from '#ui/core';
-import { GlideBox } from '#ui/lib/glide-box';
+import { GlideBox } from '#ui/lib/glide-box.component';
 import type { GlideRect } from '#ui/lib/glide-box-types';
 import { PAD, ROW_W } from './alphabet-rail-context';
 

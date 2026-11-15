@@ -1,7 +1,7 @@
 import type { NetworkView, RuleAction } from '@kromatv/client/network';
 import { useT } from '@kromatv/ui';
 import { Badge, Field, SegmentGroup, Select } from '@kromatv/ui/kit';
-import { RouteBadge } from '#web/features/admin/network-route-badge';
+import { RouteBadge } from '#web/features/admin/network-route-badge.component';
 import {
   actionNetworks,
   DEFAULT_NETWORK,

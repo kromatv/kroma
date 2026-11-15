@@ -19,13 +19,13 @@ import { useEffect, useState } from 'react';
 import { FlatList, Pressable, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type CardModel, movieCard, PosterCard, showCard } from '#mobile/components/cards';
-import { FadeImage } from '#mobile/components/fade-image';
-import { gridMetrics, PosterGrid } from '#mobile/components/poster-grid';
+import { FadeImage } from '#mobile/components/fade-image.component';
+import { gridMetrics, PosterGrid } from '#mobile/components/poster-grid.component';
 import { EmptyState, Loading, SectionTitle } from '#mobile/components/ui';
 import { discoverCard } from '#mobile/lib/discover';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
-import { usePlay } from '#mobile/lib/play';
+import { usePlay } from '#mobile/lib/play.hook';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
 

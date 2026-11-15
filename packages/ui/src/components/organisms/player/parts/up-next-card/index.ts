@@ -1,1 +1,1 @@
-export * from './up-next-card';
+export * from './up-next-card.component';

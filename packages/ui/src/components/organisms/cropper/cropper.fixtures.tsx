@@ -3,8 +3,8 @@ import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
 import { stillArt } from '#ui/lib/sample-art';
-import { Cropper, type CropperRootProps } from './cropper';
-import { useCropper } from './cropper-context';
+import { Cropper, type CropperRootProps } from './cropper.component';
+import { useCropper } from './cropper-context.hook';
 
 const FRAME_WIDTH = 320;
 

@@ -13,8 +13,8 @@ import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 
 import type { ControlSize } from '#ui/lib/field-shell';
-import type { SelectPresentation } from './select';
-import { Select } from './select';
+import type { SelectPresentation } from './select.component';
+import { Select } from './select.component';
 
 export const TRACKS: readonly { value: string; label: string; note?: string; icon: IconName }[] = [
   { value: 'truehd', label: 'TrueHD 7.1', note: 'lossless', icon: 'volume' },

@@ -3,7 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { usePhysicalTyping } from './use-physical-typing';
+import { usePhysicalTyping } from './use-physical-typing.hook';
 
 // The native half never touches a document: characters arrive from the remote
 // bridge, whose own delivery is pinned in `lib/focus-remote`.

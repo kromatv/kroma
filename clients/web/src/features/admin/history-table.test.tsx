@@ -16,7 +16,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HISTORY_COLUMNS } from '#web/features/admin/history-columns';
 import { historySort } from '#web/features/admin/history-query';
-import { HistoryTable } from '#web/features/admin/history-table';
+import { HistoryTable } from '#web/features/admin/history-table.component';
 
 const styleHost = createStyleTestHost();
 

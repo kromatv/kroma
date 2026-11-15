@@ -1,1 +1,1 @@
-export * from './up-next-sheet';
+export * from './up-next-sheet.component';

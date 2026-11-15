@@ -20,7 +20,7 @@ aliases that specifier to the DOM one, the same trick as
 `vitest.config.ts`.
 
 So a browser gets native SVG and never loads react-native-svg's runtime, bytes a TV
-cannot spare, which is the argument `lib/svg.web.tsx` makes at length. Native gets
+cannot spare, which is the argument `lib/svg.component.web.tsx` makes at length. Native gets
 react-native-svg, where it is the only way to draw at all.
 
 The one prop the two packages disagree on is the outline WEIGHT (`stroke` on the

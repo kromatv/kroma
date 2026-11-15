@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type HeldSeekTransport, useHeldSeek } from './seek-hold';
+import { type HeldSeekTransport, useHeldSeek } from './seek-hold.hook';
 
 function transport(over: Partial<HeldSeekTransport> = {}): HeldSeekTransport {
   return {

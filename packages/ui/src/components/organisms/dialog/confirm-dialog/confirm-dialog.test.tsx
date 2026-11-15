@@ -4,7 +4,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { ConfirmDialog } from './confirm-dialog';
+import { ConfirmDialog } from './confirm-dialog.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

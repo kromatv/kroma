@@ -2,7 +2,7 @@
 
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { usePlayerOutro } from './use-player-outro';
+import { usePlayerOutro } from './use-player-outro.hook';
 
 type Opts = Parameters<typeof usePlayerOutro>[0];
 

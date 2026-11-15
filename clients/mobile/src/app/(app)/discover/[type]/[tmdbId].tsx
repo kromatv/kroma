@@ -7,9 +7,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { DiscoverEpisodes } from '#mobile/components/discover-episodes';
-import { TrailerButton } from '#mobile/components/trailer-button';
-import { CastRail, DetailHero } from '#mobile/components/detail';
+import { DiscoverEpisodes } from '#mobile/components/discover-episodes.component';
+import { TrailerButton } from '#mobile/components/trailer-button.component';
+import { CastRail, DetailHero } from '#mobile/components/detail.component';
 import {
   ErrorBanner,
   ErrorView,

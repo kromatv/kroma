@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { breakpointBits } from '#ui/core/breakpoint';
 import { BREAKPOINTS, breakpoint } from '#ui/core/tokens';
 import { createStyleTestHost } from '#ui/testing-style';
-import { useBreakpoint, useBreakpointStep } from './use-breakpoint';
+import { useBreakpoint, useBreakpointStep } from './use-breakpoint.hook';
 
 const styleHost = createStyleTestHost();
 const { renderHook, pinDesignWidth } = styleHost;

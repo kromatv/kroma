@@ -27,7 +27,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLanCast } from '#ui/services/cast-lan';
+import { useLanCast } from '#ui/services/cast-lan.hook';
 import { type Cast, CastCtx, type CastFailure } from './cast-context';
 import { applyCastEvent } from './cast-events';
 import { livePosition, type PositionBase } from './cast-position';

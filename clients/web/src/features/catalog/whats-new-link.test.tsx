@@ -12,8 +12,8 @@ import {
 } from '@tanstack/react-router';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useMarkReleaseSeen } from '#web/features/releases/use-mark-release-seen';
-import { WhatsNewLink } from './whats-new-link';
+import { useMarkReleaseSeen } from '#web/features/releases/use-mark-release-seen.hook';
+import { WhatsNewLink } from './whats-new-link.component';
 
 const api = vi.hoisted(() => ({ list: vi.fn(), markSeen: vi.fn() }));
 vi.mock('#web/shared/lib/web-runtime', () => {

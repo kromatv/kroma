@@ -11,7 +11,7 @@ import { ItemId, type Section } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAiSuggest, useEstimatedProgress } from './ai-suggest';
+import { useAiSuggest, useEstimatedProgress } from './ai-suggest.hook';
 
 const ITEM = ItemId.parse('item-1');
 const OTHER_ITEM = ItemId.parse('item-2');

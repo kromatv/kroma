@@ -2,7 +2,7 @@ import { useT } from '@kromatv/ui';
 import { Box, Button, classes, Icon, OtpField, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { NearbyTvs } from '#web/features/accounts/nearby-tvs';
+import { NearbyTvs } from '#web/features/accounts/nearby-tvs.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { page } from '#web/shared/ui';
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { amplitudeOf, levelOf, useVolumeBoost, VOLUME_BOOST_MAX } from './use-volume-boost';
+import { amplitudeOf, levelOf, useVolumeBoost, VOLUME_BOOST_MAX } from './use-volume-boost.hook';
 
 function playback(volume = 1) {
   return { volume, setVol: vi.fn() };

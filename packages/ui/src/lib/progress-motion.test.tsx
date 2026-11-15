@@ -10,7 +10,7 @@ import { Progress } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { color } from '#ui/core/color';
 import { declared } from '#ui/testing';
-import { ProgressFill } from './progress-motion';
+import { ProgressFill } from './progress-motion.component';
 import { ringGeometry } from './ring';
 
 afterEach(cleanup);

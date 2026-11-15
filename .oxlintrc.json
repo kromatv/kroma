@@ -195,7 +195,8 @@
       {
         "case": "kebabCase"
       }
-    ]
+    ],
+    "kroma/file-role": "error"
   },
   "ignorePatterns": [
     ".claude/worktrees",
@@ -290,12 +291,12 @@
         "packages/tv/src/shared/preview/**",
         "packages/tv/src/features/playback/player/avplay-engine.ts",
         "packages/tv/src/features/playback/player/html-engine.ts",
-        "packages/tv/src/features/playback/player/use-now-playing.ts",
+        "packages/tv/src/features/playback/player/use-now-playing.hook.ts",
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/preview/**",
         "packages/ui/src/lib/dom.ts",
-        "packages/ui/src/services/theme-audio.ts",
+        "packages/ui/src/services/theme-audio.hook.ts",
         "packages/tv/src/shared/preview/cards.test.ts",
         "packages/tv/src/shared/preview/deeplink.test.ts"
       ],
@@ -629,9 +630,10 @@
       }
     },
     {
-      "files": ["clients/mobile/src/app/**", "packages/cli/templates/**"],
+      "files": ["clients/mobile/src/app/**", "packages/cli/templates/**", "**/src/routes/**"],
       "rules": {
-        "unicorn/filename-case": "off"
+        "unicorn/filename-case": "off",
+        "kroma/file-role": "off"
       }
     },
     {

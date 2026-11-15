@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, renderHook, screen, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConfirmHost, type ConfirmOptions, useConfirm } from './confirm';
 
-vi.mock('./confirm-dialog', () => ({
+vi.mock('./confirm-dialog.component', () => ({
   ConfirmDialog: ({
     title,
     onConfirm,

@@ -10,7 +10,7 @@ import { tintGradient } from '#ui/components/molecules/media-card';
 
 import { stillArt } from '#ui/lib/sample-art';
 
-import { Frost } from './frost';
+import { Frost } from './frost.component';
 
 export const TINT = tintGradient(['#3A2E4F', '#1B1524']);
 

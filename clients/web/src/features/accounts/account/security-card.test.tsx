@@ -5,8 +5,8 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PinCard } from './pin-card';
-import { SecurityCard } from './security-card';
+import { PinCard } from './pin-card.component';
+import { SecurityCard } from './security-card.component';
 
 const auth = vi.hoisted(() => ({
   user: { id: 'u1', hasPin: false },

@@ -17,7 +17,7 @@ beforeEach(() => {
 
 describe('iOS focus card', () => {
   it('draws nothing where the TV module is absent, as on an iPhone', async () => {
-    const { FocusCard } = await import('./focus-card.ios');
+    const { FocusCard } = await import('./focus-card.component.ios');
 
     const { container } = render(<FocusCard holdsFocus radius={12} face="child" />);
 
@@ -28,7 +28,7 @@ describe('iOS focus card', () => {
   it('uses the native card on builds that include the TV module', async () => {
     native.available = true;
 
-    const { FocusCard } = await import('./focus-card.ios');
+    const { FocusCard } = await import('./focus-card.component.ios');
 
     expect(FocusCard).toBe('native-focus-card');
     expect(native.view).toHaveBeenCalledWith('FocusCard');

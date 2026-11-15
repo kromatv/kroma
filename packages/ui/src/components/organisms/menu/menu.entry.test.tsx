@@ -4,10 +4,10 @@ import { cleanup, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Menu } from './menu';
+import { Menu } from './menu.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

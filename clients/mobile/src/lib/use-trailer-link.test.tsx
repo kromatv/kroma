@@ -33,7 +33,7 @@ vi.mock('#mobile/lib/session', () => ({
   }),
 }));
 
-const { useTrailerLink } = await import('./use-trailer-link');
+const { useTrailerLink } = await import('./use-trailer-link.hook');
 
 const trailer = (over: Partial<Trailer> = {}): Trailer => ({
   video: 'Ox8ZLF6cGM0',

@@ -21,7 +21,7 @@ vi.mock('#web/shared/lib/web-runtime', () => ({
   }),
 }));
 
-const { useMissingActions } = await import('#web/features/requests/use-missing-actions');
+const { useMissingActions } = await import('#web/features/requests/use-missing-actions.hook');
 
 let queries: QueryClient;
 

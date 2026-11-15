@@ -1,6 +1,6 @@
 // Entering a REMEMBERED profile from the gate: stored device token first, then
 // (in order) the standalone Face ID lock, the biometric PIN vault, the PIN pad
-// and finally that profile's password. Kept out of sign-in.tsx so the screen
+// and finally that profile's password. Kept out of sign-in.component.tsx so the screen
 // stays state + presentation wiring.
 
 import { apiErrorText, KromaApiError } from '@kromatv/client';

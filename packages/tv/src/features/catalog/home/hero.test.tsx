@@ -3,7 +3,7 @@ import type { MediaItem, SectionItem, Show } from '@kromatv/client/media';
 import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Hero, type HeroInfo } from '#tv/features/catalog/home/hero';
+import { Hero, type HeroInfo } from '#tv/features/catalog/home/hero.component';
 
 afterEach(cleanup);
 

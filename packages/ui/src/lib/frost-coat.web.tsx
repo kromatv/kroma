@@ -4,7 +4,7 @@ import { type StyleScope, sharedStyle } from '#ui/core';
 import type { FrostBackdropProps } from '#ui/components/atoms/frost';
 import { backdropBlur } from './css';
 import { BARE, type FrostCoat, type FrostReach } from './frost-coat-types';
-import { FrostMark } from './gl-frost/mark';
+import { FrostMark } from './gl-frost/mark.component';
 
 const coats = new Map<number, FrostCoat>();
 

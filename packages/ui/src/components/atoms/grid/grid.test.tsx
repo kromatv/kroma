@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { declared, layout } from '#ui/testing';
-import { cellWidth, columnsFor, Grid } from './grid';
+import { cellWidth, columnsFor, Grid } from './grid.component';
 
 describe('columnsFor', () => {
   it('fits as many cells as the room allows', () => {

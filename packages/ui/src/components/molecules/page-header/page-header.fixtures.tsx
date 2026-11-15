@@ -2,7 +2,7 @@ import { Button } from '#ui/components/atoms/button';
 
 import { Chip } from '#ui/components/atoms/chip';
 
-import { PageHeader } from './page-header';
+import { PageHeader } from './page-header.component';
 
 export function Parts() {
   return (

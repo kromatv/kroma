@@ -11,7 +11,7 @@ vi.mock('@kromatv/ui', () => ({
 }));
 vi.mock('#mobile/lib/i18n', () => ({ useT: () => (key: string) => key }));
 
-import { usePhoneStats } from './use-phone-stats';
+import { usePhoneStats } from './use-phone-stats.hook';
 
 const item = {
   durationMs: 100000,

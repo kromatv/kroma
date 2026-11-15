@@ -1,1 +1,1 @@
-export * from './control-cluster';
+export * from './control-cluster.component';

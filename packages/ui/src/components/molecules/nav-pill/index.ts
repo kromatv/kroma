@@ -1,1 +1,1 @@
-export * from './nav-pill';
+export * from './nav-pill.component';

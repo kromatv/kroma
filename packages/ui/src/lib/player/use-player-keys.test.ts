@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 import { WEB_FLAGS } from '#ui/components/organisms/player/types';
-import { usePlayerKeys } from './use-player-keys';
-import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
-import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
+import { usePlayerKeys } from './use-player-keys.hook';
+import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav.hook';
+import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge.hook';
 
 function makeController(): PlayerController {
   return {

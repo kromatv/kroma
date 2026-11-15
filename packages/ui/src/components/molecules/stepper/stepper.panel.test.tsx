@@ -5,7 +5,7 @@ import { type ReactElement, type ReactNode, useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { Stepper } from './stepper';
+import { Stepper } from './stepper.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 

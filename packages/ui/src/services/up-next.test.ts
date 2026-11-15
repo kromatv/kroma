@@ -6,7 +6,7 @@ import { fakeClient } from '@kromatv/client/test';
 import type { Translate } from '@kromatv/i18n';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useUpNext } from './up-next';
+import { useUpNext } from './up-next.hook';
 
 const t: Translate = ((key: string) => key) as unknown as Translate;
 

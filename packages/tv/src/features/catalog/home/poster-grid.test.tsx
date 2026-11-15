@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type GridCard, PosterGrid } from '#tv/features/catalog/home/poster-grid';
+import { type GridCard, PosterGrid } from '#tv/features/catalog/home/poster-grid.component';
 
 const inputHost = createInputTestHost();
 

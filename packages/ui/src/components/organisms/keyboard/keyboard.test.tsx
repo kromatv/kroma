@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { declared } from '#ui/testing';
 import { SearchKeyboard } from './search-keyboard';
 import { UrlKeyboard } from './url-keyboard';

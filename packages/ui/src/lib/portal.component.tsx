@@ -1,0 +1,15 @@
+// Native has no `position: fixed` and no clipping ancestor to escape, so the
+// portal is the identity component here. The web half is in `portal.component.web.tsx`.
+
+import type { ReactNode } from 'react';
+
+function Portal({ children }: Readonly<{ children: ReactNode }>) {
+  return <>{children}</>;
+}
+
+/** Web-only: see `portal.component.web.tsx`. Native draws in place either way. */
+function PortalHost({ children }: Readonly<{ container: Element | null; children: ReactNode }>) {
+  return <>{children}</>;
+}
+
+export { Portal, PortalHost };

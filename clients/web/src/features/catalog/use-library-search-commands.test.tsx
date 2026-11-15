@@ -4,7 +4,7 @@ import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
-import { useLibrarySearchCommands } from './use-library-search-commands';
+import { useLibrarySearchCommands } from './use-library-search-commands.hook';
 
 const mocks = vi.hoisted(() => ({
   query: '',

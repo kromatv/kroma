@@ -4,11 +4,13 @@ import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
 import { CATALOG_NAV } from './catalog-nav';
-import { useCatalogCommands } from './use-catalog-commands';
+import { useCatalogCommands } from './use-catalog-commands.hook';
 
 const mocks = vi.hoisted(() => ({ modulePages: [] as ModuleNav[] }));
 vi.mock('@kromatv/ui', () => ({ useT: () => (key: string) => key }));
-vi.mock('#web/modules/module-host-provider', () => ({ useModuleNav: () => mocks.modulePages }));
+vi.mock('#web/modules/module-host-provider.component', () => ({
+  useModuleNav: () => mocks.modulePages,
+}));
 vi.mock('#web/shared/lib/command-menu', async () => ({
   useCommands: (await import('#web/shared/lib/command-menu.fixture')).useFakeCommands,
 }));

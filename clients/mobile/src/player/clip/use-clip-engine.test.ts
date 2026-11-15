@@ -9,7 +9,7 @@ import {
 } from '#mobile/player/engine/engine.fixture';
 import { PlaybackOwnerProvider } from '#mobile/player/playback-owner';
 
-const { useClipEngine } = await import('./use-clip-engine');
+const { useClipEngine } = await import('./use-clip-engine.hook');
 
 const TRAILER = 'http://kroma.test/api/trailers/movie/1061474/Ox8ZLF6cGM0/stream?t=ticket';
 

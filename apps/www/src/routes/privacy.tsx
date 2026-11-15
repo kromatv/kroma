@@ -1,8 +1,8 @@
 import { site } from '@kromatv/site-meta';
 import { IconShieldLock } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
-import { ContactCard } from '#site/components/contact/contact-card';
-import { PageShell } from '#site/components/contact/page-shell';
+import { ContactCard } from '#site/components/contact/contact-card.component';
+import { PageShell } from '#site/components/contact/page-shell.component';
 import { getLocale, useLang } from '#site/lib/i18n';
 import { getLegalDoc } from '#site/lib/legal';
 import { seo } from '#site/lib/seo';

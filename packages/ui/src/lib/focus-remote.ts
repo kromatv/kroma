@@ -19,7 +19,7 @@ import {
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useInputGate } from './input-gate';
 import type { PerfSampler } from './perf';
-import { usePerfSampler } from './perf-provider';
+import { usePerfSampler } from './perf-provider.component';
 import { isRemoteKeyUp } from './tv-remote';
 
 // Both Siri Remote input paths, clickpad and touch-surface swipes, land here:
@@ -169,7 +169,7 @@ function directionsOf(event: HWEvent): readonly Direction[] {
 
 // Android TV: the new architecture (ReactSurfaceView) routes keys to per-view
 // `onKeyDown` via JSKeyDispatcher instead of `onHWKeyEvent`, so `useTVEventHandler`
-// above never fires. These are the props the key host in focus-root.tsx spreads
+// above never fires. These are the props the key host in focus-root.component.tsx spreads
 // onto the focused view; native's `enableKeyEvents` flag (turned on by
 // clients/tv-native/plugins/with-tv-key-events.js) must also be set, or neither
 // half does anything.

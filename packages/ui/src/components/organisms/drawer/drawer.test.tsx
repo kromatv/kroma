@@ -5,7 +5,7 @@ import { Text } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Drawer } from './drawer';
+import { Drawer } from './drawer.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

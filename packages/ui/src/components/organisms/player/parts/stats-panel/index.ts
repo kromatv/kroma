@@ -1,1 +1,1 @@
-export * from './stats-panel';
+export * from './stats-panel.component';

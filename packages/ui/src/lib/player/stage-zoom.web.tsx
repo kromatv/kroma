@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { Animated, type ViewStyle } from 'react-native';
 import type { StageCard } from '#ui/components/organisms/player/lib/stage-card';
-import { CARD_MS } from '#ui/components/organisms/player/lib/panel-slide';
+import { CARD_MS } from '#ui/components/organisms/player/lib/panel-slide.hook';
 import { ease } from '#ui/lib/ease';
 
 /** The settings card's corner radius, in canvas pixels. */

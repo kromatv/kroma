@@ -171,6 +171,16 @@ the kit's tokens, atoms, molecules, organisms, templates). Relative paths and th
 then the shells and the sites). A kit component's fixtures, demos and tests are
 not judged: a demo may show an atom inside a molecule.
 
+### file-role
+
+A file that exports a component is `<name>.component.tsx`, one that exports a
+hook is `<name>.hook.ts`, and a file that claims a role exports it. The role is
+read from the exported functions: the export named after the file decides, and
+when none is, the exports decide if they all agree. A mix (a provider and its
+hook) takes no role. Entry files, tests, fixtures, stories, demos and generated
+files are not judged, and the folders a router names are switched off in
+`.oxlintrc.json`.
+
 For every rule above, run `bun run --cwd packages/lint-rules rules <rule-name>` for the full scope,
 exceptions, examples, and verification steps.
 

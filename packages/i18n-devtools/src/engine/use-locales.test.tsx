@@ -5,7 +5,7 @@ import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { testEngine } from '../testing';
 import { setEngine } from './engine';
-import { useLocales } from './use-locales';
+import { useLocales } from './use-locales.hook';
 
 afterEach(() => {
   setEngine(null);

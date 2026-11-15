@@ -1,5 +1,5 @@
 import { Box } from '#ui/components/atoms/box';
-import { Button } from './button';
+import { Button } from './button.component';
 
 /**
  * How a dangerous action is presented: cancel stays calm and reachable, the

@@ -5,7 +5,7 @@ import { matches, type Story, slug } from '@kromatv/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { Kit } from './config';
+import { Kit } from './config.component';
 import { STORIES } from './stories';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));

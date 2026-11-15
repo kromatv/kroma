@@ -9,7 +9,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import { useT } from '#ui/services/i18n';
 
-import { NearbyTvList } from './nearby-tv-list';
+import { NearbyTvList } from './nearby-tv-list.component';
 
 export const SALON: DiscoveredTv = {
   handle: HandoffHandle.parse('h-4f2a91'),

@@ -3,7 +3,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { DownloadQuery, DownloadView, PageView } from './schemas';
-import { useDownloadsTable } from './use-downloads-table';
+import { useDownloadsTable } from './use-downloads-table.hook';
 
 const PAGE: PageView = { page: 3, perPage: 10, total: 42, pageCount: 5 };
 

@@ -10,7 +10,7 @@ import type { CreditsCardItem } from './parts/credits-card';
 import type { PostPlayItem } from './parts/post-play';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import type { UpNextData, UpNextItem } from './parts/up-next-sheet';
-import { Player } from './player';
+import { Player } from './player.component';
 import { fakeController } from './player.fixture';
 import { type PlayerCloseDetails, type PlayerController, WEB_FLAGS } from './types';
 

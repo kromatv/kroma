@@ -2,7 +2,7 @@
 
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useStageRatio } from './stage-ratio';
+import { useStageRatio } from './stage-ratio.hook';
 
 const NODES: HTMLElement[] = [];
 

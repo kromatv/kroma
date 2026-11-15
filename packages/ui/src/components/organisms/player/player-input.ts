@@ -1,4 +1,4 @@
-import type { usePlayerNav } from './hooks/use-player-nav';
+import type { usePlayerNav } from './hooks/use-player-nav.hook';
 import type { PlayerController, PlayerFlags } from './types';
 
 function playerInputHandlers(

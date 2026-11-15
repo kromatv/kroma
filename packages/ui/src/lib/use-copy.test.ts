@@ -2,7 +2,7 @@
 
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCopy } from './use-copy';
+import { useCopy } from './use-copy.hook';
 
 function withClipboard(writeText: (text: string) => Promise<void>) {
   const write = vi.fn(writeText);

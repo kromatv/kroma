@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { useTorrentsApi } from './api';
+import { useTorrentsApi } from './api.hook';
 import torrentsModule from './module';
 
 describe('torrentsModule', () => {

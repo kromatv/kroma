@@ -8,7 +8,7 @@ import { ItemId, type StoryboardManifest } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useStoryboard } from './storyboard';
+import { useStoryboard } from './storyboard.hook';
 
 const prefetch = vi.hoisted(() => vi.fn(async () => true));
 vi.mock('react-native', async (real) => {

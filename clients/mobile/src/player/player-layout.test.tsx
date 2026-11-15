@@ -8,7 +8,7 @@ vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 44, right: 0, bottom: 34, left: 0 }),
 }));
 
-import { PlayerLayout } from './player-layout';
+import { PlayerLayout } from './player-layout.component';
 
 afterEach(cleanup);
 

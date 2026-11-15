@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { RequestsHubPage } from '#web/features/requests/requests-hub';
+import { RequestsHubPage } from '#web/features/requests/requests-hub.component';
 
 const Search = z.object({
   tab: z.enum(['mine', 'upcoming', 'missing']).optional().catch(undefined),

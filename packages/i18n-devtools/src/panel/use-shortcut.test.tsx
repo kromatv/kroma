@@ -2,7 +2,7 @@
 
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useShortcut } from './use-shortcut';
+import { useShortcut } from './use-shortcut.hook';
 
 function Listening({ run, onDismiss }: { run: () => void; onDismiss?: () => void }) {
   useShortcut([{ code: 'KeyK', run }], onDismiss);

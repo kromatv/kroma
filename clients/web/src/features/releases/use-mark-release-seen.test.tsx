@@ -32,7 +32,7 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-import { useMarkReleaseSeen } from './use-mark-release-seen';
+import { useMarkReleaseSeen } from './use-mark-release-seen.hook';
 
 const { userQueries } = createQueries(
   createWebTestClient({ query: { releases: { list: () => api.list } } }),

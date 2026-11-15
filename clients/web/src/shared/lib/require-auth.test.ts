@@ -14,7 +14,7 @@ vi.mock('@tanstack/react-router', () => ({
     select({ location: { href: router.href } }),
 }));
 
-import { useRequireAuth } from './require-auth';
+import { useRequireAuth } from './require-auth.hook';
 
 function guard(href = '/library') {
   router.href = href;

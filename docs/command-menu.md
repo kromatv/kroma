@@ -42,9 +42,9 @@ useCommands(
 ```
 
 For a row that belongs everywhere, add it to the hook of its feature, such as
-`features/catalog/use-catalog-commands.ts`. An action used in more than one place is a
+`features/catalog/use-catalog-commands.hook.ts`. An action used in more than one place is a
 function that returns it, such as `list` and `watched` from
-`features/catalog/use-title-actions.ts`, which fit as a row or in a row's `actions`:
+`features/catalog/use-title-actions.hook.ts`, which fit as a row or in a row's `actions`:
 
 ```tsx
 const { list, watched } = useTitleActions();
@@ -177,7 +177,7 @@ A module cannot add its own rows or actions yet. `useCommands` is not part of
 
 `useCommandQuery` reads it. A server knows what the menu cannot see, so a row it
 matched through something else must be `always`, or the menu filters it out again.
-See `features/catalog/use-library-search-commands.ts`: when one hit is named what was
+See `features/catalog/use-library-search-commands.hook.ts`: when one hit is named what was
 typed the others are noise and have to match, and when none is, the server found them
 in a cast or a synopsis and all of them stay. So `du` stays clean and `tom hardy` works.
 
@@ -202,7 +202,7 @@ nothing to declare for this.
 ## A new feature's first commands
 
 Write `features/<feature>/use-<feature>-commands.ts` and call it in `CommandMenu`
-(`clients/web/src/command-menu.tsx`). That list decides the order of the groups with
+(`clients/web/src/command-menu.component.tsx`). That list decides the order of the groups with
 nothing typed, and it is the one place allowed to reach several features.
 
 ## Opening it from code

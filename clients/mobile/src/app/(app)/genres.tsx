@@ -25,7 +25,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, useWindowDimensions } from 'react-native';
-import { PageHeader } from '#mobile/components/page-header';
+import { PageHeader } from '#mobile/components/page-header.component';
 import { EmptyState, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';

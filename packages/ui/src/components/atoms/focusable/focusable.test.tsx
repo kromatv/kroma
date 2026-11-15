@@ -15,10 +15,10 @@ import { act, createRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme } from '#ui/core';
 
-import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
 import { declared, wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Focusable, type FocusHandle } from './focusable';
+import { Focusable, type FocusHandle } from './focusable.component';
 
 const { armPressGuard, clearPressGuard, render } = createInputTestHost();
 

@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ModuleEntry } from '#site/catalog';
-import { ModuleCard } from './module-card.tsx';
+import { ModuleCard } from './module-card.component.tsx';
 
 const entry = (over: Record<string, unknown> = {}) =>
   ModuleEntry.parse({

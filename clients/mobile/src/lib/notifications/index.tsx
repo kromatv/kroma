@@ -1,1 +1,1 @@
-export * from './notifications.tsx';
+export * from './notifications.hook.tsx';

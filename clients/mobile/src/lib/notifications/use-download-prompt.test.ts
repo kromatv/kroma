@@ -13,7 +13,7 @@ const notifications = vi.hoisted(() => ({
 const loadPush = vi.hoisted(() => vi.fn(() => notifications as unknown));
 vi.mock('./native', () => ({ push: loadPush }));
 
-const { useDownloadPrompt } = await import('./use-download-prompt');
+const { useDownloadPrompt } = await import('./use-download-prompt.hook');
 
 const noop = (): void => undefined;
 

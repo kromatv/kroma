@@ -6,7 +6,7 @@ import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { RegistriesDrawer } from '#web/features/admin/module-registries';
+import { RegistriesDrawer } from '#web/features/admin/module-registries.component';
 import { createWebRuntime, type WebRuntime } from '#web/shared/lib/api';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 

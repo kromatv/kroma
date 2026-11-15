@@ -5,7 +5,7 @@ import { Surface } from '#ui/components/atoms/surface';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { RingScopeProvider } from '#ui/lib/ring-scope';
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 import { s } from './focusable.fixtures';
 
 export const story = defineStory({
@@ -51,7 +51,7 @@ The kit's only focusable primitive. Every control reachable with the remote is o
 
 ## Delegating the element it renders
 
-`asChild` hands the control's host element to its one child, so a route becomes a real `<a href>` the browser can open in a tab, copy or middle-click. The child's own children are the control's content, and everything the control resolved (its coats, its ref, its a11y state) is merged onto the child under [`lib/slot`](../../../lib/slot.tsx)'s rules: the child keeps what the router put on it.
+`asChild` hands the control's host element to its one child, so a route becomes a real `<a href>` the browser can open in a tab, copy or middle-click. The child's own children are the control's content, and everything the control resolved (its coats, its ref, its a11y state) is merged onto the child under [`lib/slot`](../../../lib/slot.component.tsx)'s rules: the child keeps what the router put on it.
 
 ```tsx
 <Focusable sv={genreTile} label={label} asChild>

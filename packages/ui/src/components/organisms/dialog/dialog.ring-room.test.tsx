@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { RING_ROOM } from '#ui/core';
-import { Dialog } from './dialog';
+import { Dialog } from './dialog.component';
 
 afterEach(cleanup);
 
