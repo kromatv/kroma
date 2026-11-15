@@ -17,6 +17,7 @@ pub(super) fn ua(user_agent: &str) -> DeviceHints {
     DeviceHints {
         user_agent: Some(user_agent.to_string()),
         language: None,
+        app: None,
     }
 }
 
@@ -24,5 +25,6 @@ pub(super) fn spoken(user_agent: &str, language: &str) -> DeviceHints {
     DeviceHints {
         user_agent: Some(user_agent.to_string()),
         language: Some(language.to_string()),
+        app: None,
     }
 }

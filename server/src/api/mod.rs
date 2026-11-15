@@ -77,6 +77,8 @@ mod it_cast;
 #[cfg(test)]
 mod it_content;
 #[cfg(test)]
+mod it_device_versions;
+#[cfg(test)]
 mod it_diagnostics;
 #[cfg(test)]
 mod it_direct;

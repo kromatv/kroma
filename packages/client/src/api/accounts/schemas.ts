@@ -153,13 +153,21 @@ export type AuthResult = z.infer<typeof AuthResult>;
 export const SessionResult = AuthResult.omit({ accessToken: true });
 export type SessionResult = z.infer<typeof SessionResult>;
 
+/** The app build a device named itself by: the shell it ships as and its version. */
+export const AppBuild = z.object({ shell: z.string(), version: z.string() });
+export type AppBuild = z.infer<typeof AppBuild>;
+
 /** One signed-in device from `GET /auth/me/sessions`. `id` is a non-secret
- * handle used to revoke it; `current` marks the device making the request. */
+ * handle used to revoke it; `current` marks the device making the request.
+ * `app` is absent for a device that never named its build, and `outdated` says
+ * the build is older than the oldest its server serves. */
 export const SessionInfo = z.object({
   id: SessionId,
   userAgent: z.string().nullish(),
   createdAt: z.string(),
   lastSeen: z.string().nullish(),
+  app: AppBuild.nullish(),
+  outdated: z.boolean().optional(),
   current: z.boolean(),
 });
 export type SessionInfo = z.infer<typeof SessionInfo>;

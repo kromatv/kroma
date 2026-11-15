@@ -203,10 +203,12 @@ pub async fn list_sessions(
         .into_iter()
         .map(|r| crate::api::dto::SessionInfo {
             current: current_id.as_deref() == Some(r.id.as_str()),
+            outdated: r.app.as_ref().is_some_and(|app| app.outdated()),
             id: r.id,
             user_agent: r.user_agent,
             created_at: r.created_at,
             last_seen: r.last_seen,
+            app: r.app,
         })
         .collect();
     Json(out).into_response()
