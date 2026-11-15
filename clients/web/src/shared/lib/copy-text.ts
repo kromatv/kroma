@@ -14,7 +14,9 @@ function copyThroughSelection(text: string): boolean {
     copied = false;
   }
   area.remove();
-  if (focused instanceof HTMLElement) focused.focus();
+  if (focused instanceof HTMLElement) {
+    focused.focus();
+  }
   return copied;
 }
 
@@ -23,7 +25,9 @@ function copyThroughSelection(text: string): boolean {
  *  servers are reached on a LAN. Resolves to whether the copy happened. */
 export function copyText(text: string): Promise<boolean> {
   const board = globalThis.navigator?.clipboard;
-  if (!board) return Promise.resolve(copyThroughSelection(text));
+  if (!board) {
+    return Promise.resolve(copyThroughSelection(text));
+  }
   return board.writeText(text).then(
     () => true,
     () => copyThroughSelection(text),

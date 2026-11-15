@@ -11,12 +11,24 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.href;
+  }
+  return input.url;
+}
+
 function serverAt(network: { up: boolean }) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (!network.up) throw new TypeError('Failed to fetch');
+      const url = requestUrl(input);
+      if (!network.up) {
+        throw new TypeError('Failed to fetch');
+      }
       const body = url.endsWith('/api/health')
         ? { status: 'ok', instanceId: 'srv-1' }
         : { answer: 'a1' };

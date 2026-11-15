@@ -85,7 +85,9 @@ const PRIVATE_HEADERS = {
 // a browser session. Both are the same token.
 function assertion(request: Request): string | undefined {
   const header = request.headers.get('cf-access-jwt-assertion');
-  if (header) return header;
+  if (header) {
+    return header;
+  }
   const cookie = request.headers.get('cookie') ?? '';
   return /(?:^|;\s*)CF_Authorization=([^;]+)/.exec(cookie)?.[1];
 }
@@ -96,13 +98,17 @@ function assertion(request: Request): string | undefined {
 // went over.
 async function within(request: Request): Promise<string | null> {
   const reader = request.body?.getReader();
-  if (!reader) return '';
+  if (!reader) {
+    return '';
+  }
   const decoder = new TextDecoder();
   let text = '';
   let seen = 0;
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) return text;
+    if (done) {
+      return text;
+    }
     seen += value.byteLength;
     if (seen > MAX_REQUEST_BYTES) {
       reader.cancel().catch(() => {});
@@ -156,10 +162,14 @@ export function createApp(storeFor: (env: Env) => Store) {
   // dropped at it, rather than buffered whole and measured afterwards.
   app.use('/v1/*', async (c, next) => {
     const declared = Number(c.req.header('content-length') ?? '0');
-    if (declared > MAX_REQUEST_BYTES) return c.json({ error: 'body too large' }, 413);
+    if (declared > MAX_REQUEST_BYTES) {
+      return c.json({ error: 'body too large' }, 413);
+    }
     if (c.req.method === 'POST') {
       const body = await within(c.req.raw);
-      if (body === null) return c.json({ error: 'body too large' }, 413);
+      if (body === null) {
+        return c.json({ error: 'body too large' }, 413);
+      }
       // Carried forward rather than read again: the stream is spent, and a
       // route that asked hono for the body a second time would be parsing bytes
       // nobody had counted.
@@ -182,7 +192,9 @@ export function createApp(storeFor: (env: Env) => Store) {
 
   app.post('/v1/ping', async (c) => {
     const body: Parsed<typeof Ping> = parse(c.get('body'), Ping);
-    if (!body.ok) return c.json({ error: body.error }, 400);
+    if (!body.ok) {
+      return c.json({ error: body.error }, 400);
+    }
     const ping = body.value;
     const store = c.get('store');
 
@@ -190,14 +202,18 @@ export function createApp(storeFor: (env: Env) => Store) {
     // shared address cannot be silenced by another, and so a retry is cheap
     // while a flood is not.
     const { success } = await c.env.PING_LIMIT.limit({ key: await keyOf(ping.id) });
-    if (!success) return c.json({ error: 'too many pings for this install' }, 429);
+    if (!success) {
+      return c.json({ error: 'too many pings for this install' }, 429);
+    }
 
     // A second limiter, on the source, for the one thing that actually costs:
     // creating rows. An install that already has a row never reaches it.
     if (!(await store.has(ping.id))) {
       const source = c.req.header('cf-connecting-ip') ?? 'unknown';
       const fresh = await c.env.NEW_ID_LIMIT.limit({ key: await keyOf(source) });
-      if (!fresh.success) return c.json({ error: 'too many new installs from here' }, 429);
+      if (!fresh.success) {
+        return c.json({ error: 'too many new installs from here' }, 429);
+      }
     }
 
     await store.upsert(ping, country(c.req.raw), c.get('now'));
@@ -208,11 +224,15 @@ export function createApp(storeFor: (env: Env) => Store) {
   // or not, so this cannot be asked twice to learn whether an id exists.
   app.post('/v1/forget', async (c) => {
     const body: Parsed<typeof Forget> = parse(c.get('body'), Forget);
-    if (!body.ok) return c.json({ error: body.error }, 400);
+    if (!body.ok) {
+      return c.json({ error: body.error }, 400);
+    }
 
     const { id } = body.value;
     const { success } = await c.env.PING_LIMIT.limit({ key: await keyOf(id) });
-    if (!success) return c.json({ error: 'too many requests for this install' }, 429);
+    if (!success) {
+      return c.json({ error: 'too many requests for this install' }, 429);
+    }
 
     await c.get('store').forget(id);
     return c.json({ ok: true });
@@ -255,7 +275,9 @@ export function createApp(storeFor: (env: Env) => Store) {
   app.get('/v1/stats', async (c) => {
     const cache = edgeCache();
     const cached = await cache?.match(c.req.raw);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
 
     const store = c.get('store');
     const [rows, history] = await Promise.all([store.all(), store.daily()]);

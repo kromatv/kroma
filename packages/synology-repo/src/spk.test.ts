@@ -29,7 +29,9 @@ function spk(members: Record<string, string | Buffer>): string {
   made += 1;
   const dir = join(work, `pkg-${made}`);
   mkdirSync(dir, { recursive: true });
-  for (const [name, body] of Object.entries(members)) writeFileSync(join(dir, name), body);
+  for (const [name, body] of Object.entries(members)) {
+    writeFileSync(join(dir, name), body);
+  }
   const out = join(work, `kroma-${made}.spk`);
   execFileSync('tar', ['-cf', out, '-C', dir, ...Object.keys(members)]);
   return out;

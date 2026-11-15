@@ -38,7 +38,9 @@ const USAGE = `usage: bun run shots:pr <slug> [options]
 
 async function main(argv: string[]): Promise<void> {
   const [slug, ...rest] = argv;
-  if (!slug || slug.startsWith('--')) throw new Error(USAGE);
+  if (!slug || slug.startsWith('--')) {
+    throw new Error(USAGE);
+  }
   const flags = parseFlags(rest);
 
   const screen: Screen = {
@@ -89,8 +91,12 @@ function capture(
   port: number | undefined,
   metroPort: number,
 ): Promise<void> {
-  if (target.kind === 'dom') return captureDom(target, screen, file, seed, port);
-  if (target.kind === 'apple') return captureApple(target, screen, file, metroPort);
+  if (target.kind === 'dom') {
+    return captureDom(target, screen, file, seed, port);
+  }
+  if (target.kind === 'apple') {
+    return captureApple(target, screen, file, metroPort);
+  }
   return captureAndroid(target, screen, file, metroPort);
 }
 
@@ -98,7 +104,9 @@ function parseFlags(argv: string[]): Record<string, string> {
   const flags: Record<string, string> = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i] ?? '';
-    if (!arg.startsWith('--')) throw new Error(`unexpected argument "${arg}"\n\n${USAGE}`);
+    if (!arg.startsWith('--')) {
+      throw new Error(`unexpected argument "${arg}"\n\n${USAGE}`);
+    }
     const name = arg.slice(2);
     const next = argv[i + 1];
     // A bare flag (--publish) takes the empty string; anything else consumes

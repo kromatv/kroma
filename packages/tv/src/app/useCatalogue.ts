@@ -21,9 +21,13 @@ import { initialServers } from '#tv/shared/server';
 type Status = 'discovering' | 'connecting' | 'ready' | 'error';
 
 function serverLabel(servers: SavedServer[], url: string | null): string | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   const saved = servers.find((s) => s.url === norm(url));
-  if (saved?.name) return saved.name;
+  if (saved?.name) {
+    return saved.name;
+  }
   try {
     return new URL(url).hostname;
   } catch {
@@ -68,7 +72,9 @@ export function useCatalogue(
   );
 
   const client = useMemo<KromaClient | null>(() => {
-    if (!activeServerUrl) return null;
+    if (!activeServerUrl) {
+      return null;
+    }
     // No initial bearer: the auth provider exchanges the active account's access
     // token for a session token and calls `setAuthToken` (+ installs the refresh
     // handler) once the session belongs to this server.
@@ -109,7 +115,9 @@ export function useCatalogue(
       forgetServerStore(u);
       const next = servers.filter((s) => s.url !== u);
       setServers(next);
-      if (activeServerUrl && norm(activeServerUrl) === u) setActiveServerUrl(next[0]?.url ?? null);
+      if (activeServerUrl && norm(activeServerUrl) === u) {
+        setActiveServerUrl(next[0]?.url ?? null);
+      }
     },
     [
       servers,
@@ -124,12 +132,16 @@ export function useCatalogue(
     void discoverServer({ browse })
       .catch(() => null)
       .then((found) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setDiscovering(false);
         if (found) {
           setDiscovered((d) => (d.includes(found) ? d : [...d, found]));
           // First-run bootstrap: no servers yet → adopt the discovered one.
-          if (servers.length === 0) addServer(found);
+          if (servers.length === 0) {
+            addServer(found);
+          }
         }
       });
     return () => {
@@ -152,11 +164,15 @@ export function useCatalogue(
   if (hadServers !== hasServers) {
     setHadServers(hasServers);
     setDiscovering(!hasServers);
-    if (hasServers) setStatus((s) => (s === 'discovering' ? 'connecting' : s));
+    if (hasServers) {
+      setStatus((s) => (s === 'discovering' ? 'connecting' : s));
+    }
   }
 
   useEffect(() => {
-    if (servers.length === 0) return runDiscovery();
+    if (servers.length === 0) {
+      return runDiscovery();
+    }
   }, [servers.length, runDiscovery]);
 
   // Fetch the catalogue. `quiet` skips the status/error toggles (used by the live
@@ -167,13 +183,19 @@ export function useCatalogue(
         .then(([mvs, shs]) => {
           // A server switch mid-flight: the answer belongs to the server that has
           // just been left, so it must not become the catalogue on screen.
-          if (liveClient.current !== c) return;
+          if (liveClient.current !== c) {
+            return;
+          }
           setMovies(mvs);
           setShows(shs);
-          if (!quiet) setStatus('ready');
+          if (!quiet) {
+            setStatus('ready');
+          }
         })
         .catch((err: unknown) => {
-          if (liveClient.current !== c) return;
+          if (liveClient.current !== c) {
+            return;
+          }
           if (!quiet) {
             setError(err instanceof Error ? err.message : String(err));
             setStatus('error');
@@ -188,11 +210,15 @@ export function useCatalogue(
   const [loadedClient, setLoadedClient] = useState(loadingClient);
   if (loadedClient !== loadingClient) {
     setLoadedClient(loadingClient);
-    if (loadingClient) setStatus('connecting');
+    if (loadingClient) {
+      setStatus('connecting');
+    }
   }
 
   useEffect(() => {
-    if (client && signedIn) void fetchCatalogue(client);
+    if (client && signedIn) {
+      void fetchCatalogue(client);
+    }
   }, [client, signedIn, fetchCatalogue]);
 
   const direct = useDirectConnection(client, signedIn);
@@ -200,14 +226,18 @@ export function useCatalogue(
   // Heartbeat: detect when the server drops and auto-refetch when it returns.
   const { online, recheck, serverVersion, compat } = useServerHealth(client, signedIn, () => {
     direct.recheck();
-    if (client) void fetchCatalogue(client, true);
+    if (client) {
+      void fetchCatalogue(client, true);
+    }
   });
 
   const activity = useCatalogueSync(client, signedIn, fetchCatalogue, recheck);
 
   // Smart Hub preview (Samsung TV): keep the home-screen carousel in sync.
   useEffect(() => {
-    if (status !== 'ready' || !client) return;
+    if (status !== 'ready' || !client) {
+      return;
+    }
     const id = setTimeout(() => void publishPreview(client, movies), 1500);
     return () => clearTimeout(id);
   }, [status, client, movies, publishPreview]);

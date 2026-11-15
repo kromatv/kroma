@@ -13,7 +13,9 @@ import type { Dependencies, ModuleManifest } from './types';
 
 /** A `{ id: range }` dependency map as a flat list; `"*"` means no constraint. */
 export function depEntries(deps?: Dependencies | null): { id: string; version?: string }[] {
-  if (!deps) return [];
+  if (!deps) {
+    return [];
+  }
   return Object.entries(deps).map(([id, range]) => ({
     id,
     version: range && range !== '*' ? range : undefined,
@@ -62,7 +64,9 @@ export class ModuleRegistry {
       throw new Error(`module "${module.id}" registered twice`);
     }
     this.modules.set(module.id, module);
-    if (module.locales) this.disposers.set(module.id, this.catalogs(module.id, module.locales));
+    if (module.locales) {
+      this.disposers.set(module.id, this.catalogs(module.id, module.locales));
+    }
     this.changed();
     return this;
   }
@@ -86,7 +90,9 @@ export class ModuleRegistry {
 
   private changed(): void {
     this.slotCache.clear();
-    for (const listener of this.listeners) listener();
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 
   has(id: string): boolean {
@@ -110,14 +116,18 @@ export class ModuleRegistry {
         ids.push(id);
       }
       for (const { id } of depEntries(m.optionalDependencies)) {
-        if (this.modules.has(id)) ids.push(id);
+        if (this.modules.has(id)) {
+          ids.push(id);
+        }
       }
       return ids;
     };
 
     const indegree = new Map<string, number>();
     const dependents = new Map<string, string[]>();
-    for (const m of mods) indegree.set(m.id, 0);
+    for (const m of mods) {
+      indegree.set(m.id, 0);
+    }
     for (const m of mods) {
       for (const dep of edgesOf(m)) {
         indegree.set(m.id, (indegree.get(m.id) ?? 0) + 1);
@@ -136,7 +146,9 @@ export class ModuleRegistry {
       for (const dependent of dependents.get(id) ?? []) {
         const next = (indegree.get(dependent) ?? 0) - 1;
         indegree.set(dependent, next);
-        if (next === 0) queue.push(dependent);
+        if (next === 0) {
+          queue.push(dependent);
+        }
       }
     }
 
@@ -157,8 +169,12 @@ export class ModuleRegistry {
       getModuleApi: (id) => exports.get(id as string) as never,
     };
     for (const module of this.order()) {
-      if (module.exports) exports.set(module.id, module.exports(host));
-      if (skipSetup?.has(module.id) || this.setupDone.has(module.id)) continue;
+      if (module.exports) {
+        exports.set(module.id, module.exports(host));
+      }
+      if (skipSetup?.has(module.id) || this.setupDone.has(module.id)) {
+        continue;
+      }
       await module.setup?.(host);
       this.setupDone.add(module.id);
     }
@@ -195,7 +211,9 @@ export class ModuleRegistry {
    *  was registered. */
   slotsFor(slot: SlotName): ModuleSlotEntry[] {
     const cached = this.slotCache.get(slot);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
     const entries = this.order()
       .flatMap((m) => (m.slots ?? []).map((s) => ({ ...s, moduleId: m.id })))
       .filter((s) => s.slot === slot)

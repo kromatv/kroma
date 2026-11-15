@@ -9,7 +9,9 @@ function within(inner, outer) {
 function variableNamed(scope, name) {
   for (let at = scope; at; at = at.upper) {
     const found = at.set.get(name);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return null;
 }
@@ -49,17 +51,22 @@ export default defineRule(
     create(context) {
       return {
         ExportNamedDeclaration(node) {
-          if (node.source || node.declaration) return;
+          if (node.source || node.declaration) {
+            return;
+          }
           const scope = context.sourceCode.getScope(node);
           for (const specifier of node.specifiers) {
             const name = specifier.local.name ?? specifier.local.value;
             const variable = variableNamed(scope, name);
-            if (!variable?.defs.some((definition) => definition.type === 'ImportBinding')) continue;
+            if (!variable?.defs.some((definition) => definition.type === 'ImportBinding')) {
+              continue;
+            }
             const elsewhere = variable.references.some(
               (reference) => !within(reference.identifier, node),
             );
-            if (!elsewhere)
+            if (!elsewhere) {
               context.report({ node: specifier, messageId: 'reExport', data: { name } });
+            }
           }
         },
       };

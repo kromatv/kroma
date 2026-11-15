@@ -24,7 +24,9 @@ describe('useResumeNotice', () => {
 
   it('waits for the picture rather than counting down over a black screen', () => {
     const { result, rerender } = notice(280, 280, false);
-    act(() => vi.advanceTimersByTime(RESUME_WINDOW * 1000 + 500));
+    act(() => {
+      vi.advanceTimersByTime(RESUME_WINDOW * 1000 + 500);
+    });
     expect(result.current.shown).toBe(false);
 
     rerender({ at: 280, cur: 280, playing: true, waiting: false });
@@ -36,11 +38,15 @@ describe('useResumeNotice', () => {
   it('drains its window a second at a time, then leaves', () => {
     const { result } = notice(280);
 
-    act(() => vi.advanceTimersByTime(2000));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
 
     expect(result.current.secondsLeft).toBe(RESUME_WINDOW - 2);
 
-    act(() => vi.advanceTimersByTime((RESUME_WINDOW - 2) * 1000));
+    act(() => {
+      vi.advanceTimersByTime((RESUME_WINDOW - 2) * 1000);
+    });
 
     expect(result.current.shown).toBe(false);
   });
@@ -49,7 +55,9 @@ describe('useResumeNotice', () => {
     const { result } = notice(280);
 
     act(() => result.current.holdOpen());
-    act(() => vi.advanceTimersByTime(RESUME_WINDOW * 4000));
+    act(() => {
+      vi.advanceTimersByTime(RESUME_WINDOW * 4000);
+    });
 
     expect(result.current.shown).toBe(true);
     expect(result.current.secondsLeft).toBeNull();

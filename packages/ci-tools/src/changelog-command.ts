@@ -21,13 +21,18 @@ export function main(argv: string[]): void {
   });
   const { last, commits, version: next } = heading(values.to, values.version);
   const version = values.version ?? (next !== last ? next : null);
-  if (!version) throw new Error(`nothing releasable since v${last}`);
+  if (!version) {
+    throw new Error(`nothing releasable since v${last}`);
+  }
   const section = renderSection(version, values.date, commits);
-  if (values.out) writeFileSync(values.out, `${section}\n`);
+  if (values.out) {
+    writeFileSync(values.out, `${section}\n`);
+  }
   if (values.write) {
     const current = existsSync(CHANGELOG) ? readFileSync(CHANGELOG, 'utf8') : '';
-    if (current.includes(`\n## ${version} (`))
+    if (current.includes(`\n## ${version} (`)) {
       throw new Error(`CHANGELOG.md already has ${version}`);
+    }
     writeFileSync(CHANGELOG, prependSection(current, section));
   }
   setOutput('version', version);

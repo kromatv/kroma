@@ -27,12 +27,16 @@ it.skipIf(!wanted)(
   () => {
     const measured = measureKit(only);
 
-    if (existsSync(OUT)) rmSync(OUT, { recursive: true });
+    if (existsSync(OUT)) {
+      rmSync(OUT, { recursive: true });
+    }
     mkdirSync(OUT, { recursive: true });
     writeFileSync(join(OUT, 'report.md'), report(measured));
     writeFileSync(join(OUT, 'digest.txt'), digest(measured));
 
-    if (!process.env.KROMA_DOM_TREE && only.length === 0) return;
+    if (!process.env.KROMA_DOM_TREE && only.length === 0) {
+      return;
+    }
 
     const trees: string[] = [];
     for (const [, story] of found()) {

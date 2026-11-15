@@ -51,7 +51,9 @@ export function parseBanner(payload: Buffer): Banner {
   const props: Record<string, string> = {};
   for (const field of fields) {
     const at = field.indexOf('=');
-    if (at > 0) props[field.slice(0, at)] = field.slice(at + 1);
+    if (at > 0) {
+      props[field.slice(0, at)] = field.slice(at + 1);
+    }
   }
   return { props, features: (props.features ?? '').split(',').filter(Boolean) };
 }
@@ -106,7 +108,9 @@ export class AdbConnection {
         return connection;
       } catch (error) {
         connection.close();
-        if (!(error instanceof TlsKeyRefused)) throw error;
+        if (!(error instanceof TlsKeyRefused)) {
+          throw error;
+        }
         if (attempt + 1 >= options.keys.length) {
           throw new AdbUnpaired('the TV has not been paired with this computer');
         }
@@ -140,7 +144,9 @@ export class AdbConnection {
     this.socket = socket;
     socket.on('data', (chunk: Buffer) => {
       try {
-        for (const packet of reader.push(chunk)) this.receive(packet);
+        for (const packet of reader.push(chunk)) {
+          this.receive(packet);
+        }
       } catch (error) {
         this.fail(error instanceof Error ? error : new Error(String(error)));
         socket.destroy();
@@ -151,10 +157,14 @@ export class AdbConnection {
   }
 
   private async overTls(key: AdbKey | undefined, timeoutMs: number): Promise<void> {
-    if (!key) throw new TlsKeyRefused();
+    if (!key) {
+      throw new TlsKeyRefused();
+    }
     this.send(A_STLS, STLS_VERSION, 0);
     const plain = this.socket;
-    for (const event of ['data', 'error', 'close']) plain.removeAllListeners(event);
+    for (const event of ['data', 'error', 'close']) {
+      plain.removeAllListeners(event);
+    }
     plain.on('error', () => undefined);
     try {
       this.attach(await secure({ socket: plain }, key.privateKey, timeoutMs));
@@ -189,7 +199,9 @@ export class AdbConnection {
         secured = true;
         continue;
       }
-      if (packet.command !== A_AUTH || packet.arg0 !== AUTH_TOKEN) continue;
+      if (packet.command !== A_AUTH || packet.arg0 !== AUTH_TOKEN) {
+        continue;
+      }
 
       const key = keys[tried];
       tried += 1;
@@ -209,8 +221,12 @@ export class AdbConnection {
 
   private next(timeoutMs: number, prompted: boolean): Promise<Packet> {
     const queued = this.inbox.shift();
-    if (queued) return Promise.resolve(queued);
-    if (this.failure) return Promise.reject(this.failure);
+    if (queued) {
+      return Promise.resolve(queued);
+    }
+    if (this.failure) {
+      return Promise.reject(this.failure);
+    }
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.waiting = null;
@@ -223,22 +239,31 @@ export class AdbConnection {
       this.waiting = (packet) => {
         clearTimeout(timer);
         this.waiting = null;
-        if (packet instanceof Error) reject(packet);
-        else resolve(packet);
+        if (packet instanceof Error) {
+          reject(packet);
+        } else {
+          resolve(packet);
+        }
       };
     });
   }
 
   private receive(packet: Packet): void {
     if (!this.connected) {
-      if (this.waiting) this.waiting(packet);
-      else this.inbox.push(packet);
+      if (this.waiting) {
+        this.waiting(packet);
+      } else {
+        this.inbox.push(packet);
+      }
       return;
     }
     const stream = this.streams.get(packet.arg1);
-    if (!stream) return;
-    if (packet.command === A_OKAY) stream.ready(packet.arg0);
-    else if (packet.command === A_WRTE) {
+    if (!stream) {
+      return;
+    }
+    if (packet.command === A_OKAY) {
+      stream.ready(packet.arg0);
+    } else if (packet.command === A_WRTE) {
       this.send(A_OKAY, stream.localId, packet.arg0);
       stream.deliver(packet.payload);
     } else if (packet.command === A_CLSE) {
@@ -248,10 +273,14 @@ export class AdbConnection {
   }
 
   private fail(error: Error): void {
-    if (this.failure) return;
+    if (this.failure) {
+      return;
+    }
     this.failure = error;
     this.waiting?.(error);
-    for (const stream of this.streams.values()) stream.fail(error);
+    for (const stream of this.streams.values()) {
+      stream.fail(error);
+    }
     this.streams.clear();
   }
 
@@ -261,6 +290,8 @@ export class AdbConnection {
     arg1: number,
     payload: Buffer = Buffer.alloc(0),
   ): void {
-    if (!this.socket.destroyed) this.socket.write(encodePacket({ command, arg0, arg1, payload }));
+    if (!this.socket.destroyed) {
+      this.socket.write(encodePacket({ command, arg0, arg1, payload }));
+    }
   }
 }

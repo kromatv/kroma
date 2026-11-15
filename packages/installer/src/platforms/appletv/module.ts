@@ -27,7 +27,9 @@ async function pairedWith(name: string, identifier: string | undefined): Promise
   const set = paired.find(
     (candidate) => candidate.identifier === identifier || candidate.name === name,
   );
-  if (!set) throw new Error(`${name} is no longer paired with this Mac: pair it again in Xcode`);
+  if (!set) {
+    throw new Error(`${name} is no longer paired with this Mac: pair it again in Xcode`);
+  }
   return set;
 }
 

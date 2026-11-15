@@ -59,7 +59,7 @@ describe('sharedTokenExchange', () => {
     resolveFn({ token: 'tok', user: { id: 'u1' } });
     await p1;
 
-    sharedTokenExchange(exchange);
+    void sharedTokenExchange(exchange);
     expect(exchange).toHaveBeenCalledTimes(2);
   });
 });

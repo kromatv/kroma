@@ -15,9 +15,13 @@ export function localSubnets(): Subnet[] {
   const out: Subnet[] = [];
   for (const [iface, entries] of Object.entries(networkInterfaces())) {
     for (const entry of entries ?? []) {
-      if (entry.family !== 'IPv4' || entry.internal || VIRTUAL.test(iface)) continue;
+      if (entry.family !== 'IPv4' || entry.internal || VIRTUAL.test(iface)) {
+        continue;
+      }
       const prefix = prefixOf(entry.address);
-      if (!prefix || out.some((s) => s.prefix === prefix)) continue;
+      if (!prefix || out.some((s) => s.prefix === prefix)) {
+        continue;
+      }
       out.push({ iface, address: entry.address, prefix });
     }
   }
@@ -27,8 +31,12 @@ export function localSubnets(): Subnet[] {
 /** `192.168.1.42` -> `192.168.1`, or null for anything that is not dotted-quad IPv4. */
 export function prefixOf(address: string): string | null {
   const octets = address.split('.');
-  if (octets.length !== 4) return null;
-  if (!octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255)) return null;
+  if (octets.length !== 4) {
+    return null;
+  }
+  if (!octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255)) {
+    return null;
+  }
   return octets.slice(0, 3).join('.');
 }
 
@@ -36,14 +44,22 @@ export function prefixOf(address: string): string | null {
 export function compareHosts(a: string, b: string): number {
   const left = hostKey(a);
   const right = hostKey(b);
-  if (Number.isNaN(left) && Number.isNaN(right)) return a.localeCompare(b);
-  if (Number.isNaN(left)) return 1;
-  if (Number.isNaN(right)) return -1;
+  if (Number.isNaN(left) && Number.isNaN(right)) {
+    return a.localeCompare(b);
+  }
+  if (Number.isNaN(left)) {
+    return 1;
+  }
+  if (Number.isNaN(right)) {
+    return -1;
+  }
   return left - right;
 }
 
 function hostKey(host: string): number {
-  if (prefixOf(host) === null) return Number.NaN;
+  if (prefixOf(host) === null) {
+    return Number.NaN;
+  }
   return host.split('.').reduce((key, octet) => key * 256 + Number(octet), 0);
 }
 
@@ -56,7 +72,9 @@ export function subnetHosts(prefix: string, self?: string): string[] {
   const hosts: string[] = [];
   for (let last = 1; last <= 254; last++) {
     const host = `${prefix}.${last}`;
-    if (host !== self) hosts.push(host);
+    if (host !== self) {
+      hosts.push(host);
+    }
   }
   return hosts;
 }

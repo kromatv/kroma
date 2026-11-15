@@ -44,7 +44,9 @@ export function Scrubbable({
     setPreview(sec);
   }, []);
   const onScrubCommit = useCallback(() => {
-    if (pending.current != null) setCur(pending.current);
+    if (pending.current != null) {
+      setCur(pending.current);
+    }
     pending.current = null;
     setPreview(null);
   }, []);

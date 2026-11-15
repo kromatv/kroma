@@ -28,7 +28,9 @@ export function appBrowser(serverUrl: string): FlowBrowser {
  * opens resume the same flow and share its answer. */
 export function authFor(serverUrl: string, client: KromaClient): Auth {
   const held = known.get(serverUrl);
-  if (held) return held;
+  if (held) {
+    return held;
+  }
   const made = createAuth({ client, browser: appBrowser(serverUrl), store: pending });
   known.set(serverUrl, made);
   return made;

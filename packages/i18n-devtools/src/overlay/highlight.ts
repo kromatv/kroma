@@ -71,7 +71,9 @@ export function shows(outline: Outline, grade: Grade): boolean {
  */
 export function gradeOfNode(text: string): Grade | null {
   const marked = markIn(text);
-  if (marked !== 'catalog' || !reviewing()) return marked ?? (WORDS.test(text) ? 'raw' : null);
+  if (marked !== 'catalog' || !reviewing()) {
+    return marked ?? (WORDS.test(text) ? 'raw' : null);
+  }
   const sighting = sightingIn(text);
   return sighting ? shownGrade(sighting) : marked;
 }
@@ -106,7 +108,9 @@ export function walkGraded(take: (grade: Grade, node: Text) => void): void {
   );
   for (let node = walk.nextNode(); node; node = walk.nextNode()) {
     const grade = gradeOfNode((node as Text).data);
-    if (grade) take(grade, node as Text);
+    if (grade) {
+      take(grade, node as Text);
+    }
   }
 }
 
@@ -127,7 +131,9 @@ export function walkGraded(take: (grade: Grade, node: Text) => void): void {
 let rules: HTMLStyleElement | null = null;
 
 function installRules(): void {
-  if (rules?.isConnected) return;
+  if (rules?.isConnected) {
+    return;
+  }
   rules = document.createElement('style');
   rules.textContent = CSS_RULES;
   document.head.append(rules);
@@ -135,12 +141,16 @@ function installRules(): void {
 
 export function installHighlight(outline: Outline): () => void {
   const registry = CSS.highlights;
-  if (!registry) return () => {};
+  if (!registry) {
+    return () => {};
+  }
 
   installRules();
 
   const marks = new Map(GRADES.map((grade) => [grade, new Highlight()]));
-  for (const [grade, highlight] of marks) registry.set(`${NAME}-${grade}`, highlight);
+  for (const [grade, highlight] of marks) {
+    registry.set(`${NAME}-${grade}`, highlight);
+  }
 
   // An unmarked string reads as `raw` - text no catalog ever answered - and
   // that is only true once the engine is marking at all. An engine whose
@@ -154,15 +164,23 @@ export function installHighlight(outline: Outline): () => void {
     // Filtered here rather than in the walk: `problems` hides the strings that
     // are right, and those are exactly the evidence that the engine is marking.
     walkGraded((grade, node) => {
-      if (grade !== 'raw') marked = true;
-      if (shows(outline, grade)) found.push([grade, node]);
+      if (grade !== 'raw') {
+        marked = true;
+      }
+      if (shows(outline, grade)) {
+        found.push([grade, node]);
+      }
     });
 
     // Before the clear, not after: a page with nothing marked yet is one whose
     // engine has not answered, and emptying every highlight to wait for it
     // takes the overlay off the page for as long as that takes.
-    if (!marked) return;
-    for (const highlight of marks.values()) highlight.clear();
+    if (!marked) {
+      return;
+    }
+    for (const highlight of marks.values()) {
+      highlight.clear();
+    }
     for (const [grade, node] of found) {
       marks.get(grade)?.add(
         new StaticRange({
@@ -177,7 +195,9 @@ export function installHighlight(outline: Outline): () => void {
 
   const repaint = perFrame(paint);
   const observer = new MutationObserver((records) => {
-    if (records.some((record) => onThePage(record.target))) repaint.fire();
+    if (records.some((record) => onThePage(record.target))) {
+      repaint.fire();
+    }
   });
   observer.observe(document.body, { childList: true, characterData: true, subtree: true });
   const stopStatus = onStatusChange(repaint.fire);
@@ -187,6 +207,8 @@ export function installHighlight(outline: Outline): () => void {
     stopStatus();
     observer.disconnect();
     repaint.stop();
-    for (const grade of GRADES) registry.delete(`${NAME}-${grade}`);
+    for (const grade of GRADES) {
+      registry.delete(`${NAME}-${grade}`);
+    }
   };
 }

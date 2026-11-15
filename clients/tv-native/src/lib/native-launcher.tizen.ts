@@ -13,17 +13,22 @@ function createSmartHubLauncher(): LauncherBackend {
     timer.pending = null;
     const title = translate(deviceLocale(), 'content.continueWatching');
     const sections = smartHubSections(rows.continueJson, rows.channelsJson, title);
-    if (sections.length === 0 && !rows.published) return;
+    if (sections.length === 0 && !rows.published) {
+      return;
+    }
     rows.published = sections.length > 0;
     const request = sections.length > 0 ? SmartHubPreview.set(sections) : SmartHubPreview.clear();
     void request.then((result) => {
-      if (!result.published)
+      if (!result.published) {
         console.log(`[KROMA] Smart Hub preview not published: ${result.reason}`);
+      }
     });
   };
 
   const schedule = () => {
-    if (timer.pending !== null) clearTimeout(timer.pending);
+    if (timer.pending !== null) {
+      clearTimeout(timer.pending);
+    }
     timer.pending = setTimeout(publish, SETTLE_MS);
   };
 

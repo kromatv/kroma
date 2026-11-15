@@ -16,7 +16,9 @@ export function stopNativePlayer(player: VideoPlayer): void {
 }
 
 export function shutdownEngine(core: EngineCore, player: VideoPlayer): void {
-  if (!core.active) return;
+  if (!core.active) {
+    return;
+  }
   nextLoadId(core);
   patchCore(core, {
     active: false,

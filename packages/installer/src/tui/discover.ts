@@ -42,7 +42,9 @@ export async function discover(
   const say = (now = false) => {
     const status = line(doing, found.size, kind);
     const at = performance.now();
-    if (!now && (status === drawn || at - drawnAt < REDRAW_MS)) return;
+    if (!now && (status === drawn || at - drawnAt < REDRAW_MS)) {
+      return;
+    }
     drawn = status;
     drawnAt = at;
     picker.status(status);
@@ -66,20 +68,26 @@ export async function discover(
         const fresh = found.size > sizeWhenRoundBegan;
         quiet = fresh ? 0 : quiet + 1;
         doing = fresh ? 'scanning again' : 'nothing new';
-        if (quiet === QUIET_ROUNDS_BEFORE_NOTICE) picker.notice(WHY_SILENT);
+        if (quiet === QUIET_ROUNDS_BEFORE_NOTICE) {
+          picker.notice(WHY_SILENT);
+        }
       }
       sizeWhenRoundBegan = found.size;
       say(true);
     },
     onProgress: (done, total) => {
-      if (round > 1) return;
+      if (round > 1) {
+        return;
+      }
       doing = `scanning ${Math.floor((done / total) * 100)}%`;
       say();
     },
     onFound: (tv) => {
       found.set(tv.host, tv);
       picker.upsert(asOption(tv));
-      if (doing === 'nothing new') doing = 'scanning again';
+      if (doing === 'nothing new') {
+        doing = 'scanning again';
+      }
       say(true);
     },
   });
@@ -88,8 +96,12 @@ export async function discover(
   controller.abort();
   await scanning;
 
-  if (ticked === null) return null;
-  if (found.size === 0) await explain(platforms);
+  if (ticked === null) {
+    return null;
+  }
+  if (found.size === 0) {
+    await explain(platforms);
+  }
   return ticked.flatMap((host) => {
     const tv = found.get(host);
     return tv ? [tv] : [];
@@ -99,10 +111,14 @@ export async function discover(
 async function explain(platforms?: readonly string[]): Promise<void> {
   const { blocked, hints } = await diagnoseEmptyScan(platforms);
   p.note(hints.join('\n'), 'why nothing answered');
-  if (!blocked) return;
+  if (!blocked) {
+    return;
+  }
 
   const open = await p.confirm({ message: 'Open System Settings there?', initialValue: true });
-  if (p.isCancel(open) || !open) return;
+  if (p.isCancel(open) || !open) {
+    return;
+  }
   p.log.info((await openPrivacySettings()) ? 'System Settings is open' : 'could not open Settings');
 }
 
@@ -118,7 +134,9 @@ function asOption(tv: Television): LiveOption<string> {
 }
 
 function state(tv: Television): string {
-  if (!tv.sideloadable) return 'takes no app';
+  if (!tv.sideloadable) {
+    return 'takes no app';
+  }
   return tv.developerMode === 'on' ? 'ready' : platformFor(tv.platform).notReadyHint;
 }
 
@@ -128,6 +146,8 @@ function kindOf(platforms?: readonly string[]): string {
 }
 
 function line(doing: Doing, found: number, kind: string): string {
-  if (found === 0) return `${doing} · no ${kind} yet`;
+  if (found === 0) {
+    return `${doing} · no ${kind} yet`;
+  }
   return `${doing} · ${found} ${kind}${found === 1 ? '' : 's'}`;
 }

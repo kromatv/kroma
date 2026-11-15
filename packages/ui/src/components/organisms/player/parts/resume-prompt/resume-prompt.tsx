@@ -51,7 +51,9 @@ export function ResumePrompt({
   const t = useT();
   const px = scaler(scale);
   const fade = useFadeRise(shown);
-  if (!fade.mounted) return null;
+  if (!fade.mounted) {
+    return null;
+  }
 
   return (
     <Box

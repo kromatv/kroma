@@ -5,7 +5,9 @@ const EXTENSION = /\.[A-Za-z][A-Za-z0-9]*$/;
 
 function trimDots(found: string): string {
   let end = found.length;
-  while (end > 0 && found[end - 1] === '.') end--;
+  while (end > 0 && found[end - 1] === '.') {
+    end--;
+  }
   return found.slice(0, end);
 }
 
@@ -62,7 +64,9 @@ export function expired(assets: readonly Asset[], now: Date, retention = RETENTI
   for (const family of families.values()) {
     const byAge = [...family].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     for (const asset of byAge.slice(retention.keepMin)) {
-      if (Date.parse(asset.createdAt) < cutoff) out.push(asset);
+      if (Date.parse(asset.createdAt) < cutoff) {
+        out.push(asset);
+      }
     }
   }
   return out;

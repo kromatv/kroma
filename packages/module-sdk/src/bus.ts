@@ -18,11 +18,15 @@ export function createEventBus(): EventBus {
   return {
     emit(key, payload) {
       const set = handlers.get(key);
-      if (!set) return;
+      if (!set) {
+        return;
+      }
       // A handler may (un)subscribe during dispatch; every handler subscribed
       // when emit began still fires exactly once.
       const snapshot = Array.from(set);
-      for (const handler of snapshot) (handler as (p: typeof payload) => void)(payload);
+      for (const handler of snapshot) {
+        (handler as (p: typeof payload) => void)(payload);
+      }
     },
     on(key, handler) {
       const set = handlers.get(key) ?? new Set<AnyHandler>();

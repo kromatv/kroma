@@ -65,7 +65,9 @@ const COALESCE_MS = 600;
 
 function stream() {
   const last = streams.at(-1);
-  if (!last) throw new Error('no event stream was opened');
+  if (!last) {
+    throw new Error('no event stream was opened');
+  }
   return last;
 }
 
@@ -147,7 +149,9 @@ describe('what it reacts to', () => {
 describe('coalescing a burst', () => {
   it('refetches ONCE for a run of updates', () => {
     renderHook(() => useCatalogLiveRefresh('item', 'itm_1'));
-    for (let i = 0; i < 8; i++) emit('item.updated', 'itm_1');
+    for (let i = 0; i < 8; i++) {
+      emit('item.updated', 'itm_1');
+    }
     vi.advanceTimersByTime(COALESCE_MS);
     expect(invalidateQueries).toHaveBeenCalledOnce();
   });

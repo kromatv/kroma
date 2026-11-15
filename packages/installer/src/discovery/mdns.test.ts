@@ -25,13 +25,17 @@ vi.mock('node:dgram', () => ({
     const socket = {
       once: (_event: string, listener: (error: Error) => void) => errors.push(listener),
       on: (event: string, listener: Listener) => {
-        if (event === 'message') fake.listeners.push(listener);
+        if (event === 'message') {
+          fake.listeners.push(listener);
+        }
       },
       removeAllListeners: () => undefined,
       bind: (port: number, _address: string | undefined, ready: () => void) => {
         fake.port = port;
         if (network.taken.includes(port)) {
-          for (const fail of errors) fail(new Error('EADDRINUSE'));
+          for (const fail of errors) {
+            fail(new Error('EADDRINUSE'));
+          }
           return;
         }
         network.sockets.push(fake);
@@ -39,7 +43,9 @@ vi.mock('node:dgram', () => ({
       },
       setMulticastInterface: () => undefined,
       addMembership: () => {
-        if (network.refuseGroup) throw new Error('EADDRNOTAVAIL');
+        if (network.refuseGroup) {
+          throw new Error('EADDRNOTAVAIL');
+        }
       },
       send: (query: Buffer, port: number, to: string) => fake.sent.push({ query, port, to }),
       close: () => {

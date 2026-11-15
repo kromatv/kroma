@@ -117,9 +117,13 @@ describe('usePlayerNav auto-hide timer', () => {
   it('hides after the idle window while playing, and a poke re-arms it', () => {
     const { result } = nav(WEB_FLAGS, true);
     expect(result.current.revealed).toBe(true);
-    act(() => vi.advanceTimersByTime(3499));
+    act(() => {
+      vi.advanceTimersByTime(3499);
+    });
     expect(result.current.revealed).toBe(true);
-    act(() => vi.advanceTimersByTime(1));
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
     expect(result.current.revealed).toBe(false);
     act(() => result.current.poke());
     expect(result.current.revealed).toBe(true);
@@ -131,7 +135,9 @@ describe('usePlayerNav auto-hide timer', () => {
     const view = renderHook(({ playing }) => usePlayerNav(playing, actions, order), {
       initialProps: { playing: true },
     });
-    act(() => vi.advanceTimersByTime(3500));
+    act(() => {
+      vi.advanceTimersByTime(3500);
+    });
 
     act(() => view.result.current.handleKey('PlayPause'));
     view.rerender({ playing: false });
@@ -141,7 +147,9 @@ describe('usePlayerNav auto-hide timer', () => {
 
   it('leaves a hidden chrome hidden on a seek key', () => {
     const { result, key } = nav(WEB_FLAGS, true);
-    act(() => vi.advanceTimersByTime(3500));
+    act(() => {
+      vi.advanceTimersByTime(3500);
+    });
 
     key('FastForward');
 
@@ -150,7 +158,9 @@ describe('usePlayerNav auto-hide timer', () => {
 
   it('stays revealed while paused (no hide timer)', () => {
     const { result } = nav(WEB_FLAGS, false);
-    act(() => vi.advanceTimersByTime(10_000));
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
     expect(result.current.revealed).toBe(true);
   });
 
@@ -158,7 +168,9 @@ describe('usePlayerNav auto-hide timer', () => {
     const { result, press } = nav(WEB_FLAGS, false);
 
     press('right');
-    act(() => vi.advanceTimersByTime(10_000));
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
 
     expect(result.current.revealed).toBe(true);
   });
@@ -168,7 +180,9 @@ describe('usePlayerNav auto-hide timer', () => {
 
     act(() => result.current.openOverlay('settings'));
     press('right');
-    act(() => vi.advanceTimersByTime(10_000));
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
 
     expect(result.current.revealed).toBe(true);
     expect(result.current.overlay).toBe('settings');

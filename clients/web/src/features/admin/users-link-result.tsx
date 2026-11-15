@@ -77,7 +77,9 @@ export function LinkResult({
               label={copied ? t('common.copied') : t('common.copy')}
               onPress={() => {
                 void copyText(shown).then((ok) => {
-                  if (!ok) return;
+                  if (!ok) {
+                    return;
+                  }
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1500);
                 });

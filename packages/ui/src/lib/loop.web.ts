@@ -90,6 +90,8 @@ const loops = StyleSheet.create(KEYFRAMES);
 export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<ViewStyle> {
   const scope = useStyleScope();
 
-  if (!active) return null;
+  if (!active) {
+    return null;
+  }
   return [loops[kind], sharedStyle(`loop:${ms}`, { animationDuration: `${ms}ms` }, scope)];
 }

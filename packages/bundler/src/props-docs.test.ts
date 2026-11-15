@@ -30,7 +30,9 @@ function open({ lockfile = true } = {}): string {
   writeFileSync(join(project, 'tsconfig.json'), TSCONFIG);
   // A real project has one above it, and the fingerprint reads it: a dependency
   // bump can change an inherited prop's type.
-  if (lockfile) writeFileSync(join(project, 'bun.lock'), '{}\n');
+  if (lockfile) {
+    writeFileSync(join(project, 'bun.lock'), '{}\n');
+  }
   writeFileSync(join(project, 'src', 'chip.ts'), chip('The words on the chip.'));
   writeFileSync(join(project, 'src', 'badge.ts'), BADGE);
   writeFileSync(join(project, 'src', 'notes.md'), '# not a source file\n');
@@ -43,7 +45,9 @@ const plugin = (tsconfig: string, include?: (file: string) => boolean): Hooks =>
 const scanned = (file: string) => file.includes('/src/');
 
 afterEach(() => {
-  if (project) rmSync(project, { recursive: true, force: true });
+  if (project) {
+    rmSync(project, { recursive: true, force: true });
+  }
   project = '';
 });
 

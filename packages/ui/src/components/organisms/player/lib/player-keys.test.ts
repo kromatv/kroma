@@ -51,7 +51,9 @@ describe('routeRemoteKey while locked', () => {
   it('swallows every other key', () => {
     const { press, handleKey, exit } = route({ locked: true });
 
-    for (const key of ['Right', 'Down', 'PlayPause'] as const) press(key);
+    for (const key of ['Right', 'Down', 'PlayPause'] as const) {
+      press(key);
+    }
 
     expect(handleKey).not.toHaveBeenCalled();
     expect(exit).not.toHaveBeenCalled();

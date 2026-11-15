@@ -36,7 +36,9 @@ function spacing(count: number, width: number): number {
 }
 
 function sampleX(state: ChartState, index: number): number {
-  if (!state.band) return xAt(index, state.count, state.plot.width);
+  if (!state.band) {
+    return xAt(index, state.count, state.plot.width);
+  }
   const band = bandAt(index, state.count, state.plot.width);
   return band.x + band.width / 2;
 }
@@ -137,7 +139,9 @@ function ChartAxis({ edge, ticks = TICKS, room, every, format }: Readonly<ChartA
 function ChartLegend() {
   const state = useChart('Legend');
   const named = state.series.filter((entry) => entry.label);
-  if (named.length === 0) return null;
+  if (named.length === 0) {
+    return null;
+  }
   return (
     <Legend.Root>
       {named.map((entry) => (
@@ -171,7 +175,9 @@ function ChartTooltip() {
 
   const state = useChart('Tooltip');
   const at = state.active;
-  if (at === null || at < 0 || at >= state.count) return null;
+  if (at === null || at < 0 || at >= state.count) {
+    return null;
+  }
   const x = px(sampleX(state, at));
   const past = x > state.plot.width / 2;
   const name = state.labels[at];
@@ -206,7 +212,9 @@ function ChartTooltip() {
           ) : null}
           {state.series.map((entry) => {
             const value = entry.column[at];
-            if (value === null || value === undefined) return null;
+            if (value === null || value === undefined) {
+              return null;
+            }
             return (
               <Row key={entry.series} between gap={12}>
                 <Row gap={7}>

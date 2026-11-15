@@ -194,15 +194,21 @@ function SearchPanel({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const hit = filtered[active];
-      if (hit) pick(hit);
+      if (hit) {
+        pick(hit);
+      }
     } else if (e.key === 'Escape' || e.key === 'Tab') {
       e.preventDefault();
-      if (e.key === 'Escape') armEscapeGuard();
+      if (e.key === 'Escape') {
+        armEscapeGuard();
+      }
       onClose();
     }
   };
 
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
 
   return (
     <Portal>

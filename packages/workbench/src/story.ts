@@ -201,15 +201,23 @@ interface OwnView<A extends Args> {
 // always takes the args, so this is the last point at which "reads them" and
 // "ignores them" are still two different functions.
 function ownView<A extends Args, P extends object>(def: StoryDef<A, P>): OwnView<A> {
-  if (def.render) return { render: def.render, live: def.render.length > 0, named: false };
+  if (def.render) {
+    return { render: def.render, live: def.render.length > 0, named: false };
+  }
   const component = def.component as ComponentType<Args> | undefined;
-  if (!component) return { render: () => null, live: false, named: false };
+  if (!component) {
+    return { render: () => null, live: false, named: false };
+  }
   return { render: (args) => createElement(component, args), live: true, named: true };
 }
 
 function sceneLive<A extends Args>(scene: SceneDef<A>, own: boolean): boolean {
-  if (scene.example) return false;
-  if (scene.render) return scene.render.length > 0;
+  if (scene.example) {
+    return false;
+  }
+  if (scene.render) {
+    return scene.render.length > 0;
+  }
   return own;
 }
 
@@ -218,7 +226,9 @@ function sceneRender<A extends Args>(
   own: (args: A) => ReactNode,
 ): (args: Args) => ReactNode {
   const { example, render = own, args } = scene;
-  if (example) return example;
+  if (example) {
+    return example;
+  }
   return (current) => render({ ...current, ...args } as unknown as A);
 }
 
@@ -240,7 +250,9 @@ function story<const A extends Args = Record<string, never>, P extends object = 
   const variants = variantControls(def.variants, def.omit);
 
   const args: Args = { ...def.args };
-  for (const [group, value] of Object.entries(variants.defaults)) args[group] ??= value;
+  for (const [group, value] of Object.entries(variants.defaults)) {
+    args[group] ??= value;
+  }
 
   const variantKeys = new Set(variants.controls.map((control) => control.key));
   const own = ownView(def);
@@ -276,8 +288,12 @@ interface ControlsRole {
 }
 
 function viewIsLive(story: Story, view: View): boolean {
-  if (view === 'docs' || view.startsWith('demo:')) return false;
-  if (!view.startsWith('scene:')) return story.live;
+  if (view === 'docs' || view.startsWith('demo:')) {
+    return false;
+  }
+  if (!view.startsWith('scene:')) {
+    return story.live;
+  }
   return story.scenes[viewIndex(view)]?.live ?? false;
 }
 

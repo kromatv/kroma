@@ -22,9 +22,13 @@ export const root = findRoot(process.cwd());
 function walkUp(start: string): string | null {
   let directory = resolve(start);
   for (let depth = 0; depth < MAX_DEPTH; depth++) {
-    if (isRepository(directory)) return directory;
+    if (isRepository(directory)) {
+      return directory;
+    }
     const parent = dirname(directory);
-    if (parent === directory) return null;
+    if (parent === directory) {
+      return null;
+    }
     directory = parent;
   }
   return null;
@@ -32,7 +36,9 @@ function walkUp(start: string): string | null {
 
 function isRepository(directory: string): boolean {
   const manifest = join(directory, 'package.json');
-  if (!existsSync(manifest)) return false;
+  if (!existsSync(manifest)) {
+    return false;
+  }
   try {
     return Manifest.parse(JSON.parse(readFileSync(manifest, 'utf8'))).name === 'kroma';
   } catch {

@@ -19,20 +19,30 @@ function createTalk() {
       return state.text;
     },
     begin(): boolean {
-      if (state.active) return false;
+      if (state.active) {
+        return false;
+      }
       state.active = true;
       state.text = '';
       return true;
     },
     hear(text: string) {
-      if (!state.active || !text) return;
+      if (!state.active || !text) {
+        return;
+      }
       state.text = text;
-      for (const listener of listeners) listener.onText(text);
+      for (const listener of listeners) {
+        listener.onText(text);
+      }
     },
     end() {
-      if (!state.active) return;
+      if (!state.active) {
+        return;
+      }
       state.active = false;
-      for (const listener of listeners) listener.onDone();
+      for (const listener of listeners) {
+        listener.onDone();
+      }
     },
     listen(listener: Listener): () => void {
       listeners.add(listener);
@@ -49,7 +59,9 @@ Speech.addListener('result', (event) => talk.hear(event.results[0]?.transcript ?
 Speech.addListener('end', () => talk.end());
 
 function listen() {
-  if (talk.begin()) Speech.start({ interimResults: true });
+  if (talk.begin()) {
+    Speech.start({ interimResults: true });
+  }
 }
 
 function TalkSession({ onText, onDone }: Readonly<VoiceSessionProps>) {
@@ -63,11 +75,16 @@ function TalkSession({ onText, onDone }: Readonly<VoiceSessionProps>) {
       onText: (text) => handlers.current.onText(text),
       onDone: () => handlers.current.onDone(),
     });
-    if (!talk.active) listen();
-    else if (talk.text) handlers.current.onText(talk.text);
+    if (!talk.active) {
+      listen();
+    } else if (talk.text) {
+      handlers.current.onText(talk.text);
+    }
     return () => {
       stop();
-      if (talk.active) Speech.abort();
+      if (talk.active) {
+        Speech.abort();
+      }
     };
   }, []);
 
@@ -95,7 +112,9 @@ export function useVoiceKey(onHold: () => void): void {
       latest.current();
     });
     const pressOut = MicButton.addListener('pressOut', () => {
-      if (talk.active) Speech.stop();
+      if (talk.active) {
+        Speech.stop();
+      }
     });
     return () => {
       pressIn.remove();

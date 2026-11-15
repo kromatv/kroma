@@ -77,9 +77,15 @@ function RowEnd({
   busy,
   outcome,
 }: Readonly<{ device: DiscoveredTv; busy: boolean; outcome: HandoffOutcome | null }>): ReactNode {
-  if (busy) return <Spinner size={18} thickness={2} />;
-  if (outcome === 'done') return <Icon name="check" size={18} thickness={2.4} color="success" />;
-  if (outcome) return <Icon name="alert-triangle" size={18} thickness={2.2} color="danger" />;
+  if (busy) {
+    return <Spinner size={18} thickness={2} />;
+  }
+  if (outcome === 'done') {
+    return <Icon name="check" size={18} thickness={2.4} color="success" />;
+  }
+  if (outcome) {
+    return <Icon name="alert-triangle" size={18} thickness={2.2} color="danger" />;
+  }
   // A row that needs the check read off the television carries no check here,
   // so there is nothing to show beside it.
   return device.check ? <Badge tone="neutral">{device.check}</Badge> : null;

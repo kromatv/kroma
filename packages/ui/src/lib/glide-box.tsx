@@ -22,7 +22,9 @@ function TravellingBox({ rect, durationMs, slideX = false, style }: Readonly<Gli
   }));
   const placed = useRef(false);
   const [last, setLast] = useState<GlideRect | null>(null);
-  if (rect && rect !== last) setLast(rect);
+  if (rect && rect !== last) {
+    setLast(rect);
+  }
 
   useEffect(() => {
     if (rect && !placed.current) {
@@ -56,14 +58,18 @@ function TravellingBox({ rect, durationMs, slideX = false, style }: Readonly<Gli
   }, [rect, durationMs, slideX, motion]);
 
   const box = rect ?? last;
-  if (!box) return null;
+  if (!box) {
+    return null;
+  }
   const { left, top, width, height, shown } = motion;
   const vertical = slideX ? { top: box.y, height: box.height } : { top, height };
   return <Animated.View style={[style, { left, width, opacity: shown }, vertical]} />;
 }
 
 function JumpingBox({ rect, style }: Readonly<GlideBoxProps>) {
-  if (!rect) return null;
+  if (!rect) {
+    return null;
+  }
   const place = { left: rect.x, top: rect.y, width: rect.width, height: rect.height };
   return <View style={[style, place]} />;
 }

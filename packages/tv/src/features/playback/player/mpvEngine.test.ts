@@ -27,11 +27,17 @@ function fakeTauri(status: string = 'ok', refuses: (cmd: string) => boolean = ()
   const bridge = {
     core: {
       invoke: (cmd: string, args?: Record<string, unknown>) => {
-        if (cmd === 'mpv_command') cmds.push(args?.args as unknown[]);
-        else if (cmd === 'mpv_load')
+        if (cmd === 'mpv_command') {
+          cmds.push(args?.args as unknown[]);
+        } else if (cmd === 'mpv_load') {
           loads.push({ url: args?.url as string, start: args?.start as number });
-        if (refuses(cmd)) return Promise.reject(new Error(cmd));
-        if (cmd === 'mpv_status') return Promise.resolve(status);
+        }
+        if (refuses(cmd)) {
+          return Promise.reject(new Error(cmd));
+        }
+        if (cmd === 'mpv_status') {
+          return Promise.resolve(status);
+        }
         return Promise.resolve(undefined);
       },
     },
@@ -146,8 +152,9 @@ describe('MpvEngine construction / open', () => {
     vi.stubGlobal('__TAURI__', t.bridge);
     new MpvEngine(opts()).start();
     await tick();
-    for (const ev of ['mpv://property', 'mpv://file-loaded', 'mpv://end-file', 'mpv://error'])
+    for (const ev of ['mpv://property', 'mpv://file-loaded', 'mpv://end-file', 'mpv://error']) {
       expect(t.hasListener(ev)).toBe(true);
+    }
   });
 
   it('a dead mpv process fails fast on the status probe', async () => {
@@ -166,7 +173,9 @@ describe('MpvEngine construction / open', () => {
     const bridge = {
       core: {
         invoke: (cmd: string) => {
-          if (cmd !== 'mpv_status') return Promise.resolve(undefined);
+          if (cmd !== 'mpv_status') {
+            return Promise.resolve(undefined);
+          }
           engine?.destroy();
           probed = true;
           return Promise.resolve('dead');

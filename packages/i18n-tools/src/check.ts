@@ -46,12 +46,16 @@ function listed(keys: readonly string[]): string {
 }
 
 function misplaced({ set, source, bin }: Checked, file: string, key: string): string | null {
-  if (set.layout === 'flat') return null;
+  if (set.layout === 'flat') {
+    return null;
+  }
   if (namespaceOf(key) !== namespaceOfFile(file)) {
     return `${key} is not a message of ${namespaceOfFile(file)}`;
   }
   const home = fileOf(set, source, key);
-  if (home === file) return null;
+  if (home === file) {
+    return null;
+  }
   return `${key} belongs in ${home}.json, where ${source.locale} has it: run \`${bin} sync\``;
 }
 
@@ -79,17 +83,23 @@ function fileProblems(checked: Checked, locale: string): Problem[] {
   for (const [file, catalog] of readFiles(set, locale)) {
     const where = catalogName(set, locale, file);
     const report = (message: string | null) => {
-      if (message !== null) problems.push({ set: set.name, where, message });
+      if (message !== null) {
+        problems.push({ set: set.name, where, message });
+      }
     };
     for (const [key, template] of Object.entries(catalog)) {
       const twin = written.get(key);
-      if (twin !== undefined) report(`${key} is also in ${twin}.json`);
+      if (twin !== undefined) {
+        report(`${key} is also in ${twin}.json`);
+      }
       written.set(key, file);
       report(misplaced(checked, file, key));
       if (template === '' && locale !== source.locale) {
         report(`${key} is empty: leave an untranslated message out instead`);
       }
-      for (const problem of quoteProblems(set, source, key, template)) report(problem);
+      for (const problem of quoteProblems(set, source, key, template)) {
+        report(problem);
+      }
     }
   }
   return problems;
@@ -108,7 +118,9 @@ function translationProblems({ set, source, bin }: Checked, status: LocaleStatus
   }
   for (const [key, translation] of status.messages) {
     const original = source.messages.get(key);
-    if (!original) continue;
+    if (!original) {
+      continue;
+    }
     if (generalForm(translation) === undefined) {
       report(key, `${Object.keys(translation.forms).join(', ')} has no ${key} beside it`);
     }
@@ -151,10 +163,14 @@ function stageProblems({ set, bin }: Checked, status: LocaleStatus): Problem[] {
 }
 
 function labelProblems(set: CatalogSet, source: Source, locale: string): Problem[] {
-  if (source.catalog[labelKey(source.locale)] === undefined) return [];
+  if (source.catalog[labelKey(source.locale)] === undefined) {
+    return [];
+  }
   const key = labelKey(locale);
   const file = fileOf(set, source, key);
-  if (readFiles(set, locale).get(file)?.[key]) return [];
+  if (readFiles(set, locale).get(file)?.[key]) {
+    return [];
+  }
   return [
     {
       set: set.name,
@@ -167,7 +183,9 @@ function labelProblems(set: CatalogSet, source: Source, locale: string): Problem
 // A set that keeps a folder per language reads nothing else. A `de.json` left
 // beside the folders, from the one-file layout, holds messages no reader gets.
 function strayCatalogs(set: CatalogSet): Problem[] {
-  if (set.layout === 'flat') return [];
+  if (set.layout === 'flat') {
+    return [];
+  }
   return readdirSync(set.dir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
     .map((entry) => entry.name.slice(0, -'.json'.length))
@@ -201,7 +219,9 @@ export function checkSet(set: CatalogSet, bin: string = DEFAULT_BIN): Problem[] 
       continue;
     }
     problems.push(...fileProblems(checked, locale), ...labelProblems(set, source, locale));
-    if (locale === source.locale) continue;
+    if (locale === source.locale) {
+      continue;
+    }
     const status = inspectLocale(set, source, locale);
     problems.push(...translationProblems(checked, status), ...stageProblems(checked, status));
   }
@@ -222,10 +242,14 @@ export function policyProblems(set: CatalogSet): Problem[] {
       });
     }
   };
-  if (set.project.fallback !== undefined) unknown(set.project.fallback, 'the fallback');
+  if (set.project.fallback !== undefined) {
+    unknown(set.project.fallback, 'the fallback');
+  }
   for (const [locale, policy] of Object.entries(set.project.locales ?? {})) {
     unknown(locale, 'the locale');
-    if (policy.fallback !== undefined) unknown(policy.fallback, `the fallback of ${locale},`);
+    if (policy.fallback !== undefined) {
+      unknown(policy.fallback, `the fallback of ${locale},`);
+    }
   }
   for (const locale of locales) {
     const chain = fallbackChain(set.project, locale, (code) => locales.has(code));
@@ -242,7 +266,9 @@ export function policyProblems(set: CatalogSet): Problem[] {
 }
 
 function noteProblems(set: CatalogSet): Problem[] {
-  if (!localesOf(set).includes(set.project.source)) return [];
+  if (!localesOf(set).includes(set.project.source)) {
+    return [];
+  }
   return strayNotes(readNotes(set), readSource(set)).map((about) => ({
     set: set.name,
     where: NOTES_FILE,
@@ -253,7 +279,9 @@ function noteProblems(set: CatalogSet): Problem[] {
 /** The whole workspace. The first set owns the policy the others follow. */
 export function checkWorkspace(sets: readonly CatalogSet[], bin: string = DEFAULT_BIN): Problem[] {
   const [primary] = sets;
-  if (!primary) return [];
+  if (!primary) {
+    return [];
+  }
   return [
     ...policyProblems(primary),
     ...sets.flatMap((set) => [...checkSet(set, bin), ...noteProblems(set)]),

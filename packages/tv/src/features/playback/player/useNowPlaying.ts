@@ -34,7 +34,9 @@ function rasterize(blob: Blob, w = 342, h = 513): Promise<Uint8Array | null> {
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return done(null);
+        if (!ctx) {
+          return done(null);
+        }
         ctx.drawImage(img, 0, 0, w, h);
         // JPEG, not PNG: a poster is a photo, so this is far smaller on the Tauri IPC
         // (the bytes cross as a number[]); NSImage decodes it just the same.
@@ -96,8 +98,12 @@ function useHeldKey(): { press(key: string): void; hold(key: string): void; rele
   const delay = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const release = useCallback(() => {
-    if (delay.current) clearTimeout(delay.current);
-    if (timer.current) clearInterval(timer.current);
+    if (delay.current) {
+      clearTimeout(delay.current);
+    }
+    if (timer.current) {
+      clearInterval(timer.current);
+    }
     delay.current = null;
     timer.current = null;
   }, []);
@@ -119,8 +125,12 @@ function useHeldKey(): { press(key: string): void; hold(key: string): void; rele
 }
 
 function flips(action: string, playing: boolean): boolean {
-  if (action === 'play') return !playing;
-  if (action === 'pause') return playing;
+  if (action === 'play') {
+    return !playing;
+  }
+  if (action === 'pause') {
+    return playing;
+  }
   return true;
 }
 
@@ -135,14 +145,19 @@ function useShellEvent(
     handleRef.current = handle;
   });
   useEffect(() => {
-    if (!active || !bridge) return;
+    if (!active || !bridge) {
+      return;
+    }
     let un: (() => void) | undefined;
     let dead = false;
     void bridge.event
       .listen(name, (e) => handleRef.current((e as { payload?: unknown }).payload))
       .then((u) => {
-        if (dead) u();
-        else un = u;
+        if (dead) {
+          u();
+        } else {
+          un = u;
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -181,7 +196,9 @@ export function useNowPlaying({
   // One place to build + send the payload (artwork empty = keep the current poster).
   const push = useCallback(
     (artwork: number[]) => {
-      if (!bridge) return;
+      if (!bridge) {
+        return;
+      }
       const info = infoRef.current;
       void bridge.core
         .invoke('set_now_playing', {
@@ -199,7 +216,9 @@ export function useNowPlaying({
 
   useShellEvent(bridge, active, 'media-seek', (payload) => {
     const pos = Number(payload ?? Number.NaN);
-    if (Number.isFinite(pos)) seekTo(pos);
+    if (Number.isFinite(pos)) {
+      seekTo(pos);
+    }
   });
 
   const held = useHeldKey();
@@ -207,20 +226,30 @@ export function useNowPlaying({
     const action = MediaKeyAction.parse(payload);
     const skip = /^skip:(-?[\d.]+)$/.exec(action);
     const key = REMOTE_KEY[action];
-    if (skip) seek(Number(skip[1]));
-    else if (action.startsWith('hold:') && action.endsWith(':end')) held.release();
-    else if (key && action.startsWith('hold:')) held.hold(key);
-    else if (key) held.press(key);
-    else if (flips(action, playing)) held.press('MediaPlayPause');
+    if (skip) {
+      seek(Number(skip[1]));
+    } else if (action.startsWith('hold:') && action.endsWith(':end')) {
+      held.release();
+    } else if (key && action.startsWith('hold:')) {
+      held.hold(key);
+    } else if (key) {
+      held.press(key);
+    } else if (flips(action, playing)) {
+      held.press('MediaPlayPause');
+    }
   });
 
   // On item change ONLY: resolve + rasterize the poster, then push the full info.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- key on item.id (not identity); title/subtitle/duration are read via ref in push.
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     let cancelled = false;
     void resolveArtwork(client, item).then((artwork) => {
-      if (!cancelled) push(artwork);
+      if (!cancelled) {
+        push(artwork);
+      }
     });
     return () => {
       cancelled = true;
@@ -230,6 +259,8 @@ export function useNowPlaying({
   // On play/pause and after a seek: update the rate + elapsed time (keep the current poster).
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- fire on play/pause and seeks; the value is read via ref in push.
   useEffect(() => {
-    if (active) push([]);
+    if (active) {
+      push([]);
+    }
   }, [active, playing, seekNonce, push]);
 }

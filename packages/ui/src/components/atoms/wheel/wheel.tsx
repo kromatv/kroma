@@ -35,7 +35,9 @@ function Wheel({ size = 24, spin }: Readonly<WheelProps>) {
     </Svg>
   );
 
-  if (!spin) return svg;
+  if (!spin) {
+    return svg;
+  }
   return <Animated.View style={rotation}>{svg}</Animated.View>;
 }
 

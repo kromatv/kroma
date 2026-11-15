@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import server from './server';
+import { requestUrl } from './lib/request-url.fixture';
 
 const rendered = vi.hoisted(() => [] as string[]);
 
@@ -31,7 +32,7 @@ function ghServing() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+      calls.push(requestUrl(input));
       return new Response(JSON.stringify(catalog), { status: 200 });
     }),
   );

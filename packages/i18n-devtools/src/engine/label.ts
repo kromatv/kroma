@@ -8,7 +8,9 @@ const UNANSWERED = 'missing';
  *  catalog answered, `[missing/foo]` for one nothing answers, and
  *  `[core@en/foo]` where the answer came from the fallback locale. */
 export function keyLabel({ key, from, locale }: Rendered): string {
-  if (!from) return `[${UNANSWERED}/${key}]`;
+  if (!from) {
+    return `[${UNANSWERED}/${key}]`;
+  }
   const scope = from.scope ?? BASE;
   const answered = from.locale === locale ? scope : `${scope}@${from.locale}`;
   return `[${answered}/${key}]`;

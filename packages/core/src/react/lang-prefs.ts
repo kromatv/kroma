@@ -55,7 +55,9 @@ export function useLangPrefs(host: LangPrefsHost): LangPrefs {
   const setAudio = useCallback(
     (code: string | null) => {
       const next = normalizeLangPref(code);
-      if (next === audio) return;
+      if (next === audio) {
+        return;
+      }
       save({ audioLanguage: next });
     },
     [audio, save],
@@ -64,7 +66,9 @@ export function useLangPrefs(host: LangPrefsHost): LangPrefs {
   const setSubtitle = useCallback(
     (code: string | null) => {
       const next = normalizeLangPref(code);
-      if (next === subtitle) return;
+      if (next === subtitle) {
+        return;
+      }
       save({ subtitleLanguage: next });
     },
     [subtitle, save],
@@ -78,10 +82,16 @@ export function useLangPrefs(host: LangPrefsHost): LangPrefs {
  * never a stored one. A region survives normalization (`fr-FR` stays `fr-FR`)
  * so a viewer who picked the VFF track isn't handed the VFQ one next time. */
 export function normalizeLangPref(code: string | null | undefined): string | null {
-  if (!code || code === LANG_NO_PREF) return null;
-  if (code === LANG_OFF) return LANG_OFF;
+  if (!code || code === LANG_NO_PREF) {
+    return null;
+  }
+  if (code === LANG_OFF) {
+    return LANG_OFF;
+  }
   const base = langBase(code);
-  if (base == null) return null;
+  if (base == null) {
+    return null;
+  }
   const region = langRegion(code);
   return region ? `${base}-${region}` : base;
 }
@@ -92,7 +102,11 @@ export function normalizeLangPref(code: string | null | undefined): string | nul
  * discard the variant on re-save. A region nobody offers still falls back to
  * the base, so the picker never comes up with nothing selected. */
 export function prefValue(stored: string | null): string {
-  if (stored == null) return LANG_NO_PREF;
-  if (stored === LANG_OFF) return LANG_OFF;
+  if (stored == null) {
+    return LANG_NO_PREF;
+  }
+  if (stored === LANG_OFF) {
+    return LANG_OFF;
+  }
   return offeredLang(stored) ?? LANG_NO_PREF;
 }

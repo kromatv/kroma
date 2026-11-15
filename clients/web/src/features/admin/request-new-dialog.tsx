@@ -58,26 +58,36 @@ export function NewRequestDialog({
   const short = needle.length < MIN_CHARS;
   const key = `${scope}:${needle}`;
   const busy = !short && settled !== key;
-  if (short && results !== null) setResults(null);
+  if (short && results !== null) {
+    setResults(null);
+  }
 
   // Debounced, and every answer checked against the input that asked for it:
   // typing fast must not let an early, shorter query land last.
   useEffect(() => {
-    if (short) return;
+    if (short) {
+      return;
+    }
     let live = true;
     const at = setTimeout(() => {
       client.discovery
         .search(needle, { type: scope })
         .then((r) => {
-          if (!live) return;
+          if (!live) {
+            return;
+          }
           setResults(r.results);
           setError(null);
         })
         .catch((e) => {
-          if (live) setError(apiErrorText(e, t('requests.searchFailed')));
+          if (live) {
+            setError(apiErrorText(e, t('requests.searchFailed')));
+          }
         })
         .finally(() => {
-          if (live) setSettled(key);
+          if (live) {
+            setSettled(key);
+          }
         });
     }, DEBOUNCE_MS);
     return () => {
@@ -273,7 +283,9 @@ function Stars({ rating }: Readonly<{ rating: number }>) {
 }
 
 function starGlyph(filled: number): 'star-filled' | 'star-half-filled' | 'star' {
-  if (filled >= 0.75) return 'star-filled';
+  if (filled >= 0.75) {
+    return 'star-filled';
+  }
   return filled >= 0.25 ? 'star-half-filled' : 'star';
 }
 

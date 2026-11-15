@@ -53,7 +53,9 @@ export class AvplayEngine extends BaseTvEngine {
   constructor(opts: EngineOptions) {
     super(opts);
     const api = getAvplay();
-    if (!api) throw new Error('AVPlay unavailable');
+    if (!api) {
+      throw new Error('AVPlay unavailable');
+    }
     this.api = api;
     this.direct = new AvplayDirectSource(api);
     if (this.filter !== 'off' && this.mode === 'direct') {
@@ -64,7 +66,9 @@ export class AvplayEngine extends BaseTvEngine {
       this.baseSec = this.elSec;
       this.elSec = 0;
     }
-    if (this.mode === 'direct') this.direct.wantsStart(opts.startSec);
+    if (this.mode === 'direct') {
+      this.direct.wantsStart(opts.startSec);
+    }
     this.onVisibility = () => this.handleVisibility();
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.onVisibility);
@@ -96,7 +100,9 @@ export class AvplayEngine extends BaseTvEngine {
   /** Reloads the source at the current position with the new filter mode; a
    * filtered direct source moves onto the remux, and vice versa when turned off. */
   setAudioFilter(mode: AudioFilterMode): void {
-    if (mode === this.filter) return;
+    if (mode === this.filter) {
+      return;
+    }
     this.filter = mode;
     if (this.mode === 'direct') {
       this.filterMaster = true;
@@ -116,7 +122,9 @@ export class AvplayEngine extends BaseTvEngine {
     const url = this.sourceUrl();
     if (this.mode === 'master' && this.baseSec > AT_FILM_START_SEC) {
       void resolveMasterStart(url, this.baseSec).then((real) => {
-        if (this.destroyed || this.opens.abandoned(stamp)) return;
+        if (this.destroyed || this.opens.abandoned(stamp)) {
+          return;
+        }
         this.baseSec = real;
         this.openNow(url);
       });
@@ -140,7 +148,9 @@ export class AvplayEngine extends BaseTvEngine {
         onbufferingcomplete: () => this.listeners.onPlaying(),
         oncurrentplaytime: (ms: number) => {
           this.elSec = ms / 1000;
-          if (this.landing.reported(ms)) this.seekToTop();
+          if (this.landing.reported(ms)) {
+            this.seekToTop();
+          }
           this.direct.applyPendingAudio();
           this.listeners.onTime(this.baseSec + this.elSec);
         },
@@ -157,16 +167,22 @@ export class AvplayEngine extends BaseTvEngine {
   }
 
   private onPrepared(): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     silenceSubtitles(this.api);
     if (this.mode === 'direct') {
       // A master's duration is the remux's, which on a playlist still being
       // written is the seconds produced so far, not the runtime.
       const runtime = this.direct.runtime();
-      if (runtime > 0) this.durSec = runtime;
+      if (runtime > 0) {
+        this.durSec = runtime;
+      }
       // Resume / fallback hand-off: land on the target before frames roll.
       const target = this.direct.land();
-      if (target !== null) this.elSec = target;
+      if (target !== null) {
+        this.elSec = target;
+      }
       this.direct.wantsAudio(this.rendition);
     } else {
       this.elSec = currentSec(this.api);
@@ -186,7 +202,9 @@ export class AvplayEngine extends BaseTvEngine {
   }
 
   private handleVisibility(): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     if (document.visibilityState === 'hidden') {
       bestEffort(() => this.api.suspend());
       return;
@@ -268,7 +286,9 @@ export class AvplayEngine extends BaseTvEngine {
   /** Shrink/restore the hardware video plane (fraction-rect → 1920x1080 px). */
   setRect(rect: PlaneRect | null): void {
     const next = planeBox(rect);
-    if (samePlaneBox(next, this.displayRect)) return;
+    if (samePlaneBox(next, this.displayRect)) {
+      return;
+    }
     this.displayRect = next;
     bestEffort(() => this.api.setDisplayRect(next.x, next.y, next.w, next.h));
   }
@@ -279,7 +299,9 @@ export class AvplayEngine extends BaseTvEngine {
     // Direct: in-place native track switch. Master: the stream carries only
     // one audio track, so a language switch reopens it at the current position.
     const landed = this.mode === 'direct' && this.direct.picksAudio(rendition);
-    if (changed && !landed) this.reanchor(this.position());
+    if (changed && !landed) {
+      this.reanchor(this.position());
+    }
   }
 
   destroy(): void {

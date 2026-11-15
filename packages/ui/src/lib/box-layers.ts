@@ -62,7 +62,9 @@ const pinned = (flat: Record<string, unknown>, from: string, to: string) =>
   flat[from] != null && flat[to] != null;
 
 function pinnedOpen(flat: Record<string, unknown>): boolean {
-  if (flat.position !== 'absolute') return false;
+  if (flat.position !== 'absolute') {
+    return false;
+  }
   return pinned(flat, 'top', 'bottom') || pinned(flat, 'left', 'right');
 }
 
@@ -79,7 +81,9 @@ export function splitBoxLayers(
   face: StyleProp<ViewStyle>;
 } {
   const flat = StyleSheet.flatten(style) as Record<string, unknown> | undefined;
-  if (!flat) return { face: style };
+  if (!flat) {
+    return { face: style };
+  }
   const box: Record<string, unknown> = {};
   const face: Record<string, unknown> = {};
   let boxed = false;
@@ -93,7 +97,9 @@ export function splitBoxLayers(
       face[key] = flat[key];
     }
   }
-  if (!boxed) return { face: style };
+  if (!boxed) {
+    return { face: style };
+  }
   sized ||= pinnedOpen(flat);
   return {
     box: box as ViewStyle,

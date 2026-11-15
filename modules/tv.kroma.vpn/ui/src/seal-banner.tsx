@@ -22,7 +22,9 @@ export function SealBanner({ view }: Readonly<{ view: VpnBandwidthView }>) {
 }
 
 function toneOf(note: SealNote) {
-  if (note.kind === 'sealed') return 'success';
+  if (note.kind === 'sealed') {
+    return 'success';
+  }
   return note.kind === 'leaked' ? 'danger' : 'accent';
 }
 

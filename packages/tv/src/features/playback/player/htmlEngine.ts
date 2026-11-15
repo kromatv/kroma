@@ -146,7 +146,9 @@ export class HtmlEngine implements TvEngine {
     // The stream really starts at the keyframe AT-OR-BEFORE the anchor; correct
     // `baseSec` from X-Hls-Start so the clock + subtitle cues don't drift a GOP.
     void resolveMasterStart(url, this.baseSec).then((realStart) => {
-      if (this.destroyed || seq !== this.attachSeq) return;
+      if (this.destroyed || seq !== this.attachSeq) {
+        return;
+      }
       this.baseSec = realStart;
       this.attachPlaylist(url, 0);
     });
@@ -158,7 +160,9 @@ export class HtmlEngine implements TvEngine {
   }
 
   private dropResumeOnCanPlay(): void {
-    if (!this.resumeOnCanPlay) return;
+    if (!this.resumeOnCanPlay) {
+      return;
+    }
     this.v.removeEventListener('canplay', this.resumeOnCanPlay);
     this.resumeOnCanPlay = null;
   }
@@ -189,7 +193,9 @@ export class HtmlEngine implements TvEngine {
     this.baseSec = absSec;
     this.release();
     this.attachMaster();
-    if (wasPlaying) this.resumeWhenPlayable();
+    if (wasPlaying) {
+      this.resumeWhenPlayable();
+    }
   }
 
   play(): void {
@@ -206,7 +212,9 @@ export class HtmlEngine implements TvEngine {
     return this.baseSec + this.v.currentTime;
   }
   duration(): number {
-    if (this.durSec > 0) return this.durSec;
+    if (this.durSec > 0) {
+      return this.durSec;
+    }
     return Number.isFinite(this.v.duration) ? this.v.duration : 0;
   }
   bufferedEnd(): number {
@@ -241,7 +249,9 @@ export class HtmlEngine implements TvEngine {
   }
 
   setAudioRendition(rendition: number): void {
-    if (rendition === this.rendition || this.opts.direct) return;
+    if (rendition === this.rendition || this.opts.direct) {
+      return;
+    }
     this.rendition = rendition;
     // The audio track is muxed in by the URL (no alternate renditions), so a
     // language switch reloads the master at the current position.

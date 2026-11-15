@@ -33,9 +33,13 @@ function bare(part: string): string {
 function head(code: string): Head | null {
   if (code.startsWith('(')) {
     const close = matching(code, 0, '(');
-    if (close < 0) return null;
+    if (close < 0) {
+      return null;
+    }
     const arrow = ARROW_HEAD.exec(code.slice(close + 1));
-    if (!arrow) return null;
+    if (!arrow) {
+      return null;
+    }
     const params = binding(code.slice(1, close));
     return {
       names: destructured(params),
@@ -45,7 +49,9 @@ function head(code: string): Head | null {
     };
   }
   const single = SINGLE_PARAM.exec(code);
-  if (!single?.[1]) return null;
+  if (!single?.[1]) {
+    return null;
+  }
   return { names: [single[1]], bag: single[1], empty: false, end: single[0].length };
 }
 
@@ -61,8 +67,12 @@ function binding(params: string): string {
 }
 
 function destructured(params: string): string[] {
-  if (NAME.test(params)) return [params];
-  if (!params.startsWith('{') || !params.endsWith('}')) return [];
+  if (NAME.test(params)) {
+    return [params];
+  }
+  if (!params.startsWith('{') || !params.endsWith('}')) {
+    return [];
+  }
   return params
     .slice(1, -1)
     .split(',')

@@ -43,7 +43,9 @@ const b64url = (b: ArrayBuffer | Uint8Array) => {
     .replaceAll('/', '_');
   // Linear padding strip; `/=+$/` backtracks at every position (see worker/jwt).
   let end = b64.length;
-  while (end > 0 && b64[end - 1] === '=') end--;
+  while (end > 0 && b64[end - 1] === '=') {
+    end--;
+  }
   return b64.slice(0, end);
 };
 const enc = new TextEncoder();

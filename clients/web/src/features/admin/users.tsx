@@ -32,13 +32,19 @@ function roleKey(role: string): Role {
 }
 
 function roleStyle(role: Role): { ink: ColorValue; bg: ColorValue } {
-  if (role === 'admin.roleOwner') return { ink: 'accentText', bg: 'accentWash/16' };
-  if (role === 'admin.roleRestricted') return { ink: 'info', bg: 'info/14' };
+  if (role === 'admin.roleOwner') {
+    return { ink: 'accentText', bg: 'accentWash/16' };
+  }
+  if (role === 'admin.roleRestricted') {
+    return { ink: 'info', bg: 'info/14' };
+  }
   return { ink: 'success', bg: 'success/14' };
 }
 
 export function UsersScreen() {
-  if (!useCap('users.manage')) return <Denied />;
+  if (!useCap('users.manage')) {
+    return <Denied />;
+  }
   return <UsersPageInner />;
 }
 
@@ -53,10 +59,14 @@ function UsersPageInner() {
     15000,
   );
   const openInvite = async () => {
-    if (await InviteModal.call()) await reloadInvites();
+    if (await InviteModal.call()) {
+      await reloadInvites();
+    }
   };
   const openEdit = async (user: AdminUser) => {
-    if (await EditUserModal.call({ user })) await reload();
+    if (await EditUserModal.call({ user })) {
+      await reload();
+    }
   };
 
   const users = data?.users ?? [];

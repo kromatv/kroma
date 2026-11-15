@@ -25,7 +25,9 @@ export function AudioFilterPanel({ value, onSelect, onBack }: Readonly<AudioFilt
   const labels = audioFilterLabels(t);
   const pick = (i: number) => {
     const m = MODES[i];
-    if (m) onSelect(m);
+    if (m) {
+      onSelect(m);
+    }
     onBack();
   };
 

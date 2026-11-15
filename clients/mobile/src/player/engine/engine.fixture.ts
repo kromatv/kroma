@@ -40,7 +40,9 @@ const native = (() => {
         };
       },
       emit: (type: string, payload: unknown) => {
-        for (const fn of listeners.get(type) ?? []) (fn as (p: unknown) => void)(payload);
+        for (const fn of listeners.get(type) ?? []) {
+          (fn as (p: unknown) => void)(payload);
+        }
       },
     };
     return player;

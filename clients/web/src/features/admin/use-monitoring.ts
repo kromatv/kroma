@@ -41,7 +41,9 @@ export function useTitleFollow({
     });
   const set = (row: LibraryTitle, monitored: boolean) => {
     const tmdbId = row.tmdbId;
-    if (tmdbId === null) return;
+    if (tmdbId === null) {
+      return;
+    }
     const key = titleKey(row);
     setSaving((titles) => new Set(titles).add(key));
     const call = monitored
@@ -98,7 +100,9 @@ export function unitKey(unit: EpisodeUnit): string {
 }
 
 function bodyOf(unit: EpisodeUnit, monitored: boolean): EpisodeMonitoringBody {
-  if (unit.episode === undefined) return { seasons: [{ season: unit.season, monitored }] };
+  if (unit.episode === undefined) {
+    return { seasons: [{ season: unit.season, monitored }] };
+  }
   return { episodes: [{ season: unit.season, episode: unit.episode, monitored }] };
 }
 

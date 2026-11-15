@@ -10,7 +10,9 @@ function fakeVideo(over: { seekThrows?: boolean; playRejects?: boolean } = {}) {
   const listeners = new Map<string, Set<() => void>>();
   let currentTime = 0;
   const play = vi.fn(async () => {
-    if (over.playRejects) throw new Error('autoplay blocked');
+    if (over.playRejects) {
+      throw new Error('autoplay blocked');
+    }
   });
   const el = {
     src: '',
@@ -19,7 +21,9 @@ function fakeVideo(over: { seekThrows?: boolean; playRejects?: boolean } = {}) {
       return currentTime;
     },
     set currentTime(v: number) {
-      if (over.seekThrows) throw new Error('InvalidStateError');
+      if (over.seekThrows) {
+        throw new Error('InvalidStateError');
+      }
       currentTime = v;
     },
     addEventListener(type: string, fn: () => void) {
@@ -33,7 +37,9 @@ function fakeVideo(over: { seekThrows?: boolean; playRejects?: boolean } = {}) {
     play,
   };
   const fire = (type: string) => {
-    for (const fn of [...(listeners.get(type) ?? [])]) fn();
+    for (const fn of [...(listeners.get(type) ?? [])]) {
+      fn();
+    }
   };
   const count = (type: string) => listeners.get(type)?.size ?? 0;
   return { el: el as unknown as HTMLVideoElement, fire, count, play };

@@ -51,11 +51,17 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     if (v.paused) {
       const p = v.play();
-      if (typeof p?.then === 'function') p.catch(() => undefined);
-    } else v.pause();
+      if (typeof p?.then === 'function') {
+        p.catch(() => undefined);
+      }
+    } else {
+      v.pause();
+    }
   }, [videoRef]);
 
   // A target inside the anchored stream's produced range is a native seek;
@@ -63,7 +69,9 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
   const seekTo = useCallback(
     (absSec: number) => {
       const v = videoRef.current;
-      if (!v) return;
+      if (!v) {
+        return;
+      }
       const total = knownDurationMs ? knownDurationMs / 1000 : 0;
       const target = Math.max(0, total ? Math.min(total - 1, absSec) : absSec);
 
@@ -88,7 +96,9 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
 
   const skip = useCallback(
     (delta: number) => {
-      if (!videoRef.current) return;
+      if (!videoRef.current) {
+        return;
+      }
       seekTo(getPosition() + delta);
     },
     [seekTo, getPosition, videoRef],
@@ -98,12 +108,20 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
     (clientX: number): number | null => {
       const v = videoRef.current;
       const bar = barRef.current;
-      if (!v || !bar) return null;
+      if (!v || !bar) {
+        return null;
+      }
       let total: number;
-      if (knownDurationMs) total = knownDurationMs / 1000;
-      else if (Number.isFinite(v.duration)) total = v.duration;
-      else total = 0;
-      if (!total) return null;
+      if (knownDurationMs) {
+        total = knownDurationMs / 1000;
+      } else if (Number.isFinite(v.duration)) {
+        total = v.duration;
+      } else {
+        total = 0;
+      }
+      if (!total) {
+        return null;
+      }
       const rect = bar.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       return pct * total;
@@ -114,19 +132,25 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
   const scrubToClientX = useCallback(
     (clientX: number) => {
       const s = clientXToSec(clientX);
-      if (s != null) setScrubPreview(s);
+      if (s != null) {
+        setScrubPreview(s);
+      }
     },
     [clientXToSec, setScrubPreview],
   );
   const commitScrub = useCallback(() => {
     const s = scrubPreviewRef.current;
     setScrubPreview(null);
-    if (s != null) seekTo(s);
+    if (s != null) {
+      seekTo(s);
+    }
   }, [seekTo, setScrubPreview]);
   const seekToClientX = useCallback(
     (clientX: number) => {
       const s = clientXToSec(clientX);
-      if (s != null) seekTo(s);
+      if (s != null) {
+        seekTo(s);
+      }
     },
     [clientXToSec, seekTo],
   );
@@ -134,11 +158,15 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
   const onBarMove = useCallback(
     (e: React.PointerEvent) => {
       const bar = barRef.current;
-      if (!bar || !dur) return;
+      if (!bar || !dur) {
+        return;
+      }
       const rect = bar.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       setHover({ x: pct * rect.width, t: pct * dur, w: rect.width });
-      if (scrubbing) setScrubPreview(pct * dur);
+      if (scrubbing) {
+        setScrubPreview(pct * dur);
+      }
     },
     [dur, scrubbing, barRef, setScrubPreview],
   );
@@ -146,7 +174,9 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
   const setVol = useCallback(
     (val: number) => {
       const v = videoRef.current;
-      if (!v) return;
+      if (!v) {
+        return;
+      }
       v.volume = Math.max(0, Math.min(1, val));
       v.muted = v.volume === 0;
     },
@@ -155,21 +185,27 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
 
   const toggleMute = useCallback(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     v.muted = !v.muted;
   }, [videoRef]);
 
   const applyRate = useCallback(
     (r: number) => {
       const v = videoRef.current;
-      if (v) v.playbackRate = r;
+      if (v) {
+        v.playbackRate = r;
+      }
     },
     [videoRef],
   );
 
   const toggleFullscreen = () => {
     const el = frame?.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     if (document.fullscreenElement) {
       void document.exitFullscreen();
       return;
@@ -182,7 +218,9 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
     const v = videoRef.current as
       | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
       | null;
-    if (typeof v?.webkitEnterFullscreen === 'function') v.webkitEnterFullscreen();
+    if (typeof v?.webkitEnterFullscreen === 'function') {
+      v.webkitEnterFullscreen();
+    }
   };
 
   return {

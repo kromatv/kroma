@@ -15,13 +15,17 @@ export function RouterTunnels({
   const vpn = useVpnApi();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (!saved.some((one) => !one.active)) return null;
+  if (!saved.some((one) => !one.active)) {
+    return null;
+  }
   const routed = saved.filter((one) => one.routable).map((one) => one.id);
   const full = routed.length >= slots;
 
   const change = async (next: string[]) => {
     const flipped = saved.find((one) => next.includes(one.id) !== one.routable);
-    if (!flipped) return;
+    if (!flipped) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {

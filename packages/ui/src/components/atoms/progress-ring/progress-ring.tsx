@@ -67,7 +67,9 @@ function ProgressRing({
     </View>
   );
 
-  if (!indeterminate) return ring;
+  if (!indeterminate) {
+    return ring;
+  }
   return <Animated.View style={spin}>{ring}</Animated.View>;
 }
 

@@ -66,9 +66,13 @@ function bootedDevice(): { udid: string; name: string } {
     devices: Record<string, { udid: string; name: string; state: string }[]>;
   };
   for (const [runtime, devices] of Object.entries(list.devices)) {
-    if (!runtime.includes('tvOS')) continue;
+    if (!runtime.includes('tvOS')) {
+      continue;
+    }
     const booted = devices.find((d) => d.state === 'Booted');
-    if (booted) return { udid: booted.udid, name: booted.name };
+    if (booted) {
+      return { udid: booted.udid, name: booted.name };
+    }
   }
   console.error('No booted tvOS simulator. Boot one in Simulator first.');
   return process.exit(2);

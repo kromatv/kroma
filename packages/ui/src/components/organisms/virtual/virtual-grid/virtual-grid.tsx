@@ -110,7 +110,8 @@ function VirtualGrid<T>({
 
   const rowGapPx = rowGap ?? gap;
   const geometry = useMemo(() => {
-    const room = Math.max(0, (box.width || width || 0) - px * 2);
+    const roomWidth = box.width > 0 ? box.width : (width ?? 0);
+    const room = Math.max(0, roomWidth - px * 2);
     const count = Math.max(1, columns ?? (min ? columnsFor(room, min, gap) : 1));
     const cell = cellWidth(room, count, gap);
     return { count, cell, pitch: (itemHeight ?? Math.round(cell * ratio)) + rowGapPx };
@@ -153,7 +154,9 @@ function VirtualGrid<T>({
   // so a request can always name something that will answer it.
   useEffect(() => {
     const row = wanted.current;
-    if (row === null) return;
+    if (row === null) {
+      return;
+    }
     if (ringed.current === row) {
       wanted.current = null;
       return;
@@ -165,18 +168,25 @@ function VirtualGrid<T>({
   // yank focus back out from under the D-pad.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- opening position, not a binding.
   useEffect(() => {
-    if (initialIndex !== undefined) focusRow(initialIndex);
+    if (initialIndex !== undefined) {
+      focusRow(initialIndex);
+    }
   }, []);
 
   useEffect(() => {
-    if (metrics.count > 1 && focusedRow >= metrics.count - 1 - END_THRESHOLD) onEndReached?.();
+    if (metrics.count > 1 && focusedRow >= metrics.count - 1 - END_THRESHOLD) {
+      onEndReached?.();
+    }
   }, [focusedRow, metrics.count, onEndReached]);
 
   const settledRow = useTrailingRow(focusedRow, SETTLE_MS);
 
   const onNode = useStableCallback((row: number, node: NodeHandle | null) => {
-    if (node) nodes.current.set(row, node);
-    else nodes.current.delete(row);
+    if (node) {
+      nodes.current.set(row, node);
+    } else {
+      nodes.current.delete(row);
+    }
   });
 
   const onHeaderNode = useStableCallback((node: NodeHandle | null) => onNode(0, node));

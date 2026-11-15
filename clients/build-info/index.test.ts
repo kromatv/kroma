@@ -21,7 +21,9 @@ function project(options: { git?: boolean; remote?: string; version?: string } =
     run('config', 'user.email', 'test@kroma.test');
     run('config', 'user.name', 'Test');
     run('config', 'commit.gpgsign', 'false');
-    if (options.remote) run('remote', 'add', 'origin', options.remote);
+    if (options.remote) {
+      run('remote', 'add', 'origin', options.remote);
+    }
     writeFileSync(join(dir, 'a.txt'), 'hello');
     run('add', '.');
     run('commit', '-q', '-m', 'first');
@@ -112,8 +114,11 @@ describe('productVersion', () => {
     delete process.env.KROMA_VERSION;
   });
   afterEach(() => {
-    if (original === undefined) delete process.env.KROMA_VERSION;
-    else process.env.KROMA_VERSION = original;
+    if (original === undefined) {
+      delete process.env.KROMA_VERSION;
+    } else {
+      process.env.KROMA_VERSION = original;
+    }
   });
 
   it('takes what CI stamped, above everything else', () => {

@@ -45,10 +45,18 @@ const KIT_DEEP = /^@kromatv\/ui\/kit\/.+/;
  * bundle carries itself.
  */
 export function sharedKey(specifier: string): string | null {
-  if (specifier === PUBLIC_NAME) return '@kromatv/module-sdk';
-  if ((SHARED_MODULES as readonly string[]).includes(specifier)) return specifier;
-  if (CLIENT_DOMAIN.test(specifier)) return specifier;
-  if (KIT_DEEP.test(specifier)) return '@kromatv/ui/kit';
+  if (specifier === PUBLIC_NAME) {
+    return '@kromatv/module-sdk';
+  }
+  if ((SHARED_MODULES as readonly string[]).includes(specifier)) {
+    return specifier;
+  }
+  if (CLIENT_DOMAIN.test(specifier)) {
+    return specifier;
+  }
+  if (KIT_DEEP.test(specifier)) {
+    return '@kromatv/ui/kit';
+  }
   return null;
 }
 

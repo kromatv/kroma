@@ -28,7 +28,9 @@ const viewport = { current: null } as RefObject<View | null>;
 // Not wrapped in act(): the hook writes from the handler, and the assertions
 // read the ref-driven maths through the returned fraction after a render.
 function wheel(delta: number) {
-  if (!pan) throw new Error('the hook never registered a wheel handler');
+  if (!pan) {
+    throw new Error('the hook never registered a wheel handler');
+  }
   pan(delta);
 }
 

@@ -30,7 +30,9 @@ it.skipIf(!wanted)(
         .join(' ');
       console.log(`    ${String(view.churned).padStart(5)}  ${view.id}/${view.view}  ${worst}`);
     }
-    if (churning.length > limit) console.log(`    ... and ${churning.length - limit} more`);
+    if (churning.length > limit) {
+      console.log(`    ... and ${churning.length - limit} more`);
+    }
     console.log(`    ${fibers} fibers across ${churning.length} views\n`);
 
     // Once churn is rare this is the column that names the next thing to fix: a

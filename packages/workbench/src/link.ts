@@ -11,7 +11,9 @@ const WEB_LINK = /^https?:\/\//i;
 /** Opens `href` in the platform's browser. A URL that is not http(s) opens
  * nothing at all. */
 function openWebLink(href: string): void {
-  if (!WEB_LINK.test(href)) return;
+  if (!WEB_LINK.test(href)) {
+    return;
+  }
   Linking.openURL(href).catch(() => undefined);
 }
 
@@ -33,11 +35,17 @@ function permalink(
   rev: string | null,
   path?: string,
 ): string | null {
-  if (!repository || !rev || !SHA.test(rev)) return null;
-  if (target !== 'commit' && !path) return null;
+  if (!repository || !rev || !SHA.test(rev)) {
+    return null;
+  }
+  if (target !== 'commit' && !path) {
+    return null;
+  }
   const suffix = path ? `/${path}` : '';
   let base = repository;
-  while (base.endsWith('/')) base = base.slice(0, -1);
+  while (base.endsWith('/')) {
+    base = base.slice(0, -1);
+  }
   const url = `${base}/${target}/${rev}${suffix}`;
   return WEB_LINK.test(url) ? url : null;
 }

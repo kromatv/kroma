@@ -99,10 +99,10 @@ export function useDirectPlayback(
     },
     [engineRef],
   );
-  const runtime = useCallback(
-    () => engineRef.current?.duration() || durationSec,
-    [engineRef, durationSec],
-  );
+  const runtime = useCallback(() => {
+    const live = engineRef.current?.duration();
+    return live !== undefined && live > 0 ? live : durationSec;
+  }, [engineRef, durationSec]);
 
   useResumeAndPersist(client, item, {
     getPosition,
@@ -119,7 +119,9 @@ export function useDirectPlayback(
     durationMs: item.durationMs ?? null,
     getPosition,
     getState: () => {
-      if (!playing) return 'paused';
+      if (!playing) {
+        return 'paused';
+      }
       return waiting ? 'buffering' : 'playing';
     },
     getAudio: () =>
@@ -141,9 +143,14 @@ export function useDirectPlayback(
 
   const togglePlay = useCallback(() => {
     const e = engineRef.current;
-    if (!e) return;
-    if (e.isPaused()) e.play();
-    else e.pause();
+    if (!e) {
+      return;
+    }
+    if (e.isPaused()) {
+      e.play();
+    } else {
+      e.pause();
+    }
   }, [engineRef]);
 
   const clamp = useCallback(

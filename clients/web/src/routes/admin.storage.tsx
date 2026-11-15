@@ -57,7 +57,9 @@ function StoragePage() {
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     setResetting(true);
     try {
       await client.admin.resetMetadata();

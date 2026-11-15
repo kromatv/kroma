@@ -8,15 +8,21 @@ import { extractIcon, readSpkInfo } from './spk';
 
 function env(key: string, fallback?: string): string {
   const v = process.env[key]?.trim();
-  if (v) return v;
-  if (fallback !== undefined) return fallback;
+  if (v) {
+    return v;
+  }
+  if (fallback !== undefined) {
+    return fallback;
+  }
   throw new Error(`Missing required env var ${key} (see packages/synology-repo/.env.example)`);
 }
 
 // Linear pass on purpose: a `/\/+$/` regex backtracks the run at every position.
 function stripTrailingSlash(s: string): string {
   let end = s.length;
-  while (end > 0 && s[end - 1] === '/') end--;
+  while (end > 0 && s[end - 1] === '/') {
+    end--;
+  }
   return s.slice(0, end);
 }
 
@@ -24,15 +30,20 @@ function findSpk(dirs: string[]): string {
   const found: { path: string; mtime: number }[] = [];
   for (const dir of dirs) {
     const abs = resolve(dir);
-    if (!existsSync(abs)) continue;
+    if (!existsSync(abs)) {
+      continue;
+    }
     for (const f of readdirSync(abs)) {
-      if (f.endsWith('.spk'))
+      if (f.endsWith('.spk')) {
         found.push({ path: join(abs, f), mtime: statSync(join(abs, f)).mtimeMs });
+      }
     }
   }
   found.sort((a, b) => b.mtime - a.mtime);
   const newest = found[0];
-  if (!newest) throw new Error(`No .spk in ${dirs.join(', ')}; set CATALOG_SPK`);
+  if (!newest) {
+    throw new Error(`No .spk in ${dirs.join(', ')}; set CATALOG_SPK`);
+  }
   return newest.path;
 }
 

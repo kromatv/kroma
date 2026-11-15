@@ -13,7 +13,9 @@ export function useLangPrefs(): LangPrefs {
   const client = useClient();
   const updateUser = useCallback(
     (patch: LangPatch) => {
-      if (user) setUser({ ...user, ...patch });
+      if (user) {
+        setUser({ ...user, ...patch });
+      }
     },
     [user, setUser],
   );

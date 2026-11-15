@@ -93,9 +93,13 @@ function CastReceiver({
   // Adding a third publisher would break that, and should instead go through a
   // single owner.
   useEffect(() => {
-    if (!signedIn || castable === 'off') return;
+    if (!signedIn || castable === 'off') {
+      return;
+    }
     const publish = lan?.publish;
-    if (!publish) return;
+    if (!publish) {
+      return;
+    }
     try {
       return publish({
         name,
@@ -108,7 +112,9 @@ function CastReceiver({
   }, [signedIn, castable, platform, lan, name, deviceId]);
 
   useEffect(() => {
-    if (!signedIn || castable === 'off' || !inFront) return;
+    if (!signedIn || castable === 'off' || !inFront) {
+      return;
+    }
     const id = deviceId();
     let stopped = false;
     let fallback: ReturnType<typeof setTimeout> | undefined;
@@ -119,7 +125,9 @@ function CastReceiver({
     let attached = false;
 
     const apply = async (seq: number, command: CastCommand) => {
-      if (seq <= applied.current) return;
+      if (seq <= applied.current) {
+        return;
+      }
       applied.current = seq;
       await applyCastCommand(command, deps.current);
       events.send({ type: 'cast.ack', seq });
@@ -149,7 +157,11 @@ function CastReceiver({
 
     const beat = async () => {
       if (stopped || (events.open && attached)) {
-        if (!stopped) fallback = setTimeout(beat, FALLBACK_BEAT_MS);
+        if (!stopped) {
+          fallback = setTimeout(() => {
+            void beat();
+          }, FALLBACK_BEAT_MS);
+        }
         return;
       }
       try {
@@ -160,12 +172,18 @@ function CastReceiver({
           lastAppliedSeq: applied.current,
           playback: castReport(deps.current.t) ?? undefined,
         });
-        for (const { seq, command } of reply.commands) await apply(seq, command);
+        for (const { seq, command } of reply.commands) {
+          await apply(seq, command);
+        }
       } catch {
         // Swallowed: the next beat re-registers this TV; the roster just
         // omits it meanwhile.
       }
-      if (!stopped) fallback = setTimeout(beat, FALLBACK_BEAT_MS);
+      if (!stopped) {
+        fallback = setTimeout(() => {
+          void beat();
+        }, FALLBACK_BEAT_MS);
+      }
     };
 
     // Commands are addressed to the signed-in account, so another
@@ -202,7 +220,9 @@ function CastReceiver({
         } else if (e.type === 'cast.receiver.gone' && e.receiverId === id) {
           attached = false;
           setCastControllers([]);
-        } else if (e.type === 'cast.command' && e.receiverId === id) void apply(e.seq, e.command);
+        } else if (e.type === 'cast.command' && e.receiverId === id) {
+          void apply(e.seq, e.command);
+        }
       },
     });
 
@@ -210,7 +230,9 @@ function CastReceiver({
     // plus a slow position keepalive so a remote's scrubber cannot drift.
     const unsubscribe = onCastReportChange(pushState);
     drift = setInterval(() => {
-      if (castReport(deps.current.t)) pushState();
+      if (castReport(deps.current.t)) {
+        pushState();
+      }
     }, DRIFT_MS);
 
     events.connect();
@@ -226,7 +248,9 @@ function CastReceiver({
       // matters when the receiver came up through the fallback path, and only
       // while there is still a bearer to send it with.
       events.close();
-      if (client.hasAuth) client.cast.unregister(id).catch(() => undefined);
+      if (client.hasAuth) {
+        client.cast.unregister(id).catch(() => undefined);
+      }
     };
   }, [
     signedIn,

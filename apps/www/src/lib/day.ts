@@ -22,15 +22,21 @@ export function formatDayShort(day: string, lang: Lang): string {
 
 /** A build timestamp in UTC so server and browser render the same instant. */
 export function formatMoment(iso: string | null | undefined, lang: Lang): string | null {
-  if (!iso) return null;
+  if (!iso) {
+    return null;
+  }
   const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return null;
+  if (Number.isNaN(at.getTime())) {
+    return null;
+  }
   return `${new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(at)} UTC`;
 }
 
 /** The month a timestamp falls in, as `2026-08`, or null for no timestamp. */
 export function monthKey(at: string | null | undefined): string | null {
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
   const parsed = new Date(at);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 7);
 }
@@ -58,8 +64,11 @@ export function groupByMonth<T>(
   for (const item of items) {
     const key = monthKey(at(item));
     const last = groups.at(-1);
-    if (last?.key === key) last.items.push(item);
-    else groups.push({ key, items: [item] });
+    if (last?.key === key) {
+      last.items.push(item);
+    } else {
+      groups.push({ key, items: [item] });
+    }
   }
   return groups;
 }

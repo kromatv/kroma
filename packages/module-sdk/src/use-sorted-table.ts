@@ -111,7 +111,9 @@ function orderOf<Row extends RowData, Key extends string>(
 ): TableOrder<Key> {
   const first = sorting[0];
   const known = columns.filter(sortable).find((column) => column.sortKey === first?.id);
-  if (!first || !known) return fallback;
+  if (!first || !known) {
+    return fallback;
+  }
   return { sort: known.sortKey, dir: first.desc ? 'desc' : 'asc' };
 }
 
@@ -119,7 +121,9 @@ function definitionsOf<Row extends RowData, Key extends string>(
   columns: readonly SortedColumn<Row, Key>[],
 ): ColumnDef<SortedFeatures, Row>[] {
   return columns.map((column) => {
-    if (!sortable(column)) return { id: column.id, enableSorting: false };
+    if (!sortable(column)) {
+      return { id: column.id, enableSorting: false };
+    }
     const field = column.valueField;
     return {
       id: column.sortKey,

@@ -40,7 +40,9 @@ afterEach(() => {
 
 afterAll(() => {
   vi.unstubAllGlobals();
-  for (const base of bases) rmSync(base, { recursive: true, force: true });
+  for (const base of bases) {
+    rmSync(base, { recursive: true, force: true });
+  }
 });
 
 describe('createAuthorCertificate', () => {

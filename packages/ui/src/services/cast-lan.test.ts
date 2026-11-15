@@ -155,7 +155,9 @@ describe('a phone with the app behind it', () => {
     expect(result.current).toHaveLength(1);
 
     appVisibility('hidden');
-    act(() => vi.advanceTimersByTime(60_000));
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
     expect(stop).toHaveBeenCalledTimes(1);
     expect(result.current).toEqual([]);
 
@@ -170,9 +172,13 @@ describe('a phone with the app behind it', () => {
     const { result } = run({ lan });
 
     appVisibility('hidden');
-    act(() => vi.advanceTimersByTime(5000));
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
     appVisibility('visible');
-    act(() => vi.advanceTimersByTime(60_000));
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
 
     expect(lan.browse).toHaveBeenCalledTimes(1);
     expect(stop).not.toHaveBeenCalled();

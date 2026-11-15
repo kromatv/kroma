@@ -63,7 +63,9 @@ export function PipelinePage() {
 
   useEffect(() => {
     const cur = openEl.current;
-    if (!cur) return;
+    if (!cur) {
+      return;
+    }
     const fresh = data?.elements.find((e) => e.id === cur.id) ?? cur;
     openEl.current = fresh;
     PipelineDrawer.update({ el: fresh, busy });
@@ -79,7 +81,9 @@ export function PipelinePage() {
   const [seenHealth, setSeenHealth] = useState(health);
   if (seenHealth !== health) {
     setSeenHealth(health);
-    if (health) setPaused(health.paused);
+    if (health) {
+      setPaused(health.paused);
+    }
   }
 
   const { togglePause, reprocess, retryStage } = pipelineActions({

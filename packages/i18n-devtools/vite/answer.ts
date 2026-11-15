@@ -22,6 +22,8 @@ export type CatalogEvent = keyof typeof ANSWERS;
  *  unless a test hands it its own. */
 export function answer(event: CatalogEvent, ask: unknown, sets: Sets = appSets): object | null {
   const asked = Asked.safeParse(ask);
-  if (!asked.success) return null;
+  if (!asked.success) {
+    return null;
+  }
   return { at: asked.data.at, ...ANSWERS[event](sets, ask) };
 }

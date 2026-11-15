@@ -120,7 +120,9 @@ function unique(values: string[]): string[] {
 function tally(values: Iterable<string>): Map<string, number> {
   const out = new Map<string, number>();
   for (const value of values) {
-    if (!value) continue;
+    if (!value) {
+      continue;
+    }
     out.set(value, (out.get(value) ?? 0) + 1);
   }
   return out;
@@ -145,7 +147,9 @@ const VENDORS = new Set(['unknown', 'pc', 'apple', 'none']);
 
 function platform(target: string): string {
   const [, second, ...rest] = target.split('-');
-  if (second === undefined) return target;
+  if (second === undefined) {
+    return target;
+  }
   const os = VENDORS.has(second) ? rest : [second, ...rest];
   return os.join('-') || target;
 }
@@ -156,7 +160,9 @@ function sum(rows: InstanceRow[], of: (row: InstanceRow) => number | undefined):
 
 function sizes(rows: InstanceRow[]): Sizes | null {
   const sized = rows.filter((row) => row.users !== undefined && row.titles !== undefined);
-  if (sized.length < SIZE_REPORTERS) return null;
+  if (sized.length < SIZE_REPORTERS) {
+    return null;
+  }
   return { users: sum(sized, (row) => row.users), titles: sum(sized, (row) => row.titles) };
 }
 

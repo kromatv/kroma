@@ -11,7 +11,9 @@ const Workbench = lazy(async () => ({
 }));
 
 function wantsWorkbench(): boolean {
-  if (typeof location === 'undefined') return false;
+  if (typeof location === 'undefined') {
+    return false;
+  }
   const params = new URLSearchParams(location.search);
   return params.has('workbench') || params.has('shot');
 }

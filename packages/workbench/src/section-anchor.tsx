@@ -29,7 +29,9 @@ const CONFIRM_INK: Record<CopyState, ColorToken> = {
 // Quiet rather than hidden: a glyph that exists only under a pointer is one a
 // remote can never find, and this workbench is walked with both.
 function anchorInk(state: CopyState, lit: boolean): ColorToken {
-  if (state !== 'idle') return CONFIRM_INK[state];
+  if (state !== 'idle') {
+    return CONFIRM_INK[state];
+  }
   return lit ? 'accent' : 'textDim';
 }
 
@@ -38,7 +40,9 @@ function anchorInk(state: CopyState, lit: boolean): ColorToken {
 function SectionAnchor({ id }: Readonly<{ id: string }>) {
   const { available, state, copy } = useCopy();
   const onPress = useCallback(() => copy(sectionHref(id)), [copy, id]);
-  if (!available) return null;
+  if (!available) {
+    return null;
+  }
   return (
     <Focusable
       label={ANCHOR_FACE[state].label}

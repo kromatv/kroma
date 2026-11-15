@@ -49,6 +49,8 @@ export function BlurPreferenceProvider({ children }: { children: ReactNode }) {
 }
 export function useBlurPreference(): readonly [boolean, (on: boolean) => void] {
   const value = useContext(Context);
-  if (!value) throw new Error('Blur preferences require BlurPreferenceProvider');
+  if (!value) {
+    throw new Error('Blur preferences require BlurPreferenceProvider');
+  }
   return value;
 }

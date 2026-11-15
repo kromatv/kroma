@@ -19,7 +19,9 @@ export function hiddenModuleIds(
   manifest: readonly ModuleListing[] | undefined,
   registeredIds: readonly string[],
 ): ReadonlySet<string> {
-  if (!manifest) return new Set<string>();
+  if (!manifest) {
+    return new Set<string>();
+  }
   const active = new Set(manifest.filter((m) => m.enabled !== false).map((m) => m.id));
   return new Set(registeredIds.filter((id) => !active.has(id)));
 }
@@ -38,6 +40,8 @@ export function moduleRouteAt(
 ): ModuleRouteMatch {
   const owners = routes.filter((r) => r.path === path);
   const visible = owners.find((r) => !hiddenIds.has(r.moduleId));
-  if (visible) return { kind: 'page', route: visible };
+  if (visible) {
+    return { kind: 'page', route: visible };
+  }
   return owners.length > 0 ? { kind: 'disabled' } : { kind: 'unknown' };
 }

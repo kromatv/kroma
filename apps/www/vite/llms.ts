@@ -23,7 +23,9 @@ async function readGuides(dir: string): Promise<Guide[]> {
     files.map(async (file): Promise<Guide | undefined> => {
       const { name, lang } = parseContentPath(file);
       const slug = name === 'README' ? 'index' : name;
-      if (!isDocSlug(slug)) return undefined;
+      if (!isDocSlug(slug)) {
+        return undefined;
+      }
       return { lang, slug, source: await readFile(join(dir, file), 'utf8') };
     }),
   );
@@ -80,11 +82,15 @@ export function llmsPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = req.url?.split('?')[0] ?? '';
-        if (!path.endsWith('.md') && !path.endsWith('/llms.txt')) return next();
+        if (!path.endsWith('.md') && !path.endsWith('/llms.txt')) {
+          return next();
+        }
         readInput(root)
           .then((input) => {
             const body = agentDocs(input).get(path);
-            if (body === undefined) return next();
+            if (body === undefined) {
+              return next();
+            }
             const type = path.endsWith('.md') ? 'text/markdown' : 'text/plain';
             res.setHeader('content-type', `${type}; charset=utf-8`);
             res.setHeader('cache-control', 'no-cache');
@@ -95,7 +101,9 @@ export function llmsPlugin(): Plugin {
     },
 
     async generateBundle() {
-      if (this.environment?.name !== 'client') return;
+      if (this.environment?.name !== 'client') {
+        return;
+      }
       for (const [path, source] of agentDocs(await readInput(root))) {
         this.emitFile({ type: 'asset', fileName: path.slice(1), source });
       }

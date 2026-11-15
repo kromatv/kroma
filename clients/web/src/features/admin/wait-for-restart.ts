@@ -25,7 +25,9 @@ export async function waitForRestart(
   for (;;) {
     signal?.throwIfAborted();
     const current = await readBootId().catch(() => previous);
-    if (current !== previous) return;
+    if (current !== previous) {
+      return;
+    }
     signal?.throwIfAborted();
     await pause(intervalMs, signal);
   }

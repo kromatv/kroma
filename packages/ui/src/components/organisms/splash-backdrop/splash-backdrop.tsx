@@ -83,7 +83,9 @@ interface SplashBackdropProps {
 /** The share of the full pan a cover walks in `ms` at `DRIFT_PX_PER_S`. */
 function travelShare(width: number, height: number, ms: number): number {
   const span = Math.hypot(width * PAN_X * 2, height * PAN_Y * 2);
-  if (!span) return 0;
+  if (!span) {
+    return 0;
+  }
   return Math.min(1, (DRIFT_PX_PER_S * ms) / 1000 / span);
 }
 
@@ -123,7 +125,9 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   const [slide, setSlide] = useState(0);
   const [fading, setFading] = useState(false);
   useEffect(() => {
-    if (covers.length < 2) return;
+    if (covers.length < 2) {
+      return;
+    }
     const timer = setInterval(() => {
       setSlide((n) => n + 1);
       setFading(true);
@@ -131,7 +135,9 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
     return () => clearInterval(timer);
   }, [covers.length, holdMs]);
   useEffect(() => {
-    if (!fading) return;
+    if (!fading) {
+      return;
+    }
     const timer = setTimeout(() => setFading(false), FADE_MS);
     return () => clearTimeout(timer);
   }, [fading, slide]);
@@ -139,9 +145,13 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   // Warm the next cover through the whole hold, so a dissolve never starts
   // against a half-loaded image.
   useEffect(() => {
-    if (covers.length < 2) return;
+    if (covers.length < 2) {
+      return;
+    }
     const next = safeImageUrl(covers[(slide + 1) % covers.length]?.url ?? null);
-    if (!next) return;
+    if (!next) {
+      return;
+    }
     void prefetchImage(next);
   }, [slide, covers]);
 
@@ -154,7 +164,9 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   const count = Math.max(covers.length, 1);
   const cover = covers[slide % count];
   const previous = fading ? covers[(slide - 1) % count] : undefined;
-  if (!cover) return null;
+  if (!cover) {
+    return null;
+  }
 
   return (
     <Ground tone="dark" style={s.ground}>

@@ -36,14 +36,18 @@ export function useClipEngine(uri: string | null, title: string): ClipEngine {
   });
 
   const shutdown = useCallback(() => {
-    if (!core.current.active) return;
+    if (!core.current.active) {
+      return;
+    }
     core.current.active = false;
     stopNativePlayer(player);
   }, [player]);
   usePlaybackOwner(shutdown);
 
   const fail = useCallback(() => {
-    if (!core.current.active) return;
+    if (!core.current.active) {
+      return;
+    }
     shutdown();
     setFailed(true);
     setWaiting(false);
@@ -51,12 +55,16 @@ export function useClipEngine(uri: string | null, title: string): ClipEngine {
   }, [shutdown]);
 
   useEffect(() => {
-    if (!uri || !core.current.active) return;
+    if (!uri || !core.current.active) {
+      return;
+    }
     void player
       .replaceAsync({ uri, metadata: { title } })
       .catch(fail)
       .finally(() => {
-        if (!core.current.active) stopNativePlayer(player);
+        if (!core.current.active) {
+          stopNativePlayer(player);
+        }
       });
   }, [uri, title, player, fail]);
 
@@ -64,46 +72,72 @@ export function useClipEngine(uri: string | null, title: string): ClipEngine {
     const live = () => core.current.active;
     const subs = [
       player.addListener('statusChange', ({ status }) => {
-        if (!live()) return;
+        if (!live()) {
+          return;
+        }
         if (status === 'error') {
           fail();
           return;
         }
-        if (status === 'loading') setWaiting(true);
-        if (status !== 'readyToPlay') return;
+        if (status === 'loading') {
+          setWaiting(true);
+        }
+        if (status !== 'readyToPlay') {
+          return;
+        }
         setWaiting(false);
-        if (player.duration > 0) setDur(player.duration);
-        if (core.current.autoplayed) return;
+        if (player.duration > 0) {
+          setDur(player.duration);
+        }
+        if (core.current.autoplayed) {
+          return;
+        }
         core.current.autoplayed = true;
         player.play();
       }),
       player.addListener('timeUpdate', ({ currentTime, bufferedPosition }) => {
-        if (!live()) return;
+        if (!live()) {
+          return;
+        }
         const advanced = currentTime - core.current.at;
-        if (player.playing && advanced > 0 && advanced < STALL_JUMP_SEC) setWaiting(false);
-        if (currentTime > STARTED_AFTER_SEC) core.current.started = true;
+        if (player.playing && advanced > 0 && advanced < STALL_JUMP_SEC) {
+          setWaiting(false);
+        }
+        if (currentTime > STARTED_AFTER_SEC) {
+          core.current.started = true;
+        }
         core.current.at = currentTime;
         setCur(currentTime);
         setBuffered(Math.max(currentTime, bufferedPosition));
       }),
       player.addListener('playingChange', ({ isPlaying }) => {
-        if (live()) setPlaying(isPlaying);
+        if (live()) {
+          setPlaying(isPlaying);
+        }
       }),
       player.addListener('playToEnd', () => {
-        if (!live() || !core.current.started) return;
+        if (!live() || !core.current.started) {
+          return;
+        }
         const end = Math.max(player.duration, 0);
-        if (end > 0 && player.currentTime < end - END_SLACK_SEC) return;
+        if (end > 0 && player.currentTime < end - END_SLACK_SEC) {
+          return;
+        }
         setEndedNonce((n) => n + 1);
       }),
     ];
     return () => {
-      for (const sub of subs) sub.remove();
+      for (const sub of subs) {
+        sub.remove();
+      }
     };
   }, [player, fail]);
 
   const seekTo = useCallback(
     (abs: number) => {
-      if (!core.current.active) return;
+      if (!core.current.active) {
+        return;
+      }
       const end = player.duration;
       const clamped = Math.max(0, end > 0 ? Math.min(abs, end - 1) : abs);
       patchPlayer(player, { currentTime: clamped });
@@ -116,9 +150,14 @@ export function useClipEngine(uri: string | null, title: string): ClipEngine {
   const skip = useCallback((delta: number) => seekTo(core.current.at + delta), [seekTo]);
 
   const togglePlay = useCallback(() => {
-    if (!core.current.active) return;
-    if (player.playing) player.pause();
-    else player.play();
+    if (!core.current.active) {
+      return;
+    }
+    if (player.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
   }, [player]);
 
   return {

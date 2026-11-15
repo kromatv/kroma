@@ -20,7 +20,9 @@ import type { MobileAccount } from './storage';
 
 function promptShown(): string {
   const call = passBiometricLock.mock.calls[0];
-  if (!call) throw new Error('the system prompt was never raised');
+  if (!call) {
+    throw new Error('the system prompt was never raised');
+  }
   return call[2];
 }
 

@@ -23,7 +23,9 @@ const maps = new Map<string, TraceMap | null>();
 // once, rather than at each of them.
 function traced(map: unknown): TraceMap | null {
   const raw = map as { mappings?: string } | null | undefined;
-  if (!raw?.mappings) return null;
+  if (!raw?.mappings) {
+    return null;
+  }
   return new TraceMap(raw as ConstructorParameters<typeof TraceMap>[0]);
 }
 
@@ -44,7 +46,9 @@ export async function sourceOf(at: Served, server: ViteDevServer): Promise<Posit
     map = traced(result?.map);
     maps.set(at.url, map);
   }
-  if (!map) return null;
+  if (!map) {
+    return null;
+  }
   const found = originalPositionFor(map, { line: at.line, column: Math.max(0, at.column - 1) });
   return found.line === null ? null : { line: found.line };
 }

@@ -27,12 +27,20 @@ function toCallout(quote: MdNode, lang: 'en' | 'fr') {
   const first = quote.children?.[0];
   const lead = first?.type === 'paragraph' ? first.children?.[0] : undefined;
   const match = lead?.type === 'text' ? MARKER.exec(lead.value ?? '') : null;
-  if (!first || !lead || !match) return;
+  if (!first || !lead || !match) {
+    return;
+  }
   const kind = match[1]?.toLowerCase() as Kind;
   lead.value = (lead.value ?? '').slice(match[0].length);
-  if (lead.value === '') first.children?.shift();
-  if (first.children?.[0]?.type === 'break') first.children.shift();
-  if (first.children?.length === 0) quote.children?.shift();
+  if (lead.value === '') {
+    first.children?.shift();
+  }
+  if (first.children?.[0]?.type === 'break') {
+    first.children.shift();
+  }
+  if (first.children?.length === 0) {
+    quote.children?.shift();
+  }
   quote.data = { hName: 'aside', hProperties: { className: ['callout', `callout-${kind}`] } };
   quote.children?.unshift({
     type: 'paragraph',
@@ -42,7 +50,9 @@ function toCallout(quote: MdNode, lang: 'en' | 'fr') {
 }
 
 function visit(node: MdNode, fn: (node: MdNode) => void) {
-  for (const child of node.children ?? []) visit(child, fn);
+  for (const child of node.children ?? []) {
+    visit(child, fn);
+  }
   fn(node);
 }
 
@@ -53,7 +63,9 @@ export function remarkAlerts() {
   return (tree: MdNode, file: { path?: string }) => {
     const lang = langOf(file.path);
     visit(tree, (node) => {
-      if (node.type === 'blockquote') toCallout(node, lang);
+      if (node.type === 'blockquote') {
+        toCallout(node, lang);
+      }
     });
   };
 }

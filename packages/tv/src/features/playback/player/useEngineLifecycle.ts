@@ -55,7 +55,9 @@ export interface EngineLifecycle {
 function openingAudioIndex(item: MediaItem, audioLanguage?: string | null): number {
   const tracks = audioTracksOf(item);
   const preferred = preferredAudioIndex(tracks, audioLanguage);
-  if (preferred != null) return preferred;
+  if (preferred != null) {
+    return preferred;
+  }
   return (tracks.find((tr) => tr.default) ?? tracks[0])?.index ?? 0;
 }
 
@@ -105,7 +107,9 @@ export function useEngineLifecycle(
   // Keyed by id so a manual switch during playback is never undone.
   const prefItemRef = useRef(item.id);
   useEffect(() => {
-    if (prefItemRef.current === item.id) return;
+    if (prefItemRef.current === item.id) {
+      return;
+    }
     prefItemRef.current = item.id;
     setAudioIndex(openingAudioIndex(item, audioLanguage));
   }, [item, audioLanguage]);
@@ -174,21 +178,29 @@ export function useEngineLifecycle(
     setBuiltFor(engineDeps);
     setReady(false);
     setDecodedAspect(undefined);
-    if (startSec != null) setCur(startSec);
+    if (startSec != null) {
+      setCur(startSec);
+    }
   }
 
   useEffect(() => {
     startedRef.current = false;
-    if (startSec == null) return;
+    if (startSec == null) {
+      return;
+    }
 
     const listeners: EngineListeners = {
       onTime: (s) => {
         // The engine can briefly report 0 during the initial open.
-        if (!startedRef.current && startSec != null && s < startSec - 2) return;
+        if (!startedRef.current && startSec != null && s < startSec - 2) {
+          return;
+        }
         setCur(s);
       },
       onDuration: (s) => {
-        if (s > 0) setDur(s);
+        if (s > 0) {
+          setDur(s);
+        }
       },
       onBuffered: setBufEnd,
       onPlay: () => {
@@ -212,7 +224,9 @@ export function useEngineLifecycle(
         // Ready means it works: clear a premature watchdog error, whose "codec not
         // supported" toast would otherwise linger over a playing video.
         setError(null);
-        if (!startedRef.current) engineRef.current?.play();
+        if (!startedRef.current) {
+          engineRef.current?.play();
+        }
       },
     };
 
@@ -229,7 +243,9 @@ export function useEngineLifecycle(
       dom: { video: videoRef.current, nativeHls: env.nativeHls },
       listeners,
     });
-    if (!engine) return; // <video> surface not mounted yet; rebuild next render
+    if (!engine) {
+      return;
+    } // <video> surface not mounted yet; rebuild next render
     engineRef.current = engine;
     setAudioFilterSupported(engine.audioFilterSupported?.() ?? true);
     return () => {
@@ -257,7 +273,9 @@ export function useEngineLifecycle(
   // AVPlay is excluded: it reports its own prepare errors.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- loadBeat is an intentional dep, not read in the body; each buffering beat re-arms the grace timer (see note below).
   useEffect(() => {
-    if (surface === 'avplay' || ready || error) return;
+    if (surface === 'avplay' || ready || error) {
+      return;
+    }
     // libVLC on 10-bit HEVC at a deep resume point routinely takes 20s+ to reach
     // ready, and each buffering beat re-arms this timer, so only a silent load trips it.
     const graceMs = surface === 'mpv' ? 30000 : 15000;
@@ -284,7 +302,9 @@ export function useEngineLifecycle(
   // Re-anchor the resume position so the rebuilt engine resumes here, not at 0.
   const setEngine = useCallback(
     (p: EnginePref) => {
-      if (p === enginePref) return;
+      if (p === enginePref) {
+        return;
+      }
       const pos = engineRef.current?.position() ?? 0;
       persistEnginePref(p);
       setStartSec(pos);

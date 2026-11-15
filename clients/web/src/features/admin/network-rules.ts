@@ -25,8 +25,12 @@ function isIpv6(host: string): boolean {
  * field means any host. */
 export function parseHostPattern(input: string): HostPattern {
   const host = input.trim().toLowerCase().replace(/\.$/, '');
-  if (!host) return { ok: true, host: null };
-  if (isIpv6(host)) return { ok: true, host };
+  if (!host) {
+    return { ok: true, host: null };
+  }
+  if (isIpv6(host)) {
+    return { ok: true, host };
+  }
   const name = host.startsWith(WILDCARD) ? host.slice(WILDCARD.length) : host;
   return isHostName(name) ? { ok: true, host } : { ok: false };
 }
@@ -64,7 +68,9 @@ const ADDRESS_RANGE = /^[0-9a-fA-F:.]+\/\d{1,3}$/;
 // `null` for an empty field, `undefined` for one that is not a port.
 function parsePort(input: string): number | null | undefined {
   const text = input.trim();
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
   const port = Number(text);
   return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : undefined;
 }
@@ -98,11 +104,17 @@ export function ruleFromDraft(
   id: string,
 ): { ok: true; rule: Rule } | { ok: false; field: 'host' | 'port' | 'address' } {
   const host = parseHostPattern(draft.host);
-  if (!host.ok) return { ok: false, field: 'host' };
+  if (!host.ok) {
+    return { ok: false, field: 'host' };
+  }
   const port = parsePort(draft.port);
-  if (port === undefined) return { ok: false, field: 'port' };
+  if (port === undefined) {
+    return { ok: false, field: 'port' };
+  }
   const address = draft.address.trim();
-  if (address && !ADDRESS_RANGE.test(address)) return { ok: false, field: 'address' };
+  if (address && !ADDRESS_RANGE.test(address)) {
+    return { ok: false, field: 'address' };
+  }
   const note = draft.note.trim().slice(0, NOTE_MAX);
   return {
     ok: true,
@@ -123,7 +135,9 @@ export function ruleFromDraft(
 export function freshRuleId(rules: readonly Rule[]): string {
   const taken = new Set(rules.map((rule) => rule.id));
   let n = 1;
-  while (taken.has(`r-${n}`)) n += 1;
+  while (taken.has(`r-${n}`)) {
+    n += 1;
+  }
   return `r-${n}`;
 }
 
@@ -133,7 +147,9 @@ export function moveRule(rules: Rule[], index: number, offset: -1 | 1): Rule[] {
   const target = index + offset;
   const moving = rules[index];
   const neighbour = rules[target];
-  if (!moving || !neighbour) return rules;
+  if (!moving || !neighbour) {
+    return rules;
+  }
   const next = [...rules];
   next[index] = neighbour;
   next[target] = moving;

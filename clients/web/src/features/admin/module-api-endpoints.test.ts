@@ -25,7 +25,7 @@ installHarness();
 
 describe('the module endpoints', () => {
   const bodyOf = (init: RequestInit | undefined): unknown =>
-    JSON.parse(String(init?.body ?? 'null'));
+    JSON.parse(typeof init?.body === 'string' ? init.body : 'null');
 
   it('lists the installed modules', async () => {
     const rows: AdminModule[] = [

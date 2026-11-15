@@ -25,7 +25,9 @@ export function useScrollOffset(
 ) {
   const onScroll = useMemo(() => {
     const listener = (event: ScrollEvent) => onOffset(event.nativeEvent.contentOffset[axis]);
-    if (driven === null) return listener;
+    if (driven === null) {
+      return listener;
+    }
     return Animated.event([{ nativeEvent: { contentOffset: { [axis]: driven } } }], {
       useNativeDriver: true,
       listener,

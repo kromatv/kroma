@@ -44,8 +44,11 @@ import { useEntryFocus } from './use-entry-focus';
 
 function attach(box: RefObject<View | null>, outer: Ref<View> | undefined, view: View | null) {
   box.current = view;
-  if (typeof outer === 'function') outer(view);
-  else if (outer) outer.current = view;
+  if (typeof outer === 'function') {
+    outer(view);
+  } else if (outer) {
+    outer.current = view;
+  }
 }
 
 function Focusable<R extends AnySv = AnySv>({
@@ -175,14 +178,18 @@ function Focusable<R extends AnySv = AnySv>({
   // the only choke point that can swallow the tail of the press that opened
   // the screen.
   const press = useCallback(() => {
-    if (disabled || inputHeld() || pressGuardActive()) return;
+    if (disabled || inputHeld() || pressGuardActive()) {
+      return;
+    }
     onPress?.();
   }, [disabled, onPress, inputHeld, pressGuardActive]);
   useLayoutEffect(() => {
     pressRef.current = press;
   });
   const longPress = useCallback(() => {
-    if (disabled || inputHeld() || pressGuardActive()) return;
+    if (disabled || inputHeld() || pressGuardActive()) {
+      return;
+    }
     onLongPress?.();
   }, [disabled, onLongPress, inputHeld, pressGuardActive]);
 

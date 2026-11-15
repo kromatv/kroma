@@ -168,6 +168,8 @@ function SizeCell({
       <Field.Input type="number" placeholder="0" />
     </Field.Root>
   );
-  if (narrow) return <Box flex>{entry}</Box>;
+  if (narrow) {
+    return <Box flex>{entry}</Box>;
+  }
   return <Table.Cell>{entry}</Table.Cell>;
 }

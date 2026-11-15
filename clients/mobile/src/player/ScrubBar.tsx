@@ -83,7 +83,9 @@ export function ScrubBar({
   const tap = useTapGesture({
     runOnJS: true,
     onDeactivate: (e) => {
-      if (!e.canceled) onSeek(toTime(e.x));
+      if (!e.canceled) {
+        onSeek(toTime(e.x));
+      }
       setPreview(null);
     },
   });

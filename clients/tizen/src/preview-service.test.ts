@@ -52,7 +52,9 @@ function load(options: Options = {}): Harness {
       return contents === null ? 0 : contents.length;
     },
     read: (n: number) => {
-      if (options.readFails) throw new Error('stream read failed');
+      if (options.readFails) {
+        throw new Error('stream read failed');
+      }
       return String(contents).slice(0, n);
     },
     close: () => {
@@ -76,7 +78,9 @@ function load(options: Options = {}): Harness {
         }
         onDir({
           resolve: () => {
-            if (options.fileMissing) throw new Error('no preview.json');
+            if (options.fileMissing) {
+              throw new Error('no preview.json');
+            }
             return {
               openStream: (
                 _mode: string,
@@ -126,7 +130,9 @@ function load(options: Options = {}): Harness {
     },
     // The service chains promises; a few microtask turns settle them all.
     settle: async () => {
-      for (let i = 0; i < 10; i += 1) await Promise.resolve();
+      for (let i = 0; i < 10; i += 1) {
+        await Promise.resolve();
+      }
     },
   } as Harness;
 }
@@ -269,7 +275,9 @@ describe('when the runtime is hostile', () => {
     );
 
     expect(() => module.exports.onRequest()).not.toThrow();
-    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+    for (let i = 0; i < 10; i += 1) {
+      await Promise.resolve();
+    }
     expect(exits).toBeGreaterThanOrEqual(1);
   });
 });

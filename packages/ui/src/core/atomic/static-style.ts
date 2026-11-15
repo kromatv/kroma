@@ -27,5 +27,7 @@ export function staticStates(style: Record<string, unknown>): StaticStates {
  *  spread, `flatten` and the renderer's own compiler see only the longhands. */
 export function markStatic(style: Record<string, unknown>, states?: StaticStates): void {
   Object.defineProperty(style, STATIC, { value: true });
-  if (states) Object.defineProperty(style, STATES, { value: Object.freeze(states) });
+  if (states) {
+    Object.defineProperty(style, STATES, { value: Object.freeze(states) });
+  }
 }

@@ -59,8 +59,11 @@ export function FormatEditor({
     setRows((was) => withoutCondition(was, id));
     requestAnimationFrame(() => {
       const target = next ? removers.current.get(next.id) : null;
-      if (target) target.focus();
-      else (addButton.current as unknown as FocusHost | null)?.focus?.();
+      if (target) {
+        target.focus();
+      } else {
+        (addButton.current as unknown as FocusHost | null)?.focus?.();
+      }
     });
   };
 
@@ -119,8 +122,11 @@ export function FormatEditor({
                 key={row.id}
                 condition={row.condition}
                 removeRef={(host: FocusHost | null) => {
-                  if (host) removers.current.set(row.id, host);
-                  else removers.current.delete(row.id);
+                  if (host) {
+                    removers.current.set(row.id, host);
+                  } else {
+                    removers.current.delete(row.id);
+                  }
                 }}
                 onChange={(next) => setRows((was) => withCondition(was, row.id, next))}
                 onRemove={() => remove(row.id)}

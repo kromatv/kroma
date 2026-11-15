@@ -88,7 +88,9 @@ function Root({
   // controller never receives a press, because this app's focus is virtual and
   // the system focus engine has no reason to move into it.
   useOverlay(surface);
-  if (!open || hosted) return null;
+  if (!open || hosted) {
+    return null;
+  }
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <ScopeCarrier>{surface}</ScopeCarrier>
@@ -192,7 +194,9 @@ function defaultHeader(at: {
   titleId: string;
   descriptionId: string;
 }): ReactNode {
-  if (!at.showsTitle && !at.description) return null;
+  if (!at.showsTitle && !at.description) {
+    return null;
+  }
   return (
     <Header>
       {at.showsTitle ? (

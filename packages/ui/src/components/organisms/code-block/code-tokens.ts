@@ -66,7 +66,9 @@ const SCANNERS: readonly (readonly [ScanKind, RegExp])[] = [
 // `word` is the fallback identifier scanner: whether its match is a keyword is
 // the only thing the scanner list cannot say for itself.
 function kindOf(scanner: ScanKind, text: string): TokenKind {
-  if (scanner !== 'word') return scanner;
+  if (scanner !== 'word') {
+    return scanner;
+  }
   return KEYWORDS.has(text) ? 'keyword' : 'plain';
 }
 
@@ -74,7 +76,9 @@ function scanAt(code: string, from: number): Token | null {
   for (const [kind, pattern] of SCANNERS) {
     pattern.lastIndex = from;
     const hit = pattern.exec(code);
-    if (!hit?.[0]) continue;
+    if (!hit?.[0]) {
+      continue;
+    }
     return { text: hit[0], kind: kindOf(kind, hit[0]) };
   }
   return null;
@@ -86,7 +90,9 @@ function tokenize(code: string): Token[] {
   const out: Token[] = [];
   let plain = '';
   const flush = () => {
-    if (plain) out.push({ text: plain, kind: 'plain' });
+    if (plain) {
+      out.push({ text: plain, kind: 'plain' });
+    }
     plain = '';
   };
 
@@ -119,8 +125,12 @@ function lines(code: string): Token[][] {
   for (const token of tokenize(code)) {
     const parts = token.text.split('\n');
     parts.forEach((part, at) => {
-      if (at > 0) out.push([]);
-      if (part) out.at(-1)?.push({ text: part, kind: token.kind });
+      if (at > 0) {
+        out.push([]);
+      }
+      if (part) {
+        out.at(-1)?.push({ text: part, kind: token.kind });
+      }
     });
   }
   return out;

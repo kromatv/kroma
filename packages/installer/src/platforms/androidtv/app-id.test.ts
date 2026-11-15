@@ -4,7 +4,9 @@ import { androidAppId } from './app-id';
 const appJson = vi.hoisted(() => ({ json: '' }));
 vi.mock('node:fs', () => ({
   readFileSync: () => {
-    if (appJson.json === '') throw new Error('ENOENT');
+    if (appJson.json === '') {
+      throw new Error('ENOENT');
+    }
     return appJson.json;
   },
 }));

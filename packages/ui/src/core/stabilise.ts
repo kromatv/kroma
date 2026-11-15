@@ -34,9 +34,13 @@ const rank = (key: string) => (RN_SHORTHANDS.has(key) ? 0 : 1);
  * A value the build compiled is registered already and comes back untouched.
  */
 export function stabilise(merged: object): Record<string, unknown> {
-  if (isStaticStyle(merged)) return merged;
+  if (isStaticStyle(merged)) {
+    return merged;
+  }
   const out: Record<string, unknown> = {};
   const entries = Object.entries(merged).sort(([a], [b]) => rank(a) - rank(b) || (a < b ? -1 : 1));
-  for (const [key, value] of entries) out[key] = value;
+  for (const [key, value] of entries) {
+    out[key] = value;
+  }
   return Object.freeze(StyleSheet.create({ s: out }).s);
 }

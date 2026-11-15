@@ -87,14 +87,18 @@ function ScoreRow({
 }
 
 function scoreInk(score: number): 'text' | 'textDim' | 'dangerHover' {
-  if (score === 0) return 'textDim';
+  if (score === 0) {
+    return 'textDim';
+  }
   return score < 0 ? 'dangerHover' : 'text';
 }
 
 function UpgradeReachWarning({ profile }: Readonly<{ profile: QualityProfile }>) {
   const t = useT();
   const best = bestPositiveScore(profile);
-  if (best === 0 || profile.upgradeUntilScore >= best) return null;
+  if (best === 0 || profile.upgradeUntilScore >= best) {
+    return null;
+  }
   return (
     <Callout.Root tone="accent" icon="alert-triangle">
       <Callout.Title>{t('acq.upgradeReachTitle')}</Callout.Title>

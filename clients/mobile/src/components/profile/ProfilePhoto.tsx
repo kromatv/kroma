@@ -35,13 +35,17 @@ export function ProfilePhoto() {
       quality: 0.9,
     });
     const asset = result.assets?.[0];
-    if (result.canceled || !asset) return;
+    if (result.canceled || !asset) {
+      return;
+    }
     setAvatarBusy(true);
     setAvatarNote(null);
     try {
       const blob = await (await fetch(asset.uri)).blob();
       const { avatarUrl } = await client.accounts.uploadAvatar(blob);
-      if (user) setUser({ ...user, avatarUrl });
+      if (user) {
+        setUser({ ...user, avatarUrl });
+      }
     } catch {
       setAvatarNote({ text: t('account.avatarFailed'), ok: false });
     } finally {

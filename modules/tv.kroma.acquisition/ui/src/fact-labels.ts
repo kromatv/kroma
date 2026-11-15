@@ -67,7 +67,9 @@ export function qualityLabel(quality: string): string | null {
   const [head, tail] = quality.split('-');
   const resolution = QUALITY_RESOLUTION[tail ?? head ?? ''] ?? null;
   const source = QUALITY_SOURCE[head ?? ''] ?? null;
-  if (source === null) return resolution;
+  if (source === null) {
+    return resolution;
+  }
   return resolution === null || tail === undefined ? source : `${source} ${resolution}`;
 }
 
@@ -75,7 +77,11 @@ export function qualityLabel(quality: string): string | null {
  *  existed in standard definition. Null when the id names none. */
 export function qualityResolution(quality: string): string | null {
   const [head, tail] = quality.split('-');
-  if (tail !== undefined) return QUALITY_RESOLUTION[tail] ?? null;
-  if (SD_ONLY_SOURCES.has(head ?? '')) return QUALITY_RESOLUTION.sd ?? null;
+  if (tail !== undefined) {
+    return QUALITY_RESOLUTION[tail] ?? null;
+  }
+  if (SD_ONLY_SOURCES.has(head ?? '')) {
+    return QUALITY_RESOLUTION.sd ?? null;
+  }
   return QUALITY_RESOLUTION[head ?? ''] ?? null;
 }

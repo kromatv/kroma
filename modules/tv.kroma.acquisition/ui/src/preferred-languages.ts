@@ -19,7 +19,9 @@ export function dubFormats(formats: readonly CustomFormat[]): Map<Dub, CustomFor
   const found = new Map<Dub, CustomFormat>();
   for (const dub of DUB_ORDER) {
     const match = formats.find((format) => matches(format.name, dub));
-    if (match) found.set(dub, match);
+    if (match) {
+      found.set(dub, match);
+    }
   }
   return found;
 }
@@ -60,8 +62,11 @@ export function withDubScores(
 ): QualityProfile {
   const formatScores = { ...profile.formatScores };
   for (const { format, score } of scores) {
-    if (score === 0) delete formatScores[format.id];
-    else formatScores[format.id] = score;
+    if (score === 0) {
+      delete formatScores[format.id];
+    } else {
+      formatScores[format.id] = score;
+    }
   }
   return { ...profile, formatScores };
 }

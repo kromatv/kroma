@@ -17,7 +17,9 @@ const base = mkdtempSync(join(tmpdir(), 'kroma-samsung-profile-'));
 function kept(name: string, files: readonly string[]): string {
   const directory = join(base, name);
   mkdirSync(directory, { recursive: true });
-  for (const file of files) writeFileSync(join(directory, file), LISTED_CERTIFICATE);
+  for (const file of files) {
+    writeFileSync(join(directory, file), LISTED_CERTIFICATE);
+  }
   return directory;
 }
 

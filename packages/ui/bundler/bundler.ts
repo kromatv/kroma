@@ -46,7 +46,9 @@ export interface KromaUiOptions {
 
 function exportName(slug: string): string {
   let out = 'Icon';
-  for (const word of slug.split('-')) out += word.charAt(0).toUpperCase() + word.slice(1);
+  for (const word of slug.split('-')) {
+    out += word.charAt(0).toUpperCase() + word.slice(1);
+  }
   return out;
 }
 
@@ -70,10 +72,14 @@ function iconModules(dir: string, pkg: TablerPkg): Map<string, string> {
   for (const match of src.matchAll(BARREL_EXPORT)) {
     const names = match[1];
     const file = match[2];
-    if (!names || !file) continue;
+    if (!names || !file) {
+      continue;
+    }
     const path = join(dir, 'dist', 'esm', 'icons', `${file}.mjs`);
     for (const alias of names.matchAll(EXPORTED_AS)) {
-      if (alias[1]) out.set(alias[1], path);
+      if (alias[1]) {
+        out.set(alias[1], path);
+      }
     }
   }
   return out;
@@ -95,22 +101,30 @@ function walk(dir: string, passes: readonly SourcePass[]): void {
     return;
   }
   for (const e of entries) {
-    if (e.name.startsWith('.') || SKIP.has(e.name)) continue;
+    if (e.name.startsWith('.') || SKIP.has(e.name)) {
+      continue;
+    }
     const p = join(dir, e.name);
     if (e.isDirectory()) {
       walk(p, passes);
       continue;
     }
-    if (!SOURCE_EXT.test(e.name)) continue;
+    if (!SOURCE_EXT.test(e.name)) {
+      continue;
+    }
     const wanted = passes.filter((pass) => pass.wants(e.name));
-    if (wanted.length === 0) continue;
+    if (wanted.length === 0) {
+      continue;
+    }
     let source: string;
     try {
       source = readFileSync(p, 'utf8');
     } catch {
       continue;
     }
-    for (const pass of wanted) pass.read(source);
+    for (const pass of wanted) {
+      pass.read(source);
+    }
   }
 }
 
@@ -125,19 +139,29 @@ export function sourceRoots(repoRoot: string): string[] {
  * scan costs, and a second collector only adds a regex over source already
  * read. */
 export function walkSources(roots: readonly string[], passes: readonly SourcePass[]): void {
-  if (passes.length === 0) return;
-  for (const root of roots) walk(root, passes);
-  for (const pass of passes) pass.done();
+  if (passes.length === 0) {
+    return;
+  }
+  for (const root of roots) {
+    walk(root, passes);
+  }
+  for (const pass of passes) {
+    pass.done();
+  }
 }
 
 /** Whether a walk of `roots` reads that file, so a watcher can place a change
  * against the scan without walking again. */
 export function walkReaches(roots: readonly string[], file: string): boolean {
   const root = roots.find((r) => file.startsWith(`${r}${sep}`));
-  if (!root) return false;
+  if (!root) {
+    return false;
+  }
   const parts = file.slice(root.length + 1).split(sep);
   const name = parts.pop();
-  if (!name || name.startsWith('.') || !SOURCE_EXT.test(name)) return false;
+  if (!name || name.startsWith('.') || !SOURCE_EXT.test(name)) {
+    return false;
+  }
   return parts.every((part) => !part.startsWith('.') && !SKIP.has(part));
 }
 
@@ -158,14 +182,18 @@ const CACHE = new Map<string, IconScan>();
 // Not `localeCompare`: this ordering ends up in generated source, so it must be
 // identical on every machine rather than follow the build's locale.
 function byCodeUnit(a: string, b: string): number {
-  if (a === b) return 0;
+  if (a === b) {
+    return 0;
+  }
   return a < b ? -1 : 1;
 }
 
 function iconScan(repoRoot: string, pkg: TablerPkg): IconScan {
   const key = `${repoRoot}|${pkg}`;
   const hit = CACHE.get(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const fresh: IconScan = {
     available: iconModules(tablerDir(repoRoot, pkg), pkg),
     used: new Set(['IconHelpCircle']), // the fallback, always drawn
@@ -181,16 +209,22 @@ function absorb(scan: IconScan, source: string): boolean {
   let grew = false;
   for (const [, slug] of source.matchAll(LITERAL)) {
     const name = exportName(slug as string);
-    if (!scan.available.has(name) || scan.used.has(name)) continue;
+    if (!scan.available.has(name) || scan.used.has(name)) {
+      continue;
+    }
     scan.used.add(name);
     grew = true;
   }
-  if (grew) scan.subset = undefined;
+  if (grew) {
+    scan.subset = undefined;
+  }
   return grew;
 }
 
 function scanPass(scan: IconScan): SourcePass | null {
-  if (scan.walked) return null;
+  if (scan.walked) {
+    return null;
+  }
   return {
     wants: (name) => !NOT_SHIPPED.test(name),
     read(source) {
@@ -225,7 +259,9 @@ function emit(scan: IconScan): Subset {
 function iconSubset(repoRoot: string, pkg: TablerPkg): Subset {
   const scan = iconScan(repoRoot, pkg);
   const pass = scanPass(scan);
-  if (pass) walkSources(sourceRoots(repoRoot), [pass]);
+  if (pass) {
+    walkSources(sourceRoots(repoRoot), [pass]);
+  }
   scan.subset ??= emit(scan);
   return scan.subset;
 }
@@ -233,7 +269,9 @@ function iconSubset(repoRoot: string, pkg: TablerPkg): Subset {
 // Both adapters match the module by path: a rename would disable the swap
 // silently, in production builds only, under a green build.
 function assertTargetExists(repoRoot: string): void {
-  if (existsSync(join(repoRoot, GLYPH_SOURCE))) return;
+  if (existsSync(join(repoRoot, GLYPH_SOURCE))) {
+    return;
+  }
   throw new Error(
     `[kroma-ui] ${GLYPH_SOURCE} not found under ${repoRoot}. The icon subset is keyed on that path; update GLYPH_SOURCE in @kromatv/ui/bundler if the module moved.`,
   );
@@ -268,14 +306,18 @@ export const kromaUi = {
    * the server transforms names since: the glyph module reloads with the new
    * icon in it, so a freshly typed name draws without a restart. */
   vite({ repoRoot, icons = 'subset' }: KromaUiOptions): VitePluginLike {
-    if (icons === 'subset') assertTargetExists(repoRoot);
+    if (icons === 'subset') {
+      assertTargetExists(repoRoot);
+    }
     const pkg: TablerPkg = '@tabler/icons-react';
     const target = join(repoRoot, GLYPH_SOURCE);
     let server: ViteServerLike | undefined;
     return {
       name: 'kroma-ui',
       load(id) {
-        if (icons === 'full' || !id.endsWith(GLYPH_SOURCE)) return null;
+        if (icons === 'full' || !id.endsWith(GLYPH_SOURCE)) {
+          return null;
+        }
         const { code, note } = iconSubset(repoRoot, pkg);
         this.info?.(note);
         return code;
@@ -284,10 +326,16 @@ export const kromaUi = {
         server = dev;
       },
       transform(code, id) {
-        if (!server || icons === 'full') return undefined;
+        if (!server || icons === 'full') {
+          return undefined;
+        }
         const [file = ''] = id.split('?');
-        if (file.includes(`${sep}node_modules${sep}`) || !SOURCE_EXT.test(file)) return undefined;
-        if (file.endsWith(GLYPH_SOURCE) || !absorb(iconScan(repoRoot, pkg), code)) return undefined;
+        if (file.includes(`${sep}node_modules${sep}`) || !SOURCE_EXT.test(file)) {
+          return undefined;
+        }
+        if (file.endsWith(GLYPH_SOURCE) || !absorb(iconScan(repoRoot, pkg), code)) {
+          return undefined;
+        }
         for (const module of server.moduleGraph.getModulesByFile(target) ?? []) {
           server.reloadModule(module);
         }
@@ -308,7 +356,9 @@ export const kromaUi = {
    * the crawl, which makes the two modes agree; the scan it costs every
    * `expo start` is ~80ms. */
   metro(config: MetroConfigLike, { repoRoot, icons = 'subset' }: KromaUiOptions): MetroConfigLike {
-    if (icons === 'full') return config;
+    if (icons === 'full') {
+      return config;
+    }
     assertTargetExists(repoRoot);
 
     const { code, note } = iconSubset(repoRoot, '@tabler/icons-react-native');

@@ -96,7 +96,9 @@ export function defineModule<Exports = unknown>(
 function normalizeLocales(
   locales: DefineModuleOptions['locales'],
 ): Record<string, Record<string, string>> | undefined {
-  if (!locales) return undefined;
+  if (!locales) {
+    return undefined;
+  }
   const out: Record<string, Record<string, string>> = {};
   for (const [key, catalog] of Object.entries(locales)) {
     const code = key.replace(/^.*\//, '').replace(/\.json$/, '');

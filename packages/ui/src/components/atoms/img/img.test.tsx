@@ -35,7 +35,9 @@ describe('Img', () => {
   it('waits transparent for its own load, then fades in', () => {
     const { container } = render(el({ src: 'a.jpg' }));
     const img = main(container);
-    if (!img) throw new Error('no <img> rendered');
+    if (!img) {
+      throw new Error('no <img> rendered');
+    }
 
     expect(reveal(img)).toBe('wait');
     expect(img.getAttribute('loading')).toBe('lazy');
@@ -72,7 +74,9 @@ describe('Img', () => {
   it('drops the image when the source fails to load', () => {
     const { container } = render(el({ src: 'bad.jpg', background: 'red' }));
     const img = main(container);
-    if (!img) throw new Error('no <img> rendered');
+    if (!img) {
+      throw new Error('no <img> rendered');
+    }
     fireEvent.error(img);
     expect(main(container)).toBeNull();
   });
@@ -85,7 +89,9 @@ describe('Img', () => {
 
     rerender(el({ src: 'bad.jpg', fallback }));
     const img = main(container);
-    if (!img) throw new Error('no <img> rendered');
+    if (!img) {
+      throw new Error('no <img> rendered');
+    }
     fireEvent.error(img);
     expect(container.querySelector('[data-testid="fb"]')).not.toBeNull();
   });
@@ -95,7 +101,9 @@ describe('Img', () => {
     const { container } = render(el({ src: 'a.jpg', placeholder }));
     expect(container.querySelector('[data-testid="ph"]')).not.toBeNull();
     const img = main(container);
-    if (!img) throw new Error('no <img> rendered');
+    if (!img) {
+      throw new Error('no <img> rendered');
+    }
     fireEvent.load(img);
     await frame();
     expect(container.querySelector('[data-testid="ph"]')).toBeNull();
@@ -137,20 +145,28 @@ describe('Img', () => {
     try {
       const { container, rerender } = render(el({ src: 'a.jpg', duration: 100 }));
       const first = main(container);
-      if (!first) throw new Error('no <img> rendered');
+      if (!first) {
+        throw new Error('no <img> rendered');
+      }
       fireEvent.load(first);
 
       rerender(el({ src: 'b.jpg', duration: 100 }));
       expect(under(container)?.getAttribute('src')).toBe('a.jpg');
       const next = main(container);
-      if (!next) throw new Error('no incoming <img> rendered');
+      if (!next) {
+        throw new Error('no incoming <img> rendered');
+      }
       expect(next.getAttribute('src')).toBe('b.jpg');
       expect(reveal(next)).toBe('wait');
 
       fireEvent.load(next);
-      act(() => vi.advanceTimersByTime(16));
+      act(() => {
+        vi.advanceTimersByTime(16);
+      });
 
-      act(() => vi.advanceTimersByTime(100));
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
       expect(under(container)).toBeNull();
     } finally {
       vi.useRealTimers();
@@ -160,12 +176,16 @@ describe('Img', () => {
   it('gives each source its own reveal, keyed on the source', async () => {
     const { container, rerender } = render(el({ src: 'a.jpg', duration: 100 }));
     const first = main(container);
-    if (!first) throw new Error('no <img> rendered');
+    if (!first) {
+      throw new Error('no <img> rendered');
+    }
     fireEvent.load(first);
     rerender(el({ src: 'b.jpg', duration: 100 }));
 
     const next = main(container);
-    if (!next) throw new Error('no incoming <img> rendered');
+    if (!next) {
+      throw new Error('no incoming <img> rendered');
+    }
     expect(next.getAttribute('src')).toBe('b.jpg');
     expect(next).not.toBe(first);
     expect(reveal(next)).toBe('wait');
@@ -176,7 +196,9 @@ describe('Img', () => {
     const placeholder = createElement('span', { 'data-testid': 'ph' });
     const { container, rerender } = render(el({ src: 'a.jpg', duration: 100, placeholder }));
     const first = main(container);
-    if (!first) throw new Error('no <img> rendered');
+    if (!first) {
+      throw new Error('no <img> rendered');
+    }
     fireEvent.load(first);
     rerender(el({ src: 'b.jpg', duration: 100, placeholder }));
 
@@ -195,9 +217,13 @@ describe('Img', () => {
         const { container } = render(el({ src: 'a.jpg', background: 'red', opaque: true }));
         expect(box(container)).not.toBe(bare());
         const img = main(container);
-        if (!img) throw new Error('no <img> rendered');
+        if (!img) {
+          throw new Error('no <img> rendered');
+        }
         fireEvent.load(img);
-        act(() => vi.advanceTimersByTime(400));
+        act(() => {
+          vi.advanceTimersByTime(400);
+        });
         expect(box(container)).toBe(bare());
       } finally {
         vi.useRealTimers();
@@ -210,9 +236,13 @@ describe('Img', () => {
         const { container } = render(el({ src: 'a.jpg', background: 'red' }));
         const filled = box(container);
         const img = main(container);
-        if (!img) throw new Error('no <img> rendered');
+        if (!img) {
+          throw new Error('no <img> rendered');
+        }
         fireEvent.load(img);
-        act(() => vi.advanceTimersByTime(400));
+        act(() => {
+          vi.advanceTimersByTime(400);
+        });
         expect(box(container)).toBe(filled);
       } finally {
         vi.useRealTimers();
@@ -239,7 +269,9 @@ describe('Img', () => {
       expect(frame.hasAttribute('data-kroma-art-in')).toBe(false);
 
       const img = main(container);
-      if (!img) throw new Error('no <img> rendered');
+      if (!img) {
+        throw new Error('no <img> rendered');
+      }
       fireEvent.load(img);
 
       expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
@@ -257,7 +289,9 @@ describe('Img', () => {
     it('lets the unit go when the art fails or goes away', () => {
       const { container, rerender } = render(inUnit({ src: 'bad.jpg' }));
       const img = main(container);
-      if (!img) throw new Error('no <img> rendered');
+      if (!img) {
+        throw new Error('no <img> rendered');
+      }
       fireEvent.error(img);
       expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(false);
 
@@ -272,7 +306,9 @@ describe('Img', () => {
   it('skips the underlay when noCrossFade is set', () => {
     const { container, rerender } = render(el({ src: 'a.jpg', noCrossFade: true }));
     const first = main(container);
-    if (!first) throw new Error('no <img> rendered');
+    if (!first) {
+      throw new Error('no <img> rendered');
+    }
     fireEvent.load(first);
     rerender(el({ src: 'b.jpg', noCrossFade: true }));
     expect(under(container)).toBeNull();

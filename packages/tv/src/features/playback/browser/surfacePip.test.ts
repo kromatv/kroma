@@ -26,7 +26,9 @@ function shell({ flagged = true } = {}) {
     return deliver;
   });
   vi.stubGlobal('__TAURI__', { core: { invoke }, event: { listen } });
-  if (flagged) vi.stubGlobal('__KROMA_PIP__', true);
+  if (flagged) {
+    vi.stubGlobal('__KROMA_PIP__', true);
+  }
   return {
     invoke,
     unlisten,

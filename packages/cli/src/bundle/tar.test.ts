@@ -34,7 +34,9 @@ function headers(tar: Uint8Array): Record<string, Header> {
   let off = 0;
   while (off + 512 <= tar.length) {
     const name = field(off, 100);
-    if (!name) break;
+    if (!name) {
+      break;
+    }
     out[name] = {
       mode: octal(off + 100, 8),
       uid: octal(off + 108, 8),

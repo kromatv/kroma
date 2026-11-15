@@ -24,7 +24,9 @@ async function apt(packages: readonly string[], attempts = 3): Promise<void> {
     }
     const install =
       await $`timeout 180 sudo apt-get install -y --no-install-recommends ${packages}`.nothrow();
-    if (install.exitCode === 0) return;
+    if (install.exitCode === 0) {
+      return;
+    }
     warning(`apt attempt ${attempt} for ${packages.join(' ')} stalled or failed`);
     await Bun.sleep(10_000);
   }
@@ -44,7 +46,11 @@ const tauriDeps = () => apt(TAURI_DEPS);
 
 export async function main(argv: string[]): Promise<void> {
   const [tool] = argv;
-  if (tool === 'ffmpeg') return ffmpeg();
-  if (tool === 'tauri-deps') return tauriDeps();
+  if (tool === 'ffmpeg') {
+    return ffmpeg();
+  }
+  if (tool === 'tauri-deps') {
+    return tauriDeps();
+  }
   throw new Error('usage: bun run ci tools <ffmpeg|tauri-deps>');
 }

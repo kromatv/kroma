@@ -9,14 +9,20 @@ export function useShortcut(shortcuts: readonly Shortcut[], onDismiss?: () => vo
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat) return;
+      if (event.repeat) {
+        return;
+      }
       if (event.key === 'Escape') {
         latest.current.onDismiss?.();
         return;
       }
-      if (isEditableTarget(event.target)) return;
+      if (isEditableTarget(event.target)) {
+        return;
+      }
       const hit = latest.current.shortcuts.find((shortcut) => isChord(event, shortcut.code));
-      if (!hit) return;
+      if (!hit) {
+        return;
+      }
       event.preventDefault();
       hit.run();
     };

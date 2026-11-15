@@ -30,21 +30,29 @@ function prepare(): void {
   let removed = 0;
   for (const name of WORKSPACE_ROOTS) {
     const dir = join(root, name);
-    if (existsSync(dir) && lstatSync(dir).isDirectory()) removed += pruneLinks(dir);
+    if (existsSync(dir) && lstatSync(dir).isDirectory()) {
+      removed += pruneLinks(dir);
+    }
   }
   console.log(`pruned ${removed} workspace node_modules link(s)`);
 
   const js = join(root, 'coverage/lcov.info');
-  if (!existsSync(js))
+  if (!existsSync(js)) {
     throw new Error('coverage/lcov.info is missing: without it every file scores 0%');
+  }
   console.log(`JS/TS coverage: ${records(js)} files`);
 
   const rust = join(root, 'server/lcov.info');
-  if (existsSync(rust)) console.log(`Rust coverage: ${records(rust)} files`);
-  else notice('no Rust coverage this run (no Rust changed); the scan carries JS/TS coverage only');
+  if (existsSync(rust)) {
+    console.log(`Rust coverage: ${records(rust)} files`);
+  } else {
+    notice('no Rust coverage this run (no Rust changed); the scan carries JS/TS coverage only');
+  }
 }
 
 export function main(argv: string[]): void {
-  if (argv[0] !== 'prepare') throw new Error('usage: bun run ci sonar prepare');
+  if (argv[0] !== 'prepare') {
+    throw new Error('usage: bun run ci sonar prepare');
+  }
   prepare();
 }

@@ -80,7 +80,9 @@ function GrowingRow({
   // No navigator: a plain scrolled row. Everything mounts at once: the
   // unscoped rails are the short ones (chip strips, cast faces); a long
   // uniform row should use <Rail.List> and virtualise instead.
-  if (!scoped) return <ScrolledRow contentStyle={rowStyle}>{children}</ScrolledRow>;
+  if (!scoped) {
+    return <ScrolledRow contentStyle={rowStyle}>{children}</ScrolledRow>;
+  }
 
   return (
     <FocusRail

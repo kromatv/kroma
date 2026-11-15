@@ -13,27 +13,47 @@ export function apnsPayload(n: Notification): Record<string, unknown> {
     sound: 'default',
     'mutable-content': 1,
   };
-  if (n.category) aps.category = n.category;
-  if (n.threadId) aps['thread-id'] = n.threadId;
+  if (n.category) {
+    aps.category = n.category;
+  }
+  if (n.threadId) {
+    aps['thread-id'] = n.threadId;
+  }
 
   const payload: Record<string, unknown> = { aps, id: n.id };
-  if (n.subject) payload.subject = n.subject;
-  if (n.link) payload.link = n.link;
-  if (n.imageUrl) payload.imageUrl = n.imageUrl;
-  if (n.actions.length) payload.actions = n.actions;
+  if (n.subject) {
+    payload.subject = n.subject;
+  }
+  if (n.link) {
+    payload.link = n.link;
+  }
+  if (n.imageUrl) {
+    payload.imageUrl = n.imageUrl;
+  }
+  if (n.actions.length) {
+    payload.actions = n.actions;
+  }
   return payload;
 }
 
 export function fcmMessage(n: Notification, deviceToken: string): Record<string, unknown> {
   const notification: Record<string, unknown> = { title: n.title, body: n.body };
-  if (n.imageUrl) notification.image = n.imageUrl;
+  if (n.imageUrl) {
+    notification.image = n.imageUrl;
+  }
 
   // `data` is the only part that survives both the foreground and background
   // delivery paths, so everything the app needs on tap rides there.
   const data: Record<string, unknown> = { id: n.id };
-  if (n.subject) data.subject = JSON.stringify(n.subject);
-  if (n.link) data.link = n.link;
-  if (n.category) data.category = n.category;
+  if (n.subject) {
+    data.subject = JSON.stringify(n.subject);
+  }
+  if (n.link) {
+    data.link = n.link;
+  }
+  if (n.category) {
+    data.category = n.category;
+  }
   if (n.actions.length) {
     // Every `data` value must be a string on FCM, so the list travels encoded.
     data.actions = JSON.stringify(n.actions);

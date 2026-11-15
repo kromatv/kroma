@@ -70,7 +70,9 @@ export function ProgressQueueProvider({
   const api = useMemo<ProgressQueueApi>(
     () => ({
       remember: (itemId, positionMs, durationMs, reachedEnd) => {
-        if (!serverUrl || !userId) return;
+        if (!serverUrl || !userId) {
+          return;
+        }
         void queue.remember({
           serverUrl,
           userId,
@@ -82,7 +84,9 @@ export function ProgressQueueProvider({
         });
       },
       settle: (itemId) => {
-        if (!serverUrl || !userId) return;
+        if (!serverUrl || !userId) {
+          return;
+        }
         void queue.settle({ serverUrl, userId, itemId });
       },
     }),
@@ -99,12 +103,16 @@ function useReplay(client: KromaClient | null, serverUrl: string | null, userId:
   const run = useRef<() => void>(() => undefined);
 
   const stopTimer = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = null;
   }, []);
 
   useEffect(() => {
-    if (!client || !serverUrl || !userId) return;
+    if (!client || !serverUrl || !userId) {
+      return;
+    }
     let live = true;
     let failures = 0;
     const account = { serverUrl, userId };
@@ -112,14 +120,20 @@ function useReplay(client: KromaClient | null, serverUrl: string | null, userId:
     const pass = async () => {
       stopTimer();
       const report = await queue.replay(account, target).catch(() => null);
-      if (!live) return;
+      if (!live) {
+        return;
+      }
       failures = report && report.kept > 0 ? failures + 1 : 0;
-      if (failures > 0) timer.current = setTimeout(() => void pass(), replayBackoffMs(failures));
+      if (failures > 0) {
+        timer.current = setTimeout(() => void pass(), replayBackoffMs(failures));
+      }
     };
     run.current = () => void pass();
     void pass();
     const listener = Network.addNetworkStateListener((state) => {
-      if (!state.isConnected) return;
+      if (!state.isConnected) {
+        return;
+      }
       failures = 0;
       run.current();
     });

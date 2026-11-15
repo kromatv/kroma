@@ -42,7 +42,9 @@ function withRoom(box: ViewStyle | undefined, face: StyleProp<ViewStyle>) {
   const grown: ViewStyle = {};
   for (const key of SIZES) {
     const size = b[key];
-    if (typeof size === 'number') grown[key] = size + ROOM * 2;
+    if (typeof size === 'number') {
+      grown[key] = size + ROOM * 2;
+    }
   }
   return {
     box: {
@@ -123,7 +125,9 @@ export function ScrollMask({
 
   const measure = () => {
     const content = position?.content.current;
-    if (!probe.current || !content) return;
+    if (!probe.current || !content) {
+      return;
+    }
     probe.current.measureLayout(
       content,
       (_left, top) =>
@@ -136,7 +140,9 @@ export function ScrollMask({
   const remeasure = useEffectEvent(measure);
 
   useEffect(() => {
-    if (!MASKED || !position) return;
+    if (!MASKED || !position) {
+      return;
+    }
     let timer: ReturnType<typeof setTimeout> | null = null;
     const id = position.offset.addListener(() => {
       timer ??= setTimeout(() => {
@@ -146,11 +152,15 @@ export function ScrollMask({
     });
     return () => {
       position.offset.removeListener(id);
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
   }, [position]);
 
-  if (!MASKED || !position) return <View style={style}>{children}</View>;
+  if (!MASKED || !position) {
+    return <View style={style}>{children}</View>;
+  }
 
   const onLayout = (e: LayoutChangeEvent) => {
     height.current = e.nativeEvent.layout.height;

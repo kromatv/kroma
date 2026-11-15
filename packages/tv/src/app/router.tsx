@@ -131,8 +131,11 @@ export function TvNavProvider({
   // nowhere to go back to: Back there leaves the app where the shell can.
   const root = stack.length <= 1;
   const back = useCallback(() => {
-    if (root) onExit?.();
-    else startTransition(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)));
+    if (root) {
+      onExit?.();
+    } else {
+      startTransition(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)));
+    }
   }, [root, onExit]);
   const reset = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
     startTransition(() => setStack(name === 'home' ? [HOME] : [HOME, make(name, params)]));
@@ -173,14 +176,18 @@ export function TvNavProvider({
 
 export function useNav(): TvNav {
   const ctx = useContext(NavCtx);
-  if (!ctx) throw new Error('useNav() must be used inside <TvNavProvider>');
+  if (!ctx) {
+    throw new Error('useNav() must be used inside <TvNavProvider>');
+  }
   return ctx;
 }
 
 /** Typed access to the current route's params; throws on any other route. */
 export function useParams<K extends RouteName>(name: K): TvRoutes[K] {
   const { route } = useNav();
-  if (route.name !== name) throw new Error(`useParams('${name}') called on route '${route.name}'`);
+  if (route.name !== name) {
+    throw new Error(`useParams('${name}') called on route '${route.name}'`);
+  }
   return route.params as TvRoutes[K];
 }
 
@@ -199,7 +206,9 @@ export function TvClientProvider({
 /** The KromaClient; throws if read before a server is reached. */
 export function useClient(): KromaClient {
   const c = useContext(ClientCtx);
-  if (!c) throw new Error('useClient() called before the server was reached');
+  if (!c) {
+    throw new Error('useClient() called before the server was reached');
+  }
   return c;
 }
 
@@ -211,7 +220,9 @@ function subjectKey(route: TvRoute): string {
   if (route.name === 'player' || route.name === 'movie') {
     return `${route.name}:${route.params.item.id}`;
   }
-  if (route.name === 'discover') return `discover:${route.params.entry.tmdbId}`;
+  if (route.name === 'discover') {
+    return `discover:${route.params.entry.tmdbId}`;
+  }
   return route.name;
 }
 
@@ -219,7 +230,9 @@ export function TvOutlet() {
   const { route } = useNav();
   const screens = useContext(ScreensCtx);
   const chrome = useContext(ChromeCtx);
-  if (!screens) throw new Error('<TvOutlet> must be inside <TvNavProvider screens={…}>');
+  if (!screens) {
+    throw new Error('<TvOutlet> must be inside <TvNavProvider screens={…}>');
+  }
   const Screen = screens[route.name];
   const here = (chrome ?? []).filter((layer) => layer.routes.includes(route.name));
   const under = here.filter((layer) => layer.under);

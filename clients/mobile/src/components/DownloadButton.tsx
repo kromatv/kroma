@@ -18,12 +18,16 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
   const eligible = useMemo(() => downloads.canDownload(item), [downloads, item]);
-  if (!eligible && state.status === 'none') return null;
+  if (!eligible && state.status === 'none') {
+    return null;
+  }
 
   const onPress = () => {
-    if (state.status === 'none') downloads.start(item);
-    else if (state.status === 'queued') downloads.cancel(item.id);
-    else if (state.status === 'downloading') {
+    if (state.status === 'none') {
+      downloads.start(item);
+    } else if (state.status === 'queued') {
+      downloads.cancel(item.id);
+    } else if (state.status === 'downloading') {
       Alert.alert(item.metadata?.title ?? item.title, undefined, [
         { text: t('offline.pause'), onPress: () => downloads.pause(item.id) },
         {
@@ -56,8 +60,9 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   };
 
   let glyph = <Icon name="download" size={size} thickness={2} />;
-  if (state.status === 'downloading') glyph = <ProgressRing progress={state.progress} />;
-  else if (state.status === 'paused')
+  if (state.status === 'downloading') {
+    glyph = <ProgressRing progress={state.progress} />;
+  } else if (state.status === 'paused') {
     glyph = (
       <Box style={s.pausedBox}>
         <ProgressRing progress={Math.max(0.02, state.progress)} />
@@ -66,13 +71,15 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
         </Box>
       </Box>
     );
-  else if (state.status === 'queued') glyph = <ProgressRing progress={-1} />;
-  else if (state.status === 'done')
+  } else if (state.status === 'queued') {
+    glyph = <ProgressRing progress={-1} />;
+  } else if (state.status === 'done') {
     glyph = (
       <Box style={s.doneBadge}>
         <Icon name="check" size={size - 6} thickness={2.4} color="accentInk" />
       </Box>
     );
+  }
 
   return (
     <IconButton variant="ghost" diameter={RING} hitSlop={10} onPress={onPress}>

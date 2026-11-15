@@ -15,11 +15,17 @@ import { MANIFEST_SCHEMAS, MODULE_SCHEMA_VERSION } from './manifest/index.ts';
 // may carry fields a later apiVersion defines, and a validator must not call
 // that invalid.
 function openWorld(node: unknown): unknown {
-  if (Array.isArray(node)) return node.map(openWorld);
-  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) {
+    return node.map(openWorld);
+  }
+  if (!node || typeof node !== 'object') {
+    return node;
+  }
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(node)) {
-    if (key === 'additionalProperties' && value === false) continue;
+    if (key === 'additionalProperties' && value === false) {
+      continue;
+    }
     out[key] = openWorld(value);
   }
   return out;
@@ -43,7 +49,9 @@ export const schemaPath = (name: SchemaName, version = schemaVersionOf(name)): s
 
 // Every version ever published, not just the current one.
 function schemaFor(name: SchemaName, version: number): z.ZodType | undefined {
-  if (name === 'manifest') return MANIFEST_SCHEMAS[version];
+  if (name === 'manifest') {
+    return MANIFEST_SCHEMAS[version];
+  }
   return DOCUMENT_SCHEMAS[version]?.[name];
 }
 
@@ -63,7 +71,9 @@ export function jsonSchema(
   origin = 'https://modules.kroma.tv',
 ): JsonSchema | null {
   const schema = schemaFor(name, version);
-  if (!schema) return null;
+  if (!schema) {
+    return null;
+  }
   const emitted = openWorld(z.toJSONSchema(schema, { io: 'output' })) as JsonSchema;
   return { ...emitted, $id: `${origin}${schemaPath(name, version)}` };
 }

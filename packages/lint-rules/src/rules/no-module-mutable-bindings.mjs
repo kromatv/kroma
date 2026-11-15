@@ -29,10 +29,14 @@ export default defineRule(
     create(context) {
       return {
         VariableDeclaration(node) {
-          if (node.kind === 'const' || node.declare) return;
+          if (node.kind === 'const' || node.declare) {
+            return;
+          }
           const parent =
             node.parent.type === 'ExportNamedDeclaration' ? node.parent.parent : node.parent;
-          if (parent.type !== 'Program') return;
+          if (parent.type !== 'Program') {
+            return;
+          }
           context.report({ node, messageId: 'mutable', data: { kind: node.kind } });
         },
       };

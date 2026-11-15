@@ -128,8 +128,12 @@ function Paragraph({ children }: Readonly<{ children?: ReactNode }>) {
 // have said nothing. Read at render, not captured here, so a theme swap reaches
 // them.
 function frameFor(level: number, scope: StyleScope) {
-  if (level <= 1) return resolveStyles(sDefinition, scope).h1;
-  if (level === 2) return resolveStyles(sDefinition, scope).h2;
+  if (level <= 1) {
+    return resolveStyles(sDefinition, scope).h1;
+  }
+  if (level === 2) {
+    return resolveStyles(sDefinition, scope).h2;
+  }
   return level === 3 ? resolveStyles(sDefinition, scope).h3 : resolveStyles(sDefinition, scope).h4;
 }
 
@@ -168,7 +172,9 @@ function BulletList({ children }: Readonly<{ children?: ReactNode }>) {
   // the rhythm, so the list is a plain column: <List.Root>'s bullets and its
   // block margin would both be a second opinion.
   const tone = useContext(GuidelineToneContext);
-  if (tone) return <Box gap={space[2]}>{children}</Box>;
+  if (tone) {
+    return <Box gap={space[2]}>{children}</Box>;
+  }
   return (
     <Box style={s.list}>
       <List.Root>{children}</List.Root>
@@ -194,7 +200,9 @@ function splitTask(children: ReactNode): { checked?: boolean; rest: ReactNode[] 
   const all = Children.toArray(children);
   const at = all.findIndex((child) => isValidElement(child) && child.type === TaskBox);
   const box = all[at];
-  if (!isValidElement<{ checked?: boolean }>(box)) return { rest: all };
+  if (!isValidElement<{ checked?: boolean }>(box)) {
+    return { rest: all };
+  }
   return {
     checked: Boolean(box.props.checked),
     rest: [...all.slice(0, at), ...all.slice(at + 1)],
@@ -218,7 +226,9 @@ function GuidelineItem({ good, children }: Readonly<{ good: boolean; children?: 
 
 function ListItem({ children }: Readonly<{ children?: ReactNode }>) {
   const tone = useContext(GuidelineToneContext);
-  if (tone) return <GuidelineItem good={tone === 'do'}>{children}</GuidelineItem>;
+  if (tone) {
+    return <GuidelineItem good={tone === 'do'}>{children}</GuidelineItem>;
+  }
   const task = splitTask(children);
   return <List.Item checked={task.checked}>{runs(task.rest)}</List.Item>;
 }
@@ -248,7 +258,9 @@ function Rule() {
 // and its language are one level down.
 function codeOf(children: ReactNode): string {
   const only = Children.toArray(children)[0];
-  if (typeof only === 'string') return only;
+  if (typeof only === 'string') {
+    return only;
+  }
   if (isValidElement<{ children?: ReactNode }>(only) && typeof only.props.children === 'string') {
     return only.props.children;
   }

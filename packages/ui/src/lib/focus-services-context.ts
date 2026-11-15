@@ -8,7 +8,9 @@ export function useFocusServices() {
   const provided = useContext(Context);
   const [owned] = useState(() => (provided ? null : createFocusServices()));
   const services = provided ?? owned;
-  if (!services) throw new Error('Focus services require their owning host');
+  if (!services) {
+    throw new Error('Focus services require their owning host');
+  }
   useEffect(() => (provided ? undefined : services.source.retain()), [provided, services]);
   return services;
 }

@@ -109,9 +109,13 @@ function Palette({ user }: Readonly<{ user: User }>) {
       onSelect={(item, chosen) => {
         const resolved = byId.get(item.id);
         const action = chosen && resolved?.actions.get(chosen.id);
-        if (!resolved || !action) return;
+        if (!resolved || !action) {
+          return;
+        }
         recordCommandUse(user.id, item.id, query);
-        if (chosen === item.actions?.[0]) rememberCommand(user.id, item.id, resolved.command);
+        if (chosen === item.actions?.[0]) {
+          rememberCommand(user.id, item.id, resolved.command);
+        }
         void runAction(action, { navigate, confirm, t });
       }}
       onClose={close}

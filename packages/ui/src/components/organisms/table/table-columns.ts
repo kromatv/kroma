@@ -70,7 +70,9 @@ function stepOf(name: BreakpointName): number {
 function breakpointMask(columns: readonly TableColumn[]): number {
   let bits = 0;
   for (const column of columns) {
-    if (column.from) bits |= 1 << stepOf(column.from);
+    if (column.from) {
+      bits |= 1 << stepOf(column.from);
+    }
   }
   return bits;
 }
@@ -81,7 +83,9 @@ function drawn(column: TableColumn | undefined, step: number): boolean {
 
 function lastDrawn(columns: readonly TableColumn[], count: number, step: number): number {
   for (let at = count - 1; at >= 0; at -= 1) {
-    if (drawn(columns[at], step)) return at;
+    if (drawn(columns[at], step)) {
+      return at;
+    }
   }
   return -1;
 }
@@ -89,7 +93,9 @@ function lastDrawn(columns: readonly TableColumn[], count: number, step: number)
 function minWidthOf(columns: readonly TableColumn[], step: number): number {
   let total = 0;
   for (const column of columns) {
-    if (drawn(column, step)) total += column.width ?? column.min ?? 0;
+    if (drawn(column, step)) {
+      total += column.width ?? column.min ?? 0;
+    }
   }
   return total;
 }

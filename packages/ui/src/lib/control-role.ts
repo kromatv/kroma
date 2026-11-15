@@ -5,7 +5,9 @@ type ControlRole = AccessibilityRole | 'option';
 
 /** The role the platform can be handed: the real ARIA role on the web, the nearest one Android's `fromValue` accepts on native. */
 export function platformRole(role: ControlRole): AccessibilityRole {
-  if (WEB) return role as AccessibilityRole;
+  if (WEB) {
+    return role as AccessibilityRole;
+  }
   return role === 'option' ? 'menuitem' : role;
 }
 
@@ -16,7 +18,9 @@ export function hostRole(role: ControlRole): AccessibilityRole | undefined {
 
 /** The props that make a control an anchor where there is one, else null. */
 export function linkProps(href: string | undefined, role: ControlRole): object | null {
-  if (!WEB || !href) return null;
+  if (!WEB || !href) {
+    return null;
+  }
   return { href, accessibilityRole: hostRole(role) };
 }
 

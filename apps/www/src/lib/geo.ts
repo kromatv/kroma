@@ -22,7 +22,9 @@ export function decodeLand(points: readonly number[]): Float32Array {
   for (let i = 0; i + 1 < points.length; i += 2) {
     const lat = points[i];
     const lng = points[i + 1];
-    if (lat === undefined || lng === undefined) break;
+    if (lat === undefined || lng === undefined) {
+      break;
+    }
     out.set(toVector(lat / LAND_SCALE, lng / LAND_SCALE), (i / 2) * 3);
   }
   return out;

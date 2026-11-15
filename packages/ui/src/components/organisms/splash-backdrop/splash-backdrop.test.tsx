@@ -27,14 +27,18 @@ describe('SplashBackdrop', () => {
     const { container } = render(<SplashBackdrop covers={COVERS} holdMs={10_000} />);
     const sources = () => [...container.querySelectorAll('img')].map((img) => img.src);
 
-    act(() => vi.advanceTimersByTime(10_000));
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
 
     expect(sources()).toEqual([
       expect.stringContaining('/api/images/a.webp'),
       expect.stringContaining('/api/images/b.webp'),
     ]);
 
-    act(() => vi.advanceTimersByTime(3000));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
 
     expect(sources()).toEqual([expect.stringContaining('/api/images/b.webp')]);
   });

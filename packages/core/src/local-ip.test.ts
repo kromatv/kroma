@@ -22,8 +22,11 @@ describe('getLocalIPv4', () => {
           onError: () => void,
         ) {
           const a = answers[prop];
-          if (a === undefined || a === 'error') onError();
-          else onSuccess(a);
+          if (a === undefined || a === 'error') {
+            onError();
+          } else {
+            onSuccess(a);
+          }
         },
       },
     });
@@ -93,8 +96,11 @@ describe('getLocalIPv4', () => {
     vi.stubGlobal('webOS', {
       service: {
         request(_uri: string, opts: { onSuccess: (r: unknown) => void; onFailure: () => void }) {
-          if (fail) opts.onFailure();
-          else opts.onSuccess(res);
+          if (fail) {
+            opts.onFailure();
+          } else {
+            opts.onSuccess(res);
+          }
         },
       },
     });

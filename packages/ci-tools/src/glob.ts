@@ -8,13 +8,23 @@ function token(glob: string, at: number): [piece: string, width: number] {
   const ch = glob[at] ?? '';
   if (ch === '{') {
     const end = glob.indexOf('}', at);
-    if (end === -1) throw new Error(`unclosed brace in '${glob}'`);
+    if (end === -1) {
+      throw new Error(`unclosed brace in '${glob}'`);
+    }
     return [alternatives(glob.slice(at + 1, end)), end - at + 1];
   }
-  if (glob.startsWith('**/', at)) return ['(?:.*/)?', 3];
-  if (glob.startsWith('**', at)) return ['.*', 2];
-  if (ch === '*') return ['[^/]*', 1];
-  if (ch === '?') return ['[^/]', 1];
+  if (glob.startsWith('**/', at)) {
+    return ['(?:.*/)?', 3];
+  }
+  if (glob.startsWith('**', at)) {
+    return ['.*', 2];
+  }
+  if (ch === '*') {
+    return ['[^/]*', 1];
+  }
+  if (ch === '?') {
+    return ['[^/]', 1];
+  }
   return [ch.replace(SPECIAL, String.raw`\$&`), 1];
 }
 

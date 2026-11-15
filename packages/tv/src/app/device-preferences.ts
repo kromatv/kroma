@@ -23,6 +23,8 @@ export function useDevicePreferences(): DevicePreferences {
   const storage = useDeviceStore();
   const [owned] = useState(() => (provided ? null : createDevicePreferences(storage)));
   const preferences = provided ?? owned;
-  if (!preferences) throw new Error('Device preferences require an owner');
+  if (!preferences) {
+    throw new Error('Device preferences require an owner');
+  }
   return preferences;
 }

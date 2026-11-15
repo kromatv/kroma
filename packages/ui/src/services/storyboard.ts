@@ -71,7 +71,9 @@ export function useStoryboard(
     const preload = (url: string) => {
       Image.prefetch(url)
         .then(() => {
-          if (!cancelled) setLoaded(true);
+          if (!cancelled) {
+            setLoaded(true);
+          }
         })
         .catch(() => undefined); // unreachable sheet: fall back to the time label
     };
@@ -80,15 +82,23 @@ export function useStoryboard(
       client.media
         .storyboard(itemId)
         .then((res) => {
-          if (cancelled || resolved) return;
-          if (res === 'pending') {
-            if (!generate) return;
-            tries += 1;
-            const delay = tries <= FAST_POLLS ? POLL_MS : SLOW_MS;
-            if (tries <= MAX_TRIES) timer = setTimeout(poll, delay);
+          if (cancelled || resolved) {
             return;
           }
-          if (!res) return; // no usable file/duration: silently fall back to the time label
+          if (res === 'pending') {
+            if (!generate) {
+              return;
+            }
+            tries += 1;
+            const delay = tries <= FAST_POLLS ? POLL_MS : SLOW_MS;
+            if (tries <= MAX_TRIES) {
+              timer = setTimeout(poll, delay);
+            }
+            return;
+          }
+          if (!res) {
+            return;
+          } // no usable file/duration: silently fall back to the time label
           resolved = true;
           const url = client.media.artwork.resolve(res.url) ?? res.url;
           setManifest(res);
@@ -103,7 +113,9 @@ export function useStoryboard(
     // picked up without a tight interval.
     const doc = webDocument();
     const onVisible = () => {
-      if (doc?.visibilityState !== 'visible' || cancelled || resolved) return;
+      if (doc?.visibilityState !== 'visible' || cancelled || resolved) {
+        return;
+      }
       if (timer) {
         clearTimeout(timer);
         timer = null;
@@ -111,18 +123,26 @@ export function useStoryboard(
       tries = 0;
       poll();
     };
-    if (generate) doc?.addEventListener('visibilitychange', onVisible);
+    if (generate) {
+      doc?.addEventListener('visibilitychange', onVisible);
+    }
 
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
-      if (generate) doc?.removeEventListener('visibilitychange', onVisible);
+      if (timer) {
+        clearTimeout(timer);
+      }
+      if (generate) {
+        doc?.removeEventListener('visibilitychange', onVisible);
+      }
     };
   }, [client, itemId, generate]);
 
   const tile = useCallback(
     (sec: number, displayW: number): StoryboardTile | null => {
-      if (!manifest || !sheetUrl || !loaded) return null;
+      if (!manifest || !sheetUrl || !loaded) {
+        return null;
+      }
       const { interval, tileW, tileH, cols, rows, count } = manifest;
       const idx = Math.max(0, Math.min(count - 1, Math.floor(sec / interval)));
       const col = idx % cols;

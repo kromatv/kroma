@@ -42,7 +42,9 @@ function StatusDot({ online, size = 10, overArt = false }: Readonly<StatusDotPro
 }
 
 function lookOf(online: boolean | undefined, scope: StyleScope): Look {
-  if (online === undefined) return PENDING;
+  if (online === undefined) {
+    return PENDING;
+  }
   const token = online ? 'success' : 'danger';
   const halo = color(`${token}/75`, activeTheme(scope.theme));
   return { bg: token, glow: `0 0 7px ${halo}` };

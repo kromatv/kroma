@@ -3,10 +3,16 @@
 const { transformSync } = require('oxc-transform-react');
 
 function compileReactSource(source, id, sourcemap = true, reportDiagnostics = false) {
-  if (id.includes('node_modules') || id.startsWith('\0')) return null;
+  if (id.includes('node_modules') || id.startsWith('\0')) {
+    return null;
+  }
   const [filename, query = ''] = id.split('?');
-  if (/(?:^|&)(?:raw|url)(?:&|$)/.test(query)) return null;
-  if (!/\.(?:[cm]?[jt]sx?)$/.test(filename) || /\.d\.[cm]?ts$/.test(filename)) return null;
+  if (/(?:^|&)(?:raw|url)(?:&|$)/.test(query)) {
+    return null;
+  }
+  if (!/\.(?:[cm]?[jt]sx?)$/.test(filename) || /\.d\.[cm]?ts$/.test(filename)) {
+    return null;
+  }
   const result = transformSync(filename, source, {
     sourcemap,
     jsx: 'preserve',

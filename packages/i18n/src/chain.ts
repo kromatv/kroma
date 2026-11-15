@@ -21,7 +21,9 @@ export function translateChain(
   for (const catalog of chain) {
     const lookup = vars ? resolvePluralKey(catalog, locale, key, vars, plural) : key;
     const template = catalog[lookup];
-    if (template !== undefined) return interpolate(template, vars);
+    if (template !== undefined) {
+      return interpolate(template, vars);
+    }
   }
   return undefined;
 }
@@ -49,7 +51,9 @@ export function resolveInChain(
   for (const catalog of chain) {
     const lookup = vars ? resolvePluralKey(catalog, locale, key, vars, plural) : key;
     const template = catalog[lookup];
-    if (template !== undefined) return { at: index, text: interpolate(template, vars) };
+    if (template !== undefined) {
+      return { at: index, text: interpolate(template, vars) };
+    }
     index += 1;
   }
   return { at: -1, text: undefined };

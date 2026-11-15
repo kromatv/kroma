@@ -14,7 +14,9 @@ import { DetailSkeleton } from '#web/shared/ui';
 export const Route = createFileRoute('/_app/shows/$id')({
   validateSearch: validateShowSearch,
   loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) throw redirect({ to: '/' });
+    if (!isAuthed()) {
+      throw redirect({ to: '/' });
+    }
     await queryClient.ensureQueryData(
       webRuntime.queries.catalogQueries.showBundle(ShowId.parse(params.id)),
     );

@@ -44,7 +44,9 @@ export function resolveVersion(ctx: Context): Resolved {
   let version: string;
   let channel: Channel;
   if (ctx.event === 'push' && ctx.refType === 'tag') {
-    if (!ctx.refName?.startsWith('v')) throw new Error(`tag '${ctx.refName}' is not vX.Y.Z`);
+    if (!ctx.refName?.startsWith('v')) {
+      throw new Error(`tag '${ctx.refName}' is not vX.Y.Z`);
+    }
     version = ctx.refName.slice(1);
     channel = 'stable';
   } else if (ctx.event === 'push') {
@@ -62,7 +64,9 @@ export function resolveVersion(ctx: Context): Resolved {
 function manifestVersion(): string {
   const toml = readFileSync(join(root, 'server/Cargo.toml'), 'utf8');
   const version = /^version\s*=\s*"([^"]+)"/m.exec(toml)?.[1];
-  if (!version) throw new Error('server/Cargo.toml carries no version');
+  if (!version) {
+    throw new Error('server/Cargo.toml carries no version');
+  }
   return version;
 }
 
@@ -79,7 +83,9 @@ export function main(argv: string[]): void {
     heading: heading().version ?? manifestVersion(),
     now: new Date(),
   });
-  for (const [key, value] of Object.entries(resolved)) setOutput(key, value);
+  for (const [key, value] of Object.entries(resolved)) {
+    setOutput(key, value);
+  }
   console.log(
     `Version: ${resolved.version} (TV manifests: ${resolved.triplet}, channel: ${resolved.channel}, build: ${resolved.build})`,
   );

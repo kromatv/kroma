@@ -44,12 +44,16 @@ function devServer(): string | undefined {
 async function devAutoLogin(deps: BootDeps, cancelled: Cancelled): Promise<boolean> {
   const server = devServer();
   const devLogin = __DEV__ ? process.env.EXPO_PUBLIC_KROMA_DEV_LOGIN : undefined;
-  if (!server || !devLogin) return false;
+  if (!server || !devLogin) {
+    return false;
+  }
   try {
     const url = normalizeServerUrl(server);
     const [identifier, password] = devLogin.split(':');
     const result = await deps.makeClient(url).accounts.login(identifier ?? '', password ?? '');
-    if (cancelled()) return true;
+    if (cancelled()) {
+      return true;
+    }
     deps.enterSession(url, result.accessToken, result.token, result.user, result.mediaTicket);
     return true;
   } catch {
@@ -88,10 +92,14 @@ async function resumeAccount(
       user: fresh,
       mediaTicket,
     } = await probe.accounts.exchangeToken(account.accessToken);
-    if (cancelled()) return;
+    if (cancelled()) {
+      return;
+    }
     deps.enterSession(account.serverUrl, account.accessToken, token, fresh, mediaTicket);
   } catch (err) {
-    if (cancelled()) return;
+    if (cancelled()) {
+      return;
+    }
     deps.setServerUrl(fallbackUrl);
     deps.setSignedOut();
     onResumeFailed(deps, account, err);
@@ -104,7 +112,9 @@ async function restore(deps: BootDeps, cancelled: Cancelled): Promise<void> {
     loadAccounts(),
     loadActive(),
   ]);
-  if (cancelled()) return;
+  if (cancelled()) {
+    return;
+  }
   deps.servers.hydrate(storedServers);
   deps.accounts.hydrate(storedAccounts);
   const activeAccount = active
@@ -113,7 +123,9 @@ async function restore(deps: BootDeps, cancelled: Cancelled): Promise<void> {
   const fallbackUrl = activeAccount?.serverUrl ?? storedServers[0]?.url ?? null;
 
   if (!activeAccount) {
-    if (storedAccounts.length === 0 && (await devAutoLogin(deps, cancelled))) return;
+    if (storedAccounts.length === 0 && (await devAutoLogin(deps, cancelled))) {
+      return;
+    }
     const dev = devServer();
     deps.setServerUrl(dev ? normalizeServerUrl(dev) : fallbackUrl);
     deps.setSignedOut();
@@ -124,7 +136,9 @@ async function restore(deps: BootDeps, cancelled: Cancelled): Promise<void> {
   // silently resume into the locked profile; failing the biometric check lands
   // on the profile gate instead.
   const gatePassed = await passBootBiometricGate(activeAccount);
-  if (cancelled()) return;
+  if (cancelled()) {
+    return;
+  }
   if (!gatePassed) {
     deps.setServerUrl(fallbackUrl);
     deps.setSignedOut();

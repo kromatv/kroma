@@ -49,7 +49,9 @@ export function pointGraph(modules: readonly AdminModule[]): Point[] {
   const points = new Map<string, Point>();
   const at = (name: string): Point => {
     const found = points.get(name);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
     const fresh: Point = { name, answers: [], callers: [], unanswered: false };
     points.set(name, fresh);
     return fresh;

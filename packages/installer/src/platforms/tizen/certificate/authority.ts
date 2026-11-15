@@ -66,7 +66,9 @@ async function pack(
   alias: string,
   password: string,
 ): Promise<void> {
-  if (!existsSync(OPENSSL)) throw new Error('openssl is needed to write the .p12 and is not here');
+  if (!existsSync(OPENSSL)) {
+    throw new Error('openssl is needed to write the .p12 and is not here');
+  }
   await runOk([
     OPENSSL,
     'pkcs12',

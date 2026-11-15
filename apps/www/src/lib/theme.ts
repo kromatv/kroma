@@ -38,7 +38,12 @@ export function writeMode(mode: ThemeMode): void {
   // oxlint-disable-next-line unicorn/no-document-cookie -- the Cookie Store API is async and Safari has none, and the head bootstrap reads this synchronously
   document.cookie = `${COOKIE}=${mode};path=/;max-age=31536000;samesite=lax`;
   const root = document.documentElement;
-  if (mode === 'system') delete root.dataset.theme;
-  else root.dataset.theme = mode;
-  for (const listener of listeners) listener();
+  if (mode === 'system') {
+    delete root.dataset.theme;
+  } else {
+    root.dataset.theme = mode;
+  }
+  for (const listener of listeners) {
+    listener();
+  }
 }

@@ -10,9 +10,15 @@ import type { LedgerEpisode, LedgerSeason } from '@kromatv/client/requests';
 export type EpisodeState = 'onDisk' | 'queued' | 'unaired' | 'missing' | 'untracked';
 
 export function episodeState(ep: LedgerEpisode, today: string): EpisodeState {
-  if (ep.onDisk) return 'onDisk';
-  if (ep.wantedStatus === 'grabbed') return 'queued';
-  if (ep.airDate != null && ep.airDate > today) return 'unaired';
+  if (ep.onDisk) {
+    return 'onDisk';
+  }
+  if (ep.wantedStatus === 'grabbed') {
+    return 'queued';
+  }
+  if (ep.airDate != null && ep.airDate > today) {
+    return 'unaired';
+  }
   return ep.wantedId == null ? 'untracked' : 'missing';
 }
 

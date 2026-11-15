@@ -23,7 +23,9 @@ export interface LabelsProps {
 
 function measure(node: HTMLElement): LabelNode | null {
   const [pill, stem] = node.children;
-  if (!(pill instanceof HTMLElement) || !(stem instanceof HTMLElement)) return null;
+  if (!(pill instanceof HTMLElement) || !(stem instanceof HTMLElement)) {
+    return null;
+  }
   return { node, pill, stem, width: pill.offsetWidth, height: pill.offsetHeight };
 }
 
@@ -37,7 +39,9 @@ export function Labels({ pins, named, nodes }: Readonly<LabelsProps>) {
           key={pin.code}
           ref={(node) => {
             const measured = node && measure(node);
-            if (!measured) return;
+            if (!measured) {
+              return;
+            }
             nodes.current.set(pin.code, measured);
             return () => {
               nodes.current.delete(pin.code);

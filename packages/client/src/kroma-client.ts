@@ -70,13 +70,17 @@ export function kromaClientParts(options: KromaClientOptions): {
   let refreshHandler: (() => Promise<string | undefined>) | undefined;
 
   const setAuthToken = (token?: string): void => {
-    if (!token) setSessionMediaTicket(undefined);
+    if (!token) {
+      setSessionMediaTicket(undefined);
+    }
     setSessionToken(token);
   };
 
   const refreshSession = async (): Promise<string | undefined> => {
     const token = await refreshHandler?.();
-    if (token) setAuthToken(token);
+    if (token) {
+      setAuthToken(token);
+    }
     return token;
   };
 

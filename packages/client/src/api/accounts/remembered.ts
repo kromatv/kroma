@@ -24,14 +24,14 @@ const StoredUser = User.extend({
 });
 
 const StoredSession = z.object({
-  accessToken: z.string().min(1),
+  accessToken: z.string().nonempty(),
   user: StoredUser,
   serverUrl: z.string().optional(),
 });
 export type StoredSession = z.infer<typeof StoredSession>;
 
 const StoredServer = z.object({
-  url: z.string().min(1),
+  url: z.string().nonempty(),
   name: z.string().nullish(),
   lastUsedAt: z.number().optional(),
 });
@@ -73,7 +73,9 @@ export function createAccountStorage(backend?: SessionStorage | null) {
     );
     accounts.unshift(session);
     writeStored(ACCOUNTS_KEY, accounts, backend);
-    if (session.serverUrl) touchServer(session.serverUrl);
+    if (session.serverUrl) {
+      touchServer(session.serverUrl);
+    }
   }
 
   /** Clear only the ACTIVE session (e.g. "switch profile"). Remembered accounts
@@ -86,7 +88,9 @@ export function createAccountStorage(backend?: SessionStorage | null) {
    * `serverUrl` to get only that server's remembered profiles. */
   function loadAccounts(serverUrl?: string): StoredSession[] {
     const all = readStoredList(ACCOUNTS_KEY, StoredSession, backend);
-    if (serverUrl == null) return all;
+    if (serverUrl == null) {
+      return all;
+    }
     const scope = normalizeServerUrl(serverUrl);
     return all.filter((a) => scopeOf(a) === scope);
   }
@@ -105,7 +109,9 @@ export function createAccountStorage(backend?: SessionStorage | null) {
       backend,
     );
     const active = loadSession();
-    if (active && matches(active)) clearSession();
+    if (active && matches(active)) {
+      clearSession();
+    }
   }
 
   /** Saved KROMA servers, most-recently-used first. */
@@ -157,7 +163,9 @@ export function createAccountStorage(backend?: SessionStorage | null) {
       backend,
     );
     const active = loadSession();
-    if (active && scopeOf(active) === u) clearSession();
+    if (active && scopeOf(active) === u) {
+      clearSession();
+    }
   }
 
   /** One-time upgrade from the pre-multi-server storage: seed `kroma.servers` from
@@ -165,14 +173,18 @@ export function createAccountStorage(backend?: SessionStorage | null) {
    * drop the legacy key. A no-op once migrated or on a fresh (web) install. */
   function migrateStorage(): void {
     const store = deviceStorage(backend);
-    if (!store) return;
+    if (!store) {
+      return;
+    }
     let legacy: string | null = null;
     try {
       legacy = store.getItem(LEGACY_SERVER_KEY);
     } catch {
       return;
     }
-    if (!legacy) return;
+    if (!legacy) {
+      return;
+    }
     const url = normalizeServerUrl(legacy);
 
     if (!store.getItem(SERVERS_KEY)) {
@@ -186,7 +198,9 @@ export function createAccountStorage(backend?: SessionStorage | null) {
         changed = true;
       }
     }
-    if (changed) writeStored(ACCOUNTS_KEY, accounts, backend);
+    if (changed) {
+      writeStored(ACCOUNTS_KEY, accounts, backend);
+    }
     const active = loadSession();
     if (active && !active.serverUrl) {
       active.serverUrl = url;

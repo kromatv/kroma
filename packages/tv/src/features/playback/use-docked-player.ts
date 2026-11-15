@@ -25,12 +25,19 @@ export function useDockedPlayer(item: MediaItem, docked: boolean): DockedPlayer 
       home: docked ? dock.undock : nav.home,
       swap: (next) => (docked ? dock.undock() : nav.swap('player', { item: next })),
       onPipStart: () => {
-        if (!docked) dock.dock(item, nav.back);
+        if (!docked) {
+          dock.dock(item, nav.back);
+        }
       },
       onPipStop: (playing) => {
-        if (!docked) return;
-        if (playing) nav.go('player', { item });
-        else dock.undock();
+        if (!docked) {
+          return;
+        }
+        if (playing) {
+          nav.go('player', { item });
+        } else {
+          dock.undock();
+        }
       },
     }),
     [docked, dock, nav, item],

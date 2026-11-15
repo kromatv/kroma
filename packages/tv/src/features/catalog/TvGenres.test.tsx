@@ -35,9 +35,11 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 
 // jsdom has no ResizeObserver: the grid paints no cells until it is handed a box.
 function measure(container: HTMLElement) {
-  for (const box of [...container.querySelectorAll<HTMLElement>('div')]) {
+  for (const box of container.querySelectorAll<HTMLElement>('div')) {
     const measurable = (box as { __reactLayoutHandler?: unknown }).__reactLayoutHandler;
-    if (typeof measurable === 'function') layout(box, { width: 1600, height: 900 });
+    if (typeof measurable === 'function') {
+      layout(box, { width: 1600, height: 900 });
+    }
   }
 }
 

@@ -103,9 +103,13 @@ function PageView({ page, layout, section, onSection }: Readonly<PageViewProps>)
   // scrolled away from being dragged back.
   const target = section ? outline.sections.find((at) => at.id === section) : undefined;
   useEffect(() => {
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     const mark = landing(page.id, target, top);
-    if (arrived.current === mark) return;
+    if (arrived.current === mark) {
+      return;
+    }
     arrived.current = mark;
     setActive(target.id);
     scrollTo(target, false);
@@ -140,7 +144,9 @@ function PageView({ page, layout, section, onSection }: Readonly<PageViewProps>)
 }
 
 function Rail({ sections, active, onJump }: Readonly<PageTocProps>) {
-  if (!hasOutline(sections)) return <Box w={TOC_WIDTH} shrink={0} />;
+  if (!hasOutline(sections)) {
+    return <Box w={TOC_WIDTH} shrink={0} />;
+  }
   return <PageToc sections={sections} active={active} onJump={onJump} />;
 }
 

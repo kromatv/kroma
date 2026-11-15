@@ -25,8 +25,11 @@ export function followScale(surface: HTMLElement): ScaleFollow {
   let written = surface.getAttribute('style');
 
   const write = (value: number | null) => {
-    if (value === null) style.removeProperty('transform');
-    else style.setProperty('transform', `scale(${value})`);
+    if (value === null) {
+      style.removeProperty('transform');
+    } else {
+      style.setProperty('transform', `scale(${value})`);
+    }
     written = surface.getAttribute('style');
   };
 
@@ -51,7 +54,9 @@ export function followScale(surface: HTMLElement): ScaleFollow {
       return surface.getAttribute('style') === written;
     },
     step(now) {
-      if (!tween) return false;
+      if (!tween) {
+        return false;
+      }
       const { value, done } = tweenAt(tween, now, ease.out.native);
       shown = value;
       if (done) {
@@ -64,7 +69,9 @@ export function followScale(surface: HTMLElement): ScaleFollow {
     },
     release() {
       style.removeProperty('transition-property');
-      if (tween) write(null);
+      if (tween) {
+        write(null);
+      }
     },
   };
 }

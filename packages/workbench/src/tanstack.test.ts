@@ -53,7 +53,9 @@ function at(params: Record<string, unknown> = {}, search: Record<string, unknown
 /** The single navigation the adapter performed. */
 function went() {
   const call = navigate.mock.calls[0]?.[0];
-  if (!call) throw new Error('the adapter never navigated');
+  if (!call) {
+    throw new Error('the adapter never navigated');
+  }
   return call as { to: string; params: Record<string, string>; replace: boolean };
 }
 

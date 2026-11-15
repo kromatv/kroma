@@ -15,7 +15,9 @@ export function PreferredLanguagesBox({
 }>) {
   const t = useT();
   const [preview, setPreview] = useState<DubScore[] | null>(null);
-  if (formats.length === 0) return null;
+  if (formats.length === 0) {
+    return null;
+  }
   return (
     <Surface radius="lg" pad="sm" tone="raised">
       <Box gap={10}>

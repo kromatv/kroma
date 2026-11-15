@@ -68,9 +68,15 @@ export function releaseSystem(sources: ReleaseSources): string {
 
 function brief(change: PullRequestBrief): string {
   const lines = [`subject: ${change.subject}`];
-  if (change.title) lines.push(`title: ${change.title}`);
-  if (change.files?.length) lines.push(`files: ${change.files.join(', ')}`);
-  if (change.body) lines.push('', change.body);
+  if (change.title) {
+    lines.push(`title: ${change.title}`);
+  }
+  if (change.files?.length) {
+    lines.push(`files: ${change.files.join(', ')}`);
+  }
+  if (change.body) {
+    lines.push('', change.body);
+  }
   return tag('change', lines.join('\n'), change.pr ? ` pr="${change.pr}"` : '');
 }
 

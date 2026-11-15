@@ -53,7 +53,9 @@ export function parseLock(text: string): Lock {
 /** A lock that is missing or unreadable is an empty one: every translation on
  *  disk is then taken as current, which is what a first sync records. */
 export function readLock(path: string): Lock {
-  if (!existsSync(path)) return new Map();
+  if (!existsSync(path)) {
+    return new Map();
+  }
   try {
     return parseLock(readFileSync(path, 'utf8'));
   } catch {
@@ -65,7 +67,9 @@ export function renderLock(lock: Lock): string {
   const messages: Record<string, string> = {};
   for (const key of [...lock.keys()].sort((a, b) => (a < b ? -1 : 1))) {
     const entry = lock.get(key);
-    if (!entry) continue;
+    if (!entry) {
+      continue;
+    }
     const flag = entry.machine ? ` ${MACHINE}` : '';
     messages[key] = `${entry.source} ${entry.translation}${flag}`;
   }
@@ -77,21 +81,31 @@ export function renderLock(lock: Lock): string {
 export function writeLock(path: string, lock: Lock): boolean {
   const present = existsSync(path);
   if (lock.size === 0) {
-    if (present) rmSync(path);
+    if (present) {
+      rmSync(path);
+    }
     return present;
   }
   const next = renderLock(lock);
-  if (present && readFileSync(path, 'utf8') === next) return false;
+  if (present && readFileSync(path, 'utf8') === next) {
+    return false;
+  }
   writeFileSync(path, next);
   return true;
 }
 
 export function sameLock(a: Lock, b: Lock): boolean {
-  if (a.size !== b.size) return false;
+  if (a.size !== b.size) {
+    return false;
+  }
   for (const [key, entry] of a) {
     const other = b.get(key);
-    if (other?.source !== entry.source || other.translation !== entry.translation) return false;
-    if (Boolean(other.machine) !== Boolean(entry.machine)) return false;
+    if (other?.source !== entry.source || other.translation !== entry.translation) {
+      return false;
+    }
+    if (Boolean(other.machine) !== Boolean(entry.machine)) {
+      return false;
+    }
   }
   return true;
 }

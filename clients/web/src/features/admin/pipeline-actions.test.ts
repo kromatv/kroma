@@ -104,3 +104,31 @@ describe('acting on one element', () => {
     expect(setBusy).not.toHaveBeenCalled();
   });
 });
+
+describe('a failed element action', () => {
+  it('tells the admin and frees the busy flag when a reprocess is refused', async () => {
+    const reprocessSubject = vi.fn(async () => {
+      throw new Error('nope');
+    });
+    const { actions, setBusy, flash, reload } = harness({ pipeline: { reprocessSubject } });
+
+    actions.reprocess(row('movie', 'i1'));
+    await flush();
+
+    expect(flash).toHaveBeenCalledWith('error.serverTitle');
+    expect(reload).not.toHaveBeenCalled();
+    expect(setBusy.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('tells the admin when a stage retry is refused', async () => {
+    const retryElement = vi.fn(async () => {
+      throw new Error('nope');
+    });
+    const { actions, flash } = harness({ pipeline: { retryElement } });
+
+    actions.retryStage(row('movie', 'i1'), 'probe');
+    await flush();
+
+    expect(flash).toHaveBeenCalledWith('error.serverTitle');
+  });
+});

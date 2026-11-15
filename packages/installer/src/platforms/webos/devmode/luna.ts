@@ -40,10 +40,13 @@ function jsonReplies(onReply: (reply: unknown) => void): (chunk: Buffer) => void
   return (chunk) => {
     for (const line of chunk.toString('utf8').split(/\r?\n/)) {
       pending += line;
-      if (pending.length > MAX_REPLY_CHARS)
+      if (pending.length > MAX_REPLY_CHARS) {
         throw new Error('luna-send printed an answer too long to read');
+      }
       const reply = parsed(pending);
-      if (reply === undefined) continue;
+      if (reply === undefined) {
+        continue;
+      }
       pending = '';
       onReply(reply);
     }
@@ -73,7 +76,9 @@ export function lunaCall<T>(
     let running: RunningCommand | null = null;
     let settled = false;
     const settle = (finish: () => void) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       running?.close();
@@ -92,7 +97,9 @@ export function lunaCall<T>(
         return;
       }
       const verdict = decide(reply);
-      if (verdict !== undefined) settle(() => resolve(verdict));
+      if (verdict !== undefined) {
+        settle(() => resolve(verdict));
+      }
     };
     const feed = jsonReplies(onReply);
     const onData = (chunk: Buffer) => {
@@ -105,7 +112,9 @@ export function lunaCall<T>(
 
     const started = (command: RunningCommand) => {
       running = command;
-      if (settled) command.close();
+      if (settled) {
+        command.close();
+      }
       return command.exited;
     };
     const ended = (code: number) =>

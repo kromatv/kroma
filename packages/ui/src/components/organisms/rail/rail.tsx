@@ -76,9 +76,13 @@ function sort(children: ReactNode): Sorted {
   const at: Sorted = { title: [], list: [], tiles: [] };
   for (const child of Children.toArray(children)) {
     const part = isValidElement(child) ? child.type : null;
-    if (part === Title) at.title.push(child);
-    else if (part === List) at.list.push(child);
-    else at.tiles.push(child);
+    if (part === Title) {
+      at.title.push(child);
+    } else if (part === List) {
+      at.list.push(child);
+    } else {
+      at.tiles.push(child);
+    }
   }
   return at;
 }

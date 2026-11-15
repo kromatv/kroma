@@ -30,7 +30,9 @@ let probe: Probe | null = null;
 
 function announce(next: Probe | null): void {
   probe = next;
-  for (const listener of listeners) listener();
+  for (const listener of listeners) {
+    listener();
+  }
 }
 
 function nodeAt(x: number, y: number): Text | null {
@@ -40,9 +42,13 @@ function nodeAt(x: number, y: number): Text | null {
 
 function probeOf(node: Text, outline: Outline): Probe | null {
   const text = node.nodeValue;
-  if (!text || !onThePage(node)) return null;
+  if (!text || !onThePage(node)) {
+    return null;
+  }
   const marked = gradeOfNode(text);
-  if (!marked || !shows(outline, marked)) return null;
+  if (!marked || !shows(outline, marked)) {
+    return null;
+  }
   const sighting = sightingIn(text);
   const range = document.createRange();
   range.selectNodeContents(node);
@@ -78,7 +84,9 @@ export function installProbe(outline: Outline, editor: string | null): () => voi
 
   const look = perFrame(() => {
     const node = nodeAt(x, y);
-    if (node === over) return;
+    if (node === over) {
+      return;
+    }
     over = node;
     announce(node ? probeOf(node, outline) : null);
   });
@@ -95,17 +103,25 @@ export function installProbe(outline: Outline, editor: string | null): () => voi
   };
 
   const click = (event: MouseEvent) => {
-    if (!event.altKey) return;
+    if (!event.altKey) {
+      return;
+    }
     const node = nodeAt(event.clientX, event.clientY);
     const found = node && probeOf(node, outline);
-    if (!found || (!found.key && !found.origin)) return;
+    if (!found || (!found.key && !found.origin)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     if (event.shiftKey) {
-      if (found.origin) openInEditor(fileOfOrigin(sourceOrigin(found.origin)), editor);
+      if (found.origin) {
+        openInEditor(fileOfOrigin(sourceOrigin(found.origin)), editor);
+      }
       return;
     }
-    if (!found.key) return;
+    if (!found.key) {
+      return;
+    }
     void navigator.clipboard?.writeText(found.key).then(
       () => announce({ ...found, copied: true }),
       () => announce(found),

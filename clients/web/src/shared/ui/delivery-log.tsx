@@ -19,7 +19,9 @@ export function DeliveryLog({ deliveries, pending = false }: Readonly<DeliveryLo
   const t = useT();
   const [all, setAll] = useState(false);
 
-  if (pending) return <Skeleton h={120} radius="sm" />;
+  if (pending) {
+    return <Skeleton h={120} radius="sm" />;
+  }
 
   if (deliveries.length === 0) {
     return (

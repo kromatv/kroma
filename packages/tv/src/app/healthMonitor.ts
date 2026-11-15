@@ -28,20 +28,33 @@ export function startHealthMonitor(opts: HealthMonitorOptions): HealthMonitor {
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const mark = (up: boolean) => {
-    if (stopped || up === online) return;
+    if (stopped || up === online) {
+      return;
+    }
     online = up;
     opts.onChange(up);
-    if (up) opts.onReconnect?.();
+    if (up) {
+      opts.onReconnect?.();
+    }
   };
 
   const schedule = () => {
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     clearTimeout(timer);
-    timer = setTimeout(run, online ? onlineMs : offlineMs);
+    timer = setTimeout(
+      () => {
+        void run();
+      },
+      online ? onlineMs : offlineMs,
+    );
   };
 
   async function run(): Promise<void> {
-    if (stopped || inFlight) return;
+    if (stopped || inFlight) {
+      return;
+    }
     inFlight = true;
     try {
       mark(await opts.probe());
@@ -57,7 +70,9 @@ export function startHealthMonitor(opts: HealthMonitorOptions): HealthMonitor {
 
   return {
     recheck: () => {
-      if (stopped || inFlight) return;
+      if (stopped || inFlight) {
+        return;
+      }
       clearTimeout(timer);
       void run();
     },

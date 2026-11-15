@@ -41,7 +41,9 @@ function targetOf(file: string, id: string): string | null {
 function artifactsOf(release: Release, id: string): ArtifactRef[] {
   return release.assets.flatMap((asset) => {
     const sha256 = asset.name.endsWith('.kmod') ? asset.digest?.match(HEX_DIGEST)?.[1] : null;
-    if (!sha256) return [];
+    if (!sha256) {
+      return [];
+    }
     return [
       {
         target: targetOf(asset.name, id),
@@ -61,9 +63,13 @@ export function missingReleases(
 ): ModuleRelease[] {
   return releases.flatMap((release) => {
     const match = release.draft ? null : TAG.exec(release.tag_name);
-    if (!match?.[1] || !match[2]) return [];
+    if (!match?.[1] || !match[2]) {
+      return [];
+    }
     const [, id, version] = match;
-    if (history?.modules[id]?.[version]) return [];
+    if (history?.modules[id]?.[version]) {
+      return [];
+    }
     const artifacts = artifactsOf(release, id);
     return artifacts.length > 0 ? [{ id, version, tag: release.tag_name, artifacts }] : [];
   });
@@ -81,7 +87,11 @@ export function manifestPath(id: string): string {
  */
 export function describeRelease(release: ModuleRelease, manifest: unknown): DescribedModule | null {
   const parsed = Manifest.safeParse(manifest);
-  if (!parsed.success) return null;
-  if (parsed.data.id !== release.id || parsed.data.version !== release.version) return null;
+  if (!parsed.success) {
+    return null;
+  }
+  if (parsed.data.id !== release.id || parsed.data.version !== release.version) {
+    return null;
+  }
   return { ...parsed.data, artifacts: release.artifacts };
 }

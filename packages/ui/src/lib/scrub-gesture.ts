@@ -25,7 +25,9 @@ export function useScrubGesture(
     }
   });
   const drag = useEffectEvent((moveY: number) => {
-    if (originY.current === null) return;
+    if (originY.current === null) {
+      return;
+    }
     onScrub(moveY - originY.current);
   });
   const end = useEffectEvent(() => onEnd());

@@ -14,7 +14,9 @@ const tile = sv({
 
 function Anchor({ to, onNavigate, ...host }: Readonly<Record<string, unknown>>) {
   const click = (event: RouterClick) => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
+      return;
+    }
     event.preventDefault();
     (onNavigate as (() => void) | undefined)?.();
   };

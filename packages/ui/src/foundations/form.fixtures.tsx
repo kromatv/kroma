@@ -17,7 +17,7 @@ import { useT } from '#ui/services/i18n';
 export const Credentials = z.object({
   email: z
     .string()
-    .min(1, msg('form.required'))
+    .nonempty(msg('form.required'))
     .pipe(z.email(msg('form.email'))),
   password: z.string().min(8, msg('form.tooShort', { min: 8 })),
   remember: z.boolean(),
@@ -64,7 +64,7 @@ export function SignIn() {
 export const Passwords = z
   .object({
     password: z.string().min(8, msg('form.tooShort', { min: 8 })),
-    confirm: z.string().min(1, msg('form.required')),
+    confirm: z.string().nonempty(msg('form.required')),
   })
   .refine((entered) => entered.password === entered.confirm, msg('form.mismatch'));
 
@@ -94,7 +94,7 @@ export function CrossField() {
   );
 }
 
-export const PairingCode = z.object({ code: z.string().min(1, msg('form.required')) });
+export const PairingCode = z.object({ code: z.string().nonempty(msg('form.required')) });
 
 export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -127,7 +127,7 @@ export function FailingSubmit() {
 export const Note = z.object({
   note: z
     .string()
-    .min(1, 'Say something first.')
+    .nonempty('Say something first.')
     .max(80, msg('At most {max} characters.', { max: 80 })),
 });
 

@@ -44,7 +44,9 @@ function webTrigger(anchor: RefObject<unknown>): HTMLElement | null {
 
 function viewport(): AnchorViewport | null {
   const win = webWindow();
-  if (win) return { width: win.innerWidth, height: win.innerHeight };
+  if (win) {
+    return { width: win.innerWidth, height: win.innerHeight };
+  }
   const { width, height } = Dimensions.get('window');
   return width > 0 && height > 0 ? { width, height } : null;
 }
@@ -54,8 +56,11 @@ function viewport(): AnchorViewport | null {
 // unplaced panel draws nothing until it does.
 function measureAnchor(anchor: RefObject<unknown>, into: (rect: AnchorRect) => void): void {
   const handle = anchor.current as AnchorHandle | null;
-  if (handle?.getBoundingClientRect) into(handle.getBoundingClientRect());
-  else handle?.measureInWindow?.((left, top, width, height) => into({ left, top, width, height }));
+  if (handle?.getBoundingClientRect) {
+    into(handle.getBoundingClientRect());
+  } else {
+    handle?.measureInWindow?.((left, top, width, height) => into({ left, top, width, height }));
+  }
 }
 
 /**
@@ -102,13 +107,17 @@ export function useAnchoredPlacement(
       settle();
     };
     const queue = () => {
-      if (frame === 0) frame = win.requestAnimationFrame(settleOnFrame);
+      if (frame === 0) {
+        frame = win.requestAnimationFrame(settleOnFrame);
+      }
     };
     win.addEventListener('resize', queue);
     win.addEventListener('scroll', queue, true);
     return () => {
       live = false;
-      if (frame !== 0) win.cancelAnimationFrame(frame);
+      if (frame !== 0) {
+        win.cancelAnimationFrame(frame);
+      }
       win.removeEventListener('resize', queue);
       win.removeEventListener('scroll', queue, true);
     };
@@ -149,7 +158,9 @@ export function useTriggerKeys(
   const { listId, haspopup, onKeyDown } = at;
   useEffect(() => {
     const trigger = webTrigger(anchor);
-    if (!trigger) return;
+    if (!trigger) {
+      return;
+    }
     const onKey = (event: KeyboardEvent) => {
       onKeyDown({
         nativeEvent: { key: event.key },
@@ -173,7 +184,9 @@ export function useTriggerKeys(
 export function useActiveDescendant(anchor: RefObject<unknown>, rowId: string): void {
   useEffect(() => {
     const trigger = webTrigger(anchor);
-    if (!trigger) return;
+    if (!trigger) {
+      return;
+    }
     trigger.setAttribute('aria-activedescendant', rowId);
     return () => trigger.removeAttribute('aria-activedescendant');
   }, [anchor, rowId]);

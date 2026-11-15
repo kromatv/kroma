@@ -21,7 +21,9 @@ export interface Host {
 }
 
 function answerOf(host: Host, url: string): object | undefined {
-  if (url.includes('/api/health')) return { status: 'ok', instanceId: host.instanceId };
+  if (url.includes('/api/health')) {
+    return { status: 'ok', instanceId: host.instanceId };
+  }
   const nonce = decodeURIComponent(/[?&]nonce=([^&]*)/.exec(url)?.[1] ?? '');
   const answer = host.proofs?.[nonce];
   return answer === undefined ? undefined : { answer };
@@ -36,7 +38,9 @@ export function network(hosts: Record<string, Host>) {
     seen.push({ url, headers: new Headers(init?.headers) });
     const base = Object.keys(hosts).find((host) => url.startsWith(`${host}/`));
     const host = base ? hosts[base] : undefined;
-    if (!host) throw new TypeError('Failed to fetch');
+    if (!host) {
+      throw new TypeError('Failed to fetch');
+    }
     if (host.hangs) {
       return new Promise<Response>((_, reject) => {
         init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
@@ -62,7 +66,9 @@ export function clientOffering(...offers: DirectOffer[]) {
   let asked = 0;
   return recordingClient(
     (url) => {
-      if (!url.endsWith('/api/server/direct')) return { status: 404, ok: false };
+      if (!url.endsWith('/api/server/direct')) {
+        return { status: 404, ok: false };
+      }
       const offer = offers[Math.min(asked++, offers.length - 1)];
       return offer ? { json: offer } : { status: 503, ok: false };
     },

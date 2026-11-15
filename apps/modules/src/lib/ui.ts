@@ -1,6 +1,10 @@
 export const mb = (n?: number | null) => {
-  if (!n) return '';
-  if (n < 1048576) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  if (!n) {
+    return '';
+  }
+  if (n < 1048576) {
+    return `${Math.max(1, Math.round(n / 1024))} KB`;
+  }
   return `${(n / 1048576).toFixed(1)} MB`;
 };
 

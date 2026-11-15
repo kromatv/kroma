@@ -31,11 +31,15 @@ function taggedHit<T extends string>(
   const matched: { tag: string; score: number }[] = [];
   for (const tag of catalog.iconEntry(name)?.tags ?? []) {
     const score = fuzzyScore(tag, query);
-    if (score !== null) matched.push({ tag, score });
+    if (score !== null) {
+      matched.push({ tag, score });
+    }
   }
   matched.sort((a, b) => b.score - a.score);
   const best = matched[0];
-  if (!best) return null;
+  if (!best) {
+    return null;
+  }
   return { name, tags: matched.map((hit) => hit.tag), score: best.score - TAG_HANDICAP };
 }
 
@@ -52,7 +56,9 @@ function searchIcons<T extends string>(
   const pool = category
     ? names.filter((name) => catalog.iconEntry(name)?.category === category)
     : names;
-  if (!fuzzyQuery(query)) return pool.map((name) => ({ name, tags: [] }));
+  if (!fuzzyQuery(query)) {
+    return pool.map((name) => ({ name, tags: [] }));
+  }
 
   const hits: Scored<T>[] = fuzzySearch(pool, query).map((hit) => ({
     name: hit.text,
@@ -61,9 +67,13 @@ function searchIcons<T extends string>(
   }));
   const named = new Set(hits.map((hit) => hit.name));
   for (const name of pool) {
-    if (named.has(name)) continue;
+    if (named.has(name)) {
+      continue;
+    }
     const hit = taggedHit(name, query, catalog);
-    if (hit) hits.push(hit);
+    if (hit) {
+      hits.push(hit);
+    }
   }
   hits.sort((a, b) => b.score - a.score || a.name.length - b.name.length);
   return hits.map(({ name, tags }) => ({ name, tags }));

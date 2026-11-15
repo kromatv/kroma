@@ -35,7 +35,9 @@ for (const r of releases) {
     name: string;
   }[];
   const spk = assets.find((a) => a.name.endsWith('.spk'));
-  if (!spk) continue;
+  if (!spk) {
+    continue;
+  }
   if (assets.some((a) => a.name === `${spk.name}.info.json`)) {
     console.log(`${r.tagName}: sidecar already present`);
     continue;

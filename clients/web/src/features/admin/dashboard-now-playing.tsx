@@ -72,8 +72,12 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
 }
 
 function transportTone(state: string, t: Translate): { color: ColorValue; label: string } {
-  if (state === 'buffering') return { color: 'accent', label: t('admin.buffering') };
-  if (state === 'playing') return { color: 'success', label: t('admin.playing') };
+  if (state === 'buffering') {
+    return { color: 'accent', label: t('admin.buffering') };
+  }
+  if (state === 'playing') {
+    return { color: 'success', label: t('admin.playing') };
+  }
   return { color: 'text/50', label: t('admin.paused') };
 }
 
@@ -81,7 +85,9 @@ function pipeTone(mode: string, t: Translate): { ink: ColorValue; bg: ColorValue
   if (mode === 'transcode') {
     return { ink: 'accent', bg: 'accentWash/14', label: t('admin.audioTranscode') };
   }
-  if (mode === 'remux') return { ink: 'info', bg: 'info/14', label: t('admin.remux') };
+  if (mode === 'remux') {
+    return { ink: 'info', bg: 'info/14', label: t('admin.remux') };
+  }
   return { ink: 'success', bg: 'success/14', label: t('admin.directPlay') };
 }
 

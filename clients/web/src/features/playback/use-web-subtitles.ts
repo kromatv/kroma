@@ -52,7 +52,9 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
       item.subs.map((s) => ({ ...s, generated: s.downloaded })),
       user.subtitleLanguage,
     );
-    if (idx != null) setActiveIndex(idx);
+    if (idx != null) {
+      setActiveIndex(idx);
+    }
   }
 
   useEffect(() => {
@@ -77,7 +79,9 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
         .then((list) => {
           setDownloaded(list);
           const i = list.findIndex((d) => d.id === subId);
-          if (i >= 0) setActiveIndex(1000 + i);
+          if (i >= 0) {
+            setActiveIndex(1000 + i);
+          }
         })
         .catch(() => undefined);
     },
@@ -126,9 +130,15 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
       setDownloaded((prev) => prev.filter((p) => p.id !== subId));
       if (di >= 0) {
         setActiveIndex((cur) => {
-          if (cur == null || cur < 1000) return cur;
-          if (cur === 1000 + di) return null;
-          if (cur > 1000 + di) return cur - 1;
+          if (cur == null || cur < 1000) {
+            return cur;
+          }
+          if (cur === 1000 + di) {
+            return null;
+          }
+          if (cur > 1000 + di) {
+            return cur - 1;
+          }
           return cur;
         });
       }
@@ -142,7 +152,9 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
   const onStart = useCallback(
     (req: SubtitleGenRequest) => {
       const target = GEN_LANGS.find((l) => l.code === req.lang) ?? GEN_LANGS[0];
-      if (!target) return;
+      if (!target) {
+        return;
+      }
       const done = () => {
         webRuntime.client.subtitles
           .downloaded(item.id)
@@ -162,7 +174,9 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
           .catch(() => undefined);
       } else {
         const src = allSubs.find((s) => s.index === req.sourceIndex && s.url);
-        if (!src) return;
+        if (!src) {
+          return;
+        }
         void webRuntime.client.subtitles
           .generate(item.id, {
             mode: 'translate',
@@ -202,7 +216,9 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
         return;
       }
       const language = allSubs.find((s) => s.index === index)?.language;
-      if (language) setSubtitle(language);
+      if (language) {
+        setSubtitle(language);
+      }
     },
     [setSubtitle, allSubs],
   );

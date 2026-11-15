@@ -26,14 +26,16 @@ export default defineRule(
     create(context) {
       const emDash = String.fromCodePoint(0x2014);
       function check(node, text) {
-        if (typeof text === 'string' && text.includes(emDash))
+        if (typeof text === 'string' && text.includes(emDash)) {
           context.report({ node, messageId: 'violation' });
+        }
       }
       return {
         Program() {
           for (const comment of context.sourceCode.getAllComments()) {
-            if (comment.value.includes(emDash))
+            if (comment.value.includes(emDash)) {
               context.report({ loc: comment.loc, messageId: 'violation' });
+            }
           }
         },
         Literal: (node) => check(node, node.value),

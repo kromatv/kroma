@@ -42,8 +42,11 @@ function run(args: readonly string[], prompt: string): Promise<string> {
     });
     child.on('close', (code) => {
       clearTimeout(timer);
-      if (code === 0) done(out);
-      else fail(new Error(`claude exited with ${code}: ${(err || out).trim().slice(0, 400)}`));
+      if (code === 0) {
+        done(out);
+      } else {
+        fail(new Error(`claude exited with ${code}: ${(err || out).trim().slice(0, 400)}`));
+      }
     });
     child.stdin.end(prompt);
   });

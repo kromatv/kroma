@@ -16,10 +16,14 @@ export function usePersonCredits(name: string): SearchHit[] | null {
     let cancelled = false;
     client.media.people(name).then(
       (res) => {
-        if (!cancelled) setSettled({ client, name, credits: res.results });
+        if (!cancelled) {
+          setSettled({ client, name, credits: res.results });
+        }
       },
       () => {
-        if (!cancelled) setSettled({ client, name, credits: [] });
+        if (!cancelled) {
+          setSettled({ client, name, credits: [] });
+        }
       },
     );
     return () => {

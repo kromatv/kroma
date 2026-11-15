@@ -18,7 +18,9 @@ export async function obtainCertificates({ duid, log }: CertificateWish): Promis
   const access = await signIn((url) => {
     log(`sign in to your Samsung account in the browser. If none opened, go to: ${url}`);
     const opener = BROWSER[process.platform];
-    if (opener) run([opener, url]).catch(() => undefined);
+    if (opener) {
+      run([opener, url]).catch(() => undefined);
+    }
   });
   return requestCertificates({ access, duid, log });
 }

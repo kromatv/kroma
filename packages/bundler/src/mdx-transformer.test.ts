@@ -31,9 +31,14 @@ const going = (filename: string, src: string): TransformInput => ({
 });
 
 afterEach(() => {
-  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
-  if (inherited === undefined) delete process.env[VARIABLE];
-  else process.env[VARIABLE] = inherited;
+  for (const dir of made.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  if (inherited === undefined) {
+    delete process.env[VARIABLE];
+  } else {
+    process.env[VARIABLE] = inherited;
+  }
 });
 
 describe('the transformer Metro reaches a .docs.mdx through', () => {

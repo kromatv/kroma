@@ -30,7 +30,9 @@ const CONFIG = `signingConfigs {
 
 /** Patch the generated Expo Groovy template, without embedding any credentials. */
 export function configureAndroidSigning(contents: string): string {
-  if (contents.includes(MARKER)) return contents;
+  if (contents.includes(MARKER)) {
+    return contents;
+  }
   const release = /(\brelease\s*\{[\s\S]*?)signingConfig signingConfigs\.debug/;
   if (!release.test(contents) || !contents.includes('    buildTypes {')) {
     throw new Error('The Expo Android signing template changed; refusing an unsigned release');

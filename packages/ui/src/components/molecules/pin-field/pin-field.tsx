@@ -92,7 +92,9 @@ function Dot() {
 }
 
 function dotEdge(filled: boolean, invalid: boolean): ColorValue {
-  if (filled) return 'accent';
+  if (filled) {
+    return 'accent';
+  }
   return invalid ? 'danger' : 'tint/25';
 }
 
@@ -108,16 +110,22 @@ interface Buffer {
 function useDigitKeys(enabled: boolean, buffer: Buffer): void {
   const onKey = useEffectEvent((event: KeyboardEvent) => {
     const { value, maxLength, disabled, setValue } = buffer;
-    if (disabled) return;
+    if (disabled) {
+      return;
+    }
     if (/^\d$/.test(event.key)) {
-      if (value.length < maxLength) setValue(value + event.key);
+      if (value.length < maxLength) {
+        setValue(value + event.key);
+      }
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
       setValue(value.slice(0, -1));
     }
   });
   useEffect(() => {
     const w = enabled ? webWindow() : null;
-    if (!w) return;
+    if (!w) {
+      return;
+    }
     w.addEventListener('keydown', onKey);
     return () => w.removeEventListener('keydown', onKey);
   }, [enabled]);

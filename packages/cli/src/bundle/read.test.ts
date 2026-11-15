@@ -42,7 +42,9 @@ function pack(outDir: string, shipped: Shipped = {}): string {
   const manifest = { ...MANIFEST, id: shipped.id ?? MANIFEST.id };
   writeFileSync(join(dir, 'module.json'), JSON.stringify(shipped.moduleJson ?? manifest));
   const icon = shipped.icon === undefined ? 'icon.svg' : shipped.icon;
-  if (icon) writeFileSync(join(dir, icon), icon === 'icon.svg' ? '<svg/>' : 'PNG');
+  if (icon) {
+    writeFileSync(join(dir, icon), icon === 'icon.svg' ? '<svg/>' : 'PNG');
+  }
   writeFileSync(join(dir, 'module.wasm'), '\0asm');
   const project: Project = { dir, manifest, server: null, ui: null };
   return packBundle({ project, binPath: join(dir, 'module.wasm'), feDir: null, outDir }).path;

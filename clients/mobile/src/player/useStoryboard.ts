@@ -28,28 +28,39 @@ export function useStoryboard(
   const localSprite = offline?.storyboard?.spritePath ?? null;
 
   useEffect(() => {
-    if (!enabled || localSprite) return;
+    if (!enabled || localSprite) {
+      return;
+    }
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const poll = () => {
       client.media
         .storyboard(item.id)
         .then((m) => {
-          if (cancelled) return;
-          if (m === 'pending') timer = setTimeout(poll, 5000);
-          else if (m) setManifest(m);
+          if (cancelled) {
+            return;
+          }
+          if (m === 'pending') {
+            timer = setTimeout(poll, 5000);
+          } else if (m) {
+            setManifest(m);
+          }
         })
         .catch(() => undefined);
     };
     poll();
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
   }, [client, item.id, enabled, localSprite]);
 
   return (absSec: number): StoryboardTile | null => {
-    if (!manifest || manifest.count === 0 || manifest.interval <= 0) return null;
+    if (!manifest || manifest.count === 0 || manifest.interval <= 0) {
+      return null;
+    }
     const index = Math.min(manifest.count - 1, Math.max(0, Math.floor(absSec / manifest.interval)));
     return {
       sheet: localSprite ?? client.media.artwork.resolve(manifest.url) ?? manifest.url,

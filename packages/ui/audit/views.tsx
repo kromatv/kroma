@@ -100,7 +100,9 @@ function measureKit(only: readonly string[] = []): readonly Measured[] {
     needles.some((needle) => `${story.name} ${story.id}`.toLowerCase().includes(needle));
   const out: Measured[] = [];
   for (const [file, story] of found()) {
-    if (!keep(story)) continue;
+    if (!keep(story)) {
+      continue;
+    }
     for (const [view, ui] of viewsOf(story)) {
       out.push({ ...measure(story, view, ui), file, tier: tierOf(file) });
     }
@@ -112,7 +114,9 @@ function measureKit(only: readonly string[] = []): readonly Measured[] {
  * rather than at a number. The caller must `cleanup()`. */
 function mount(story: Story, view: string): readonly Element[] {
   const wanted = viewsOf(story).find(([name]) => name === view);
-  if (!wanted) throw new Error(`no view ${view} on ${story.name}`);
+  if (!wanted) {
+    throw new Error(`no view ${view} on ${story.name}`);
+  }
   const [, ui] = wanted;
   return rootsOf(render(onScreen(ui())).container);
 }

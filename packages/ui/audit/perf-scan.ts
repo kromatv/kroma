@@ -75,9 +75,13 @@ const LAYOUT = new Set(['left', 'top', 'right', 'bottom', 'width', 'height', 'st
 // written apart from each other (one `const eased` spread into every call), so
 // the question "could this have been native?" is only answerable file-wide.
 function layoutBound(node: Node): string | null {
-  if (node.type !== 'ObjectProperty') return null;
+  if (node.type !== 'ObjectProperty') {
+    return null;
+  }
   const key = node.key?.name ?? node.key?.value ?? '';
-  if (!LAYOUT.has(key)) return null;
+  if (!LAYOUT.has(key)) {
+    return null;
+  }
   const held = node.value?.type ?? '';
   return held === 'Identifier' || held === 'MemberExpression' || held === 'CallExpression'
     ? key
@@ -106,7 +110,9 @@ function nativeDriverOn(node: Node): boolean {
 }
 
 function identityMemo(node: Node): boolean {
-  if (node.callee?.type !== 'Identifier' || node.callee.name !== 'useMemo') return false;
+  if (node.callee?.type !== 'Identifier' || node.callee.name !== 'useMemo') {
+    return false;
+  }
   const fn = node.arguments?.[0];
   return fn?.type === 'ArrowFunctionExpression' && fn.body?.type === 'Identifier';
 }
@@ -116,12 +122,18 @@ function providerValue(node: Node): Node | null {
     ? ((node as { openingElement?: { name?: { property?: { name?: string } } } }).openingElement
         ?.name?.property?.name ?? null)
     : null;
-  if (name !== 'Provider') return null;
+  if (name !== 'Provider') {
+    return null;
+  }
   for (const attr of node.openingElement?.attributes ?? []) {
-    if (attr.type !== 'JSXAttribute' || attr.name?.name !== 'value') continue;
+    if (attr.type !== 'JSXAttribute' || attr.name?.name !== 'value') {
+      continue;
+    }
     const held = attr.value?.type === 'JSXExpressionContainer' ? attr.value.expression : null;
     const kind = held?.type ?? '';
-    if (/^(Object|Array|ArrowFunction|Function)Expression$/.test(kind)) return attr as Node;
+    if (/^(Object|Array|ArrowFunction|Function)Expression$/.test(kind)) {
+      return attr as Node;
+    }
   }
   return null;
 }
@@ -154,10 +166,16 @@ function collector(into: Finding[], file: string, forked = true) {
     visitor: {
       ObjectProperty(path: BabelPath) {
         const node = path.node as unknown as Node;
-        if (nativeDriverOff(node)) driven.push(lineOf(node));
-        if (nativeDriverOn(node)) native.push(lineOf(node));
+        if (nativeDriverOff(node)) {
+          driven.push(lineOf(node));
+        }
+        if (nativeDriverOn(node)) {
+          native.push(lineOf(node));
+        }
         const bound = layoutBound(node);
-        if (bound) layout.add(bound);
+        if (bound) {
+          layout.add(bound);
+        }
       },
       CallExpression(path: BabelPath) {
         const node = path.node as unknown as Node;

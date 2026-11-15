@@ -40,9 +40,13 @@ export async function devModeKey(
   passphrase: string | undefined,
   store: KeyStore = DEFAULT_KEY_STORE,
 ): Promise<string> {
-  if (passphrase) return fetchKey(host, passphrase, store);
+  if (passphrase) {
+    return fetchKey(host, passphrase, store);
+  }
   const kept = await keptKey(host, store.directory);
-  if (kept) return kept;
+  if (kept) {
+    return kept;
+  }
   throw new Error(
     `this computer holds no key for ${host} yet: give the passphrase the Dev Mode app shows`,
   );
@@ -74,13 +78,17 @@ async function fetchKey(host: string, passphrase: string, store: KeyStore): Prom
 
 async function keptKey(host: string, directory: string): Promise<string | null> {
   const path = keptKeyPath(host, directory);
-  if (!existsSync(path) || (await stat(path)).size > MAX_KEY_BYTES) return null;
+  if (!existsSync(path) || (await stat(path)).size > MAX_KEY_BYTES) {
+    return null;
+  }
   return openKey(await readFile(path, 'utf8'));
 }
 
 function openKey(text: string, passphrase?: string): string | null {
   const parsed = utils.parseKey(text, passphrase);
   const key = Array.isArray(parsed) ? parsed[0] : parsed;
-  if (!key || key instanceof Error || !key.isPrivateKey()) return null;
+  if (!key || key instanceof Error || !key.isPrivateKey()) {
+    return null;
+  }
   return key.getPrivatePEM();
 }

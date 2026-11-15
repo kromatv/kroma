@@ -62,7 +62,9 @@ const NUMBERED = /^(\d{1,3})[-_.](.+)$/;
 
 function numbered(segment: string): { order?: number; name: string } {
   const at = NUMBERED.exec(segment);
-  if (!at?.[1] || !at[2]) return { name: segment };
+  if (!at?.[1] || !at[2]) {
+    return { name: segment };
+  }
   return { order: Number(at[1]), name: at[2] };
 }
 

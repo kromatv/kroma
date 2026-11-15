@@ -50,12 +50,16 @@ export function useTvController(
   const filter = useAudioFilter(pb.videoRef, `${item.id}:${pb.surface}`);
   const { setAudioFilter: pushEngineFilter, surface } = pb;
   useEffect(() => {
-    if (surface !== 'video') pushEngineFilter(filter.mode);
+    if (surface !== 'video') {
+      pushEngineFilter(filter.mode);
+    }
   }, [surface, pushEngineFilter, filter.mode]);
 
   const scrubPreview = useCallback(
     (abs: number | null) => {
-      if (abs != null) pb.seekScrub(abs);
+      if (abs != null) {
+        pb.seekScrub(abs);
+      }
     },
     [pb],
   );
@@ -89,7 +93,9 @@ export function useTvController(
       pickAudio(index);
       const track = tracks.find((a) => a.index === index);
       const code = refineTrackLang(track?.language, track?.title);
-      if (code) rememberAudio(code);
+      if (code) {
+        rememberAudio(code);
+      }
     },
     [pickAudio, rememberAudio, tracks],
   );

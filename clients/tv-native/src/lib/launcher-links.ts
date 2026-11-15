@@ -8,9 +8,13 @@ type LauncherLink = { type: 'movie' | 'show'; id: string };
 
 // Hand-parsed rather than through `URL`, which React Native only partly implements.
 export function linkInUrl(url: string | null): LauncherLink | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   const [, kind, raw] = /^kroma:\/\/(item|show)\/([^/?#]+)/i.exec(url) ?? [];
-  if (!kind || !raw) return null;
+  if (!kind || !raw) {
+    return null;
+  }
   const type = kind.toLowerCase() === 'show' ? 'show' : 'movie';
   let id = raw;
   try {
@@ -25,13 +29,17 @@ export function startLauncherLinks(requestDeepLink: (link: LauncherLink) => void
   void Linking.getInitialURL()
     .then((url) => {
       const link = linkInUrl(url);
-      if (link) requestDeepLink(link);
+      if (link) {
+        requestDeepLink(link);
+      }
     })
     .catch(() => undefined);
 
   const sub = Linking.addEventListener('url', ({ url }) => {
     const link = linkInUrl(url);
-    if (link) requestDeepLink(link);
+    if (link) {
+      requestDeepLink(link);
+    }
   });
   return () => sub.remove();
 }

@@ -59,11 +59,15 @@ function ChoiceRow({
   // A language row's options are ~190 names through a collator, and this list
   // re-renders whenever any pref on the menu changes.
   const options = useMemo(() => item.options(t, locale), [item, t, locale]);
-  if (options.length < 2) return null;
+  if (options.length < 2) {
+    return null;
+  }
 
   const cycle = () => {
     const next = options[(options.indexOf(value) + 1) % options.length];
-    if (next) set(next);
+    if (next) {
+      set(next);
+    }
   };
 
   const list = item.pick === 'list';

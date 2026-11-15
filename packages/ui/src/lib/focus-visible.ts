@@ -31,6 +31,8 @@ export function useFocusVisibleBy(focus: unknown, focusHidden: () => boolean): b
   const [seen, setSeen] = useState(() => ({ focus, visible: !focusHidden() }));
   const moved = seen.focus !== focus;
   const visible = moved && held ? !focusHidden() : seen.visible;
-  if (moved) setSeen({ focus, visible });
+  if (moved) {
+    setSeen({ focus, visible });
+  }
   return held && visible;
 }

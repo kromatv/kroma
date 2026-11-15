@@ -79,7 +79,9 @@ function WorkbenchShell({
   const openSearch = () => setSearchOpen(true);
   useCommandKey(openSearch);
 
-  if (!drawer && navOpen) setNavOpen(false);
+  if (!drawer && navOpen) {
+    setNavOpen(false);
+  }
 
   // A bare address opens the first article rather than the first component: the
   // guides say how to use the kit, and landing on an arbitrary component asks
@@ -118,7 +120,9 @@ function WorkbenchShell({
     setEdits((prev) => ({ ...prev, [id]: { ...prev[id], [key]: value } }));
   };
 
-  if (!entry) return null;
+  if (!entry) {
+    return null;
+  }
 
   const controls = story ? controlsRole(story, view) : NO_CONTROLS;
 

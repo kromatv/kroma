@@ -45,7 +45,9 @@ export function CopyButton({
   const { available, state, copy } = useCopy();
   const onPress = useCallback(() => copy(value), [copy, value]);
 
-  if (!available) return null;
+  if (!available) {
+    return null;
+  }
 
   // The glyph is the whole confirmation on the icon-only face, so the name has
   // to carry it too or the press reads as having done nothing.

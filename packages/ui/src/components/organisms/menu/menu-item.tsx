@@ -61,8 +61,12 @@ interface MenuItemProps {
 }
 
 function textOf(children: ReactNode): string | undefined {
-  if (typeof children === 'string') return children;
-  if (typeof children === 'number') return String(children);
+  if (typeof children === 'string') {
+    return children;
+  }
+  if (typeof children === 'number') {
+    return String(children);
+  }
   return undefined;
 }
 
@@ -190,7 +194,9 @@ function Item(props: Readonly<MenuItemProps>) {
     composed: delegate.content !== undefined && textOf(delegate.content) === undefined,
   };
 
-  if (row.presentation === 'panel') return <PanelRow {...shared} />;
+  if (row.presentation === 'panel') {
+    return <PanelRow {...shared} />;
+  }
   return <DialogRow {...shared} />;
 }
 

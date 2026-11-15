@@ -31,7 +31,9 @@ export function commandName(command: number): string {
 
 export function checksum(data: Buffer): number {
   let total = 0;
-  for (const byte of data) total = (total + byte) >>> 0;
+  for (const byte of data) {
+    total = (total + byte) >>> 0;
+  }
   return total;
 }
 
@@ -84,15 +86,21 @@ export class PacketReader {
     this.buffer = this.buffer.length === 0 ? chunk : Buffer.concat([this.buffer, chunk]);
     const packets: SdbPacket[] = [];
     for (;;) {
-      if (this.buffer.length < HEADER_BYTES) return packets;
+      if (this.buffer.length < HEADER_BYTES) {
+        return packets;
+      }
       const header = decodeHeader(this.buffer);
       if (!headerIsSane(header, this.maxData)) {
         throw new Error(`sdb: bad frame from the device (${commandName(header.command)})`);
       }
-      if (this.buffer.length < HEADER_BYTES + header.length) return packets;
+      if (this.buffer.length < HEADER_BYTES + header.length) {
+        return packets;
+      }
 
       const data = this.buffer.subarray(HEADER_BYTES, HEADER_BYTES + header.length);
-      if (checksum(data) !== header.checksum) throw new Error('sdb: payload checksum mismatch');
+      if (checksum(data) !== header.checksum) {
+        throw new Error('sdb: payload checksum mismatch');
+      }
       this.buffer = this.buffer.subarray(HEADER_BYTES + header.length);
       packets.push({ command: header.command, arg0: header.arg0, arg1: header.arg1, data });
     }

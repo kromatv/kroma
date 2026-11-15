@@ -45,7 +45,9 @@ function baseSub(el: ElementRow, dur: string, seasons: string): string {
       .filter(Boolean)
       .join(' · ');
   }
-  if (el.kind === 'episode') return dur;
+  if (el.kind === 'episode') {
+    return dur;
+  }
   return [el.year ? String(el.year) : '', el.genre, dur].filter(Boolean).join(' · ');
 }
 

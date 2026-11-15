@@ -13,7 +13,9 @@ const state = {
 
 class FakeDirectory {
   constructor(..._parts: unknown[]) {
-    if (state.throwOnOpen) throw new Error('no document directory');
+    if (state.throwOnOpen) {
+      throw new Error('no document directory');
+    }
   }
   get exists() {
     return state.dirExists;
@@ -28,14 +30,18 @@ class FakeFile {
   get exists() {
     return state.fileExists;
   }
-  write(body: string) {
-    if (state.throwOnWrite) throw new Error('disk full');
+  writeSync(body: string) {
+    if (state.throwOnWrite) {
+      throw new Error('disk full');
+    }
     state.written.push(body);
     state.text = body;
     state.fileExists = true;
   }
   textSync() {
-    if (state.throwOnRead) throw new Error('unreadable');
+    if (state.throwOnRead) {
+      throw new Error('unreadable');
+    }
     return state.text;
   }
 }
@@ -135,6 +141,19 @@ describe('createDeviceStore', () => {
     store.setItem('kroma:theme', 'light');
     expect(store.getItem('kroma:theme')).toBe('light');
     expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('warns with the cause when the write fails', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    state.throwOnWrite = true;
+    const store = install();
+
+    store.setItem('kroma:theme', 'light');
+    expect(warn).toHaveBeenCalledWith(
+      '[kroma] preference store write failed:',
+      new Error('disk full'),
+    );
     warn.mockRestore();
   });
 });

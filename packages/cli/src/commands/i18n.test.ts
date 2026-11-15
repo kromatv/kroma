@@ -8,7 +8,9 @@ import { catalogsOf, i18nCommand, writeMessageTypes } from './i18n';
 const dirs: string[] = [];
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 const FILES = {
@@ -31,7 +33,9 @@ function moduleAt(dependency: string, locales: Record<string, object> = FILES): 
   };
   write('module.json', { schemaVersion: 3, id: 'tv.kroma.notes', name: 'Notes', version: '0.1.0' });
   write('package.json', { name: 'notes', dependencies: { [dependency]: '*' } });
-  for (const [path, content] of Object.entries(locales)) write(path, content);
+  for (const [path, content] of Object.entries(locales)) {
+    write(path, content);
+  }
   write('ui/src/module.tsx', 'export default {};');
   return dir;
 }

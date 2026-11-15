@@ -156,9 +156,15 @@ const chipDefinition = styles(
 );
 
 function positionAt(index: number, count: number): GroupPosition {
-  if (count === 1) return 'only';
-  if (index === 0) return 'first';
-  if (index === count - 1) return 'last';
+  if (count === 1) {
+    return 'only';
+  }
+  if (index === 0) {
+    return 'first';
+  }
+  if (index === count - 1) {
+    return 'last';
+  }
   return 'middle';
 }
 

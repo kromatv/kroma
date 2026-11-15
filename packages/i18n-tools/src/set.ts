@@ -57,8 +57,12 @@ const EXTENSION = '.json';
 function stems(dir: string, prefix = ''): string[] {
   return readdirSync(dir, { withFileTypes: true })
     .flatMap((entry) => {
-      if (entry.isDirectory()) return stems(join(dir, entry.name), `${prefix}${entry.name}/`);
-      if (!entry.name.endsWith(EXTENSION)) return [];
+      if (entry.isDirectory()) {
+        return stems(join(dir, entry.name), `${prefix}${entry.name}/`);
+      }
+      if (!entry.name.endsWith(EXTENSION)) {
+        return [];
+      }
       return [`${prefix}${entry.name.slice(0, -EXTENSION.length)}`];
     })
     .sort((a, b) => (a < b ? -1 : 1));
@@ -66,8 +70,12 @@ function stems(dir: string, prefix = ''): string[] {
 
 /** Every locale the set has on disk, whatever it is named. */
 export function localesOf(set: Shelf): string[] {
-  if (!existsSync(set.dir)) return [];
-  if (set.layout === 'flat') return stems(set.dir).filter((stem) => !stem.includes('/'));
+  if (!existsSync(set.dir)) {
+    return [];
+  }
+  if (set.layout === 'flat') {
+    return stems(set.dir).filter((stem) => !stem.includes('/'));
+  }
   return readdirSync(set.dir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -107,18 +115,26 @@ export function readFiles(set: Shelf, locale: string): LocaleFiles {
   const files: LocaleFiles = new Map();
   if (set.layout === 'flat') {
     const path = catalogPath(set, locale, WHOLE);
-    if (existsSync(path)) files.set(WHOLE, parse(path));
+    if (existsSync(path)) {
+      files.set(WHOLE, parse(path));
+    }
     return files;
   }
   const dir = join(set.dir, locale);
-  if (!existsSync(dir)) return files;
-  for (const file of stems(dir)) files.set(file, parse(catalogPath(set, locale, file)));
+  if (!existsSync(dir)) {
+    return files;
+  }
+  for (const file of stems(dir)) {
+    files.set(file, parse(catalogPath(set, locale, file)));
+  }
   return files;
 }
 
 export function merged(files: LocaleFiles): Catalog {
   const all: Record<string, string> = {};
-  for (const catalog of files.values()) Object.assign(all, catalog);
+  for (const catalog of files.values()) {
+    Object.assign(all, catalog);
+  }
   return all;
 }
 
@@ -137,7 +153,9 @@ const SCHEMA = '$schema';
 // outlives a rewrite: a file keeps the one it has, and a new one takes its
 // source language's.
 function pointerOf(path: string): string | undefined {
-  if (!existsSync(path)) return undefined;
+  if (!existsSync(path)) {
+    return undefined;
+  }
   try {
     return CatalogFile.parse(JSON.parse(readFileSync(path, 'utf8')))[SCHEMA];
   } catch {
@@ -161,14 +179,19 @@ export function writeCatalog(
   const path = catalogPath(set, locale, file);
   const present = existsSync(path);
   if (Object.keys(catalog).length === 0 && set.layout === 'folder') {
-    if (present) rmSync(path);
-    if (present && readdirSync(dirname(path)).length === 0)
+    if (present) {
+      rmSync(path);
+    }
+    if (present && readdirSync(dirname(path)).length === 0) {
       rmSync(dirname(path), { recursive: true });
+    }
     return present;
   }
   const pointer = pointerOf(path) ?? pointerOf(catalogPath(set, set.project.source, file));
   const next = renderCatalog(catalog, pointer);
-  if (present && readFileSync(path, 'utf8') === next) return false;
+  if (present && readFileSync(path, 'utf8') === next) {
+    return false;
+  }
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, next);
   return true;

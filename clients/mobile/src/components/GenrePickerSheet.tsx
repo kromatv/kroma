@@ -56,7 +56,9 @@ export function GenrePickerSheet({
       snapPoints={SNAP_POINTS}
       enableDynamicSizing={false}
       onChange={(index) => {
-        if (index >= 0) setAsked(true);
+        if (index >= 0) {
+          setAsked(true);
+        }
       }}
     >
       <Box style={s.header}>

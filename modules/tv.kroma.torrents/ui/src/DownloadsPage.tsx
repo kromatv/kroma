@@ -77,7 +77,9 @@ export default function DownloadsPage() {
   const queryKey = useMemo(() => ['admin', 'downloads', query] as const, [query]);
   const { data, failed, reload } = usePoll(queryKey, () => torrents.downloads(query), POLL_MS);
   const [lastData, setLastData] = useState(data);
-  if (data && data !== lastData) setLastData(data);
+  if (data && data !== lastData) {
+    setLastData(data);
+  }
   const shown = data ?? lastData;
   const clientsPoll = usePoll(['admin', 'downloads', 'clients'], () => torrents.clients(), 60000);
   const { table, headings, sort, onSortChange } = useDownloadsTable({
@@ -90,7 +92,9 @@ export default function DownloadsPage() {
   const lastReloadRef = useRef(0);
   const throttledReload = useCallback(() => {
     const now = Date.now();
-    if (now - lastReloadRef.current < RELOAD_THROTTLE_MS) return;
+    if (now - lastReloadRef.current < RELOAD_THROTTLE_MS) {
+      return;
+    }
     lastReloadRef.current = now;
     void reload();
   }, [reload]);
@@ -130,15 +134,23 @@ export default function DownloadsPage() {
   };
 
   const relink = async (dl: DownloadView) => {
-    if (await LinkModal.call({ dl })) await reload();
+    if (await LinkModal.call({ dl })) {
+      await reload();
+    }
   };
 
   const editLimits = async () => {
-    if (await LimitsModal.call()) await reload();
+    if (await LimitsModal.call()) {
+      await reload();
+    }
   };
 
-  if (!canQueue) return <Denied />;
-  if (!shown) return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading />;
+  if (!canQueue) {
+    return <Denied />;
+  }
+  if (!shown) {
+    return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading />;
+  }
 
   const { downloads, page, stats, vpn } = shown;
   const hasActive = stats.active > 0;

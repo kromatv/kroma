@@ -38,7 +38,9 @@ export function stubFetch(res: Response) {
 // Throws when there is no call, rather than returning nothing: otherwise a test
 // asserting an absent header would pass for the wrong reason (no request was made).
 export const headersOf = (init: RequestInit | undefined): Record<string, string> => {
-  if (!init) throw new Error('expected a recorded fetch call, but none was made');
+  if (!init) {
+    throw new Error('expected a recorded fetch call, but none was made');
+  }
   return init.headers as Record<string, string>;
 };
 

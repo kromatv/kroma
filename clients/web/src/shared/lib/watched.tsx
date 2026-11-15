@@ -41,7 +41,9 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !user) {
+      return;
+    }
     let cancelled = false;
     client.playback
       .watched()
@@ -52,7 +54,9 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
         }
       })
       .catch(() => {
-        if (!cancelled) setLoadedFor(user);
+        if (!cancelled) {
+          setLoadedFor(user);
+        }
       });
     return () => {
       cancelled = true;
@@ -61,19 +65,29 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
 
   const setWatched = useCallback(
     (id: SubjectId, watched: boolean) => {
-      if (!user) return;
-      if (idsRef.current.has(id) === watched) return;
+      if (!user) {
+        return;
+      }
+      if (idsRef.current.has(id) === watched) {
+        return;
+      }
       const next = new Set(idsRef.current);
-      if (watched) next.add(id);
-      else next.delete(id);
+      if (watched) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
       apply(next);
       const call = watched
         ? client.playback.markWatched(ItemId.parse(id))
         : client.playback.unmarkWatched(ItemId.parse(id));
       call.catch(() => {
         const reverted = new Set(idsRef.current);
-        if (watched) reverted.delete(id);
-        else reverted.add(id);
+        if (watched) {
+          reverted.delete(id);
+        } else {
+          reverted.add(id);
+        }
         apply(reverted);
       });
     },
@@ -82,7 +96,9 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
 
   const noteWatched = useCallback(
     (id: SubjectId) => {
-      if (!user || idsRef.current.has(id)) return;
+      if (!user || idsRef.current.has(id)) {
+        return;
+      }
       apply(new Set(idsRef.current).add(id));
     },
     [apply, user],
@@ -108,6 +124,8 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
 /** Throws if used outside `<WatchedProvider>`. */
 export function useWatched(): WatchedValue {
   const ctx = useContext(WatchedContext);
-  if (!ctx) throw new Error('useWatched must be used within <WatchedProvider>');
+  if (!ctx) {
+    throw new Error('useWatched must be used within <WatchedProvider>');
+  }
   return ctx;
 }

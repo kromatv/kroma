@@ -39,13 +39,16 @@ export async function reconcileTransfers({
       continue;
     }
     live.push(meta.fileUri);
-    if (task.state === 'PAUSED') markPaused(meta.item.id, true);
+    if (task.state === 'PAUSED') {
+      markPaused(meta.item.id, true);
+    }
     const seed = task.bytesTotal > 0 ? Math.min(0.99, task.bytesDownloaded / task.bytesTotal) : -1;
     execute(meta.item, (hooks) => adoptTransfer(client, task, meta, hooks), seed);
   }
   await sweepOrphans(stored, live);
   for (const item of await readWanted()) {
-    if (!isRunning(item.id) && !stored.some((e) => e.itemId === item.id) && !hasEntry(item.id))
+    if (!isRunning(item.id) && !stored.some((e) => e.itemId === item.id) && !hasEntry(item.id)) {
       start(item);
+    }
   }
 }

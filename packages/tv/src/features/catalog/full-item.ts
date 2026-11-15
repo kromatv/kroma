@@ -17,11 +17,15 @@ export function useFullItem(title: MediaCard): MediaItem | null {
   const [loaded, setLoaded] = useState<{ client: KromaClient; item: MediaItem } | null>(null);
 
   useEffect(() => {
-    if (isFullItem(title)) return;
+    if (isFullItem(title)) {
+      return;
+    }
     let cancelled = false;
     client.media.item(title.id).then(
       (item) => {
-        if (!cancelled) setLoaded({ client, item });
+        if (!cancelled) {
+          setLoaded({ client, item });
+        }
       },
       () => undefined,
     );
@@ -30,7 +34,9 @@ export function useFullItem(title: MediaCard): MediaItem | null {
     };
   }, [client, title]);
 
-  if (isFullItem(title)) return title;
+  if (isFullItem(title)) {
+    return title;
+  }
   return loaded?.client === client && loaded.item.id === title.id ? loaded.item : null;
 }
 

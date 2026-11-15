@@ -38,13 +38,17 @@ export function usePushGrantRefresh(): void {
   const signedIn = status === 'signedIn';
 
   useEffect(() => {
-    if (!signedIn || !client) return;
+    if (!signedIn || !client) {
+      return;
+    }
     let cancelled = false;
 
     void (async () => {
       try {
         const refreshed = await refreshGrant();
-        if (!refreshed || cancelled) return;
+        if (!refreshed || cancelled) {
+          return;
+        }
         await client.notifications.push.subscribe({
           transport: 'relay',
           endpoint: refreshed.grant,
@@ -79,14 +83,18 @@ export function usePushTaps(): void {
   const signedIn = status === 'signedIn';
 
   useEffect(() => {
-    if (!signedIn || !client) return;
+    if (!signedIn || !client) {
+      return;
+    }
     let cancelled = false;
     let subscription: { remove(): void } | undefined;
 
     void (async () => {
       const push = loadPush();
       // No native push in this build: the in-app centre still works.
-      if (!push || cancelled) return;
+      if (!push || cancelled) {
+        return;
+      }
 
       // Banner only, no sound: the app is already in hand.
       push.setNotificationHandler({
@@ -102,7 +110,9 @@ export function usePushTaps(): void {
       const go = async (response: Notifications.NotificationResponse) => {
         const route = await handleTap(response, client);
         // Guards a sign-out landing between the await and the push.
-        if (route && !cancelled) router.push(route as never);
+        if (route && !cancelled) {
+          router.push(route as never);
+        }
       };
 
       // `getLastNotificationResponse` is STICKY for the life of the JS context,
@@ -122,7 +132,9 @@ export function usePushTaps(): void {
           await go(initial);
         }
       }
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
 
       subscription = push.addNotificationResponseReceivedListener((response) => {
         void go(response);

@@ -30,8 +30,12 @@ function transformOf(): Transform {
 
 async function rewrite(code: string): Promise<string> {
   const out = await transformOf().call(ctx, code, '/m/ui/src/page.tsx');
-  if (!out) throw new Error(`nothing was rewritten in: ${code}`);
-  if (!out.code.startsWith(HELPER_IMPORT)) throw new Error(`no helper import: ${out.code}`);
+  if (!out) {
+    throw new Error(`nothing was rewritten in: ${code}`);
+  }
+  if (!out.code.startsWith(HELPER_IMPORT)) {
+    throw new Error(`no helper import: ${out.code}`);
+  }
   return out.code.slice(HELPER_IMPORT.length).trim();
 }
 

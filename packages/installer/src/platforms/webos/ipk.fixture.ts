@@ -52,7 +52,7 @@ function tar(name: string, data: Buffer): Buffer {
   header.write('00000000000\0', 136, 'latin1');
   header.write('        ', 148, 'latin1');
   header.write('0', 156, 'latin1');
-  header.write('ustar\0' + '00', 257, 'latin1');
+  header.write('ustar\u000000', 257, 'latin1');
   const sum = header.reduce((total, byte) => total + byte, 0);
   header.write(`${sum.toString(8).padStart(6, '0')}\0 `, 148, 'latin1');
   const padded = Buffer.alloc(Math.ceil(data.length / TAR_BLOCK_BYTES) * TAR_BLOCK_BYTES);

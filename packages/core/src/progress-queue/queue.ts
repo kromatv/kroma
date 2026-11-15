@@ -42,7 +42,9 @@ export interface ProgressQueue {
 }
 
 function usable(stored: unknown): PendingProgress[] {
-  if (!Array.isArray(stored)) return [];
+  if (!Array.isArray(stored)) {
+    return [];
+  }
   return stored.flatMap((raw) => {
     const entry = PendingProgress.safeParse(raw);
     return entry.success ? [entry.data] : [];
@@ -94,7 +96,9 @@ export function createProgressQueue(store: PendingProgressStore): ProgressQueue 
         await replace((current) =>
           current.flatMap((entry) => {
             const key = progressKey(entry);
-            if (!outcome.has(key)) return [entry];
+            if (!outcome.has(key)) {
+              return [entry];
+            }
             const kept = outcome.get(key);
             return kept ? [kept] : [];
           }),
@@ -113,7 +117,9 @@ async function walk(
   outcome: Map<string, PendingProgress | null>,
 ): Promise<void> {
   const [entry, ...rest] = queue;
-  if (!entry) return;
+  if (!entry) {
+    return;
+  }
   const verdict = await attempt(entry, target);
   if (verdict === 'unreachable') {
     outcome.set(progressKey(entry), { ...entry, attempts: entry.attempts + 1 });
@@ -127,7 +133,9 @@ async function walk(
 
 async function attempt(entry: PendingProgress, target: ProgressTarget): Promise<Verdict> {
   try {
-    if (!shouldReplay(entry, await target.current(entry.itemId))) return 'dropped';
+    if (!shouldReplay(entry, await target.current(entry.itemId))) {
+      return 'dropped';
+    }
     await target.save(entry.itemId, entry.positionMs, entry.durationMs);
     return 'saved';
   } catch (error) {
@@ -138,7 +146,11 @@ async function attempt(entry: PendingProgress, target: ProgressTarget): Promise<
 const WORTH_ANOTHER_PASS = new Set([401, 408, 429]);
 
 function answered(error: unknown): boolean {
-  if (error instanceof KromaSchemaError) return true;
-  if (!(error instanceof KromaApiError)) return false;
+  if (error instanceof KromaSchemaError) {
+    return true;
+  }
+  if (!(error instanceof KromaApiError)) {
+    return false;
+  }
   return error.status >= 400 && error.status < 500 && !WORTH_ANOTHER_PASS.has(error.status);
 }

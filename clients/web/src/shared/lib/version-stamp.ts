@@ -38,9 +38,10 @@ export function clientStamp(
 
 /** The server's stamp, from `/api/health`. An older server sends no commit. */
 export function serverStamp(health: Health): VersionStamp {
+  const build = health.build ?? 0;
   return {
     version: health.version,
-    build: health.build || null,
+    build: build > 0 ? build : null,
     commit: known(health.commit),
     dirty: false,
   };
@@ -50,17 +51,24 @@ export function serverStamp(health: Health): VersionStamp {
  *  serves its own web client. Local builds share no build number, so their
  *  commits decide. */
 export function sameBuild(a: VersionStamp, b: VersionStamp): boolean {
-  if (a.version !== b.version || a.build !== b.build) return false;
-  if (a.build !== null || !a.commit || !b.commit) return true;
+  if (a.version !== b.version || a.build !== b.build) {
+    return false;
+  }
+  if (a.build !== null || !a.commit || !b.commit) {
+    return true;
+  }
   return a.commit === b.commit;
 }
 
 /** `v0.1.39 · build 3488516` for a CI build, `v0.1.39 · dev 1fadb4f` for a
  *  local one. */
 export function stampLabel(stamp: VersionStamp, t: Translate): string {
-  if (stamp.build !== null)
+  if (stamp.build !== null) {
     return `v${stamp.version} · ${t('nav.versionBuild', { build: String(stamp.build) })}`;
-  if (stamp.commit) return `v${stamp.version} · ${t('nav.versionDev', { commit: stamp.commit })}`;
+  }
+  if (stamp.commit) {
+    return `v${stamp.version} · ${t('nav.versionDev', { commit: stamp.commit })}`;
+  }
   return `v${stamp.version}`;
 }
 
@@ -71,7 +79,9 @@ export function stampLines(
   server: VersionStamp | null,
   t: Translate,
 ): StampLine[] {
-  if (!server || sameBuild(client, server)) return [{ side: null, text: stampLabel(client, t) }];
+  if (!server || sameBuild(client, server)) {
+    return [{ side: null, text: stampLabel(client, t) }];
+  }
   return [
     { side: t('nav.versionClient'), text: stampLabel(client, t) },
     { side: t('nav.versionServer'), text: stampLabel(server, t) },
@@ -80,7 +90,9 @@ export function stampLines(
 
 function describe(stamp: VersionStamp): string {
   const version = stamp.build === null ? stamp.version : `${stamp.version}.${stamp.build}`;
-  if (!stamp.commit) return version;
+  if (!stamp.commit) {
+    return version;
+  }
   return `${version} (${stamp.commit}${stamp.dirty ? '-dirty' : ''})`;
 }
 

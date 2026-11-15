@@ -41,7 +41,9 @@ const PICKED = new File(['original'], 'me.jpg', { type: 'image/jpeg' });
 
 function pick(file: File | undefined) {
   const input = document.querySelector('input[type="file"]');
-  if (!input) throw new Error('no file input');
+  if (!input) {
+    throw new Error('no file input');
+  }
   fireEvent.change(input, { target: { files: file ? [file] : [] } });
 }
 

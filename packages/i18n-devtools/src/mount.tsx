@@ -32,8 +32,11 @@ const HOST_STYLE = {
 function disposeLive(): void {
   for (const stale of document.querySelectorAll(HOST)) {
     const dispose = Reflect.get(stale, LIVE);
-    if (typeof dispose === 'function') dispose();
-    else stale.remove();
+    if (typeof dispose === 'function') {
+      dispose();
+    } else {
+      stale.remove();
+    }
   }
 }
 
@@ -48,7 +51,9 @@ function stamps(): string[] {
 
 function leaveDocumentUnstamped(before: readonly string[]): void {
   for (const key of stamps()) {
-    if (!before.includes(key)) Reflect.deleteProperty(document, key);
+    if (!before.includes(key)) {
+      Reflect.deleteProperty(document, key);
+    }
   }
 }
 
@@ -63,7 +68,9 @@ function leaveDocumentUnstamped(before: readonly string[]): void {
  * that calls this without ever reaching that module's own disposer.
  */
 export function mount(options: MountOptions = {}): () => void {
-  if (typeof document === 'undefined') return () => {};
+  if (typeof document === 'undefined') {
+    return () => {};
+  }
   ignoreTools(options.ignore ?? []);
   openChannel(options.hot ?? null);
   setEngine(options.engine ?? null);
@@ -76,7 +83,9 @@ export function mount(options: MountOptions = {}): () => void {
   document.body.append(host);
 
   const { open, x, y } = readSession();
-  if (open && x !== null && y !== null) place(host, x, y);
+  if (open && x !== null && y !== null) {
+    place(host, x, y);
+  }
   const stopDrag = draggable(host, (left, top) => writeSession({ x: left, y: top }));
   const stopClamp = keepInView(host);
 

@@ -12,7 +12,9 @@ export interface ModuleHistoryProps {
 
 /** Every version of the module that has been released, newest first. */
 export function ModuleHistory({ rows }: Readonly<ModuleHistoryProps>) {
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return null;
+  }
   return (
     <Column gap={12}>
       <Text variant="overline" color="accentText">

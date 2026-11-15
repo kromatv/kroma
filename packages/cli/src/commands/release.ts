@@ -40,10 +40,16 @@ export type Verdict =
  * one; a published entry that recorded none says nothing either way.
  */
 export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
-  if (!live) return { kind: 'new' };
+  if (!live) {
+    return { kind: 'new' };
+  }
   const order = compareRaw(local.version, live.version);
-  if (order < 0) return { kind: 'backwards', published: live.version };
-  if (order > 0) return { kind: 'publish', from: live.version };
+  if (order < 0) {
+    return { kind: 'backwards', published: live.version };
+  }
+  if (order > 0) {
+    return { kind: 'publish', from: live.version };
+  }
 
   const published = live.artifacts[0]?.contentHash;
   if (published && published !== local.artifacts[0]?.contentHash) {
@@ -109,7 +115,9 @@ export function decide(
     if (beyond) {
       errors.push(beyond);
       const kept = live.get(entry.id);
-      if (kept) entries.push(underRepo(kept, repo));
+      if (kept) {
+        entries.push(underRepo(kept, repo));
+      }
       continue;
     }
     const verdict = verdictFor(entry, live.get(entry.id));
@@ -165,11 +173,17 @@ function report(plan: Plan, stale: string[], errors: string[], strict: boolean):
     const label = r.reason === 'new' ? 'new' : 'update';
     console.log(`  publish  ${r.tag}  (${label})`);
   }
-  for (const id of plan.unchanged) console.log(`  unchanged ${id}`);
-  for (const id of plan.carried) console.log(`  carried  ${id} (not built in this run)`);
+  for (const id of plan.unchanged) {
+    console.log(`  unchanged ${id}`);
+  }
+  for (const id of plan.carried) {
+    console.log(`  carried  ${id} (not built in this run)`);
+  }
   if (stale.length > 0) {
     console.warn(`\n${stale.length} module(s) changed without a version bump, NOT published:\n`);
-    for (const s of stale) console.warn(`  ! ${s}\n`);
+    for (const s of stale) {
+      console.warn(`  ! ${s}\n`);
+    }
     console.warn(
       strict
         ? '  --strict: treating unbumped modules as a failure.'
@@ -178,7 +192,9 @@ function report(plan: Plan, stale: string[], errors: string[], strict: boolean):
   }
   if (errors.length > 0) {
     console.error(`\n${errors.length} module(s) cannot be released:\n`);
-    for (const e of errors) console.error(`  x ${e}\n`);
+    for (const e of errors) {
+      console.error(`  x ${e}\n`);
+    }
   }
 }
 
@@ -198,7 +214,9 @@ export interface ReleaseOptions {
  *  `history.json` and `plan.json` under `--out`. */
 export async function releaseCommand(options: ReleaseOptions): Promise<number> {
   const repo = options.repo ?? process.env.GITHUB_REPOSITORY;
-  if (!repo) throw new Error('--repo owner/name is required (or set GITHUB_REPOSITORY)');
+  if (!repo) {
+    throw new Error('--repo owner/name is required (or set GITHUB_REPOSITORY)');
+  }
   const cwd = options.cwd ?? process.cwd();
   const modulesDir = resolveDir(options.from, 'dist/modules', cwd);
   const outDir = resolveDir(options.out, 'dist/registry', cwd);
@@ -215,8 +233,12 @@ export async function releaseCommand(options: ReleaseOptions): Promise<number> {
     versions(cwd).server,
   );
   report(plan, stale, errors, options.strict === true);
-  if (errors.length > 0) return 1;
-  if (options.strict && stale.length > 0) return 1;
+  if (errors.length > 0) {
+    return 1;
+  }
+  if (options.strict && stale.length > 0) {
+    return 1;
+  }
   if (options.dryRun) {
     console.log('\n--dry-run: wrote nothing');
     return 0;

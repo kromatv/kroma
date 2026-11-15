@@ -20,7 +20,9 @@ const RELATIVE = new Map<Locale, Intl.RelativeTimeFormat | null>();
 // than taking the app down.
 function relativeFormat(locale: Locale): Intl.RelativeTimeFormat | null {
   const cached = RELATIVE.get(locale);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
   let made: Intl.RelativeTimeFormat | null = null;
   try {
     made = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' });
@@ -46,7 +48,9 @@ const NUMBERS = new Map<string, Intl.NumberFormat | null>();
 function numberFormat(locale: Locale, digits: number): Intl.NumberFormat | null {
   const key = `${locale}${digits}`;
   const cached = NUMBERS.get(key);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
   const made = built(
     () =>
       new Intl.NumberFormat(locale, {
@@ -65,7 +69,9 @@ function groupDigits(n: number, locale: Locale): string {
   const [whole = '', fraction] = String(Math.abs(n)).split('.');
   const head = whole.length % 3 || 3;
   const groups = [whole.slice(0, head)];
-  for (let at = head; at < whole.length; at += 3) groups.push(whole.slice(at, at + 3));
+  for (let at = head; at < whole.length; at += 3) {
+    groups.push(whole.slice(at, at + 3));
+  }
   const tail = fraction ? `${DECIMAL_SEPARATOR[locale]}${fraction.slice(0, 3)}` : '';
   return `${n < 0 ? '-' : ''}${groups.join(GROUP_SEPARATOR[locale])}${tail}`;
 }
@@ -86,7 +92,9 @@ export function formatCount(n: number, locale: Locale): string {
 // numeric bag stands in.
 function dateFormat(locale: Locale): Intl.DateTimeFormat | null {
   const cached = DATES.get(locale);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
   let made: Intl.DateTimeFormat | null = null;
   try {
     made = new Intl.DateTimeFormat(locale, { dateStyle: 'short' });
@@ -140,7 +148,9 @@ export function formatClock(date: Date): string {
 export function formatBytes(bytes: number, locale: Locale): string {
   const units = BYTE_UNITS[locale];
   const smallest = units[0] as string;
-  if (!bytes || bytes < 0) return `0 ${smallest}`;
+  if (!bytes || bytes < 0) {
+    return `0 ${smallest}`;
+  }
   // Clamped at both ends: a fractional byte count logs negative, and an
   // unclamped index would divide by 1024 to the minus one and read a
   // half-byte transfer rate back as 512.
@@ -191,8 +201,12 @@ export function formatUptime(t: Translate, seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (days > 0) return t('format.uptimeDays', { days, hours: pad(hours) });
-  if (hours > 0) return t('format.uptimeHours', { hours, minutes: pad(minutes) });
+  if (days > 0) {
+    return t('format.uptimeDays', { days, hours: pad(hours) });
+  }
+  if (hours > 0) {
+    return t('format.uptimeHours', { hours, minutes: pad(minutes) });
+  }
   return t('format.uptimeMinutes', { minutes });
 }
 
@@ -213,7 +227,9 @@ const STAMPS = new Map<Locale, Intl.DateTimeFormat | null>();
 // the option bag falls back rather than throwing at a call site.
 function stampFormat(locale: Locale): Intl.DateTimeFormat | null {
   const cached = STAMPS.get(locale);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
   let made: Intl.DateTimeFormat | null = null;
   try {
     made = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -229,9 +245,13 @@ function stampFormat(locale: Locale): Intl.DateTimeFormat | null {
  *  answers "when", which is what a log wants: two rows a minute apart both read
  *  "2 days ago", and a reader auditing a history needs to tell them apart. */
 export function formatStamp(locale: Locale, at: string | number | null | undefined): string | null {
-  if (at === null || at === undefined || at === '') return null;
+  if (at === null || at === undefined || at === '') {
+    return null;
+  }
   const then = typeof at === 'number' ? at : Date.parse(at);
-  if (Number.isNaN(then)) return null;
+  if (Number.isNaN(then)) {
+    return null;
+  }
   return (
     stampFormat(locale)?.format(then) ?? new Date(then).toISOString().slice(0, 16).replace('T', ' ')
   );
@@ -243,20 +263,32 @@ export function formatElapsed(
   at: string | number | null | undefined,
   now: number = Date.now(),
 ): string {
-  if (at === null || at === undefined || at === '') return t('format.never');
+  if (at === null || at === undefined || at === '') {
+    return t('format.never');
+  }
   const then = typeof at === 'number' ? at : Date.parse(at);
-  if (Number.isNaN(then)) return t('format.unknownTime');
+  if (Number.isNaN(then)) {
+    return t('format.unknownTime');
+  }
 
   const minutes = Math.floor((now - then) / 60000);
-  if (minutes < 1) return t('format.justNow');
+  if (minutes < 1) {
+    return t('format.justNow');
+  }
 
   const relative = relativeFormat(locale);
   if (relative) {
-    if (minutes < 60) return relative.format(-minutes, 'minute');
+    if (minutes < 60) {
+      return relative.format(-minutes, 'minute');
+    }
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return relative.format(-hours, 'hour');
+    if (hours < 24) {
+      return relative.format(-hours, 'hour');
+    }
     const days = Math.floor(hours / 24);
-    if (days < 30) return relative.format(-days, 'day');
+    if (days < 30) {
+      return relative.format(-days, 'day');
+    }
   }
   return dateFormat(locale)?.format(then) ?? new Date(then).toISOString().slice(0, 10);
 }

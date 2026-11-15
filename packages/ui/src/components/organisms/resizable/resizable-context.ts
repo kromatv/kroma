@@ -48,13 +48,17 @@ const SeamIndexContext = createContext<number | null>(null);
 
 function usePanelIndex(): number {
   const at = useContext(PanelIndexContext);
-  if (at === null) throw new Error('<Resizable.Panel> must be a direct child of <Resizable.Root>');
+  if (at === null) {
+    throw new Error('<Resizable.Panel> must be a direct child of <Resizable.Root>');
+  }
   return at;
 }
 
 function useSeamIndex(): number {
   const at = useContext(SeamIndexContext);
-  if (at === null) throw new Error('<Resizable.Handle> must be a direct child of <Resizable.Root>');
+  if (at === null) {
+    throw new Error('<Resizable.Handle> must be a direct child of <Resizable.Root>');
+  }
   return at;
 }
 

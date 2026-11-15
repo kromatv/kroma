@@ -28,6 +28,8 @@ export function trailerRoute(params: {
 }): TrailerRoute | null {
   const kind = TmdbKind.safeParse(routeParam(params.kind));
   const tmdbId = Number(routeParam(params.tmdbId));
-  if (!kind.success || !Number.isInteger(tmdbId) || tmdbId <= 0) return null;
+  if (!kind.success || !Number.isInteger(tmdbId) || tmdbId <= 0) {
+    return null;
+  }
   return { kind: kind.data, tmdbId, title: routeParam(params.title) };
 }

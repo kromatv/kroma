@@ -10,7 +10,7 @@ const MAX_PAGES = 30;
 const ATTEMPTS = 4;
 const BACKOFF_MS = 2000;
 
-const FileList = z.array(z.object({ filename: z.string().min(1) }));
+const FileList = z.array(z.object({ filename: z.string().nonempty() }));
 const Compare = z.object({ files: FileList.default([]) });
 
 type Changed = string[] | 'all';
@@ -21,15 +21,23 @@ async function api(repo: Repo, path: string): Promise<unknown> {
     'user-agent': 'kroma-ci-tools',
     'x-github-api-version': '2022-11-28',
   };
-  if (repo.token) headers.authorization = `Bearer ${repo.token}`;
+  if (repo.token) {
+    headers.authorization = `Bearer ${repo.token}`;
+  }
   let failure = '';
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-    if (attempt > 1) await delay(BACKOFF_MS * 2 ** (attempt - 2));
+    if (attempt > 1) {
+      await delay(BACKOFF_MS * 2 ** (attempt - 2));
+    }
     try {
       const res = await fetch(`https://api.github.com/repos/${repo.slug}${path}`, { headers });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        return await res.json();
+      }
       failure = `answered ${res.status}`;
-      if (res.status !== 429 && res.status < 500) break;
+      if (res.status !== 429 && res.status < 500) {
+        break;
+      }
     } catch (error) {
       failure = error instanceof Error ? error.message : String(error);
     }
@@ -56,7 +64,9 @@ async function paged(
   for (let page = 1; page <= MAX_PAGES; page++) {
     const batch = read(await api(repo, `${path}per_page=${PER_PAGE}&page=${page}`));
     files.push(...batch);
-    if (batch.length < PER_PAGE) return files;
+    if (batch.length < PER_PAGE) {
+      return files;
+    }
   }
   return 'all';
 }
@@ -68,7 +78,9 @@ async function pullRequestFiles(repo: Repo, number: number): Promise<Changed> {
 }
 
 async function pushFiles(repo: Repo, before: string, after: string): Promise<Changed> {
-  if (before === NO_COMMIT) return 'all';
+  if (before === NO_COMMIT) {
+    return 'all';
+  }
   return paged(repo, `/compare/${before}...${after}?`, (body) =>
     Compare.parse(body).files.map((f) => f.filename),
   );
@@ -78,8 +90,16 @@ async function localFiles(base: string): Promise<string[]> {
   const committed = await $`git diff --name-only ${base}...HEAD`.text();
   const pending = await $`git status --porcelain --untracked-files=all`.text();
   const names = new Set<string>();
-  for (const line of committed.split('\n')) if (line) names.add(line);
-  for (const line of pending.split('\n')) if (line) names.add(line.slice(3).trim());
+  for (const line of committed.split('\n')) {
+    if (line) {
+      names.add(line);
+    }
+  }
+  for (const line of pending.split('\n')) {
+    if (line) {
+      names.add(line.slice(3).trim());
+    }
+  }
   return [...names];
 }
 

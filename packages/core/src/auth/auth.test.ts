@@ -25,8 +25,12 @@ const STARTED = {
 
 function server(finish: object) {
   return recordingClient((url) => {
-    if (url.endsWith('/auth/sso/finish')) return { json: finish };
-    if (url.endsWith('/auth/config')) return { json: { publicUserList: false, hasAccounts: true } };
+    if (url.endsWith('/auth/sso/finish')) {
+      return { json: finish };
+    }
+    if (url.endsWith('/auth/config')) {
+      return { json: { publicUserList: false, hasAccounts: true } };
+    }
     return { json: STARTED };
   });
 }
@@ -114,7 +118,9 @@ describe('a flow that leaves an identity waiting', () => {
 
     const end = await auth.signIn.with(provider);
     expect(store.load('f1')).not.toBeNull();
-    if (end) await auth.claim(end.keys);
+    if (end) {
+      await auth.claim(end.keys);
+    }
 
     expect(end?.result.status).toBe('emailTaken');
     expect(calls.at(-1)?.path).toBe('/auth/sso/claim');

@@ -107,7 +107,9 @@ describe('perfReport', () => {
     startPerf();
     // Nineteen good frames and one 200ms stall: the mean stays near 60fps.
     const times = [100];
-    for (let i = 1; i <= 19; i++) times.push(100 + i * 16);
+    for (let i = 1; i <= 19; i++) {
+      times.push(100 + i * 16);
+    }
     times.push(100 + 19 * 16 + 200);
     frames.paint(...times);
     const report = perfReport();

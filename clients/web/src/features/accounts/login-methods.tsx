@@ -8,7 +8,9 @@ export function Notices({
   notice,
   error,
 }: Readonly<{ notice: string | null; error: string | null }>) {
-  if (!(notice || error)) return null;
+  if (!(notice || error)) {
+    return null;
+  }
   return (
     <Box w="100%" gap={10}>
       {notice ? (
@@ -41,7 +43,9 @@ export function FormLinks({
   onBack: () => void;
 }>) {
   const t = useT();
-  if (typing && !canGoBack) return null;
+  if (typing && !canGoBack) {
+    return null;
+  }
   return (
     <Box align="center" gap={4}>
       {typing ? null : (

@@ -27,7 +27,9 @@ function ruleFor(orientation: GroupOrientation): string {
 /** Take the page for the length of a drag; returns the release. */
 function holdCursor(orientation: GroupOrientation): () => void {
   const doc = webDocument();
-  if (!doc?.head) return NOOP;
+  if (!doc?.head) {
+    return NOOP;
+  }
   const style = doc.createElement('style');
   style.dataset.kromaResize = orientation;
   style.textContent = ruleFor(orientation);

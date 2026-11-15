@@ -76,7 +76,9 @@ for (const file of files) {
   const lines = readFileSync(file, 'utf8').split('\n');
   lines.forEach((line, i) => {
     // A line that is only a comment is describing the rule, not breaking it.
-    if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+    if (/^\s*(\/\/|\*|\/\*)/.test(line)) {
+      return;
+    }
     for (const rule of RULES) {
       if (rule.test.test(line) && !rule.unless?.test(line)) {
         console.log(`${file}:${i + 1}  ${rule.id}  ${rule.what}`);

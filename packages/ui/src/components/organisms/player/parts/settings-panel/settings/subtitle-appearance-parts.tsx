@@ -50,7 +50,9 @@ export function AppearanceRow({
       label={label}
       autoFocus={autoFocus}
       onKey={(direction) => {
-        if (direction !== 'left' && direction !== 'right') return false;
+        if (direction !== 'left' && direction !== 'right') {
+          return false;
+        }
         onNudge(index, direction === 'left' ? -1 : 1);
         return true;
       }}

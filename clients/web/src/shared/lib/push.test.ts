@@ -49,7 +49,9 @@ function browser(env: Env = {}) {
 
   const serviceWorker = { getRegistration, register };
   const nav: Record<string, unknown> = { userAgent: ua, standalone };
-  if (hasPush) nav.serviceWorker = serviceWorker;
+  if (hasPush) {
+    nav.serviceWorker = serviceWorker;
+  }
 
   vi.stubGlobal('navigator', nav);
   vi.stubGlobal('window', {

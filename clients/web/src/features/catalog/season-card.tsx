@@ -88,8 +88,11 @@ export function SeasonRequestCard({
     : t('discover.episodesN', { n: String(season.episodeCount) });
 
   let tone: 'normal' | 'partial' | 'locked' = 'normal';
-  if (locked) tone = 'locked';
-  else if (partial) tone = 'partial';
+  if (locked) {
+    tone = 'locked';
+  } else if (partial) {
+    tone = 'partial';
+  }
 
   const name = season.name ?? t('discover.seasonN', { n: String(season.number) });
 
@@ -131,7 +134,9 @@ function SeasonTrailing({
   if (season.available || season.requested) {
     return <RequestStatusChip status={season.available ? 'available' : 'pending'} size="card" />;
   }
-  if (!canRequest) return null;
+  if (!canRequest) {
+    return null;
+  }
   const idle = partial ? 'accent/15' : 'accent/12';
   const ink = partial ? 'black' : 'accentInk';
   return (

@@ -58,8 +58,12 @@ export interface SeekBarProps {
 }
 
 function previewCentre(centre: number, trackWidth: number, half: number): number {
-  if (trackWidth <= 0) return 0;
-  if (half * 2 >= trackWidth) return centre;
+  if (trackWidth <= 0) {
+    return 0;
+  }
+  if (half * 2 >= trackWidth) {
+    return centre;
+  }
   return Math.max(half, Math.min(trackWidth - half, centre));
 }
 
@@ -116,17 +120,23 @@ export function SeekBar({
   );
 
   const secAtOffset = (offset: number | null): number | null => {
-    if (offset == null || dur <= 0 || track.width <= 0) return null;
+    if (offset == null || dur <= 0 || track.width <= 0) {
+      return null;
+    }
     return msAtOffset(Math.max(0, Math.min(track.width, offset)), segs, track.width) / 1000;
   };
   const secAt = (locationX: number): number | null => secAtOffset(track.offsetOf(locationX));
 
   const hover = (e: PointerEvent) => {
-    if (dragging.current) return;
+    if (dragging.current) {
+      return;
+    }
     setHoverSec(secAtOffset(track.offsetAtClient(e.nativeEvent.clientX)));
   };
   const leave = () => {
-    if (!dragging.current) setHoverSec(null);
+    if (!dragging.current) {
+      setHoverSec(null);
+    }
   };
 
   const endSelectionBlock = useRef(NOOP);
@@ -138,22 +148,30 @@ export function SeekBar({
     endSelectionBlock.current = suppressSelection();
     track.measure();
     const sec = secAt(locationX);
-    if (sec == null) return;
+    if (sec == null) {
+      return;
+    }
     dragging.current = true;
     onScrub(sec);
     setHoverSec(sec);
   });
   const moveScrub = useEffectEvent((locationX: number) => {
-    if (!dragging.current) return;
+    if (!dragging.current) {
+      return;
+    }
     const sec = secAt(locationX);
-    if (sec == null) return;
+    if (sec == null) {
+      return;
+    }
     onScrub(sec);
     setHoverSec(sec);
   });
   const releaseScrub = useEffectEvent(() => {
     endSelectionBlock.current();
     endSelectionBlock.current = NOOP;
-    if (!dragging.current) return;
+    if (!dragging.current) {
+      return;
+    }
     dragging.current = false;
     setHoverSec(null);
     onScrubCommit();
@@ -183,8 +201,11 @@ export function SeekBar({
   const playheadX = offsetAt(shownMs, segs, trackWidth);
 
   let previewSec: number | null = null;
-  if (hoverSec != null) previewSec = hoverSec;
-  else if (focused && !pointerDriving()) previewSec = shown;
+  if (hoverSec != null) {
+    previewSec = hoverSec;
+  } else if (focused && !pointerDriving()) {
+    previewSec = shown;
+  }
   const previewTile = previewSec != null ? tileAt(previewSec) : null;
   // Centred on the cursor, but kept inside the track: at 0:00 half the thumbnail
   // would otherwise hang off the edge of the screen.
@@ -228,7 +249,9 @@ export function SeekBar({
           onBlur();
         }}
         onKey={(direction) => {
-          if (direction !== 'left' && direction !== 'right') return false;
+          if (direction !== 'left' && direction !== 'right') {
+            return false;
+          }
           onNudge(direction === 'left' ? -1 : 1);
           return true;
         }}

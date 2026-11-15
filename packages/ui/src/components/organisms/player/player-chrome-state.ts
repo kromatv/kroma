@@ -2,8 +2,12 @@ import type { usePlayerNav } from './hooks/use-player-nav';
 import type { UpNextData } from './parts/up-next-sheet';
 
 function initialSettingsView(overlay: string | null): 'audio' | 'subtitles' | 'menu' {
-  if (overlay === 'audio') return 'audio';
-  if (overlay === 'subtitles') return 'subtitles';
+  if (overlay === 'audio') {
+    return 'audio';
+  }
+  if (overlay === 'subtitles') {
+    return 'subtitles';
+  }
   return 'menu';
 }
 

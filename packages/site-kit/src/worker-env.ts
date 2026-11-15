@@ -29,12 +29,16 @@ export async function workerContext(): Promise<{
 let ambientEnv: Record<string, string> | undefined;
 
 function processEnv(): Record<string, string> {
-  if (ambientEnv) return ambientEnv;
+  if (ambientEnv) {
+    return ambientEnv;
+  }
   const ambient = (globalThis as { process?: { env?: Record<string, string | undefined> } })
     .process;
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(ambient?.env ?? {})) {
-    if (value !== undefined) out[key] = value;
+    if (value !== undefined) {
+      out[key] = value;
+    }
   }
   ambientEnv = out;
   return out;

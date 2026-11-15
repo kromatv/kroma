@@ -113,7 +113,9 @@ describe('chromeMetrics', () => {
     // panel), which outlive `pip`.
     const widthOf = (id: (typeof WEB)[number]) => {
       for (let w = 240; w <= 1400; w += 2) {
-        if (chromeMetrics(WEB, w).controls.includes(id)) return w;
+        if (chromeMetrics(WEB, w).controls.includes(id)) {
+          return w;
+        }
       }
       return Number.POSITIVE_INFINITY;
     };
@@ -138,7 +140,9 @@ describe('chromeMetrics', () => {
       steps.add(chromeMetrics(WEB, w).scale);
     }
     expect(steps.size).toBeLessThanOrEqual(1 + Math.ceil((1 - MIN_SCALE) / 0.02));
-    for (const scale of steps) expect(scale).toBeGreaterThanOrEqual(MIN_SCALE);
+    for (const scale of steps) {
+      expect(scale).toBeGreaterThanOrEqual(MIN_SCALE);
+    }
   });
 
   it('reports the cluster width at the scale it will be drawn at', () => {
@@ -191,7 +195,9 @@ describe('panelGeometry', () => {
     // Below a fifth of the stage the picture is a postage stamp.
     for (const stage of [700, 834, 960, 1400, 1920, 2560]) {
       const panel = panelGeometry(stage);
-      if (panel.covers) continue;
+      if (panel.covers) {
+        continue;
+      }
       const card = stage - panel.width - CARD_MARGIN * 2;
       expect(card / stage, `stage ${stage}`).toBeGreaterThanOrEqual(0.2);
     }

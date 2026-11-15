@@ -28,11 +28,15 @@ export function rowOffset(g: GridGeometry, row: number): number {
  * null while only the header is on screen. */
 export function visibleItems(g: GridGeometry, top: number, bottom: number): ItemRange | null {
   const rows = Math.ceil(g.count / g.cols);
-  if (rows === 0 || bottom <= top) return null;
+  if (rows === 0 || bottom <= top) {
+    return null;
+  }
   const step = pitch(g);
   const firstRow = Math.max(0, Math.floor((top - g.header - g.rowH) / step) + 1);
   const lastRow = Math.min(rows - 1, Math.ceil((bottom - g.header) / step) - 1);
-  if (lastRow < firstRow) return null;
+  if (lastRow < firstRow) {
+    return null;
+  }
   return { first: firstRow * g.cols, last: Math.min(g.count - 1, lastRow * g.cols + g.cols - 1) };
 }
 
@@ -42,11 +46,15 @@ export function lettersOnScreen(
   count: number,
   items: ItemRange | null,
 ): LetterRange | undefined {
-  if (items === null) return undefined;
+  if (items === null) {
+    return undefined;
+  }
   const shown: string[] = [];
   marks.forEach((mark, i) => {
     const end = (marks[i + 1]?.index ?? count) - 1;
-    if (mark.index <= items.last && end >= items.first) shown.push(mark.letter);
+    if (mark.index <= items.last && end >= items.first) {
+      shown.push(mark.letter);
+    }
   });
   const first = shown[0];
   const last = shown.at(-1);

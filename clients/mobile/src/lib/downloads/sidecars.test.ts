@@ -96,7 +96,9 @@ describe('embedded subtitle tracks', () => {
 
   it('keeps the tracks it CAN fetch when one fails', async () => {
     downloadAsync.mockImplementation(async (_url: string, path: string) => {
-      if (path.endsWith('e0.vtt')) throw new Error('404');
+      if (path.endsWith('e0.vtt')) {
+        throw new Error('404');
+      }
       return {};
     });
     const { subs } = await fetchSidecars(client(), item(['subrip', 'subrip']));

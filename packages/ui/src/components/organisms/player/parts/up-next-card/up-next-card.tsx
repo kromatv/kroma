@@ -115,7 +115,9 @@ export function UpNextCard({
       <Face item={item} />
     </Box>
   );
-  if (!interactive) return <Box style={[s.card, { width }]}>{face}</Box>;
+  if (!interactive) {
+    return <Box style={[s.card, { width }]}>{face}</Box>;
+  }
   return (
     <Focusable
       label={item.title}

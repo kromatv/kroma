@@ -32,9 +32,13 @@ export function useHoverPassthrough<T>(): (node: T | null) => void {
       previous.removeEventListener(UNLOCK, stop);
       bound.current = null;
     }
-    if (!WEB) return;
+    if (!WEB) {
+      return;
+    }
     const host = node as Host;
-    if (!host || typeof host.addEventListener !== 'function') return;
+    if (!host || typeof host.addEventListener !== 'function') {
+      return;
+    }
     const target = host as unknown as EventTarget;
     target.addEventListener(LOCK, stop);
     target.addEventListener(UNLOCK, stop);

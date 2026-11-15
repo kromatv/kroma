@@ -44,7 +44,9 @@ describe('tangentsOf', () => {
       const here = points[index] as { x: number; y: number };
       const next = points[index + 1] as { x: number; y: number };
       const secant = (next.y - here.y) / (next.x - here.x);
-      if (secant === 0) continue;
+      if (secant === 0) {
+        continue;
+      }
       const enter = (tangents[index] as number) / secant;
       const leave = (tangents[index + 1] as number) / secant;
       expect(enter * enter + leave * leave).toBeLessThanOrEqual(9);

@@ -37,11 +37,15 @@ export function useSystemGround(): void {
   const storage = useDeviceStore();
   useEffect(() => {
     const follow = () => {
-      if (readMode(undefined, storage) === 'system') runtime.setMode('system');
+      if (readMode(undefined, storage) === 'system') {
+        runtime.setMode('system');
+      }
     };
     const watch = Appearance.addChangeListener(follow);
     const wake = AppState.addEventListener('change', (state) => {
-      if (state === 'active') follow();
+      if (state === 'active') {
+        follow();
+      }
     });
     return () => {
       watch.remove();
@@ -83,7 +87,9 @@ function OwnedThemeProvider({
     runtime.theme.themeVersion,
   );
   useEffect(() => {
-    if (theme) runtime.theme.setTheme(theme);
+    if (theme) {
+      runtime.theme.setTheme(theme);
+    }
   }, [runtime, theme]);
   useEffect(() => runtime.breakpoints.retain(), [runtime]);
   return createElement(

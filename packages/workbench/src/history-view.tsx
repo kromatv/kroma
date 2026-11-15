@@ -63,7 +63,9 @@ function HistoryBlock({ entry, repository, limit }: Readonly<HistoryBlockProps>)
 /** The one line a header carries: when it was written, and how long ago it last
  * moved. Empty for something with no committed history at all. */
 function summaryOf(entry: HistoryEntry): string {
-  if (!entry.created) return 'Not committed yet';
+  if (!entry.created) {
+    return 'Not committed yet';
+  }
   return `Created ${dayLabel(entry.created)} · edited ${agoLabel(entry.changed)}`;
 }
 

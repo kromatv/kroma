@@ -72,7 +72,9 @@ export function useWebController(item: MovieView): WebController {
       pickAudio(index);
       const track = audioTracks.find((a) => a.index === index);
       const code = refineTrackLang(track?.language, track?.title);
-      if (code) rememberAudio(code);
+      if (code) {
+        rememberAudio(code);
+      }
     },
     [pickAudio, rememberAudio, audioTracks],
   );
@@ -87,7 +89,9 @@ export function useWebController(item: MovieView): WebController {
     const s = scrubRef.current;
     scrubRef.current = null;
     setScrubSec(null);
-    if (s != null) pb.seekTo(s);
+    if (s != null) {
+      pb.seekTo(s);
+    }
   }, [pb]);
 
   // Native Picture-in-Picture (the browser's own floating window). The <video>
@@ -96,7 +100,9 @@ export function useWebController(item: MovieView): WebController {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- anchor/audioIndex are intentional remount triggers, not read values. The <video> is keyed by anchor+audio, so re-anchoring / switching audio mounts a fresh element the pip listeners must rebind to. Depending on `pb` itself would rerun on every render.
   useEffect(() => {
     const v = pb.videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     const onEnter = () => setPipActive(true);
     const onLeave = () => setPipActive(false);
     v.addEventListener('enterpictureinpicture', onEnter);
@@ -108,7 +114,9 @@ export function useWebController(item: MovieView): WebController {
   }, [pb.anchor, pb.audioIndex, pb.videoRef]);
   const togglePip = () => {
     const v = pb.videoRef.current;
-    if (!document.pictureInPictureEnabled || !v) return;
+    if (!document.pictureInPictureEnabled || !v) {
+      return;
+    }
     if (document.pictureInPictureElement) {
       void document.exitPictureInPicture().catch(() => undefined);
     } else {
@@ -125,7 +133,9 @@ export function useWebController(item: MovieView): WebController {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- anchor/audioIndex are intentional remount triggers, not read values. The <video> is keyed by anchor+audio, so re-anchoring / switching audio mounts a fresh element the `resize` listener must rebind to. Depending on `pb` itself would rerun on every render.
   useEffect(() => {
     const v = pb.videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     const read = () =>
       setDecodedAspect(v.videoHeight > 0 ? v.videoWidth / v.videoHeight : undefined);
     read();
@@ -142,7 +152,9 @@ export function useWebController(item: MovieView): WebController {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- anchor/audioIndex are intentional remount triggers, not read values. The <video> is keyed by anchor+audio, so re-anchoring / switching audio mounts a fresh element the `ended` listener must rebind to. Depending on `pb` itself would rerun on every render.
   useEffect(() => {
     const v = pb.videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     const onEnded = () => setEndedNonce((n) => n + 1);
     v.addEventListener('ended', onEnded);
     return () => v.removeEventListener('ended', onEnded);
@@ -155,7 +167,9 @@ export function useWebController(item: MovieView): WebController {
       .then((r) => {
         const cr = r.headers.get('Content-Range');
         const total = cr ? Number(cr.split('/')[1]) : Number(r.headers.get('Content-Length') ?? 0);
-        if (!cancelled && Number.isFinite(total) && total > 0) setBytes(total);
+        if (!cancelled && Number.isFinite(total) && total > 0) {
+          setBytes(total);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -253,7 +267,9 @@ export function useWebController(item: MovieView): WebController {
     engines,
     engineId: pb.enginePref,
     setEngine: (id: string) => {
-      if (isWebEnginePref(id)) pb.setEnginePref(id);
+      if (isWebEnginePref(id)) {
+        pb.setEnginePref(id);
+      }
     },
     audioFilter: filter.mode,
     setAudioFilter: filter.setMode,

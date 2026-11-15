@@ -82,11 +82,20 @@ function status({
   count: number;
   automatic: boolean;
 }): string {
-  if (loading) return 'Looking for editors on the dev server…';
-  if (error) return 'Could not reach the dev server. Try refreshing.';
-  if (unavailable) return 'This editor is no longer available. Choose another.';
-  if (count === 0)
+  if (loading) {
+    return 'Looking for editors on the dev server…';
+  }
+  if (error) {
+    return 'Could not reach the dev server. Try refreshing.';
+  }
+  if (unavailable) {
+    return 'This editor is no longer available. Choose another.';
+  }
+  if (count === 0) {
     return 'No editor commands found on the dev server. Install a command-line launcher, then refresh.';
-  if (automatic) return 'Uses your running editor or the dev server’s default.';
+  }
+  if (automatic) {
+    return 'Uses your running editor or the dev server’s default.';
+  }
   return 'Detected on the machine running the dev server.';
 }

@@ -47,7 +47,11 @@ function summed(tallies: readonly Tally[]): Tally {
     outdated: 0,
     missing: 0,
   };
-  for (const tally of tallies) for (const count of COUNTS) sum[count] += tally[count];
+  for (const tally of tallies) {
+    for (const count of COUNTS) {
+      sum[count] += tally[count];
+    }
+  }
   return sum;
 }
 
@@ -57,7 +61,9 @@ function summed(tallies: readonly Tally[]): Tally {
  */
 export function describeStatus(sets: Sets, payload: unknown): StatusAnswer {
   const asked = parsed(Asked, payload);
-  if (typeof asked === 'string') return { status: null, refused: asked };
+  if (typeof asked === 'string') {
+    return { status: null, refused: asked };
+  }
   try {
     const { locale } = asked;
     const all = sets();
@@ -95,10 +101,14 @@ export function describeStatus(sets: Sets, payload: unknown): StatusAnswer {
  */
 export function confirmMessage(sets: Sets, payload: unknown): ConfirmAnswer {
   const target = parsed(Target, payload);
-  if (typeof target === 'string') return { settled: [], refused: target };
+  if (typeof target === 'string') {
+    return { settled: [], refused: target };
+  }
   try {
     const at = locate(sets, target);
-    if (typeof at === 'string') return { settled: [], refused: at };
+    if (typeof at === 'string') {
+      return { settled: [], refused: at };
+    }
     if (target.locale === at.source.locale) {
       return { settled: [], refused: `${target.locale} is the source language` };
     }

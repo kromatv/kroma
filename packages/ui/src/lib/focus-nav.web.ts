@@ -49,10 +49,14 @@ export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers)
             // preventDefaults the Backspace it turned into a delete). Both
             // listeners sit on window, so without this one press would delete a
             // character AND leave the screen.
-            if (ev.defaultPrevented) return false;
+            if (ev.defaultPrevented) {
+              return false;
+            }
             // In a real text field a physical Backspace edits the value (native);
             // only Escape / a remote Back button leaves the screen.
-            if (inText && ev.key === 'Backspace') return false;
+            if (inText && ev.key === 'Backspace') {
+              return false;
+            }
             return onBack?.();
           },
           Play: media,

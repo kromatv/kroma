@@ -7,7 +7,9 @@ const GLYPH = 16;
  *  no engine there is nothing to name, and nothing works either. */
 export function EngineBadge() {
   const { name } = engine();
-  if (!name) return null;
+  if (!name) {
+    return null;
+  }
 
   return (
     <Row align="center" justify="space-between" gap={10}>

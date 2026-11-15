@@ -7,8 +7,12 @@ export default function __PAGE__() {
   const api = useModuleApi();
   const hello = useFetch(['hello'], () => api.get('/hello', Hello));
 
-  if (hello.failed) return <ModuleFailed />;
-  if (!hello.data) return <ModuleLoading />;
+  if (hello.failed) {
+    return <ModuleFailed />;
+  }
+  if (!hello.data) {
+    return <ModuleLoading />;
+  }
   return (
     <>
       <PageHeader.Root>

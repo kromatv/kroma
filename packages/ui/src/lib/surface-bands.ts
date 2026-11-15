@@ -39,10 +39,14 @@ function surfaceBands(children: ReactNode, parts: Readonly<SurfaceParts>): Surfa
 }
 
 function isEmptyBand(node: ReactNode, parts: Readonly<SurfaceParts>): boolean {
-  if (!isValidElement(node)) return false;
+  if (!isValidElement(node)) {
+    return false;
+  }
   const band =
     node.type === parts.header || node.type === parts.panel || node.type === parts.footer;
-  if (!band) return false;
+  if (!band) {
+    return false;
+  }
   const { children } = node.props as { children?: ReactNode };
   return Children.toArray(children).length === 0;
 }

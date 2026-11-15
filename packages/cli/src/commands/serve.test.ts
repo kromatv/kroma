@@ -16,7 +16,9 @@ function tarEntry(name: string, body: string): Uint8Array {
   // The checksum field must read as spaces while the checksum is computed.
   block.fill(0x20, 148, 156);
   let sum = 0;
-  for (let i = 0; i < 512; i += 1) sum += block[i] as number;
+  for (let i = 0; i < 512; i += 1) {
+    sum += block[i] as number;
+  }
   block.set(text.encode(`${sum.toString(8).padStart(6, '0')}\0 `), 148);
   block.set(text.encode(body), 512);
   return block;
@@ -30,7 +32,7 @@ function bundleDir(manifest: Record<string, unknown>): string {
   tar.set(entry, 0);
   // Uncompressed on purpose: the reader dispatches on magic bytes and takes a
   // raw tar, and the runner has no Bun compressor.
-  writeFileSync(join(dir, `${manifest.id}.kmod`), tar);
+  writeFileSync(join(dir, `${String(manifest.id)}.kmod`), tar);
   return dir;
 }
 

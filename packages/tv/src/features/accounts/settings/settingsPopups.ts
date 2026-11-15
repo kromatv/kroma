@@ -7,7 +7,9 @@ export const SettingsPopups = createContext<((delta: 1 | -1) => void) | null>(nu
 export function useSettingsPopup(open: boolean): void {
   const count = useContext(SettingsPopups);
   useEffect(() => {
-    if (!open || !count) return;
+    if (!open || !count) {
+      return;
+    }
     count(1);
     return () => count(-1);
   }, [open, count]);

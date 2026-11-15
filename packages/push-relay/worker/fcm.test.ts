@@ -93,14 +93,18 @@ describe('send', () => {
 
     expect(delivery).toEqual({ ok: true, gone: false, status: 200, reason: '' });
     expect(calls[0]?.url).toBe('https://oauth2.googleapis.com/token');
-    const form = new URLSearchParams(String(calls[0]?.init.body));
+    const form = new URLSearchParams(
+      calls[0]?.init.body instanceof URLSearchParams ? calls[0].init.body : '',
+    );
     expect(form.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:jwt-bearer');
     expect(form.get('assertion')).toMatch(/^eyJ[\w-]+\.[\w-]+\.[\w-]+$/);
 
     expect(calls[1]?.url).toBe('https://fcm.googleapis.com/v1/projects/kroma-push/messages:send');
     const headers = calls[1]?.init.headers as Record<string, string>;
     expect(headers.authorization).toBe('Bearer ya29.fake');
-    expect(JSON.parse(String(calls[1]?.init.body))).toMatchObject({
+    expect(
+      JSON.parse(typeof calls[1]?.init.body === 'string' ? calls[1].init.body : ''),
+    ).toMatchObject({
       message: { token: 'DEVICE-A' },
     });
   });

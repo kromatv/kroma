@@ -48,7 +48,9 @@ export function lastStable(
     return tag.trim().slice(1) || null;
   } catch (error) {
     const stderr = error instanceof Error && 'stderr' in error ? String(error.stderr) : '';
-    if (NO_TAG.test(stderr)) return null;
+    if (NO_TAG.test(stderr)) {
+      return null;
+    }
     throw error;
   }
 }

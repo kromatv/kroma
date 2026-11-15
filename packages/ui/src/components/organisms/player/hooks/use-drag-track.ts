@@ -55,7 +55,9 @@ function useDragTrack(): DragTrack {
 
   const offsetOf = useCallback((locationX: number): number | null => {
     const inCanvas = canvas.current;
-    if (inCanvas <= 0) return null;
+    if (inCanvas <= 0) {
+      return null;
+    }
     return pointerToCanvas(locationX, screen.current, inCanvas);
   }, []);
 

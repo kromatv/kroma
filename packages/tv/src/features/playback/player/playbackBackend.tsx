@@ -89,6 +89,8 @@ export function PlaybackBackendProvider({
 /** The backend the shell mounted the player with. */
 export function usePlaybackBackend(): PlaybackBackend {
   const backend = use(PlaybackBackendContext);
-  if (!backend) throw new Error('usePlaybackBackend outside a PlaybackBackendProvider');
+  if (!backend) {
+    throw new Error('usePlaybackBackend outside a PlaybackBackendProvider');
+  }
   return backend;
 }

@@ -49,11 +49,17 @@ function rewindToEdge(send: Send, probe: FocusProbe, back: boolean): void {
   const rewind = back ? Directions.RIGHT : Directions.LEFT;
   for (let i = 0; i < MAX_STEPS; i += 1) {
     const from = probe.box();
-    if (!step(rewind)) return;
+    if (!step(rewind)) {
+      return;
+    }
     const to = probe.box();
-    if (!from || !to) return;
+    if (!from || !to) {
+      return;
+    }
     if (sameLine(from, to)) {
-      if (back ? to.left > from.left : to.left < from.left) continue;
+      if (back ? to.left > from.left : to.left < from.left) {
+        continue;
+      }
       return;
     }
     // That step left the line - a sidebar, the row above - so the edge was the
@@ -66,8 +72,12 @@ function rewindToEdge(send: Send, probe: FocusProbe, back: boolean): void {
 /** Move the focus one control along reading order; `back` for Shift+Tab. */
 export function walkTab(send: Send, probe: FocusProbe, back = false): void {
   const step = stepper(send, probe);
-  if (step(back ? Directions.LEFT : Directions.RIGHT)) return;
+  if (step(back ? Directions.LEFT : Directions.RIGHT)) {
+    return;
+  }
   // The line has ended, so drop to the next one and rewind it to its edge.
-  if (!step(back ? Directions.UP : Directions.DOWN)) return;
+  if (!step(back ? Directions.UP : Directions.DOWN)) {
+    return;
+  }
   rewindToEdge(send, probe, back);
 }

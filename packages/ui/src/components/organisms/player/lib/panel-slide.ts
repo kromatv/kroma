@@ -29,7 +29,9 @@ export function usePanelSlide(open: boolean): PanelSlide {
     }
   }
   useEffect(() => {
-    if (open) return;
+    if (open) {
+      return;
+    }
     const out = setTimeout(() => setMounted(false), CARD_MS);
     return () => clearTimeout(out);
   }, [open]);

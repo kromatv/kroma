@@ -28,7 +28,9 @@ export function PillTabBar({
           labels="none"
           // Null is the slide ending - nothing to feel there.
           onPreview={(label) => {
-            if (label !== null) void Haptics.selectionAsync();
+            if (label !== null) {
+              void Haptics.selectionAsync();
+            }
           }}
         >
           {Platform.OS === 'ios' ? <NavPill.Backdrop amount={15} /> : null}
@@ -42,7 +44,9 @@ export function PillTabBar({
                 target: route.key,
                 canPreventDefault: true,
               });
-              if (!focused && !event.defaultPrevented) navigateToTab(route.key);
+              if (!focused && !event.defaultPrevented) {
+                navigateToTab(route.key);
+              }
             };
             return (
               <NavPill.Item

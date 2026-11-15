@@ -16,8 +16,12 @@ export function audioSupport(
   caps: PlaybackCapabilities = capabilities(),
 ): AudioSupport {
   const codec = item.audio?.codec;
-  if (!codec) return { canPlay: true, messageKey: null };
-  if (canDecodeAudioCodec(codec, caps)) return { canPlay: true, messageKey: null };
+  if (!codec) {
+    return { canPlay: true, messageKey: null };
+  }
+  if (canDecodeAudioCodec(codec, caps)) {
+    return { canPlay: true, messageKey: null };
+  }
   return {
     canPlay: false,
     messageKey: 'player.audioUnsupported',
@@ -32,7 +36,9 @@ export const FMP4_COPY_CODECS = new Set<string>(['aac', 'ac3', 'eac3']);
 /** Falls back to a single track for older payloads that only carry the
  * representative `audio`. */
 export function audioTracksOf(item: MediaItem): AudioTrack[] {
-  if (item.audioTracks?.length) return item.audioTracks;
+  if (item.audioTracks?.length) {
+    return item.audioTracks;
+  }
   return item.audio ? [{ ...item.audio, index: item.audio.index ?? 0 }] : [];
 }
 
@@ -42,8 +48,12 @@ export function canDecodeAudioCodec(
   codec: string | undefined,
   caps: PlaybackCapabilities = capabilities(),
 ): boolean {
-  if (!codec) return true;
-  if (codec === UNNAMED_CODEC) return false;
+  if (!codec) {
+    return true;
+  }
+  if (codec === UNNAMED_CODEC) {
+    return false;
+  }
   const known = Object.entries(caps.audio).find(([name]) => name === codec);
   return known === undefined || known[1];
 }
@@ -54,7 +64,9 @@ export function canSeamlessAudioSwitch(
   item: MediaItem,
   caps: PlaybackCapabilities = capabilities(),
 ): boolean {
-  if (!canDirectPlay(item, caps).canDirectPlay) return false;
+  if (!canDirectPlay(item, caps).canDirectPlay) {
+    return false;
+  }
   return audioTracksOf(item).length > 1;
 }
 
@@ -70,7 +82,9 @@ export function masterNeedsAac(
   caps: PlaybackCapabilities = capabilities(),
 ): boolean {
   const tracks = audioTracksOf(item);
-  if (tracks.length === 0) return true;
+  if (tracks.length === 0) {
+    return true;
+  }
   return !tracks.every(
     (t) => !!t.codec && canDecodeAudioCodec(t.codec, caps) && FMP4_COPY_CODECS.has(t.codec),
   );
@@ -108,14 +122,20 @@ function scoreMatch(t: AudioTrack, want: AudioTrackId): number {
   let s = 0;
   const lang = t.language ?? null;
   if (want.language != null && lang != null) {
-    if (lang.toLowerCase() === want.language.toLowerCase()) s += 100;
+    if (lang.toLowerCase() === want.language.toLowerCase()) {
+      s += 100;
+    }
   } else if (want.language == null && lang == null) {
     s += 20;
   }
-  if (want.channels != null && t.channels != null && t.channels === want.channels) s += 10;
+  if (want.channels != null && t.channels != null && t.channels === want.channels) {
+    s += 10;
+  }
   const tt = (t.title ?? '').trim().toLowerCase();
   const wt = (want.title ?? '').trim().toLowerCase();
-  if (wt && tt && tt === wt) s += 5;
+  if (wt && tt && tt === wt) {
+    s += 5;
+  }
   return s;
 }
 
@@ -125,10 +145,14 @@ function scoreMatch(t: AudioTrack, want: AudioTrackId): number {
  * reordered track list.
  */
 export function resolveAudioRelativeIndex(tracks: AudioTrack[], want: AudioTrackId): number {
-  if (tracks.length === 0) return 0;
+  if (tracks.length === 0) {
+    return 0;
+  }
 
   const exact = tracks.find((t) => t.index === want.index);
-  if (exact && sameIdentity(exact, want)) return exact.index;
+  if (exact && sameIdentity(exact, want)) {
+    return exact.index;
+  }
 
   let best: AudioTrack | null = null;
   let bestScore = 0;
@@ -139,7 +163,9 @@ export function resolveAudioRelativeIndex(tracks: AudioTrack[], want: AudioTrack
       best = t;
     }
   }
-  if (best) return best.index;
+  if (best) {
+    return best.index;
+  }
 
   const def = tracks.find((t) => t.default);
   return def?.index ?? tracks[0]?.index ?? 0;

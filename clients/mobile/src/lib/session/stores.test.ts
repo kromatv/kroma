@@ -7,8 +7,12 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const saveAccounts = vi.hoisted(() => vi.fn(async (_: unknown[]) => undefined));
-const saveServers = vi.hoisted(() => vi.fn(async (_: unknown[]) => undefined));
+const saveAccounts = vi.hoisted(() =>
+  vi.fn<(accounts: unknown[]) => Promise<undefined>>(async () => undefined),
+);
+const saveServers = vi.hoisted(() =>
+  vi.fn<(accounts: unknown[]) => Promise<undefined>>(async () => undefined),
+);
 vi.mock('#mobile/lib/storage', () => ({ saveAccounts, saveServers }));
 
 import type { MobileAccount, ServerEntry } from '#mobile/lib/storage';

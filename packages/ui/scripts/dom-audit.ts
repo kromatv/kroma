@@ -93,8 +93,12 @@ function print(): void {
     console.log(read('digest.txt').split('\n').slice(0, 3).join('\n'));
     return;
   }
-  if (tree) console.log(read('tree.txt'));
-  if (flags.has('--smells')) console.log(smells());
+  if (tree) {
+    console.log(read('tree.txt'));
+  }
+  if (flags.has('--smells')) {
+    console.log(smells());
+  }
   console.log(read('digest.txt'));
   console.log('\nfull report: packages/ui/.dom/report.md');
   if (only.length === 0) {
@@ -105,6 +109,8 @@ function print(): void {
 print();
 
 // The runner's own output is the failure message: which view moved, and how.
-if (run.status !== 0) console.error(`\n${run.stdout ?? ''}`);
+if (run.status !== 0) {
+  console.error(`\n${run.stdout ?? ''}`);
+}
 
 process.exit(run.status ?? 1);

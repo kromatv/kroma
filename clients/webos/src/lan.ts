@@ -31,7 +31,9 @@ const pending = new Set<Bridge>();
 
 function call(uri: string, payload: Record<string, unknown>): boolean {
   const { PalmServiceBridge } = globalThis as unknown as WebOsGlobals;
-  if (!PalmServiceBridge) return false;
+  if (!PalmServiceBridge) {
+    return false;
+  }
   const bridge = new PalmServiceBridge();
   pending.add(bridge);
   bridge.onservicecallback = () => {
@@ -47,7 +49,9 @@ function call(uri: string, payload: Record<string, unknown>): boolean {
  * handoff loop then falls back to the server, exactly as it does on Tizen.
  */
 export function webOsLan(): LanDiscoveryBridge | undefined {
-  if (!(globalThis as unknown as WebOsGlobals).PalmServiceBridge) return undefined;
+  if (!(globalThis as unknown as WebOsGlobals).PalmServiceBridge) {
+    return undefined;
+  }
   return {
     publish(service: LanService) {
       call(`${SERVICE}/publish`, { name: service.name, txt: service.txt });

@@ -101,10 +101,15 @@ export function FolderListEditor({
   const [at, setAt] = useState<number | null>(null);
 
   const commit = (path: string) => {
-    if (at === null) return;
+    if (at === null) {
+      return;
+    }
     const next = folders.slice();
-    if (at < next.length) next[at] = path;
-    else next.push(path);
+    if (at < next.length) {
+      next[at] = path;
+    } else {
+      next.push(path);
+    }
     onChange(next.filter((p, i) => next.indexOf(p) === i));
     setAt(null);
   };

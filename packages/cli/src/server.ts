@@ -42,6 +42,8 @@ export async function uploadBundle(server: Server, path: string): Promise<string
     body: new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength),
   });
   const body = await res.text();
-  if (!res.ok) throw new Error(`install failed (${res.status}): ${body}`);
+  if (!res.ok) {
+    throw new Error(`install failed (${res.status}): ${body}`);
+  }
   return body;
 }

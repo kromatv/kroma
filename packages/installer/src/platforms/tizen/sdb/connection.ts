@@ -59,7 +59,9 @@ export class SdbConnection implements StreamTransport {
   }
 
   async openStream(service: string, timeoutMs = HANDSHAKE_TIMEOUT_MS): Promise<SdbStream> {
-    if (this.failure) throw this.failure;
+    if (this.failure) {
+      throw this.failure;
+    }
     const localId = this.nextId++;
     const stream = new SdbStream(service, localId, this);
     this.streams.set(localId, stream);
@@ -70,7 +72,9 @@ export class SdbConnection implements StreamTransport {
   }
 
   send(command: number, arg0: number, arg1: number, data: Buffer): void {
-    if (this.socket.destroyed) return;
+    if (this.socket.destroyed) {
+      return;
+    }
     this.socket.write(encodePacket({ command, arg0, arg1, data }));
   }
 
@@ -92,8 +96,11 @@ export class SdbConnection implements StreamTransport {
         clearTimeout(timer);
         this.onConnected = null;
         this.onRejected = null;
-        if (error) reject(error);
-        else resolve();
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
       };
       this.onConnected = (banner) => {
         this.banner = banner;
@@ -117,7 +124,9 @@ export class SdbConnection implements StreamTransport {
       this.fail(error as Error);
       return;
     }
-    for (const packet of packets) this.dispatch(packet);
+    for (const packet of packets) {
+      this.dispatch(packet);
+    }
   }
 
   private dispatch(packet: SdbPacket): void {
@@ -133,18 +142,29 @@ export class SdbConnection implements StreamTransport {
       return;
     }
     const stream = this.streams.get(packet.arg1);
-    if (!stream) return;
-    if (packet.command === SDB_COMMAND.OKAY) stream.onOkay(packet.arg0);
-    else if (packet.command === SDB_COMMAND.WRTE) stream.onData(packet.data);
-    else if (packet.command === SDB_COMMAND.CLSE) stream.onClose();
-    else this.fail(new Error(`sdb: unexpected ${commandName(packet.command)}`));
+    if (!stream) {
+      return;
+    }
+    if (packet.command === SDB_COMMAND.OKAY) {
+      stream.onOkay(packet.arg0);
+    } else if (packet.command === SDB_COMMAND.WRTE) {
+      stream.onData(packet.data);
+    } else if (packet.command === SDB_COMMAND.CLSE) {
+      stream.onClose();
+    } else {
+      this.fail(new Error(`sdb: unexpected ${commandName(packet.command)}`));
+    }
   }
 
   private fail(error: Error): void {
-    if (this.failure) return;
+    if (this.failure) {
+      return;
+    }
     this.failure = error;
     this.onRejected?.(error);
-    for (const stream of this.streams.values()) stream.onFail(error);
+    for (const stream of this.streams.values()) {
+      stream.onFail(error);
+    }
     this.streams.clear();
     this.socket.destroy();
   }
@@ -152,7 +172,9 @@ export class SdbConnection implements StreamTransport {
 
 function bannerFrom(data: Buffer): string {
   let end = data.length;
-  while (end > 0 && data[end - 1] === 0) end -= 1;
+  while (end > 0 && data[end - 1] === 0) {
+    end -= 1;
+  }
   return data.subarray(0, end).toString('utf8');
 }
 

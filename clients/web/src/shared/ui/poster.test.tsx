@@ -17,7 +17,9 @@ function poster(props: { poster?: string | null; caption?: boolean }) {
 
 function caption(): Element {
   const box = screen.getByText('Sci-fi').parentElement;
-  if (!box) throw new Error('the caption has no box to fade');
+  if (!box) {
+    throw new Error('the caption has no box to fade');
+  }
   return box;
 }
 

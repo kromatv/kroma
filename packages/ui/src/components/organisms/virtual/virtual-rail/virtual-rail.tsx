@@ -98,14 +98,20 @@ function VirtualRail<T>({
   // closure per render moves every tile's `onFocus` and rebuilds the row.
   const select = useStableCallback((index: number) => {
     grow(index + OVERSCAN);
-    if (index >= count - 1 - OVERSCAN) onEndReached?.();
+    if (index >= count - 1 - OVERSCAN) {
+      onEndReached?.();
+    }
     // A real scroller owns its position: the browser reveals a tab-focused
     // tile itself, and a tap must not yank the row out from under the finger.
-    if (!scoped) return;
+    if (!scoped) {
+      return;
+    }
     // Only a PRESS moves the row: the navigator focuses whatever the cursor
     // enters, so scrolling on every focus change made the row creep sideways
     // under a wandering pointer.
-    if (!keyed()) return;
+    if (!keyed()) {
+      return;
+    }
     at.current = edgeScrollOffset({
       offset: at.current,
       index,
@@ -123,7 +129,9 @@ function VirtualRail<T>({
       at.current = x;
       setOffset(x);
       grow(Math.ceil((x + measured.current) / pitch) + OVERSCAN);
-      if (x >= maxOffset(count, pitch, measured.current) - OVERSCAN * pitch) onEndReached?.();
+      if (x >= maxOffset(count, pitch, measured.current) - OVERSCAN * pitch) {
+        onEndReached?.();
+      }
     },
     [count, grow, onEndReached, pitch],
   );
@@ -167,7 +175,9 @@ function VirtualRail<T>({
     const snapped = Math.round(
       Math.min(furthest, Math.max(0, Math.round(at.current / pitch) * pitch)),
     );
-    if (snapped === at.current) return;
+    if (snapped === at.current) {
+      return;
+    }
     at.current = snapped;
     setOffset(snapped);
     scroller.current?.scrollTo({ x: snapped, animated: false });
@@ -188,7 +198,9 @@ function VirtualRail<T>({
   for (let next = 0; next < mounted; next += 1) {
     const index = next;
     const item = data[index];
-    if (item === undefined) continue;
+    if (item === undefined) {
+      continue;
+    }
     tiles.push(
       <FocusLiftView key={index} style={cell}>
         <FocusReporter onFocus={select} index={index}>

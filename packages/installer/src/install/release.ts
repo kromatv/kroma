@@ -23,7 +23,7 @@ const SHA256 = /^sha256:([0-9a-f]{64})$/;
 const Release = z.object({
   assets: z.array(
     z.object({
-      name: z.string().min(1).max(255),
+      name: z.string().nonempty().max(255),
       size: z.number().int().nonnegative(),
       digest: z.string().nullish(),
       browser_download_url: z.url(),
@@ -74,10 +74,14 @@ export async function fetchAsset(
   directory: string,
   log: LogLine,
 ): Promise<string> {
-  if (!asset.sha256) throw new Error(`${asset.name} lists no digest to check a download against`);
+  if (!asset.sha256) {
+    throw new Error(`${asset.name} lists no digest to check a download against`);
+  }
 
   const path = join(directory, asset.name);
-  if ((await sha256Of(path)) === asset.sha256) return path;
+  if ((await sha256Of(path)) === asset.sha256) {
+    return path;
+  }
 
   await rm(directory, { recursive: true, force: true });
   await mkdir(directory, { recursive: true });
@@ -89,7 +93,9 @@ export async function fetchAsset(
 async function sha256Of(path: string): Promise<string | null> {
   const hash = createHash('sha256');
   try {
-    for await (const chunk of createReadStream(path)) hash.update(chunk as Uint8Array);
+    for await (const chunk of createReadStream(path)) {
+      hash.update(chunk as Uint8Array);
+    }
   } catch {
     return null;
   }

@@ -34,13 +34,17 @@ function closerThanBefore(t: HeldSeekTransport, held: Held): boolean {
 }
 
 function reAnchored(t: HeldSeekTransport, held: Held): boolean {
-  if (t.anchor !== undefined) return t.anchor !== held.anchor;
+  if (t.anchor !== undefined) {
+    return t.anchor !== held.anchor;
+  }
   const jumped = Math.abs(t.cur - held.from) > DRIFT_SEC;
   return jumped && closerThanBefore(t, held);
 }
 
 function landed(t: HeldSeekTransport, held: Held): boolean {
-  if (Math.abs(t.cur - held.at) <= REACHED_WITHIN_SEC) return true;
+  if (Math.abs(t.cur - held.at) <= REACHED_WITHIN_SEC) {
+    return true;
+  }
   return !t.waiting && reAnchored(t, held);
 }
 
@@ -56,10 +60,14 @@ export function useHeldSeek<T extends HeldSeekTransport>(transport: T): T {
     live.current = transport;
   });
 
-  if (held !== null && landed(transport, held)) setHeld(null);
+  if (held !== null && landed(transport, held)) {
+    setHeld(null);
+  }
 
   useEffect(() => {
-    if (held === null) return;
+    if (held === null) {
+      return;
+    }
     const timer = setTimeout(() => setHeld(null), GIVE_UP_MS);
     return () => clearTimeout(timer);
   }, [held]);

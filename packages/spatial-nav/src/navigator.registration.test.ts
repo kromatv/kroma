@@ -5,7 +5,9 @@ import { row, tracker } from './tree.fixture';
 const TILES = ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'];
 
 function reregister(nav: SpatialNavigator, ids: readonly string[]) {
-  for (const id of ids) nav.registerNode(id, { parent: 'row0', focusable: true });
+  for (const id of ids) {
+    nav.registerNode(id, { parent: 'row0', focusable: true });
+  }
 }
 
 describe('registerNode', () => {

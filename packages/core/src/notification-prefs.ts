@@ -47,7 +47,9 @@ export function channelReach(
   section: PrefsSection,
   channel: NotificationChannel,
 ): { on: number; of: number } {
-  if (section.types.length === 0) return { on: section.category[channel] ? 1 : 0, of: 1 };
+  if (section.types.length === 0) {
+    return { on: section.category[channel] ? 1 : 0, of: 1 };
+  }
   return {
     on: section.types.filter((type) => type[channel]).length,
     of: section.types.length,

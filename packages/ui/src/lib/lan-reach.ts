@@ -3,7 +3,9 @@ import { isLanRoute, type LanPermission } from '@kromatv/core';
 const HTTP_ORIGIN = /^http:\/\/[^/?#]+/;
 
 const urlOf = (input: RequestInfo | URL) => {
-  if (typeof input === 'string') return input;
+  if (typeof input === 'string') {
+    return input;
+  }
   return input instanceof URL ? input.href : input.url;
 };
 
@@ -14,9 +16,13 @@ const onHttpsPage = () => globalThis.location?.protocol === 'https:';
  * page) it may; an https page answers from the browser's `local-network`
  * permission, and a browser that has none is `unsupported`. */
 export async function lanPermission(): Promise<LanPermission> {
-  if (!onHttpsPage()) return 'granted';
+  if (!onHttpsPage()) {
+    return 'granted';
+  }
   const permissions = globalThis.navigator?.permissions;
-  if (!permissions) return 'unsupported';
+  if (!permissions) {
+    return 'unsupported';
+  }
   try {
     // Never `local-network-access`: older Chrome crashes the renderer on it,
     // past any try/catch.
@@ -34,7 +40,9 @@ export async function lanPermission(): Promise<LanPermission> {
  * `'local'` as loopback and fail every request to a private address that
  * carries it (docs/reference/direct-connection-platforms.md). */
 export function withLocalAddressSpace(fetchFn: typeof globalThis.fetch): typeof globalThis.fetch {
-  if (!onHttpsPage()) return fetchFn;
+  if (!onHttpsPage()) {
+    return fetchFn;
+  }
   return (input, init) =>
     isLanRoute(HTTP_ORIGIN.exec(urlOf(input))?.[0] ?? '')
       ? fetchFn(input, { ...init, targetAddressSpace: 'local' } as RequestInit)
@@ -45,7 +53,9 @@ export function withLocalAddressSpace(fetchFn: typeof globalThis.fetch): typeof 
  * browser's `online` event). A platform that says nothing never calls it. */
 export function onOnline(listener: () => void): () => void {
   const target = globalThis as Partial<Pick<Window, 'addEventListener' | 'removeEventListener'>>;
-  if (typeof target.addEventListener !== 'function') return () => undefined;
+  if (typeof target.addEventListener !== 'function') {
+    return () => undefined;
+  }
   target.addEventListener('online', listener);
   return () => target.removeEventListener?.('online', listener);
 }

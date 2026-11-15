@@ -71,8 +71,11 @@ export function TitlePicker({
     setEverything(false);
     setSelected((was) => {
       const next = new Set(was);
-      if (next.has(title)) next.delete(title);
-      else next.add(title);
+      if (next.has(title)) {
+        next.delete(title);
+      } else {
+        next.add(title);
+      }
       return next;
     });
   };

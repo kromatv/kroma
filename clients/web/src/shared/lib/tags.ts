@@ -19,7 +19,9 @@ export function cutTags(text: string, separators: string): { closed: string[]; r
 export function withTags(tags: readonly string[], added: readonly string[]): string[] {
   const next = [...tags];
   for (const name of added.map((raw) => raw.trim())) {
-    if (name && !next.includes(name)) next.push(name);
+    if (name && !next.includes(name)) {
+      next.push(name);
+    }
   }
   return next;
 }

@@ -31,6 +31,8 @@ export const families = (): readonly FamilyMeta[] => [
 /** One family's own row of the table. */
 export function family(id: FamilyMeta['id']): FamilyMeta {
   const found = families().find((f) => f.id === id);
-  if (!found) throw new Error(`no such device family: ${id}`);
+  if (!found) {
+    throw new Error(`no such device family: ${id}`);
+  }
   return found;
 }

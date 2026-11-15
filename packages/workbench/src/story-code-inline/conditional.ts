@@ -10,11 +10,17 @@ interface Conditional {
 // either side of a colon backtrack quadratically over anything that is not one.
 function conditional(inner: string): Conditional | null {
   const ask = inner.indexOf('?');
-  if (ask < 0) return null;
+  if (ask < 0) {
+    return null;
+  }
   const name = inner.slice(0, ask).trim();
-  if (!NAME.test(name)) return null;
+  if (!NAME.test(name)) {
+    return null;
+  }
   const colon = answering(inner, ask + 1);
-  if (colon < 0) return null;
+  if (colon < 0) {
+    return null;
+  }
   return { name, whenTrue: inner.slice(ask + 1, colon), whenFalse: inner.slice(colon + 1) };
 }
 
@@ -31,13 +37,21 @@ function answering(text: string, from: number): number {
   for (let at = from; at < text.length; at += 1) {
     const char = text[at] as string;
     if (quote) {
-      if (char === '\\') at += 1;
-      else if (char === quote) quote = '';
-    } else if (QUOTES.has(char)) quote = char;
-    else if (OPENS.has(char)) depth += 1;
-    else if (SHUTS.has(char)) depth -= 1;
-    else if (char === ':') {
-      if (depth === 0) return at;
+      if (char === '\\') {
+        at += 1;
+      } else if (char === quote) {
+        quote = '';
+      }
+    } else if (QUOTES.has(char)) {
+      quote = char;
+    } else if (OPENS.has(char)) {
+      depth += 1;
+    } else if (SHUTS.has(char)) {
+      depth -= 1;
+    } else if (char === ':') {
+      if (depth === 0) {
+        return at;
+      }
       depth -= 1;
     }
   }

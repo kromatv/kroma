@@ -39,7 +39,9 @@ const field = (tag: 'input' | 'textarea') => document.body.appendChild(document.
 describe('typing on a hardware keyboard', () => {
   it('collects the characters, in the order they were struck', () => {
     const { result } = typing();
-    for (const key of ['k', 'r', 'o']) press({ key });
+    for (const key of ['k', 'r', 'o']) {
+      press({ key });
+    }
     expect(result.current).toBe('kro');
   });
 

@@ -14,9 +14,13 @@ const VERSION = /^(\d+)\.(\d+)\.(\d+)$/;
  */
 export function isHandWritten(version: string): boolean {
   const folder = join(RELEASES, version);
-  if (!existsSync(join(folder, 'en.md'))) return false;
+  if (!existsSync(join(folder, 'en.md'))) {
+    return false;
+  }
   const meta = join(folder, 'release.json');
-  if (!existsSync(meta)) return true;
+  if (!existsSync(meta)) {
+    return true;
+  }
   try {
     return Meta.parse(JSON.parse(readFileSync(meta, 'utf8'))).draft !== true;
   } catch {
@@ -30,14 +34,18 @@ function compare(a: string, b: string): number {
   const [x, y] = [key(a), key(b)];
   for (let i = 0; i < 3; i++) {
     const delta = (x[i] ?? 0) - (y[i] ?? 0);
-    if (delta !== 0) return delta;
+    if (delta !== 0) {
+      return delta;
+    }
   }
   return 0;
 }
 
 /** The newest release folder a person wrote, or null. */
 export function newestWritten(): string | null {
-  if (!existsSync(RELEASES)) return null;
+  if (!existsSync(RELEASES)) {
+    return null;
+  }
   return (
     readdirSync(RELEASES)
       .filter((v) => VERSION.test(v) && isHandWritten(v))

@@ -139,7 +139,9 @@ self.addEventListener('pushsubscriptionchange', (event) => {
       // subscription object that does not implement it at all.
       const p256dh = subscription?.getKey?.('p256dh');
       const auth = subscription?.getKey?.('auth');
-      if (!subscription || !p256dh || !auth) return;
+      if (!subscription || !p256dh || !auth) {
+        return;
+      }
       await fetch('/api/push/subscribe', {
         method: 'POST',
         credentials: 'include',

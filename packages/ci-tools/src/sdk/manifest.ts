@@ -51,13 +51,15 @@ export function declarationOf(dir: string, target: string): string | null {
 export function pathsFor(
   manifests: ReadonlyArray<[string, PackageJson]>,
 ): Record<string, string[]> {
-  const paths: Record<string, string[]> = {
-    ...Object.fromEntries(Object.entries(REACT_NATIVE_PATHS).map(([k, v]) => [k, [...v]])),
-  };
+  const paths: Record<string, string[]> = Object.fromEntries(
+    Object.entries(REACT_NATIVE_PATHS).map(([k, v]) => [k, [...v]]),
+  );
   for (const [dir, pkg] of manifests) {
     for (const [key, target] of Object.entries(pkg.exports ?? {})) {
       const types = declarationOf(dir, target);
-      if (!types) continue;
+      if (!types) {
+        continue;
+      }
       paths[key === '.' ? pkg.name : `${pkg.name}/${key.slice(2)}`] = [types];
     }
   }
@@ -94,7 +96,9 @@ function ranges(
     const range = from
       .map((pkg) => pkg.dependencies?.[name] ?? pkg.peerDependencies?.[name])
       .find((r) => r !== undefined);
-    if (!range) throw new Error(`${name}: no workspace package declares a range for it`);
+    if (!range) {
+      throw new Error(`${name}: no workspace package declares a range for it`);
+    }
     out[name] = range;
   }
   return out;

@@ -59,8 +59,12 @@ export interface AtomicOptions {
 
 // A minified sheet arrives as bytes, an unminified one as text.
 function textOf(source: unknown): string | null {
-  if (typeof source === 'string') return source;
-  if (source instanceof Uint8Array) return new TextDecoder().decode(source);
+  if (typeof source === 'string') {
+    return source;
+  }
+  if (source instanceof Uint8Array) {
+    return new TextDecoder().decode(source);
+  }
   return null;
 }
 
@@ -103,22 +107,29 @@ export function kromaAtomic({ repoRoot }: AtomicOptions): AtomicPlugin {
         ...options,
         assetFileNames: (asset) => {
           const name = typeof names === 'function' ? names(asset) : names;
-          if (sheet.size === 0 || !textOf(asset.source)?.includes(TOKENS_MARKER)) return name;
+          if (sheet.size === 0 || !textOf(asset.source)?.includes(TOKENS_MARKER)) {
+            return name;
+          }
           return name.replace('[hash]', `${hashOf(sheet.toCss())}-[hash]`);
         },
       };
     },
     transform(code, id) {
       const [file = ''] = id.split('?');
-      if (!isSource(file)) return null;
+      if (!isSource(file)) {
+        return null;
+      }
       const out = transformModule({ code, file, loader, inject: command === 'serve' });
-      if (!out) return null;
+      if (!out) {
+        return null;
+      }
       sheet.add(out.rules);
       compiled += out.compiled;
       for (const skip of out.skipped) {
         skipped.push({ ...skip, file });
-        if (report)
+        if (report) {
           this.info?.(`[kroma-atomic] ${file}:${skip.line} left to the runtime: ${skip.reason}`);
+        }
       }
       return out.code === null ? null : { code: out.code, map: out.map };
     },
@@ -128,13 +139,19 @@ export function kromaAtomic({ repoRoot }: AtomicOptions): AtomicPlugin {
     generateBundle: {
       order: 'post',
       handler(_options, bundle) {
-        if (sheet.size === 0) return;
+        if (sheet.size === 0) {
+          return;
+        }
         const css = sheet.toCss();
         let landed = false;
         for (const file of Object.values(bundle)) {
-          if (file.type !== 'asset' || !file.fileName.endsWith('.css')) continue;
+          if (file.type !== 'asset' || !file.fileName.endsWith('.css')) {
+            continue;
+          }
           const source = textOf(file.source);
-          if (!source?.includes(TOKENS_MARKER)) continue;
+          if (!source?.includes(TOKENS_MARKER)) {
+            continue;
+          }
           file.source = `${source}\n${css}\n`;
           landed = true;
         }
@@ -147,7 +164,9 @@ export function kromaAtomic({ repoRoot }: AtomicOptions): AtomicPlugin {
       },
     },
     buildEnd() {
-      if (command === 'build') this.info?.(summary(compiled, skipped));
+      if (command === 'build') {
+        this.info?.(summary(compiled, skipped));
+      }
     },
   };
 }

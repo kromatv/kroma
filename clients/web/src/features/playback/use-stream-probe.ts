@@ -64,7 +64,9 @@ export function useStreamProbe({
   const refused = useCallback(
     (status: number, resumeAt?: number) => {
       const refusal = streamRefusal(status);
-      if (!refusal) return;
+      if (!refusal) {
+        return;
+      }
       if (refusal === 'denied' && !renewed.current) {
         renewed.current = true;
         void webRuntime.client.refreshSession().then((token) => {
@@ -72,7 +74,9 @@ export function useStreamProbe({
             setFailure('denied');
             return;
           }
-          if (resumeAt !== undefined) restartAt(resumeAt);
+          if (resumeAt !== undefined) {
+            restartAt(resumeAt);
+          }
           setRenewals((n) => n + 1);
         });
         return;
@@ -96,13 +100,17 @@ export function useStreamProbe({
       const direct = decision.kind === 'direct';
       setSrcReady(direct);
       setFailure(null);
-      if (direct) setBaseSec(0);
+      if (direct) {
+        setBaseSec(0);
+      }
     }
   }
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- `renewals` is the retry trigger.
   useEffect(() => {
-    if (!booted || decision.kind === 'direct') return;
+    if (!booted || decision.kind === 'direct') {
+      return;
+    }
     let cancelled = false;
     const url = webRuntime.client.media.hlsMasterUrl(
       itemId,
@@ -115,7 +123,9 @@ export function useStreamProbe({
     );
     fetch(url)
       .then((r) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         if (streamRefusal(r.status)) {
           refused(r.status);
           return;
@@ -124,11 +134,15 @@ export function useStreamProbe({
         const start = numberHeader(r, 'X-Hls-Start');
         const total = numberHeader(r, 'X-Media-Duration');
         setBaseSec(Number.isFinite(start) ? start : anchor);
-        if (Number.isFinite(total) && total > 0) setServerDurSec(total);
+        if (Number.isFinite(total) && total > 0) {
+          setServerDurSec(total);
+        }
         setSrcReady(true);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setBaseSec(anchor);
         setSrcReady(true);
       });

@@ -17,7 +17,9 @@ const HttpStatus = z.number().int();
 /** The HTTP status a Shaka load was rejected with, when the server answered one. */
 export function shakaHttpStatus(error: unknown): number | null {
   const parsed = ShakaHttpError.safeParse(error);
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   const status = HttpStatus.safeParse(parsed.data.data[1]);
   return status.success ? status.data : null;
 }

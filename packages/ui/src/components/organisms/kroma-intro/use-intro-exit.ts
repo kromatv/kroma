@@ -32,7 +32,9 @@ export function useIntroExit(onDone: () => void): IntroExit {
   });
 
   const exit = useCallback(() => {
-    if (exitedRef.current) return;
+    if (exitedRef.current) {
+      return;
+    }
     exitedRef.current = true;
     clearTimeout(safetyRef.current);
     setExiting(true);

@@ -107,12 +107,16 @@ function Root({
   useEffect(() => report(value), [value, report]);
 
   const commit = (next: string) => {
-    if (disabled) return;
-    const clean = [...next]
+    if (disabled) {
+      return;
+    }
+    const clean = Array.from(next)
       .filter((char) => allowed.test(char))
       .slice(0, maxLength)
       .join('');
-    if (clean === value) return;
+    if (clean === value) {
+      return;
+    }
     setValue(clean);
   };
 
@@ -123,7 +127,9 @@ function Root({
   // the focus takes it back, so a screen stacking several codes (current, new,
   // confirm) is left alone.
   useEffect(() => {
-    if (physicalKeyboard && autoFocus && !disabled) input.current?.focus();
+    if (physicalKeyboard && autoFocus && !disabled) {
+      input.current?.focus();
+    }
   }, [physicalKeyboard, autoFocus, disabled]);
 
   // The caret sits in the next empty slot; a full code has none, because there
@@ -209,7 +215,9 @@ function Root({
 function placed(children: ReactNode): ReactNode {
   let start = 0;
   return Children.map(children, (child) => {
-    if (!isValidElement(child) || child.type !== Group) return child;
+    if (!isValidElement(child) || child.type !== Group) {
+      return child;
+    }
     const at = start;
     start += Children.count((child.props as { children?: ReactNode }).children);
     return <OtpGroupStartContext.Provider value={at}>{child}</OtpGroupStartContext.Provider>;

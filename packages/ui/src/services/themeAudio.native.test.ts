@@ -37,11 +37,15 @@ const useVideoPlayer = vi.hoisted(() => {
       written: 0,
       get volume() {
         player.reads += 1;
-        if (player.released) throw new Error('NotFoundException: native shared object');
+        if (player.released) {
+          throw new Error('NotFoundException: native shared object');
+        }
         return player.written;
       },
       set volume(next: number) {
-        if (player.released) throw new Error('NotFoundException: native shared object');
+        if (player.released) {
+          throw new Error('NotFoundException: native shared object');
+        }
         player.written = next;
       },
     };
@@ -51,7 +55,9 @@ const useVideoPlayer = vi.hoisted(() => {
 
   const hook = vi.fn((source: string | null, setup?: (player: unknown) => void) => {
     const existing = cache.get(source);
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
     const player = build(setup);
     cache.set(source, player);
     players.push(player as unknown as FakePlayer);
@@ -76,7 +82,9 @@ import { useThemeAudio } from './themeAudio';
 
 function player(): FakePlayer {
   const last = players.at(-1);
-  if (!last) throw new Error('the hook never built a player');
+  if (!last) {
+    throw new Error('the hook never built a player');
+  }
   return last;
 }
 

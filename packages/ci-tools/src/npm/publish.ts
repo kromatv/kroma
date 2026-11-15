@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { decide, type PackageFiles, type PublishDecision } from './content-hash';
 
-const PackageName = z.object({ name: z.string().min(1) }).loose();
+const PackageName = z.object({ name: z.string().nonempty() }).loose();
 
 export interface Registry {
   /** The tarball bytes behind `<name>@<tag>`, or null when nothing is published there. */
@@ -27,7 +27,9 @@ export type PublishDeps = {
 
 export function packageName(files: PackageFiles): string {
   const raw = files.get('package.json');
-  if (!raw) throw new Error('the tarball has no package.json');
+  if (!raw) {
+    throw new Error('the tarball has no package.json');
+  }
   return PackageName.parse(JSON.parse(new TextDecoder().decode(raw))).name;
 }
 
@@ -40,6 +42,8 @@ export async function publishTarball(
   const bytes =
     request.tag === 'canary' ? await deps.registry.publishedTarball(name, request.tag) : null;
   const decision = decide({ tag: request.tag, local, published: bytes ? deps.read(bytes) : null });
-  if (decision.publish) await deps.registry.publish(request.tarball, request);
+  if (decision.publish) {
+    await deps.registry.publish(request.tarball, request);
+  }
   return { ...decision, name };
 }

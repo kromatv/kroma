@@ -13,7 +13,9 @@ const ROW_HEIGHT = 50;
 
 function root(): HTMLElement {
   const mounted = document.getElementById('root');
-  if (mounted) return mounted;
+  if (mounted) {
+    return mounted;
+  }
   const made = document.createElement('div');
   made.id = 'root';
   document.body.append(made);
@@ -24,7 +26,9 @@ function button(label: string, ringed = false): HTMLElement {
   const el = document.createElement('div');
   el.setAttribute('role', 'button');
   el.setAttribute('aria-label', label);
-  if (ringed) Object.assign(el.style, { outlineStyle: 'solid', outlineWidth: '2px' });
+  if (ringed) {
+    Object.assign(el.style, { outlineStyle: 'solid', outlineWidth: '2px' });
+  }
   root().append(el);
   return el;
 }
@@ -46,7 +50,9 @@ function observing(report: (targets: Element[]) => Sighting[]): void {
       constructor(private readonly notify: (entries: Sighting[]) => void) {}
       observe(target: Element): void {
         this.targets.push(target);
-        if (this.scheduled) return;
+        if (this.scheduled) {
+          return;
+        }
         this.scheduled = true;
         queueMicrotask(() => this.notify(report(this.targets)));
       }

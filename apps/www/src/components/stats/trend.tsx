@@ -33,10 +33,14 @@ function runs(values: readonly (number | null)[]): number[][] {
       run.push(i);
       return;
     }
-    if (run.length > 0) out.push(run);
+    if (run.length > 0) {
+      out.push(run);
+    }
     run = [];
   });
-  if (run.length > 0) out.push(run);
+  if (run.length > 0) {
+    out.push(run);
+  }
   return out;
 }
 
@@ -47,7 +51,9 @@ export function Trend({ days, series, empty }: Readonly<TrendProps>) {
   const [hovered, setHovered] = useState<number | null>(null);
   const current = series[selected] ?? series[0];
 
-  if (!current || days.length < 2) return <p className="text-sm text-muted">{empty}</p>;
+  if (!current || days.length < 2) {
+    return <p className="text-sm text-muted">{empty}</p>;
+  }
 
   const { values } = current;
   const last = values.length - 1;

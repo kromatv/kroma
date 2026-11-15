@@ -17,7 +17,9 @@ export function isWebEnginePref(value: string): value is WebEnginePref {
 export function getWebEnginePref(): WebEnginePref {
   try {
     const v = localStorage.getItem(KEY);
-    if (v && isWebEnginePref(v)) return v;
+    if (v && isWebEnginePref(v)) {
+      return v;
+    }
   } catch {
     /* storage unavailable */
   }

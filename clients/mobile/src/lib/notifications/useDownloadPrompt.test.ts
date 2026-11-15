@@ -33,7 +33,7 @@ describe('asking for notifications when a download starts', () => {
   it('waits for the answer before running the download', async () => {
     const { result } = renderHook(() => useDownloadPrompt());
     const run = vi.fn();
-    let answer = (_: unknown) => {};
+    let answer: (value: unknown) => void = () => {};
 
     notifications.requestPermissionsAsync.mockReturnValue(
       new Promise((resolve) => {

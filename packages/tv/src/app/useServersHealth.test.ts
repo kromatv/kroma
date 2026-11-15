@@ -6,7 +6,9 @@ import { useServersHealth } from './useServersHealth';
 function fakeFetch(replies: Record<string, { ok?: boolean; body?: unknown; throws?: boolean }>) {
   return vi.fn((input: string) => {
     const reply = replies[String(input)];
-    if (!reply || reply.throws) return Promise.reject(new Error('offline'));
+    if (!reply || reply.throws) {
+      return Promise.reject(new Error('offline'));
+    }
     return Promise.resolve({
       ok: reply.ok !== false,
       json: () => Promise.resolve(reply.body ?? {}),

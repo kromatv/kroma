@@ -29,12 +29,18 @@ export interface WaitSample {
  * fires `waiting` still counts.
  */
 export function waitReason(s: WaitSample): WaitReason | null {
-  if (s.ended) return null;
-  if (s.attaching || s.seeking) return 'loading';
+  if (s.ended) {
+    return null;
+  }
+  if (s.attaching || s.seeking) {
+    return 'loading';
+  }
   if (s.readyState < HAVE_CURRENT_DATA) {
     return s.intent || s.networkState === NETWORK_LOADING ? 'loading' : null;
   }
-  if (s.intent && (s.readyState < HAVE_FUTURE_DATA || s.frozen)) return 'buffering';
+  if (s.intent && (s.readyState < HAVE_FUTURE_DATA || s.frozen)) {
+    return 'buffering';
+  }
   return null;
 }
 

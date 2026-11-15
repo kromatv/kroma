@@ -16,7 +16,9 @@ export function useStats(): StatsState {
     fetchStats(abort.signal)
       .then((stats) => setState({ kind: 'ready', stats, fetchedAt: Math.floor(Date.now() / 1000) }))
       .catch(() => {
-        if (!abort.signal.aborted) setState({ kind: 'failed' });
+        if (!abort.signal.aborted) {
+          setState({ kind: 'failed' });
+        }
       });
     return () => abort.abort();
   }, []);

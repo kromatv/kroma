@@ -31,7 +31,9 @@ export function TvConnect() {
   if (seenDiscovered !== discovered) {
     setSeenDiscovered(discovered);
     const found = discovered.at(-1);
-    if (found && !value) setValue(hostOf(found));
+    if (found && !value) {
+      setValue(hostOf(found));
+    }
   }
 
   // Only one of http and https is safe to put a password into, so the
@@ -47,24 +49,32 @@ export function TvConnect() {
   if (probedValue !== value) {
     setProbedValue(value);
     setProbe(null);
-    if (!value.trim()) setProbing(false);
+    if (!value.trim()) {
+      setProbing(false);
+    }
   }
 
   useEffect(() => {
     const address = value.trim();
-    if (!address) return;
+    if (!address) {
+      return;
+    }
     let cancelled = false;
     // Debounced: each keystroke would otherwise cost a pair of requests.
     const timer = setTimeout(() => {
       setProbing(true);
       resolveServerOrigin(address)
         .then((hit) => {
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
           setProbe({ address, origin: hit });
           setProbing(false);
         })
         .catch(() => {
-          if (!cancelled) setProbing(false);
+          if (!cancelled) {
+            setProbing(false);
+          }
         });
     }, 700);
     return () => {
@@ -76,7 +86,9 @@ export function TvConnect() {
   const submitting = useRef(false);
   const submit = async () => {
     const address = value.trim();
-    if (!address || submitting.current) return;
+    if (!address || submitting.current) {
+      return;
+    }
     submitting.current = true;
     try {
       // Enter must not lose to the debounce: when the badge has not answered
@@ -92,7 +104,9 @@ export function TvConnect() {
       // Only a validated origin proceeds: the old http:// fallback saved
       // addresses that then failed on the very next screen. The badge below
       // says why Enter stayed put.
-      if (!hit.origin) return;
+      if (!hit.origin) {
+        return;
+      }
       addServer(hit.origin.url);
       nav.go('quick');
     } finally {

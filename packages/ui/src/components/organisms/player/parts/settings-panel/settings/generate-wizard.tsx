@@ -64,8 +64,12 @@ export function GenerateWizard({
   const [sourceIndex, setSourceIndex] = useState(0);
 
   const qualityLabel = (q: GenQuality) => {
-    if (q === 'fast') return t('player.subQualityFast');
-    if (q === 'accurate') return t('player.subQualityAccurate');
+    if (q === 'fast') {
+      return t('player.subQualityFast');
+    }
+    if (q === 'accurate') {
+      return t('player.subQualityAccurate');
+    }
     return t('player.subQualityBalanced');
   };
   const sourceLabel = (s: PlayerSub) =>
@@ -84,7 +88,9 @@ export function GenerateWizard({
       onStart({ mode: 'transcribe', lang: lang?.code, quality });
     } else {
       const src = sources[sourceIndex];
-      if (!src) return;
+      if (!src) {
+        return;
+      }
       onStart({ mode: 'translate', sourceIndex: src.index });
     }
     onClose();
@@ -100,7 +106,9 @@ export function GenerateWizard({
     ref,
     () => ({
       onKey: (key) => {
-        if (key !== 'Back') return false;
+        if (key !== 'Back') {
+          return false;
+        }
         onClose();
         return true;
       },
@@ -141,7 +149,9 @@ export function GenerateWizard({
         autoFocus
         label={t('player.subGenerate')}
         onKey={(direction) => {
-          if (direction !== 'left' && direction !== 'right') return false;
+          if (direction !== 'left' && direction !== 'right') {
+            return false;
+          }
           toggleMode();
           return true;
         }}
@@ -259,7 +269,11 @@ function modeTone(
   on: boolean,
   scope: StyleScope,
 ): { box: ViewStyle; ink: ColorValue } {
-  if (!enabled) return { box: resolveStyles(sDefinition, scope).modeDisabled, ink: 'text/40' };
-  if (on) return { box: resolveStyles(sDefinition, scope).modeOn, ink: 'accentInk' };
+  if (!enabled) {
+    return { box: resolveStyles(sDefinition, scope).modeDisabled, ink: 'text/40' };
+  }
+  if (on) {
+    return { box: resolveStyles(sDefinition, scope).modeOn, ink: 'accentInk' };
+  }
   return { box: resolveStyles(sDefinition, scope).modeOff, ink: 'text/75' };
 }

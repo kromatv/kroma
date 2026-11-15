@@ -60,12 +60,17 @@ export class SdbStream {
   onData(data: Buffer): void {
     this.transport.send(SDB_COMMAND.OKAY, this.localId, this.remoteId, EMPTY);
     const reader = this.readers.shift();
-    if (reader) reader.resolve(data);
-    else this.pending.push(data);
+    if (reader) {
+      reader.resolve(data);
+    } else {
+      this.pending.push(data);
+    }
   }
 
   onClose(): void {
-    if (this.ended) return;
+    if (this.ended) {
+      return;
+    }
     this.ended = true;
     if (this.remoteId !== 0) {
       this.transport.send(SDB_COMMAND.CLSE, this.localId, this.remoteId, EMPTY);
@@ -73,8 +78,12 @@ export class SdbStream {
     this.transport.release(this.localId);
     this.opened?.reject(new Error(`sdb: the device refused ${this.service}`));
     this.opened = null;
-    for (const reader of this.readers.splice(0)) reader.resolve(null);
-    for (const ack of this.acks.splice(0)) ack.reject(new Error('sdb: stream closed mid-write'));
+    for (const reader of this.readers.splice(0)) {
+      reader.resolve(null);
+    }
+    for (const ack of this.acks.splice(0)) {
+      ack.reject(new Error('sdb: stream closed mid-write'));
+    }
   }
 
   onFail(error: Error): void {
@@ -82,8 +91,12 @@ export class SdbStream {
     this.ended = true;
     this.opened?.reject(error);
     this.opened = null;
-    for (const reader of this.readers.splice(0)) reader.reject(error);
-    for (const ack of this.acks.splice(0)) ack.reject(error);
+    for (const reader of this.readers.splice(0)) {
+      reader.reject(error);
+    }
+    for (const ack of this.acks.splice(0)) {
+      ack.reject(error);
+    }
   }
 
   async write(data: Buffer, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<void> {
@@ -98,10 +111,16 @@ export class SdbStream {
   }
 
   read(timeoutMs = DEFAULT_TIMEOUT_MS): Promise<Buffer | null> {
-    if (this.failure) return Promise.reject(this.failure);
+    if (this.failure) {
+      return Promise.reject(this.failure);
+    }
     const buffered = this.pending.shift();
-    if (buffered) return Promise.resolve(buffered);
-    if (this.ended) return Promise.resolve(null);
+    if (buffered) {
+      return Promise.resolve(buffered);
+    }
+    if (this.ended) {
+      return Promise.resolve(null);
+    }
     return this.deadline(
       new Promise<Buffer | null>((resolve, reject) => {
         this.readers.push({ resolve, reject });
@@ -117,10 +136,14 @@ export class SdbStream {
     let size = 0;
     for (;;) {
       const chunk = await this.read(timeoutMs);
-      if (!chunk) break;
+      if (!chunk) {
+        break;
+      }
       chunks.push(chunk);
       size += chunk.length;
-      if (size >= limit) break;
+      if (size >= limit) {
+        break;
+      }
     }
     return Buffer.concat(chunks).subarray(0, limit);
   }

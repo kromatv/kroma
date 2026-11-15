@@ -62,7 +62,9 @@ const sheets = new Map<string, ViewStyle>();
 function sheet(spec: Readonly<DriftSpec>): ViewStyle {
   const key = `${spec.x}|${spec.y}|${spec.zoom}|${steps(spec)}`;
   const held = sheets.get(key);
-  if (held) return held;
+  if (held) {
+    return held;
+  }
   const made = StyleSheet.create({ drift: frames(spec) as ViewStyle }).drift;
   sheets.set(key, made);
   return made;
@@ -80,7 +82,9 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
   return useMemo(() => {
     // A zero-height box is the frame before layout: there is nothing to pan yet,
     // and starting the rule now only means restarting it on the next frame.
-    if (!width || !height) return null;
+    if (!width || !height) {
+      return null;
+    }
     return [
       sheet({ x, y, zoom, ms, width, height }),
       sharedStyle(`splash:drift:${ms}`, { animationDuration: `${ms}ms` }, scope),

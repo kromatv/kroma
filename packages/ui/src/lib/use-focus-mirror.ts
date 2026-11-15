@@ -8,7 +8,9 @@ export function useFocusMirror(focused: boolean): (element: unknown) => void {
   const { mirror } = useFocusServices();
   const host = useRef<unknown>(null);
   useLayoutEffect(() => {
-    if (focused) mirror.mirrorFocus(host.current);
+    if (focused) {
+      mirror.mirrorFocus(host.current);
+    }
   }, [focused, mirror]);
   return useCallback((element: unknown) => {
     host.current = element;

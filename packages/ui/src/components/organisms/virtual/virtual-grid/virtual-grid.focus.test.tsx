@@ -73,7 +73,9 @@ describe('a windowed grid opened on a row', () => {
   it('walks a row at a time, mounting what it walks onto', () => {
     open(120);
 
-    for (let step = 0; step < 10; step += 1) press('ArrowDown');
+    for (let step = 0; step < 10; step += 1) {
+      press('ArrowDown');
+    }
 
     expect(ringed()).toEqual(['row 130']);
     expect(mounted()).toContain('row 130');
@@ -82,7 +84,9 @@ describe('a windowed grid opened on a row', () => {
   it('walks back up through the page it came from', () => {
     open(120);
 
-    for (let step = 0; step < 4; step += 1) press('ArrowUp');
+    for (let step = 0; step < 4; step += 1) {
+      press('ArrowUp');
+    }
 
     expect(ringed()).toEqual(['row 116']);
   });
@@ -90,7 +94,9 @@ describe('a windowed grid opened on a row', () => {
   it('shows every row of the page before the strip moves', () => {
     open(0);
 
-    for (let step = 0; step < ROWS - 1; step += 1) press('ArrowDown');
+    for (let step = 0; step < ROWS - 1; step += 1) {
+      press('ArrowDown');
+    }
 
     expect(ringed()).toEqual([`row ${ROWS - 1}`]);
     expect(strip()).toBe(0);
@@ -99,7 +105,9 @@ describe('a windowed grid opened on a row', () => {
   it('moves the strip by a whole page once the ring leaves it', () => {
     open(0);
 
-    for (let step = 0; step < ROWS; step += 1) press('ArrowDown');
+    for (let step = 0; step < ROWS; step += 1) {
+      press('ArrowDown');
+    }
 
     expect(strip()).toBe((ROW + GAP) * ROWS);
   });
@@ -155,7 +163,9 @@ describe('a grid whose first row is its header', () => {
 function strip(): number {
   for (const node of document.querySelectorAll<HTMLElement>('div')) {
     const match = /translateY\((-?[\d.]+)px\)/.exec(node.style.transform);
-    if (match?.[1]) return -Number(match[1]) || 0;
+    if (match?.[1]) {
+      return -Number(match[1]) || 0;
+    }
   }
   return 0;
 }

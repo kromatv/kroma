@@ -8,8 +8,11 @@ export const epKey = (season: number, episode: number) => `${season}-${episode}`
 
 export function toggle(prev: ReadonlySet<string>, key: string): Set<string> {
   const next = new Set(prev);
-  if (next.has(key)) next.delete(key);
-  else next.add(key);
+  if (next.has(key)) {
+    next.delete(key);
+  } else {
+    next.add(key);
+  }
   return next;
 }
 
@@ -21,11 +24,17 @@ export function toEpisodeRefs(selection: ReadonlySet<string>): EpisodeRef[] {
     const [s, e] = key.split('-');
     // `Number('')` is 0, which passes an integer check, so the emptiness of each
     // half has to be tested on its own.
-    if (!s || !e) continue;
+    if (!s || !e) {
+      continue;
+    }
     const season = Number(s);
     const episode = Number(e);
-    if (!Number.isInteger(season) || season < 0) continue;
-    if (!Number.isInteger(episode) || episode < 1) continue;
+    if (!Number.isInteger(season) || season < 0) {
+      continue;
+    }
+    if (!Number.isInteger(episode) || episode < 1) {
+      continue;
+    }
     refs.push({ season, episode });
   }
   return refs.sort((a, b) => a.season - b.season || a.episode - b.episode);

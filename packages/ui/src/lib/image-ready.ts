@@ -6,9 +6,13 @@ const ready = new Set<string>();
 export function markImageReady(uri: string): void {
   ready.delete(uri);
   ready.add(uri);
-  if (ready.size <= LIMIT) return;
+  if (ready.size <= LIMIT) {
+    return;
+  }
   const oldest = ready.values().next().value;
-  if (oldest !== undefined) ready.delete(oldest);
+  if (oldest !== undefined) {
+    ready.delete(oldest);
+  }
 }
 
 /** Whether `uri` has been loaded or prefetched recently enough to draw at once. */

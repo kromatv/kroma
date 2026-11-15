@@ -31,7 +31,9 @@ export function useHostRule(caller: string | null = null): {
       cancelLabel: t('common.cancel'),
       destructive: blocking,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     await run(
       async () => {
         const stored = await client.network.rules();

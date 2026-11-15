@@ -7,7 +7,9 @@ export { langName };
 /** "Français · AAC 5.1" language then codec/channels. */
 export function audioString(t: Translate, item: Pick<MediaItem, 'audio'>): string {
   const a = item.audio;
-  if (!a) return '-';
+  if (!a) {
+    return '-';
+  }
   const tech = [codecLabel(a.codec), channelLabel(a.channels)].filter(Boolean).join(' ');
   return [langName(t, a.language), tech].filter(Boolean).join(' · ') || '-';
 }

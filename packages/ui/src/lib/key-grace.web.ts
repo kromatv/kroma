@@ -11,9 +11,13 @@ export function useKeyGrace(scoped: boolean): () => boolean {
 
   useEffect(() => {
     const dom = webDocument();
-    if (!scoped || !dom) return;
+    if (!scoped || !dom) {
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (DIRECTIONS.has(e.key)) keyAt.current = Date.now();
+      if (DIRECTIONS.has(e.key)) {
+        keyAt.current = Date.now();
+      }
     };
     dom.addEventListener('keydown', onKey, true);
     return () => dom.removeEventListener('keydown', onKey, true);

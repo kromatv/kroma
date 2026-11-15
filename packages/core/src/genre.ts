@@ -38,7 +38,9 @@ function matchKey(name: string): string {
 }
 
 function localized(key: string): GenreRow | undefined {
-  if (key === '') return undefined;
+  if (key === '') {
+    return undefined;
+  }
   for (const genre of GENRES) {
     const copy = labelKey(genre.slug);
     for (const locale of SUPPORTED_LOCALES) {
@@ -108,7 +110,9 @@ export function genreOfSegment(segment: string): string {
   const id = Number(segment);
   if (Number.isInteger(id) && segment.trim() !== '') {
     const slug = genreOfTmdbId(id);
-    if (slug) return slug;
+    if (slug) {
+      return slug;
+    }
   }
   return genreSlug(segment);
 }

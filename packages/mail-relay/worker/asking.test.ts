@@ -52,7 +52,9 @@ describe('asking to be activated', () => {
   });
 
   it('gives a mailbox a small daily budget of questions, whoever asks', async () => {
-    for (let i = 0; i < 3; i++) expect((await ask()).status).toBe(200);
+    for (let i = 0; i < 3; i++) {
+      expect((await ask()).status).toBe(200);
+    }
 
     expect((await ask()).status).toBe(429);
     const other = await registered('https://other.example');

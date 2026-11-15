@@ -21,7 +21,7 @@ export type { Transport };
 export const GrantPayload = z.object({
   t: Transport,
   // Never leaves the relay in readable form.
-  d: z.string().min(1),
+  d: z.string().nonempty(),
   e: z.number(),
 });
 export type GrantPayload = z.infer<typeof GrantPayload>;

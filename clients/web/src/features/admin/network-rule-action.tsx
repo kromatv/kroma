@@ -13,7 +13,9 @@ import {
 export function useNetworkName(): (choice: NetworkChoice) => string {
   const t = useT();
   return ({ name, label }) => {
-    if (name !== DEFAULT_NETWORK) return label ?? name;
+    if (name !== DEFAULT_NETWORK) {
+      return label ?? name;
+    }
     return label ? t('network.actionDefaultVpn', { label }) : t('network.routeVpn');
   };
 }
@@ -78,9 +80,15 @@ export function RuleActionBadge({
   networks,
 }: Readonly<{ action: RuleAction; networks: readonly NetworkView[] }>) {
   const nameOf = useNetworkName();
-  if (action === 'direct') return <RouteBadge route="direct" />;
-  if (action === 'block') return <RouteBadge route="blocked" />;
-  if (action === DEFAULT_NETWORK) return <RouteBadge route="vpn" />;
+  if (action === 'direct') {
+    return <RouteBadge route="direct" />;
+  }
+  if (action === 'block') {
+    return <RouteBadge route="blocked" />;
+  }
+  if (action === DEFAULT_NETWORK) {
+    return <RouteBadge route="vpn" />;
+  }
   const label = networks.find(({ name }) => name === action)?.label ?? null;
   return <Badge tone="info">{nameOf({ name: action, label })}</Badge>;
 }

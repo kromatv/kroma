@@ -63,7 +63,9 @@ function Root({ size = 'md', layout = 'inline', icon, children }: Readonly<RootP
 function Media({ variant = 'icon', name, children }: Readonly<MediaProps>) {
   const shape = useShape('Media');
   const mark = name ? <Icon name={name} size={shape.glyph} color="textDim" /> : children;
-  if (variant === 'plain') return <Box center>{mark}</Box>;
+  if (variant === 'plain') {
+    return <Box center>{mark}</Box>;
+  }
   return (
     <Box center w={shape.badge} h={shape.badge} radius="circle" bg="tint/5" border="tint/8">
       {mark}
@@ -117,7 +119,9 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 function frameOf(shape: Shape, layout: EmptyStateLayout) {
-  if (layout === 'fill') return FILL;
+  if (layout === 'fill') {
+    return FILL;
+  }
   return { flex: undefined, py: shape.inlinePad } as const;
 }
 

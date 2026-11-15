@@ -49,8 +49,12 @@ const remembered = new Map<string, Sighting>();
 
 /** What answered a message: the grade a mark would carry. */
 export function gradeOf({ from, locale, holes }: Rendered): Marked {
-  if (!from) return 'missing';
-  if (holes.length > 0) return 'vars';
+  if (!from) {
+    return 'missing';
+  }
+  if (holes.length > 0) {
+    return 'vars';
+  }
   return from.locale === locale ? 'catalog' : 'fallback';
 }
 
@@ -69,7 +73,9 @@ export function mark(rendered: Rendered, drawn: string): string {
   const grade = gradeOf(rendered);
   const marked = MARKS[grade] + drawn;
   const seen = remembered.get(marked);
-  if (seen?.key === rendered.key) return marked;
+  if (seen?.key === rendered.key) {
+    return marked;
+  }
   remembered.set(marked, {
     key: rendered.key,
     scope: rendered.from?.scope ?? null,
@@ -98,11 +104,17 @@ export function forgetMarks(): void {
  */
 export function sightingIn(text: string): Sighting | null {
   const whole = remembered.get(text) ?? remembered.get(text.trim());
-  if (whole) return whole;
+  if (whole) {
+    return whole;
+  }
   const start = text.trim();
-  if (!start) return null;
+  if (!start) {
+    return null;
+  }
   for (const [marked, sighting] of remembered) {
-    if (marked.startsWith(start)) return sighting;
+    if (marked.startsWith(start)) {
+      return sighting;
+    }
   }
   return null;
 }
@@ -114,10 +126,16 @@ export function markIn(text: string): Marked | null {
   let worst: Marked | null = null;
   for (let at = 0; at < text.length; at += 1) {
     const code = text.codePointAt(at);
-    if (code === undefined || code < FIRST || code > LAST) continue;
+    if (code === undefined || code < FIRST || code > LAST) {
+      continue;
+    }
     const grade = OF_CODE[code] as Marked;
-    if (grade === 'missing') return grade;
-    if (worst === null || SEVERITY[grade] < SEVERITY[worst]) worst = grade;
+    if (grade === 'missing') {
+      return grade;
+    }
+    if (worst === null || SEVERITY[grade] < SEVERITY[worst]) {
+      worst = grade;
+    }
   }
   return worst;
 }

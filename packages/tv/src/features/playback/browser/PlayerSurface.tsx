@@ -22,7 +22,9 @@ export function PlayerSurface({ pb, title, pip }: Readonly<SurfaceProps>): React
       />
     );
   }
-  if (surface === 'mpv') return <MpvSurface pb={pb} title={title} pip={pip} />;
+  if (surface === 'mpv') {
+    return <MpvSurface pb={pb} title={title} pip={pip} />;
+  }
   return <VideoSurface pb={pb} title={title} pip={pip} />;
 }
 

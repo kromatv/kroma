@@ -57,7 +57,9 @@ export function FormatsView({
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (!yes) return;
+    if (!yes) {
+      return;
+    }
     await action.run(
       async () => {
         await acquisition.deleteFormat(format.id);

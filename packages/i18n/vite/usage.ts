@@ -57,11 +57,15 @@ export function importChain(id: string, graph: ImportGraph): string[] {
   for (let at = queue.shift(); at !== undefined; at = queue.shift()) {
     if (graph.isEntry(at)) {
       const chain: string[] = [];
-      for (let step: string | null | undefined = at; step; step = below.get(step)) chain.push(step);
+      for (let step: string | null | undefined = at; step; step = below.get(step)) {
+        chain.push(step);
+      }
       return chain.filter((step) => !DEPENDENCY.test(step) && !step.startsWith('\0'));
     }
     for (const importer of graph.importers(at)) {
-      if (below.has(importer)) continue;
+      if (below.has(importer)) {
+        continue;
+      }
       below.set(importer, at);
       queue.push(importer);
     }
@@ -84,7 +88,9 @@ function chunkUsage(
   for (const id of chunk.moduleIds ?? []) {
     for (const [file, own] of byModule.get(id) ?? []) {
       const into = noted(merged, file);
-      for (const key of own.keys) into.keys.add(key);
+      for (const key of own.keys) {
+        into.keys.add(key);
+      }
       into.whole ||= own.whole;
       from.set(file, { ...from.get(file), [id]: own.keys.size });
     }
@@ -106,7 +112,9 @@ function bootChunks(bundle: Readonly<Record<string, Chunk>>): string[] {
   const seen = new Set<string>();
   const queue = Object.keys(bundle).filter((name) => bundle[name]?.isEntry === true);
   for (let name = queue.pop(); name !== undefined; name = queue.pop()) {
-    if (seen.has(name)) continue;
+    if (seen.has(name)) {
+      continue;
+    }
     seen.add(name);
     queue.push(...(bundle[name]?.imports ?? []));
   }
@@ -120,7 +128,9 @@ function bootUsage(chunks: ChunkUsage, loaded: readonly string[], graph?: Import
   for (const name of loaded) {
     for (const [file, own] of Object.entries(chunks[name]?.files ?? {})) {
       const keys = named.get(file) ?? new Set();
-      for (const key of own.keys) keys.add(key);
+      for (const key of own.keys) {
+        keys.add(key);
+      }
       named.set(file, keys);
       from.set(file, { ...from.get(file), ...own.from });
       files[file] = {
@@ -133,7 +143,9 @@ function bootUsage(chunks: ChunkUsage, loaded: readonly string[], graph?: Import
   }
   for (const [file, own] of Object.entries(files)) {
     const [reader] = Object.entries(from.get(file) ?? {}).sort(([, a], [, b]) => b - a);
-    if (graph && reader) files[file] = { ...own, via: importChain(reader[0], graph) };
+    if (graph && reader) {
+      files[file] = { ...own, via: importChain(reader[0], graph) };
+    }
   }
   const total = (pick: (file: BootFile) => number) =>
     Object.values(files).reduce((sum, file) => sum + pick(file), 0);
@@ -173,9 +185,13 @@ export function usageByChunk(
 ): BuildUsage {
   const chunks: ChunkUsage = {};
   for (const [name, chunk] of Object.entries(bundle)) {
-    if (chunk.type !== 'chunk') continue;
+    if (chunk.type !== 'chunk') {
+      continue;
+    }
     const files = chunkUsage(chunk, byModule, keys);
-    if (Object.keys(files).length > 0) chunks[name] = { entry: chunk.isEntry === true, files };
+    if (Object.keys(files).length > 0) {
+      chunks[name] = { entry: chunk.isEntry === true, files };
+    }
   }
   const built = { boot: bootUsage(chunks, bootChunks(bundle), graph), chunks };
   return graph?.label ? labelled(built, graph.label) : built;
@@ -185,7 +201,9 @@ export function usageByChunk(
  *  first screen, the heaviest file first with the imports that led to it, or
  *  null when it holds. */
 export function overBoot({ messages, files }: BootUsage, limit: number): string | null {
-  if (messages <= limit) return null;
+  if (messages <= limit) {
+    return null;
+  }
   const lines = Object.entries(files)
     .sort(([, a], [, b]) => b.of - a.of)
     .map(([file, { named, of, via }]) => {

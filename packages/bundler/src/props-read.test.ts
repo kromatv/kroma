@@ -158,7 +158,9 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(() => {
-  if (project) rmSync(project, { recursive: true, force: true });
+  if (project) {
+    rmSync(project, { recursive: true, force: true });
+  }
 });
 
 describe('readPropDocs', () => {

@@ -136,7 +136,9 @@ describe('sending from an activated server', () => {
     expect((await send(MESSAGE)).status).toBe(429);
     env.SEND_IP = testEnv().SEND_IP;
 
-    for (let i = 0; i < 50; i++) expect((await send(MESSAGE)).status).toBe(200);
+    for (let i = 0; i < 50; i++) {
+      expect((await send(MESSAGE)).status).toBe(200);
+    }
     expect((await send(MESSAGE)).status).toBe(429);
     expect(env.sent).toHaveLength(50);
   });

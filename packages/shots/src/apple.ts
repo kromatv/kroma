@@ -61,7 +61,9 @@ function deviceUdid(target: Target): string {
   for (const line of listed.split('\n')) {
     const found = UDID.exec(line);
     const udid = found?.[1];
-    if (found && udid && line.slice(0, found.index).trim() === wanted) return udid;
+    if (found && udid && line.slice(0, found.index).trim() === wanted) {
+      return udid;
+    }
   }
   throw new Error(
     `no available simulator named "${wanted}". ` +
@@ -78,7 +80,9 @@ function assertInstalled(udid: string, appId: string, target: Target): void {
   const container = run('xcrun', ['simctl', 'get_app_container', udid, appId], 'text', {
     allowFailure: true,
   });
-  if (container.trim()) return;
+  if (container.trim()) {
+    return;
+  }
   throw new Error(
     `${target.id}: "${appId}" is not installed on the simulator. ` +
       `This tool photographs a build, it does not make one - install it first with ` +

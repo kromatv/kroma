@@ -58,8 +58,12 @@ function startOfDay(ms: number): number {
  * DST boundary, where "now minus 24h" is off by an hour. */
 export function notificationDayOf(at: number, now: number): NotificationDay {
   const day = startOfDay(at);
-  if (day >= startOfDay(now)) return 'today';
-  if (day >= startOfDay(now - 86_400_000)) return 'yesterday';
+  if (day >= startOfDay(now)) {
+    return 'today';
+  }
+  if (day >= startOfDay(now - 86_400_000)) {
+    return 'yesterday';
+  }
   return 'earlier';
 }
 
@@ -79,8 +83,11 @@ export function groupNotificationsByDay(
   for (const item of items) {
     const day = notificationDayOf(notificationUpdatedAt(item), now);
     const last = groups.at(-1);
-    if (last?.day === day) last.items.push(item);
-    else groups.push({ day, items: [item] });
+    if (last?.day === day) {
+      last.items.push(item);
+    } else {
+      groups.push({ day, items: [item] });
+    }
   }
   return groups;
 }

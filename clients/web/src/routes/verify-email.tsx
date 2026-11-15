@@ -40,12 +40,16 @@ function VerifyEmailPage() {
   const [relay, setRelay] = useState<{ url: string; serverName: string } | null>(null);
 
   useEffect(() => {
-    if (!activate) return;
+    if (!activate) {
+      return;
+    }
     let cancelled = false;
     client.accounts
       .config()
       .then((cfg) => {
-        if (cancelled || !cfg.mailRelayUrl) return;
+        if (cancelled || !cfg.mailRelayUrl) {
+          return;
+        }
         setRelay({ url: cfg.mailRelayUrl, serverName: cfg.serverName ?? 'KROMA' });
       })
       .catch(() => undefined);
@@ -57,15 +61,20 @@ function VerifyEmailPage() {
   const link = useTokenLink(token, (tok) => client.accounts.checkEmailVerification(tok));
   const asking = Boolean(activate && relay);
   let submitLabel = t('auth.verifySubmit');
-  if (asking) submitLabel = t('auth.activateSubmit');
-  else if (link.busy) submitLabel = t('common.saving');
+  if (asking) {
+    submitLabel = t('auth.activateSubmit');
+  } else if (link.busy) {
+    submitLabel = t('common.saving');
+  }
   const host = typeof window === 'undefined' ? '' : window.location.host;
   let detail = link.username;
   if (asking) {
     detail = ip ? t('auth.activateServer', { host, ip }) : t('auth.activateServerNoIp', { host });
   }
   const submit = () => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     if (activate && relay) {
       postActivation(relay.url, activate);
       return;

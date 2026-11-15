@@ -55,7 +55,9 @@ export function useModuleActions(): {
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (sure) await moduleApi.uninstallModule(id, true);
+    if (sure) {
+      await moduleApi.uninstallModule(id, true);
+    }
     return sure;
   };
 
@@ -63,8 +65,12 @@ export function useModuleActions(): {
     try {
       await moduleApi.uninstallModule(module.id);
     } catch (error) {
-      if (!(error instanceof UninstallConflictError)) throw error;
-      if (!(await removeAnyway(module, error.dependents))) return;
+      if (!(error instanceof UninstallConflictError)) {
+        throw error;
+      }
+      if (!(await removeAnyway(module, error.dependents))) {
+        return;
+      }
     }
     await refresh();
     toast({ message: t('commands.moduleUninstalled', { name: module.name }), tone: 'success' });

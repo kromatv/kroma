@@ -14,7 +14,9 @@ function stemsOf(catalog: Catalog): ReadonlySet<string> {
     const found = new Set<string>();
     for (const key of Object.keys(catalog)) {
       const suffix = SUFFIX.exec(key);
-      if (suffix) found.add(key.slice(0, key.length - suffix[0].length));
+      if (suffix) {
+        found.add(key.slice(0, key.length - suffix[0].length));
+      }
     }
     stems = found;
     STEMS.set(catalog, stems);
@@ -31,7 +33,9 @@ export function forgetStems(catalog: Catalog): void {
 
 function rulesFor(locale: string): Intl.PluralRules | null {
   const cached = RULES.get(locale);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
   let rules: Intl.PluralRules | null = null;
   try {
     rules = new Intl.PluralRules(locale);
@@ -47,7 +51,9 @@ function rulesFor(locale: string): Intl.PluralRules | null {
  *  television engines. Note that French puts 0 in `one` and English does not,
  *  so a server rendering the same catalog has to agree with this. */
 export function selectCategory(locale: string, count: number, rule?: PluralRule): PluralCategory {
-  if (rule) return rule(locale, count);
+  if (rule) {
+    return rule(locale, count);
+  }
   return rulesFor(locale)?.select(count) ?? (count === 1 ? 'one' : 'other');
 }
 
@@ -58,14 +64,22 @@ function variantIn(
   n: number,
   rule?: PluralRule,
 ): string | undefined {
-  if (!stemsOf(catalog).has(stem)) return undefined;
+  if (!stemsOf(catalog).has(stem)) {
+    return undefined;
+  }
   // An explicit `_zero` wins at zero even where CLDR has no `zero` category,
   // because "no results" is usually its own sentence rather than a plural.
-  if (n === 0 && catalog[`${stem}_zero`] !== undefined) return `${stem}_zero`;
+  if (n === 0 && catalog[`${stem}_zero`] !== undefined) {
+    return `${stem}_zero`;
+  }
   const category = `${stem}_${selectCategory(locale, n, rule)}`;
-  if (catalog[category] !== undefined) return category;
+  if (catalog[category] !== undefined) {
+    return category;
+  }
   const other = `${stem}_other`;
-  if (catalog[other] !== undefined) return other;
+  if (catalog[other] !== undefined) {
+    return other;
+  }
   return undefined;
 }
 
@@ -92,14 +106,22 @@ export function resolvePluralKey(
   const count = vars.count;
   if (typeof count === 'number') {
     const hit = variantIn(catalog, locale, key, count, rule);
-    if (hit) return hit;
+    if (hit) {
+      return hit;
+    }
   }
   for (const name in vars) {
-    if (name === 'count' || !Object.hasOwn(vars, name)) continue;
+    if (name === 'count' || !Object.hasOwn(vars, name)) {
+      continue;
+    }
     const value = vars[name];
-    if (typeof value !== 'number') continue;
+    if (typeof value !== 'number') {
+      continue;
+    }
     const hit = variantIn(catalog, locale, `${key}_${name}`, value, rule);
-    if (hit) return hit;
+    if (hit) {
+      return hit;
+    }
   }
   return key;
 }

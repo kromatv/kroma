@@ -16,12 +16,16 @@ export function PlayerSurface({ pb, title, pip }: Readonly<SurfaceProps>): React
   // <VideoView> is backed by an AVPlayerLayer, which a rounded ancestor does
   // NOT clip; only clipping its own wrapper rounds the picture.
   const radius = useSurfaceRadius();
-  if (pb.surface === 'vlc') return <VlcSurface pb={pb} title={title} radius={radius} />;
+  if (pb.surface === 'vlc') {
+    return <VlcSurface pb={pb} title={title} radius={radius} />;
+  }
   // The engine replaces its player on every re-anchor, and `engineRef` is a ref,
   // so `surfaceNonce` is what tells React to render the new one.
   const engine = pb.engineRef.current as ExpoVideoEngine | null;
   const player = engine?.videoPlayer ?? null;
-  if (!player) return null;
+  if (!player) {
+    return null;
+  }
   const { attach, onStart, onStop } = pip;
   return (
     <Animated.View style={[StyleSheet.absoluteFill, CLIP, { borderRadius: radius }]}>
@@ -62,7 +66,9 @@ function VlcSurface({
   // holds the outgoing player here. Checking the KIND rather than casting is what
   // keeps that render from reading a source the old engine does not have.
   const engine = current?.kind === 'vlc' ? (current as VlcEngine) : null;
-  if (!Plane || !engine) return null;
+  if (!Plane || !engine) {
+    return null;
+  }
   return (
     <Animated.View style={[StyleSheet.absoluteFill, CLIP, { borderRadius: radius }]}>
       <Plane

@@ -144,7 +144,11 @@ describe('the rule editor', () => {
       target: { value: 'tracker.example' },
     });
     clearPressGuard();
-    fireEvent.click(within(dialog).getAllByRole('button', { name: 'Add a rule' }).at(-1)!);
+    const addButton = within(dialog).getAllByRole('button', { name: 'Add a rule' }).at(-1);
+    if (!addButton) {
+      throw new Error('no add button');
+    }
+    fireEvent.click(addButton);
     press('Save');
 
     await waitFor(() => expect(api.saveRules).toHaveBeenCalledTimes(1));

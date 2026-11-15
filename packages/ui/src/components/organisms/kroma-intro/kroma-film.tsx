@@ -58,14 +58,19 @@ function armStallSafety(
   },
   rechecksLeft = HIDDEN_RECHECKS,
 ): void {
-  if (opts.looping()) return;
+  if (opts.looping()) {
+    return;
+  }
   const d = opts.video.current?.duration;
   const ms = d && Number.isFinite(d) && d > 0 ? d * 1000 + SAFETY_SLACK_MS : SAFETY_MS;
   opts.arm(ms, () => {
     const v = opts.video.current;
     const stillParked = document.hidden && v?.readyState === 0;
-    if (stillParked && rechecksLeft > 0) armStallSafety(opts, rechecksLeft - 1);
-    else opts.exit();
+    if (stillParked && rechecksLeft > 0) {
+      armStallSafety(opts, rechecksLeft - 1);
+    } else {
+      opts.exit();
+    }
   });
 }
 
@@ -114,12 +119,16 @@ function VideoIntro({
   // pending hand-off, so the fallback would play a whole second intro from
   // the top.
   const fail = useEffectEvent(() => {
-    if (!exitedRef.current) onVideoError();
+    if (!exitedRef.current) {
+      onVideoError();
+    }
   });
 
   const replay = useEffectEvent(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     reopen();
     setTagVisible(false);
     try {
@@ -137,9 +146,13 @@ function VideoIntro({
   // is what makes picture and sound open together when the user is early.
   const unblock = useEffectEvent(() => {
     const v = videoRef.current;
-    if (!v?.muted || exitedRef.current) return;
+    if (!v?.muted || exitedRef.current) {
+      return;
+    }
     v.muted = false;
-    if (v.currentTime >= UNMUTE_REWIND_S) return;
+    if (v.currentTime >= UNMUTE_REWIND_S) {
+      return;
+    }
     try {
       v.currentTime = 0;
     } catch {
@@ -150,8 +163,11 @@ function VideoIntro({
   });
 
   const onEnded = useEffectEvent(() => {
-    if (loop) replay();
-    else exit();
+    if (loop) {
+      replay();
+    } else {
+      exit();
+    }
   });
 
   useIntroKeys({ exit, replay, unblock });
@@ -159,14 +175,18 @@ function VideoIntro({
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only intro timeline; exit/clearTimers are stable useCallbacks and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the film) on unrelated re-renders.
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
 
     // Sound-first autoplay; muted fallback when the browser blocks it. A
     // muted-too rejection means playback is genuinely broken: use the CSS scene.
     const beginMuted = () => {
       v.muted = true;
       const muted = v.play();
-      if (typeof muted?.then === 'function') muted.catch(fail);
+      if (typeof muted?.then === 'function') {
+        muted.catch(fail);
+      }
     };
 
     // Only a refusal of sound means sound: a play() interrupted by the film's
@@ -176,9 +196,13 @@ function VideoIntro({
       if (typeof p?.then === 'function') {
         p.catch((error: unknown) => {
           const aborted = error instanceof DOMException && error.name === 'AbortError';
-          if (!aborted || !retry) beginMuted();
-          else if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) begin(false);
-          else v.addEventListener('canplay', () => begin(false), { once: true });
+          if (!aborted || !retry) {
+            beginMuted();
+          } else if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+            begin(false);
+          } else {
+            v.addEventListener('canplay', () => begin(false), { once: true });
+          }
         });
       }
       rearmSafety();
@@ -213,7 +237,9 @@ function VideoIntro({
     //
     // So the sourceless case is asked about rather than waited for.
     const sourceless = setTimeout(() => {
-      if (v.networkState === v.NETWORK_NO_SOURCE && v.readyState === v.HAVE_NOTHING) fail();
+      if (v.networkState === v.NETWORK_NO_SOURCE && v.readyState === v.HAVE_NOTHING) {
+        fail();
+      }
     }, NO_SOURCE_MS);
 
     const onMeta = () => rearmSafety();
@@ -236,10 +262,17 @@ function VideoIntro({
   // when a tagline was actually asked for (no shell sets one today).
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !tagline) return;
+    if (!v || !tagline) {
+      return;
+    }
     const onTime = () => {
-      if (v.duration && Number.isFinite(v.duration) && v.currentTime > v.duration - TAGLINE_LEAD_S)
+      if (
+        v.duration &&
+        Number.isFinite(v.duration) &&
+        v.currentTime > v.duration - TAGLINE_LEAD_S
+      ) {
         setTagVisible(true);
+      }
     };
     v.addEventListener('timeupdate', onTime);
     return () => v.removeEventListener('timeupdate', onTime);

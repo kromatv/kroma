@@ -77,12 +77,18 @@ export function useUpNext(
   return useMemo(() => {
     const recos = similar.slice(0, 18);
     const byId = new Map<string, MediaItem>();
-    for (const e of following) byId.set(e.id, e);
-    for (const s of recos) byId.set(s.id, s);
+    for (const e of following) {
+      byId.set(e.id, e);
+    }
+    for (const s of recos) {
+      byId.set(s.id, s);
+    }
     // A library that holds the same film twice answers itself as its own nearest
     // neighbour, and offering what just finished is worse than offering nothing.
     const offer = similar.find((s) => s.id !== item.id) ?? null;
-    if (offer) byId.set(offer.id, offer);
+    if (offer) {
+      byId.set(offer.id, offer);
+    }
     return {
       data: {
         nextEpisodes: following.map((e) => toCard(client, t, e)),

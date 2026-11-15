@@ -66,7 +66,9 @@ const disc = () => screen.getByLabelText('Add to list');
 
 function foldLayer(): Element {
   const layer = screen.getByLabelText('Watched').parentElement;
-  if (!layer) throw new Error('the watched fold has no layer to fade');
+  if (!layer) {
+    throw new Error('the watched fold has no layer to fade');
+  }
   return layer;
 }
 

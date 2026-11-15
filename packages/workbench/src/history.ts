@@ -52,7 +52,9 @@ function historyOf(
   root: string,
   path: string | undefined,
 ): HistoryEntry | undefined {
-  if (!(history && path)) return undefined;
+  if (!(history && path)) {
+    return undefined;
+  }
   return history.entries[repoPath(root, path)];
 }
 
@@ -78,9 +80,13 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** A date as `11 Aug 2026`. Written out rather than localised: every host would
  * otherwise word the same build differently. */
 function dayLabel(iso: string | undefined): string {
-  if (!iso) return '';
+  if (!iso) {
+    return '';
+  }
   const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return '';
+  if (Number.isNaN(at.getTime())) {
+    return '';
+  }
   return `${at.getDate()} ${MONTHS[at.getMonth()]} ${at.getFullYear()}`;
 }
 
@@ -92,14 +98,28 @@ const daysSince = (iso: string, now: number): number =>
 /** How long ago, in the words a reader actually uses. Falls back to the date
  * itself past a month, where "six weeks ago" stops meaning anything. */
 function agoLabel(iso: string | undefined, now: number = Date.now()): string {
-  if (!iso) return '';
+  if (!iso) {
+    return '';
+  }
   const days = daysSince(iso, now);
-  if (Number.isNaN(days)) return '';
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${days} days ago`;
-  if (days < 14) return 'last week';
-  if (days < 31) return `${Math.floor(days / 7)} weeks ago`;
+  if (Number.isNaN(days)) {
+    return '';
+  }
+  if (days <= 0) {
+    return 'today';
+  }
+  if (days === 1) {
+    return 'yesterday';
+  }
+  if (days < 7) {
+    return `${days} days ago`;
+  }
+  if (days < 14) {
+    return 'last week';
+  }
+  if (days < 31) {
+    return `${Math.floor(days / 7)} weeks ago`;
+  }
   return dayLabel(iso);
 }
 
@@ -109,11 +129,19 @@ const BUCKETS: readonly Bucket[] = ['Uncommitted', 'Today', 'This week', 'This m
 
 /** Which heading a row belongs under in a list of recent changes. */
 function bucketOf(entry: HistoryEntry, now: number = Date.now()): Bucket {
-  if (!entry.changed) return 'Uncommitted';
+  if (!entry.changed) {
+    return 'Uncommitted';
+  }
   const days = daysSince(entry.changed, now);
-  if (days <= 0) return 'Today';
-  if (days < 7) return 'This week';
-  if (days < 31) return 'This month';
+  if (days <= 0) {
+    return 'Today';
+  }
+  if (days < 7) {
+    return 'This week';
+  }
+  if (days < 31) {
+    return 'This month';
+  }
   return 'Earlier';
 }
 
@@ -132,7 +160,9 @@ function recentChanges(
   const rows: HistoryRow[] = [];
   for (const subject of subjects) {
     const entry = historyOf(history, root, subject.path);
-    if (entry) rows.push({ ...subject, entry });
+    if (entry) {
+      rows.push({ ...subject, entry });
+    }
   }
   return rows.sort((a, b) => changedAt(b.entry) - changedAt(a.entry) || (a.name < b.name ? -1 : 1));
 }

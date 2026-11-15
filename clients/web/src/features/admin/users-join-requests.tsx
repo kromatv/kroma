@@ -21,7 +21,9 @@ function WaitingRow({
   const [declining, setDeclining] = useState(false);
 
   const approve = async () => {
-    if (await ApproveJoinModal.call({ request })) onApproved();
+    if (await ApproveJoinModal.call({ request })) {
+      onApproved();
+    }
   };
   const decline = async () => {
     setDeclining(true);
@@ -102,7 +104,9 @@ export function JoinRequests({ onApproved }: Readonly<{ onApproved: () => void }
   );
   const waiting = data?.waiting ?? [];
   const declined = data?.declined ?? [];
-  if (waiting.length === 0 && declined.length === 0) return null;
+  if (waiting.length === 0 && declined.length === 0) {
+    return null;
+  }
 
   return (
     <Section.Root mt={28}>

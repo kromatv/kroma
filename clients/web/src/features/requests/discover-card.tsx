@@ -35,8 +35,12 @@ function detailLink(entry: DiscoverEntry, owned: boolean): ReactNode {
 }
 
 function statusChip(entry: DiscoverEntry, owned: boolean, status: RequestStatus | null): ReactNode {
-  if (owned) return <RequestStatusChip status="available" size="card" />;
-  if (!status) return null;
+  if (owned) {
+    return <RequestStatusChip status="available" size="card" />;
+  }
+  if (!status) {
+    return null;
+  }
   return <RequestStatusChip status={status} size="card" progress={entry.requestProgress} />;
 }
 

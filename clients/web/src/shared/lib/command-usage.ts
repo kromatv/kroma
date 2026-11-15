@@ -73,7 +73,9 @@ function frecency(uses: number, last: number, now: number): number {
 function affinity(queries: Record<string, number>, typed: string): number {
   let best = 0;
   for (const [query, count] of Object.entries(queries)) {
-    if (!query.startsWith(typed) && !typed.startsWith(query)) continue;
+    if (!query.startsWith(typed) && !typed.startsWith(query)) {
+      continue;
+    }
     const closeness = Math.min(typed.length, query.length) / Math.max(typed.length, query.length);
     best = Math.max(best, (AFFINITY_BASE + AFFINITY_STEP * count) * closeness);
   }
@@ -89,6 +91,8 @@ export function usageBoost(
   now = Date.now(),
 ): number {
   const entry = usage[id];
-  if (!entry) return 0;
+  if (!entry) {
+    return 0;
+  }
   return frecency(entry.uses, entry.last, now) + affinity(entry.queries, normal(query));
 }

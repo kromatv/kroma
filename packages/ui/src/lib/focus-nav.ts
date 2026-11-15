@@ -37,7 +37,9 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
   }, [resetKey, resetFocusEntry, armPressGuard]);
 
   useEffect(() => {
-    if (!onBack) return;
+    if (!onBack) {
+      return;
+    }
     // Claim the Menu key so tvOS reports it instead of backing out of the app.
     const releaseMenuKey = menuKeys.hold();
     // Android, phone and TV alike, and Tizen, where BackHandler is a channel of
@@ -63,9 +65,14 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
   }, [onBack, menuKeys, inputHeld]);
 
   useRemoteEvents((evt: HWEvent) => {
-    if (isRemoteKeyUp(evt) || inputHeld()) return;
-    if (BACK_EVENTS.has(evt.eventType)) onBack?.();
-    else if (PLAY_PAUSE_EVENTS.has(evt.eventType)) onPlayPause?.();
+    if (isRemoteKeyUp(evt) || inputHeld()) {
+      return;
+    }
+    if (BACK_EVENTS.has(evt.eventType)) {
+      onBack?.();
+    } else if (PLAY_PAUSE_EVENTS.has(evt.eventType)) {
+      onPlayPause?.();
+    }
   });
 }
 

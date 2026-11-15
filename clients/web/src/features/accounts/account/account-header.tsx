@@ -51,19 +51,27 @@ export function AccountHeader() {
 
   const since = useMemo(() => {
     const joined = user ? new Date(user.createdAt) : null;
-    if (!joined || Number.isNaN(joined.getTime())) return null;
+    if (!joined || Number.isNaN(joined.getTime())) {
+      return null;
+    }
     return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(joined);
   }, [user, locale]);
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   const photoUrl = sizedImageUrl(imageUrl(user.avatarUrl), 160);
 
   const pick = (file: File | undefined) => {
-    if (file) setPicked({ file, url: URL.createObjectURL(file) });
+    if (file) {
+      setPicked({ file, url: URL.createObjectURL(file) });
+    }
   };
   const closePicked = () => {
-    if (picked) URL.revokeObjectURL(picked.url);
+    if (picked) {
+      URL.revokeObjectURL(picked.url);
+    }
     setPicked(null);
   };
 

@@ -6,7 +6,9 @@ export function useVisible(target: RefObject<HTMLElement | null>): boolean {
 
   useEffect(() => {
     const element = target.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     const observer = new IntersectionObserver(([entry]) => {
       setVisible(entry?.isIntersecting ?? true);
     });

@@ -13,13 +13,23 @@ interface Reply {
   stream?: string[];
 }
 
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.href;
+  }
+  return input.url;
+}
+
 function transport(
   reply: Reply | ((url: string) => Reply) = {},
   config?: Partial<TransportConfig>,
 ) {
   const calls: { url: string; headers: Headers; method: string }[] = [];
   const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
+    const url = urlOf(input);
     calls.push({ url, headers: new Headers(init?.headers), method: init?.method ?? 'GET' });
     const r = typeof reply === 'function' ? reply(url) : reply;
     const chunks = r.stream;
@@ -180,7 +190,9 @@ describe('a 401 and the silent refresh', () => {
   const unauthorized = (failFirst: string) => {
     let hits = 0;
     return (url: string): Reply => {
-      if (!url.includes(failFirst)) return { text: '{}' };
+      if (!url.includes(failFirst)) {
+        return { text: '{}' };
+      }
       hits += 1;
       return hits === 1 ? { ok: false, status: 401, text: '{}' } : { text: '{"id":"i1"}' };
     };
@@ -278,7 +290,9 @@ describe('concurrency policy', () => {
         calls += 1;
         aborted.push(init?.signal);
         await delayed?.();
-        if (init?.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        if (init?.signal?.aborted) {
+          throw new DOMException('Aborted', 'AbortError');
+        }
         return { ok: true, status: 200, text: async () => '{"id":"i1"}', body: null } as Response;
       }) as typeof globalThis.fetch,
       token: () => undefined,

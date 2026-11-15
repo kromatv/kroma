@@ -87,7 +87,9 @@ const listeners = new Set<Listener>();
  * opted in simply stays quiet instead of throwing at the call site.
  */
 export function toast(options: ToastOptions): void {
-  for (const listener of listeners) listener(options);
+  for (const listener of listeners) {
+    listener(options);
+  }
 }
 
 export interface ToasterProps {
@@ -167,7 +169,9 @@ export function Toaster({
 }
 
 function resolveInset(inset: NonNullable<ToasterProps['inset']>): Gutters {
-  if (typeof inset === 'number') return { x: inset, top: inset, bottom: inset };
+  if (typeof inset === 'number') {
+    return { x: inset, top: inset, bottom: inset };
+  }
   const y = inset.y ?? DEFAULT_INSET;
   return { x: inset.x ?? DEFAULT_INSET, top: inset.top ?? y, bottom: inset.bottom ?? y };
 }
@@ -175,7 +179,9 @@ function resolveInset(inset: NonNullable<ToasterProps['inset']>): Gutters {
 function capped(list: readonly Placed[], at: ToastPosition): Placed[] {
   const column = list.filter((entry) => entry.at === at);
   const over = column.length - MAX_VISIBLE;
-  if (over <= 0) return [...list];
+  if (over <= 0) {
+    return [...list];
+  }
   const evicted = new Set(column.slice(0, over).map((entry) => entry.id));
   return list.filter((entry) => !evicted.has(entry.id));
 }
@@ -184,8 +190,11 @@ function byPosition(entries: readonly Placed[]): Map<ToastPosition, Placed[]> {
   const columns = new Map<ToastPosition, Placed[]>();
   for (const entry of entries) {
     const column = columns.get(entry.at);
-    if (column) column.push(entry);
-    else columns.set(entry.at, [entry]);
+    if (column) {
+      column.push(entry);
+    } else {
+      columns.set(entry.at, [entry]);
+    }
   }
   return columns;
 }

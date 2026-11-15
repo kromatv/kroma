@@ -22,7 +22,9 @@ afterEach(cleanup);
 function lastButton(container: HTMLElement): Element {
   const buttons = container.querySelectorAll('[role="button"]');
   const last = buttons[buttons.length - 1];
-  if (!last) throw new Error('no controls rendered');
+  if (!last) {
+    throw new Error('no controls rendered');
+  }
   return last;
 }
 

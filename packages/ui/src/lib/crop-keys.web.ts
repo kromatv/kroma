@@ -25,20 +25,28 @@ export function useCropKeys({ held, onPan, onZoom, onRelease }: CropKeysOptions)
   const onKey = useEffectEvent((event: KeyboardEvent) => {
     const pan = PANS[event.key];
     const zoom = ZOOMS[event.key];
-    if (!pan && !zoom && !RELEASES.has(event.key)) return;
+    if (!pan && !zoom && !RELEASES.has(event.key)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
-    if (pan) onPan(pan[0], pan[1]);
-    else if (zoom) onZoom(zoom);
-    else {
-      if (event.key === 'Escape') armEscapeGuard();
+    if (pan) {
+      onPan(pan[0], pan[1]);
+    } else if (zoom) {
+      onZoom(zoom);
+    } else {
+      if (event.key === 'Escape') {
+        armEscapeGuard();
+      }
       onRelease();
     }
   });
 
   useEffect(() => {
     const document = webDocument();
-    if (!held || !document) return;
+    if (!held || !document) {
+      return;
+    }
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [held]);

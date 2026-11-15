@@ -31,7 +31,9 @@ function writePrivateFile(t: Tizen, name: string, data: string): Promise<void> {
           } catch {
             file = dir.createFile(name);
           }
-          if (!file) throw new Error(`tizen filesystem gave no file for ${name}`);
+          if (!file) {
+            throw new Error(`tizen filesystem gave no file for ${name}`);
+          }
           file.openStream(
             'w',
             // Its own callback, on its own turn of the platform's stack, so it
@@ -81,7 +83,9 @@ export function createPreviewPublisher() {
    *  off Tizen. */
   return async function publishPreview(client: KromaClient, movies: MediaCard[]): Promise<void> {
     const t = tizen();
-    if (!t) return;
+    if (!t) {
+      return;
+    }
     let continueItems: ContinueItem[] = [];
     try {
       continueItems = await client.playback.continueWatching();
@@ -89,7 +93,9 @@ export function createPreviewPublisher() {
       /* not logged in / no progress yet */
     }
     const data = buildPreviewData(client, movies, continueItems);
-    if (!data) return;
+    if (!data) {
+      return;
+    }
     try {
       await writePrivateFile(t, PREVIEW_FILE, data);
       const now = Date.now();

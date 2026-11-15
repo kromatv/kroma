@@ -74,15 +74,29 @@ const UNPRESSED = new Set(['slider']);
 
 function roleOf(el: Element): string {
   const named = el.getAttribute('role');
-  if (named) return named;
+  if (named) {
+    return named;
+  }
   const tag = tagOf(el);
-  if (tag === 'button') return 'button';
-  if (tag === 'a') return el.hasAttribute('href') ? 'link' : '';
-  if (tag === 'textarea') return 'textbox';
-  if (tag === 'select') return 'combobox';
-  if (tag !== 'input') return '';
+  if (tag === 'button') {
+    return 'button';
+  }
+  if (tag === 'a') {
+    return el.hasAttribute('href') ? 'link' : '';
+  }
+  if (tag === 'textarea') {
+    return 'textbox';
+  }
+  if (tag === 'select') {
+    return 'combobox';
+  }
+  if (tag !== 'input') {
+    return '';
+  }
   const type = el.getAttribute('type') ?? 'text';
-  if (type === 'checkbox' || type === 'radio') return type;
+  if (type === 'checkbox' || type === 'radio') {
+    return type;
+  }
   return type === 'search' ? 'searchbox' : 'textbox';
 }
 
@@ -99,14 +113,22 @@ function nameOf(el: Element): string {
       .map((id) => el.ownerDocument.getElementById(id)?.textContent?.trim() ?? '')
       .filter(Boolean)
       .join(' ');
-    if (named) return named;
+    if (named) {
+      return named;
+    }
   }
   const label = el.getAttribute('aria-label')?.trim();
-  if (label) return label;
+  if (label) {
+    return label;
+  }
   const alt = el.getAttribute('alt')?.trim();
-  if (alt) return alt;
+  if (alt) {
+    return alt;
+  }
   const title = el.getAttribute('title')?.trim();
-  if (title) return title;
+  if (title) {
+    return title;
+  }
   if (ENTRIES.has(tagOf(el))) {
     return el.getAttribute('placeholder')?.trim() ?? '';
   }
@@ -134,7 +156,9 @@ function stateOf(el: Element): string {
 
 function hiddenFromReaders(el: Element): boolean {
   for (let at: Element | null = el; at; at = at.parentElement) {
-    if (at.getAttribute('aria-hidden') === 'true') return true;
+    if (at.getAttribute('aria-hidden') === 'true') {
+      return true;
+    }
   }
   return false;
 }
@@ -148,11 +172,17 @@ function nativelyDisabled(el: Element): boolean {
 }
 
 function focusable(el: Element): boolean {
-  if (nativelyDisabled(el)) return false;
+  if (nativelyDisabled(el)) {
+    return false;
+  }
   const index = el.getAttribute('tabindex');
-  if (index !== null) return Number.parseInt(index, 10) >= 0;
+  if (index !== null) {
+    return Number.parseInt(index, 10) >= 0;
+  }
   const tag = tagOf(el);
-  if (tag === 'a') return el.hasAttribute('href');
+  if (tag === 'a') {
+    return el.hasAttribute('href');
+  }
   return ENTRIES.has(tag) || tag === 'button';
 }
 
@@ -168,16 +198,24 @@ function unavailable(el: Element): boolean {
 // is a portal, so the rows it holds are nowhere near the combobox that owns
 // them - which is the shape every anchored listbox in this kit takes.
 function ownedByActiveDescendant(el: Element): boolean {
-  if (el.getAttribute('tabindex') !== '-1') return false;
+  if (el.getAttribute('tabindex') !== '-1') {
+    return false;
+  }
   for (const owner of el.ownerDocument.querySelectorAll('[aria-activedescendant]')) {
-    if (owner.contains(el)) return true;
+    if (owner.contains(el)) {
+      return true;
+    }
     const controls = owner.getAttribute('aria-controls');
-    if (!controls) continue;
+    if (!controls) {
+      continue;
+    }
     const listed = controls
       .split(/\s+/)
       .map((id) => el.ownerDocument.getElementById(id))
       .filter((node): node is HTMLElement => node !== null);
-    if (listed.some((node) => node.contains(el))) return true;
+    if (listed.some((node) => node.contains(el))) {
+      return true;
+    }
   }
   return false;
 }
@@ -189,7 +227,9 @@ const ROVING: Record<string, string> = { radio: 'radiogroup', tab: 'tablist' };
 
 function inRovingSet(el: Element, role: string): boolean {
   const owner = ROVING[role];
-  if (!owner || el.getAttribute('tabindex') !== '-1') return false;
+  if (!owner || el.getAttribute('tabindex') !== '-1') {
+    return false;
+  }
   const group = el.closest(`[role="${owner}"]`);
   return group !== null && group.querySelector(`[role="${role}"][tabindex="0"]`) !== null;
 }
@@ -200,7 +240,9 @@ function accessibleLine(el: Element): string | undefined {
   const role = roleOf(el);
   const state = stateOf(el);
   const live = el.getAttribute('aria-live');
-  if (!role && !state && !live) return undefined;
+  if (!role && !state && !live) {
+    return undefined;
+  }
   const stop = focusable(el) ? ' tab' : '';
   const said = state ? ` [${state}]` : '';
   return `${role || tagOf(el)} "${nameOf(el).slice(0, 60)}"${said}${stop}`;
@@ -248,7 +290,9 @@ const RULES: readonly Rule[] = [
     kind: 'dangling-labelledby',
     note: ({ el }) => {
       const labelled = el.getAttribute('aria-labelledby');
-      if (!labelled) return null;
+      if (!labelled) {
+        return null;
+      }
       const missing = labelled.split(/\s+/).filter((id) => !el.ownerDocument.getElementById(id));
       return missing.length === 0
         ? null
@@ -291,9 +335,15 @@ function issuesOf(el: Element): readonly A11yIssue[] {
 }
 
 function unreachable(el: Element, role: string): boolean {
-  if (!CONTROLS.has(role) || UNPRESSED.has(role) || focusable(el)) return false;
-  if (unavailable(el) || hiddenFromReaders(el) || ownedByActiveDescendant(el)) return false;
-  if (inRovingSet(el, role)) return false;
+  if (!CONTROLS.has(role) || UNPRESSED.has(role) || focusable(el)) {
+    return false;
+  }
+  if (unavailable(el) || hiddenFromReaders(el) || ownedByActiveDescendant(el)) {
+    return false;
+  }
+  if (inRovingSet(el, role)) {
+    return false;
+  }
   const style = styleOf(el);
   return style.display !== 'none' && style.pointerEvents !== 'none';
 }
@@ -311,7 +361,9 @@ function accessOf(roots: readonly Element[]): Access {
   for (const root of roots) {
     eachElement(root, (el, path) => {
       const line = accessibleLine(el);
-      if (line) lines.push(line);
+      if (line) {
+        lines.push(line);
+      }
       findings.push(...issuesOf(el).map((issue) => ({ ...issue, at: path })));
     });
   }

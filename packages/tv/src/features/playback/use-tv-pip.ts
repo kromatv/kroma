@@ -15,7 +15,9 @@ export function useTvPip(onStart: () => void, onStop: (playing: boolean) => void
   const [active, setActive] = useState(false);
   const toggle = useCallback(() => {
     const handle = view.current;
-    if (!handle) return;
+    if (!handle) {
+      return;
+    }
     const request = active ? handle.stopPictureInPicture() : handle.startPictureInPicture();
     request.catch(() => undefined);
   }, [active]);

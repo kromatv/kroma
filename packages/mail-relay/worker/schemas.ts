@@ -15,7 +15,9 @@ const PRIVATE_SUFFIXES = ['.local', '.lan', '.home.arpa'];
 
 function privateIpv4(host: string): boolean {
   const parts = host.split('.');
-  if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p))) return false;
+  if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p))) {
+    return false;
+  }
   const a = Number(parts[0]);
   const b = Number(parts[1]);
   return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
@@ -26,9 +28,15 @@ function privateIpv4(host: string): boolean {
  * stranger. */
 export function isPrivateHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
-  if (host === 'localhost' || host === '[::1]') return true;
-  if (host.startsWith('[fc') || host.startsWith('[fd')) return true;
-  if (privateIpv4(host)) return true;
+  if (host === 'localhost' || host === '[::1]') {
+    return true;
+  }
+  if (host.startsWith('[fc') || host.startsWith('[fd')) {
+    return true;
+  }
+  if (privateIpv4(host)) {
+    return true;
+  }
   return PRIVATE_SUFFIXES.some((suffix) => host.endsWith(suffix));
 }
 
@@ -44,14 +52,20 @@ export function isOrigin(s: string): boolean {
   } catch {
     return false;
   }
-  if (url.origin !== s) return false;
-  if (url.protocol === 'https:') return true;
+  if (url.origin !== s) {
+    return false;
+  }
+  if (url.protocol === 'https:') {
+    return true;
+  }
   return url.protocol === 'http:' && isPrivateHost(url.hostname);
 }
 
 function withoutTrailingSlashes(s: string): string {
   let end = s.length;
-  while (end > 0 && s[end - 1] === '/') end--;
+  while (end > 0 && s[end - 1] === '/') {
+    end--;
+  }
   return s.slice(0, end);
 }
 
@@ -86,7 +100,7 @@ export type RegisterRequest = z.infer<typeof RegisterRequest>;
 
 /** What a registered server answers at `/api/mail/relay-challenge`. */
 export const ChallengeAnswer = z.object({
-  nonce: z.string().min(1).max(128),
+  nonce: z.string().nonempty().max(128),
   signature: Signature,
 });
 
@@ -95,7 +109,7 @@ export const ChallengeAnswer = z.object({
  * text the instance signed; it is only parsed once the signature holds.
  */
 export const SignedRequest = z.object({
-  instance: z.string().min(1).max(4096),
+  instance: z.string().nonempty().max(4096),
   payload: z
     .string()
     .min(2)
@@ -131,14 +145,14 @@ export type Attachment = z.infer<typeof Attachment>;
 /** `POST /v1/send`: one rendered message to one mailbox, as SMTP would take it. */
 export const SendPayload = Stamped.extend({
   to: Address,
-  subject: z.string().max(512).transform(printable).pipe(z.string().min(1).max(256)),
+  subject: z.string().max(512).transform(printable).pipe(z.string().nonempty().max(256)),
   text: z
     .string()
-    .min(1)
+    .nonempty()
     .max(16 * 1024),
   html: z
     .string()
-    .min(1)
+    .nonempty()
     .max(64 * 1024),
   attachments: z.array(Attachment).max(1).default([]),
 });
@@ -147,7 +161,9 @@ export type SendPayload = z.infer<typeof SendPayload>;
 /** The first problem zod found, naming the field and never echoing the value. */
 export function firstIssue(error: { issues: readonly z.core.$ZodIssue[] }): string {
   const issue = error.issues[0];
-  if (!issue) return 'invalid request';
+  if (!issue) {
+    return 'invalid request';
+  }
   const path = issue.path.join('.');
   return path ? `${path}: ${issue.message}` : issue.message;
 }

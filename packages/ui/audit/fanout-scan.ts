@@ -42,10 +42,16 @@ interface BabelPath {
 
 function kindOf(path: BabelPath): Alloc['kind'] | null {
   const value = path.node.value;
-  if (value?.type !== 'JSXExpressionContainer') return null;
+  if (value?.type !== 'JSXExpressionContainer') {
+    return null;
+  }
   const type = value.expression?.type;
-  if (type === 'ArrowFunctionExpression' || type === 'FunctionExpression') return 'function';
-  if (type === 'ObjectExpression' || type === 'ArrayExpression') return 'object';
+  if (type === 'ArrowFunctionExpression' || type === 'FunctionExpression') {
+    return 'function';
+  }
+  if (type === 'ObjectExpression' || type === 'ArrayExpression') {
+    return 'object';
+  }
   return null;
 }
 
@@ -70,7 +76,9 @@ function collector(into: Alloc[], file: string) {
     visitor: {
       JSXAttribute(path: BabelPath) {
         const kind = kindOf(path);
-        if (!kind || !insideList(path)) return;
+        if (!kind || !insideList(path)) {
+          return;
+        }
         into.push({
           file,
           prop: path.node.name?.name ?? '?',
@@ -85,12 +93,14 @@ function collector(into: Alloc[], file: string) {
 function* sources(dir: string): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const at = join(dir, entry.name);
-    if (entry.isDirectory()) yield* sources(at);
-    else if (
+    if (entry.isDirectory()) {
+      yield* sources(at);
+    } else if (
       entry.name.endsWith('.tsx') &&
       !/\.(test|story|stories|demo|fixtures)\./.test(entry.name)
-    )
+    ) {
       yield at;
+    }
   }
 }
 
@@ -142,7 +152,9 @@ async function scanKit(root: string): Promise<Alloc[]> {
     for (const alloc of [...written].sort((a, b) => a.line - b.line)) {
       const key = `${alloc.prop}:${alloc.kind}`;
       const left = budget.get(key) ?? 0;
-      if (left === 0) continue;
+      if (left === 0) {
+        continue;
+      }
       budget.set(key, left - 1);
       out.push(alloc);
     }

@@ -34,7 +34,9 @@ class FakeSocket {
     done();
   }
   setMulticastTTL(value: number) {
-    if (this.throwOnMulticast) throw new Error('EPERM');
+    if (this.throwOnMulticast) {
+      throw new Error('EPERM');
+    }
     this.ttl = value;
   }
   setMulticastLoopback(value: boolean) {

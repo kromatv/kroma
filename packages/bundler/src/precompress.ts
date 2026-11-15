@@ -21,7 +21,9 @@ const MIN_BYTES = 1024;
 
 async function compress(file: string): Promise<number> {
   const source = await readFile(file);
-  if (source.length < MIN_BYTES) return 0;
+  if (source.length < MIN_BYTES) {
+    return 0;
+  }
   const [br, gz] = await Promise.all([
     brotli(source, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } }),
     gzipped(source, { level: 9 }),

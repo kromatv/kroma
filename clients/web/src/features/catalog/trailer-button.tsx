@@ -23,7 +23,9 @@ export function TrailerButton({
     retry: false,
   });
   const trailer = playableTrailer(data);
-  if (!trailer) return null;
+  if (!trailer) {
+    return null;
+  }
   return (
     <Button variant="outline" icon="movie" label={t(TRAILER_LABEL[trailer.version])} asChild>
       <RouteLink

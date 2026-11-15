@@ -6,7 +6,11 @@ import { useChromeReveal } from './useChromeReveal';
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-const wait = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+const wait = (ms: number) => {
+  act(() => {
+    vi.advanceTimersByTime(ms);
+  });
+};
 
 function holdOn(reveal: { current: ReturnType<typeof useChromeReveal> }): () => void {
   let release: () => void = () => undefined;

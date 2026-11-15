@@ -78,11 +78,15 @@ function rowWidth(ids: readonly ControlId[], gap: number, rail: boolean): number
 function rowFits(row: readonly ControlId[]): [RowFit, ...RowFit[]] {
   let controls = [...row];
   const fits: [RowFit, ...RowFit[]] = [{ controls, rail: true }];
-  if (controls.includes('volume')) fits.push({ controls, rail: false });
+  if (controls.includes('volume')) {
+    fits.push({ controls, rail: false });
+  }
   for (const shed of SHED) {
     const next = controls.filter((id) => !shed.includes(id));
     // A control the flags already left out is not a step.
-    if (next.length === controls.length) continue;
+    if (next.length === controls.length) {
+      continue;
+    }
     controls = next;
     fits.push({ controls, rail: false });
   }
@@ -105,7 +109,9 @@ function designWidth({ controls, rail }: RowFit): number {
 // full row rather than the floor.
 function scaleFor(fit: RowFit, stageWidth: number): number {
   const needed = designWidth(fit);
-  if (stageWidth <= 0 || needed <= 0) return 1;
+  if (stageWidth <= 0 || needed <= 0) {
+    return 1;
+  }
   const ratio = stageWidth / needed;
   return ratio >= 1 ? 1 : quantize(ratio);
 }
@@ -143,7 +149,9 @@ export function chromeMetrics(row: readonly ControlId[], stageWidth: number): Ch
   for (const fit of fits) {
     last = fit;
     const scale = scaleFor(fit, stageWidth);
-    if (scale >= MIN_SCALE) return measure(fit, scale, row);
+    if (scale >= MIN_SCALE) {
+      return measure(fit, scale, row);
+    }
   }
   // Narrower than even the last row: hold the floor rather than shed play itself.
   return measure(last, MIN_SCALE, row);
@@ -180,7 +188,9 @@ export interface PanelGeometry {
 /** Where the settings panel sits on this stage, and whether the video still has
  * somewhere to shrink to beside it. */
 export function panelGeometry(stageWidth: number): PanelGeometry {
-  if (stageWidth <= 0) return { width: PANEL_MAX, covers: false };
+  if (stageWidth <= 0) {
+    return { width: PANEL_MAX, covers: false };
+  }
   const share = Math.min(stageWidth * PANEL_FRACTION, PANEL_MAX);
   const wanted = Math.max(share, PANEL_MIN);
   // Asked in the same terms the card is laid out in, margins included: a rule

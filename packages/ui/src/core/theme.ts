@@ -47,18 +47,26 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     // Cached once found, never cached empty: the token sheet may still be on its
     // way in (a code-split chunk, a dev server's first paint), and an empty scan
     // remembered would leave every theme after it without its alpha steps.
-    if (derivedProps?.size) return derivedProps;
+    if (derivedProps?.size) {
+      return derivedProps;
+    }
     const found = new Map<string, string[]>();
     for (const sheet of doc.styleSheets) {
-      for (const rule of rulesOf(sheet)) collectSteps(rule.cssText, found);
+      for (const rule of rulesOf(sheet)) {
+        collectSteps(rule.cssText, found);
+      }
     }
-    if (found.size > 0) derivedProps = found;
+    if (found.size > 0) {
+      derivedProps = found;
+    }
     return found;
   }
 
   const block = (selector: string, theme: Theme | undefined, doc: Document): string => {
     const rules = theme ? restated(theme, stepsOf(doc)) : [];
-    if (rules.length === 0) return '';
+    if (rules.length === 0) {
+      return '';
+    }
     const body = rules.map(([name, value]) => `${name}:${value}`).join(';');
     return `${selector}{${body}}`;
   };
@@ -85,7 +93,9 @@ export function createThemeRuntime(initial: Theme = KROMA) {
    */
   function publish(theme: Theme, light: Theme | undefined): void {
     const doc = scope?.ownerDocument;
-    if (!doc || !scopeId) return;
+    if (!doc || !scopeId) {
+      return;
+    }
     // A theme given no light half paints the same values in every ground.
     const paper = light ?? theme;
     const systemSelector = `[data-kroma-theme="${scopeId}"]:not([data-theme])`;
@@ -110,7 +120,9 @@ export function createThemeRuntime(initial: Theme = KROMA) {
   // every untouched one: both grounds are published, so a literal in the store
   // would be the one value that could not follow the switch.
   function cascading(theme: Theme): Theme {
-    if (!CSS_COLORS) return theme;
+    if (!CSS_COLORS) {
+      return theme;
+    }
     return Object.freeze({
       ...theme,
       colors: { ...theme.colors, ...CSS_COLORS },
@@ -149,13 +161,17 @@ export function createThemeRuntime(initial: Theme = KROMA) {
    * Reach for `applyTheme` on a browser instead, unless pinning is the point.
    */
   function setTheme(theme: Theme, light?: Theme): void {
-    if (theme === active) return;
+    if (theme === active) {
+      return;
+    }
     applied = theme;
     active = theme;
     version += 1;
     paper = light;
     publish(theme, light);
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   }
 
   /**
@@ -183,11 +199,15 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     // cascade, or a literal here would be the one value a ground switch under
     // this theme could not reach.
     const next = cascading(theme);
-    if (sameShape(applied, theme)) return;
+    if (sameShape(applied, theme)) {
+      return;
+    }
     applied = theme;
     active = next;
     version += 1;
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   }
 
   /** Subscribe to theme swaps; returns the unsubscribe. Shaped for
@@ -237,9 +257,13 @@ export function themedCache<T>(
       at = version;
     }
     const hit = entries.get(key);
-    if (hit !== undefined) return hit;
+    if (hit !== undefined) {
+      return hit;
+    }
     const made = make();
-    if (entries.size < limit) entries.set(key, made);
+    if (entries.size < limit) {
+      entries.set(key, made);
+    }
     return made;
   };
 }
@@ -252,7 +276,9 @@ export function themed<T>(
     const key = owner ?? KROMA;
     const version = themeVersion(owner);
     const cached = values.get(key);
-    if (cached?.version === version) return cached.value;
+    if (cached?.version === version) {
+      return cached.value;
+    }
     const value = make(activeTheme(owner));
     values.set(key, { version, value });
     return value;

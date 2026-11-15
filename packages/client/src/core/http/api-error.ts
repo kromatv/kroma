@@ -51,7 +51,9 @@ export type ApiErrorBody = z.infer<typeof ApiErrorBody>;
  * for anything that is not a {@link KromaApiError} and for a body the server
  * did not shape (so a caller reads a flag without ever casting). */
 export function apiErrorBody(e: unknown): ApiErrorBody {
-  if (!(e instanceof KromaApiError)) return {};
+  if (!(e instanceof KromaApiError)) {
+    return {};
+  }
   const parsed = ApiErrorBody.safeParse(e.body);
   return parsed.success ? parsed.data : {};
 }

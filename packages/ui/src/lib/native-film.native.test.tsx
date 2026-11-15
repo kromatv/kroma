@@ -62,11 +62,15 @@ describe('NativeFilm', () => {
     const onDone = vi.fn();
     const { container } = render(<NativeFilm portraitSrc={PORTRAIT} onDone={onDone} />);
     const stage = container.firstElementChild;
-    if (!stage) throw new Error('no stage rendered');
+    if (!stage) {
+      throw new Error('no stage rendered');
+    }
 
     fireEvent.mouseDown(stage);
     fireEvent.mouseUp(stage);
-    act(() => vi.advanceTimersByTime(EXIT_MS));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS);
+    });
 
     expect(onDone).toHaveBeenCalledTimes(1);
   });

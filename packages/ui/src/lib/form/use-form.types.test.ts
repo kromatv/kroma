@@ -61,7 +61,7 @@ export function refusals(form: Account) {
   // @ts-expect-error the value has to match the field it is set on
   form.setValue('remember', 'yes');
   // @ts-expect-error errors are keyed by the schema too
-  form.errors.nickname;
+  void form.errors.nickname;
 }
 
 /** Never rendered; the assertion is that half a set of defaults does not compile. */

@@ -13,7 +13,9 @@ export function PinCard() {
   const { user } = useAuth();
   const [task, setTask] = useState<PinTask | null>(null);
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   const on = user.hasPin;
 
   return (

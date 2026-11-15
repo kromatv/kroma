@@ -16,7 +16,9 @@ function percent(share: number): string {
  *  colour the overlay marks it with. Absent until the dev server has said. */
 export function TranslationStatus() {
   const status = useSyncExternalStore(onStatusChange, heldStatus, heldStatus);
-  if (!status) return null;
+  if (!status) {
+    return null;
+  }
   return (
     <Column gap={6}>
       <Row between gap={8}>

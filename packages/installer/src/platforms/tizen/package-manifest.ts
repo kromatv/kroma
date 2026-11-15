@@ -31,8 +31,9 @@ export function readTizenPackage(directory: string): TizenPackage {
     };
   }
   const web = join(directory, WEB_MANIFEST);
-  if (!existsSync(web))
+  if (!existsSync(web)) {
     throw new Error(`the package has neither ${NATIVE_MANIFEST} nor ${WEB_MANIFEST}`);
+  }
   const xml = readManifest(web);
   return {
     type: 'wgt',
@@ -42,8 +43,9 @@ export function readTizenPackage(directory: string): TizenPackage {
 }
 
 function readManifest(path: string): string {
-  if (statSync(path).size > MAX_MANIFEST_BYTES)
+  if (statSync(path).size > MAX_MANIFEST_BYTES) {
     throw new Error(`${path} is too large to be a manifest`);
+  }
   return readFileSync(path, 'utf8');
 }
 
@@ -52,6 +54,8 @@ function identifier(xml: string, element: string, name: string, file: string): s
   const value =
     tag === undefined ? undefined : new RegExp(String.raw`\s${name}="([^"]*)"`).exec(tag)?.[1];
   const parsed = Identifier.safeParse(value);
-  if (!parsed.success) throw new Error(`${file} names no usable ${name} on <${element}>`);
+  if (!parsed.success) {
+    throw new Error(`${file} names no usable ${name} on <${element}>`);
+  }
   return parsed.data;
 }

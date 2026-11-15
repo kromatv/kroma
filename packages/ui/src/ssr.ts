@@ -16,7 +16,9 @@ type WebStyleSheet = { getSheet(): { id: string; textContent: string } };
 export function withTheme(handler: Fetch): Fetch {
   return async (request: Request) => {
     const response = await handler(request);
-    if (!response.headers.get('content-type')?.includes('text/html')) return response;
+    if (!response.headers.get('content-type')?.includes('text/html')) {
+      return response;
+    }
 
     const mode = readMode(request.headers.get('cookie') ?? '');
     const html = await response.text();
@@ -44,7 +46,9 @@ export function withTheme(handler: Fetch): Fetch {
 export function withKitStyles(handler: Fetch): Fetch {
   return async (request: Request) => {
     const response = await handler(request);
-    if (!response.headers.get('content-type')?.includes('text/html')) return response;
+    if (!response.headers.get('content-type')?.includes('text/html')) {
+      return response;
+    }
 
     const html = await response.text();
     const sheet = (StyleSheet as unknown as WebStyleSheet).getSheet();

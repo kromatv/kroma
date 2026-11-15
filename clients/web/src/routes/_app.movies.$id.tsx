@@ -16,7 +16,9 @@ export const Route = createFileRoute('/_app/movies/$id')({
   loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
     // Catalogue is auth-gated: a signed-out deep-link goes to the gate (the
     // AuthGate overlay covers /, and its loader is guarded too).
-    if (!isAuthed()) throw redirect({ to: '/' });
+    if (!isAuthed()) {
+      throw redirect({ to: '/' });
+    }
     const id = ItemId.parse(params.id);
     const { catalogQueries } = webRuntime.queries;
     void queryClient.prefetchQuery(catalogQueries.similar(id));

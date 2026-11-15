@@ -38,11 +38,18 @@ export function OverlayHost({ children }: Readonly<{ children: ReactNode }>) {
     setSlots((prev) => {
       // Same element as last time (a caller re-rendered without changing it):
       // returning `prev` is what keeps this from re-rendering the host forever.
-      if (prev.get(id) === node) return prev;
-      if (node == null && !prev.has(id)) return prev;
+      if (prev.get(id) === node) {
+        return prev;
+      }
+      if (node == null && !prev.has(id)) {
+        return prev;
+      }
       const next = new Map(prev);
-      if (node == null) next.delete(id);
-      else next.set(id, node);
+      if (node == null) {
+        next.delete(id);
+      } else {
+        next.set(id, node);
+      }
       return next;
     });
   }, []);

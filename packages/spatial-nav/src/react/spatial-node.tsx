@@ -106,11 +106,15 @@ function SpatialNode({
       index,
       onFocus: () => {
         latest.current.onFocus?.();
-        if (latest.current.watched) setFocused(true);
+        if (latest.current.watched) {
+          setFocused(true);
+        }
       },
       onBlur: () => {
         latest.current.onBlur?.();
-        if (latest.current.watched) setFocused(false);
+        if (latest.current.watched) {
+          setFocused(false);
+        }
       },
       onSelect: () => latest.current.onSelect?.(),
       holds: () => latest.current.onLongSelect !== undefined,
@@ -118,18 +122,24 @@ function SpatialNode({
       onKey: (direction) => latest.current.onKey?.(direction) === true,
       onActive: () => {
         latest.current.onActive?.();
-        if (latest.current.watched) setActive(true);
+        if (latest.current.watched) {
+          setActive(true);
+        }
       },
       onInactive: () => {
         latest.current.onInactive?.();
-        if (latest.current.watched) setActive(false);
+        if (latest.current.watched) {
+          setActive(false);
+        }
       },
     });
     return () => navigator.unregisterNode(id);
   }, [navigator, id, parentId, focusable, orientation, alignInGrid, spatial, index]);
 
   useEffect(() => {
-    if (focusable && wantsFocus) host.claimFocus(id);
+    if (focusable && wantsFocus) {
+      host.claimFocus(id);
+    }
   }, [host, id, focusable, wantsFocus]);
 
   return (

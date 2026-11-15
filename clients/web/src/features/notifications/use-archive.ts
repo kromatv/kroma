@@ -25,11 +25,21 @@ export function useArchive(): {
     };
     return {
       archiveRead: async () => {
-        await webRuntime.client.notifications.archiveRead().finally(settle);
+        try {
+          await webRuntime.client.notifications.archiveRead();
+        } finally {
+          await settle();
+        }
       },
       unarchive: async (ids: NotificationId[]) => {
-        if (ids.length === 0) return;
-        await webRuntime.client.notifications.unarchive(ids).finally(settle);
+        if (ids.length === 0) {
+          return;
+        }
+        try {
+          await webRuntime.client.notifications.unarchive(ids);
+        } finally {
+          await settle();
+        }
       },
     };
   }, [queryClient, webRuntime.queries.userQueries, webRuntime.client]);

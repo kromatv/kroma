@@ -104,7 +104,9 @@ function HistoryRow({ play, columns }: Readonly<HistoryRowProps>) {
     );
   });
   const goes = titlePage(play);
-  if (!goes) return <Table.Row>{cells}</Table.Row>;
+  if (!goes) {
+    return <Table.Row>{cells}</Table.Row>;
+  }
   return (
     <Table.Row asChild>
       {goes.page === 'show' ? (

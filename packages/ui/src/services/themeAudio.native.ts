@@ -61,12 +61,16 @@ function fadeOutAlone(player: VideoPlayer, level: RefObject<number>): void {
     level.current = Math.max(0, from * (1 - i / steps));
     try {
       player.volume = level.current;
-      if (i < steps) return;
+      if (i < steps) {
+        return;
+      }
       player.pause();
     } catch {
       // Released before the fade finished; stop quietly.
     }
-    if (i >= steps) clearInterval(out);
+    if (i >= steps) {
+      clearInterval(out);
+    }
   }, 50);
 }
 
@@ -92,9 +96,13 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
       fade.current = setInterval(() => {
         i += 1;
         setLevel(player, level, from + (target - from) * (i / steps));
-        if (i < steps) return;
+        if (i < steps) {
+          return;
+        }
         clearInterval(fade.current);
-        if (thenPause) pauseQuietly(player);
+        if (thenPause) {
+          pauseQuietly(player);
+        }
       }, 50);
     },
     [player],
@@ -102,9 +110,13 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- keyed on the theme and its player only. Re-running when `fadeTo` changes identity would restart the film's theme from the top on an unrelated render.
   useEffect(() => {
-    if (!themeUrl || readThemeMuted(storage)) return;
+    if (!themeUrl || readThemeMuted(storage)) {
+      return;
+    }
     setLevel(player, level, 0);
-    if (!playQuietly(player)) return;
+    if (!playQuietly(player)) {
+      return;
+    }
     fadeTo(TARGET_VOLUME, FADE_IN_MS);
     return () => {
       clearInterval(fade.current);
@@ -120,7 +132,9 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
       fadeTo(0, 250, true);
       return;
     }
-    if (!playQuietly(player)) return;
+    if (!playQuietly(player)) {
+      return;
+    }
     fadeTo(TARGET_VOLUME, 400);
   }, [fadeTo, player, storage]);
 

@@ -21,7 +21,9 @@ function walk(dir: string, out: string[]): void {
     return;
   }
   for (const name of entries) {
-    if (SKIP.has(name)) continue;
+    if (SKIP.has(name)) {
+      continue;
+    }
     const full = join(dir, name);
     let directory: boolean;
     try {
@@ -29,8 +31,11 @@ function walk(dir: string, out: string[]): void {
     } catch {
       continue;
     }
-    if (directory) walk(full, out);
-    else if (SOURCE.test(name)) out.push(full);
+    if (directory) {
+      walk(full, out);
+    } else if (SOURCE.test(name)) {
+      out.push(full);
+    }
   }
 }
 
@@ -42,7 +47,9 @@ describe('platform files', () => {
   // competing for the same disk.
   it('are never reached through an explicit extension', { timeout: 60_000 }, () => {
     const files: string[] = [];
-    for (const root of ROOTS) walk(root, files);
+    for (const root of ROOTS) {
+      walk(root, files);
+    }
 
     const offenders: string[] = [];
     for (const file of files) {
@@ -53,10 +60,14 @@ describe('platform files', () => {
         continue;
       }
       for (const [, specifier] of source.matchAll(RELATIVE_IMPORT)) {
-        if (!specifier) continue;
+        if (!specifier) {
+          continue;
+        }
         const target = resolve(dirname(file), specifier);
         const web = target.replace(/\.(ts|tsx)$/, (_, ext) => `.web.${ext}`);
-        if (existsSync(web)) offenders.push(`${file} imports ${specifier} (shadowed by ${web})`);
+        if (existsSync(web)) {
+          offenders.push(`${file} imports ${specifier} (shadowed by ${web})`);
+        }
       }
     }
 

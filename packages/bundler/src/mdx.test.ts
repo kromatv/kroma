@@ -12,7 +12,9 @@ describe('the Vite half', () => {
   it('draws on the same options the television is served through', async () => {
     const plugin = kromaMdx();
     const transform = plugin.transform;
-    if (typeof transform !== 'function') throw new Error('kromaMdx() lost its transform hook');
+    if (typeof transform !== 'function') {
+      throw new Error('kromaMdx() lost its transform hook');
+    }
 
     const out = await transform.call({} as never, '# Anatomy\n', '/kit/list-row.docs.mdx');
     const code = typeof out === 'string' ? out : (out?.code ?? '');

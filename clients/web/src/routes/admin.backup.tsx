@@ -28,14 +28,20 @@ function BackupPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  if (!canManage) return <Denied />;
+  if (!canManage) {
+    return <Denied />;
+  }
 
   async function onFilePicked(file: File) {
     setNotice(null);
     const encrypted = await isEncryptedFile(file);
     const msg = await ImportModal.call({ file, encrypted });
-    if (fileRef.current) fileRef.current.value = '';
-    if (msg) setNotice(msg);
+    if (fileRef.current) {
+      fileRef.current.value = '';
+    }
+    if (msg) {
+      setNotice(msg);
+    }
   }
 
   return (
@@ -98,7 +104,9 @@ function BackupPage() {
                 className={classes(s.hidden)}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) void onFilePicked(file);
+                  if (file) {
+                    void onFilePicked(file);
+                  }
                 }}
               />
               <Button

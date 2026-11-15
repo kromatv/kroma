@@ -52,7 +52,9 @@ describe('kromaFontPreload', () => {
   });
 
   it('hands a build a path Vite resolves against the html, so hashing still applies', () => {
-    for (const tag of built()) expect(tag.attrs.href).toMatch(/^\.\.\//);
+    for (const tag of built()) {
+      expect(tag.attrs.href).toMatch(/^\.\.\//);
+    }
   });
 
   it('marks that path relative where the html sits above the fonts rather than beside', () => {

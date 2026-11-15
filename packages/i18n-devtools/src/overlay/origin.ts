@@ -43,14 +43,20 @@ function fileOf(url: string): string {
 function frameOf(line: string): { url: string; line: number; column: number } | null {
   const text = line.trim().replace(/\)$/, '');
   const start = text.search(URL_AT);
-  if (start === -1) return null;
+  if (start === -1) {
+    return null;
+  }
   const at = text.slice(start);
   const lastColon = at.lastIndexOf(':');
   const firstColon = at.lastIndexOf(':', lastColon - 1);
-  if (firstColon < 1) return null;
+  if (firstColon < 1) {
+    return null;
+  }
   const row = at.slice(firstColon + 1, lastColon);
   const column = at.slice(lastColon + 1);
-  if (!POSITION.test(row) || !POSITION.test(column)) return null;
+  if (!POSITION.test(row) || !POSITION.test(column)) {
+    return null;
+  }
   return { url: at.slice(0, firstColon), line: Number(row), column: Number(column) };
 }
 
@@ -60,7 +66,9 @@ function frameOf(line: string): { url: string; line: number; column: number } | 
 export function screenFrame(stack: string | undefined): Origin | null {
   for (const line of (stack ?? '').split('\n').slice(1)) {
     const at = frameOf(line);
-    if (!at || MACHINERY.test(at.url)) continue;
+    if (!at || MACHINERY.test(at.url)) {
+      continue;
+    }
     return {
       url: servedAt(at.url),
       line: at.line,
@@ -83,7 +91,9 @@ export function fileOfOrigin(origin: Origin): string {
 }
 
 function announce(): void {
-  for (const listener of listeners) listener();
+  for (const listener of listeners) {
+    listener();
+  }
 }
 
 /**
@@ -94,10 +104,14 @@ function announce(): void {
  * moves it - React Compiler by a dozen lines either way.
  */
 export function sourceOrigin(origin: Origin): Origin {
-  if (origin.source) return origin;
+  if (origin.source) {
+    return origin;
+  }
   const at = `${origin.url}|${origin.line}|${origin.column}`;
   const hit = known.get(at);
-  if (hit !== undefined) return hit ?? origin;
+  if (hit !== undefined) {
+    return hit ?? origin;
+  }
   if (!asked.has(at)) {
     asked.set(
       at,
@@ -124,7 +138,9 @@ export function onOriginTraced(listener: () => void): () => void {
 
 export function originOf(key: string): Origin | null {
   const hit = seen.get(key);
-  if (hit !== undefined) return hit;
+  if (hit !== undefined) {
+    return hit;
+  }
   const found = screenFrame(new Error(STACK_PROBE).stack);
   seen.set(key, found);
   return found;
@@ -138,7 +154,9 @@ interface Fiber {
 }
 
 function fiberOf(element: Element | null): Fiber | null {
-  if (!element) return null;
+  if (!element) {
+    return null;
+  }
   const key = Object.keys(element).find((name) => name.startsWith('__reactFiber$'));
   return key ? ((Reflect.get(element, key) as Fiber) ?? null) : null;
 }
@@ -150,7 +168,9 @@ export function originAt(node: Node): Origin | null {
   let fiber = fiberOf(node.parentElement);
   for (let up = 0; fiber && up < 24; up += 1) {
     const found = screenFrame(fiber._debugStack?.stack);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
     fiber = fiber.return ?? null;
   }
   return null;

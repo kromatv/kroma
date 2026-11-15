@@ -39,7 +39,11 @@ const hyphenate = (key: string) => key.replace(/[A-Z]/g, (letter) => `-${letter.
 /** Whether a box with no ref can skip react-native-web's View: nothing beside
  *  its style and children but `testID` and `dataSet`. */
 export function isStaticHost(rest: Readonly<Record<string, unknown>>): boolean {
-  for (const key in rest) if (!PASS.has(key)) return false;
+  for (const key in rest) {
+    if (!PASS.has(key)) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -57,7 +61,9 @@ export function StaticView({ style, children, testID, dataSet }: Readonly<Static
   const data: Record<string, string | number> = {};
   if (dataSet) {
     for (const [key, value] of Object.entries(dataSet)) {
-      if (value !== undefined) data[`data-${hyphenate(key)}`] = value;
+      if (value !== undefined) {
+        data[`data-${hyphenate(key)}`] = value;
+      }
     }
   }
   return (

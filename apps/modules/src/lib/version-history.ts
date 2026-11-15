@@ -24,14 +24,18 @@ async function fetchUpstream(env: Env | undefined): Promise<string> {
     headers: githubHeaders(env),
     redirect: 'follow',
   });
-  if (!res.ok) throw new Error(`history.json ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`history.json ${res.status}`);
+  }
   return res.text();
 }
 
 async function load(env: Env | undefined, waitUntil: (p: Promise<unknown>) => void) {
   const cache = edgeCache();
   const hit = await cache?.match(CACHE_FRESH);
-  if (hit) return hit.text();
+  if (hit) {
+    return hit.text();
+  }
   try {
     const body = await fetchUpstream(env);
     if (cache) {
@@ -41,7 +45,9 @@ async function load(env: Env | undefined, waitUntil: (p: Promise<unknown>) => vo
     return body;
   } catch (err) {
     const stale = await cache?.match(CACHE_STALE);
-    if (stale) return stale.text();
+    if (stale) {
+      return stale.text();
+    }
     console.error('version history unavailable', err);
     return null;
   }
@@ -58,7 +64,9 @@ export async function describedVersions(
   id: string,
 ): Promise<HistoryVersions | undefined> {
   const body = await load(env, waitUntil);
-  if (!body) return undefined;
+  if (!body) {
+    return undefined;
+  }
   let raw: unknown;
   try {
     raw = JSON.parse(body);
@@ -66,7 +74,9 @@ export async function describedVersions(
     return undefined;
   }
   const envelope = Envelope.safeParse(raw);
-  if (!envelope.success) return undefined;
+  if (!envelope.success) {
+    return undefined;
+  }
   const versions = Versions.safeParse(envelope.data.modules[id]);
   return versions.success ? versions.data : undefined;
 }
@@ -77,6 +87,8 @@ export function withDescriptions(
   listed: KnownVersions | undefined,
   described: HistoryVersions | undefined,
 ): KnownVersions | undefined {
-  if (!described) return listed;
+  if (!described) {
+    return listed;
+  }
   return { ...listed, versions: { ...listed?.versions, ...described } };
 }

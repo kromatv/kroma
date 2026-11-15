@@ -8,7 +8,9 @@ import { type AppleTv, listAppleTvs, locateAppleTvTool } from './index';
  * for a scan to fail.
  */
 export async function pairedTelevisions(): Promise<Television[]> {
-  if (locateAppleTvTool('devicectl') === null) return [];
+  if (locateAppleTvTool('devicectl') === null) {
+    return [];
+  }
   try {
     return (await listAppleTvs()).map(asTelevision);
   } catch {
@@ -32,7 +34,9 @@ function asTelevision(set: AppleTv): Television {
 }
 
 function tvosRuntime(osVersion: string): Runtime | null {
-  if (!osVersion) return null;
+  if (!osVersion) {
+    return null;
+  }
   return {
     name: 'tvOS',
     version: osVersion,

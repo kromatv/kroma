@@ -14,7 +14,9 @@ function Sections({ current, listed }: Readonly<DocsNavProps>) {
     <div className="flex flex-col gap-7">
       {DOC_SECTIONS.map((section) => {
         const slugs = section.slugs.filter((slug) => listed.includes(slug));
-        if (slugs.length === 0) return null;
+        if (slugs.length === 0) {
+          return null;
+        }
         return (
           <div key={section.id}>
             <p className="mb-2.5 font-sans text-[0.7rem] font-bold uppercase tracking-[0.16em] text-dim">

@@ -91,7 +91,9 @@ export function toEntries(bundles: readonly Bundle[], baseFor: (b: Bundle) => st
   for (const b of bundles) {
     const id = b.manifest.id;
     const twin = entries.get(id);
-    if (twin) throw new Error(`${twin.file} and ${b.file} both hold ${id}`);
+    if (twin) {
+      throw new Error(`${twin.file} and ${b.file} both hold ${id}`);
+    }
     const base = baseFor(b).replace(/\/$/, '');
     const artifact: Artifact = {
       file: b.file,

@@ -43,7 +43,9 @@ function useClipState(videoRef: RefObject<HTMLVideoElement | null>, src: string 
   const [endedNonce, setEndedNonce] = useState(0);
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !src) return;
+    if (!v || !src) {
+      return;
+    }
     const patch = (next: Partial<ClipState>) => setState((s) => ({ ...s, ...next }));
     let started = false;
     const handlers: [string, () => void][] = [
@@ -66,15 +68,21 @@ function useClipState(videoRef: RefObject<HTMLVideoElement | null>, src: string 
         'canplay',
         () => {
           patch({ ready: true, waiting: false });
-          if (started) return;
+          if (started) {
+            return;
+          }
           started = true;
           v.play()?.catch(() => patch({ playing: false }));
         },
       ],
     ];
-    for (const [name, handler] of handlers) v.addEventListener(name, handler);
+    for (const [name, handler] of handlers) {
+      v.addEventListener(name, handler);
+    }
     return () => {
-      for (const [name, handler] of handlers) v.removeEventListener(name, handler);
+      for (const [name, handler] of handlers) {
+        v.removeEventListener(name, handler);
+      }
     };
   }, [videoRef, src]);
   return { state, endedNonce };
@@ -89,8 +97,11 @@ function useFullscreen() {
     return () => document.removeEventListener('fullscreenchange', read);
   }, []);
   const toggle = () => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-    else void frame?.current?.requestFullscreen().catch(() => undefined);
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined);
+    } else {
+      void frame?.current?.requestFullscreen().catch(() => undefined);
+    }
   };
   return { fullscreen, toggle };
 }
@@ -99,7 +110,9 @@ function usePip(videoRef: RefObject<HTMLVideoElement | null>, src: string | null
   const [active, setActive] = useState(false);
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !src) return;
+    if (!v || !src) {
+      return;
+    }
     const enter = () => setActive(true);
     const leave = () => setActive(false);
     v.addEventListener('enterpictureinpicture', enter);
@@ -111,10 +124,14 @@ function usePip(videoRef: RefObject<HTMLVideoElement | null>, src: string | null
   }, [videoRef, src]);
   const toggle = useCallback(() => {
     const v = videoRef.current;
-    if (!document.pictureInPictureEnabled || !v) return;
-    if (document.pictureInPictureElement)
+    if (!document.pictureInPictureEnabled || !v) {
+      return;
+    }
+    if (document.pictureInPictureElement) {
       void document.exitPictureInPicture().catch(() => undefined);
-    else void v.requestPictureInPicture().catch(() => undefined);
+    } else {
+      void v.requestPictureInPicture().catch(() => undefined);
+    }
   }, [videoRef]);
   return { active, toggle };
 }
@@ -134,7 +151,9 @@ export function useClipController(src: string | null): ClipController {
   const seekTo = useCallback(
     (abs: number) => {
       const v = videoRef.current;
-      if (v) v.currentTime = clamp(abs, Number.isFinite(v.duration) ? v.duration : abs);
+      if (v) {
+        v.currentTime = clamp(abs, Number.isFinite(v.duration) ? v.duration : abs);
+      }
     },
     [videoRef],
   );
@@ -155,9 +174,14 @@ export function useClipController(src: string | null): ClipController {
     aspect: state.aspect,
     togglePlay: () => {
       const v = videoRef.current;
-      if (!v) return;
-      if (v.paused) v.play()?.catch(() => undefined);
-      else v.pause();
+      if (!v) {
+        return;
+      }
+      if (v.paused) {
+        v.play()?.catch(() => undefined);
+      } else {
+        v.pause();
+      }
     },
     seekTo,
     skip: (delta) => seekTo((videoRef.current?.currentTime ?? 0) + delta),
@@ -169,24 +193,34 @@ export function useClipController(src: string | null): ClipController {
       const target = previewRef.current;
       previewRef.current = null;
       setSeekPreview(null);
-      if (target != null) seekTo(target);
+      if (target != null) {
+        seekTo(target);
+      }
     },
     volume: state.volume,
     muted: state.muted,
     setVolume: (value) => {
       const v = videoRef.current;
-      if (!v) return;
+      if (!v) {
+        return;
+      }
       v.volume = clamp(value, 1);
-      if (value > 0) v.muted = false;
+      if (value > 0) {
+        v.muted = false;
+      }
     },
     toggleMute: () => {
       const v = videoRef.current;
-      if (v) v.muted = !v.muted;
+      if (v) {
+        v.muted = !v.muted;
+      }
     },
     rate: state.rate,
     setRate: (rate) => {
       const v = videoRef.current;
-      if (v) v.playbackRate = rate;
+      if (v) {
+        v.playbackRate = rate;
+      }
     },
     audioTracks: [],
     audioIndex: 0,

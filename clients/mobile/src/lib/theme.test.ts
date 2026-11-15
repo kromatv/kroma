@@ -121,8 +121,12 @@ describe('posterWidth', () => {
 
   it('always leaves room for the padding and the gutters', () => {
     const columns = (width: number) => {
-      if (width >= 900) return 6;
-      if (width >= 600) return 4;
+      if (width >= 900) {
+        return 6;
+      }
+      if (width >= 600) {
+        return 4;
+      }
       return 3;
     };
     for (const width of [320, 390, 430, 600, 768, 900, 1024, 1366]) {

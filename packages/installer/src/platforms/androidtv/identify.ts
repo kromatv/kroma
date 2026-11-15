@@ -30,9 +30,15 @@ export async function identifyAndroidTv(
     plain: PHILIPS_API_PORT,
     tls: PHILIPS_TLS_PORT,
   });
-  if (philips) return identifyPhilips(host, philips, adb);
-  if (adb === null) return null;
-  if (!adb.wireless) return identifyAndroid(host, adb, upnp);
+  if (philips) {
+    return identifyPhilips(host, philips, adb);
+  }
+  if (adb === null) {
+    return null;
+  }
+  if (!adb.wireless) {
+    return identifyAndroid(host, adb, upnp);
+  }
 
   const cast = advertised.some((service) => service.type === CAST_SERVICE);
   return identifyWireless(host, adb, upnp, cast);
@@ -42,7 +48,9 @@ function endpointOf(
   openPorts: ReadonlySet<number>,
   advertised: readonly MdnsService[],
 ): AdbEndpoint | null {
-  if (openPorts.has(ADB_PORT)) return { port: ADB_PORT, wireless: false };
+  if (openPorts.has(ADB_PORT)) {
+    return { port: ADB_PORT, wireless: false };
+  }
   const wireless = advertised.find((service) => service.type === ADB_CONNECT_SERVICE);
   return wireless ? { port: wireless.port, wireless: true } : null;
 }
@@ -95,7 +103,9 @@ async function identifyWireless(
   cast: boolean,
 ): Promise<Television | null> {
   const device = await adbDevice(host, adb.port);
-  if (!device?.tv && !upnp && !cast) return null;
+  if (!device?.tv && !upnp && !cast) {
+    return null;
+  }
   return {
     host,
     platform: 'androidtv',
@@ -116,8 +126,12 @@ function philipsNote(
   adb: AdbEndpoint | null,
   osType: string | undefined,
 ): string {
-  if (adb?.wireless) return 'Android TV, Wireless debugging on';
-  if (adb) return 'Android TV, network debugging open on 5555';
+  if (adb?.wireless) {
+    return 'Android TV, Wireless debugging on';
+  }
+  if (adb) {
+    return 'Android TV, network debugging open on 5555';
+  }
   if (!android) {
     return `${osType ?? 'not Android'}: this Philips takes no sideloaded app, only its own store`;
   }

@@ -31,14 +31,20 @@ export function createScrollLock() {
   let release = NOOP;
   return {
     hold() {
-      if (holds === 0) release = lockPage();
+      if (holds === 0) {
+        release = lockPage();
+      }
       holds += 1;
       let released = false;
       return () => {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         holds -= 1;
-        if (holds > 0) return;
+        if (holds > 0) {
+          return;
+        }
         release();
         release = NOOP;
       };
@@ -57,7 +63,9 @@ export function useScrollLock(locked: boolean): void {
 function lockPage(): () => void {
   const doc = webDocument();
   const win = webWindow();
-  if (!doc || !win) return NOOP;
+  if (!doc || !win) {
+    return NOOP;
+  }
   const root = doc.documentElement;
   const { body } = doc;
   // Both, because which of the two owns the viewport's scrollbar is the page's
@@ -96,9 +104,13 @@ function guardTouch(doc: Document, win: Window): () => void {
   const move = (event: TouchEvent) => {
     // Two fingers are a zoom, which the page is welcome to, and an event
     // already committed to elsewhere cannot be taken back.
-    if (event.touches.length > 1 || !event.cancelable) return;
+    if (event.touches.length > 1 || !event.cancelable) {
+      return;
+    }
     const asked = from - (event.touches[0]?.clientY ?? 0);
-    if (!scrollerUnder(event.target, asked, win)) event.preventDefault();
+    if (!scrollerUnder(event.target, asked, win)) {
+      event.preventDefault();
+    }
   };
   doc.addEventListener('touchstart', start, PASSIVE);
   doc.addEventListener('touchmove', move, ACTIVE);
@@ -112,7 +124,9 @@ function guardTouch(doc: Document, win: Window): () => void {
 function scrollerUnder(target: EventTarget | null, asked: number, win: Window): boolean {
   let node = asElement(target);
   while (node) {
-    if (canScroll(node, asked, win)) return true;
+    if (canScroll(node, asked, win)) {
+      return true;
+    }
     node = node.parentElement;
   }
   return false;
@@ -128,8 +142,12 @@ function asElement(target: EventTarget | null): Element | null {
 
 function canScroll(node: Element, asked: number, win: Window): boolean {
   const room = node.scrollHeight - node.clientHeight;
-  if (room <= 0) return false;
+  if (room <= 0) {
+    return false;
+  }
   const overflow = win.getComputedStyle(node).overflowY;
-  if (overflow !== 'auto' && overflow !== 'scroll') return false;
+  if (overflow !== 'auto' && overflow !== 'scroll') {
+    return false;
+  }
   return asked > 0 ? node.scrollTop < room : node.scrollTop > 0;
 }

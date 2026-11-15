@@ -33,7 +33,9 @@ describe('Spinner', () => {
     const views = [ring, ...ring.querySelectorAll('*')];
 
     for (const view of views) {
-      for (const edge of EDGES) expect(rulesSetting(edge, view).length).toBeLessThanOrEqual(1);
+      for (const edge of EDGES) {
+        expect(rulesSetting(edge, view).length).toBeLessThanOrEqual(1);
+      }
     }
   });
 

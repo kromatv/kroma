@@ -23,7 +23,9 @@ export async function translateCommand(
     },
   });
   const [locale, ...prefixes] = positionals;
-  if (locale === undefined) throw new Error(`usage: ${context.bin} translate <locale> [prefix...]`);
+  if (locale === undefined) {
+    throw new Error(`usage: ${context.bin} translate <locale> [prefix...]`);
+  }
   if (!sets.some((set) => localesOf(set).includes(locale))) {
     throw new Error(`no language "${locale}" here: start it with \`${context.bin} add ${locale}\``);
   }
@@ -41,9 +43,12 @@ export async function translateCommand(
       batch: values.batch === undefined ? undefined : Number(values.batch),
       onBatch: (written, total) => print(`${set.name}  ${locale}: ${written} of ${total}`),
     });
-    if (done.asked === 0) continue;
-    for (const { key, why } of done.refused)
+    if (done.asked === 0) {
+      continue;
+    }
+    for (const { key, why } of done.refused) {
       print(`${set.name}  ${locale}: ${key} ${why}, left out`);
+    }
     refusals += done.refused.length;
   }
   print(`Read them, then: ${context.bin} confirm ${locale}`);

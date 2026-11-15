@@ -65,20 +65,24 @@ export function styles<const S extends Record<string, StyleDecl>>(
   ): Styles<S> => {
     const step = breakpointStep(mask, index);
     const cached = owners.get(scope);
-    if (cached?.at === at && cached.step === step) return cached.built;
+    if (cached?.at === at && cached.step === step) {
+      return cached.built;
+    }
     const resolved: Record<string, AnyStyle> = {};
-    for (const [name, decl] of Object.entries(decls))
+    for (const [name, decl] of Object.entries(decls)) {
       resolved[name] = stabilise(normalize(decl, index, activeTheme(scope.theme))) as AnyStyle;
+    }
     const built = resolved as Styles<S>;
     owners.set(scope, { at, step, built });
     return built;
   };
   const binding: Record<PropertyKey, unknown> = {};
-  for (const name of Object.keys(decls))
+  for (const name of Object.keys(decls)) {
     Object.defineProperty(binding, name, {
       enumerable: true,
       get: () => Reflect.get(resolve(owner), name),
     });
+  }
   Object.defineProperty(binding, RESOLVE, { value: resolve });
   Object.defineProperty(binding, MASK, { value: mask });
   return Object.freeze(binding) as Styles<S>;
@@ -92,7 +96,9 @@ export function resolveStyles<S>(definition: Styles<S>, scope: StyleScope): Styl
 export function useStyles<S>(definition: Styles<S>): Styles<S> {
   const binding = definition as StyleBinding<S>;
   const scope = useStyleScope();
-  if (binding[MASK] === 0) return binding[RESOLVE](scope);
+  if (binding[MASK] === 0) {
+    return binding[RESOLVE](scope);
+  }
   const at = use(BreakpointIndexContext);
   return binding[RESOLVE](scope, undefined, at < 0 ? undefined : at);
 }

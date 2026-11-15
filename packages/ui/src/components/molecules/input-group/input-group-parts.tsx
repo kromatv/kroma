@@ -171,8 +171,12 @@ function Addon({
 }
 
 function edgeIndex(align: AddonAlign, count: number): number {
-  if (align === 'inline-start') return 0;
-  if (align === 'inline-end') return count - 1;
+  if (align === 'inline-start') {
+    return 0;
+  }
+  if (align === 'inline-end') {
+    return count - 1;
+  }
   return -1;
 }
 

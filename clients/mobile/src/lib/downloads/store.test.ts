@@ -44,7 +44,11 @@ const entry = (id: string, extras: { subs?: string[]; sprite?: string } = {}) =>
 const deleted = () => fs.deleteAsync.mock.calls.map(([uri]) => uri);
 
 beforeEach(() => {
-  for (const fn of Object.values(fs)) if (typeof fn !== 'string') fn.mockClear();
+  for (const fn of Object.values(fs)) {
+    if (typeof fn !== 'string') {
+      fn.mockClear();
+    }
+  }
 });
 
 afterEach(() => {

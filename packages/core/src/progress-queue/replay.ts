@@ -15,10 +15,16 @@ export const CLOCK_SKEW_MS = 60_000;
  * is dropped rather than rewinding the account.
  */
 export function shouldReplay(entry: PendingProgress, onServer: ProgressEntry | null): boolean {
-  if (!onServer) return true;
-  if (entry.reachedEnd) return true;
+  if (!onServer) {
+    return true;
+  }
+  if (entry.reachedEnd) {
+    return true;
+  }
   const serverAt = Date.parse(onServer.updatedAt);
-  if (Number.isNaN(serverAt)) return true;
+  if (Number.isNaN(serverAt)) {
+    return true;
+  }
   return serverAt <= entry.capturedAt + CLOCK_SKEW_MS;
 }
 

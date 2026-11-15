@@ -90,8 +90,11 @@ interface Sorted {
 function sort(children: ReactNode): Sorted {
   const at: Sorted = { backdrop: [], items: [] };
   for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Backdrop) at.backdrop.push(child);
-    else at.items.push(child);
+    if (isValidElement(child) && child.type === Backdrop) {
+      at.backdrop.push(child);
+    } else {
+      at.items.push(child);
+    }
   }
   return at;
 }
@@ -139,7 +142,9 @@ function Root({
   const preview = useEffectEvent((id: string | null, quiet = false) => {
     hoverRef.current = id;
     setHover(id === null ? null : { id, rect: targets.current.get(id)?.rect() ?? null });
-    if (quiet) return;
+    if (quiet) {
+      return;
+    }
     onPreview?.(id === null ? null : (targets.current.get(id)?.label ?? null));
   });
   const capsule = useRef<View>(null);
@@ -147,13 +152,17 @@ function Root({
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
-      if (settle.current) clearTimeout(settle.current);
+      if (settle.current) {
+        clearTimeout(settle.current);
+      }
     },
     [],
   );
 
   const grab = useEffectEvent(() => {
-    if (settle.current) clearTimeout(settle.current);
+    if (settle.current) {
+      clearTimeout(settle.current);
+    }
     originX.current = null;
     preview(lens?.id ?? null, true);
     const node = capsule.current as
@@ -170,20 +179,26 @@ function Root({
   });
 
   const drag = useEffectEvent((moveX: number) => {
-    if (originX.current === null) return;
+    if (originX.current === null) {
+      return;
+    }
     const x = moveX - originX.current;
     let hit: string | null = null;
     let gap = Number.POSITIVE_INFINITY;
     for (const [id, target] of targets.current) {
       const rect = target.rect();
-      if (!rect) continue;
+      if (!rect) {
+        continue;
+      }
       const away = Math.abs(x - (rect.x + rect.width / 2));
       if (away < gap) {
         gap = away;
         hit = id;
       }
     }
-    if (hit && hit !== hoverRef.current) preview(hit);
+    if (hit && hit !== hoverRef.current) {
+      preview(hit);
+    }
   });
 
   const drop = useEffectEvent(() => {

@@ -21,7 +21,9 @@ const Dependencies = z.looseObject({
 // a module that lives in the KROMA repository.
 function sdkOf(project: Project): string {
   const path = join(project.dir, 'package.json');
-  if (!existsSync(path)) return PUBLIC_NAME;
+  if (!existsSync(path)) {
+    return PUBLIC_NAME;
+  }
   const { dependencies = {}, devDependencies = {} } = Dependencies.parse(
     JSON.parse(readFileSync(path, 'utf8')),
   );

@@ -140,7 +140,9 @@ export function beaconTxt(record: BeaconRecord): Record<string, string> {
  * dropped rather than shown half-empty or passed on to the server. */
 export function parseBeaconTxt(txt: Record<string, string>): BeaconRecord | null {
   const parsed = BeaconTxt.safeParse(txt);
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   const record = parsed.data;
   const name = safeLabel(record.name);
   const platform = safeLabel(record.platform);
@@ -165,13 +167,17 @@ function watchRecords<T>(
   onRows: (rows: T[]) => void,
 ): () => void {
   const browse = bridge.browse;
-  if (!browse) return () => undefined;
+  if (!browse) {
+    return () => undefined;
+  }
   return browse((services) => {
     const rows: T[] = [];
     for (const service of services) {
       const record = parseBeaconTxt(service.txt);
       const row = record && read(record, service);
-      if (row) rows.push(row);
+      if (row) {
+        rows.push(row);
+      }
     }
     onRows(rows);
   });
@@ -245,14 +251,18 @@ export function serverSource(client: KromaClient, everyMs = 3000): TvDiscoverySo
       let timer: ReturnType<typeof setTimeout> | undefined;
 
       const wait = () => {
-        if (stopped) return;
+        if (stopped) {
+          return;
+        }
         timer = setTimeout(() => void tick(), everyMs);
       };
 
       const tick = async () => {
         try {
           const rows = await client.handoff.devices();
-          if (!stopped) onRows(rows.map((row) => ({ ...row, via: 'server' as const })));
+          if (!stopped) {
+            onRows(rows.map((row) => ({ ...row, via: 'server' as const })));
+          }
         } catch {
           /* keep the last good list: a dropped poll is not a TV going away */
         }
@@ -262,7 +272,9 @@ export function serverSource(client: KromaClient, everyMs = 3000): TvDiscoverySo
       void tick();
       return () => {
         stopped = true;
-        if (timer) clearTimeout(timer);
+        if (timer) {
+          clearTimeout(timer);
+        }
         timer = undefined;
       };
     },

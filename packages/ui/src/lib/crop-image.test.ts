@@ -34,8 +34,11 @@ function images(outcome: Outcome, natural = { width: 400, height: 200 }): HTMLIm
   ) {
     made.push(this);
     queueMicrotask(() => {
-      if (outcome === 'load') this.onload?.(new Event('load'));
-      else this.onerror?.(new Event('error'));
+      if (outcome === 'load') {
+        this.onload?.(new Event('load'));
+      } else {
+        this.onerror?.(new Event('error'));
+      }
     });
   });
   return made;

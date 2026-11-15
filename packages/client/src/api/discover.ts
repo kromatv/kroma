@@ -19,7 +19,9 @@ declare const require: {
 function every(): Record<string, DomainFactory> {
   const context = require.context('.', true, /\/client\.ts$/);
   const found: Record<string, DomainFactory> = {};
-  for (const key of context.keys()) found[domainKey(key)] = context(key).default;
+  for (const key of context.keys()) {
+    found[domainKey(key)] = context(key).default;
+  }
   return found;
 }
 
@@ -28,7 +30,9 @@ export const domains: Readonly<Record<string, DomainFactory>> = every();
 function everyIndex(): Record<string, unknown> {
   const context = require.context('.', true, /\/index\.ts$/);
   const found: Record<string, unknown> = {};
-  for (const key of context.keys()) found[domainKey(key)] = context(key);
+  for (const key of context.keys()) {
+    found[domainKey(key)] = context(key);
+  }
   return found;
 }
 

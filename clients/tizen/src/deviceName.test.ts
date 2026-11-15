@@ -29,7 +29,9 @@ interface Stub {
 /** Installs a Tizen platform on `globalThis`, as a set's firmware would. */
 function platform(stub: Stub) {
   const answer = (key: NonNullable<Stub['throwOn']>, value: unknown) => () => {
-    if (stub.throwOn === key) throw new Error('not on this firmware');
+    if (stub.throwOn === key) {
+      throw new Error('not on this firmware');
+    }
     return value;
   };
   Object.assign(globalThis, {
@@ -47,9 +49,14 @@ function platform(stub: Stub) {
           onSuccess: BuildListener,
           onError?: BuildListener,
         ) => {
-          if (stub.throwOn === 'getPropertyValue') throw new Error('not on this firmware');
-          if (stub.buildFails) onError?.(new Error('no such property'));
-          else if (stub.build !== undefined) onSuccess(stub.build);
+          if (stub.throwOn === 'getPropertyValue') {
+            throw new Error('not on this firmware');
+          }
+          if (stub.buildFails) {
+            onError?.(new Error('no such property'));
+          } else if (stub.build !== undefined) {
+            onSuccess(stub.build);
+          }
         },
       },
     },

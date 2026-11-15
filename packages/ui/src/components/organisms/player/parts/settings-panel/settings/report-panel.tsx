@@ -28,7 +28,9 @@ export function ReportPanel({ onReport }: Readonly<ReportPanelProps>) {
   const sending = useRef(false);
   const pick = (i: number) => {
     const category = REPORT_CATEGORIES[i]?.key;
-    if (!category || sending.current || state === 'done') return;
+    if (!category || sending.current || state === 'done') {
+      return;
+    }
     sending.current = true;
     setState('busy');
     onReport(category)

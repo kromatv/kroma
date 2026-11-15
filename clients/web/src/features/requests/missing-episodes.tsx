@@ -64,7 +64,9 @@ export function EpisodeList({
   const s = useStyles(sDefinition);
   const t = useT();
   const [expanded, setExpanded] = useState(false);
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
 
   const collapsed = !expanded && entries.length > COLLAPSE_OVER;
   const visible = collapsed ? entries.slice(0, COLLAPSED_ROWS) : entries;

@@ -136,7 +136,9 @@ export function FilterSelect<V extends string>({ label, choice }: Readonly<Filte
       value={choice.value}
       onValueChange={(next) => {
         const picked = choice.options.find((one) => one.value === next);
-        if (picked) choice.onChange(picked.value);
+        if (picked) {
+          choice.onChange(picked.value);
+        }
       }}
     >
       <Select.Trigger />

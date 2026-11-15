@@ -24,7 +24,9 @@ const BARE_SOURCE = {
 } satisfies TorrentSource;
 
 function kindOf(season: number | null, episode: number | null): string {
-  if (season === null) return 'movie';
+  if (season === null) {
+    return 'movie';
+  }
   return episode === null ? 'season' : 'episode';
 }
 
@@ -67,7 +69,9 @@ export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
   const [refused, setRefused] = useState<DropzoneRejection | null>(null);
 
   const takeFile = (file: File | undefined) => {
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     setRefused(null);
     void run(
       async () => {

@@ -54,7 +54,9 @@ const UI_ENTRIES = ['ui/src/module.tsx', 'ui/src/module.ts', 'ui/src/index.tsx',
 function readServer(dir: string): ServerCrate | null {
   const serverDir = join(dir, 'server');
   const cargoPath = join(serverDir, 'Cargo.toml');
-  if (!existsSync(cargoPath)) return null;
+  if (!existsSync(cargoPath)) {
+    return null;
+  }
   const cargo = CargoManifest.parse(parseToml(readFileSync(cargoPath, 'utf8')));
   return {
     dir: serverDir,
@@ -88,7 +90,7 @@ export function openProject(dir: string): Project {
   try {
     raw = JSON.parse(readFileSync(path, 'utf8'));
   } catch (e) {
-    throw new Error(`${path}: invalid JSON (${(e as Error).message})`);
+    throw new Error(`${path}: invalid JSON (${(e as Error).message})`, { cause: e });
   }
   const read = AuthoredManifest.safeParse(raw);
   if (!read.success) {
@@ -103,7 +105,9 @@ function absolute(path: string, cwd: string): string {
 
 /** Every module directory under `root` (a `modules/` folder), sorted. */
 export function moduleDirs(root: string): string[] {
-  if (!existsSync(root)) return [];
+  if (!existsSync(root)) {
+    return [];
+  }
   return readdirSync(root, { withFileTypes: true })
     .filter((e) => e.isDirectory() && existsSync(join(root, e.name, 'module.json')))
     .map((e) => join(root, e.name))
@@ -116,8 +120,12 @@ export function moduleDirs(root: string): string[] {
  * project and for this repository, where `modules/` holds all of them.
  */
 export function findProjects(dirs: readonly string[], cwd = process.cwd()): Project[] {
-  if (dirs.length > 0) return dirs.map((d) => openProject(absolute(d, cwd)));
-  if (existsSync(join(cwd, 'module.json'))) return [openProject(cwd)];
+  if (dirs.length > 0) {
+    return dirs.map((d) => openProject(absolute(d, cwd)));
+  }
+  if (existsSync(join(cwd, 'module.json'))) {
+    return [openProject(cwd)];
+  }
   const found = moduleDirs(join(cwd, 'modules'));
   if (found.length === 0) {
     throw new Error(`no module here: ${cwd} has no module.json and no modules/ directory`);

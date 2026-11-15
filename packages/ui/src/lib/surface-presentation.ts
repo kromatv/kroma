@@ -21,7 +21,9 @@ function useSurfacePresentation(asked: SurfacePresentation = 'auto'): ResolvedPr
   const { surfaces: shellPresentation } = useKitSettings();
   const scoped = useInsideFocusScope();
   const stated = asked === 'auto' ? shellPresentation : asked;
-  if (stated !== 'auto') return stated;
+  if (stated !== 'auto') {
+    return stated;
+  }
   return scoped ? 'dialog' : 'panel';
 }
 

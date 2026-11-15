@@ -82,7 +82,9 @@ app.notFound((c) => c.json({ error: 'not found' }, 404));
 const bounded =
   (max: number): MiddlewareHandler<{ Bindings: Env }> =>
   async (c, next) => {
-    if (c.req.method === 'GET' || c.req.method === 'HEAD') return next();
+    if (c.req.method === 'GET' || c.req.method === 'HEAD') {
+      return next();
+    }
     const declared = c.req.header('content-length');
     const length = Number(declared);
     let refused: Response | null = null;
@@ -104,7 +106,9 @@ app.use('/v1/send', bounded(MAX_SEND_BYTES));
 
 const validate = <T extends typeof RegisterRequest | typeof SignedRequest>(schema: T) =>
   zValidator('json', schema, (result, c) => {
-    if (!result.success) return c.json({ error: firstIssue(result.error) }, 400);
+    if (!result.success) {
+      return c.json({ error: firstIssue(result.error) }, 400);
+    }
     return undefined;
   });
 
@@ -120,7 +124,9 @@ app.post('/v1/register', validate(RegisterRequest), async (c) => {
   const { success } = await c.env.ENROL_IP.limit({
     key: callerKey(c.req.header('cf-connecting-ip')),
   });
-  if (!success) return c.json({ error: 'too many registrations' }, 429);
+  if (!success) {
+    return c.json({ error: 'too many registrations' }, 429);
+  }
 
   const { origin, publicKey } = c.req.valid('json');
   if (!(await importPublicKey(publicKey))) {
@@ -145,7 +151,9 @@ app.post('/v1/register', validate(RegisterRequest), async (c) => {
 // and the origin must not be shut out.
 async function authenticated(env: Env, request: SignedRequest, now: number) {
   const signed = await openSigned(env.GRANT_SECRET, request, now);
-  if (!signed) return { error: 'invalid instance or signature', status: 401 as const };
+  if (!signed) {
+    return { error: 'invalid instance or signature', status: 401 as const };
+  }
   const originKey = await budgetKey(env.LIMIT_SECRET, signed.instance.o);
   if (await banned(env.COUNTERS, originKey)) {
     return { error: 'this origin is shut out', status: 403 as const };
@@ -163,15 +171,23 @@ app.post('/v1/activate', validate(SignedRequest), async (c) => {
   const { success } = await c.env.ENROL_IP.limit({
     key: callerKey(c.req.header('cf-connecting-ip')),
   });
-  if (!success) return c.json({ error: 'too many activation requests' }, 429);
+  if (!success) {
+    return c.json({ error: 'too many activation requests' }, 429);
+  }
 
   const now = nowSecs();
   const auth = await authenticated(c.env, c.req.valid('json'), now);
-  if ('status' in auth) return c.json({ error: auth.error }, auth.status);
+  if ('status' in auth) {
+    return c.json({ error: auth.error }, auth.status);
+  }
   const parsed = ActivatePayload.safeParse(auth.payload);
-  if (!parsed.success) return c.json({ error: firstIssue(parsed.error) }, 400);
+  if (!parsed.success) {
+    return c.json({ error: firstIssue(parsed.error) }, 400);
+  }
   const { to, token, ts } = parsed.data;
-  if (stale(ts, now)) return c.json({ error: 'ts: not from about now' }, 400);
+  if (stale(ts, now)) {
+    return c.json({ error: 'ts: not from about now' }, 400);
+  }
 
   const mailbox = await budgetKey(c.env.LIMIT_SECRET, to);
   if (!(await takeDaily(c.env.COUNTERS, `ask:${mailbox}`, ACTIVATE_PER_ADDRESS_DAY, now))) {
@@ -203,9 +219,13 @@ async function activationLinkFor(
 ): Promise<Allowed | null> {
   const link = /https?:\/\/[^\s"'<>()]+/.exec(`${text}\n${html}`)?.[0] ?? '';
   const blob = activationBlob(env.PUBLIC_URL, link);
-  if (!blob) return null;
+  if (!blob) {
+    return null;
+  }
   const pending = await openPending(env.GRANT_SECRET, blob, now);
-  if (pending?.o !== origin || pending.a !== to) return null;
+  if (pending?.o !== origin || pending.a !== to) {
+    return null;
+  }
   return exactly(link);
 }
 
@@ -221,7 +241,9 @@ async function overBudget(
 ): Promise<string | null> {
   const mailbox = await budgetKey(env.LIMIT_SECRET, to);
   const minute = await env.SEND_ADDR.limit({ key: mailbox });
-  if (!minute.success) return 'too many messages for this address';
+  if (!minute.success) {
+    return 'too many messages for this address';
+  }
   if (!(await takeDaily(env.COUNTERS, `send:${mailbox}`, SEND_PER_ADDRESS_DAY, now))) {
     return 'too many messages for this address today';
   }
@@ -243,16 +265,26 @@ app.post('/v1/send', validate(SignedRequest), async (c) => {
   const { success } = await c.env.SEND_IP.limit({
     key: callerKey(c.req.header('cf-connecting-ip')),
   });
-  if (!success) return c.json({ error: 'too many sends' }, 429);
+  if (!success) {
+    return c.json({ error: 'too many sends' }, 429);
+  }
 
   const now = nowSecs();
   const auth = await authenticated(c.env, c.req.valid('json'), now);
-  if ('status' in auth) return c.json({ error: auth.error }, auth.status);
+  if ('status' in auth) {
+    return c.json({ error: auth.error }, auth.status);
+  }
   const parsed = SendPayload.safeParse(auth.payload);
-  if (!parsed.success) return c.json({ error: firstIssue(parsed.error) }, 400);
+  if (!parsed.success) {
+    return c.json({ error: firstIssue(parsed.error) }, 400);
+  }
   const message = parsed.data;
-  if (stale(message.ts, now)) return c.json({ error: 'ts: not from about now' }, 400);
-  if (!c.env.EMAIL) return c.json({ error: 'email is not configured on this relay' }, 503);
+  if (stale(message.ts, now)) {
+    return c.json({ error: 'ts: not from about now' }, 400);
+  }
+  if (!c.env.EMAIL) {
+    return c.json({ error: 'email is not configured on this relay' }, 503);
+  }
 
   const origin = auth.instance.o;
   const marks = marksOf(c.env);
@@ -260,23 +292,33 @@ app.post('/v1/send', validate(SignedRequest), async (c) => {
   const allowed = active
     ? onOrigin(origin)
     : await activationLinkFor(c.env, origin, message.to, message.text, message.html, now);
-  if (!allowed) return c.json({ error: 'activation required' }, 403);
+  if (!allowed) {
+    return c.json({ error: 'activation required' }, 403);
+  }
   if (active && (await marks.blocked(origin, message.to))) {
     return c.json({ error: 'address opted out' }, 410);
   }
 
   const spent = await overBudget(c.env, message.to, auth.originKey, active, now);
-  if (spent) return c.json({ error: spent }, 429);
+  if (spent) {
+    return c.json({ error: spent }, 429);
+  }
 
   const refusal = refuseContent(allowed, message.text, message.html);
-  if (refusal) return c.json({ error: refusal }, 422);
+  if (refusal) {
+    return c.json({ error: refusal }, 422);
+  }
 
   const optOut = active
     ? blockUrl(c.env.PUBLIC_URL, await sealBlock(c.env.GRANT_SECRET, message.to, origin, now))
     : undefined;
   const outcome = await carry(c.env.EMAIL, c.env, marks, origin, message, optOut);
-  if (outcome) return c.json({ error: outcome.error }, outcome.status);
-  if (active) await marks.refresh(origin);
+  if (outcome) {
+    return c.json({ error: outcome.error }, outcome.status);
+  }
+  if (active) {
+    await marks.refresh(origin);
+  }
   return c.json({ delivered: true });
 });
 
@@ -295,7 +337,9 @@ async function carry(
     return null;
   } catch (e) {
     const outcome = failure(e);
-    if (outcome.status === 410) await marks.block(origin, message.to);
+    if (outcome.status === 410) {
+      await marks.block(origin, message.to);
+    }
     return outcome;
   }
 }
@@ -307,11 +351,15 @@ async function carry(
 app.get('/confirm/:blob', async (c) => {
   const blob = c.req.param('blob');
   const pending = await openPending(c.env.GRANT_SECRET, blob, nowSecs());
-  if (!pending) return c.json({ error: 'this link is no longer valid' }, 404);
+  if (!pending) {
+    return c.json({ error: 'this link is no longer valid' }, 404);
+  }
   const target = new URL(`${pending.o}/verify-email`);
   target.searchParams.set('token', pending.t);
   target.searchParams.set('activate', blob);
-  if (pending.i) target.searchParams.set('ip', pending.i);
+  if (pending.i) {
+    target.searchParams.set('ip', pending.i);
+  }
   return c.redirect(target.toString(), 303);
 });
 
@@ -320,7 +368,9 @@ app.get('/confirm/:blob', async (c) => {
 app.post('/confirm/:blob', async (c) => {
   const now = nowSecs();
   const pending = await openPending(c.env.GRANT_SECRET, c.req.param('blob'), now);
-  if (!pending) return c.json({ error: 'this link is no longer valid' }, 404);
+  if (!pending) {
+    return c.json({ error: 'this link is no longer valid' }, 404);
+  }
   await marksOf(c.env).activate(pending.o, pending.a);
   const target = new URL(`${pending.o}/verify-email`);
   target.searchParams.set('token', pending.t);
@@ -332,13 +382,17 @@ app.post('/confirm/:blob', async (c) => {
 // that activated the server takes the activation with it.
 app.get('/block/:blob', async (c) => {
   const block = await openBlock(c.env.GRANT_SECRET, c.req.param('blob'), nowSecs());
-  if (!block) return c.json({ error: 'this link is no longer valid' }, 404);
+  if (!block) {
+    return c.json({ error: 'this link is no longer valid' }, 404);
+  }
   return c.html(optOutPage(new URL(block.o).host, false));
 });
 
 app.post('/block/:blob', async (c) => {
   const block = await openBlock(c.env.GRANT_SECRET, c.req.param('blob'), nowSecs());
-  if (!block) return c.json({ error: 'this link is no longer valid' }, 404);
+  if (!block) {
+    return c.json({ error: 'this link is no longer valid' }, 404);
+  }
   const marks = marksOf(c.env);
   await marks.block(block.o, block.a);
   await marks.deactivateBy(block.o, block.a);

@@ -12,7 +12,7 @@ afterEach(cleanup);
 const Credentials = z.object({
   email: z
     .string()
-    .min(1, msg('form.required'))
+    .nonempty(msg('form.required'))
     .pipe(z.email(msg('form.email'))),
   password: z.string().min(8, msg('form.tooShort', { min: 8 })),
   remember: z.boolean(),

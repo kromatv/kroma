@@ -28,7 +28,9 @@ export function I18nProvider({
   onLocaleChange,
   children,
 }: Readonly<I18nProviderProps>) {
-  if (!i18n) return children;
+  if (!i18n) {
+    return children;
+  }
   return (
     <Provider i18n={i18n} locale={locale} onLocaleChange={onLocaleChange}>
       {children}

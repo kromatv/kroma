@@ -76,8 +76,12 @@ function Actions({
       </>
     ) : null;
   const extra = Children.toArray(children);
-  if (!pair) return extra.length === 0 ? null : <FocusRegion style={s.row}>{extra}</FocusRegion>;
-  if (extra.length === 0) return <FocusRegion style={s.row}>{pair}</FocusRegion>;
+  if (!pair) {
+    return extra.length === 0 ? null : <FocusRegion style={s.row}>{extra}</FocusRegion>;
+  }
+  if (extra.length === 0) {
+    return <FocusRegion style={s.row}>{pair}</FocusRegion>;
+  }
   return (
     <FocusRegion style={s.split}>
       <Box style={s.end}>{extra}</Box>

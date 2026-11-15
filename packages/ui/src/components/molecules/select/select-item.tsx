@@ -63,17 +63,26 @@ interface Sorted {
 function sort(children: ReactNode): Sorted {
   const at: Sorted = { media: [], body: [] };
   for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Media) at.media.push(child);
-    else at.body.push(child);
+    if (isValidElement(child) && child.type === Media) {
+      at.media.push(child);
+    } else {
+      at.body.push(child);
+    }
   }
   return at;
 }
 
 function textOf(body: readonly ReactNode[]): string | undefined {
-  if (body.length !== 1) return undefined;
+  if (body.length !== 1) {
+    return undefined;
+  }
   const [only] = body;
-  if (typeof only === 'string') return only;
-  if (typeof only === 'number') return String(only);
+  if (typeof only === 'string') {
+    return only;
+  }
+  if (typeof only === 'number') {
+    return String(only);
+  }
   return undefined;
 }
 
@@ -92,8 +101,12 @@ function optionOf(props: Readonly<SelectItemProps>): SelectOption {
  *  sugar. The Root keys these by value, so the trigger draws the pick's. */
 function mediaOf(props: Readonly<SelectItemProps>): ReactNode {
   const { media } = sort(props.children);
-  if (media.length > 0) return media;
-  if (props.icon === undefined) return null;
+  if (media.length > 0) {
+    return media;
+  }
+  if (props.icon === undefined) {
+    return null;
+  }
   return <Media name={props.icon} />;
 }
 
@@ -129,7 +142,9 @@ function Item(props: Readonly<SelectItemProps>) {
           aria-disabled={disabled}
           tabIndex={-1}
           onPress={() => {
-            if (disabled) return;
+            if (disabled) {
+              return;
+            }
             pick(value);
             row.onPicked?.();
           }}
@@ -199,7 +214,9 @@ function Media({
    *  with a column of glyphs. */
   children?: ReactNode;
 }>) {
-  if (name) return <Icon name={name} size={GLYPH} color="textMuted" />;
+  if (name) {
+    return <Icon name={name} size={GLYPH} color="textMuted" />;
+  }
   return <Box shrink={0}>{children}</Box>;
 }
 
@@ -209,7 +226,9 @@ function Media({
 function Indicator() {
   const { multiple } = useSelect('Indicator');
   const { chosen } = useSelectItem('Indicator');
-  if (multiple) return <CheckboxFace checked={chosen} />;
+  if (multiple) {
+    return <CheckboxFace checked={chosen} />;
+  }
   return (
     <Box w={18} align="center">
       {chosen ? <Icon name="check" size={16} color="accentText" /> : null}

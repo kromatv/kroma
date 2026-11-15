@@ -66,7 +66,9 @@ interface TableRowProps {
 
 /** One record. */
 function Row({ onPress, children }: Readonly<TableRowProps>) {
-  if (!onPress) return <Kit.Row>{children}</Kit.Row>;
+  if (!onPress) {
+    return <Kit.Row>{children}</Kit.Row>;
+  }
   return (
     <Kit.Row asChild>
       <Pressable onPress={onPress}>{children}</Pressable>

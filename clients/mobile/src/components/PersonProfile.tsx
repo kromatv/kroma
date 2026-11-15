@@ -31,7 +31,9 @@ export function PersonProfile({
   const facts = personFacts(t, detail, locale);
   const biography = detail?.biography?.trim() || null;
 
-  if (!photo && !facts.length && !biography && !roles.length) return null;
+  if (!photo && !facts.length && !biography && !roles.length) {
+    return null;
+  }
 
   return (
     <Box style={s.wrap}>

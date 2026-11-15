@@ -45,8 +45,12 @@ const badgeVariants = sv({
 /** Maps the catalogue's quality strings ("4K", "HDR", "H.265", ...) to a
  * tone. Anything unrecognised gets the amber treatment. */
 function qualityTone(badge: string): BadgeTone {
-  if (badge === 'HDR') return 'HDR';
-  if (badge === 'H.265') return 'H.265';
+  if (badge === 'HDR') {
+    return 'HDR';
+  }
+  if (badge === 'H.265') {
+    return 'H.265';
+  }
   return '4K';
 }
 

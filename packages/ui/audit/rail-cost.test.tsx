@@ -50,7 +50,9 @@ function travelled(root: Element): number {
     throw new Error(`the rail should translate exactly one strip, found ${strips.length}`);
   }
   const px = /translateX\((-?[\d.]+)px\)/.exec(strips[0]?.style.transform ?? '');
-  if (!px?.[1]) throw new Error('the rail translated a strip by no readable distance');
+  if (!px?.[1]) {
+    throw new Error('the rail translated a strip by no readable distance');
+  }
   return Math.abs(Number(px[1]));
 }
 

@@ -64,7 +64,9 @@ export function useEngineControls(deps: ControlDeps): Controls {
 
   const seekTo = useCallback(
     (abs: number) => {
-      if (!core.active || core.terminal) return;
+      if (!core.active || core.terminal) {
+        return;
+      }
       const clamped = Math.max(0, Math.min(abs, dur > 0 ? dur - 1 : abs));
       if (core.mode === 'direct') {
         patchPlayer(player, { currentTime: clamped });
@@ -85,9 +87,14 @@ export function useEngineControls(deps: ControlDeps): Controls {
   );
 
   const togglePlay = useCallback(() => {
-    if (!core.active || core.terminal) return;
-    if (player.playing) player.pause();
-    else player.play();
+    if (!core.active || core.terminal) {
+      return;
+    }
+    if (player.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
   }, [player, core]);
 
   const skip = useCallback(
@@ -101,16 +108,22 @@ export function useEngineControls(deps: ControlDeps): Controls {
   // no reload at all.
   const setAudio = useCallback(
     (index: number) => {
-      if (!core.active || core.terminal) return;
+      if (!core.active || core.terminal) {
+        return;
+      }
       if (localUri) {
         const target = player.availableAudioTracks[index];
-        if (!target) return;
+        if (!target) {
+          return;
+        }
         patchPlayer(player, { audioTrack: target });
         patchCore(core, { audioIndex: index });
         setAudioIndex(index);
         return;
       }
-      if (index === core.audioIndex && core.mode === 'master') return;
+      if (index === core.audioIndex && core.mode === 'master') {
+        return;
+      }
       patchCore(core, { audioIndex: index, mode: 'master' });
       setAudioIndex(index);
       void load(core.baseSec + core.elSec);
@@ -122,8 +135,12 @@ export function useEngineControls(deps: ControlDeps): Controls {
   // it off returns to direct when the file is direct-playable.
   const setFilter = useCallback(
     (f: AudioFilterMode) => {
-      if (!core.active || core.terminal) return;
-      if (localUri || f === core.filter) return;
+      if (!core.active || core.terminal) {
+        return;
+      }
+      if (localUri || f === core.filter) {
+        return;
+      }
       patchCore(core, { filter: f });
       setFilterState(f);
       patchCore(core, {
@@ -139,7 +156,9 @@ export function useEngineControls(deps: ControlDeps): Controls {
 
   const setRate = useCallback(
     (r: number) => {
-      if (!core.active || core.terminal) return;
+      if (!core.active || core.terminal) {
+        return;
+      }
       patchPlayer(player, { playbackRate: r });
       setRateState(r);
     },

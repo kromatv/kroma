@@ -23,7 +23,9 @@ export function useControllable<T>(
 
   const set = useCallback(
     (next: T) => {
-      if (mode === 'uncontrolled') setOwn(next);
+      if (mode === 'uncontrolled') {
+        setOwn(next);
+      }
       onChange?.(next);
     },
     [mode, onChange],

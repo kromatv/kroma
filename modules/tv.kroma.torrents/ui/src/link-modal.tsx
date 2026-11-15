@@ -45,7 +45,9 @@ export const LinkModal = createCallable<LinkModalProps, boolean>(({ call, dl }) 
         .candidates(dl.id, text)
         .then((view) => {
           setFound(view);
-          if (text === undefined) setQuery(view.query);
+          if (text === undefined) {
+            setQuery(view.query);
+          }
         })
         .catch(() => setFound(null))
         .finally(() => setSearching(false));

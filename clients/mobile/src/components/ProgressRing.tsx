@@ -13,7 +13,9 @@ export function ProgressRing({
   size?: number;
   thickness?: number;
 }>) {
-  if (progress < 0) return <Spinner size={20} color="accent" />;
+  if (progress < 0) {
+    return <Spinner size={20} color="accent" />;
+  }
   return (
     <Ring
       // A ring at exactly 0 reads as broken rather than as "just started", so

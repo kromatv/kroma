@@ -10,7 +10,9 @@ import { useConnection } from '#tv/app/providers/connection';
 export function CompatBanner() {
   const { compat, serverVersion } = useConnection();
   const t = useT();
-  if (compat !== 'server-outdated') return null;
+  if (compat !== 'server-outdated') {
+    return null;
+  }
   return (
     <Box
       absolute

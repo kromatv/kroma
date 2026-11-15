@@ -43,7 +43,7 @@ interface ControlMetrics {
    *  fill also lays a <Frost> under it, so what shows through is BLURRED: the
    *  hint is depth, not a legible picture, and a grid of keys still reads as
    *  one surface rather than one colour per key. */
-  bg: `${ControlFill}`;
+  bg: ControlFill;
   /** Corner, by NAME: a px number baked in here at module load would not follow
    *  a theme. Use {@link controlRadius} where the number itself is needed. */
   radius: RadiusToken;
@@ -198,7 +198,9 @@ export function fieldShell(
   at: Readonly<{ flat: boolean; focused: boolean; invalid: boolean }>,
   scope: StyleScope = DEFAULT_STYLE_SCOPE,
 ): { box: Record<string, unknown>; edge: TextStyle | null } {
-  if (at.flat) return { box: { radius: 0, bg: 'transparent', borderWidth: 0 }, edge: null };
+  if (at.flat) {
+    return { box: { radius: 0, bg: 'transparent', borderWidth: 0 }, edge: null };
+  }
   return {
     box: {
       radius: metrics.radius,

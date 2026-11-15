@@ -17,7 +17,9 @@ function claimsFocus(node: Element): boolean {
 function firstControl(panel: HTMLElement): HTMLElement | null {
   for (const node of panel.querySelectorAll<HTMLElement>(CONTROL)) {
     const off = node.hasAttribute('disabled') || node.getAttribute('aria-disabled') === 'true';
-    if (!off && node.tabIndex >= 0) return node;
+    if (!off && node.tabIndex >= 0) {
+      return node;
+    }
   }
   return null;
 }
@@ -33,7 +35,9 @@ export function useDialogEntryFocus(panel: RefObject<View | null>): void {
   useEffect(() => {
     const document = webDocument();
     const box = panel.current as HTMLElement | null;
-    if (!document || typeof box?.querySelectorAll !== 'function') return;
+    if (!document || typeof box?.querySelectorAll !== 'function') {
+      return;
+    }
     const was = document.activeElement;
     // react-native-web remembers the opener at its own mount, which is after
     // this: whatever it remembers is inside the panel and gone by the time it
@@ -41,22 +45,27 @@ export function useDialogEntryFocus(panel: RefObject<View | null>): void {
     const opener = box.contains(was) ? null : (was as HTMLElement | null);
     if (opener) {
       const entry = firstControl(box);
-      if (entry) entry.focus();
-      else {
+      if (entry) {
+        entry.focus();
+      } else {
         box.setAttribute('tabindex', '-1');
         box.focus();
       }
     }
     const sendFocusToControl = (event: FocusEvent) => {
       const at = event.target;
-      if (!(at instanceof HTMLElement) || !box.contains(at) || claimsFocus(at)) return;
+      if (!(at instanceof HTMLElement) || !box.contains(at) || claimsFocus(at)) {
+        return;
+      }
       firstControl(box)?.focus();
     };
     document.addEventListener('focusin', sendFocusToControl);
     return () => {
       document.removeEventListener('focusin', sendFocusToControl);
       const at = document.activeElement;
-      if ((!at || at === document.body) && opener?.isConnected) opener.focus();
+      if ((!at || at === document.body) && opener?.isConnected) {
+        opener.focus();
+      }
     };
   }, [panel]);
 }

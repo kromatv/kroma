@@ -11,7 +11,9 @@ function partContext<T>(owner: string) {
   const Context = createContext<T | null>(null);
   const usePart = (part: string): T => {
     const state = useContext(Context);
-    if (!state) throw new Error(`<${namespace}.${part}> must be used inside <${owner}>`);
+    if (!state) {
+      throw new Error(`<${namespace}.${part}> must be used inside <${owner}>`);
+    }
     return state;
   };
   return [Context, usePart] as const;

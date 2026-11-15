@@ -20,7 +20,9 @@ import type { SelectSurfaceProps } from './select-surface';
 
 function SelectOptions(props: Readonly<SelectSurfaceProps>) {
   const presentation = useSurfacePresentation(props.presentation);
-  if (presentation === 'dialog') return <SelectOptionsDialog {...props} />;
+  if (presentation === 'dialog') {
+    return <SelectOptionsDialog {...props} />;
+  }
   return props.open ? <SelectPopover {...props} /> : null;
 }
 
@@ -29,7 +31,9 @@ const MAX_HEIGHT = 320;
 
 function firstEnabled(options: readonly SelectOption[], values: readonly string[]): number {
   const chosen = options.findIndex((option) => values.includes(option.value) && !option.disabled);
-  if (chosen >= 0) return chosen;
+  if (chosen >= 0) {
+    return chosen;
+  }
   return Math.max(
     0,
     options.findIndex((option) => !option.disabled),
@@ -66,7 +70,9 @@ function SelectPopover({
     labelAt: (i) => options[i]?.label ?? '',
     onPick: (i) => {
       const option = options[i];
-      if (option) onPick(option.value);
+      if (option) {
+        onPick(option.value);
+      }
     },
     onClose: () => onDismiss('escape'),
   });
@@ -84,7 +90,9 @@ function SelectPopover({
     onLayout: (y, height) => onRowLayout(index, y, height),
   });
 
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
 
   return (
     <AnchoredPopup

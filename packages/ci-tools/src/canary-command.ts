@@ -8,7 +8,7 @@ import { summary, warning } from './actions';
 import { type Asset, canaryName, expired, RETENTION } from './canary';
 
 const Assets = z.object({
-  assets: z.array(z.object({ name: z.string().min(1), created_at: z.string() })).default([]),
+  assets: z.array(z.object({ name: z.string().nonempty(), created_at: z.string() })).default([]),
 });
 
 /** The canary release's opening paragraph, above the notes of the newest build. */
@@ -17,13 +17,17 @@ export const NOTES =
 
 async function ensureRelease(tag: string): Promise<void> {
   const exists = await $`gh release view ${tag}`.quiet().nothrow();
-  if (exists.exitCode === 0) return;
+  if (exists.exitCode === 0) {
+    return;
+  }
   await $`gh release create ${tag} --prerelease --title "KROMA canary" --notes ${NOTES}`;
 }
 
 async function listAssets(tag: string): Promise<Asset[]> {
   const repo = process.env.GH_REPO ?? process.env.GITHUB_REPOSITORY;
-  if (!repo) throw new Error('GH_REPO is not set');
+  if (!repo) {
+    throw new Error('GH_REPO is not set');
+  }
   const body = await $`gh api repos/${repo}/releases/tags/${tag}`.json();
   return Assets.parse(body).assets.map((a) => ({ name: a.name, createdAt: a.created_at }));
 }
@@ -32,7 +36,9 @@ function stage(files: string[], rename: { triplet: string; canary: string } | nu
   const dir = mkdtempSync(join(tmpdir(), 'kroma-canary-'));
   return files.map((file) => {
     const name = rename ? canaryName(file, rename.triplet, rename.canary) : file.split('/').at(-1);
-    if (!name) throw new Error(`not a file: ${file}`);
+    if (!name) {
+      throw new Error(`not a file: ${file}`);
+    }
     const target = join(dir, name);
     copyFileSync(file, target);
     return target;
@@ -43,7 +49,9 @@ async function prune(tag: string, now: Date): Promise<string[]> {
   const gone = expired(await listAssets(tag), now, RETENTION);
   for (const asset of gone) {
     const result = await $`gh release delete-asset ${tag} ${asset.name} -y`.nothrow();
-    if (result.exitCode !== 0) warning(`could not delete ${asset.name} from ${tag}`);
+    if (result.exitCode !== 0) {
+      warning(`could not delete ${asset.name} from ${tag}`);
+    }
   }
   return gone.map((a) => a.name);
 }
@@ -67,8 +75,9 @@ export async function main(argv: string[]): Promise<void> {
   }
   let rename: { triplet: string; canary: string } | null = null;
   if (values.rename) {
-    if (!values.triplet || !values.version)
+    if (!values.triplet || !values.version) {
       throw new Error('--rename needs --triplet and --version');
+    }
     rename = { triplet: values.triplet, canary: values.version };
   }
 

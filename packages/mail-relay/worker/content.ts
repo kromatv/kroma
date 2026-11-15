@@ -32,7 +32,9 @@ function attributeValue(html: string, from: number): string {
     return end === -1 ? html.slice(from + 1) : html.slice(from + 1, end);
   }
   let end = from;
-  while (end < html.length && !/[\s>]/.test(html[end] ?? '')) end++;
+  while (end < html.length && !/[\s>]/.test(html[end] ?? '')) {
+    end++;
+  }
   return html.slice(from, end);
 }
 
@@ -49,20 +51,34 @@ function attributeValue(html: string, from: number): string {
  */
 export function refuseContent(allowed: Allowed, text: string, html: string): string | null {
   const tag = FORBIDDEN_TAG.exec(html);
-  if (tag) return `html: <${(tag[1] ?? '').toLowerCase()}> is not allowed`;
-  if (CSS_ESCAPE.test(html)) return 'html: css that loads or runs is not allowed';
+  if (tag) {
+    return `html: <${(tag[1] ?? '').toLowerCase()}> is not allowed`;
+  }
+  if (CSS_ESCAPE.test(html)) {
+    return 'html: css that loads or runs is not allowed';
+  }
   const attr = FORBIDDEN_ATTR.exec(html);
-  if (attr) return `html: ${(attr[1] ?? '').toLowerCase()} is not allowed`;
+  if (attr) {
+    return `html: ${(attr[1] ?? '').toLowerCase()} is not allowed`;
+  }
   for (const m of html.matchAll(URL_ATTR)) {
     const url = attributeValue(html, m.index + m[0].length).trim();
-    if (url.toLowerCase().startsWith('cid:')) continue;
-    if (!allowed(url)) return 'html: a link leads where this message may not';
+    if (url.toLowerCase().startsWith('cid:')) {
+      continue;
+    }
+    if (!allowed(url)) {
+      return 'html: a link leads where this message may not';
+    }
   }
   for (const [url] of html.matchAll(URL_LIKE)) {
-    if (!allowed(url)) return 'html: a link leads where this message may not';
+    if (!allowed(url)) {
+      return 'html: a link leads where this message may not';
+    }
   }
   for (const [url] of text.matchAll(URL_LIKE)) {
-    if (!allowed(url)) return 'text: a link leads where this message may not';
+    if (!allowed(url)) {
+      return 'text: a link leads where this message may not';
+    }
   }
   return null;
 }

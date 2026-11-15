@@ -30,7 +30,9 @@ function ConnectPage() {
 
   async function submit(value?: string) {
     const c = (value ?? code).trim();
-    if (!c) return;
+    if (!c) {
+      return;
+    }
     setBusy(true);
     setStatus('idle');
     try {

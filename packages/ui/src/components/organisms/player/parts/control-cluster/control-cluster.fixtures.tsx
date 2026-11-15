@@ -43,8 +43,12 @@ export function Live({ playing, muted, volume, ...rest }: Readonly<LiveProps>) {
   }
 
   const activate = (id: ControlId) => {
-    if (id === 'play') setState((prev) => ({ ...prev, playing: !prev.playing }));
-    if (id === 'volume') setState((prev) => ({ ...prev, muted: !prev.muted }));
+    if (id === 'play') {
+      setState((prev) => ({ ...prev, playing: !prev.playing }));
+    }
+    if (id === 'volume') {
+      setState((prev) => ({ ...prev, muted: !prev.muted }));
+    }
   };
 
   const [width, setWidth] = useState(0);

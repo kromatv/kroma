@@ -53,12 +53,19 @@ export async function readDocument({
       };
       const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) seen.set(entry.target, entry.intersectionRect);
-          else seen.delete(entry.target);
+          if (entry.isIntersecting) {
+            seen.set(entry.target, entry.intersectionRect);
+          } else {
+            seen.delete(entry.target);
+          }
         }
-        if (entries.length >= controlled.length) done();
+        if (entries.length >= controlled.length) {
+          done();
+        }
       });
-      for (const el of controlled) observer.observe(el);
+      for (const el of controlled) {
+        observer.observe(el);
+      }
       setTimeout(done, wait);
     },
   );
@@ -67,9 +74,13 @@ export async function readDocument({
   let overlaps = 0;
   for (const { el, box } of onScreen) {
     const over = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-    if (!over || el === over || el.contains(over)) continue;
+    if (!over || el === over || el.contains(over)) {
+      continue;
+    }
     overlaps += 1;
-    if (overlapping.length < 6) overlapping.push(`${name(el)} under ${name(over)}`);
+    if (overlapping.length < 6) {
+      overlapping.push(`${name(el)} under ${name(over)}`);
+    }
   }
 
   return {

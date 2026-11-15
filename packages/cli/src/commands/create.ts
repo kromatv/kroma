@@ -60,7 +60,9 @@ function titleOf(id: string): string {
 }
 
 function answer<T>(value: T): Exclude<T, symbol> {
-  if (p.isCancel(value)) throw new Error('cancelled');
+  if (p.isCancel(value)) {
+    throw new Error('cancelled');
+  }
   return value as Exclude<T, symbol>;
 }
 
@@ -68,7 +70,9 @@ async function ask(options: CreateOptions, cwd: string): Promise<Answers> {
   const inRepo = options.inRepo ?? repoRoot(cwd) !== null;
   const given = options.id ?? (options.dir && isBareId(options.dir) ? options.dir : undefined);
   if (options.yes) {
-    if (!given) throw new Error('--yes needs an id: kroma create tv.acme.notes --yes');
+    if (!given) {
+      throw new Error('--yes needs an id: kroma create tv.acme.notes --yes');
+    }
     return {
       id: given,
       name: options.name ?? titleOf(given),
@@ -186,11 +190,16 @@ export async function createCommand(options: CreateOptions): Promise<number> {
 
   const where = relative(cwd, target) || '.';
   const quiet = options.yes === true;
-  if (quiet) console.log(`created ${a.id} in ${where} (${written.length} files)`);
-  else p.log.success(`${a.id} in ${where}`);
+  if (quiet) {
+    console.log(`created ${a.id} in ${where} (${written.length} files)`);
+  } else {
+    p.log.success(`${a.id} in ${where}`);
+  }
 
   const wanted = options.install !== false && hasPackage;
-  if (wanted && !(await install(quiet, a.inRepo, repo ?? target))) return 1;
+  if (wanted && !(await install(quiet, a.inRepo, repo ?? target))) {
+    return 1;
+  }
 
   if (quiet) {
     console.log(nextSteps(where, a.inRepo));

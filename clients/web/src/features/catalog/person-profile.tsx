@@ -19,7 +19,9 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
   const facts = personFacts(t, detail, locale);
   const biography = detail?.biography?.trim() || null;
 
-  if (!facts.length && !biography) return null;
+  if (!facts.length && !biography) {
+    return null;
+  }
 
   return (
     <section>

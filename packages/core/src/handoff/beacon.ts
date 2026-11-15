@@ -82,7 +82,9 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
   const republish = (record: Parameters<typeof beaconTxt>[0] | null) => {
     unpublish?.();
     unpublish = undefined;
-    if (!record || !publish) return;
+    if (!record || !publish) {
+      return;
+    }
     try {
       unpublish = publish({ name: record.name || 'KROMA', txt: beaconTxt(record) });
     } catch {
@@ -94,12 +96,16 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
   // The one place a next step is scheduled, and so the one place that has to
   // notice the loop was stopped while a request was in flight.
   const wait = (ms: number, run: () => void) => {
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     timer = setTimeout(run, ms);
   };
 
   const disarm = () => {
-    if (timer) clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+    }
     timer = undefined;
   };
 
@@ -113,7 +119,9 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
   const poll = async (mine: number, every: number) => {
     try {
       const status = await client.handoff.poll(secret);
-      if (stale(mine)) return;
+      if (stale(mine)) {
+        return;
+      }
       if (status.status === 'authorized') {
         // Collected: the beacon is already consumed server-side, so there is
         // nothing left to take down.
@@ -133,7 +141,9 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
         return;
       }
     } catch (cause) {
-      if (stale(mine)) return;
+      if (stale(mine)) {
+        return;
+      }
       if (refusedForGood(cause)) {
         // Nothing can poll this beacon and nothing can take it down either. It
         // lapses on its own once this stops asking after it.
@@ -179,7 +189,9 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
       onBeacon({ name, check: beacon.check });
       wait(beacon.pollSecs * 1000, () => void poll(mine, beacon.pollSecs * 1000));
     } catch (cause) {
-      if (stale(mine)) return;
+      if (stale(mine)) {
+        return;
+      }
       secret = '';
       if (refusedForGood(cause)) {
         // Asking again would only be refused again; the code + QR on screen
@@ -205,7 +217,9 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
       }
     },
     rename(next: string) {
-      if (stopped || next === name) return;
+      if (stopped || next === name) {
+        return;
+      }
       name = next;
       disarm();
       void begin();

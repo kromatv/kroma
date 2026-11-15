@@ -46,7 +46,9 @@ export function Count({
 
 function readCount(text: string): number | null {
   const trimmed = text.trim();
-  if (trimmed === '') return null;
+  if (trimmed === '') {
+    return null;
+  }
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
 }

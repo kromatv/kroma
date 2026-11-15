@@ -20,13 +20,17 @@ export function useNotificationStream(): void {
   const signedIn = status === 'signedIn';
 
   useEffect(() => {
-    if (!signedIn || !client) return;
+    if (!signedIn || !client) {
+      return;
+    }
     const { queryKey } = client.query.notifications.list();
     const events = new KromaEvents(client.baseUrl, {
       token: () => client.sessionToken,
       refresh: () => client.refreshSession(),
       onEvent: (e) => {
-        if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
+        if (e.type !== 'notification.created' && e.type !== 'notification.read') {
+          return;
+        }
         const counts = { unread: e.unread, unseen: e.unseen ?? e.unread };
         queryClient.setQueryData(queryKey, (prev: NotificationsView | undefined) =>
           prev ? { ...prev, ...counts } : prev,
@@ -85,7 +89,9 @@ export function useMarkSeen(): () => void {
     const { queryKey } = client.query.notifications.list();
     return () => {
       const current = queryClient.getQueryData<NotificationsView>(queryKey);
-      if (!current || current.unseen === 0) return;
+      if (!current || current.unseen === 0) {
+        return;
+      }
       queryClient.setQueryData(queryKey, { ...current, unseen: 0 });
       const settle = () => void queryClient.invalidateQueries({ queryKey });
       client.notifications.markSeen().then(settle, settle);

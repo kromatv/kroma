@@ -23,10 +23,14 @@ export function useDiscoverDetail(kind: RequestKind, tmdbId: number): DiscoverFi
     let live = true;
     client.discovery.detail(tmdbKindOf(kind), tmdbId).then(
       (detail) => {
-        if (live) setSettled({ client, kind, tmdbId, fiche: { state: 'read', detail } });
+        if (live) {
+          setSettled({ client, kind, tmdbId, fiche: { state: 'read', detail } });
+        }
       },
       () => {
-        if (live) setSettled({ client, kind, tmdbId, fiche: { state: 'refused' } });
+        if (live) {
+          setSettled({ client, kind, tmdbId, fiche: { state: 'refused' } });
+        }
       },
     );
     return () => {

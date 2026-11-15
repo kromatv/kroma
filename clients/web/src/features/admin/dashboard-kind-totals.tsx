@@ -18,7 +18,9 @@ export function kindTotals(
 export function dominantKind(totals: Record<WatchKind, number>): WatchKind | null {
   let best: WatchKind | null = null;
   for (const kind of WATCH_KINDS) {
-    if (totals[kind] > 0 && (best === null || totals[kind] > totals[best])) best = kind;
+    if (totals[kind] > 0 && (best === null || totals[kind] > totals[best])) {
+      best = kind;
+    }
   }
   return best;
 }

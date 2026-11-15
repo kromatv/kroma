@@ -22,9 +22,15 @@ export type LibKind = '' | 'movies' | 'shows' | 'mixed';
 
 /** Accepts both the legacy `film`/`tv` kinds and the current `movies`/`shows`. */
 export function normalizeLibKind(kind: string): LibKind {
-  if (kind === 'shows' || kind === 'tv') return 'shows';
-  if (kind === 'movies' || kind === 'film') return 'movies';
-  if (kind === 'mixed') return 'mixed';
+  if (kind === 'shows' || kind === 'tv') {
+    return 'shows';
+  }
+  if (kind === 'movies' || kind === 'film') {
+    return 'movies';
+  }
+  if (kind === 'mixed') {
+    return 'mixed';
+  }
   return '';
 }
 
@@ -60,7 +66,9 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   const { busy, run } = useAsyncAction();
 
   const create = () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      return;
+    }
     void run(async () => {
       await client.library.create({
         name: name.trim(),
@@ -132,7 +140,9 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
         cancelLabel: t('common.cancel'),
         destructive: true,
       });
-      if (!ok) return;
+      if (!ok) {
+        return;
+      }
       await run(async () => {
         await client.library.delete(lib.id);
         call.end(true);

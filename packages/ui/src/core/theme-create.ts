@@ -128,11 +128,15 @@ function isPlain(value: unknown): value is Record<string, unknown> {
 }
 
 function merge<T extends object>(base: T, over: DeepPartial<T> | undefined): T {
-  if (over === undefined) return base;
+  if (over === undefined) {
+    return base;
+  }
   const out: Record<string, unknown> = {};
   Object.assign(out, base);
   for (const [key, value] of Object.entries(over)) {
-    if (value === undefined) continue;
+    if (value === undefined) {
+      continue;
+    }
     const under = out[key];
     out[key] = isPlain(value) && isPlain(under) ? merge(under, value) : value;
   }
@@ -146,7 +150,9 @@ function paint<K extends string, V>(
   builtin: Record<K, V>,
   vars: Readonly<Record<K, V>> | null,
 ): Record<K, V> {
-  if (!vars) return group;
+  if (!vars) {
+    return group;
+  }
   const out = {} as Record<K, V>;
   for (const key of Object.keys(group) as K[]) {
     out[key] = group[key] === builtin[key] ? vars[key] : group[key];
@@ -164,7 +170,9 @@ function paintType(
   families: Record<FontToken, string>,
 ): Record<TypeRole, RoleStyle> {
   const derived = toType(spec, families) as Record<TypeRole, RoleStyle>;
-  if (!CSS_TYPE) return derived;
+  if (!CSS_TYPE) {
+    return derived;
+  }
   const out = {} as Record<TypeRole, RoleStyle>;
   for (const role of Object.keys(spec) as TypeRole[]) {
     out[role] = sameSpec(spec[role], typeSpec[role]) ? CSS_TYPE[role] : derived[role];
@@ -235,6 +243,8 @@ export const KROMA_LIGHT: Theme = derive({
 
 export function createTheme(overrides: ThemeOverrides, base: Theme = KROMA): Theme {
   const groups: Record<string, unknown> = {};
-  for (const key of GROUPS) groups[key] = merge(base[key], overrides[key]);
+  for (const key of GROUPS) {
+    groups[key] = merge(base[key], overrides[key]);
+  }
   return derive(groups as unknown as ThemeTokens);
 }

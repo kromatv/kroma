@@ -64,10 +64,14 @@ function TrailerScreen({
   const trailer = playableTrailer(list.data);
   const missing = list.isSuccess && !trailer;
   useEffect(() => {
-    if (missing) goBack(router);
+    if (missing) {
+      goBack(router);
+    }
   }, [missing, router]);
 
-  if (!focused) return null;
+  if (!focused) {
+    return null;
+  }
 
   if (list.isError) {
     return (

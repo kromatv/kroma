@@ -34,7 +34,9 @@ function edgeScrollOffset({
   count,
   margin,
 }: EdgeScrollInput): number {
-  if (viewport <= 0 || itemSize <= 0) return 0;
+  if (viewport <= 0 || itemSize <= 0) {
+    return 0;
+  }
   const furthest = Math.max(0, count * itemSize - viewport);
   const start = index * itemSize;
   const end = start + itemSize;
@@ -49,7 +51,9 @@ function edgeScrollOffset({
   // on the item instead of flip-flopping between two impossible bounds.
   // Rounded to a whole pixel: a fractional translateX puts tile boundaries on
   // sub-pixels, which Chrome rounds independently into hairline seams.
-  if (atLeast > atMost) return Math.round(clamp(start + itemSize / 2 - viewport / 2, 0, furthest));
+  if (atLeast > atMost) {
+    return Math.round(clamp(start + itemSize / 2 - viewport / 2, 0, furthest));
+  }
 
   return Math.round(clamp(offset, atLeast, atMost));
 }
@@ -67,7 +71,9 @@ function maxOffset(count: number, pitch: number, room: number): number {
  * win over the shorthand, matching React Native's own precedence.
  */
 function horizontalInset(style: ViewStyle | undefined): number {
-  if (!style) return 0;
+  if (!style) {
+    return 0;
+  }
   const both = typeof style.paddingHorizontal === 'number' ? style.paddingHorizontal : 0;
   const left = typeof style.paddingLeft === 'number' ? style.paddingLeft : both;
   const right = typeof style.paddingRight === 'number' ? style.paddingRight : both;
@@ -82,7 +88,9 @@ function horizontalInset(style: ViewStyle | undefined): number {
  * rounds independently into hairline seams.
  */
 function fitPitch(itemWidth: number, viewport: number): number {
-  if (itemWidth <= 0 || viewport <= 0) return Math.max(1, Math.round(itemWidth));
+  if (itemWidth <= 0 || viewport <= 0) {
+    return Math.max(1, Math.round(itemWidth));
+  }
   const columns = Math.max(1, Math.round(viewport / itemWidth));
   return Math.max(1, Math.floor(viewport / columns));
 }

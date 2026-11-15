@@ -58,24 +58,35 @@ export function nameOf(node: Node): string {
 }
 
 function bindDeclaration(scope: ModuleScope, decl: Node, exported: boolean): void {
-  if (decl.type !== 'VariableDeclaration' || decl.kind !== 'const') return;
+  if (decl.type !== 'VariableDeclaration' || decl.kind !== 'const') {
+    return;
+  }
   for (const declarator of decl.declarations as Node[]) {
     const id = declarator.id as Node;
     const init = declarator.init as Node | null;
-    if (id.type !== 'Identifier' || !init) continue;
+    if (id.type !== 'Identifier' || !init) {
+      continue;
+    }
     scope.consts.set(id.name as string, init);
-    if (exported) scope.exports.set(id.name as string, { local: id.name as string });
+    if (exported) {
+      scope.exports.set(id.name as string, { local: id.name as string });
+    }
   }
 }
 
 function bindImport(scope: ModuleScope, stmt: Node): void {
-  if (stmt.importKind === 'type') return;
+  if (stmt.importKind === 'type') {
+    return;
+  }
   const source = (stmt.source as Node).value as string;
   for (const spec of stmt.specifiers as Node[]) {
-    if (spec.importKind === 'type') continue;
+    if (spec.importKind === 'type') {
+      continue;
+    }
     const local = (spec.local as Node).name as string;
-    if (spec.type === 'ImportDefaultSpecifier')
+    if (spec.type === 'ImportDefaultSpecifier') {
       scope.imports.set(local, { source, imported: 'default' });
+    }
     if (spec.type === 'ImportSpecifier') {
       scope.imports.set(local, { source, imported: nameOf(spec.imported as Node) });
     }
@@ -83,14 +94,18 @@ function bindImport(scope: ModuleScope, stmt: Node): void {
 }
 
 function bindExport(scope: ModuleScope, stmt: Node): void {
-  if (stmt.exportKind === 'type') return;
+  if (stmt.exportKind === 'type') {
+    return;
+  }
   if (stmt.declaration) {
     bindDeclaration(scope, stmt.declaration as Node, true);
     return;
   }
   const source = stmt.source ? ((stmt.source as Node).value as string) : null;
   for (const spec of stmt.specifiers as Node[]) {
-    if (spec.exportKind === 'type') continue;
+    if (spec.exportKind === 'type') {
+      continue;
+    }
     const local = nameOf(spec.local as Node);
     const exported = nameOf(spec.exported as Node);
     scope.exports.set(exported, source ? { source, imported: local } : { local });
@@ -107,10 +122,13 @@ export function scopeOf(program: Program, file: string): ModuleScope {
     exportAll: [],
   };
   for (const stmt of program.body) {
-    if (stmt.type === 'VariableDeclaration') bindDeclaration(scope, stmt, false);
-    else if (stmt.type === 'ImportDeclaration') bindImport(scope, stmt);
-    else if (stmt.type === 'ExportNamedDeclaration') bindExport(scope, stmt);
-    else if (stmt.type === 'ExportAllDeclaration' && stmt.exportKind !== 'type') {
+    if (stmt.type === 'VariableDeclaration') {
+      bindDeclaration(scope, stmt, false);
+    } else if (stmt.type === 'ImportDeclaration') {
+      bindImport(scope, stmt);
+    } else if (stmt.type === 'ExportNamedDeclaration') {
+      bindExport(scope, stmt);
+    } else if (stmt.type === 'ExportAllDeclaration' && stmt.exportKind !== 'type') {
       scope.exportAll.push((stmt.source as Node).value as string);
     }
   }
@@ -122,10 +140,14 @@ interface Roots {
 }
 
 function withExtension(base: string): string | null {
-  if (/\.[cm]?[jt]sx?$/.test(base) && existsSync(base)) return base;
+  if (/\.[cm]?[jt]sx?$/.test(base) && existsSync(base)) {
+    return base;
+  }
   for (const ext of EXTENSIONS) {
     const candidate = base + ext;
-    if (existsSync(candidate)) return candidate;
+    if (existsSync(candidate)) {
+      return candidate;
+    }
   }
   return null;
 }
@@ -147,9 +169,13 @@ const EXACT: Readonly<Record<string, string>> = {
 /** Where an import lands on disk, for the specifiers a workspace file may use
  *  to reach a constant; null for anything a static reader does not follow. */
 export function resolveModule(specifier: string, from: string, { repoRoot }: Roots): string | null {
-  if (specifier.startsWith('.')) return withExtension(resolve(dirname(from), specifier));
+  if (specifier.startsWith('.')) {
+    return withExtension(resolve(dirname(from), specifier));
+  }
   const exact = EXACT[specifier];
-  if (exact) return withExtension(join(repoRoot, exact));
+  if (exact) {
+    return withExtension(join(repoRoot, exact));
+  }
   for (const [prefix, dir] of ALIASES) {
     if (specifier.startsWith(prefix)) {
       return withExtension(join(repoRoot, dir, specifier.slice(prefix.length)));
@@ -178,7 +204,9 @@ export class ModuleLoader {
   scope(file: string): ModuleScope {
     const mtime = statSync(file).mtimeMs;
     const hit = this.scopes.get(file);
-    if (hit?.mtime === mtime) return hit.scope;
+    if (hit?.mtime === mtime) {
+      return hit.scope;
+    }
     const scope = scopeOf(parseModule(readFileSync(file, 'utf8'), file), file);
     this.scopes.set(file, { mtime, scope });
     return scope;
@@ -186,20 +214,28 @@ export class ModuleLoader {
 
   /** The initialiser of `name` as `file` exports it, following re-exports. */
   exportOf(file: string, name: string, chain: number): { init: Node; scope: ModuleScope } {
-    if (chain > MAX_MODULE_CHAIN) throw new Unstatic(`re-export chain past ${file}`);
+    if (chain > MAX_MODULE_CHAIN) {
+      throw new Unstatic(`re-export chain past ${file}`);
+    }
     const scope = this.scope(file);
     const binding = scope.exports.get(name);
     if (binding && 'local' in binding) {
       const init = scope.consts.get(binding.local);
-      if (!init) throw new Unstatic(`${name} in ${file} is not a const`);
+      if (!init) {
+        throw new Unstatic(`${name} in ${file} is not a const`);
+      }
       return { init, scope };
     }
-    if (binding) return this.follow(binding, scope, chain);
+    if (binding) {
+      return this.follow(binding, scope, chain);
+    }
     for (const source of scope.exportAll) {
       try {
         return this.follow({ source, imported: name }, scope, chain);
       } catch (error) {
-        if (!(error instanceof Unstatic)) throw error;
+        if (!(error instanceof Unstatic)) {
+          throw error;
+        }
       }
     }
     throw new Unstatic(`${file} does not export ${name}`);
@@ -207,7 +243,9 @@ export class ModuleLoader {
 
   private follow(binding: ImportBinding, scope: ModuleScope, chain: number) {
     const target = this.resolve(binding.source, scope.file);
-    if (!target) throw new Unstatic(`import from ${binding.source}`);
+    if (!target) {
+      throw new Unstatic(`import from ${binding.source}`);
+    }
     return this.exportOf(target, binding.imported, chain + 1);
   }
 }

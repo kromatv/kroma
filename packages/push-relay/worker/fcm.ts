@@ -16,9 +16,9 @@ const TOKEN_LIFETIME_SECS = 50 * 60;
 // `.loose()` so a key Google adds to the service-account file later is kept, not rejected.
 const ServiceAccount = z
   .object({
-    project_id: z.string().min(1),
-    client_email: z.string().min(1),
-    private_key: z.string().min(1),
+    project_id: z.string().nonempty(),
+    client_email: z.string().nonempty(),
+    private_key: z.string().nonempty(),
   })
   .loose();
 type ServiceAccount = z.infer<typeof ServiceAccount>;
@@ -28,7 +28,9 @@ let cached: { token: string; mintedAt: number; email: string } | null = null;
 let parsed: { json: string; account: ServiceAccount } | null = null;
 
 export function parseServiceAccount(json: string): ServiceAccount {
-  if (parsed?.json === json) return parsed.account;
+  if (parsed?.json === json) {
+    return parsed.account;
+  }
   const account = ServiceAccount.parse(JSON.parse(json));
   parsed = { json, account };
   return account;
@@ -62,7 +64,9 @@ async function accessToken(account: ServiceAccount, nowSecs: number): Promise<st
     throw new Error(`token endpoint returned ${response.status}: ${await response.text()}`);
   }
   const { access_token } = (await response.json()) as { access_token?: string };
-  if (!access_token) throw new Error('token endpoint returned no access_token');
+  if (!access_token) {
+    throw new Error('token endpoint returned no access_token');
+  }
   cached = { token: access_token, mintedAt: nowSecs, email: account.client_email };
   return access_token;
 }
@@ -82,7 +86,9 @@ export async function send(
       body: JSON.stringify(fcmMessage(notification, deviceToken)),
     },
   );
-  if (response.ok) return { ok: true, gone: false, status: response.status, reason: '' };
+  if (response.ok) {
+    return { ok: true, gone: false, status: response.status, reason: '' };
+  }
 
   const text = await response.text();
   // Google's vocabulary for a dead token: 404/410, or UNREGISTERED in the body.

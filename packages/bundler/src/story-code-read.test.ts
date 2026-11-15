@@ -16,7 +16,9 @@ function open(files: Record<string, string>): string {
 }
 
 afterEach(() => {
-  if (repo) rmSync(repo, { recursive: true, force: true });
+  if (repo) {
+    rmSync(repo, { recursive: true, force: true });
+  }
   repo = '';
 });
 

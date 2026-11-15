@@ -28,7 +28,9 @@ export function pickVersion(versions: string[], range: string): string | null {
 /** Verify bytes against an `sha256-<base64>` integrity string. */
 export async function verifyIntegrity(bytes: Uint8Array, integrity: string): Promise<boolean> {
   const [algo, expected] = [integrity.slice(0, 7), integrity.slice(7)];
-  if (algo !== 'sha256-' || !expected) return false;
+  if (algo !== 'sha256-' || !expected) {
+    return false;
+  }
   const digest = await crypto.subtle.digest('SHA-256', bytes as Uint8Array<ArrayBuffer>);
   const actual = base64(new Uint8Array(digest));
   return actual === expected;
@@ -40,7 +42,9 @@ export type Searchable = Pick<RegistryEntry, 'id' | 'name' | 'description' | 'ke
 /** Substring match over everything a store card shows. */
 export function matches(entry: Searchable, query: string): boolean {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
+  if (!q) {
+    return true;
+  }
   return [
     entry.id,
     entry.name,
@@ -75,7 +79,9 @@ function checkApiVersion(apiVersion: number, what: string): void {
 export function createRegistryClient(baseUrl: string, fetchJson: FetchJson): RegistryClient {
   const base = trimTrailingSlashes(baseUrl);
   const record = async (id: string): Promise<ModuleRecord> => {
-    if (!ID.test(id)) throw new Error(`'${id}' is not a module id`);
+    if (!ID.test(id)) {
+      throw new Error(`'${id}' is not a module id`);
+    }
     const parsed = ModuleRecord.parse(await fetchJson(`${base}/m/${encodeURIComponent(id)}.json`));
     checkApiVersion(parsed.apiVersion, id);
     return parsed;

@@ -16,7 +16,9 @@ export function HeightGlide({ height, durationMs, children }: Readonly<HeightGli
   const [value] = useState(() => new Animated.Value(height ?? 0));
   const settled = useRef(height);
   useEffect(() => {
-    if (height === undefined) return;
+    if (height === undefined) {
+      return;
+    }
     if (settled.current === undefined) {
       value.setValue(height);
       settled.current = height;
@@ -31,6 +33,8 @@ export function HeightGlide({ height, durationMs, children }: Readonly<HeightGli
     }).start();
   }, [height, value, durationMs]);
 
-  if (height === undefined) return <>{children}</>;
+  if (height === undefined) {
+    return <>{children}</>;
+  }
   return <Animated.View style={[CLIP, { height: value }]}>{children}</Animated.View>;
 }

@@ -22,7 +22,9 @@ export const EFFECT_DOT = {
 
 /** What grabbing a release would do, refused when a rule turns it down. */
 export function effectOf(release: Pick<ScoredReleaseView, 'score' | 'verdict'>): Effect {
-  if (release.score == null) return 'refused';
+  if (release.score == null) {
+    return 'refused';
+  }
   return release.verdict?.kind ?? 'notBetter';
 }
 
@@ -43,7 +45,9 @@ export function autoPickOf<Row extends Pick<ScoredReleaseView, 'score' | 'verdic
   groups: readonly { effect: Effect; rows: readonly Row[] }[],
 ): Row | null {
   const first = groups[0];
-  if (!first || (first.effect !== 'fill' && first.effect !== 'upgrade')) return null;
+  if (!first || (first.effect !== 'fill' && first.effect !== 'upgrade')) {
+    return null;
+  }
   return first.rows.reduce<Row | null>(
     (best, row) => (best == null || (row.score ?? 0) > (best.score ?? 0) ? row : best),
     null,

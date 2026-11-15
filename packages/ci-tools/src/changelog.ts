@@ -23,10 +23,14 @@ export function renderSection(version: string, date: string, commits: readonly C
     const picked = commits
       .filter(section.takes)
       .sort((a, b) => (a.scope ?? '').localeCompare(b.scope ?? ''));
-    if (picked.length === 0) continue;
+    if (picked.length === 0) {
+      continue;
+    }
     out.push('', `### ${section.title}`, '', ...picked.map(line));
   }
-  if (out.length === 1) out.push('', 'Maintenance only.');
+  if (out.length === 1) {
+    out.push('', 'Maintenance only.');
+  }
   return out.join('\n');
 }
 

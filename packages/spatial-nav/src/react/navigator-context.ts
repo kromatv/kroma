@@ -24,7 +24,9 @@ function useNavigatorHost(): NavigatorHost | null {
 function useNodeHost(): NodeHost {
   const host = useContext(HostContext);
   const parentId = useContext(ParentIdContext);
-  if (!host || !parentId) throw new Error(MISSING_ROOT);
+  if (!host || !parentId) {
+    throw new Error(MISSING_ROOT);
+  }
   return { host, parentId };
 }
 

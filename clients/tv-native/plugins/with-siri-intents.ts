@@ -55,7 +55,9 @@ const withIntentsSupported: ConfigPlugin = (config) =>
 const withIntentHandler: ConfigPlugin = (config) =>
   withAppDelegate(config, (cfg) => {
     let contents = cfg.modResults.contents;
-    if (contents.includes('KromaMediaIntents.handler')) return cfg;
+    if (contents.includes('KromaMediaIntents.handler')) {
+      return cfg;
+    }
 
     const imports = 'import React\n';
     if (!contents.includes(imports)) {

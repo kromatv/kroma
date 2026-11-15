@@ -22,7 +22,9 @@ afterEach(() => {
     files = [];
   }
   for (const file of files) {
-    if (ids.some((id) => file.startsWith(id))) rmSync(join(CACHE_DIR, file), { force: true });
+    if (ids.some((id) => file.startsWith(id))) {
+      rmSync(join(CACHE_DIR, file), { force: true });
+    }
   }
   ids = [];
 });

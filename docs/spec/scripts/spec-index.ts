@@ -49,10 +49,14 @@ async function chapters(dir: string): Promise<string[]> {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name !== 'scripts') below.push(chapters(full));
+      if (entry.name !== 'scripts') {
+        below.push(chapters(full));
+      }
     } else if (entry.name.endsWith('.md')) {
       const rel = relative(SPEC_DIR, full);
-      if (rel.split(sep).length > 1 || !ROOT_SKIP.has(entry.name)) here.push(rel);
+      if (rel.split(sep).length > 1 || !ROOT_SKIP.has(entry.name)) {
+        here.push(rel);
+      }
     }
   }
   const nested = await Promise.all(below);
@@ -104,10 +108,14 @@ async function collect(): Promise<{ reqs: Requirement[]; errors: string[] }> {
         inFence = !inFence;
         return;
       }
-      if (inFence) return;
+      if (inFence) {
+        return;
+      }
 
       const idm = REQ_ID.exec(raw);
-      if (!idm) return;
+      if (!idm) {
+        return;
+      }
       const [, prefix, num, rest] = idm;
       const line = i + 1;
       const where = `${rel}:${line}`;

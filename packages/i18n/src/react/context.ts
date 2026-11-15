@@ -20,7 +20,9 @@ export const I18nContext = createContext<I18nValue | null>(null);
 
 function useI18nValue(): I18nValue {
   const value = useContext(I18nContext);
-  if (!value) throw new Error('useT/useLocale must be used within <I18nProvider>');
+  if (!value) {
+    throw new Error('useT/useLocale must be used within <I18nProvider>');
+  }
   return value;
 }
 

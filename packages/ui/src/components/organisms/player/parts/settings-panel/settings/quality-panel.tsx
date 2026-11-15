@@ -27,7 +27,9 @@ export function QualityPanel({
 
   const pick = (i: number) => {
     const q = qualities[i];
-    if (q) onSelect(q.id);
+    if (q) {
+      onSelect(q.id);
+    }
     onBack();
   };
 

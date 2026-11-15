@@ -226,8 +226,12 @@ export default function mediaApi(ctx: RequestContext) {
      * item has no usable file or duration (404). */
     storyboard: async (id: ItemId): Promise<StoryboardManifest | 'pending' | null> => {
       const res = await ctx.send('/items/:id/storyboard', { params: { id } });
-      if (res.status === 202) return 'pending';
-      if (!res.ok) return null;
+      if (res.status === 202) {
+        return 'pending';
+      }
+      if (!res.ok) {
+        return null;
+      }
       return StoryboardManifest.parse(await res.json());
     },
   };

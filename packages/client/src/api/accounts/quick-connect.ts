@@ -11,7 +11,9 @@ function poller(ctx: RequestContext) {
         ctx,
         ctx.get('/auth/quickconnect/poll', PairingStatus, { auth: 'public', query: { secret } }),
       );
-    if (legacy) return withQuery();
+    if (legacy) {
+      return withQuery();
+    }
     try {
       return await adoptMediaTicket(
         ctx,
@@ -21,7 +23,9 @@ function poller(ctx: RequestContext) {
         }),
       );
     } catch (e) {
-      if (!(e instanceof KromaApiError) || e.status !== 400) throw e;
+      if (!(e instanceof KromaApiError) || e.status !== 400) {
+        throw e;
+      }
       const status = await withQuery();
       legacy = true;
       return status;

@@ -19,7 +19,9 @@ export function identifyWebos(
   upnp?: UpnpDevice,
 ): Promise<Television | null> {
   const devMode = openPorts.has(DEV_PORT);
-  if (!looksWebos(devMode, upnp)) return Promise.resolve(null);
+  if (!looksWebos(devMode, upnp)) {
+    return Promise.resolve(null);
+  }
 
   const runtime = webosRuntime([upnp?.modelName, upnp?.modelNumber, upnp?.friendlyName]);
   const seen = devMode
@@ -39,7 +41,9 @@ export function identifyWebos(
 }
 
 function looksWebos(devMode: boolean, upnp?: UpnpDevice): boolean {
-  if (devMode) return true;
+  if (devMode) {
+    return true;
+  }
   const vendor = `${upnp?.manufacturer ?? ''} ${upnp?.friendlyName ?? ''}`.toLowerCase();
   return vendor.includes('lg electronics') || vendor.includes('webos');
 }

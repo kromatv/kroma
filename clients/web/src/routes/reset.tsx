@@ -33,7 +33,9 @@ function ResetPage() {
 
   const ready = code.trim().length === CODE_LEN && password.length >= MIN_PASSWORD_LEN;
   const submit = () => {
-    if (!ready || !token) return;
+    if (!ready || !token) {
+      return;
+    }
     void link.run(
       () => client.accounts.redeemReset(token, code.trim(), password),
       t('auth.resetFailed'),

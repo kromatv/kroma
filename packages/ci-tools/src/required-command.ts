@@ -3,7 +3,9 @@ import { blockers, LaneOf, Needs } from './required';
 
 function readJson(variable: string): unknown {
   const raw = process.env[variable];
-  if (!raw) throw new Error(`${variable} is not set`);
+  if (!raw) {
+    throw new Error(`${variable} is not set`);
+  }
   return JSON.parse(raw);
 }
 

@@ -65,11 +65,17 @@ export function useWaitReason({
       );
     };
     read();
-    if (!v) return;
-    for (const type of EVENTS) v.addEventListener(type, read);
+    if (!v) {
+      return;
+    }
+    for (const type of EVENTS) {
+      v.addEventListener(type, read);
+    }
     const poll = setInterval(read, POLL_MS);
     return () => {
-      for (const type of EVENTS) v.removeEventListener(type, read);
+      for (const type of EVENTS) {
+        v.removeEventListener(type, read);
+      }
       clearInterval(poll);
     };
   }, [videoRef, intent, attaching, stuck, remount]);

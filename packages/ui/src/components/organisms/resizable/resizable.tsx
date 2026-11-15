@@ -89,7 +89,9 @@ function walk(children: ReactNode): Parts {
   // which is what the providers wrap themselves in: an index would renumber the
   // panels the moment a window crossing a breakpoint drops one.
   const nodes = Children.toArray(children).map((child) => {
-    if (!isValidElement(child)) return child;
+    if (!isValidElement(child)) {
+      return child;
+    }
     if (child.type === Panel) {
       const at = specs.length;
       specs.push(child.props as PanelSpec);
@@ -166,10 +168,14 @@ function Root({
   const commit = useCallback(
     (next: readonly number[], committed: boolean) => {
       const moved = !sameLayout(next, told.current);
-      if (!moved && (!committed || settled.current)) return;
+      if (!moved && (!committed || settled.current)) {
+        return;
+      }
       told.current = next;
       settled.current = committed;
-      if (moved) setWish(next);
+      if (moved) {
+        setWish(next);
+      }
       report.current?.(next, { committed, user: true });
     },
     [setWish],
@@ -179,7 +185,9 @@ function Root({
   // until a panel's own floor bit - is still a layout change to a caller
   // keeping one.
   useEffect(() => {
-    if (told.current !== NOTHING && sameLayout(layout, told.current)) return;
+    if (told.current !== NOTHING && sameLayout(layout, told.current)) {
+      return;
+    }
     told.current = layout;
     settled.current = true;
     report.current?.(layout, { committed: true, user: false });
@@ -189,13 +197,17 @@ function Root({
   // and the layout written for the old set says nothing about the new one.
   const arranged = useRef(arrangement);
   useEffect(() => {
-    if (arranged.current === arrangement) return;
+    if (arranged.current === arrangement) {
+      return;
+    }
     arranged.current = arrangement;
     setWish(readLayout(store, autoSaveId, arrangement));
   }, [arrangement, store, autoSaveId, setWish]);
 
   useEffect(() => {
-    if (mine) writeLayout(store, autoSaveId, arrangement, mine);
+    if (mine) {
+      writeLayout(store, autoSaveId, arrangement, mine);
+    }
   }, [store, autoSaveId, arrangement, mine]);
 
   const from = useRef<readonly number[]>(NOTHING);
@@ -215,7 +227,9 @@ function Root({
   const drag = useCallback(
     (seam: number, delta: number, committed: boolean) => {
       const room = at.current.available;
-      if (room <= 0) return;
+      if (room <= 0) {
+        return;
+      }
       const base =
         from.current.length === at.current.layout.length ? from.current : at.current.layout;
       commit(adjust(base, seam, (delta / room) * FULL, at.current.limits), committed);

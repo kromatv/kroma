@@ -40,7 +40,9 @@ const NO_SHAPE: GridShape = { columns: 0, cell: 0, pitch: 0, rows: 0, height: 0 
  * height the rows do not add up to and the page jumps by the difference. */
 export function gridShape(room: number, items: number): GridShape {
   const columns = tileColumns(room);
-  if (columns <= 0 || items <= 0) return NO_SHAPE;
+  if (columns <= 0 || items <= 0) {
+    return NO_SHAPE;
+  }
   const cell = tileCell(room, columns);
   const pitch = Math.round(cell * POSTER_RATIO) + TILE_ROW_GAP;
   const rows = Math.ceil(items / columns);
@@ -61,8 +63,12 @@ export interface RowWindowInput {
 }
 
 export function rowWindow({ rows, pitch, top, viewport, overscan }: RowWindowInput): RowWindow {
-  if (rows <= 0) return { first: 0, count: 0 };
-  if (pitch <= 0) return { first: 0, count: 1 };
+  if (rows <= 0) {
+    return { first: 0, count: 0 };
+  }
+  if (pitch <= 0) {
+    return { first: 0, count: 1 };
+  }
   const firstSeen = Math.floor(-top / pitch);
   const lastSeen = Math.ceil((viewport - top) / pitch) - 1;
   const first = Math.min(Math.max(firstSeen - overscan, 0), rows - 1);

@@ -33,12 +33,16 @@ export function createCastControllerStore() {
   const setCastControllers = (next: readonly CastController[]): CastController[] => {
     const before = new Set(controllers.map(who));
     controllers = next.length === 0 ? NOBODY : next;
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
     return next.filter((c) => !before.has(who(c)));
   };
   const setCastUplink = (send: ((message: CastClientMessage) => void) | null): void => {
     uplink = send;
-    if (!send) setCastControllers(NOBODY);
+    if (!send) {
+      setCastControllers(NOBODY);
+    }
   };
   const kickCastController = (controllerId: ControllerId): void => {
     uplink?.({ type: 'cast.kick', controllerId });
@@ -57,7 +61,9 @@ export function CastControllersProvider({ children }: { children: ReactNode }) {
 
 export function useCastControllerStore(): CastControllerStore {
   const store = useContext(Context);
-  if (!store) throw new Error('Cast controls require CastControllersProvider');
+  if (!store) {
+    throw new Error('Cast controls require CastControllersProvider');
+  }
   return store;
 }
 

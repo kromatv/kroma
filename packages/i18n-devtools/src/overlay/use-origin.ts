@@ -9,6 +9,8 @@ export function useOrigin(origin: Origin | null): { label: string; file: string 
     () => (origin ? sourceOrigin(origin) : null),
     () => origin,
   );
-  if (!traced) return null;
+  if (!traced) {
+    return null;
+  }
   return { label: labelOf(traced), file: `${traced.file}:${traced.line}:${traced.column}` };
 }

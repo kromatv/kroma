@@ -13,7 +13,9 @@ export function remoteName(fileName: string): string {
 export function remotePath(directory: string, fileName: string): string {
   const base = directory.endsWith('/') ? directory.slice(0, -1) : directory;
   const path = `${base}/${remoteName(fileName)}`;
-  if (!SAFE_PATH.test(path)) throw new Error(`sdb: refusing an unquotable remote path "${path}"`);
+  if (!SAFE_PATH.test(path)) {
+    throw new Error(`sdb: refusing an unquotable remote path "${path}"`);
+  }
   return path;
 }
 

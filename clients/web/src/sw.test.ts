@@ -2,6 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { fetchAt, load, payload, pushEvent, shownAt } from '#web/sw.fixture';
 
+const bodyText = (body: BodyInit | null | undefined): string =>
+  typeof body === 'string' ? body : 'null';
+
 describe('push', () => {
   it('shows the notification the server described', async () => {
     const sw = load();
@@ -103,7 +106,7 @@ describe('pushsubscriptionchange', () => {
 
     expect(sw.fetches).toHaveLength(1);
     expect(fetchAt(sw, 0).url).toBe('/api/push/subscribe');
-    const body = JSON.parse(String(fetchAt(sw, 0).init?.body));
+    const body = JSON.parse(bodyText(fetchAt(sw, 0).init?.body));
     expect(body.transport).toBe('webpush');
     expect(body.endpoint).toBe('https://push.example/abc');
     // base64url, not base64: no +, / or = may reach the server.
@@ -121,7 +124,7 @@ describe('pushsubscriptionchange', () => {
         getKey: key([0xfb, 0xff, 0xbf]),
       },
     });
-    const body = JSON.parse(String(fetchAt(sw, 0).init?.body));
+    const body = JSON.parse(bodyText(fetchAt(sw, 0).init?.body));
     expect(body.p256dh).not.toMatch(/[+/=]/);
     expect(body.p256dh).toBe('-_-_');
   });

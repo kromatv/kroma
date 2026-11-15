@@ -11,7 +11,9 @@ import { STORIES } from './stories';
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 function press(...names: string[]): void {
-  for (const name of names) fireEvent.click(screen.getByRole('button', { name }));
+  for (const name of names) {
+    fireEvent.click(screen.getByRole('button', { name }));
+  }
 }
 
 // "3 of 96" -> [3, 96].
@@ -263,7 +265,9 @@ describe('the command palette', () => {
     // the query matched. Articles are searched too, so pressing a fixed number of
     // times would land somewhere else the moment a guide mentions the word.
     const [showing] = shownOf(screen.getByText(/^\d+ of \d+$/).textContent ?? '');
-    for (let step = 0; step < showing; step += 1) fireEvent.keyDown(document, { key: 'ArrowDown' });
+    for (let step = 0; step < showing; step += 1) {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+    }
     fireEvent.keyDown(document, { key: 'Enter' });
 
     expect(screen.queryByLabelText('Search the component list')).toBeNull();

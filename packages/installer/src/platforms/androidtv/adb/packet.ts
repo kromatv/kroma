@@ -27,7 +27,9 @@ export interface Packet {
 
 function checksum(payload: Buffer): number {
   let sum = 0;
-  for (const byte of payload) sum = (sum + byte) >>> 0;
+  for (const byte of payload) {
+    sum = (sum + byte) >>> 0;
+  }
   return sum;
 }
 
@@ -61,8 +63,12 @@ export class PacketReader {
       if (!KNOWN.has(command) || magic !== (command ^ 0xffffffff) >>> 0) {
         throw new Error('the TV sent something that is not an adb message');
       }
-      if (length > LARGEST_PAYLOAD) throw new Error('the TV sent an adb message far too large');
-      if (this.pending.length < HEADER_BYTES + length) break;
+      if (length > LARGEST_PAYLOAD) {
+        throw new Error('the TV sent an adb message far too large');
+      }
+      if (this.pending.length < HEADER_BYTES + length) {
+        break;
+      }
 
       const packet = {
         command,

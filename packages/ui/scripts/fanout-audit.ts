@@ -18,7 +18,9 @@ const all = await scanKit(ROOT);
 const allocs = needle ? all.filter((a) => a.file.includes(needle)) : all;
 
 const byFile = new Map<string, typeof allocs>();
-for (const alloc of allocs) byFile.set(alloc.file, [...(byFile.get(alloc.file) ?? []), alloc]);
+for (const alloc of allocs) {
+  byFile.set(alloc.file, [...(byFile.get(alloc.file) ?? []), alloc]);
+}
 
 console.log(`${allocs.length} allocations inside a list render, in ${byFile.size} files\n`);
 for (const [file, list] of [...byFile].sort(([, a], [, b]) => b.length - a.length)) {

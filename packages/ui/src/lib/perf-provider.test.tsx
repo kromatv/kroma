@@ -19,7 +19,9 @@ describe('app-owned performance recording', () => {
     const b = renderHook(usePerfSampler, { wrapper: PerfProvider });
     const first = a.result.current;
     const second = b.result.current;
-    if (!first || !second) throw new Error('provider did not supply a recorder');
+    if (!first || !second) {
+      throw new Error('provider did not supply a recorder');
+    }
     first.markGridFocus(1, 2);
     second.markGridFocus(3, 4);
     first.startPerf();

@@ -37,6 +37,8 @@ export const AuthContext = createContext<AuthValue | null>(null);
 /** Access the auth context. Throws if used outside `<AuthProvider>`. */
 export function useAuth(): AuthValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
+  if (!ctx) {
+    throw new Error('useAuth must be used within <AuthProvider>');
+  }
   return ctx;
 }

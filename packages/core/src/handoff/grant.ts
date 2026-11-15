@@ -33,7 +33,9 @@ const BY_STATUS: Record<number, GrantRefusal> = {
  * dropped request, a server having a bad time - reads as `gone`, the one answer
  * that offers the reader nothing to retry with. */
 export function grantRefusal(cause: unknown): GrantRefusal {
-  if (!(cause instanceof KromaApiError)) return 'gone';
+  if (!(cause instanceof KromaApiError)) {
+    return 'gone';
+  }
   return BY_STATUS[cause.status] ?? 'gone';
 }
 

@@ -62,7 +62,9 @@ function langCodes(t: Translate, locale: Locale): string[] {
 }
 
 function langValueLabel(value: string): MessageKey {
-  if (value === LANG_OFF) return 'player.subtitlesOff';
+  if (value === LANG_OFF) {
+    return 'player.subtitlesOff';
+  }
   return langKey(value) ?? 'account.noPreference';
 }
 

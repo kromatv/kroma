@@ -21,7 +21,9 @@ async function press(page: Page, key: string, settleMs = SETTLE_MS): Promise<voi
 async function until(page: Page, ready: (seen: Reading) => boolean, what: string): Promise<void> {
   const deadline = Date.now() + READY_MS;
   while (Date.now() < deadline) {
-    if (ready(await read(page))) return;
+    if (ready(await read(page))) {
+      return;
+    }
     await page.waitForTimeout(POLL_MS);
   }
   throw new Error(`${what} never happened within ${READY_MS}ms`);
@@ -58,7 +60,9 @@ export async function openDestination(page: Page, label: string): Promise<void> 
     await press(page, 'ArrowUp', BAND_SETTLE_MS);
   }
   const from = await focusedTab(page);
-  if (!from) throw new Error('the top bar never took focus; no tab is wearing the ring');
+  if (!from) {
+    throw new Error('the top bar never took focus; no tab is wearing the ring');
+  }
 
   const labels = await tabLabels(page);
   const to = labels.indexOf(label);
@@ -71,7 +75,9 @@ export async function openDestination(page: Page, label: string): Promise<void> 
   }
 
   const landed = await focusedTab(page);
-  if (landed !== label) throw new Error(`the ring stopped on "${landed}", not "${label}"`);
+  if (landed !== label) {
+    throw new Error(`the ring stopped on "${landed}", not "${label}"`);
+  }
   await press(page, 'Enter');
   await until(page, (seen) => ringedTab(seen) === null, `"${label}" never took the focus`);
 }

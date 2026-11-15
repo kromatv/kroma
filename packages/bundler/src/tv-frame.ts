@@ -35,7 +35,9 @@ export function tvFrame(options: TvFrameOptions = {}): DevOnlyHtmlPlugin {
     name: 'kroma:tv-frame',
     apply: 'serve',
     transformIndexHtml() {
-      if (!enabled) return [];
+      if (!enabled) {
+        return [];
+      }
       return [
         { tag: 'style', injectTo: 'head', children: stageCss(width, height) },
         { tag: 'script', injectTo: 'head', children: stageJs(width, height) },

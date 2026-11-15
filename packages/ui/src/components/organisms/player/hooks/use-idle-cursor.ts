@@ -18,7 +18,9 @@ const IDLE_RULE = `#${PLAYER_ROOT_ID}, #${PLAYER_ROOT_ID} * { cursor: none !impo
 export function useIdleCursor(hidden: boolean): void {
   useEffect(() => {
     const doc = webDocument();
-    if (!hidden || !doc?.head) return;
+    if (!hidden || !doc?.head) {
+      return;
+    }
     const el = doc.createElement('style');
     el.id = IDLE_STYLE_ID;
     el.textContent = IDLE_RULE;

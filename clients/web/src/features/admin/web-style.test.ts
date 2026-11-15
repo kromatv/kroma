@@ -19,6 +19,6 @@ describe('the console frame', () => {
   });
 
   it('clears the notch above the phone bar', () => {
-    expect(String(ADMIN_BAR_TOP.paddingTop)).toContain('safe-area-inset-top');
+    expect(JSON.stringify(ADMIN_BAR_TOP.paddingTop)).toContain('safe-area-inset-top');
   });
 });

@@ -25,7 +25,9 @@ export function useAskForTitle(
   const { kind, tmdbId } = title;
 
   const ask = useCallback(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     setAsking(true);
     setFailed(false);
     client.requests.create({ kind, tmdbId, seasons: null }).then(

@@ -53,8 +53,11 @@ async function passes(
   }
   const args = ['run', '--quiet', '--manifest-path', host.manifest, '--bin', 'kroma-audit', '--'];
   args.push(project.dir, component);
-  if (options.json) args.push('--json');
-  else console.log('');
+  if (options.json) {
+    args.push('--json');
+  } else {
+    console.log('');
+  }
   const env = host.targetDir ? { ...process.env, CARGO_TARGET_DIR: host.targetDir } : process.env;
   const ran = await exec('cargo', args, { cwd, env });
   return ran.exitCode === 0;
@@ -74,7 +77,9 @@ export async function auditCommand(options: AuditOptions): Promise<number> {
 
   const failed: string[] = [];
   for (const project of projects) {
-    if (!(await passes(project, dir, host, options, cwd))) failed.push(project.manifest.id);
+    if (!(await passes(project, dir, host, options, cwd))) {
+      failed.push(project.manifest.id);
+    }
   }
   if (failed.length > 0 && !options.json) {
     console.log(`\n${failed.length} module(s) did not pass: ${failed.join(', ')}`);

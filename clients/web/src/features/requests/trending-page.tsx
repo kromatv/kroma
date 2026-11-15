@@ -120,7 +120,9 @@ function Pager({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1) {
+    return null;
+  }
   return (
     <Row justify="center" gap={16} mt={40}>
       <Button

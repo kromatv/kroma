@@ -46,12 +46,16 @@ export function SkipIntroButton({
   const [focused, setFocused] = useState(false);
   const handle = useRef<FocusHandle>(null);
   useEffect(() => {
-    if (visible) handle.current?.focus();
+    if (visible) {
+      handle.current?.focus();
+    }
   }, [visible]);
 
   const t = useT();
   const px = scaler(scale);
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
   // Scaled off the SAME constant as the row beneath it: unscaled, the two right
   // edges would disagree below the design width.
   return (

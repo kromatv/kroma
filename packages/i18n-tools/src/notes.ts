@@ -21,7 +21,9 @@ function notesPath(set: CatalogSet): string | null {
  *  keep any, and has none. */
 export function readNotes(set: CatalogSet): Map<string, string> {
   const path = notesPath(set);
-  if (path === null || !existsSync(path)) return new Map();
+  if (path === null || !existsSync(path)) {
+    return new Map();
+  }
   const { $schema: _pointer, ...notes } = Notes.parse(JSON.parse(readFileSync(path, 'utf8')));
   return new Map(Object.entries(notes));
 }
@@ -37,7 +39,9 @@ export function noteFor(notes: ReadonlyMap<string, string>, key: string): string
 }
 
 function concerns(about: string, key: string): boolean {
-  if (about === EVERYWHERE || about === key) return true;
+  if (about === EVERYWHERE || about === key) {
+    return true;
+  }
   return about.endsWith('.') && key.startsWith(about);
 }
 
@@ -50,8 +54,12 @@ function breadth(about: string): number {
 export function strayNotes(notes: ReadonlyMap<string, string>, source: Source): string[] {
   const keys = [...source.bases];
   return [...notes.keys()].filter((about) => {
-    if (about === EVERYWHERE) return false;
-    if (about.endsWith('.')) return !keys.some((key) => key.startsWith(about));
+    if (about === EVERYWHERE) {
+      return false;
+    }
+    if (about.endsWith('.')) {
+      return !keys.some((key) => key.startsWith(about));
+    }
     return !source.bases.has(about);
   });
 }
@@ -59,10 +67,15 @@ export function strayNotes(notes: ReadonlyMap<string, string>, source: Source): 
 /** Write a note, or remove it with an empty text. */
 export function writeNote(set: CatalogSet, about: string, text: string): void {
   const path = notesPath(set);
-  if (path === null) throw new Error(`${set.name} keeps one file per language, and no notes`);
+  if (path === null) {
+    throw new Error(`${set.name} keeps one file per language, and no notes`);
+  }
   const notes = readNotes(set);
-  if (text === '') notes.delete(about);
-  else notes.set(about, text);
+  if (text === '') {
+    notes.delete(about);
+  } else {
+    notes.set(about, text);
+  }
   const ordered = Object.fromEntries([...notes].sort(([a], [b]) => (a < b ? -1 : 1)));
   writeFileSync(path, `${JSON.stringify(ordered, null, 2)}\n`);
 }

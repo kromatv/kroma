@@ -40,7 +40,9 @@ function floorFor(ceiling: number): number {
 }
 
 function shareRatioOf(stats: DownloadStatsView): string | null {
-  if (stats.totalDownloadedBytes <= 0) return null;
+  if (stats.totalDownloadedBytes <= 0) {
+    return null;
+  }
   return (stats.totalUploadedBytes / stats.totalDownloadedBytes).toFixed(2);
 }
 

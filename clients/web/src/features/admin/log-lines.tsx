@@ -92,7 +92,9 @@ const INFO_TONE = { bg: 'tint/6', ink: 'textMuted' } as const;
 const MESSAGE_MIN = 160;
 
 function sameDay(a: number | undefined, b: number): boolean {
-  if (!a) return false;
+  if (!a) {
+    return false;
+  }
   return new Date(a).toDateString() === new Date(b).toDateString();
 }
 

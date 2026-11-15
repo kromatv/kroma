@@ -36,7 +36,9 @@ export function propSections(name: string, docs: PropDocs): PropSection[] {
       parts.push({ part: key.slice(prefix.length), props });
     }
   }
-  if (parts.length > 0) return parts;
+  if (parts.length > 0) {
+    return parts;
+  }
   const own = docs[name];
   return own?.length ? [{ props: own }] : [];
 }

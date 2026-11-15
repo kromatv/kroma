@@ -71,7 +71,9 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
   // Ramp the element volume toward `target` over `ms`, then optionally pause.
   const fadeTo = useCallback((target: number, ms: number, thenPause = false) => {
     const a = audioRef.current;
-    if (!a) return;
+    if (!a) {
+      return;
+    }
     clearInterval(fadeRef.current);
     const steps = Math.max(1, Math.round(ms / 50));
     const from = a.volume;
@@ -81,14 +83,18 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
       a.volume = Math.min(1, Math.max(0, from + (target - from) * (i / steps)));
       if (i >= steps) {
         clearInterval(fadeRef.current);
-        if (thenPause) a.pause();
+        if (thenPause) {
+          a.pause();
+        }
       }
     }, 50);
   }, []);
 
   // (Re)create the audio element for the current theme.
   useEffect(() => {
-    if (!themeUrl) return;
+    if (!themeUrl) {
+      return;
+    }
     const a = new Audio(themeUrl);
     a.loop = true;
     a.preload = 'auto';
@@ -96,16 +102,22 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
     audioRef.current = a;
 
     const start = () => {
-      if (readThemeMuted(storage)) return;
+      if (readThemeMuted(storage)) {
+        return;
+      }
       const p = a.play();
-      if (p != null && typeof p.then === 'function')
+      if (p != null && typeof p.then === 'function') {
         p.then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS)).catch(() => undefined);
-      else fadeTo(TARGET_VOLUME, FADE_IN_MS);
+      } else {
+        fadeTo(TARGET_VOLUME, FADE_IN_MS);
+      }
     };
 
     // Autoplay-with-sound may still be blocked; unblock on the first gesture.
     const unblock = () => {
-      if (a.paused) start();
+      if (a.paused) {
+        start();
+      }
     };
     document.addEventListener('pointerdown', unblock, { once: true });
     document.addEventListener('keydown', unblock, { once: true });
@@ -129,13 +141,17 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
     writeThemeMuted(next, storage);
     setMuted(next);
     const a = audioRef.current;
-    if (!a) return;
+    if (!a) {
+      return;
+    }
     if (next) {
       fadeTo(0, 250, true);
       return;
     }
     const p = a.play();
-    if (p != null && typeof p.then === 'function') p.catch(() => undefined);
+    if (p != null && typeof p.then === 'function') {
+      p.catch(() => undefined);
+    }
     fadeTo(TARGET_VOLUME, 400);
   }, [fadeTo, storage]);
 

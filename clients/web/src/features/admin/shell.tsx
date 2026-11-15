@@ -57,8 +57,12 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
       refresh: () => eventClient.refreshSession(),
 
       onEvent: (e) => {
-        if (highFrequency.has(e.type)) return;
-        if (pending) return;
+        if (highFrequency.has(e.type)) {
+          return;
+        }
+        if (pending) {
+          return;
+        }
         pending = setTimeout(() => {
           pending = null;
           void queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -67,7 +71,9 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
     });
     ev.connect();
     return () => {
-      if (pending) clearTimeout(pending);
+      if (pending) {
+        clearTimeout(pending);
+      }
       ev.close();
     };
   }, [queryClient, eventClient.sessionToken, eventClient.refreshSession]);

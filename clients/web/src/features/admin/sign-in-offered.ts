@@ -16,7 +16,9 @@ export function offeredBy(form: SignInForm, catalog: PresetCatalog, untitled = '
     methods: form.methods
       .filter((method) => method.enabled)
       .map((method) => {
-        if (method.kind !== 'oidc') return { id: method.kind, kind: method.kind };
+        if (method.kind !== 'oidc') {
+          return { id: method.kind, kind: method.kind };
+        }
         const preset = presetOf(catalog, method.preset);
         return {
           id: method.id || method.key,

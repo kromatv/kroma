@@ -20,7 +20,9 @@ export function parseCatalogPath(path: string): CatalogPath | null {
   const match = FILE.exec(path.startsWith('./') ? path.slice(2) : path);
   const locale = match?.[1];
   const file = match?.[2];
-  if (!locale || !file) return null;
+  if (!locale || !file) {
+    return null;
+  }
   return { locale, namespace: namespaceOfFile(file), file };
 }
 
@@ -38,7 +40,9 @@ export function catalogsByLocale(
   const merged: Record<string, Record<string, string>> = {};
   for (const [path, catalog] of Object.entries(files)) {
     const at = parseCatalogPath(path);
-    if (!at) continue;
+    if (!at) {
+      continue;
+    }
     const own = merged[at.locale] ?? {};
     Object.assign(own, catalog);
     merged[at.locale] = own;
@@ -56,7 +60,9 @@ export function sourcesByFile(
   const out: Record<string, Record<string, Loader>> = {};
   for (const [path, load] of Object.entries(loaders)) {
     const at = parseCatalogPath(path);
-    if (!at) continue;
+    if (!at) {
+      continue;
+    }
     const own = out[at.file] ?? {};
     own[at.locale] = load;
     out[at.file] = own;

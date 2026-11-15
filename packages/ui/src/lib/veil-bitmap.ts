@@ -23,9 +23,11 @@ function splitTop(css: string): string[] {
   let from = 0;
   for (let i = 0; i < css.length; i += 1) {
     const c = css[i];
-    if (c === '(') depth += 1;
-    else if (c === ')') depth -= 1;
-    else if (c === ',' && depth === 0) {
+    if (c === '(') {
+      depth += 1;
+    } else if (c === ')') {
+      depth -= 1;
+    } else if (c === ',' && depth === 0) {
       parts.push(css.slice(from, i).trim());
       from = i + 1;
     }
@@ -47,14 +49,18 @@ export function parseRamps(css: string): Ramp[] | null {
   const ramps: Ramp[] = [];
   for (const layer of splitTop(css)) {
     const body = /^linear-gradient\((.*)\)$/.exec(layer)?.[1];
-    if (!body) return null;
+    if (!body) {
+      return null;
+    }
     const args = splitTop(body);
     const head = args[0] ?? '';
     const degrees = /^(-?[\d.]+)deg$/.exec(head);
     const side = SIDES[head];
     const angle = degrees ? Number(degrees[1]) : (side ?? 180);
     const stops = (degrees || side !== undefined ? args.slice(1) : args).map(stopOf);
-    if (stops.length < 2 || stops.some((s) => /\d(px|em|rem)$/.test(s.color))) return null;
+    if (stops.length < 2 || stops.some((s) => /\d(px|em|rem)$/.test(s.color))) {
+      return null;
+    }
     ramps.push({ angle, stops });
   }
   return ramps.length > 0 ? ramps : null;
@@ -69,7 +75,9 @@ function draw(doc: Document, ramps: Ramp[]): string | null {
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const g = canvas.getContext('2d');
-  if (!g) return null;
+  if (!g) {
+    return null;
+  }
   for (const { angle, stops } of [...ramps].reverse()) {
     const rad = (angle * Math.PI) / 180;
     const dx = Math.sin(rad);
@@ -94,7 +102,9 @@ function draw(doc: Document, ramps: Ramp[]): string | null {
  *  no canvas to draw it with or the ramp is not one this can draw. */
 export function veilBitmap(css: string): string | null {
   const known = drawn.get(css);
-  if (known !== undefined) return known;
+  if (known !== undefined) {
+    return known;
+  }
   const doc = webDocument();
   const ramps = doc ? parseRamps(css) : null;
   let url: string | null = null;

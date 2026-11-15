@@ -8,7 +8,7 @@ export const emailRule = z
 
 export const passwordRule = z.string().min(8, { message: 'auth.passwordTooShort' });
 
-export const usernameRule = z.string().trim().min(1, { message: 'auth.usernameInvalid' });
+export const usernameRule = z.string().trim().nonempty({ message: 'auth.usernameInvalid' });
 
 export const pinRule = z.string().regex(/^\d{4}$/, { message: 'auth.pinInvalid' });
 

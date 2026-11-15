@@ -37,7 +37,9 @@ function toBufferOptions(
 export async function createPasskey(options: WebAuthnOptions): Promise<WebAuthnCredential> {
   const publicKey = toBufferOptions(options.publicKey);
   const cred = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential | null;
-  if (!cred) throw new Error('passkey creation cancelled');
+  if (!cred) {
+    throw new Error('passkey creation cancelled');
+  }
   const res = cred.response as AuthenticatorAttestationResponse;
   return {
     id: cred.id,
@@ -56,7 +58,9 @@ export async function createPasskey(options: WebAuthnOptions): Promise<WebAuthnC
 export async function getPasskey(options: WebAuthnOptions): Promise<WebAuthnCredential> {
   const publicKey = toBufferOptions(options.publicKey);
   const cred = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;
-  if (!cred) throw new Error('passkey request cancelled');
+  if (!cred) {
+    throw new Error('passkey request cancelled');
+  }
   const res = cred.response as AuthenticatorAssertionResponse;
   return {
     id: cred.id,

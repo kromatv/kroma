@@ -22,7 +22,9 @@ export interface NearbyWatchOptions {
 // take over a handle another has already claimed - "last one wins" would be an
 // ordering an attacker picks.
 function combine(seen: DiscoveredTv, row: DiscoveredTv): DiscoveredTv {
-  if (seen.via === row.via) return seen;
+  if (seen.via === row.via) {
+    return seen;
+  }
   const listed = seen.via === 'server' ? seen : row;
   const heard = seen.via === 'server' ? row : seen;
   return { ...listed, via: 'lan', proof: heard.proof };
@@ -59,7 +61,9 @@ export function watchNearbyTvs(opts: NearbyWatchOptions): () => void {
 
   const stops = sources.map((source) =>
     source.start((rows) => {
-      if (stopped) return;
+      if (stopped) {
+        return;
+      }
       views.set(source.id, rows);
       onRows(merge(views));
     }),
@@ -67,6 +71,8 @@ export function watchNearbyTvs(opts: NearbyWatchOptions): () => void {
 
   return () => {
     stopped = true;
-    for (const stop of stops) stop();
+    for (const stop of stops) {
+      stop();
+    }
   };
 }

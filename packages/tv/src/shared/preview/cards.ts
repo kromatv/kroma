@@ -16,8 +16,12 @@ type PreviewTitle = MediaCard & Partial<Pick<MediaItem, 'showId' | 'showTitle'>>
 
 function newest(movies: MediaCard[]): MediaCard[] {
   return [...movies].sort((a, b) => {
-    if (a.addedAt < b.addedAt) return 1;
-    if (a.addedAt > b.addedAt) return -1;
+    if (a.addedAt < b.addedAt) {
+      return 1;
+    }
+    if (a.addedAt > b.addedAt) {
+      return -1;
+    }
     return 0;
   });
 }
@@ -58,7 +62,9 @@ function subtitleFor(m: PreviewTitle): string {
 // `?v=<addedAt>` busts the TV's preview image cache when art changes.
 function tile(client: KromaClient, m: PreviewTitle, badge: string, progress?: number): Tile {
   const params = new URLSearchParams({ label: badge, v: m.addedAt });
-  if (progress != null && progress > 0) params.set('progress', progress.toFixed(3));
+  if (progress != null && progress > 0) {
+    params.set('progress', progress.toFixed(3));
+  }
   return {
     title: titleFor(m),
     subtitle: subtitleFor(m),
@@ -83,12 +89,16 @@ export function buildPreviewData(
     .map((c) =>
       tile(client, c.item, RESUME_BADGE, c.durationMs ? c.positionMs / c.durationMs : undefined),
     );
-  if (resume.length) sections.push({ title: RESUME_SECTION, tiles: resume });
+  if (resume.length) {
+    sections.push({ title: RESUME_SECTION, tiles: resume });
+  }
 
   const recent = newest(movies.filter(hasArt))
     .slice(0, MAX_TILES)
     .map((m) => tile(client, m, RECENT_BADGE));
-  if (recent.length) sections.push({ title: RECENT_SECTION, tiles: recent });
+  if (recent.length) {
+    sections.push({ title: RECENT_SECTION, tiles: recent });
+  }
 
   return sections.length ? JSON.stringify({ sections }) : null;
 }

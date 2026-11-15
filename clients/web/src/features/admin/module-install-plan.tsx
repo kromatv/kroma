@@ -23,7 +23,9 @@ export function ErrorBox({ text }: Readonly<{ text: string }>) {
 
 function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingPoint[] }>) {
   const t = useT();
-  if (missing.length === 0) return null;
+  if (missing.length === 0) {
+    return null;
+  }
   return (
     <Box gap={8}>
       {missing.map((m) => (
@@ -54,7 +56,9 @@ export function planSubtitle(
   ).length;
   const brings = required > 0 ? t('admin.modulesInstallWith', { count: required }) : null;
   const size = plan.totalSize > 0 ? bytes(plan.totalSize) : null;
-  if (brings && size) return t('admin.modulesInstallSubtitle', { required: brings, size });
+  if (brings && size) {
+    return t('admin.modulesInstallSubtitle', { required: brings, size });
+  }
   return brings ?? size ?? undefined;
 }
 
@@ -78,7 +82,9 @@ export function PlanBody({
   installed: readonly AdminModule[];
 }>) {
   const t = useT();
-  if (error) return <ErrorBox text={error} />;
+  if (error) {
+    return <ErrorBox text={error} />;
+  }
   if (!plan) {
     return (
       <Row gap={12} py={8}>

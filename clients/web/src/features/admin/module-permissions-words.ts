@@ -120,7 +120,9 @@ export function byAccountWeight(a: string, b: string): number {
 
 /** A `storage.core` entry as data about people, or null for one that is not. */
 export function accountWord(entry: string, t: Translate): Word | null {
-  if (entry in ACCOUNT) return wordFor(entry, ACCOUNT[entry], t);
+  if (entry in ACCOUNT) {
+    return wordFor(entry, ACCOUNT[entry], t);
+  }
   return entry.startsWith('users.') ? wordFor(entry, undefined, t) : null;
 }
 
@@ -130,13 +132,17 @@ export function tableWord(entry: string, t: Translate): Word {
 }
 
 export function settingWord(key: string, t: Translate): Word {
-  if (key in SETTING) return wordFor(key, SETTING[key], t);
+  if (key in SETTING) {
+    return wordFor(key, SETTING[key], t);
+  }
   return key.startsWith('acq') ? wordFor(key, ACQUISITION, t) : wordFor(key, undefined, t);
 }
 
 /** How a module may touch one thing: read it, change it, or both. */
 export function accessWord(reads: boolean, writes: boolean, t: Translate): string {
-  if (!writes) return t('modulePermissions.readOnly');
+  if (!writes) {
+    return t('modulePermissions.readOnly');
+  }
   return t(reads ? 'modulePermissions.readWrite' : 'modulePermissions.writeOnly');
 }
 
@@ -152,7 +158,9 @@ export function listOf(
   const rest = items.length - head.length + unlisted;
   const parts = rest > 0 ? [...head, t('modulePermissions.others', { count: rest })] : head;
   const last = parts.at(-1);
-  if (parts.length < 2 || last === undefined) return parts.join('');
+  if (parts.length < 2 || last === undefined) {
+    return parts.join('');
+  }
   return t('modulePermissions.list', { head: parts.slice(0, -1).join(', '), last });
 }
 

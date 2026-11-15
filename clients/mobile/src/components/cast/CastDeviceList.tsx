@@ -57,7 +57,9 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
   const granting = useRef(false);
   const grant = useCallback(
     async (tv: DiscoveredTv, check?: string): Promise<GrantResult> => {
-      if (granting.current) return 'dropped';
+      if (granting.current) {
+        return 'dropped';
+      }
       granting.current = true;
       setAttempt({ handle: tv.handle, state: 'signingIn' });
       try {
@@ -73,7 +75,9 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
           setAttempt(null);
           // A row this picker believed needed no code, and the server says
           // otherwise: ask for it rather than leave a tap that did nothing.
-          if (refusal === 'checkRequired') setAsking(tv);
+          if (refusal === 'checkRequired') {
+            setAsking(tv);
+          }
           return refusal;
         }
         setAttempt({ handle: tv.handle, state: refusal });
@@ -211,16 +215,26 @@ function Searching() {
 }
 
 function detailOfPairable(state: PairingState | null, t: ReturnType<typeof useT>): string {
-  if (state === 'signingIn') return t('handoff.connecting');
-  if (state === 'done') return t('handoff.rowDone');
-  if (state === 'gone') return t('handoff.gone');
-  if (state === 'checkTooMany') return t('handoff.checkTooMany');
+  if (state === 'signingIn') {
+    return t('handoff.connecting');
+  }
+  if (state === 'done') {
+    return t('handoff.rowDone');
+  }
+  if (state === 'gone') {
+    return t('handoff.gone');
+  }
+  if (state === 'checkTooMany') {
+    return t('handoff.checkTooMany');
+  }
   return t('cast.signInThisTv');
 }
 
 function detailOf(r: CastReceiver, t: ReturnType<typeof useT>): string {
   const playing = r.nowPlaying?.item;
-  if (playing) return playing.metadata?.title ?? playing.title;
+  if (playing) {
+    return playing.metadata?.title ?? playing.title;
+  }
   return `${r.username} · ${t('cast.idle')}`;
 }
 

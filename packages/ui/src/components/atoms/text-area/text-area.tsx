@@ -177,7 +177,9 @@ function growth(
   sized: StyleProp<TextStyle>,
   scope: StyleScope,
 ): StyleProp<TextStyle> {
-  if (!autoSize) return sharedStyle(`text-area:height:${min}`, { height: min }, scope);
+  if (!autoSize) {
+    return sharedStyle(`text-area:height:${min}`, { height: min }, scope);
+  }
   return sized;
 }
 

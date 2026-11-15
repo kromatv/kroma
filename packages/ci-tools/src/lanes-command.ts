@@ -23,7 +23,9 @@ export async function main(argv: string[]): Promise<void> {
   const verdict = matchLanes(files);
 
   if (values.lane !== undefined) {
-    if (!isLane(values.lane)) throw new Error(`unknown lane '${values.lane}'`);
+    if (!isLane(values.lane)) {
+      throw new Error(`unknown lane '${values.lane}'`);
+    }
     console.log(String(verdict[values.lane]));
     process.exitCode = verdict[values.lane] ? 0 : 1;
     return;
@@ -38,7 +40,9 @@ export async function main(argv: string[]): Promise<void> {
     return;
   }
 
-  for (const name of LANE_NAMES) setOutput(name, verdict[name]);
+  for (const name of LANE_NAMES) {
+    setOutput(name, verdict[name]);
+  }
   setOutput('rust_shards', JSON.stringify(rust));
   setOutput('rust_modules', modules.join(','));
 

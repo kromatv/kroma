@@ -12,7 +12,9 @@ const NETWORK = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
 // `Mb/s` and `kb/s` are SI symbols, the same in every language; only the
 // decimal separator moves.
 function kbps(k: number | undefined, locale: Locale): string | undefined {
-  if (!k || k <= 0) return undefined;
+  if (!k || k <= 0) {
+    return undefined;
+  }
   return k >= 1000 ? `${decimal(k / 1000, locale, 2)} Mb/s` : `${Math.round(k)} kb/s`;
 }
 
@@ -61,6 +63,10 @@ interface StatsMetrics {
   rate: number;
 }
 
+function firstPositive(...values: ReadonlyArray<number | null | undefined>): number {
+  return values.find((n) => n !== null && n !== undefined && n > 0) ?? 0;
+}
+
 function computeMetrics(s: WebStatsInput): StatsMetrics {
   const { v, item, cur, dur, bufEnd } = s;
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
@@ -70,8 +76,8 @@ function computeMetrics(s: WebStatsInput): StatsMetrics {
       ? (navigator as Navigator & { connection?: ConnLike }).connection
       : undefined) ?? {};
   return {
-    vw: v?.videoWidth || item.video?.width || 0,
-    vh: v?.videoHeight || item.video?.height || 0,
+    vw: firstPositive(v?.videoWidth, item.video?.width),
+    vh: firstPositive(v?.videoHeight, item.video?.height),
     dpr,
     dw: v ? Math.round(v.clientWidth * dpr) : 0,
     dh: v ? Math.round(v.clientHeight * dpr) : 0,
@@ -104,7 +110,9 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
   const { dw, dh, dpr, rel, conn, rate } = m;
   const position = useHls ? `${clock(cur)} · rel ${rel.toFixed(0)}s` : clock(cur);
   const push = (group: string, label: string, value: string | undefined) => {
-    if (value != null && value !== '') rows.push({ group, label, value });
+    if (value != null && value !== '') {
+      rows.push({ group, label, value });
+    }
   };
   const media = t('stats.groupMedia');
   const transport = t('stats.groupTransport');
@@ -149,7 +157,9 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
     t('stats.volume'),
     `${Math.round((v?.volume ?? 1) * 100)}%${v?.muted ? t('stats.volumeMuted') : ''}`,
   );
-  if (rate !== 1) push(client, t('stats.speed'), `${rate.toFixed(2)}×`);
+  if (rate !== 1) {
+    push(client, t('stats.speed'), `${rate.toFixed(2)}×`);
+  }
   push(
     client,
     t('stats.connection'),

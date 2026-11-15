@@ -50,7 +50,9 @@ function frameSize(
   rotate: boolean,
 ): { width: number; height: number } | null {
   const size = VIEWPORTS[viewport]?.size;
-  if (!size) return null;
+  if (!size) {
+    return null;
+  }
   return rotate ? { width: size.height, height: size.width } : size;
 }
 
@@ -72,7 +74,9 @@ function stageWidth(
   spec: StoryWidth | undefined,
   available: number,
 ): { width?: number; scroll: boolean } {
-  if (spec === undefined) return { scroll: false };
+  if (spec === undefined) {
+    return { scroll: false };
+  }
   // Not measured yet (jsdom, a first frame): using `available` would pin the
   // story to zero. The next layout pass has the real number.
   const room = available > 0 ? available : undefined;
@@ -80,7 +84,9 @@ function stageWidth(
     return { width: spec, scroll: room !== undefined && spec > room };
   }
   const { min, max } = spec === 'fill' ? {} : spec;
-  if (room === undefined) return { width: min, scroll: false };
+  if (room === undefined) {
+    return { width: min, scroll: false };
+  }
   const capped = max === undefined ? room : Math.min(room, max);
   // `min` wins over the room available, and the overflow becomes a scroll.
   const width = min === undefined ? capped : Math.max(capped, min);

@@ -50,7 +50,7 @@ function shared(c: UserConfig): UserConfig {
     user: UserConfig,
     env: unknown,
   ) => UserConfig;
-  return hook.call(null, c, { command: 'serve', mode: 'development' });
+  return hook(c, { command: 'serve', mode: 'development' });
 }
 
 const aliases = (c: UserConfig) =>
@@ -60,7 +60,9 @@ const find = (c: UserConfig, spec: string) => aliases(c).find((a) => a.find === 
 
 function subset(c: UserConfig): Record<string, string> {
   const load = plugins(c).find((p) => p.name === 'kroma:message-subset')?.load;
-  if (typeof load !== 'function') throw new Error('the site must subset the catalogs');
+  if (typeof load !== 'function') {
+    throw new Error('the site must subset the catalogs');
+  }
   return JSON.parse((load.call(null as never, EN, undefined) as string) ?? '{}');
 }
 
@@ -78,7 +80,9 @@ describe('kromaSite', () => {
 
   it('stands in for the workerd-only builtin, in dev alone, with a module that throws', () => {
     const shim = plugins(config(siteRoot())).find((p) => p.name === 'kroma:workerd-builtins-dev');
-    if (!shim) throw new Error('the site must shim cloudflare:workers for dev');
+    if (!shim) {
+      throw new Error('the site must shim cloudflare:workers for dev');
+    }
     const resolve = shim.resolveId as (id: string) => string | undefined;
     const load = shim.load as (id: string) => string | undefined;
 
@@ -129,7 +133,9 @@ describe('kromaSite', () => {
     const kitOnly = subset(config(siteRoot()));
     const catalog = JSON.parse(readFileSync(EN, 'utf8')) as Record<string, string>;
     const unreached = Object.keys(catalog).find((k) => !(k in kitOnly));
-    if (!unreached) throw new Error('the design system reaches every message');
+    if (!unreached) {
+      throw new Error('the design system reaches every message');
+    }
 
     const scanned = subset(config(siteRoot({ 'src/page.tsx': `t(${JSON.stringify(unreached)})` })));
 

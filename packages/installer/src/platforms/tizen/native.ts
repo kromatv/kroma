@@ -32,7 +32,9 @@ export async function installOverSdb(
       const duid = refusedChain(result.output) ? await duidOf(device) : null;
       throw new Error(installFailure(result.output, profile, duid));
     }
-    if (launch) await device.launch(tizenPackage.appId);
+    if (launch) {
+      await device.launch(tizenPackage.appId);
+    }
   } finally {
     device.close();
   }
@@ -42,7 +44,9 @@ function progress(name: string, log: LogLine): (sent: number, total: number) => 
   let reported = 0;
   return (sent, total) => {
     const percent = total > 0 ? Math.floor((sent / total) * 100) : 0;
-    if (percent < reported + 20) return;
+    if (percent < reported + 20) {
+      return;
+    }
     reported = percent;
     log(`pushing ${name}, ${percent}%`);
   };

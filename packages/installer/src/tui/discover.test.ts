@@ -138,7 +138,12 @@ describe('discover', () => {
   it('gives up looking once the round cap is reached', async () => {
     let rounds = 0;
     scanReports(({ onRound, signal }) => {
-      while (!signal?.aborted && rounds < 100) onRound?.(++rounds);
+      while (rounds < 100) {
+        if (signal?.aborted) {
+          break;
+        }
+        onRound?.(++rounds);
+      }
     });
     picker.reply([]);
 
@@ -182,7 +187,9 @@ describe('discover', () => {
   it('collapses a burst of progress into a handful of redraws', async () => {
     scanReports(({ onRound, onProgress }) => {
       onRound?.(1);
-      for (let done = 1; done <= 256; done += 1) onProgress?.(done, 256);
+      for (let done = 1; done <= 256; done += 1) {
+        onProgress?.(done, 256);
+      }
     });
     picker.reply([]);
 
@@ -195,7 +202,9 @@ describe('discover', () => {
     vi.useFakeTimers({ toFake: ['performance'] });
     scanReports(({ onRound, onProgress }) => {
       onRound?.(1);
-      for (let done = 1; done <= 32; done += 1) onProgress?.(done, 256);
+      for (let done = 1; done <= 32; done += 1) {
+        onProgress?.(done, 256);
+      }
       vi.advanceTimersByTime(200);
       onProgress?.(200, 256);
     });

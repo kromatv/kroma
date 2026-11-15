@@ -21,5 +21,7 @@ export async function checkEndpoint({ call, method, path, body, auth }: Endpoint
   expect(recorded.method).toBe(method);
   expect(recorded.path).toBe(path);
   expect(recorded.headers.get('Authorization')).toBe(auth === 'public' ? null : `Bearer ${BEARER}`);
-  if (body !== undefined) expect(recorded.body).toEqual(body);
+  if (body !== undefined) {
+    expect(recorded.body).toEqual(body);
+  }
 }

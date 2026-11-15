@@ -90,7 +90,9 @@ const SERVE_ROOT = realpathSync(dist);
 function served(requested: string): string | null {
   try {
     const file = realpathSync(resolve(SERVE_ROOT, `.${sep}${requested.replace(/^[/\\]+/, '')}`));
-    if (file !== SERVE_ROOT && !file.startsWith(`${SERVE_ROOT}${sep}`)) return null;
+    if (file !== SERVE_ROOT && !file.startsWith(`${SERVE_ROOT}${sep}`)) {
+      return null;
+    }
     return statSync(file).isFile() ? file : null;
   } catch {
     return null;
@@ -124,7 +126,9 @@ function chrome(extraArgs: string[], isDone: (out: string) => boolean): Promise<
     let out = '';
     let settled = false;
     const finish = () => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearInterval(poll);
       clearTimeout(deadline);
@@ -135,7 +139,9 @@ function chrome(extraArgs: string[], isDone: (out: string) => boolean): Promise<
       out += chunk;
     });
     const poll = setInterval(() => {
-      if (isDone(out)) finish();
+      if (isDone(out)) {
+        finish();
+      }
     }, 150);
     const deadline = setTimeout(finish, DEADLINE_MS);
     child.on('close', finish);
@@ -174,8 +180,9 @@ for (const shot of shots) {
   const url = `http://localhost:${PORT}/?shot&story=${shot.id}${shot.query}`;
   const target = join(out, `${shot.name}.png`);
   await chrome(['--window-size=1280,800', `--screenshot=${target}`, url], () => existsSync(target));
-  if (existsSync(target)) console.log(`  ${shot.name}`);
-  else {
+  if (existsSync(target)) {
+    console.log(`  ${shot.name}`);
+  } else {
     failed++;
     console.error(`  ${shot.name} FAILED (no image after ${DEADLINE_MS}ms)`);
   }

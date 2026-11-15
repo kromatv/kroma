@@ -31,7 +31,9 @@ function playLabel(t: Translate, item: MediaItem, resume: boolean): string {
 }
 
 function reportKind(title: HeldTitle): ReportSubjectKind {
-  if (title.kind === 'show') return 'show';
+  if (title.kind === 'show') {
+    return 'show';
+  }
   return title.item.kind === 'episode' ? 'episode' : 'movie';
 }
 
@@ -90,15 +92,20 @@ export function useTitleActions(title: HeldTitle): TitleAction[] {
   if (title.kind === 'show') {
     const showId = title.item.id;
     const start = (next: UpNext | null) => {
-      if (next) nav.go('player', { item: next.item });
+      if (next) {
+        nav.go('player', { item: next.item });
+      }
     };
     const play: TitleAction = {
       id: 'play',
       icon: 'player-play-filled',
       label: upNext ? playLabel(t, upNext.item, upNext.resume) : t('player.play'),
       run: () => {
-        if (upNext) start(upNext);
-        else client.playback.upNext(showId).then(start, () => undefined);
+        if (upNext) {
+          start(upNext);
+        } else {
+          client.playback.upNext(showId).then(start, () => undefined);
+        }
       },
     };
     return [play, list, markWatched, report];
@@ -117,7 +124,9 @@ export function useTitleActions(title: HeldTitle): TitleAction[] {
             run: () => openShow(showId),
           },
         ];
-  if (title.kind === 'episode') return [playItem(item, false), ...series, markWatched, report];
+  if (title.kind === 'episode') {
+    return [playItem(item, false), ...series, markWatched, report];
+  }
 
   const info: TitleAction[] =
     item.kind === 'movie'

@@ -136,7 +136,9 @@ describe('the web half', () => {
     const { result } = renderHook(() => useShakeWeb(1));
     const seen = [travelOf(result.current)];
     for (let leg = 1; leg < 5; leg += 1) {
-      act(() => vi.advanceTimersByTime(LEG_MS));
+      act(() => {
+        vi.advanceTimersByTime(LEG_MS);
+      });
       seen.push(travelOf(result.current));
     }
 
@@ -164,7 +166,9 @@ describe('the web half', () => {
     const { result, rerender } = renderHook(({ at }) => useShakeWeb(at), {
       initialProps: { at: 1 },
     });
-    act(() => vi.advanceTimersByTime(LEG_MS));
+    act(() => {
+      vi.advanceTimersByTime(LEG_MS);
+    });
     rerender({ at: 1 });
 
     expect(travelOf(result.current)).toBe(8);

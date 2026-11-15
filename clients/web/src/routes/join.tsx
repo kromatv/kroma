@@ -51,7 +51,9 @@ function JoinPage() {
     let cancelled = false;
     client.accounts.config().then(
       (config) => {
-        if (!cancelled && config.signIn) setMethods(config.signIn);
+        if (!cancelled && config.signIn) {
+          setMethods(config.signIn);
+        }
       },
       () => undefined,
     );
@@ -61,7 +63,9 @@ function JoinPage() {
   }, [client]);
 
   async function joinWith(provider: SignInButton) {
-    if (!invite) return;
+    if (!invite) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -74,15 +78,21 @@ function JoinPage() {
   }
 
   useEffect(() => {
-    if (!invite) return;
+    if (!invite) {
+      return;
+    }
     let cancelled = false;
     client.accounts
       .checkInvite(invite)
       .then((r) => {
-        if (!cancelled) setCheckedStatus(r.valid ? 'ok' : 'invalid');
+        if (!cancelled) {
+          setCheckedStatus(r.valid ? 'ok' : 'invalid');
+        }
       })
       .catch(() => {
-        if (!cancelled) setCheckedStatus('invalid');
+        if (!cancelled) {
+          setCheckedStatus('invalid');
+        }
       });
     return () => {
       cancelled = true;
@@ -92,7 +102,9 @@ function JoinPage() {
   const valid = email.includes('@') && username.trim().length > 0 && password.length >= 4;
 
   async function submit() {
-    if (!valid || !invite) return;
+    if (!valid || !invite) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -102,8 +114,11 @@ function JoinPage() {
       void navigate({ to: '/' });
     } catch (e) {
       let msg = t('auth.registerFailed');
-      if (e instanceof Error && /403|invalid|expir/i.test(e.message)) msg = t('auth.inviteInvalid');
-      else if (e instanceof Error && /409|déjà|exist/i.test(e.message)) msg = t('auth.emailTaken');
+      if (e instanceof Error && /403|invalid|expir/i.test(e.message)) {
+        msg = t('auth.inviteInvalid');
+      } else if (e instanceof Error && /409|déjà|exist/i.test(e.message)) {
+        msg = t('auth.emailTaken');
+      }
       setError(msg);
     } finally {
       setBusy(false);

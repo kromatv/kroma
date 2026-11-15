@@ -11,7 +11,9 @@ afterEach(cleanup);
 function bar(ui: ReactElement): HTMLElement {
   const { container } = render(ui);
   const track = container.querySelector('[role=progressbar]');
-  if (!track) throw new Error('no bar was rendered');
+  if (!track) {
+    throw new Error('no bar was rendered');
+  }
   return track as HTMLElement;
 }
 

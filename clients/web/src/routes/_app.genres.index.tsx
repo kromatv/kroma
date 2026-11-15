@@ -18,7 +18,9 @@ const CELL_GAP = 16;
 
 export const Route = createFileRoute('/_app/genres/')({
   loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) return;
+    if (!isAuthed()) {
+      return;
+    }
     await Promise.all([
       queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
       queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),

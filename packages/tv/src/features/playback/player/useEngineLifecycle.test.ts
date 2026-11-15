@@ -55,7 +55,9 @@ const ITEM = { id: 'vid1', durationMs: 7_200_000 } as unknown as MediaItem;
 
 function open() {
   const view = renderHook(() => useEngineLifecycle(CLIENT, ITEM));
-  if (!H.listeners) throw new Error('expected the lifecycle to have built an engine');
+  if (!H.listeners) {
+    throw new Error('expected the lifecycle to have built an engine');
+  }
   return { ...view, on: H.listeners };
 }
 
@@ -147,7 +149,9 @@ describe('useEngineLifecycle decoder ceiling', () => {
           children,
         }),
     });
-    if (!H.listeners) throw new Error('expected the lifecycle to have built an engine');
+    if (!H.listeners) {
+      throw new Error('expected the lifecycle to have built an engine');
+    }
 
     act(() => H.listeners?.onError());
 

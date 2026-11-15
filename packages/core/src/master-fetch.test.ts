@@ -3,7 +3,9 @@ import { fetchMaster, resolveMasterStart } from './master-fetch';
 
 function answers(...statuses: number[]) {
   const fetch = vi.fn();
-  for (const status of statuses) fetch.mockResolvedValueOnce({ status });
+  for (const status of statuses) {
+    fetch.mockResolvedValueOnce({ status });
+  }
   vi.stubGlobal('fetch', fetch);
   return fetch;
 }
