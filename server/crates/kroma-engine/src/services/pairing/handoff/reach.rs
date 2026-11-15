@@ -55,7 +55,7 @@ fn behind_one_router(ip: &std::net::Ipv4Addr) -> bool {
 
 // `::ffff:192.168.1.4` and `192.168.1.4` are one host reached over a dual-stack
 // socket, so they have to compare as one family.
-fn host(ip: &str) -> Option<IpAddr> {
+pub(super) fn host(ip: &str) -> Option<IpAddr> {
     match ip.trim().parse().ok()? {
         IpAddr::V6(v6) => Some(v6.to_ipv4_mapped().map_or(IpAddr::V6(v6), IpAddr::V4)),
         v4 => Some(v4),

@@ -161,6 +161,16 @@ async fn sweep(state: &SharedState, surrendered: impl IntoIterator<Item = Orphan
     drop_orphans(state, state.handoff.take_orphans()).await;
 }
 
+fn settle(state: &SharedState) {
+    state
+        .handoff
+        .settle_in(state.direct.household(&state.settings));
+    let later = state.clone();
+    tokio::spawn(async move {
+        later.direct.learn_public_address(&later.settings).await;
+    });
+}
+
 /// `POST /api/handoff/announce` → [`AnnounceReply`]. Unauthenticated by design:
 /// the device announcing has no account yet. Capped per address and per network,
 /// closed to an origin this install refuses, and the reply's `handle` is
@@ -178,6 +188,7 @@ pub async fn announce(
     if state.handoff.announcing_too_often(&ip) {
         return lerr(loc, StatusCode::TOO_MANY_REQUESTS, "handoff.tooOften");
     }
+    settle(&state);
     if !valid_device_id(&body.device_id) {
         return lerr(loc, StatusCode::BAD_REQUEST, "error.castBadReceiver");
     }
@@ -249,6 +260,7 @@ pub async fn devices(
     headers: HeaderMap,
 ) -> Response {
     let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
+    settle(&state);
     let rows: Vec<NearbyDevice> = state
         .handoff
         .nearby(&ip)
@@ -282,6 +294,7 @@ pub async fn grant(
             Err(resp) => return resp,
         };
 
+    settle(&state);
     let claim = Claim {
         viewer_ip: &ip,
         proof: body.proof.as_deref(),

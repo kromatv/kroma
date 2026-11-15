@@ -14,13 +14,14 @@ use std::sync::Arc;
 
 pub use challenge::Challenge;
 pub use origins::{PublicOrigins, origin_of};
-pub use reach::is_private_client;
+pub use reach::{is_private_client, shares_a_prefix};
 
 use challenge::Challenges;
 use neighbourhood::Neighbourhood;
 use reach::same_network;
 use routes::{global_v6, lan_addresses, local_addresses};
 
+use crate::services::pairing::handoff::Household;
 use crate::services::pairing::throttle::Throttle;
 use crate::services::settings::Settings;
 
@@ -117,6 +118,30 @@ impl Direct {
             routes,
             same_network: same_network(asker.client, public_v4, &global_v6(&addresses)),
             challenge,
+        }
+    }
+
+    /// What this server knows of the house it sits in, read without waiting:
+    /// the public IPv4 the echo last gave and the global IPv6 addresses this
+    /// machine holds. Empty while the admin switch is off.
+    pub fn household(&self, settings: &Settings) -> Household {
+        if !settings.get_bool(ENABLED_KEY, true) {
+            return Household::default();
+        }
+        Household {
+            public_v4: self.public_ip.learned(),
+            own_v6: NEIGHBOURHOOD.addresses(kroma_primitives::now_ms(), || {
+                global_v6(&local_addresses())
+            }),
+        }
+    }
+
+    /// Ask the echo for this house's public address unless a fresh answer is
+    /// held, so [`Direct::household`] has it next time. Never asked while the
+    /// admin switch is off.
+    pub async fn learn_public_address(&self, settings: &Settings) {
+        if settings.get_bool(ENABLED_KEY, true) {
+            self.public_ip.get(kroma_primitives::now_ms()).await;
         }
     }
 

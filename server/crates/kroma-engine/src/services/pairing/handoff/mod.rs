@@ -23,7 +23,7 @@
 //! because printing something on that screen is the one thing a page wearing
 //! that origin cannot do.
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use super::grants::{Filed, Grants, Orphaned, PollState, ScopedInsert};
 use super::throttle::Throttle;
@@ -31,6 +31,7 @@ use crate::services::auth::random_bytes;
 use kroma_primitives::clean_label;
 
 mod claim;
+mod house;
 mod reach;
 
 #[cfg(test)]
@@ -38,6 +39,7 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 
+pub use house::Household;
 pub use reach::same_network;
 
 use reach::network_of;
@@ -169,6 +171,7 @@ struct Beacon {
 pub struct HandoffInner {
     grants: Grants<Beacon>,
     announces: Throttle,
+    home: RwLock<Household>,
 }
 
 pub type Handoff = Arc<HandoffInner>;
@@ -177,6 +180,7 @@ pub fn new() -> Handoff {
     Arc::new(HandoffInner {
         grants: Grants::new(BEACON_TTL_SECS, MAX_BEACONS),
         announces: Throttle::new(MAX_ANNOUNCES_PER_MINUTE, ANNOUNCE_WINDOW_SECS),
+        home: RwLock::default(),
     })
 }
 
@@ -246,7 +250,7 @@ impl HandoffInner {
     /// not reshuffle between two polls.
     pub fn nearby(&self, viewer_ip: &str) -> Vec<Nearby> {
         let mut rows = self.grants.map_pending(|handle, b| {
-            same_network(&b.ip, viewer_ip).then(|| Nearby {
+            self.reaches(&b.ip, viewer_ip).then(|| Nearby {
                 handle: handle.to_string(),
                 name: b.name.clone(),
                 platform: b.platform.clone(),

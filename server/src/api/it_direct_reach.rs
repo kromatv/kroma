@@ -2,19 +2,9 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{
-    HOUSEHOLD_PUBLIC_IP, NEIGHBOUR, TestApp, get, get_from, offer, offer_through_the_tunnel, raw,
-    send, test_app, test_app_served_at,
+    HOUSEHOLD_PUBLIC_IP, NEIGHBOUR, TestApp, echo_answering, get, get_from, offer,
+    offer_through_the_tunnel, raw, send, test_app, test_app_served_at,
 };
-
-async fn echo_answering(address: &'static str) -> String {
-    let app = axum::Router::new().route("/", axum::routing::get(move || async move { address }));
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    tokio::spawn(async move {
-        let _ = axum::serve(listener, app).await;
-    });
-    format!("http://{addr}/")
-}
 
 async fn preflight(t: &TestApp, origin: &str) -> axum::http::HeaderMap {
     let (_, headers, _) = raw(

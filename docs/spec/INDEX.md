@@ -3,7 +3,7 @@
 
 # Requirement index
 
-559 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+560 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -234,6 +234,7 @@
 - **DISC-31** (DESIGN, NOT IMPLEMENTED) - Samsung and LG televisions do not reach the deeper
 - **DISC-32** (SHIPPED) - Native TV shells also *browse* for a server, so a television that was
 - **DISC-33** (SHIPPED) - A client with a camera may read the code from the television's QR
+- **DISC-34** (SHIPPED) - In the house the server itself sits in, a device on the server's
 
 ## LIB - [library](library/)
 

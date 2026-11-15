@@ -34,11 +34,43 @@ answers by how the two arrived:
 - **IPv6**, either way: same `/64`. That is one prefix delegation, which is one
   LAN.
 
+### The house the server sits in
+
+Those three rules compare two addresses and nothing else, which is right for a
+server that is somewhere else. A server at home sees its own house two ways at
+once. A television that found it on the network arrives from `192.168.1.20`. A
+browser on the tunnelled name (`https://kroma.example`) leaves the house and
+comes back in, and arrives wearing the house's public address. One private, one
+public: the rules above call that two networks, and the television was never
+listed to that browser.
+
+The server knows better, because it is in that house. It knows the public IPv4
+the house leaves through (the echo behind `KROMA_PUBLIC_IP_URL`, the same answer
+the [direct route](direct-connection.md#the-offer) uses) and the IPv6 prefixes it
+holds an address in. So, on top of the three rules, `Household::joins` places
+two devices together when both are in the server's own house and at least one
+of them came in through its public face:
+
+- one arrived from a private address, the other from the house's public IPv4 or
+  from inside one of the server's own `/64`s;
+- or both came in through a public face, one over each family.
+
+Two private addresses stay under the `/24` rule: a house routed across several
+subnets is still not settled by this. A server that does not know its public
+address places nobody by it, and so does one whose admin switched *Connexion
+directe à la maison* off, since that switch is also what forbids asking the
+echo. The address is learned in the background the first time a television
+announces, and kept: a list is never held up for it.
+
+It is exactly as wide as the public-address rule already was. Under
+carrier-grade NAT, a stranger sharing the house's public address can be shown
+the televisions waiting in it, and can only push their own account onto one.
+
 Three cases this cannot settle, all of which fall back to Quick Connect:
 
 1. a home routed across several subnets;
-2. a dual-stack home where the television arrives over IPv6 and the telephone
-   over IPv4;
+2. a dual-stack home the server is not in, where the television arrives over
+   IPv6 and the telephone over IPv4;
 3. carrier-grade NAT, where strangers share one public address and can therefore
    see each other's beacons.
 

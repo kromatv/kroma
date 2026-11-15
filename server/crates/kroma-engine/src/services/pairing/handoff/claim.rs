@@ -1,4 +1,3 @@
-use super::reach::same_network;
 use super::{Beacon, Claim, HandoffInner, Refusal, CHECK_LEN};
 use crate::model::User;
 use crate::services::auth::ct_eq;
@@ -18,8 +17,9 @@ impl HandoffInner {
     /// The caller must first show something that puts it beside that TV, and
     /// either will do:
     ///
-    /// - the addresses agree ([`same_network`]), which is all a phone that found
-    ///   the TV through this server can offer;
+    /// - the addresses agree, or this server places both in its own house
+    ///   (`reaches`), which is all a phone that found the TV through this
+    ///   server can offer;
     /// - or the caller quotes the beacon's `proof`, which is published in the
     ///   TV's DNS-SD record and nowhere else. Multicast does not leave the link,
     ///   so quoting it is proof of having been on it. Unlike the addresses, it
@@ -38,7 +38,11 @@ impl HandoffInner {
         access_token: String,
     ) -> Result<(), Refusal> {
         let rule = |b: &mut Beacon| {
-            if !in_reach(b, claim.viewer_ip, claim.proof) {
+            let beside = self.reaches(&b.ip, claim.viewer_ip)
+                || claim
+                    .proof
+                    .is_some_and(|p| ct_eq(b.proof.as_bytes(), p.as_bytes()));
+            if !beside {
                 return Verdict::Refuse(Refusal::Gone);
             }
             if !b.confirm_required {
@@ -60,11 +64,6 @@ impl HandoffInner {
             Decided::Gone => Err(Refusal::Gone),
         }
     }
-}
-
-fn in_reach(beacon: &Beacon, viewer_ip: &str, proof: Option<&str>) -> bool {
-    same_network(&beacon.ip, viewer_ip)
-        || proof.is_some_and(|p| ct_eq(beacon.proof.as_bytes(), p.as_bytes()))
 }
 
 fn confirmed(beacon: &mut Beacon, check: Option<&str>) -> Verdict<Refusal> {

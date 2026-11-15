@@ -1927,7 +1927,7 @@
     "status": "SHIPPED",
     "text": "A home this cannot place, split across subnets, dual-stack with the two",
     "file": "docs/spec/discovery/README.md",
-    "line": 36
+    "line": 40
   },
   {
     "id": "DISC-6",
@@ -1937,7 +1937,7 @@
     "status": "SHIPPED",
     "text": "Native mobile shells, iOS and Android, can *browse*: they find nearby",
     "file": "docs/spec/discovery/README.md",
-    "line": 49
+    "line": 53
   },
   {
     "id": "DISC-7",
@@ -1947,7 +1947,7 @@
     "status": "SHIPPED",
     "text": "Native TV shells, Apple TV and Android TV, and webOS can *announce*:",
     "file": "docs/spec/discovery/README.md",
-    "line": 51
+    "line": 55
   },
   {
     "id": "DISC-8",
@@ -1957,7 +1957,7 @@
     "status": "SHIPPED",
     "text": "Web, desktop and TV-web shells can do neither from the browser",
     "file": "docs/spec/discovery/README.md",
-    "line": 56
+    "line": 60
   },
   {
     "id": "DISC-9",
@@ -1967,7 +1967,7 @@
     "status": "SHIPPED",
     "text": "Tizen cannot announce at all, because its TV profile ships no way to.",
     "file": "docs/spec/discovery/README.md",
-    "line": 59
+    "line": 63
   },
   {
     "id": "DISC-10",
@@ -1977,7 +1977,7 @@
     "status": "SHIPPED",
     "text": "Browsing and announcing settle *reach*, whether two devices are near",
     "file": "docs/spec/discovery/README.md",
-    "line": 63
+    "line": 67
   },
   {
     "id": "DISC-11",
@@ -1987,7 +1987,7 @@
     "status": "SHIPPED",
     "text": "Every shell offers a manual path: a person can always type an address,",
     "file": "docs/spec/discovery/README.md",
-    "line": 72
+    "line": 76
   },
   {
     "id": "DISC-12",
@@ -1997,7 +1997,7 @@
     "status": "SHIPPED",
     "text": "Manual connection is the only supported path from *outside* the local",
     "file": "docs/spec/discovery/README.md",
-    "line": 77
+    "line": 81
   },
   {
     "id": "DISC-13",
@@ -2007,7 +2007,7 @@
     "status": "SHIPPED",
     "text": "Once an address is reachable, every sign-in road below works over it,",
     "file": "docs/spec/discovery/README.md",
-    "line": 83
+    "line": 87
   },
   {
     "id": "DISC-14",
@@ -2017,7 +2017,7 @@
     "status": "SHIPPED",
     "text": "All three roads end in the same place. The server holds a pending",
     "file": "docs/spec/discovery/README.md",
-    "line": 94
+    "line": 98
   },
   {
     "id": "DISC-15",
@@ -2027,7 +2027,7 @@
     "status": "SHIPPED",
     "text": "**Quick Connect is the floor.** The television prints a short code; the",
     "file": "docs/spec/discovery/README.md",
-    "line": 99
+    "line": 103
   },
   {
     "id": "DISC-16",
@@ -2037,7 +2037,7 @@
     "status": "SHIPPED",
     "text": "**Nearby handoff** is the shortcut for televisions the platform lets us",
     "file": "docs/spec/discovery/README.md",
-    "line": 108
+    "line": 112
   },
   {
     "id": "DISC-17",
@@ -2047,7 +2047,7 @@
     "status": "SHIPPED",
     "text": "**Confirmed handoff** covers the listed television a server cannot",
     "file": "docs/spec/discovery/README.md",
-    "line": 112
+    "line": 116
   },
   {
     "id": "DISC-18",
@@ -2057,7 +2057,7 @@
     "status": "SHIPPED",
     "text": "Discovery finding nothing is a normal state, not an error, and every",
     "file": "docs/spec/discovery/README.md",
-    "line": 121
+    "line": 125
   },
   {
     "id": "DISC-19",
@@ -2067,7 +2067,7 @@
     "status": "SHIPPED",
     "text": "A TV shell that can announce but not browse is *already* showing its",
     "file": "docs/spec/discovery/README.md",
-    "line": 124
+    "line": 128
   },
   {
     "id": "DISC-20",
@@ -2077,7 +2077,7 @@
     "status": "SHIPPED",
     "text": "A TV shell that cannot announce shows Quick Connect and, when it is",
     "file": "docs/spec/discovery/README.md",
-    "line": 126
+    "line": 130
   },
   {
     "id": "DISC-21",
@@ -2087,7 +2087,7 @@
     "status": "SHIPPED",
     "text": "A mobile shell that browses and sees an empty list offers, in that",
     "file": "docs/spec/discovery/README.md",
-    "line": 129
+    "line": 133
   },
   {
     "id": "DISC-22",
@@ -2097,7 +2097,7 @@
     "status": "SHIPPED",
     "text": "Web and desktop, which never browse, present the manual address field",
     "file": "docs/spec/discovery/README.md",
-    "line": 132
+    "line": 136
   },
   {
     "id": "DISC-23",
@@ -2107,7 +2107,7 @@
     "status": "SHIPPED",
     "text": "No shell ever traps a person on a road that failed. There is always a",
     "file": "docs/spec/discovery/README.md",
-    "line": 135
+    "line": 139
   },
   {
     "id": "DISC-24",
@@ -2117,7 +2117,7 @@
     "status": "SHIPPED",
     "text": "A Quick Connect or handoff code is valid for **five minutes**, because",
     "file": "docs/spec/discovery/README.md",
-    "line": 142
+    "line": 146
   },
   {
     "id": "DISC-25",
@@ -2127,7 +2127,7 @@
     "status": "SHIPPED",
     "text": "A code that expires mid-flow is replaced on the television by a clear",
     "file": "docs/spec/discovery/README.md",
-    "line": 146
+    "line": 150
   },
   {
     "id": "DISC-26",
@@ -2137,7 +2137,7 @@
     "status": "SHIPPED",
     "text": "A code already consumed by a successful sign-in vanishes rather than",
     "file": "docs/spec/discovery/README.md",
-    "line": 150
+    "line": 154
   },
   {
     "id": "DISC-27",
@@ -2147,7 +2147,7 @@
     "status": "SHIPPED",
     "text": "An expired code is visibly dead and one tap from being alive again,",
     "file": "docs/spec/discovery/README.md",
-    "line": 153
+    "line": 157
   },
   {
     "id": "DISC-28",
@@ -2157,7 +2157,7 @@
     "status": "SHIPPED",
     "text": "Approval is one-time. The moment an account approves a pairing, the",
     "file": "docs/spec/discovery/README.md",
-    "line": 160
+    "line": 164
   },
   {
     "id": "DISC-29",
@@ -2167,7 +2167,7 @@
     "status": "SHIPPED",
     "text": "A paired television is a *device*, not a second key to the account. It",
     "file": "docs/spec/discovery/README.md",
-    "line": 165
+    "line": 169
   },
   {
     "id": "DISC-30",
@@ -2177,7 +2177,7 @@
     "status": "SHIPPED",
     "text": "Revocation is symmetrical with every other device. The account sees the",
     "file": "docs/spec/discovery/README.md",
-    "line": 169
+    "line": 173
   },
   {
     "id": "DISC-31",
@@ -2187,7 +2187,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Samsung and LG televisions do not reach the deeper",
     "file": "docs/spec/discovery/README.md",
-    "line": 177
+    "line": 181
   },
   {
     "id": "DISC-32",
@@ -2197,7 +2197,7 @@
     "status": "SHIPPED",
     "text": "Native TV shells also *browse* for a server, so a television that was",
     "file": "docs/spec/discovery/README.md",
-    "line": 53
+    "line": 57
   },
   {
     "id": "DISC-33",
@@ -2207,7 +2207,17 @@
     "status": "SHIPPED",
     "text": "A client with a camera may read the code from the television's QR",
     "file": "docs/spec/discovery/README.md",
-    "line": 104
+    "line": 108
+  },
+  {
+    "id": "DISC-34",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 34,
+    "status": "SHIPPED",
+    "text": "In the house the server itself sits in, a device on the server's",
+    "file": "docs/spec/discovery/README.md",
+    "line": 35
   },
   {
     "id": "LIB-1",
