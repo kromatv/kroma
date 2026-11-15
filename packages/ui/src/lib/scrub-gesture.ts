@@ -12,9 +12,7 @@ export function useScrubGesture(
 
   const grab = useEffectEvent(() => {
     originY.current = null;
-    const node = target.current as
-      | (View & { getBoundingClientRect?: () => { top: number } })
-      | null;
+    const node = target.current;
     if (node?.getBoundingClientRect) {
       const scrollY = (globalThis as { scrollY?: number }).scrollY ?? 0;
       originY.current = node.getBoundingClientRect().top + scrollY;

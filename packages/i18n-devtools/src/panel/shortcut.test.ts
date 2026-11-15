@@ -15,7 +15,7 @@ describe('isChord', () => {
   });
 
   it('refuses AltGr, which Windows and Linux report as ctrl+alt', () => {
-    const altGr = chord({ modifierAltGraph: true } as KeyboardEventInit);
+    const altGr = chord({ modifierAltGraph: true });
 
     expect(isChord(altGr, 'KeyK')).toBe(false);
   });

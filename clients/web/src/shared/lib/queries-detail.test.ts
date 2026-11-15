@@ -13,11 +13,11 @@ const { catalogQueries } = createQueries(c);
 
 installHarness();
 
-describe('the show bundle', () => {
-  const detail = (id: string, genres: string[], tmdbId: number | null = null) => ({
-    show: show(id, genres, tmdbId),
-  });
+const detail = (id: string, genres: string[], tmdbId: number | null = null) => ({
+  show: show(id, genres, tmdbId),
+});
 
+describe('the show bundle', () => {
   it('prefers shows that share a genre', async () => {
     c.media.show.mockResolvedValue(detail('s1', ['Drama']));
     c.media.showCards.mockResolvedValue([

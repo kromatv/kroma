@@ -141,7 +141,7 @@ export function ScrollMask({
 
   useEffect(() => {
     if (!MASKED || !position) {
-      return;
+      return undefined;
     }
     let timer: ReturnType<typeof setTimeout> | null = null;
     const id = position.offset.addListener(() => {

@@ -153,13 +153,13 @@ describe('offline', () => {
   });
 });
 
-describe('resolving a tile', () => {
-  const tileAt = async (seconds: number) => {
-    const { result } = renderHook(() => useStoryboard(client, item, true));
-    await waitFor(() => expect(result.current(0)).not.toBeNull());
-    return result.current(seconds);
-  };
+const tileAt = async (seconds: number) => {
+  const { result } = renderHook(() => useStoryboard(client, item, true));
+  await waitFor(() => expect(result.current(0)).not.toBeNull());
+  return result.current(seconds);
+};
 
+describe('resolving a tile', () => {
   it('resolves the sheet against the server', async () => {
     expect((await tileAt(0))?.sheet).toBe('https://kroma.test/sb/itm_1.jpg');
   });

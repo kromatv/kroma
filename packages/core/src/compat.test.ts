@@ -29,13 +29,13 @@ describe('non-numeric version parts', () => {
   });
 });
 
-describe('checkCompat', () => {
-  const client = (over: Partial<ClientBuild> = {}): ClientBuild => ({
-    version: '0.1.31',
-    minServerVersion: '0.1.0',
-    ...over,
-  });
+const client = (over: Partial<ClientBuild> = {}): ClientBuild => ({
+  version: '0.1.31',
+  minServerVersion: '0.1.0',
+  ...over,
+});
 
+describe('checkCompat', () => {
   it('is ok when each side meets what the other asks', () => {
     expect(checkCompat(client(), { version: '0.1.31', minClient: '0.1.30' })).toBe('ok');
     expect(checkCompat(client({ minServerVersion: '0.1.30' }), { version: '0.1.31' })).toBe('ok');

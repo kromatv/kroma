@@ -8,7 +8,7 @@ import { trailerHref, trailerListQuery } from '#mobile/lib/trailer';
 
 interface TrailerLink {
   label: string;
-  open(): void;
+  open: () => void;
 }
 
 /** The way to a title's trailer, or null until the server says it can play
@@ -32,6 +32,6 @@ export function useTrailerLink(
   }
   return {
     label: t(TRAILER_LABEL[trailer.version]),
-    open: () => router.push(trailerHref(kind, tmdbId, title) as never),
+    open: () => router.push(trailerHref(kind, tmdbId, title)),
   };
 }

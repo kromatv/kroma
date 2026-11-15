@@ -49,7 +49,7 @@ describe('bindMediaEvents', () => {
 
     const fv2 = fakeVideo({ duration: 900 });
     const s2 = mkSetters();
-    bindMediaEvents(fv2.el, { ...item, durationMs: 0 } as MovieView, s2, 10);
+    bindMediaEvents(fv2.el, { ...item, durationMs: 0 }, s2, 10);
     fv2.fire('durationchange');
     expect(s2.setDur).toHaveBeenCalledWith(910);
   });
@@ -57,7 +57,7 @@ describe('bindMediaEvents', () => {
   it('prefers the known (server-header) duration over the element clock', () => {
     const fv = fakeVideo({ duration: 172 });
     const s = mkSetters();
-    bindMediaEvents(fv.el, { ...item, durationMs: 0 } as MovieView, s, 0, 5_885_000);
+    bindMediaEvents(fv.el, { ...item, durationMs: 0 }, s, 0, 5_885_000);
     fv.fire('durationchange');
     expect(s.setDur).toHaveBeenCalledWith(5885);
   });
@@ -172,7 +172,7 @@ describe('bindMediaEvents', () => {
   it('reports no duration at all while neither source knows one', () => {
     const fv = fakeVideo();
     const s = mkSetters();
-    bindMediaEvents(fv.el, { ...item, durationMs: 0 } as MovieView, s, 0);
+    bindMediaEvents(fv.el, { ...item, durationMs: 0 }, s, 0);
     fv.fire('durationchange');
     expect(s.setDur).not.toHaveBeenCalled();
   });

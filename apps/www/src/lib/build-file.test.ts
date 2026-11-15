@@ -3,16 +3,15 @@ import { fromCanaryFile, fromDownload } from './build-file.ts';
 import type { CanaryFile } from './canary.ts';
 import type { SiteDownload } from './releases.ts';
 
-const release = (over: Partial<SiteDownload> = {}): SiteDownload =>
-  ({
-    target: 'macos',
-    name: 'KROMA_0.1.38_aarch64.dmg',
-    url: 'https://github.com/x/y/releases/download/v0.1.38/KROMA_0.1.38_aarch64.dmg',
-    bytes: 52_807_435,
-    sha256: 'a'.repeat(64),
-    builtAt: '2026-08-14T02:17:00Z',
-    ...over,
-  }) as SiteDownload;
+const release = (over: Partial<SiteDownload> = {}): SiteDownload => ({
+  target: 'macos',
+  name: 'KROMA_0.1.38_aarch64.dmg',
+  url: 'https://github.com/x/y/releases/download/v0.1.38/KROMA_0.1.38_aarch64.dmg',
+  bytes: 52_807_435,
+  sha256: 'a'.repeat(64),
+  builtAt: '2026-08-14T02:17:00Z',
+  ...over,
+});
 
 const canary = (over: Partial<CanaryFile> = {}): CanaryFile => ({
   target: 'tizen',

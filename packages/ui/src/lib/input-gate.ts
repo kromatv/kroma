@@ -15,7 +15,7 @@ export function createInputGate() {
   let holders = 0;
   return {
     ...guard,
-    holdInput() {
+    holdInput: () => {
       holders += 1;
       let released = false;
       return () => {
@@ -30,7 +30,7 @@ export function createInputGate() {
       };
     },
     inputHeld: () => holders > 0,
-    clearInputHolds() {
+    clearInputHolds: () => {
       holders = 0;
     },
   };

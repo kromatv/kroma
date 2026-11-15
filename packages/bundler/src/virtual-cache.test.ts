@@ -96,6 +96,10 @@ describe('serving the module', () => {
   });
 });
 
+const fingerprint = async () => {
+  throw new Error('no such directory');
+};
+
 describe('the cache', () => {
   it('spares a second build the reading', async () => {
     const id = freshId();
@@ -143,9 +147,6 @@ describe('the cache', () => {
       reads += 1;
       return { reads };
     };
-    const fingerprint = async () => {
-      throw new Error('no such directory');
-    };
     expect(await plugin({ id, read, fingerprint }).load(RESOLVED)).toBe(
       'export const FIXTURE = {"reads":1};',
     );
@@ -154,19 +155,19 @@ describe('the cache', () => {
   });
 });
 
-describe('refreshing during dev', () => {
-  function server() {
-    const invalidated: unknown[] = [];
-    const mod = { id: RESOLVED };
-    return {
-      invalidated,
-      moduleGraph: {
-        getModuleById: (id: string) => (id === RESOLVED ? mod : undefined),
-        invalidateModule: (found: unknown) => invalidated.push(found),
-      },
-    };
-  }
+function server() {
+  const invalidated: unknown[] = [];
+  const mod = { id: RESOLVED };
+  return {
+    invalidated,
+    moduleGraph: {
+      getModuleById: (id: string) => (id === RESOLVED ? mod : undefined),
+      invalidateModule: (found: unknown) => invalidated.push(found),
+    },
+  };
+}
 
+describe('refreshing during dev', () => {
   it('invalidates the module when a watched file changes', () => {
     const hooks = plugin({
       id: freshId(),

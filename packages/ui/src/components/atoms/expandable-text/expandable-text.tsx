@@ -67,7 +67,7 @@ function ExpandableText({
   const clamped = !expanded && (!animate || settled);
   useEffect(() => {
     if (expanded || !animate) {
-      return;
+      return undefined;
     }
     const settle = setTimeout(() => setSettled(true), GROW_MS);
     return () => clearTimeout(settle);

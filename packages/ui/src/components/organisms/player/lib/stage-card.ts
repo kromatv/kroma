@@ -51,6 +51,10 @@ function pictureRect(width: number, height: number, aspect: number | undefined):
   return { x: (1 - w) / 2, y: (1 - h) / 2, width: w, height: h };
 }
 
+// Never past the fraction panelGeometry already calls too small to shrink to:
+// a stage barely deeper than its own margins would otherwise scale to nothing.
+const fit = (slot: number, side: number) => Math.max(slot / side, MIN_CARD_SCALE);
+
 /** The picture on a `width` x `height` stage, and the card it shrinks into
  * beside the settings panel. `aspect` is the picture's display ratio (w/h); with
  * none the picture is the whole stage, which is what the shrink used to assume.
@@ -63,9 +67,6 @@ export function stageCard(width: number, height: number, aspect?: number): Stage
     x: width > 0 ? CARD_MARGIN / width : 0,
     y: height > 0 ? CARD_MARGIN / height : 0,
   };
-  // Never past the fraction panelGeometry already calls too small to shrink to:
-  // a stage barely deeper than its own margins would otherwise scale to nothing.
-  const fit = (slot: number, side: number) => Math.max(slot / side, MIN_CARD_SCALE);
   const scale =
     free > 0
       ? Math.min(

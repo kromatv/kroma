@@ -46,10 +46,10 @@ describe('tierFor', () => {
   });
 });
 
-describe('orderStories', () => {
-  const make = (tier: string, group: string, name: string) =>
-    ({ id: slug(name), tier, group, name }) as Story;
+const make = (tier: string, group: string, name: string) =>
+  ({ id: slug(name), tier, group, name }) as Story;
 
+describe('orderStories', () => {
   it('sorts by functional group first, so every input sits in one section', () => {
     const sorted = orderStories([
       make('Organisms', 'Media', 'Rail'),

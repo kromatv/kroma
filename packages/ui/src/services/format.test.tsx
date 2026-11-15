@@ -17,6 +17,11 @@ function read(locale: Locale, pick: (f: ReturnType<typeof useFormat>) => string)
   ).container.textContent;
 }
 
+function FormatProbe() {
+  const f = useFormat();
+  return <>{`${f.bytes(1024 ** 3)} ${f.elapsed(null)}`}</>;
+}
+
 describe('useFormat', () => {
   it('binds the byte units to the locale on screen', () => {
     expect(read('fr', (f) => f.bytes(1024 ** 3))).toBe('1,0 Go');
@@ -41,12 +46,7 @@ describe('useFormat', () => {
   });
 
   it('answers in the default locale above a provider instead of throwing', () => {
-    function Probe() {
-      const f = useFormat();
-      return <>{`${f.bytes(1024 ** 3)} ${f.elapsed(null)}`}</>;
-    }
-
-    expect(render(<Probe />).container.textContent).toBe('1,0 Go jamais');
+    expect(render(<FormatProbe />).container.textContent).toBe('1,0 Go jamais');
   });
 
   it('keeps one identity while the locale holds still', () => {

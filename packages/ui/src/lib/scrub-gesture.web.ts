@@ -13,7 +13,7 @@ export function useScrubGesture(
   useEffect(() => {
     const node = target.current as unknown as HTMLElement | null;
     if (!node?.addEventListener) {
-      return;
+      return undefined;
     }
     const down = (e: PointerEvent) => {
       e.preventDefault();

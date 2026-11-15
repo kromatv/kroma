@@ -24,9 +24,12 @@ describe('the in-memory session bearer', () => {
   });
 });
 
+let resolveFn: (v: { token: string; user: unknown }) => void = () => {};
+
+let release: (v: { token: string; user: string }) => void = () => {};
+
 describe('sharedTokenExchange', () => {
   it('leaves the newer in-flight exchange alone when a nested one settles', async () => {
-    let release: (v: { token: string; user: string }) => void = () => {};
     let nested: Promise<{ token: string; user: string }> | undefined;
 
     const outer = sharedTokenExchange<string>(() => {
@@ -46,7 +49,6 @@ describe('sharedTokenExchange', () => {
   });
 
   it('coalesces overlapping exchanges into one, then allows a fresh one after settle', async () => {
-    let resolveFn: (v: { token: string; user: unknown }) => void = () => {};
     const exchange = vi.fn(
       () => new Promise<{ token: string; user: unknown }>((r) => (resolveFn = r)),
     );

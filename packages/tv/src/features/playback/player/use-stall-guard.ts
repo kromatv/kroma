@@ -17,7 +17,7 @@ export function useStallGuard(
   useEffect(() => {
     const engine = engineRef.current;
     if (!active || !engine) {
-      return;
+      return undefined;
     }
     return driveStallRecovery(
       {

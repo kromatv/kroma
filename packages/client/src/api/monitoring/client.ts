@@ -20,11 +20,12 @@ import {
 
 const Removed = z.object({ ok: z.boolean() });
 
+const title = (kind: RequestKind, tmdbId: number) => ({ params: { kind, tmdbId } });
+
 /** Monitoring (`library.manage`): the titles the server wants to hold, Sonarr
  * and Radarr's model. A monitored movie is searched once available; a
  * monitored show is searched episode by episode. */
 export default function monitoringApi(ctx: RequestContext) {
-  const title = (kind: RequestKind, tmdbId: number) => ({ params: { kind, tmdbId } });
   return {
     /** Every monitored title with what the library holds of it. */
     list: () => ctx.get('/monitoring', MonitoredSummary.array()),

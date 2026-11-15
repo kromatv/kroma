@@ -7,7 +7,7 @@ import { afterEach, expect, it } from 'vitest';
 import { PlanBody, planSubtitle } from '#web/features/admin/module-install-plan';
 import { englishT } from '#web/features/admin/module-permissions.fixture';
 
-const { render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(cleanup);
 
@@ -48,7 +48,7 @@ const PLAN = StorePlan.parse({
 });
 
 function show() {
-  render(
+  inputHost.render(
     <I18nProvider locale="fr">
       <PlanBody
         plan={PLAN}
@@ -83,10 +83,10 @@ it('says once for every module what reaches past its isolation', () => {
   expect(screen.getByText('Détail par module')).toBeTruthy();
 });
 
+const bytes = () => '16 MB';
+
 it('counts what an install requires, and leaves the optional module out of it', () => {
   const t = englishT();
-
-  const bytes = () => '16 MB';
 
   expect(planSubtitle(PLAN, PLAN.optional, bytes, t)).toBe('With 2 required modules · 16 MB');
   expect(planSubtitle({ ...PLAN, totalSize: 0 }, PLAN.optional, bytes, t)).toBe(
@@ -114,7 +114,7 @@ function showOne(module: Record<string, unknown>) {
     missing: [],
     totalSize: 0,
   });
-  render(
+  inputHost.render(
     <I18nProvider locale="fr">
       <PlanBody
         plan={plan}

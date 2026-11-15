@@ -124,7 +124,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   // concurrent 401s (and the boot exchange / data layer) share one exchange.
   useEffect(() => {
     if (!client) {
-      return;
+      return undefined;
     }
     client.setRefreshHandler(() => refreshExchange(client, setSession, persistence));
     return () => client.setRefreshHandler();
@@ -140,7 +140,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
     const active = loadSession();
     if (!client || !active) {
       setReady(true);
-      return;
+      return undefined;
     }
     let cancelled = false;
     const settled = client.session.currentExchange<User>();

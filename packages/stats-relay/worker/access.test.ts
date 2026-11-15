@@ -52,8 +52,7 @@ async function sign(pair: CryptoKeyPair, kid: string, claims: Record<string, unk
 }
 
 function serving(document: unknown, ok = true): typeof fetch {
-  return (async () =>
-    new Response(JSON.stringify(document), { status: ok ? 200 : 500 })) as unknown as typeof fetch;
+  return async () => new Response(JSON.stringify(document), { status: ok ? 200 : 500 });
 }
 
 function goodClaims(overrides: Record<string, unknown> = {}) {

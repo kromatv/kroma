@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { startHealthMonitor } from './health-monitor';
 
+const noop = () => undefined;
+
 // Fake timers so the self-adjusting poll loop is deterministic; probes are async,
 // so advance with the *Async helpers to also flush the microtask queue.
 beforeEach(() => vi.useFakeTimers());
@@ -87,7 +89,7 @@ describe('startHealthMonitor', () => {
   });
 
   it('coalesces overlapping probes (recheck while one is in flight is a no-op)', async () => {
-    let resolve: (v: boolean) => void = () => {};
+    let resolve: (v: boolean) => void = noop;
     const probe = vi.fn(() => new Promise<boolean>((r) => (resolve = r)));
     const m = startHealthMonitor({
       probe,
@@ -124,7 +126,7 @@ describe('startHealthMonitor', () => {
   });
 
   it('schedules nothing more when stop() lands while a probe is in flight', async () => {
-    let resolve: (v: boolean) => void = () => {};
+    let resolve: (v: boolean) => void = noop;
     const probe = vi.fn(() => new Promise<boolean>((r) => (resolve = r)));
     const m = startHealthMonitor({ probe, onChange: () => {}, onlineMs: 100, offlineMs: 100 });
     m.stop();

@@ -2,14 +2,15 @@
 // each build carries the oldest server it works with, and a server states the
 // oldest app it serves. Anything unknown counts as compatible.
 
+const parts = (v: string): number[] =>
+  (v.split(/[-+]/)[0] ?? '')
+    .split('.')
+    .map((p) => Number.parseInt(p, 10))
+    .map((n) => (Number.isFinite(n) ? n : 0));
+
 /** Only the leading numeric parts matter, so a canary compares as the release
  * it leads to: `0.1.39-canary.4` is 0.1.39. */
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
-  const parts = (v: string): number[] =>
-    (v.split(/[-+]/)[0] ?? '')
-      .split('.')
-      .map((p) => Number.parseInt(p, 10))
-      .map((n) => (Number.isFinite(n) ? n : 0));
   const pa = parts(a);
   const pb = parts(b);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

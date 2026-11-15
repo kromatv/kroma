@@ -87,6 +87,9 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   useEffect(() => {
     clientRef.current = params.client;
   }, [params.client]);
+  const stop = () => {
+    clientRef.current.playback.stop(sessionId).catch(() => undefined);
+  };
 
   const fireTerminated = useEffectEvent((message: string) => {
     if (terminated.current) {
@@ -144,7 +147,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- send reads through the effect event; re-run only on client/enabled.
   useEffect(() => {
     if (!params.enabled) {
-      return;
+      return undefined;
     }
     const ping = () => send();
     ping();
@@ -171,9 +174,6 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
       if (terminated.current || !opened.current) {
         return;
       }
-      const stop = () => {
-        clientRef.current.playback.stop(sessionId).catch(() => undefined);
-      };
       const pending = inFlight.current;
       if (pending) {
         void pending.then(stop, stop);
@@ -196,7 +196,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- the socket lives per enabled/baseUrl; the token closure reads its live value at handshake time.
   useEffect(() => {
     if (!params.enabled) {
-      return;
+      return undefined;
     }
     const ev = new KromaEvents(params.eventsBaseUrl, {
       token: params.eventsToken ?? (() => params.client.sessionToken),

@@ -12,8 +12,10 @@ const wait = (ms: number) => {
   });
 };
 
+const noop = (): void => undefined;
+
 function holdOn(reveal: { current: ReturnType<typeof useChromeReveal> }): () => void {
-  let release: () => void = () => undefined;
+  let release: () => void = noop;
   act(() => {
     release = reveal.current.hold();
   });

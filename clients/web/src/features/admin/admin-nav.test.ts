@@ -63,6 +63,8 @@ describe('the console navigation', () => {
   });
 });
 
+const moderator = (cap: Permission | null) => cap === 'requests.manage';
+
 describe('the console pages', () => {
   it('lead somewhere different from one another, under one section each', () => {
     const paths = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.to));
@@ -72,8 +74,6 @@ describe('the console pages', () => {
   });
 
   it('opens the library to whoever can manage titles or requests', () => {
-    const moderator = (cap: Permission | null) => cap === 'requests.manage';
-
     const items = adminNavSections([], moderator).sections.flatMap((section) => section.items);
 
     expect(items.map((item) => item.to)).toEqual(['/admin/monitoring']);

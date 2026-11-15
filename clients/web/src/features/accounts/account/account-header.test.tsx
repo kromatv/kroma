@@ -35,7 +35,7 @@ function Providers({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 const PHOTO_URL = 'blob:http://localhost/picked';
 const PICKED = new File(['original'], 'me.jpg', { type: 'image/jpeg' });
 
@@ -47,9 +47,12 @@ function pick(file: File | undefined) {
   fireEvent.change(input, { target: { files: file ? [file] : [] } });
 }
 
+const createObjectURL = vi.fn(() => PHOTO_URL);
+const revokeObjectURL = vi.fn();
+
 beforeEach(() => {
-  URL.createObjectURL = vi.fn(() => PHOTO_URL);
-  URL.revokeObjectURL = vi.fn();
+  URL.createObjectURL = createObjectURL;
+  URL.revokeObjectURL = revokeObjectURL;
 });
 
 afterEach(() => {
@@ -59,32 +62,32 @@ afterEach(() => {
 
 describe('changing the account photo', () => {
   it('opens the picked photo to be framed rather than uploading it as it is', () => {
-    render(<AccountHeader />, { wrapper: Providers });
+    inputHost.render(<AccountHeader />, { wrapper: Providers });
 
     pick(PICKED);
 
     expect(screen.getByRole('button', { name: 'Move the photo' })).toBeTruthy();
-    expect(URL.createObjectURL).toHaveBeenCalledWith(PICKED);
+    expect(createObjectURL).toHaveBeenCalledWith(PICKED);
     expect(auth.uploadAvatar).not.toHaveBeenCalled();
   });
 
   it('lets go of the photo when the framing is cancelled', () => {
-    render(<AccountHeader />, { wrapper: Providers });
+    inputHost.render(<AccountHeader />, { wrapper: Providers });
     pick(PICKED);
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(screen.queryByRole('button', { name: 'Move the photo' })).toBeNull();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith(PHOTO_URL);
+    expect(revokeObjectURL).toHaveBeenCalledWith(PHOTO_URL);
   });
 
   it('opens nothing when the picker is dismissed', () => {
-    render(<AccountHeader />, { wrapper: Providers });
+    inputHost.render(<AccountHeader />, { wrapper: Providers });
 
     pick(undefined);
 
     expect(screen.queryByRole('button', { name: 'Move the photo' })).toBeNull();
-    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(createObjectURL).not.toHaveBeenCalled();
   });
 });

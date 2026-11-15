@@ -30,7 +30,7 @@ function FocusReporter(props: ReporterProps) {
   const { onFocus, index, children } = props;
   // Stable per item, or every focus change re-renders every tile in the window.
   const value = useMemo<Report>(
-    () => (index === undefined ? (onFocus as Report) : () => onFocus(index)),
+    () => (index === undefined ? onFocus : () => onFocus(index)),
     [onFocus, index],
   );
   return <FocusReportContext.Provider value={value}>{children}</FocusReportContext.Provider>;

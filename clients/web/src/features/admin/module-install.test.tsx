@@ -9,7 +9,7 @@ import { InstallModal } from '#web/features/admin/module-install';
 import { createWebRuntime } from '#web/shared/lib/api';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 
-const { render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(cleanup);
 
@@ -18,7 +18,7 @@ it('asks the server for the install plan as soon as the dialog opens', async () 
     client: createQueryClient({ baseUrl: 'http://kroma.test', authToken: 't' }),
   });
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+  inputHost.render(
     <QueryClientProvider client={queries}>
       <I18nProvider locale="en">
         <WebRuntimeProvider value={runtime}>

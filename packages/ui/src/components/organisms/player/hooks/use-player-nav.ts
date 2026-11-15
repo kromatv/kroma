@@ -15,24 +15,24 @@ const HIDE_MS = 3500;
 
 /** Actions the top-level machine invokes; the shell wires them to the controller. */
 export interface PlayerNavActions {
-  togglePlay(): void;
+  togglePlay: () => void;
   /** Directional seek, -1 = back / +1 = forward, from the seek bar or the
    *  rewind/forward transport buttons. */
-  seekNudge(dir: -1 | 1, press: SeekPress): void;
-  onNext(): void;
+  seekNudge: (dir: -1 | 1, press: SeekPress) => void;
+  onNext: () => void;
   hasNext: boolean;
   sheetHasItems: boolean;
   /** Volume ±5 % (§4b) when the volume control is focused. */
-  volumeNudge(dir: -1 | 1): void;
-  toggleMute(): void;
-  togglePip(): void;
-  toggleFullscreen(): void;
+  volumeNudge: (dir: -1 | 1) => void;
+  toggleMute: () => void;
+  togglePip: () => void;
+  toggleFullscreen: () => void;
   /** Hand this film to a TV. Only reachable when `flags.cast` is on, which the
    *  host sets while a receiver is live. */
-  onCast?(): void;
+  onCast?: () => void;
   /** Leave the player, told why: OK on the back button, Back at the top level,
    *  or the Stop media key. */
-  onExit(reason: PlayerCloseReason): void;
+  onExit: (reason: PlayerCloseReason) => void;
 }
 
 export interface PlayerNav {
@@ -42,25 +42,25 @@ export interface PlayerNav {
   /** Where in the chrome the navigator's focus is, or null when it is elsewhere. */
   spot: Spot | null;
   /** The keys the navigator does not walk: the media keys and Back. */
-  handleKey(key: RemoteKey): void;
+  handleKey: (key: RemoteKey) => void;
   /** The chrome's answer to a press before the navigator moves (see `onKey`):
    *  a hidden chrome comes back on the first press and keeps it. */
-  chromeKey(direction: Direction): boolean;
+  chromeKey: (direction: Direction) => boolean;
   /** Reveal the chrome + (re)arm the auto-hide timer (pointer move / any key). */
-  poke(): void;
+  poke: () => void;
   /** Re-arm the auto-hide timer WITHOUT revealing the chrome. Used by immersive
    *  media shortcuts so repeated arrow presses don't flash the UI. */
-  rearmHide(): void;
-  openOverlay(o: Exclude<Overlay, null>): void;
-  closeOverlay(): void;
+  rearmHide: () => void;
+  openOverlay: (o: Exclude<Overlay, null>) => void;
+  closeOverlay: () => void;
   /** Run a control's action, whether OK or a click pressed it. */
-  activate(id: ControlId): void;
+  activate: (id: ControlId) => void;
   /** Where the navigator's focus landed in the chrome, reported by the part it landed on. */
-  focus(spot: Spot): void;
+  focus: (spot: Spot) => void;
   /** The part that held the focus lost it. */
-  blur(spot: Spot): void;
+  blur: (spot: Spot) => void;
   /** Leave the player, told why, without going through the key chain. */
-  exit(reason: PlayerCloseReason): void;
+  exit: (reason: PlayerCloseReason) => void;
 }
 
 /**

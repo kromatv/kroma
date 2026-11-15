@@ -14,7 +14,7 @@ import { webWindow } from './dom';
  */
 export function suppressSelection(): () => void {
   const win = webWindow();
-  const root = win?.document?.documentElement as HTMLElement | undefined;
+  const root = win?.document?.documentElement;
   if (!win || !root) {
     return NOOP;
   }

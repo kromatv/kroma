@@ -19,7 +19,7 @@ export function useIdleCursor(hidden: boolean): void {
   useEffect(() => {
     const doc = webDocument();
     if (!hidden || !doc?.head) {
-      return;
+      return undefined;
     }
     const el = doc.createElement('style');
     el.id = IDLE_STYLE_ID;

@@ -20,13 +20,13 @@ export interface Terminal {
   drawn(): string;
 }
 
+const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+
 export function terminal(): Terminal {
   const input = new PassThrough();
   const output = new PassThrough();
   const chunks: string[] = [];
   output.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
-
-  const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
   return {
     input,

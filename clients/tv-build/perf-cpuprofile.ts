@@ -37,7 +37,7 @@ export function bottomUp(
     if (window && (at < window.start || at > window.end)) {
       continue;
     }
-    const id = samples[i] as number;
+    const id = samples[i];
     const ms = Math.max(0, (deltas[i] ?? 0) / 1000);
     self.set(id, (self.get(id) ?? 0) + ms);
     counted += ms;

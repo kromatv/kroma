@@ -89,7 +89,7 @@ export function seriesPath(data: readonly number[], extent: Extent, box: ChartBo
   }
   let d = '';
   for (let i = 0; i < data.length; i += 1) {
-    const value = Number.isFinite(data[i] as number) ? (data[i] as number) : extent.min;
+    const value = Number.isFinite(data[i]) ? (data[i] as number) : extent.min;
     d += `${i === 0 ? 'M' : 'L'}${px(xAt(i, data.length, box))} ${px(yAt(value, extent, box))}`;
   }
   return d;

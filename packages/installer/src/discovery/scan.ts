@@ -133,10 +133,10 @@ export async function sweepTargets(): Promise<string[]> {
     return prefix !== null && prefixes.has(prefix);
   });
 
-  const rest = subnets.flatMap((subnet) =>
+  const unknown = subnets.flatMap((subnet) =>
     subnetHosts(subnet.prefix, subnet.address).filter((host) => !known.includes(host)),
   );
-  return [...known, ...rest];
+  return [...known, ...unknown];
 }
 
 interface Said {
@@ -160,11 +160,11 @@ async function examine(host: string, said: Said, signal?: AbortSignal): Promise<
 }
 
 function byAdvertiser(services: readonly MdnsService[]): Map<string, MdnsService[]> {
-  const byHost = new Map<string, MdnsService[]>();
+  const grouped = new Map<string, MdnsService[]>();
   for (const service of services) {
-    byHost.set(service.host, [...(byHost.get(service.host) ?? []), service]);
+    grouped.set(service.host, [...(grouped.get(service.host) ?? []), service]);
   }
-  return byHost;
+  return grouped;
 }
 
 async function openOf(host: string, ports: readonly number[]): Promise<Set<number>> {
@@ -175,7 +175,7 @@ async function openOf(host: string, ports: readonly number[]): Promise<Set<numbe
 }
 
 async function describe(replies: Awaited<ReturnType<typeof ssdpSearch>>) {
-  const byHost = new Map<string, UpnpDevice>();
+  const devices = new Map<string, UpnpDevice>();
   const seen = new Set<string>();
   const first = replies.filter((reply) => {
     if (seen.has(reply.host)) {
@@ -187,10 +187,10 @@ async function describe(replies: Awaited<ReturnType<typeof ssdpSearch>>) {
   await mapPool(first, 8, async (reply) => {
     const device = await fetchDeviceDescription(reply.location);
     if (device) {
-      byHost.set(reply.host, device);
+      devices.set(reply.host, device);
     }
   });
-  return byHost;
+  return devices;
 }
 
 function rest(ms: number, signal?: AbortSignal): Promise<void> {

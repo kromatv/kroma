@@ -17,9 +17,9 @@ vi.mock('#web/shared/lib/api', () => ({
 vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
   const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
-  const { QueryClient } =
+  const { QueryClient: ActualQueryClient } =
     await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
-  const queryCache = new QueryClient();
+  const queryCache = new ActualQueryClient();
   const runtime = createWebTestRuntime(
     { discovery: { detail: api.discoverDetail } },
     () => queryCache,

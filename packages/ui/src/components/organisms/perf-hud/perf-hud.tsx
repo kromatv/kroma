@@ -26,7 +26,7 @@ function PerfHud({
 
   useEffect(() => {
     if (!enabled || !perf) {
-      return;
+      return undefined;
     }
     perf.startPerf();
     const timer = setInterval(() => setReport(perf.perfReport()), REFRESH_MS);

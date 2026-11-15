@@ -165,9 +165,7 @@ function Root({
     }
     originX.current = null;
     preview(lens?.id ?? null, true);
-    const node = capsule.current as
-      | (View & { getBoundingClientRect?: () => { left: number } })
-      | null;
+    const node = capsule.current;
     if (node?.getBoundingClientRect) {
       const scrollX = (globalThis as { scrollX?: number }).scrollX ?? 0;
       originX.current = node.getBoundingClientRect().left + scrollX;

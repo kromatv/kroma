@@ -126,7 +126,7 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   const [fading, setFading] = useState(false);
   useEffect(() => {
     if (covers.length < 2) {
-      return;
+      return undefined;
     }
     const timer = setInterval(() => {
       setSlide((n) => n + 1);
@@ -136,7 +136,7 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   }, [covers.length, holdMs]);
   useEffect(() => {
     if (!fading) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setFading(false), FADE_MS);
     return () => clearTimeout(timer);

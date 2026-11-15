@@ -50,7 +50,7 @@ export function usePlayerCredits(opts: {
   }
   useEffect(() => {
     if (!show) {
-      return;
+      return undefined;
     }
     const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);

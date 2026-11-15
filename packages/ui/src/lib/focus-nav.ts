@@ -38,7 +38,7 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
 
   useEffect(() => {
     if (!onBack) {
-      return;
+      return undefined;
     }
     // Claim the Menu key so tvOS reports it instead of backing out of the app.
     const releaseMenuKey = menuKeys.hold();

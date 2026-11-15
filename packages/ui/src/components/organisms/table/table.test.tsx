@@ -355,7 +355,7 @@ function Declared() {
 }
 
 const boxOf = (node: Element) => {
-  const style = getComputedStyle(node as HTMLElement);
+  const style = getComputedStyle(node);
   return { width: style.width, grow: style.flexGrow, min: style.minWidth };
 };
 

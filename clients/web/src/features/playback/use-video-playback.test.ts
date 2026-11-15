@@ -137,10 +137,10 @@ describe('useVideoPlayback scrub bar math', () => {
   });
 });
 
-describe('useVideoPlayback fullscreen', () => {
-  const setDoc = (key: string, value: unknown) =>
-    Object.defineProperty(document, key, { value, configurable: true });
+const setDoc = (key: string, value: unknown) =>
+  Object.defineProperty(document, key, { value, configurable: true });
 
+describe('useVideoPlayback fullscreen', () => {
   afterEach(() => {
     setDoc('fullscreenElement', null);
     setDoc('fullscreenEnabled', false);
@@ -235,10 +235,10 @@ describe('useVideoPlayback without an element', () => {
   });
 });
 
-describe('useVideoPlayback bar geometry', () => {
-  const bar = (left: number, width: number) =>
-    ({ getBoundingClientRect: () => ({ left, width }) as DOMRect }) as unknown as HTMLDivElement;
+const bar = (left: number, width: number) =>
+  ({ getBoundingClientRect: () => ({ left, width }) as DOMRect }) as unknown as HTMLDivElement;
 
+describe('useVideoPlayback bar geometry', () => {
   it('maps a clientX against the element duration when the catalogue has none', () => {
     const { result } = render(movie({ durationMs: 0 }));
     const v = fakeVideo({ duration: 200 });

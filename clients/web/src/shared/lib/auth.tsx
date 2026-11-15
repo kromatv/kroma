@@ -26,7 +26,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       void router.invalidate();
       void webRuntime.queryClient.invalidateQueries();
     },
-    [client, auth, router, webRuntime.queryClient.invalidateQueries],
+    [client, auth, router, webRuntime.queryClient],
   );
 
   const loginPasskey = useCallback(async () => {
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     auth.apply(await client.accounts.passkeys.authFinish({ ceremonyId, credential }));
     void router.invalidate();
     void webRuntime.queryClient.invalidateQueries();
-  }, [client, auth, router, webRuntime.queryClient.invalidateQueries]);
+  }, [client, auth, router, webRuntime.queryClient]);
 
   const enter = useCallback(
     (result: AuthResult) => {
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       void router.invalidate();
       void webRuntime.queryClient.invalidateQueries();
     },
-    [auth, router, webRuntime.queryClient.invalidateQueries],
+    [auth, router, webRuntime.queryClient],
   );
 
   const register = useCallback(
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       void router.invalidate();
       void webRuntime.queryClient.invalidateQueries();
     },
-    [client, auth, router, webRuntime.queryClient.invalidateQueries],
+    [client, auth, router, webRuntime.queryClient],
   );
 
   const activate = useCallback(
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
       return res;
     },
-    [auth, router, webRuntime.queryClient.invalidateQueries],
+    [auth, router, webRuntime.queryClient],
   );
 
   const logout = useCallback(async () => {
@@ -88,13 +88,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     webRuntime.queryClient.clear();
   }, [
     auth, // Every cached per-user entry must go, or it leaks into the next session.
-    webRuntime.queryClient.clear,
+    webRuntime.queryClient,
   ]);
 
   const switchProfile = useCallback(() => {
     auth.switchProfile();
     webRuntime.queryClient.clear();
-  }, [auth, webRuntime.queryClient.clear]);
+  }, [auth, webRuntime.queryClient]);
 
   const value = useMemo<AuthValue>(
     () => ({

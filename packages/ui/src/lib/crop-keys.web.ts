@@ -45,7 +45,7 @@ export function useCropKeys({ held, onPan, onZoom, onRelease }: CropKeysOptions)
   useEffect(() => {
     const document = webDocument();
     if (!held || !document) {
-      return;
+      return undefined;
     }
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);

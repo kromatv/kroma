@@ -28,7 +28,7 @@ export function TvPerson() {
 
   const { cards, involvement } = useMemo(() => {
     const hits = credits ?? NO_CREDITS;
-    const cards = hits.flatMap((hit): GridCard[] => {
+    const creditCards = hits.flatMap((hit): GridCard[] => {
       if (hit.type === 'show') {
         const s = hit.show;
         return [
@@ -58,7 +58,7 @@ export function TvPerson() {
       ];
     });
     const metas = hits.map((hit) => (hit.type === 'show' ? hit.show.metadata : hit.item.metadata));
-    return { cards, involvement: personInvolvement(metas, name) };
+    return { cards: creditCards, involvement: personInvolvement(metas, name) };
   }, [credits, name, client, nav, hold]);
 
   const detail = usePersonDetail(name);

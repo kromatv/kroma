@@ -21,17 +21,17 @@ vi.mock('#tv/app/providers/connection', () => ({
   useConnection: () => ({ client: { accounts: { setPin: state.setPin } } }),
 }));
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(cleanup);
-afterEach(clearPressGuard);
+afterEach(() => inputHost.clearPressGuard());
 afterEach(() => vi.clearAllMocks());
 
 function press(key: string) {
   act(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
   });
-  clearPressGuard();
+  inputHost.clearPressGuard();
 }
 
 async function digits(code: string) {
@@ -43,7 +43,7 @@ async function digits(code: string) {
 }
 
 function mount() {
-  render(
+  inputHost.render(
     onScreen(
       <I18nProvider locale="en">
         <TvNavProvider screens={{} as never}>

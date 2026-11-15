@@ -39,7 +39,7 @@ export function useShake(at: number): Animated.WithAnimatedValue<ViewStyle> {
 
   useEffect(() => {
     if (at === 0 || reduced) {
-      return;
+      return undefined;
     }
     // Each leg is scheduled off the same instant, so a late timer costs its own
     // leg and never the ones behind it.
@@ -53,5 +53,5 @@ export function useShake(at: number): Animated.WithAnimatedValue<ViewStyle> {
     };
   }, [at, reduced]);
 
-  return { ...LEG, transform: [{ translateX: travel }] } as Animated.WithAnimatedValue<ViewStyle>;
+  return { ...LEG, transform: [{ translateX: travel }] };
 }

@@ -11,11 +11,12 @@ interface Shape {
 
 const [ShapeContext, useShape] = partContext<Shape>('Widget.Root');
 
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <ShapeContext.Provider value={{ gap: 12 }}>{children}</ShapeContext.Provider>
+);
+
 describe('partContext', () => {
   it('hands a part what the Root published', () => {
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <ShapeContext.Provider value={{ gap: 12 }}>{children}</ShapeContext.Provider>
-    );
     const { result } = renderHook(() => useShape('Label'), { wrapper });
     expect(result.current).toEqual({ gap: 12 });
   });

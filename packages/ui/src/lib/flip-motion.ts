@@ -21,7 +21,7 @@ export function useFlipMotion(on: boolean, travel: number, durationMs: number): 
   }, [on, flip, durationMs]);
   const slide = flip.interpolate({ inputRange: [0, 1], outputRange: [0, travel] });
   return {
-    fill: { opacity: flip } as unknown as ViewStyle,
-    slide: { transform: [{ translateX: slide }] } as unknown as ViewStyle,
+    fill: { opacity: flip },
+    slide: { transform: [{ translateX: slide }] },
   };
 }

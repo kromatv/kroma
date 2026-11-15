@@ -61,6 +61,8 @@ const answers = (point: string, over: Record<string, unknown> = {}) =>
     ...over,
   }) as never;
 
+const never = () => new Promise<ModuleInfo[]>(() => {});
+
 describe('useEnabledEngines', () => {
   it('offers an enabled module that answers the point', async () => {
     const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
@@ -128,7 +130,6 @@ describe('useEnabledEngines', () => {
   });
 
   it('is empty rather than throwing before the module list arrives', () => {
-    const never = () => new Promise<ModuleInfo[]>(() => {});
     const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
       wrapper: wrapper(never),
     });
@@ -152,7 +153,6 @@ describe('useModuleEnabled', () => {
   });
 
   it('assumes enabled while the list is still loading', () => {
-    const never = () => new Promise<ModuleInfo[]>(() => {});
     const { result } = renderHook(() => useModuleEnabled('torrents'), {
       wrapper: wrapper(never),
     });

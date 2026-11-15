@@ -34,11 +34,11 @@ export function useRise(): Rise {
   }, []);
 
   return {
-    veil: { opacity: arrived ? 1 : 0, ...TRANSITION } as ViewStyle,
+    veil: { opacity: arrived ? 1 : 0, ...TRANSITION },
     copy: {
       opacity: arrived ? 1 : 0,
       transform: [{ translateY: arrived ? 0 : RISE_PX }],
       ...TRANSITION,
-    } as ViewStyle,
+    },
   };
 }

@@ -102,20 +102,19 @@ describe('shellOwnsPlaneGeometry', () => {
   });
 });
 
+const track = (index: number, language: string, isDefault = false): AudioTrack => ({
+  index,
+  codec: 'eac3',
+  channels: 6,
+  language,
+  title: null,
+  default: isDefault,
+});
+
+const withTracks = (tracks: AudioTrack[]): MediaItem =>
+  ({ audio: tracks[0] ?? null, audioTracks: tracks }) as unknown as MediaItem;
+
 describe('renditionFor', () => {
-  const track = (index: number, language: string, isDefault = false): AudioTrack =>
-    ({
-      index,
-      codec: 'eac3',
-      channels: 6,
-      language,
-      title: null,
-      default: isDefault,
-    }) as AudioTrack;
-
-  const withTracks = (tracks: AudioTrack[]): MediaItem =>
-    ({ audio: tracks[0] ?? null, audioTracks: tracks }) as unknown as MediaItem;
-
   it('resolves the asked-for track from its identity, not its position', () => {
     const item = withTracks([track(1, 'en'), track(3, 'fr'), track(7, 'de')]);
     expect(renditionFor(item, 3)).toBe(3);

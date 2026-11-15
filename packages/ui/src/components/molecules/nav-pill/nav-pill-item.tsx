@@ -105,7 +105,7 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
   const select = useEffectEvent(() => onPress());
   useEffect(() => {
     if (focus.disabled) {
-      return;
+      return undefined;
     }
     enrol(id, { label, rect: () => rect.current, select });
     return () => withdraw(id);

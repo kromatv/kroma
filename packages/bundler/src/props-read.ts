@@ -242,7 +242,7 @@ async function namespaceEntries(
 ): Promise<Entry[]> {
   const props = await Promise.all(namespace.parts.map((part) => partProps(part, checker, fileOf)));
   return namespace.parts.flatMap((part, at) => {
-    const documented = props[at] as PropDoc[] | undefined;
+    const documented = props[at];
     return documented?.length ? [[`${namespace.name}.${part.name}`, documented] as Entry] : [];
   });
 }

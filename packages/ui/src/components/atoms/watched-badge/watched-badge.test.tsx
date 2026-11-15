@@ -15,6 +15,8 @@ afterEach(() => {
   setTheme(KROMA);
 });
 
+const fill = () => screen.getByLabelText('Watched').querySelector('polygon')?.getAttribute('fill');
+
 describe('WatchedBadge', () => {
   it('names itself, so a reader who cannot see the artwork still hears the state', () => {
     render(onScreen(<WatchedBadge />));
@@ -38,8 +40,6 @@ describe('WatchedBadge', () => {
   });
 
   it('paints the same in either theme, because a poster is the same poster in both', () => {
-    const fill = () =>
-      screen.getByLabelText('Watched').querySelector('polygon')?.getAttribute('fill');
     const { unmount } = render(onScreen(<WatchedBadge />));
     const dark = fill();
     unmount();

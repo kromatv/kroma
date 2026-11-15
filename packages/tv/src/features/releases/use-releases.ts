@@ -12,7 +12,7 @@ export function useReleases(): ReleasesView | null {
 
   useEffect(() => {
     if (!ready || !user) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.releases

@@ -29,17 +29,17 @@ const enabling = (parts: Partial<PushCapability> = {}) => {
 describe('turning push on', () => {
   it('asks the device to subscribe against the key the server minted', async () => {
     const subscribe = vi.fn(async () => SUBSCRIPTION);
-    const { client, capability } = enabling({ subscribe });
+    const { client, capability: pushCapability } = enabling({ subscribe });
 
-    await enablePush(capability, client);
+    await enablePush(pushCapability, client);
 
     expect(subscribe).toHaveBeenCalledWith({ applicationServerKey: 'vapid' });
   });
 
   it('registers with the server whatever the device subscription turned out to be', async () => {
-    const { client, registered, capability } = enabling();
+    const { client, registered, capability: pushCapability } = enabling();
 
-    await enablePush(capability, client);
+    await enablePush(pushCapability, client);
 
     expect(registered).toHaveBeenCalledWith(SUBSCRIPTION);
   });

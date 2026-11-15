@@ -57,9 +57,9 @@ describe('the breakpoint a width lands on', () => {
   });
 });
 
-describe('the step a browser reads off the root', () => {
-  const stamped = () => stepsReached(styleHost.runtime.breakpoints.index());
+const stamped = () => stepsReached(styleHost.runtime.breakpoints.index());
 
+describe('the step a browser reads off the root', () => {
   it('carries every step reached, so `~=` matches the cascade from a step upwards', () => {
     at(0);
     expect(stamped()).toBe('base');

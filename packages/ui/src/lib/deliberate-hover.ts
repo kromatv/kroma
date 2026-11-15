@@ -17,7 +17,7 @@ function useDeliberateHover<T>(onHover: (target: T) => void): (target: T) => voi
     const document = webDocument();
     if (!document) {
       atRest.current = false;
-      return;
+      return undefined;
     }
     const onMove = () => {
       atRest.current = false;

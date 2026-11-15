@@ -37,17 +37,17 @@ function* sourceFiles(dir: string, options: SourceOptions = {}): Generator<strin
 }
 
 interface BabelCore {
-  transformAsync(src: string, options: object): Promise<{ code?: string } | null>;
+  transformAsync: (src: string, options: object) => Promise<{ code?: string } | null>;
 }
 
 /** Oxc for shipped compiler output, plus Babel for the audit's AST visitors. */
 interface Babel {
   core: BabelCore;
   compiler: string;
-  compile(source: string, filename: string): { code: string };
+  compile: (source: string, filename: string) => { code: string };
   presetTs: string;
   /** Babel options for reading TS and TSX with no project config in the way. */
-  parse(filename: string, plugins: unknown[]): object;
+  parse: (filename: string, plugins: unknown[]) => object;
 }
 
 class NoCompiler extends Error {
@@ -73,11 +73,11 @@ function babelAt(resolveFrom: readonly string[]): Babel {
     const presetTs = own.resolve('@babel/preset-typescript');
     const core = own('@babel/core') as BabelCore;
     const { transformSync } = own(compiler) as {
-      transformSync(
+      transformSync: (
         filename: string,
         source: string,
         options: object,
-      ): { fatal: boolean; code: string; errors: { message: string }[] };
+      ) => { fatal: boolean; code: string; errors: { message: string }[] };
     };
     return {
       core,

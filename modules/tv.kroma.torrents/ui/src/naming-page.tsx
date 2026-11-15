@@ -184,7 +184,7 @@ export default function NamingPage() {
           {FIELDS.map((f) => (
             <Row key={f.key} align="flex-end" gap={8}>
               <Field.Root
-                label={t(f.labelKey as Parameters<typeof t>[0])}
+                label={t(f.labelKey)}
                 value={tpl[f.key]}
                 onValueChange={(v) => set(f.key, v)}
                 flex
@@ -211,7 +211,7 @@ export default function NamingPage() {
                 <Select.Trigger block />
                 {CASES.map((c) => (
                   <Select.Item key={c.value} value={c.value}>
-                    {t(c.labelKey as Parameters<typeof t>[0])}
+                    {t(c.labelKey)}
                   </Select.Item>
                 ))}
               </Select.Root>

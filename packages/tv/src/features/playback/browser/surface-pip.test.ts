@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PipBinding, PipHandle } from '#tv/features/playback/player/playback-backend';
 import { browserPictureInPicture, useShellPip, useVideoPip } from './surface-pip';
 
+const noop = () => undefined;
+
 type Listener = (e: { payload: unknown }) => void;
 
 function binding() {
@@ -34,7 +36,7 @@ function shell({ flagged = true } = {}) {
     unlisten,
     emit: (name: string, payload: unknown) => listeners.get(name)?.({ payload }),
     holdListener: () => {
-      let release: () => void = () => undefined;
+      let release: () => void = noop;
       deliver = new Promise((resolve) => {
         release = () => resolve(unlisten);
       });

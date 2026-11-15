@@ -11,9 +11,9 @@ import { devicePref } from '#tv/app/device-pref';
 
 /** A subscribable one-of-N device preference (devicePref + change notification). */
 export interface ReactivePref<T extends string> {
-  get(): T;
-  set(value: T): void;
-  subscribe(listener: () => void): () => void;
+  get: () => T;
+  set: (value: T) => void;
+  subscribe: (listener: () => void) => () => void;
 }
 
 /** A reactive one-of-N preference stored under `key` (unknown stored values

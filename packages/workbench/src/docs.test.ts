@@ -2,13 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { snippet } from './docs';
 import { type Story, story } from './story';
 
-describe('snippet', () => {
-  const make = (over: Partial<Story>): Story =>
-    ({
-      ...story({ name: 'Button', group: 'Actions', render: () => null }),
-      ...over,
-    }) as Story;
+const make = (over: Partial<Story>): Story => ({
+  ...story({ name: 'Button', group: 'Actions', render: () => null }),
+  ...over,
+});
 
+describe('snippet', () => {
   it('writes booleans bare when on, drops them when off, quotes strings', () => {
     const s = make({
       controls: [

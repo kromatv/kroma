@@ -121,9 +121,10 @@ function ManualRow({
   );
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
 /** `S03E07` / `S03` / null for anything the parser read as a film. */
 function parsedTarget(r: ManualReleaseView): string | null {
-  const pad = (n: number) => String(n).padStart(2, '0');
   if (r.season == null) {
     return null;
   }

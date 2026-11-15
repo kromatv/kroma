@@ -57,8 +57,9 @@ export function UpgradeSearchButton({
   );
 }
 
+const pad = (value: number) => String(value).padStart(2, '0');
+
 function subjectOf(title: string, scope: SearchScope): string {
-  const pad = (value: number) => String(value).padStart(2, '0');
   switch (scope.scope) {
     case 'season':
       return `${title} S${pad(scope.season)}`;

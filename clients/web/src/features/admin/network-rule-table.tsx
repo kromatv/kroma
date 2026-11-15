@@ -30,6 +30,8 @@ interface RuleRowProps {
   onRemove: () => void;
 }
 
+const ink = (value: string | null) => (value === null ? 'textDim' : 'text');
+
 function RuleRow({
   rule,
   position,
@@ -41,7 +43,6 @@ function RuleRow({
   onRemove,
 }: Readonly<RuleRowProps>) {
   const t = useT();
-  const ink = (value: string | null) => (value === null ? 'textDim' : 'text');
   return (
     <Table.Row>
       <Table.Cell>

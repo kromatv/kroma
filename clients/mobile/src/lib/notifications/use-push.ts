@@ -39,7 +39,7 @@ export function usePushGrantRefresh(): void {
 
   useEffect(() => {
     if (!signedIn || !client) {
-      return;
+      return undefined;
     }
     let cancelled = false;
 
@@ -84,7 +84,7 @@ export function usePushTaps(): void {
 
   useEffect(() => {
     if (!signedIn || !client) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     let subscription: { remove(): void } | undefined;
@@ -111,7 +111,7 @@ export function usePushTaps(): void {
         const route = await handleTap(response, client);
         // Guards a sign-out landing between the await and the push.
         if (route && !cancelled) {
-          router.push(route as never);
+          router.push(route);
         }
       };
 

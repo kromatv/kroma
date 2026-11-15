@@ -25,12 +25,12 @@ export interface TransferQueue {
   pausedIds: string[];
   queuedIds: string[];
   activeItems: Map<string, MediaItem>;
-  canDownload(item: MediaItem): boolean;
-  start(item: MediaItem): void;
-  pause(itemId: string): void;
-  resume(itemId: string): void;
-  cancel(itemId: string): void;
-  remove(itemId: string): Promise<void>;
+  canDownload: (item: MediaItem) => boolean;
+  start: (item: MediaItem) => void;
+  pause: (itemId: string) => void;
+  resume: (itemId: string) => void;
+  cancel: (itemId: string) => void;
+  remove: (itemId: string) => Promise<void>;
 }
 
 export function useTransferQueue(client: KromaClient | null): TransferQueue {

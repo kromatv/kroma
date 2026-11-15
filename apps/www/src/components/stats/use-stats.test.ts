@@ -30,6 +30,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const noop = (): void => undefined;
+
 describe('useStats', () => {
   it('starts out loading, so the page never shows a number it has not got', () => {
     const { result } = renderHook(() => useStats());
@@ -55,7 +57,7 @@ describe('useStats', () => {
   });
 
   it('abandons the read when the page leaves rather than reporting a failure', async () => {
-    let refuse: (why: Error) => void = () => {};
+    let refuse: (why: Error) => void = noop;
     fetchStats.mockReturnValue(
       new Promise((_, reject) => {
         refuse = reject;

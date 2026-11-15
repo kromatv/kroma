@@ -29,7 +29,7 @@ export function frostCoat(
     return cached;
   }
   const coat: FrostCoat = {
-    style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never, scope) as ViewStyle,
+    style: sharedStyle(`frost:${amount}`, backdropBlur(amount), scope),
     layer: null,
   };
   coats.set(amount, coat);

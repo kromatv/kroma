@@ -1,7 +1,8 @@
 import type { TvScreens } from '#tv/app/router';
 
+const stub = (name: string) => () => <div>{`screen:${name}`}</div>;
+
 export function stubScreens(screens: Partial<TvScreens> = {}): TvScreens {
-  const stub = (name: string) => () => <div>{`screen:${name}`}</div>;
   return {
     connect: stub('connect'),
     profiles: stub('profiles'),

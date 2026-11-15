@@ -10,7 +10,7 @@ export function usePhysicalOrientation(enabled = true) {
   const [orientation, setOrientation] = useState<PhysicalOrientation | null>(null);
   useEffect(() => {
     if (!enabled) {
-      return;
+      return undefined;
     }
     let active = true;
     let subscription: { remove(): void } | undefined;

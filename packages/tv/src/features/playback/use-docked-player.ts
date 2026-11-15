@@ -4,11 +4,11 @@ import { usePlayerDock } from '#tv/app/player-dock';
 import { useNav } from '#tv/app/router';
 
 export interface DockedPlayer {
-  leave(): void;
-  home(): void;
-  swap(next: MediaItem): void;
-  onPipStart(): void;
-  onPipStop(playing: boolean): void;
+  leave: () => void;
+  home: () => void;
+  swap: (next: MediaItem) => void;
+  onPipStart: () => void;
+  onPipStop: (playing: boolean) => void;
 }
 
 /** How the player leaves, changes title and answers its picture-in-picture

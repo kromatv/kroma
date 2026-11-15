@@ -27,7 +27,7 @@ export interface Platform {
   package: string;
   notReadyHint: string;
   enableSteps?: string;
-  setup?(computer: string | null): readonly string[];
+  setup?: (computer: string | null) => readonly string[];
   guide?: string;
   ports?: PlatformPorts;
   searchTargets?: readonly string[];

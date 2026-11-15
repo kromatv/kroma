@@ -55,7 +55,7 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
 
   useEffect(() => {
     if (!client) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.media
@@ -80,7 +80,7 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
 
   useEffect(() => {
     if (sources.length === 0) {
-      return;
+      return undefined;
     }
     return watchNearbyTvs({ sources, onRows: setHeard });
   }, [sources]);

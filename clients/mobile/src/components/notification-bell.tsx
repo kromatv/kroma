@@ -27,7 +27,7 @@ export function NotificationBell() {
       glyph={22}
       hitSlop={10}
       label={unseen > 0 ? t('notifications.titleNew', { count: unseen }) : t('notifications.title')}
-      onPress={() => router.push('/notifications' as never)}
+      onPress={() => router.push('/notifications')}
     >
       <Box>
         <Icon name="bell" size={22} thickness={2} />

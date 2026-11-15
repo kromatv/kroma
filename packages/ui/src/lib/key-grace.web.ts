@@ -12,7 +12,7 @@ export function useKeyGrace(scoped: boolean): () => boolean {
   useEffect(() => {
     const dom = webDocument();
     if (!scoped || !dom) {
-      return;
+      return undefined;
     }
     const onKey = (e: KeyboardEvent) => {
       if (DIRECTIONS.has(e.key)) {

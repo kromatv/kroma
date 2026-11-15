@@ -6,6 +6,8 @@ const GRIP = '[data-kroma-i18n-grip]';
 /** The gap the tools keep from the corner they park in. */
 export const EDGE_PX = 16;
 
+const idle = () => {};
+
 interface Box {
   width: number;
   height: number;
@@ -82,7 +84,7 @@ export function draggable(host: HTMLElement, onDrop: (x: number, y: number) => v
   let dragged = false;
   // The pointer is only followed while the grip is held, so what follows it
   // exists only then: nothing has to ask whether there is a grab.
-  let release = () => {};
+  let release = idle;
 
   const down = (event: PointerEvent) => {
     if (!(event.target as Element | null)?.closest?.(GRIP)) {
@@ -120,7 +122,7 @@ export function draggable(host: HTMLElement, onDrop: (x: number, y: number) => v
     release = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      release = () => {};
+      release = idle;
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);

@@ -27,7 +27,7 @@ export function ServerRestartDialog({
 
   useEffect(() => {
     if (!stopped) {
-      return;
+      return undefined;
     }
     const controller = new AbortController();
     const { signal } = controller;

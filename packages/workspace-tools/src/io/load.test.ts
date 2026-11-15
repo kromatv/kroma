@@ -35,6 +35,8 @@ const graph = loadGraph({ root: ROOT });
 
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 
+const named = (name: string) => graph.projects.find((p) => p.name === name);
+
 describe('reading a repo into a graph', () => {
   it('reads the server version out of its Cargo manifest', () => {
     expect(graph.server).toMatchObject({ name: 'server', dir: 'server', version: '0.1.38' });
@@ -54,8 +56,6 @@ describe('reading a repo into a graph', () => {
 });
 
 describe('the JS workspace projects', () => {
-  const named = (name: string) => graph.projects.find((p) => p.name === name);
-
   it('keeps only the dependencies that name another project in this graph', () => {
     expect(named('@kromatv/core')?.deps).toEqual(['@kromatv/ui']);
   });
@@ -74,8 +74,6 @@ describe('the JS workspace projects', () => {
 });
 
 describe('the module projects', () => {
-  const named = (name: string) => graph.projects.find((p) => p.name === name);
-
   it('keeps the declared ranges beside the resolved dependency names', () => {
     expect(named('tv.kroma.vpn')).toMatchObject({
       version: '0.4.1',

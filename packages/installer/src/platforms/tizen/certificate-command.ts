@@ -16,6 +16,8 @@ export const certificateCommand = defineCommand({
   run: ({ args }) => exitAfter(certificate(args.host)),
 });
 
+const day = (date: Date) => date.toISOString().slice(0, 10);
+
 /**
  * Reads the DUID off the set, signs the owner in to Samsung, and has Samsung
  * issue the author and the distributor certificate that set takes.
@@ -29,7 +31,6 @@ async function certificate(host: string): Promise<number> {
 
   const obtained = await obtainCertificates({ duid, log: (line) => console.log(style.dim(line)) });
 
-  const day = (date: Date) => date.toISOString().slice(0, 10);
   console.log(`${style.green('kept in')}      ${obtained.directory}`);
   console.log(`${style.green('sets')}         ${obtained.duids.join(', ')}`);
   console.log(`${style.green('author')}       valid until ${day(obtained.authorUntil)}`);

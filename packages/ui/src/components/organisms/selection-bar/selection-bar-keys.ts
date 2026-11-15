@@ -23,7 +23,7 @@ export function useSelectionKeys(
   useEffect(() => {
     const document = webDocument();
     if (!document || !active) {
-      return;
+      return undefined;
     }
     const inside = (node: unknown) => {
       const box = bar.current;

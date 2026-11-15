@@ -18,7 +18,7 @@ function Anchor({
   ...rest
 }: Readonly<Record<string, unknown>> & { children?: ReactNode }) {
   return (
-    <View {...(rest as object)} {...({ href: to } as object)}>
+    <View {...rest} {...({ href: to } as object)}>
       {children}
     </View>
   );

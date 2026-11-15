@@ -7,10 +7,10 @@ const DAY = 86_400;
 // Old enough that the sweep considers them at all.
 const SETTLED = NOW - 30 * DAY;
 
-describe('burstIds', () => {
-  const identical = (n: number, at: number) =>
-    Array.from({ length: n }, (_, i) => row({ id: `fleet-${i}`, firstSeen: at }));
+const identical = (n: number, at: number) =>
+  Array.from({ length: n }, (_, i) => row({ id: `fleet-${i}`, firstSeen: at }));
 
+describe('burstIds', () => {
   it('names every id in a crowd that arrived identical in the same minute', () => {
     const ids = burstIds(identical(BURST_LIMIT, SETTLED), NOW);
 

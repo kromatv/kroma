@@ -59,9 +59,9 @@ describe('scanAlphas', () => {
   });
 });
 
-describe('foldAlphas', () => {
-  const said = (source: string) => () => source;
+const said = (source: string) => () => source;
 
+describe('foldAlphas', () => {
   it('stays out of a scan that has not happened, since there is nothing to widen', async () => {
     const fresh = new Set(['accent']);
     expect(await foldAlphas([root], fresh, join(root, 'a.tsx'), said(`'accent/45'`))).toBe(false);

@@ -65,10 +65,12 @@ export function traceSummary(events: TraceEvent[]): Record<string, number> {
   return out;
 }
 
+const noop = (): void => undefined;
+
 // Collect the tracing stream the Tracing domain emits after `Tracing.end`.
 export function collectTrace(cdp: CDPSession): { events: Promise<TraceEvent[]> } {
   const chunks: TraceEvent[] = [];
-  let settle: (v: TraceEvent[]) => void = () => {};
+  let settle: (v: TraceEvent[]) => void = noop;
   const events = new Promise<TraceEvent[]>((resolve) => {
     settle = resolve;
   });

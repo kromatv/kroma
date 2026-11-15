@@ -4,15 +4,15 @@
 import type { ViewStyle } from 'react-native';
 
 export function gradient(css: string): ViewStyle {
-  return { backgroundImage: css } as ViewStyle;
+  return { backgroundImage: css };
 }
 
 export function bgPosition(value: string): ViewStyle {
-  return { backgroundPosition: value } as ViewStyle;
+  return { backgroundPosition: value };
 }
 
 export function bgSize(value: string): ViewStyle {
-  return { backgroundSize: value } as ViewStyle;
+  return { backgroundSize: value };
 }
 
 // A CSS `backdrop-filter` samples the nearest BACKDROP ROOT rather than the

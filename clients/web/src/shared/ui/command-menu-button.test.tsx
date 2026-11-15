@@ -9,19 +9,21 @@ import { CommandMenuButton } from './command-menu-button';
 
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: { id: 'viewer' } }) }));
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const menu = () => Promise.resolve(() => <div>the menu</div>);
 
 function show(children: ReactNode) {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <CommandMenuProvider load={menu}>{children}</CommandMenuProvider>
     </I18nProvider>,
   );
 }
 
-beforeEach(clearPressGuard);
+beforeEach(() => {
+  inputHost.clearPressGuard();
+});
 
 afterEach(cleanup);
 

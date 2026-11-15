@@ -6,10 +6,7 @@ import { sv } from './recipe';
 
 describe('sv over static layers', () => {
   const chip = sv({
-    base: staticStyle(
-      { borderRadius: 999 },
-      { hover: staticStyle({ backgroundColor: 'hover' }) },
-    ) as never,
+    base: staticStyle({ borderRadius: 999 }, { hover: staticStyle({ backgroundColor: 'hover' }) }),
     variants: {
       tone: {
         neutral: staticStyle({ backgroundColor: 'neutral' }) as never,

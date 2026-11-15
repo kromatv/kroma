@@ -77,15 +77,15 @@ describe('the ground on a device', () => {
 
   it('reads system when the device has no store at all', async () => {
     const { readMode } = await import('./theme-mode');
-    const { writeMode } = createStyleTestHost({ deviceStore: null });
-    writeMode('dark');
+    const { writeMode: writeWithoutStore } = createStyleTestHost({ deviceStore: null });
+    writeWithoutStore('dark');
     expect(readMode(undefined, null)).toBe('system');
   });
 
   it('survives a device store that refuses to answer', async () => {
     const { readMode } = await import('./theme-mode');
-    const { writeMode } = createStyleTestHost({ deviceStore: unavailable });
-    expect(() => writeMode('light')).not.toThrow();
+    const { writeMode: writeUnanswered } = createStyleTestHost({ deviceStore: unavailable });
+    expect(() => writeUnanswered('light')).not.toThrow();
     expect(readMode(undefined, unavailable)).toBe('system');
   });
 });

@@ -158,7 +158,7 @@ export function boxStyle(
   if (p.radius !== undefined) {
     applyCircleRadius(out, p, index);
   }
-  return out as ViewStyle;
+  return out;
 }
 
 /**

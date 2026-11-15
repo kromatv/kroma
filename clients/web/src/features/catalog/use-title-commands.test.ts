@@ -48,19 +48,19 @@ describe('useTitleCommands', () => {
   });
 
   it('offers nothing to play for a title it only knows about', () => {
-    mount({ ...VIEW, localId: null } as TitleView);
+    mount({ ...VIEW, localId: null });
 
     expect(labels()).not.toContain('content.play');
   });
 
   it('offers to file and mark a title it only knows about', () => {
-    mount({ ...VIEW, localId: null } as TitleView);
+    mount({ ...VIEW, localId: null });
 
     expect(labels()).toEqual(['content.addToList', 'content.markWatched']);
   });
 
   it('offers nothing for a title with nothing to file it under', () => {
-    mount({ ...VIEW, localId: null, tmdbId: null, playable: null } as unknown as TitleView);
+    mount({ ...VIEW, localId: null, tmdbId: null, playable: null });
 
     expect(listedCommands()).toEqual([]);
   });

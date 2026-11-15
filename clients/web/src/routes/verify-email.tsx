@@ -41,7 +41,7 @@ function VerifyEmailPage() {
 
   useEffect(() => {
     if (!activate) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.accounts

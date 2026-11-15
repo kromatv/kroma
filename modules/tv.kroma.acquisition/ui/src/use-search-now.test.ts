@@ -9,8 +9,9 @@ vi.mock('@kromatv/ui/kit', () => ({ toast: (...args: unknown[]) => toast(...args
 vi.mock('@kromatv/client', () => ({
   apiErrorText: (error: Error, fallback: string) => error.message || fallback,
 }));
+const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
+
 vi.mock('@kromatv/module-sdk', () => {
-  const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
   return { useT: () => t };
 });
 

@@ -121,7 +121,7 @@ export function TvPlayer() {
 
   useEffect(() => {
     if (pb.surface === 'video' || !pb.ready) {
-      return;
+      return undefined;
     }
     return revealNativeSurface();
   }, [pb.surface, pb.ready]);

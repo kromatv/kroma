@@ -125,7 +125,7 @@ async function walk(keys: string[], forMs: number): Promise<void> {
   const until = Date.now() + forMs;
   let at = 0;
   while (Date.now() < until) {
-    await press(keys[at % keys.length] as string);
+    await press(keys[at % keys.length]);
     at += 1;
     await wait(KEY_MS);
   }
@@ -201,7 +201,7 @@ function bottomUp(profile: CpuProfile): { label: string; ms: number; pct: number
   const samples = profile.samples ?? [];
   const deltas = profile.timeDeltas ?? [];
   for (let i = 0; i < samples.length; i += 1) {
-    const id = samples[i] as number;
+    const id = samples[i];
     self.set(id, (self.get(id) ?? 0) + Math.max(0, (deltas[i] ?? 0) / 1000));
   }
 

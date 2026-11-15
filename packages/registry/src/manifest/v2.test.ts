@@ -43,6 +43,8 @@ describe('Manifest', () => {
   });
 });
 
+const bad = (read: string[]) => () => Manifest.parse({ ...base, storage: { core: { read } } });
+
 describe('storage', () => {
   it('is absent for a module that declares none, which is most of them', () => {
     // Absent is not the same as empty: it means no database at all, and a
@@ -72,7 +74,6 @@ describe('storage', () => {
   });
 
   it('refuses an entry that is not a table or one of its columns', () => {
-    const bad = (read: string[]) => () => Manifest.parse({ ...base, storage: { core: { read } } });
     expect(bad(['users.name.first'])).toThrow();
     expect(bad(['requests; DROP TABLE users'])).toThrow();
     expect(bad(['*'])).toThrow();
@@ -110,11 +111,11 @@ describe('settings', () => {
   });
 
   it('refuses an entry that is not a settings key', () => {
-    const bad = (read: string[]) => () => Manifest.parse({ ...base, settings: { read } });
-    expect(bad(['*'])).toThrow();
-    expect(bad([''])).toThrow();
-    expect(bad(['vpnWgConfig; DROP TABLE users'])).toThrow();
-    expect(bad(['.leading'])).toThrow();
+    const badSettings = (read: string[]) => () => Manifest.parse({ ...base, settings: { read } });
+    expect(badSettings(['*'])).toThrow();
+    expect(badSettings([''])).toThrow();
+    expect(badSettings(['vpnWgConfig; DROP TABLE users'])).toThrow();
+    expect(badSettings(['.leading'])).toThrow();
     // ...and the dotted namespaced keys are fine.
     expect(
       Manifest.parse({ ...base, settings: { read: ['notifications.vapid.publicKey'] } }).settings

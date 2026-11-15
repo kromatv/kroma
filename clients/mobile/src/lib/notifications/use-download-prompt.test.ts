@@ -15,6 +15,8 @@ vi.mock('./native', () => ({ push: loadPush }));
 
 const { useDownloadPrompt } = await import('./use-download-prompt');
 
+const noop = (): void => undefined;
+
 const settled = () => new Promise((resolve) => setTimeout(resolve));
 
 function undecided(canAskAgain = true) {
@@ -24,7 +26,7 @@ function undecided(canAskAgain = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   platform.OS = 'android';
-  loadPush.mockReturnValue(notifications as unknown);
+  loadPush.mockReturnValue(notifications);
   notifications.getPermissionsAsync.mockResolvedValue(undecided());
   notifications.requestPermissionsAsync.mockResolvedValue({ status: 'granted' });
 });
@@ -33,7 +35,7 @@ describe('asking for notifications when a download starts', () => {
   it('waits for the answer before running the download', async () => {
     const { result } = renderHook(() => useDownloadPrompt());
     const run = vi.fn();
-    let answer: (value: unknown) => void = () => {};
+    let answer: (value: unknown) => void = noop;
 
     notifications.requestPermissionsAsync.mockReturnValue(
       new Promise((resolve) => {

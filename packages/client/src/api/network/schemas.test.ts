@@ -179,19 +179,19 @@ describe('the incoming tally', () => {
     bytesOut: 1_048_576,
     lastAt: 1_761_820_800_000,
   };
-  const SUMMARY = {
+  const INBOUND_SUMMARY = {
     since: 1_761_782_400_000,
     totals: { requests: 12, addresses: 1, bytesIn: 1024, bytesOut: 1_048_576 },
     rows: [ROW],
   };
 
   it('reads a client that came over the tunnel', () => {
-    expect(InboundSummary.parse(SUMMARY)).toEqual(SUMMARY);
+    expect(InboundSummary.parse(INBOUND_SUMMARY)).toEqual(INBOUND_SUMMARY);
   });
 
   it('refuses a road it does not know', () => {
     const rows = [{ ...ROW, via: 'carrier-pigeon' }];
 
-    expect(() => InboundSummary.parse({ ...SUMMARY, rows })).toThrow();
+    expect(() => InboundSummary.parse({ ...INBOUND_SUMMARY, rows })).toThrow();
   });
 });

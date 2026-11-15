@@ -43,8 +43,10 @@ const HLS_CLASS: HlsClassLike = {
 
 type HlsErrorData = { type: string; fatal: boolean; response?: { code?: number } };
 
+const unset = () => undefined;
+
 function fakeHls() {
-  let listener: (event: string, data: HlsErrorData) => void = () => undefined;
+  let listener: (event: string, data: HlsErrorData) => void = unset;
   const hls = {
     on: (_event: string, fn: typeof listener) => {
       listener = fn;
@@ -252,21 +254,21 @@ describe('streamRefusal', () => {
   });
 });
 
-describe('driveStallRecovery', () => {
-  function target(over: Partial<Record<string, unknown>> = {}) {
-    let at = 100;
-    const calls = {
-      sample: () => ({ currentTime: at, bufferedEnd: at + 60, paused: false }),
-      nudge: vi.fn(() => {
-        at += 0.1;
-      }),
-      recover: vi.fn(() => true),
-      restart: vi.fn(),
-      ...over,
-    };
-    return { calls, move: (by: number) => (at += by) };
-  }
+function target(over: Partial<Record<string, unknown>> = {}) {
+  let at = 100;
+  const calls = {
+    sample: () => ({ currentTime: at, bufferedEnd: at + 60, paused: false }),
+    nudge: vi.fn(() => {
+      at += 0.1;
+    }),
+    recover: vi.fn(() => true),
+    restart: vi.fn(),
+    ...over,
+  };
+  return { calls, move: (by: number) => (at += by) };
+}
 
+describe('driveStallRecovery', () => {
   it('climbs the ladder in order and stops the interval when told', () => {
     vi.useFakeTimers();
     const t = target({ nudge: vi.fn() });

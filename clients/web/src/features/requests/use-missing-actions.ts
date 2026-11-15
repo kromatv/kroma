@@ -150,16 +150,16 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
     canMonitor,
     selectedAction: verb !== undefined && otherVerbs.length === 0 ? verb : 'mixed',
     actionOf,
-    toggleRow: (key) => setSelected((picked) => withKeys(picked, [key], !picked.has(key))),
+    toggleRow: (key) => setSelected((current) => withKeys(current, [key], !current.has(key))),
     toggleGroup: (group, pick) =>
-      setSelected((picked) => withKeys(picked, group.items.map(epKey), pick)),
+      setSelected((current) => withKeys(current, group.items.map(epKey), pick)),
     clearSelection: () => setSelected(new Set()),
     run,
     runSelected: () => {
       for (const group of groups) {
-        const picked = group.items.filter((item) => selected.has(epKey(item)));
-        if (picked.length > 0) {
-          run(group, picked);
+        const chosen = group.items.filter((item) => selected.has(epKey(item)));
+        if (chosen.length > 0) {
+          run(group, chosen);
         }
       }
     },

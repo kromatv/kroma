@@ -10,12 +10,12 @@ function title(p: {
   genres?: string[];
   backdropUrl?: string;
 }): Sortable {
-  const { title, rating = null, genres = [], backdropUrl } = p;
+  const { title: name, rating = null, genres = [], backdropUrl } = p;
   return {
-    title,
+    title: name,
     year: null,
     addedAt: '2020-01-01T00:00:00Z',
-    metadata: { rating, genres, backdropUrl } as unknown as Metadata,
+    metadata: { rating, genres, backdropUrl },
   };
 }
 

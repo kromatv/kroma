@@ -86,7 +86,7 @@ export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<Vi
 
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     value.setValue(breathes(kind) ? 1 : 0);
     const loop = Animated.loop(cycle(kind, value, ms));
@@ -102,7 +102,7 @@ export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<Vi
       transform: [
         { rotate: value.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) },
       ],
-    } as unknown as StyleProp<ViewStyle>;
+    };
   }
   if (kind === 'sweep') {
     return {
@@ -118,7 +118,7 @@ export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<Vi
       transform: [
         { scale: value.interpolate({ inputRange: [0, 1], outputRange: [HALO_FROM, HALO_TO] }) },
       ],
-    } as unknown as StyleProp<ViewStyle>;
+    };
   }
-  return { opacity: value } as unknown as StyleProp<ViewStyle>;
+  return { opacity: value };
 }

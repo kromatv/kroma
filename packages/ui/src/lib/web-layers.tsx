@@ -97,19 +97,19 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           {...{ [REVEAL]: 'wait' }}
           ref={(el) => {
             if (!el) {
-              return;
+              return undefined;
             }
             const unit = el.closest<HTMLElement>(UNIT);
             if (el.getAttribute(REVEAL) === 'in') {
               release(unit, true);
-              return;
+              return undefined;
             }
             if ((el.complete && el.naturalWidth > 0) || isImageReady(src)) {
               el.setAttribute(REVEAL, 'shown');
               release(unit, true);
               at.markLoaded();
               at.onCovered?.(src);
-              return;
+              return undefined;
             }
             hold(unit);
             return () => release(unit, false);

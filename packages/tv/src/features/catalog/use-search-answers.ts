@@ -40,7 +40,7 @@ export function useSearchAnswers(
     const query = typed.trim();
     if (!query) {
       seq.current += 1;
-      return;
+      return undefined;
     }
     const mine = ++seq.current;
     const timer = setTimeout(() => {

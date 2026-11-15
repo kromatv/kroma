@@ -104,9 +104,9 @@ describe('keptUntil', () => {
   });
 });
 
-describe('coversSet', () => {
-  const directory = () => kept(`covering-${Math.random()}`, ['author.pem', 'distributor.pem']);
+const directory = () => kept(`covering-${Math.random()}`, ['author.pem', 'distributor.pem']);
 
+describe('coversSet', () => {
   it('answers yes for a set the kept distributor certificate lists', () => {
     expect(coversSet('1900A2C4D6E8', new Date(), directory())).toBe(true);
   });

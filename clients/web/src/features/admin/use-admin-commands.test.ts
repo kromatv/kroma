@@ -150,6 +150,9 @@ describe('the console in the command menu', () => {
   });
 });
 
+const moduleRows = (commands: readonly CommandDef[]) =>
+  commands.filter((command) => command.id?.startsWith('module:'));
+
 describe('an installed module in the command menu', () => {
   const WHISPER = {
     id: 'tv.kroma.whisper',
@@ -161,9 +164,6 @@ describe('an installed module in the command menu', () => {
     hasSidecar: true,
     removable: true,
   };
-
-  const moduleRows = (commands: readonly CommandDef[]) =>
-    commands.filter((command) => command.id?.startsWith('module:'));
 
   it('is not listed before anything is typed, so it does not bury the pages', () => {
     mocks.installed = [WHISPER];

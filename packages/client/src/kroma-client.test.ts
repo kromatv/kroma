@@ -159,9 +159,10 @@ describe('the recording client', () => {
   });
 });
 
+const resolve = () => 'http://kroma.test/api/images/p.webp';
+
 describe('fakeClient', () => {
   it('takes a namespace as far as the test needs it, nested members included', async () => {
-    const resolve = () => 'http://kroma.test/api/images/p.webp';
     const client = fakeClient({ media: { artwork: { resolve } } });
 
     expect(client.media.artwork.resolve('/api/images/p.webp')).toBe(

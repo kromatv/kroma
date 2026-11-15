@@ -15,7 +15,7 @@ function mount(ui: ReactNode, props: object = {}): { current: object | null } {
     <View
       {...props}
       ref={(node) => {
-        stage.current = node as object | null;
+        stage.current = node;
       }}
     >
       {ui}

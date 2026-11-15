@@ -41,6 +41,7 @@ vi.mock('#web/shared/lib/web-runtime', () => {
 const { fetchAdminModules, fetchStoreCatalog } = H;
 const { useModuleData, useModuleToggle } = await import('#web/features/admin/module-data');
 
+const unsettled = (): void => undefined;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 beforeEach(() => {
@@ -123,7 +124,7 @@ describe('useModuleToggle', () => {
   });
 
   it('is busy while the request is in flight', async () => {
-    let settle: (r: unknown) => void = () => undefined;
+    let settle: (r: unknown) => void = unsettled;
     H.setModuleEnabled.mockReturnValue(
       new Promise((resolve) => {
         settle = resolve;

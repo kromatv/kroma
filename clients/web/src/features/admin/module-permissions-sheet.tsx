@@ -72,55 +72,55 @@ function ModuleSection({ module, named }: Readonly<{ module: ModuleAccess; named
 
 /** Everything one or several modules may do, one section per module: its
  *  verdict, then each kind of access with its particulars. */
-export const PermissionsSheet = createCallable<
-  Readonly<{ modules: readonly ModuleAccess[] }>,
-  void
->(({ call, modules }) => {
-  const t = useT();
-  const [only] = modules;
-  const single = modules.length === 1 && only !== undefined;
-  const heading = single ? t('modulePermissions.title') : t('modulePermissions.detailsPerModule');
-  const names = listOf(
-    modules.map((module) => module.name),
-    t,
-  );
-  return (
-    <Drawer.Root
-      open={!call.ended}
-      onClose={() => call.end()}
-      title={single ? t('modulePermissions.titleOf', { name: only.name }) : heading}
-      width="md"
-      fullBelow={FULL_SCREEN_BELOW}
-    >
-      <Drawer.Header>
-        <Row between gap={12} align="flex-start">
-          <Box minW={0} flex>
-            <Text variant="h2" accessibilityRole="header">
-              {heading}
-            </Text>
-            <Text variant="meta" color="textDim" mt={4}>
-              {names}
-            </Text>
+export const PermissionsSheet = createCallable<Readonly<{ modules: readonly ModuleAccess[] }>>(
+  ({ call, modules }) => {
+    const t = useT();
+    const [only] = modules;
+    const single = modules.length === 1 && only !== undefined;
+    const heading = single ? t('modulePermissions.title') : t('modulePermissions.detailsPerModule');
+    const names = listOf(
+      modules.map((module) => module.name),
+      t,
+    );
+    return (
+      <Drawer.Root
+        open={!call.ended}
+        onClose={() => call.end()}
+        title={single ? t('modulePermissions.titleOf', { name: only.name }) : heading}
+        width="md"
+        fullBelow={FULL_SCREEN_BELOW}
+      >
+        <Drawer.Header>
+          <Row between gap={12} align="flex-start">
+            <Box minW={0} flex>
+              <Text variant="h2" accessibilityRole="header">
+                {heading}
+              </Text>
+              <Text variant="meta" color="textDim" mt={4}>
+                {names}
+              </Text>
+            </Box>
+            <Drawer.Close />
+          </Row>
+        </Drawer.Header>
+        <Drawer.Panel>
+          <Box gap={28}>
+            {modules.map((module, at) => (
+              <Fragment key={module.id}>
+                {at > 0 ? <Divider /> : null}
+                <ModuleSection module={module} named={!single} />
+              </Fragment>
+            ))}
           </Box>
-          <Drawer.Close />
-        </Row>
-      </Drawer.Header>
-      <Drawer.Panel>
-        <Box gap={28}>
-          {modules.map((module, at) => (
-            <Fragment key={module.id}>
-              {at > 0 ? <Divider /> : null}
-              <ModuleSection module={module} named={!single} />
-            </Fragment>
-          ))}
-        </Box>
-        <Row gap={10} mt={28} mb={8}>
-          <Icon name="shield-check" size={16} color="glyphDim" />
-          <Text variant="meta" color="textDim" flex>
-            {t('modulePermissions.denied', { count: modules.length })}
-          </Text>
-        </Row>
-      </Drawer.Panel>
-    </Drawer.Root>
-  );
-}, 400);
+          <Row gap={10} mt={28} mb={8}>
+            <Icon name="shield-check" size={16} color="glyphDim" />
+            <Text variant="meta" color="textDim" flex>
+              {t('modulePermissions.denied', { count: modules.length })}
+            </Text>
+          </Row>
+        </Drawer.Panel>
+      </Drawer.Root>
+    );
+  },
+  400,
+);

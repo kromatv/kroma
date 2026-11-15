@@ -35,16 +35,16 @@ function Providers({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 const onClose = vi.fn();
 
 function press(name: string) {
-  clearPressGuard();
+  inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
 }
 
 function open(task: PinTask) {
-  render(<PinDialog task={task} onClose={onClose} />, { wrapper: Providers });
+  inputHost.render(<PinDialog task={task} onClose={onClose} />, { wrapper: Providers });
 }
 
 function enter(code: string) {

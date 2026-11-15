@@ -181,7 +181,7 @@ export function AddEngineHost({ children }: Readonly<{ children?: ReactNode }>) 
       new Promise((resolve) => {
         pending.current.add(resolve);
         const ask = { id: nextId.current++, ...options, resolve };
-        setQueue((queue) => [...queue, ask]);
+        setQueue((waiting) => [...waiting, ask]);
       }),
     [],
   );
@@ -201,7 +201,7 @@ export function AddEngineHost({ children }: Readonly<{ children?: ReactNode }>) 
     }
     pending.current.delete(current.resolve);
     current.resolve(added);
-    setQueue((queue) => queue.slice(1));
+    setQueue((waiting) => waiting.slice(1));
   };
   return (
     <AddEngineContext.Provider value={addEngine}>

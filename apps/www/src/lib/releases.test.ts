@@ -105,10 +105,10 @@ describe('toSiteRelease', () => {
   });
 });
 
-describe('toSiteRelease checksums', () => {
-  const only = (extra: Record<string, unknown>) =>
-    toSiteRelease(raw({ assets: [asset('KROMA_0.1.38_aarch64.dmg', 1024, extra)] }))?.downloads[0];
+const only = (extra: Record<string, unknown>) =>
+  toSiteRelease(raw({ assets: [asset('KROMA_0.1.38_aarch64.dmg', 1024, extra)] }))?.downloads[0];
 
+describe('toSiteRelease checksums', () => {
   it('publishes the digest GitHub hashed the upload with', () => {
     expect(only({})?.sha256).toBe(HEX);
   });
@@ -204,12 +204,12 @@ describe('toSiteReleases', () => {
   });
 });
 
-describe('missingTargets', () => {
-  const release = (tag: string, ...names: string[]) => ({
-    ...bare(tag),
-    assets: names.map((name) => asset(name)),
-  });
+const release = (tag: string, ...names: string[]) => ({
+  ...bare(tag),
+  assets: names.map((name) => asset(name)),
+});
 
+describe('missingTargets', () => {
   it('names a platform the newest release dropped', () => {
     const releases = toSiteReleases(
       Feed.parse([

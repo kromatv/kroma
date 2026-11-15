@@ -231,6 +231,8 @@ describe('the messages the app renders', () => {
   });
 });
 
+const inspector = ({ text }: Rendered) => `[${text}]`;
+
 describe('the engine the panel reaches without being handed one', () => {
   it('does nothing at all until the app builds an adapter', async () => {
     const { engine } = await reloaded();
@@ -243,31 +245,31 @@ describe('the engine the panel reaches without being handed one', () => {
   });
 
   it('answers for the adapter the app built', async () => {
-    const paraglide = await reloaded();
+    const page = await reloaded();
     const runtime = runtimeFor('fr');
 
-    paraglide.paraglide({ runtime, messages: messagesFor(runtime) });
+    page.paraglide({ runtime, messages: messagesFor(runtime) });
 
-    expect(paraglide.engine.locales()).toEqual(['en', 'fr']);
-    expect(paraglide.engine.activeLocale()).toBe('fr');
+    expect(page.engine.locales()).toEqual(['en', 'fr']);
+    expect(page.engine.activeLocale()).toBe('fr');
   });
 
   it('carries both switches through to it', async () => {
-    const paraglide = await reloaded();
+    const page = await reloaded();
     const runtime = runtimeFor('en');
-    const built = paraglide.paraglide({ runtime, messages: messagesFor(runtime) });
+    const built = page.paraglide({ runtime, messages: messagesFor(runtime) });
 
-    paraglide.engine.overrideLocale('fr');
-    paraglide.engine.inspect(({ text }) => `[${text}]`);
+    page.engine.overrideLocale('fr');
+    page.engine.inspect(({ text }) => `[${text}]`);
 
     expect(built.messages.hello({ name: 'Ada' })).toBe('[Bonjour Ada]');
   });
 
   it('carries the inspector into the adapter a refresh rebuilds', async () => {
-    const paraglide = await reloaded();
+    const page = await reloaded();
     const first = runtimeFor('en');
-    paraglide.paraglide({ runtime: first, messages: messagesFor(first) });
-    paraglide.engine.inspect(({ text }) => `[${text}]`);
+    page.paraglide({ runtime: first, messages: messagesFor(first) });
+    page.engine.inspect(({ text }) => `[${text}]`);
 
     const again = await reloaded({ page: 'same' });
     const rebuilt = again.paraglide({ runtime: first, messages: messagesFor(first) });
@@ -276,10 +278,9 @@ describe('the engine the panel reaches without being handed one', () => {
   });
 
   it('installs the inspector it already has without asking for another refresh', async () => {
-    const paraglide = await reloaded();
+    const page = await reloaded();
     const runtime = runtimeFor('en');
-    const built = paraglide.paraglide({ runtime, messages: messagesFor(runtime) });
-    const inspector = ({ text }: Rendered) => `[${text}]`;
+    const built = page.paraglide({ runtime, messages: messagesFor(runtime) });
     built.inspect(inspector);
 
     built.inspect(inspector);
@@ -288,9 +289,9 @@ describe('the engine the panel reaches without being handed one', () => {
   });
 
   it('asks for nothing when told to render the locale already showing', async () => {
-    const paraglide = await reloaded();
+    const page = await reloaded();
     const runtime = runtimeFor('en');
-    const built = paraglide.paraglide({ runtime, messages: messagesFor(runtime) });
+    const built = page.paraglide({ runtime, messages: messagesFor(runtime) });
 
     built.overrideLocale('en');
 

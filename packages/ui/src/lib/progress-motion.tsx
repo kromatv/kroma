@@ -31,7 +31,7 @@ function useSettling(to: number): Animated.Value {
     // A first render mounts AT the value: a browse grid of half-watched tiles
     // must not animate two dozen bars into place.
     if (target.current === to) {
-      return;
+      return undefined;
     }
     target.current = to;
     const anim = Animated.timing(value, {
@@ -81,5 +81,5 @@ export function ProgressFill({ value, style }: Readonly<ProgressFillProps>) {
   const eased = useSettling(value);
   const trailing = eased.interpolate({ inputRange: [0, 1], outputRange: ['100%', '0%'] });
 
-  return <Animated.View style={[style, { right: trailing } as unknown as ViewStyle]} />;
+  return <Animated.View style={[style, { right: trailing }]} />;
 }

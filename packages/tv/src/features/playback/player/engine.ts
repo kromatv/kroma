@@ -21,27 +21,27 @@ export type PlayerFailure = Omit<DirectPlayVerdict, 'canDirectPlay'>;
 
 /** Normalised lifecycle callbacks the hook subscribes to (absolute seconds). */
 export interface EngineListeners {
-  onTime(sec: number): void;
-  onDuration(sec: number): void;
-  onBuffered(sec: number | null): void;
-  onPlay(): void;
-  onPause(): void;
-  onWaiting(): void;
-  onPlaying(): void;
-  onEnded(): void;
-  onError(): void;
-  onReady(): void;
-  onAudioFilterUnavailable?(): void;
+  onTime: (sec: number) => void;
+  onDuration: (sec: number) => void;
+  onBuffered: (sec: number | null) => void;
+  onPlay: () => void;
+  onPause: () => void;
+  onWaiting: () => void;
+  onPlaying: () => void;
+  onEnded: () => void;
+  onError: () => void;
+  onReady: () => void;
+  onAudioFilterUnavailable?: () => void;
   // The picture's display ratio, from whatever the backend can actually read of
   // the decoded stream. Optional twice over: an engine that cannot ask its
   // decoder never fires it, and the hook falls back to the catalog's declared
   // dimensions, which are only wrong for anamorphic sources.
-  onAspect?(aspect: number): void;
+  onAspect?: (aspect: number) => void;
   // Only the native backend fires this: expo-video's player is a value the engine replaces (on
   // the direct→remux fallback, and on every anchored-master seek), unlike the browser engines'
   // stable DOM elements. Without it the `<VideoView>` kept rendering a released player: a
   // black, unscrubbable screen.
-  onSurfaceChange?(): void;
+  onSurfaceChange?: () => void;
 }
 
 /** The uniform surface the hook + UI talk to, regardless of backend. */

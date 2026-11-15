@@ -17,11 +17,11 @@ export const PRESS_GUARD_MS = 300;
 export function createPressGuard() {
   let guardedUntil = 0;
   return {
-    armPressGuard(ms = PRESS_GUARD_MS) {
+    armPressGuard: (ms = PRESS_GUARD_MS) => {
       guardedUntil = Date.now() + ms;
     },
     pressGuardActive: () => Date.now() < guardedUntil,
-    clearPressGuard() {
+    clearPressGuard: () => {
       guardedUntil = 0;
     },
   };

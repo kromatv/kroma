@@ -9,11 +9,11 @@ import { choiceItem, type SettingsEntry, toggleItem } from '#tv/app/settings/ite
 import { reactivePref, useStoredPref } from '#tv/app/settings/store';
 import { SettingsRows } from './settings-rows';
 
-const { clearPressGuard, render: renderRaw } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator; render inside the
 // same scope the router gives a real screen.
-const render = (ui: ReactElement) => renderRaw(onScreen(ui));
+const render = (ui: ReactElement) => inputHost.render(onScreen(ui));
 
 function show(items: readonly SettingsEntry[]) {
   return render(
@@ -26,7 +26,17 @@ function show(items: readonly SettingsEntry[]) {
 afterEach(cleanup);
 // The press guard lives at module scope, so it survives unmounting (and a
 // test) unless dropped here.
-afterEach(clearPressGuard);
+afterEach(() => inputHost.clearPressGuard());
+
+const perfHudToggle = (id: string, available: boolean) =>
+  toggleItem({
+    id,
+    level: 'device',
+    label: 'profileMenu.perfHud',
+    icon: 'check',
+    available: () => available,
+    useValue: () => [false, () => {}] as const,
+  });
 
 describe('SettingsRows', () => {
   it('cycles a choice row through its options on activation', () => {
@@ -91,7 +101,7 @@ describe('SettingsRows', () => {
 
     // The dialog's OK guard arms on mount and would otherwise swallow this
     // press in a real test-clock window.
-    clearPressGuard();
+    inputHost.clearPressGuard();
     // An option of the list, not a button: the picker is a one-of-N choice and
     // says so, with the chosen row carrying the selection.
     fireEvent.click(screen.getByRole('option', { name: 'Swedish' }));
@@ -116,16 +126,7 @@ describe('SettingsRows', () => {
   });
 
   it('skips unavailable items and falsy inline entries', () => {
-    const toggle = (id: string, available: boolean) =>
-      toggleItem({
-        id,
-        level: 'device',
-        label: 'profileMenu.perfHud',
-        icon: 'check',
-        available: () => available,
-        useValue: () => [false, () => {}] as const,
-      });
-    show([false, null, undefined, toggle('gated', false), toggle('shown', true)]);
+    show([false, null, undefined, perfHudToggle('gated', false), perfHudToggle('shown', true)]);
     expect(screen.getAllByRole('switch')).toHaveLength(1);
   });
 });

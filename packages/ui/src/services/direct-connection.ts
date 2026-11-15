@@ -44,7 +44,7 @@ export function useDirectConnection(
 
   useEffect(() => {
     if (!client) {
-      return;
+      return undefined;
     }
     const started = startDirectConnection(client, {
       fetch: withLocalAddressSpace(globalThis.fetch.bind(globalThis)),
@@ -62,7 +62,7 @@ export function useDirectConnection(
   useEffect(() => connection.current?.setForeground(inFront), [client, inFront]);
   useEffect(() => {
     if (!client) {
-      return;
+      return undefined;
     }
     const recheck = () => connection.current?.recheck();
     const stopOnline = onOnline(recheck);

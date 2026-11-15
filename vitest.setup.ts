@@ -50,7 +50,7 @@ function memoryStorage(): Storage {
     clear: () => {
       entries.clear();
     },
-  } as Storage;
+  };
 }
 
 // Only where a DOM is expected. The `node` environment is where the native

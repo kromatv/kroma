@@ -141,7 +141,7 @@ function useLockFocusBehind(active: boolean): void {
   const { lock, unlock } = useLockNavigator();
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     lock();
     // The navigator counts locks rather than holding a flag, so overlapping

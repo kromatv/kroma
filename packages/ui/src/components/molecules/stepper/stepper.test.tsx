@@ -201,9 +201,9 @@ function OwnPanels() {
 function MappedSteps({ steps }: Readonly<{ steps: readonly string[] }>) {
   return (
     <Stepper.List>
-      {steps.map((step) => (
-        <Stepper.Item key={step} value={step}>
-          <Stepper.Label>{step}</Stepper.Label>
+      {steps.map((name) => (
+        <Stepper.Item key={name} value={name}>
+          <Stepper.Label>{name}</Stepper.Label>
         </Stepper.Item>
       ))}
     </Stepper.List>

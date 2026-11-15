@@ -84,7 +84,7 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
   const detail = fiche.data;
   if (detail.localId) {
     const owned = detail.kind === 'show' ? `/show/${detail.localId}` : `/item/${detail.localId}`;
-    return <Redirect href={owned as never} />;
+    return <Redirect href={owned} />;
   }
 
   const span = detail.seasons.length

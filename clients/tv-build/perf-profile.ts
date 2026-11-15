@@ -63,7 +63,7 @@ async function walk(page: Page, keys: string[], everyMs: number, forMs: number):
   const until = Date.now() + forMs;
   let at = 0;
   while (Date.now() < until) {
-    await page.keyboard.press(keys[at % keys.length] as string);
+    await page.keyboard.press(keys[at % keys.length]);
     at += 1;
     await page.waitForTimeout(everyMs);
   }

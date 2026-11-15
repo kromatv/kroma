@@ -633,6 +633,18 @@
       "rules": {
         "unicorn/filename-case": "off"
       }
+    },
+    {
+      "files": [
+        "**/src/main.tsx",
+        "**/src/main.ts",
+        "**/src/main.*.ts",
+        "packages/bundler/src/polyfills-legacy.ts",
+        "**/*.d.ts"
+      ],
+      "rules": {
+        "import/no-unassigned-import": "off"
+      }
     }
   ]
 }

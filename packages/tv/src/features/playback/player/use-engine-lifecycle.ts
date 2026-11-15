@@ -186,7 +186,7 @@ export function useEngineLifecycle(
   useEffect(() => {
     startedRef.current = false;
     if (startSec == null) {
-      return;
+      return undefined;
     }
 
     const listeners: EngineListeners = {
@@ -244,7 +244,7 @@ export function useEngineLifecycle(
       listeners,
     });
     if (!engine) {
-      return;
+      return undefined;
     } // <video> surface not mounted yet; rebuild next render
     engineRef.current = engine;
     setAudioFilterSupported(engine.audioFilterSupported?.() ?? true);
@@ -274,7 +274,7 @@ export function useEngineLifecycle(
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- loadBeat is an intentional dep, not read in the body; each buffering beat re-arms the grace timer (see note below).
   useEffect(() => {
     if (surface === 'avplay' || ready || error) {
-      return;
+      return undefined;
     }
     // libVLC on 10-bit HEVC at a deep resume point routinely takes 20s+ to reach
     // ready, and each buffering beat re-arms this timer, so only a silent load trips it.

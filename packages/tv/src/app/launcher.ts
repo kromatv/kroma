@@ -8,10 +8,10 @@ import { createContext, useContext } from 'react';
 export interface LauncherBackend {
   // JSON array of `{id,title,subtitle?,imageUrl?,backdropUrl?,progressMs,
   // durationMs,kind,showId?,updatedAtMs}`; `[]` clears it.
-  setContinueWatching(json: string): void;
+  setContinueWatching: (json: string) => void;
   // JSON array of `{title, items:[{id,title,subtitle?,imageUrl?,backdropUrl?,
   // kind}]}` in display order; `[]` clears them.
-  setHomeChannel(json: string): void;
+  setHomeChannel: (json: string) => void;
 }
 
 const Context = createContext<LauncherBackend | null>(null);

@@ -9,6 +9,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function Debug({ children }: { children: ReactNode }) {
+  return <PerfProvider debug>{children}</PerfProvider>;
+}
+
 describe('app-owned performance recording', () => {
   it('keeps samples and recording lifetimes separate between roots', () => {
     let next = 0;
@@ -39,9 +43,6 @@ describe('app-owned performance recording', () => {
   it('exposes the benchmark API only for the lifetime of an opted-in root', () => {
     const previous = { owner: 'another tool' };
     vi.stubGlobal('KROMA_PERF', previous);
-    function Debug({ children }: { children: ReactNode }) {
-      return <PerfProvider debug>{children}</PerfProvider>;
-    }
     const root = renderHook(usePerfSampler, { wrapper: Debug });
     expect(Reflect.get(globalThis, 'KROMA_PERF')).toMatchObject({
       report: root.result.current?.perfReport,

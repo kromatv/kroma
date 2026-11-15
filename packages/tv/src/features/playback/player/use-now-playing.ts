@@ -146,7 +146,7 @@ function useShellEvent(
   });
   useEffect(() => {
     if (!active || !bridge) {
-      return;
+      return undefined;
     }
     let un: (() => void) | undefined;
     let dead = false;
@@ -243,7 +243,7 @@ export function useNowPlaying({
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- key on item.id (not identity); title/subtitle/duration are read via ref in push.
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     void resolveArtwork(client, item).then((artwork) => {

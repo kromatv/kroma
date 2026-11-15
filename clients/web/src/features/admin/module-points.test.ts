@@ -21,7 +21,7 @@ function mod(over: Partial<AdminModule> & { id: string }): AdminModule {
     running: true,
     hasSidecar: true,
     ...over,
-  } as AdminModule;
+  };
 }
 
 describe('pointGraph', () => {

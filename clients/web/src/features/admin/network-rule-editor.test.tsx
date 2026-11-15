@@ -44,17 +44,17 @@ function Providers({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const press = (name: string) => {
-  clearPressGuard();
+  inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
 };
 
 const ids = (update: RulesUpdate) => update.rules.map((rule) => rule.id);
 
 async function mount(onDirtyChange = vi.fn()) {
-  render(<RuleEditor onDirtyChange={onDirtyChange} />, { wrapper: Providers });
+  inputHost.render(<RuleEditor onDirtyChange={onDirtyChange} />, { wrapper: Providers });
   await screen.findByText('*.doubleclick.net');
   return onDirtyChange;
 }
@@ -120,10 +120,10 @@ describe('the rule editor', () => {
     await mount();
 
     press('Presets');
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Everything through the VPN' }));
     const dialog = await screen.findByRole('dialog');
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Replace' }));
     await waitForElementToBeRemoved(() => screen.queryByText('*.doubleclick.net'));
     press('Save');
@@ -143,7 +143,7 @@ describe('the rule editor', () => {
     fireEvent.change(within(dialog).getByLabelText('Host'), {
       target: { value: 'tracker.example' },
     });
-    clearPressGuard();
+    inputHost.clearPressGuard();
     const addButton = within(dialog).getAllByRole('button', { name: 'Add a rule' }).at(-1);
     if (!addButton) {
       throw new Error('no add button');

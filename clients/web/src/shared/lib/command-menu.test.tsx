@@ -215,28 +215,33 @@ describe('loading the menu', () => {
   });
 });
 
+function QueryOnly() {
+  return <output>{useCommandQuery()}</output>;
+}
+
+const typed = () => screen.getByRole('status').textContent;
+
+const press = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+
+function QueryBox() {
+  const { open, close, setQuery } = useCommandMenu();
+  return (
+    <>
+      <output>{useCommandQuery()}</output>
+      <button type="button" onClick={open}>
+        open
+      </button>
+      <button type="button" onClick={close}>
+        close
+      </button>
+      <button type="button" onClick={() => setQuery('dune')}>
+        type
+      </button>
+    </>
+  );
+}
+
 describe('useCommandQuery', () => {
-  function QueryBox() {
-    const { open, close, setQuery } = useCommandMenu();
-    return (
-      <>
-        <output>{useCommandQuery()}</output>
-        <button type="button" onClick={open}>
-          open
-        </button>
-        <button type="button" onClick={close}>
-          close
-        </button>
-        <button type="button" onClick={() => setQuery('dune')}>
-          type
-        </button>
-      </>
-    );
-  }
-
-  const press = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
-  const typed = () => screen.getByRole('status').textContent;
-
   it('reads what is typed', () => {
     render(provider(<QueryBox />));
 
@@ -260,11 +265,13 @@ describe('useCommandQuery', () => {
 
     expect(typed()).toBe('');
   });
-
-  function QueryOnly() {
-    return <output>{useCommandQuery()}</output>;
-  }
 });
+
+function TwoHeadings() {
+  useCommands([command('a')], { group: 'First' });
+  useCommands([command('b')], { group: 'Second' });
+  return null;
+}
 
 describe('useCommands', () => {
   it('lists a screen’s commands while it is mounted', () => {
@@ -321,11 +328,6 @@ describe('useCommands', () => {
   });
 
   it('lists two calls in the order they were made, so one hook can make one per heading', () => {
-    function TwoHeadings() {
-      useCommands([command('a')], { group: 'First' });
-      useCommands([command('b')], { group: 'Second' });
-      return null;
-    }
     render(
       provider(
         <>

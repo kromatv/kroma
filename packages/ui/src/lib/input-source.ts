@@ -19,11 +19,13 @@ export interface InputSourceOptions {
   pointerShowsFocus?: boolean;
 }
 
+const NO_STOP = () => {};
+
 /** Pointer modality and its listeners have the same lifetime as their host. */
 export function createInputSource({ pointerShowsFocus = false }: InputSourceOptions = {}) {
   let pointerDrove = false;
   let holds = 0;
-  let stop = () => {};
+  let stop = NO_STOP;
   return {
     pointerDriving: () => pointerDrove,
     focusHidden: () => pointerDrove && !pointerShowsFocus,

@@ -4,6 +4,9 @@ import { chipVariants } from './chip';
 const VARIANTS = ['solid', 'subtle', 'surface'] as const;
 const SIZES = ['sm', 'tv'] as const;
 
+const hovered = (variant: (typeof VARIANTS)[number]) =>
+  chipVariants({ variant }, { hover: true }).root.backgroundColor;
+
 describe('chip design', () => {
   it('gives every variant an idle fill of its own', () => {
     expect(chipVariants({ variant: 'solid' }).root.backgroundColor).toBe('var(--kroma-tint-7)');
@@ -47,8 +50,6 @@ describe('chip design', () => {
   });
 
   it('lifts each variant to its own wash under a cursor', () => {
-    const hovered = (variant: (typeof VARIANTS)[number]) =>
-      chipVariants({ variant }, { hover: true }).root.backgroundColor;
     expect(hovered('solid')).toBe('var(--kroma-tint-13)');
     expect(hovered('subtle')).toBe('var(--kroma-tint-14)');
     expect(hovered('surface')).toBe('var(--kroma-surface-3)');

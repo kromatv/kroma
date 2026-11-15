@@ -66,7 +66,7 @@ export function useWaitReason({
     };
     read();
     if (!v) {
-      return;
+      return undefined;
     }
     for (const type of EVENTS) {
       v.addEventListener(type, read);

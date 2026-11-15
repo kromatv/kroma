@@ -69,7 +69,7 @@ export function HeroBillboard({
     if (entry.type === 'movie') {
       void playNow(entry.item.id);
     } else {
-      router.push(detailRoute as never);
+      router.push(detailRoute);
     }
   };
 
@@ -82,7 +82,7 @@ export function HeroBillboard({
 
   return (
     <Box style={[s.wrap, { width: w, height: h }]}>
-      <Pressable onPress={() => router.push(detailRoute as never)} style={StyleSheet.absoluteFill}>
+      <Pressable onPress={() => router.push(detailRoute)} style={StyleSheet.absoluteFill}>
         <FadeImage uri={art} seed={id} radius={radius.xl} style={StyleSheet.absoluteFill} />
         <ArtScrim variant="deep" radius={radius.xl} />
       </Pressable>
