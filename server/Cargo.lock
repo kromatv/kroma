@@ -2162,6 +2162,7 @@ dependencies = [
  "kroma-media",
  "kroma-module-host",
  "kroma-module-manifest",
+ "kroma-module-wire",
  "kroma-primitives",
  "kroma-push",
  "kroma-requests",

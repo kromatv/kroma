@@ -92,6 +92,12 @@ can allow it.
    (exact, or `*.example.org` for the domain and its subdomains), address range
    and port. Its action is the route: `direct`, a network's name, or `block`.
 3. **The default action**: `allow` (direct) or `block`.
+4. **Middleware.** A connection that is still allowed is put to each module
+   that answers the `network-policy` point, in the order set under Admin →
+   Réseau → Middleware. One can block it or move it to another network, and
+   cannot unblock it or send it direct. One that does not answer within 200 ms
+   is skipped, or blocks the connection when the operator marked it required.
+   The contract is in [network modules](network-modules.md#network-middleware).
 
 Then, depending on the decision:
 
@@ -319,7 +325,7 @@ or not.
 | Strict tier by uid and nftables under Docker, Watch scanner | dropped: no module is a native process (#489, #490) |
 | `network` point, several networks at once, rules that name one or match a port or address range | on `main` (#491) |
 | WireGuard tunnels in the gateway | dropped: `wireproxy` keeps the tunnel (#512) |
-| Network middleware | planned (#493) |
+| Network middleware | on `main` (#493) |
 | A network that carries UDP | dropped: a tunnel carries TCP only, so behind a VPN the torrent engine keeps DHT, its trackers and its listener off (#512) |
 | ffmpeg and ffprobe open local inputs only | on `main` (#515) |
 | A call that skips the gate fails CI, and SMTP mail asks the gate as `email` | on `main` (#541) |

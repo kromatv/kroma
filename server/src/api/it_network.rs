@@ -4,12 +4,13 @@ use serde_json::{Value, json};
 use crate::api::test_support::{get, raw, seed_session, send, test_app};
 use crate::model::Permission;
 
-const READS: [&str; 5] = [
+const READS: [&str; 6] = [
     "/api/admin/network/flows",
     "/api/admin/network/summary",
     "/api/admin/network/inbound",
     "/api/admin/network/rules",
     "/api/admin/network/listeners",
+    "/api/admin/network/middleware",
 ];
 
 fn rules_blocking(purpose: &str) -> Value {
@@ -337,4 +338,52 @@ async fn the_socket_modules_call_back_on_is_listed_as_this_machine_only() {
         })),
         "{body}"
     );
+}
+
+#[tokio::test]
+async fn the_middleware_order_an_admin_sets_is_the_one_read_back() {
+    let t = test_app();
+    let order = json!({ "middleware": [
+        { "module": "tv.example.blocklist", "required": true },
+        { "module": "tv.example.router", "required": false },
+        { "module": "tv.example.blocklist", "required": false }
+    ] });
+
+    let (written, _) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/network/middleware",
+        Some(&t.token),
+        Some(order),
+    )
+    .await;
+    let (_, read) = get(&t.app, "/api/admin/network/middleware", Some(&t.token)).await;
+
+    assert_eq!(written, StatusCode::NO_CONTENT);
+    assert_eq!(
+        read["middleware"],
+        json!([
+            { "module": "tv.example.blocklist", "required": true, "answering": false,
+              "skipped": 0, "lastSkip": null },
+            { "module": "tv.example.router", "required": false, "answering": false,
+              "skipped": 0, "lastSkip": null },
+        ])
+    );
+}
+
+#[tokio::test]
+async fn a_middleware_order_that_is_not_one_is_refused_by_name() {
+    let t = test_app();
+
+    let (status, body) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/network/middleware",
+        Some(&t.token),
+        Some(json!({ "middleware": [{ "name": "tv.example.blocklist" }] })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["code"], json!("invalid_body"));
 }

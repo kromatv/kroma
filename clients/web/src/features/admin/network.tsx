@@ -7,6 +7,7 @@ import { NetworkConnections } from '#web/features/admin/network-connections';
 import { NetworkDestinations } from '#web/features/admin/network-destinations';
 import { NetworkInbound } from '#web/features/admin/network-inbound';
 import { NetworkListeners } from '#web/features/admin/network-listeners';
+import { NetworkMiddleware } from '#web/features/admin/network-middleware';
 import { RuleEditor } from '#web/features/admin/network-rule-editor';
 import { SettingsPage } from '#web/features/admin/settings';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
@@ -16,6 +17,7 @@ export const NETWORK_TABS = [
   'destinations',
   'inbound',
   'rules',
+  'middleware',
   'listeners',
   'settings',
 ] as const;
@@ -26,6 +28,7 @@ const LABEL: Record<NetworkTab, MessageKey> = {
   destinations: 'network.tabDestinations',
   inbound: 'network.tabInbound',
   rules: 'network.tabRules',
+  middleware: 'network.tabMiddleware',
   listeners: 'network.tabListeners',
   settings: 'network.tabSettings',
 };
@@ -99,6 +102,7 @@ function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
       {tab === 'destinations' ? <NetworkDestinations /> : null}
       {tab === 'inbound' ? <NetworkInbound /> : null}
       {tab === 'rules' ? <RuleEditor onDirtyChange={setRulesDirty} /> : null}
+      {tab === 'middleware' ? <NetworkMiddleware /> : null}
       {tab === 'listeners' ? <NetworkListeners /> : null}
       {tab === 'settings' ? (
         <SettingsPage

@@ -157,6 +157,10 @@ impl AppState {
             settings.clone(),
             crate::point::Point::new(crate::services::network::NETWORK_POINT, contributions.clone()),
         )
+        .with_middleware(crate::point::Point::new(
+            crate::services::network::POLICY_POINT,
+            contributions.clone(),
+        ))
         .with_providers(network_providers)
         .with_listeners(network_listeners)
         .with_core_ports(config.port, config.https_port_override)
