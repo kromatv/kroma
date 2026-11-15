@@ -352,6 +352,7 @@
         "packages/cli/**",
         "packages/installer/**",
         "packages/sonar-tools/**",
+        "packages/quality-tools/**",
         "packages/shots/**",
         "packages/tv-probe/**",
         "packages/workspace-tools/**",

@@ -1,0 +1,2 @@
+tree-sitter==0.26.0
+tree-sitter-language-pack==1.23.1
