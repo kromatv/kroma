@@ -28,7 +28,9 @@ const withDependency = (config) =>
   withAppBuildGradle(config, (cfg) => {
     const contents = cfg.modResults.contents;
     // Idempotent: prebuild without --clean re-runs plugins over a patched file.
-    if (contents.includes(AAR)) return cfg;
+    if (contents.includes(AAR)) {
+      return cfg;
+    }
     if (!contents.includes(ANCHOR)) {
       throw new Error(
         `@kromatv/media3-ffmpeg: no "${ANCHOR}" block in app/build.gradle. The Expo ` +

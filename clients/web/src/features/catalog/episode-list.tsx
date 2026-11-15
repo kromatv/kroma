@@ -110,11 +110,15 @@ export function SeasonSection({
   // the whole set: carrying them over would submit episodes nothing on screen
   // shows, and nothing offers a way to see or clear.
   const pickSeason = (n: number) => {
-    if (n === season) return;
+    if (n === season) {
+      return;
+    }
     onClearSelection();
     setSeason(n);
   };
-  if (!current) return null;
+  if (!current) {
+    return null;
+  }
   const hasOpen = canRequest && seasons.some((s) => !s.available && !s.requested);
   const seasonPickable = canRequest && !current.available && !current.requested;
 
@@ -199,10 +203,18 @@ function mergeEpisodes(
   canRequest: boolean,
 ): { ownedByNum: Map<number, MediaItem>; ordered: number[]; perEpisode: boolean } {
   const ownedByNum = new Map<number, MediaItem>();
-  for (const ep of current.episodes) if (ep.episode != null) ownedByNum.set(ep.episode, ep);
+  for (const ep of current.episodes) {
+    if (ep.episode != null) {
+      ownedByNum.set(ep.episode, ep);
+    }
+  }
   const perEpisode = canRequest && !current.available && current.episodeCount > 0;
   const epNumbers = new Set<number>(ownedByNum.keys());
-  if (perEpisode) for (let n = 1; n <= current.episodeCount; n++) epNumbers.add(n);
+  if (perEpisode) {
+    for (let n = 1; n <= current.episodeCount; n++) {
+      epNumbers.add(n);
+    }
+  }
   const ordered = [...epNumbers].sort((a, b) => a - b);
   return { ownedByNum, ordered, perEpisode };
 }

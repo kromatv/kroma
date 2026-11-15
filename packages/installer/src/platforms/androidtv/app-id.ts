@@ -7,7 +7,7 @@ const APP_JSON = 'clients/tv-native/app.json';
 const FALLBACK = 'tv.kroma.app';
 
 const ExpoConfig = z.object({
-  expo: z.object({ android: z.object({ package: z.string().min(1).max(128) }) }),
+  expo: z.object({ android: z.object({ package: z.string().nonempty().max(128) }) }),
 });
 
 export function androidAppId(): string {

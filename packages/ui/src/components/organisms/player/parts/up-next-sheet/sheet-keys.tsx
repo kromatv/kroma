@@ -28,17 +28,23 @@ export function SheetKeys({ handle, open, onClose }: Readonly<SheetKeysProps>) {
     const send = (direction: Direction) => void navigator.handle(direction);
     return {
       onKey: (key: RemoteKey) => {
-        if (!open) return false;
+        if (!open) {
+          return false;
+        }
         if (key === 'Back') {
           onClose();
           return true;
         }
         const move = MOVES[key];
-        if (move && sheetMovesRing(enabled)) send(move);
+        if (move && sheetMovesRing(enabled)) {
+          send(move);
+        }
         return true;
       },
       onTab: (backwards: boolean) => {
-        if (enabled) return true;
+        if (enabled) {
+          return true;
+        }
         const was = probe.seq();
         walkTab(send, probe, backwards);
         return !backwards || probe.seq() !== was;

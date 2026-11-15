@@ -22,7 +22,9 @@ function folded(text: string): string {
 function fuzzyQuery(query: string): string {
   let out = '';
   for (const char of folded(query)) {
-    if (!SEPARATORS.has(char)) out += char;
+    if (!SEPARATORS.has(char)) {
+      out += char;
+    }
   }
   return out;
 }
@@ -35,7 +37,9 @@ function holdsInOrder(text: string, needle: string): boolean {
   let from = 0;
   for (const char of needle) {
     const at = text.indexOf(char, from);
-    if (at === -1) return false;
+    if (at === -1) {
+      return false;
+    }
     from = at + 1;
   }
   return true;
@@ -62,12 +66,15 @@ function nextRow(text: string, char: string, prev: readonly number[], row: numbe
 
 function scoreOf(text: string, needle: string): number {
   const width = text.length;
-  let prev = new Array<number>(width).fill(NONE);
-  let row = new Array<number>(width).fill(NONE);
+  let prev = Array.from<number>({ length: width }).fill(NONE);
+  let row = Array.from<number>({ length: width }).fill(NONE);
   let step = 0;
   for (const char of needle) {
-    if (step === 0) openRow(text, char, row);
-    else nextRow(text, char, prev, row);
+    if (step === 0) {
+      openRow(text, char, row);
+    } else {
+      nextRow(text, char, prev, row);
+    }
     [prev, row] = [row, prev];
     step += 1;
   }
@@ -81,9 +88,13 @@ function scoreOf(text: string, needle: string): number {
  * against anything. */
 function fuzzyScore(text: string, query: string): number | null {
   const needle = fuzzyQuery(query);
-  if (!needle) return 0;
+  if (!needle) {
+    return 0;
+  }
   const hay = folded(text);
-  if (!holdsInOrder(hay, needle)) return null;
+  if (!holdsInOrder(hay, needle)) {
+    return null;
+  }
   return scoreOf(hay, needle);
 }
 
@@ -99,11 +110,15 @@ interface FuzzyHit<T extends string> {
  * candidate in the order given, each scoring 0. */
 function fuzzySearch<T extends string>(candidates: readonly T[], query: string): FuzzyHit<T>[] {
   const needle = fuzzyQuery(query);
-  if (!needle) return candidates.map((text) => ({ text, score: 0 }));
+  if (!needle) {
+    return candidates.map((text) => ({ text, score: 0 }));
+  }
   const hits: FuzzyHit<T>[] = [];
   for (const candidate of candidates) {
     const hay = folded(candidate);
-    if (holdsInOrder(hay, needle)) hits.push({ text: candidate, score: scoreOf(hay, needle) });
+    if (holdsInOrder(hay, needle)) {
+      hits.push({ text: candidate, score: scoreOf(hay, needle) });
+    }
   }
   hits.sort((a, b) => b.score - a.score || a.text.length - b.text.length);
   return hits;

@@ -11,11 +11,17 @@ export { type LangCode, PREF_LANGS } from './lang-table';
  * chopping `"swe"` to `"sw"` would claim Swedish is Swahili.
  */
 export function langBase(code?: string | null): string | null {
-  if (!code) return null;
+  if (!code) {
+    return null;
+  }
   const raw = code.trim().toLowerCase();
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const base = raw.split(/[-_]/)[0] ?? raw;
-  if (!base) return null;
+  if (!base) {
+    return null;
+  }
   return LANG_ALIAS[base] ?? base;
 }
 
@@ -37,10 +43,14 @@ export const LANG_OFF = 'off';
  */
 export function offeredLang(code?: string | null): LangCode | null {
   const base = langBase(code);
-  if (base == null) return null;
+  if (base == null) {
+    return null;
+  }
   const region = langRegion(code);
   const full = region ? `${base}-${region}` : base;
-  if (isLangCode(full)) return full;
+  if (isLangCode(full)) {
+    return full;
+  }
   return isLangCode(base) ? base : null;
 }
 
@@ -62,20 +72,35 @@ export interface AudioCandidate {
  * `language: fre`. Bare "VF" names no side and stays null.
  */
 export function titleLangVariant(title?: string | null): string | null {
-  if (!title) return null;
+  if (!title) {
+    return null;
+  }
   const t = title.toLowerCase();
-  if (/\bvfq\b|\bvq\b|qu[eé]b[eé]c|fr[-_ ]ca\b|canadian french|french canadian/.test(t))
+  if (/\bvfq\b|\bvq\b|qu[eé]b[eé]c|fr[-_ ]ca\b|canadian french|french canadian/.test(t)) {
     return 'fr-CA';
-  if (/\bvff\b|true\s?french|fr[-_ ]fr\b/.test(t)) return 'fr-FR';
-  if (/castellano|castilian/.test(t)) return 'es-ES';
-  if (/\blatino\b|latin american/.test(t)) return 'es-419';
-  if (/bra[sz]il/.test(t)) return 'pt-BR';
-  if (/\bpt[-_ ]pt\b|european portuguese/.test(t)) return 'pt-PT';
+  }
+  if (/\bvff\b|true\s?french|fr[-_ ]fr\b/.test(t)) {
+    return 'fr-FR';
+  }
+  if (/castellano|castilian/.test(t)) {
+    return 'es-ES';
+  }
+  if (/\blatino\b|latin american/.test(t)) {
+    return 'es-419';
+  }
+  if (/bra[sz]il/.test(t)) {
+    return 'pt-BR';
+  }
+  if (/\bpt[-_ ]pt\b|european portuguese/.test(t)) {
+    return 'pt-PT';
+  }
   return null;
 }
 
 export function langRegion(code?: string | null): string | null {
-  if (!code) return null;
+  if (!code) {
+    return null;
+  }
   const region = code.trim().split(/[-_]/)[1];
   return region ? region.toUpperCase() : null;
 }
@@ -88,7 +113,9 @@ export function langRegion(code?: string | null): string | null {
 export function refineTrackLang(language?: string | null, title?: string | null): string | null {
   const base = langBase(language);
   const variant = titleLangVariant(title);
-  if (variant && (base == null || langBase(variant) === base)) return variant;
+  if (variant && (base == null || langBase(variant) === base)) {
+    return variant;
+  }
   return base;
 }
 
@@ -108,17 +135,27 @@ export function preferredAudioIndex(
   tracks: readonly AudioCandidate[],
   pref?: string | null,
 ): number | null {
-  if (!pref || pref === LANG_NO_PREF) return null;
+  if (!pref || pref === LANG_NO_PREF) {
+    return null;
+  }
   const matches = tracks.filter((tr) => matchesLang(pref, tr.language));
-  if (matches.length === 0) return null;
+  if (matches.length === 0) {
+    return null;
+  }
   const want = langRegion(pref);
-  if (!want) return matches[0]?.index ?? null;
+  if (!want) {
+    return matches[0]?.index ?? null;
+  }
   const variantOf = (tr: AudioCandidate) =>
     langRegion(tr.language) ?? langRegion(refineTrackLang(tr.language, tr.title));
   const exact = matches.find((tr) => variantOf(tr) === want);
-  if (exact) return exact.index;
+  if (exact) {
+    return exact.index;
+  }
   const neutral = matches.find((tr) => variantOf(tr) == null);
-  if (neutral) return neutral.index;
+  if (neutral) {
+    return neutral.index;
+  }
   return matches[0]?.index ?? null;
 }
 
@@ -129,7 +166,9 @@ export function preferredSubIndex(
   subs: readonly SubtitleCandidate[],
   pref?: string | null,
 ): number | null {
-  if (!pref || pref === LANG_OFF || pref === LANG_NO_PREF) return null;
+  if (!pref || pref === LANG_OFF || pref === LANG_NO_PREF) {
+    return null;
+  }
   const matches = subs.filter(
     (s) => Boolean(s.url) && !s.generated && matchesLang(pref, s.language),
   );
@@ -146,7 +185,9 @@ const FORCED_WORDS: ReadonlySet<string> = new Set([
 ]);
 
 function isForced(sub: SubtitleCandidate): boolean {
-  if (sub.forced) return true;
+  if (sub.forced) {
+    return true;
+  }
   const words = (sub.title ?? '').toLowerCase().split(/[^a-zÀ-ɏ]+/);
   return words.some((w) => FORCED_WORDS.has(w));
 }

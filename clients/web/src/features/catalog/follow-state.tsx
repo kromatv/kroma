@@ -24,7 +24,9 @@ export function FollowState({
     staleTime: 30_000,
   });
 
-  if (!canMonitor || tmdbId === null || followed === undefined) return null;
+  if (!canMonitor || tmdbId === null || followed === undefined) {
+    return null;
+  }
   return (
     <Button
       variant="glass"

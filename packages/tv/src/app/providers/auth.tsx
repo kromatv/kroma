@@ -31,8 +31,9 @@ export function isTokenRevoked(e: unknown): boolean {
 const keyOf = (a: Pick<StoredSession, 'serverUrl' | 'user'>) => `${norm(a.serverUrl)}|${a.user.id}`;
 
 function sameValue(a: unknown, b: unknown): boolean {
-  if (Array.isArray(a) && Array.isArray(b))
+  if (Array.isArray(a) && Array.isArray(b)) {
     return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
   return a === b;
 }
 
@@ -46,7 +47,9 @@ function sameUser(a: User, b: User): boolean {
 // A fresh object for the user we already have would change `user`'s identity and
 // re-run every consumer's refresh for nothing.
 function withUser(current: StoredSession | null, user: User): StoredSession | null {
-  if (!current || current.user.id !== user.id || sameUser(current.user, user)) return current;
+  if (!current || current.user.id !== user.id || sameUser(current.user, user)) {
+    return current;
+  }
   return { ...current, user };
 }
 
@@ -94,7 +97,9 @@ export function AuthProvider({
   const [resumed, setResumed] = useState<string | null>(null);
   const unlocked = useRef<Set<string>>(new Set(session ? [keyOf(session)] : []));
 
-  if (!session && resumed !== null) setResumed(null);
+  if (!session && resumed !== null) {
+    setResumed(null);
+  }
   const ready = !client || !session || resumed === session.accessToken;
 
   const drop = useCallback(
@@ -123,19 +128,25 @@ export function AuthProvider({
     clearSession();
   });
   useEffect(() => {
-    if (dropNonce > 0) releaseForeign();
+    if (dropNonce > 0) {
+      releaseForeign();
+    }
   }, [dropNonce]);
 
   // The bearer is only applied when the session belongs to the server the client
   // points at: a token for server A must never ride a request to server B.
   useEffect(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     if (!session) {
       client.setAuthToken();
       client.setRefreshHandler();
       return;
     }
-    if (norm(session.serverUrl) !== norm(activeServerUrl)) return;
+    if (norm(session.serverUrl) !== norm(activeServerUrl)) {
+      return;
+    }
 
     let cancelled = false;
     // One exchange for the boot and for a 401 alike: `sharedTokenExchange`
@@ -145,7 +156,9 @@ export function AuthProvider({
       client.session
         .sharedTokenExchange(() => client.accounts.exchangeToken(stored.accessToken))
         .then((res) => {
-          if (cancelled) return undefined;
+          if (cancelled) {
+            return undefined;
+          }
           client.setAuthToken(res.token);
           setSession((cur) => withUser(cur, res.user));
           saveSession({ ...stored, user: res.user });
@@ -153,11 +166,14 @@ export function AuthProvider({
           return res.token as string | undefined;
         })
         .catch((e: unknown) => {
-          if (cancelled) return undefined;
+          if (cancelled) {
+            return undefined;
+          }
           // Unresumable (revoked/expired token, or PIN required after a reset):
           // drop to the picker rather than a signed-in state with no bearer.
-          if (isTokenRevoked(e)) forgetAccountStore(stored.user.id, stored.serverUrl);
-          else if (apiErrorBody(e).pinRequired) {
+          if (isTokenRevoked(e)) {
+            forgetAccountStore(stored.user.id, stored.serverUrl);
+          } else if (apiErrorBody(e).pinRequired) {
             saveSession({ ...stored, user: { ...stored.user, hasPin: true } });
           }
           drop(client);
@@ -166,7 +182,9 @@ export function AuthProvider({
         });
 
     client.setRefreshHandler(() => resume(session));
-    if (resumed !== session.accessToken) void resume(session);
+    if (resumed !== session.accessToken) {
+      void resume(session);
+    }
     return () => {
       cancelled = true;
       client.setRefreshHandler();
@@ -221,7 +239,9 @@ export function AuthProvider({
   );
 
   const switchProfile = useCallback(() => {
-    if (session) client?.accounts.relock(session.accessToken).catch(() => undefined);
+    if (session) {
+      client?.accounts.relock(session.accessToken).catch(() => undefined);
+    }
     drop(client);
   }, [client, session, drop]);
 
@@ -247,14 +267,18 @@ export function AuthProvider({
     } catch {
       /* best-effort server-side revocation */
     }
-    if (active?.serverUrl) forgetAccountStore(active.user.id, active.serverUrl);
+    if (active?.serverUrl) {
+      forgetAccountStore(active.user.id, active.serverUrl);
+    }
     drop(client);
     setAccounts(loadAccounts());
   }, [client, session, drop, loadAccounts, forgetAccountStore]);
 
   const updateUser = useCallback(
     (patch: Partial<User>) => {
-      if (!session) return;
+      if (!session) {
+        return;
+      }
       const next: StoredSession = { ...session, user: { ...session.user, ...patch } };
       // `saveSession` rewrites the remembered-accounts entry too, so `accounts`
       // must be re-read or the picker keeps showing a lock for a disabled PIN.
@@ -307,7 +331,9 @@ export function AuthProvider({
 
 export function useAuth(): Auth {
   const ctx = useContext(AuthCtx);
-  if (!ctx) throw new Error('useAuth() must be used inside <AuthProvider>');
+  if (!ctx) {
+    throw new Error('useAuth() must be used inside <AuthProvider>');
+  }
   return ctx;
 }
 

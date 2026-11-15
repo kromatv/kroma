@@ -104,7 +104,9 @@ export function IdentitiesCard() {
   const [linking, setLinking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const outcome = takeOutcome('link');
-    if (!outcome || outcome.result.status === 'linked') return null;
+    if (!outcome || outcome.result.status === 'linked') {
+      return null;
+    }
     return t(`sso.${flowMessage(outcome.result)}.body`, {
       provider: t('sso.yourProvider'),
       server: 'KROMA',
@@ -113,7 +115,9 @@ export function IdentitiesCard() {
 
   const providers = signInButtons(config?.signIn ?? DEFAULT_SIGN_IN_METHODS);
   const linked = identities ?? [];
-  if (providers.length === 0 && linked.length === 0) return null;
+  if (providers.length === 0 && linked.length === 0) {
+    return null;
+  }
 
   const link = async (provider: SignInButton) => {
     setLinking(provider.id);

@@ -21,8 +21,11 @@ interface Buckets {
 function sort(children: ReactNode): Buckets {
   const at: Buckets = { header: [], body: [] };
   for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Header) at.header.push(child);
-    else at.body.push(child);
+    if (isValidElement(child) && child.type === Header) {
+      at.header.push(child);
+    } else {
+      at.body.push(child);
+    }
   }
   return at;
 }

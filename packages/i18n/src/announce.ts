@@ -30,12 +30,17 @@ export function announceCatalogs(
   complete?: readonly string[],
 ): void {
   const announced = { file, catalogs, complete };
-  if (sink) sink(announced);
-  else queue.push(announced);
+  if (sink) {
+    sink(announced);
+  } else {
+    queue.push(announced);
+  }
 }
 
 /** Take every announcement made so far, and every one to come. */
 export function drainAnnouncements(next: (announced: Announced) => void): void {
   sink = next;
-  for (const announced of queue.splice(0)) next(announced);
+  for (const announced of queue.splice(0)) {
+    next(announced);
+  }
 }

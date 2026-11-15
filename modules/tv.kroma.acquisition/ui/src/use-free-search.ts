@@ -38,7 +38,9 @@ export function useFreeSearch(
   const ready = canSearch(query, target, season, episode);
 
   const run = useCallback(() => {
-    if (!canSearch(query, target, season, episode)) return;
+    if (!canSearch(query, target, season, episode)) {
+      return;
+    }
     generation.current += 1;
     const mine = generation.current;
     setBusy(true);
@@ -47,13 +49,19 @@ export function useFreeSearch(
     api
       .search({ query: query.trim(), kind: target, ...scopeOf(target, season, episode) })
       .then((v) => {
-        if (generation.current === mine) setView(v);
+        if (generation.current === mine) {
+          setView(v);
+        }
       })
       .catch((e) => {
-        if (generation.current === mine) setError(apiErrorText(e, t('requests.searchFailed')));
+        if (generation.current === mine) {
+          setError(apiErrorText(e, t('requests.searchFailed')));
+        }
       })
       .finally(() => {
-        if (generation.current === mine) setBusy(false);
+        if (generation.current === mine) {
+          setBusy(false);
+        }
       });
   }, [api, t, query, target, season, episode]);
 

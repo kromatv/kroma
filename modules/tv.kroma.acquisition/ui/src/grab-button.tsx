@@ -27,7 +27,9 @@ export function GrabButton({
         confirmLabel: t('acq.grab.anyway'),
         cancelLabel: t('common.cancel'),
       }));
-    if (yes) onGrab(release);
+    if (yes) {
+      onGrab(release);
+    }
   };
   return (
     <Button
@@ -43,7 +45,9 @@ export function GrabButton({
 }
 
 function variantOf(picked: boolean, refused: boolean): ButtonVariant {
-  if (refused) return 'ghost';
+  if (refused) {
+    return 'ghost';
+  }
   return picked ? 'primary' : 'glass';
 }
 
@@ -52,6 +56,8 @@ function iconOf(upgrade: boolean, refused: boolean): IconName {
 }
 
 function labelKeyOf(upgrade: boolean, refused: boolean): string {
-  if (refused) return 'acq.grab.anyway';
+  if (refused) {
+    return 'acq.grab.anyway';
+  }
   return upgrade ? 'acq.grab.replace' : 'acq.grab.take';
 }

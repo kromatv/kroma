@@ -52,7 +52,9 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
 
   const [visited, setVisited] = useState(index);
   const reached = Math.max(visited, index);
-  if (index > visited) setVisited(index);
+  if (index > visited) {
+    setVisited(index);
+  }
 
   const off = useMemo(() => new Set(disabled), [disabled]);
   const done = useMemo(() => (complete ? new Set(complete) : null), [complete]);
@@ -60,14 +62,18 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
   const seek = (from: number, delta: 1 | -1) => {
     for (let at = from + delta; at >= 0 && at < steps.length; at += delta) {
       const key = steps[at];
-      if (key !== undefined && !off.has(key)) return at;
+      if (key !== undefined && !off.has(key)) {
+        return at;
+      }
     }
     return -1;
   };
 
   const land = useStableCallback((at: number, reason: StepReason) => {
     const key = steps[at];
-    if (key === undefined || key === current) return;
+    if (key === undefined || key === current) {
+      return;
+    }
     setVisited((far) => Math.max(far, at));
     setHeld(key);
     onValueChange?.(key, { reason });
@@ -77,7 +83,9 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
   const previous = useStableCallback(() => land(seek(index, -1), 'previous'));
 
   const goTo = useStableCallback((step: string) => {
-    if (!off.has(step)) land(steps.indexOf(step), 'goTo');
+    if (!off.has(step)) {
+      land(steps.indexOf(step), 'goTo');
+    }
   });
 
   const reset = useStableCallback(() => {
@@ -89,7 +97,9 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
   // frozen closure would answer from the render before the flow moved.
   const isComplete = useCallback(
     (step: string) => {
-      if (done) return done.has(step);
+      if (done) {
+        return done.has(step);
+      }
       const at = steps.indexOf(step);
       return at !== -1 && at < reached;
     },
@@ -99,8 +109,12 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
   const isReachable = useCallback(
     (step: string) => {
       const at = steps.indexOf(step);
-      if (at === -1 || off.has(step)) return false;
-      if (done) return step === current || done.has(step);
+      if (at === -1 || off.has(step)) {
+        return false;
+      }
+      if (done) {
+        return step === current || done.has(step);
+      }
       return at <= reached;
     },
     [done, off, steps, reached, current],

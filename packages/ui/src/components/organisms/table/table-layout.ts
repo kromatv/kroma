@@ -84,7 +84,9 @@ function useColumnLayout({ columns, step, resizable, autoSaveId, storage }: Resi
   const store = useMemo(() => (storage === undefined ? browserStorage() : storage), [storage]);
 
   const restored = useMemo(() => {
-    if (!resizable) return null;
+    if (!resizable) {
+      return null;
+    }
     const saved = readLayout(store, autoSaveId, arrangement);
     return saved?.length === shown.length ? saved : null;
   }, [resizable, store, autoSaveId, arrangement, shown.length]);
@@ -99,9 +101,13 @@ function useColumnLayout({ columns, step, resizable, autoSaveId, storage }: Resi
   const measure = useCallback(
     (at: number, width: number) => {
       widths.current[at] = width;
-      if (resized) return;
+      if (resized) {
+        return;
+      }
       const room = shown.reduce((sum, column) => sum + (widths.current[column] ?? 0), 0);
-      if (room <= 0) return;
+      if (room <= 0) {
+        return;
+      }
       const next = shown.map((column) => Math.round(((widths.current[column] ?? 0) / room) * FULL));
       setMeasured((was) => (sameShares(was, next) ? was : next));
     },
@@ -124,10 +130,16 @@ function useColumnLayout({ columns, step, resizable, autoSaveId, storage }: Resi
     (at: number, delta: number, committed: boolean) => {
       const from = start.current;
       const seam = shown.indexOf(at);
-      if (!from || seam < 0) return;
+      if (!from || seam < 0) {
+        return;
+      }
       const next = adjust(from.base, seam, (delta / from.room) * FULL, from.limits);
-      if (!sizes || !sameLayout(next, sizes)) setKept({ arrangement, sizes: next });
-      if (committed) writeLayout(store, autoSaveId, arrangement, next);
+      if (!sizes || !sameLayout(next, sizes)) {
+        setKept({ arrangement, sizes: next });
+      }
+      if (committed) {
+        writeLayout(store, autoSaveId, arrangement, next);
+      }
     },
     [shown, sizes, arrangement, store, autoSaveId],
   );
@@ -138,7 +150,9 @@ function useColumnLayout({ columns, step, resizable, autoSaveId, storage }: Resi
   }, [arrangement, store, autoSaveId]);
 
   const resize = useMemo<ColumnResize | null>(() => {
-    if (!resizable) return null;
+    if (!resizable) {
+      return null;
+    }
     const shares = sizes ?? measured;
     return {
       seamAfter: (at) => {
@@ -154,7 +168,9 @@ function useColumnLayout({ columns, step, resizable, autoSaveId, storage }: Resi
   }, [resizable, sizes, measured, shown, measure, begin, drag, reset]);
 
   const boxes = useMemo(() => {
-    if (!sizes) return null;
+    if (!sizes) {
+      return null;
+    }
     return columns.map((column, at) => shareBox(sizes[shown.indexOf(at)] ?? 0, column));
   }, [sizes, columns, shown]);
 

@@ -63,7 +63,9 @@ export function webosRuntime(models: readonly (string | undefined)[]): Runtime |
 function modelYear(model: string): number | null {
   const upper = model.toUpperCase();
   const oled = /OLED\d{2}[A-Z]([0-9X])/.exec(upper)?.[1];
-  if (oled !== undefined) return OLED_YEAR[oled] ?? null;
+  if (oled !== undefined) {
+    return OLED_YEAR[oled] ?? null;
+  }
   const lcd = /\d{2}([A-Z]{2})\d/.exec(upper)?.[1];
   return lcd === undefined ? null : (LCD_YEAR[lcd] ?? null);
 }

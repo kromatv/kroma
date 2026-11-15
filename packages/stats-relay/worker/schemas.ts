@@ -33,8 +33,8 @@ const Count = z.int().min(0).max(10_000_000);
 
 const Base = z.object({
   id: InstallId,
-  version: z.string().trim().min(1).max(32),
-  commit: z.string().trim().min(1).max(40),
+  version: z.string().trim().nonempty().max(32),
+  commit: z.string().trim().nonempty().max(40),
   target: z.string().trim().max(64),
   install: z.enum(['docker', 'synology', 'binary', 'unknown']),
   locales: z.array(Tag).max(32).optional(),
@@ -137,7 +137,9 @@ export function parse<S extends z.ZodType>(text: string, schema: S): Parsed<S> {
 // received value back, reflecting an attacker's payload into a response.
 function firstIssue(error: { issues: readonly z.core.$ZodIssue[] }): string {
   const issue = error.issues[0];
-  if (!issue) return 'invalid request';
+  if (!issue) {
+    return 'invalid request';
+  }
   const path = issue.path.join('.');
   return path ? `${path}: ${issue.message}` : issue.message;
 }

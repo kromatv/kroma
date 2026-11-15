@@ -42,7 +42,7 @@ export interface ServiceSession {
   close(): void;
 }
 
-export type ServiceHandler = (session: ServiceSession) => void;
+export type ServiceHandler = (session: ServiceSession) => void | Promise<void>;
 
 export interface FakeDeviceOptions {
   banner?: string;
@@ -77,7 +77,9 @@ class DeviceSession implements ServiceSession {
   accept(payload: Buffer): void {
     this.socket.write(this.frame(SDB_COMMAND.OKAY, EMPTY));
     const waiter = this.waiting.shift();
-    if (!waiter) throw new Error(`the fake device was not reading ${this.service}`);
+    if (!waiter) {
+      throw new Error(`the fake device was not reading ${this.service}`);
+    }
     waiter(payload);
   }
 
@@ -116,7 +118,9 @@ export async function fakeDevice({
   let nextId = 101;
 
   const answerHandshake = (socket: Socket): void => {
-    if (handshake === 'silence') return;
+    if (handshake === 'silence') {
+      return;
+    }
     if (handshake === 'auth') {
       const challenge = { command: SDB_COMMAND.AUTH, arg0: 1, arg1: 0, data: randomBytes(20) };
       socket.write(encodePacket(challenge));
@@ -151,15 +155,23 @@ export async function fakeDevice({
     sessions.set(deviceId, session);
     const accepted = { command: SDB_COMMAND.OKAY, arg0: deviceId, arg1: packet.arg0, data: EMPTY };
     socket.write(encodePacket(accepted));
-    handler(session);
+    void handler(session);
   };
 
   const handle = (socket: Socket, packet: SdbPacket): void => {
     received.push(packet);
-    if (packet.command === SDB_COMMAND.CNXN) answerHandshake(socket);
-    if (packet.command === SDB_COMMAND.OPEN) openService(socket, packet);
-    if (packet.command === SDB_COMMAND.CLSE) sessions.delete(packet.arg1);
-    if (packet.command === SDB_COMMAND.WRTE) sessions.get(packet.arg1)?.accept(packet.data);
+    if (packet.command === SDB_COMMAND.CNXN) {
+      answerHandshake(socket);
+    }
+    if (packet.command === SDB_COMMAND.OPEN) {
+      openService(socket, packet);
+    }
+    if (packet.command === SDB_COMMAND.CLSE) {
+      sessions.delete(packet.arg1);
+    }
+    if (packet.command === SDB_COMMAND.WRTE) {
+      sessions.get(packet.arg1)?.accept(packet.data);
+    }
   };
 
   const server = createServer((socket) => {
@@ -168,12 +180,16 @@ export async function fakeDevice({
     socket.on('error', () => undefined);
     const reader = new PacketReader(HOST_MAX_DATA);
     socket.on('data', (chunk) => {
-      for (const packet of reader.push(chunk)) handle(socket, packet);
+      for (const packet of reader.push(chunk)) {
+        handle(socket, packet);
+      }
     });
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
-  if (address === null || typeof address === 'string') throw new Error('no port was assigned');
+  if (address === null || typeof address === 'string') {
+    throw new Error('no port was assigned');
+  }
 
   return {
     host: '127.0.0.1',
@@ -190,13 +206,17 @@ export async function fakeDevice({
     hungUpOn: () =>
       new Promise<void>((resolve) => {
         const socket = sockets.at(-1);
-        if (!socket || socket.destroyed) return resolve();
+        if (!socket || socket.destroyed) {
+          return resolve();
+        }
         socket.once('close', () => resolve());
       }),
     reset: () => sockets.at(-1)?.resetAndDestroy(),
     close: () =>
       new Promise<void>((resolve) => {
-        for (const socket of sockets.splice(0)) socket.destroy();
+        for (const socket of sockets.splice(0)) {
+          socket.destroy();
+        }
         server.close(() => resolve());
       }),
   };
@@ -204,6 +224,8 @@ export async function fakeDevice({
 
 function trimNul(text: string): string {
   let end = text.length;
-  while (end > 0 && text[end - 1] === '\0') end -= 1;
+  while (end > 0 && text[end - 1] === '\0') {
+    end -= 1;
+  }
   return text.slice(0, end);
 }

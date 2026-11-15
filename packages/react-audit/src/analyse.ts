@@ -23,7 +23,9 @@ interface Commit {
 }
 
 const add = (into: Record<string, number>, from: Readonly<Record<string, number>>) => {
-  for (const [name, count] of Object.entries(from)) into[name] = (into[name] ?? 0) + count;
+  for (const [name, count] of Object.entries(from)) {
+    into[name] = (into[name] ?? 0) + count;
+  }
 };
 
 const cost = (work: Work) => work.mounted * 10 + work.updated;
@@ -62,11 +64,15 @@ function components(commits: readonly Commit[]): ReadonlyArray<readonly [string,
  */
 function churn(commits: readonly Commit[]): ReadonlyArray<readonly [string, number]> {
   const [first, ...rest] = commits;
-  if (!first || rest.length === 0) return [];
+  if (!first || rest.length === 0) {
+    return [];
+  }
   const after = rest.at(-1)?.census ?? {};
 
   const deleted: Record<string, number> = {};
-  for (const commit of rest) add(deleted, commit.deleted);
+  for (const commit of rest) {
+    add(deleted, commit.deleted);
+  }
 
   return Object.entries(deleted)
     .filter(([name]) => (after[name] ?? 0) > 0)
@@ -88,7 +94,9 @@ function rerenders(commits: readonly Commit[]): number {
  * numerous first. The count a DOM or native tree is actually judged on. */
 function hosts(commits: readonly Commit[]): ReadonlyArray<readonly [string, number]> {
   const last = commits.at(-1);
-  if (!last) return [];
+  if (!last) {
+    return [];
+  }
   return Object.entries(last.hosts).sort(([, a], [, b]) => b - a);
 }
 

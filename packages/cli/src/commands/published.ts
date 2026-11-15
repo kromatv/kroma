@@ -16,12 +16,18 @@ export function defaultHistory(repo: string): string {
 
 async function load<T>(source: string, schema: z.ZodType<T>, flag: string): Promise<T | null> {
   if (!/^https?:\/\//.test(source)) {
-    if (!existsSync(source)) throw new Error(`${flag} ${source} does not exist`);
+    if (!existsSync(source)) {
+      throw new Error(`${flag} ${source} does not exist`);
+    }
     return schema.parse(JSON.parse(readFileSync(source, 'utf8')));
   }
   const res = await fetch(source, { headers: { 'user-agent': 'kroma-cli' } });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`${source}: HTTP ${res.status}`);
+  if (res.status === 404) {
+    return null;
+  }
+  if (!res.ok) {
+    throw new Error(`${source}: HTTP ${res.status}`);
+  }
   return schema.parse(await res.json());
 }
 
@@ -29,7 +35,9 @@ async function load<T>(source: string, schema: z.ZodType<T>, flag: string): Prom
  *  empty catalog, so every module is a first release. */
 export async function loadPublished(source: string): Promise<Catalog> {
   const catalog = await load(source, Catalog, '--published');
-  if (catalog) return catalog;
+  if (catalog) {
+    return catalog;
+  }
   console.warn(`  ! ${source} is 404: treating every module as a first release`);
   return { schema: 2, modules: [] };
 }
@@ -39,6 +47,8 @@ export async function loadPublished(source: string): Promise<Catalog> {
  *  one that forgot it. */
 export async function loadHistory(source: string): Promise<VersionHistory | null> {
   const history = await load(source, VersionHistory, '--published-history');
-  if (!history) console.warn(`  ! ${source} is 404: starting the version history afresh`);
+  if (!history) {
+    console.warn(`  ! ${source} is 404: starting the version history afresh`);
+  }
   return history;
 }

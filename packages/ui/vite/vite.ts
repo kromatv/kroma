@@ -12,8 +12,12 @@ export { tokensCss } from './tokens.ts';
 function findRepoRoot(from = process.cwd()): string {
   for (let dir = from; ; dir = dirname(dir)) {
     const manifest = join(dir, 'package.json');
-    if (existsSync(manifest) && readFileSync(manifest, 'utf8').includes('"workspaces"')) return dir;
-    if (dirname(dir) === dir) throw new Error(`[kroma-ui] no workspace root above ${from}`);
+    if (existsSync(manifest) && readFileSync(manifest, 'utf8').includes('"workspaces"')) {
+      return dir;
+    }
+    if (dirname(dir) === dir) {
+      throw new Error(`[kroma-ui] no workspace root above ${from}`);
+    }
   }
 }
 

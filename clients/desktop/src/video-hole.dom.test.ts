@@ -26,7 +26,9 @@ function place(el: HTMLElement, left: number, top: number, right: number, bottom
 
 function div(parent: HTMLElement, id?: string): HTMLElement {
   const el = document.createElement('div');
-  if (id) el.id = id;
+  if (id) {
+    el.id = id;
+  }
   parent.appendChild(el);
   return el;
 }

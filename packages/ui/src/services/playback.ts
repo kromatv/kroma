@@ -89,24 +89,32 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   }, [params.client]);
 
   const fireTerminated = useEffectEvent((message: string) => {
-    if (terminated.current) return;
+    if (terminated.current) {
+      return;
+    }
     terminated.current = true;
     params.onTerminated(message);
   });
 
   const send = useEffectEvent(() => {
-    if (!params.enabled || terminated.current) return;
+    if (!params.enabled || terminated.current) {
+      return;
+    }
     const state = params.getState();
     const positionMs = Math.round(params.getPosition() * 1000);
     const now = Date.now();
     const last = beat.current;
     // Nothing has played, so there is no session to open. A surface that only
     // ever buffers or sits paused is not a viewing.
-    if (!opened.current && state !== 'playing') return;
+    if (!opened.current && state !== 'playing') {
+      return;
+    }
     // A background tab's timer is clamped to about one wake-up a minute, so the
     // beat arrives after the server has reaped and logged the session. Opening
     // another one on an unmoved playhead writes a row a minute, forever.
-    if (last && now - last.at >= SERVER_TTL_MS && positionMs === last.positionMs) return;
+    if (last && now - last.at >= SERVER_TTL_MS && positionMs === last.positionMs) {
+      return;
+    }
     beat.current = { at: now, positionMs };
     opened.current = true;
     const buffered = params.getBuffered?.();
@@ -126,14 +134,18 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
       })
       .catch((e: unknown) => {
         // 410 Gone → an admin terminated this session (WS fallback).
-        if (e instanceof KromaApiError && e.status === 410) fireTerminated('');
+        if (e instanceof KromaApiError && e.status === 410) {
+          fireTerminated('');
+        }
       });
   });
 
   // Heartbeat loop + prompt ping on the element's play/pause + stop on unmount.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- send reads through the effect event; re-run only on client/enabled.
   useEffect(() => {
-    if (!params.enabled) return;
+    if (!params.enabled) {
+      return;
+    }
     const ping = () => send();
     ping();
     const iv = setInterval(ping, 10000);
@@ -156,27 +168,36 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- unmount only; the client is read through a ref.
   useEffect(
     () => () => {
-      if (terminated.current || !opened.current) return;
+      if (terminated.current || !opened.current) {
+        return;
+      }
       const stop = () => {
         clientRef.current.playback.stop(sessionId).catch(() => undefined);
       };
       const pending = inFlight.current;
-      if (pending) void pending.then(stop, stop);
-      else stop();
+      if (pending) {
+        void pending.then(stop, stop);
+      } else {
+        stop();
+      }
     },
     [],
   );
 
   // Prompt ping when the caller's play state changes (web passes React `playing`).
   useEffect(() => {
-    if (params.pingSignal === undefined) return;
+    if (params.pingSignal === undefined) {
+      return;
+    }
     send();
   }, [params.pingSignal]);
 
   // Listen for an admin terminating this session (matched by session id).
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- the socket lives per enabled/baseUrl; the token closure reads its live value at handshake time.
   useEffect(() => {
-    if (!params.enabled) return;
+    if (!params.enabled) {
+      return;
+    }
     const ev = new KromaEvents(params.eventsBaseUrl, {
       token: params.eventsToken ?? (() => params.client.sessionToken),
       refresh: () => params.client.refreshSession(),

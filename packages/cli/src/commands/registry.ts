@@ -18,7 +18,9 @@ export interface RegistryOptions {
 }
 
 export function resolveDir(value: string | undefined, fallback: string, cwd: string): string {
-  if (!value) return join(cwd, fallback);
+  if (!value) {
+    return join(cwd, fallback);
+  }
   return isAbsolute(value) ? value : join(cwd, value);
 }
 
@@ -32,7 +34,9 @@ export function registryCommand(options: RegistryOptions): number {
 
   const bundles = readBundles(modulesDir);
   mkdirSync(outDir, { recursive: true });
-  for (const b of bundles) copyFileSync(b.path, join(outDir, b.file));
+  for (const b of bundles) {
+    copyFileSync(b.path, join(outDir, b.file));
+  }
 
   const modules = toEntries(bundles, () => baseUrl);
   const write = (rel: string, value: unknown) => {
@@ -43,7 +47,9 @@ export function registryCommand(options: RegistryOptions): number {
   write('catalog.json', { schema: 2, generatedAt: new Date().toISOString(), modules });
   write('registry.json', buildDescriptor('KROMA modules', baseUrl, modules));
   write('index.json', buildIndex(modules));
-  for (const entry of modules) write(`m/${entry.id}.json`, buildModuleRecord(entry));
+  for (const entry of modules) {
+    write(`m/${entry.id}.json`, buildModuleRecord(entry));
+  }
   for (const name of SCHEMA_NAMES) {
     const schema = jsonSchema(name);
     write(schemaPath(name).replace(/^\//, ''), schema);
@@ -51,6 +57,8 @@ export function registryCommand(options: RegistryOptions): number {
   }
 
   console.log(`registry: ${modules.length} module(s) -> ${outDir}`);
-  for (const m of modules) console.log(`  ${m.id}  v${m.version}`);
+  for (const m of modules) {
+    console.log(`  ${m.id}  v${m.version}`);
+  }
   return 0;
 }

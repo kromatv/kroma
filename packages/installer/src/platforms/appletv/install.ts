@@ -26,7 +26,9 @@ export async function installAppleTv({
 
   log(`installing ${basename(app)} on ${identifier}`);
   await command(['device', 'install', 'app', '--device', identifier, app], log, INSTALL_TIMEOUT_MS);
-  if (!launch) return;
+  if (!launch) {
+    return;
+  }
 
   log(`launching ${bundleId}`);
   const args = ['device', 'process', 'launch', '--device', identifier, '--terminate-existing'];
@@ -35,7 +37,9 @@ export async function installAppleTv({
 
 async function command(args: readonly string[], log: LogLine, timeoutMs: number): Promise<void> {
   const { code, output, report } = await devicectl(args, { log, timeoutMs });
-  if (code === 0) return;
+  if (code === 0) {
+    return;
+  }
   throw new Error(devicectlAdvice(failureText(report) ?? lastLines(output)));
 }
 
@@ -44,8 +48,9 @@ async function readBundleId(app: string): Promise<string> {
   const json = await runOk(['plutil', '-convert', 'json', '-o', '-', plist], {
     timeoutMs: PLIST_TIMEOUT_MS,
   });
-  if (json.length > MAX_PLIST_BYTES)
+  if (json.length > MAX_PLIST_BYTES) {
     throw new Error(`${basename(app)} carries an unreadable plist`);
+  }
 
   const info = AppBundleInfo.parse(JSON.parse(json));
   if (info.DTPlatformName !== TVOS_DEVICE_SDK) {

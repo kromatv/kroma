@@ -48,9 +48,13 @@ function sort(children: ReactNode): Sorted {
   const at: Sorted = { trigger: [], panel: [], loose: [] };
   for (const child of Children.toArray(children)) {
     const part = isValidElement(child) ? child.type : null;
-    if (part === Trigger) at.trigger.push(child);
-    else if (part === Panel) at.panel.push(child);
-    else at.loose.push(child);
+    if (part === Trigger) {
+      at.trigger.push(child);
+    } else if (part === Panel) {
+      at.panel.push(child);
+    } else {
+      at.loose.push(child);
+    }
   }
   return at;
 }
@@ -123,7 +127,9 @@ function Trigger({ children, label }: Readonly<DisclosureTriggerProps>) {
  *  inside it is reachable by a pointer, a screen reader or a D-pad. */
 function Panel({ children }: Readonly<{ children: ReactNode }>) {
   const { open } = useDisclosure('Panel');
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
   return <Box pt={4}>{children}</Box>;
 }
 

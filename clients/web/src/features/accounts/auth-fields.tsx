@@ -72,12 +72,16 @@ export function RegisterFields({
 
   useEffect(() => {
     return () => {
-      if (preview) URL.revokeObjectURL(preview);
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
     };
   }, [preview]);
 
   function pickFile(f: File | null) {
-    if (preview) URL.revokeObjectURL(preview);
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
     onAvatar(f);
     setPreview(f ? URL.createObjectURL(f) : null);
   }

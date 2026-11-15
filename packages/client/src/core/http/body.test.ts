@@ -6,7 +6,9 @@ const streamed = (chunks: readonly Uint8Array[], status = 200) =>
     status,
     body: new ReadableStream({
       start(controller) {
-        for (const chunk of chunks) controller.enqueue(chunk);
+        for (const chunk of chunks) {
+          controller.enqueue(chunk);
+        }
         controller.close();
       },
     }),

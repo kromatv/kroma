@@ -48,9 +48,13 @@ const html = readFileSync(join(DIST, 'index.html'), 'utf8');
 // The gate is the only place the modern pair survives as hrefs; the older tiers
 // are named by their directory.
 function entryOf(which: Tier): { css: string; js: string } {
-  if (which !== 'modern') return { css: `./${which}/style.css`, js: `./${which}/index.js` };
+  if (which !== 'modern') {
+    return { css: `./${which}/style.css`, js: `./${which}/index.js` };
+  }
   const [, css, js] = /css = '([^']*)';[^\n]*\n[^\n]*src = '([^']*)';/.exec(html) ?? [];
-  if (!css || !js) throw new Error('[slice] could not read the modern entry out of the gate');
+  if (!css || !js) {
+    throw new Error('[slice] could not read the modern entry out of the gate');
+  }
   return { css, js };
 }
 
@@ -70,18 +74,28 @@ const queue = [local(entry.css), local(entry.js)];
 // Modulepreloads are the modern tier's other roots.
 if (tier === 'modern') {
   for (const [, list] of html.matchAll(/var pre = (\[[^\]]*\]);/g)) {
-    if (list) for (const href of JSON.parse(list) as string[]) queue.push(local(href));
+    if (list) {
+      for (const href of JSON.parse(list) as string[]) {
+        queue.push(local(href));
+      }
+    }
   }
 }
 
 while (queue.length > 0) {
   const file = queue.pop();
-  if (file === undefined || reached.has(file) || !existsSync(file)) continue;
+  if (file === undefined || reached.has(file) || !existsSync(file)) {
+    continue;
+  }
   reached.add(file);
-  if (!TEXT.test(file)) continue;
+  if (!TEXT.test(file)) {
+    continue;
+  }
   const text = readFileSync(file, 'utf8');
   for (const [name, path] of assets) {
-    if (!reached.has(path) && text.includes(name)) queue.push(path);
+    if (!reached.has(path) && text.includes(name)) {
+      queue.push(path);
+    }
   }
 }
 
@@ -91,7 +105,9 @@ mkdirSync(join(OUT, 'assets'), { recursive: true });
 
 for (const name of ['config.xml', 'icon.png', 'service']) {
   const from = join(DIST, name);
-  if (existsSync(from)) cpSync(from, join(OUT, name), { recursive: true });
+  if (existsSync(from)) {
+    cpSync(from, join(OUT, name), { recursive: true });
+  }
 }
 
 // The whole package floors at 3.0 and lets the gate choose; a slice has nothing
@@ -105,9 +121,13 @@ writeFileSync(
     `required_version="${TIERS[tier].requiredVersion}"`,
   ),
 );
-if (tier !== 'modern') cpSync(join(DIST, tier), join(OUT, tier), { recursive: true });
+if (tier !== 'modern') {
+  cpSync(join(DIST, tier), join(OUT, tier), { recursive: true });
+}
 for (const file of reached) {
-  if (file.startsWith(join(DIST, 'assets'))) cpSync(file, join(OUT, 'assets', basename(file)));
+  if (file.startsWith(join(DIST, 'assets'))) {
+    cpSync(file, join(OUT, 'assets', basename(file)));
+  }
 }
 
 // One tier, loaded directly: no probe, and nothing to fall back to.
@@ -135,7 +155,9 @@ writeFileSync(join(OUT, 'index.html'), `${head}${loader}\n  ${tail}`);
 function sizeOf(dir: string): number {
   let total = 0;
   for (const item of readdirSync(dir, { withFileTypes: true, recursive: true })) {
-    if (!item.isDirectory()) total += readFileSync(join(item.parentPath, item.name)).length;
+    if (!item.isDirectory()) {
+      total += readFileSync(join(item.parentPath, item.name)).length;
+    }
   }
   return total;
 }

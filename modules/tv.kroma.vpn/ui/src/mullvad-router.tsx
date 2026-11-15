@@ -71,8 +71,12 @@ export function MullvadRouterButton({
 function refusalText(cause: unknown, t: ReturnType<typeof useT>): string {
   const body = cause instanceof KromaApiError ? cause.body : null;
   const full = RouterFull.safeParse(body);
-  if (full.success) return t('vpn.routerFull', { count: full.data.max });
+  if (full.success) {
+    return t('vpn.routerFull', { count: full.data.max });
+  }
   const refusal = MullvadRefusal.safeParse(body);
-  if (refusal.success) return t(REFUSAL_KEY[refusal.data.code]);
+  if (refusal.success) {
+    return t(REFUSAL_KEY[refusal.data.code]);
+  }
   return apiErrorText(cause, t('vpn.mullvadUnavailable'));
 }

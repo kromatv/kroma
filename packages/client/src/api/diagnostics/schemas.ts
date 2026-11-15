@@ -16,7 +16,7 @@ export type CrashDevice = z.infer<typeof CrashDevice>;
  * design: a stack and message plus the build/device metadata needed to place
  * the crash, and nothing that identifies the user. */
 export const CrashReport = z.object({
-  message: z.string().min(1).max(2000),
+  message: z.string().nonempty().max(2000),
   stack: z.string().max(16000),
   platform: z.string().max(256),
   capturedAt: z.number().int().nonnegative(),

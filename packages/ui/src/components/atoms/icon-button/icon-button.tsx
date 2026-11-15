@@ -223,7 +223,9 @@ const boxes = new Map<string, ViewStyle>();
 function metrics(size: number, radius?: Radius): ViewStyle {
   const key = `${size}:${radius ?? ''}`;
   const hit = boxes.get(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const made = StyleSheet.create({
     box:
       radius === undefined

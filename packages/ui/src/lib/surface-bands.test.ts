@@ -8,7 +8,7 @@ const Footer = ({ children }: Readonly<{ children?: ReactNode }>) => children;
 const Other = ({ children }: Readonly<{ children?: ReactNode }>) => children;
 
 const parts = { header: Header, panel: Panel, footer: Footer };
-const band = (of: typeof Header, children?: ReactNode) => createElement(of, { children });
+const band = (of: typeof Header, children?: ReactNode) => createElement(of, null, children);
 
 // `Children.toArray` keys what it hands back, so a band comes out a clone of
 // what went in and only what it holds identifies it.

@@ -34,7 +34,9 @@ export function DirectOffer() {
   const [dismissed, setDismissed] = useState(() => offerDismissed(client.baseUrl));
   const [attempt, setAttempt] = useState<Attempt>('idle');
 
-  if (!shouldOffer(direct, dismissed)) return null;
+  if (!shouldOffer(direct, dismissed)) {
+    return null;
+  }
 
   const connect = () => {
     setAttempt('trying');

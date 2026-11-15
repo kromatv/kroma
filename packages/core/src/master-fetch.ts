@@ -19,9 +19,13 @@ export async function fetchMaster(url: string, signal?: AbortSignal): Promise<Re
   const init = signal ? { signal } : undefined;
   const ask = async (asked: number, wait: number): Promise<Response> => {
     const answer = await fetch(url, init);
-    if (answer.status !== PLAYLIST_NOT_WRITTEN_YET || asked >= ATTEMPTS) return answer;
+    if (answer.status !== PLAYLIST_NOT_WRITTEN_YET || asked >= ATTEMPTS) {
+      return answer;
+    }
     await sleep(wait);
-    if (signal?.aborted) return answer;
+    if (signal?.aborted) {
+      return answer;
+    }
     return ask(asked + 1, wait * 2);
   };
   return ask(1, FIRST_WAIT_MS);
@@ -34,10 +38,14 @@ export async function fetchMaster(url: string, signal?: AbortSignal): Promise<Re
  * every subtitle cue after a resume/seek/audio switch. A master that never
  * answers, or answers without naming its start, keeps the requested anchor. */
 export async function resolveMasterStart(url: string, requested: number): Promise<number> {
-  if (requested <= AT_FILM_START_SEC) return 0;
+  if (requested <= AT_FILM_START_SEC) {
+    return 0;
+  }
   try {
     const r = await fetchMaster(url);
-    if (r.status >= 400) return requested;
+    if (r.status >= 400) {
+      return requested;
+    }
     const real = namedStart(r);
     return Number.isFinite(real) ? real : requested;
   } catch {

@@ -55,7 +55,7 @@ describe('following a title', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(ROW, true, expect.any(Function)));
     expect(client.monitoring.monitor).toHaveBeenCalledWith('movie', 603);
 
-    act(() => onSaved.mock.calls[0]?.[2]());
+    act(() => void onSaved.mock.calls[0]?.[2]());
 
     await waitFor(() => expect(client.monitoring.unmonitor).toHaveBeenCalledWith('movie', 603));
   });
@@ -126,7 +126,7 @@ describe('monitoring episodes', () => {
     act(() => result.current.set({ season: 2, episode: 3 }, true));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
 
-    act(() => onSaved.mock.calls[0]?.[2]());
+    act(() => void onSaved.mock.calls[0]?.[2]());
 
     await waitFor(() =>
       expect(client.monitoring.setEpisodes).toHaveBeenLastCalledWith(7, {

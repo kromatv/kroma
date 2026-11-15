@@ -37,7 +37,9 @@ export function useCompleteOnce(
       completed.current = false;
       return;
     }
-    if (completed.current) return;
+    if (completed.current) {
+      return;
+    }
     completed.current = true;
     fire?.(value);
   }, []);

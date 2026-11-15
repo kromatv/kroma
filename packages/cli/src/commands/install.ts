@@ -12,11 +12,14 @@ export interface InstallOptions extends ServerOptions {
 }
 
 function pickBundle(options: InstallOptions, cwd: string): string {
-  if (options.file) return options.file;
+  if (options.file) {
+    return options.file;
+  }
   const id =
     options.id ?? (existsSync(join(cwd, 'module.json')) ? openProject(cwd).manifest.id : undefined);
-  if (!id)
+  if (!id) {
     throw new Error('usage: kroma install [module-id] [--file x.kmod] [--server URL] [--token T]');
+  }
   const dir = options.from ?? join(cwd, 'dist', 'modules');
   const path = join(dir, bundleName(id));
   if (!existsSync(path)) {
@@ -34,6 +37,8 @@ export async function installCommand(options: InstallOptions): Promise<number> {
   const path = pickBundle(options, cwd);
   const body = await uploadBundle(server, path);
   console.log(`installed ${basename(path)} -> ${server.url}`);
-  if (body.trim()) console.log(`  ${body.trim()}`);
+  if (body.trim()) {
+    console.log(`  ${body.trim()}`);
+  }
   return 0;
 }

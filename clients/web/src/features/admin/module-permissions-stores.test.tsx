@@ -8,7 +8,9 @@ const t = englishT();
 function only(source: Omit<PermissionSource, 'permissions'> & Partial<PermissionSource>) {
   const [group, ...rest] = permissionGroups({ permissions: {}, ...source }, t);
   expect(rest).toEqual([]);
-  if (!group) throw new Error('no group');
+  if (!group) {
+    throw new Error('no group');
+  }
   return group;
 }
 

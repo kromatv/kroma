@@ -7,9 +7,13 @@ import { webDocument } from '#ui/lib/dom';
 
 export function armEscapeGuard(): void {
   const doc = webDocument();
-  if (!doc) return;
+  if (!doc) {
+    return;
+  }
   const swallow = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape') return;
+    if (event.key !== 'Escape') {
+      return;
+    }
     event.stopImmediatePropagation();
     doc.removeEventListener('keyup', swallow, true);
   };

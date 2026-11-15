@@ -17,14 +17,20 @@ export function createModuleRuntime(listModules: () => Promise<readonly ModuleIn
     generation += 1;
     let released = false;
     return () => {
-      if (released) return;
+      if (released) {
+        return;
+      }
       released = true;
       holds -= 1;
       const releasedAt = ++generation;
       queueMicrotask(() => {
-        if (holds > 0 || generation !== releasedAt) return;
+        if (holds > 0 || generation !== releasedAt) {
+          return;
+        }
         remotes.dispose();
-        for (const id of registry.ids()) registry.unregister(id);
+        for (const id of registry.ids()) {
+          registry.unregister(id);
+        }
       });
     };
   }

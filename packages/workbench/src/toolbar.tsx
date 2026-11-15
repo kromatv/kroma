@@ -208,7 +208,9 @@ function Toolbar({
 function CopyLink() {
   const { available, state, copy } = useCopy();
   const onPress = useCallback(() => copy(webWindow()?.location?.href), [copy]);
-  if (!available) return null;
+  if (!available) {
+    return null;
+  }
   return (
     <>
       <IconTool
@@ -224,7 +226,9 @@ function CopyLink() {
 
 function ViewSource() {
   const source = useStorySource();
-  if (!source) return null;
+  if (!source) {
+    return null;
+  }
   return (
     <IconTool
       glyph="brand-github"

@@ -37,7 +37,9 @@ const sizeOf = (fontSize: number, scope: StyleScope) =>
   sharedStyle(`letter:size:${fontSize}`, { fontSize }, scope);
 function toneOf(index: number, present: boolean, lit: [number, number] | null): Tone {
   const inLens = lit !== null && index >= lit[0] && index <= lit[1];
-  if (present) return inLens ? 'lit' : 'idle';
+  if (present) {
+    return inLens ? 'lit' : 'idle';
+  }
   return inLens ? 'litDim' : 'dim';
 }
 

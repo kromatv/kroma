@@ -56,17 +56,21 @@ export default defineRule(
         'borderBottomRightRadius',
       ]);
       function check(node, name, value) {
-        if (value?.type === 'JSXExpressionContainer') value = value.expression;
+        if (value?.type === 'JSXExpressionContainer') {
+          value = value.expression;
+        }
         let literal = value?.type === 'Literal' ? value.value : undefined;
-        if (value?.type === 'TemplateLiteral' && !value.expressions.length)
+        if (value?.type === 'TemplateLiteral' && !value.expressions.length) {
           literal = value.quasis[0].value.cooked;
+        }
         if (
           value?.type === 'UnaryExpression' &&
           value.operator === '-' &&
           value.argument.type === 'Literal' &&
           typeof value.argument.value === 'number'
-        )
+        ) {
           literal = -value.argument.value;
+        }
         const rawColour =
           colours.has(name) && typeof literal === 'string' && isColour(literal.trim());
         const rawMetric =
@@ -74,16 +78,22 @@ export default defineRule(
           (typeof literal === 'number' ||
             (typeof literal === 'string' && /^-?\d+(?:\.\d+)?(?:px|rem|em|%)?$/.test(literal))) &&
           !(radii.has(name) && Number.parseFloat(String(literal)) === 0);
-        if (rawColour || rawMetric) context.report({ node, messageId: 'violation' });
+        if (rawColour || rawMetric) {
+          context.report({ node, messageId: 'violation' });
+        }
       }
       return {
         Property(node) {
-          if (node.parent.type !== 'ObjectExpression') return;
+          if (node.parent.type !== 'ObjectExpression') {
+            return;
+          }
           const name = node.computed ? node.key.value : (node.key.name ?? node.key.value);
           check(node.value, name, node.value);
         },
         JSXAttribute(node) {
-          if (node.name.type === 'JSXIdentifier') check(node, node.name.name, node.value);
+          if (node.name.type === 'JSXIdentifier') {
+            check(node, node.name.name, node.value);
+          }
         },
       };
     },

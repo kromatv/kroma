@@ -24,7 +24,9 @@ export function YourPlatform() {
   const userAgent = useSyncExternalStore(subscribeNever, clientUserAgent, serverUserAgent);
   const guess = useMemo(() => (userAgent ? guessPlatform(userAgent) : null), [userAgent]);
 
-  if (!guess || !release) return null;
+  if (!guess || !release) {
+    return null;
+  }
 
   const files = downloadsFor(release, guess.targets).map(fromDownload);
 

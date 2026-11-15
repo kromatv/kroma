@@ -43,21 +43,27 @@ export function createLocales<
     const parts = subtags(tag);
     for (let length = parts.length; length > 0; length -= 1) {
       const code = folded.get(parts.slice(0, length).join('-'));
-      if (code) return code;
+      if (code) {
+        return code;
+      }
     }
     const language = parts[0];
     return codes.find((code) => subtags(code)[0] === language) ?? null;
   };
 
   const normalizeLocale = (tag?: string | null): L | null => {
-    if (!tag) return null;
+    if (!tag) {
+      return null;
+    }
     const lower = tag.toLowerCase();
     return byTag(tag) ?? codes.find((code) => names[code]?.toLowerCase() === lower) ?? null;
   };
 
   const detectLocale = (preferred?: string | null): L => {
     const explicit = normalizeLocale(preferred);
-    if (explicit) return explicit;
+    if (explicit) {
+      return explicit;
+    }
     const nav = typeof navigator !== 'undefined' ? navigator : undefined;
     const languages = nav?.languages ?? [];
     const language = nav?.language;
@@ -69,7 +75,9 @@ export function createLocales<
     }
     for (const t of tags) {
       const loc = normalizeLocale(t);
-      if (loc) return loc;
+      if (loc) {
+        return loc;
+      }
     }
     return defaultLocale;
   };

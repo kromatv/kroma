@@ -104,27 +104,36 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
     stencil: false,
     powerPreference: 'low-power',
   });
-  if (!gl) return () => {};
+  if (!gl) {
+    return () => {};
+  }
 
   const shader = (type: number, src: string) => {
     const s = gl.createShader(type);
-    if (!s) throw new Error('shader');
+    if (!s) {
+      throw new Error('shader');
+    }
     gl.shaderSource(s, src);
     gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
       throw new Error(gl.getShaderInfoLog(s) ?? 'compile');
+    }
     return s;
   };
 
   let prog: WebGLProgram;
   try {
     const p = gl.createProgram();
-    if (!p) throw new Error('program');
+    if (!p) {
+      throw new Error('program');
+    }
     prog = p;
     gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERT));
     gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('link');
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      throw new Error('link');
+    }
   } catch {
     return () => {};
   }
@@ -179,10 +188,14 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
     raf = 0;
     gl.uniform1f(uT, (now - t0) / 1000 + 40);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    if (!reduced && visible && !document.hidden && !dead) raf = requestAnimationFrame(draw);
+    if (!reduced && visible && !document.hidden && !dead) {
+      raf = requestAnimationFrame(draw);
+    }
   };
   const wake = () => {
-    if (!raf && !dead && visible && !document.hidden) raf = requestAnimationFrame(draw);
+    if (!raf && !dead && visible && !document.hidden) {
+      raf = requestAnimationFrame(draw);
+    }
   };
 
   // Resizing the canvas empties its drawing buffer, so the frame after a resize
@@ -206,7 +219,9 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
   // Re-measure once fonts land, since a reflow can move the anchor. Guarded:
   // this can resolve after a fast route change, against an already-detached canvas.
   void document.fonts?.ready.then(() => {
-    if (!dead) measure();
+    if (!dead) {
+      measure();
+    }
   });
   const onLost = (e: Event) => {
     e.preventDefault();

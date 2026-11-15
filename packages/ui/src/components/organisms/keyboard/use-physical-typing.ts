@@ -11,17 +11,26 @@ function usePhysicalTyping(
   physicalKeyboard: boolean,
 ) {
   const type = useEffectEvent((key: string) => {
-    if (key === 'Backspace') onValueChange(value.slice(0, -1));
-    else if (key.length === 1) onValueChange(value + key);
+    if (key === 'Backspace') {
+      onValueChange(value.slice(0, -1));
+    } else if (key.length === 1) {
+      onValueChange(value + key);
+    }
   });
 
   useEffect(() => {
     const w = physicalKeyboard ? webWindow() : null;
-    if (!w) return;
+    if (!w) {
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) {
+        return;
+      }
       const t = e.target;
-      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) {
+        return;
+      }
       if (e.key === 'Backspace' || e.key.length === 1) {
         e.preventDefault();
         type(e.key);

@@ -38,18 +38,22 @@ export function createInputSource({ pointerShowsFocus = false }: InputSourceOpti
           pointerDrove = false;
         };
         const pointerOptions = { capture: true, passive: true };
-        for (const kind of ['mousemove', 'wheel', 'pointerdown'])
+        for (const kind of ['mousemove', 'wheel', 'pointerdown']) {
           win?.addEventListener(kind, pointer, pointerOptions);
+        }
         win?.addEventListener('keydown', keys, true);
         stop = () => {
-          for (const kind of ['mousemove', 'wheel', 'pointerdown'])
+          for (const kind of ['mousemove', 'wheel', 'pointerdown']) {
             win?.removeEventListener(kind, pointer, true);
+          }
           win?.removeEventListener('keydown', keys, true);
         };
       }
       let released = false;
       return () => {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         holds -= 1;
         if (holds === 0) {
@@ -67,7 +71,9 @@ function useInputSource(): ReturnType<typeof createInputSource> {
   const parent = useContext(Context);
   const [owned] = useState(() => (parent ? null : createInputSource()));
   const source = parent ?? owned;
-  if (!source) throw new Error('Input source requires its owning root');
+  if (!source) {
+    throw new Error('Input source requires its owning root');
+  }
   useEffect(() => (parent ? undefined : source.retain()), [parent, source]);
   return source;
 }

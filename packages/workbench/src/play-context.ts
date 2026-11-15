@@ -59,13 +59,17 @@ interface Stage {
 
 function rootOrThrow(stage: Stage): Fiber {
   const root = stage.root();
-  if (!root) throw new PlayError('the story is not on the stage');
+  if (!root) {
+    throw new PlayError('the story is not on the stage');
+  }
   return root;
 }
 
 function nearby(root: Fiber): string {
   const names = namesUnder(root);
-  if (names.length === 0) return 'nothing on the stage is named';
+  if (names.length === 0) {
+    return 'nothing on the stage is named';
+  }
   const shown = names.slice(0, NAMES_SHOWN).map(quote).join(', ');
   return `named: ${shown}${names.length > NAMES_SHOWN ? ', …' : ''}`;
 }
@@ -85,7 +89,9 @@ async function locate(stage: Stage, name: string): Promise<Fiber> {
   for (;;) {
     const root = rootOrThrow(stage);
     const found = pick(root, name);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
     if (Date.now() >= deadline) {
       throw new PlayError(`no control ${quote(name)}; ${nearby(root)}`);
     }
@@ -100,8 +106,12 @@ async function until(stage: Stage, check: Check): Promise<void> {
   const deadline = Date.now() + stage.timeout;
   for (;;) {
     const failure = check(rootOrThrow(stage));
-    if (!failure) return;
-    if (Date.now() >= deadline) throw new PlayError(failure);
+    if (!failure) {
+      return;
+    }
+    if (Date.now() >= deadline) {
+      throw new PlayError(failure);
+    }
     await flush();
     await sleep(POLL_MS);
   }
@@ -110,7 +120,9 @@ async function until(stage: Stage, check: Check): Promise<void> {
 function visibleCheck(name: string): Check {
   return (root) => {
     const found = pick(root, name);
-    if (!found) return `${quote(name)} is not on the stage; ${nearby(root)}`;
+    if (!found) {
+      return `${quote(name)} is not on the stage; ${nearby(root)}`;
+    }
     return isVisible(found, root) ? null : `${quote(name)} is on the stage but hidden`;
   };
 }
@@ -118,7 +130,9 @@ function visibleCheck(name: string): Check {
 function textCheck(name: string, wanted: string): Check {
   return (root) => {
     const found = pick(root, name);
-    if (!found) return `${quote(name)} is not on the stage; ${nearby(root)}`;
+    if (!found) {
+      return `${quote(name)} is not on the stage; ${nearby(root)}`;
+    }
     const text = textOf(found);
     return text.includes(wanted)
       ? null
@@ -134,10 +148,14 @@ function expectation(stage: Stage, name: string, negated: boolean): PlayExpectat
   // A negated matcher asserts once: waiting a second for something to stay
   // absent is a second spent on every passing play.
   const settle = async (check: Check) => {
-    if (!negated) return until(stage, check);
+    if (!negated) {
+      return until(stage, check);
+    }
     await flush();
     const failure = check(rootOrThrow(stage));
-    if (failure) throw new PlayError(failure);
+    if (failure) {
+      throw new PlayError(failure);
+    }
   };
   return {
     get not() {
@@ -162,16 +180,24 @@ function actions(stage: Stage): Omit<PlayContext, 'step'> {
   return {
     press: async (name) => {
       const control = await locate(stage, name);
-      if (isDisabled(control)) throw new PlayError(`${quote(name)} is disabled`);
+      if (isDisabled(control)) {
+        throw new PlayError(`${quote(name)} is disabled`);
+      }
       const fire = pressHandler(control, rootOrThrow(stage));
-      if (!fire) throw new PlayError(`${quote(name)} answers no press`);
+      if (!fire) {
+        throw new PlayError(`${quote(name)} answers no press`);
+      }
       await flush(() => fire());
     },
     type: async (name, text) => {
       const control = await locate(stage, name);
-      if (isDisabled(control)) throw new PlayError(`${quote(name)} is disabled`);
+      if (isDisabled(control)) {
+        throw new PlayError(`${quote(name)} is disabled`);
+      }
       const set = valueHandler(control);
-      if (!set) throw new PlayError(`${quote(name)} takes no value`);
+      if (!set) {
+        throw new PlayError(`${quote(name)} takes no value`);
+      }
       await flush(() => (set as (value: string) => void)(text));
     },
     expect: (name) => expectation(stage, name, false),

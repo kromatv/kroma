@@ -32,7 +32,9 @@ function progress(name: string, log: LogLine): (sent: number, total: number) => 
   let reported = 0;
   return (sent, total) => {
     const percent = total > 0 ? Math.floor((sent / total) * 100) : 0;
-    if (percent < reported + 20) return;
+    if (percent < reported + 20) {
+      return;
+    }
     reported = percent;
     log(`sending ${name}, ${percent}%`);
   };
@@ -40,7 +42,9 @@ function progress(name: string, log: LogLine): (sent: number, total: number) => 
 
 async function connect(host: string, typed: string | undefined, log: LogLine) {
   const endpoint = await adbEndpoint(host);
-  if (!endpoint) throw new Error(NO_ADB);
+  if (!endpoint) {
+    throw new Error(NO_ADB);
+  }
   const open = async () =>
     AdbConnection.open(host, endpoint.port, {
       keys: await adbKeys(),
@@ -50,10 +54,14 @@ async function connect(host: string, typed: string | undefined, log: LogLine) {
   try {
     return await open();
   } catch (error) {
-    if (!(error instanceof AdbUnpaired) || typed === undefined) throw reason(error);
+    if (!(error instanceof AdbUnpaired) || typed === undefined) {
+      throw reason(error);
+    }
   }
   const code = pairingCode(typed);
-  if (code === null) throw new Error('a pairing code is the six digits the TV shows');
+  if (code === null) {
+    throw new Error('a pairing code is the six digits the TV shows');
+  }
   log('pairing this computer with the TV');
   await pairSet(host, code);
   return open().catch((error: unknown) => {
@@ -73,8 +81,12 @@ export async function installAndroid(context: InstallContext): Promise<void> {
 
   try {
     const answer = await installApk(connection, artifact, progress(basename(artifact), log));
-    if (!answer.includes('Success')) throw new Error(installFailure(answer));
-    if (launch) await shell(connection, `monkey -p ${androidAppId()} -c ${LEANBACK} 1`);
+    if (!answer.includes('Success')) {
+      throw new Error(installFailure(answer));
+    }
+    if (launch) {
+      await shell(connection, `monkey -p ${androidAppId()} -c ${LEANBACK} 1`);
+    }
   } finally {
     connection.close();
   }

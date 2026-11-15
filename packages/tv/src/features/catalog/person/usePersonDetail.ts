@@ -21,7 +21,9 @@ export function usePersonDetail(name: string): PersonDetail | null {
     client.media
       .person(name)
       .then((res) => {
-        if (!cancelled) setSettled({ client, name, detail: res.person ?? null });
+        if (!cancelled) {
+          setSettled({ client, name, detail: res.person ?? null });
+        }
       })
       .catch(() => undefined);
     return () => {

@@ -22,23 +22,30 @@ const DEFAULT_BASE = 'http://localhost:4040';
 // Linear scan, no backtracking regex.
 function stripTrailingSlashes(s: string): string {
   let end = s.length;
-  while (end > 0 && s[end - 1] === '/') end -= 1;
+  while (end > 0 && s[end - 1] === '/') {
+    end -= 1;
+  }
   return s.slice(0, end);
 }
 
 /** The KROMA server origin (no trailing slash). */
 export function apiBase(): string {
-  if (typeof window !== 'undefined' && window.__KROMA_API__) {
-    return stripTrailingSlashes(window.__KROMA_API__);
+  const injected = globalThis.window?.__KROMA_API__;
+  if (injected) {
+    return stripTrailingSlashes(injected);
   }
   const envBase = import.meta.env?.VITE_KROMA_SERVER;
-  if (envBase) return stripTrailingSlashes(envBase);
+  if (envBase) {
+    return stripTrailingSlashes(envBase);
+  }
   if (import.meta.env?.DEV) {
     return typeof window !== 'undefined'
       ? stripTrailingSlashes(window.location.origin)
       : DEFAULT_BASE;
   }
-  if (typeof window !== 'undefined') return stripTrailingSlashes(window.location.origin);
+  if (typeof window !== 'undefined') {
+    return stripTrailingSlashes(window.location.origin);
+  }
   const env = typeof process !== 'undefined' ? process.env.KROMA_SERVER_URL : undefined;
   return stripTrailingSlashes(env ?? DEFAULT_BASE);
 }
@@ -65,7 +72,9 @@ export function createWebRuntime(options: { client?: QueryClient; app?: AppIdent
   const queryClient = makeQueryClient();
   async function exchangeStoredSession(): Promise<string | undefined> {
     const active = loadSession();
-    if (!active) return undefined;
+    if (!active) {
+      return undefined;
+    }
     try {
       const result = await client.session.sharedTokenExchange(() =>
         client.accounts.exchangeToken(active.accessToken),
@@ -85,7 +94,9 @@ export function createWebRuntime(options: { client?: QueryClient; app?: AppIdent
     queries: createQueries(client),
     moduleApi: createAdminApi(client),
     async ensureSession(): Promise<void> {
-      if (!client.sessionToken) await exchangeStoredSession();
+      if (!client.sessionToken) {
+        await exchangeStoredSession();
+      }
     },
   };
 }

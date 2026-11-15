@@ -15,7 +15,9 @@ export function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
     enabled: webRuntime.app !== undefined,
   });
   const app = webRuntime.app;
-  if (!app || !health || checkCompat(app, health) !== 'client-outdated') return children;
+  if (!app || !health || checkCompat(app, health) !== 'client-outdated') {
+    return children;
+  }
   return <ClientOutdated client={app.version} server={health.version} />;
 }
 

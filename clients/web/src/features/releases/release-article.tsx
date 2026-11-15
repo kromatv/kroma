@@ -61,7 +61,9 @@ export function ReleaseArticle({ release }: Readonly<{ release: Release }>) {
 function HighlightGrid({ highlights }: Readonly<{ highlights: readonly Highlight[] }>) {
   const columns = useBreakpoint() === 'base' ? 1 : 2;
   const { lead, rows } = highlightLayout(highlights, columns);
-  if (!lead && rows.length === 0) return null;
+  if (!lead && rows.length === 0) {
+    return null;
+  }
   return (
     <Box gap={16}>
       {lead ? <HighlightCard highlight={lead} lead /> : null}
@@ -87,7 +89,9 @@ interface NoteListProps {
 }
 
 function NoteList({ title, icon, ink, lines }: Readonly<NoteListProps>) {
-  if (lines.length === 0) return null;
+  if (lines.length === 0) {
+    return null;
+  }
   return (
     <Section.Root gap={12}>
       <Section.Header>

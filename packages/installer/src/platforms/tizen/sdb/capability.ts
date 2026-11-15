@@ -5,7 +5,7 @@ const MAX_PAYLOAD_BYTES = 4095;
 const MAX_ENTRIES = 128;
 const LENGTH_PREFIX_BYTES = 2;
 
-const Capability = z.record(z.string().min(1).max(64), z.string().max(512));
+const Capability = z.record(z.string().nonempty().max(64), z.string().max(512));
 
 export type Capability = z.infer<typeof Capability>;
 
@@ -18,9 +18,13 @@ export function parseCapability(payload: Buffer): Capability {
   const entries: [string, string][] = [];
   for (const line of body(payload).split('\n')) {
     const at = line.indexOf(':');
-    if (at < 1) continue;
+    if (at < 1) {
+      continue;
+    }
     entries.push([line.slice(0, at).trim(), line.slice(at + 1).trim()]);
-    if (entries.length === MAX_ENTRIES) break;
+    if (entries.length === MAX_ENTRIES) {
+      break;
+    }
   }
   return Capability.parse(Object.fromEntries(entries));
 }
@@ -33,7 +37,9 @@ export async function readCapability(connection: SdbConnection): Promise<Capabil
 }
 
 function body(payload: Buffer): string {
-  if (payload.length < LENGTH_PREFIX_BYTES) return '';
+  if (payload.length < LENGTH_PREFIX_BYTES) {
+    return '';
+  }
   const declared = payload.readUInt16LE(0);
   const framed = declared > 0 && declared <= payload.length - LENGTH_PREFIX_BYTES;
   const bytes = framed

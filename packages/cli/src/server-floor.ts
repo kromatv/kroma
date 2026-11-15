@@ -15,7 +15,11 @@ export interface Floored {
 export function floorBeyondRelease(module: Floored, release: string): string | null {
   const range = module.engines?.server;
   const floor = range ? floorOf(range) : null;
-  if (!floor || !parse(release) || release === '0.0.0') return null;
-  if (compareRaw(floor, release) <= 0) return null;
+  if (!floor || !parse(release) || release === '0.0.0') {
+    return null;
+  }
+  if (compareRaw(floor, release) <= 0) {
+    return null;
+  }
   return `${module.id}: needs server ${floor}, past ${release}, the release being prepared, so no server could run it`;
 }

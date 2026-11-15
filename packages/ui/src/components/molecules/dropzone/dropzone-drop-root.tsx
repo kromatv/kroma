@@ -49,10 +49,16 @@ function DropRoot({
 
   const take = useCallback(
     (files: FileList | null) => {
-      if (!files || files.length === 0) return;
+      if (!files || files.length === 0) {
+        return;
+      }
       const { taken, turned } = sift([...files], { accept, maxSize, multiple });
-      if (turned.length > 0) onReject?.(turned);
-      if (taken.length > 0) onDrop?.(taken);
+      if (turned.length > 0) {
+        onReject?.(turned);
+      }
+      if (taken.length > 0) {
+        onDrop?.(taken);
+      }
     },
     [accept, maxSize, multiple, onDrop, onReject],
   );
@@ -60,11 +66,15 @@ function DropRoot({
   const onDropped = (e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setOver(false);
-    if (!inert) take(e.dataTransfer?.files ?? null);
+    if (!inert) {
+      take(e.dataTransfer?.files ?? null);
+    }
   };
 
   const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (inert || (e.key !== 'Enter' && e.key !== ' ')) return;
+    if (inert || (e.key !== 'Enter' && e.key !== ' ')) {
+      return;
+    }
     e.preventDefault();
     input.current?.click();
   };
@@ -80,7 +90,9 @@ function DropRoot({
         onKeyDown={onKey}
         onDragOver={(e) => {
           e.preventDefault();
-          if (!inert) setOver(true);
+          if (!inert) {
+            setOver(true);
+          }
         }}
         onDragLeave={() => setOver(false)}
         onDrop={onDropped}

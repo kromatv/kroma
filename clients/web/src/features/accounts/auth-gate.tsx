@@ -48,10 +48,14 @@ export function LoginGate() {
     let cancelled = false;
     client.accounts.config().then(
       (loaded) => {
-        if (!cancelled) setConfig(loaded);
+        if (!cancelled) {
+          setConfig(loaded);
+        }
       },
       () => {
-        if (!cancelled) setConfig(UNREACHABLE_CONFIG);
+        if (!cancelled) {
+          setConfig(UNREACHABLE_CONFIG);
+        }
       },
     );
     return () => {
@@ -59,7 +63,9 @@ export function LoginGate() {
     };
   }, [client]);
 
-  if (!(ready && config)) return null;
+  if (!(ready && config)) {
+    return null;
+  }
   return (
     <main className={classes(s.gate)}>
       <LoginBackdrop />

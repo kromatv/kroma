@@ -35,8 +35,12 @@ export default function SignIn() {
   const clientFor = useClientCache();
   const probeUrls = useMemo(() => {
     const set = new Set(accounts.map((a) => a.serverUrl));
-    for (const s of servers) set.add(s.url);
-    if (serverUrl) set.add(serverUrl);
+    for (const s of servers) {
+      set.add(s.url);
+    }
+    if (serverUrl) {
+      set.add(serverUrl);
+    }
     // Sorted to keep the probe list, and therefore the effect key, stable
     // across renders.
     return [...set].sort((a, b) => a.localeCompare(b));
@@ -53,7 +57,9 @@ export default function SignIn() {
   const [seenPhaseParam, setSeenPhaseParam] = useState(phaseParam);
   if (seenPhaseParam !== phaseParam) {
     setSeenPhaseParam(phaseParam);
-    if (phaseParam === 'form') setPhase({ kind: 'form' });
+    if (phaseParam === 'form') {
+      setPhase({ kind: 'form' });
+    }
   }
   const [password, setPassword] = useState('');
   const [identifier, setIdentifier] = useState('');
@@ -76,12 +82,16 @@ export default function SignIn() {
   // yet means no covers, and the screen keeps its plain wash.
   const [covers, setCovers] = useState<SplashCover[]>([]);
   useEffect(() => {
-    if (!serverUrl) return;
+    if (!serverUrl) {
+      return;
+    }
     let cancelled = false;
     clientFor(serverUrl)
       .media.splash()
       .then((entries) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setCovers(
           entries.map((e) => ({
             url: sizedImageUrl(e.backdropUrl, 640) ?? e.backdropUrl,
@@ -126,7 +136,9 @@ export default function SignIn() {
   });
 
   const submit = async (who: string) => {
-    if (!who.trim() || !password) return;
+    if (!who.trim() || !password) {
+      return;
+    }
     setBusy('login');
     setError(null);
     try {
@@ -134,8 +146,11 @@ export default function SignIn() {
       router.replace('/(app)/(tabs)');
     } catch (err) {
       setBusy(null);
-      if (err instanceof KromaApiError) setError(apiErrorText(err, t('auth.invalidCredentials')));
-      else setError(t('auth.loginFailed'));
+      if (err instanceof KromaApiError) {
+        setError(apiErrorText(err, t('auth.invalidCredentials')));
+      } else {
+        setError(t('auth.loginFailed'));
+      }
     }
   };
 
@@ -162,8 +177,11 @@ export default function SignIn() {
     ...accounts.map((account) => {
       const offline = probes[account.serverUrl]?.online === false;
       let caption: string | null = null;
-      if (offline) caption = t('profiles.serverOffline');
-      else if (multiServer) caption = serverLabel(account.serverUrl);
+      if (offline) {
+        caption = t('profiles.serverOffline');
+      } else if (multiServer) {
+        caption = serverLabel(account.serverUrl);
+      }
       return {
         key: keyOf(account),
         name: account.user.username,
@@ -194,8 +212,12 @@ export default function SignIn() {
   // the root and has nowhere to go; the sign-up form returns to the server
   // list it came from rather than all the way out.
   function backFrom(kind: Phase['kind']): (() => void) | undefined {
-    if (kind === 'gate') return undefined;
-    if (kind !== 'form') return backToGate;
+    if (kind === 'gate') {
+      return undefined;
+    }
+    if (kind !== 'form') {
+      return backToGate;
+    }
     return () => {
       setPassword('');
       setError(null);
@@ -247,7 +269,9 @@ export default function SignIn() {
           error={error}
           onChange={(next) => {
             setPin(next);
-            if (next.length === 4) void enterSaved(phase.account, next);
+            if (next.length === 4) {
+              void enterSaved(phase.account, next);
+            }
           }}
         />
       )}

@@ -21,8 +21,12 @@ function cargoSection(manifest: string, targets: readonly string[]): string | nu
   try {
     return renderNotices('Rust crates', cargoNotices(manifest, targets));
   } catch (error) {
-    if (process.env.CI) throw error;
-    console.warn(`[third-party-notices] no Rust crates listed, cargo metadata failed: ${error}`);
+    if (process.env.CI) {
+      throw error;
+    }
+    console.warn(
+      `[third-party-notices] no Rust crates listed, cargo metadata failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return null;
   }
 }

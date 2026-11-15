@@ -112,7 +112,9 @@ export function offersSignIn(methods: SignInMethods, kind: 'password' | 'passkey
 export function signInButtons(methods: SignInMethods): SignInButton[] {
   return methods.methods.flatMap((method) => {
     const id = ProviderId.safeParse(method.id);
-    if (method.kind !== 'oidc' || !id.success) return [];
+    if (method.kind !== 'oidc' || !id.success) {
+      return [];
+    }
     return [
       {
         id: id.data,

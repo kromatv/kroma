@@ -5,7 +5,9 @@ import { delimiter, join } from 'node:path';
 export function which(binary: string): string | null {
   for (const directory of (process.env.PATH ?? '').split(delimiter)) {
     const candidate = join(directory, binary);
-    if (directory !== '' && runnable(candidate)) return candidate;
+    if (directory !== '' && runnable(candidate)) {
+      return candidate;
+    }
   }
   return null;
 }

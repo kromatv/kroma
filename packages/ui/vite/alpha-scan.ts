@@ -19,7 +19,9 @@ const key = (roots: readonly string[], known: ReadonlySet<string>) =>
 function scan(roots: readonly string[], known: ReadonlySet<string>): Scan {
   const k = key(roots, known);
   const hit = CACHE.get(k);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const fresh: Scan = { found: new Set(), walked: false };
   CACHE.set(k, fresh);
   return fresh;
@@ -28,9 +30,13 @@ function scan(roots: readonly string[], known: ReadonlySet<string>): Scan {
 function collect(source: string, known: ReadonlySet<string>, into: Set<string>): boolean {
   let grew = false;
   for (const [, token, alpha] of source.matchAll(CANDIDATE)) {
-    if (!token || !alpha || !known.has(token)) continue;
+    if (!token || !alpha || !known.has(token)) {
+      continue;
+    }
     const combo = `${token}/${alpha}`;
-    if (into.has(combo)) continue;
+    if (into.has(combo)) {
+      continue;
+    }
     into.add(combo);
     grew = true;
   }
@@ -41,7 +47,9 @@ function collect(source: string, known: ReadonlySet<string>, into: Set<string>):
  * something else. Null once the answer is known. */
 export function alphaPass(roots: readonly string[], known: ReadonlySet<string>): SourcePass | null {
   const state = scan(roots, known);
-  if (state.walked) return null;
+  if (state.walked) {
+    return null;
+  }
   return {
     wants: (name) => !isTest(name),
     read(source) {
@@ -63,7 +71,9 @@ export function alphaPass(roots: readonly string[], known: ReadonlySet<string>):
 export function scanAlphas(roots: readonly string[], known: ReadonlySet<string>): Set<string> {
   const state = scan(roots, known);
   const pass = alphaPass(roots, known);
-  if (pass) walkSources(roots, [pass]);
+  if (pass) {
+    walkSources(roots, [pass]);
+  }
   return state.found;
 }
 
@@ -81,7 +91,11 @@ export async function foldAlphas(
   read: () => string | Promise<string>,
 ): Promise<boolean> {
   const state = CACHE.get(key(roots, known));
-  if (!state?.walked) return false;
-  if (!walkReaches(roots, file) || isTest(basename(file))) return false;
+  if (!state?.walked) {
+    return false;
+  }
+  if (!walkReaches(roots, file) || isTest(basename(file))) {
+    return false;
+  }
   return collect(await read(), known, state.found);
 }

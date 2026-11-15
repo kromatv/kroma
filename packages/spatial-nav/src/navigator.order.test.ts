@@ -99,7 +99,9 @@ describe('sibling order', () => {
 
   it('keeps the order of the tiles a sliding window did not touch', () => {
     const nav = strip();
-    for (const [index, id] of ['a', 'b', 'c', 'd'].entries()) tile(nav, id, index);
+    for (const [index, id] of ['a', 'b', 'c', 'd'].entries()) {
+      tile(nav, id, index);
+    }
 
     nav.unregisterNode('a');
     nav.unregisterNode('b');

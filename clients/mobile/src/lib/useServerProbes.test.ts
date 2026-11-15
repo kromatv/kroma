@@ -21,7 +21,9 @@ const createQueryClient = vi.hoisted(() =>
       health: async (opts?: HealthOpts) => {
         health.calls.push({ url: baseUrl, signal: opts?.signal });
         const answer = health.answers.get(baseUrl);
-        if (!answer) throw new Error(`unreachable: ${baseUrl}`);
+        if (!answer) {
+          throw new Error(`unreachable: ${baseUrl}`);
+        }
         return answer();
       },
     },

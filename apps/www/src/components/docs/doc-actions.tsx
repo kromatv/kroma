@@ -31,7 +31,9 @@ const ITEM =
 
 async function pageBlob(markdown: string): Promise<Blob> {
   const response = await fetch(markdown);
-  if (!response.ok) throw new Error(`${markdown} answered ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`${markdown} answered ${response.status}`);
+  }
   return new Blob([await response.text()], { type: 'text/plain' });
 }
 
@@ -50,12 +52,18 @@ export function DocActions({ title, markdown, className }: Readonly<DocActionsPr
   const panel = useId();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     const onPointer = (event: PointerEvent) => {
-      if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
+      if (event.target instanceof Node && !root.current?.contains(event.target)) {
+        setOpen(false);
+      }
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== 'Escape') {
+        return;
+      }
       setOpen(false);
       toggle.current?.focus();
     };

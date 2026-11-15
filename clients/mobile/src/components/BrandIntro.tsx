@@ -9,7 +9,9 @@ const PORTRAIT_FILM: number = require('../../assets/kroma-intro-hevc-portrait.mp
  * cut on an upright phone, the landscape master on a tablet held sideways. */
 export function BrandIntro({ ready }: Readonly<{ ready: boolean }>) {
   const [done, setDone] = useState(false);
-  if (done || !ready) return null;
+  if (done || !ready) {
+    return null;
+  }
   return (
     <ThemeProvider theme={MOBILE}>
       <NativeFilm portraitSrc={PORTRAIT_FILM} onDone={() => setDone(true)} />

@@ -37,9 +37,13 @@ function featuredBackdrop(
   let best: { rating: number; url: string } | null = null;
   for (const entry of entries) {
     const url = client.media.artwork.backdropFor(entry);
-    if (url === null) continue;
+    if (url === null) {
+      continue;
+    }
     const rating = entry.metadata?.rating ?? -1;
-    if (best === null || rating > best.rating) best = { rating, url };
+    if (best === null || rating > best.rating) {
+      best = { rating, url };
+    }
   }
   return best === null ? null : sizedImageUrl(best.url, 1200);
 }
@@ -108,7 +112,9 @@ export function CatalogueScreen<T extends MediaCard | Show>({
   const scrollToLetter = useCallback(
     (letter: string) => {
       const mark = marks.find((m) => m.letter === letter);
-      if (mark) grid.current?.scrollToItem(mark.index);
+      if (mark) {
+        grid.current?.scrollToItem(mark.index);
+      }
     },
     [marks],
   );
@@ -123,16 +129,21 @@ export function CatalogueScreen<T extends MediaCard | Show>({
     setSort('title');
   };
   useEffect(() => {
-    if (pendingJump.current === null || sort !== 'title') return;
+    if (pendingJump.current === null || sort !== 'title') {
+      return;
+    }
     scrollToLetter(pendingJump.current);
     pendingJump.current = null;
   }, [sort, scrollToLetter]);
 
-  if (pending) return <Loading label={t('common.loading')} />;
-  if (error)
+  if (pending) {
+    return <Loading label={t('common.loading')} />;
+  }
+  if (error) {
     return (
       <ErrorView message={t('error.serverBody')} retryLabel={t('error.retry')} onRetry={refetch} />
     );
+  }
 
   const active = genre === null ? undefined : genres.find((g) => g.slug === genre);
   const header = (

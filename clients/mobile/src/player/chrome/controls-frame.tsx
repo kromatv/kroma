@@ -72,7 +72,9 @@ export function ControlsFrame({
       pointerEvents="box-none"
       onTouchStart={touch.take}
       onTouchEnd={(e) => {
-        if (e.nativeEvent.touches.length === 0) touch.give();
+        if (e.nativeEvent.touches.length === 0) {
+          touch.give();
+        }
       }}
       onTouchCancel={touch.give}
     >

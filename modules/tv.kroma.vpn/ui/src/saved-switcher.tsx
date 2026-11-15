@@ -14,11 +14,15 @@ export function SavedSwitcher({
   const vpn = useVpnApi();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (saved.length < 2) return null;
+  if (saved.length < 2) {
+    return null;
+  }
   const active = saved.find((one) => one.active)?.id ?? '';
 
   const choose = async (id: string) => {
-    if (id === active) return;
+    if (id === active) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {

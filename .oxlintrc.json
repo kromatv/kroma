@@ -1,8 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  "extends": ["./packages/lint-rules/debt/oxlintrc.json"],
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "import", "jsx-a11y"],
   "categories": {
-    "correctness": "off"
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
   },
   "jsPlugins": [
     {
@@ -12,6 +15,10 @@
     {
       "name": "react-compiler",
       "specifier": "eslint-plugin-react-hooks"
+    },
+    {
+      "name": "sonarjs",
+      "specifier": "eslint-plugin-sonarjs"
     }
   ],
   "rules": {
@@ -51,7 +58,116 @@
     "react/no-danger": "error",
     "typescript/no-empty-interface": "error",
     "typescript/no-explicit-any": "error",
-    "unicorn/no-document-cookie": "error"
+    "unicorn/no-document-cookie": "error",
+    "max-lines-per-function": [
+      "error",
+      {
+        "max": 30,
+        "skipBlankLines": true,
+        "skipComments": true,
+        "IIFEs": true
+      }
+    ],
+    "max-params": [
+      "error",
+      {
+        "max": 3
+      }
+    ],
+    "complexity": [
+      "error",
+      {
+        "max": 8
+      }
+    ],
+    "max-depth": [
+      "error",
+      {
+        "max": 3
+      }
+    ],
+    "max-lines": [
+      "error",
+      {
+        "max": 300,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "sonarjs/no-nested-conditional": "error",
+    "sonarjs/cognitive-complexity": ["error", 15],
+    "typescript/consistent-type-assertions": [
+      "error",
+      {
+        "assertionStyle": "never"
+      }
+    ],
+    "typescript/no-non-null-assertion": "error",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": "allow-with-description",
+        "ts-ignore": true,
+        "ts-nocheck": true
+      }
+    ],
+    "typescript/switch-exhaustiveness-check": [
+      "error",
+      {
+        "considerDefaultExhaustiveForUnions": true
+      }
+    ],
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": {
+          "attributes": false
+        }
+      }
+    ],
+    "typescript/no-implied-eval": "error",
+    "typescript/prefer-optional-chain": "error",
+    "typescript/prefer-nullish-coalescing": [
+      "error",
+      {
+        "ignorePrimitives": {
+          "string": true,
+          "boolean": true
+        },
+        "ignoreConditionalTests": true
+      }
+    ],
+    "typescript/no-deprecated": "error",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/prefer-readonly": "error",
+    "typescript/no-unnecessary-type-conversion": "error",
+    "typescript/no-unnecessary-template-expression": "error",
+    "curly": ["error", "all"],
+    "no-new-func": "error",
+    "no-console": "error",
+    "react/react-in-jsx-scope": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "import/no-unassigned-import": [
+      "error",
+      {
+        "allow": ["**/*.css"]
+      }
+    ],
+    "import/no-cycle": "error",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/no-autofocus": [
+      "error",
+      {
+        "ignoreNonDOM": true
+      }
+    ],
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-array-reverse": "off",
+    "kroma/no-boolean-flag-param": "error",
+    "kroma/zod-nonempty": "error"
   },
   "ignorePatterns": [
     ".claude/worktrees",
@@ -199,6 +315,46 @@
             "message": "The worst one: React Native DEFINES `window` (it is `global`), so `typeof window !== 'undefined'` passes and `window.addEventListener` is then undefined rather than absent - \"undefined is not a function\", at render, on a TV. Use `webWindow()` from @kromatv/ui/kit, or add a `.web.ts` half."
           }
         ]
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.test.mjs", "**/*.spec.ts", "**/*.spec.tsx"],
+      "rules": {
+        "max-lines-per-function": "off",
+        "max-lines": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/ci-tools/**",
+        "packages/cli/**",
+        "packages/installer/**",
+        "packages/sonar-tools/**",
+        "packages/shots/**",
+        "packages/tv-probe/**",
+        "packages/workspace-tools/**",
+        "packages/lint-rules/**",
+        "packages/bundler/**",
+        "packages/react-audit/**",
+        "clients/tv-build/**",
+        "clients/expo-build/**",
+        "clients/android-build/**",
+        "clients/bench/**",
+        "docs/spec/scripts/**",
+        "**/scripts/**",
+        "**/*.config.ts",
+        "**/*.config.mjs",
+        "**/vite/**"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["packages/lint-rules/**/*.test.mjs"],
+      "rules": {
+        "typescript/no-floating-promises": "off",
+        "typescript/no-misused-promises": "off"
       }
     }
   ]

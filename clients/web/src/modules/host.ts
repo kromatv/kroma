@@ -15,7 +15,9 @@ async function apiGet<T>(client: KromaClient, path: string): Promise<T> {
   const res = await fetch(`${client.baseUrl}/api${path}`, {
     headers: client.authHeaders(),
   });
-  if (!res.ok) throw new Error(`GET /api${path} failed (${res.status})`);
+  if (!res.ok) {
+    throw new Error(`GET /api${path} failed (${res.status})`);
+  }
   return (await res.json()) as T;
 }
 
@@ -30,7 +32,9 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
     provided ? null : createModuleRuntime(() => auth.client.modules.list()),
   );
   const runtime = provided ?? owned;
-  if (!runtime) throw new Error('Module host requires its runtime');
+  if (!runtime) {
+    throw new Error('Module host requires its runtime');
+  }
   const { registry: moduleRegistry, bus: appBus, remotes, listModules } = runtime;
   useEffect(() => runtime.retain(), [runtime]);
   const navigate = useNavigate();
@@ -48,7 +52,9 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
   const authed = auth.user != null;
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; revision re-wires modules after install/uninstall/enable
   useEffect(() => {
-    if (!authed) return;
+    if (!authed) {
+      return;
+    }
     let alive = true;
     const base: HostBase = {
       api: {
@@ -82,14 +88,22 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
           () => undefined,
         );
         await remotes.loadRuntimeRemotes(moduleRegistry);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         const skip = await switchedOff;
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         const wired = await moduleRegistry.start(base, skip);
-        if (alive) setHost(wired);
+        if (alive) {
+          setHost(wired);
+        }
       } catch (e) {
         console.error('[modules] host start failed', e);
-        if (alive) setHost({ ...base, getModuleApi: () => undefined });
+        if (alive) {
+          setHost({ ...base, getModuleApi: () => undefined });
+        }
       }
     })();
     return () => {

@@ -27,8 +27,11 @@ export function SessionsCard() {
     setBusy(which);
     setFailed(false);
     try {
-      if (which === 'others') await webRuntime.client.accounts.revokeOtherSessions();
-      else await webRuntime.client.accounts.revokeSession(which);
+      if (which === 'others') {
+        await webRuntime.client.accounts.revokeOtherSessions();
+      } else {
+        await webRuntime.client.accounts.revokeSession(which);
+      }
       await qc.invalidateQueries({ queryKey: webRuntime.queries.userQueries.sessions().queryKey });
     } catch {
       setFailed(true);

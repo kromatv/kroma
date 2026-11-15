@@ -8,7 +8,9 @@ export function ReleaseSummary() {
   const release = useDownloadRelease();
   const channel = useDownloadChannel();
   const lang = useLang();
-  if (!release) return null;
+  if (!release) {
+    return null;
+  }
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-dim">
       <span className="flex items-center gap-2">

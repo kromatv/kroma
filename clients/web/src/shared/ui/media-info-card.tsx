@@ -65,7 +65,9 @@ export function FileCard({
 }
 
 function FileStreams({ file }: Readonly<{ file: MediaFile }>) {
-  if (file.unreadable) return <Unreadable reason={file.unreadable} />;
+  if (file.unreadable) {
+    return <Unreadable reason={file.unreadable} />;
+  }
   return file.probed ? <FileTracks file={file} /> : <Unprobed />;
 }
 

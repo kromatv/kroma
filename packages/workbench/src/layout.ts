@@ -47,7 +47,9 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, Math.round(value)));
 
 function modeFor(width: number): LayoutMode {
-  if (width >= BREAKPOINTS.wide) return 'wide';
+  if (width >= BREAKPOINTS.wide) {
+    return 'wide';
+  }
   return width >= BREAKPOINTS.medium ? 'medium' : 'compact';
 }
 

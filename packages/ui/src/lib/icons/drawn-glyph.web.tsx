@@ -8,7 +8,9 @@ const FIRM = StyleSheet.create({ firm: { flexShrink: 0 } }).firm;
 const FADES = new Map<number | string, ViewStyle>();
 function fade(opacity: number | string): ViewStyle {
   const hit = FADES.get(opacity);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const style = StyleSheet.create({ fade: { opacity, ...FIRM } as ViewStyle }).fade;
   FADES.set(opacity, style);
   return style;

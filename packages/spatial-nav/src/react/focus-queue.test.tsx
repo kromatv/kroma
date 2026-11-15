@@ -33,7 +33,9 @@ function BranchArrivingWhole() {
     // oxlint-disable-next-line react-compiler/set-state-in-effect -- the test needs the branch to mount on a second commit
     setReady(true);
   }, []);
-  if (!ready) return null;
+  if (!ready) {
+    return null;
+  }
   return (
     <NavigatorView direction="horizontal">
       <TileAskingOnMount />

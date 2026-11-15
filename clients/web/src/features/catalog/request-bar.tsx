@@ -35,7 +35,9 @@ export function RequestBar({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  if (count === 0) return null;
+  if (count === 0) {
+    return null;
+  }
   return (
     <div className={classes(s.sticky)}>
       <Surface elevated radius="xl" pad="md">
@@ -79,7 +81,9 @@ export function SeasonAsk({
   onRequestAll: () => void;
 }>) {
   const t = useT();
-  if (!seasonPickable && !allPickable) return null;
+  if (!seasonPickable && !allPickable) {
+    return null;
+  }
   return (
     <Row wrap gap={8}>
       {seasonPickable ? (

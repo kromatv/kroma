@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { foldReleases, moduleHistory } from './history';
 import type { Env } from './source';
+import { requestUrl } from './request-url.fixture';
 
 const CACHE_KEY = 'https://kroma-modules.cache/history-index';
 
@@ -23,7 +24,10 @@ function upstream(releases: unknown) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      calls.push({ url: String(input), headers: (init?.headers ?? {}) as Record<string, string> });
+      calls.push({
+        url: requestUrl(input),
+        headers: (init?.headers ?? {}) as Record<string, string>,
+      });
       return Response.json(releases);
     }),
   );

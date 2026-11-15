@@ -31,7 +31,9 @@ function NavigatorView({
   const box = (
     <View style={[style, direction === 'horizontal' ? axis.row : axis.column]}>{children}</View>
   );
-  if (!host) return box;
+  if (!host) {
+    return box;
+  }
   return (
     <NavigatorNode orientation={direction} alignInGrid={alignInGrid} onKey={onKey} ref={ref}>
       {box}

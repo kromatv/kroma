@@ -17,7 +17,9 @@ export function parseInfo(info: string): Record<string, string> {
     const m = INFO_LINE.exec(line);
     const key = m?.[1];
     const raw = m?.[2];
-    if (key === undefined || raw === undefined) continue;
+    if (key === undefined || raw === undefined) {
+      continue;
+    }
     out[key] = raw.replace(/^"(.*)"$/, '$1');
   }
   return out;
@@ -45,7 +47,9 @@ export type SpkInfo = {
 export function readSpkInfo(spk: string): SpkInfo {
   const info = parseInfo(extractFromSpk(spk, 'INFO').toString('utf8'));
   const version = info.version;
-  if (!version) throw new Error(`No version= in the .spk INFO (${spk})`);
+  if (!version) {
+    throw new Error(`No version= in the .spk INFO (${spk})`);
+  }
   const bytes = readFileSync(spk);
   return {
     package: info.package || 'kroma',

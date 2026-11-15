@@ -8,10 +8,16 @@ export type SealNote =
 
 /** The verdict for `view`'s whole window, worst case first. */
 export function sealNote(view: VpnBandwidthView): SealNote {
-  if (!view.bridgeConfigured) return { kind: 'noBridge' };
+  if (!view.bridgeConfigured) {
+    return { kind: 'noBridge' };
+  }
   const bytes = view.totals.unsealedDownBytes + view.totals.unsealedUpBytes;
-  if (bytes > 0) return { kind: 'leaked', bytes };
-  if (view.totals.unsealedSecs > 0) return { kind: 'gap', secs: view.totals.unsealedSecs };
+  if (bytes > 0) {
+    return { kind: 'leaked', bytes };
+  }
+  if (view.totals.unsealedSecs > 0) {
+    return { kind: 'gap', secs: view.totals.unsealedSecs };
+  }
   return { kind: 'sealed' };
 }
 

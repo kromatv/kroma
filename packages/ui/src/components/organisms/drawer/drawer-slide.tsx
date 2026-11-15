@@ -21,10 +21,16 @@ type DrawerSide = 'left' | 'right';
 function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
-  if (open && !mounted) setMounted(true);
-  if (!open && shown) setShown(false);
+  if (open && !mounted) {
+    setMounted(true);
+  }
+  if (!open && shown) {
+    setShown(false);
+  }
   useEffect(() => {
-    if (open) return;
+    if (open) {
+      return;
+    }
     const out = setTimeout(() => setMounted(false), SLIDE_MS);
     return () => clearTimeout(out);
   }, [open]);
@@ -33,7 +39,9 @@ function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   // painted where it ends has no off-screen start for the transition to play
   // from. The second frame is on the far side of that paint.
   useEffect(() => {
-    if (!open || !mounted) return;
+    if (!open || !mounted) {
+      return;
+    }
     let second = 0;
     const first = requestAnimationFrame(() => {
       second = requestAnimationFrame(() => setShown(true));

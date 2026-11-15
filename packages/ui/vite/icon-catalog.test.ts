@@ -23,9 +23,13 @@ afterEach(() => {
 async function catalog(): Promise<IconCatalog> {
   const plugin = kromaIconCatalog();
   const id = plugin.resolveId('virtual:kroma-icon-catalog');
-  if (!id) throw new Error('the plugin did not claim its own module id');
+  if (!id) {
+    throw new Error('the plugin did not claim its own module id');
+  }
   const source = plugin.load(id);
-  if (!source) throw new Error('the plugin served no catalogue');
+  if (!source) {
+    throw new Error('the plugin served no catalogue');
+  }
   const module = await import(`data:text/javascript,${encodeURIComponent(source)}`);
   return module.ICON_CATALOG as IconCatalog;
 }

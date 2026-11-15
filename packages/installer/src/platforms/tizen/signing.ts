@@ -36,16 +36,22 @@ export interface Signed {
 export async function profileFor(host: string, log: LogLine): Promise<SigningProfile> {
   const duid = await duidAt(host).catch(() => null);
   const kept = readSamsungProfile();
-  if (kept && duid && coversSet(duid)) return kept;
+  if (kept && duid && coversSet(duid)) {
+    return kept;
+  }
 
   const studio = await activeProfile();
-  if (studio) return studio;
+  if (studio) {
+    return studio;
+  }
 
   if (duid && process.stdin.isTTY) {
     log('this set has no certificate from Samsung yet');
     await obtainCertificates({ duid, log });
     const issued = readSamsungProfile();
-    if (issued) return issued;
+    if (issued) {
+      return issued;
+    }
   }
   return kept ?? generatedProfile(log);
 }

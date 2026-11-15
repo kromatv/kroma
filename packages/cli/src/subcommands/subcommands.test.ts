@@ -45,7 +45,9 @@ function runOf(command: { run?: unknown }): Run {
 }
 
 beforeEach(() => {
-  for (const handler of Object.values(handlers)) handler.mockReset().mockResolvedValue(0);
+  for (const handler of Object.values(handlers)) {
+    handler.mockReset().mockResolvedValue(0);
+  }
 });
 
 describe('create', () => {

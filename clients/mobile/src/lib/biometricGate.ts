@@ -14,8 +14,12 @@ export async function passProfileBiometricGate(
   account: MobileAccount,
   prompt: string,
 ): Promise<boolean> {
-  if (account.user.hasPin) return true;
-  if (!(await isBiometricLockEnabled(account.serverUrl, account.user.id))) return true;
+  if (account.user.hasPin) {
+    return true;
+  }
+  if (!(await isBiometricLockEnabled(account.serverUrl, account.user.id))) {
+    return true;
+  }
   return passBiometricLock(account.serverUrl, account.user.id, prompt);
 }
 

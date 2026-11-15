@@ -42,7 +42,9 @@ export function TvPerson() {
           },
         ];
       }
-      if (hit.type !== 'movie') return [];
+      if (hit.type !== 'movie') {
+        return [];
+      }
       const m = hit.item;
       return [
         {

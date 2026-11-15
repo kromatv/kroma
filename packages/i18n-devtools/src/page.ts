@@ -12,7 +12,9 @@
 export function pageRecord<T extends object>(key: string, make: () => T): () => T {
   return () => {
     const found = Reflect.get(globalThis, key) as T | undefined;
-    if (found) return found;
+    if (found) {
+      return found;
+    }
     const fresh = make();
     Reflect.set(globalThis, key, fresh);
     return fresh;

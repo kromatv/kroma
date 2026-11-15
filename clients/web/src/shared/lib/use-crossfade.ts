@@ -13,7 +13,9 @@ export function useCrossfade(src: string | null, ms: number = CROSSFADE_MS): str
   const [prev, setPrev] = useState<string | null>(null);
   const last = useRef(src);
   useLayoutEffect(() => {
-    if (src === last.current) return;
+    if (src === last.current) {
+      return;
+    }
     setPrev(last.current);
     last.current = src;
     const timer = setTimeout(() => setPrev(null), ms);

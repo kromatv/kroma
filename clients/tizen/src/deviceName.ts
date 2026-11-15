@@ -41,7 +41,7 @@ interface TizenGlobals {
 
 // Whatever the systeminfo bus hands over crosses a process boundary, and the
 // synchronous calls are only typed by the declarations above.
-const Name = z.string().trim().min(1);
+const Name = z.string().trim().nonempty();
 const Build = z.object({ model: Name });
 
 function view(): TizenGlobals {
@@ -52,7 +52,9 @@ function firstName(...candidates: Array<() => unknown>): string | null {
   for (const read of candidates) {
     try {
       const parsed = Name.safeParse(read());
-      if (parsed.success) return parsed.data;
+      if (parsed.success) {
+        return parsed.data;
+      }
     } catch {
       /* absent on this firmware */
     }
@@ -79,7 +81,9 @@ function readBuild(found: (name: string) => void): void {
       'BUILD',
       (value) => {
         const build = Build.safeParse(value);
-        if (build.success) found(build.data.model);
+        if (build.success) {
+          found(build.data.model);
+        }
       },
       () => undefined,
     );
@@ -93,7 +97,10 @@ function readBuild(found: (name: string) => void): void {
 export function resolveTizenDeviceName(): DeviceNameSource {
   const name = lateDeviceName();
   const sync = readSync();
-  if (sync) name.found(sync);
-  else readBuild(name.found);
+  if (sync) {
+    name.found(sync);
+  } else {
+    readBuild(name.found);
+  }
   return name;
 }

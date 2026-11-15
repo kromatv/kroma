@@ -54,7 +54,9 @@ export function useListKeys(at: ListKeysAt): {
 
   const typeahead = useCallback((key: string) => {
     const { count, disabledAt, labelAt, setActive } = live.current;
-    if (!labelAt) return;
+    if (!labelAt) {
+      return;
+    }
     const now = Date.now();
     const state = typed.current;
     state.buffer = (now - state.last > 500 ? '' : state.buffer) + key.toLowerCase();
@@ -89,10 +91,14 @@ export function useListKeys(at: ListKeysAt): {
         move(count, -1);
       } else if (key === 'Enter' || key === ' ') {
         claim();
-        if (!disabledAt?.(active)) onPick(active);
+        if (!disabledAt?.(active)) {
+          onPick(active);
+        }
       } else if (key === 'Escape' || key === 'Tab') {
         claim();
-        if (key === 'Escape') armEscapeGuard();
+        if (key === 'Escape') {
+          armEscapeGuard();
+        }
         onClose();
       } else if (key.length === 1) {
         claim();
@@ -117,8 +123,12 @@ interface RowBox {
 }
 
 function scrollFor(row: RowBox, offset: number, viewHeight: number): number | null {
-  if (row.y < offset) return row.y;
-  if (row.y + row.height > offset + viewHeight) return row.y + row.height - viewHeight;
+  if (row.y < offset) {
+    return row.y;
+  }
+  if (row.y + row.height > offset + viewHeight) {
+    return row.y + row.height - viewHeight;
+  }
   return null;
 }
 
@@ -141,9 +151,13 @@ export function useRowInView(active: number): {
 
   useEffect(() => {
     const row = rows.current.get(active);
-    if (!row || viewHeight.current === 0) return;
+    if (!row || viewHeight.current === 0) {
+      return;
+    }
     const y = scrollFor(row, offset.current, viewHeight.current);
-    if (y === null) return;
+    if (y === null) {
+      return;
+    }
     offset.current = y;
     ref.current?.scrollTo({ y, animated: false });
   }, [active]);

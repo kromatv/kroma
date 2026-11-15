@@ -7,9 +7,15 @@ type Bump = 'major' | 'minor' | 'patch';
 const RANK: Record<Bump, number> = { patch: 1, minor: 2, major: 3 };
 
 function bumpOf(commit: Commit, preOne: boolean): Bump | null {
-  if (commit.breaking) return preOne ? 'minor' : 'major';
-  if (commit.type === 'feat') return preOne ? 'patch' : 'minor';
-  if (commit.type === 'fix' || commit.type === 'perf') return 'patch';
+  if (commit.breaking) {
+    return preOne ? 'minor' : 'major';
+  }
+  if (commit.type === 'feat') {
+    return preOne ? 'patch' : 'minor';
+  }
+  if (commit.type === 'fix' || commit.type === 'perf') {
+    return 'patch';
+  }
   return null;
 }
 
@@ -21,16 +27,26 @@ function bumpOf(commit: Commit, preOne: boolean): Bump | null {
  */
 export function nextVersion(last: string, commits: readonly Commit[]): string | null {
   const match = TRIPLET.exec(last);
-  if (!match) throw new Error(`'${last}' is not X.Y.Z`);
+  if (!match) {
+    throw new Error(`'${last}' is not X.Y.Z`);
+  }
   const [major, minor, patch] = match.slice(1).map(Number) as [number, number, number];
   const preOne = major === 0;
   let bump: Bump | null = null;
   for (const commit of commits) {
     const next = bumpOf(commit, preOne);
-    if (next && (!bump || RANK[next] > RANK[bump])) bump = next;
+    if (next && (!bump || RANK[next] > RANK[bump])) {
+      bump = next;
+    }
   }
-  if (bump === 'major') return `${major + 1}.0.0`;
-  if (bump === 'minor') return `${major}.${minor + 1}.0`;
-  if (bump === 'patch') return `${major}.${minor}.${patch + 1}`;
+  if (bump === 'major') {
+    return `${major + 1}.0.0`;
+  }
+  if (bump === 'minor') {
+    return `${major}.${minor + 1}.0`;
+  }
+  if (bump === 'patch') {
+    return `${major}.${minor}.${patch + 1}`;
+  }
   return null;
 }

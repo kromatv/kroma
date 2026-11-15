@@ -126,7 +126,9 @@ function signedIn() {
 
 function stream() {
   const last = H.streams.at(-1);
-  if (!last) throw new Error('no event stream was opened');
+  if (!last) {
+    throw new Error('no event stream was opened');
+  }
   return last;
 }
 

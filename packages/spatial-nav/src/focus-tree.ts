@@ -54,7 +54,9 @@ export interface Siblings {
 const NO_CHILDREN: readonly TreeNode[] = [];
 
 function sortsAfter(sibling: TreeNode, node: TreeNode): boolean {
-  if (sibling.index !== node.index) return sibling.index > node.index;
+  if (sibling.index !== node.index) {
+    return sibling.index > node.index;
+  }
   return sibling.seq > node.seq;
 }
 
@@ -81,13 +83,17 @@ export class FocusTree {
    *  registered. */
   reachable(id: string): TreeNode | undefined {
     const node = this.nodes.get(id);
-    if (node === undefined) return undefined;
+    if (node === undefined) {
+      return undefined;
+    }
     const top = this.ancestorsOf(node).at(-1) ?? node;
     return top.parent === null ? node : undefined;
   }
 
   register(id: string, config: NodeConfig): void {
-    if (this.nodes.has(id)) return;
+    if (this.nodes.has(id)) {
+      return;
+    }
     const parent = config.parent ?? null;
     const slot = this.slots.get(parent) ?? 0;
     const index = config.index ?? slot;
@@ -105,8 +111,11 @@ export class FocusTree {
       activeChild: null,
     };
     this.nodes.set(id, node);
-    if (parent === null || this.nodes.has(parent)) this.link(node);
-    else this.hold(parent, node);
+    if (parent === null || this.nodes.has(parent)) {
+      this.link(node);
+    } else {
+      this.hold(parent, node);
+    }
     this.attachHeld(id);
   }
 
@@ -146,7 +155,9 @@ export class FocusTree {
   /** The child `node` was last left on, while it is still one of its children. */
   activeChildOf(node: TreeNode): TreeNode | undefined {
     const remembered = node.activeChild;
-    if (remembered === null) return undefined;
+    if (remembered === null) {
+      return undefined;
+    }
     return this.childrenOf(node.id).find((child) => child.id === remembered);
   }
 
@@ -182,7 +193,9 @@ export class FocusTree {
     const held = node.parent === null ? undefined : this.waiting.get(node.parent);
     const siblings = held ?? this.children.get(node.parent) ?? [];
     const at = siblings.indexOf(node);
-    if (at >= 0) siblings.splice(at, 1);
+    if (at >= 0) {
+      siblings.splice(at, 1);
+    }
   }
 
   private hold(parent: string, node: TreeNode): void {
@@ -193,9 +206,13 @@ export class FocusTree {
 
   private attachHeld(parent: string): void {
     const held = this.waiting.get(parent);
-    if (!held) return;
+    if (!held) {
+      return;
+    }
     this.waiting.delete(parent);
-    for (const node of held) this.link(node);
+    for (const node of held) {
+      this.link(node);
+    }
   }
 
   private subtree(node: TreeNode): TreeNode[] {

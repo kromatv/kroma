@@ -20,7 +20,9 @@ const withKeepScreenOn: ConfigPlugin = (config) =>
   withMainActivity(config, (cfg) => {
     let contents = cfg.modResults.contents;
     // Idempotent: prebuild without --clean re-runs plugins over a patched file.
-    if (contents.includes('FLAG_KEEP_SCREEN_ON')) return cfg;
+    if (contents.includes('FLAG_KEEP_SCREEN_ON')) {
+      return cfg;
+    }
 
     if (!contents.includes(IMPORT_ANCHOR)) {
       throw new Error(

@@ -63,37 +63,51 @@ export function SubtitleRenderer({
     activeIndex == null ? null : (subtitles.find((s) => s.index === activeIndex)?.url ?? null);
 
   const cues = (activeUrl ? loaded[activeUrl] : undefined) ?? NO_CUES;
-  if (cues.length === 0 && text !== '') setText('');
+  if (cues.length === 0 && text !== '') {
+    setText('');
+  }
 
   const isLoaded = useEffectEvent((url: string) => url in loaded);
 
   const reportFailed = useEffectEvent(() => {
-    if (activeIndex != null) onTrackFailed?.(activeIndex);
+    if (activeIndex != null) {
+      onTrackFailed?.(activeIndex);
+    }
   });
 
   // Fetch + parse the active track only when its url changes; a per-url ref cache
   // makes switching back to a previously-loaded track instant. Errors → nothing.
   useEffect(() => {
     pointer.current = 0;
-    if (!activeUrl || isLoaded(activeUrl)) return;
+    if (!activeUrl || isLoaded(activeUrl)) {
+      return;
+    }
     let cancelled = false;
     fetch(activeUrl)
       .then((r) => {
-        if (!r.ok) throw new Error(String(r.status));
+        if (!r.ok) {
+          throw new Error(String(r.status));
+        }
         if (Number(r.headers.get('content-length')) > MAX_VTT_BYTES) {
           throw new Error('track too large');
         }
         return r.text();
       })
       .then((raw) => {
-        if (raw.length > MAX_VTT_BYTES) throw new Error('track too large');
+        if (raw.length > MAX_VTT_BYTES) {
+          throw new Error('track too large');
+        }
         const parsed = parseVtt(raw);
-        if (parsed.length === 0) throw new Error('empty track');
+        if (parsed.length === 0) {
+          throw new Error('empty track');
+        }
         setLoaded((held) => ({ ...held, [activeUrl]: parsed }));
         return undefined;
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         reportFailed();
       });
     return () => {
@@ -116,7 +130,9 @@ export function SubtitleRenderer({
 
   // Tick the interpolated clock and update only when the visible line changes.
   useEffect(() => {
-    if (cues.length === 0) return;
+    if (cues.length === 0) {
+      return;
+    }
     let last: string | null = null;
     const tick = () => {
       const c = clock.current;
@@ -133,7 +149,9 @@ export function SubtitleRenderer({
     return () => clearInterval(id);
   }, [cues, playing]);
 
-  if (activeIndex == null || !text) return null;
+  if (activeIndex == null || !text) {
+    return null;
+  }
 
   // Multi-line cues keep their hard breaks, which <Text> already does for newlines.
   return (

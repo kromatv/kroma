@@ -61,7 +61,9 @@ const castTile = sv({ base: { shrink: 0, align: 'center', w: { base: 96, md: CAS
 /** First + last initials, e.g. "George MacKay" → "GM". */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
+  if (parts.length === 0) {
+    return '?';
+  }
   const first = parts[0]?.[0] ?? '';
   const last = parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '';
   return (first + last).toUpperCase();
@@ -73,7 +75,9 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  if (cast.length === 0) return null;
+  if (cast.length === 0) {
+    return null;
+  }
   return (
     <section className={classes(s.castSection)}>
       <h2 className={classes(s.gutter)}>
@@ -148,7 +152,9 @@ export interface SimilarItem {
 export function SimilarRail({ title, items }: Readonly<{ title: string; items: SimilarItem[] }>) {
   const s = useStyles(sDefinition);
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
   return (
     <section className={classes(s.similarSection)}>
       <h2 className={classes(s.gutter)}>

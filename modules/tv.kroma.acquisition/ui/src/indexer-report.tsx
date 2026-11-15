@@ -17,7 +17,9 @@ export function nothingAnswered(indexers: readonly IndexerAnswer[]): boolean {
 
 export function IndexerReportStrip({ indexers = [] }: Readonly<{ indexers?: IndexerAnswer[] }>) {
   const t = useT();
-  if (indexers.length === 0) return null;
+  if (indexers.length === 0) {
+    return null;
+  }
   const failed = indexers.filter((i) => i.error).length;
   return (
     <Box gap={8}>
@@ -56,7 +58,9 @@ function IndexerPill({ report }: Readonly<{ report: IndexerAnswer }>) {
 }
 
 function pillTone(report: IndexerAnswer): 'danger' | 'success' | 'textDim' {
-  if (report.error) return 'danger';
+  if (report.error) {
+    return 'danger';
+  }
   return report.found > 0 ? 'success' : 'textDim';
 }
 

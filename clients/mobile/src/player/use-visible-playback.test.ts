@@ -47,7 +47,9 @@ describe('visible playback', () => {
     renderHook(() => useVisiblePlayback({ pause } as unknown as VideoPlayer, false));
     background();
     expect(pause).not.toHaveBeenCalled();
-    act(() => vi.advanceTimersByTime(700));
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
     expect(pause).toHaveBeenCalledOnce();
   });
 
@@ -59,10 +61,14 @@ describe('visible playback', () => {
     });
     background();
     rerender({ inPip: true });
-    act(() => vi.advanceTimersByTime(1000));
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
     expect(pause).not.toHaveBeenCalled();
     rerender({ inPip: false });
-    act(() => vi.advanceTimersByTime(700));
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
     expect(pause).toHaveBeenCalledOnce();
   });
 
@@ -71,7 +77,9 @@ describe('visible playback', () => {
     renderHook(() => useVisiblePlayback({ pause } as unknown as VideoPlayer, false));
     background();
     act(() => state.changed?.('active'));
-    act(() => vi.advanceTimersByTime(1000));
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
     expect(pause).not.toHaveBeenCalled();
   });
 

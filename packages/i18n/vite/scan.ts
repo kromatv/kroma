@@ -41,13 +41,21 @@ export function keysNamedIn(code: string, keys: ReadonlyMap<string, readonly str
     .filter((line) => !isComment(line))
     .join('\n');
   for (const [, literal = ''] of read.matchAll(KEY_LITERAL)) {
-    if (judged.has(literal)) continue;
+    if (judged.has(literal)) {
+      continue;
+    }
     judged.add(literal);
     const namespace = namespaceOf(literal);
     for (const [file, own] of keys) {
-      if (namespaceOfFile(file) !== namespace) continue;
-      if (own.includes(literal)) noted(usage, file).keys.add(literal);
-      if (isPrefix(literal, own)) noted(usage, file).whole = true;
+      if (namespaceOfFile(file) !== namespace) {
+        continue;
+      }
+      if (own.includes(literal)) {
+        noted(usage, file).keys.add(literal);
+      }
+      if (isPrefix(literal, own)) {
+        noted(usage, file).whole = true;
+      }
     }
   }
   return usage;

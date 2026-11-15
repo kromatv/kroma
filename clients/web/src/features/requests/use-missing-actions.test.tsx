@@ -50,7 +50,9 @@ const REQUESTED = entry({ tmdbId: 30, requestId: 'r1' as CalendarEntry['requestI
 
 function pick(groups: MissingGroup[], at: number): MissingGroup {
   const group = groups[at];
-  if (!group) throw new Error(`no group at ${at}`);
+  if (!group) {
+    throw new Error(`no group at ${at}`);
+  }
   return group;
 }
 
@@ -213,7 +215,7 @@ describe('running a group', () => {
     });
     expect(result.current.startedKeys.size).toBe(1);
 
-    act(() => vi.advanceTimersByTime(30_000));
+    act(() => void vi.advanceTimersByTime(30_000));
 
     expect(result.current.startedKeys.size).toBe(0);
   });

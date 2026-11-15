@@ -48,11 +48,19 @@ export function fallbackCanary(commits: readonly Commit[]): string {
 
 function looseUnderNew(lines: readonly string[], newHeading: string): boolean {
   const start = lines.indexOf(newHeading);
-  if (start === -1) return false;
+  if (start === -1) {
+    return false;
+  }
   for (const line of lines.slice(start + 1)) {
-    if (line.startsWith('## ')) return false;
-    if (line.startsWith('### ')) return false;
-    if (line !== '') return true;
+    if (line.startsWith('## ')) {
+      return false;
+    }
+    if (line.startsWith('### ')) {
+      return false;
+    }
+    if (line !== '') {
+      return true;
+    }
   }
   return false;
 }
@@ -67,13 +75,20 @@ export function shapeProblem(note: string, lang: Lang): string | null {
   const allowed: readonly string[] = HEADINGS[lang];
   const lines = note.split('\n').map((line) => line.trim());
   const found = lines.filter((line) => line.startsWith('## '));
-  if (found.length === 0) return 'no section';
+  if (found.length === 0) {
+    return 'no section';
+  }
   const unknown = found.find((heading) => !allowed.includes(heading));
-  if (unknown) return `unknown heading '${unknown}'`;
+  if (unknown) {
+    return `unknown heading '${unknown}'`;
+  }
   const order = found.map((heading) => allowed.indexOf(heading));
-  if (order.some((index, i) => i > 0 && index <= (order[i - 1] ?? -1)))
+  if (order.some((index, i) => i > 0 && index <= (order[i - 1] ?? -1))) {
     return 'headings out of order';
-  if (looseUnderNew(lines, HEADINGS[lang][1])) return 'text under New outside a highlight';
+  }
+  if (looseUnderNew(lines, HEADINGS[lang][1])) {
+    return 'text under New outside a highlight';
+  }
   return null;
 }
 

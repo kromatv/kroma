@@ -52,7 +52,9 @@ export async function captureAndroid(
 
   for (const key of screen.keys) {
     const event = REMOTE_KEYS[key];
-    if (!event) throw new Error(`no Android TV keyevent mapping for "${key}"`);
+    if (!event) {
+      throw new Error(`no Android TV keyevent mapping for "${key}"`);
+    }
     run(adb, ['-s', serial, 'shell', 'input', 'keyevent', event]);
     await sleep(KEY_SETTLE_MS);
   }
@@ -78,7 +80,9 @@ function androidSdk(): string {
 
 async function bootedEmulator(sdk: string, adb: string, target: Target): Promise<string> {
   const running = emulatorSerials(adb);
-  if (running.length) return running[0] ?? '';
+  if (running.length) {
+    return running[0] ?? '';
+  }
 
   const avd = target.avd ?? '';
   const emulator = join(sdk, 'emulator', 'emulator');
@@ -104,7 +108,9 @@ async function waitForBoot(adb: string): Promise<string> {
       const booted = run(adb, ['-s', serial, 'shell', 'getprop', 'sys.boot_completed'], 'text', {
         allowFailure: true,
       });
-      if (booted.trim() === '1') return serial;
+      if (booted.trim() === '1') {
+        return serial;
+      }
     }
     await sleep(BOOT_POLL_MS);
   }
@@ -125,7 +131,9 @@ function assertInstalled(adb: string, serial: string, appId: string, target: Tar
   const found = run(adb, ['-s', serial, 'shell', 'pm', 'list', 'packages', appId], 'text', {
     allowFailure: true,
   });
-  if (found.includes(appId)) return;
+  if (found.includes(appId)) {
+    return;
+  }
   throw new Error(
     `${target.id}: "${appId}" is not installed on the emulator. ` +
       `This tool photographs a build, it does not make one - install it first with ` +

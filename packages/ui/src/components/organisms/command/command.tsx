@@ -98,21 +98,27 @@ function Root({
 
   const choose = useCallback(
     (item: CommandItem | undefined) => {
-      if (item) run(item, item.actions?.[0]);
+      if (item) {
+        run(item, item.actions?.[0]);
+      }
     },
     [run],
   );
 
   const chooseAction = useCallback(
     (action: CommandAction) => {
-      if (current) run(current, action);
+      if (current) {
+        run(current, action);
+      }
     },
     [current, run],
   );
 
   const chooseSecondary = () => {
     const second = current?.actions?.[1];
-    if (current && second) run(current, second);
+    if (current && second) {
+      run(current, second);
+    }
   };
 
   // Stable, because it is a prop on every row: rebuilt with the rest of the
@@ -120,7 +126,9 @@ function Root({
   // the cursor.
   const point = useDeliberateHover((item: CommandItem) => {
     const row = flat.indexOf(item);
-    if (row >= 0) setCursor(row);
+    if (row >= 0) {
+      setCursor(row);
+    }
   });
 
   const cursorId = useListCursorKeys({
@@ -129,17 +137,26 @@ function Root({
       actions.open ? actions.step(rows) : setCursor((prev) => stepTo(prev, rows, flat.length)),
     onChoose: (secondary) => {
       if (actions.open) {
-        if (actions.cursor) chooseAction(actions.cursor);
-      } else if (secondary) chooseSecondary();
-      else choose(current);
+        if (actions.cursor) {
+          chooseAction(actions.cursor);
+        }
+      } else if (secondary) {
+        chooseSecondary();
+      } else {
+        choose(current);
+      }
     },
     onClose: actions.open ? actions.hide : onClose,
   });
 
   useCommandKey(() => {
-    if (actions.open) actions.hide();
-    else if (actions.available) actions.show();
-    else onClose();
+    if (actions.open) {
+      actions.hide();
+    } else if (actions.available) {
+      actions.show();
+    } else {
+      onClose();
+    }
   }, modal);
 
   const state = useMemo<CommandState>(

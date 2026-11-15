@@ -108,7 +108,9 @@ function Marked({
 
 function RowMedia({ item, open }: Readonly<{ item: CommandItem; open: boolean }>) {
   const { icon, image, imageShape } = item;
-  if (!icon && !image) return null;
+  if (!icon && !image) {
+    return null;
+  }
   if (!image || imageShape === 'tile') {
     return (
       <IconWell name={icon ?? 'photo'} size="xs" tone={open ? 'accent' : 'neutral'} src={image} />

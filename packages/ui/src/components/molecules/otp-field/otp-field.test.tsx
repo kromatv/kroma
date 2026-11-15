@@ -12,7 +12,9 @@ const entry = (container: HTMLElement) =>
 
 function type(container: HTMLElement, text: string) {
   const input = entry(container);
-  if (!input) throw new Error('no entry mounted');
+  if (!input) {
+    throw new Error('no entry mounted');
+  }
   fireEvent.change(input, { target: { value: text } });
 }
 
@@ -97,7 +99,9 @@ describe('OtpField', () => {
     );
     const faces = Array.from(row(container).children).slice(2) as HTMLElement[];
     expect(faces).toHaveLength(3);
-    for (const face of faces) expect(getComputedStyle(face).pointerEvents).toBe('none');
+    for (const face of faces) {
+      expect(getComputedStyle(face).pointerEvents).toBe('none');
+    }
   });
 
   it('lands the caret from a press anywhere on the row, and blinks it nowhere else', () => {

@@ -36,18 +36,24 @@ const savedSizes = z.array(z.number().nonnegative()).max(128);
 
 function layoutsOf(value: unknown): SavedLayouts {
   const layouts = savedLayouts.safeParse(value);
-  if (!layouts.success) return {};
+  if (!layouts.success) {
+    return {};
+  }
   const out: SavedLayouts = {};
   for (const [key, value] of Object.entries(layouts.data)) {
     const sizes = savedSizes.safeParse(value);
-    if (sizes.success) out[key] = sizes.data;
+    if (sizes.success) {
+      out[key] = sizes.data;
+    }
   }
   return out;
 }
 
 function readLayouts(store: ResizableStorage | null, id: string): SavedLayouts {
   const raw = store?.getItem(id);
-  if (!raw || raw.length > 1_000_000) return {};
+  if (!raw || raw.length > 1_000_000) {
+    return {};
+  }
   try {
     return layoutsOf(JSON.parse(raw));
   } catch {
@@ -61,7 +67,9 @@ function readLayout(
   id: string | undefined,
   arrangement: string,
 ): number[] | null {
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
   const saved = readLayouts(store, id)[arrangement];
   return saved && saved.length > 0 ? saved : null;
 }
@@ -72,7 +80,9 @@ function writeLayout(
   arrangement: string,
   sizes: readonly number[],
 ): void {
-  if (!store || !id) return;
+  if (!store || !id) {
+    return;
+  }
   try {
     store.setItem(id, JSON.stringify({ ...readLayouts(store, id), [arrangement]: [...sizes] }));
   } catch {

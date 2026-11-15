@@ -12,7 +12,9 @@ const REPO = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 
 function cwd(files: Record<string, string> = {}): string {
   const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-vite-'));
-  for (const [name, source] of Object.entries(files)) writeFileSync(join(dir, name), source);
+  for (const [name, source] of Object.entries(files)) {
+    writeFileSync(join(dir, name), source);
+  }
   vi.spyOn(process, 'cwd').mockReturnValue(dir);
   return dir;
 }
@@ -38,7 +40,9 @@ describe('kromaUI', () => {
 
   it('answers both collectors from one walk, and only on a build', () => {
     const scan = kromaUI().find((plugin) => plugin.name === 'kroma-scan');
-    if (!scan || !('apply' in scan)) throw new Error('kromaUI() lost its scan');
+    if (!scan || !('apply' in scan)) {
+      throw new Error('kromaUI() lost its scan');
+    }
     expect(scan.apply).toBe('build');
     expect(alphaPass(SOURCE_ROOTS, KNOWN_COLOR_NAMES)).not.toBeNull();
 
@@ -62,7 +66,9 @@ describe('kromaUI', () => {
   it('skips the icon scan entirely when every glyph is wanted', () => {
     const plugins = kromaUI({ icons: 'full', repoRoot: '/no/such/workspace' });
     const scan = plugins.find((plugin) => plugin.name === 'kroma-scan');
-    if (!scan || !('apply' in scan)) throw new Error('kromaUI() lost its scan');
+    if (!scan || !('apply' in scan)) {
+      throw new Error('kromaUI() lost its scan');
+    }
 
     // Reaching Tabler from a root that has none is what the subset would do
     // here, and the walk carries no icon collector to do it.

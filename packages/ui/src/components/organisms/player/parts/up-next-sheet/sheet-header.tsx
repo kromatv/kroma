@@ -31,7 +31,9 @@ export function SheetHeader({
   // navigator focuses on mouse-enter (see lib/input-source).
   const pointerDriving = usePointerDriving();
   const leave = () => {
-    if (!pointerDriving()) onToggle();
+    if (!pointerDriving()) {
+      onToggle();
+    }
   };
   const inside = (
     <Box row align="center" gap={14}>

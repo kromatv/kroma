@@ -20,7 +20,9 @@ const KEY = 'subtitleStyle';
 
 function written(): unknown {
   const call = savePref.mock.calls.at(-1);
-  if (!call) throw new Error('nothing was persisted');
+  if (!call) {
+    throw new Error('nothing was persisted');
+  }
   return JSON.parse(call[1]);
 }
 

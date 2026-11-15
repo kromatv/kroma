@@ -95,8 +95,12 @@ export default function RemotePage() {
     return () => clearInterval(id);
   }, [remote]);
 
-  if (!canManage) return <Denied />;
-  if (!view) return failed ? <ModuleFailed /> : <ModuleLoading panels={2} />;
+  if (!canManage) {
+    return <Denied />;
+  }
+  if (!view) {
+    return failed ? <ModuleFailed /> : <ModuleLoading panels={2} />;
+  }
   const st = view.status;
 
   // Persist config; the server reconciles the connector to match `enabled`.
@@ -106,7 +110,9 @@ export default function RemotePage() {
     try {
       const v = await remote.save({ enabled: en, url, ...(token ? { token } : {}) });
       setView(v);
-      if (token) setToken('');
+      if (token) {
+        setToken('');
+      }
       setSaved(true);
     } finally {
       setBusy(false);

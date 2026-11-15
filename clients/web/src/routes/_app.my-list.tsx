@@ -49,17 +49,27 @@ interface MyListSearch {
 
 function validateSearch(s: Record<string, unknown>): MyListSearch {
   const out: MyListSearch = {};
-  if (isSavedTab(s.tab) && s.tab !== 'toWatch') out.tab = s.tab;
-  if (isSavedSort(s.sort) && s.sort !== 'recent') out.sort = s.sort;
-  if (isSavedKind(s.kind) && s.kind !== 'all') out.kind = s.kind;
-  if (s.unavailable === true || s.unavailable === 'true') out.unavailable = true;
+  if (isSavedTab(s.tab) && s.tab !== 'toWatch') {
+    out.tab = s.tab;
+  }
+  if (isSavedSort(s.sort) && s.sort !== 'recent') {
+    out.sort = s.sort;
+  }
+  if (isSavedKind(s.kind) && s.kind !== 'all') {
+    out.kind = s.kind;
+  }
+  if (s.unavailable === true || s.unavailable === 'true') {
+    out.unavailable = true;
+  }
   return out;
 }
 
 export const Route = createFileRoute('/_app/my-list')({
   validateSearch,
   loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) return;
+    if (!isAuthed()) {
+      return;
+    }
     await Promise.all([
       queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
       queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),
@@ -81,14 +91,17 @@ function MyListPending() {
 type LibrarySource = Exclude<SavedSource, { from: 'discover' }>;
 
 function LibraryPoster({ source, width }: Readonly<{ source: LibrarySource; width: number }>) {
-  if (source.from === 'movie')
+  if (source.from === 'movie') {
     return <MoviePoster item={source.movie} width={width} caption={false} />;
+  }
   return <ShowPoster show={source.show} width={width} caption={false} />;
 }
 
 function SavedTile({ title, width }: Readonly<{ title: SavedTitle; width: number }>) {
   const { source } = title;
-  if (source.from === 'discover') return <DiscoverCard entry={source.entry} width={width} />;
+  if (source.from === 'discover') {
+    return <DiscoverCard entry={source.entry} width={width} />;
+  }
   return (
     <>
       <LibraryPoster source={source} width={width} />

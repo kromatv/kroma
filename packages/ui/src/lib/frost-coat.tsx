@@ -25,7 +25,9 @@ export function frostCoat(
   scope: StyleScope,
   reach: FrostReach,
 ): FrostCoat {
-  if (!Backdrop || reach.layerOnly) return BARE;
+  if (!Backdrop || reach.layerOnly) {
+    return BARE;
+  }
   const corner = StyleSheet.flatten(surface)?.borderRadius;
   const s = resolveStyles(sDefinition, scope);
   return {

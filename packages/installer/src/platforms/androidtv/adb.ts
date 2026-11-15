@@ -22,7 +22,9 @@ export interface AdbDevice {
  */
 export async function adbDevice(host: string, port: number): Promise<AdbDevice | null> {
   const keys = await existingAdbKeys();
-  if (keys.length === 0) return null;
+  if (keys.length === 0) {
+    return null;
+  }
 
   let connection: AdbConnection | null = null;
   try {

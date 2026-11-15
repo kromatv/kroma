@@ -46,7 +46,9 @@ const receiving = async (answer: (session: ServiceSession) => void, maxData = 65
     for (;;) {
       const message = await session.read();
       heard.push(message);
-      if (idOf(message) === 'DONE') answer(session);
+      if (idOf(message) === 'DONE') {
+        answer(session);
+      }
     }
   });
   const connection = await SdbConnection.open(set.host, set.port, { timeoutMs: PATIENT_MS });
@@ -57,9 +59,12 @@ const receiving = async (answer: (session: ServiceSession) => void, maxData = 65
 const accepts = (session: ServiceSession) => session.write(syncRequest('OKAY', 0));
 
 afterEach(async () => {
-  for (const connection of connections.splice(0)) connection.close();
-  for (const directory of directories.splice(0))
+  for (const connection of connections.splice(0)) {
+    connection.close();
+  }
+  for (const directory of directories.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
+  }
   await Promise.all(televisions.splice(0).map((set) => set.close()));
 });
 

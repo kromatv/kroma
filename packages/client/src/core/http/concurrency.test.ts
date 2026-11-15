@@ -41,8 +41,8 @@ describe('the latest policy', () => {
         return pending();
       });
 
-    run();
-    run();
+    void run();
+    void run();
 
     expect(seen[0]?.aborted).toBe(true);
     expect(seen[1]?.aborted).toBe(false);
@@ -57,8 +57,8 @@ describe('the latest policy', () => {
         return pending();
       });
 
-    run('GET /search?q=a');
-    run('GET /search?q=b');
+    void run('GET /search?q=a');
+    void run('GET /search?q=b');
 
     expect(seen[0]?.aborted).toBe(false);
   });
@@ -69,7 +69,7 @@ describe('the latest policy', () => {
     const reason = new Error('walked away');
     let signal: AbortSignal | undefined;
 
-    gate('GET /search', { concurrency: 'latest', signal: caller.signal }, (s) => {
+    void gate('GET /search', { concurrency: 'latest', signal: caller.signal }, (s) => {
       signal = s;
       return pending();
     });
@@ -83,7 +83,7 @@ describe('the latest policy', () => {
     const gate = concurrencyGate();
     let signal: AbortSignal | undefined;
 
-    gate('GET /search', { concurrency: 'latest', signal: AbortSignal.abort() }, (s) => {
+    void gate('GET /search', { concurrency: 'latest', signal: AbortSignal.abort() }, (s) => {
       signal = s;
       return pending();
     });

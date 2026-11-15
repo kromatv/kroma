@@ -22,10 +22,14 @@ interface MessageAnswer {
  */
 export function describeMessage(sets: Sets, payload: unknown): MessageAnswer {
   const target = parsed(Target, payload);
-  if (typeof target === 'string') return { message: null, refused: target };
+  if (typeof target === 'string') {
+    return { message: null, refused: target };
+  }
   try {
     const at = locate(sets, target);
-    if (typeof at === 'string') return { message: null, refused: at };
+    if (typeof at === 'string') {
+      return { message: null, refused: at };
+    }
     const own = inspectLocale(at.set, at.source, target.locale).messages.get(target.key);
     const message = {
       set: at.set.name,

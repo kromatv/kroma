@@ -44,13 +44,17 @@ function useResizableKeys({ held, orientation, onNudge, onRelease }: ResizableKe
   useEffect(() => (held ? holdInput() : undefined), [held, holdInput]);
 
   const onRemote = useEffectEvent((event: HWEvent) => {
-    if (!held || isKeyUp(event)) return;
+    if (!held || isKeyUp(event)) {
+      return;
+    }
     if (RELEASES.has(event.eventType)) {
       onRelease();
       return;
     }
     const move = MOVES[event.eventType];
-    if (move?.orientation === orientation) onNudge(move.towards);
+    if (move?.orientation === orientation) {
+      onNudge(move.towards);
+    }
   });
 
   useRemoteEvents(onRemote);

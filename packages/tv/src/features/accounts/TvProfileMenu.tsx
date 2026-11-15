@@ -17,11 +17,16 @@ export function TvProfileMenu() {
   const { activeServerUrl, client } = useConnection();
   const { user, switchProfile, logout, forget } = useAuth();
 
-  if (!user || !client) return null;
+  if (!user || !client) {
+    return null;
+  }
 
   const onSignOut = () => {
-    if (activeServerUrl) forget(user.id, activeServerUrl);
-    else void logout();
+    if (activeServerUrl) {
+      forget(user.id, activeServerUrl);
+    } else {
+      void logout();
+    }
   };
 
   const account: SettingsPane[] = [

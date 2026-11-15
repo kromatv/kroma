@@ -18,7 +18,9 @@ import { MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog'
 
 function MenuSurface(props: Readonly<MenuSurfaceProps>) {
   const presentation = useSurfacePresentation(props.presentation);
-  if (presentation === 'dialog') return <MenuSurfaceDialog {...props} />;
+  if (presentation === 'dialog') {
+    return <MenuSurfaceDialog {...props} />;
+  }
   return props.open ? <MenuPanel {...props} /> : null;
 }
 
@@ -82,10 +84,15 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
   const fire = useCallback(
     (index: number, byKey: boolean) => {
       const row = rows[index];
-      if (!row || row.disabled) return;
+      if (!row || row.disabled) {
+        return;
+      }
       onDismiss('select');
-      if (row.select) row.select();
-      else if (byKey) webDocument()?.getElementById(`${baseId}-${index}`)?.click();
+      if (row.select) {
+        row.select();
+      } else if (byKey) {
+        webDocument()?.getElementById(`${baseId}-${index}`)?.click();
+      }
     },
     [baseId, onDismiss, rows],
   );
@@ -105,7 +112,9 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
   useTriggerKeys(anchor, { listId: `${baseId}-list`, haspopup: 'menu', onKeyDown });
   useActiveDescendant(anchor, `${baseId}-${active}`);
 
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
 
   return (
     <AnchoredPopup

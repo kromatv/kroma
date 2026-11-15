@@ -53,9 +53,13 @@ function codeSpan(text: string, at: number): number {
 // The index just past a `**bold**` opening at `at`, or -1. A lone `*` inside is
 // not bold: `**a*b**` is three stars and a word, the way markdown reads it.
 function boldSpan(text: string, at: number): number {
-  if (!text.startsWith('**', at)) return -1;
+  if (!text.startsWith('**', at)) {
+    return -1;
+  }
   const close = within(text, '**', at + 2);
-  if (close === -1 || close === at + 2) return -1;
+  if (close === -1 || close === at + 2) {
+    return -1;
+  }
   return text.slice(at + 2, close).includes('*') ? -1 : close + 2;
 }
 
@@ -67,11 +71,17 @@ interface Link {
 
 function linkSpan(text: string, at: number): Link | null {
   const close = within(text, ']', at + 1);
-  if (close === -1 || close === at + 1 || text[close + 1] !== '(') return null;
+  if (close === -1 || close === at + 1 || text[close + 1] !== '(') {
+    return null;
+  }
   const paren = within(text, ')', close + 2);
-  if (paren === -1 || paren === close + 2) return null;
+  if (paren === -1 || paren === close + 2) {
+    return null;
+  }
   const href = text.slice(close + 2, paren);
-  if (WHITESPACE.test(href)) return null;
+  if (WHITESPACE.test(href)) {
+    return null;
+  }
   return { end: paren + 1, label: text.slice(at + 1, close), href };
 }
 
@@ -80,7 +90,9 @@ function segments(text: string): Segment[] {
   const out: Segment[] = [];
   let plain = '';
   const flush = () => {
-    if (plain) out.push({ text: plain, mark: 'plain' });
+    if (plain) {
+      out.push({ text: plain, mark: 'plain' });
+    }
     plain = '';
   };
 
@@ -126,7 +138,9 @@ const BULLET = /^-\s+(\S.*)$/;
 
 function closingFence(lines: readonly string[], from: number): number {
   for (let at = from; at < lines.length; at += 1) {
-    if ((lines[at] as string).trim().startsWith('```')) return at;
+    if ((lines[at] as string).trim().startsWith('```')) {
+      return at;
+    }
   }
   return -1;
 }
@@ -138,11 +152,15 @@ interface Fenced {
 
 function fencedBlock(line: string, lines: readonly string[], from: number): Fenced | null {
   const fence = FENCE.exec(line);
-  if (!fence) return null;
+  if (!fence) {
+    return null;
+  }
   const end = closingFence(lines, from);
   // An unclosed fence falls through and stays literal, so a stray ``` cannot
   // swallow the rest of the page.
-  if (end === -1) return null;
+  if (end === -1) {
+    return null;
+  }
   const code = lines.slice(from, end).join('\n');
   return {
     block: { kind: 'code', code, ...(fence[1] ? { lang: fence[1] } : null) },
@@ -152,7 +170,9 @@ function fencedBlock(line: string, lines: readonly string[], from: number): Fenc
 
 function headingBlock(line: string): Block | null {
   const heading = HEADING.exec(line);
-  if (!heading?.[1] || !heading[2]) return null;
+  if (!heading?.[1] || !heading[2]) {
+    return null;
+  }
   return { kind: 'heading', level: heading[1].length === 1 ? 1 : 2, text: heading[2] };
 }
 
@@ -171,11 +191,15 @@ function pendingBlocks(out: Block[]): Pending {
   let items: string[] = [];
 
   const flushParagraph = () => {
-    if (para.length > 0) out.push({ kind: 'paragraph', text: para.join(' ') });
+    if (para.length > 0) {
+      out.push({ kind: 'paragraph', text: para.join(' ') });
+    }
     para = [];
   };
   const flushList = () => {
-    if (items.length > 0) out.push({ kind: 'list', items });
+    if (items.length > 0) {
+      out.push({ kind: 'list', items });
+    }
     items = [];
   };
 
@@ -228,8 +252,11 @@ function blocks(md: string): Block[] {
     }
 
     const item = bulletItem(line);
-    if (item) pending.item(item);
-    else pending.paragraph(line);
+    if (item) {
+      pending.item(item);
+    } else {
+      pending.paragraph(line);
+    }
   }
 
   pending.flush();

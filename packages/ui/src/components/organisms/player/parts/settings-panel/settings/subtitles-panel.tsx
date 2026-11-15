@@ -74,9 +74,15 @@ export function SubtitlesPanel({
     ref,
     () => ({
       onKey: (k: RemoteKey) => {
-        if (!wizardOpen) return false;
-        if (wizardRef.current?.onKey(k)) return true;
-        if (k !== 'Back') return false;
+        if (!wizardOpen) {
+          return false;
+        }
+        if (wizardRef.current?.onKey(k)) {
+          return true;
+        }
+        if (k !== 'Back') {
+          return false;
+        }
         setWizardOpen(false);
         return true;
       },

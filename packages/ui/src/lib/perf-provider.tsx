@@ -17,12 +17,17 @@ export function PerfProvider({
       report: sampler.perfReport,
     };
     const previous: unknown = Reflect.get(globalThis, 'KROMA_PERF');
-    if (debug) Reflect.set(globalThis, 'KROMA_PERF', api);
+    if (debug) {
+      Reflect.set(globalThis, 'KROMA_PERF', api);
+    }
     return () => {
       sampler.stopPerf();
       if (debug && Reflect.get(globalThis, 'KROMA_PERF') === api) {
-        if (previous === undefined) Reflect.deleteProperty(globalThis, 'KROMA_PERF');
-        else Reflect.set(globalThis, 'KROMA_PERF', previous);
+        if (previous === undefined) {
+          Reflect.deleteProperty(globalThis, 'KROMA_PERF');
+        } else {
+          Reflect.set(globalThis, 'KROMA_PERF', previous);
+        }
       }
     };
   }, [sampler, debug]);

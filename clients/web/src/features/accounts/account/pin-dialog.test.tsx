@@ -49,7 +49,9 @@ function open(task: PinTask) {
 
 function enter(code: string) {
   const input = document.querySelector('input');
-  if (!input) throw new Error('no code field');
+  if (!input) {
+    throw new Error('no code field');
+  }
   fireEvent.change(input, { target: { value: code } });
 }
 

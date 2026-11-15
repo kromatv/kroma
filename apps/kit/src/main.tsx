@@ -20,7 +20,9 @@ function Root() {
 }
 
 const el = document.getElementById('root');
-if (!el) throw new Error('KROMA Kit: #root element not found');
+if (!el) {
+  throw new Error('KROMA Kit: #root element not found');
+}
 createRoot(el).render(
   <StrictMode>
     <Root />

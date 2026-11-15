@@ -5,12 +5,18 @@ import { SiriSearch } from '../../modules/siri-search';
 
 // Hand-parsed rather than through `URL`, which React Native only partly implements.
 function searchInUrl(url: string | null): string | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   const query = /^kroma:\/\/search\/?\?(.*)$/i.exec(url)?.[1];
-  if (!query) return null;
+  if (!query) {
+    return null;
+  }
   for (const pair of query.split('&')) {
     const [key, value = ''] = pair.split('=');
-    if (key !== 'q') continue;
+    if (key !== 'q') {
+      continue;
+    }
     try {
       return decodeURIComponent(value.replaceAll('+', ' '));
     } catch {
@@ -26,11 +32,15 @@ export function startSiriSearch(requestSearch: (query: string) => void): () => v
   // Whatever was asked for before JavaScript existed: Siri launches the app to
   // handle an intent, and a link launches it the same way.
   const pending = SiriSearch?.takePendingQuery();
-  if (pending) requestSearch(pending);
+  if (pending) {
+    requestSearch(pending);
+  }
   void Linking.getInitialURL()
     .then((url) => {
       const q = searchInUrl(url);
-      if (q) requestSearch(q);
+      if (q) {
+        requestSearch(q);
+      }
     })
     .catch(() => undefined);
 
@@ -38,11 +48,15 @@ export function startSiriSearch(requestSearch: (query: string) => void): () => v
     SiriSearch?.addListener('query', ({ text }) => requestSearch(text)),
     Linking.addEventListener('url', ({ url }) => {
       const q = searchInUrl(url);
-      if (q) requestSearch(q);
+      if (q) {
+        requestSearch(q);
+      }
     }),
   ];
   return () => {
-    for (const sub of subs) sub?.remove();
+    for (const sub of subs) {
+      sub?.remove();
+    }
   };
 }
 

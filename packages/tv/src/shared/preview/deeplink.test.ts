@@ -9,16 +9,24 @@ type Opts = {
 };
 
 function payloadData(opts: Opts) {
-  if (opts.noPayloadKey) return [{ key: 'OTHER', value: ['x'] }];
-  if (opts.payload !== undefined) return [{ key: 'PAYLOAD', value: [opts.payload] }];
+  if (opts.noPayloadKey) {
+    return [{ key: 'OTHER', value: ['x'] }];
+  }
+  if (opts.payload !== undefined) {
+    return [{ key: 'PAYLOAD', value: [opts.payload] }];
+  }
   return [];
 }
 
 function stubTizen(opts: Opts = {}) {
   const data = payloadData(opts);
   const getRequestedAppControl = () => {
-    if (opts.throwControl) throw new Error('boom');
-    if (opts.nullControl) return null;
+    if (opts.throwControl) {
+      throw new Error('boom');
+    }
+    if (opts.nullControl) {
+      return null;
+    }
     return { appControl: { operation: 'op', data } };
   };
   vi.stubGlobal('tizen', {

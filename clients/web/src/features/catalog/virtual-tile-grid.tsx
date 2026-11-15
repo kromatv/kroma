@@ -39,7 +39,9 @@ function useRoom(box: RefObject<HTMLDivElement | null>): number {
   const [room, setRoom] = useState(0);
   useLayoutEffect(() => {
     const el = box.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const measure = () =>
       setRoom((current) => (current === el.clientWidth ? current : el.clientWidth));
     measure();
@@ -58,7 +60,9 @@ function useRowWindow(box: RefObject<HTMLDivElement | null>, shape: GridShape): 
     const measure = () => {
       raf = 0;
       const el = box.current;
-      if (!el) return;
+      if (!el) {
+        return;
+      }
       const next = rowWindow({
         rows,
         pitch,
@@ -71,7 +75,9 @@ function useRowWindow(box: RefObject<HTMLDivElement | null>, shape: GridShape): 
       );
     };
     const schedule = () => {
-      if (raf === 0) raf = requestAnimationFrame(measure);
+      if (raf === 0) {
+        raf = requestAnimationFrame(measure);
+      }
     };
     measure();
     window.addEventListener('scroll', schedule, { passive: true });
@@ -79,7 +85,9 @@ function useRowWindow(box: RefObject<HTMLDivElement | null>, shape: GridShape): 
     return () => {
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
-      if (raf !== 0) cancelAnimationFrame(raf);
+      if (raf !== 0) {
+        cancelAnimationFrame(raf);
+      }
     };
   }, [box, rows, pitch]);
   return shown;
@@ -170,10 +178,14 @@ export function VirtualTileGrid<T>({ data, keyOf, renderItem }: Readonly<Virtual
  * many rows forces one layout rather than one per question. */
 export function gridGeometry(root: HTMLElement | null | undefined): GridGeometry | null {
   const grid = root?.querySelector<HTMLElement>('[data-tile-pitch]');
-  if (!grid) return null;
+  if (!grid) {
+    return null;
+  }
   const columns = Number(grid.dataset.tileColumns);
   const pitch = Number(grid.dataset.tilePitch);
-  if (!(columns > 0 && pitch > 0)) return null;
+  if (!(columns > 0 && pitch > 0)) {
+    return null;
+  }
   const box = grid.getBoundingClientRect();
   return { top: box.top, bottom: box.bottom, columns, pitch };
 }

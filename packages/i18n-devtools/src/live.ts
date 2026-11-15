@@ -32,9 +32,13 @@ export function liveState(): Live {
 export function setLive(fields: Partial<Live>): void {
   const state = held();
   const next = { ...state.live, ...fields };
-  if (same(state.live, next)) return;
+  if (same(state.live, next)) {
+    return;
+  }
   state.live = next;
-  for (const listener of state.listeners) listener();
+  for (const listener of state.listeners) {
+    listener();
+  }
 }
 
 export function onLiveChange(listener: () => void): () => void {

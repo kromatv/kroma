@@ -13,10 +13,16 @@ export function GlideBox({ rect, durationMs, slideX = false, style }: Readonly<G
   const scope = useStyleScope();
   const [last, setLast] = useState<GlideRect | null>(null);
   const [entering, setEntering] = useState(true);
-  if (rect && last && rect !== last && entering) setEntering(false);
-  if (rect && rect !== last) setLast(rect);
+  if (rect && last && rect !== last && entering) {
+    setEntering(false);
+  }
+  if (rect && rect !== last) {
+    setLast(rect);
+  }
   const box = rect ?? last;
-  if (!box) return null;
+  if (!box) {
+    return null;
+  }
   const motion = sharedStyle(
     `glide-box:${entering}:${slideX}:${durationMs}`,
     {

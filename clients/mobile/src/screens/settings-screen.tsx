@@ -101,7 +101,9 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
 
   // A row with no value renders nothing, which is how a git-less build hides
   // its own empty rows.
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const body: ReactNode = (
     <>
       <Text style={s.rowLabel}>{label}</Text>
@@ -113,7 +115,9 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
       </Box>
     </>
   );
-  if (!onPress) return <Box style={s.row}>{body}</Box>;
+  if (!onPress) {
+    return <Box style={s.row}>{body}</Box>;
+  }
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
       {body}

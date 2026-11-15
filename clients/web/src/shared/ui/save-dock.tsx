@@ -22,7 +22,7 @@ function StatusLabel({
   savedLabel,
 }: Readonly<{ dirty: boolean; status: SaveStatus; error: string | null; savedLabel: string }>) {
   const t = useT();
-  if (status === 'saved')
+  if (status === 'saved') {
     return (
       <Row gap={8}>
         <Icon name="check" size={16} thickness={2.4} color="success" />
@@ -31,13 +31,15 @@ function StatusLabel({
         </Text>
       </Row>
     );
-  if (status === 'error')
+  }
+  if (status === 'error') {
     return (
       <Text variant="meta" color="danger">
         {error}
       </Text>
     );
-  if (dirty)
+  }
+  if (dirty) {
     return (
       <Row gap={10}>
         <Box w={7} h={7} radius="circle" bg="accent" />
@@ -46,6 +48,7 @@ function StatusLabel({
         </Text>
       </Row>
     );
+  }
   return null;
 }
 

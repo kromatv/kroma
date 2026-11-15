@@ -20,11 +20,17 @@ export function artworkApi(ctx: RequestContext) {
    * DISPLAY `width` for grids (a Samsung TV decoding a hundred full-size images
    * stutters); leave it out to get the stored master. */
   const resolve = (url?: string | null, width?: number): string | null => {
-    if (!url) return null;
-    if (/^https?:\/\//.test(url)) return url;
+    if (!url) {
+      return null;
+    }
+    if (/^https?:\/\//.test(url)) {
+      return url;
+    }
     let path = width ? withParam(url, 'w', String(artworkWidth(width, ctx.artworkScale?.()))) : url;
     const held = ctx.mediaTicket();
-    if (held && isItemBytes(url)) path = withParam(path, 't', held);
+    if (held && isItemBytes(url)) {
+      path = withParam(path, 't', held);
+    }
     return `${ctx.baseUrl}${path}`;
   };
 
@@ -63,10 +69,14 @@ export function artworkApi(ctx: RequestContext) {
       const raw = item.metadata?.posterUrl;
       if (raw && /^https?:\/\//.test(raw)) {
         const res = await ctx.external(raw);
-        if (!res.ok) throw new Error(`poster ${res.status}`);
+        if (!res.ok) {
+          throw new Error(`poster ${res.status}`);
+        }
         return res.blob();
       }
-      if (raw) return ctx.blob(raw.replace(/^\/api\b/, ''));
+      if (raw) {
+        return ctx.blob(raw.replace(/^\/api\b/, ''));
+      }
       return ctx.blob('/items/:id/poster', { params: { id: item.id } });
     },
   };

@@ -96,6 +96,6 @@ export interface WebStyle {
   rowGap?: number | string;
   backgroundRepeat?: Wide<'backgroundRepeat'>;
   outlineStyle?: Wide<'outlineStyle', 'none' | 'solid' | 'dashed' | 'dotted'>;
-  outlineColor?: Exclude<ViewStyle['outlineColor'] | TextStyle['outlineColor'], undefined> | string;
+  outlineColor?: Exclude<ViewStyle['outlineColor'], undefined> | string;
   filter?: Exclude<ViewStyle['filter'], undefined> | string;
 }

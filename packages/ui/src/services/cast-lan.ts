@@ -65,11 +65,15 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
   const [wasBrowsing, setWasBrowsing] = useState(browsing);
   if (wasBrowsing !== browsing) {
     setWasBrowsing(browsing);
-    if (!browsing) setPairable([]);
+    if (!browsing) {
+      setPairable([]);
+    }
   }
 
   useEffect(() => {
-    if (!enabled || !inFront || !lan?.browse) return;
+    if (!enabled || !inFront || !lan?.browse) {
+      return;
+    }
 
     return watchLanBeacons(lan, report);
   }, [lan, enabled, inFront]);
@@ -80,10 +84,14 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
 function useStaysInFront(): boolean {
   const inFront = useForeground();
   const [departed, setDeparted] = useState(!inFront);
-  if (inFront && departed) setDeparted(false);
+  if (inFront && departed) {
+    setDeparted(false);
+  }
 
   useEffect(() => {
-    if (inFront) return;
+    if (inFront) {
+      return;
+    }
     const timer = setTimeout(() => setDeparted(true), DEPARTURE_GRACE_MS);
     return () => clearTimeout(timer);
   }, [inFront]);

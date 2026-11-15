@@ -29,7 +29,9 @@ function hold(watch: StallWatch, from: number, polls: number, at = 100) {
   for (let i = 1; i <= polls; i += 1) {
     const verdict = watch.observe(playing({ currentTime: at }), from + i * STALL_POLL_MS);
     stalled = verdict.stalled;
-    if (verdict.step) steps.push(verdict.step);
+    if (verdict.step) {
+      steps.push(verdict.step);
+    }
   }
   return { steps, stalled };
 }

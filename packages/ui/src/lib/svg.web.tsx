@@ -53,7 +53,9 @@ export function SvgXml({
 
   const s = useStyles(sDefinition);
 
-  if (!xml) return null;
+  if (!xml) {
+    return null;
+  }
   return (
     <div
       className={classes(s.box, sizeOf(width, height, scope))}

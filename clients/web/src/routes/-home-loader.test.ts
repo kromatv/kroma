@@ -22,7 +22,9 @@ const fetched = vi.fn(async () => Response.json([]));
 async function load() {
   const runtime = createWebTestRuntime({ media });
   const loader = Route.options.loader;
-  if (typeof loader !== 'function') throw new Error('the home route loads with a function');
+  if (typeof loader !== 'function') {
+    throw new Error('the home route loads with a function');
+  }
   await loader({ context: { runtime, queryClient: runtime.queryClient } } as never);
   return runtime.queryClient;
 }

@@ -17,7 +17,9 @@ function setOf(files: Files, over: Partial<CatalogSet> = {}): CatalogSet {
     project: { source: 'fr' },
     ...over,
   };
-  for (const [path, content] of Object.entries(files)) write(set, path, content);
+  for (const [path, content] of Object.entries(files)) {
+    write(set, path, content);
+  }
   return set;
 }
 
@@ -74,11 +76,15 @@ export function standing(): CatalogSet {
   write(set, 'fr/state.json', { ...source, 'state.outdated': 'Ancien, revu' });
   const lock = readLock(lockPath(set, 'en'));
   const entry = lock.get('state.machine');
-  if (entry) lock.set('state.machine', { ...entry, machine: true });
+  if (entry) {
+    lock.set('state.machine', { ...entry, machine: true });
+  }
   writeFileSync(lockPath(set, 'en'), renderLock(lock));
   return set;
 }
 
 export function removeSets(): void {
-  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of made.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }

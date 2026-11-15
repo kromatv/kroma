@@ -64,6 +64,62 @@ the thresholds and exemptions live in
 [`ARCHITECTURE.md`](ARCHITECTURE.md#file-size-policy). A file you cannot name
 without "and" is two files.
 
+## Code limits are lint errors
+
+A function does one thing and a file holds one concept. `.oxlintrc.json` says how
+big that may be. None of these is switched off to land a change: split the code.
+
+| Limit | Value | Instead |
+|---|---|---|
+| Lines per function | 30, blank lines and comments not counted | Extract a named function, hook or part |
+| Parameters | 3 | One options object with named fields |
+| Cyclomatic complexity | 8 | Return early, name the branches |
+| Cognitive complexity | 15 | The same |
+| Nesting depth | 3 | Extract a function |
+| Lines per file | 300, blank lines and comments not counted | Split at a seam |
+| Nested ternary | none | A named variable or function |
+| Boolean flag parameter | none | Two named functions, or an options object |
+| Body of `if`, `else` and loops | always in braces | A line added later stays inside the condition |
+
+A test reads as a specification, so a long `describe` is fine: the two length
+limits are off in `*.test.*`. Every other limit holds there too.
+
+## A type is earned, never asserted
+
+The compiler is told nothing it did not check:
+
+- **No `as`, no `!`, no `any`, no `@ts-ignore`.** Parse outside data once with zod
+  where it enters, and narrow with a guard inside. `as const` is not an assertion.
+  `@ts-expect-error` is allowed with the reason written after it.
+- **A promise is awaited, handled, or dropped on purpose.** A call whose rejection
+  nothing catches is a bug the user sees as nothing happening. A fire-and-forget
+  call that handles its own failure is written `void call()`.
+- **A `switch` over a union names every member**, so a new member is a compile
+  error at each place that has to decide about it.
+- **A non-empty zod string is `.nonempty()`**, and `.min(n)` is kept for a real
+  length rule.
+
+Lint runs with type information (`oxlint --type-aware`), so these are checked on
+every file, tests included.
+
+## Legacy debt only shrinks
+
+The two sections above were switched on over code that predates them. What that
+code still owes is written down in
+[`packages/lint-rules/debt/counts.json`](packages/lint-rules/debt/counts.json),
+one count per rule and file, and `bun run lint:debt` (part of `bun run check`)
+holds the line:
+
+- A file with no entry owes nothing, so **new code meets every rule**.
+- A file may not exceed its recorded count: legacy code does not get worse.
+- A fix lowers the count. Run `bun run lint:debt --update` and commit what it
+  rewrites; the check fails while the list is behind the code.
+
+`--update` never raises a count. `--baseline` rewrites the list from the code as
+it stands and exists for one case, switching a new rule on. See
+[`packages/lint-rules/README.md`](packages/lint-rules/README.md#the-debt-list)
+for how the list is read and what to do when the check fails.
+
 ## A file name says what it exports, and a suffix says how it resolves
 
 Kebab-case, named after its export: `focusable.tsx` exports `Focusable`,

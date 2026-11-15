@@ -35,8 +35,12 @@ const CATEGORIES: Record<
 };
 
 function transportFor(type: string): 'apns' | 'fcm' | null {
-  if (type === 'ios') return 'apns';
-  if (type === 'android') return 'fcm';
+  if (type === 'ios') {
+    return 'apns';
+  }
+  if (type === 'android') {
+    return 'fcm';
+  }
   return null;
 }
 
@@ -44,7 +48,9 @@ function transportFor(type: string): 'apns' | 'fcm' | null {
  * language supplied by its owning app. */
 export async function registerCategories(translate: Translate = DEFAULT_TRANSLATE): Promise<void> {
   const Notifications = loadPush();
-  if (!Notifications) return;
+  if (!Notifications) {
+    return;
+  }
   await Promise.all(
     Object.entries(CATEGORIES).map(([name, actions]) =>
       Notifications.setNotificationCategoryAsync(
@@ -65,9 +71,13 @@ export async function registerCategories(translate: Translate = DEFAULT_TRANSLAT
 export async function registerAndroidChannels(
   translate: Translate = DEFAULT_TRANSLATE,
 ): Promise<void> {
-  if (Platform.OS !== 'android') return;
+  if (Platform.OS !== 'android') {
+    return;
+  }
   const Notifications = loadPush();
-  if (!Notifications) return;
+  if (!Notifications) {
+    return;
+  }
   // Translated: the name shows in Android's own settings. `default` keeps the
   // brand untranslated.
   const channels: [string, string, ExpoNotifications.AndroidImportance][] = [
@@ -100,23 +110,31 @@ export function createNativePush(translate: Translate): PushCapability {
     // often register for real; only minting a token may fail, which `subscribe`
     // reports once it actually tries.
     async blocker(): Promise<PushBlocker | null> {
-      if (Platform.OS !== 'ios' && Platform.OS !== 'android') return 'unsupported';
+      if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+        return 'unsupported';
+      }
       const Notifications = loadPush();
       // Native module missing: this build predates the dependency, needs `expo prebuild`.
-      if (!Notifications) return 'needs-rebuild';
+      if (!Notifications) {
+        return 'needs-rebuild';
+      }
       const { status } = await Notifications.getPermissionsAsync();
       // iOS only prompts once; `denied` can only be undone in Settings.
-      return status === 'denied' ? 'denied' : null;
+      return String(status) === 'denied' ? 'denied' : null;
     },
 
     async subscribe(): Promise<SubscribeBody> {
       const Notifications = loadPush();
-      if (!Notifications) throw new Error('needs-rebuild');
+      if (!Notifications) {
+        throw new Error('needs-rebuild');
+      }
 
       const { status } = await Notifications.requestPermissionsAsync({
         ios: { allowAlert: true, allowBadge: true, allowSound: true },
       });
-      if (status !== 'granted') throw new Error('denied');
+      if (String(status) !== 'granted') {
+        throw new Error('denied');
+      }
 
       await registerCategories(translate);
       await registerAndroidChannels(translate);
@@ -130,7 +148,9 @@ export function createNativePush(translate: Translate): PushCapability {
         throw new Error(Device.isDevice ? 'unsupported' : 'simulator', { cause: e });
       }
       const transport = transportFor(token.type);
-      if (!transport) throw new Error('unsupported');
+      if (!transport) {
+        throw new Error('unsupported');
+      }
 
       // The raw token stops here; the server gets a grant instead (see ./relay):
       // a self-hosted server holds no Apple/Google credential to spend it.

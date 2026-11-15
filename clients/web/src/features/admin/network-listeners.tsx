@@ -49,8 +49,12 @@ export function NetworkListeners() {
     LISTENERS_POLL_MS,
   );
 
-  if (failed && data === null) return <NetworkLoadFailed error={error} />;
-  if (data === null) return <TableSkeleton rows={4} />;
+  if (failed && data === null) {
+    return <NetworkLoadFailed error={error} />;
+  }
+  if (data === null) {
+    return <TableSkeleton rows={4} />;
+  }
   if (data.listeners.length === 0) {
     return (
       <EmptyState.Root icon="plug">

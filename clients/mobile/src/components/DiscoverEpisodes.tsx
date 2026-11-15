@@ -59,7 +59,9 @@ export function DiscoverEpisodes({
     enabled: season != null,
   });
 
-  if (seasons.length === 0) return null;
+  if (seasons.length === 0) {
+    return null;
+  }
 
   return (
     <Box>

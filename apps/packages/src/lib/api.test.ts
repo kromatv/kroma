@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type ExecCtx, machineResponse } from './api';
 import type { Env } from './catalog';
+import { requestUrl } from './request-url.fixture';
 
 const ICON_SRC =
   'https://raw.githubusercontent.com/kromatv/kroma/main/clients/synology/spk/PACKAGE_ICON_256.PNG';
@@ -27,7 +28,9 @@ async function machine(
   context: ExecCtx = ctx(),
 ): Promise<Response> {
   const res = await machineResponse(req(path, init), env, context);
-  if (!res) throw new Error(`expected a machine response for ${path}`);
+  if (!res) {
+    throw new Error(`expected a machine response for ${path}`);
+  }
   return res;
 }
 
@@ -65,7 +68,7 @@ function ghServing(releases: unknown[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = requestUrl(input);
       calls.push(url);
       if (new URL(url).hostname === 'api.github.com') {
         return new Response(JSON.stringify(releases), { status: 200 });
@@ -81,7 +84,7 @@ function fetchServing(body: string, status = 200) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+      calls.push(requestUrl(input));
       return new Response(body, { status });
     }),
   );

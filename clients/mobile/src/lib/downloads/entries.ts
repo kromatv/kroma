@@ -49,7 +49,9 @@ export function useEntries(): EntryIndex {
     async (itemId: string) => {
       const entry = entriesRef.current.find((e) => e.itemId === itemId);
       commitEntries(entriesRef.current.filter((e) => e.itemId !== itemId));
-      if (entry) await deleteEntryFiles(entry);
+      if (entry) {
+        await deleteEntryFiles(entry);
+      }
     },
     [commitEntries],
   );

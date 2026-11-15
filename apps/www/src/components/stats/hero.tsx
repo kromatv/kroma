@@ -14,7 +14,9 @@ import { m } from '#site/paraglide/messages';
 function toPins(countries: Stats['countries'], name: (code: string) => string): GlobePin[] {
   return countries.flatMap(({ key, n }) => {
     const centroid = centroidOf(key);
-    if (!centroid) return [];
+    if (!centroid) {
+      return [];
+    }
     return [
       { code: key, label: name(key), flag: flagUrl(key), n, lat: centroid[0], lng: centroid[1] },
     ];

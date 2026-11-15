@@ -98,7 +98,7 @@ describe('picking a group of files', () => {
   it('adds a whole group without disturbing what was already picked', () => {
     const next = withFilesSelected(new Set([9]), [file(0, 'a'), file(1, 'b')], { include: true });
 
-    expect([...next].sort()).toEqual([0, 1, 9]);
+    expect([...next].sort((a, b) => a - b)).toEqual([0, 1, 9]);
   });
 
   it('clears only the files it was handed', () => {

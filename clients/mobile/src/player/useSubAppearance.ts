@@ -19,7 +19,9 @@ export function useSubAppearance(): [
     let cancelled = false;
     loadPref(KEY)
       .then((raw) => {
-        if (cancelled || !raw) return;
+        if (cancelled || !raw) {
+          return;
+        }
         try {
           // Migrated, not spread: a pref written before the renderer took on
           // CEA-708 still names `box` or `outline`, and those reach

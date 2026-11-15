@@ -12,6 +12,8 @@ export function PointerFace({
   render: (pressed: boolean) => ReactNode;
   renderTouch: (unfocusable: boolean) => ReactNode;
 }>): ReactNode {
-  if (POINTERLESS) return <Animated.View style={style}>{render(false)}</Animated.View>;
+  if (POINTERLESS) {
+    return <Animated.View style={style}>{render(false)}</Animated.View>;
+  }
   return renderTouch(NAVIGATED);
 }

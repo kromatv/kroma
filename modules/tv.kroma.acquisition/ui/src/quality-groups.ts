@@ -12,8 +12,11 @@ export function qualityGroups(qualities: readonly QualityId[]): QualityGroup[] {
   for (const quality of qualities) {
     const label = qualityResolution(quality);
     const group = groups.find((one) => one.label === label);
-    if (group) group.qualities.push(quality);
-    else groups.push({ label, qualities: [quality] });
+    if (group) {
+      group.qualities.push(quality);
+    } else {
+      groups.push({ label, qualities: [quality] });
+    }
   }
   return groups;
 }

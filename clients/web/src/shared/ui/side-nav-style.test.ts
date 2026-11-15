@@ -66,7 +66,9 @@ describe('a navigation row', () => {
     for (const face of [REST, HOVERED, CURRENT, CURRENT_HOVERED, UNREACHABLE]) {
       for (const slot of Object.values(face)) {
         for (const value of Object.values(slot)) {
-          if (typeof value !== 'string') continue;
+          if (typeof value !== 'string') {
+            continue;
+          }
           expect(value).toMatch(/^var\(--(kroma|radius)-|^[a-z]+$/);
         }
       }

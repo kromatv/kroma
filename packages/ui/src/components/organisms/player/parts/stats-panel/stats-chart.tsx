@@ -208,7 +208,9 @@ function draw(series: readonly Resolved[], box: ChartBox, reference?: number) {
 // area: cheaper, and exactly aligned with the line it sits under.
 function closeToBaseline(d: string, box: ChartBox): string {
   const first = /^M([\d.]+) /.exec(d);
-  if (!first) return '';
+  if (!first) {
+    return '';
+  }
   return `${d}L${box.width} ${box.height}L${first[1]} ${box.height}Z`;
 }
 

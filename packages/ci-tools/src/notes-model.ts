@@ -61,7 +61,9 @@ function subject(c: Commit): string {
 }
 
 function brief(c: Commit): PullRequestBrief {
-  if (!c.pr) return { subject: subject(c), pr: null };
+  if (!c.pr) {
+    return { subject: subject(c), pr: null };
+  }
   try {
     const raw = run('gh', ['pr', 'view', String(c.pr), '--json', 'title,body,files']);
     const pr = PullRequest.parse(JSON.parse(raw));
@@ -88,28 +90,36 @@ function catalogs(lang: string) {
 
 function previousNotes() {
   const written = newestWritten();
-  if (!written) return [];
+  if (!written) {
+    return [];
+  }
   return ['en', 'fr'].map((lang) => ({ lang, text: read(`releases/${written}/${lang}.md`) }));
 }
 
 const API = 'https://api.anthropic.com';
-const GithubToken = z.object({ value: z.string().min(1) });
+const GithubToken = z.object({ value: z.string().nonempty() });
 
 async function githubIdentityToken(): Promise<string> {
   const env = process.env;
   const res = await fetch(`${env.ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${API}`, {
     headers: { authorization: `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}` },
   });
-  if (!res.ok) throw new Error(`GitHub refused an identity token: ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`GitHub refused an identity token: ${res.status}`);
+  }
   return GithubToken.parse(await res.json()).value;
 }
 
 function client(): Anthropic | null {
   const env = process.env;
-  if (env.ANTHROPIC_API_KEY) return new Anthropic({ maxRetries: 1 });
+  if (env.ANTHROPIC_API_KEY) {
+    return new Anthropic({ maxRetries: 1 });
+  }
   const rule = env.ANTHROPIC_FEDERATION_RULE_ID;
   const organization = env.ANTHROPIC_ORGANIZATION_ID;
-  if (!rule || !organization || !env.ACTIONS_ID_TOKEN_REQUEST_URL) return null;
+  if (!rule || !organization || !env.ACTIONS_ID_TOKEN_REQUEST_URL) {
+    return null;
+  }
   return new Anthropic({
     maxRetries: 1,
     credentials: oidcFederationProvider({
@@ -158,7 +168,9 @@ async function ask<T extends z.ZodType>(
     }
     return response.parsed_output ?? null;
   } catch (error) {
-    if (!(error instanceof Anthropic.AnthropicError)) throw error;
+    if (!(error instanceof Anthropic.AnthropicError)) {
+      throw error;
+    }
     console.warn(`::warning::the model did not answer (${error.message}); using the plain list`);
     return null;
   }
@@ -167,7 +179,9 @@ async function ask<T extends z.ZodType>(
 /** The English and French notes for `version`, or null when no model answered. */
 export function draftRelease(version: string, commits: readonly Commit[]) {
   const anthropic = client();
-  if (!anthropic) return Promise.resolve(null);
+  if (!anthropic) {
+    return Promise.resolve(null);
+  }
   const system = releaseSystem({
     skill: read('.claude/skills/release-notes/SKILL.md'),
     guide: read('docs/release-notes.md'),
@@ -185,7 +199,9 @@ export function draftRelease(version: string, commits: readonly Commit[]) {
  */
 export async function draftCanary(commits: readonly Commit[]): Promise<string | null> {
   const anthropic = client();
-  if (!anthropic) return null;
+  if (!anthropic) {
+    return null;
+  }
   const answer = await ask(
     anthropic,
     CANARY,

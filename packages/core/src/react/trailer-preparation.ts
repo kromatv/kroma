@@ -24,12 +24,18 @@ export function useTrailerPreparation(
     const ask = () => {
       prepareRef.current().then(
         ({ status }) => {
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
           setAnswer({ key, state: status });
-          if (status === 'preparing') timer = setTimeout(ask, POLL_MS);
+          if (status === 'preparing') {
+            timer = setTimeout(ask, POLL_MS);
+          }
         },
         () => {
-          if (!cancelled) setAnswer({ key, state: 'failed' });
+          if (!cancelled) {
+            setAnswer({ key, state: 'failed' });
+          }
         },
       );
     };

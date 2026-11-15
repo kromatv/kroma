@@ -25,7 +25,9 @@ export function useChromeReveal(): ChromeReveal {
   }, []);
 
   const arm = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = holds.current > 0 ? null : setTimeout(() => show(false), HIDE_AFTER_MS);
   }, [show]);
 
@@ -39,7 +41,9 @@ export function useChromeReveal(): ChromeReveal {
       poke();
       return;
     }
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     show(false);
   }, [show, poke]);
 
@@ -48,7 +52,9 @@ export function useChromeReveal(): ChromeReveal {
     poke();
     let held = true;
     return () => {
-      if (!held) return;
+      if (!held) {
+        return;
+      }
       held = false;
       holds.current -= 1;
       arm();
@@ -58,7 +64,9 @@ export function useChromeReveal(): ChromeReveal {
   useEffect(() => {
     arm();
     return () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
     };
   }, [arm]);
 

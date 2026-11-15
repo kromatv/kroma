@@ -26,21 +26,31 @@ export async function runTui(options: TuiOptions): Promise<number> {
 
   const given = options.artifact !== undefined || options.source !== undefined;
   const source = given ? options.source : await chooseVersion();
-  if (source === null) return cancelled();
+  if (source === null) {
+    return cancelled();
+  }
 
   const platforms = options.hosts?.length ? undefined : await chooseKinds(source);
-  if (platforms === null) return cancelled();
-  if (platforms) showSetup(platforms);
+  if (platforms === null) {
+    return cancelled();
+  }
+  if (platforms) {
+    showSetup(platforms);
+  }
 
   const chosen = await discover(options.hosts, platforms);
-  if (chosen === null) return cancelled();
+  if (chosen === null) {
+    return cancelled();
+  }
   if (chosen.length === 0) {
     p.outro('nothing to install onto');
     return 1;
   }
 
   const answers = await askPlatforms(chosen);
-  if (answers === null) return cancelled();
+  if (answers === null) {
+    return cancelled();
+  }
 
   const failed = await installSets(chosen, {
     artifact: options.artifact,
@@ -59,6 +69,8 @@ function cancelled(): number {
 
 function summary(total: number, failed: number): string {
   const sets = `${total} TV${total === 1 ? '' : 's'}`;
-  if (failed === 0) return `KROMA is on ${sets}`;
+  if (failed === 0) {
+    return `KROMA is on ${sets}`;
+  }
   return `${total - failed} of ${sets} took KROMA, ${failed} failed`;
 }

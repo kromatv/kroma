@@ -37,7 +37,9 @@ function run(over: Partial<Run> = {}): Check[] {
 
 function verdict(rows: Check[], name: string): Check {
   const row = rows.find((each) => each.name === name);
-  if (!row) throw new Error(`no check named "${name}"; the run reads ${rows.length} rows`);
+  if (!row) {
+    throw new Error(`no check named "${name}"; the run reads ${rows.length} rows`);
+  }
   return row;
 }
 

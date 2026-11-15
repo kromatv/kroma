@@ -32,7 +32,9 @@ export function UpcomingList() {
 
   const groups: Array<{ key: string; label: string; items: CalendarEntry[] }> = [];
   for (const e of entries ?? []) {
-    if (!e.airDate) continue;
+    if (!e.airDate) {
+      continue;
+    }
     const key = monthKey(e.airDate);
     let g = groups.at(-1);
     if (g?.key !== key) {

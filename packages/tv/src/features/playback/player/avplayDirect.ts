@@ -20,7 +20,9 @@ export class AvplayDirectSource {
   land(): number | null {
     const target = this.pendingSeek;
     this.pendingSeek = null;
-    if (target === null) return null;
+    if (target === null) {
+      return null;
+    }
     bestEffort(() => this.api.seekTo(Math.max(0, Math.round(target * 1000))));
     return target;
   }
@@ -34,7 +36,9 @@ export class AvplayDirectSource {
     let seconds = 0;
     bestEffort(() => {
       const ms = this.api.getDuration();
-      if (ms > 0) seconds = ms / 1000;
+      if (ms > 0) {
+        seconds = ms / 1000;
+      }
     });
     return seconds;
   }
@@ -53,9 +57,13 @@ export class AvplayDirectSource {
    * lands or the budget runs out. */
   applyPendingAudio(): void {
     const rendition = this.pendingAudio;
-    if (rendition === null) return;
+    if (rendition === null) {
+      return;
+    }
     this.audioRetriesLeft -= 1;
-    if (this.selectAudio(rendition) || this.audioRetriesLeft <= 0) this.pendingAudio = null;
+    if (this.selectAudio(rendition) || this.audioRetriesLeft <= 0) {
+      this.pendingAudio = null;
+    }
   }
 
   /** The viewer's own pick, which replaces whatever was held. Answers whether
@@ -73,7 +81,9 @@ export class AvplayDirectSource {
     try {
       const audios = this.api.getTotalTrackInfo().filter((t) => t.type === 'AUDIO');
       const track = audios[rendition];
-      if (!track) return false;
+      if (!track) {
+        return false;
+      }
       this.api.setSelectTrack('AUDIO', track.index);
       return true;
     } catch {

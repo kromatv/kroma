@@ -10,7 +10,7 @@ const names = (plugins: unknown[]): string[] => flat(plugins).map((plugin) => pl
 function shellConfig(plugins: unknown[], user: UserConfig = {}): UserConfig {
   const shell = flat(plugins).find((plugin) => plugin.name === 'kroma:shell');
   const config = shell?.config as (this: unknown, user: UserConfig, env: unknown) => UserConfig;
-  return config.call(null, user, { command: 'serve', mode: 'development' });
+  return config(user, { command: 'serve', mode: 'development' });
 }
 
 describe('kroma', () => {

@@ -10,7 +10,7 @@ import { type SurfacePresentation, useSurfacePresentation } from './surface-pres
 function unscoped(presentation?: SurfacePresentation, surfaces: SurfacePresentation = 'auto') {
   return renderHook(() => useSurfacePresentation(presentation), {
     wrapper: ({ children }: { children: ReactNode }) =>
-      createElement(KitProvider, { config: { surfaces }, children }),
+      createElement(KitProvider, { config: { surfaces } }, children),
   }).result.current;
 }
 

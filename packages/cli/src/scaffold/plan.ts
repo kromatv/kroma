@@ -39,7 +39,9 @@ function packageRoot(from: string): string {
       return dir;
     }
     const parent = dirname(dir);
-    if (parent === dir) throw new Error('kroma: cannot find my own package.json');
+    if (parent === dir) {
+      throw new Error('kroma: cannot find my own package.json');
+    }
     dir = parent;
   }
 }
@@ -85,10 +87,13 @@ export function versions(cwd: string): Versions {
 export function repoRoot(cwd: string): string | null {
   let dir = cwd;
   for (;;) {
-    if (existsSync(join(dir, 'server', 'Cargo.toml')) && existsSync(join(dir, 'modules')))
+    if (existsSync(join(dir, 'server', 'Cargo.toml')) && existsSync(join(dir, 'modules'))) {
       return dir;
+    }
     const parent = dirname(dir);
-    if (parent === dir) return null;
+    if (parent === dir) {
+      return null;
+    }
     dir = parent;
   }
 }
@@ -100,7 +105,9 @@ function serverVersion(repo: string): string | null {
 
 function rustChannel(repo: string): string | null {
   const path = join(repo, 'rust-toolchain.toml');
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) {
+    return null;
+  }
   return /^channel\s*=\s*"([^"]+)"/m.exec(readFileSync(path, 'utf8'))?.[1] ?? null;
 }
 
@@ -111,15 +118,21 @@ function serverRange(version: string): string {
 /** The dependency spec for the SDK: a `workspace:*` link in this repository,
  *  else the published package at this CLI's own version. */
 export function sdkSpec(v: Versions, inRepo: boolean): string {
-  if (inRepo) return 'workspace:*';
+  if (inRepo) {
+    return 'workspace:*';
+  }
   return v.sdk === '0.0.0' ? '*' : `^${v.sdk}`;
 }
 
 /** The template trees a kind is rendered from. */
 export function treesFor(kind: Kind): string[] {
   const trees = ['base'];
-  if (kind !== 'server') trees.push('ui');
-  if (kind !== 'ui') trees.push('server');
+  if (kind !== 'server') {
+    trees.push('ui');
+  }
+  if (kind !== 'ui') {
+    trees.push('server');
+  }
   return trees.map((t) => join(CLI_ROOT, 'templates', t));
 }
 
@@ -170,15 +183,21 @@ export function manifestFor(a: Answers, v: Versions): Record<string, unknown> {
     description: a.description,
     engines: { server: serverRange(v.server) },
   };
-  if (a.kind !== 'server') manifest.feRemote = { module: './remoteEntry.js' };
-  if (a.storage) manifest.storage = { core: {} };
+  if (a.kind !== 'server') {
+    manifest.feRemote = { module: './remoteEntry.js' };
+  }
+  if (a.storage) {
+    manifest.storage = { core: {} };
+  }
   return manifest;
 }
 
 /** The module's `package.json`: the SDK and the design system for the page, the
  *  CLI to build it with. `workspace:*` inside this repository. */
 export function packageJsonFor(a: Answers, v: Versions): Record<string, unknown> | null {
-  if (a.kind === 'server') return null;
+  if (a.kind === 'server') {
+    return null;
+  }
   const dep = sdkSpec(v, a.inRepo);
   const slug = slugOf(a.id);
   return {
@@ -209,7 +228,9 @@ export function packageJsonFor(a: Answers, v: Versions): Record<string, unknown>
 }
 
 export function tsconfigFor(a: Answers, depth: number): Record<string, unknown> | null {
-  if (a.kind === 'server') return null;
+  if (a.kind === 'server') {
+    return null;
+  }
   const base = a.inRepo ? `${'../'.repeat(depth)}tsconfig.base.json` : `${PUBLIC_NAME}/tsconfig`;
   return {
     extends: base,

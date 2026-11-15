@@ -85,7 +85,9 @@ interface StoredRow {
 }
 
 function parseList(raw: string | null): string[] | undefined {
-  if (raw === null) return undefined;
+  if (raw === null) {
+    return undefined;
+  }
   try {
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
@@ -192,7 +194,9 @@ export function d1Store(db: D1Database): Store {
       return results;
     },
     async flag(ids) {
-      if (ids.length === 0) return;
+      if (ids.length === 0) {
+        return;
+      }
       await db.batch(
         ids.map((id) => db.prepare('UPDATE instances SET flagged = 1 WHERE id = ?1').bind(id)),
       );

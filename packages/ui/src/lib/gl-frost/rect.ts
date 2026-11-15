@@ -36,7 +36,9 @@ export function glRect(
   const top = (surface.top - frame.top) * ky;
   const w = surface.width * kx;
   const h = surface.height * ky;
-  if (x >= pixels.width || top >= pixels.height || x + w <= 0 || top + h <= 0) return null;
+  if (x >= pixels.width || top >= pixels.height || x + w <= 0 || top + h <= 0) {
+    return null;
+  }
   const scale = layoutWidth > 0 ? surface.width / layoutWidth : 1;
   return {
     x,

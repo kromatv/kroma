@@ -13,7 +13,9 @@ export function WhatsNewLink() {
     ...webRuntime.queries.userQueries.releases(),
     refetchOnWindowFocus: true,
   });
-  if (!data?.unseen) return null;
+  if (!data?.unseen) {
+    return null;
+  }
   return (
     <SideNav.Item to="/whats-new" icon="sparkles">
       <SideNav.Label>{t('releases.title')}</SideNav.Label>

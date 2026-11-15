@@ -17,7 +17,9 @@ export function setupText(
 ): { title: string; body: string } | null {
   const shown = kinds.filter((module) => module.setup);
   const [only] = shown;
-  if (!only) return null;
+  if (!only) {
+    return null;
+  }
   if (shown.length === 1) {
     return { title: `Once, on the ${only.label} TV`, body: steps(only, computer).join('\n') };
   }
@@ -28,5 +30,7 @@ export function setupText(
 /** Shows what the chosen kinds of TV need once before they answer a scan. */
 export function showSetup(platforms: readonly string[]): void {
   const text = setupText(platforms.map(platformFor), localSubnets()[0]?.address ?? null);
-  if (text) p.note(text.body, text.title);
+  if (text) {
+    p.note(text.body, text.title);
+  }
 }

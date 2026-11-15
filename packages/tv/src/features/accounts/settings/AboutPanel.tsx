@@ -76,9 +76,13 @@ function platformLabel(platform: string): string {
 // back to the total alone.
 function memoryLabel(hardware: ClientHardware, t: Translate, locale: string): string | null {
   const { memoryGb, memoryFreeGb } = hardware;
-  if (memoryGb === null) return null;
+  if (memoryGb === null) {
+    return null;
+  }
   const total = gb(memoryGb, locale);
-  if (memoryFreeGb === null) return t('about.memorySize', { gb: total });
+  if (memoryFreeGb === null) {
+    return t('about.memorySize', { gb: total });
+  }
   return t('about.memoryFree', { free: gb(memoryFreeGb, locale), total });
 }
 
@@ -93,7 +97,9 @@ function Fact({
 }: Readonly<{ label: string; value: string | null; mono?: boolean }>) {
   const s = useStyles(sDefinition);
 
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   return (
     <ListRow.Root ground="surface" disabled>
       <ListRow.Label>{label}</ListRow.Label>

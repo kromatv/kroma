@@ -2,7 +2,9 @@ import type { Move } from './directions';
 import type { FocusTree, Rect, TreeNode } from './focus-tree';
 
 function focusablesIn(tree: FocusTree, node: TreeNode): TreeNode[] {
-  if (node.focusable) return [node];
+  if (node.focusable) {
+    return [node];
+  }
   return tree.childrenOf(node.id).flatMap((child) => focusablesIn(tree, child));
 }
 
@@ -29,15 +31,21 @@ export function nearestAmong(
   move: Move,
 ): TreeNode | null {
   const origin = from.config.rect?.() ?? null;
-  if (origin === null) return null;
+  if (origin === null) {
+    return null;
+  }
   for (const sibling of ahead) {
     const candidates = focusablesIn(tree, sibling);
-    if (candidates.length === 0) continue;
+    if (candidates.length === 0) {
+      continue;
+    }
     let nearest: TreeNode | null = null;
     let best: readonly [number, number] = [Infinity, Infinity];
     for (const candidate of candidates) {
       const rect = candidate.config.rect?.() ?? null;
-      if (rect === null) continue;
+      if (rect === null) {
+        continue;
+      }
       const score = [
         gapAcross(origin, rect, move),
         Math.abs(centreAcross(origin, move) - centreAcross(rect, move)),

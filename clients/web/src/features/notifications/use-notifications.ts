@@ -22,7 +22,9 @@ export function useNotificationStream(): void {
       refresh: () => eventClient.refreshSession(),
 
       onEvent: (e) => {
-        if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
+        if (e.type !== 'notification.created' && e.type !== 'notification.read') {
+          return;
+        }
         // Patch the badge from the event's own count, so it is right even when
         // the panel is closed and the list is never refetched.
         const counts = { unread: e.unread, unseen: e.unseen ?? e.unread };
@@ -80,7 +82,9 @@ export function useMarkSeen(): () => void {
     const key = webRuntime.queries.userQueries.notifications().queryKey;
     return () => {
       const current = queryClient.getQueryData<NotificationsView>(key);
-      if (!current || current.unseen === 0) return;
+      if (!current || current.unseen === 0) {
+        return;
+      }
       queryClient.setQueryData(key, { ...current, unseen: 0 });
       const settle = () => void queryClient.invalidateQueries({ queryKey: key });
       webRuntime.client.notifications.markSeen().then(settle, settle);
@@ -102,7 +106,9 @@ export function applyRead(
   const wanted = new Set(ids);
   let delta = 0;
   const notifications = view.notifications.map((n) => {
-    if (!wanted.has(n.id) || n.read === read) return n;
+    if (!wanted.has(n.id) || n.read === read) {
+      return n;
+    }
     delta += read ? -1 : 1;
     return { ...n, read };
   });
@@ -125,7 +131,9 @@ export function unreadView(
 ): { items: NotificationsView['notifications']; sticky: ReadonlySet<string> } {
   const next = new Set<string>();
   for (const item of items) {
-    if (!item.read || sticky.has(item.id)) next.add(item.id);
+    if (!item.read || sticky.has(item.id)) {
+      next.add(item.id);
+    }
   }
   return { items: items.filter((item) => next.has(item.id)), sticky: next };
 }
@@ -160,7 +168,9 @@ export function useReadState(): {
       void queryClient.invalidateQueries({ queryKey: key });
     };
     const write = (ids: NotificationId[], read: boolean) => {
-      if (ids.length === 0) return;
+      if (ids.length === 0) {
+        return;
+      }
       patch(ids, read);
       const client = webRuntime.client;
       const sent = read ? client.notifications.markRead(ids) : client.notifications.markUnread(ids);
@@ -191,7 +201,9 @@ export function usePanelState(): {
     // The latch only ever goes true: closing must not unmount the inbox query,
     // or every reopen would refetch from scratch.
     setOpen: (next: boolean) => {
-      if (next) setEverOpened(true);
+      if (next) {
+        setEverOpened(true);
+      }
       setOpen(next);
     },
   };

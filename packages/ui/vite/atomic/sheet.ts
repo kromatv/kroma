@@ -3,7 +3,9 @@ import type { CompiledRule } from './compile.ts';
 // Not `localeCompare`: this order ends up in a shipped stylesheet, so it must
 // be the same on every machine rather than follow the build's locale.
 function byCodeUnit(a: string, b: string): number {
-  if (a === b) return 0;
+  if (a === b) {
+    return 0;
+  }
   return a < b ? -1 : 1;
 }
 
@@ -20,7 +22,9 @@ export class RuleSheet {
 
   add(rules: readonly CompiledRule[]): void {
     for (const rule of rules) {
-      if (!this.groups.has(rule.css)) this.groups.set(rule.css, rule.group);
+      if (!this.groups.has(rule.css)) {
+        this.groups.set(rule.css, rule.group);
+      }
     }
   }
 

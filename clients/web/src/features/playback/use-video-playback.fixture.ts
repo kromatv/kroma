@@ -49,7 +49,9 @@ export const movie = (over: Partial<MovieView> = {}): MovieView =>
   ({ id: 'm1', durationMs: 100_000, subs: [], ...over }) as MovieView;
 
 const ticks = async (left: number): Promise<void> => {
-  if (left === 0) return;
+  if (left === 0) {
+    return;
+  }
   await new Promise<void>((r) => setTimeout(r, 0));
   return ticks(left - 1);
 };

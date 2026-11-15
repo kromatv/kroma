@@ -63,7 +63,9 @@ function glyphs(count: number): Check {
 }
 
 function catalogue(count: number, ready: boolean): Check {
-  if (count > 0) return { label: 'Icon catalogue', found: true, evidence: `${count} categories` };
+  if (count > 0) {
+    return { label: 'Icon catalogue', found: true, evidence: `${count} categories` };
+  }
   const deferred = !ready;
   return {
     label: 'Icon catalogue',

@@ -59,34 +59,48 @@ function TooltipBubble({ label, children }: Readonly<TooltipProps>) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const show = () => {
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = setTimeout(() => {
       const rect = box.current?.getBoundingClientRect();
-      if (rect) setSpot(spotBeside(rect));
+      if (rect) {
+        setSpot(spotBeside(rect));
+      }
     }, SHOW_DELAY_MS);
   };
   const hide = () => {
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = null;
     setSpot(null);
   };
 
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
     },
     [],
   );
 
   const shown = spot !== null;
   useEffect(() => {
-    if (!shown) return;
+    if (!shown) {
+      return;
+    }
     const settle = () => {
       const rect = box.current?.getBoundingClientRect();
-      if (rect) setSpot(spotBeside(rect));
+      if (rect) {
+        setSpot(spotBeside(rect));
+      }
     };
     const view = webWindow();
-    if (!view) return;
+    if (!view) {
+      return;
+    }
     view.addEventListener('resize', settle);
     view.addEventListener('scroll', settle, true);
     return () => {

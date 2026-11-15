@@ -29,7 +29,9 @@ function AskButton({ entry }: Readonly<{ entry: DiscoverEntry }>) {
   const { status, asking, failed, ask } = useAskForTitle(client, entry);
 
   useEffect(() => {
-    if (failed) toast({ message: t('discover.requestFailed') });
+    if (failed) {
+      toast({ message: t('discover.requestFailed') });
+    }
   }, [failed, t]);
 
   return (

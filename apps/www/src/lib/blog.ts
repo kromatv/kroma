@@ -56,7 +56,9 @@ function resolve(
   lang: Lang,
 ): Post | undefined {
   const mod = pickLocale(byLang, lang);
-  if (!mod) return undefined;
+  if (!mod) {
+    return undefined;
+  }
   const fm = { ...byLang[CONTENT_FALLBACK_LANG]?.frontmatter, ...mod.frontmatter };
   const date = fm.date ?? '1970-01-01';
   return {
@@ -83,8 +85,12 @@ export function createBlog(modules: Record<string, MdxModule>, isDev = import.me
     const posts: Post[] = [];
     for (const [slug, byLang] of groups) {
       const post = resolve(slug, byLang, lang);
-      if (!post) continue;
-      if (!isDev && pickLocale(byLang, lang)?.frontmatter?.draft) continue;
+      if (!post) {
+        continue;
+      }
+      if (!isDev && pickLocale(byLang, lang)?.frontmatter?.draft) {
+        continue;
+      }
       posts.push(post);
     }
     return posts.sort((a, b) => (a.date < b.date ? 1 : -1));

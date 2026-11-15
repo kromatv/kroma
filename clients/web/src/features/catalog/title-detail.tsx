@@ -57,7 +57,9 @@ function similarLink(target: SimilarTarget): HostElement | undefined {
       />
     );
   }
-  if (target.tmdbId == null) return undefined;
+  if (target.tmdbId == null) {
+    return undefined;
+  }
   return (
     <RouteLink
       to="/discover/$type/$tmdbId"
@@ -189,7 +191,9 @@ export function TitleDetail({
   const owned = view.localId != null && view.playable != null;
   const localId = view.localId;
   let backTo: '/' | '/shows' | '/search' = '/search';
-  if (owned) backTo = view.kind === 'show' ? '/shows' : '/';
+  if (owned) {
+    backTo = view.kind === 'show' ? '/shows' : '/';
+  }
 
   const { data: epProgress = {} } = useQuery({
     ...webRuntime.queries.userQueries.progress(),
@@ -203,7 +207,7 @@ export function TitleDetail({
       void playOn(castDevice.id, id);
       return;
     }
-    navigate({ to: '/watch/$id', params: { id } });
+    void navigate({ to: '/watch/$id', params: { id } });
   };
   useTitleCommands(view, play);
 

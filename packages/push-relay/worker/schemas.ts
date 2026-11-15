@@ -12,17 +12,17 @@ export type Urgency = z.infer<typeof Urgency>;
 /** An actionable button. Only `api` actions reach a native payload; a link is
  * plain navigation the tap handler already covers. */
 export const Action = z.object({
-  id: z.string().min(1),
-  method: z.string().min(1).default('POST'),
-  href: z.string().min(1),
+  id: z.string().nonempty(),
+  method: z.string().nonempty().default('POST'),
+  href: z.string().nonempty(),
 });
 export type Action = z.infer<typeof Action>;
 
 /** What the notification is about. The app routes a tap from it, falling back
  * to `link` for a kind it has no screen for. */
 export const Subject = z.object({
-  kind: z.string().min(1).max(128),
-  id: z.string().min(1).max(128),
+  kind: z.string().nonempty().max(128),
+  id: z.string().nonempty().max(128),
 });
 export type Subject = z.infer<typeof Subject>;
 
@@ -33,8 +33,8 @@ export type Subject = z.infer<typeof Subject>;
  * promote a digest to a radio-waking alert.
  */
 export const Notification = z.object({
-  id: z.string().min(1).max(128),
-  title: z.string().min(1).max(256),
+  id: z.string().nonempty().max(128),
+  title: z.string().nonempty().max(256),
   body: z.string().max(1024).default(''),
   subject: Subject.optional(),
   link: z.string().max(1024).optional(),
@@ -51,13 +51,13 @@ export const GrantRequest = z.object({
   transport: Transport,
   // Bounded: a real token is far shorter, and an unbounded string is a free
   // way to make the relay do work.
-  token: z.string().trim().min(1).max(1024),
+  token: z.string().trim().nonempty().max(1024),
 });
 export type GrantRequest = z.infer<typeof GrantRequest>;
 
 /** `POST /v1/push`: a server spends a grant. */
 export const PushRequest = z.object({
-  grant: z.string().min(1).max(4096),
+  grant: z.string().nonempty().max(4096),
   notification: Notification,
 });
 export type PushRequest = z.infer<typeof PushRequest>;
@@ -81,7 +81,9 @@ export interface Delivery {
  */
 export function firstIssue(error: { issues: readonly z.core.$ZodIssue[] }): string {
   const issue = error.issues[0];
-  if (!issue) return 'invalid request';
+  if (!issue) {
+    return 'invalid request';
+  }
   const path = issue.path.join('.');
   return path ? `${path}: ${issue.message}` : issue.message;
 }

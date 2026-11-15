@@ -5,7 +5,7 @@ import { z } from 'zod';
  * id rather than carrying it into a URL. Each id is declared by the domain that
  * owns it; only the ones no single domain owns live here. */
 export function brandedId<const B extends string>(brand: B) {
-  return z.string().min(1).meta({ id: brand }).brand<B>();
+  return z.string().nonempty().meta({ id: brand }).brand<B>();
 }
 
 /** A television's stable per-install id. The same value names it on the cast

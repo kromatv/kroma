@@ -119,7 +119,9 @@ export function Hero({
 
   const t = useT();
   const { hero, heroId, heroMeta, heroBackdrop, heroBadge } = info;
-  if (!hero || !heroId) return <Box h={HERO_EMPTY_HEIGHT} />;
+  if (!hero || !heroId) {
+    return <Box h={HERO_EMPTY_HEIGHT} />;
+  }
   return (
     <Box h={HERO_HEIGHT}>
       <Img

@@ -35,8 +35,11 @@ const STARTED_MARK_MS = 30_000;
 function withKeys(prev: ReadonlySet<string>, keys: string[], present: boolean): Set<string> {
   const next = new Set(prev);
   for (const key of keys) {
-    if (present) next.add(key);
-    else next.delete(key);
+    if (present) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
   }
   return next;
 }
@@ -54,8 +57,12 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
   const [startedKeys, setStartedKeys] = useState<ReadonlySet<string>>(() => new Set());
 
   const actionOf = (group: MissingGroup): GroupAction => {
-    if (!isFollowed(group)) return canMonitor ? 'follow' : 'request';
-    if (canMonitor) return 'search';
+    if (!isFollowed(group)) {
+      return canMonitor ? 'follow' : 'request';
+    }
+    if (canMonitor) {
+      return 'search';
+    }
     return group.requestId !== null && canManage ? 'search' : 'none';
   };
 
@@ -64,7 +71,9 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
       const answer = await client.monitoring.search(group.kind, group.tmdbId, episodeRefs(items));
       return answer.started;
     }
-    if (group.requestId === null) return false;
+    if (group.requestId === null) {
+      return false;
+    }
     await client.requests.autoSearch(group.requestId);
     return true;
   };
@@ -113,7 +122,9 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
     setBusyKeys((busy) => withKeys(busy, keys, true));
     apply(group, items)
       .then((went) => {
-        if (!went) return;
+        if (!went) {
+          return;
+        }
         setStartedKeys((started) => withKeys(started, keys, true));
         setSelected((picked) => withKeys(picked, keys, false));
         setTimeout(
@@ -147,7 +158,9 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
     runSelected: () => {
       for (const group of groups) {
         const picked = group.items.filter((item) => selected.has(epKey(item)));
-        if (picked.length > 0) run(group, picked);
+        if (picked.length > 0) {
+          run(group, picked);
+        }
       }
     },
   };

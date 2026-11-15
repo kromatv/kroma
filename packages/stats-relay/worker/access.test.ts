@@ -14,7 +14,9 @@ const config: AccessConfig = {
 function b64url(bytes: ArrayBuffer | Uint8Array): string {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let binary = '';
-  for (const byte of view) binary += String.fromCodePoint(byte);
+  for (const byte of view) {
+    binary += String.fromCodePoint(byte);
+  }
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
 }
 

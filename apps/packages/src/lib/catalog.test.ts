@@ -12,6 +12,7 @@ import {
   toDsmPackage,
   versionFromSpkName,
 } from './catalog';
+import { requestUrl } from './request-url.fixture';
 
 function entry(over: Partial<Entry> = {}): Entry {
   return {
@@ -200,14 +201,18 @@ function ghServing(releases: unknown[], sidecars: Record<string, unknown> = {}) 
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
+      const url = requestUrl(input);
       calls.push({ url, init });
       if (new URL(url).hostname === 'api.github.com') {
         return new Response(JSON.stringify(releases), { status: 200 });
       }
       const body = sidecars[url];
-      if (body === undefined) return new Response('', { status: 404 });
-      if (body instanceof Error) throw body;
+      if (body === undefined) {
+        return new Response('', { status: 404 });
+      }
+      if (body instanceof Error) {
+        throw body;
+      }
       return new Response(JSON.stringify(body), { status: 200 });
     }),
   );
@@ -272,8 +277,10 @@ describe('loadCatalog', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
-        const url = new URL(String(input));
-        if (url.hostname !== 'api.github.com') return new Response('', { status: 404 });
+        const url = new URL(requestUrl(input));
+        if (url.hostname !== 'api.github.com') {
+          return new Response('', { status: 404 });
+        }
         return new Response(JSON.stringify(pages[url.searchParams.get('page') ?? '1'] ?? []));
       }),
     );

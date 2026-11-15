@@ -19,7 +19,9 @@ export const edgeCache = (): Cache | undefined =>
 
 export function githubHeaders(env: Env | undefined): Record<string, string> {
   const out: Record<string, string> = { 'user-agent': 'kroma-module-registry' };
-  if (env?.GITHUB_TOKEN) out.authorization = `Bearer ${env.GITHUB_TOKEN}`;
+  if (env?.GITHUB_TOKEN) {
+    out.authorization = `Bearer ${env.GITHUB_TOKEN}`;
+  }
   return out;
 }
 
@@ -48,7 +50,9 @@ async function fetchUpstream(env: Env | undefined): Promise<string> {
     `https://github.com/${repo}/releases/download/${CATALOG_TAG}/modules.json`,
     { headers: githubHeaders(env), redirect: 'follow' },
   );
-  if (!res.ok) throw new Error(`modules.json ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`modules.json ${res.status}`);
+  }
   return res.text();
 }
 
@@ -60,7 +64,9 @@ export async function loadCatalog(
 ): Promise<string | null> {
   const cache = edgeCache();
   const hit = await cache?.match(CACHE_FRESH);
-  if (hit) return hit.text();
+  if (hit) {
+    return hit.text();
+  }
   try {
     const body = await fetchUpstream(env);
     if (cache) {
@@ -70,7 +76,9 @@ export async function loadCatalog(
     return body;
   } catch (err) {
     const stale = await cache?.match(CACHE_STALE);
-    if (stale) return stale.text();
+    if (stale) {
+      return stale.text();
+    }
     console.error('catalog load failed', err);
     return null;
   }

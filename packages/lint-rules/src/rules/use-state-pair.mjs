@@ -1,9 +1,13 @@
 import { defineRule } from '../define-rule.mjs';
 
 function isUseState(call) {
-  if (call?.type !== 'CallExpression') return false;
+  if (call?.type !== 'CallExpression') {
+    return false;
+  }
   const { callee } = call;
-  if (callee.type === 'Identifier') return callee.name === 'useState';
+  if (callee.type === 'Identifier') {
+    return callee.name === 'useState';
+  }
   return (
     callee.type === 'MemberExpression' &&
     !callee.computed &&
@@ -54,13 +58,17 @@ export default defineRule(
     create(context) {
       return {
         VariableDeclarator(node) {
-          if (!isUseState(node.init)) return;
+          if (!isUseState(node.init)) {
+            return;
+          }
           if (node.id.type !== 'ArrayPattern') {
             context.report({ node: node.id, messageId: 'notDestructured' });
             return;
           }
           const [value, setter] = node.id.elements;
-          if (value?.type !== 'Identifier' || setter?.type !== 'Identifier') return;
+          if (value?.type !== 'Identifier' || setter?.type !== 'Identifier') {
+            return;
+          }
           const expected = setterOf(value.name);
           if (setter.name !== expected) {
             context.report({

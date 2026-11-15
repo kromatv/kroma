@@ -31,16 +31,22 @@ async function probe(host: string): Promise<number> {
     console.error(reason(error));
     return null;
   });
-  if (!device) return 1;
+  if (!device) {
+    return 1;
+  }
 
   try {
     console.log(`${label('banner')}${device.banner}`);
     const capability = await device.capability();
     for (const key of INTERESTING) {
-      if (capability[key]) console.log(`${label(key)}${capability[key]}`);
+      if (capability[key]) {
+        console.log(`${label(key)}${capability[key]}`);
+      }
     }
     const rest = Object.keys(capability).filter((key) => !INTERESTING.has(key));
-    if (rest.length > 0) console.log(style.dim(`${label('also')}${rest.join(', ')}`));
+    if (rest.length > 0) {
+      console.log(style.dim(`${label('also')}${rest.join(', ')}`));
+    }
   } finally {
     device.close();
   }

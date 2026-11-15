@@ -37,7 +37,9 @@ const DOT: Record<string, ColorValue> = {
 };
 
 function compare(a: string | number, b: string | number): number {
-  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
   return String(a).localeCompare(String(b));
 }
 
@@ -46,7 +48,9 @@ export function ordered(rows: readonly Download[], sort: readonly SortColumn[]):
     for (const { column, direction } of sort) {
       const read = FIELD[column];
       const side = read ? compare(read(a), read(b)) : 0;
-      if (side !== 0) return direction === 'asc' ? side : -side;
+      if (side !== 0) {
+        return direction === 'asc' ? side : -side;
+      }
     }
     return 0;
   });

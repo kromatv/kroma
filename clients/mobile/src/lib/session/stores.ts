@@ -103,7 +103,9 @@ export function useServerStore(): ServerStore {
       const prev = ref.current;
       // No-op when nothing changes: this runs off a health probe on every
       // server-picker mount, and a pointless write would re-render the tree.
-      if (!prev.some((s) => s.url === url && s.name !== name)) return;
+      if (!prev.some((s) => s.url === url && s.name !== name)) {
+        return;
+      }
       persist(prev.map((s) => (s.url === url ? { ...s, name } : s)));
     },
     [persist],

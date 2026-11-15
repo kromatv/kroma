@@ -14,7 +14,9 @@ const SCOPE = '@kromatv/';
 export function declarations(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((at) => {
     const path = join(dir, at.name);
-    if (at.isDirectory()) return declarations(path);
+    if (at.isDirectory()) {
+      return declarations(path);
+    }
     return at.name.endsWith('.d.ts') ? [path] : [];
   });
 }
@@ -45,10 +47,14 @@ export function workspacePaths(bundled: Bundled[]): Record<string, string[]> {
 function target(pkg: Bundled, subpath: string): string | undefined {
   const key = `.${subpath}`;
   const exact = pkg.exports[key];
-  if (isSource(exact)) return exact;
+  if (isSource(exact)) {
+    return exact;
+  }
   for (const [pattern, to] of Object.entries(pkg.exports)) {
     const star = pattern.indexOf('*');
-    if (star < 0 || !isSource(to)) continue;
+    if (star < 0 || !isSource(to)) {
+      continue;
+    }
     const head = pattern.slice(0, star);
     const tail = pattern.slice(star + 1);
     if (key.startsWith(head) && key.endsWith(tail) && key.length >= pattern.length - 1) {
@@ -67,13 +73,17 @@ export function internalizeWorkspaceSpecifiers(distDir: string, bundled: Bundled
     const after = before.replace(SPECIFIER, (whole, quote, dir, subpath) => {
       const pkg = byDir.get(dir);
       const to = pkg && target(pkg, subpath);
-      if (!pkg || !to) return whole;
+      if (!pkg || !to) {
+        return whole;
+      }
       const inside = join(distDir, pkg.dir, to.replace(/\.tsx?$/, ''));
       const path = relative(dirname(file), inside);
       const specifier = path.startsWith('.') ? path : `./${path}`;
       return `${quote}${specifier}${quote}`;
     });
-    if (after !== before) writeFileSync(file, after);
+    if (after !== before) {
+      writeFileSync(file, after);
+    }
   }
 }
 

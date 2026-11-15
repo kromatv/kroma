@@ -58,13 +58,17 @@ const started = {
 
 function op(ops: Record<string, StoreOp>, id: string): StoreOp {
   const found = ops[id];
-  if (!found) throw new Error(`missing op ${id}`);
+  if (!found) {
+    throw new Error(`missing op ${id}`);
+  }
   return found;
 }
 
 function mod(o: StoreOp, id: string): OpModule {
   const found = o.modules[id];
-  if (!found) throw new Error(`missing module ${id}`);
+  if (!found) {
+    throw new Error(`missing module ${id}`);
+  }
   return found;
 }
 

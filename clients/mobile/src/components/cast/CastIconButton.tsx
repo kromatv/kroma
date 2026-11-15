@@ -38,7 +38,9 @@ export function CastIconButton({
           select(id);
           // Picking a TV means "drive that one", so open the remote; picking
           // this device hands control back and stays where the viewer was.
-          if (id) router.push('/cast' as never);
+          if (id) {
+            router.push('/cast' as never);
+          }
         }}
       />
     </>

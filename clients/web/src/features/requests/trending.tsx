@@ -38,7 +38,9 @@ function TrendRail({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
   return (
     <section>
       <RailHeading

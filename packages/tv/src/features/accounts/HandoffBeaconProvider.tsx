@@ -57,7 +57,9 @@ export function HandoffBeaconProvider({
   const [wasWaiting, setWasWaiting] = useState(waiting);
   if (wasWaiting !== waiting) {
     setWasWaiting(waiting);
-    if (!waiting) setBeacon(null);
+    if (!waiting) {
+      setBeacon(null);
+    }
   }
 
   useEffect(() => {
@@ -65,7 +67,9 @@ export function HandoffBeaconProvider({
     // its job and would only offer a second one. A boot still resuming its
     // session is not signed out either, or the beacon goes up and is retracted
     // a round trip later.
-    if (!ready || !client || !activeServerUrl || signedIn) return;
+    if (!ready || !client || !activeServerUrl || signedIn) {
+      return;
+    }
     const handoff = startHandoff({
       client,
       deviceId: deviceId(),

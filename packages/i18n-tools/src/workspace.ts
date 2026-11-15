@@ -61,7 +61,9 @@ const SiteSettings = z.object({ baseLocale: z.string(), locales: z.array(z.strin
 // whatever the app thinks of that language.
 function siteSet(root: string, app: Project): CatalogSet | null {
   const settings = join(root, SITE, 'project.inlang', 'settings.json');
-  if (!existsSync(settings)) return null;
+  if (!existsSync(settings)) {
+    return null;
+  }
   const { baseLocale, locales } = SiteSettings.parse(JSON.parse(readFileSync(settings, 'utf8')));
   const staged = modulePolicy(app).locales ?? {};
   return {
@@ -85,7 +87,9 @@ export function workspace(root: string = REPO): CatalogSet[] {
   const project = readProject(dir);
   const core: CatalogSet = { name: 'core', dir, layout: 'folder', project };
   const modules = join(root, MODULES);
-  if (!existsSync(modules)) return [core];
+  if (!existsSync(modules)) {
+    return [core];
+  }
   const policy = modulePolicy(project);
   const sets = readdirSync(modules, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && existsSync(join(modules, entry.name, 'locales')))

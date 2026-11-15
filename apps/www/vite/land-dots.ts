@@ -28,7 +28,9 @@ function landmasses(land: Feature<MultiPolygon>): Landmass[] {
 
 // A landmass cut at the antimeridian bounds with west past east.
 function within([[west, south], [east, north]]: Bounds, lng: number, lat: number): boolean {
-  if (lat < south || lat > north) return false;
+  if (lat < south || lat > north) {
+    return false;
+  }
   return west <= east ? lng >= west && lng <= east : lng >= west || lng <= east;
 }
 

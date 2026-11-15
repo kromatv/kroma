@@ -163,7 +163,9 @@ describe('AdbConnection.open', () => {
     const opening = AdbConnection.open('127.0.0.1', port, { keys: [trustedKey], timeoutMs: 1000 });
 
     await expect(opening).rejects.toThrow('not an adb message');
-    for (const socket of sockets) socket.destroy();
+    for (const socket of sockets) {
+      socket.destroy();
+    }
     await new Promise((resolve) => liar.close(resolve));
   });
 });
@@ -193,7 +195,9 @@ describe('AdbConnection.open, a service', () => {
         'exec:cat': (side) => {
           side.onData = (data) => {
             pieces.push(data.length);
-            if (pieces.reduce((a, b) => a + b) === 2500) side.close();
+            if (pieces.reduce((a, b) => a + b) === 2500) {
+              side.close();
+            }
           };
         },
       },

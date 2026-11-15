@@ -33,7 +33,9 @@ export function useGoalHeadline(): (goal: TargetGoal) => string {
     (goal) => {
       const quality = rungLabel(goal.rung);
       const { formats } = goal;
-      if (formats.kind === 'none') return quality;
+      if (formats.kind === 'none') {
+        return quality;
+      }
       if (formats.kind === 'score') {
         return t('acq.goal.withScore', { quality, score: formats.score });
       }
@@ -71,7 +73,9 @@ export function useShortfallText(): (shortfall: Shortfall, goal: TargetGoal) => 
 }
 
 function named(t: Translate, formats: Extract<GoalFormats, { kind: 'one' | 'either' | 'both' }>) {
-  if (formats.kind === 'one') return formats.format.name;
+  if (formats.kind === 'one') {
+    return formats.format.name;
+  }
   const [first, second] = formats.formats;
   const key = formats.kind === 'either' ? 'acq.goal.either' : 'acq.goal.both';
   return t(key, { first: first.name, second: second.name });

@@ -23,7 +23,9 @@ export function read(page: Page): Promise<Reading> {
 export function frames(page: Page): Promise<Frames | null> {
   return page.evaluate(() => {
     const perf = (globalThis as { KROMA_PERF?: { report(): Frames } }).KROMA_PERF;
-    if (!perf) return null;
+    if (!perf) {
+      return null;
+    }
     const { fps, worstFrame, jankyFrames, frameCount, responseP50, responseWorst } = perf.report();
     return { fps, worstFrame, jankyFrames, frameCount, responseP50, responseWorst };
   });

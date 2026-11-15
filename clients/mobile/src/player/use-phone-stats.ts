@@ -9,8 +9,11 @@ export function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStat
   const t = useT();
   const filterLabels = audioFilterLabels(t);
   let sourceMode = 'HLS';
-  if (engine.offline) sourceMode = 'Direct · local';
-  else if (engine.mode === 'direct') sourceMode = 'Direct';
+  if (engine.offline) {
+    sourceMode = 'Direct · local';
+  } else if (engine.mode === 'direct') {
+    sourceMode = 'Direct';
+  }
 
   // AVPlayer exposes no network counters to JS, so download speed is estimated
   // from the buffered edge advancing, smoothed, with a seek's jump clamped.
@@ -19,7 +22,9 @@ export function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStat
   const avgBytesPerSec =
     file?.size && item.durationMs ? file.size / (item.durationMs / 1000) : null;
   const bandwidthMbps = (): number | null => {
-    if (engine.offline || avgBytesPerSec == null) return null;
+    if (engine.offline || avgBytesPerSec == null) {
+      return null;
+    }
     const now = Date.now();
     const prev = net.current;
     if (prev.at === 0) {
@@ -27,7 +32,9 @@ export function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStat
       return 0;
     }
     const dt = (now - prev.at) / 1000;
-    if (dt < 0.2) return prev.ema;
+    if (dt < 0.2) {
+      return prev.ema;
+    }
     const gained = Math.min(Math.max(0, engine.buffered - prev.bufEnd), dt * 50);
     const inst = ((gained / dt) * avgBytesPerSec * 8) / 1e6;
     const ema = prev.ema === 0 ? inst : prev.ema * 0.6 + inst * 0.4;

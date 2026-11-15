@@ -11,7 +11,9 @@ const VAR_TAIL = /^\w+=[^&]*(?:&\w+=[^&]*)*$/;
  *  can carry as its error, for `useForm` to unpack again through `t`. */
 function msg(key: string, vars?: TVars): string {
   const entries = Object.entries(vars ?? {});
-  if (entries.length === 0) return key;
+  if (entries.length === 0) {
+    return key;
+  }
   const tail = entries
     .map(([name, value]) => `${name}=${encodeURIComponent(String(value))}`)
     .join('&');
@@ -20,9 +22,13 @@ function msg(key: string, vars?: TVars): string {
 
 function unpack(message: string): { key: string; vars?: TVars } {
   const cut = message.lastIndexOf('?');
-  if (cut < 0) return { key: message };
+  if (cut < 0) {
+    return { key: message };
+  }
   const tail = message.slice(cut + 1);
-  if (!VAR_TAIL.test(tail)) return { key: message };
+  if (!VAR_TAIL.test(tail)) {
+    return { key: message };
+  }
 
   const vars: TVars = {};
   for (const pair of tail.split('&')) {

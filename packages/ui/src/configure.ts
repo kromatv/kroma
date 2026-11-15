@@ -169,7 +169,9 @@ function KitStyleProvider({
   const parent = useStyleRuntimeParent();
   const ownsTheme = !parent || config.theme !== undefined || config.ground !== undefined;
   const ownsWidth = !parent || config.designWidth !== undefined;
-  if (!ownsTheme && !ownsWidth) return createElement(Fragment, null, children);
+  if (!ownsTheme && !ownsWidth) {
+    return createElement(Fragment, null, children);
+  }
   return createElement(
     OwnedKitStyleProvider,
     { key: `${ownsTheme}:${ownsWidth}`, config, parent: parent ?? undefined },
@@ -188,13 +190,19 @@ function OwnedKitStyleProvider({
   const [runtime] = useState(() => createStyleRuntime(config, parent));
   useEffect(() => runtime.breakpoints.retain(), [runtime]);
   useEffect(() => {
-    if (config.ground && config.ground !== runtime.mode()) runtime.setMode(config.ground);
+    if (config.ground && config.ground !== runtime.mode()) {
+      runtime.setMode(config.ground);
+    }
   }, [config.ground, runtime]);
   useEffect(() => {
-    if (config.theme) runtime.theme.setTheme(config.theme);
+    if (config.theme) {
+      runtime.theme.setTheme(config.theme);
+    }
   }, [config.theme, runtime]);
   useEffect(() => {
-    if (config.designWidth !== undefined) runtime.breakpoints.pinDesignWidth(config.designWidth);
+    if (config.designWidth !== undefined) {
+      runtime.breakpoints.pinDesignWidth(config.designWidth);
+    }
   }, [config.designWidth, runtime]);
   return createElement(
     StyleRuntimeProvider,

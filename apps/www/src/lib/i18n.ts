@@ -45,7 +45,9 @@ export function localizePath(path: string, lang: Lang): string {
   // drop-trailing-slash` (wrangler.jsonc) redirects `/fr/download/`, and this
   // builds canonical/hreflang URLs that must not point at a redirect.
   // Paraglide spells a locale ROOT `/fr/`, the only spelling this changes.
-  if (localized === '/' || !localized.endsWith('/')) return localized;
+  if (localized === '/' || !localized.endsWith('/')) {
+    return localized;
+  }
   return localized.slice(0, -1);
 }
 

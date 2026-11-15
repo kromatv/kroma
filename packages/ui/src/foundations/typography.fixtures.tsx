@@ -7,7 +7,9 @@ import type { TypeSpec } from '#ui/core/tokens';
 export const SPECIMEN = 'Blade Runner 2049';
 
 export function tracking(em: number | undefined) {
-  if (em === undefined) return '';
+  if (em === undefined) {
+    return '';
+  }
   const sign = em > 0 ? '+' : '';
   return ` · ${sign}${em}em`;
 }

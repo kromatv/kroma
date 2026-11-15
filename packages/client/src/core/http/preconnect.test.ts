@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { preconnect } from '.';
 
 afterEach(() => {
-  for (const link of [...document.head.querySelectorAll('link')]) link.remove();
+  for (const link of document.head.querySelectorAll('link')) {
+    link.remove();
+  }
 });
 
 describe('preconnect', () => {

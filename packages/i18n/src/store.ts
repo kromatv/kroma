@@ -13,7 +13,9 @@ function lookupKey(locale: string, scope: string | undefined): string {
 function withoutSchema(catalogs: Record<string, Catalog | undefined>): Record<string, Catalog> {
   const out: Record<string, Catalog> = {};
   for (const [locale, catalog] of Object.entries(catalogs)) {
-    if (!catalog) continue;
+    if (!catalog) {
+      continue;
+    }
     if (catalog[SCHEMA_KEY] === undefined) {
       out[locale] = catalog;
       continue;
@@ -27,7 +29,9 @@ function withoutSchema(catalogs: Record<string, Catalog | undefined>): Record<st
 function rewrites(own: Catalog, incoming: Catalog): boolean {
   for (const key in incoming) {
     const held = own[key];
-    if (held !== undefined && held !== incoming[key]) return true;
+    if (held !== undefined && held !== incoming[key]) {
+      return true;
+    }
   }
   return false;
 }
@@ -56,11 +60,15 @@ export class CatalogStore<L extends string> {
       locale === defaultLocale ? [locale] : [locale, defaultLocale],
     deferred: Readonly<Record<string, () => Catalog>> = {},
   ) {
-    for (const [locale, read] of Object.entries(deferred)) this.waiting.set(locale, read);
+    for (const [locale, read] of Object.entries(deferred)) {
+      this.waiting.set(locale, read);
+    }
     const expanded = expandRefs(withoutSchema(catalogs as Record<string, Catalog>), defaultLocale);
     // Own copies, so a namespace landing later can be merged in place without
     // writing into the objects the caller handed over.
-    for (const [locale, catalog] of Object.entries(expanded)) this.base[locale] = { ...catalog };
+    for (const [locale, catalog] of Object.entries(expanded)) {
+      this.base[locale] = { ...catalog };
+    }
   }
 
   /** The catalogs a lookup walks, most specific first.
@@ -86,26 +94,36 @@ export class CatalogStore<L extends string> {
   // since a `$t()` reference may fall back there.
   private read(locale: string): void {
     const waiting = this.waiting.get(locale);
-    if (!waiting) return;
+    if (!waiting) {
+      return;
+    }
     this.waiting.delete(locale);
-    if (locale !== this.defaultLocale) this.read(this.defaultLocale);
+    if (locale !== this.defaultLocale) {
+      this.read(this.defaultLocale);
+    }
     this.extend({ [locale]: waiting() });
   }
 
   private build(key: string, locale: string, scope: string | undefined) {
     const codes = this.chainOf(locale);
-    for (const code of codes) this.read(code);
+    for (const code of codes) {
+      this.read(code);
+    }
     const chain: Catalog[] = [];
     const sources: CatalogSource[] = [];
     const add = (from: string | null, source: Record<string, Catalog> | undefined) => {
       for (const code of codes) {
         const catalog = source?.[code];
-        if (!catalog) continue;
+        if (!catalog) {
+          continue;
+        }
         chain.push(catalog);
         sources.push({ scope: from, locale: code });
       }
     };
-    if (scope) add(scope, this.scopes.get(scope));
+    if (scope) {
+      add(scope, this.scopes.get(scope));
+    }
     add(null, this.base);
     this.chains.set(key, chain);
     this.origins.set(key, sources);
@@ -120,7 +138,9 @@ export class CatalogStore<L extends string> {
     this.scopes.set(scope, own);
     this.changed();
     return () => {
-      if (this.scopes.get(scope) !== own) return;
+      if (this.scopes.get(scope) !== own) {
+        return;
+      }
       this.scopes.delete(scope);
       this.changed();
     };
@@ -138,7 +158,9 @@ export class CatalogStore<L extends string> {
     );
     for (const [locale, catalog] of Object.entries(part)) {
       const own = this.base[locale] ?? {};
-      if (rewrites(own, catalog)) this.rewritten += 1;
+      if (rewrites(own, catalog)) {
+        this.rewritten += 1;
+      }
       Object.assign(own, catalog);
       forgetStems(own);
       this.base[locale] = own;
@@ -172,6 +194,8 @@ export class CatalogStore<L extends string> {
     this.chains.clear();
     this.origins.clear();
     this.revision += 1;
-    for (const listener of this.listeners) listener();
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 }

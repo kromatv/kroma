@@ -49,10 +49,16 @@ const round = (value: number): number => Math.round(value * PLACES) / PLACES;
 /** A stated size as a share of `available` points, or nothing where it cannot
  * be resolved yet - a points size before the group has been measured. */
 function percentOf(size: ResizableSize | undefined, available: number): number | undefined {
-  if (size === undefined) return undefined;
-  if (typeof size === 'number') return Number.isFinite(size) ? clamp(size, 0, FULL) : undefined;
+  if (size === undefined) {
+    return undefined;
+  }
+  if (typeof size === 'number') {
+    return Number.isFinite(size) ? clamp(size, 0, FULL) : undefined;
+  }
   const points = Number.parseFloat(size);
-  if (!Number.isFinite(points) || available <= 0) return undefined;
+  if (!Number.isFinite(points) || available <= 0) {
+    return undefined;
+  }
   return clamp((points / available) * FULL, 0, FULL);
 }
 
@@ -95,8 +101,12 @@ function collapsedAt(size: number, limit: PanelLimit): boolean {
 // is what makes the panel snap shut rather than dissolve.
 function settle(size: number, limit: PanelLimit): number {
   const capped = Math.min(size, limit.max);
-  if (!limit.collapsible) return Math.max(capped, limit.min);
-  if (capped >= limit.min) return capped;
+  if (!limit.collapsible) {
+    return Math.max(capped, limit.min);
+  }
+  if (capped >= limit.min) {
+    return capped;
+  }
   return capped <= (limit.collapsedSize + limit.min) / 2 ? limit.collapsedSize : limit.min;
 }
 
@@ -121,14 +131,20 @@ const dragRoom = (size: number, limit: PanelLimit, way: 'grow' | 'shrink'): numb
 // narrowing takes a little from every panel instead of flattening the first.
 function normalise(sizes: readonly number[], limits: readonly PanelLimit[]): number[] {
   const drift = FULL - total(sizes);
-  if (Math.abs(drift) < EPSILON) return [...sizes];
+  if (Math.abs(drift) < EPSILON) {
+    return [...sizes];
+  }
   const room = sizes.map((size, at) => {
     const limit = limits[at];
-    if (!limit) return 0;
+    if (!limit) {
+      return 0;
+    }
     return drift > 0 ? growRoom(size, limit) : shrinkRoom(size, limit);
   });
   const spare = total(room);
-  if (spare < EPSILON) return [...sizes];
+  if (spare < EPSILON) {
+    return [...sizes];
+  }
   const moved = Math.min(Math.abs(drift), spare) * Math.sign(drift);
   return sizes.map((size, at) => size + (moved * (room[at] as number)) / spare);
 }
@@ -147,8 +163,10 @@ function solve(sizes: readonly number[], limits: readonly PanelLimit[]): number[
 function order(from: number, to: number): number[] {
   const step = from <= to ? 1 : -1;
   const count = Math.abs(to - from) + 1;
-  const out: number[] = new Array(count);
-  for (let i = 0; i < count; i += 1) out[i] = from + i * step;
+  const out: number[] = Array.from({ length: count });
+  for (let i = 0; i < count; i += 1) {
+    out[i] = from + i * step;
+  }
   return out;
 }
 
@@ -176,7 +194,9 @@ function spend(
 ): void {
   let left = amount;
   for (const at of indices) {
-    if (left < EPSILON) return;
+    if (left < EPSILON) {
+      return;
+    }
     const limit = limits[at] as PanelLimit;
     const size = sizes[at] as number;
     const take = Math.min(left, dragRoom(size, limit, way));
@@ -200,8 +220,12 @@ function adjust(
   limits: readonly PanelLimit[],
 ): number[] {
   const last = layout.length - 1;
-  if (!Number.isFinite(delta) || Math.abs(delta) < EPSILON) return [...layout];
-  if (at < 0 || at >= last) return [...layout];
+  if (!Number.isFinite(delta) || Math.abs(delta) < EPSILON) {
+    return [...layout];
+  }
+  if (at < 0 || at >= last) {
+    return [...layout];
+  }
 
   const forward = delta > 0;
   const grow = forward ? order(at, 0) : order(at + 1, last);
@@ -211,7 +235,9 @@ function adjust(
     capacity(layout, limits, grow, 'grow'),
     capacity(layout, limits, shrink, 'shrink'),
   );
-  if (room < EPSILON) return [...layout];
+  if (room < EPSILON) {
+    return [...layout];
+  }
 
   const out = [...layout];
   spend(out, limits, shrink, room, 'shrink');
@@ -228,7 +254,9 @@ function resizePanel(
   limits: readonly PanelLimit[],
 ): number[] {
   const current = layout[at];
-  if (current === undefined || layout.length < 2) return [...layout];
+  if (current === undefined || layout.length < 2) {
+    return [...layout];
+  }
   const delta = size - current;
   return at < layout.length - 1
     ? adjust(layout, at, delta, limits)
@@ -248,10 +276,16 @@ function resetSeam(
   const after = layout[at + 1];
   const wantedBefore = defaults[at];
   const wantedAfter = defaults[at + 1];
-  if (before === undefined || after === undefined) return [...layout];
-  if (wantedBefore === undefined || wantedAfter === undefined) return [...layout];
+  if (before === undefined || after === undefined) {
+    return [...layout];
+  }
+  if (wantedBefore === undefined || wantedAfter === undefined) {
+    return [...layout];
+  }
   const share = wantedBefore + wantedAfter;
-  if (share < EPSILON) return [...layout];
+  if (share < EPSILON) {
+    return [...layout];
+  }
   const out = [...layout];
   out[at] = ((before + after) * wantedBefore) / share;
   out[at + 1] = before + after - out[at];

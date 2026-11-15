@@ -37,7 +37,9 @@ export function useSeekGesture({ duration, seekTo }: SeekDeps): SeekGesture {
   const commit = useCallback(() => {
     const target = previewRef.current;
     updatePreview(null);
-    if (target != null) seekTo(target);
+    if (target != null) {
+      seekTo(target);
+    }
   }, [seekTo, updatePreview]);
 
   const scrub = useCallback(
@@ -49,7 +51,9 @@ export function useSeekGesture({ duration, seekTo }: SeekDeps): SeekGesture {
   useEffect(
     () => () => {
       const target = previewRef.current;
-      if (target != null) seekTo(target);
+      if (target != null) {
+        seekTo(target);
+      }
     },
     [seekTo],
   );

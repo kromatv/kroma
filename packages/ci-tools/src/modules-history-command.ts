@@ -19,8 +19,12 @@ const Contents = z.object({ content: z.string(), encoding: z.literal('base64') }
 
 async function publishedHistory(url: string): Promise<VersionHistory | null> {
   const res = await fetch(url, { headers: { 'user-agent': 'kroma-ci' } });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  if (res.status === 404) {
+    return null;
+  }
+  if (!res.ok) {
+    throw new Error(`${url}: HTTP ${res.status}`);
+  }
   return VersionHistory.parse(await res.json());
 }
 
@@ -36,7 +40,9 @@ async function releases(repo: string): Promise<Release[]> {
 async function manifestAt(repo: string, release: ModuleRelease): Promise<unknown> {
   const path = `repos/${repo}/contents/${manifestPath(release.id)}?ref=${encodeURIComponent(release.tag)}`;
   const result = await $`gh api ${path}`.quiet().nothrow();
-  if (result.exitCode !== 0) return null;
+  if (result.exitCode !== 0) {
+    return null;
+  }
   const file = Contents.parse(result.json());
   return JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
 }
@@ -48,8 +54,11 @@ async function describeAll(repo: string, missing: ModuleRelease[]): Promise<Desc
     const manifests = await Promise.all(batch.map((release) => manifestAt(repo, release)));
     batch.forEach((release, j) => {
       const entry = describeRelease(release, manifests[j]);
-      if (entry) described.push(entry);
-      else warning(`${release.tag}: no readable module.json at the tag; left undescribed`);
+      if (entry) {
+        described.push(entry);
+      } else {
+        warning(`${release.tag}: no readable module.json at the tag; left undescribed`);
+      }
     });
   }
   return described;
@@ -68,7 +77,9 @@ export async function main(argv: string[]): Promise<void> {
     },
   });
   const repo = values.repo ?? process.env.GH_REPO ?? process.env.GITHUB_REPOSITORY;
-  if (!repo) throw new Error('--repo owner/name is required (or set GH_REPO)');
+  if (!repo) {
+    throw new Error('--repo owner/name is required (or set GH_REPO)');
+  }
   const source =
     values.published ?? `https://github.com/${repo}/releases/download/modules/history.json`;
 

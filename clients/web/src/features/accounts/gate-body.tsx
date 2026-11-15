@@ -31,8 +31,12 @@ function pathToReturnTo(): string {
 }
 
 function entryMode(config: AuthConfig, accounts: readonly StoredSession[]): Mode {
-  if (!config.hasAccounts) return { kind: 'register' };
-  if (config.publicUserList || accounts.length > 0) return { kind: 'pick' };
+  if (!config.hasAccounts) {
+    return { kind: 'register' };
+  }
+  if (config.publicUserList || accounts.length > 0) {
+    return { kind: 'pick' };
+  }
   return { kind: 'login', user: null };
 }
 
@@ -52,15 +56,21 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
 
   if (entryAccounts !== accounts) {
     setEntryAccounts(accounts);
-    if (!listsProfiles) setMode(entryMode(config, accounts));
+    if (!listsProfiles) {
+      setMode(entryMode(config, accounts));
+    }
   }
 
   useEffect(() => {
-    if (!listsProfiles) return;
+    if (!listsProfiles) {
+      return;
+    }
     let cancelled = false;
     client.accounts.users().then(
       (users) => {
-        if (!cancelled) setProfiles(users);
+        if (!cancelled) {
+          setProfiles(users);
+        }
       },
       () => undefined,
     );
@@ -270,7 +280,9 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     // Probe with a no-PIN exchange to let the server decide what's needed,
     // rather than trusting the cached `hasPin`.
     const r = await activate(acc);
-    if (r.ok) return;
+    if (r.ok) {
+      return;
+    }
     if (r.needsPin) {
       setMode({ kind: 'pin', account: acc });
       return;

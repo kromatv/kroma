@@ -42,7 +42,9 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 export function ModuleDetailPage({ id }: Readonly<{ id: string }>) {
-  if (!useCap('settings.manage')) return <Denied />;
+  if (!useCap('settings.manage')) {
+    return <Denied />;
+  }
   return <ModuleDetailInner id={id} />;
 }
 
@@ -62,11 +64,15 @@ function ModuleDetailInner({ id }: Readonly<{ id: string }>) {
   const op = activeByModule.get(id);
 
   const install = async () => {
-    if (await InstallModal.call({ id })) refresh();
+    if (await InstallModal.call({ id })) {
+      refresh();
+    }
   };
 
   if (!installed && !entry) {
-    if (!modules || !catalog) return <DetailSkeleton />;
+    if (!modules || !catalog) {
+      return <DetailSkeleton />;
+    }
     return <Gone onBack={back} />;
   }
 
@@ -163,7 +169,9 @@ function InstalledSections({
   id,
   onSaved,
 }: Readonly<{ installed: AdminModule | undefined; id: string; onSaved: () => void }>) {
-  if (!installed) return null;
+  if (!installed) {
+    return null;
+  }
   return (
     <>
       <ModuleSettings module={installed} onSaved={onSaved} />
@@ -178,8 +186,12 @@ function permissionSource(
   entry: StoreModule | undefined,
   catalog: StoreCatalog | null | undefined,
 ): PermissionSource | null | undefined {
-  if (installed) return installed.hasSidecar ? installedSource(installed) : undefined;
-  if (!entry || entry.library || !catalog) return undefined;
+  if (installed) {
+    return installed.hasSidecar ? installedSource(installed) : undefined;
+  }
+  if (!entry || entry.library || !catalog) {
+    return undefined;
+  }
   return declaredSource({ ...entry, official: fromOfficialRegistry(catalog, entry) });
 }
 
@@ -188,7 +200,9 @@ function Security({
   name,
   source,
 }: Readonly<{ id: string; name: string; source: PermissionSource | null | undefined }>) {
-  if (source === undefined) return null;
+  if (source === undefined) {
+    return null;
+  }
   return <SecurityCard id={id} name={name} source={source} />;
 }
 

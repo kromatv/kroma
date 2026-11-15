@@ -45,15 +45,18 @@ export function tizenSources(): Source[] {
  * Samsung before Tizen 6.0 refuses the native library a `.tpk` carries.
  */
 export function resolveTizenArtifact(request: ArtifactRequest): Promise<string> {
-  if (wantsWeb(request.options)) return resolveWeb(request);
+  if (wantsWeb(request.options)) {
+    return resolveWeb(request);
+  }
   if (belowNativeFloor(request.tv)) {
     request.log(
       `Tizen ${request.tv.runtime?.version} is older than ${NATIVE_FLOOR}.0, the oldest the native app runs on: installing the web app`,
     );
     return resolveWeb(request);
   }
-  if (request.source === 'local' && !localArtifact(TIZEN_NATIVE_PACKAGE))
+  if (request.source === 'local' && !localArtifact(TIZEN_NATIVE_PACKAGE)) {
     return resolveWeb(request);
+  }
   return resolveArtifact(
     { id: 'tizen', kind: TIZEN_NATIVE_PACKAGE, build: buildTizenNative },
     request,
@@ -77,7 +80,9 @@ async function buildTizenNative(log: LogLine): Promise<string> {
     timeoutMs: NATIVE_BUILD_TIMEOUT_MS,
   });
   const built = localArtifact(TIZEN_NATIVE_PACKAGE);
-  if (!built) throw new Error('rn-tv tizen package produced no .tpk');
+  if (!built) {
+    throw new Error('rn-tv tizen package produced no .tpk');
+  }
   return built;
 }
 

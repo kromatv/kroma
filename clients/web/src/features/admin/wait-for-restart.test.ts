@@ -4,8 +4,11 @@ import { waitForRestart } from './wait-for-restart';
 function answers(...replies: (string | Error)[]) {
   const read = vi.fn<() => Promise<string | undefined>>();
   for (const reply of replies) {
-    if (reply instanceof Error) read.mockRejectedValueOnce(reply);
-    else read.mockResolvedValueOnce(reply);
+    if (reply instanceof Error) {
+      read.mockRejectedValueOnce(reply);
+    } else {
+      read.mockResolvedValueOnce(reply);
+    }
   }
   return read;
 }

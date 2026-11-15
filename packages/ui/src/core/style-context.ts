@@ -50,6 +50,8 @@ export function useStyleScope(): StyleScope {
 
 export function useStyleRuntime(): StyleRuntime {
   const runtime = useContext(StyleRuntimeContext);
-  if (!runtime) throw new Error('Styling controls require KitProvider or ThemeProvider');
+  if (!runtime) {
+    throw new Error('Styling controls require KitProvider or ThemeProvider');
+  }
   return runtime;
 }

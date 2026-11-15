@@ -16,6 +16,7 @@ import {
   type Packet,
   PacketReader,
 } from './packet';
+import { listenOnLoopback } from './fake-listener.fixture';
 import { presented, SERVER_TLS } from './fake-tls.fixture';
 
 export interface ServiceSide {
@@ -72,16 +73,26 @@ class Session {
   ) {}
 
   feed(chunk: Buffer): void {
-    if (this.options.silent) return;
-    for (const packet of this.reader.push(chunk)) this.handle(packet);
+    if (this.options.silent) {
+      return;
+    }
+    for (const packet of this.reader.push(chunk)) {
+      this.handle(packet);
+    }
   }
 
   private handle(packet: Packet): void {
-    if (packet.command === A_CNXN) this.greet();
-    else if (packet.command === A_STLS) this.secure();
-    else if (packet.command === A_AUTH) this.authenticate(packet);
-    else if (packet.command === A_OPEN) this.open(packet);
-    else if (packet.command === A_WRTE) this.take(packet);
+    if (packet.command === A_CNXN) {
+      this.greet();
+    } else if (packet.command === A_STLS) {
+      this.secure();
+    } else if (packet.command === A_AUTH) {
+      this.authenticate(packet);
+    } else if (packet.command === A_OPEN) {
+      this.open(packet);
+    } else if (packet.command === A_WRTE) {
+      this.take(packet);
+    }
   }
 
   private send(command: number, arg0: number, arg1: number, payload: Buffer = Buffer.alloc(0)) {
@@ -109,7 +120,9 @@ class Session {
     secured.on('error', () => undefined);
     secured.once('secure', () => {
       const { trusted } = this.options;
-      if (trusted && !presented(secured, trusted)) return secured.destroy();
+      if (trusted && !presented(secured, trusted)) {
+        return secured.destroy();
+      }
       this.socket = secured;
       listen(secured, this);
       this.connect();
@@ -117,27 +130,39 @@ class Session {
   }
 
   private greet(): void {
-    if (this.options.tls) this.send(A_STLS, 0x01000000, 0);
-    else if (this.options.trusted) this.send(A_AUTH, AUTH_TOKEN, 0, this.token);
-    else this.connect();
+    if (this.options.tls) {
+      this.send(A_STLS, 0x01000000, 0);
+    } else if (this.options.trusted) {
+      this.send(A_AUTH, AUTH_TOKEN, 0, this.token);
+    } else {
+      this.connect();
+    }
   }
 
   private authenticate(packet: Packet): void {
     if (packet.arg0 === AUTH_SIGNATURE) {
-      if (signedBy(this.options.trusted ?? [], this.token, packet.payload)) return this.connect();
+      if (signedBy(this.options.trusted ?? [], this.token, packet.payload)) {
+        return this.connect();
+      }
       this.token = randomBytes(20);
       return this.send(A_AUTH, AUTH_TOKEN, 0, this.token);
     }
-    if (packet.arg0 !== AUTH_RSAPUBLICKEY) return;
+    if (packet.arg0 !== AUTH_RSAPUBLICKEY) {
+      return;
+    }
     this.fake.prompts.push(packet.payload.toString('utf8'));
-    if (this.options.acceptPrompt) this.connect();
+    if (this.options.acceptPrompt) {
+      this.connect();
+    }
   }
 
   private open(packet: Packet): void {
     const name = packet.payload.toString('utf8').replaceAll('\0', '');
     this.fake.opened.push(name);
     const service = this.options.services?.[name];
-    if (!service) return this.send(A_CLSE, 0, packet.arg0);
+    if (!service) {
+      return this.send(A_CLSE, 0, packet.arg0);
+    }
 
     const id = this.nextId++;
     const side: Side = {
@@ -153,7 +178,9 @@ class Session {
 
   private take(packet: Packet): void {
     const side = this.sides.get(packet.arg1);
-    if (!side) return;
+    if (!side) {
+      return;
+    }
     this.send(A_OKAY, packet.arg1, packet.arg0);
     side.received.push(packet.payload);
     side.onData?.(packet.payload);
@@ -177,15 +204,7 @@ export async function fakeAdbd(options: FakeAdbdOptions = {}): Promise<FakeAdbd>
     sockets.add(socket);
     serve(socket, options, fake);
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const address = server.address();
-  fake.port = typeof address === 'object' && address ? address.port : 0;
-  fake.close = () =>
-    new Promise((resolve) => {
-      for (const socket of sockets) socket.destroy();
-      server.close(() => resolve());
-    });
-  return fake;
+  return Object.assign(fake, await listenOnLoopback(server, sockets));
 }
 
 /** A service that answers one text and closes. */
@@ -203,7 +222,9 @@ export const takes =
     let have = 0;
     side.onData = (data) => {
       have += data.length;
-      if (have < size) return;
+      if (have < size) {
+        return;
+      }
       side.write(answer);
       side.close();
     };

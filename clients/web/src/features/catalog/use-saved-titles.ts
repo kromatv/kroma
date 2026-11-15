@@ -7,9 +7,13 @@ import { TMDB_PREFIX } from '#web/shared/lib/saved-title-id';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 function tmdbIdOf(id: string): number | null {
-  if (!id.startsWith(TMDB_PREFIX)) return null;
+  if (!id.startsWith(TMDB_PREFIX)) {
+    return null;
+  }
   const tmdbId = Number(id.slice(TMDB_PREFIX.length));
-  if (Number.isNaN(tmdbId)) return null;
+  if (Number.isNaN(tmdbId)) {
+    return null;
+  }
   return tmdbId;
 }
 
@@ -17,7 +21,9 @@ function tmdbIdsIn(ids: readonly string[]): number[] {
   const out: number[] = [];
   for (const id of ids) {
     const tmdbId = tmdbIdOf(id);
-    if (tmdbId !== null) out.push(tmdbId);
+    if (tmdbId !== null) {
+      out.push(tmdbId);
+    }
   }
   return out;
 }
@@ -62,8 +68,11 @@ function useDiscoverEntries(tmdbIds: readonly number[]) {
   const entries: DiscoverEntry[] = [];
   let loading = false;
   for (const query of queries) {
-    if (query.isLoading) loading = true;
-    else if (query.data) entries.push(query.data);
+    if (query.isLoading) {
+      loading = true;
+    } else if (query.data) {
+      entries.push(query.data);
+    }
   }
   return { entries, loading };
 }
@@ -119,7 +128,9 @@ function collect(
     const tmdbId = tmdbIdOf(id);
     if (tmdbId !== null) {
       const entry = entryByTmdbId.get(tmdbId);
-      if (entry) out.push(fromDiscover(entry));
+      if (entry) {
+        out.push(fromDiscover(entry));
+      }
       continue;
     }
     const movie = movieById.get(id);
@@ -128,7 +139,9 @@ function collect(
       continue;
     }
     const show = showById.get(id);
-    if (show) out.push(fromShow(show));
+    if (show) {
+      out.push(fromShow(show));
+    }
   }
   return out;
 }

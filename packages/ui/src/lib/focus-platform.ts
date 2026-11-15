@@ -87,7 +87,9 @@ function usePlatformFocusHost(): PlatformFocusState {
   );
   const onEdge = useCallback((direction: string) => {
     const arrow = ARROWS[direction];
-    if (arrow) edge.current?.(arrow);
+    if (arrow) {
+      edge.current?.(arrow);
+    }
   }, []);
   return { owner, onEdge, host };
 }

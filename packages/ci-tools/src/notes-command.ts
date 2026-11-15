@@ -19,14 +19,20 @@ import { root } from './root';
 export const CANARY_MARKER = 'kroma-canary-commit';
 
 function usable(note: string | undefined, lang: Lang): string | null {
-  if (!note) return null;
+  if (!note) {
+    return null;
+  }
   const problem = shapeProblem(note, lang);
-  if (problem) console.warn(`::warning::drafted ${lang}.md rejected: ${problem}`);
+  if (problem) {
+    console.warn(`::warning::drafted ${lang}.md rejected: ${problem}`);
+  }
   return problem ? null : `${note.trimEnd()}\n`;
 }
 
 function reviewNote(drafted: { leftOut: string[]; blockers: string[] } | null): string {
-  if (!drafted) return 'Drafted from the commit subjects: no model answered.\n';
+  if (!drafted) {
+    return 'Drafted from the commit subjects: no model answered.\n';
+  }
   const list = (items: readonly string[]) =>
     items.length ? items.map((i) => `- ${i}`) : ['- none'];
   return [
@@ -49,7 +55,9 @@ async function release(
 ): Promise<void> {
   const { last, commits, version: next } = heading(to, version);
   const target = version ?? (next !== last ? next : null);
-  if (!target) throw new Error(`nothing releasable since v${last}`);
+  if (!target) {
+    throw new Error(`nothing releasable since v${last}`);
+  }
   if (isHandWritten(target) && !force) {
     throw new Error(`releases/${target} is hand-written; pass --force to replace it`);
   }
@@ -63,7 +71,9 @@ async function release(
     sources.push(`${lang}.md ${written ? 'by the model' : 'from the subjects'}`);
   }
   writeFileSync(join(folder, 'release.json'), `${JSON.stringify({ draft: true }, null, 2)}\n`);
-  if (review) writeFileSync(review, reviewNote(drafted));
+  if (review) {
+    writeFileSync(review, reviewNote(drafted));
+  }
   setOutput('version', target);
   summary(`Drafted releases/${target}: ${sources.join(', ')}.`);
 }
@@ -92,6 +102,8 @@ export async function main(argv: string[]): Promise<void> {
       review: { type: 'string' },
     },
   });
-  if (values.canary) return canary(values.to, values.since, values.canary);
+  if (values.canary) {
+    return canary(values.to, values.since, values.canary);
+  }
   return release(values.version, values.to, values.force, values.review);
 }

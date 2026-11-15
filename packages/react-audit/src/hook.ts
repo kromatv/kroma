@@ -54,12 +54,16 @@ function installHook(): Hook {
       return id;
     },
     onCommitFiberRoot(_id, root) {
-      for (const listener of hook.listeners) listener(root);
+      for (const listener of hook.listeners) {
+        listener(root);
+      }
     },
     // The one unambiguous signal in the whole library: React is deleting this
     // fiber. Everything else has to be inferred.
     onCommitFiberUnmount(_id, fiber) {
-      for (const listener of hook.unmounts) listener(fiber);
+      for (const listener of hook.unmounts) {
+        listener(fiber);
+      }
     },
     onPostCommitFiberRoot() {},
     onScheduleFiberRoot() {},

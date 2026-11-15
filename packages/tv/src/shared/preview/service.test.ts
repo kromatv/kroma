@@ -17,13 +17,17 @@ function runtime(
   const file = {
     resolve: (name: string) => {
       // A file that is not there yet throws, which is the ONLY way to find out.
-      if (over.noFile) throw new Error('not found');
+      if (over.noFile) {
+        throw new Error('not found');
+      }
       opened.push(name);
       return stream(name);
     },
     createFile: (name: string) => {
       created = name;
-      if (over.nullFile) return null as unknown as ReturnType<typeof stream>;
+      if (over.nullFile) {
+        return null as unknown as ReturnType<typeof stream>;
+      }
       opened.push(name);
       return stream(name);
     },

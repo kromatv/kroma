@@ -50,6 +50,8 @@ export const PRESETS: PresetView[] = [
 
 export function fixturePreset(id: string): PresetView {
   const found = PRESETS.find((preset) => preset.id === id);
-  if (!found) throw new Error(`no fixture preset named ${id}`);
+  if (!found) {
+    throw new Error(`no fixture preset named ${id}`);
+  }
   return found;
 }

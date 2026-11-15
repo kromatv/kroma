@@ -91,7 +91,9 @@ function cards(
     const seed = round * count + at;
     const key = recycle ? at : seed;
     const picture = art.length ? (art[seed % art.length] ?? null) : null;
-    if (kind !== 'poster' && kind !== 'media') return part(kind, key, seed, picture);
+    if (kind !== 'poster' && kind !== 'media') {
+      return part(kind, key, seed, picture);
+    }
     return kind === 'poster' ? (
       <PosterCard
         key={key}
@@ -164,10 +166,14 @@ export function mountBench(params: URLSearchParams, root: HTMLElement): void {
   const report: MountReport = { card: kind, count, runs: [], perCard: 0 };
   const go = async () => {
     await new Promise((done) => setTimeout(done, 500));
-    if (recycle) flushSync(() => show(-1));
+    if (recycle) {
+      flushSync(() => show(-1));
+    }
     await new Promise((done) => setTimeout(done, 60));
     const measure = async (round: number): Promise<void> => {
-      if (round >= runs) return;
+      if (round >= runs) {
+        return;
+      }
       const start = performance.now();
       flushSync(() => show(round));
       report.runs.push(performance.now() - start);

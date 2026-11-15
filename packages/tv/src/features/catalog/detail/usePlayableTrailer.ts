@@ -23,11 +23,15 @@ export function usePlayableTrailer(
   const [settled, setSettled] = useState<Settled | null>(null);
 
   useEffect(() => {
-    if (tmdbId == null) return;
+    if (tmdbId == null) {
+      return;
+    }
     let live = true;
     client.trailers.list(kind, tmdbId).then(
       (list) => {
-        if (live) setSettled({ client, kind, tmdbId, trailer: playableTrailer(list) });
+        if (live) {
+          setSettled({ client, kind, tmdbId, trailer: playableTrailer(list) });
+        }
       },
       () => undefined,
     );

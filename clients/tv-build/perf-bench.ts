@@ -70,11 +70,21 @@ async function serve(): Promise<() => void> {
 
 const stop = url ? () => {} : await serve();
 const query = new URLSearchParams();
-if (ART) query.set('art', ART);
-if (WIDTH) query.set('w', WIDTH);
-if (RAILS) query.set('rails', RAILS);
-if (TILES) query.set('tiles', TILES);
-if (LOADERS) query.set('loaders', LOADERS);
+if (ART) {
+  query.set('art', ART);
+}
+if (WIDTH) {
+  query.set('w', WIDTH);
+}
+if (RAILS) {
+  query.set('rails', RAILS);
+}
+if (TILES) {
+  query.set('tiles', TILES);
+}
+if (LOADERS) {
+  query.set('loaders', LOADERS);
+}
 const origin = url || `http://localhost:${PORT}/`;
 const search = query.size ? `?${query}` : '';
 const target = `${origin}${search}`;
@@ -83,7 +93,9 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 
 const cdp = await page.context().newCDPSession(page);
-if (THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
+if (THROTTLE > 1) {
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
+}
 
 // The app stores its session per origin, so a fresh profile lands on the picker.
 // Seed one from KROMA_SESSION to benchmark a real, populated home screen.
@@ -116,10 +128,12 @@ const report = await page.evaluate(() => {
   const nodes = document.querySelectorAll('*').length;
   const controls = document.querySelectorAll('[role="button"]').length;
   const measured = perf?.report();
-  if (!measured) return { nodes, controls };
+  if (!measured) {
+    return { nodes, controls };
+  }
   // The frame durations are the on-screen chart's. Printed as a row they are a
   // comma-joined list that buries every number below them.
-  const { frames, ...scalars } = measured;
+  const { frames: _frames, ...scalars } = measured;
   return { ...scalars, nodes, controls };
 });
 

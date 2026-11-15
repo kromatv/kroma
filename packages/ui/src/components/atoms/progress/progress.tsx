@@ -45,7 +45,9 @@ const WAITING_OPACITY = 0.22;
 const FULL_WIDTH = style({ right: 0 });
 
 function clamp01(n: number): number {
-  if (!Number.isFinite(n)) return 0;
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
   return Math.min(Math.max(n, 0), 1);
 }
 

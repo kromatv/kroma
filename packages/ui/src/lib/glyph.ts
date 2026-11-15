@@ -44,12 +44,18 @@ type Paint = { color: string; opacity: number | string };
 // is looked up rather than parsed.
 function cascadePaint(authored: string, scope: StyleScope): Paint | null {
   const faded = CSS_FADED[authored];
-  if (faded) return faded;
+  if (faded) {
+    return faded;
+  }
   const slash = authored.lastIndexOf('/');
-  if (slash === -1) return null;
+  if (slash === -1) {
+    return null;
+  }
   const base = authored.slice(0, slash);
   const alpha = Number(authored.slice(slash + 1));
-  if (CSS_FADED[base] || !Number.isFinite(alpha)) return null;
+  if (CSS_FADED[base] || !Number.isFinite(alpha)) {
+    return null;
+  }
   const color = resolveColor(base, activeTheme(scope.theme));
   return color.startsWith('var(') ? { color, opacity: alpha / 100 } : null;
 }

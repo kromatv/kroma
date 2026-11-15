@@ -32,7 +32,9 @@ export class PairingCipher {
 
   /** The plain bytes, or null when the other side sealed them with another key. */
   open(sealed: Uint8Array): Buffer | null {
-    if (sealed.length < TAG_BYTES) return null;
+    if (sealed.length < TAG_BYTES) {
+      return null;
+    }
     const decipher = createDecipheriv('aes-128-gcm', this.key, nonce(this.opened));
     decipher.setAuthTag(sealed.subarray(sealed.length - TAG_BYTES));
     try {

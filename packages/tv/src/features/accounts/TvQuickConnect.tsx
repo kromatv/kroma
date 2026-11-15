@@ -41,15 +41,21 @@ export function TvQuickConnect() {
   useFocusNav({ onBack: nav.back });
 
   useEffect(() => {
-    if (!client || !activeServerUrl) return;
+    if (!client || !activeServerUrl) {
+      return;
+    }
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
     let expireTimer: ReturnType<typeof setTimeout> | undefined;
     let secret = '';
 
     const clearTimers = () => {
-      if (pollTimer) clearTimeout(pollTimer);
-      if (expireTimer) clearTimeout(expireTimer);
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+      }
+      if (expireTimer) {
+        clearTimeout(expireTimer);
+      }
       pollTimer = undefined;
       expireTimer = undefined;
     };
@@ -57,10 +63,14 @@ export function TvQuickConnect() {
     const onAuthenticated = (res: AuthResult) => login(res, activeServerUrl);
 
     const poll = async () => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       try {
         const res = await client.accounts.quickConnect.poll(secret);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         if (res.status === 'authorized') {
           clearTimers();
           onAuthenticated({
@@ -78,7 +88,9 @@ export function TvQuickConnect() {
       } catch {
         /* transient keep polling */
       }
-      pollTimer = setTimeout(poll, 2500);
+      pollTimer = setTimeout(() => {
+        void poll();
+      }, 2500);
     };
 
     const begin = async () => {
@@ -87,7 +99,9 @@ export function TvQuickConnect() {
         // Passing the outgoing secret has the server revoke it instead of leaving
         // it approvable until its own TTL lapses.
         const init = await client.accounts.quickConnect.initiate(secret || undefined);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         secret = init.secret;
         setInfo(init);
         setQr(null);
@@ -109,9 +123,13 @@ export function TvQuickConnect() {
         const marginSec = Math.min(EXPIRY_MARGIN_SEC, Math.floor(init.expiresInSec / 2));
         const renewMs = Math.max(1000, (init.expiresInSec - marginSec) * 1000);
         expireTimer = setTimeout(() => void begin(), renewMs);
-        pollTimer = setTimeout(poll, 2500);
+        pollTimer = setTimeout(() => {
+          void poll();
+        }, 2500);
       } catch {
-        if (!cancelled) setError('connect.quickConnectUnavailable');
+        if (!cancelled) {
+          setError('connect.quickConnectUnavailable');
+        }
       }
     };
 
@@ -195,7 +213,9 @@ export function TvQuickConnect() {
 }
 
 function connectUrl(client: KromaClient, code: string, serverUrl?: string | null): string {
-  if (serverUrl) return serverUrl;
+  if (serverUrl) {
+    return serverUrl;
+  }
   try {
     const u = new URL(client.baseUrl);
     u.pathname = '/connect';

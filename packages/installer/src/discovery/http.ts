@@ -15,10 +15,14 @@ export interface FetchOptions {
 /** The body as text, or null for any refusal: unreachable, not ok, or too big. */
 export async function fetchText(url: string, options: FetchOptions = {}): Promise<string | null> {
   const { timeoutMs = DEFAULT_TIMEOUT_MS, maxBytes = DEFAULT_MAX_BYTES } = options;
-  if (options.insecureTls) return getUnverified(url, timeoutMs, maxBytes);
+  if (options.insecureTls) {
+    return getUnverified(url, timeoutMs, maxBytes);
+  }
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      return null;
+    }
     return await readBounded(response, maxBytes);
   } catch {
     return null;
@@ -32,7 +36,9 @@ export async function fetchJson<T>(
   options: FetchOptions = {},
 ): Promise<T | null> {
   const text = await fetchText(url, options);
-  if (text === null) return null;
+  if (text === null) {
+    return null;
+  }
   try {
     const parsed = schema.safeParse(JSON.parse(text));
     return parsed.success ? parsed.data : null;
@@ -54,7 +60,9 @@ function getUnverified(url: string, timeoutMs: number, maxBytes: number): Promis
           response.on('error', refuse);
           response.on('data', (chunk: Buffer) => {
             size += chunk.byteLength;
-            if (size <= maxBytes) return chunks.push(chunk);
+            if (size <= maxBytes) {
+              return chunks.push(chunk);
+            }
             refuse();
             return request.destroy();
           });
@@ -71,9 +79,13 @@ function getUnverified(url: string, timeoutMs: number, maxBytes: number): Promis
 }
 
 async function readBounded(response: Response, maxBytes: number): Promise<string | null> {
-  if (Number(response.headers.get('content-length') ?? '0') > maxBytes) return null;
+  if (Number(response.headers.get('content-length') ?? '0') > maxBytes) {
+    return null;
+  }
   const reader = response.body?.getReader();
-  if (!reader) return null;
+  if (!reader) {
+    return null;
+  }
   const chunks: Uint8Array[] = [];
   let size = 0;
   for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {

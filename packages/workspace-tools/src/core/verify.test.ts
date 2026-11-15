@@ -44,7 +44,9 @@ describe('verify', () => {
   it('flags a dependency version outside the declared range', () => {
     const g = graph();
     const torrents = g.projects.find((p) => p.name === 'tv.kroma.torrents');
-    if (torrents) torrents.version = '0.2.0'; // jumps a minor; ^0.1.0 no longer holds
+    if (torrents) {
+      torrents.version = '0.2.0';
+    } // jumps a minor; ^0.1.0 no longer holds
     const violations = verify(g);
     expect(violations).toHaveLength(1);
     expect(violations[0]).toMatchObject({ project: 'tv.kroma.acquisition', kind: 'range' });
@@ -53,7 +55,9 @@ describe('verify', () => {
   it('flags a missing dependency', () => {
     const g = graph();
     const acquisition = g.projects.find((p) => p.name === 'tv.kroma.acquisition');
-    if (acquisition) acquisition.ranges = { 'tv.kroma.ghost': '^0.1.0' };
+    if (acquisition) {
+      acquisition.ranges = { 'tv.kroma.ghost': '^0.1.0' };
+    }
     expect(verify(g)[0]).toMatchObject({ kind: 'missing-dep' });
   });
 

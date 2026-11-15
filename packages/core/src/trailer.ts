@@ -12,7 +12,9 @@ export const TRAILER_LABEL: Record<TrailerVersion, MessageKey> = {
 /** The trailer a title's button plays: the best one, and only when this
  * server can play it. */
 export function playableTrailer(list: TrailerList | undefined): Trailer | null {
-  if (!list?.playable) return null;
+  if (!list?.playable) {
+    return null;
+  }
   return list.trailers[0] ?? null;
 }
 

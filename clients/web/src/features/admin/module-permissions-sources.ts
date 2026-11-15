@@ -30,7 +30,9 @@ const accessOf = (
 
 /** What an installed module declares, or null when it does not say what it may do. */
 export function installedSource(module: AdminModule): PermissionSource | null {
-  if (!module.permissions) return null;
+  if (!module.permissions) {
+    return null;
+  }
   return {
     permissions: module.permissions,
     storage: module.storage,
@@ -146,7 +148,9 @@ export function consentOf(
       ? installed.find((one) => one.id === module.id)
       : undefined;
     const before = current ? installedSource(current) : null;
-    if (!before || !module.source) return module;
+    if (!before || !module.source) {
+      return module;
+    }
     return { ...module, source: addedAccess(module.source, before) };
   });
   return {

@@ -48,11 +48,15 @@ let scope: Tier | 'remote' = 'modern';
 const check = (ok: boolean, label: string, detail = ''): void => {
   results.push({ ok, label, detail, tier: scope });
   const suffix = detail ? `  ${detail}` : '';
-  if (!JSON_OUT) console.log(`  ${ok ? '✓' : '✗'} ${label}${suffix}`);
+  if (!JSON_OUT) {
+    console.log(`  ${ok ? '✓' : '✗'} ${label}${suffix}`);
+  }
 };
 
 const say = (line: string): void => {
-  if (!JSON_OUT) console.log(line);
+  if (!JSON_OUT) {
+    console.log(line);
+  }
 };
 
 function report(tier: Tier, seen: Painted, errors: readonly string[]): void {
@@ -66,7 +70,9 @@ function report(tier: Tier, seen: Painted, errors: readonly string[]): void {
   check(seen.bodyBackground === 'rgb(10, 10, 12)', 'ground is the dark token', seen.bodyBackground);
   check(seen.webfontApplied, 'webfont applied, not the default serif');
   check(errors.length === 0, 'no uncaught exceptions', errors.join(' | '));
-  if (tier !== 'deep') return;
+  if (tier !== 'deep') {
+    return;
+  }
   check(seen.cascadeLayers === 'undefined', 'engine reports no cascade layers');
   check(!seen.customProperties, 'engine reports no custom properties');
 }
@@ -109,7 +115,9 @@ try {
     say(`\n${tier} tier`);
     await sim.load(INDEX, tier);
     report(tier, await sim.inspect(), sim.errors());
-    if (SHOTS) await sim.screenshot(join(SHOTS, `sim-${tier}.png`));
+    if (SHOTS) {
+      await sim.screenshot(join(SHOTS, `sim-${tier}.png`));
+    }
   }
   await exerciseRemote(sim);
 } finally {

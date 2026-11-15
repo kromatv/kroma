@@ -23,7 +23,9 @@ export class ByteReader {
 
   async read(length: number): Promise<Buffer> {
     while (this.pending.length < length) {
-      if (this.failure) throw this.failure;
+      if (this.failure) {
+        throw this.failure;
+      }
       await this.more();
     }
     const out = this.pending.subarray(0, length);

@@ -18,8 +18,10 @@ export function PlatformDownload({
 }: Readonly<{ target: TargetId; label: string; secondary?: boolean }>) {
   const release = useDownloadRelease();
   const download = release?.downloads.find((file) => file.target === target);
-  if (!download && secondary) return null;
-  if (!download)
+  if (!download && secondary) {
+    return null;
+  }
+  if (!download) {
     return (
       <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
         <p className="text-sm text-muted">
@@ -28,6 +30,7 @@ export function PlatformDownload({
         <ArchiveLink />
       </div>
     );
+  }
   return (
     <DownloadButton
       file={{

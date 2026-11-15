@@ -42,7 +42,9 @@ export function UserChip() {
   const { user, logout } = useAuth();
   // Return to the current page after switching profile.
   const href = useRouterState({ select: (s) => s.location.href });
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   return (
     <Menu.Root label={t('nav.account')} align="start">
       <Menu.Trigger render={userChipTrigger(user, t('nav.account'))} />

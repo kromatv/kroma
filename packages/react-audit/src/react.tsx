@@ -35,9 +35,13 @@ function firstControl(
 ): Element | null {
   for (const selector of selectors) {
     for (const root of roots) {
-      if (root.matches?.(selector)) return root;
+      if (root.matches?.(selector)) {
+        return root;
+      }
       const found = root.querySelector(selector);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
     }
   }
   return null;
@@ -63,8 +67,12 @@ interface Measured extends Result {
 }
 
 function resolve(roots: readonly Element[], press: MeasureOptions['press']): Element | null {
-  if (press instanceof Element) return press;
-  if (typeof press === 'string' && press !== 'first') return firstControl(roots, [press]);
+  if (press instanceof Element) {
+    return press;
+  }
+  if (typeof press === 'string' && press !== 'first') {
+    return firstControl(roots, [press]);
+  }
   return firstControl(roots);
 }
 
@@ -82,10 +90,14 @@ function measure(ui: ReactElement, options: MeasureOptions = {}): Measured {
     options.act(roots);
   } else if (options.type !== undefined) {
     drove = firstControl(roots, ['input:not([type=hidden])', 'textarea']);
-    if (drove) fireEvent.change(drove, { target: { value: options.type } });
+    if (drove) {
+      fireEvent.change(drove, { target: { value: options.type } });
+    }
   } else {
     drove = resolve(roots, options.press ?? 'first');
-    if (drove) fireEvent.click(drove);
+    if (drove) {
+      fireEvent.click(drove);
+    }
   }
 
   return { ...run.stop(), drove, roots };

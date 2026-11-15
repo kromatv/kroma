@@ -12,7 +12,9 @@ import { castPicker } from '#web/shared/ui/cast-picker';
 export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
   const t = useT();
   const { available, playOn } = useCast();
-  if (!available) return null;
+  if (!available) {
+    return null;
+  }
   return (
     <Button
       variant="outline"
@@ -20,11 +22,15 @@ export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
       label={t('cast.title')}
       onPress={async () => {
         const picked = await castPicker();
-        if (!picked) return;
+        if (!picked) {
+          return;
+        }
         // The position is the account's own resume point, which the receiver
         // already knows - nothing to hand over from a page that isn't playing.
         const failure = await playOn(picked, itemId);
-        if (failure) toast({ message: t(failure) });
+        if (failure) {
+          toast({ message: t(failure) });
+        }
       }}
     />
   );

@@ -26,7 +26,9 @@ interface HeadResize {
 const NO_RESIZE: HeadResize = { onLayout: undefined, seam: null };
 
 function resizeOf(resize: ColumnResize | null, at: number, children: ReactNode): HeadResize {
-  if (!resize) return NO_RESIZE;
+  if (!resize) {
+    return NO_RESIZE;
+  }
   const label = typeof children === 'string' ? children : undefined;
   return {
     onLayout: (event) => resize.measure(at, event.nativeEvent.layout.width),
@@ -35,7 +37,9 @@ function resizeOf(resize: ColumnResize | null, at: number, children: ReactNode):
 }
 
 function inkOf(head: boolean, sorted: boolean) {
-  if (!head) return 'textMuted';
+  if (!head) {
+    return 'textMuted';
+  }
   return sorted ? 'accent' : 'textDim';
 }
 
@@ -44,7 +48,9 @@ function CellText({
   sorted,
   children,
 }: Readonly<{ head: boolean; sorted: boolean; children: ReactNode }>) {
-  if (typeof children !== 'string') return children;
+  if (typeof children !== 'string') {
+    return children;
+  }
   return (
     <Text variant={head ? 'overline' : 'body'} color={inkOf(head, sorted)} lines={1}>
       {children}
@@ -63,7 +69,9 @@ function Cell({ children }: Readonly<TableCellProps>) {
   const resize = useColumnResize();
   const column = grid?.columns[at];
   const step = grid?.step ?? 0;
-  if (!drawn(column, step)) return null;
+  if (!drawn(column, step)) {
+    return null;
+  }
   const { onLayout, seam } = resizeOf(head ? resize : null, at, children);
   const { pad, bleed } = padsFor(
     variant,
@@ -115,11 +123,12 @@ const sDefinition = styles({
 });
 
 function padsFor(variant: TableVariant, gutter: boolean, scope: StyleScope) {
-  if (variant === 'framed')
+  if (variant === 'framed') {
     return {
       pad: resolveStyles(sDefinition, scope).cell,
       bleed: resolveStyles(sDefinition, scope).bleed,
     };
+  }
   return gutter
     ? {
         pad: resolveStyles(sDefinition, scope).cellGutter,

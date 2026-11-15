@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { describedVersions, withDescriptions } from './version-history';
+import { requestUrl } from './request-url.fixture';
 
 const SRI = `sha256-${btoa(String.fromCharCode(...Array(32).fill(0xab)))}`;
 
@@ -16,7 +17,7 @@ function serving(body: unknown, status = 200) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+      calls.push(requestUrl(input));
       return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status });
     }),
   );

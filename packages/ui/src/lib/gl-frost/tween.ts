@@ -13,7 +13,9 @@ export function tweenAt(
   easing: (t: number) => number,
 ): { value: number; done: boolean } {
   const t = tween.duration > 0 ? (now - tween.start) / tween.duration : 1;
-  if (t >= 1) return { value: tween.to, done: true };
+  if (t >= 1) {
+    return { value: tween.to, done: true };
+  }
   const k = easing(Math.max(0, t));
   return { value: tween.from + (tween.to - tween.from) * k, done: false };
 }

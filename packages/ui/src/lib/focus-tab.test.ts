@@ -13,7 +13,9 @@ function grid(start: { row: number; col: number }) {
   const at = { ...start };
   let seq = 0;
   const move = (row: number, col: number) => {
-    if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+      return;
+    }
     at.row = row;
     at.col = col;
     seq += 1;
@@ -27,10 +29,18 @@ function grid(start: { row: number; col: number }) {
     },
     send(direction: Direction) {
       this.sent.push(direction);
-      if (direction === Directions.RIGHT) move(at.row, at.col + 1);
-      if (direction === Directions.LEFT) move(at.row, at.col - 1);
-      if (direction === Directions.DOWN) move(at.row + 1, at.col);
-      if (direction === Directions.UP) move(at.row - 1, at.col);
+      if (direction === Directions.RIGHT) {
+        move(at.row, at.col + 1);
+      }
+      if (direction === Directions.LEFT) {
+        move(at.row, at.col - 1);
+      }
+      if (direction === Directions.DOWN) {
+        move(at.row + 1, at.col);
+      }
+      if (direction === Directions.UP) {
+        move(at.row - 1, at.col);
+      }
     },
   };
 }
@@ -79,7 +89,9 @@ describe('walkTab', () => {
     const probe = { seq: () => seq, box: () => NODES[at].box };
     walkTab((direction) => {
       const next = NODES[at].to[direction];
-      if (!next) return;
+      if (!next) {
+        return;
+      }
       at = next;
       seq += 1;
     }, probe);
@@ -103,7 +115,9 @@ describe('walkTab', () => {
     walkTab((direction) => {
       sends += 1;
       const next = NODES[at].to[direction];
-      if (!next) return;
+      if (!next) {
+        return;
+      }
       at = next;
       seq += 1;
     }, probe);
@@ -126,7 +140,9 @@ describe('walkTab', () => {
     // starts rewinding: every other direction moves.
     const send = (d: Direction) => {
       sent.push(d);
-      if (d !== Directions.RIGHT) seq += 1;
+      if (d !== Directions.RIGHT) {
+        seq += 1;
+      }
     };
     return { sent, send, seq: () => seq };
   }

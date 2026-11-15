@@ -139,7 +139,9 @@ describe('the plain reads', () => {
     endpoint.mockResolvedValue('payload');
     await run(build());
     expect(endpoint).toHaveBeenCalledTimes(1);
-    if (arg !== undefined) expect(endpoint).toHaveBeenCalledWith(arg);
+    if (arg !== undefined) {
+      expect(endpoint).toHaveBeenCalledWith(arg);
+    }
   });
 });
 
@@ -150,6 +152,8 @@ describe('the caller’s own request lists', () => {
     const keys = builds.map((build) => JSON.stringify(build().queryKey));
 
     expect(new Set(keys).size).toBe(3);
-    for (const build of builds) expect(build().queryKey).toContain('requests');
+    for (const build of builds) {
+      expect(build().queryKey).toContain('requests');
+    }
   });
 });

@@ -9,7 +9,9 @@ const PLAYER_SCREEN = {
   dangerouslySingular: true,
   listeners: {
     transitionEnd: ({ data }) => {
-      if (data.closing) lockUpright();
+      if (data.closing) {
+        lockUpright();
+      }
     },
   },
   options: {
@@ -27,8 +29,12 @@ export default function AppLayout() {
   useThemeVersion();
 
   const { status, serverUrl } = useSession();
-  if (status === 'booting') return null;
-  if (status !== 'signedIn') return <Redirect href={serverUrl ? '/sign-in' : '/connect'} />;
+  if (status === 'booting') {
+    return null;
+  }
+  if (status !== 'signedIn') {
+    return <Redirect href={serverUrl ? '/sign-in' : '/connect'} />;
+  }
   return (
     <CompatGate>
       <Stack

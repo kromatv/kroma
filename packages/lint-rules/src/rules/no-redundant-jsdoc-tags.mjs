@@ -25,11 +25,15 @@ export default defineRule(
       },
     },
     create(context) {
-      if (!/\.(?:[cm]?ts|tsx)$/.test(context.filename)) return {};
+      if (!/\.(?:[cm]?ts|tsx)$/.test(context.filename)) {
+        return {};
+      }
       return {
         Program() {
           for (const comment of context.sourceCode.getAllComments()) {
-            if (comment.type !== 'Block' || !comment.value.startsWith('*')) continue;
+            if (comment.type !== 'Block' || !comment.value.startsWith('*')) {
+              continue;
+            }
             const redundant = comment.value
               .split('\n')
               .some((line) =>

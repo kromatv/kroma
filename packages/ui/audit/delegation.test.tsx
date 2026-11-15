@@ -46,7 +46,9 @@ function focusOneRow() {
     </I18nProvider>,
   );
   const first = container.querySelector('a');
-  if (!first) throw new Error('the grid rendered no anchor to focus');
+  if (!first) {
+    throw new Error('the grid rendered no anchor to focus');
+  }
   fireEvent.focus(first);
   return run.stop();
 }

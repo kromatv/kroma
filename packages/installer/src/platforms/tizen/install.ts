@@ -20,7 +20,9 @@ interface Package extends Signed {
 export function parseSdbSerial(devices: string, host: string): string | null {
   for (const line of devices.split('\n')) {
     const [serial = '', state = ''] = line.trim().split(/\s+/);
-    if (serial.startsWith(`${host}:`) && state === 'device') return serial;
+    if (serial.startsWith(`${host}:`) && state === 'device') {
+      return serial;
+    }
   }
   return null;
 }
@@ -29,10 +31,15 @@ export async function installTizen(context: InstallContext): Promise<void> {
   const native = booleanOption(context.options, 'native') ?? true;
   const signed = await sign(context);
   try {
-    if (native) await installOverSdb(context, signed.path, signed.package, signed.profile.name);
-    else await installOverCli(context, signed);
+    if (native) {
+      await installOverSdb(context, signed.path, signed.package, signed.profile.name);
+    } else {
+      await installOverCli(context, signed);
+    }
   } finally {
-    if (signed.staged) await rm(dirname(signed.path), { recursive: true, force: true });
+    if (signed.staged) {
+      await rm(dirname(signed.path), { recursive: true, force: true });
+    }
   }
 }
 
@@ -45,7 +52,9 @@ async function sign(context: InstallContext): Promise<Package> {
 
 async function namedProfile(name: string): Promise<SigningProfile> {
   const profile = await readProfile(name);
-  if (!profile) throw new Error(`no signing profile called ${name}`);
+  if (!profile) {
+    throw new Error(`no signing profile called ${name}`);
+  }
   return profile;
 }
 
@@ -77,9 +86,13 @@ async function installOverCli(context: InstallContext, signed: Package): Promise
     const duid = refusedChain(installed.output) ? await readDuid(sdb, log) : null;
     throw new Error(installFailure(installed.output, signed.profile.name, duid));
   }
-  if (!launch) return;
+  if (!launch) {
+    return;
+  }
 
   const application = signed.package.appId;
   const started = await run([tizen, 'run', '-p', application], { log });
-  if (started.code !== 0) await run([sdb, 'shell', '0', 'was_execute', application], { log });
+  if (started.code !== 0) {
+    await run([sdb, 'shell', '0', 'was_execute', application], { log });
+  }
 }

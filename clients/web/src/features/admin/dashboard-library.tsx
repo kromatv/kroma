@@ -6,10 +6,14 @@ import { RouteLink } from '#web/shared/ui/route-link';
 export function MissingCallout() {
   const t = useT();
   const { data: titles } = useMonitoredTitles();
-  if (!titles) return null;
+  if (!titles) {
+    return null;
+  }
 
   const missing = titles.reduce((total, title) => total + title.missing, 0);
-  if (missing === 0) return null;
+  if (missing === 0) {
+    return null;
+  }
   const titleCount = titles.filter((title) => title.missing > 0).length;
 
   return (

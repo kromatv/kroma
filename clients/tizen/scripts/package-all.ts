@@ -41,13 +41,17 @@ const signing = profile ? ['-s', profile] : [];
 const wgtsIn = (dir: string) => readdirSync(dir).filter((f) => f.endsWith('.wgt'));
 
 function pack(dir: string, name: string): void {
-  for (const stale of wgtsIn(dir)) rmSync(join(dir, stale));
+  for (const stale of wgtsIn(dir)) {
+    rmSync(join(dir, stale));
+  }
   execFileSync('tizen', ['package', '-t', 'wgt', ...signing, '--', dir], {
     cwd: SHELL,
     stdio: 'inherit',
   });
   const [wgt] = wgtsIn(dir);
-  if (!wgt) throw new Error(`tizen package left no .wgt in ${dir}`);
+  if (!wgt) {
+    throw new Error(`tizen package left no .wgt in ${dir}`);
+  }
   renameSync(join(dir, wgt), join(OUT, name));
   console.log(`[package] ${name}`);
 }

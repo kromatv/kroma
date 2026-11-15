@@ -85,7 +85,9 @@ export function RequestLedger({
 }>) {
   const t = useT();
 
-  if (loading) return <Skeleton w="100%" h={220} radius="xl" />;
+  if (loading) {
+    return <Skeleton w="100%" h={220} radius="xl" />;
+  }
   if (seasons.length === 0) {
     return (
       <EmptyState.Root icon="inbox">
@@ -224,12 +226,16 @@ function seasonLabel(s: LedgerSeason, t: (key: MessageKey, vars: { number: numbe
 }
 
 function coverageDot(state: SeasonCoverage): 'success' | 'accent' | 'textDim' {
-  if (state === 'all') return 'success';
+  if (state === 'all') {
+    return 'success';
+  }
   return state === 'some' ? 'accent' : 'textDim';
 }
 
 function dotFor(s: LedgerSeason): 'success' | 'accent' | 'textDim' {
-  if (s.onDisk >= s.episodeCount && s.episodeCount > 0) return 'success';
+  if (s.onDisk >= s.episodeCount && s.episodeCount > 0) {
+    return 'success';
+  }
   return isRequested(s) ? 'accent' : 'textDim';
 }
 

@@ -53,7 +53,9 @@ export function initialMotion(): Motion {
  * to visit.
  */
 export function tourOf(places: readonly { lat: number; lng: number; n: number }[]): Tour | null {
-  if (places.length === 0) return null;
+  if (places.length === 0) {
+    return null;
+  }
   return {
     stops: places.map((place) => ({
       yaw: -place.lng * RADIANS,
@@ -86,7 +88,9 @@ export function drag(motion: Motion, dyaw: number, dpitch: number, dt: number): 
   motion.lean = null;
   motion.yaw += dyaw;
   motion.pitch = clamp(motion.pitch + dpitch, -PITCH_LIMIT, PITCH_LIMIT);
-  if (dt > 0) motion.spin = clamp(0.5 * motion.spin + 0.5 * (dyaw / dt), -MAX_SPIN, MAX_SPIN);
+  if (dt > 0) {
+    motion.spin = clamp(0.5 * motion.spin + 0.5 * (dyaw / dt), -MAX_SPIN, MAX_SPIN);
+  }
 }
 
 export function release(motion: Motion): void {

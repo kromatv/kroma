@@ -11,7 +11,9 @@ const linking = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Linking: {
     getInitialURL: async () => {
-      if (linking.initialFails) throw new Error('no activity attached');
+      if (linking.initialFails) {
+        throw new Error('no activity attached');
+      }
       return linking.initial;
     },
     addEventListener: (_event: string, handler: (e: { url: string }) => void) => {
@@ -33,7 +35,9 @@ const siri = vi.hoisted(() => ({
 }));
 vi.mock('../../modules/siri-search', () => ({
   get SiriSearch() {
-    if (!siri.present) return null;
+    if (!siri.present) {
+      return null;
+    }
     return {
       takePendingQuery: () => siri.pending,
       addListener: (_event: string, handler: (e: { text: string }) => void) => {

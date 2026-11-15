@@ -12,7 +12,9 @@ afterEach(() => vi.useRealTimers());
 
 function hidden(actions = makeActions()) {
   const view = nav(WEB_FLAGS, true, actions);
-  act(() => vi.advanceTimersByTime(3500));
+  act(() => {
+    vi.advanceTimersByTime(3500);
+  });
   return view;
 }
 

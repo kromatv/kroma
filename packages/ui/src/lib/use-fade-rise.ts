@@ -18,9 +18,13 @@ export interface FadeRise {
 // a CSS transition. It needs one frame at the arriving style to run from.
 function useSettled(shown: boolean): boolean {
   const [settled, setSettled] = useState(false);
-  if (!shown && settled) setSettled(false);
+  if (!shown && settled) {
+    setSettled(false);
+  }
   useEffect(() => {
-    if (!shown) return;
+    if (!shown) {
+      return;
+    }
     const frame = requestAnimationFrame(() => setSettled(true));
     return () => cancelAnimationFrame(frame);
   }, [shown]);
@@ -40,7 +44,9 @@ function webStyle(at: boolean, ms: number, rise: number): ViewStyle {
 function useNativeStyle(shown: boolean, ms: number, rise: number) {
   const [run] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    if (WEB) return;
+    if (WEB) {
+      return;
+    }
     const anim = Animated.timing(run, {
       toValue: shown ? 1 : 0,
       duration: ms,
@@ -58,9 +64,13 @@ function useNativeStyle(shown: boolean, ms: number, rise: number) {
 
 function useMounted(shown: boolean, ms: number): boolean {
   const [mounted, setMounted] = useState(shown);
-  if (shown && !mounted) setMounted(true);
+  if (shown && !mounted) {
+    setMounted(true);
+  }
   useEffect(() => {
-    if (shown) return;
+    if (shown) {
+      return;
+    }
     const out = setTimeout(() => setMounted(false), ms);
     return () => clearTimeout(out);
   }, [shown, ms]);

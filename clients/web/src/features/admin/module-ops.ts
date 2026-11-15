@@ -89,7 +89,9 @@ export function foldOpEvent(
     }
     case 'module.op.progress': {
       const op = ops[e.op];
-      if (!op) return ops;
+      if (!op) {
+        return ops;
+      }
       const prev = op.modules[e.id] ?? blank(e.id);
       const next: OpModule = {
         ...prev,
@@ -102,7 +104,9 @@ export function foldOpEvent(
     }
     case 'module.op.done': {
       const op = ops[e.op];
-      if (!op) return ops;
+      if (!op) {
+        return ops;
+      }
       const prev = op.modules[e.id] ?? blank(e.id);
       const next: OpModule = { ...prev, phase: 'done', version: e.version };
       const order = op.modules[e.id] ? op.order : [...op.order, e.id];
@@ -110,7 +114,9 @@ export function foldOpEvent(
     }
     case 'module.op.finished': {
       const op = ops[e.op];
-      if (!op) return ops;
+      if (!op) {
+        return ops;
+      }
       return { ...ops, [e.op]: { ...op, finished: true, ok: e.ok, error: e.error ?? null } };
     }
     default:
@@ -120,16 +126,24 @@ export function foldOpEvent(
 
 /** Percentage for a module's progress bar, or null while indeterminate. */
 export function opPct(m: OpModule): number | null {
-  if (m.phase === 'done') return 100;
-  if (!m.total || m.total <= 0) return null;
+  if (m.phase === 'done') {
+    return 100;
+  }
+  if (!m.total || m.total <= 0) {
+    return null;
+  }
   return Math.min(100, Math.round((m.received / m.total) * 100));
 }
 
 /** What a bar should show for a phase: real percent while downloading, full
  * while installing, empty while waiting. */
 export function runningPct(phase: OpPhase, pct: number | null): number {
-  if (phase === 'done') return 100;
-  if (pct !== null) return pct;
+  if (phase === 'done') {
+    return 100;
+  }
+  if (pct !== null) {
+    return pct;
+  }
   return phase === 'wait' ? 0 : 100;
 }
 
@@ -150,9 +164,13 @@ export function createStoreOps(baseUrl: string, client?: KromaClient) {
         token: () => client?.sessionToken,
         refresh: () => client?.refreshSession() ?? Promise.resolve(undefined),
         onEvent: (e) => {
-          if (!e.type.startsWith('module.op.')) return;
+          if (!e.type.startsWith('module.op.')) {
+            return;
+          }
           ops = foldOpEvent(ops, e as StoreOpEvent);
-          for (const l of listeners) l();
+          for (const l of listeners) {
+            l();
+          }
         },
       });
       socket.connect();
@@ -200,7 +218,9 @@ export function useStoreOps(): {
   const activeByModule = useMemo(() => {
     const map = new Map<string, OpModule & { op: string }>();
     for (const op of Object.values(snapshot)) {
-      if (op.finished) continue;
+      if (op.finished) {
+        continue;
+      }
       for (const m of Object.values(op.modules)) {
         map.set(m.id, { ...m, op: op.op });
       }

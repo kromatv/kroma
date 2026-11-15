@@ -41,21 +41,37 @@ function isBooleanGroup(options: readonly string[]): boolean {
 }
 
 function resolveSpec(spec: ControlSpec): Control {
-  if (spec === 'text') return { kind: 'text' };
-  if (spec === 'boolean') return { kind: 'boolean' };
-  if (spec === 'number') return { kind: 'number', min: 0, max: 100, step: 1 };
+  if (spec === 'text') {
+    return { kind: 'text' };
+  }
+  if (spec === 'boolean') {
+    return { kind: 'boolean' };
+  }
+  if (spec === 'number') {
+    return { kind: 'number', min: 0, max: 100, step: 1 };
+  }
   // Thousands of Tabler names resolve, so this is a field you type, not a list
   // you step through. An unknown name draws the fallback glyph.
-  if (spec === 'icon') return { kind: 'text' };
-  if (Array.isArray(spec)) return { kind: 'select', options: [...spec] };
+  if (spec === 'icon') {
+    return { kind: 'text' };
+  }
+  if (Array.isArray(spec)) {
+    return { kind: 'select', options: [...spec] };
+  }
   const range = spec as { min: number; max: number; step?: number };
   return { kind: 'number', min: range.min, max: range.max, step: range.step ?? 1 };
 }
 
 function inferSpec(value: unknown): Control | null {
-  if (typeof value === 'string') return { kind: 'text' };
-  if (typeof value === 'boolean') return { kind: 'boolean' };
-  if (typeof value === 'number') return { kind: 'number', min: 0, max: 100, step: 1 };
+  if (typeof value === 'string') {
+    return { kind: 'text' };
+  }
+  if (typeof value === 'boolean') {
+    return { kind: 'boolean' };
+  }
+  if (typeof value === 'number') {
+    return { kind: 'number', min: 0, max: 100, step: 1 };
+  }
   return null;
 }
 
@@ -98,7 +114,9 @@ function variantControls(
   const omitted = new Set(omit);
   const derived: DerivedVariants = { controls: [], matrix: [], defaults: {} };
   for (const [group, raw] of Object.entries(variants?.options ?? {})) {
-    if (omitted.has(group)) continue;
+    if (omitted.has(group)) {
+      continue;
+    }
     const { control, row, value } = variantGroup(group, raw, variants?.defaults?.[group]);
     derived.controls.push(control);
     derived.matrix.push(row);
@@ -115,10 +133,14 @@ function argControls(
   const out: ResolvedControl[] = [];
   for (const [key, value] of Object.entries(args)) {
     // A prop that is also a variant already has its control from the `sv`.
-    if (variantKeys.has(key)) continue;
+    if (variantKeys.has(key)) {
+      continue;
+    }
     const spec = specs[key];
     const control = spec ? resolveSpec(spec) : inferSpec(value);
-    if (control) out.push({ key, control, variant: false });
+    if (control) {
+      out.push({ key, control, variant: false });
+    }
   }
   return out;
 }

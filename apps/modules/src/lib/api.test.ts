@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { machineResponse } from './api';
 import { type Env, UNAVAILABLE } from './source';
+import { requestUrl } from './request-url.fixture';
 
 const ctx = () => ({ waitUntil: vi.fn() });
 
@@ -9,7 +10,9 @@ const req = (path: string, init?: RequestInit) =>
 
 async function machine(path: string, init?: RequestInit, env: Env = {}): Promise<Response> {
   const res = await machineResponse(req(path, init), env, ctx());
-  if (!res) throw new Error(`expected a machine response for ${path}`);
+  if (!res) {
+    throw new Error(`expected a machine response for ${path}`);
+  }
   return res;
 }
 
@@ -75,11 +78,13 @@ function upstreamServing(body: unknown, status = 200) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = requestUrl(input);
       calls.push(url);
       // The releases listing is a different upstream; a test that does not care
       // about history gets an empty one.
-      if (url.startsWith('https://api.github.com/')) return new Response('[]');
+      if (url.startsWith('https://api.github.com/')) {
+        return new Response('[]');
+      }
       return new Response(JSON.stringify(body), { status });
     }),
   );
@@ -92,8 +97,10 @@ function releasesServing(releases: unknown[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.startsWith('https://api.github.com/')) return new Response(JSON.stringify(releases));
+      const url = requestUrl(input);
+      if (url.startsWith('https://api.github.com/')) {
+        return new Response(JSON.stringify(releases));
+      }
       return new Response(JSON.stringify(CATALOG));
     }),
   );
@@ -313,8 +320,10 @@ describe('the RFC-110 documents', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.startsWith('https://api.github.com/')) return new Response('[]');
+        const url = requestUrl(input);
+        if (url.startsWith('https://api.github.com/')) {
+          return new Response('[]');
+        }
         if (url.endsWith('/history.json')) {
           return Response.json({
             schema: 1,

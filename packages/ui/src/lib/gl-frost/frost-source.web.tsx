@@ -42,7 +42,9 @@ export function FrostSource({
   useEffect(() => {
     const root = frame.current as unknown as HTMLElement | null;
     const surface = canvas.current;
-    if (!(root && surface)) return undefined;
+    if (!(root && surface)) {
+      return undefined;
+    }
     const made = createFrostEngine(surface, root, setReady);
     setEngine(made);
     return () => {
@@ -52,13 +54,19 @@ export function FrostSource({
   }, []);
 
   useEffect(() => {
-    if (!engine) return undefined;
+    if (!engine) {
+      return undefined;
+    }
     let live = true;
     if (src) {
       void loadPicture(src, veil, position, amount).then((picture) => {
-        if (live) engine.show(picture);
+        if (live) {
+          engine.show(picture);
+        }
       });
-    } else engine.show(null);
+    } else {
+      engine.show(null);
+    }
     return () => {
       live = false;
     };

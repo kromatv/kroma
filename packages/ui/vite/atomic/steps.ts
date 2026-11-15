@@ -18,7 +18,9 @@ export interface StepLayer {
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 function stated(value: unknown, property: string): string | number {
-  if (typeof value === 'string' || typeof value === 'number') return value;
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value;
+  }
   throw new Unstatic(`a ${property} stated per breakpoint as ${typeof value}`);
 }
 
@@ -26,11 +28,15 @@ function stepsOf(perStep: readonly Record<string, unknown>[], property: string):
   const steps: Step[] = [{ at: 0, value: stated(perStep[0]?.[property], property) }];
   for (let at = 1; at < perStep.length; at++) {
     const layer = perStep[at];
-    if (!layer) throw new Unstatic('a missing breakpoint layer');
+    if (!layer) {
+      throw new Unstatic('a missing breakpoint layer');
+    }
     if (!(property in layer)) {
       throw new Unstatic(`a ${property} stated at some breakpoints and not others`);
     }
-    if (same(layer[property], steps.at(-1)?.value)) continue;
+    if (same(layer[property], steps.at(-1)?.value)) {
+      continue;
+    }
     steps.push({ at, value: stated(layer[property], property) });
   }
   return steps;
@@ -75,13 +81,19 @@ function readsPerStep(property: string, steps: readonly Step[]): [string, Compil
  */
 export function compileSteps(perStep: readonly Record<string, unknown>[]): StepLayer {
   const base = perStep[0];
-  if (!base) throw new Unstatic('no breakpoint layers');
-  if (perStep.length === 1) return { values: base, rules: [] };
+  if (!base) {
+    throw new Unstatic('no breakpoint layers');
+  }
+  if (perStep.length === 1) {
+    return { values: base, rules: [] };
+  }
   const values: Record<string, unknown> = {};
   const rules: CompiledRule[] = [];
   for (const layer of perStep) {
     for (const property of Object.keys(layer)) {
-      if (property in base) continue;
+      if (property in base) {
+        continue;
+      }
       throw new Unstatic(`a ${property} stated at some breakpoints and not others`);
     }
   }

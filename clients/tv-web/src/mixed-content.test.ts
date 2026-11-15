@@ -12,7 +12,7 @@ const DISMISSED = 'kroma.tvweb.mixedContentDismissed';
 
 // jsdom's `location` is read-only, so the protocol is swapped wholesale.
 function servedOver(protocol: 'https:' | 'http:') {
-  vi.stubGlobal('location', { ...globalThis.location, protocol });
+  vi.stubGlobal('location', Object.assign({}, globalThis.location, { protocol }));
 }
 
 // This runner has no `localStorage` at all (Node exposes it only behind

@@ -4,7 +4,9 @@ import { type Point, pointGraph } from '#web/features/admin/module-points';
 
 function first(points: readonly Point[]): Point {
   const found = points[0];
-  if (!found) throw new Error('expected at least one point');
+  if (!found) {
+    throw new Error('expected at least one point');
+  }
   return found;
 }
 

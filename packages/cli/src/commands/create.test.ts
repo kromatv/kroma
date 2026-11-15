@@ -45,7 +45,9 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  if (dir) rmSync(dir, { recursive: true, force: true });
+  if (dir) {
+    rmSync(dir, { recursive: true, force: true });
+  }
   dir = '';
 });
 

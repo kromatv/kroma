@@ -32,13 +32,17 @@ type Keyframes = Record<string, { transform?: string }>;
 function keyframes(spec = SPEC): Keyframes {
   const rules = flat(spec).animationKeyframes as Keyframes[] | undefined;
   const first = rules?.[0];
-  if (!first) throw new Error('the drift style carries no @keyframes rule');
+  if (!first) {
+    throw new Error('the drift style carries no @keyframes rule');
+  }
   return first;
 }
 
 function frameAt(stop: string, spec = SPEC): string {
   const transform = keyframes(spec)[stop]?.transform;
-  if (!transform) throw new Error(`no transform at ${stop}`);
+  if (!transform) {
+    throw new Error(`no transform at ${stop}`);
+  }
   return transform;
 }
 

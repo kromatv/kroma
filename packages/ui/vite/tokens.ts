@@ -71,7 +71,9 @@ const alphaVars = (combos: ReadonlySet<string>, p: Record<ColorToken, string>) =
 const fadedVars = (p: Record<ColorToken, string>) =>
   Object.entries(p).flatMap(([k, v]) => {
     const { color, opacity } = splitAlpha(v);
-    if (opacity === 1) return [];
+    if (opacity === 1) {
+      return [];
+    }
     return [`${cssVar(k)}-opaque: ${color};`, `${cssVar(k)}-alpha: ${opacity};`];
   });
 
@@ -95,7 +97,9 @@ const typography = () => {
     ...Object.entries(fonts).map(([k, v]) => `--font-${k}: ${fontStack(v)};`),
     ...Object.entries(typeSpec).flatMap(([k, s]) => {
       const role = derived[k];
-      if (!role) return [];
+      if (!role) {
+        return [];
+      }
       return [
         `--type-${kebab(k)}: ${s.weight} ${s.size}px / ${s.ratio} var(--font-${s.family});`,
         `${typeProperty(k, 'family')}: var(--font-${s.family});`,

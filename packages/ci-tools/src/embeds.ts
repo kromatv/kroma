@@ -45,7 +45,9 @@ function embedsOf(file: string, body: string): string[] {
     const raw = m[1] ?? '';
     return normalize(posix.join(raw.startsWith('/') ? base : dirname(file), raw));
   });
-  if (!isBuildScript) return included;
+  if (!isBuildScript) {
+    return included;
+  }
   const literals = [...body.matchAll(BUILD_SCRIPT_PATH)].map((m) =>
     normalize(posix.join(base, m[1] ?? '')),
   );
@@ -62,18 +64,28 @@ export function warmUpCopies(dockerfile: string): string[] {
   const copies: string[] = [];
   let inBuilder = false;
   for (const line of dockerfile.split('\n')) {
-    if (/^FROM\s.*\sAS\s+builder\b/i.test(line)) inBuilder = true;
-    if (!inBuilder) continue;
-    if (/^RUN .*fn main\(\)/.test(line)) break;
+    if (/^FROM\s.*\sAS\s+builder\b/i.test(line)) {
+      inBuilder = true;
+    }
+    if (!inBuilder) {
+      continue;
+    }
+    if (/^RUN .*fn main\(\)/.test(line)) {
+      break;
+    }
     const [word, source] = line.split(/\s+/);
-    if (word === 'COPY' && source) copies.push(withoutTrailingSlash(source));
+    if (word === 'COPY' && source) {
+      copies.push(withoutTrailingSlash(source));
+    }
   }
   return copies;
 }
 
 function withoutTrailingSlash(path: string): string {
   let end = path.length;
-  while (end > 0 && path[end - 1] === '/') end -= 1;
+  while (end > 0 && path[end - 1] === '/') {
+    end -= 1;
+  }
   return path.slice(0, end);
 }
 

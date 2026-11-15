@@ -52,7 +52,9 @@ function DialogEntry({ entry, spec, first, onFire }: Readonly<DialogEntryProps>)
       active: false,
       entry: first,
       fire: () => {
-        if (spec) onFire(spec);
+        if (spec) {
+          onFire(spec);
+        }
       },
     }),
     [spec, first, onFire],
@@ -70,7 +72,9 @@ export function MenuSurfaceDialog({
   const pointerDriving = usePointerDriving();
   const fire = useCallback(
     (spec: MenuRowSpec) => {
-      if (spec.disabled) return;
+      if (spec.disabled) {
+        return;
+      }
       onDismiss('select');
       spec.select?.();
     },

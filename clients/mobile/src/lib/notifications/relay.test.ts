@@ -10,8 +10,11 @@ const store = new Map<string, string>();
 vi.mock('#mobile/lib/storage', () => ({
   loadPref: vi.fn(async (key: string) => store.get(key) ?? null),
   savePref: vi.fn(async (key: string, value: string | null) => {
-    if (value === null) store.delete(key);
-    else store.set(key, value);
+    if (value === null) {
+      store.delete(key);
+    } else {
+      store.set(key, value);
+    }
   }),
 }));
 
@@ -26,7 +29,9 @@ const EXPIRING = () => Date.now() + 10 * DAY;
 function relayAnswers(...grants: { grant: string; expiresAt: number }[]) {
   const fetchMock = vi.fn(async () => {
     const next = grants.shift();
-    if (!next) throw new Error('relay called more times than the test allowed');
+    if (!next) {
+      throw new Error('relay called more times than the test allowed');
+    }
     return { ok: true, json: async () => next } as unknown as Response;
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -55,7 +60,7 @@ describe('trading a device token for a grant', () => {
     expect(grant).toBe('v1.sealed');
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://push.kroma.tv/v1/grant');
-    expect(JSON.parse(String(init.body))).toEqual({
+    expect(JSON.parse(typeof init.body === 'string' ? init.body : '')).toEqual({
       transport: 'apns',
       token: 'DEVICE-TOKEN',
     });

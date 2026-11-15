@@ -45,7 +45,9 @@ const labelOf = () => document.activeElement?.getAttribute('aria-label') ?? '';
 const pillInFocus = () => document.activeElement?.firstElementChild;
 
 function walkTo(name: RegExp) {
-  for (let step = 0; step < 12 && !name.test(labelOf()); step++) press('Tab');
+  for (let step = 0; step < 12 && !name.test(labelOf()); step++) {
+    press('Tab');
+  }
 }
 
 describe('the player chrome and the document focus', () => {

@@ -77,7 +77,9 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
       }
       return () => {
         // Someone else's record is up now; theirs is not ours to take down.
-        if (published !== owner) return;
+        if (published !== owner) {
+          return;
+        }
         published = null;
         module.unpublish();
       };
@@ -87,9 +89,13 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
       listeners.add(onFound);
       if (listeners.size === 1) {
         const session = module.addListener('lan-beacon:found', (event) => {
-          if (event.epoch !== epoch) return;
+          if (event.epoch !== epoch) {
+            return;
+          }
           latest = event.services;
-          for (const listener of listeners) listener(latest);
+          for (const listener of listeners) {
+            listener(latest);
+          }
         });
         subscription = session;
         epoch += 1;
@@ -104,10 +110,14 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
 
       let released = false;
       return () => {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         listeners.delete(onFound);
-        if (listeners.size > 0) return;
+        if (listeners.size > 0) {
+          return;
+        }
         subscription?.remove();
         subscription = null;
         latest = [];

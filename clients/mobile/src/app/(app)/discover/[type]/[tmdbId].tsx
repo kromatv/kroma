@@ -48,7 +48,9 @@ export default function DiscoverRoute() {
   const params = useLocalSearchParams<{ type?: string; tmdbId?: string }>();
   const kind = TmdbKind.safeParse(routeParam(params.type));
   const tmdbId = Number(routeParam(params.tmdbId));
-  if (!(kind.success && Number.isFinite(tmdbId))) return <Redirect href="/" />;
+  if (!(kind.success && Number.isFinite(tmdbId))) {
+    return <Redirect href="/" />;
+  }
   return <DiscoverScreen kind={kind.data} tmdbId={tmdbId} />;
 }
 
@@ -66,8 +68,10 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
   });
   const fiche = useQuery(client.query.discovery.detail(kind, tmdbId));
 
-  if (fiche.isPending) return <Loading label={t('common.loading')} />;
-  if (fiche.isError)
+  if (fiche.isPending) {
+    return <Loading label={t('common.loading')} />;
+  }
+  if (fiche.isError) {
     return (
       <ErrorView
         message={t('requests.ledgerFailed')}
@@ -75,6 +79,7 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
         onRetry={() => fiche.refetch()}
       />
     );
+  }
 
   const detail = fiche.data;
   if (detail.localId) {

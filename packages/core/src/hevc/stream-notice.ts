@@ -20,10 +20,16 @@ export function streamNotice(
   mode: PlaybackMode,
   caps: PlaybackCapabilities = capabilities(),
 ): StreamNotice | null {
-  if (mode === 'direct') return null;
-  if (mode === 'remux') return { messageKey: 'player.repackaged' };
+  if (mode === 'direct') {
+    return null;
+  }
+  if (mode === 'remux') {
+    return { messageKey: 'player.repackaged' };
+  }
   const codec = replacedAudioCodec(item, caps);
-  if (!codec) return null;
+  if (!codec) {
+    return null;
+  }
   return {
     messageKey: 'player.audioAdjusted',
     messageVars: { codec: codec.toUpperCase() },

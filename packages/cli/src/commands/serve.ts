@@ -40,7 +40,9 @@ export function registryApp(dir: string) {
   });
   app.get('/schemas/:version{[0-9]+}/:name{[^/]+[.]json}', (c) => {
     const name = schemaNamed(c.req.param('name'));
-    if (!name) return c.json({ error: 'no such schema' }, 404);
+    if (!name) {
+      return c.json({ error: 'no such schema' }, 404);
+    }
     return json(jsonSchema(name, Number(c.req.param('version'))));
   });
   app.get('/schemas/:name{[^/]+[.]json}', (c) => {
@@ -51,7 +53,9 @@ export function registryApp(dir: string) {
     const file = c.req.param('file');
     const named = readBundles(dir).some((b) => b.file === file);
     const path = join(dir, file);
-    if (!named || !existsSync(path)) return c.json({ error: 'no such bundle' }, 404);
+    if (!named || !existsSync(path)) {
+      return c.json({ error: 'no such bundle' }, 404);
+    }
     const bytes = readFileSync(path);
     return new Response(
       new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength),
@@ -79,7 +83,9 @@ export async function serveCommand(options: ServeOptions): Promise<number> {
   Bun.serve({ port, fetch: registryApp(dir).fetch });
   const found = readBundles(dir);
   console.log(`serving ${found.length} bundle(s) from ${dir}\n`);
-  for (const b of found) console.log(`  ${b.manifest.id}  v${b.manifest.version}`);
+  for (const b of found) {
+    console.log(`  ${b.manifest.id}  v${b.manifest.version}`);
+  }
   console.log(`\n  http://localhost:${port}/registry.json`);
   console.log(`\nAdd http://localhost:${port} under Admin -> Modules -> Registries to browse it.`);
   await new Promise<never>(() => {});

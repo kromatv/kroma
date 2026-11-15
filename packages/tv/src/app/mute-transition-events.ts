@@ -6,8 +6,12 @@ const TRANSITION_EVENTS = ['transitionrun', 'transitionstart', 'transitionend', 
  *  know a transition ended uses a timer, as the intro does. */
 export function muteTransitionEvents(win: Window): () => void {
   const stop = (event: Event) => event.stopImmediatePropagation();
-  for (const type of TRANSITION_EVENTS) win.addEventListener(type, stop, { capture: true });
+  for (const type of TRANSITION_EVENTS) {
+    win.addEventListener(type, stop, { capture: true });
+  }
   return () => {
-    for (const type of TRANSITION_EVENTS) win.removeEventListener(type, stop, { capture: true });
+    for (const type of TRANSITION_EVENTS) {
+      win.removeEventListener(type, stop, { capture: true });
+    }
   };
 }

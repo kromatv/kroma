@@ -316,7 +316,9 @@ describe('HtmlEngine Shaka master', () => {
     const seen = watchLegacyTier(false);
     const fv = fakeVideo();
     const { engine } = makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
-    for (let i = 0; i < 200 && seen.reads === 0; i += 1) await Promise.resolve();
+    for (let i = 0; i < 200 && seen.reads === 0; i += 1) {
+      await Promise.resolve();
+    }
     expect(seen.reads).toBe(1);
     engine.destroy();
     await import('shaka-player/dist/shaka-player.compiled.js');
@@ -330,7 +332,9 @@ describe('HtmlEngine Shaka master', () => {
     const seen = watchLegacyTier(true);
     const fv = fakeVideo();
     const { engine } = makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
-    for (let i = 0; i < 200 && seen.reads === 0; i += 1) await Promise.resolve();
+    for (let i = 0; i < 200 && seen.reads === 0; i += 1) {
+      await Promise.resolve();
+    }
     expect(seen.reads).toBe(1);
     engine.destroy();
     await import('hls.js');
@@ -742,7 +746,9 @@ describe('HtmlEngine stall recovery', () => {
     hlsMasterUrl.mockClear();
     const onError = hlsMock.on.mock.calls[0]?.[1] as (e: string, d: unknown) => void;
 
-    for (let i = 0; i < 3; i += 1) onError('hlsError', { type: 'mediaError', fatal: true });
+    for (let i = 0; i < 3; i += 1) {
+      onError('hlsError', { type: 'mediaError', fatal: true });
+    }
     await tick();
 
     expect(hlsMock.recoverMediaError).toHaveBeenCalledTimes(2);

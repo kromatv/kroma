@@ -37,12 +37,16 @@ function useServerUpdateNotice() {
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
-  if (!allowed || !data) return null;
+  if (!allowed || !data) {
+    return null;
+  }
   const operation = data.operation;
   if (operation && !['complete', 'failed', 'deferred'].includes(operation.phase)) {
     return { version: operation.target.version, updating: true };
   }
-  if (!data.available || !data.latest) return null;
+  if (!data.available || !data.latest) {
+    return null;
+  }
   return { version: data.latest.version, updating: false };
 }
 
@@ -50,7 +54,9 @@ function useServerUpdateNotice() {
 export function ServerUpdateNotice() {
   const t = useT();
   const notice = useServerUpdateNotice();
-  if (!notice) return null;
+  if (!notice) {
+    return null;
+  }
   const label = notice.updating
     ? t('nav.serverUpdating')
     : t('admin.updateAvailable', { version: notice.version });
@@ -79,7 +85,9 @@ export function ServerUpdateNotice() {
 export function ServerUpdateIndicator() {
   const t = useT();
   const notice = useServerUpdateNotice();
-  if (!notice) return null;
+  if (!notice) {
+    return null;
+  }
   const label = notice.updating
     ? t('nav.serverUpdating')
     : t('admin.updateAvailable', { version: notice.version });

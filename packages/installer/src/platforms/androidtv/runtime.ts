@@ -19,7 +19,9 @@ export function androidProps(output: string): AndroidProps {
   const printed: Record<string, string> = {};
   for (const line of output.slice(0, MAX_OUTPUT_CHARS).split('\n')) {
     const [, key, value] = /^\[([^\]]+)]: \[(.*)]$/.exec(line.trim()) ?? [];
-    if (key !== undefined) printed[key] = value ?? '';
+    if (key !== undefined) {
+      printed[key] = value ?? '';
+    }
   }
   const parsed = AndroidProps.safeParse(printed);
   return parsed.success ? parsed.data : {};
@@ -32,7 +34,9 @@ export function androidProps(output: string): AndroidProps {
  */
 export function androidRuntime(props: AndroidProps, webview: string): Runtime | null {
   const version = props['ro.build.version.release'];
-  if (!version) return null;
+  if (!version) {
+    return null;
+  }
   const major = /versionName=(\d+)/.exec(webview.slice(0, MAX_OUTPUT_CHARS))?.[1];
   return {
     name: 'Android',
@@ -49,7 +53,9 @@ export function androidRuntime(props: AndroidProps, webview: string): Runtime | 
  */
 export function philipsAndroid(osType: string | undefined): Runtime | null {
   const tag = (osType ?? '').toUpperCase();
-  if (!tag.includes('ANDROID')) return null;
+  if (!tag.includes('ANDROID')) {
+    return null;
+  }
   const year = /(?:^|_)(20\d{2})(?:_|$)/.exec(tag)?.[1];
   const version = year === undefined ? undefined : PHILIPS_ANDROID_FLOOR[Number(year)];
   return version === undefined

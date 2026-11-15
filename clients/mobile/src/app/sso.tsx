@@ -16,7 +16,9 @@ export default function ProviderReturn() {
   const began = useRef(false);
 
   useEffect(() => {
-    if (began.current) return;
+    if (began.current) {
+      return;
+    }
     began.current = true;
     const leave = () => router.replace(status === 'signedIn' ? '/(app)/(tabs)' : '/sign-in');
     if (!serverUrl || !flow || !code) {

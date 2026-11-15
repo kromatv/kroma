@@ -80,7 +80,9 @@ function FocusScopeHost({
   useRemoteBridge(remote);
   // A replacement screen gets a fresh claim before children render.
   const [claim, setClaim] = useState(() => ({ key: entryKey, entry: createFocusEntry() }));
-  if (claim.key !== entryKey) setClaim({ key: entryKey, entry: createFocusEntry() });
+  if (claim.key !== entryKey) {
+    setClaim({ key: entryKey, entry: createFocusEntry() });
+  }
   const { entry } = claim;
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
@@ -113,7 +115,9 @@ function FocusScope(props: Readonly<ScreenScopeProps>) {
     parent ? null : createFocusServices(true, input, source ?? undefined),
   );
   const services = parent ?? owned;
-  if (!services) throw new Error('Focus scope requires its owning host');
+  if (!services) {
+    throw new Error('Focus scope requires its owning host');
+  }
   useEffect(() => services.source.retain(), [services]);
   return (
     <FocusServicesProvider value={services}>
@@ -136,7 +140,9 @@ function FocusScope(props: Readonly<ScreenScopeProps>) {
 function useLockFocusBehind(active: boolean): void {
   const { lock, unlock } = useLockNavigator();
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     lock();
     // The navigator counts locks rather than holding a flag, so overlapping
     // surfaces (a picker opened from a dialog) unlock in any order.
@@ -157,7 +163,9 @@ function FocusRegion({ children, style, onKey }: Readonly<FocusGroupProps>) {
   // same degradation <Focusable> makes, and it is what lets a kit component
   // holding a FocusRegion (a dialog's action row) render in an app that has
   // no spatial navigation at all.
-  if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
+  if (!useInsideFocusScope()) {
+    return <View style={flat(style)}>{children}</View>;
+  }
   return (
     <FocusLiftHost>
       {(held) => (
@@ -184,7 +192,9 @@ function FocusRegion({ children, style, onKey }: Readonly<FocusGroupProps>) {
  */
 function FocusColumn({ children, style, grid = false, onKey }: Readonly<FocusColumnProps>) {
   // See <FocusRegion>: unscoped, a stack is just a stack.
-  if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
+  if (!useInsideFocusScope()) {
+    return <View style={flat(style)}>{children}</View>;
+  }
   return (
     <FocusLiftHost>
       {(held) => (

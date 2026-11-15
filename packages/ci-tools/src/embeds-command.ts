@@ -9,7 +9,9 @@ async function rustPaths(dir: string): Promise<string[]> {
   const glob = new Bun.Glob('**/*.rs');
   const paths: string[] = [];
   for await (const file of glob.scan({ cwd: join(root, dir), onlyFiles: true })) {
-    if (file.includes('/target/') || file.includes('/ui/')) continue;
+    if (file.includes('/target/') || file.includes('/ui/')) {
+      continue;
+    }
     paths.push(`${dir}/${file}`);
   }
   return paths;
@@ -39,9 +41,10 @@ export async function main(): Promise<void> {
     );
     return;
   }
-  for (const e of missing)
+  for (const e of missing) {
     console.error(
       `::error file=${e.from}::embeds ${e.path}, which no warm-up COPY in server/Dockerfile puts in place`,
     );
+  }
   throw new Error(`${missing.length} embed(s) missing from the Dockerfile warm-up stage`);
 }

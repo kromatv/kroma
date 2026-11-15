@@ -25,8 +25,12 @@ const CEILING_MS = BUDGET_MS * 4;
 const HEIGHT = 34;
 
 function barColor(ms: number): string {
-  if (ms > BUDGET_MS * 2) return colors.danger;
-  if (ms > BUDGET_MS) return colors.accent;
+  if (ms > BUDGET_MS * 2) {
+    return colors.danger;
+  }
+  if (ms > BUDGET_MS) {
+    return colors.accent;
+  }
   return colors.success;
 }
 

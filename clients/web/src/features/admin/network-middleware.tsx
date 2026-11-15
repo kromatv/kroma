@@ -37,13 +37,17 @@ const COLUMNS: readonly MiddlewareColumn[] = [
 export function moved(list: readonly Middleware[], from: number, offset: -1 | 1) {
   const to = from + offset;
   const one = list[from];
-  if (!one || to < 0 || to >= list.length) return null;
+  if (!one || to < 0 || to >= list.length) {
+    return null;
+  }
   const rest = list.filter((_, index) => index !== from);
   return [...rest.slice(0, to), one, ...rest.slice(to)];
 }
 
 function skippedText(one: Middleware, t: ReturnType<typeof useT>): string | null {
-  if (one.skipped === 0) return null;
+  if (one.skipped === 0) {
+    return null;
+  }
   return one.skipped === 1
     ? t('network.middlewareSkippedOnce')
     : t('network.middlewareSkipped', { count: one.skipped });
@@ -60,8 +64,12 @@ export function NetworkMiddleware() {
     MIDDLEWARE_POLL_MS,
   );
 
-  if (failed && data === null) return <NetworkLoadFailed error={error} />;
-  if (data === null) return <TableSkeleton rows={3} />;
+  if (failed && data === null) {
+    return <NetworkLoadFailed error={error} />;
+  }
+  if (data === null) {
+    return <TableSkeleton rows={3} />;
+  }
   if (data.middleware.length === 0) {
     return (
       <EmptyState.Root icon="filter">
@@ -110,7 +118,9 @@ export function NetworkMiddleware() {
             const skipped = skippedText(one, t);
             const move = (offset: -1 | 1) => {
               const next = moved(list, index, offset);
-              if (next) void save(next);
+              if (next) {
+                void save(next);
+              }
             };
             return (
               <Table.Row key={one.module}>

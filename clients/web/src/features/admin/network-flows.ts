@@ -49,7 +49,9 @@ export function flowPositionAt(
   current: FlowPosition,
   shown: readonly Flow[],
 ): FlowPosition {
-  if (page === 1) return FIRST_FLOW_PAGE;
+  if (page === 1) {
+    return FIRST_FLOW_PAGE;
+  }
   const newest = shown[0]?.id;
   const anchored = newest === undefined ? null : newest + 1;
   return { page, before: current.before ?? anchored };

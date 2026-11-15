@@ -274,7 +274,7 @@ describe('addEngine', () => {
   });
 
   it('holds Save until the name and every required field are there', () => {
-    open({
+    void open({
       title: 'Add a download client',
       engines: [engine('transmission', [field({ key: 'url', required: true })])],
       onSubmit: vi.fn(),
@@ -289,7 +289,7 @@ describe('addEngine', () => {
 
   it('submits a select field as the option that was picked', async () => {
     const onSubmit = vi.fn(async () => {});
-    open({
+    void open({
       title: 'Add an indexer',
       engines: [
         engine('cardigann', [
@@ -319,7 +319,7 @@ describe('addEngine', () => {
   // switching back must not lose what was typed.
   it('keeps each engine’s draft to itself', async () => {
     const onSubmit = vi.fn(async () => {});
-    open({
+    void open({
       title: 'Add a download client',
       engines: [
         engine('transmission', [field({ key: 'url' })]),
@@ -348,7 +348,7 @@ describe('addEngine', () => {
   });
 
   it('says why the server refused, and leaves the panel open', async () => {
-    open({
+    void open({
       title: 'Add a download client',
       engines: [engine('transmission')],
       onSubmit: vi.fn(async () => {

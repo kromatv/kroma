@@ -51,7 +51,9 @@ export function BarList({
   // The fold-up row is a label, not a key, so it never reaches `format`: the
   // formatters here are `Intl.DisplayNames`, which throws on anything that is
   // not a well-formed code.
-  if (rest > 0) rows.push({ key: otherLabel, label: otherLabel, icon: null, n: rest, other: true });
+  if (rest > 0) {
+    rows.push({ key: otherLabel, label: otherLabel, icon: null, n: rest, other: true });
+  }
   const peak = rows.reduce((top, { n }) => Math.max(top, n), 0);
   const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 });
 

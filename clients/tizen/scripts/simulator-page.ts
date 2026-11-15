@@ -25,7 +25,9 @@ export function readPainted(): Painted | null {
   const frame = document.querySelector<HTMLIFrameElement>('iframe');
   const doc = frame?.contentDocument;
   const view = frame?.contentWindow;
-  if (!doc || !view) return null;
+  if (!doc || !view) {
+    return null;
+  }
 
   const span = doc.createElement('span');
   span.style.cssText = 'position:absolute;visibility:hidden;font-size:64px;white-space:nowrap';
@@ -56,15 +58,21 @@ export function readFocusRing(): string | null {
   const frame = document.querySelector<HTMLIFrameElement>('iframe');
   const doc = frame?.contentDocument;
   const view = frame?.contentWindow;
-  if (!doc || !view) return null;
+  if (!doc || !view) {
+    return null;
+  }
 
   let ringed: string | null = null;
   for (const element of doc.querySelectorAll('*')) {
     const style = view.getComputedStyle(element);
-    if (style.outlineStyle === 'none' || Number.parseFloat(style.outlineWidth) < 1) continue;
+    if (style.outlineStyle === 'none' || Number.parseFloat(style.outlineWidth) < 1) {
+      continue;
+    }
     const label = element.getAttribute('aria-label') ?? element.textContent ?? '';
     const text = label.replace(/\s+/g, ' ').trim();
-    if (text) ringed = text.slice(0, 60);
+    if (text) {
+      ringed = text.slice(0, 60);
+    }
   }
   return ringed;
 }
@@ -72,14 +80,18 @@ export function readFocusRing(): string | null {
 /** Centre of one button on the simulator's remote graphic, in page coordinates. */
 export function readButtonSpot(id: string): { x: number; y: number } | null {
   const element = document.getElementById(id);
-  if (!element) return null;
+  if (!element) {
+    return null;
+  }
   const box = element.getBoundingClientRect();
   return { x: Math.round(box.left + box.width / 2), y: Math.round(box.top + box.height / 2) };
 }
 
 export function setViewportSrc(src: string): void {
   const frame = document.querySelector<HTMLIFrameElement>('iframe');
-  if (frame) frame.src = src;
+  if (frame) {
+    frame.src = src;
+  }
 }
 
 // The two probes the engine gate makes, answered the way a set below that tier

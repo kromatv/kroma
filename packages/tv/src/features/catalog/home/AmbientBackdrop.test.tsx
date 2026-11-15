@@ -62,7 +62,9 @@ describe('AmbientBackdrop', () => {
 
     for (const id of ['b', 'c', 'd']) {
       focus(id);
-      act(() => vi.advanceTimersByTime(120));
+      act(() => {
+        vi.advanceTimersByTime(120);
+      });
     }
 
     expect(art(container)?.getAttribute('src')).toBe('http://s/a-back.jpg');
@@ -73,9 +75,13 @@ describe('AmbientBackdrop', () => {
 
     for (const id of ['b', 'c', 'd']) {
       focus(id);
-      act(() => vi.advanceTimersByTime(120));
+      act(() => {
+        vi.advanceTimersByTime(120);
+      });
     }
-    act(() => vi.advanceTimersByTime(400));
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
 
     expect(art(container)?.getAttribute('src')).toBe('http://s/d-back.jpg');
   });
@@ -89,11 +95,15 @@ describe('AmbientBackdrop', () => {
   it('dissolves instead of cutting: the settled art holds under the incoming frame', () => {
     const { container, focus } = mount('a');
     const first = art(container);
-    if (!first) throw new Error('no artwork rendered');
+    if (!first) {
+      throw new Error('no artwork rendered');
+    }
     fireEvent.load(first);
 
     focus('b');
-    act(() => vi.advanceTimersByTime(400));
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
 
     expect(outgoing(container)?.getAttribute('src')).toBe('http://s/a-back.jpg');
     expect(art(container)?.getAttribute('src')).toBe('http://s/b-back.jpg');

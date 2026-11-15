@@ -30,7 +30,9 @@ export function beyondDecoder(
 ): FrameOverrun | null {
   const video = item.video;
   const limit = caps.frameLimits?.[video?.codec ?? ''];
-  if (!limit || video?.width == null || video.height == null) return null;
+  if (!limit || video?.width == null || video.height == null) {
+    return null;
+  }
   const frame = { width: video.width, height: video.height };
   return frame.width > limit.width || frame.height > limit.height ? { frame, limit } : null;
 }
@@ -89,12 +91,16 @@ export function decoderMaxFrame(
   caps: PlaybackCapabilities = capabilities(),
 ): FrameSize | undefined {
   const limits = caps.frameLimits;
-  if (!limits) return undefined;
+  if (!limits) {
+    return undefined;
+  }
   const source = item?.video?.codec;
   const reachable = [limits[H264], source ? limits[source] : undefined].filter(
     (l) => l !== undefined,
   );
-  if (reachable.length === 0) return undefined;
+  if (reachable.length === 0) {
+    return undefined;
+  }
   return {
     width: Math.min(...reachable.map((l) => l.width)),
     height: Math.min(...reachable.map((l) => l.height)),
@@ -155,7 +161,9 @@ export function canRenderHdr(
   caps: PlaybackCapabilities = capabilities(),
 ): boolean {
   const video = item.video;
-  if (video?.hdrFormat !== 'dolbyVision' || caps.hdr.dolbyVision) return true;
+  if (video?.hdrFormat !== 'dolbyVision' || caps.hdr.dolbyVision) {
+    return true;
+  }
   const profile = video.dolbyVisionProfile;
   return profile == null || !DV_WITHOUT_A_BASE_LAYER.has(profile);
 }
@@ -168,8 +176,12 @@ function depthVerdict(options: {
   unsupported10: MessageKey;
   ok: MessageKey;
 }): DirectPlayVerdict {
-  if (!options.decodes) return undecodable(options.unsupported);
-  if (options.tenBit && !options.decodes10) return undecodable(options.unsupported10);
+  if (!options.decodes) {
+    return undecodable(options.unsupported);
+  }
+  if (options.tenBit && !options.decodes10) {
+    return undecodable(options.unsupported10);
+  }
   return { canDirectPlay: true, messageKey: options.ok };
 }
 
@@ -223,24 +235,28 @@ export function canDirectPlay(
   caps: PlaybackCapabilities = capabilities(),
 ): DirectPlayVerdict {
   const file = representativeFile(item);
-  if (file?.unreadable)
+  if (file?.unreadable) {
     return {
       canDirectPlay: false,
       messageKey: 'player.fileUnreadable',
       messageVars: { reason: file.unreadable },
       hintKey: 'player.fileUnreadableHint',
     };
+  }
 
   const over = beyondDecoder(item, caps);
-  if (over)
+  if (over) {
     return {
       canDirectPlay: false,
       messageKey: 'player.frameTooLarge',
       messageVars: overrunLabels(over),
       hintKey: 'player.frameTooLargeHint',
     };
+  }
 
-  if (!canRenderHdr(item, caps)) return undecodable('player.dolbyVisionUnsupported');
+  if (!canRenderHdr(item, caps)) {
+    return undecodable('player.dolbyVisionUnsupported');
+  }
 
   return codecVerdict({
     codec: item.video?.codec ?? UNNAMED_CODEC,

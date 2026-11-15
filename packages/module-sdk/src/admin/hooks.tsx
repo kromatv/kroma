@@ -78,7 +78,9 @@ export function useFetch<T>(
     keyRef.current = key;
   });
   const reload = useCallback(async () => {
-    if (keyRef.current) await queryClient.invalidateQueries({ queryKey: keyRef.current });
+    if (keyRef.current) {
+      await queryClient.invalidateQueries({ queryKey: keyRef.current });
+    }
   }, [queryClient]);
   return { data: data ?? null, loading: asked && isPending, failed: isError, error, reload };
 }
@@ -97,7 +99,9 @@ export function useAsyncAction(): {
     try {
       await fn();
     } catch (e) {
-      if (onError) setError(onError(e));
+      if (onError) {
+        setError(onError(e));
+      }
     } finally {
       setBusy(false);
     }
@@ -120,6 +124,8 @@ export function isAnyAdmin(user: Pick<User, 'permissions'> | null | undefined): 
 /** Whether the current user satisfies `cap` (or is any admin when `cap` is null). */
 export function useCap(cap?: Permission | null): boolean {
   const { user } = useAdminHost();
-  if (!user) return false;
+  if (!user) {
+    return false;
+  }
   return cap ? hasPermission(user, cap) : isAnyAdmin(user);
 }

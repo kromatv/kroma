@@ -17,7 +17,9 @@ export function ReleaseSortSelect({ view }: Readonly<{ view: ReleaseView }>) {
       value={view.sort}
       onValueChange={(next) => {
         const picked = releaseSortOf(next);
-        if (picked) view.setSort(picked);
+        if (picked) {
+          view.setSort(picked);
+        }
       }}
       label={t('requests.sortBy')}
     >

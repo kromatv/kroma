@@ -27,7 +27,9 @@ async function writerUnder(data: string | undefined) {
 afterEach(() => vi.unstubAllEnvs());
 
 afterAll(() => {
-  for (const base of bases) rmSync(base, { recursive: true, force: true });
+  for (const base of bases) {
+    rmSync(base, { recursive: true, force: true });
+  }
 });
 
 describe('profilesXml', () => {

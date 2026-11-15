@@ -49,7 +49,9 @@ export function useHandoffPicker(opts: HandoffPickerOptions): HandoffPicker {
   const [asking, setAsking] = useState<DiscoveredTv | null>(null);
 
   useEffect(() => {
-    if (!attempt?.outcome) return;
+    if (!attempt?.outcome) {
+      return;
+    }
     const timer = setTimeout(() => setAttempt(null), HANDOFF_OUTCOME_MS);
     return () => clearTimeout(timer);
   }, [attempt]);
@@ -60,7 +62,9 @@ export function useHandoffPicker(opts: HandoffPickerOptions): HandoffPicker {
       const result = await connect(device, check);
       // The beacon went while the grant was in flight and nobody did anything
       // wrong, so there is nothing to report on the row.
-      if (result === 'dropped') return result;
+      if (result === 'dropped') {
+        return result;
+      }
       if (result === 'granted') {
         setAttempt({ device, outcome: 'done' });
         setAsking(null);
@@ -75,7 +79,9 @@ export function useHandoffPicker(opts: HandoffPickerOptions): HandoffPicker {
         setAttempt(null);
         // A row this shell believed needed no code, and the server says
         // otherwise: ask for it rather than leave a tap that did nothing.
-        if (result === 'checkRequired') setAsking(device);
+        if (result === 'checkRequired') {
+          setAsking(device);
+        }
         return result;
       }
       setAttempt({ device, outcome: result });
@@ -145,7 +151,9 @@ export function useCheckPrompt(opts: CheckPromptOptions): CheckPrompt {
       setRefused(null);
       try {
         const result = await onGrant(device, value.toUpperCase());
-        if (result === 'granted' || result === 'dropped') return;
+        if (result === 'granted' || result === 'dropped') {
+          return;
+        }
         setRefused(result);
         setCode('');
       } finally {
@@ -165,8 +173,12 @@ export function handoffRowHint(
   outcome: HandoffOutcome | null,
   t: Translate,
 ): string {
-  if (busy) return t('handoff.connecting');
-  if (outcome) return outcome === 'done' ? t('handoff.rowDone') : t(`handoff.${outcome}`);
+  if (busy) {
+    return t('handoff.connecting');
+  }
+  if (outcome) {
+    return outcome === 'done' ? t('handoff.rowDone') : t(`handoff.${outcome}`);
+  }
   // A television that has no name of its own publishes its platform as one
   // (see `deviceName` in packages/tv), so showing the platform underneath it
   // would print the same word twice.

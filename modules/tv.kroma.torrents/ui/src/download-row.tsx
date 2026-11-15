@@ -114,16 +114,21 @@ export function DownloadRowView({
 function useOpenInKroma(dl: DownloadView): (() => void) | null {
   const navigate = useNavigate();
   const localId = dl.localId;
-  if (!localId) return null;
-  return () =>
-    navigate({
+  if (!localId) {
+    return null;
+  }
+  return () => {
+    void navigate({
       to: dl.kind === 'movie' ? '/movies/$id' : '/shows/$id',
       params: { id: localId },
     });
+  };
 }
 
 function openTrackerPage(url: string | null | undefined): (() => void) | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   return () => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };

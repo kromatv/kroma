@@ -26,8 +26,12 @@ export function isSortMode(v: unknown): v is SortMode {
 }
 
 function cmp(a: string, b: string): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
+  if (a < b) {
+    return -1;
+  }
+  if (a > b) {
+    return 1;
+  }
   return 0;
 }
 
@@ -35,9 +39,13 @@ function releaseValue(item: Sortable): number | null {
   const iso = item.metadata?.releaseDate;
   if (iso) {
     const ms = Date.parse(iso);
-    if (!Number.isNaN(ms)) return ms;
+    if (!Number.isNaN(ms)) {
+      return ms;
+    }
   }
-  if (item.year != null) return Date.UTC(item.year, 0, 1);
+  if (item.year != null) {
+    return Date.UTC(item.year, 0, 1);
+  }
   return null;
 }
 
@@ -48,18 +56,30 @@ const byTitle = (a: Sortable, b: Sortable): number => a.title.localeCompare(b.ti
 function byRelease(a: Sortable, b: Sortable): number {
   const av = releaseValue(a);
   const bv = releaseValue(b);
-  if (av == null && bv == null) return byTitle(a, b);
-  if (av == null) return 1;
-  if (bv == null) return -1;
+  if (av == null && bv == null) {
+    return byTitle(a, b);
+  }
+  if (av == null) {
+    return 1;
+  }
+  if (bv == null) {
+    return -1;
+  }
   return bv - av || byTitle(a, b);
 }
 
 function byRating(a: Sortable, b: Sortable): number {
   const av = a.metadata?.rating ?? null;
   const bv = b.metadata?.rating ?? null;
-  if (av == null && bv == null) return (b.year ?? 0) - (a.year ?? 0) || byTitle(a, b);
-  if (av == null) return 1;
-  if (bv == null) return -1;
+  if (av == null && bv == null) {
+    return (b.year ?? 0) - (a.year ?? 0) || byTitle(a, b);
+  }
+  if (av == null) {
+    return 1;
+  }
+  if (bv == null) {
+    return -1;
+  }
   return bv - av || (b.year ?? 0) - (a.year ?? 0) || byTitle(a, b);
 }
 
@@ -94,8 +114,11 @@ export function collectGenres(items: readonly Sortable[]): GenreCount[] {
   for (const it of items) {
     for (const { slug, name } of genreEntries(it.metadata)) {
       const seen = counts.get(slug);
-      if (seen) seen.count += 1;
-      else counts.set(slug, { slug, name: name.trim() || slug, count: 1 });
+      if (seen) {
+        seen.count += 1;
+      } else {
+        counts.set(slug, { slug, name: name.trim() || slug, count: 1 });
+      }
     }
   }
   return [...counts.values()].sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug));
@@ -105,13 +128,15 @@ export function collectGenres(items: readonly Sortable[]): GenreCount[] {
  * own spellings, so `/genre/family` finds a title stored as `Familial`. */
 export function hasGenre(item: Sortable, genre: string): boolean {
   const want = genreSlug(genre);
-  if (!want) return false;
+  if (!want) {
+    return false;
+  }
   return genreSlugs(item.metadata).includes(want);
 }
 
 /** Every fast-scroll bucket, in rail order: digits and symbols first, matching
  * where `localeCompare` files them. */
-export const TITLE_LETTERS: readonly string[] = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+export const TITLE_LETTERS: readonly string[] = ['#', ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ')];
 
 // The combining-marks range, not `\p{M}`: this module ships to the legacy
 // webOS tier, whose engine cannot parse unicode property escapes.
@@ -127,8 +152,12 @@ const foldChar = (ch: string): string =>
 export function titleLetter(title: string): string {
   for (const ch of title) {
     const c = foldChar(ch).charAt(0);
-    if (c >= 'A' && c <= 'Z') return c;
-    if (c >= '0' && c <= '9') return '#';
+    if (c >= 'A' && c <= 'Z') {
+      return c;
+    }
+    if (c >= '0' && c <= '9') {
+      return '#';
+    }
   }
   return '#';
 }
@@ -145,7 +174,9 @@ export function letterMarks(items: readonly Sortable[]): LetterMark[] {
   const seen = new Set<string>();
   items.forEach((item, index) => {
     const letter = titleLetter(item.title);
-    if (seen.has(letter)) return;
+    if (seen.has(letter)) {
+      return;
+    }
     seen.add(letter);
     marks.push({ letter, index });
   });

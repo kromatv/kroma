@@ -46,10 +46,14 @@ const STORY_MDX = '.story.mdx';
 // rather than silently moving nothing on the canvas.
 function checkSceneArgs(name: string, compiled: Story, scenes: readonly LiftedScene[]): void {
   const known = new Set([...Object.keys(compiled.args), ...compiled.controls.map((c) => c.key)]);
-  if (known.size === 0) return;
+  if (known.size === 0) {
+    return;
+  }
   for (const scene of scenes) {
     for (const key of Object.keys(scene.args ?? {})) {
-      if (known.has(key)) continue;
+      if (known.has(key)) {
+        continue;
+      }
       throw new Error(
         `${name}: scene "${scene.name}" sets an arg the story has no control for: \`${key}\`. ` +
           `It knows ${[...known].sort((a, b) => a.localeCompare(b)).join(', ')}.`,
@@ -76,7 +80,7 @@ function storyFromMdx(module: StoryMdxModule, path?: string): Story {
     ...def,
     name,
     matrix: matrix === true ? undefined : false,
-    scenes: lifted.map(({ code, ...scene }) => scene as SceneDef<Args>),
+    scenes: lifted.map(({ code: _code, ...scene }) => scene as SceneDef<Args>),
   } as StoryDef<Args>);
   checkSceneArgs(name, compiled, lifted);
   return {

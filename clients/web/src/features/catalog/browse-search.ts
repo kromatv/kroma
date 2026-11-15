@@ -9,7 +9,7 @@ const MAX_GENRE_LENGTH = 64;
 const BrowseSearchParams = z
   .object({
     sort: z.enum(SORT_MODES).optional().catch(undefined),
-    genre: z.string().min(1).max(MAX_GENRE_LENGTH).optional().catch(undefined),
+    genre: z.string().nonempty().max(MAX_GENRE_LENGTH).optional().catch(undefined),
   })
   .catch({});
 
@@ -24,7 +24,11 @@ export interface BrowseSearch {
 export function validateBrowseSearch(s: Record<string, unknown>): BrowseSearch {
   const { sort, genre } = BrowseSearchParams.parse(s);
   const out: BrowseSearch = {};
-  if (sort) out.sort = sort;
-  if (genre) out.genre = genre;
+  if (sort) {
+    out.sort = sort;
+  }
+  if (genre) {
+    out.genre = genre;
+  }
   return out;
 }

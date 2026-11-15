@@ -77,7 +77,9 @@ function sortSlots(children: ReactNode): PlayerSlots {
   };
   Children.forEach(children, (child) => {
     if (!isValidElement(child)) {
-      if (child != null) at.rest.push(child);
+      if (child != null) {
+        at.rest.push(child);
+      }
       return;
     }
     const face = FACES.get(child.type);

@@ -28,7 +28,9 @@ function probe(source: string, file = join(REPO, 'packages/ui/src/probe.ts')): u
   const program = parseModule(`${source}\nexport const probe = PROBE;`, file);
   const scope = scopeOf(program, file);
   const init = scope.consts.get('probe');
-  if (!init) throw new Error('no probe');
+  if (!init) {
+    throw new Error('no probe');
+  }
   return evaluate(init, scope, loader);
 }
 

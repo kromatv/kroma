@@ -118,7 +118,9 @@ function buildSections(data: UpNextData, t: Translate): Section[] {
 
 function peekSections(sections: Section[]): Section[] {
   const first = sections[0];
-  if (!first) return [];
+  if (!first) {
+    return [];
+  }
   return [{ ...first, items: first.items.slice(0, UP_NEXT_COLUMNS) }];
 }
 
@@ -149,7 +151,9 @@ function UpNextSheetBase({
 
   const live = useDeferredValue(open);
   const [lifted, setLifted] = useState(false);
-  if (open && lifted) setLifted(false);
+  if (open && lifted) {
+    setLifted(false);
+  }
   const lift = !open && !live && lifted ? PEEK_LIFT : 0;
   const slide = useSheetSlide(open, parkOffset(sheetHeight) - lift);
 
@@ -171,7 +175,9 @@ function UpNextSheetBase({
   // against it.
   const overhang = RING_ROOM + (((card ?? 0) * 9) / 16) * ((FOCUS_SCALE - 1) / 2);
   const headroom = overhang * 2;
-  if (!open && !live && (!revealed || items.length === 0)) return null;
+  if (!open && !live && (!revealed || items.length === 0)) {
+    return null;
+  }
 
   const grouped = sections.length > 1;
   const shown = live ? sections : peekSections(sections);

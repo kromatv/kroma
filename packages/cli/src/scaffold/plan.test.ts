@@ -55,7 +55,9 @@ const V: Versions = {
 };
 
 afterEach(() => {
-  if (dir) rmSync(dir, { recursive: true, force: true });
+  if (dir) {
+    rmSync(dir, { recursive: true, force: true });
+  }
   dir = '';
 });
 

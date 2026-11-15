@@ -41,7 +41,9 @@ function checkout(): string {
 const plugin = (at: string): Hooks => gitHistory({ repo: at, root: ROOT }) as unknown as Hooks;
 
 afterEach(() => {
-  if (repo) rmSync(repo, { recursive: true, force: true });
+  if (repo) {
+    rmSync(repo, { recursive: true, force: true });
+  }
   repo = '';
 });
 

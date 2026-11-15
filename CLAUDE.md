@@ -49,7 +49,7 @@ These are the CI hard gates (`.github/workflows/ci.yml`, see
 ```bash
 bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool)
 bun run test             # vitest (two projects: web + native)
-bun run check            # oxlint + oxfmt  (check:fix to write)
+bun run check            # oxlint with types + the Sonar mirror + the lint debt list + oxfmt  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
 bun run modules:test:wasm  # every module's tests again, each one a component
@@ -350,6 +350,11 @@ the build on anything a legacy engine cannot parse.
 - **File size:** hard-split files > 300 LOC; split 200–300 only at a natural seam.
   Cut at a domain/layer seam, never at an arbitrary line. Generated, vendored,
   locale-JSON and irreducible-adapter files are exempt.
+- **Code limits are lint errors** ([`CONVENTIONS.md`](CONVENTIONS.md#code-limits-are-lint-errors)):
+  30 lines per function, 3 parameters, complexity 8, nesting 3, braces on every
+  body, no boolean flag parameter, no `as`, no `!`, no floating promise. New code
+  meets all of them. Older code is held by a debt list that only shrinks: when you
+  fix a finding in a listed file, run `bun run lint:debt --update` and commit it.
 - **zod at every trust boundary**: HTTP bodies, stored blobs, third-party JSON,
   cross-process messages. No `typeof` chains, no `as Record<string, unknown>`.
   Bound the body size by hand *before* parsing.

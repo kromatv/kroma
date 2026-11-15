@@ -19,7 +19,9 @@ export function useControlsHold(hold: (() => () => void) | undefined): {
 
   return {
     take: () => {
-      if (!release.current && hold) release.current = hold();
+      if (!release.current && hold) {
+        release.current = hold();
+      }
     },
     give: () => {
       release.current?.();

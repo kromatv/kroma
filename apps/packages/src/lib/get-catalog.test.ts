@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_REPO } from './catalog';
+import { requestUrl } from './request-url.fixture';
 
 vi.mock('@tanstack/react-start/server', () => ({
   getRequest: () => new Request('https://packages.kroma.tv/browse?channel=canary'),
@@ -36,7 +37,9 @@ function ghServing(releases: unknown[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      if (new URL(String(input)).hostname === 'api.github.com') return Response.json(releases);
+      if (new URL(requestUrl(input)).hostname === 'api.github.com') {
+        return Response.json(releases);
+      }
       return new Response('', { status: 404 });
     }),
   );

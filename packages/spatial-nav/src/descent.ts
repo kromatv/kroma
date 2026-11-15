@@ -3,10 +3,14 @@ import type { FocusTree, TreeNode } from './focus-tree';
 /** The focusable node `node` stands for: itself when it is focusable, else the
  *  child it was last left on, else its first focusable descendant. */
 export function focusableIn(tree: FocusTree, node: TreeNode): TreeNode | null {
-  if (node.focusable) return node;
+  if (node.focusable) {
+    return node;
+  }
   const remembered = tree.activeChildOf(node);
   const found = remembered ? focusableIn(tree, remembered) : null;
-  if (found !== null) return found;
+  if (found !== null) {
+    return found;
+  }
   return firstAmong(
     tree,
     tree.childrenOf(node.id).filter((child) => child !== remembered),
@@ -16,7 +20,9 @@ export function focusableIn(tree: FocusTree, node: TreeNode): TreeNode | null {
 export function firstAmong(tree: FocusTree, nodes: readonly TreeNode[]): TreeNode | null {
   for (const node of nodes) {
     const found = focusableIn(tree, node);
-    if (found !== null) return found;
+    if (found !== null) {
+      return found;
+    }
   }
   return null;
 }

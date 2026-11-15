@@ -39,16 +39,22 @@ function heard(target: EventTarget, answer?: (event: KeyboardEvent) => void): Ke
 
 function keydown(key: string, keyCode?: number): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
-  if (keyCode !== undefined) Object.defineProperty(event, 'keyCode', { value: keyCode });
+  if (keyCode !== undefined) {
+    Object.defineProperty(event, 'keyCode', { value: keyCode });
+  }
   return event;
 }
 
 const codeOf = (event: KeyboardEvent) => (event as { keyCode: number }).keyCode;
 
 afterEach(() => {
-  for (const step of undo.splice(0)) step();
+  for (const step of undo.splice(0)) {
+    step();
+  }
   vi.restoreAllMocks();
-  if (scrollY) Object.defineProperty(window, 'scrollY', scrollY);
+  if (scrollY) {
+    Object.defineProperty(window, 'scrollY', scrollY);
+  }
   document.body.innerHTML = '';
 });
 
@@ -154,7 +160,9 @@ describe('mirrorFocus', () => {
 
     const focus = HTMLElement.prototype.focus;
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement) {
-      if (this === el) scroller.scrollTop = 0;
+      if (this === el) {
+        scroller.scrollTop = 0;
+      }
       focus.call(this);
     });
 
@@ -170,7 +178,9 @@ describe('mirrorFocus', () => {
 
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement) {
-      if (this === el) Object.defineProperty(window, 'scrollY', { value: 300, configurable: true });
+      if (this === el) {
+        Object.defineProperty(window, 'scrollY', { value: 300, configurable: true });
+      }
     });
 
     mirrorFocus(el);

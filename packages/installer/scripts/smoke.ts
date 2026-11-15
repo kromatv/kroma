@@ -10,7 +10,9 @@ const SHIPPED = ['LICENSE', 'README.md', 'cli.js', 'package.json'];
 
 const staged = join(import.meta.dir, '..', 'dist', 'npm');
 const tarball = (await readdir(staged)).find((name) => name.endsWith('.tgz'));
-if (!tarball) throw new Error(`no tarball in ${staged}: run the stage script first`);
+if (!tarball) {
+  throw new Error(`no tarball in ${staged}: run the stage script first`);
+}
 
 const app = await mkdtemp(join(tmpdir(), 'kroma-installer-smoke-'));
 try {
@@ -42,10 +44,14 @@ try {
   }
 
   const found: unknown = JSON.parse(await say('scan', '--host', '127.0.0.1', '--json'));
-  if (!Array.isArray(found)) throw new Error('scan --json did not print a list');
+  if (!Array.isArray(found)) {
+    throw new TypeError('scan --json did not print a list');
+  }
 
   const version = (await say('--version')).trim();
-  if (!tarball.includes(version)) throw new Error(`--version says ${version}, not ${tarball}`);
+  if (!tarball.includes(version)) {
+    throw new Error(`--version says ${version}, not ${tarball}`);
+  }
 
   const node = (await $`node --version`.text()).trim();
   console.log(`${PACKAGE}@${version} runs from its tarball under Node ${node}`);

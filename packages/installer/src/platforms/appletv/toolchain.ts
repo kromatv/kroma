@@ -29,10 +29,18 @@ export const APPLETV_TOOLS_FOR: Record<AppleTvIntent, readonly AppleTvToolId[]> 
 const WORKSPACE = 'clients/tv-native/ios/KROMA.xcworkspace';
 
 export function locateAppleTvTool(tool: AppleTvToolId): string | null {
-  if (process.platform !== 'darwin') return null;
-  if (tool === 'xcode') return developerDirectory();
-  if (tool === 'devicectl') return found(['xcrun', '--find', 'devicectl']);
-  if (tool === 'cocoapods') return which('pod');
+  if (process.platform !== 'darwin') {
+    return null;
+  }
+  if (tool === 'xcode') {
+    return developerDirectory();
+  }
+  if (tool === 'devicectl') {
+    return found(['xcrun', '--find', 'devicectl']);
+  }
+  if (tool === 'cocoapods') {
+    return which('pod');
+  }
   return existing(join(root, WORKSPACE));
 }
 
@@ -42,7 +50,9 @@ export function missingAppleTvTools(intent: AppleTvIntent): AppleTvToolId[] {
 
 export function requireAppleTvTool(tool: AppleTvToolId): string {
   const path = locateAppleTvTool(tool);
-  if (path) return path;
+  if (path) {
+    return path;
+  }
   throw new Error(`${APPLETV_TOOLS[tool].label} is missing: ${APPLETV_TOOLS[tool].source}`);
 }
 

@@ -70,7 +70,9 @@ function sortIssues<Values, Output>(
 
 function thrownMessage(cause: unknown, t?: MessageLookup): string {
   const raw = cause instanceof Error ? cause.message : cause;
-  if (typeof raw !== 'string' || raw === '') return resolveMessage('form.submitFailed', t);
+  if (typeof raw !== 'string' || raw === '') {
+    return resolveMessage('form.submitFailed', t);
+  }
   return resolveMessage(raw, t);
 }
 
@@ -126,7 +128,9 @@ function useForm<Values extends Record<string, unknown>, Output>({
   const check = useCallback(
     async (candidate: Values): Promise<Checked<Values, Output>> => {
       const result = await schema['~standard'].validate(candidate);
-      if (result.issues) return sortIssues(result.issues, lookup);
+      if (result.issues) {
+        return sortIssues(result.issues, lookup);
+      }
       return { fields: {}, form: undefined, value: result.value };
     },
     [schema, lookup],
@@ -140,7 +144,9 @@ function useForm<Values extends Record<string, unknown>, Output>({
     latest.current += 1;
     const ticket = latest.current;
     const { fields, form, value } = await check(candidate);
-    if (ticket !== latest.current) return { ok: false };
+    if (ticket !== latest.current) {
+      return { ok: false };
+    }
     setErrors(fields);
     setFormError(form);
     return value === undefined ? { ok: false } : { ok: true, value };
@@ -151,13 +157,17 @@ function useForm<Values extends Record<string, unknown>, Output>({
     // filling e-mail and password together) do not lose the first.
     setValues((current) => ({ ...current, [name]: next }));
     setSubmitted(false);
-    if (live.current) void settle({ ...values, [name]: next });
+    if (live.current) {
+      void settle({ ...values, [name]: next });
+    }
   };
 
   const submit = async () => {
     live.current = true;
     const checked = await settle(values);
-    if (!checked.ok) return;
+    if (!checked.ok) {
+      return;
+    }
 
     await runSubmit(checked.value, onSubmit, lookup, {
       submitting: setSubmitting,
@@ -178,7 +188,11 @@ function useForm<Values extends Record<string, unknown>, Output>({
         onValueChange: (next) => setValue(name, next),
         error: errors[name],
       },
-      input: { onSubmit: submit },
+      input: {
+        onSubmit: () => {
+          void submit();
+        },
+      },
     }),
     toggle: (name) => ({
       checked: values[name],

@@ -21,9 +21,13 @@ export async function probeFinalOrigin(
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetchFn(`${base}/api/health`, { signal: ctrl.signal });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const body = HealthProbe.safeParse(await res.json());
-    if (!body.success || body.data.status !== 'ok') return null;
+    if (!body.success || body.data.status !== 'ok') {
+      return null;
+    }
     // `res.url` is empty on the odd fetch implementation that omits it.
     return originOf(res.url) ?? base;
   } catch {
@@ -34,7 +38,9 @@ export async function probeFinalOrigin(
 }
 
 function originOf(url: string | undefined): string | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   try {
     return stripTrailingSlash(new URL(url).origin);
   } catch {
@@ -49,7 +55,9 @@ export function raceForServer(
   concurrency = urls.length,
 ): Promise<string | null> {
   return new Promise((resolve) => {
-    if (urls.length === 0) return resolve(null);
+    if (urls.length === 0) {
+      return resolve(null);
+    }
     let next = 0;
     let active = 0;
     let done = 0;
@@ -57,9 +65,14 @@ export function raceForServer(
     const total = urls.length;
 
     const pump = () => {
-      while (active < concurrency && next < total && !settled) {
+      if (settled) {
+        return;
+      }
+      while (active < concurrency && next < total) {
         const url = urls[next++];
-        if (url === undefined) break;
+        if (url === undefined) {
+          break;
+        }
         active += 1;
         void probe(fetchFn, url, timeoutMs).then((ok) => {
           active -= 1;
@@ -93,9 +106,13 @@ export async function probeAll(
     while (next < urls.length) {
       const i = next++;
       const url = urls[i];
-      if (url === undefined) break;
+      if (url === undefined) {
+        break;
+      }
       const body = await probeHealth(fetchFn, url, timeoutMs);
-      if (body) slots[i] = { url, body };
+      if (body) {
+        slots[i] = { url, body };
+      }
     }
   };
   await Promise.all(
@@ -117,7 +134,9 @@ export async function probeHealth(
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetchFn(`${base}/api/health`, { signal: ctrl.signal });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const body = HealthProbe.safeParse(await res.json());
     return body.success && body.data.status === 'ok' ? body.data : null;
   } catch {

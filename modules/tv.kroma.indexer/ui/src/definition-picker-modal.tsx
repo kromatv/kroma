@@ -37,7 +37,9 @@ export const DefinitionPickerModal = createCallable<{ added: readonly string[] }
       waiting ? WAITING_POLL_MS : SETTLED_POLL_MS,
     );
     useEffect(() => {
-      if (data) setWaiting(!data.synced);
+      if (data) {
+        setWaiting(!data.synced);
+      }
     }, [data]);
     const [query, setQuery] = useState('');
     const [kind, setKind] = useState<KindFilter>('all');
@@ -129,8 +131,12 @@ export const DefinitionPickerModal = createCallable<{ added: readonly string[] }
 type BodyState = 'failed' | 'loading' | 'downloading' | 'ready';
 
 function bodyState(failed: boolean, data: IndexerDefinitionsView | null): BodyState {
-  if (failed) return 'failed';
-  if (!data) return 'loading';
+  if (failed) {
+    return 'failed';
+  }
+  if (!data) {
+    return 'loading';
+  }
   return data.synced ? 'ready' : 'downloading';
 }
 
@@ -146,8 +152,12 @@ function PickerBody({
   onPick: (id: string) => void;
 }>) {
   const t = useT();
-  if (state === 'failed') return <Note text={t('indexers.catalogUnavailable')} />;
-  if (state === 'loading') return <Note text={t('indexers.loading')} />;
+  if (state === 'failed') {
+    return <Note text={t('indexers.catalogUnavailable')} />;
+  }
+  if (state === 'loading') {
+    return <Note text={t('indexers.loading')} />;
+  }
   if (state === 'downloading') {
     return (
       <Row gap={12} center py={32}>
@@ -158,7 +168,9 @@ function PickerBody({
       </Row>
     );
   }
-  if (shown.length === 0) return <Note text={t('indexers.noTrackerMatch')} />;
+  if (shown.length === 0) {
+    return <Note text={t('indexers.noTrackerMatch')} />;
+  }
   return (
     <ListRow.Group size="sm">
       {shown.map((d) => (

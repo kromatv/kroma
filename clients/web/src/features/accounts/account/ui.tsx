@@ -41,12 +41,22 @@ export type Strength = {
  * (8+), mixed case, a digit and a symbol. Purely a UI hint the server enforces
  * the real minimum. */
 export function passwordStrength(pw: string): Strength {
-  if (!pw) return { score: 0, value: 0, color: 'transparent', labelKey: null };
+  if (!pw) {
+    return { score: 0, value: 0, color: 'transparent', labelKey: null };
+  }
   let s = 0;
-  if (pw.length >= 8) s += 1;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s += 1;
-  if (/\d/.test(pw)) s += 1;
-  if (/[^A-Za-z0-9]/.test(pw)) s += 1;
+  if (pw.length >= 8) {
+    s += 1;
+  }
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) {
+    s += 1;
+  }
+  if (/\d/.test(pw)) {
+    s += 1;
+  }
+  if (/[^A-Za-z0-9]/.test(pw)) {
+    s += 1;
+  }
   const score = Math.max(1, s) as 1 | 2 | 3 | 4;
   const map = {
     1: { value: 0.25, color: 'danger', labelKey: 'account.passwordStrengthWeak' },
@@ -66,13 +76,17 @@ export function useSave() {
 
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
     },
     [],
   );
 
   const run = useCallback(async (fn: () => Promise<void>, fallback: string) => {
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     setStatus('saving');
     setError(null);
     try {
@@ -94,17 +108,19 @@ export function StatusText({
   error,
 }: Readonly<{ status: SaveStatus; error: string | null }>) {
   const t = useT();
-  if (status === 'saved')
+  if (status === 'saved') {
     return (
       <Text variant="meta" color="accent">
         {t('common.saved')}
       </Text>
     );
-  if (status === 'error')
+  }
+  if (status === 'error') {
     return (
       <Text variant="meta" color="danger">
         {error}
       </Text>
     );
+  }
   return null;
 }

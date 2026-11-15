@@ -89,7 +89,9 @@ function extendedGroup(
 
 function runGroup(source: PermissionSource, t: Translate): PermissionGroup | null {
   const programs = source.permissions.run ?? [];
-  if (programs.length === 0) return null;
+  if (programs.length === 0) {
+    return null;
+  }
   const { helpers } = source;
   const origin = (name: string) =>
     t(
@@ -108,7 +110,9 @@ function filesGroup(fs: ModulePermissions['fs'], t: Translate): PermissionGroup 
   const reads = SHARED_ROOTS.filter((root) => fs?.read?.includes(root));
   const writes = SHARED_ROOTS.filter((root) => fs?.write?.includes(root));
   const touched = SHARED_ROOTS.filter((root) => reads.includes(root) || writes.includes(root));
-  if (touched.length === 0) return null;
+  if (touched.length === 0) {
+    return null;
+  }
   const readOnly = reads.filter((root) => !writes.includes(root));
   const words = (roots: readonly SharedRoot[]) =>
     listOf(
@@ -143,7 +147,9 @@ function filesGroup(fs: ModulePermissions['fs'], t: Translate): PermissionGroup 
 }
 
 function mediaGroup(media: ModulePermissions['media'], t: Translate): PermissionGroup | null {
-  if (!media?.includes('decode')) return null;
+  if (!media?.includes('decode')) {
+    return null;
+  }
   return {
     category: 'media',
     summary: t('modulePermissions.mediaSummary'),

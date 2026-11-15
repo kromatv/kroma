@@ -52,7 +52,9 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   });
 
   for (const television of (await discovered).flat()) {
-    if (options.hosts?.length && !options.hosts.includes(television.host)) continue;
+    if (options.hosts?.length && !options.hosts.includes(television.host)) {
+      continue;
+    }
     found.push(television);
     options.onFound?.(television);
   }
@@ -61,7 +63,9 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   const visit = async (host: string) => {
     const television = await examine(host, {}, options.signal);
     options.onProgress?.(Math.min(++done, targets.length), targets.length);
-    if (!television || !wanted(television.platform)) return;
+    if (!television || !wanted(television.platform)) {
+      return;
+    }
     found.push(television);
     options.onFound?.(television);
   };
@@ -77,11 +81,16 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   for (const host of new Set([...described.keys(), ...advertised.keys()])) {
     const said = { upnp: described.get(host), advertised: advertised.get(host) };
     const television = await examine(host, said, options.signal);
-    if (!television || !wanted(television.platform)) continue;
+    if (!television || !wanted(television.platform)) {
+      continue;
+    }
 
     const at = found.findIndex((seen) => seen.host === host);
-    if (at === -1) found.push(television);
-    else found[at] = television;
+    if (at === -1) {
+      found.push(television);
+    } else {
+      found[at] = television;
+    }
     options.onFound?.(television);
   }
   return found.sort(byHost);
@@ -107,7 +116,9 @@ export async function watch(options: WatchOptions): Promise<Television[]> {
         }
       },
     });
-    if (options.signal?.aborted) break;
+    if (options.signal?.aborted) {
+      break;
+    }
     await rest(BETWEEN_ROUNDS_MS, options.signal);
   }
   return [...seen.values()].sort(byHost);
@@ -135,10 +146,16 @@ interface Said {
 
 async function examine(host: string, said: Said, signal?: AbortSignal): Promise<Television | null> {
   const ports = await openOf(host, sweepPorts());
-  if (ports.size === 0 && !said.upnp && !said.advertised) return null;
-  if (signal?.aborted) return null;
+  if (ports.size === 0 && !said.upnp && !said.advertised) {
+    return null;
+  }
+  if (signal?.aborted) {
+    return null;
+  }
 
-  for (const port of await openOf(host, detailPorts())) ports.add(port);
+  for (const port of await openOf(host, detailPorts())) {
+    ports.add(port);
+  }
   return identify(host, ports, said.upnp, said.advertised);
 }
 
@@ -161,13 +178,17 @@ async function describe(replies: Awaited<ReturnType<typeof ssdpSearch>>) {
   const byHost = new Map<string, UpnpDevice>();
   const seen = new Set<string>();
   const first = replies.filter((reply) => {
-    if (seen.has(reply.host)) return false;
+    if (seen.has(reply.host)) {
+      return false;
+    }
     seen.add(reply.host);
     return true;
   });
   await mapPool(first, 8, async (reply) => {
     const device = await fetchDeviceDescription(reply.location);
-    if (device) byHost.set(reply.host, device);
+    if (device) {
+      byHost.set(reply.host, device);
+    }
   });
   return byHost;
 }

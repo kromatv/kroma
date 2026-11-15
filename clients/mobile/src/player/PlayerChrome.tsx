@@ -66,7 +66,7 @@ export function PlayerChrome({
   const client = useClient();
   const stats = usePhoneStats(engine, item);
   const resume = useResumeNotice({
-    at: resumedAt || undefined,
+    at: resumedAt === undefined || resumedAt === 0 ? undefined : resumedAt,
     cur: engine.cur,
     playing: engine.playing,
     waiting: engine.waiting,

@@ -22,7 +22,9 @@ export const STATE_BIT: Readonly<Record<SvStateName, number>> = Object.freeze(
  *  entries holding identical styles. */
 export function maskOf(declared: Iterable<SvStateName>): number {
   let mask = 0;
-  for (const name of declared) mask |= STATE_BIT[name];
+  for (const name of declared) {
+    mask |= STATE_BIT[name];
+  }
   return mask;
 }
 
@@ -37,10 +39,14 @@ const EMPTY_SUFFIX = SUFFIX[0] as string;
 /** The state half of a cache key. Only states in `mask` contribute, so two calls
  *  differing solely in a state the recipe ignores share one entry. */
 export function stateSuffix(state: SvState | undefined, mask: number): string {
-  if (mask === 0 || state === undefined) return EMPTY_SUFFIX;
+  if (mask === 0 || state === undefined) {
+    return EMPTY_SUFFIX;
+  }
   let bits = 0;
   for (const name of SV_STATES) {
-    if (state[name] === true) bits |= STATE_BIT[name];
+    if (state[name] === true) {
+      bits |= STATE_BIT[name];
+    }
   }
   return SUFFIX[bits & mask] as string;
 }

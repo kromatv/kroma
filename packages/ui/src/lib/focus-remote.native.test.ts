@@ -83,7 +83,9 @@ async function load(
 
 function navigator(): { moves: string[]; stop: () => void } {
   const moves: string[] = [];
-  if (!nav.config) throw new Error('configureRemote never ran');
+  if (!nav.config) {
+    throw new Error('configureRemote never ran');
+  }
   const stop = nav.config.subscribe((direction) => moves.push(direction));
   return { moves, stop };
 }
@@ -151,8 +153,12 @@ describe('the TV remote', () => {
 
     // The clickpad and the touch surface are different gesture recognisers and
     // never both fire for one gesture.
-    for (const event of ['up', 'down', 'left', 'right']) press(event);
-    for (const event of ['swipeUp', 'swipeDown', 'swipeLeft', 'swipeRight']) press(event);
+    for (const event of ['up', 'down', 'left', 'right']) {
+      press(event);
+    }
+    for (const event of ['swipeUp', 'swipeDown', 'swipeLeft', 'swipeRight']) {
+      press(event);
+    }
 
     expect(nav1.moves).toEqual(['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']);
   });
@@ -190,9 +196,13 @@ describe('the TV remote', () => {
     vi.useFakeTimers();
 
     press('longDown', 0);
-    act(() => vi.advanceTimersByTime(450));
+    act(() => {
+      vi.advanceTimersByTime(450);
+    });
     press('longDown', 1);
-    act(() => vi.advanceTimersByTime(450));
+    act(() => {
+      vi.advanceTimersByTime(450);
+    });
     vi.useRealTimers();
 
     expect(nav1.moves).toEqual(['down', 'down', 'down', 'down']);
@@ -206,7 +216,9 @@ describe('the TV remote', () => {
 
     press('longRight', 0);
     press('select', 1);
-    act(() => vi.advanceTimersByTime(450));
+    act(() => {
+      vi.advanceTimersByTime(450);
+    });
     vi.useRealTimers();
 
     expect(nav1.moves).toEqual(['right', 'enter', 'release']);
@@ -216,7 +228,9 @@ describe('the TV remote', () => {
     const { remote } = await load();
     const nav1 = navigator();
     renderHook(() => remote.useRemoteBridge());
-    for (const event of ['menu', 'playPause', 'longPlayPause']) press(event);
+    for (const event of ['menu', 'playPause', 'longPlayPause']) {
+      press(event);
+    }
     expect(nav1.moves).toEqual([]);
   });
 
@@ -297,7 +311,9 @@ describe('the Android key host', () => {
     const { result } = renderHook(() => remote.useRemoteHostProps());
 
     keyDown(result.current, { code: 'Enter' });
-    for (let i = 0; i < 12; i++) keyDown(result.current, { code: 'Enter' });
+    for (let i = 0; i < 12; i++) {
+      keyDown(result.current, { code: 'Enter' });
+    }
     keyUp(result.current, { code: 'Enter' });
 
     expect(nav1.moves).toEqual(['enter', 'release']);
@@ -346,7 +362,9 @@ describe('the Android key host', () => {
     const { remote } = await load('android');
     const nav1 = navigator();
     const { result } = renderHook(() => remote.useRemoteHostProps());
-    for (let i = 0; i < 4; i++) keyDown(result.current, { code: 'ArrowRight' });
+    for (let i = 0; i < 4; i++) {
+      keyDown(result.current, { code: 'ArrowRight' });
+    }
     expect(nav1.moves).toHaveLength(4);
   });
 
@@ -404,7 +422,9 @@ describe('typing on a hardware keyboard', () => {
     renderHook(() => remote.useHardwareKeys((key) => typed.push(key)));
     const { result } = renderHook(() => remote.useRemoteHostProps());
 
-    for (const key of ['k', 'r', 'o']) keyDown(result.current, { code: `Key${key}`, key });
+    for (const key of ['k', 'r', 'o']) {
+      keyDown(result.current, { code: `Key${key}`, key });
+    }
     expect(typed).toEqual(['k', 'r', 'o']);
   });
 
@@ -424,7 +444,9 @@ describe('typing on a hardware keyboard', () => {
     const { result } = renderHook(() => remote.useRemoteHostProps());
     // Enter counts as a direction: it activates the focused key rather than
     // typing a newline into the search box.
-    for (const code of ['ArrowUp', 'Enter']) keyDown(result.current, { code, key: code });
+    for (const code of ['ArrowUp', 'Enter']) {
+      keyDown(result.current, { code, key: code });
+    }
     expect(typed).toEqual([]);
   });
 

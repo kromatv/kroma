@@ -8,7 +8,9 @@ export function fallbackFocus(tree: FocusTree, node: TreeNode): TreeNode | null 
   for (const leaving of [node, ...tree.ancestorsOf(node)]) {
     const siblings = tree.siblingsAround(leaving);
     const found = firstAmong(tree, siblings.before) ?? firstAmong(tree, siblings.after);
-    if (found !== null) return found;
+    if (found !== null) {
+      return found;
+    }
   }
   return null;
 }

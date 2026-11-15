@@ -258,7 +258,9 @@ describe('remote events', () => {
   it('bridges all three spellings of the transport key', () => {
     const onPlayPause = vi.fn();
     renderHook(() => useFocusNav({ onPlayPause }));
-    for (const event of ['playPause', 'play', 'pause']) remote(event);
+    for (const event of ['playPause', 'play', 'pause']) {
+      remote(event);
+    }
     expect(onPlayPause).toHaveBeenCalledTimes(3);
   });
 
@@ -266,7 +268,9 @@ describe('remote events', () => {
     const onBack = vi.fn();
     const onPlayPause = vi.fn();
     renderHook(() => useFocusNav({ onBack, onPlayPause }));
-    for (const event of ['up', 'down', 'left', 'right', 'select']) remote(event);
+    for (const event of ['up', 'down', 'left', 'right', 'select']) {
+      remote(event);
+    }
     expect(onBack).not.toHaveBeenCalled();
     expect(onPlayPause).not.toHaveBeenCalled();
   });

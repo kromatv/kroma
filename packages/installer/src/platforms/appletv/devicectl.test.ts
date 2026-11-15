@@ -15,7 +15,9 @@ vi.mock('./toolchain', async (original) => ({
 vi.mock('node:fs/promises', () => ({
   unlink,
   stat: async () => {
-    if (!wrote.exists) throw new Error('ENOENT');
+    if (!wrote.exists) {
+      throw new Error('ENOENT');
+    }
     return { size: wrote.size };
   },
   readFile: async () => wrote.text,

@@ -21,7 +21,9 @@ export function PasswordDialog({ onClose }: Readonly<{ onClose: () => void }>) {
 
   const submit = (e?: React.SyntheticEvent) => {
     e?.preventDefault();
-    if (!valid || busy) return;
+    if (!valid || busy) {
+      return;
+    }
     void save.run(async () => {
       await client.accounts.changePassword(current, next);
       onClose();

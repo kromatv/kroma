@@ -83,7 +83,9 @@ export function TvPlayer() {
   const up = useUpNext(client, t, item, following);
 
   const goNext = useCallback(() => {
-    if (advancedRef.current || !next) return;
+    if (advancedRef.current || !next) {
+      return;
+    }
     advancedRef.current = true;
     // swap, not push: Back returns to the show/detail you launched from.
     moves.swap(next);
@@ -91,7 +93,9 @@ export function TvPlayer() {
   const onPlayItem = useCallback(
     (i: UpNextItem) => {
       const full = up.byId.get(i.id);
-      if (full) moves.swap(full);
+      if (full) {
+        moves.swap(full);
+      }
     },
     [up.byId, moves],
   );
@@ -116,7 +120,9 @@ export function TvPlayer() {
     intro != null && pb.cur * 1000 >= intro.startMs && pb.cur * 1000 < intro.endMs;
 
   useEffect(() => {
-    if (pb.surface === 'video' || !pb.ready) return;
+    if (pb.surface === 'video' || !pb.ready) {
+      return;
+    }
     return revealNativeSurface();
   }, [pb.surface, pb.ready]);
 

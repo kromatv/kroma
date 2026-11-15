@@ -64,7 +64,9 @@ export function matchesQuery(
   query: string,
 ): boolean {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
+  if (!q) {
+    return true;
+  }
   return [m.id, m.name, m.description ?? ''].some((s) => s.toLowerCase().includes(q));
 }
 

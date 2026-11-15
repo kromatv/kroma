@@ -34,7 +34,9 @@ export function ProfilesView({
   const create = () => {
     const source =
       rules.profiles.find((one) => one.id === rules.defaultProfile) ?? rules.profiles[0];
-    if (source) copyOf(source, t('acq.profileNewName'));
+    if (source) {
+      copyOf(source, t('acq.profileNewName'));
+    }
   };
 
   const makeDefault = (profile: QualityProfile) =>
@@ -51,7 +53,9 @@ export function ProfilesView({
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (!yes) return;
+    if (!yes) {
+      return;
+    }
     await action.run(async () => {
       await acquisition.deleteProfile(profile.id);
       await onSaved();

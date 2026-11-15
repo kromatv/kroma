@@ -62,11 +62,15 @@ export function carrierOf(property: string, value: unknown): Carrier | null {
   const [style, ordered] = atomic(preprocess({ [property]: value }, SHADOWS));
   const cls = style[property];
   const group = ordered[0];
-  if (typeof cls !== 'string' || ordered.length !== 1 || group === undefined) return null;
+  if (typeof cls !== 'string' || ordered.length !== 1 || group === undefined) {
+    return null;
+  }
   const [rules] = group;
   const css = rules.length === 1 ? (rules[0] as string) : '';
   const head = `.${cls}{`;
-  if (!css.startsWith(head) || !css.endsWith('}')) return null;
+  if (!css.startsWith(head) || !css.endsWith('}')) {
+    return null;
+  }
   return { cls, body: css.slice(head.length, -1) };
 }
 

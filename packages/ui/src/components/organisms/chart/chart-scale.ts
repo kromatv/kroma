@@ -34,7 +34,9 @@ export interface ChartBand {
 const BAR_FILL = 0.62;
 
 function clamp01(value: number): number {
-  if (!Number.isFinite(value)) return 0;
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
   return Math.min(Math.max(value, 0), 1);
 }
 
@@ -66,7 +68,9 @@ export function domainOf(
   let max = Number.NEGATIVE_INFINITY;
   for (const column of columns) {
     for (const value of column) {
-      if (value === null) continue;
+      if (value === null) {
+        continue;
+      }
       min = Math.min(min, value);
       max = Math.max(max, value);
     }
@@ -83,8 +87,12 @@ export function domainOf(
 // as 0..1; a flat run opens around the value it rests at, or up from the floor
 // where the floor is part of the reading.
 function widened(at: ChartDomain, baseline: boolean): ChartDomain {
-  if (!Number.isFinite(at.min) || !Number.isFinite(at.max)) return { min: 0, max: 1 };
-  if (at.min !== at.max) return at;
+  if (!Number.isFinite(at.min) || !Number.isFinite(at.max)) {
+    return { min: 0, max: 1 };
+  }
+  if (at.min !== at.max) {
+    return at;
+  }
   if (baseline || at.min === 0) {
     const min = Math.min(at.min, 0);
     return { min, max: Math.max(at.max, min + 1) };
@@ -103,13 +111,17 @@ function stated(at: ChartDomain, options: Readonly<DomainOptions>): ChartDomain 
 /** Sample index to x, first sample on the left edge and last on the right. A
  *  lone sample sits in the middle, where a division would otherwise be by zero. */
 export function xAt(index: number, count: number, width: number): number {
-  if (count <= 1) return width / 2;
+  if (count <= 1) {
+    return width / 2;
+  }
   return (index / (count - 1)) * width;
 }
 
 /** The slice of the plot one sample owns, and the bar drawn inside it. */
 export function bandAt(index: number, count: number, width: number): ChartBand {
-  if (count <= 0) return { x: 0, width };
+  if (count <= 0) {
+    return { x: 0, width };
+  }
   const slot = width / count;
   const bar = Math.max(1, slot * BAR_FILL);
   return { x: slot * index + (slot - bar) / 2, width: bar };
@@ -136,7 +148,9 @@ export function px(value: number): number {
 
 /** `count` evenly spaced levels across the domain, both ends included. */
 export function ticksOf(domain: ChartDomain, count: number): number[] {
-  if (count < 2) return [domain.min];
+  if (count < 2) {
+    return [domain.min];
+  }
   const span = domain.max - domain.min;
   return Array.from({ length: count }, (_, at) => domain.min + (span * at) / (count - 1));
 }
@@ -144,9 +158,13 @@ export function ticksOf(domain: ChartDomain, count: number): number[] {
 /** Which sample an x lands on, for the cursor. Null where there is nothing to
  *  land on. `band` picks the slice a bar owns rather than the nearest point. */
 export function indexAtX(x: number, count: number, width: number, band = false): number | null {
-  if (count <= 0 || width <= 0) return null;
+  if (count <= 0 || width <= 0) {
+    return null;
+  }
   const ratio = clamp01(x / width);
-  if (band) return Math.min(count - 1, Math.floor(ratio * count));
+  if (band) {
+    return Math.min(count - 1, Math.floor(ratio * count));
+  }
   return Math.round(ratio * (count - 1));
 }
 
@@ -180,7 +198,9 @@ export function barPath(stack: Readonly<BarBox>, span: Readonly<BarSpan>, radius
   const neck = stack.y + stack.height - r;
   const from = Math.max(span.y, stack.y);
   const to = Math.min(span.y + span.height, stack.y + stack.height);
-  if (to <= from) return '';
+  if (to <= from) {
+    return '';
+  }
 
   const inset = (y: number) => {
     const depth = Math.max(head - y, y - neck, 0);
@@ -214,9 +234,11 @@ export function barPath(stack: Readonly<BarBox>, span: Readonly<BarSpan>, radius
  * the bars above it.
  */
 export function stackBase(below: readonly (readonly (number | null)[])[], count: number): number[] {
-  const base = new Array<number>(count).fill(0);
+  const base = Array.from<number>({ length: count }).fill(0);
   for (const column of below) {
-    for (let at = 0; at < count; at += 1) base[at] = (base[at] as number) + (column[at] ?? 0);
+    for (let at = 0; at < count; at += 1) {
+      base[at] = (base[at] as number) + (column[at] ?? 0);
+    }
   }
   return base;
 }

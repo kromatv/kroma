@@ -12,7 +12,9 @@ const MONO = { fontFamily: 'monospace', fontSize: 13 } as const;
 type Choice = 'mullvad' | 'proton' | 'other';
 
 function firstChoice(provider: VpnProvider | null, configured: boolean): Choice {
-  if (provider) return provider.kind;
+  if (provider) {
+    return provider.kind;
+  }
   return configured ? 'other' : 'mullvad';
 }
 
@@ -59,8 +61,11 @@ export function VpnConfigDialog({
   const remove = () =>
     run(
       async () => {
-        if (provider?.kind === 'mullvad') await vpn.mullvadDisconnect();
-        else await vpn.save({ wgConfig: '', localPort: null });
+        if (provider?.kind === 'mullvad') {
+          await vpn.mullvadDisconnect();
+        } else {
+          await vpn.save({ wgConfig: '', localPort: null });
+        }
         done();
       },
       (e) => apiErrorText(e, t('requests.actionFailed')),

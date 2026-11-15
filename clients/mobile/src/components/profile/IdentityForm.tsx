@@ -28,9 +28,11 @@ export function IdentityForm() {
       setUser(updated);
       setInfoNote({ text: t('account.profileSaved'), ok: true });
     } catch (err) {
-      if (err instanceof KromaApiError && err.status === 409)
+      if (err instanceof KromaApiError && err.status === 409) {
         setInfoNote({ text: t('auth.emailTaken'), ok: false });
-      else setInfoNote({ text: t('account.saveFailed'), ok: false });
+      } else {
+        setInfoNote({ text: t('account.saveFailed'), ok: false });
+      }
     } finally {
       setSavingInfo(false);
     }

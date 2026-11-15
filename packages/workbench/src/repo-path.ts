@@ -7,7 +7,9 @@
  * `root` is cut there, one relative to it is joined onto it. */
 function repoPath(root: string, path: string): string {
   const at = path.indexOf(`${root}/`);
-  if (at >= 0) return path.slice(at);
+  if (at >= 0) {
+    return path.slice(at);
+  }
   return `${root}/${path.replace(/^(?:\.\.?\/)+/, '')}`;
 }
 

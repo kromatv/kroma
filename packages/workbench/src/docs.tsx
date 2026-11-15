@@ -27,8 +27,12 @@ function marks(text: string): ReactNode[] {
   return segments(text).map((segment, at) => {
     // Order never changes for a given string: the index IS the identity.
     const key = `${at}-${segment.mark}`;
-    if (segment.mark === 'bold') return <Strong key={key}>{segment.text}</Strong>;
-    if (segment.mark === 'code') return <Code key={key}>{segment.text}</Code>;
+    if (segment.mark === 'bold') {
+      return <Strong key={key}>{segment.text}</Strong>;
+    }
+    if (segment.mark === 'code') {
+      return <Code key={key}>{segment.text}</Code>;
+    }
     if (segment.mark === 'link') {
       return (
         <A key={key} href={segment.href}>
@@ -99,9 +103,13 @@ function snippet(story: Story, args: Record<string, unknown>): string {
   const props: string[] = [];
   for (const control of story.controls) {
     const value = args[control.key];
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
     if (typeof value === 'boolean') {
-      if (value) props.push(control.key);
+      if (value) {
+        props.push(control.key);
+      }
     } else if (typeof value === 'number') {
       props.push(`${control.key}={${value}}`);
     } else {
@@ -114,7 +122,9 @@ function snippet(story: Story, args: Record<string, unknown>): string {
     }
   }
   const flat = props.length > 0 ? `<${name} ${props.join(' ')} />` : `<${name} />`;
-  if (flat.length <= 72) return flat;
+  if (flat.length <= 72) {
+    return flat;
+  }
   return `<${name}\n  ${props.join('\n  ')}\n/>`;
 }
 

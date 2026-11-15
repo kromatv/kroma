@@ -16,12 +16,16 @@ export function useStallGuard(
 
   useEffect(() => {
     const engine = engineRef.current;
-    if (!active || !engine) return;
+    if (!active || !engine) {
+      return;
+    }
     return driveStallRecovery(
       {
         sample: () => {
           const bufferedEnd = engine.bufferedEnd();
-          if (bufferedEnd == null) return null;
+          if (bufferedEnd == null) {
+            return null;
+          }
           return { currentTime: engine.position(), bufferedEnd, paused: engine.isPaused() };
         },
         nudge: () => engine.nudge(),

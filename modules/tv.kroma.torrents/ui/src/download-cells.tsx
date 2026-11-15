@@ -49,7 +49,9 @@ const sDefinition = styles({
 
 function targetPill(dl: DownloadView): string | null {
   const season = String(dl.season ?? 0).padStart(2, '0');
-  if (dl.kind === 'season') return `S${season}`;
+  if (dl.kind === 'season') {
+    return `S${season}`;
+  }
   if (dl.kind === 'episode') {
     const first = dl.episodes?.[0] ?? 0;
     const last = dl.episodes?.[dl.episodes.length - 1] ?? first;

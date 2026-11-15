@@ -34,13 +34,17 @@ export function useProviderGate(deps: ProviderGateDeps) {
   const [waiting, setWaiting] = useState<FlowKeys | null>(null);
 
   useEffect(() => {
-    if (!serverUrl) return;
+    if (!serverUrl) {
+      return;
+    }
     let cancelled = false;
     clientFor(serverUrl)
       .accounts.config()
       .then(
         (config) => {
-          if (!cancelled) setMethods(config.signIn ?? DEFAULT_SIGN_IN_METHODS);
+          if (!cancelled) {
+            setMethods(config.signIn ?? DEFAULT_SIGN_IN_METHODS);
+          }
         },
         () => undefined,
       );
@@ -50,7 +54,9 @@ export function useProviderGate(deps: ProviderGateDeps) {
   }, [serverUrl, clientFor]);
 
   const settle = (end: FlowEnd | null, provider: string) => {
-    if (!end || !serverUrl) return;
+    if (!end || !serverUrl) {
+      return;
+    }
     if (end.result.status === 'signedIn') {
       session.adopt(serverUrl, end.result);
       enterApp();
@@ -63,12 +69,17 @@ export function useProviderGate(deps: ProviderGateDeps) {
       end.result.status === 'emailTaken' ||
       end.result.status === 'invitationOnly';
     setWaiting(end.result.status === 'emailTaken' ? end.keys : null);
-    if (left) setNotice(said);
-    else setError(said);
+    if (left) {
+      setNotice(said);
+    } else {
+      setError(said);
+    }
   };
 
   const press = async (provider: SignInButton) => {
-    if (!serverUrl) return;
+    if (!serverUrl) {
+      return;
+    }
     setBusy('provider');
     setError(null);
     setNotice(null);
@@ -87,7 +98,9 @@ export function useProviderGate(deps: ProviderGateDeps) {
    * account that signed in: the notice on screen says it will. A link that
    * fails does not undo the sign-in. */
   const loginAndClaim = async (identifier: string, password: string) => {
-    if (!serverUrl) throw new Error('no server');
+    if (!serverUrl) {
+      throw new Error('no server');
+    }
     const signedIn = makeClient(serverUrl, session.requestLocale());
     const result = await signedIn.accounts.login(identifier, password);
     if (waiting) {

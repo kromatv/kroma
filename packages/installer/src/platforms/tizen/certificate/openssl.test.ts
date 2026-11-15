@@ -5,7 +5,9 @@ vi.mock('node:fs', () => ({ existsSync: (path: string) => present.has(path) }));
 
 async function resolvedWith(installed: string[], path: string | undefined): Promise<string> {
   present.clear();
-  for (const candidate of installed) present.add(candidate);
+  for (const candidate of installed) {
+    present.add(candidate);
+  }
   vi.stubEnv('PATH', path);
   vi.resetModules();
   return (await import('./openssl')).OPENSSL;

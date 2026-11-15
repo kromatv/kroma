@@ -26,20 +26,31 @@ export class ExpoClipEngine implements ClipEngine {
         this.reportDuration();
       }),
       player.addListener('playingChange', ({ isPlaying }) => {
-        if (isPlaying) listeners.onPlay();
-        else listeners.onPause();
+        if (isPlaying) {
+          listeners.onPlay();
+        } else {
+          listeners.onPause();
+        }
       }),
       player.addListener('statusChange', ({ status }) => {
-        if (status === 'loading') listeners.onWaiting();
-        if (status === 'error') listeners.onError();
-        if (status !== 'readyToPlay') return;
+        if (status === 'loading') {
+          listeners.onWaiting();
+        }
+        if (status === 'error') {
+          listeners.onError();
+        }
+        if (status !== 'readyToPlay') {
+          return;
+        }
         this.reportDuration();
         listeners.onPlaying();
         listeners.onReady();
       }),
       player.addListener('videoTrackChange', ({ videoTrack }) => {
         const size = videoTrack?.size;
-        if (size && size.height > 0) listeners.onAspect?.(size.width / size.height);
+        if (size && size.height > 0) {
+          listeners.onAspect?.(size.width / size.height);
+        }
       }),
       player.addListener('playToEnd', () => listeners.onEnded()),
     ];
@@ -48,7 +59,9 @@ export class ExpoClipEngine implements ClipEngine {
 
   private reportDuration(): void {
     const total = this.player.duration;
-    if (!Number.isFinite(total) || total <= 0 || total === this.durationSec) return;
+    if (!Number.isFinite(total) || total <= 0 || total === this.durationSec) {
+      return;
+    }
     this.durationSec = total;
     this.listeners.onDuration(total);
   }
@@ -78,7 +91,9 @@ export class ExpoClipEngine implements ClipEngine {
     this.player.playbackRate = rate;
   }
   destroy(): void {
-    for (const subscription of this.subscriptions) subscription.remove();
+    for (const subscription of this.subscriptions) {
+      subscription.remove();
+    }
     try {
       this.player.pause();
       this.player.release();

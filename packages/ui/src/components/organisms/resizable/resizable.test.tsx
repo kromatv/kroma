@@ -82,7 +82,9 @@ function drag(by: number, upTo = true) {
   mouse('mousedown', strip, { clientX: 100, clientY: 100, button: 0 }, 1000);
   mouse('mousemove', strip, { clientX: 100 + claimed, clientY: 100, buttons: 1 }, 1010);
   mouse('mousemove', document.body, { clientX: 100 + by, clientY: 100, buttons: 1 }, 1020);
-  if (upTo) mouse('mouseup', document.body, { clientX: 100 + by, clientY: 100 }, 1030);
+  if (upTo) {
+    mouse('mouseup', document.body, { clientX: 100 + by, clientY: 100 }, 1030);
+  }
 }
 
 const grab = () => fireEvent.click(screen.getByLabelText('Resize'));

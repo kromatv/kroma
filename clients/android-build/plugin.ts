@@ -8,8 +8,9 @@ const withAndroidRelease: ConfigPlugin<{ formFactor: AndroidFormFactor }> = (
   { formFactor },
 ) => {
   config = withAppBuildGradle(config, (cfg) => {
-    if (cfg.modResults.language !== 'groovy')
+    if (cfg.modResults.language !== 'groovy') {
       throw new Error('KROMA requires a Groovy app Gradle file');
+    }
     cfg.modResults.contents = configureAndroidSigning(cfg.modResults.contents);
     return cfg;
   });
@@ -17,8 +18,11 @@ const withAndroidRelease: ConfigPlugin<{ formFactor: AndroidFormFactor }> = (
     const features = (cfg.modResults.manifest['uses-feature'] ??= []);
     const setFeature = (name: string, required: 'true' | 'false') => {
       const feature = features.find((entry) => entry.$['android:name'] === name);
-      if (feature) feature.$['android:required'] = required;
-      else features.push({ $: { 'android:name': name, 'android:required': required } });
+      if (feature) {
+        feature.$['android:required'] = required;
+      } else {
+        features.push({ $: { 'android:name': name, 'android:required': required } });
+      }
     };
     setFeature('android.hardware.touchscreen', formFactor === 'mobile' ? 'true' : 'false');
     if (formFactor === 'tv') {

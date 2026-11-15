@@ -28,8 +28,11 @@ function* sourceFiles(dir: string, options: SourceOptions = {}): Generator<strin
   const skip = options.skip ?? DEFAULT_SKIP;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const at = join(dir, entry.name);
-    if (entry.isDirectory()) yield* sourceFiles(at, options);
-    else if (ext.some((end) => entry.name.endsWith(end)) && !skip.test(entry.name)) yield at;
+    if (entry.isDirectory()) {
+      yield* sourceFiles(at, options);
+    } else if (ext.some((end) => entry.name.endsWith(end)) && !skip.test(entry.name)) {
+      yield at;
+    }
   }
 }
 
@@ -84,10 +87,11 @@ function babelAt(resolveFrom: readonly string[]): Babel {
           jsx: 'preserve',
           reactCompiler: { target: '19' },
         });
-        if (result.fatal)
+        if (result.fatal) {
           throw new SyntaxError(
             `${filename}: ${result.errors.map((error) => error.message).join('\n')}`,
           );
+        }
         return result;
       },
       presetTs,

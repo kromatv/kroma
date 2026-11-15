@@ -22,7 +22,9 @@ function gate(ready: () => Promise<void>): () => void {
     open = true;
   };
   return () => {
-    if (open) return;
+    if (open) {
+      return;
+    }
     pending ??= ready().then(opened, opened);
     throw pending;
   };

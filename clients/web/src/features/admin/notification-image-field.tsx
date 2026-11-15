@@ -134,8 +134,12 @@ function ImagePickerDialog({
           className={classes(s.hidden)}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) void upload(file);
-            if (fileRef.current) fileRef.current.value = '';
+            if (file) {
+              void upload(file);
+            }
+            if (fileRef.current) {
+              fileRef.current.value = '';
+            }
           }}
         />
         {error ? (
@@ -163,10 +167,14 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
     webRuntime.client.admin.notifications
       .images()
       .then((listing) => {
-        if (active) setImages(listing.images);
+        if (active) {
+          setImages(listing.images);
+        }
       })
       .catch(() => {
-        if (active) setFailed(true);
+        if (active) {
+          setFailed(true);
+        }
       });
     return () => {
       active = false;

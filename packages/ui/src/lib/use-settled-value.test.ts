@@ -21,9 +21,13 @@ describe('useSettledValue', () => {
 
     rerender({ value: 'b' });
 
-    act(() => vi.advanceTimersByTime(399));
+    act(() => {
+      vi.advanceTimersByTime(399);
+    });
     expect(result.current).toBe('a');
-    act(() => vi.advanceTimersByTime(1));
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
     expect(result.current).toBe('b');
   });
 
@@ -32,11 +36,15 @@ describe('useSettledValue', () => {
 
     for (const value of ['b', 'c', 'd']) {
       rerender({ value });
-      act(() => vi.advanceTimersByTime(120));
+      act(() => {
+        vi.advanceTimersByTime(120);
+      });
     }
 
     expect(result.current).toBe('a');
-    act(() => vi.advanceTimersByTime(400));
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
     expect(result.current).toBe('d');
   });
 
@@ -44,10 +52,14 @@ describe('useSettledValue', () => {
     const { result, rerender } = walk();
 
     rerender({ value: 'b' });
-    act(() => vi.advanceTimersByTime(200));
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     rerender({ value: 'a' });
 
-    act(() => vi.advanceTimersByTime(400));
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
     expect(result.current).toBe('a');
   });
 });

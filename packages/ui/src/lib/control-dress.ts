@@ -6,8 +6,12 @@ import { NO_OUTLINE } from './field-shell';
 import { WEB } from './platform';
 
 function pointerCursor(disabled: boolean, actionable: boolean): ViewStyle | null {
-  if (!WEB) return null;
-  if (disabled) return ARROW;
+  if (!WEB) {
+    return null;
+  }
+  if (disabled) {
+    return ARROW;
+  }
   return actionable ? HAND : null;
 }
 

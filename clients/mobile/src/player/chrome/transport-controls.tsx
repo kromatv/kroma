@@ -37,7 +37,9 @@ export function TransportControls({
       >
         {(() => {
           const ink = compact ? colors.text : colors.accentInk;
-          if (engine.waiting) return <Spinner size={compact ? 24 : 30} color={ink} />;
+          if (engine.waiting) {
+            return <Spinner size={compact ? 24 : 30} color={ink} />;
+          }
           const glyph = engine.playing ? 'player-pause-filled' : 'player-play-filled';
           return <Icon name={glyph} size={engine.playing ? 30 : 32} color={ink} />;
         })()}

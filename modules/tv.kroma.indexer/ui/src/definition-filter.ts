@@ -36,7 +36,9 @@ export function languagesIn(definitions: readonly IndexerDefinitionView[]): stri
   const counts = new Map<string, number>();
   for (const d of definitions) {
     const base = baseLanguage(d.language);
-    if (base) counts.set(base, (counts.get(base) ?? 0) + 1);
+    if (base) {
+      counts.set(base, (counts.get(base) ?? 0) + 1);
+    }
   }
   return [...counts]
     .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b))

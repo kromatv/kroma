@@ -68,7 +68,9 @@ export class MpvEngine extends BaseTvEngine {
   constructor(opts: EngineOptions) {
     super(opts);
     const bridge = getTauri();
-    if (!bridge) throw new Error('mpv bridge unavailable');
+    if (!bridge) {
+      throw new Error('mpv bridge unavailable');
+    }
     this.bridge = bridge;
     if (this.mode === 'direct') {
       this.pendingSeek = opts.startSec > 0.5 ? opts.startSec : null;
@@ -105,10 +107,15 @@ export class MpvEngine extends BaseTvEngine {
   private async subscribe(): Promise<void> {
     const on = async (event: string, cb: (payload: unknown) => void) => {
       const un = await this.bridge.event.listen(event, (e) => {
-        if (!this.destroyed) cb(e.payload);
+        if (!this.destroyed) {
+          cb(e.payload);
+        }
       });
-      if (this.destroyed) un();
-      else this.unlisten.push(un);
+      if (this.destroyed) {
+        un();
+      } else {
+        this.unlisten.push(un);
+      }
     };
     await Promise.all([
       on('mpv://property', (p) => this.onProperty(p as { name: string; data: unknown })),
@@ -123,12 +130,16 @@ export class MpvEngine extends BaseTvEngine {
     // which case no event ever arrives. Probe once so a dead process fails
     // fast instead of leaving an endless spinner.
     const status = await this.bridge.core.invoke('mpv_status').catch(() => null);
-    if (status === 'dead') this.fatal();
+    if (status === 'dead') {
+      this.fatal();
+    }
   }
 
   // Fails without the direct->master retry: the mpv process itself is unusable.
   private fatal(): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     this.fellBack = true;
     this.listeners.onError();
   }
@@ -155,13 +166,19 @@ export class MpvEngine extends BaseTvEngine {
       }
       case 'pause': {
         this.paused = p.data === true;
-        if (this.paused) this.listeners.onPause();
-        else this.listeners.onPlay();
+        if (this.paused) {
+          this.listeners.onPause();
+        } else {
+          this.listeners.onPlay();
+        }
         break;
       }
       case 'paused-for-cache': {
-        if (p.data === true) this.listeners.onWaiting();
-        else this.listeners.onPlaying();
+        if (p.data === true) {
+          this.listeners.onWaiting();
+        } else {
+          this.listeners.onPlaying();
+        }
         break;
       }
       case 'track-list': {
@@ -184,10 +201,14 @@ export class MpvEngine extends BaseTvEngine {
   /** The observed `track-list`: remember mpv's own audio track ids (in file order)
    * so a rendition maps to the right track, then re-assert the wanted one. */
   private onTrackList(data: unknown): void {
-    if (!Array.isArray(data)) return;
+    if (!Array.isArray(data)) {
+      return;
+    }
     this.audioIds = data.filter(isAudioTrack).map((t) => t.id);
     // Re-assert the wanted track now that the real ids are known (idempotent).
-    if (this.audioIds.length) this.selectAudio(this.rendition);
+    if (this.audioIds.length) {
+      this.selectAudio(this.rendition);
+    }
   }
 
   private onLoaded(): void {
@@ -218,7 +239,9 @@ export class MpvEngine extends BaseTvEngine {
       this.listeners.onEnded();
       return;
     }
-    if (p.reason === 'error') this.fail();
+    if (p.reason === 'error') {
+      this.fail();
+    }
   }
 
   // An anchored master first resolves its real start (the keyframe the
@@ -229,7 +252,9 @@ export class MpvEngine extends BaseTvEngine {
     const seq = ++this.openSeq;
     if (this.mode === 'master' && this.baseSec > 0.5) {
       void resolveMasterStart(url, this.baseSec).then((real) => {
-        if (this.destroyed || seq !== this.openSeq) return;
+        if (this.destroyed || seq !== this.openSeq) {
+          return;
+        }
         this.baseSec = real;
         this.load(url);
       });
@@ -296,7 +321,9 @@ export class MpvEngine extends BaseTvEngine {
   }
 
   setAudioRendition(rendition: number): void {
-    if (rendition === this.rendition) return;
+    if (rendition === this.rendition) {
+      return;
+    }
     this.rendition = rendition;
     // Direct: in-place native track switch. Master: the stream carries only
     // one audio track, so reopen it at the current position.
@@ -309,7 +336,9 @@ export class MpvEngine extends BaseTvEngine {
 
   // mpv rebuilds its `af` graph live, so playback never stops.
   setAudioFilter(mode: AudioFilterMode): void {
-    if (mode === this.filter) return;
+    if (mode === this.filter) {
+      return;
+    }
     this.filter = mode;
     this.applyFilter();
   }
@@ -321,7 +350,9 @@ export class MpvEngine extends BaseTvEngine {
   // The mpv window fills the screen behind the page, so a fraction-rect maps
   // straight to margin ratios; the video letterboxes inside the remainder.
   setRect(rect: PlaneRect | null): void {
-    if (shellOwnsPlaneGeometry()) return;
+    if (shellOwnsPlaneGeometry()) {
+      return;
+    }
     const [l, t, r, b] = rect
       ? [rect.x, rect.y, Math.max(0, 1 - (rect.x + rect.w)), Math.max(0, 1 - (rect.y + rect.h))]
       : [0, 0, 0, 0];
@@ -333,7 +364,9 @@ export class MpvEngine extends BaseTvEngine {
 
   destroy(): void {
     this.destroyed = true;
-    for (const un of this.unlisten) un();
+    for (const un of this.unlisten) {
+      un();
+    }
     this.unlisten.length = 0;
     // Keep the mpv process alive for the next item; just stop the current file so
     // it idles behind the UI (the shell kills the process on app exit).

@@ -16,7 +16,9 @@ export function ReleaseTabs({ view }: Readonly<{ view: ReleaseView }>) {
       value={view.tab}
       onValueChange={(next: string) => {
         const picked = releaseTabOf(next);
-        if (picked) view.setTab(picked);
+        if (picked) {
+          view.setTab(picked);
+        }
       }}
       label={t('acq.releaseTabs')}
       size="sm"

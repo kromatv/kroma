@@ -97,8 +97,11 @@ export function MonitorTitlesDialog({
     setPicked((previous) => {
       const next = new Map(previous);
       const key = keyOf(candidate);
-      if (next.has(key)) next.delete(key);
-      else next.set(key, candidate);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.set(key, candidate);
+      }
       return next;
     });
 
@@ -246,7 +249,9 @@ function NothingShown({
   answered: boolean;
 }>) {
   const t = useT();
-  if (loading) return <CandidatesSkeleton />;
+  if (loading) {
+    return <CandidatesSkeleton />;
+  }
   if (source === 'tmdb') {
     if (!searched) {
       return (
@@ -255,7 +260,9 @@ function NothingShown({
         </EmptyState.Root>
       );
     }
-    if (!answered) return null;
+    if (!answered) {
+      return null;
+    }
     return (
       <EmptyState.Root icon="search">
         <EmptyState.Title>{t('monitoring.addExternalNothing')}</EmptyState.Title>

@@ -28,12 +28,18 @@ async function play(
   // Already on this title: seek rather than remount the engine, which would
   // black the screen for a second.
   if (target?.item.id === command.itemId) {
-    if (command.positionMs) controller?.seekTo(command.positionMs / 1000);
-    if (controller && !controller.playing) controller.togglePlay();
+    if (command.positionMs) {
+      controller?.seekTo(command.positionMs / 1000);
+    }
+    if (controller && !controller.playing) {
+      controller.togglePlay();
+    }
     return;
   }
   const item = await deps.client.media.item(command.itemId).catch(() => null);
-  if (!item) return;
+  if (!item) {
+    return;
+  }
   deps.bridge.requestCastSeek(item.id, command.positionMs ?? 0);
   // reset, not push: a cast launch has no detail screen behind it.
   deps.nav.reset('player', { item });
@@ -45,7 +51,9 @@ async function skipNext(
 ): Promise<void> {
   const next = await deps.client.playback.nextEpisode(target.item.id).catch(() => null);
   // swap, not push: what is behind the player stays behind it.
-  if (next) deps.nav.swap('player', { item: next });
+  if (next) {
+    deps.nav.swap('player', { item: next });
+  }
 }
 
 /** Execute one order against the running player (or the router, for `play`). */
@@ -59,10 +67,14 @@ export async function applyCastCommand(command: CastCommand, deps: CastDeps): Pr
     case 'skipNext':
       return target ? skipNext(deps, target) : undefined;
     case 'pause':
-      if (controller?.playing) controller.togglePlay();
+      if (controller?.playing) {
+        controller.togglePlay();
+      }
       return;
     case 'resume':
-      if (controller && !controller.playing) controller.togglePlay();
+      if (controller && !controller.playing) {
+        controller.togglePlay();
+      }
       return;
     case 'togglePlay':
       controller?.togglePlay();
@@ -76,7 +88,9 @@ export async function applyCastCommand(command: CastCommand, deps: CastDeps): Pr
     case 'stop':
       // Only leaves the PLAYER: a stale `stop` must not yank a viewer out of
       // whatever they have browsed to since.
-      if (target) deps.nav.home();
+      if (target) {
+        deps.nav.home();
+      }
       return;
     case 'setAudio':
       controller?.setAudio(command.index);

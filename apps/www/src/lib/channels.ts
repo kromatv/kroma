@@ -35,11 +35,15 @@ const EXTENSION = /\.[A-Za-z][A-Za-z0-9]*$/;
 /** The version a file name carries, or null for a name that carries none. */
 export function versionOf(assetName: string): string | null {
   const found = VERSION.exec(assetName.replace(EXTENSION, ''))?.[0];
-  if (found === undefined) return null;
+  if (found === undefined) {
+    return null;
+  }
   // The suffix run takes any trailing dot with it. Trimmed here rather than in
   // the pattern, where the alternative backtracks.
   let end = found.length;
-  while (end > 0 && found[end - 1] === '.') end--;
+  while (end > 0 && found[end - 1] === '.') {
+    end--;
+  }
   return found.slice(0, end);
 }
 
@@ -70,8 +74,11 @@ function fold(buckets: Bucket[]): Bucket[] {
       (other) =>
         isStemOf(bucket.version, other.version) && Math.abs(other.at - bucket.at) <= RUN_WINDOW_MS,
     );
-    if (host) host.downloads.push(...bucket.downloads);
-    else kept.push(bucket);
+    if (host) {
+      host.downloads.push(...bucket.downloads);
+    } else {
+      kept.push(bucket);
+    }
   }
   return kept;
 }
@@ -83,13 +90,17 @@ function fold(buckets: Bucket[]): Bucket[] {
  * nothing installable is not a build.
  */
 export function toChannelBuilds(raw: Release | undefined): ChannelBuild[] {
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
 
   const buckets = new Map<string, Bucket>();
   for (const asset of raw.assets) {
     const target = classify(asset.name);
     const at = Date.parse(asset.created_at ?? raw.published_at ?? '');
-    if (!target || Number.isNaN(at)) continue;
+    if (!target || Number.isNaN(at)) {
+      continue;
+    }
 
     const version = versionOf(asset.name);
     // A file naming no version stands alone, keyed by when it arrived: there is

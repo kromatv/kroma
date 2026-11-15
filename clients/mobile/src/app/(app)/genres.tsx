@@ -64,7 +64,9 @@ export default function Genres() {
   const min = Math.round(Math.min(Math.max(width * CELL_SHARE, CELL_MIN), CELL_MAX));
   const cellW = cellWidth(room, columnsFor(room, min, GAP), GAP);
 
-  if (catalogue.isPending) return <Loading label={t('common.loading')} />;
+  if (catalogue.isPending) {
+    return <Loading label={t('common.loading')} />;
+  }
 
   return (
     <Screen padded={false}>

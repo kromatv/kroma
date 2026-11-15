@@ -22,18 +22,26 @@ export function useSelectionKeys(
   const clear = useEffectEvent(onClear);
   useEffect(() => {
     const document = webDocument();
-    if (!document || !active) return;
+    if (!document || !active) {
+      return;
+    }
     const inside = (node: unknown) => {
       const box = bar.current;
       return isElement(box) && node instanceof Node && box.contains(node);
     };
     let origin = inside(document.activeElement) ? null : document.activeElement;
     const track = (event: FocusEvent) => {
-      if (!inside(event.target) && isElement(event.target)) origin = event.target;
+      if (!inside(event.target) && isElement(event.target)) {
+        origin = event.target;
+      }
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      if (holdsCaret(document.activeElement) || document.querySelector(MODAL)) return;
+      if (event.key !== 'Escape' || event.defaultPrevented) {
+        return;
+      }
+      if (holdsCaret(document.activeElement) || document.querySelector(MODAL)) {
+        return;
+      }
       event.preventDefault();
       clear();
     };
@@ -44,7 +52,9 @@ export function useSelectionKeys(
       document.removeEventListener('focusin', track);
       const at = document.activeElement;
       const lost = at === null || at === document.body || inside(at);
-      if (lost && isElement(origin) && origin.isConnected) origin.focus();
+      if (lost && isElement(origin) && origin.isConnected) {
+        origin.focus();
+      }
     };
   }, [active, bar]);
 }

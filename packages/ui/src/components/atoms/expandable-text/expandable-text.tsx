@@ -66,7 +66,9 @@ function ExpandableText({
   const [settled, setSettled] = useState(true);
   const clamped = !expanded && (!animate || settled);
   useEffect(() => {
-    if (expanded || !animate) return;
+    if (expanded || !animate) {
+      return;
+    }
     const settle = setTimeout(() => setSettled(true), GROW_MS);
     return () => clearTimeout(settle);
   }, [expanded, animate]);
@@ -80,8 +82,12 @@ function ExpandableText({
   return (
     <Pressable
       onPress={() => {
-        if (!clampable) return;
-        if (!expanded) setSettled(false);
+        if (!clampable) {
+          return;
+        }
+        if (!expanded) {
+          setSettled(false);
+        }
         setExpanded(!expanded);
       }}
       onHoverIn={() => setHovered(true)}
@@ -98,7 +104,9 @@ function ExpandableText({
           onLayout={(event) => {
             // Only the CLAMPED height is the comparison's left side; expanded,
             // the visible copy is the ghost's own height and says nothing.
-            if (!expanded && clamped) setShown(event.nativeEvent.layout.height);
+            if (!expanded && clamped) {
+              setShown(event.nativeEvent.layout.height);
+            }
           }}
         >
           {children}

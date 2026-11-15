@@ -140,7 +140,9 @@ function SeasonCard({
         cancelLabel: t('common.cancel'),
         destructive: true,
       });
-      if (!ok) return;
+      if (!ok) {
+        return;
+      }
     }
     onToggle({ season: season.season }, monitored);
   };
@@ -281,7 +283,9 @@ function SeasonMeta({ season }: Readonly<{ season: LedgerSeason }>) {
 function SeasonProgress({ season }: Readonly<{ season: LedgerSeason }>) {
   const t = useT();
   const narrow = useBreakpoint() === 'base';
-  if (season.requested === 0 || narrow) return null;
+  if (season.requested === 0 || narrow) {
+    return null;
+  }
   const held = Math.min(season.onDisk, season.requested);
   return (
     <Box w={132} gap={6} shrink={0}>

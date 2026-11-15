@@ -23,7 +23,9 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   const [shake] = useState(() => new Animated.Value(0));
   const [fade] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    if (!message) return;
+    if (!message) {
+      return;
+    }
     fade.setValue(0);
     shake.setValue(0);
     Animated.parallel([
@@ -35,7 +37,9 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
       ),
     ]).start();
   }, [message, fade, shake]);
-  if (!message) return null;
+  if (!message) {
+    return null;
+  }
   return (
     <Animated.View style={[s.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
       <Icon name="alert-circle" size={17} thickness={2} color="danger" />

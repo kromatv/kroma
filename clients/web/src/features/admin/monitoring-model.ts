@@ -37,10 +37,18 @@ const AIR_STATUS_KEYS: Record<string, MessageKey> = {
 /** The episode's state, dated against the server's own `today` so it agrees
  * with the search gate. */
 export function episodeState(episode: EpisodeRow, today: string): EpisodeState {
-  if (episode.onDisk || episode.wantedStatus === 'available') return 'available';
-  if (episode.airDate !== null && episode.airDate > today) return 'upcoming';
-  if (episode.wantedId === null) return 'untracked';
-  if (episode.wantedStatus === 'grabbed') return 'grabbed';
+  if (episode.onDisk || episode.wantedStatus === 'available') {
+    return 'available';
+  }
+  if (episode.airDate !== null && episode.airDate > today) {
+    return 'upcoming';
+  }
+  if (episode.wantedId === null) {
+    return 'untracked';
+  }
+  if (episode.wantedStatus === 'grabbed') {
+    return 'grabbed';
+  }
   return 'missing';
 }
 
@@ -62,9 +70,13 @@ export function monitorCandidates(
   const offer = (kind: RequestKind, entries: readonly CatalogTitle[]) => {
     for (const entry of entries) {
       const tmdbId = entry.metadata?.tmdbId;
-      if (tmdbId === undefined) continue;
+      if (tmdbId === undefined) {
+        continue;
+      }
       const key = `${kind}:${tmdbId}`;
-      if (taken.has(key) || found.has(key)) continue;
+      if (taken.has(key) || found.has(key)) {
+        continue;
+      }
       found.set(key, {
         kind,
         tmdbId,
@@ -96,7 +108,9 @@ type SeasonTally = Pick<LedgerSeason, 'season' | 'episodeCount' | 'requested' | 
 /** The season a reader wants open: the first with a gap, or the only one. */
 export function seasonToOpen(seasons: readonly SeasonTally[]): number | null {
   const gap = seasons.find((season) => season.requested > season.onDisk);
-  if (gap) return gap.season;
+  if (gap) {
+    return gap.season;
+  }
   return seasons.length === 1 ? (seasons[0]?.season ?? null) : null;
 }
 
@@ -106,7 +120,9 @@ export function isSpecials(season: number): boolean {
 }
 
 export function seasonFollow(season: SeasonTally): FollowState {
-  if (season.requested === 0) return 'off';
+  if (season.requested === 0) {
+    return 'off';
+  }
   return season.requested >= season.episodeCount ? 'on' : 'partly';
 }
 
@@ -128,7 +144,9 @@ const RUNGS = [2160, 1440, 1080, 720, 576, 480];
  * nothing was probed. The height is snapped to the rung below it, so a 1088-line
  * file still reads as 1080p. */
 export function fileLabel(video: VideoTrack | null): string | null {
-  if (!video) return null;
+  if (!video) {
+    return null;
+  }
   const height = video.height ?? 0;
   const rung = RUNGS.find((step) => height >= step);
   const parts = [rung ? `${rung}p` : null, video.codec ? codecLabel(video.codec) : null];

@@ -13,9 +13,12 @@ import { CATEGORY_VIEW, GLYPH_SIZE, lineKey } from '#web/features/admin/module-p
 import { listOf } from '#web/features/admin/module-permissions-words';
 
 function whoSays(line: SharedAccess, declared: number, t: Translate): string | null {
-  if (declared < 2) return null;
-  if (line.modules.length === declared)
+  if (declared < 2) {
+    return null;
+  }
+  if (line.modules.length === declared) {
     return t('modulePermissions.allModules', { count: declared });
+  }
   return listOf(line.modules, t);
 }
 
@@ -51,9 +54,13 @@ function Reach({
   const t = useT();
   const [only] = entries;
   if (entries.length === 1 && only) {
-    if (!updating) return <ModuleVerdict source={only.source} />;
+    if (!updating) {
+      return <ModuleVerdict source={only.source} />;
+    }
     const sentence = only.source ? extendedSentence(only.source, t) : null;
-    if (!sentence) return null;
+    if (!sentence) {
+      return null;
+    }
     return (
       <Verdict extended title={t('modulePermissions.extended')}>
         <Callout.Detail>{sentence}</Callout.Detail>
@@ -69,7 +76,9 @@ function Reach({
       </Verdict>
     );
   }
-  if (updating) return null;
+  if (updating) {
+    return null;
+  }
   return (
     <Verdict extended={false} title={t('modulePermissions.noneExtended')}>
       <Callout.Detail>{t('modulePermissions.noneExtendedHint')}</Callout.Detail>

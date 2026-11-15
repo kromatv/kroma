@@ -44,7 +44,9 @@ function encodeName(name: string): Buffer {
   const out: Buffer[] = [];
   for (const part of parts) {
     const label = Buffer.from(part, 'utf8');
-    if (label.length > 63) throw new Error(`label too long: ${part}`);
+    if (label.length > 63) {
+      throw new Error(`label too long: ${part}`);
+    }
     out.push(Buffer.from([label.length]), label);
   }
   out.push(Buffer.from([0]));
@@ -60,7 +62,9 @@ function decodeName(buf: Buffer, offset: number): { name: string; next: number }
   // A malformed packet must not become an infinite loop: every jump has to move
   // backwards, and there are only so many bytes to jump into.
   for (let guard = 0; guard < 128; guard += 1) {
-    if (at >= buf.length) break;
+    if (at >= buf.length) {
+      break;
+    }
     const len = buf[at] ?? 0;
     if (len === 0) {
       at += 1;
@@ -68,8 +72,12 @@ function decodeName(buf: Buffer, offset: number): { name: string; next: number }
     }
     if ((len & 0xc0) === 0xc0) {
       const pointer = ((len & 0x3f) << 8) | (buf[at + 1] ?? 0);
-      if (next < 0) next = at + 2;
-      if (pointer >= at) break;
+      if (next < 0) {
+        next = at + 2;
+      }
+      if (pointer >= at) {
+        break;
+      }
       at = pointer;
       continue;
     }
@@ -90,11 +98,15 @@ function record(name: string, type: number, ttl: number, data: Buffer, flush: bo
 
 function txtData(txt: Readonly<Record<string, string>>): Buffer {
   const entries = Object.entries(txt);
-  if (entries.length === 0) return Buffer.from([0]);
+  if (entries.length === 0) {
+    return Buffer.from([0]);
+  }
   return Buffer.concat(
     entries.map(([key, value]) => {
       const line = Buffer.from(`${key}=${value}`, 'utf8');
-      if (line.length > 255) throw new Error(`txt entry too long: ${key}`);
+      if (line.length > 255) {
+        throw new Error(`txt entry too long: ${key}`);
+      }
       return Buffer.concat([Buffer.from([line.length]), line]);
     }),
   );
@@ -144,16 +156,22 @@ export function answerPacket(service: ServiceRecord): Buffer {
 
 /** The questions in a packet, or an empty list if it is not a query. */
 export function readQuestions(buf: Buffer): Question[] {
-  if (buf.length < 12) return [];
+  if (buf.length < 12) {
+    return [];
+  }
   const flags = buf.readUInt16BE(2);
-  if ((flags & 0x8000) !== 0) return []; // a response, not a question
+  if ((flags & 0x8000) !== 0) {
+    return [];
+  } // a response, not a question
   const count = buf.readUInt16BE(4);
   const out: Question[] = [];
   let at = 12;
   for (let i = 0; i < count && at < buf.length; i += 1) {
     const { name, next } = decodeName(buf, at);
     at = next;
-    if (at + 4 > buf.length) break;
+    if (at + 4 > buf.length) {
+      break;
+    }
     out.push({ name, type: buf.readUInt16BE(at) });
     at += 4;
   }
@@ -168,7 +186,9 @@ export function asksAbout(question: Question, service: ServiceRecord): boolean {
     question.name === full ||
     question.name === service.host ||
     question.name === '_services._dns-sd._udp.local';
-  if (!named) return false;
+  if (!named) {
+    return false;
+  }
   return (
     question.type === TYPE.ANY ||
     question.type === TYPE.PTR ||

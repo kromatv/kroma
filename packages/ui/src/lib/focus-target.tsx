@@ -33,7 +33,9 @@ export function radiusOf(style: StyleProp<ViewStyle>): number {
  */
 export function useFocusTarget(focused: boolean, radius: number, face: FocusFace): FocusTarget {
   const native = useNativeFocus(focused);
-  if (!NATIVE_FOCUS) return { hostProps: null, overlay: null, remoteSelects: false };
+  if (!NATIVE_FOCUS) {
+    return { hostProps: null, overlay: null, remoteSelects: false };
+  }
   return {
     hostProps: {
       focusable: native,
@@ -72,7 +74,9 @@ export function FocusTargetHost({
   children: ReactNode;
 }>): ReactNode {
   const target = useFocusTarget(focused, radius, 'child');
-  if (!target.hostProps) return children;
+  if (!target.hostProps) {
+    return children;
+  }
   return (
     <View style={style} collapsable={false} {...target.hostProps}>
       {children}

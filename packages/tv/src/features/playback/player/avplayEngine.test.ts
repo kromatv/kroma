@@ -38,7 +38,9 @@ function fakeAvplay(refuses: string[] = []): FakeAvplay {
     (m: string) =>
     (...args: unknown[]) => {
       calls.push({ m, args });
-      if (refuses.includes(m) || (!playing && refuses.includes(`${m}:ready`))) throw new Error(m);
+      if (refuses.includes(m) || (!playing && refuses.includes(`${m}:ready`))) {
+        throw new Error(m);
+      }
     };
   const api = {
     open: rec('open'),
@@ -51,7 +53,9 @@ function fakeAvplay(refuses: string[] = []): FakeAvplay {
     pause: rec('pause'),
     seekTo: (ms: number, onOk?: () => void) => {
       calls.push({ m: 'seekTo', args: [ms] });
-      if (refuses.includes('seekTo')) throw new Error('seekTo');
+      if (refuses.includes('seekTo')) {
+        throw new Error('seekTo');
+      }
       time = ms;
       answer = onOk ?? null;
     },
@@ -65,7 +69,9 @@ function fakeAvplay(refuses: string[] = []): FakeAvplay {
     getState: () => 'PLAYING',
     getDuration: () => duration,
     getTotalTrackInfo: () => {
-      if (refuses.includes('getTotalTrackInfo')) throw new Error('getTotalTrackInfo');
+      if (refuses.includes('getTotalTrackInfo')) {
+        throw new Error('getTotalTrackInfo');
+      }
       return tracks;
     },
     setListener: (l: AvplayListeners) => {
@@ -139,7 +145,9 @@ const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 function masterArrivedTo(arrivedSec: number) {
   return vi.fn((url: string) => {
     const anchor = Number(String(url).split(':')[3]);
-    if (anchor > arrivedSec) return Promise.resolve({ status: 503, headers: { get: () => null } });
+    if (anchor > arrivedSec) {
+      return Promise.resolve({ status: 503, headers: { get: () => null } });
+    }
     return Promise.resolve({
       status: 200,
       headers: { get: (k: string) => (k === 'X-Hls-Start' ? String(anchor - 2) : null) },
@@ -280,7 +288,9 @@ describe('AvplayEngine joining a master that is still being written', () => {
     const { a, names } = make({ direct: false, startSec: 0 }, ['seekTo']);
 
     a.prepareOk();
-    for (const ms of [91000, 92000, 93000, 94000]) a.listener().oncurrentplaytime?.(ms);
+    for (const ms of [91000, 92000, 93000, 94000]) {
+      a.listener().oncurrentplaytime?.(ms);
+    }
 
     expect(names().filter((n) => n === 'seekTo')).toHaveLength(3);
   });
@@ -289,7 +299,9 @@ describe('AvplayEngine joining a master that is still being written', () => {
     const { a, names } = make({ direct: false, startSec: 0 });
 
     a.prepareOk();
-    for (const ms of [156015, 156015, 156015]) a.listener().oncurrentplaytime?.(ms);
+    for (const ms of [156015, 156015, 156015]) {
+      a.listener().oncurrentplaytime?.(ms);
+    }
 
     expect(names().filter((n) => n === 'seekTo')).toHaveLength(1);
   });
@@ -353,7 +365,9 @@ describe('AvplayEngine prepared (resume + audio mapping)', () => {
 
     a.prepareOk();
     e.play();
-    for (const ms of [500, 1000, 1500, 2000, 2500]) a.listener().oncurrentplaytime?.(ms);
+    for (const ms of [500, 1000, 1500, 2000, 2500]) {
+      a.listener().oncurrentplaytime?.(ms);
+    }
 
     expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(4);
   });

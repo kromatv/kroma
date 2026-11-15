@@ -91,8 +91,12 @@ export function TreatmentsPanel({
 
   // Nothing to offer without either permission; with `settings.manage` we also
   // wait for the treatment list so the strip does not flash in empty.
-  if (!admin && !canManageLibrary) return null;
-  if (admin && !treatments) return null;
+  if (!admin && !canManageLibrary) {
+    return null;
+  }
+  if (admin && !treatments) {
+    return null;
+  }
 
   const reprocess = () => {
     setBusy(true);
@@ -111,7 +115,9 @@ export function TreatmentsPanel({
     });
     // The correction re-runs enrichment in the background; give it a beat, then
     // pull the fresh treatments + art.
-    if (applied) setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
+    if (applied) {
+      setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
+    }
   };
 
   return (

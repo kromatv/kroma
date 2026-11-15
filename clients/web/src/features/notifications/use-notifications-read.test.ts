@@ -101,7 +101,11 @@ describe('moving one row between read and unread', () => {
       unread: server.filter((n) => !n.read).length,
     }));
     const flip = (read: boolean) => async (ids: string[]) => {
-      for (const n of server) if (ids.includes(n.id)) n.read = read;
+      for (const n of server) {
+        if (ids.includes(n.id)) {
+          n.read = read;
+        }
+      }
       return { unread: server.filter((r) => !r.read).length };
     };
     markNotificationsRead.mockImplementation(flip(true));

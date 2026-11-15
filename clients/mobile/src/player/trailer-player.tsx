@@ -61,7 +61,9 @@ export function TrailerPlayer({
   const leaveAtEnd = useEffectEvent(exit);
   const ended = clip.endedNonce > 0;
   useEffect(() => {
-    if (ended) leaveAtEnd();
+    if (ended) {
+      leaveAtEnd();
+    }
   }, [ended]);
 
   if (state === 'failed' || clip.failed) {

@@ -41,7 +41,9 @@ function GenrePage({ name }: Readonly<{ name: string }>) {
     },
   });
 
-  if (catalogue.isPending) return <Loading label={t('common.loading')} />;
+  if (catalogue.isPending) {
+    return <Loading label={t('common.loading')} />;
+  }
 
   const matches = sortTitles(
     (catalogue.data ?? []).filter((entry) => hasGenre(entry, genre)),

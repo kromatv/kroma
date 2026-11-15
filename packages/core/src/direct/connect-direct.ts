@@ -53,17 +53,27 @@ export async function connectDirect(
   client: KromaClient,
   options: ConnectDirectOptions,
 ): Promise<DirectOutcome> {
-  if (isLanBase(client.route.canonical)) return { kind: 'canonical', reason: 'no-route' };
+  if (isLanBase(client.route.canonical)) {
+    return { kind: 'canonical', reason: 'no-route' };
+  }
   const challenge = options.offer ? Promise.resolve(options.offer) : askDirectOffer(client);
   const known = options.routesFrom ?? (await challenge);
-  if (!known) return { kind: 'unknown' };
+  if (!known) {
+    return { kind: 'unknown' };
+  }
   const routes = lanRoutes(known, client);
-  if (routes.length === 0) return settle(client, { kind: 'canonical', reason: 'no-route' });
+  if (routes.length === 0) {
+    return settle(client, { kind: 'canonical', reason: 'no-route' });
+  }
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const route = await firstToAnswer(routes, known.instanceId, options.fetch, timeoutMs);
-  if (!route) return settle(client, { kind: 'canonical', reason: 'unreachable' });
+  if (!route) {
+    return settle(client, { kind: 'canonical', reason: 'unreachable' });
+  }
   const offer = await challenge;
-  if (!offer) return { kind: 'unknown' };
+  if (!offer) {
+    return { kind: 'unknown' };
+  }
   const proven =
     offer.instanceId === known.instanceId &&
     (await answers(route, offer, options.fetch, timeoutMs));
@@ -74,8 +84,11 @@ export async function connectDirect(
 }
 
 function settle(client: KromaClient, outcome: DirectOutcome): DirectOutcome {
-  if (outcome.kind === 'direct') client.route.useDirect(outcome.route);
-  else client.route.drop();
+  if (outcome.kind === 'direct') {
+    client.route.useDirect(outcome.route);
+  } else {
+    client.route.drop();
+  }
   return outcome;
 }
 
@@ -90,8 +103,11 @@ function firstToAnswer(
     for (const route of routes) {
       void probeHealth(fetchFn, route, timeoutMs).then((health) => {
         left -= 1;
-        if (health?.instanceId === instanceId) resolve(route);
-        else if (left === 0) resolve(null);
+        if (health?.instanceId === instanceId) {
+          resolve(route);
+        } else if (left === 0) {
+          resolve(null);
+        }
       });
     }
   });
@@ -108,9 +124,13 @@ async function answers(
   try {
     const url = `${route}/api/server/direct/proof?nonce=${encodeURIComponent(offer.nonce)}`;
     const res = await fetchFn(url, { signal: ctrl.signal });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      return false;
+    }
     const text = await res.text();
-    if (text.length > MAX_PROOF_BYTES) return false;
+    if (text.length > MAX_PROOF_BYTES) {
+      return false;
+    }
     const proof = DirectProof.safeParse(JSON.parse(text));
     return proof.success && proof.data.answer === offer.answer;
   } catch {

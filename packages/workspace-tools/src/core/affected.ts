@@ -14,7 +14,9 @@ export function directlyChanged(changedPaths: string[], graph: Graph): Set<strin
         ownerDirLength = project.dir.length;
       }
     }
-    if (owner) hit.add(owner);
+    if (owner) {
+      hit.add(owner);
+    }
   }
   return hit;
 }
@@ -29,7 +31,9 @@ export function affected(changedPaths: string[], graph: Graph): Set<string> {
   const queue = [...result];
   while (queue.length > 0) {
     const current = queue.shift();
-    if (current === undefined) continue;
+    if (current === undefined) {
+      continue;
+    }
     for (const dependent of reverse.get(current) ?? []) {
       if (!result.has(dependent)) {
         result.add(dependent);

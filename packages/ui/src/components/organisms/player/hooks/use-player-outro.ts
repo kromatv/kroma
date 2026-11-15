@@ -21,7 +21,9 @@ export function usePlayerOutro(opts: {
   const run = useEffectEvent(() => (canOffer ? onOffer() : onLeave()));
 
   useEffect(() => {
-    if (endedNonce === seen.current || hasNext) return;
+    if (endedNonce === seen.current || hasNext) {
+      return;
+    }
     seen.current = endedNonce;
     run();
   }, [endedNonce, hasNext]);

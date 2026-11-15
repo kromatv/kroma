@@ -25,27 +25,29 @@ const SlimUser = User.pick({
 export type SlimUser = z.infer<typeof SlimUser>;
 
 const MobileAccount = z.object({
-  serverUrl: z.string().min(1),
-  accessToken: z.string().min(1),
+  serverUrl: z.string().nonempty(),
+  accessToken: z.string().nonempty(),
   user: SlimUser,
 });
 export type MobileAccount = z.infer<typeof MobileAccount>;
 
 const ServerEntry = z.object({
-  url: z.string().min(1),
+  url: z.string().nonempty(),
   name: z.string().optional(),
   lastUsedAt: z.number(),
 });
 export type ServerEntry = z.infer<typeof ServerEntry>;
 
 const ActivePointer = z.object({
-  serverUrl: z.string().min(1),
-  userId: z.string().min(1),
+  serverUrl: z.string().nonempty(),
+  userId: z.string().nonempty(),
 });
 export type ActivePointer = z.infer<typeof ActivePointer>;
 
 function stored<S extends z.ZodType>(schema: S, raw: string | null): z.infer<S> | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const parsed = schema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : null;
@@ -66,7 +68,9 @@ function slim(user: SlimUser): SlimUser {
 
 function usableAccounts(raw: string | null): MobileAccount[] | null {
   const entries = stored(z.array(z.unknown()), raw);
-  if (!entries) return null;
+  if (!entries) {
+    return null;
+  }
   return entries.flatMap((entry) => {
     const account = MobileAccount.safeParse(entry);
     return account.success ? [account.data] : [];
@@ -76,7 +80,9 @@ function usableAccounts(raw: string | null): MobileAccount[] | null {
 export async function loadAccounts(): Promise<MobileAccount[]> {
   try {
     const accounts = usableAccounts(await SecureStore.getItemAsync(ACCOUNTS_KEY));
-    if (accounts) return accounts;
+    if (accounts) {
+      return accounts;
+    }
     // One-time migration from the single-session era.
     const legacy = stored(MobileAccount, await SecureStore.getItemAsync(LEGACY_SESSION_KEY));
     if (legacy) {
@@ -260,8 +266,11 @@ export async function loadPref(key: string): Promise<string | null> {
 
 export async function savePref(key: string, value: string | null): Promise<void> {
   try {
-    if (value === null) await SecureStore.deleteItemAsync(PREF_PREFIX + key);
-    else await SecureStore.setItemAsync(PREF_PREFIX + key, value);
+    if (value === null) {
+      await SecureStore.deleteItemAsync(PREF_PREFIX + key);
+    } else {
+      await SecureStore.setItemAsync(PREF_PREFIX + key, value);
+    }
   } catch {
     // Prefs are best-effort.
   }

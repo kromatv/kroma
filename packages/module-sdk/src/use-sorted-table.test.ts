@@ -76,7 +76,9 @@ describe('useSortedTable', () => {
       }),
     );
 
-    for (const [sent, back] of round) expect(back).toEqual(sent);
+    for (const [sent, back] of round) {
+      expect(back).toEqual(sent);
+    }
     expect(round).toHaveLength(6);
   });
 

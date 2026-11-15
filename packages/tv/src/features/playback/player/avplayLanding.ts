@@ -22,7 +22,9 @@ export class AvplayLanding {
    * seek takes seconds to answer while reports keep arriving every half second,
    * so only one is ever in flight. */
   reported(ms: number): boolean {
-    if (this.seeking || this.triesLeft <= 0) return false;
+    if (this.seeking || this.triesLeft <= 0) {
+      return false;
+    }
     if (ms <= AT_TOP_MS) {
       this.triesLeft = 0;
       return false;

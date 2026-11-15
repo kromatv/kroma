@@ -85,12 +85,14 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
 type Split = ReturnType<typeof splitShorthand>;
 
 function hostOf(asChild: boolean | undefined, plain: boolean) {
-  if (asChild) return Slot;
+  if (asChild) {
+    return Slot;
+  }
   return plain ? StaticView : View;
 }
 
 interface FluidBoxProps {
-  host: typeof View | typeof Slot | typeof StaticView;
+  host: ReturnType<typeof hostOf>;
   split: Split;
   style?: StyleProp<ViewStyle>;
   ref?: Ref<View>;
@@ -136,7 +138,9 @@ const sDefinition = styles({ spacer: { flex: true } });
 // step joins that key only for a box that states a value per breakpoint, so a
 // flat one still mints the single entry it always has.
 function layoutOf(split: Split, step: number, scope: StyleScope): ViewStyle {
-  if (!split.key) return EMPTY;
+  if (!split.key) {
+    return EMPTY;
+  }
   const key = split.breakpoints === 0 ? split.key : `${step}|${split.key}`;
   return sharedBoxStyle(key, split.shorthand as BoxStyleProps, scope);
 }

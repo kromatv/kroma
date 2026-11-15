@@ -25,7 +25,9 @@ import { usePhysicalOrientation } from './use-physical-orientation';
 
 function sample(x: number, y: number, z = 0, count = 1) {
   act(() => {
-    for (let index = 0; index < count; index += 1) sensor.listener?.({ x, y, z, timestamp: index });
+    for (let index = 0; index < count; index += 1) {
+      sensor.listener?.({ x, y, z, timestamp: index });
+    }
   });
 }
 

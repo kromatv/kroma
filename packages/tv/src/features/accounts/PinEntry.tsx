@@ -36,7 +36,9 @@ export function PinEntry({ label, onSubmit, wrongKey }: Readonly<PinEntryProps>)
   }, []);
 
   useEffect(() => {
-    if (cooldown <= 0) return;
+    if (cooldown <= 0) {
+      return;
+    }
     const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(id);
   }, [cooldown]);
@@ -47,12 +49,16 @@ export function PinEntry({ label, onSubmit, wrongKey }: Readonly<PinEntryProps>)
   };
 
   const submit = async (pin: string) => {
-    if (blocked) return;
+    if (blocked) {
+      return;
+    }
     setError('');
     setBusy(true);
     try {
       const refused = await onSubmit(pin);
-      if (refused) fail(refused);
+      if (refused) {
+        fail(refused);
+      }
     } catch (e) {
       if (isPinLockout(e)) {
         setCooldown(Number((e.body as { retryAfter?: number } | undefined)?.retryAfter ?? 30));
@@ -67,7 +73,9 @@ export function PinEntry({ label, onSubmit, wrongKey }: Readonly<PinEntryProps>)
   };
 
   const edit = (next: (b: string) => string) => {
-    if (blocked) return;
+    if (blocked) {
+      return;
+    }
     setError('');
     setBuffer(next);
   };

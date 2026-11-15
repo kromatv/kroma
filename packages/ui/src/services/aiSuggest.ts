@@ -60,7 +60,9 @@ export function useAiSuggest(
   }
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     let cancelled = false;
     let tries = 0;
     let timer: ReturnType<typeof setTimeout>;
@@ -68,7 +70,9 @@ export function useAiSuggest(
       client.media
         .aiSuggest(id)
         .then((res) => {
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
           if (res) {
             // Terminal: a section (possibly with empty items).
             setSection(res);
@@ -82,7 +86,9 @@ export function useAiSuggest(
           }
         })
         .catch(() => {
-          if (!cancelled) setPending(false);
+          if (!cancelled) {
+            setPending(false);
+          }
         });
     };
     poll();

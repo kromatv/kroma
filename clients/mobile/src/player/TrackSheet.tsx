@@ -66,13 +66,17 @@ export function TrackSheet({
   const [opened, setOpened] = useState({ visible, initialView });
   if (opened.visible !== visible || opened.initialView !== initialView) {
     setOpened({ visible, initialView });
-    if (visible) setView(initialView);
+    if (visible) {
+      setView(initialView);
+    }
   }
 
   const [slide] = useState(() => new Animated.Value(1));
   const prevView = useRef(view);
   useEffect(() => {
-    if (prevView.current === view) return;
+    if (prevView.current === view) {
+      return;
+    }
     prevView.current = view;
     slide.setValue(0);
     Animated.timing(slide, {
@@ -146,7 +150,9 @@ export function TrackSheet({
                 engine.setAudio(track.index);
                 // Picking a language REMEMBERS it (account-level, like the
                 // TV): the next title opens on this language when it can.
-                if (track.prefCode) prefs.setAudio(track.prefCode);
+                if (track.prefCode) {
+                  prefs.setAudio(track.prefCode);
+                }
                 done();
               }}
             />
@@ -197,7 +203,9 @@ export function TrackSheet({
               note={subNote(t, subs, track.index)}
               onPress={() => {
                 subs.pick(track.index);
-                if (track.language) prefs.setSubtitle(track.language);
+                if (track.language) {
+                  prefs.setSubtitle(track.language);
+                }
                 done();
               }}
             />

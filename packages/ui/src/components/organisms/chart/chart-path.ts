@@ -30,13 +30,17 @@ function segmentsOf(column: readonly (number | null)[]): Segment[] {
   let from = -1;
   for (let at = 0; at < column.length; at += 1) {
     if (column[at] === null) {
-      if (from !== -1) runs.push({ from, to: at - 1 });
+      if (from !== -1) {
+        runs.push({ from, to: at - 1 });
+      }
       from = -1;
     } else if (from === -1) {
       from = at;
     }
   }
-  if (from !== -1) runs.push({ from, to: column.length - 1 });
+  if (from !== -1) {
+    runs.push({ from, to: column.length - 1 });
+  }
   return runs;
 }
 
@@ -68,7 +72,9 @@ function pointsOf(
  */
 export function tangentsOf(points: readonly Point[]): number[] {
   const count = points.length;
-  if (count < 2) return new Array<number>(count).fill(0);
+  if (count < 2) {
+    return Array.from<number>({ length: count }).fill(0);
+  }
 
   const secants: number[] = [];
   for (let at = 0; at < count - 1; at += 1) {
@@ -78,7 +84,7 @@ export function tangentsOf(points: readonly Point[]): number[] {
     secants.push(run === 0 ? 0 : (next.y - here.y) / run);
   }
 
-  const tangents = new Array<number>(count);
+  const tangents = Array.from<number>({ length: count });
   tangents[0] = secants[0] as number;
   tangents[count - 1] = secants[count - 2] as number;
   for (let at = 1; at < count - 1; at += 1) {
@@ -151,9 +157,13 @@ const DRAW: Record<ChartCurve, (points: readonly Point[]) => string> = {
  *  linecap draws as the dot the sample is. */
 export function curveOf(points: readonly Point[], curve: ChartCurve): string {
   const first = points[0];
-  if (!first) return '';
+  if (!first) {
+    return '';
+  }
   const head = `M${px(first.x)} ${px(first.y)}`;
-  if (points.length === 1) return `${head}L${px(first.x)} ${px(first.y)}`;
+  if (points.length === 1) {
+    return `${head}L${px(first.x)} ${px(first.y)}`;
+  }
   return head + DRAW[curve](points);
 }
 

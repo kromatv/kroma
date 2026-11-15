@@ -190,8 +190,15 @@ export function withAlpha(value: string, alpha: number): string {
 
 function withHexAlpha(value: string, alpha: number): string {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value)?.[1];
-  if (!hex) return value;
-  const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
+  if (!hex) {
+    return value;
+  }
+  const full =
+    hex.length === 3
+      ? Array.from(hex)
+          .map((c) => c + c)
+          .join('')
+      : hex;
   const r = Number.parseInt(full.slice(0, 2), 16);
   const g = Number.parseInt(full.slice(2, 4), 16);
   const b = Number.parseInt(full.slice(4, 6), 16);
@@ -207,10 +214,14 @@ export function splitAlpha(value: string): { color: string; opacity: number } {
   const body = /^rgba?\((.+)\)$/i.exec(value)?.[1];
   if (body) {
     const parts = body.split(/[\s,/]+/).filter(Boolean);
-    if (parts.length < 4) return { color: value, opacity: 1 };
+    if (parts.length < 4) {
+      return { color: value, opacity: 1 };
+    }
     const raw = parts[3] as string;
     const alpha = raw.endsWith('%') ? Number(raw.slice(0, -1)) / 100 : Number(raw);
-    if (!Number.isFinite(alpha)) return { color: value, opacity: 1 };
+    if (!Number.isFinite(alpha)) {
+      return { color: value, opacity: 1 };
+    }
     return { color: `rgb(${parts.slice(0, 3).join(', ')})`, opacity: alpha };
   }
   const hex = /^#(?:([0-9a-f]{3})([0-9a-f])|([0-9a-f]{6})([0-9a-f]{2}))$/i.exec(value);

@@ -110,6 +110,8 @@ function Trail({
 }
 
 function borderOf(open: boolean, picked: boolean): 'borderStrong' | 'accent/40' | 'border' {
-  if (picked) return 'accent/40';
+  if (picked) {
+    return 'accent/40';
+  }
   return open ? 'borderStrong' : 'border';
 }

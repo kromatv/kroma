@@ -14,10 +14,14 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
   const [resolved, setResolved] = useState<{ id: string; sec: number } | null>(null);
   const [resumed, setResumed] = useState<{ id: string; sec: number } | null>(null);
   useEffect(() => {
-    if (!client.hasAuth) return;
+    if (!client.hasAuth) {
+      return;
+    }
     let done = false;
     const settle = (sec: number) => {
-      if (done) return;
+      if (done) {
+        return;
+      }
       done = true;
       setResolved({ id: item.id, sec });
       setResumed({ id: item.id, sec });
@@ -42,8 +46,11 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
   const setStartSec = useCallback((sec: number) => setResolved({ id: item.id, sec }), [item.id]);
 
   let startSec: number | null = null;
-  if (resolved?.id === item.id) startSec = resolved.sec;
-  else if (!client.hasAuth) startSec = 0;
+  if (resolved?.id === item.id) {
+    startSec = resolved.sec;
+  } else if (!client.hasAuth) {
+    startSec = 0;
+  }
 
   return {
     startSec,

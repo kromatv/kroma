@@ -26,19 +26,26 @@ const RELEASES = new Set(['Enter', 'Escape', ' ', 'Backspace']);
 function useResizableKeys({ held, orientation, onNudge, onRelease }: ResizableKeysOptions): void {
   const onKey = useEffectEvent((event: KeyboardEvent) => {
     const move = MOVES[event.key];
-    if (!move && !RELEASES.has(event.key)) return;
+    if (!move && !RELEASES.has(event.key)) {
+      return;
+    }
     event.preventDefault();
     // Every direction is swallowed while the seam is held, not only the two
     // it acts on: focus moving out from under a held seam would leave it
     // holding the keys of a group nobody is looking at.
     event.stopPropagation();
-    if (!move) onRelease();
-    else if (move.orientation === orientation) onNudge(move.towards);
+    if (!move) {
+      onRelease();
+    } else if (move.orientation === orientation) {
+      onNudge(move.towards);
+    }
   });
 
   useEffect(() => {
     const document = webDocument();
-    if (!held || !document) return;
+    if (!held || !document) {
+      return;
+    }
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [held]);

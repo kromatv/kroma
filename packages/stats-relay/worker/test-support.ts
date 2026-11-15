@@ -78,7 +78,9 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
     flag(ids) {
       for (const id of ids) {
         const found = rows.get(id);
-        if (found) rows.set(id, { ...found, flagged: true });
+        if (found) {
+          rows.set(id, { ...found, flagged: true });
+        }
       }
       return Promise.resolve();
     },
@@ -87,7 +89,11 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
       return Promise.resolve();
     },
     prune(before) {
-      for (const [id, r] of rows) if (r.lastSeen < before) rows.delete(id);
+      for (const [id, r] of rows) {
+        if (r.lastSeen < before) {
+          rows.delete(id);
+        }
+      }
       return Promise.resolve();
     },
     forget(id) {

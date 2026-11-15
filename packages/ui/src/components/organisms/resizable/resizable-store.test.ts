@@ -18,8 +18,11 @@ const own = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
 
 afterEach(() => {
   held.clear();
-  if (own) Object.defineProperty(globalThis, 'localStorage', own);
-  else Reflect.deleteProperty(globalThis, 'localStorage');
+  if (own) {
+    Object.defineProperty(globalThis, 'localStorage', own);
+  } else {
+    Reflect.deleteProperty(globalThis, 'localStorage');
+  }
 });
 
 describe('browserStorage', () => {

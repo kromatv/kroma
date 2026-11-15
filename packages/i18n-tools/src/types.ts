@@ -5,10 +5,14 @@ import { type CatalogSet, keepsPolicy, localesOf } from './set.ts';
 import { readSource } from './status.ts';
 
 function writeModuleTypes(set: CatalogSet, types: NonNullable<CatalogSet['types']>): boolean {
-  if (!localesOf(set).includes(set.project.source)) return false;
+  if (!localesOf(set).includes(set.project.source)) {
+    return false;
+  }
   const next = renderModuleTypes(readSource(set).catalog, types.target);
   const current = existsSync(types.path) ? readFileSync(types.path, 'utf8') : null;
-  if (current === next) return false;
+  if (current === next) {
+    return false;
+  }
   writeFileSync(types.path, next);
   return true;
 }
@@ -20,10 +24,14 @@ export function writeTypes(sets: readonly CatalogSet[]): string[] {
   const moved: string[] = [];
   for (const set of sets) {
     if (set.types) {
-      if (writeModuleTypes(set, set.types)) moved.push(set.types.path);
+      if (writeModuleTypes(set, set.types)) {
+        moved.push(set.types.path);
+      }
     } else if (keepsPolicy(set)) {
       const { path, changed } = writeCatalogTypes(set.dir);
-      if (changed) moved.push(path);
+      if (changed) {
+        moved.push(path);
+      }
     }
   }
   return moved;

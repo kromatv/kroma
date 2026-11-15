@@ -39,7 +39,9 @@ export default defineConfig({
       name: 'kroma-ui-drop-brand-media',
       enforce: 'pre' as const,
       transform(code: string, id: string) {
-        if (!id.endsWith('kroma-intro/constants.ts')) return null;
+        if (!id.endsWith('kroma-intro/constants.ts')) {
+          return null;
+        }
         return code.replace(/new URL\([^)]*kroma-intro[^)]*\)\.href/g, "''");
       },
     },
@@ -49,7 +51,9 @@ export default defineConfig({
       enforce: 'pre' as const,
       load(id: string) {
         for (const swap of ['services/i18n-instance']) {
-          if (id.endsWith(`${swap}.ts`)) return readFileSync(src(`${swap}.published.ts`), 'utf8');
+          if (id.endsWith(`${swap}.ts`)) {
+            return readFileSync(src(`${swap}.published.ts`), 'utf8');
+          }
         }
         return null;
       },
@@ -58,7 +62,9 @@ export default defineConfig({
       name: 'kroma-ui-icon-subset',
       enforce: 'pre' as const,
       load(id: string) {
-        if (NATIVE || !id.endsWith('lib/icons/glyph-source.ts')) return null;
+        if (NATIVE || !id.endsWith('lib/icons/glyph-source.ts')) {
+          return null;
+        }
         return iconSubset(fileURLToPath(new URL('.', import.meta.url)));
       },
     },

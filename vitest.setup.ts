@@ -65,7 +65,9 @@ for (const name of hasDom ? (['localStorage', 'sessionStorage'] as const) : []) 
   } catch {
     usable = false;
   }
-  if (usable) continue;
+  if (usable) {
+    continue;
+  }
   try {
     Object.defineProperty(globalThis, name, {
       value: memoryStorage(),

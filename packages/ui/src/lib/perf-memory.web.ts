@@ -19,7 +19,9 @@ const MB = 1024 * 1024;
 export function readMemory(): MemoryReading | null {
   const memory = (performance as Performance & { memory?: ChromiumMemory }).memory;
   const used = memory?.usedJSHeapSize;
-  if (typeof used !== 'number') return null;
+  if (typeof used !== 'number') {
+    return null;
+  }
   return {
     usedMb: Math.round(used / MB),
     limitMb: Math.round((memory?.jsHeapSizeLimit ?? 0) / MB),

@@ -26,7 +26,9 @@ function shotStage(at: Shot): ReactNode {
   if (at.listOnly) {
     return <Text>{`KROMA_STORY_IDS:${at.stories.map((entry) => entry.id).join(',')}`}</Text>;
   }
-  if (!at.story) return null;
+  if (!at.story) {
+    return null;
+  }
   // A story that declares a width measures itself and has to be given one;
   // measured against the window, because a shot has no stage card.
   const stage = stageWidth(at.story.width, at.width - SHOT_PAD * 2);

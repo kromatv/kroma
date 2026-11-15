@@ -33,13 +33,14 @@ function PersonPage({ name }: Readonly<{ name: string }>) {
   // never hold up the filmography, which the library already knows.
   const profile = useQuery({ ...client.query.media.person(person), staleTime: 60 * 60_000 });
 
-  if (credits.isPending)
+  if (credits.isPending) {
     return (
       <Screen padded={false}>
         <PageHeader title={person} />
         <Loading label={t('common.loading')} />
       </Screen>
     );
+  }
 
   const results = credits.data?.results ?? [];
   const cards: CardModel[] = results.map((hit) =>

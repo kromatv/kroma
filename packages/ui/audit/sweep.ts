@@ -30,12 +30,16 @@ function sweepKit(only: readonly string[] = []): readonly Pressed[] {
     const keep =
       needles.length === 0 ||
       needles.some((needle) => `${story.name} ${story.id}`.toLowerCase().includes(needle));
-    if (!keep) continue;
+    if (!keep) {
+      continue;
+    }
 
     for (const [view, ui] of viewsOf(story)) {
       try {
         const result = measure(onScreen(ui()));
-        if (!result.drove) continue;
+        if (!result.drove) {
+          continue;
+        }
         out.push({
           id: story.id,
           view,

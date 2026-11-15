@@ -22,20 +22,30 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
 
   const setInList = useCallback(
     (id: SubjectId, inList: boolean) => {
-      if (!client) return;
+      if (!client) {
+        return;
+      }
       setIds((prev) => {
-        if (prev.has(id) === inList) return prev;
+        if (prev.has(id) === inList) {
+          return prev;
+        }
         const next = new Set(prev);
-        if (inList) next.add(id);
-        else next.delete(id);
+        if (inList) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
         return next;
       });
       const call = inList ? client.playback.addToList(id) : client.playback.removeFromList(id);
       call.catch(() => {
         setIds((prev) => {
           const next = new Set(prev);
-          if (inList) next.delete(id);
-          else next.add(id);
+          if (inList) {
+            next.delete(id);
+          } else {
+            next.add(id);
+          }
           return next;
         });
       });
@@ -56,6 +66,8 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
 
 export function useMyList(): MyList {
   const c = useContext(Ctx);
-  if (!c) throw new Error('useMyList() must be used inside <MyListProvider>');
+  if (!c) {
+    throw new Error('useMyList() must be used inside <MyListProvider>');
+  }
   return c;
 }

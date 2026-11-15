@@ -27,7 +27,9 @@ function cmdAffected(argv: string[]): number {
     console.log('No projects affected.');
     return 0;
   }
-  for (const p of projects) console.log(`${p.name}\t${p.dir}`);
+  for (const p of projects) {
+    console.log(`${p.name}\t${p.dir}`);
+  }
   return 0;
 }
 
@@ -39,15 +41,19 @@ function cmdVerify(): number {
     return 0;
   }
   console.error(`${violations.length} dependency problem(s):`);
-  for (const v of violations) console.error(`  ✗ [${v.kind}] ${v.project}: ${v.detail}`);
+  for (const v of violations) {
+    console.error(`  ✗ [${v.kind}] ${v.project}: ${v.detail}`);
+  }
   return 1;
 }
 
 function main(): void {
   const [command, ...rest] = process.argv.slice(2);
-  if (command === 'affected') process.exit(cmdAffected(rest));
-  else if (command === 'verify') process.exit(cmdVerify());
-  else {
+  if (command === 'affected') {
+    process.exit(cmdAffected(rest));
+  } else if (command === 'verify') {
+    process.exit(cmdVerify());
+  } else {
     console.error('usage: workspace-tools <affected|verify> [options]');
     process.exit(2);
   }

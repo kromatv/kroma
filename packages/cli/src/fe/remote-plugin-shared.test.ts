@@ -47,10 +47,14 @@ async function declared(
       return file.fileName;
     },
   };
-  for (const [id, code] of Object.entries(files)) await shared.transform.call(ctx, code, id);
+  for (const [id, code] of Object.entries(files)) {
+    await shared.transform.call(ctx, code, id);
+  }
   shared.generateBundle.call(ctx, {}, bundle);
   const file = emitted.find((e) => e.fileName === 'shared.json');
-  if (!file) throw new Error('no shared.json emitted');
+  if (!file) {
+    throw new Error('no shared.json emitted');
+  }
   return JSON.parse(file.source) as Record<string, string[]>;
 }
 

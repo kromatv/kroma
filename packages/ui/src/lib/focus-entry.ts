@@ -27,6 +27,8 @@ export function useFocusEntry() {
   const provided = useContext(Context);
   const [owned] = useState(() => (provided ? null : createFocusEntry()));
   const entry = provided ?? owned;
-  if (!entry) throw new Error('Focus entry requires its owning screen');
+  if (!entry) {
+    throw new Error('Focus entry requires its owning screen');
+  }
   return entry;
 }

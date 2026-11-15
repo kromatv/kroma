@@ -16,8 +16,12 @@ function body(rest: string): string | null {
   const text = rest.trim();
   // A block body runs statements before it returns anything, so there is no
   // single expression to show in its place.
-  if (text.startsWith('{')) return null;
-  if (!text.startsWith('(')) return text;
+  if (text.startsWith('{')) {
+    return null;
+  }
+  if (!text.startsWith('(')) {
+    return text;
+  }
   const close = matching(text, 0, '(');
   return close === text.length - 1 ? dedent(text.slice(1, close)) : text;
 }
@@ -52,14 +56,22 @@ function fullyInlined(code: string | undefined, args: Record<string, unknown>): 
 }
 
 function unwrap(code: string | undefined, args: Record<string, unknown>): Pass | null {
-  if (!code) return null;
+  if (!code) {
+    return null;
+  }
   const at = head(code);
-  if (!at) return { text: code, whole: false };
+  if (!at) {
+    return { text: code, whole: false };
+  }
   const inner = body(code.slice(at.end));
-  if (inner === null) return { text: code, whole: false };
+  if (inner === null) {
+    return { text: code, whole: false };
+  }
   // A parameterless arrow has nothing to write in and is whole as it stands; a
   // parameter list this could not read is not, and must not pass as one.
-  if (!at.names.length && !at.bag) return { text: inner, whole: at.empty };
+  if (!at.names.length && !at.bag) {
+    return { text: inner, whole: at.empty };
+  }
   const done = substitute(inner, at.names, at.bag, args);
   return { text: tidy(inner, done.text), whole: done.whole };
 }

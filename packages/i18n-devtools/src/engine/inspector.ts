@@ -19,6 +19,8 @@ const BOTH = inspecting(true, true);
  *  to see. One stable function per state rather than a closure per call,
  *  because installing a new identity re-renders every string in the app. */
 export function inspectorFor(keys: boolean, outline: Outline): Inspector | null {
-  if (outline !== 'off') return keys ? BOTH : MARKING;
+  if (outline !== 'off') {
+    return keys ? BOTH : MARKING;
+  }
   return keys ? LABELLING : null;
 }

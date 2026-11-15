@@ -33,7 +33,9 @@ export interface PerfReport {
 }
 
 const median = (xs: number[]): number => {
-  if (xs.length === 0) return 0;
+  if (xs.length === 0) {
+    return 0;
+  }
   const sorted = [...xs].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;
 };
@@ -48,7 +50,9 @@ export const CHART_FRAMES = 48;
 
 function push(into: number[], value: number): void {
   into.push(value);
-  if (into.length > CAPACITY) into.shift();
+  if (into.length > CAPACITY) {
+    into.shift();
+  }
 }
 
 /** A recorder owned by one app root or measurement run. */
@@ -60,15 +64,21 @@ export function createPerfSampler() {
   let handle: number | undefined;
 
   function tick(now: number): void {
-    if (!running) return;
-    if (lastFrame) push(sample.frames, now - lastFrame);
+    if (!running) {
+      return;
+    }
+    if (lastFrame) {
+      push(sample.frames, now - lastFrame);
+    }
     lastFrame = now;
     handle = requestAnimationFrame(tick);
   }
 
   /** Idempotent. */
   function startPerf(): void {
-    if (running) return;
+    if (running) {
+      return;
+    }
     running = true;
     lastFrame = 0;
     handle = requestAnimationFrame(tick);
@@ -76,7 +86,9 @@ export function createPerfSampler() {
 
   function stopPerf(): void {
     running = false;
-    if (handle !== undefined) cancelAnimationFrame(handle);
+    if (handle !== undefined) {
+      cancelAnimationFrame(handle);
+    }
     handle = undefined;
   }
 
@@ -85,13 +97,17 @@ export function createPerfSampler() {
   }
 
   function markPress(): void {
-    if (running) pressedAt = performance.now();
+    if (running) {
+      pressedAt = performance.now();
+    }
   }
 
   /** Called by every focusable; only the first one after a press counts, the rest
    * of the render is not the viewer's wait. */
   function markFocus(): void {
-    if (!running || !pressedAt) return;
+    if (!running || !pressedAt) {
+      return;
+    }
     push(sample.responses, performance.now() - pressedAt);
     pressedAt = 0;
   }
@@ -114,8 +130,12 @@ export function createPerfSampler() {
     let janky = 0;
     for (const ms of frames) {
       total += ms;
-      if (ms > worst) worst = ms;
-      if (ms > JANK_MS) janky += 1;
+      if (ms > worst) {
+        worst = ms;
+      }
+      if (ms > JANK_MS) {
+        janky += 1;
+      }
     }
     return {
       frames: frames.slice(-CHART_FRAMES),

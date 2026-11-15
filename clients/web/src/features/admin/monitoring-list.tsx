@@ -53,7 +53,9 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
   const [rest, setRest] = useState(FRESH);
   const filter = useMemo<LibraryFilter>(() => ({ ...rest, state: view }), [rest, view]);
   const setFilter = ({ state, ...next }: LibraryFilter) => {
-    if (state !== view) onView(state);
+    if (state !== view) {
+      onView(state);
+    }
     setRest(next);
   };
   const [adding, setAdding] = useState(false);
@@ -95,15 +97,20 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
     setPicked((previous) => {
       const next = new Map(previous);
       const key = titleKey(row);
-      if (next.has(key)) next.delete(key);
-      else next.set(key, row);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.set(key, row);
+      }
       return next;
     });
 
   const selectAll = () =>
     setPicked((previous) => {
       const next = new Map(previous);
-      for (const row of selectable) next.set(titleKey(row), row);
+      for (const row of selectable) {
+        next.set(titleKey(row), row);
+      }
       return next;
     });
 

@@ -53,7 +53,9 @@ export default function NotificationsScreen() {
   const unseen = inbox.data?.unseen ?? 0;
 
   useEffect(() => {
-    if (focused && unseen > 0) markSeen();
+    if (focused && unseen > 0) {
+      markSeen();
+    }
   }, [focused, unseen, markSeen]);
 
   const unread = inbox.data?.unread ?? 0;
@@ -83,8 +85,9 @@ export default function NotificationsScreen() {
   }
 
   let content;
-  if (isPending) content = <Loading />;
-  else if (isError && !data)
+  if (isPending) {
+    content = <Loading />;
+  } else if (isError && !data) {
     content = (
       <ErrorView
         message={t('error.serverBody')}
@@ -92,8 +95,9 @@ export default function NotificationsScreen() {
         onRetry={() => void refetch()}
       />
     );
-  else if (sections.length === 0) content = <EmptyInbox filter={shelf ? 'archived' : filter} />;
-  else
+  } else if (sections.length === 0) {
+    content = <EmptyInbox filter={shelf ? 'archived' : filter} />;
+  } else {
     content = (
       <SectionList
         sections={sections}
@@ -113,6 +117,7 @@ export default function NotificationsScreen() {
         )}
       />
     );
+  }
 
   return (
     <Screen padded={false}>

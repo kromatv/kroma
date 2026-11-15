@@ -23,10 +23,14 @@ const run = (cmd: string, args: string[], cwd: string) =>
 
 const isTarball = (name: string) => name.endsWith('.tgz');
 
-if (!readdirSync(dist).some(isTarball)) run('npm', ['pack', '--silent'], dist);
+if (!readdirSync(dist).some(isTarball)) {
+  run('npm', ['pack', '--silent'], dist);
+}
 
 const tarball = readdirSync(dist).find(isTarball);
-if (!tarball) throw new Error(`no tarball in ${dist}, and npm pack produced none`);
+if (!tarball) {
+  throw new Error(`no tarball in ${dist}, and npm pack produced none`);
+}
 const packed = join(dist, tarball);
 
 const app = mkdtempSync(join(tmpdir(), 'kroma-ui-smoke-'));

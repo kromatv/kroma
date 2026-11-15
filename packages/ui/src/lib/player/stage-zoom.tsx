@@ -51,7 +51,9 @@ export function cardCorner(radius: number): number {
 export function useStageZoom(settingsShrink: boolean, active: boolean): Animated.Value {
   const [zoom] = useState(() => new Animated.Value(settingsShrink ? 1 : 0));
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     const anim = Animated.timing(zoom, {
       toValue: settingsShrink ? 1 : 0,
       duration: CARD_MS,

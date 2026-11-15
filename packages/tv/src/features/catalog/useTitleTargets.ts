@@ -9,12 +9,16 @@ export function useUpNext(showId: ShowId | null): UpNext | null {
   const client = useClient();
   const [answer, setAnswer] = useState<{ showId: ShowId; next: UpNext | null } | null>(null);
   useEffect(() => {
-    if (showId === null) return;
+    if (showId === null) {
+      return;
+    }
     let cancelled = false;
     client.playback
       .upNext(showId)
       .then((next) => {
-        if (!cancelled) setAnswer({ showId, next });
+        if (!cancelled) {
+          setAnswer({ showId, next });
+        }
       })
       .catch(() => undefined);
     return () => {

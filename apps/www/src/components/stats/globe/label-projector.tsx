@@ -39,7 +39,9 @@ function above(label: LabelNode, x: number, y: number, placed: readonly Rect[]):
   let rect = rectAt(label, x, y - STEM_PX - label.height);
   for (let attempt = 0; attempt < MAX_STACK; attempt++) {
     const blocking = placed.find((other) => overlaps(rect, other));
-    if (!blocking) break;
+    if (!blocking) {
+      break;
+    }
     rect = rectAt(label, x, blocking.top - GAP_PX - label.height);
   }
   return rect;
@@ -49,7 +51,9 @@ function below(label: LabelNode, x: number, y: number, placed: readonly Rect[]):
   let rect = rectAt(label, x, y + STEM_PX);
   for (let attempt = 0; attempt < MAX_STACK; attempt++) {
     const blocking = placed.find((other) => overlaps(rect, other));
-    if (!blocking) break;
+    if (!blocking) {
+      break;
+    }
     rect = rectAt(label, x, blocking.bottom + GAP_PX);
   }
   return rect;
@@ -59,7 +63,9 @@ function below(label: LabelNode, x: number, y: number, placed: readonly Rect[]):
 // canvas, in which case it hangs below instead: a label is never clipped.
 function place(label: LabelNode, x: number, y: number, placed: readonly Rect[]): Placement {
   const up = above(label, x, y, placed);
-  if (up.top >= 0) return { rect: up, below: false };
+  if (up.top >= 0) {
+    return { rect: up, below: false };
+  }
   return { rect: below(label, x, y, placed), below: true };
 }
 
@@ -84,12 +90,16 @@ export function LabelProjector({ pins, nodes, group }: Readonly<LabelProjectorPr
 
   useFrame(({ camera, size }) => {
     const globe = group.current;
-    if (!globe) return;
+    if (!globe) {
+      return;
+    }
     globe.updateMatrixWorld();
     const placed: Rect[] = [];
     for (const pin of pins) {
       const label = nodes.current.get(pin.code);
-      if (!label) continue;
+      if (!label) {
+        continue;
+      }
       const { world, normal, toCamera } = scratch;
       globe.localToWorld(world.set(pin.position[0], pin.position[1], pin.position[2]));
       normal.copy(world).normalize();

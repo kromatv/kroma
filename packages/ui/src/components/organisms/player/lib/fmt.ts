@@ -16,9 +16,13 @@ function frenchClock(at: Date): string {
  * Empty string when the runtime is unknown.
  */
 export function endsAtClock(remainingMs: number | null | undefined, locale?: string): string {
-  if (!remainingMs || remainingMs <= 0) return '';
+  if (!remainingMs || remainingMs <= 0) {
+    return '';
+  }
   const at = new Date(Date.now() + remainingMs);
-  if (!locale || FRENCH.test(locale)) return frenchClock(at);
+  if (!locale || FRENCH.test(locale)) {
+    return frenchClock(at);
+  }
   try {
     return at.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   } catch {

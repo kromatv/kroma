@@ -72,10 +72,14 @@ function Root<T extends string>({
   const order: string[] = [];
   const off = new Set<string>();
   for (const child of Children.toArray(children)) {
-    if (!isValidElement(child) || child.type !== Item) continue;
+    if (!isValidElement(child) || child.type !== Item) {
+      continue;
+    }
     const item = child.props as { value: string; disabled?: boolean };
     order.push(item.value);
-    if (item.disabled) off.add(item.value);
+    if (item.disabled) {
+      off.add(item.value);
+    }
   }
   const boxes = useRef(new Map<string, Box2D>());
   const views = useRef(new Map<string, SegmentHost | null>());
@@ -86,7 +90,9 @@ function Root<T extends string>({
   // segment whenever one of them moved.
   const report = useStableCallback((option: string, box: Box2D) => {
     boxes.current.set(option, box);
-    if (option === value) setThumb(box);
+    if (option === value) {
+      setThumb(box);
+    }
   });
 
   const mount = useStableCallback((option: string, view: View | null) => {
@@ -97,18 +103,26 @@ function Root<T extends string>({
 
   useEffect(() => {
     const at = boxes.current.get(value);
-    if (at) setThumb(at);
+    if (at) {
+      setThumb(at);
+    }
   }, [value]);
 
   // WAI-ARIA's radio group: the arrows move the selection AND the focus, so the
   // reader is never left on the segment they just moved off.
   const move = useEffectEvent((delta: -1 | 1) => {
     const at = order.indexOf(value);
-    if (at === -1) return;
+    if (at === -1) {
+      return;
+    }
     for (let step = 1; step <= order.length; step += 1) {
       const key = order[(((at + delta * step) % order.length) + order.length) % order.length];
-      if (key === undefined || key === value) return;
-      if (off.has(key)) continue;
+      if (key === undefined || key === value) {
+        return;
+      }
+      if (off.has(key)) {
+        continue;
+      }
       onValueChange(key as T);
       views.current.get(key)?.focus?.();
       return;
@@ -144,8 +158,11 @@ function Root<T extends string>({
       // native radio group does; the D-pad already walks the FocusRegion.
       onKeyDown={(event) => {
         const key = event.nativeEvent.key;
-        if (key === 'ArrowLeft' || key === 'ArrowUp') move(-1);
-        else if (key === 'ArrowRight' || key === 'ArrowDown') move(1);
+        if (key === 'ArrowLeft' || key === 'ArrowUp') {
+          move(-1);
+        } else if (key === 'ArrowRight' || key === 'ArrowDown') {
+          move(1);
+        }
       }}
       style={style}
     >
@@ -176,7 +193,9 @@ function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: Radius }>) {
   const [width] = useState(() => new Animated.Value(0));
   const placed = useRef(false);
   useEffect(() => {
-    if (!at) return;
+    if (!at) {
+      return;
+    }
     if (!placed.current) {
       placed.current = true;
       x.setValue(at.x);
@@ -189,7 +208,9 @@ function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: Radius }>) {
       Animated.timing(width, { toValue: at.width, ...settle }),
     ]).start();
   }, [at, x, width]);
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
   return (
     <Animated.View
       style={[

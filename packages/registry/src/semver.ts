@@ -19,7 +19,9 @@ const SEMVER = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$
 /** `null` when `raw` is not a version this pipeline will publish. */
 export function parse(raw: string): Version | null {
   const m = SEMVER.exec(raw.trim());
-  if (!m) return null;
+  if (!m) {
+    return null;
+  }
   const [, major, minor, patch, pre] = m;
   return {
     major: Number(major),
@@ -30,7 +32,9 @@ export function parse(raw: string): Version | null {
 }
 
 function sign(a: string | number, b: string | number): number {
-  if (a < b) return -1;
+  if (a < b) {
+    return -1;
+  }
   return a > b ? 1 : 0;
 }
 
@@ -38,15 +42,21 @@ function sign(a: string | number, b: string | number): number {
 function comparePart(a: string | number, b: string | number): number {
   const aNum = typeof a === 'number';
   const bNum = typeof b === 'number';
-  if (aNum && bNum) return sign(a, b);
-  if (aNum !== bNum) return aNum ? -1 : 1;
+  if (aNum && bNum) {
+    return sign(a, b);
+  }
+  if (aNum !== bNum) {
+    return aNum ? -1 : 1;
+  }
   return sign(String(a), String(b));
 }
 
 function comparePrerelease(a: Version['prerelease'], b: Version['prerelease']): number {
   // A prerelease is LOWER than the release it leads to, so "has none" wins.
   if (a.length === 0 || b.length === 0) {
-    if (a.length === b.length) return 0;
+    if (a.length === b.length) {
+      return 0;
+    }
     return a.length === 0 ? 1 : -1;
   }
   const len = Math.max(a.length, b.length);
@@ -54,10 +64,16 @@ function comparePrerelease(a: Version['prerelease'], b: Version['prerelease']): 
     const x = a[i];
     const y = b[i];
     // A shorter prerelease chain is the lower one: 1.0.0-a < 1.0.0-a.1.
-    if (x === undefined) return -1;
-    if (y === undefined) return 1;
+    if (x === undefined) {
+      return -1;
+    }
+    if (y === undefined) {
+      return 1;
+    }
     const c = comparePart(x, y);
-    if (c !== 0) return c;
+    if (c !== 0) {
+      return c;
+    }
   }
   return 0;
 }
@@ -65,7 +81,9 @@ function comparePrerelease(a: Version['prerelease'], b: Version['prerelease']): 
 /** Negative / zero / positive, the `Array.sort` contract. */
 function compare(a: Version, b: Version): number {
   for (const k of ['major', 'minor', 'patch'] as const) {
-    if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1;
+    if (a[k] !== b[k]) {
+      return a[k] < b[k] ? -1 : 1;
+    }
   }
   return comparePrerelease(a.prerelease, b.prerelease);
 }
@@ -74,8 +92,12 @@ function compare(a: Version, b: Version): number {
 export function compareRaw(a: string, b: string): number {
   const [x, y] = [parse(a), parse(b)];
   if (!x || !y) {
-    if (x) return 1;
-    if (y) return -1;
+    if (x) {
+      return 1;
+    }
+    if (y) {
+      return -1;
+    }
     return 0;
   }
   return compare(x, y);
@@ -84,9 +106,15 @@ export function compareRaw(a: string, b: string): number {
 type Operator = '^' | '~' | '>=' | '=';
 
 function operatorOf(range: string): Operator {
-  if (range.startsWith('^')) return '^';
-  if (range.startsWith('~')) return '~';
-  if (range.startsWith('>=')) return '>=';
+  if (range.startsWith('^')) {
+    return '^';
+  }
+  if (range.startsWith('~')) {
+    return '~';
+  }
+  if (range.startsWith('>=')) {
+    return '>=';
+  }
   return '=';
 }
 
@@ -99,9 +127,15 @@ const stable = (major: number, minor: number, patch: number): Version => ({
 
 // Caret is compatible within the left-most non-zero segment; tilde within the minor.
 function upperBound(operator: '^' | '~', base: Version): Version {
-  if (operator === '~') return stable(base.major, base.minor + 1, 0);
-  if (base.major > 0) return stable(base.major + 1, 0, 0);
-  if (base.minor > 0) return stable(0, base.minor + 1, 0);
+  if (operator === '~') {
+    return stable(base.major, base.minor + 1, 0);
+  }
+  if (base.major > 0) {
+    return stable(base.major + 1, 0, 0);
+  }
+  if (base.minor > 0) {
+    return stable(0, base.minor + 1, 0);
+  }
   return stable(0, 0, base.patch + 1);
 }
 
@@ -117,18 +151,28 @@ const sameTuple = (a: Version, b: Version) =>
  */
 export function satisfies(version: string, range: string): boolean {
   const v = parse(version);
-  if (!v) return false;
+  if (!v) {
+    return false;
+  }
   const r = range.trim();
-  if (r === '' || r === '*' || r === 'latest') return v.prerelease.length === 0;
+  if (r === '' || r === '*' || r === 'latest') {
+    return v.prerelease.length === 0;
+  }
 
   const operator = operatorOf(r);
   const base = parse(operator === '=' ? r : r.slice(operator.length));
-  if (!base) return false;
+  if (!base) {
+    return false;
+  }
   if (v.prerelease.length > 0 && (base.prerelease.length === 0 || !sameTuple(v, base))) {
     return false;
   }
-  if (operator === '=') return compare(v, base) === 0;
-  if (operator === '>=') return compare(v, base) >= 0;
+  if (operator === '=') {
+    return compare(v, base) === 0;
+  }
+  if (operator === '>=') {
+    return compare(v, base) >= 0;
+  }
   return compare(v, base) >= 0 && compare(v, upperBound(operator, base)) < 0;
 }
 
@@ -149,10 +193,16 @@ export function floorOf(range: string): string | null {
     .filter(Boolean);
   let floor: string | null = null;
   for (const token of tokens) {
-    if (token.startsWith('<') || token === '*') continue;
+    if (token.startsWith('<') || token === '*') {
+      continue;
+    }
     const base = LOWER_BOUND.exec(token)?.[1];
-    if (!base) return null;
-    if (floor === null || compareRaw(base, floor) > 0) floor = base;
+    if (!base) {
+      return null;
+    }
+    if (floor === null || compareRaw(base, floor) > 0) {
+      floor = base;
+    }
   }
   return floor;
 }
@@ -164,8 +214,12 @@ export function floorOf(range: string): string | null {
  */
 export function channelOf(version: string): string | null {
   const parsed = parse(version);
-  if (!parsed) return null;
+  if (!parsed) {
+    return null;
+  }
   const [first] = parsed.prerelease;
-  if (first === undefined) return 'latest';
+  if (first === undefined) {
+    return 'latest';
+  }
   return typeof first === 'string' ? first : null;
 }

@@ -38,13 +38,21 @@ function shippedTrees(root = ROOT): string[] {
   const out: string[] = [];
   for (const glob of workspaces) {
     const [dir, star] = glob.split('/');
-    if (!dir || star !== '*') continue;
+    if (!dir || star !== '*') {
+      continue;
+    }
     const parent = resolve(root, dir);
-    if (!existsSync(parent)) continue;
+    if (!existsSync(parent)) {
+      continue;
+    }
     for (const entry of readdirSync(parent, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
+      if (!entry.isDirectory()) {
+        continue;
+      }
       const src = join(dir, entry.name, 'src');
-      if (existsSync(resolve(root, src))) out.push(src);
+      if (existsSync(resolve(root, src))) {
+        out.push(src);
+      }
     }
   }
   return out.sort((a, b) => a.localeCompare(b));

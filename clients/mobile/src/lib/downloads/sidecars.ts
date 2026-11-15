@@ -18,7 +18,9 @@ async function fetchSubs(client: KromaClient, item: MediaItem): Promise<OfflineS
   for (const [index, sub] of item.subtitles.entries()) {
     // Image subtitle codecs (PGS, DVD) can't be converted to text, so they
     // have nothing to take offline.
-    if (!isTextSubtitle(sub.codec)) continue;
+    if (!isTextSubtitle(sub.codec)) {
+      continue;
+    }
     const path = mediaPath(item.id, `e${index}.vtt`);
     try {
       await FileSystem.downloadAsync(client.media.subtitleUrl(item.id, index), path);
@@ -48,7 +50,9 @@ async function fetchStoryboard(
 ): Promise<DownloadEntry['storyboard']> {
   try {
     const manifest = await client.media.storyboard(item.id);
-    if (!manifest || manifest === 'pending') return undefined;
+    if (!manifest || manifest === 'pending') {
+      return undefined;
+    }
     const spritePath = mediaPath(item.id, 'sb.img');
     await FileSystem.downloadAsync(
       client.media.artwork.resolve(manifest.url) ?? manifest.url,

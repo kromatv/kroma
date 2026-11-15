@@ -53,5 +53,7 @@ export function has(set: CatalogSet, path: string): boolean {
 }
 
 export function removeSets(): void {
-  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of made.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }

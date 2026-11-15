@@ -62,8 +62,12 @@ export function RuleEditor({
 
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
 
-  if (!current && failed) return <NetworkLoadFailed error={loadError} />;
-  if (!current) return <CardSkeleton fields={4} />;
+  if (!current && failed) {
+    return <NetworkLoadFailed error={loadError} />;
+  }
+  if (!current) {
+    return <CardSkeleton fields={4} />;
+  }
 
   const change = (next: RulesUpdate) => {
     setSaved(false);
@@ -73,7 +77,9 @@ export function RuleEditor({
 
   const pickPreset = async (preset: RulePreset) => {
     const entry = RULE_PRESETS.find((one) => one.preset === preset);
-    if (!entry) return;
+    if (!entry) {
+      return;
+    }
     if (current.rules.length > 0) {
       const ok = await confirm({
         title: t('network.presetConfirmTitle', { preset: t(entry.labelKey) }),
@@ -81,7 +87,9 @@ export function RuleEditor({
         confirmLabel: t('network.presetConfirm'),
         cancelLabel: t('common.cancel'),
       });
-      if (!ok) return;
+      if (!ok) {
+        return;
+      }
     }
     change(presetRules(preset, purposes));
   };
@@ -93,7 +101,9 @@ export function RuleEditor({
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (ok) setRules(current.rules.filter((_, at) => at !== index));
+    if (ok) {
+      setRules(current.rules.filter((_, at) => at !== index));
+    }
   };
 
   const save = () =>
@@ -108,7 +118,9 @@ export function RuleEditor({
     );
 
   const finishEditing = (rule: Rule) => {
-    if (!editing) return;
+    if (!editing) {
+      return;
+    }
     const { index } = editing;
     setRules(
       index === null
@@ -159,7 +171,9 @@ export function RuleEditor({
           onMove={(index, offset) => setRules(moveRule(current.rules, index, offset))}
           onEdit={(index) => {
             const rule = current.rules[index];
-            if (rule) setEditing({ index, id: rule.id, draft: draftOf(rule) });
+            if (rule) {
+              setEditing({ index, id: rule.id, draft: draftOf(rule) });
+            }
           }}
           onRemove={(index) => void remove(index)}
         />

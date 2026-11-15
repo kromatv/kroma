@@ -41,9 +41,15 @@ export function ModuleRouteOutlet({ path, notFound }: Readonly<ModuleRouteOutlet
 
   // The registry is still resolving, so it is too early to say the module is
   // missing: hold the page's silhouette rather than accusing it of absence.
-  if (!scopedHost) return <ModuleLoading />;
-  if (match.kind === 'disabled') return <ModuleUnavailable />;
-  if (match.kind === 'unknown') return notFound;
+  if (!scopedHost) {
+    return <ModuleLoading />;
+  }
+  if (match.kind === 'disabled') {
+    return <ModuleUnavailable />;
+  }
+  if (match.kind === 'unknown') {
+    return notFound;
+  }
   const Panel = match.route.component;
   return (
     <Suspense fallback={<ModuleLoading />}>

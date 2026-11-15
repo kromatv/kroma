@@ -7,13 +7,19 @@ export function createMenuKeys() {
   return {
     hold() {
       holders += 1;
-      if (holders === 1) TVEventControl?.enableTVMenuKey?.();
+      if (holders === 1) {
+        TVEventControl?.enableTVMenuKey?.();
+      }
       let released = false;
       return () => {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         holders -= 1;
-        if (holders === 0) TVEventControl?.disableTVMenuKey?.();
+        if (holders === 0) {
+          TVEventControl?.disableTVMenuKey?.();
+        }
       };
     },
   };

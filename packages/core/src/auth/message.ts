@@ -29,11 +29,15 @@ function isRefusal(reason: string): reason is (typeof REFUSALS)[number] {
 /** The message for a flow that ended with nobody signed in. A reason this
  * client does not know reads as a failure, never as a blank screen. */
 export function flowMessage(result: FlowResult): FlowMessage {
-  if (result.status === 'refused' && isRefusal(result.reason)) return `refused.${result.reason}`;
+  if (result.status === 'refused' && isRefusal(result.reason)) {
+    return `refused.${result.reason}`;
+  }
   if (result.status === 'failed' && result.reason === 'provider.access_denied') {
     return 'failedDenied';
   }
-  if (result.status === 'failed' || result.status === 'refused') return 'failed';
+  if (result.status === 'failed' || result.status === 'refused') {
+    return 'failed';
+  }
   if (
     result.status === 'requested' ||
     result.status === 'emailTaken' ||

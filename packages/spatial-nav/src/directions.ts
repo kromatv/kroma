@@ -29,6 +29,8 @@ const MOVES: Record<Exclude<Direction, Press>, Move> = {
 /** The axis and the sense a direction walks a container in; null for the
  *  three halves of a press, which move nothing. */
 export function moveOf(direction: Direction): Move | null {
-  if (direction === 'enter' || direction === 'release' || direction === 'hold') return null;
+  if (direction === 'enter' || direction === 'release' || direction === 'hold') {
+    return null;
+  }
   return MOVES[direction];
 }

@@ -20,18 +20,28 @@ function indexed(status: TranslationStatus | null): Held['reviews'] {
   const reviews: Held['reviews'] = new Map();
   for (const { scope, outdated, unreviewed } of status?.sets ?? []) {
     const own = new Map<string, Review>();
-    for (const key of unreviewed) own.set(key, 'unreviewed');
-    for (const key of outdated) own.set(key, 'outdated');
-    if (own.size > 0) reviews.set(scope, own);
+    for (const key of unreviewed) {
+      own.set(key, 'unreviewed');
+    }
+    for (const key of outdated) {
+      own.set(key, 'outdated');
+    }
+    if (own.size > 0) {
+      reviews.set(scope, own);
+    }
   }
   return reviews;
 }
 
 function hold(state: Held, status: TranslationStatus | null): void {
-  if (state.status === status) return;
+  if (state.status === status) {
+    return;
+  }
   state.status = status;
   state.reviews = indexed(status);
-  for (const listener of state.listeners) listener();
+  for (const listener of state.listeners) {
+    listener();
+  }
 }
 
 /** Say which locale's status is wanted from now on, or `null` for none. What
@@ -40,14 +50,18 @@ function hold(state: Held, status: TranslationStatus | null): void {
 export function wantStatus(locale: string | null): void {
   const state = held();
   state.wanted = locale;
-  if (state.status?.locale !== locale) hold(state, null);
+  if (state.status?.locale !== locale) {
+    hold(state, null);
+  }
 }
 
 /** Keep `status` for the overlay and the panel to read. One that is not for
  *  the wanted locale arrived late and is left out. */
 export function holdStatus(status: TranslationStatus): void {
   const state = held();
-  if (status.locale === state.wanted) hold(state, status);
+  if (status.locale === state.wanted) {
+    hold(state, status);
+  }
 }
 
 /** How the rendered locale stands, the same object until it is asked again,
@@ -79,8 +93,12 @@ export function reviewing(): boolean {
  * that translation, and one that is both outdated and unreviewed is outdated.
  */
 export function shownGrade({ grade, scope, key, locale }: Sighting): Grade {
-  if (grade !== 'catalog') return grade;
+  if (grade !== 'catalog') {
+    return grade;
+  }
   const state = held();
-  if (state.status?.locale !== locale) return grade;
+  if (state.status?.locale !== locale) {
+    return grade;
+  }
   return state.reviews.get(scope)?.get(key) ?? grade;
 }

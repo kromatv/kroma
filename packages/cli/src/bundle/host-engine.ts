@@ -31,10 +31,14 @@ export function interfaceOf(wasm: Uint8Array): string | null {
  * byte for byte, so a bundle only moves when its module does.
  */
 export function bundledManifest(authored: string, host: string | null): string {
-  if (!host) return authored;
+  if (!host) {
+    return authored;
+  }
   const manifest: { engines?: Record<string, string> | null } = JSON.parse(authored);
   const range = manifest.engines?.server;
   const floor = range ? floorOf(range) : null;
-  if (!floor || compareRaw(floor, HOST_ENGINE_FLOOR) < 0) return authored;
+  if (!floor || compareRaw(floor, HOST_ENGINE_FLOOR) < 0) {
+    return authored;
+  }
   return `${JSON.stringify({ ...manifest, engines: { ...manifest.engines, host } }, null, 2)}\n`;
 }

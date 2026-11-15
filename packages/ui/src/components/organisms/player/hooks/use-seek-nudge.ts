@@ -64,7 +64,9 @@ export function useSeekNudge(controller: PlayerController): SeekNudge {
   // A burst interrupted by unmount must not leave a timer holding the player.
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
     },
     [],
   );
@@ -113,7 +115,9 @@ export function useSeekNudge(controller: PlayerController): SeekNudge {
     c.scrubPreview(target);
     setShown({ dir, deltaSec: target - origin, rate });
 
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = setTimeout(commit, COMMIT_MS);
   });
 

@@ -15,7 +15,9 @@ export interface BackupImportOptions {
 const flag = (on?: boolean) => (on ? '1' : undefined);
 
 function hexUtf8(s?: string): string | undefined {
-  if (!s) return undefined;
+  if (!s) {
+    return undefined;
+  }
   return Array.from(new TextEncoder().encode(s))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');

@@ -61,13 +61,13 @@ export type HandoffAnnounce = z.infer<typeof HandoffAnnounce>;
  * thing a page pretending to be a television has not got. Case and surrounding
  * space are the server's to normalise. */
 export const HandoffEvidence = z.object({
-  proof: z.string().min(1).optional(),
-  check: z.string().min(1).optional(),
+  proof: z.string().nonempty().optional(),
+  check: z.string().nonempty().optional(),
 });
 export type HandoffEvidence = z.infer<typeof HandoffEvidence>;
 
 const Label = z.string().max(64).optional();
-const Token = z.string().min(1).max(128);
+const Token = z.string().nonempty().max(128);
 
 /** The text record a waiting TV publishes: what a phone needs to sign it in.
  *
@@ -83,7 +83,7 @@ export const WaitingBeaconTxt = z.object({
    * cannot grant this row and must not offer it. */
   server: Token,
   handle: Token,
-  check: z.string().min(1).max(16),
+  check: z.string().nonempty().max(16),
   proof: Token,
 });
 

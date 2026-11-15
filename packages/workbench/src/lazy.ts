@@ -65,15 +65,20 @@ function ownedBy(paths: readonly string[], owner: (path: string) => string): Map
   for (const path of paths) {
     const id = owner(path);
     const list = out.get(id);
-    if (list) list.push(path);
-    else out.set(id, [path]);
+    if (list) {
+      list.push(path);
+    } else {
+      out.set(id, [path]);
+    }
   }
   return out;
 }
 
 function loaderAt(modules: Loaders, path: string): () => Promise<unknown> {
   const at = modules[path];
-  if (!at) throw new Error(`No module was globbed at "${path}".`);
+  if (!at) {
+    throw new Error(`No module was globbed at "${path}".`);
+  }
   return at;
 }
 
@@ -122,7 +127,9 @@ function entryOf(row: Row, registry: LazyRegistry): StoryEntry {
   let done: Story | undefined;
   const listeners = new Set<() => void>();
   const announce = () => {
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   };
   return {
     id: row.id,

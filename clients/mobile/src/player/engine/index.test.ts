@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CLIENT,
   ITEM,
-  P,
   cleanupEngineFixture,
   open,
   playFor,

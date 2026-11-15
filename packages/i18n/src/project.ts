@@ -36,7 +36,9 @@ function isStage(value: string | undefined): value is Stage {
 }
 
 export function stageOf(project: Project, locale: string): Stage {
-  if (locale === project.source) return 'stable';
+  if (locale === project.source) {
+    return 'stable';
+  }
   const stage = project.locales?.[locale]?.stage;
   return isStage(stage) ? stage : 'draft';
 }
@@ -71,19 +73,32 @@ export function fallbackChain(
   const chain: string[] = [];
   const visited = new Set<string>();
   const push = (code: string | undefined) => {
-    if (code !== undefined && exists(code) && !chain.includes(code)) chain.push(code);
+    if (code !== undefined && exists(code) && !chain.includes(code)) {
+      chain.push(code);
+    }
   };
   const visit = (code: string) => {
-    if (visited.has(code)) return;
+    if (visited.has(code)) {
+      return;
+    }
     visited.add(code);
     push(code);
     const named = project.locales?.[code]?.fallback;
-    if (named === undefined) for (const parent of parentTags(code)) push(parent);
-    else visit(named);
+    if (named === undefined) {
+      for (const parent of parentTags(code)) {
+        push(parent);
+      }
+    } else {
+      visit(named);
+    }
   };
   visit(locale);
-  if (project.fallback !== undefined) visit(project.fallback);
+  if (project.fallback !== undefined) {
+    visit(project.fallback);
+  }
   push(project.source);
-  if (!chain.includes(locale)) chain.unshift(locale);
+  if (!chain.includes(locale)) {
+    chain.unshift(locale);
+  }
   return chain;
 }

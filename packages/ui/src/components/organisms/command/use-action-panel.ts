@@ -43,7 +43,9 @@ function useActionPanel(item: CommandItem | undefined) {
       step: (rows: number) => setCursor((prev) => stepTo(prev, rows, shown.length)),
       point: (action: CommandAction) => {
         const row = shown.indexOf(action);
-        if (row >= 0) setCursor(row);
+        if (row >= 0) {
+          setCursor(row);
+        }
       },
     }),
     [open, query, shown, at, available],

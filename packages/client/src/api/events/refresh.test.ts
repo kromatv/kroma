@@ -141,7 +141,9 @@ describe('KromaEvents bearer refresh', () => {
     class FlakyWS extends FakeWS {
       constructor(url: string, protocol?: string) {
         super(url, protocol);
-        if (throwOnConstruct) throw new Error('cannot open');
+        if (throwOnConstruct) {
+          throw new Error('cannot open');
+        }
       }
     }
 

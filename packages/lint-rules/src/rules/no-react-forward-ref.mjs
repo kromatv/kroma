@@ -34,24 +34,33 @@ export default defineRule(
       }
       return {
         ImportDeclaration(node) {
-          if (node.source.value !== 'react') return;
+          if (node.source.value !== 'react') {
+            return;
+          }
           for (const specifier of node.specifiers) {
             if (
               specifier.type === 'ImportSpecifier' &&
               (specifier.imported.name ?? specifier.imported.value) === 'forwardRef'
-            )
+            ) {
               report(specifier);
+            }
           }
         },
         ExportNamedDeclaration(node) {
-          if (node.source?.value !== 'react') return;
+          if (node.source?.value !== 'react') {
+            return;
+          }
           for (const specifier of node.specifiers) {
-            if ((specifier.local.name ?? specifier.local.value) === 'forwardRef') report(specifier);
+            if ((specifier.local.name ?? specifier.local.value) === 'forwardRef') {
+              report(specifier);
+            }
           }
         },
         MemberExpression(node) {
           const property = node.computed ? node.property.value : node.property.name;
-          if (property !== 'forwardRef' || node.object.type !== 'Identifier') return;
+          if (property !== 'forwardRef' || node.object.type !== 'Identifier') {
+            return;
+          }
           let scope = context.sourceCode.getScope(node);
           while (scope) {
             const variable = scope.set.get(node.object.name);
@@ -64,8 +73,9 @@ export default defineRule(
                       definition.node.type,
                     ),
                 )
-              )
+              ) {
                 report(node);
+              }
               return;
             }
             scope = scope.upper;

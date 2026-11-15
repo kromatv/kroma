@@ -21,7 +21,9 @@ const PARAM = /:(\w+)/g;
 export function buildPath(template: string, params?: Readonly<Record<string, string | number>>) {
   return template.replace(PARAM, (_, name: string) => {
     const value = params?.[name];
-    if (value === undefined) throw new Error(`path ${template} has no value for :${name}`);
+    if (value === undefined) {
+      throw new Error(`path ${template} has no value for :${name}`);
+    }
     return encodeURIComponent(String(value));
   });
 }

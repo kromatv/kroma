@@ -25,7 +25,9 @@ function Probe() {
 }
 
 const cropper = (): CropperState => {
-  if (!held.cropper) throw new Error('no cropper mounted');
+  if (!held.cropper) {
+    throw new Error('no cropper mounted');
+  }
   return held.cropper;
 };
 

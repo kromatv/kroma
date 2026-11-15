@@ -58,7 +58,9 @@ const PackageJson = z
 export function tarballIn(out: string): string {
   const stem = SDK.replace('@', '').replace('/', '-');
   const file = readdirSync(out).find((f) => f.startsWith(`${stem}-`) && f.endsWith('.tgz'));
-  if (!file) throw new Error(`sdk smoke: no ${SDK} tarball in ${out}; run \`sdk stage\` first`);
+  if (!file) {
+    throw new Error(`sdk smoke: no ${SDK} tarball in ${out}; run \`sdk stage\` first`);
+  }
   return join(out, file);
 }
 
@@ -67,7 +69,9 @@ export function tarballIn(out: string): string {
 export function wireToTarball(manifest: string, tarball: string): string {
   const pkg = PackageJson.parse(JSON.parse(manifest));
   for (const table of [pkg.dependencies, pkg.devDependencies]) {
-    if (SDK in table) table[SDK] = `file:${tarball}`;
+    if (SDK in table) {
+      table[SDK] = `file:${tarball}`;
+    }
   }
   return `${JSON.stringify(pkg, null, 2)}\n`;
 }
@@ -113,8 +117,9 @@ export async function smoke(options: SmokeOptions): Promise<void> {
     if (options.rust) {
       await $`bun x kroma build`.cwd(project);
       const bundle = join(project, 'dist', 'modules', `${ID}.kmod`);
-      if (!existsSync(bundle))
+      if (!existsSync(bundle)) {
         throw new Error(`sdk smoke: kroma build left no bundle at ${bundle}`);
+      }
     }
     const installed = await $`du -sm ${join(project, 'node_modules')}`.text();
     const size = installed.trim().split('\t')[0] ?? '?';

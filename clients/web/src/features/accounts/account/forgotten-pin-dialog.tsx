@@ -15,7 +15,9 @@ export function ForgottenPinDialog({ onClose }: Readonly<{ onClose: () => void }
 
   const submit = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
-    if (!password || busy) return;
+    if (!password || busy) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {

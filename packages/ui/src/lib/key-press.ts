@@ -18,11 +18,15 @@ function useKeyPress(
   tabbable = true,
 ): { pressable: KeyProps; view: KeyProps } | null {
   return useMemo(() => {
-    if (!WEB || !active) return null;
+    if (!WEB || !active) {
+      return null;
+    }
     const answering = (owns: (key: string) => boolean): KeyProps => ({
       tabIndex: tabbable ? 0 : -1,
       onKeyDown: (event) => {
-        if (!owns(event.nativeEvent.key)) return;
+        if (!owns(event.nativeEvent.key)) {
+          return;
+        }
         event.preventDefault();
         press.current();
       },

@@ -82,18 +82,24 @@ export interface PlaybackCapabilities {
 
 function supportsType(type: string): boolean {
   const MS = (globalThis as { MediaSource?: { isTypeSupported(t: string): boolean } }).MediaSource;
-  if (MS && typeof MS.isTypeSupported === 'function' && MS.isTypeSupported(type)) return true;
+  if (MS && typeof MS.isTypeSupported === 'function' && MS.isTypeSupported(type)) {
+    return true;
+  }
 
   if (typeof document !== 'undefined') {
     const v = document.createElement('video');
     const r = v.canPlayType(type);
-    if (r === 'probably' || r === 'maybe') return true;
+    if (r === 'probably' || r === 'maybe') {
+      return true;
+    }
   }
   return false;
 }
 
 function detectHdr(): boolean {
-  if (typeof globalThis.matchMedia !== 'function') return false;
+  if (typeof globalThis.matchMedia !== 'function') {
+    return false;
+  }
   return (
     globalThis.matchMedia('(dynamic-range: high)').matches ||
     globalThis.matchMedia('(video-dynamic-range: high)').matches

@@ -37,7 +37,9 @@ const PRODUCT_TAG = /^v(\d+\.\d+\.\d+)$/;
  */
 export function toSiteRelease(raw: Release): SiteRelease | null {
   const version = PRODUCT_TAG.exec(raw.tag_name)?.[1];
-  if (!version || raw.draft || raw.prerelease) return null;
+  if (!version || raw.draft || raw.prerelease) {
+    return null;
+  }
 
   const rank = (name: string) => (name.includes(version) ? 0 : 1);
   const byVersionThenName = (a: { name: string }, b: { name: string }) =>
@@ -46,7 +48,9 @@ export function toSiteRelease(raw: Release): SiteRelease | null {
   const downloads = new Map<TargetId, SiteDownload>();
   for (const asset of [...raw.assets].sort(byVersionThenName)) {
     const target = classify(asset.name);
-    if (!target || downloads.has(target)) continue;
+    if (!target || downloads.has(target)) {
+      continue;
+    }
     downloads.set(target, toDownload(asset, target));
   }
 
@@ -79,7 +83,9 @@ export function toSiteReleases(feed: readonly Release[]): SiteRelease[] {
  */
 export function missingTargets(releases: readonly SiteRelease[]): TargetId[] {
   const [newest] = releases;
-  if (!newest) return [];
+  if (!newest) {
+    return [];
+  }
   const shipped = new Set(releases.flatMap((r) => r.downloads.map((d) => d.target)));
   const has = new Set(newest.downloads.map((d) => d.target));
   return TARGET_IDS.filter((id) => shipped.has(id) && !has.has(id));
@@ -91,7 +97,9 @@ export function compareVersions(a: string, b: string): number {
   const right = b.split('.').map(Number);
   for (let i = 0; i < Math.max(left.length, right.length); i++) {
     const diff = (left[i] ?? 0) - (right[i] ?? 0);
-    if (diff !== 0) return diff;
+    if (diff !== 0) {
+      return diff;
+    }
   }
   return 0;
 }
@@ -101,14 +109,18 @@ export function downloadsFor(
   release: SiteRelease | null,
   targets: readonly TargetId[],
 ): SiteDownload[] {
-  if (!release) return [];
+  if (!release) {
+    return [];
+  }
   return targets.flatMap((target) => release.downloads.filter((d) => d.target === target));
 }
 
 // A stamp the page cannot read is worse than none: it would reach a `<time>`
 // element as a dateTime nothing can parse. Anything but a real instant is null.
 function toInstant(iso: string | null | undefined): string | null {
-  if (!iso) return null;
+  if (!iso) {
+    return null;
+  }
   return Number.isNaN(Date.parse(iso)) ? null : iso;
 }
 
@@ -117,7 +129,9 @@ export function onlyLabel(
   downloads: readonly SiteDownload[],
   label: string | null,
 ): SiteDownload[] {
-  if (!label) return [...downloads];
+  if (!label) {
+    return [...downloads];
+  }
   return downloads.filter((d) => TARGETS[d.target].label === label);
 }
 

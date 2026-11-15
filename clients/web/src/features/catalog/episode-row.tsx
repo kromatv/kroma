@@ -236,7 +236,9 @@ export function MissingEpisodeRow({
 }
 
 function runtimeMinOf(listed: SeasonGap | null): number {
-  if (!listed || !('runtimeMin' in listed)) return 0;
+  if (!listed || !('runtimeMin' in listed)) {
+    return 0;
+  }
   return listed.runtimeMin ?? 0;
 }
 
@@ -260,7 +262,9 @@ function MissingText({
     facts.push(t('requests.noDate'));
   }
   const runtime = formatRuntime(runtimeMinOf(listed) * 60_000);
-  if (runtime) facts.push(runtime);
+  if (runtime) {
+    facts.push(runtime);
+  }
   return (
     <Box minW={0} flex>
       <Box row align="center" gap={10} mb={6}>

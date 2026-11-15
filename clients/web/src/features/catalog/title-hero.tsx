@@ -127,7 +127,9 @@ function RequestCta({
       <RequestStatusChip status={view.requestStatus} size="hero" progress={view.requestProgress} />
     );
   }
-  if (!view.canRequest) return null;
+  if (!view.canRequest) {
+    return null;
+  }
   return (
     <Button
       icon="plus"

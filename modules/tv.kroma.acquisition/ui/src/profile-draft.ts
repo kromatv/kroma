@@ -30,7 +30,9 @@ export function setTierAllowed(
 
 function withCutoffAllowed(profile: QualityProfile): QualityProfile {
   const allowed = allowedQualities(profile);
-  if (allowed.length === 0 || allowed.includes(profile.cutoff)) return profile;
+  if (allowed.length === 0 || allowed.includes(profile.cutoff)) {
+    return profile;
+  }
   return { ...profile, cutoff: allowed[0] as QualityId };
 }
 
@@ -42,8 +44,11 @@ export function setFormatScore(
   score: number,
 ): QualityProfile {
   const formatScores = { ...profile.formatScores };
-  if (score === 0) delete formatScores[formatId];
-  else formatScores[formatId] = score;
+  if (score === 0) {
+    delete formatScores[formatId];
+  } else {
+    formatScores[formatId] = score;
+  }
   return { ...profile, formatScores };
 }
 
@@ -73,9 +78,13 @@ export function freeId(name: string, taken: readonly string[]): string {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .slice(0, 48) || 'profile';
-  if (!taken.includes(slug)) return slug;
+  if (!taken.includes(slug)) {
+    return slug;
+  }
   let suffix = 2;
-  while (taken.includes(`${slug}-${suffix}`)) suffix += 1;
+  while (taken.includes(`${slug}-${suffix}`)) {
+    suffix += 1;
+  }
   return `${slug}-${suffix}`;
 }
 

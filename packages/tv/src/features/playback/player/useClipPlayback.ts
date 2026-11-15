@@ -49,13 +49,17 @@ export function useClipPlayback<E extends ClipEngine>(
   const [surfaceNonce, setSurfaceNonce] = useState(0);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      return;
+    }
     let started = false;
     const patch = (next: Partial<ClipState>) => setState((s) => ({ ...s, ...next }));
     const listeners: EngineListeners = {
       onTime: (cur) => patch({ cur }),
       onDuration: (dur) => {
-        if (dur > 0) patch({ dur });
+        if (dur > 0) {
+          patch({ dur });
+        }
       },
       onBuffered: (end) => patch({ bufEnd: end ?? 0 }),
       onPlay: () => patch({ playing: true, waiting: false }),
@@ -69,13 +73,17 @@ export function useClipPlayback<E extends ClipEngine>(
       onSurfaceChange: () => setSurfaceNonce((n) => n + 1),
       onReady: () => {
         patch({ ready: true, waiting: false });
-        if (started) return;
+        if (started) {
+          return;
+        }
         started = true;
         engineRef.current?.play();
       },
     };
     const engine = backend.createClipEngine({ url, video, listeners });
-    if (!engine) return;
+    if (!engine) {
+      return;
+    }
     engineRef.current = engine;
     return () => {
       engineRef.current = null;
@@ -85,14 +93,21 @@ export function useClipPlayback<E extends ClipEngine>(
 
   const togglePlay = useCallback(() => {
     const engine = engineRef.current;
-    if (!engine) return;
-    if (engine.isPaused()) engine.play();
-    else engine.pause();
+    if (!engine) {
+      return;
+    }
+    if (engine.isPaused()) {
+      engine.play();
+    } else {
+      engine.pause();
+    }
   }, []);
 
   const seekTo = useCallback((sec: number) => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine) {
+      return;
+    }
     const total = engine.duration();
     const target = Math.max(0, total > 0 ? Math.min(total - END_MARGIN_SEC, sec) : sec);
     setState((s) => ({ ...s, cur: target }));

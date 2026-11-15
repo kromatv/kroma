@@ -30,10 +30,14 @@ export async function scanCommand(options: CommandOptions): Promise<number> {
   }
   if (found.length === 0) {
     console.log('no television answered on this network');
-    for (const hint of (await diagnoseEmptyScan()).hints) console.log(style.dim(hint));
+    for (const hint of (await diagnoseEmptyScan()).hints) {
+      console.log(style.dim(hint));
+    }
     return 1;
   }
-  for (const tv of found) console.log(describe(tv));
+  for (const tv of found) {
+    console.log(describe(tv));
+  }
   return 0;
 }
 
@@ -53,7 +57,9 @@ export async function installCommand(target: string, options: CommandOptions): P
         ? 'no television to install onto'
         : `${target} is not a television this tool can install onto`,
     );
-    for (const hint of (await diagnoseEmptyScan()).hints) console.error(style.dim(hint));
+    for (const hint of (await diagnoseEmptyScan()).hints) {
+      console.error(style.dim(hint));
+    }
     return 1;
   }
 

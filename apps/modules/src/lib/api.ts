@@ -102,7 +102,9 @@ export async function machineResponse(
 function withoutTrailingSlash(request: Request): Request {
   const url = new URL(request.url);
   const trimmed = trimTrailingSlashes(url.pathname) || '/';
-  if (trimmed === url.pathname) return request;
+  if (trimmed === url.pathname) {
+    return request;
+  }
   url.pathname = trimmed;
   return new Request(url, request);
 }

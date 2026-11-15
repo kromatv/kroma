@@ -33,7 +33,9 @@ export function useShowDetail(showId: ShowId): ShowDetailState {
     client.playback
       .progress()
       .then((entries) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const map: Record<string, number> = {};
         for (const e of entries) {
           const dur = e.durationMs ?? 0;
@@ -58,7 +60,9 @@ export function useShowDetail(showId: ShowId): ShowDetailState {
       watched.toggle(id);
       if (nowWatched) {
         setEpProgress((cur) => {
-          if (cur[id] == null) return cur;
+          if (cur[id] == null) {
+            return cur;
+          }
           const { [id]: _gone, ...rest } = cur;
           return rest;
         });
@@ -80,12 +84,16 @@ export function useShowDetail(showId: ShowId): ShowDetailState {
     client.media
       .show(showId)
       .then((d) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setDetail(d);
         setSeason(d.seasons[0]?.number ?? null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
       });
     return () => {
       cancelled = true;
@@ -105,7 +113,9 @@ export function useShowDetail(showId: ShowId): ShowDetailState {
     client.playback
       .upNext(showId)
       .then((r) => {
-        if (!cancelled) setUpNext(r);
+        if (!cancelled) {
+          setUpNext(r);
+        }
       })
       .catch(() => undefined);
     return () => {

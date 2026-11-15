@@ -18,13 +18,17 @@ export async function philipsSystem(
       `http://${host}:${ports.plain}/1/system`,
     );
   }
-  if (openPorts.has(ports.tls)) endpoints.push(`https://${host}:${ports.tls}/6/system`);
+  if (openPorts.has(ports.tls)) {
+    endpoints.push(`https://${host}:${ports.tls}/6/system`);
+  }
 
   for (const endpoint of endpoints) {
     const system = await fetchJson(endpoint, PhilipsSystem, {
       insecureTls: endpoint.startsWith('https:'),
     });
-    if (system?.name || system?.model) return system;
+    if (system?.name || system?.model) {
+      return system;
+    }
   }
   return null;
 }

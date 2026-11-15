@@ -30,7 +30,9 @@ interface SelectSelection {
 }
 
 function listOf(value: string | readonly string[]): readonly string[] {
-  if (typeof value !== 'string') return value;
+  if (typeof value !== 'string') {
+    return value;
+  }
   return value === '' ? NONE : [value];
 }
 
@@ -43,8 +45,11 @@ function report(
   next: readonly string[],
   item: SelectOption,
 ): void {
-  if (props.multiple) props.onValueChange?.([...next], { item });
-  else props.onValueChange?.(next[0] ?? '', { item });
+  if (props.multiple) {
+    props.onValueChange?.([...next], { item });
+  } else {
+    props.onValueChange?.(next[0] ?? '', { item });
+  }
 }
 
 function useSelectSelection(props: Readonly<SelectValueProps>): SelectSelection {
@@ -58,7 +63,9 @@ function useSelectSelection(props: Readonly<SelectValueProps>): SelectSelection 
   const choose = useStableCallback((value: string, item: SelectOption | undefined) => {
     const next = props.multiple ? toggled(values, value) : [value];
     setValues(next);
-    if (item) report(props, next, item);
+    if (item) {
+      report(props, next, item);
+    }
   });
 
   return { values, choose };

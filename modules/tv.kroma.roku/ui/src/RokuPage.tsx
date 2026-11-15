@@ -38,8 +38,12 @@ export default function RokuPage() {
       .catch(() => setFailed(true));
   }, [roku]);
 
-  if (!canManage) return <Denied />;
-  if (!view) return failed ? <ModuleFailed /> : <ModuleLoading panels={2} />;
+  if (!canManage) {
+    return <Denied />;
+  }
+  if (!view) {
+    return failed ? <ModuleFailed /> : <ModuleLoading panels={2} />;
+  }
 
   const savePassword = async () => {
     setSaved(false);
@@ -240,7 +244,9 @@ function DeviceCard({ device, hasPassword, busy, onInstall, onLaunch }: Readonly
 
 function InstallChip({ device }: Readonly<{ device: RokuDevice }>) {
   const t = useT();
-  if (!device.developerEnabled) return <Badge tone="warning">{t('roku.devModeOff')}</Badge>;
+  if (!device.developerEnabled) {
+    return <Badge tone="warning">{t('roku.devModeOff')}</Badge>;
+  }
   switch (device.install.status) {
     case 'installed':
       return <Badge tone="success">{t('roku.installed')}</Badge>;

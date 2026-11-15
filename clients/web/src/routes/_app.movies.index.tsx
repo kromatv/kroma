@@ -14,7 +14,9 @@ import { PageFrame, SkeletonRow } from '#web/shared/ui';
 export const Route = createFileRoute('/_app/movies/')({
   validateSearch: validateBrowseSearch,
   loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) return;
+    if (!isAuthed()) {
+      return;
+    }
     await queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView());
   },
   pendingComponent: MoviesPending,

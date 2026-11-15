@@ -18,7 +18,9 @@ export function resolveRedirect<S, R extends string, T extends R>(
   current: R,
 ): T | null {
   for (const rule of rules) {
-    if (rule.when(state)) return rule.allow.includes(current) ? null : rule.to;
+    if (rule.when(state)) {
+      return rule.allow.includes(current) ? null : rule.to;
+    }
   }
   return null;
 }

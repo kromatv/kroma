@@ -59,18 +59,28 @@ function cachedVirtualModule(options: CachedVirtualOptions): import('vite').Plug
     name: `kroma:${id}`,
     resolveId: (source) => (source === virtual ? resolved : null),
     async load(loaded) {
-      if (loaded !== resolved) return null;
+      if (loaded !== resolved) {
+        return null;
+      }
       const hash = await hashOf();
       const cached = hash ? await readCache(id, hash) : null;
-      if (cached) return `export const ${binding} = ${cached};`;
+      if (cached) {
+        return `export const ${binding} = ${cached};`;
+      }
       const json = JSON.stringify(await options.read());
-      if (hash) await writeCache(id, hash, json);
+      if (hash) {
+        await writeCache(id, hash, json);
+      }
       return `export const ${binding} = ${json};`;
     },
     handleHotUpdate({ file, server }) {
-      if (!watch?.(file)) return;
+      if (!watch?.(file)) {
+        return;
+      }
       const mod = server.moduleGraph.getModuleById(resolved);
-      if (mod) server.moduleGraph.invalidateModule(mod);
+      if (mod) {
+        server.moduleGraph.invalidateModule(mod);
+      }
     },
   };
 }

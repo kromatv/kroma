@@ -73,6 +73,8 @@ export function notificationData<E extends EventWithData>(
 export function notificationData(notification: Notification): unknown;
 export function notificationData(notification: Notification): unknown {
   const schema: z.ZodType | undefined = BY_EVENT[notification.event as EventWithData];
-  if (!schema || !notification.data) return undefined;
+  if (!schema || !notification.data) {
+    return undefined;
+  }
   return schema.safeParse(notification.data).data;
 }

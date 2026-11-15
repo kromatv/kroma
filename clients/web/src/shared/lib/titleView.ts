@@ -283,8 +283,12 @@ function mergeSeasons(owned: Season[], discover: DiscoverDetail | null): TitleSe
 /** "2024 · 2h08" from a not-owned title's year + TMDB runtime (movies only). */
 export function tmdbMetaLine(year: number | null, runtimeMin: number | null): string {
   const parts: string[] = [];
-  if (year) parts.push(String(year));
+  if (year) {
+    parts.push(String(year));
+  }
   const rt = formatRuntime((runtimeMin ?? 0) * 60000);
-  if (rt) parts.push(rt);
+  if (rt) {
+    parts.push(rt);
+  }
   return parts.join(' · ');
 }

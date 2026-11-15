@@ -50,7 +50,9 @@ export function SsoReturn({ flow, code }: Readonly<{ flow?: string; code?: strin
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (began.current || !beganHere || !flow || !code) return;
+    if (began.current || !beganHere || !flow || !code) {
+      return;
+    }
     began.current = true;
     client.accounts.config().then(setConfig, () => undefined);
     flows.resume({ flow, code }).then(

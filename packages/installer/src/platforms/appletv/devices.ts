@@ -31,7 +31,9 @@ export async function listAppleTvs(): Promise<AppleTv[]> {
   const { code, output, report } = await devicectl(['list', 'devices'], {
     timeoutMs: LIST_TIMEOUT_MS,
   });
-  if (code !== 0) throw new Error(`devicectl could not list the paired devices: ${output.trim()}`);
+  if (code !== 0) {
+    throw new Error(`devicectl could not list the paired devices: ${output.trim()}`);
+  }
   return readAppleTvs(report);
 }
 

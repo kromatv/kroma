@@ -40,7 +40,9 @@ const RAIL_RESERVE = { base: 0, md: 48, lg: 32, tv: 24 } as const;
 // Docked bar bottom edge + breathing room = where a jumped-to row should land.
 const jumpOffset = (bar: RefObject<HTMLDivElement | null>): number => {
   const el = bar.current;
-  if (!el) return 72;
+  if (!el) {
+    return 72;
+  }
   const top = Number.parseFloat(getComputedStyle(el).top) || 0;
   return top + el.getBoundingClientRect().height + 8;
 };
@@ -56,12 +58,16 @@ function useVisibleLetters(
 ): LetterRange | undefined {
   const [range, setRange] = useState<LetterRange | undefined>();
   useEffect(() => {
-    if (!enabled || marks.length === 0) return;
+    if (!enabled || marks.length === 0) {
+      return;
+    }
     let raf = 0;
     const measure = () => {
       raf = 0;
       const geometry = gridGeometry(gridWrap.current);
-      if (!geometry) return;
+      if (!geometry) {
+        return;
+      }
       const line = jumpOffset(bar) + 4;
       const viewBottom = window.innerHeight;
       const visible: string[] = [];
@@ -72,23 +78,31 @@ function useVisibleLetters(
         const sectionBottom =
           next === undefined ? geometry.bottom : rowBounds(geometry, next.index - 1).bottom;
         const sectionTop = rowBounds(geometry, mark.index).top;
-        if (sectionTop < viewBottom && sectionBottom > line) visible.push(mark.letter);
+        if (sectionTop < viewBottom && sectionBottom > line) {
+          visible.push(mark.letter);
+        }
       });
       const first = visible[0];
       const last = visible.at(-1);
       setRange((prev) => {
-        if (first === undefined || last === undefined) return undefined;
+        if (first === undefined || last === undefined) {
+          return undefined;
+        }
         return prev?.first === first && prev?.last === last ? prev : { first, last };
       });
     };
     const onScroll = () => {
-      if (raf === 0) raf = requestAnimationFrame(measure);
+      if (raf === 0) {
+        raf = requestAnimationFrame(measure);
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     measure();
     return () => {
       window.removeEventListener('scroll', onScroll);
-      if (raf !== 0) cancelAnimationFrame(raf);
+      if (raf !== 0) {
+        cancelAnimationFrame(raf);
+      }
     };
   }, [enabled, marks, gridWrap, bar]);
   return enabled && marks.length > 0 ? range : undefined;
@@ -157,7 +171,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
     setSlide(0);
   }
   useEffect(() => {
-    if (featuredPool.length < 2) return;
+    if (featuredPool.length < 2) {
+      return;
+    }
     const timer = setInterval(() => setSlide((s) => s + 1), 8000);
     return () => clearInterval(timer);
   }, [featuredPool]);
@@ -167,7 +183,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
     (letter: string) => {
       const mark = marks.find((m) => m.letter === letter);
       const geometry = gridGeometry(gridWrap.current);
-      if (mark === undefined || !geometry) return;
+      if (mark === undefined || !geometry) {
+        return;
+      }
       const top = rowBounds(geometry, mark.index).top + window.scrollY - jumpOffset(bar);
       window.scrollTo({ top: Math.max(top, 0) });
     },
@@ -189,7 +207,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   );
 
   useLayoutEffect(() => {
-    if (pending.current === null || sort !== 'title') return;
+    if (pending.current === null || sort !== 'title') {
+      return;
+    }
     scrollToLetter(pending.current);
     pending.current = null;
   }, [sort, scrollToLetter]);

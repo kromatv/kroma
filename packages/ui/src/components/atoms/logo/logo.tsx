@@ -19,7 +19,9 @@ interface LogoProps {
 function Logo({ size = 24, markOnly = false, spin, color }: Readonly<LogoProps>) {
   const theme = useTheme();
   const fill = color ?? theme.colors.text;
-  if (markOnly) return <Wheel size={size} spin={spin} />;
+  if (markOnly) {
+    return <Wheel size={size} spin={spin} />;
+  }
   const s = size / KROMA_LOCKUP.height;
   return (
     <Box row align="center" accessibilityRole="image" accessibilityLabel="KROMA">

@@ -29,7 +29,9 @@ async function pollOnce(at: {
 }): Promise<void> {
   try {
     const list = await at.client.subtitles.generations(at.itemId);
-    if (at.isStopped()) return;
+    if (at.isStopped()) {
+      return;
+    }
     at.report(list);
     for (const g of list) {
       if (g.status === 'done' && g.subId && !at.seenDone.has(g.id)) {
@@ -38,7 +40,9 @@ async function pollOnce(at: {
       }
     }
     const live = list.some((g) => g.status !== 'done' && g.status !== 'error');
-    if (!live) at.stop();
+    if (!live) {
+      at.stop();
+    }
   } catch {
     /* transient; next tick retries */
   }
@@ -59,7 +63,9 @@ export function useSubtitleGenerations(
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- `nudge` is a trigger dep, not read in the body; bumping it via refresh() re-arms polling after a new generation is kicked off.
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     let stopped = false;
     let iv: ReturnType<typeof setInterval> | null = null;
     const stop = () => {

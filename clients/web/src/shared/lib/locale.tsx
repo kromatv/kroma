@@ -13,10 +13,14 @@ function RefetchOnLocaleChange({ children }: Readonly<{ children: ReactNode }>) 
     // the client's locale is what the requests actually carried: while it disagrees
     // with `locale` the provider is still settling and there is nothing to drop.
     const asked = client.locale;
-    if (asked !== locale) return;
+    if (asked !== locale) {
+      return;
+    }
     const before = served.current;
     served.current = asked;
-    if (before === null || before === asked) return;
+    if (before === null || before === asked) {
+      return;
+    }
     void queryClient.invalidateQueries();
   }, [locale, queryClient, client]);
   return children;

@@ -26,7 +26,9 @@ export const BEARER = 'session-bearer';
 
 /** The URL a `fetch` call names, whichever of its three spellings it was given. */
 export function requestUrl(input: RequestInfo | URL): string {
-  if (typeof input === 'string') return input;
+  if (typeof input === 'string') {
+    return input;
+  }
   return input instanceof URL ? input.href : input.url;
 }
 
@@ -97,7 +99,9 @@ export async function recordRequest(
   const { client, calls } = recordingClient(reply, { authToken: BEARER });
   await Promise.resolve(call(client)).catch(() => undefined);
   const first = calls[0];
-  if (!first) throw new Error('no request was made');
+  if (!first) {
+    throw new Error('no request was made');
+  }
   return first;
 }
 
@@ -115,10 +119,16 @@ const unprovided = (path: string) => () => {
 function stubbed(name: string, provided: object): object {
   return new Proxy(provided, {
     get(target, key) {
-      if (typeof key !== 'string') return Reflect.get(target, key);
+      if (typeof key !== 'string') {
+        return Reflect.get(target, key);
+      }
       const member: unknown = Reflect.get(target, key);
-      if (member === undefined) return unprovided(`${name}.${key}`);
-      if (typeof member === 'object' && member !== null) return stubbed(`${name}.${key}`, member);
+      if (member === undefined) {
+        return unprovided(`${name}.${key}`);
+      }
+      if (typeof member === 'object' && member !== null) {
+        return stubbed(`${name}.${key}`, member);
+      }
       return member;
     },
   });

@@ -14,8 +14,12 @@ export async function askPassphrases(
   const passphrases = new Map<string, PlatformOptions>();
   for (const tv of sets) {
     const answer = await p.password({ message: `passphrase for ${tv.name} (${tv.host})` });
-    if (p.isCancel(answer)) return null;
-    if (answer) passphrases.set(tv.host, { passphrase: answer });
+    if (p.isCancel(answer)) {
+      return null;
+    }
+    if (answer) {
+      passphrases.set(tv.host, { passphrase: answer });
+    }
   }
   return passphrases;
 }

@@ -72,14 +72,18 @@ function ShowSettings({
   const presetLabel = usePresetLabel();
 
   const apply = async () => {
-    if (!preset) return;
+    if (!preset) {
+      return;
+    }
     const ok = await confirm({
       title: t('monitoring.applyConfirm', { preset: presetLabel(preset) }),
       message: t('monitoring.applyConfirmHint'),
       confirmLabel: t('monitoring.apply'),
       cancelLabel: t('common.cancel'),
     });
-    if (ok) onMonitor({ preset, monitorSpecials: specials });
+    if (ok) {
+      onMonitor({ preset, monitorSpecials: specials });
+    }
   };
 
   return (

@@ -80,7 +80,9 @@ function useStory(entry: StoryEntry | undefined): Story | undefined {
   const read = useCallback(() => entry?.ready(), [entry]);
   const story = useSyncExternalStore(subscribe, read, read);
   useEffect(() => {
-    if (!entry || entry.ready()) return;
+    if (!entry || entry.ready()) {
+      return;
+    }
     entry.load().catch(() => undefined);
   }, [entry]);
   return story;

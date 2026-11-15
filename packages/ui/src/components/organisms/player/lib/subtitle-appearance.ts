@@ -126,7 +126,9 @@ const LEGACY_COLOR: Record<string, string> = {
 };
 
 function colour(v: unknown, fallback: string): string {
-  if (typeof v !== 'string') return fallback;
+  if (typeof v !== 'string') {
+    return fallback;
+  }
   const mapped = LEGACY_COLOR[v] ?? v;
   return (SUB_COLORS as readonly string[]).includes(mapped) ? mapped : fallback;
 }
@@ -166,8 +168,11 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
   const stored = typeof v.bgOpacity === 'number' ? v.bgOpacity : undefined;
   const onNewModel = typeof v.bgColor === 'string';
   let bgOpacity = DEFAULT_SUB_APPEARANCE.bgOpacity;
-  if (boxed) bgOpacity = clampPct(stored ?? 75);
-  else if (onNewModel && stored !== undefined) bgOpacity = clampPct(stored);
+  if (boxed) {
+    bgOpacity = clampPct(stored ?? 75);
+  } else if (onNewModel && stored !== undefined) {
+    bgOpacity = clampPct(stored);
+  }
 
   return {
     ...DEFAULT_SUB_APPEARANCE,
@@ -211,8 +216,10 @@ export function useSubtitleAppearance(): [
 
   useEffect(() => {
     const stored = readStoredAppearance(store);
-    // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so hydration matches the defaults.
-    if (stored) setStyle(stored);
+    if (stored) {
+      // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so hydration matches the defaults.
+      setStyle(stored);
+    }
   }, [store]);
 
   const update = useCallback(
@@ -243,7 +250,9 @@ export function subtitleWindowStyle(
   style: SubtitleAppearance,
   scope: StyleScope = DEFAULT_STYLE_SCOPE,
 ): ViewStyle {
-  if (style.windowOpacity <= 0) return NO_WINDOW;
+  if (style.windowOpacity <= 0) {
+    return NO_WINDOW;
+  }
   return sharedStyle(
     `subtitle:window:${style.windowColor}:${style.windowOpacity}`,
     {

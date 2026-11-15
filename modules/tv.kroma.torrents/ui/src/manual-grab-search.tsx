@@ -20,7 +20,9 @@ export function useIndexerSearch(kind: string, season: string, episode: string) 
 
   const onSearch = () => {
     const words = query.trim();
-    if (!words) return;
+    if (!words) {
+      return;
+    }
     setSearching(true);
     setSearchErr(null);
     acquisition
@@ -33,7 +35,9 @@ export function useIndexerSearch(kind: string, season: string, episode: string) 
       .then((found) => {
         setResults(found.releases);
         const failed = found.indexers.filter((i) => i.error);
-        if (failed.length) setSearchErr(failed.map((i) => `${i.name}: ${i.error}`).join(' · '));
+        if (failed.length) {
+          setSearchErr(failed.map((i) => `${i.name}: ${i.error}`).join(' · '));
+        }
       })
       .catch((e) => setSearchErr(apiErrorText(e, t('manual.searchFailed'))))
       .finally(() => setSearching(false));

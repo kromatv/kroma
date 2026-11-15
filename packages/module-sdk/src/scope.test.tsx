@@ -15,7 +15,9 @@ function install(catalogs: Record<string, Record<string, string>>, scope = MODUL
 }
 
 afterEach(() => {
-  for (const dispose of disposers.splice(0)) dispose();
+  for (const dispose of disposers.splice(0)) {
+    dispose();
+  }
 });
 
 function Message({ messageKey }: Readonly<{ messageKey: string }>) {

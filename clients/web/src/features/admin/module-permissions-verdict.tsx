@@ -28,7 +28,9 @@ export function Verdict({
 }
 
 function isolatedHint(source: PermissionSource | null, t: Translate): MessageKey {
-  if (!source) return 'modulePermissions.undeclaredHint';
+  if (!source) {
+    return 'modulePermissions.undeclaredHint';
+  }
   return permissionGroups(source, t).length > 0
     ? 'modulePermissions.isolatedHint'
     : 'modulePermissions.isolatedNothing';

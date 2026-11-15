@@ -28,7 +28,9 @@ export function blankCondition(type: ConditionType): Condition {
 
 /** `negate` and `required` carry over to the new type. */
 export function retypeCondition(condition: Condition, type: ConditionType): Condition {
-  if (condition.type === type) return condition;
+  if (condition.type === type) {
+    return condition;
+  }
   return { ...blankCondition(type), negate: condition.negate, required: condition.required };
 }
 

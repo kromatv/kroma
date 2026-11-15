@@ -32,7 +32,9 @@ export function useCatalogueSync(
   // A leading+trailing throttle coalesces bursts into at most one refetch/window.
   // Only while signed in the picker keeps the stream (and /api/status) closed.
   useEffect(() => {
-    if (!client || !signedIn) return;
+    if (!client || !signedIn) {
+      return;
+    }
     const MIN_MS = 2500;
     let last = 0;
     let trailing: ReturnType<typeof setTimeout> | undefined;
@@ -42,8 +44,9 @@ export function useCatalogueSync(
     };
     const trigger = () => {
       const since = Date.now() - last;
-      if (since >= MIN_MS) run();
-      else {
+      if (since >= MIN_MS) {
+        run();
+      } else {
         clearTimeout(trailing);
         trailing = setTimeout(run, MIN_MS - since);
       }

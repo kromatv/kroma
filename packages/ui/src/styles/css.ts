@@ -4,8 +4,6 @@
 // page it was imported from would otherwise have painted with every custom
 // property undefined.
 
-export {};
-
 throw new Error(
   '[kroma-ui] @kromatv/ui/css was imported, but kromaUI() is not in the Vite plugin list, so no stylesheet was served. Add it (see @kromatv/ui/vite).',
 );

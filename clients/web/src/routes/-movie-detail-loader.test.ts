@@ -23,7 +23,9 @@ async function load() {
     id: ID,
   } as never);
   const loader = Route.options.loader;
-  if (typeof loader !== 'function') throw new Error('the movie route loads with a function');
+  if (typeof loader !== 'function') {
+    throw new Error('the movie route loads with a function');
+  }
   await loader({
     params: { id: ID },
     context: { runtime, queryClient: runtime.queryClient },

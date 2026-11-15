@@ -160,8 +160,12 @@ function text(value: unknown): string | undefined {
 }
 
 function asSource(value: string | undefined): Source | undefined {
-  if (value === undefined) return undefined;
-  if (!SOURCES.includes(value as Source)) throw new Error(`--source takes ${SOURCES.join(', ')}`);
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!SOURCES.includes(value as Source)) {
+    throw new Error(`--source takes ${SOURCES.join(', ')}`);
+  }
   return value as Source;
 }
 
@@ -169,8 +173,12 @@ function asSource(value: string | undefined): Source | undefined {
 function hostList(): string[] | undefined {
   const argv = process.argv.slice(2);
   const hosts = argv.flatMap((arg, index) => {
-    if (arg.startsWith('--host=')) return [arg.slice('--host='.length)];
-    if (arg !== '--host') return [];
+    if (arg.startsWith('--host=')) {
+      return [arg.slice('--host='.length)];
+    }
+    if (arg !== '--host') {
+      return [];
+    }
     const value = argv[index + 1];
     return value === undefined || value.startsWith('-') ? [] : [value];
   });

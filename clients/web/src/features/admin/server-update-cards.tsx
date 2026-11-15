@@ -286,15 +286,25 @@ export function InstallMethod({ data }: Readonly<{ data: UpdateStatus }>) {
 }
 
 function heroTitle(data: UpdateStatus) {
-  if (data.error) return 'admin.updatesCheckFailed';
-  if (data.available) return 'admin.updatesReady';
-  if (data.checkedAt && data.latest) return 'admin.updatesCurrent';
+  if (data.error) {
+    return 'admin.updatesCheckFailed';
+  }
+  if (data.available) {
+    return 'admin.updatesReady';
+  }
+  if (data.checkedAt && data.latest) {
+    return 'admin.updatesCurrent';
+  }
   return 'admin.updatesNotChecked';
 }
 
 function heroIcon(data: UpdateStatus) {
-  if (data.error) return 'cloud-off';
-  if (data.available) return 'download';
+  if (data.error) {
+    return 'cloud-off';
+  }
+  if (data.available) {
+    return 'download';
+  }
   return 'shield-check';
 }
 
@@ -311,7 +321,9 @@ const PHASE_KEYS = {
   failed: 'admin.updateFailed',
 } as const;
 function stageOf(phase: UpdateOperation['phase']) {
-  if (phase === 'queued' || phase === 'waiting_idle' || phase === 'deferred') return 1;
+  if (phase === 'queued' || phase === 'waiting_idle' || phase === 'deferred') {
+    return 1;
+  }
   return Math.max(0, STEPS.indexOf(phase as (typeof STEPS)[number]));
 }
 
@@ -382,7 +394,8 @@ function UpdateActions({
   onInstall,
 }: Readonly<{ data: UpdateStatus; busy: boolean; onInstall: () => void }>) {
   const t = useT();
-  const ready = !!data.installer?.ready && !!data.latest?.build && !data.error;
+  const { latest } = data;
+  const ready = !!data.installer?.ready && !!latest?.build && !data.error;
   return (
     <Row wrap gap={10}>
       {data.available ? (
@@ -394,12 +407,12 @@ function UpdateActions({
           onPress={onInstall}
         />
       ) : null}
-      {data.latest ? (
+      {latest ? (
         <Button
           variant="glass"
           icon="external-link"
           label={t('admin.updateNotes')}
-          onPress={() => void Linking.openURL(data.latest!.url)}
+          onPress={() => void Linking.openURL(latest.url)}
         />
       ) : null}
       <Button variant="outline" icon="archive" label={t('admin.updateBackup')} asChild>

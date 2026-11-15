@@ -44,16 +44,22 @@ export function useTokenLink(
   useEffect(() => () => clearTimeout(timer.current), []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     let cancelled = false;
     resolve(token)
       .then((r) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setUsername(r.username ?? null);
         setStatus(r.valid ? 'ok' : 'invalid');
       })
       .catch(() => {
-        if (!cancelled) setStatus('invalid');
+        if (!cancelled) {
+          setStatus('invalid');
+        }
       });
     return () => {
       cancelled = true;

@@ -16,7 +16,9 @@ function plannedHint(module: StorePlanModule, requested: boolean, t: Translate):
 }
 
 function optionalHint(module: StoreOptionalModule, t: Translate): string {
-  if (!module.for) return t('admin.modulesInstallOptional');
+  if (!module.for) {
+    return t('admin.modulesInstallOptional');
+  }
   return t(
     module.suggested ? 'admin.modulesInstallSuggestedFor' : 'admin.modulesInstallOptionalFor',
     { name: module.for },
@@ -25,7 +27,9 @@ function optionalHint(module: StoreOptionalModule, t: Translate): string {
 
 function Size({ bytes }: Readonly<{ bytes: number | null | undefined }>) {
   const fmt = useFormat();
-  if (!bytes) return null;
+  if (!bytes) {
+    return null;
+  }
   return (
     <Text variant="meta" color="textMuted">
       {fmt.bytes(bytes)}

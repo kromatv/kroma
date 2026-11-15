@@ -215,7 +215,9 @@ describe('asking the machine this is actually running on', () => {
     const found = installedEditors();
 
     expect(Array.isArray(found)).toBe(true);
-    for (const editor of found) expect(launcherOf(editor.id)).toBeTruthy();
+    for (const editor of found) {
+      expect(launcherOf(editor.id)).toBeTruthy();
+    }
   });
 
   it('offers them in the order a person reads', () => {

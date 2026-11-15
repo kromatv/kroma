@@ -43,11 +43,15 @@ export function freeMemoryBytes(): number | null {
  * gates nothing. */
 export function decoderFrameLimits(): DecoderFrameLimits | null {
   const byMime = native?.decoderFrameLimits();
-  if (!byMime) return null;
+  if (!byMime) {
+    return null;
+  }
   const limits: Record<string, FrameSize> = {};
   for (const [mime, size] of Object.entries(byMime)) {
     const codec = CODEC_OF_MIME[mime.toLowerCase()];
-    if (codec) limits[codec] = size;
+    if (codec) {
+      limits[codec] = size;
+    }
   }
   return Object.keys(limits).length > 0 ? limits : null;
 }

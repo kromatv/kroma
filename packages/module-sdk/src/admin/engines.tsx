@@ -188,13 +188,17 @@ export function AddEngineHost({ children }: Readonly<{ children?: ReactNode }>) 
   useEffect(() => {
     const requests = pending.current;
     return () => {
-      for (const resolve of requests) resolve(false);
+      for (const resolve of requests) {
+        resolve(false);
+      }
       requests.clear();
     };
   }, []);
   const current = queue[0];
   const settle = (added: boolean) => {
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     pending.current.delete(current.resolve);
     current.resolve(added);
     setQueue((queue) => queue.slice(1));
@@ -234,7 +238,9 @@ function AddEngineDialog({
   const submit = () =>
     run(
       async () => {
-        if (!engine) return;
+        if (!engine) {
+          return;
+        }
         await ask.onSubmit(engine.id, { name: name.trim(), ...values });
         onSettle(true);
       },

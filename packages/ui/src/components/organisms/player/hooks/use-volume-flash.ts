@@ -16,14 +16,18 @@ export function useVolumeFlash(): VolumeFlash {
 
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
     },
     [],
   );
 
   const show = useEffectEvent((level: number) => {
     setFlash({ kind: 'volume', level });
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = setTimeout(() => {
       timer.current = null;
       setFlash(null);
