@@ -2,7 +2,14 @@
 // route loaders (`ensureQueryData`) and components (`useSuspenseQuery`/`useQuery`)
 // share the exact same cache entry.
 import type { DiscoverDetail, DiscoverType } from '@kromatv/client/discovery';
-import type { ItemId, Show, ShowDetail, ShowId, UpNext } from '@kromatv/client/media';
+import type {
+  ItemId,
+  SectionLayoutRequest,
+  Show,
+  ShowDetail,
+  ShowId,
+  UpNext,
+} from '@kromatv/client/media';
 import type { QueryClient } from '@kromatv/client/query';
 import { genreSlugs } from '@kromatv/core';
 import { queryOptions } from '@tanstack/react-query';
@@ -29,6 +36,8 @@ export interface ShowBundle {
  * with art/stream URLs resolved, or the local movie fallback wrapped in the same
  * shape). The queries that can come up empty spell the `| null` themselves. */
 export type HeroEntry = { type: 'movie'; movie: MovieCardView } | { type: 'show'; show: ShowView };
+
+const HOME_LAYOUTS: readonly SectionLayoutRequest[] = ['hero', 'spotlight', 'ranked', 'wide'];
 
 /** Query factories capture the API client owned by this router. */
 export function createQueries(client: QueryClient) {
@@ -141,7 +150,7 @@ export function createQueries(client: QueryClient) {
 
   // Only mount once `ready && user`.
   const userQueries = {
-    home: () => client.query.media.homeCards(),
+    home: () => client.query.media.homeCards({ layouts: HOME_LAYOUTS }),
 
     continueWatching: () => client.query.playback.continueWatching(),
 

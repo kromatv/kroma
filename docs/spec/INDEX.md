@@ -3,7 +3,7 @@
 
 # Requirement index
 
-560 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+620 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -198,6 +198,69 @@
 - **ADMIN-93** (AGREED) - The rule above is identical on every host. Only the delivery vehicle <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-94** (AGREED) - A server speaks to the relay under an identity of its own: a key it <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-95** (AGREED) - The relay carries a server's mail only after a person allowed that <sub>[README.md](admin/README.md)</sub>
+
+## BROWSE - [browse](browse/)
+
+- **BROWSE-1** (SHIPPED) - The home is built for the account looking at it. Two people of one
+- **BROWSE-2** (SHIPPED) - A viewer with no history still opens on a full page: with nothing to
+- **BROWSE-3** (SHIPPED) - The home is the same on every surface: the same sections, in the same
+- **BROWSE-4** (SHIPPED) - The order of a row sways from one day to the next and holds still
+- **BROWSE-5** (SHIPPED) - Every section names one of five layouts: a **rail** of posters; a
+- **BROWSE-6** (SHIPPED) - A client is only sent the layouts it says it can draw. A layout it
+- **BROWSE-7** (SHIPPED) - An app released before a layout existed therefore keeps a home it can
+- **BROWSE-8** (SHIPPED) - A section may say one line about an entry: why it is offered to this
+- **BROWSE-9** (SHIPPED) - The hero holds at most five titles and takes a small share of a small
+- **BROWSE-10** (SHIPPED) - No recommendation repeats a title another recommendation on the same
+- **BROWSE-11** (SHIPPED) - A row that lists facts (what was added, what gained episodes, what
+- **BROWSE-12** (SHIPPED) - A title the library holds under two entries is recommended once.
+- **BROWSE-13** (SHIPPED) - A title the viewer finished, dropped, or has in progress is not
+- **BROWSE-14** (SHIPPED) - A row with too few titles to look like a row is not shown. A row is
+- **BROWSE-15** (SHIPPED) - A row that makes a claim about its members ("with this actor", "like
+- **BROWSE-16** (SHIPPED) - A taste is read from what the viewer did, never asked for. Finishing
+- **BROWSE-17** (SHIPPED) - A film left in its first minutes and not returned to counts against
+- **BROWSE-18** (SHIPPED) - A taste fades with time without vanishing: last week says more than
+- **BROWSE-19** (SHIPPED) - A title is described by its genres, the people in it and behind it,
+- **BROWSE-20** (SHIPPED) - One title is not a leaning. A genre or a person earns a row of its
+- **BROWSE-21** (SHIPPED) - Recommendations need no module. A module that embeds titles sharpens
+- **BROWSE-22** (SHIPPED) - "Because you watched X" holds only titles that share a genre with X
+- **BROWSE-23** (SHIPPED) - A genre row holds only titles of that genre, and a person's row only
+- **BROWSE-24** (SHIPPED) - A themed row is a rule before it is a ranking. A title is a member
+- **BROWSE-25** (SHIPPED) - A slasher set at Christmas is therefore not in the Christmas row, and
+- **BROWSE-26** (SHIPPED) - An embedding may order the members of a theme. It never admits one.
+- **BROWSE-27** (SHIPPED) - A theme that is only a mood, which no rule can check, is shown only
+- **BROWSE-28** (SHIPPED) - Themes follow the calendar and the clock: a season's themes in its
+- **BROWSE-29** (SHIPPED) - New films and new shows are two rows. A show is new by when its
+- **BROWSE-30** (SHIPPED) - "New episodes" lists the shows that were already in the library and
+- **BROWSE-31** (SHIPPED) - "Trending" is a ranked row of at most nine. A household of several
+- **BROWSE-32** (SHIPPED) - What the viewer saved and has not finished is a row of the home, the
+- **BROWSE-33** (SHIPPED) - An admin can turn the recently added rows off ([`admin/`](../admin/)).
+- **BROWSE-34** (SHIPPED) - Every word of a query has to land somewhere in a result: its title in
+- **BROWSE-35** (SHIPPED) - The last word may be unfinished, and a typo is forgiven in a title or
+- **BROWSE-36** (SHIPPED) - A query that is the whole title comes before the titles that only
+- **BROWSE-37** (SHIPPED) - A year beside a title is read as the release year and picks the film
+- **BROWSE-38** (SHIPPED) - An episode can be named by its number, however it is written
+- **BROWSE-39** (SHIPPED) - A sequel is found however its number is written: "2", "II" and "two"
+- **BROWSE-40** (SHIPPED) - A title written with a hyphen is found typed as one word, and the
+- **BROWSE-41** (SHIPPED) - A word naming a kind ("film", "series") beside a title favours that
+- **BROWSE-42** (SHIPPED) - A full name ranks the titles of that person above a title that merely
+- **BROWSE-43** (SHIPPED) - A query nothing answers in full is read again more loosely, in this
+- **BROWSE-44** (SHIPPED) - A query that matches a credited person's name answers with the
+- **BROWSE-45** (SHIPPED) - Search obeys visibility ([`accounts/`](../accounts/)): a title in a
+- **BROWSE-46** (SHIPPED) - A title the asker is in the middle of, or saved, comes before its
+- **BROWSE-47** (SHIPPED) - A show that matches is listed once, without its episodes. A show
+- **BROWSE-48** (SHIPPED) - A title the library holds under two entries is listed once, in
+- **BROWSE-49** (SHIPPED) - A person's page lists the titles of the library that credit them,
+- **BROWSE-50** (AGREED) - Under them it lists the rest of the person's filmography, the titles
+- **BROWSE-51** (SHIPPED) - A guest spot as oneself on a talk show is not part of a filmography.
+- **BROWSE-52** (DESIGN, NOT IMPLEMENTED) - Explicit feedback: "not for me" on a title, or a
+- **BROWSE-53** (DESIGN, NOT IMPLEMENTED) - Counting what was shown and never chosen, to retire a
+- **BROWSE-54** (DESIGN, NOT IMPLEMENTED) - Themes read from the provider's keywords. The
+- **BROWSE-55** (SHIPPED) - What the world is watching this week, as the metadata provider ranks
+- **BROWSE-56** (SHIPPED) - The provider's ranking never delays the home. It is read in the
+- **BROWSE-57** (SHIPPED) - Nothing the home or the search recognises in text depends on one
+- **BROWSE-58** (SHIPPED) - Adding a language is adding its copy. Its words join the vocabulary
+- **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
+- **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
 
 ## DISC - [discovery](discovery/)
 

@@ -27,6 +27,17 @@ fn entry_ids(home: &Value) -> Vec<String> {
         .collect()
 }
 
+fn recommended_ids(home: &Value) -> Vec<String> {
+    let recommending: Vec<Value> = home
+        .as_array()
+        .expect("sections")
+        .iter()
+        .filter(|s| !matches!(s["id"].as_str(), Some("recent" | "recent-shows" | "trending")))
+        .cloned()
+        .collect();
+    entry_ids(&Value::Array(recommending))
+}
+
 fn first_movie(home: &Value) -> String {
     entries(home)
         .into_iter()
@@ -113,7 +124,7 @@ async fn a_film_started_since_the_tag_was_taken_gets_the_new_home() {
     .await;
 
     assert_eq!(status, StatusCode::OK);
-    assert!(!entry_ids(&again).contains(&film));
+    assert!(!recommended_ids(&again).contains(&film));
 }
 
 #[tokio::test]
@@ -155,4 +166,41 @@ async fn another_accounts_tag_is_not_honoured_for_rows_it_may_not_see() {
 
     assert_eq!(status, StatusCode::OK);
     assert_ne!(headers[header::ETAG], tag.as_str());
+}
+
+fn layouts(home: &Value) -> Vec<&str> {
+    home.as_array()
+        .unwrap()
+        .iter()
+        .map(|section| section["layout"].as_str().unwrap())
+        .collect()
+}
+
+#[tokio::test]
+async fn home_serves_rails_only_to_a_client_that_names_no_layout() {
+    let t = test_app();
+
+    let (status, body) = get(&t.app, "/api/home", Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(!layouts(&body).is_empty());
+    assert!(layouts(&body).iter().all(|layout| *layout == "rail"), "{:?}", layouts(&body));
+}
+
+#[tokio::test]
+async fn home_opens_on_a_hero_for_a_client_that_draws_one() {
+    let t = test_app();
+
+    let (status, body) = get(
+        &t.app,
+        "/api/home?view=card&layouts=hero,spotlight,ranked,wide",
+        Some(&t.token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(layouts(&body)[0], "hero");
+    let hero = &body[0];
+    assert!(!hero["items"].as_array().unwrap().is_empty());
+    assert_eq!(hero["items"][0]["item"].get("files"), None, "a card carries no files");
 }

@@ -47,6 +47,11 @@ const POP_IN = keyframes('pop-in', [
   rule('to', { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }),
 ]);
 
+const FILL = keyframes('kroma-fill', [
+  rule('from', { transform: 'scaleX(0)' }),
+  rule('to', { transform: 'scaleX(1)' }),
+]);
+
 export const MOTION: readonly SheetEntry[] = [
   IMG_WAIT,
   IMG_SHOWN,
@@ -56,4 +61,5 @@ export const MOTION: readonly SheetEntry[] = [
   BREATHE,
   FADE_IN,
   POP_IN,
+  FILL,
 ];

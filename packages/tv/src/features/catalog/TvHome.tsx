@@ -1,22 +1,15 @@
-import type { MediaItem, MediaCard as MovieCard, SectionItem, Show } from '@kromatv/client/media';
-import { episodeTag, genreLabels, posterColors } from '@kromatv/core';
-import { useT } from '@kromatv/ui';
 import {
   Box,
   FocusScroll,
   FocusSlot,
-  MediaCard,
-  RAIL_GAP,
-  Rail,
   ScrollMask,
   styles,
   TopFade,
-  typeSpec as textRoles,
   useFocusNav,
   useGrowingCount,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useCallback, useEffect, useMemo } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useContinue } from '#tv/app/providers/continue';
 import { useMyList } from '#tv/app/providers/mylist';
@@ -25,54 +18,36 @@ import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
 import { useRootBack } from '#tv/app/useRootBack';
 import { usePlayTitle } from '#tv/features/catalog/full-item';
-import { computeHero, Hero } from '#tv/features/catalog/home/Hero';
-import { entryId, type HomeEntry } from '#tv/features/catalog/home/sectionEntry';
+import { ContinueRail } from '#tv/features/catalog/home/continue-rail';
+import { Hero } from '#tv/features/catalog/home/Hero';
+import { heroSlides } from '#tv/features/catalog/home/hero-slides';
+import { HomeSection } from '#tv/features/catalog/home/home-section';
+import type { HomeEntry } from '#tv/features/catalog/home/sectionEntry';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
-
-const RAIL_LIMIT = 20;
 
 const ROW_CHUNK = 3;
 
 const NAV_BOTTOM = 104;
 
-// What one home tile occupies, so the row can be virtualised: a <MediaCard>
-// at its default 328 width, 16:9, plus the 24px gap after it.
-const ROW_TILE = { pitch: 328 + RAIL_GAP, height: Math.round((328 * 9) / 16) };
-
-// The design sizes the hero with viewport units and clamps; on the fixed
-// 1920x1080 stage those resolve to the values below.
 const sDefinition = styles({
   pageScroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box.
   pageContent: { pb: 40 },
-  rowTitle: {
-    fontSize: textRoles.subheadingTv.size,
-    lineHeight: 30,
-    fontWeight: '700',
-    letterSpacing: -0.56,
-  },
 });
 
-interface Row {
-  key: string;
-  title: string;
-  cards: React.ReactNode[];
-}
-
-/** The 10-foot home: a cinematic hero over a vertical stack of horizontal
- * rails. Films, Séries and Search live on their own screens via the shared
- * top nav. */
+/** The 10-foot home: a cinematic hero over a vertical stack of rows, each drawn
+ * the way the server's section asks. Films, Séries and Search live on their own
+ * screens via the shared top nav. */
 export function TvHome() {
   const s = useStyles(sDefinition);
 
-  const { movies, shows } = useConnection();
+  const { movies } = useConnection();
   const { items: continueItems, refresh: refreshContinue } = useContinue();
   const { sections, featured } = useRecommend();
-  const { has: isWatched, refresh: refreshWatched } = useWatched();
+  const { refresh: refreshWatched } = useWatched();
   const { refresh: refreshMyList } = useMyList();
   const { go } = useNav();
   const client = useClient();
-  const t = useT();
   useEffect(() => refreshContinue(), [refreshContinue]);
   // Re-pull the watched + my-list sets on entry so a title finished in the player
   // (auto-marked) or added on another device shows up the moment we land on Home.
@@ -82,154 +57,28 @@ export function TvHome() {
   useFocusNav({ onBack: titleMenu.onBack });
   const hold = titleMenu.open;
 
-  const onSelectMovie = useCallback((m: MovieCard) => go('movie', { item: m }), [go]);
-  const onSelectShow = useCallback((s: Show) => go('show', { show: s }), [go]);
-  const onPlay = useCallback((m: MediaItem) => go('player', { item: m }), [go]);
   const playTitle = usePlayTitle();
-  // Open a recommendation entry: play page for movies, detail for shows.
   const onSelectEntry = useCallback(
-    (e: HomeEntry) => (e.type === 'show' ? onSelectShow(e.show) : onSelectMovie(e.item)),
-    [onSelectMovie, onSelectShow],
+    (e: HomeEntry) =>
+      e.type === 'show' ? go('show', { show: e.show }) : go('movie', { item: e.item }),
+    [go],
   );
 
-  // Render one rail entry (movie or show) as a 16:9 card.
-  const entryCard = useCallback(
-    (key: string, e: SectionItem): React.ReactNode => {
-      if (e.type === 'show') {
-        const show = e.show;
-        return (
-          <MediaCard
-            key={`${key}-${show.id}`}
-            title={show.title}
-            overline={genreLabels(t, show.metadata)[0] ?? t('content.series')}
-            art={
-              client.media.artwork.backdropFor(show, TILE_W) ??
-              client.media.artwork.showPosterFor(show, TILE_W)
-            }
-            tint={posterColors(show.id)}
-            watched={isWatched(show.id)}
-            progress={show.progress == null ? null : show.progress / 100}
-            onPress={() => onSelectShow(show)}
-            onLongPress={() => hold({ kind: 'show', item: show })}
-          />
-        );
-      }
-      const m = e.item;
-      return (
-        <MediaCard
-          key={`${key}-${m.id}`}
-          title={m.title}
-          overline={genreLabels(t, m.metadata)[0] ?? t('content.film')}
-          art={
-            client.media.artwork.backdropFor(m, TILE_W) ?? client.media.artwork.posterFor(m, TILE_W)
-          }
-          tint={posterColors(m.id)}
-          watched={isWatched(m.id)}
-          onPress={() => onSelectMovie(m)}
-          onLongPress={() => hold({ kind: 'movie', item: m })}
-        />
-      );
-    },
-    [client, onSelectMovie, onSelectShow, isWatched, hold, t],
+  const slides = useMemo(
+    () => heroSlides({ sections, featured, movies }, client),
+    [sections, featured, movies, client],
   );
 
-  // One 16:9 rail per server section: empty list in → null out, so the home drops
-  // it. `title` arrives already localized from the server rendered as-is.
-  const mediaRow = useCallback(
-    (key: string, title: string, items: SectionItem[]): Row | null =>
-      items.length
-        ? { key, title, cards: items.slice(0, RAIL_LIMIT).map((e) => entryCard(key, e)) }
-        : null,
-    [entryCard],
-  );
+  const rows = useMemo<ReactNode[]>(() => {
+    const drawn: ReactNode[] = [];
+    if (continueItems.length) drawn.push(<ContinueRail items={continueItems} onHold={hold} />);
+    for (const section of sections) {
+      if (section.layout === 'hero' || section.items.length === 0) continue;
+      drawn.push(<HomeSection section={section} onHold={hold} />);
+    }
+    return drawn;
+  }, [continueItems, sections, hold]);
 
-  // Featured spotlight (hero) + its backdrop art and quality badge, computed once.
-  const heroInfo = computeHero(featured, sections, movies, client);
-  const heroId = heroInfo.heroId;
-
-  const rows = useMemo<Row[]>(() => {
-    const continueRow: Row | null = continueItems.length
-      ? {
-          key: 'continue',
-          title: t('content.continueWatching'),
-          cards: continueItems.map(({ item, positionMs, durationMs }) => {
-            const dur = durationMs ?? item.durationMs ?? 0;
-            const pct = dur > 0 ? Math.min(100, Math.round((positionMs / dur) * 100)) : 0;
-            const genre =
-              item.kind === 'episode' && item.showTitle
-                ? `${item.showTitle} · ${episodeTag(item)}`
-                : t('content.film');
-            return (
-              <MediaCard
-                key={`continue-${item.id}`}
-                title={item.title}
-                overline={genre}
-                art={
-                  client.media.artwork.backdropFor(item, TILE_W) ??
-                  client.media.artwork.posterFor(item, TILE_W)
-                }
-                tint={posterColors(item.id)}
-                progress={pct / 100}
-                onPress={() => onPlay(item)}
-                onLongPress={() => hold({ kind: 'resume', item, progress: pct / 100 })}
-              />
-            );
-          }),
-        }
-      : null;
-    // One rail per server section, in the server's order. The hero is picked
-    // independently of the sections, so drop it from every row to avoid showing
-    // the same title twice (the server already de-dupes rows against each other).
-    const sectionRows = sections.map((section) =>
-      mediaRow(
-        section.id,
-        section.title,
-        heroId ? section.items.filter((e) => entryId(e) !== heroId) : section.items,
-      ),
-    );
-    const showRow: Row | null = shows.length
-      ? {
-          key: 'series',
-          title: t('nav.series'),
-          cards: shows
-            .slice(0, RAIL_LIMIT)
-            .map((show) => (
-              <MediaCard
-                key={show.id}
-                title={show.title}
-                overline={
-                  genreLabels(t, show.metadata)[0] ??
-                  t('content.seasonCount', { count: show.seasonCount })
-                }
-                art={
-                  client.media.artwork.backdropFor(show, TILE_W) ??
-                  client.media.artwork.showPosterFor(show, TILE_W)
-                }
-                tint={posterColors(show.id)}
-                watched={isWatched(show.id)}
-                progress={show.progress == null ? null : show.progress / 100}
-                onPress={() => onSelectShow(show)}
-                onLongPress={() => hold({ kind: 'show', item: show })}
-              />
-            )),
-        }
-      : null;
-    return [continueRow, ...sectionRows, showRow].filter((r): r is Row => r !== null);
-  }, [
-    shows,
-    continueItems,
-    sections,
-    heroId,
-    mediaRow,
-    client,
-    onPlay,
-    onSelectShow,
-    isWatched,
-    hold,
-    t,
-  ]);
-
-  // How many rails are mounted. Three is already more than fits on screen, and
   // the rest arrive as the focus comes down (see <FocusSlot onActive>).
   const {
     count: rowCount,
@@ -246,9 +95,8 @@ export function TvHome() {
             by the order they mount. */}
           <FocusSlot>
             <Hero
-              info={heroInfo}
+              slides={slides}
               onPlay={playTitle}
-              onSelectShow={onSelectShow}
               onSelectEntry={onSelectEntry}
               maskInset={NAV_BOTTOM}
             />
@@ -261,12 +109,7 @@ export function TvHome() {
             {rows.slice(0, rowCount).map((row, index) => (
               // oxlint-disable-next-line react/no-array-index-key -- the index IS the slot - see <FocusSlot>.
               <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
-                <Box mb={8} mt={18}>
-                  <Rail.Root>
-                    <Rail.Title style={s.rowTitle}>{row.title}</Rail.Title>
-                    <Rail.List {...ROW_TILE}>{row.cards}</Rail.List>
-                  </Rail.Root>
-                </Box>
+                {row}
               </FocusSlot>
             ))}
           </ScrollMask>
@@ -277,7 +120,3 @@ export function TvHome() {
     </Box>
   );
 }
-
-// A rail tile is drawn 330pt wide, but the server's next rendition bucket above
-// 320 is 480: those pixels cost more than the 3% upscale shows.
-const TILE_W = 320;

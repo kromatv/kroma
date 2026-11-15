@@ -1,4 +1,4 @@
-import type { Section, SectionItem } from '@kromatv/client/media';
+import type { CardSection, SectionItem, SectionLayoutRequest } from '@kromatv/client/media';
 import {
   createContext,
   type ReactNode,
@@ -13,8 +13,10 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { buildHomeChannels } from '#tv/shared/launcher/cards';
 
+const DRAWN_LAYOUTS: readonly SectionLayoutRequest[] = ['hero', 'spotlight', 'ranked', 'wide'];
+
 interface Recommend {
-  sections: Section[];
+  sections: CardSection[];
   featured: SectionItem | null;
 }
 
@@ -26,7 +28,7 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
   const launcher = useLauncherBackend();
   const { user, ready } = useAuth();
   const { client } = useConnection();
-  const [sections, setSections] = useState<Section[]>([]);
+  const [sections, setSections] = useState<CardSection[]>([]);
   const [featured, setFeatured] = useState<SectionItem | null>(null);
 
   const active = ready && !!user && !!client;
@@ -43,15 +45,15 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
     if (!ready || !user || !client) return;
     let cancelled = false;
     client.media
-      .home()
-      .then((s) => {
-        if (!cancelled) setSections(s);
+      .homeCards({ layouts: DRAWN_LAYOUTS })
+      .then((home) => {
+        if (cancelled) return;
+        setSections(home);
+        if (home.some((section) => section.layout === 'hero')) return null;
+        return client.media.featured();
       })
-      .catch(() => undefined);
-    client.media
-      .featured()
-      .then((f) => {
-        if (!cancelled) setFeatured(f);
+      .then((pick) => {
+        if (!cancelled && pick) setFeatured(pick);
       })
       .catch(() => undefined);
     return () => {

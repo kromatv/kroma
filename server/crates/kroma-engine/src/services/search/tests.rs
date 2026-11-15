@@ -5,7 +5,7 @@ use super::spawn_reindex;
 use crate::domain::metadata::CastMember;
 use crate::model::{Kind, MediaItem, Metadata, Show};
 
-fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata {
+pub(crate) fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata {
     Metadata {
         provider: "tmdb",
         tmdb_id: 1,
@@ -38,7 +38,7 @@ fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata
     }
 }
 
-fn movie(id: &str, title: &str, m: Option<Metadata>) -> MediaItem {
+pub(crate) fn movie(id: &str, title: &str, m: Option<Metadata>) -> MediaItem {
     MediaItem {
         id: id.into(),
         title: title.into(),
@@ -69,7 +69,7 @@ fn movie(id: &str, title: &str, m: Option<Metadata>) -> MediaItem {
     }
 }
 
-fn episode(id: &str, show_id: &str, show_title: &str, title: &str) -> MediaItem {
+pub(crate) fn episode(id: &str, show_id: &str, show_title: &str, title: &str) -> MediaItem {
     MediaItem {
         kind: Kind::Episode,
         show_id: Some(show_id.into()),
@@ -79,7 +79,7 @@ fn episode(id: &str, show_id: &str, show_title: &str, title: &str) -> MediaItem 
     }
 }
 
-fn show(id: &str, title: &str, m: Option<Metadata>) -> Show {
+pub(crate) fn show(id: &str, title: &str, m: Option<Metadata>) -> Show {
     Show {
         id: id.into(),
         title: title.into(),
@@ -180,7 +180,7 @@ fn series_engine() -> SearchEngine {
     e
 }
 
-fn ids(e: &SearchEngine, q: &str, limit: usize) -> Vec<String> {
+pub(crate) fn ids(e: &SearchEngine, q: &str, limit: usize) -> Vec<String> {
     e.search(q, limit).into_iter().map(|h| h.id).collect()
 }
 

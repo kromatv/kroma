@@ -1,4 +1,3 @@
-import type { SectionItem } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
 import {
   ArtScrim,
@@ -15,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { featuredMetaLine } from '#mobile/lib/featured';
+import type { HomeEntry } from '#mobile/lib/home-sections';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
@@ -26,10 +26,13 @@ const HEIGHT_SHARE = 0.6;
 const BACKDROP_RATIO = 0.56;
 const POSTER_RATIO = 1.42;
 
+/** The title a home opens on. `note` is the line over its title saying why it
+ *  is there, left out when the server gave none. */
 export function HeroBillboard({
   entry,
   progress,
-}: Readonly<{ entry: SectionItem; progress?: number | null }>) {
+  note,
+}: Readonly<{ entry: HomeEntry; progress?: number | null; note?: string | null }>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -84,6 +87,11 @@ export function HeroBillboard({
         <ArtScrim variant="deep" radius={radius.xl} />
       </Pressable>
       <Box style={s.content} pointerEvents="box-none">
+        {note ? (
+          <Text lines={1} style={s.note}>
+            {note}
+          </Text>
+        ) : null}
         <Text lines={2} style={s.title}>
           {title}
         </Text>
@@ -110,7 +118,7 @@ export function HeroBillboard({
               name={inList ? 'bookmark-filled' : 'bookmark'}
               size={24}
               thickness={2.2}
-              color={inList ? 'accentText' : 'text'}
+              color={inList ? 'accentText' : 'white'}
             />
             <Text lines={1} style={[s.listLabel, inList && s.listLabelActive]}>
               {inList ? t('content.inList') : t('nav.myList')}
@@ -127,6 +135,13 @@ export function HeroBillboard({
   );
 }
 
+const ON_ART = {
+  textAlign: 'center',
+  textShadowColor: 'black/85',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 10,
+} as const;
+
 const sDefinition = styles({
   wrap: { self: 'center', mt: spacing.sm },
   content: {
@@ -137,20 +152,24 @@ const sDefinition = styles({
     align: 'center',
     gap: 8,
   },
+  note: {
+    ...type.caption,
+    ...ON_ART,
+    color: 'accentText',
+    fontWeight: '700',
+  },
   title: {
     ...type.display,
+    ...ON_ART,
+    color: 'white',
     fontSize: textRoles.subheadingTv.size,
-    textAlign: 'center',
-    textShadowColor: 'bg/85',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 10,
   },
-  meta: { ...type.caption, color: 'text' },
+  meta: { ...type.caption, color: 'white/82' },
   buttons: { row: true, align: 'center', self: 'center', gap: 14, w: '100%', maxW: 480, mt: 6 },
   play: { flex: true },
   listAction: { align: 'center', gap: 3, minW: 64, py: 4 },
   listActionPressed: { opacity: 0.7 },
-  listLabel: { ...type.small, color: 'textMuted' },
+  listLabel: { ...type.small, color: 'white/70' },
   listLabelActive: { color: 'accentText' },
   progress: { w: '100%', maxW: 480, mt: 2 },
 });

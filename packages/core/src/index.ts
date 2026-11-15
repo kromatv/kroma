@@ -35,4 +35,5 @@ export * from './push-labels';
 export * from './slug';
 export * from './subtitle-stage';
 export * from './subtitles';
+export * from './synopsis';
 export * from './trailer';

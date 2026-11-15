@@ -24,4 +24,6 @@ pub use sso::{
     JoinRequests, LookView, MethodView, PresetView, ProviderView, SignInAdmin, SignInMethods,
     TestReportView,
 };
-pub use search::{PersonDetailResponse, PersonResponse, SearchHit, SearchResponse};
+pub use search::{
+    one_per_title, PersonDetailResponse, PersonHit, PersonResponse, SearchHit, SearchResponse,
+};

@@ -77,6 +77,8 @@ fn a_rail_emptied_by_the_grant_is_dropped_rather_than_shown_bare() {
             id: "mixed".into(),
             title: "Mixed".into(),
             reason: None,
+            layout: Default::default(),
+            notes: Default::default(),
             items: vec![
                 SectionItem::Movie {
                     item: Box::new(movie()),
@@ -90,6 +92,8 @@ fn a_rail_emptied_by_the_grant_is_dropped_rather_than_shown_bare() {
             id: "hidden".into(),
             title: "Hidden".into(),
             reason: None,
+            layout: Default::default(),
+            notes: Default::default(),
             items: vec![SectionItem::Show {
                 show: Box::new(series()),
             }],
@@ -106,12 +110,12 @@ fn a_rail_emptied_by_the_grant_is_dropped_rather_than_shown_bare() {
 #[test]
 fn an_unrestricted_account_is_handed_the_shared_rails_themselves() {
     let owner = viewer(LibraryScope::All);
-    let shared = Arc::new(vec![Section {
-        id: "for-you".into(),
-        title: "For you".into(),
-        reason: None,
-        items: Vec::new(),
-    }]);
+    let shared = Arc::new(vec![Section::rail(
+        "for-you",
+        "For you".into(),
+        None,
+        Vec::new(),
+    )]);
 
     let kept = keep_sections(&owner, Arc::clone(&shared));
 

@@ -1,24 +1,12 @@
-// Poster + continue-watching cards and the horizontal media rail. Cards are
-// pure presentation; navigation targets are resolved by the small helpers at
-// the top so every screen routes titles the same way.
-
 import type { KromaClient } from '@kromatv/client';
-import type { ContinueItem, MediaCard, SectionItem, Show } from '@kromatv/client/media';
-import { episodeTag, sizedImageUrl } from '@kromatv/core';
-import {
-  Box,
-  radius as cornerRadius,
-  styles,
-  Text,
-  useStyles,
-  VirtualRail,
-  WatchedBadge,
-} from '@kromatv/ui/kit';
+import type { MediaCard, Show } from '@kromatv/client/media';
+import { sizedImageUrl } from '@kromatv/core';
+import { Box, styles, Text, useStyles, VirtualRail, WatchedBadge } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import type { HomeEntry } from '#mobile/lib/home-sections';
 import { useGutters } from '#mobile/lib/layout';
-import { usePlay } from '#mobile/lib/play';
 import { posterWidth, radius, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
@@ -53,7 +41,7 @@ export function showCard(show: Show, client: KromaClient, width: number): CardMo
   };
 }
 
-export function sectionCard(entry: SectionItem, client: KromaClient, width: number): CardModel {
+export function sectionCard(entry: HomeEntry, client: KromaClient, width: number): CardModel {
   return entry.type === 'movie'
     ? movieCard(entry.item, client, width)
     : showCard(entry.show, client, width);
@@ -137,94 +125,9 @@ export function MediaRail({ cards }: Readonly<{ cards: CardModel[] }>) {
   );
 }
 
-/** Landscape resume tile: backdrop, remaining-progress bar, episode tag. */
-export function ContinueCard({
-  entry,
-  client,
-  width,
-  artWidth,
-}: Readonly<{
-  entry: ContinueItem;
-  client: KromaClient;
-  width: number | '100%';
-  artWidth: number;
-}>) {
-  const s = useStyles(sDefinition);
-
-  const { play } = usePlay();
-  const { item, positionMs, durationMs } = entry;
-  const total = durationMs ?? item.durationMs ?? 0;
-  const frac = total > 0 ? Math.min(1, positionMs / total) : 0;
-  const backdrop = sizedImageUrl(
-    client.media.artwork.backdropFor(item) ?? client.media.artwork.posterFor(item),
-    artWidth,
-  );
-  const tag = episodeTag(item) || undefined;
-  return (
-    <Pressable
-      onPress={() => void play(item.id)}
-      style={({ pressed }) => [{ width, opacity: pressed ? 0.75 : 1 }]}
-    >
-      <Box>
-        <FadeImage
-          uri={backdrop}
-          seed={item.id}
-          radius={radius.sm}
-          style={{ width, aspectRatio: 16 / 9 }}
-        />
-        <Box style={s.progressTrack}>
-          <Box style={[s.progressFill, { width: `${frac * 100}%` }]} />
-        </Box>
-      </Box>
-      <Text lines={1} style={s.cardTitle}>
-        {item.showTitle ?? item.metadata?.title ?? item.title}
-      </Text>
-      {tag ? <Text style={s.cardSub}>{tag}</Text> : null}
-    </Pressable>
-  );
-}
-
-const CONTINUE_TEXT = 42;
-
-export function ContinueRail({
-  entries,
-  client,
-}: Readonly<{
-  entries: ContinueItem[];
-  client: KromaClient;
-}>) {
-  const { width: windowWidth } = useWindowDimensions();
-  const gutters = useGutters();
-  const width = Math.min(300, windowWidth * 0.55);
-  return (
-    <VirtualRail
-      data={entries}
-      itemWidth={width + GAP}
-      gap={GAP}
-      style={{ height: Math.ceil((width * 9) / 16) + CONTINUE_TEXT }}
-      contentStyle={gutters.style}
-      renderItem={(entry) => (
-        <ContinueCard entry={entry} client={client} width="100%" artWidth={width} />
-      )}
-    />
-  );
-}
-
 const sDefinition = styles({
   art: { radius: radius.sm, overflow: 'hidden' },
   label: { h: POSTER_LABEL_H, pt: 6 },
   labelTitle: { ...type.caption, color: 'text', fontWeight: '600' },
   labelSub: { ...type.small },
-  cardTitle: { ...type.caption, mt: 6, color: 'text' },
-  cardSub: { ...type.small, mt: 1 },
-  progressTrack: {
-    absolute: true,
-    right: 6,
-    bottom: 6,
-    left: 6,
-    h: 3,
-    bg: 'text/30',
-    radius: cornerRadius.track,
-  },
-  progressFill: { h: 3, bg: 'accent', radius: cornerRadius.track },
 });

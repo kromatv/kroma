@@ -1,129 +1,20 @@
 // @vitest-environment jsdom
 
-import type { DiscoverEntry, DiscoverResponse } from '@kromatv/client/discovery';
-import type { MediaCard, MediaItem, SearchResponse, Show } from '@kromatv/client/media';
-import { fakeClient } from '@kromatv/client/test';
-import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
-import { EnvProvider } from '#tv/app/providers/env';
-import {
-  TvClientProvider,
-  type TvNav,
-  TvNavProvider,
-  type TvScreens,
-  useNav,
-} from '#tv/app/router';
-import {
-  createSearchRequests,
-  type SearchRequests,
-  SearchRequestsProvider,
-} from '#tv/app/searchRequest';
-import { type SearchShell, type SearchShellProps, SearchShellProvider } from '#tv/app/searchShell';
-import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
+import { createSearchRequests } from '#tv/app/searchRequest';
+import type { SearchShellProps } from '#tv/app/searchShell';
 import { addRecentSearch } from '#tv/features/catalog/searchHistory';
-import { TvSearch } from '#tv/features/catalog/TvSearch';
-
-const { clearPressGuard, render } = createInputTestHost();
-
-const movie = (id: string, title: string, genre = 'sci-fi'): MediaItem =>
-  ({ id, title, video: null, metadata: { genres: [genre] } }) as unknown as MediaItem;
-
-const series = (id: string, title: string, genre = 'drama'): Show =>
-  ({ id, title, video: null, metadata: { genres: [genre] } }) as unknown as Show;
-
-const found = (...results: SearchResponse['results']): SearchResponse => ({ query: '', results });
-
-const tmdb = (tmdbId: number, title: string, inLibrary = false): DiscoverEntry => ({
-  kind: 'movie',
-  tmdbId,
-  title,
-  year: null,
-  posterUrl: null,
-  backdropUrl: null,
-  overview: null,
-  rating: null,
-  inLibrary,
-  localId: inLibrary ? 'local-1' : null,
-  requestId: null,
-  requestStatus: null,
-  requestProgress: null,
-});
-
-const known = (...results: DiscoverEntry[]): DiscoverResponse => ({
-  results,
-  page: 1,
-  totalPages: 1,
-});
-
-function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
-  const nav = useNav();
-  onReady(nav);
-  return null;
-}
-
-function mount({
-  search = vi.fn(async () => found()),
-  discover = vi.fn(async () => known()),
-  movies = [] as MediaCard[],
-  shows = [] as Show[],
-  requests = createSearchRequests(),
-  voiceSearch = null,
-  searchShell = null,
-}: {
-  search?: () => Promise<SearchResponse>;
-  discover?: () => Promise<DiscoverResponse>;
-  movies?: MediaCard[];
-  shows?: Show[];
-  requests?: SearchRequests;
-  voiceSearch?: VoiceSearchBackend | null;
-  searchShell?: SearchShell | null;
-} = {}) {
-  const client = fakeClient({
-    media: {
-      search,
-      artwork: {
-        posterFor: (m) => `art:${m.id}`,
-        showPosterFor: (s) => `art:${s.id}`,
-        resolve: (url) => url ?? null,
-      },
-    },
-    discovery: { search: discover },
-  });
-  let nav!: TvNav;
-  render(
-    onScreen(
-      <SearchRequestsProvider value={requests}>
-        <VoiceSearchProvider value={voiceSearch}>
-          <SearchShellProvider value={searchShell}>
-            <EnvProvider platform="TV" overrides={{ physicalKeyboard: false }}>
-              <ConnectionProvider value={{ movies, shows } as Connection}>
-                <TvClientProvider client={client}>
-                  <TvNavProvider screens={{} as TvScreens}>
-                    <NavHandle
-                      onReady={(n) => {
-                        nav = n;
-                      }}
-                    />
-                    <TvSearch />
-                  </TvNavProvider>
-                </TvClientProvider>
-              </ConnectionProvider>
-            </EnvProvider>
-          </SearchShellProvider>
-        </VoiceSearchProvider>
-      </SearchRequestsProvider>,
-    ),
-  );
-  // The screen arms the press guard as it mounts, and would otherwise swallow
-  // the test's first press.
-  clearPressGuard();
-  return { nav: () => nav, search, discover };
-}
-
-// The on-screen keyboard is the only way to type on a remote-driven shell.
-const type = (letter: string) => fireEvent.click(screen.getByLabelText(letter));
+import {
+  clearPressGuard,
+  found,
+  known,
+  mount,
+  movie,
+  series,
+  tmdb,
+  type,
+} from '#tv/features/catalog/TvSearch.fixtures';
 
 // jsdom leaves `localStorage` undefined under this runner, and the device store
 // falls back to no storage at all; the recent searches need one.
@@ -257,6 +148,35 @@ describe('TvSearch', () => {
     expect(screen.getByText('shell:Search')).toBeTruthy();
     // Ours is gone with it: the platform draws its own field and keys.
     expect(screen.queryByLabelText('A')).toBeNull();
+  });
+
+  it('opens the titles of somebody the query names, above the library results', async () => {
+    const { nav } = mount({
+      search: vi.fn(async () => ({
+        ...found({ type: 'movie', item: movie('m1', 'Blade Runner') }),
+        people: [{ name: 'Ridley Scott', titles: 3 }],
+      })),
+    });
+    type('R');
+
+    const person = await screen.findByRole('button', { name: 'See titles with Ridley Scott' });
+    const film = screen.getByRole('button', { name: 'Blade Runner' });
+    fireEvent.click(person);
+
+    expect(screen.getByText('3 titles')).toBeTruthy();
+    expect(person.compareDocumentPosition(film)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(nav().route).toEqual({ name: 'person', params: { name: 'Ridley Scott' } });
+  });
+
+  it('shows the people a query names even when no title matches it', async () => {
+    mount({
+      search: vi.fn(async () => ({ ...found(), people: [{ name: 'Ridley Scott', titles: 1 }] })),
+    });
+    type('R');
+
+    expect(await screen.findByText('Ridley Scott')).toBeTruthy();
+    expect(screen.getByText('1 title')).toBeTruthy();
+    expect(screen.queryByText('No results')).toBeNull();
   });
 
   it('offers a title TMDB knows and this server has not got', async () => {

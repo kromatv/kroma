@@ -157,10 +157,25 @@ export const EpisodeHit = z.object({ type: z.literal('episode'), item: MediaItem
 export const SectionItem = z.discriminatedUnion('type', [MovieHit, ShowHit]);
 export type SectionItem = z.infer<typeof SectionItem>;
 
+/** How a home section asks to be drawn. A layout this client does not know
+ * reads as a rail, which is how the server serves it to a client that did not
+ * ask for it. */
+export const SectionLayout = z
+  .enum(['rail', 'wide', 'ranked', 'spotlight', 'hero'])
+  .default('rail')
+  .catch('rail');
+export type SectionLayout = z.infer<typeof SectionLayout>;
+
+/** The layouts a client can name in `?layouts=`: everything but the rail every
+ * client draws. */
+export type SectionLayoutRequest = Exclude<SectionLayout, 'rail'>;
+
 const SectionRail = z.object({
   id: z.string(),
   title: z.string(),
   reason: z.string().nullish(),
+  layout: SectionLayout,
+  notes: z.record(z.string(), z.string()).default({}),
 });
 
 export const Section = SectionRail.extend({ items: z.array(SectionItem) });

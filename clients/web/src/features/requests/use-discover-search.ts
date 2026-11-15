@@ -5,7 +5,7 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 import { hasPermission } from '@kromatv/client/accounts';
 import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
-import type { SearchHit } from '@kromatv/client/media';
+import type { PersonHit, SearchHit } from '@kromatv/client/media';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useAuth } from '#web/shared/lib/auth';
 import { useDebouncedValue } from '#web/shared/lib/use-debounced-value';
@@ -13,6 +13,7 @@ import { useDebouncedValue } from '#web/shared/lib/use-debounced-value';
 export interface DiscoverSearchState {
   loading: boolean;
   local: SearchHit[];
+  people: PersonHit[];
   discover: DiscoverEntry[];
   canDiscover: boolean;
 }
@@ -28,11 +29,10 @@ export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSe
     queryKey: ['discoverSearch', q, type, canDiscover],
     queryFn: async () => {
       const c = webRuntime.client;
-      const [local, discover] = await Promise.all([
+      const [{ results: local, people }, discover] = await Promise.all([
         c.media
           .search(q, { limit: 24 })
-          .then((r) => r.results)
-          .catch(() => [] as SearchHit[]),
+          .catch(() => ({ results: [] as SearchHit[], people: [] as PersonHit[] })),
         canDiscover
           ? c.discovery
               .search(q, { type })
@@ -46,15 +46,16 @@ export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSe
         type === 'all'
           ? local
           : local.filter((h) => (type === 'movie' ? h.type === 'movie' : h.type !== 'movie'));
-      return { local: filteredLocal, discover };
+      return { local: filteredLocal, people, discover };
     },
     enabled: q.length > 0,
     placeholderData: keepPreviousData,
   });
 
   return {
-    loading: q.length > 0 && isFetching,
+    loading: q.length > 0 && isFetching && data === undefined,
     local: data?.local ?? [],
+    people: data?.people ?? [],
     discover: data?.discover ?? [],
     canDiscover,
   };

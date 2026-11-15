@@ -3,7 +3,7 @@
 // effects; this owns the shape, so it is testable without React.
 
 import type { KromaClient } from '@kromatv/client';
-import type { ContinueItem, MediaItem, Section } from '@kromatv/client/media';
+import type { CardSection, ContinueItem, MediaCard } from '@kromatv/client/media';
 
 // A launcher card is drawn 1280 wide; asking for the original ships a
 // multi-megabyte still to a shelf that shows a thumbnail.
@@ -56,7 +56,7 @@ function isStarted(c: ContinueItem): boolean {
   return c.durationMs ? c.positionMs / c.durationMs >= 0.03 : false;
 }
 
-function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
+function toProgram(movie: MediaCard, client: KromaClient): HomeProgram {
   const art = `${client.baseUrl}/api/items/${encodeURIComponent(movie.id)}/card?v=${encodeURIComponent(movie.addedAt)}`;
   return {
     id: movie.id,
@@ -69,7 +69,7 @@ function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
 }
 
 // Movies only: the launcher preview deep link resolves a movie id.
-function programsOf(section: Section, client: KromaClient): HomeProgram[] {
+function programsOf(section: CardSection, client: KromaClient): HomeProgram[] {
   const seen = new Set<string>();
   const items: HomeProgram[] = [];
   for (const e of section.items) {
@@ -81,7 +81,10 @@ function programsOf(section: Section, client: KromaClient): HomeProgram[] {
   return items;
 }
 
-export function buildHomeChannels(sections: Section[], client: KromaClient): HomeChannelSpec[] {
+export function buildHomeChannels(
+  sections: readonly CardSection[],
+  client: KromaClient,
+): HomeChannelSpec[] {
   const byId = new Map(sections.map((s) => [s.id, s]));
   const channels: HomeChannelSpec[] = [];
   for (const id of GENERIC_HOME_ROWS) {

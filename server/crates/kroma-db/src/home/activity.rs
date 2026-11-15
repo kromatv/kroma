@@ -16,6 +16,7 @@ pub struct HomeActivity {
     pub plays: (i64, Option<i64>),
     pub taste: Option<i64>,
     pub vectors: Option<String>,
+    pub listed: (i64, Option<String>),
 }
 
 /// One statement whose every read is an index seek or an index-only count, so
@@ -31,7 +32,9 @@ pub fn home_activity(pool: &Pool, user_id: &str) -> Result<HomeActivity> {
            (SELECT COUNT(*) FROM play_history), \
            (SELECT MAX(ended_at) FROM play_history), \
            (SELECT updated_at FROM user_taste WHERE user_id = ?1), \
-           (SELECT MAX(updated_at) FROM item_vectors)",
+           (SELECT MAX(updated_at) FROM item_vectors), \
+           (SELECT COUNT(*) FROM my_list WHERE user_id = ?1), \
+           (SELECT MAX(added_at) FROM my_list WHERE user_id = ?1)",
         params![user_id],
         |r| {
             Ok(HomeActivity {
@@ -40,6 +43,7 @@ pub fn home_activity(pool: &Pool, user_id: &str) -> Result<HomeActivity> {
                 plays: (r.get(4)?, r.get(5)?),
                 taste: r.get(6)?,
                 vectors: r.get(7)?,
+                listed: (r.get(8)?, r.get(9)?),
             })
         },
     )?;

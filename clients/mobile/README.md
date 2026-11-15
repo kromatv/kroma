@@ -50,8 +50,12 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
 
 ## Features beyond browsing
 
-- Netflix-style Home (billboard hero, continue watching, My List, server rails),
-  genre explorer (`/genres`), sort + genre filters on the Films/Series tabs.
+- Home laid out by the server: each section names its layout (a paging hero,
+  backdrop rails, a numbered top ten, one spotlight card, poster rails) and
+  `src/components/home/` draws it; continue watching sits under the hero.
+  Genre explorer (`/genres`), sort + genre filters on the Films/Series tabs.
+- Search answers people as well as titles: a strip of portraits above the
+  library results, each opening that person's credits.
 - Quick Connect (`/connect-device`): scan the TV's QR code (the code is read
   from the authorize URL's query params) or type the 4-digit code to sign that
   device into the account, like the web client.

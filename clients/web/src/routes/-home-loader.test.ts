@@ -39,28 +39,29 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it('hands the page over before the featured pick lands', async () => {
-  media.featured.mockReturnValue(new Promise(() => undefined));
+it('starts the home and the continue row without waiting for either', async () => {
+  fetched.mockReturnValue(new Promise(() => undefined) as never);
 
   const queryClient = await load();
 
-  expect(queryClient.getQueryData(['featured'])).toBeUndefined();
-});
-
-it('starts the featured pick and the home rails together', async () => {
-  media.featured.mockReturnValue(new Promise(() => undefined));
-
-  await load();
-
-  expect(media.featured).toHaveBeenCalledTimes(1);
-  expect(media.showCards).toHaveBeenCalledTimes(1);
   expect(requestedPaths()).toEqual(expect.arrayContaining(['/api/home', '/api/continue']));
+  expect(queryClient.isFetching()).toBeGreaterThan(0);
 });
 
-it('leaves the movie catalogue alone, even when the server has no pick', async () => {
-  media.featured.mockResolvedValue(null);
-
+it('names the layouts the page draws, so the server sends a hero', async () => {
   await load();
 
+  const home = fetched.mock.calls
+    .map(([input]: unknown[]) => new URL(String(input)))
+    .find((url) => url.pathname === '/api/home');
+  expect(home?.searchParams.get('layouts')).toBe('hero,spotlight,ranked,wide');
+  expect(home?.searchParams.get('view')).toBe('card');
+});
+
+it('leaves the pick of the day and the catalogue alone: the home carries its own hero', async () => {
+  await load();
+
+  expect(media.featured).not.toHaveBeenCalled();
   expect(media.movieCards).not.toHaveBeenCalled();
+  expect(media.showCards).not.toHaveBeenCalled();
 });

@@ -148,6 +148,7 @@ export { createPerfSampler } from './lib/perf';
 export { PerfProvider, usePerfSampler } from './lib/perf-provider';
 export { Portal, PortalHost } from './lib/portal';
 export { createPressGuard, PRESS_GUARD_MS } from './lib/press-guard';
+export { useReducedMotion } from './lib/reduced-motion';
 export type { ReportCategoryMeta } from './lib/report-categories';
 export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';

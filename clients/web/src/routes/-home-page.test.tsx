@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { CardSection } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, render, screen } from '@testing-library/react';
@@ -9,33 +10,73 @@ import type { HeroEntry } from '#web/shared/lib/queries';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 
+const session = vi.hoisted(() => ({ signedIn: true }));
+
+vi.mock('#web/shared/lib/auth', () => ({
+  useAuth: () => ({ ready: true, user: session.signedIn ? { id: 'u1' } : null }),
+}));
 vi.mock('#web/features/catalog/featured-hero', () => ({
   Hero: ({ entry }: { entry: HeroEntry }) => (
     <p>{`hero ${entry.type === 'movie' ? entry.movie.id : entry.show.id}`}</p>
   ),
   HeroSkeleton: () => <p>hero pending</p>,
 }));
-vi.mock('#web/features/catalog/continue-row', () => ({ ContinueRow: () => <p>continue</p> }));
-vi.mock('#web/features/catalog/home-sections', () => ({
-  HomeSections: ({ excludeId }: { excludeId: string | null }) => (
-    <p>{`sections without ${excludeId}`}</p>
+vi.mock('#web/features/catalog/home/hero-carousel', () => ({
+  HeroCarousel: ({ section }: { section: CardSection }) => (
+    <p>{`carousel of ${section.items.length}`}</p>
   ),
+}));
+vi.mock('#web/features/catalog/continue-row', () => ({ ContinueRow: () => <p>continue</p> }));
+vi.mock('#web/features/catalog/home/home-sections', () => ({
+  HomeSections: () => <p>sections</p>,
   SectionsSkeleton: () => <p>sections pending</p>,
 }));
-vi.mock('#web/features/catalog/cards', () => ({ ShowRail: () => <p>shows</p> }));
 
 import { Route } from './_app.index';
 
 const art = { posterFor: () => '/poster', showPosterFor: () => '/poster', backdropFor: () => null };
 
-afterEach(cleanup);
+const show = (id: string) => ({
+  type: 'show',
+  show: {
+    id,
+    title: id,
+    year: null,
+    library: 'lib',
+    video: null,
+    addedAt: 't',
+    seasonCount: 1,
+    episodeCount: 1,
+  },
+});
 
-async function mount(media: {
-  featured: () => Promise<unknown>;
-  movieCards?: () => Promise<unknown>;
-}) {
+const section = (id: string, layout: string, items: unknown[]) => ({
+  id,
+  title: id,
+  layout,
+  items,
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  session.signedIn = true;
+});
+
+async function mount(
+  home: unknown[] | Promise<never>,
+  media: { featured?: () => Promise<unknown>; movieCards?: () => Promise<unknown> } = {},
+) {
+  const fetched = vi.fn(async () => Response.json(await home));
+  vi.stubGlobal('fetch', fetched);
   const runtime = createWebTestRuntime({
-    media: { showCards: async () => [], movieCards: async () => [], artwork: art, ...media },
+    media: {
+      showCards: async () => [],
+      movieCards: async () => [],
+      featured: async () => null,
+      artwork: art,
+      ...media,
+    },
   });
   const Page = Route.options.component as ComponentType;
   await act(async () => {
@@ -49,31 +90,49 @@ async function mount(media: {
       </WebRuntimeProvider>,
     );
   });
+  return fetched;
 }
 
-it('draws the rails while the featured pick is still on its way', async () => {
-  await mount({ featured: () => new Promise(() => undefined) });
+it('draws the continue row while the home is still on its way', async () => {
+  await mount(new Promise<never>(() => undefined));
 
   expect(screen.getByText('hero pending')).toBeTruthy();
   expect(screen.getByText('continue')).toBeTruthy();
 });
 
-it('spotlights the featured pick and keeps it out of the rails', async () => {
-  await mount({ featured: async () => ({ type: 'show', show: { id: 's1' } }) });
+it('opens on the hero the server sent', async () => {
+  await mount([section('hero', 'hero', [show('s1'), show('s2')]), section('recent', 'rail', [])]);
 
-  expect(await screen.findByText('hero s1')).toBeTruthy();
-  expect(await screen.findByText('sections without s1')).toBeTruthy();
+  expect(await screen.findByText('carousel of 2')).toBeTruthy();
+  expect(await screen.findByText('sections')).toBeTruthy();
 });
 
-it('falls back to the first movie when the server has no pick', async () => {
-  await mount({ featured: async () => null, movieCards: async () => [{ id: 'm1' }, { id: 'm2' }] });
+it('falls back to the pick of the day for a server that sends no hero', async () => {
+  await mount([section('recent', 'rail', [show('s1')])], {
+    featured: async () => ({ type: 'show', show: { id: 's9' } }),
+  });
+
+  expect(await screen.findByText('hero s9')).toBeTruthy();
+});
+
+it('falls back to the first movie when the server has no pick either', async () => {
+  await mount([], { movieCards: async () => [{ id: 'm1' }, { id: 'm2' }] });
 
   expect(await screen.findByText('hero m1')).toBeTruthy();
-  expect(await screen.findByText('sections without m1')).toBeTruthy();
 });
 
 it('says the library is empty when there is nothing at all to show', async () => {
-  await mount({ featured: async () => null });
+  await mount([]);
 
   expect(await screen.findByText('Your library is empty.')).toBeTruthy();
+});
+
+it('asks for nothing of the home before somebody is signed in', async () => {
+  session.signedIn = false;
+
+  const fetched = await mount([]);
+
+  expect(screen.getByText('hero pending')).toBeTruthy();
+  expect(screen.getByText('sections pending')).toBeTruthy();
+  expect(fetched).not.toHaveBeenCalled();
 });

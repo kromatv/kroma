@@ -11,6 +11,7 @@ import {
   MediaItem,
   Section,
   SectionItem,
+  type SectionLayoutRequest,
   Show,
   ShowDetail,
   SplashEntry,
@@ -43,6 +44,15 @@ const frame = (maxFrame?: { width: number; height: number }) =>
   maxFrame && maxFrame.width > 0 && maxFrame.height > 0
     ? { maxw: Math.round(maxFrame.width), maxh: Math.round(maxFrame.height) }
     : {};
+
+/** What a client asks of the home beyond rails: the layouts it draws. Naming
+ * none gets rails only, which is what every client drew before layouts existed. */
+export interface HomeOptions {
+  layouts?: readonly SectionLayoutRequest[];
+}
+
+const homeQuery = (opts?: HomeOptions): Query =>
+  opts?.layouts?.length ? { layouts: opts.layouts.join(',') } : {};
 
 /** The `?copy=&video=&maxw=&maxh=` a stream request carries: what this device can
  * decode, and the largest picture it accepts. An EMPTY codec list is itself a
@@ -127,12 +137,16 @@ export default function mediaApi(ctx: RequestContext) {
 
     /** The generated home screen (Bearer): an ordered, server-assembled list of
      * section rails already localized and de-duplicated. Rendered generically. */
-    home: () => ctx.get('/home', Section.array(), { concurrency: 'share' }),
+    home: (opts?: HomeOptions) =>
+      ctx.get('/home', Section.array(), { query: homeQuery(opts), concurrency: 'share' }),
 
     /** The same home with every entry slimmed to what a poster draws: a fraction
      * of `home()`, for a client that opens a title's own page to show more. */
-    homeCards: () =>
-      ctx.get('/home', CardSection.array(), { query: { view: 'card' }, concurrency: 'share' }),
+    homeCards: (opts?: HomeOptions) =>
+      ctx.get('/home', CardSection.array(), {
+        query: { view: 'card', ...homeQuery(opts) },
+        concurrency: 'share',
+      }),
 
     /** Today's "En vedette" hero for the caller (Bearer): one movie or show
      * picked server-side with a deterministic daily rotation. `null` only when

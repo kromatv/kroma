@@ -5,13 +5,22 @@
 
 mod document;
 mod engine;
+mod entry;
 mod hit;
 mod index;
+mod lexicon;
+mod parse;
+mod people;
 mod query;
+mod rerank;
+mod run;
 mod schema;
 
-pub use engine::{spawn_reindex, SearchEngine};
+pub use engine::{spawn_reindex, Answer, Asker, SearchEngine};
 pub use hit::{Hit, HitKind};
+pub use people::PersonHit;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
+#[cfg(test)]
+mod understanding_tests;

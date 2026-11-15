@@ -1880,6 +1880,606 @@
     "line": 148
   },
   {
+    "id": "BROWSE-1",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "The home is built for the account looking at it. Two people of one",
+    "file": "docs/spec/browse/README.md",
+    "line": 15
+  },
+  {
+    "id": "BROWSE-2",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "A viewer with no history still opens on a full page: with nothing to",
+    "file": "docs/spec/browse/README.md",
+    "line": 18
+  },
+  {
+    "id": "BROWSE-3",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "The home is the same on every surface: the same sections, in the same",
+    "file": "docs/spec/browse/README.md",
+    "line": 22
+  },
+  {
+    "id": "BROWSE-4",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "The order of a row sways from one day to the next and holds still",
+    "file": "docs/spec/browse/README.md",
+    "line": 26
+  },
+  {
+    "id": "BROWSE-5",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "Every section names one of five layouts: a **rail** of posters; a",
+    "file": "docs/spec/browse/README.md",
+    "line": 34
+  },
+  {
+    "id": "BROWSE-6",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "A client is only sent the layouts it says it can draw. A layout it",
+    "file": "docs/spec/browse/README.md",
+    "line": 39
+  },
+  {
+    "id": "BROWSE-7",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "An app released before a layout existed therefore keeps a home it can",
+    "file": "docs/spec/browse/README.md",
+    "line": 43
+  },
+  {
+    "id": "BROWSE-8",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "A section may say one line about an entry: why it is offered to this",
+    "file": "docs/spec/browse/README.md",
+    "line": 46
+  },
+  {
+    "id": "BROWSE-9",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "The hero holds at most five titles and takes a small share of a small",
+    "file": "docs/spec/browse/README.md",
+    "line": 54
+  },
+  {
+    "id": "BROWSE-10",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "No recommendation repeats a title another recommendation on the same",
+    "file": "docs/spec/browse/README.md",
+    "line": 57
+  },
+  {
+    "id": "BROWSE-11",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "A row that lists facts (what was added, what gained episodes, what",
+    "file": "docs/spec/browse/README.md",
+    "line": 60
+  },
+  {
+    "id": "BROWSE-12",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "A title the library holds under two entries is recommended once.",
+    "file": "docs/spec/browse/README.md",
+    "line": 63
+  },
+  {
+    "id": "BROWSE-13",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "A title the viewer finished, dropped, or has in progress is not",
+    "file": "docs/spec/browse/README.md",
+    "line": 65
+  },
+  {
+    "id": "BROWSE-14",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "A row with too few titles to look like a row is not shown. A row is",
+    "file": "docs/spec/browse/README.md",
+    "line": 68
+  },
+  {
+    "id": "BROWSE-15",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "A row that makes a claim about its members (\"with this actor\", \"like",
+    "file": "docs/spec/browse/README.md",
+    "line": 71
+  },
+  {
+    "id": "BROWSE-16",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 16,
+    "status": "SHIPPED",
+    "text": "A taste is read from what the viewer did, never asked for. Finishing",
+    "file": "docs/spec/browse/README.md",
+    "line": 79
+  },
+  {
+    "id": "BROWSE-17",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "A film left in its first minutes and not returned to counts against",
+    "file": "docs/spec/browse/README.md",
+    "line": 83
+  },
+  {
+    "id": "BROWSE-18",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 18,
+    "status": "SHIPPED",
+    "text": "A taste fades with time without vanishing: last week says more than",
+    "file": "docs/spec/browse/README.md",
+    "line": 87
+  },
+  {
+    "id": "BROWSE-19",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "A title is described by its genres, the people in it and behind it,",
+    "file": "docs/spec/browse/README.md",
+    "line": 90
+  },
+  {
+    "id": "BROWSE-20",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "One title is not a leaning. A genre or a person earns a row of its",
+    "file": "docs/spec/browse/README.md",
+    "line": 94
+  },
+  {
+    "id": "BROWSE-21",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 21,
+    "status": "SHIPPED",
+    "text": "Recommendations need no module. A module that embeds titles sharpens",
+    "file": "docs/spec/browse/README.md",
+    "line": 97
+  },
+  {
+    "id": "BROWSE-22",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 22,
+    "status": "SHIPPED",
+    "text": "\"Because you watched X\" holds only titles that share a genre with X",
+    "file": "docs/spec/browse/README.md",
+    "line": 104
+  },
+  {
+    "id": "BROWSE-23",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "A genre row holds only titles of that genre, and a person's row only",
+    "file": "docs/spec/browse/README.md",
+    "line": 107
+  },
+  {
+    "id": "BROWSE-24",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "A themed row is a rule before it is a ranking. A title is a member",
+    "file": "docs/spec/browse/README.md",
+    "line": 110
+  },
+  {
+    "id": "BROWSE-25",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "A slasher set at Christmas is therefore not in the Christmas row, and",
+    "file": "docs/spec/browse/README.md",
+    "line": 115
+  },
+  {
+    "id": "BROWSE-26",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "An embedding may order the members of a theme. It never admits one.",
+    "file": "docs/spec/browse/README.md",
+    "line": 118
+  },
+  {
+    "id": "BROWSE-27",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 27,
+    "status": "SHIPPED",
+    "text": "A theme that is only a mood, which no rule can check, is shown only",
+    "file": "docs/spec/browse/README.md",
+    "line": 120
+  },
+  {
+    "id": "BROWSE-28",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "Themes follow the calendar and the clock: a season's themes in its",
+    "file": "docs/spec/browse/README.md",
+    "line": 124
+  },
+  {
+    "id": "BROWSE-29",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "New films and new shows are two rows. A show is new by when its",
+    "file": "docs/spec/browse/README.md",
+    "line": 132
+  },
+  {
+    "id": "BROWSE-30",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 30,
+    "status": "SHIPPED",
+    "text": "\"New episodes\" lists the shows that were already in the library and",
+    "file": "docs/spec/browse/README.md",
+    "line": 135
+  },
+  {
+    "id": "BROWSE-31",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 31,
+    "status": "SHIPPED",
+    "text": "\"Trending\" is a ranked row of at most nine. A household of several",
+    "file": "docs/spec/browse/README.md",
+    "line": 139
+  },
+  {
+    "id": "BROWSE-32",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 32,
+    "status": "SHIPPED",
+    "text": "What the viewer saved and has not finished is a row of the home, the",
+    "file": "docs/spec/browse/README.md",
+    "line": 150
+  },
+  {
+    "id": "BROWSE-33",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 33,
+    "status": "SHIPPED",
+    "text": "An admin can turn the recently added rows off ([`admin/`](../admin/)).",
+    "file": "docs/spec/browse/README.md",
+    "line": 153
+  },
+  {
+    "id": "BROWSE-34",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 34,
+    "status": "SHIPPED",
+    "text": "Every word of a query has to land somewhere in a result: its title in",
+    "file": "docs/spec/browse/README.md",
+    "line": 159
+  },
+  {
+    "id": "BROWSE-35",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 35,
+    "status": "SHIPPED",
+    "text": "The last word may be unfinished, and a typo is forgiven in a title or",
+    "file": "docs/spec/browse/README.md",
+    "line": 163
+  },
+  {
+    "id": "BROWSE-36",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "A query that is the whole title comes before the titles that only",
+    "file": "docs/spec/browse/README.md",
+    "line": 167
+  },
+  {
+    "id": "BROWSE-37",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 37,
+    "status": "SHIPPED",
+    "text": "A year beside a title is read as the release year and picks the film",
+    "file": "docs/spec/browse/README.md",
+    "line": 170
+  },
+  {
+    "id": "BROWSE-38",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 38,
+    "status": "SHIPPED",
+    "text": "An episode can be named by its number, however it is written",
+    "file": "docs/spec/browse/README.md",
+    "line": 173
+  },
+  {
+    "id": "BROWSE-39",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 39,
+    "status": "SHIPPED",
+    "text": "A sequel is found however its number is written: \"2\", \"II\" and \"two\"",
+    "file": "docs/spec/browse/README.md",
+    "line": 176
+  },
+  {
+    "id": "BROWSE-40",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 40,
+    "status": "SHIPPED",
+    "text": "A title written with a hyphen is found typed as one word, and the",
+    "file": "docs/spec/browse/README.md",
+    "line": 179
+  },
+  {
+    "id": "BROWSE-41",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 41,
+    "status": "SHIPPED",
+    "text": "A word naming a kind (\"film\", \"series\") beside a title favours that",
+    "file": "docs/spec/browse/README.md",
+    "line": 182
+  },
+  {
+    "id": "BROWSE-42",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 42,
+    "status": "SHIPPED",
+    "text": "A full name ranks the titles of that person above a title that merely",
+    "file": "docs/spec/browse/README.md",
+    "line": 185
+  },
+  {
+    "id": "BROWSE-43",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 43,
+    "status": "SHIPPED",
+    "text": "A query nothing answers in full is read again more loosely, in this",
+    "file": "docs/spec/browse/README.md",
+    "line": 188
+  },
+  {
+    "id": "BROWSE-44",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 44,
+    "status": "SHIPPED",
+    "text": "A query that matches a credited person's name answers with the",
+    "file": "docs/spec/browse/README.md",
+    "line": 192
+  },
+  {
+    "id": "BROWSE-45",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 45,
+    "status": "SHIPPED",
+    "text": "Search obeys visibility ([`accounts/`](../accounts/)): a title in a",
+    "file": "docs/spec/browse/README.md",
+    "line": 195
+  },
+  {
+    "id": "BROWSE-46",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 46,
+    "status": "SHIPPED",
+    "text": "A title the asker is in the middle of, or saved, comes before its",
+    "file": "docs/spec/browse/README.md",
+    "line": 199
+  },
+  {
+    "id": "BROWSE-47",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 47,
+    "status": "SHIPPED",
+    "text": "A show that matches is listed once, without its episodes. A show",
+    "file": "docs/spec/browse/README.md",
+    "line": 202
+  },
+  {
+    "id": "BROWSE-48",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 48,
+    "status": "SHIPPED",
+    "text": "A title the library holds under two entries is listed once, in",
+    "file": "docs/spec/browse/README.md",
+    "line": 205
+  },
+  {
+    "id": "BROWSE-49",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 49,
+    "status": "SHIPPED",
+    "text": "A person's page lists the titles of the library that credit them,",
+    "file": "docs/spec/browse/README.md",
+    "line": 233
+  },
+  {
+    "id": "BROWSE-50",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 50,
+    "status": "AGREED",
+    "text": "Under them it lists the rest of the person's filmography, the titles",
+    "file": "docs/spec/browse/README.md",
+    "line": 236
+  },
+  {
+    "id": "BROWSE-51",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 51,
+    "status": "SHIPPED",
+    "text": "A guest spot as oneself on a talk show is not part of a filmography.",
+    "file": "docs/spec/browse/README.md",
+    "line": 240
+  },
+  {
+    "id": "BROWSE-52",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 52,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Explicit feedback: \"not for me\" on a title, or a",
+    "file": "docs/spec/browse/README.md",
+    "line": 246
+  },
+  {
+    "id": "BROWSE-53",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 53,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Counting what was shown and never chosen, to retire a",
+    "file": "docs/spec/browse/README.md",
+    "line": 251
+  },
+  {
+    "id": "BROWSE-54",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 54,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Themes read from the provider's keywords. The",
+    "file": "docs/spec/browse/README.md",
+    "line": 255
+  },
+  {
+    "id": "BROWSE-55",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 55,
+    "status": "SHIPPED",
+    "text": "What the world is watching this week, as the metadata provider ranks",
+    "file": "docs/spec/browse/README.md",
+    "line": 142
+  },
+  {
+    "id": "BROWSE-56",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 56,
+    "status": "SHIPPED",
+    "text": "The provider's ranking never delays the home. It is read in the",
+    "file": "docs/spec/browse/README.md",
+    "line": 146
+  },
+  {
+    "id": "BROWSE-57",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 57,
+    "status": "SHIPPED",
+    "text": "Nothing the home or the search recognises in text depends on one",
+    "file": "docs/spec/browse/README.md",
+    "line": 212
+  },
+  {
+    "id": "BROWSE-58",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 58,
+    "status": "SHIPPED",
+    "text": "Adding a language is adding its copy. Its words join the vocabulary",
+    "file": "docs/spec/browse/README.md",
+    "line": 218
+  },
+  {
+    "id": "BROWSE-59",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 59,
+    "status": "SHIPPED",
+    "text": "A synopsis shown on the home is cut by sentence, never by the box:",
+    "file": "docs/spec/browse/README.md",
+    "line": 221
+  },
+  {
+    "id": "BROWSE-60",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 60,
+    "status": "SHIPPED",
+    "text": "A rank is drawn as a shape in the display face, the same on a",
+    "file": "docs/spec/browse/README.md",
+    "line": 225
+  },
+  {
     "id": "DISC-1",
     "domain": "DISC",
     "space": "discovery",

@@ -23,6 +23,7 @@ pub mod notify;
 pub mod pairing;
 pub mod pipeline;
 pub mod playback;
+pub mod reco;
 pub mod recommend;
 pub mod releases;
 pub mod rematch;
@@ -37,6 +38,7 @@ pub mod subtitles;
 pub mod trailers;
 pub mod updates;
 pub mod upgrade_tasks;
+pub mod vocab;
 
 pub use kroma_requests::lifecycle as requests;
 pub use kroma_requests::{monitoring, request_ledger};

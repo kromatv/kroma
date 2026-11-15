@@ -57,7 +57,11 @@ function PersonPage() {
       ? { kind: 'show', show: toShowView(c, hit.show) }
       : { kind: 'movie', movie: toMovieView(c, hit.item) },
   );
-  const metas = results.map((hit) => (hit.type === 'show' ? hit.show.metadata : hit.item.metadata));
+  const held = results.map((hit) => ({
+    type: hit.type,
+    metadata: hit.type === 'show' ? hit.show.metadata : hit.item.metadata,
+  }));
+  const metas = held.map(({ metadata }) => metadata);
   // A segment that is only a provider id is not a name: reached from a discover
   // title's cast, nothing local carries the credit, so with no provider answer
   // there is no name to show and printing the id would be worse than saying so.
@@ -68,7 +72,7 @@ function PersonPage() {
   const [g1, g2] = posterColors(name);
   const roles = roleLabels(t, involvement);
 
-  const body = renderPersonBody(t, entries, tmdbCredits);
+  const body = renderPersonBody(t, entries, creditsOutsideLibrary(tmdbCredits, held));
 
   return (
     <PageFrame>
@@ -114,17 +118,52 @@ function PersonPage() {
   );
 }
 
+type TitleMetadata = { tmdbId: number } | null | undefined;
+
+const creditKey = (kind: TmdbCredit['mediaType'], tmdbId: number) => `${kind}:${tmdbId}`;
+
+function creditsOutsideLibrary(
+  credits: readonly TmdbCredit[],
+  held: readonly { type: 'movie' | 'show' | 'episode'; metadata: TitleMetadata }[],
+): TmdbCredit[] {
+  const inLibrary = new Set(
+    held.flatMap(({ type, metadata }) =>
+      metadata ? [creditKey(type === 'show' ? 'tv' : 'movie', metadata.tmdbId)] : [],
+    ),
+  );
+  return credits.filter((credit) => !inLibrary.has(creditKey(credit.mediaType, credit.tmdbId)));
+}
+
 function renderPersonBody(
   t: ReturnType<typeof useT>,
   entries: CatalogEntry[],
-  tmdbCredits: readonly TmdbCredit[],
+  elsewhere: readonly TmdbCredit[],
 ) {
-  if (entries.length) return <CatalogGrid entries={entries} />;
-  if (tmdbCredits.length) return <TmdbFilmography credits={tmdbCredits} />;
+  if (entries.length === 0 && elsewhere.length === 0) {
+    return (
+      <EmptyState.Root icon="user-x">
+        <EmptyState.Title>{t('person.empty')}</EmptyState.Title>
+      </EmptyState.Root>
+    );
+  }
   return (
-    <EmptyState.Root icon="user-x">
-      <EmptyState.Title>{t('person.empty')}</EmptyState.Title>
-    </EmptyState.Root>
+    <>
+      {entries.length > 0 ? (
+        <section>
+          {elsewhere.length > 0 ? (
+            <Text variant="h2" mb={20}>
+              {t('discover.sectionLibrary')}
+            </Text>
+          ) : null}
+          <CatalogGrid entries={entries} />
+        </section>
+      ) : null}
+      {elsewhere.length > 0 ? (
+        <Box mt={entries.length > 0 ? 48 : 0}>
+          <TmdbFilmography credits={elsewhere} />
+        </Box>
+      ) : null}
+    </>
   );
 }
 
