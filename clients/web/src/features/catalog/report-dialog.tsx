@@ -149,7 +149,7 @@ export const ReportDialog = createCallable<
               />
             </Box>
             <Text variant="label" color="white/85" textAlign="center">
-              {t('report.submitted')}
+              {t('report.sent')}
             </Text>
           </Box>
         ) : (

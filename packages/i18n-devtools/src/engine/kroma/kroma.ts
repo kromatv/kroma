@@ -25,4 +25,5 @@ export const engine: Engine = {
     ),
   overrideLocale: installLocaleOverride,
   subscribe: onOverridesChange,
+  writable: true,
 };

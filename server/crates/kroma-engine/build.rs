@@ -1,6 +1,8 @@
-//! Gathers the shared message catalogs, `packages/core/src/locales/<locale>/<namespace>.json`,
-//! into one `include_str!` list, so the server embeds exactly the files the
-//! TypeScript clients bundle without naming each namespace by hand. The release
+//! Gathers the shared message catalogs, every `.json` under
+//! `packages/core/src/locales/<locale>/`, into one `include_str!` list, so the
+//! server embeds exactly the files the TypeScript clients bundle without naming
+//! each namespace by hand. `i18n.json` beside the folders says which of them a
+//! reader is offered, and those are the ones embedded. The release
 //! notes under `releases/<version>/` are gathered the same way, and so are the
 //! sign-in presets, one folder each under `src/services/sso/presets/`.
 
@@ -9,7 +11,13 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[path = "src/i18n/policy.rs"]
+mod policy;
+
+use policy::{Policy, Stage};
+
 const LOCALES: &str = "../../../packages/core/src/locales";
+const PROJECT: &str = "i18n.json";
 const RELEASES: &str = "../../../releases";
 const PRESETS: &str = "src/services/sso/presets";
 
@@ -27,36 +35,73 @@ fn write_catalog_parts(manifest: &Path, out_dir: &Path) {
         .canonicalize()
         .expect("the shared catalogs live in packages/core/src/locales");
     rerun_if_changed(&locales);
+    let project = locales.join(PROJECT);
+    rerun_if_changed(&project);
+    let policy = fs::read_to_string(&project)
+        .map_err(|e| e.to_string())
+        .and_then(|json| Policy::parse(&json))
+        .unwrap_or_else(|e| panic!("{}: {e}", project.display()));
 
-    let mut codes = Vec::new();
+    let folders: Vec<String> = sorted_children(&locales, Path::is_dir)
+        .iter()
+        .map(|folder| file_name(folder).to_owned())
+        .collect();
+    let offered: Vec<&String> = folders.iter().filter(|c| policy.offered(c)).collect();
+    let exists = |code: &str| offered.iter().any(|known| *known == code);
+
     let mut parts = Vec::new();
-    for locale in sorted_children(&locales, Path::is_dir) {
-        rerun_if_changed(&locale);
-        let code = file_name(&locale).to_owned();
-        for file in sorted_children(&locale, |p| p.extension().is_some_and(|e| e == "json")) {
+    let mut chains = Vec::new();
+    for code in &offered {
+        for file in catalog_files(&locales.join(code)) {
             rerun_if_changed(&file);
-            let name = file
-                .file_name()
-                .and_then(OsStr::to_str)
-                .expect("a catalog file has a name");
+            let within = file
+                .strip_prefix(&locales)
+                .expect("a catalog file is under the catalog folder")
+                .components()
+                .map(|part| part.as_os_str().to_str().expect("a catalog path is UTF-8"))
+                .collect::<Vec<_>>()
+                .join("/");
             // Relative to the crate being compiled rather than canonical, so a
             // target dir shared between checkouts never embeds another checkout's
             // catalogs, and rustc tracks this checkout's files for rebuilds.
-            let rel = format!("{LOCALES}/{code}/{name}");
+            let rel = format!("{LOCALES}/{within}");
             parts.push(format!(
                 "    ({code:?}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{rel}\"))),"
             ));
         }
-        codes.push(format!("{code:?}"));
+        if policy.stage(code) != Stage::Stable {
+            let rest = &policy.chain(code, &exists)[1..];
+            chains.push(format!("    ({code:?}, &{rest:?}),"));
+        }
     }
 
     let body = format!(
-        "pub(crate) const LOCALES: &[&str] = &[{}];\n\
+        "pub(crate) const SOURCE: &str = {:?};\n\
+         pub(crate) const FALLBACK: Option<&str> = {:?};\n\
+         pub(crate) const LOCALES: &[&str] = &{offered:?};\n\
+         pub(crate) const FALLBACKS: &[(&str, &[&str])] = &[\n{}\n];\n\
          pub(crate) const CATALOG_PARTS: &[(&str, &str)] = &[\n{}\n];\n",
-        codes.join(", "),
+        policy.source,
+        policy.fallback,
+        chains.join("\n"),
         parts.join("\n")
     );
     fs::write(out_dir.join("catalog_parts.rs"), body).expect("write catalog_parts.rs");
+}
+
+// Every `.json` under a locale folder, however deep: a namespace may be one
+// file or a folder of them. The lock beside them is not a catalog.
+fn catalog_files(dir: &Path) -> Vec<PathBuf> {
+    rerun_if_changed(dir);
+    let mut files = Vec::new();
+    for child in sorted_children(dir, |_| true) {
+        if child.is_dir() {
+            files.extend(catalog_files(&child));
+        } else if child.extension().is_some_and(|e| e == "json") {
+            files.push(child);
+        }
+    }
+    files
 }
 
 fn write_release_parts(manifest: &Path, out_dir: &Path) {

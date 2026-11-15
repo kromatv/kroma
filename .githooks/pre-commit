@@ -1,0 +1,18 @@
+#!/bin/sh
+# Keep the translation locks in step with the catalogs being committed, so
+# nobody has to remember `bun run i18n sync`. Wired via core.hooksPath
+# (.githooks); see docs/i18n.md.
+set -eu
+
+git diff --cached --name-only | grep -Eq '(^|/)locales/' || exit 0
+command -v bun >/dev/null 2>&1 || exit 0
+
+bun packages/i18n-tools/src/cli.ts sync >/dev/null || {
+	printf 'i18n: the catalogs could not be synced; run `bun run i18n check`.\n' >&2
+	exit 1
+}
+
+# Locks only: a catalog the author left unstaged stays unstaged.
+git ls-files -z --modified --others --exclude-standard -- \
+	'packages/core/src/locales/*/i18n.lock' 'modules/*/locales/*.lock' |
+	xargs -0 git add --

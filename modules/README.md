@@ -29,7 +29,7 @@ modules/<id>/
   module.json      manifest: id, version, engines, dependencies, points, config
   server/          the Rust backend: a [[bin]] makes it a component
   ui/src/module.ts optional React frontend (a KromaModule: pages, nav, slots)
-  locales/         optional en.json, fr.json, this module's own catalog
+  locales/         optional en.json, fr.json (or en/, fr/), this module's own catalog
   package.json     with a frontend: its dependencies (@kromatv/module-sdk, @kromatv/ui)
   icon.svg
   README.md
@@ -261,7 +261,7 @@ The design, and the parts of it not built yet, are in
 ### Frontend
 
 `ui/src/module.ts` default-exports the module. `defineModule` takes id / version /
-dependencies from `module.json` (the build injects them, with `locales/*.json`),
+dependencies from `module.json` (the build injects them, with the catalogs in `locales/`),
 so they are never restated. Each page is a `path` + `component`; the nav URL is
 derived from `section` + `path`, so a route and its link cannot drift:
 
@@ -307,11 +307,42 @@ of the app load it, whether or not the module shows anything there.
 ### Strings
 
 Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve
-against the module's own catalog first, then the core ones.
+against the module's own catalog first, then the core ones. English is the
+language a module is written in, and any other may lack a message, which then
+reads in English.
+
+A module with many strings may keep one folder per language instead, laid out
+as the app's catalogs are:
+
+```
+locales/
+  en/
+    nav.json          one file per namespace: the keys that start with nav.
+    settings/         or a folder, where a namespace is split
+      advanced.json
+  fr/
+    nav.json
+    i18n.lock
+```
+
+Both layouts work everywhere: the front-end build, the server crate, `kroma
+check` and `kroma i18n`. A `locales/` that holds a folder is read as folders.
+The bundle does not change: `kroma build` packs one `locales/<code>.json` per
+language either way, the files of a folder merged, and leaves out the locks.
+See [`docs/i18n.md`](../docs/i18n.md#modules).
+
+`kroma i18n` is the same translation tool the app uses, over this module:
+`kroma i18n new page.empty "Nothing yet" fr="Rien pour l'instant"` writes a
+message, `kroma i18n` shows how far each language has come, and `todo`, `fill`,
+`rename`, `rm`, `unused` and `check` work as in
+[`docs/i18n.md`](../docs/i18n.md). The keys are typed: `kroma dev` and `kroma
+check` write `ui/src/messages.d.ts`, and `useT()` then refuses a key the module
+does not have, or a call missing a variable its message names.
 
 The server crate reads those same files, so a module has one store and not one per
-half. `embedded_locales!()` finds every `locales/<code>.json` at compile time
-and `i18n::engine` resolves them with the engine the core resolves its own
+half. `embedded_locales!()` finds every `locales/<code>.json` at compile time,
+or every file of each `locales/<code>/` folder, which the engine merges by
+language, and `i18n::engine` resolves them with the engine the core resolves its own
 with, which is what makes a plural and a `{name}` behave the same in a row
 title a backend shapes as on a page:
 
@@ -330,7 +361,7 @@ fn strings(locale: &str) -> Translator<'static> {
 }
 ```
 
-`en.json` is the authoritative catalog: a key another locale has no entry for
+English is the authoritative catalog: a key another locale has no entry for
 falls back to it, and then to the key itself. Resolve for a person with the
 session user's `language`, which is what every other surface reads.
 

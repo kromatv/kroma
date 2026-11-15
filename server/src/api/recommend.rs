@@ -12,7 +12,7 @@ use crate::api::media::{items_in_view, ListView};
 use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::model::MediaItem;
 use crate::state::SharedState;
 use axum::routing::get;
@@ -32,7 +32,7 @@ const ROW_LEN: usize = 30;
 pub async fn for_you(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Response {
     let uid = user.id.clone();
     let engine = state.clone();
@@ -61,7 +61,7 @@ pub struct SimilarParams {
 pub async fn similar(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
     Query(params): Query<SimilarParams>,
 ) -> Response {
@@ -95,7 +95,7 @@ pub struct ThemedParams {
 pub async fn themed(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Query(params): Query<ThemedParams>,
 ) -> Response {
     let q = params.q.trim().to_string();

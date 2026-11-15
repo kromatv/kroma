@@ -50,7 +50,8 @@ pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Op
         tracing::error!(target: "sections", "featured: reading the winner failed: {e:#}");
         Vec::new()
     });
-    let _ = db::localize::overlay_section_items(pool, &mut hero, locale);
+    let content_locale = crate::i18n::content_locale(locale);
+    let _ = db::localize::overlay_section_items(pool, &mut hero, content_locale);
     hero.pop()
 }
 

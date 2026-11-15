@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { $ } from 'bun';
 import { root } from '../root';
 import { BUILT_IN, PackageJson, sdkManifest, tsconfigPreset } from './manifest';
@@ -57,6 +57,29 @@ async function emitDeclarations(from: string, outDir: string): Promise<void> {
       `${from}: declaration emit failed:\n${result.stdout.toString()}${result.stderr.toString()}`,
     );
   }
+}
+
+const MESSAGE_KEYS = join('src', 'locales', 'messages.d.ts');
+const KEYS_REFERENCE = '/// <reference path="./locales/messages.d.ts" />\n';
+
+/**
+ * Carries the app's message keys into the staged `core` declarations. The
+ * compiler emits no `.d.ts` it was handed and drops the reference to it, so a
+ * module built against the SDK would otherwise see every key as `string`, and
+ * `t('common.sav')` would compile. The file is copied and the reference put
+ * back where the source has it.
+ */
+function shipMessageKeys(from: string, typesDir: string): void {
+  const source = join(from, MESSAGE_KEYS);
+  if (!existsSync(source)) {
+    throw new Error(`${source} is missing: run \`bun run i18n types\` before staging the SDK`);
+  }
+  const target = join(typesDir, MESSAGE_KEYS);
+  mkdirSync(dirname(target), { recursive: true });
+  copyFileSync(source, target);
+  const entry = join(typesDir, 'src', 'i18n.d.ts');
+  const text = readFileSync(entry, 'utf8');
+  if (!text.includes(KEYS_REFERENCE.trim())) writeFileSync(entry, `${KEYS_REFERENCE}${text}`);
 }
 
 /** The one thing the CLI cannot carry: Vite's bundler is a native binary. */
@@ -148,6 +171,7 @@ export async function stage(options: StageOptions): Promise<string> {
     const from = join(root, 'packages', dir);
     await emitDeclarations(from, join(to, 'types', dir));
     if (dir === 'ui') inlineIconNames(from, join(to, 'types', dir));
+    if (dir === 'core') shipMessageKeys(from, join(to, 'types', dir));
     manifests.push([dir, readManifest(from)]);
   }
   stageReactNativeTypes(join(root, 'packages', 'ui'), join(to, 'types', 'react-native'));

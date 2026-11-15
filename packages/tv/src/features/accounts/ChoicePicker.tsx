@@ -14,7 +14,7 @@ import {
   useStyles,
   VirtualGrid,
 } from '@kromatv/ui/kit';
-import type { ChoiceItem } from '#tv/app/settings/items';
+import { type ChoiceItem, choiceValueText } from '#tv/app/settings/items';
 
 const ROW_HEIGHT = CONTROL.tv.height;
 // Rows stand a ring apart, so a focused one never lays its ring on its
@@ -87,7 +87,7 @@ export function ChoicePicker({
               onClose();
             }}
           >
-            <ListRow.Label>{t(item.valueLabel(option))}</ListRow.Label>
+            <ListRow.Label>{choiceValueText(item, t, option)}</ListRow.Label>
             <ListRow.Trailing>
               {option === value ? (
                 <Icon name="check" size={20} thickness={2.4} color="accentText" />

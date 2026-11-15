@@ -7,6 +7,7 @@ import { openProject, type Project } from '../project';
 import { resolveServer, type Server, type ServerOptions, uploadBundle } from '../server';
 import { style } from '../style';
 import { feOutDir } from './build';
+import { writeMessageTypes } from './i18n';
 
 export interface DevOptions extends ServerOptions {
   dir?: string;
@@ -59,6 +60,7 @@ class Loop {
         this.binPath = await buildComponent(this.project, this.dir, 'dev');
       }
       if (parts.has('ui')) {
+        writeMessageTypes([this.project]);
         this.hasFe = await buildFrontend(this.project, feOutDir(this.project), 'development');
       }
       const packed = packForDev({

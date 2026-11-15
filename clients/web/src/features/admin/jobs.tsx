@@ -5,7 +5,6 @@ import { useKromaClient } from '#web/shared/lib/web-runtime';
 // (`services::jobs`) over `/api/admin/jobs`.
 
 import { KromaEvents } from '@kromatv/client/events';
-import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, EmptyState, Section } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
@@ -64,7 +63,7 @@ export function JobsPage() {
       {categories.map((cat) => (
         <Section.Root key={cat} mt={28}>
           <Section.Header>
-            <Section.Title>{t(`jobs.cat.${cat}` as MessageKey)}</Section.Title>
+            <Section.Title>{t(`jobs.cat.${cat}`)}</Section.Title>
           </Section.Header>
           <Box gap={14}>
             {jobs

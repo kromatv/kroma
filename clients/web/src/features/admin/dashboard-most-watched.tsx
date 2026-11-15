@@ -44,7 +44,7 @@ function posterOf(client: KromaClient, entry: MostWatchedEntry, width?: number):
 }
 
 function viewersLabel(t: Translate, count: number): string {
-  return t(count === 1 ? 'admin.viewers_one' : 'admin.viewers_other', { count });
+  return t('admin.viewers', { count });
 }
 
 export function MostWatchedSection() {

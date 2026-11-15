@@ -3,7 +3,6 @@
   "permissions.libraryHint": "Scans, bibliothèques, métadonnées",
   "permissions.playback": "Lecture",
   "permissions.playbackHint": "Regarder le catalogue + reprise",
-  "permissions.playbackHintDefault": "Regarder le catalogue + reprise (par défaut)",
   "permissions.reportsManage": "Gérer les signalements",
   "permissions.reportsManageHint": "Traiter les signalements envoyés par les utilisateurs",
   "permissions.requestAuto": "Approbation automatique",

@@ -34,6 +34,7 @@ export interface ChoiceItem extends BaseItem {
   level: SettingsLevel;
   options: (t: Translate, locale: Locale) => readonly string[];
   valueLabel: (value: string) => MessageKey;
+  valueText?: (t: Translate, value: string) => string;
   /** Named `use*` because it IS a hook, and the renderer calls it through this
    *  property: React Compiler only leaves a call alone when the name reads as
    *  one, and memoizes `item.use()` on `item` - a module constant - which
@@ -64,22 +65,28 @@ export function choiceItem<T extends string>(
     level: SettingsLevel;
     options: (t: Translate, locale: Locale) => readonly T[];
     valueLabel: (value: T) => MessageKey;
+    valueText?: (t: Translate, value: T) => string;
     useValue: () => readonly [T, (value: T) => void];
     pick?: ChoicePick;
     summary?: MessageKey;
   },
 ): SettingsItem {
-  const { options, valueLabel, useValue, ...base } = spec;
+  const { options, valueLabel, valueText, useValue, ...base } = spec;
   return {
     kind: 'choice',
     ...base,
     options,
     valueLabel: (value) => valueLabel(value as T),
+    valueText: valueText && ((t, value) => valueText(t, value as T)),
     useValue: () => {
       const [value, set] = useValue();
       return [value, set as (value: string) => void] as const;
     },
   };
+}
+
+export function choiceValueText(item: ChoiceItem, t: Translate, value: string): string {
+  return item.valueText ? item.valueText(t, value) : t(item.valueLabel(value));
 }
 
 export function toggleItem(spec: Omit<ToggleItem, 'kind'>): SettingsItem {

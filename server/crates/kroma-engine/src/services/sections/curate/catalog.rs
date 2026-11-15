@@ -5,9 +5,9 @@ use crate::i18n;
 use crate::model::{Kind, MediaItem, Show};
 use crate::services::sections::generate::slug;
 
-// Build a `locale -> value` map over every [`i18n::SUPPORTED_LOCALES`] entry.
+// Build a `locale -> value` map over every [`i18n::content_locales`] entry.
 fn per_locale(mut f: impl FnMut(&str) -> String) -> HashMap<String, String> {
-    i18n::SUPPORTED_LOCALES
+    i18n::content_locales()
         .iter()
         .map(|&l| (l.to_string(), f(l)))
         .collect()

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import { type Layout, readCatalogs } from '@kromatv/i18n-tools';
 import {
   dependenciesOf,
   type Manifest,
@@ -7,10 +8,10 @@ import {
   optionalDependenciesOf,
   satisfies,
 } from '@kromatv/registry';
-import { z } from 'zod';
 import { COMPONENT_TARGET, cargo, targetDir } from '../cargo';
 import { exec } from '../exec';
 import { findProjects, type Project } from '../project';
+import { catalogsOf, writeMessageTypes } from './i18n';
 import { versions } from '../scaffold/plan';
 import { floorBeyondRelease } from '../server-floor';
 import { style } from '../style';
@@ -73,6 +74,7 @@ async function checkTs(project: Project): Promise<string[]> {
   );
   if (!tsconfigDir)
     return [...problems, `${project.manifest.id}: no tsconfig.json beside the frontend`];
+  writeMessageTypes([project]);
   const tsc = await exec('bun', ['x', 'tsc', '--noEmit', '-p', tsconfigDir], { cwd: tsconfigDir });
   if (tsc.exitCode !== 0) problems.push(`${project.manifest.id}: tsc failed`);
   return problems;
@@ -114,38 +116,46 @@ export function unsatisfiableRanges(projects: readonly Project[]): string[] {
   return problems;
 }
 
-const Catalog = z.record(z.string(), z.unknown());
-type Catalogs = Readonly<Record<string, z.infer<typeof Catalog>>>;
+type Catalogs = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 
-function catalogsOf(dir: string): Catalogs {
-  const at = join(dir, 'locales');
-  if (!existsSync(at)) return {};
-  const files = readdirSync(at).filter((name) => name.endsWith('.json'));
-  return Object.fromEntries(
-    files.map((name) => [
-      name.slice(0, -'.json'.length),
-      Catalog.parse(JSON.parse(readFileSync(join(at, name), 'utf8'))),
-    ]),
-  );
+const SOURCE_LOCALE = 'en';
+
+// The catalogs a notification has to be worded in. A module is written in
+// English and any other language may lack a message, which then reads in
+// English, so English alone is owed where the module has it.
+function owed(catalogs: Catalogs): [string, Readonly<Record<string, unknown>>][] {
+  const source = catalogs[SOURCE_LOCALE];
+  return source ? [[SOURCE_LOCALE, source]] : Object.entries(catalogs);
+}
+
+function worded(catalog: Readonly<Record<string, unknown>>, key: string): boolean {
+  return key in catalog || `${key}_other` in catalog;
 }
 
 /** What a module's declared notification types get wrong: a type outside its
- *  namespace or declared twice, and a key one of the catalogs it ships has no
- *  words for. `catalogs` maps a locale to its parsed `locales/<code>.json`. */
-export function notificationProblems(manifest: Manifest, catalogs: Catalogs): string[] {
+ *  namespace or declared twice, and a key its English catalog has no words
+ *  for. `catalogs` maps a locale to its messages, and `layout` is how the
+ *  module keeps them, which is how a catalog that lacks one is named. */
+export function notificationProblems(
+  manifest: Manifest,
+  catalogs: Catalogs,
+  layout: Layout = 'flat',
+): string[] {
   const declared = manifest.notifications ?? [];
   if (declared.length === 0) return [];
   const id = manifest.id;
   const named = notificationsProblem(id, declared);
   const problems = named === null ? [] : [`${id}: ${named}`];
-  const locales = Object.entries(catalogs);
-  if (locales.length === 0) problems.push(`${id}: declares notifications but ships no locales`);
+  if (Object.keys(catalogs).length === 0) {
+    problems.push(`${id}: declares notifications but ships no locales`);
+  }
+  const where = (locale: string) =>
+    layout === 'flat' ? `locales/${locale}.json` : `locales/${locale}/`;
   for (const type of declared) {
     const keys = new Set([type.titleKey, type.bodyKey, type.labelKey ?? type.titleKey]);
     for (const key of keys) {
-      for (const [locale, catalog] of locales) {
-        if (key in catalog || `${key}_other` in catalog) continue;
-        problems.push(`${id}: ${type.type} names "${key}", which locales/${locale}.json lacks`);
+      for (const [locale] of owed(catalogs).filter(([, catalog]) => !worded(catalog, key))) {
+        problems.push(`${id}: ${type.type} names "${key}", which ${where(locale)} lacks`);
       }
     }
   }
@@ -176,7 +186,10 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
 
   for (const project of projects) {
     console.log(`\n${style.bold(project.manifest.id)}`);
-    problems.push(...notificationProblems(project.manifest, catalogsOf(project.dir)));
+    const messages = catalogsOf(project);
+    problems.push(
+      ...notificationProblems(project.manifest, readCatalogs(messages), messages.layout),
+    );
     if (options.ts !== false) problems.push(...(await checkTs(project)));
     if (options.rust !== false) problems.push(...(await checkRust(project, dir)));
   }

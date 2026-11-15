@@ -1,7 +1,9 @@
 use serde_json::{json, Value};
 
-use super::tmdb_json;
+use super::super::cache::Cache;
+use super::{lookup_all_by_id, tmdb_json, Target};
 use crate::test_support::recording_server::RecordingServer;
+use crate::test_support::FakeTmdb;
 
 const V3_KEY: &str = "0123456789abcdef0123456789abcdef";
 const V4_TOKEN: &str = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ4In0.c2lnbmF0dXJl";
@@ -57,4 +59,21 @@ fn a_body_that_is_not_json_is_a_failure() {
     let reply = ask(&server, V3_KEY);
 
     assert_eq!(reply, Err(()));
+}
+
+#[test]
+fn a_locale_is_asked_under_the_tag_tmdb_knows_and_answered_under_its_own() {
+    let tmdb = FakeTmdb::start(|_| (200, json!({ "id": 603, "title": "Title" })));
+    let cache = Cache::new();
+    let locales = ["fr", "pt-BR", "zh-Hant"];
+
+    let resolved = lookup_all_by_id(&cache, V3_KEY, "fr-FR", &locales, Target::Movie, 603).unwrap();
+
+    let mut answered: Vec<&str> = resolved.by_lang.keys().map(String::as_str).collect();
+    answered.sort_unstable();
+    let asked = tmdb.requests();
+    assert_eq!(answered, locales);
+    assert!(asked[0].contains("language=fr&"));
+    assert!(asked[1].contains("language=pt-BR&"));
+    assert!(asked[2].contains("language=zh-TW&"));
 }

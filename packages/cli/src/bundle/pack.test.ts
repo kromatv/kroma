@@ -30,7 +30,17 @@ function fixture(): PackInput {
   };
 }
 
+function catalog(input: PackInput, path: string, text: string): void {
+  const full = join(input.project.dir, 'locales', path);
+  mkdirSync(join(full, '..'), { recursive: true });
+  writeFileSync(full, text);
+}
+
 const bytesOf = (path: string) => new Uint8Array(readFileSync(path));
+const carriedLocales = (tar: Uint8Array) =>
+  tarNames(tar).filter((name) => name.startsWith('locales/'));
+const textOf = (tar: Uint8Array, name: string) =>
+  Buffer.from(tarRead(tar, name) ?? []).toString('utf8');
 const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 describe('bundleName', () => {
@@ -99,6 +109,46 @@ describe('packBundle', () => {
     const names = tarNames(toTar(bytesOf(packed.path)));
     expect(names).toContain('locales/en.json');
     expect(names).not.toContain('locales/notes.md');
+  });
+
+  it('copies one file per language byte for byte, and leaves its lock behind', () => {
+    const input = fixture();
+    const written = '{"b": "B",\n\t"a": "A"}';
+    catalog(input, 'en.json', written);
+    catalog(input, 'fr.json', '{}');
+    catalog(input, 'fr.lock', '{}');
+
+    const tar = toTar(bytesOf(packBundle(input).path));
+
+    expect(carriedLocales(tar)).toEqual(['locales/', 'locales/en.json', 'locales/fr.json']);
+    expect(textOf(tar, 'locales/en.json')).toBe(written);
+  });
+
+  it('packs a folder per language as one file per language, its files merged in path order', () => {
+    const input = fixture();
+    catalog(input, 'en/settings/advanced.json', '{"settings.port": "Port"}');
+    catalog(input, 'en/settings.json', '{"settings.title": "Settings"}');
+    catalog(input, 'en/nav.json', '{"nav.title": "Notes", "nav.back": "Back"}');
+    catalog(input, 'fr/nav.json', '{"nav.back": "Retour"}');
+
+    const tar = toTar(bytesOf(packBundle(input).path));
+
+    expect(carriedLocales(tar)).toEqual(['locales/', 'locales/en.json', 'locales/fr.json']);
+    expect(textOf(tar, 'locales/en.json')).toBe(
+      '{\n  "nav.title": "Notes",\n  "nav.back": "Back",\n  "settings.title": "Settings",\n  "settings.port": "Port"\n}\n',
+    );
+    expect(textOf(tar, 'locales/fr.json')).toBe('{\n  "nav.back": "Retour"\n}\n');
+  });
+
+  it('packs neither the lock of a language folder nor the notes beside the folders', () => {
+    const input = fixture();
+    catalog(input, 'en/nav.json', '{"nav.title": "Notes"}');
+    catalog(input, 'en/i18n.lock', '{"version": 1, "messages": {}}');
+    catalog(input, 'notes.json', '{"*": "A note."}');
+
+    const tar = toTar(bytesOf(packBundle(input).path));
+
+    expect(carriedLocales(tar)).toEqual(['locales/', 'locales/en.json']);
   });
 
   it('packs the manifest byte for byte as it was written', () => {

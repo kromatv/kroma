@@ -1,6 +1,5 @@
 import { ItemId, ShowId } from '@kromatv/client/media';
 import type { ElementRow } from '@kromatv/client/pipeline';
-import type { MessageKey } from '@kromatv/i18n';
 import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
@@ -88,7 +87,7 @@ export const PipelineDrawer = createCallable<
           <DrawerPoster el={el} />
           <Box minW={0} pt={4} align="flex-start">
             <Pill ink={km.color} bg={km.bg} variant="overline">
-              {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+              {t(`pipeline.type.${km.typeKey}`)}
             </Pill>
             <Text variant="h2" accessibilityRole="header" mt={10}>
               {el.title}
@@ -111,14 +110,14 @@ export const PipelineDrawer = createCallable<
             return (
               <Box key={tr.key} px={16} py={14} radius="xl" bg="surface1" border="tint/7">
                 <Row between gap={12}>
-                  <Text variant="label">{t(`pipeline.t.${tr.key}` as MessageKey)}</Text>
+                  <Text variant="label">{t(`pipeline.t.${tr.key}`)}</Text>
                   <Row gap={8}>
                     <Pill
                       ink={m.color}
                       bg={m.bg}
                       leading={<PillDot tone={m.dot} pulse={m.pulse} />}
                     >
-                      {t(`pipeline.st.${tr.status}` as MessageKey)}
+                      {t(`pipeline.st.${tr.status}`)}
                     </Pill>
                     {/* Run just this stage now, at top priority (also acts as a retry on failure). */}
                     <IconButton

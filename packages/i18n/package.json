@@ -17,12 +17,16 @@
     ".": "./src/index.ts",
     "./layout": "./src/layout.ts",
     "./locales": "./src/locales.ts",
+    "./model": "./src/model.ts",
     "./react": "./src/react/index.ts",
     "./schema": "./schema/catalog.schema.json",
     "./vite": "./vite/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

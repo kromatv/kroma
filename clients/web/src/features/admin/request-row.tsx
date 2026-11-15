@@ -3,7 +3,6 @@ import { Avatar, Box, Row, Text, useStyleScope, useThemeVersion } from '@kromatv
 // requester, date, status chip, and quick approve/deny on pending rows.
 
 import type { MediaRequest } from '@kromatv/client/requests';
-import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR, Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 
@@ -60,7 +59,7 @@ export function RequestRowView({
             </Text>
             <Box shrink={0}>
               <Pill ink={km.color} bg={km.bg} variant="overline">
-                {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+                {t(`pipeline.type.${km.typeKey}`)}
               </Pill>
             </Box>
           </Row>

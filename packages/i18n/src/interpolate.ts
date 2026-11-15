@@ -1,4 +1,4 @@
-import type { TVars } from './types';
+import type { TVars } from './types.ts';
 
 const TOKEN = /\{(\w+)}/g;
 const ANY_TOKEN = /\{\w+}/;

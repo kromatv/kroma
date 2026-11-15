@@ -14,7 +14,5 @@
   "offline.remove": "Remove download",
   "offline.resume": "Resume",
   "offline.storageFree": "Free",
-  "offline.storageOther": "Used",
-  "offline.storageUsed": "{size} used",
-  "offline.unavailable": "Not available offline on this device"
+  "offline.storageOther": "Used"
 }

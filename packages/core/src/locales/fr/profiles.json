@@ -1,7 +1,6 @@
 {
   "profiles.add": "Ajouter",
   "profiles.addProfile": "Ajouter un profil",
-  "profiles.chooseHint": "{left} {right} Choisir · OK Sélectionner",
   "profiles.deviceSettings": "Paramètres",
   "profiles.serverOffline": "Hors ligne",
   "profiles.subtitle": "Choisissez un profil, ou liez un appareil par connexion rapide."

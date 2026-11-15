@@ -5,12 +5,13 @@
 //! the orchestration (iterate users, call the model, persist) is the
 //! `sections.personalize` job in [`crate::services::jobs`].
 
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 
 use crate::db::{self, Pool};
+use crate::i18n;
 
+use super::language_name::language_name;
+pub use super::localized::Localized;
 use super::taste::Cluster;
 
 // How many sections we ask the model for (and cap to).
@@ -40,56 +41,6 @@ fn canonical_genre(raw: &str, vocabulary: &[String]) -> Option<String> {
         return None;
     }
     vocabulary.iter().find(|g| stem(g) == key).cloned()
-}
-
-// Cap on a single section title, defended on parse (catchy, not an essay).
-const MAX_TITLE: usize = 64;
-
-/// A row's name, written by the model in every language the server serves.
-///
-/// Also reads a bare string, which is what rows cached before the model was
-/// asked for more than one language hold.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum Localized {
-    Single(String),
-    ByLang(HashMap<String, String>),
-}
-
-impl Default for Localized {
-    fn default() -> Self {
-        Self::Single(String::new())
-    }
-}
-
-impl Localized {
-    /// The reader's language, else the default one, else whatever there is.
-    pub fn get(&self, locale: &str) -> &str {
-        match self {
-            Self::Single(s) => s,
-            Self::ByLang(by) => by
-                .get(locale)
-                .or_else(|| by.get(crate::i18n::DEFAULT_LOCALE))
-                .or_else(|| by.values().next())
-                .map(String::as_str)
-                .unwrap_or_default(),
-        }
-    }
-
-    fn is_blank(&self) -> bool {
-        match self {
-            Self::Single(s) => s.trim().is_empty(),
-            Self::ByLang(by) => by.values().all(|v| v.trim().is_empty()),
-        }
-    }
-
-    fn trimmed_and_capped(self) -> Self {
-        let cap = |s: String| -> String { s.trim().chars().take(MAX_TITLE).collect() };
-        match self {
-            Self::Single(s) => Self::Single(cap(s)),
-            Self::ByLang(by) => Self::ByLang(by.into_iter().map(|(k, v)| (k, cap(v))).collect()),
-        }
-    }
 }
 
 /// A personalized section authored by the LLM and cached per user. `query` is the
@@ -151,13 +102,13 @@ pub fn build_prompt(
     vocabulary: &[String],
 ) -> (String, String) {
     let lang = language_name(locale);
-    let langs = crate::i18n::SUPPORTED_LOCALES
+    let langs = i18n::content_locales()
         .iter()
         .map(|l| format!("\"{l}\" ({})", language_name(l)))
         .collect::<Vec<_>>()
         .join(", ");
     let genres = vocabulary.join(", ");
-    let shape = crate::i18n::SUPPORTED_LOCALES
+    let shape = i18n::content_locales()
         .iter()
         .map(|l| format!("\"{l}\": string"))
         .collect::<Vec<_>>()
@@ -249,10 +200,10 @@ pub fn parse_response(
     let mut named = std::collections::HashSet::new();
     for s in out.sections {
         let query = s.query.trim();
-        if s.title.is_blank() || query.is_empty() {
+        let title = s.title.trimmed_and_capped();
+        if title.is_blank() || query.is_empty() {
             continue;
         }
-        let title = s.title.trimmed_and_capped();
         // Keyed off the query, which is English whatever the reader speaks: a
         // key cut from the title would change with the language it was read in.
         let mut key = slug(query);
@@ -307,13 +258,6 @@ pub(crate) fn slug(s: &str) -> String {
         }
     }
     out.trim_matches('-').to_string()
-}
-
-fn language_name(locale: &str) -> &'static str {
-    match locale {
-        "en" => "English",
-        _ => "French",
-    }
 }
 
 #[cfg(test)]
@@ -382,15 +326,15 @@ mod tests {
             serde_json::from_str(r#"{"key":"k","title":{"fr":"Titre","en":"Title"},"query":"q"}"#)
                 .unwrap();
 
-        assert_eq!(s.title.get("de"), s.title.get(crate::i18n::DEFAULT_LOCALE));
+        assert_eq!(s.title.get("de"), s.title.get(i18n::content_locale("de")));
         assert!(!s.title.get("de").is_empty());
     }
 
     #[test]
-    fn the_prompt_asks_for_every_supported_language() {
+    fn the_prompt_asks_for_every_language_the_server_keeps_content_in() {
         let (system, _) = build_prompt("fr", None, &[], &vocab());
 
-        for lang in crate::i18n::SUPPORTED_LOCALES {
+        for lang in i18n::content_locales() {
             assert!(
                 system.contains(&format!("\"{lang}\": string")),
                 "the shape does not ask for {lang}: {system}"
@@ -483,13 +427,6 @@ mod tests {
         assert_eq!(extract_json("prefix {\"a\":1} suffix"), Some("{\"a\":1}"));
         assert!(extract_json("no braces").is_none());
         assert!(extract_json("}before{").is_none()); // end <= start
-    }
-
-    #[test]
-    fn language_name_maps_en_else_french() {
-        assert_eq!(language_name("en"), "English");
-        assert_eq!(language_name("fr"), "French");
-        assert_eq!(language_name("xx"), "French");
     }
 
     #[test]

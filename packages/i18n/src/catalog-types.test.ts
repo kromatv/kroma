@@ -1,31 +1,48 @@
 import { describe, expect, it } from 'vitest';
 import { renderCatalogTypes } from './catalog-types';
 
-const FILES = [
-  { locale: 'en', namespace: 'about' },
-  { locale: 'fr', namespace: 'about' },
-  { locale: 'en', namespace: 'addProfile' },
-  { locale: 'fr', namespace: 'addProfile' },
-  { locale: 'fr', namespace: 'draft' },
-];
+const SOURCE = {
+  'nav.home': 'Home',
+  'cart.items': '{count} items in {store}',
+  'cart.items_one': 'One item in {store}',
+  'cart.seats': 'Seats',
+  'cart.seats_taken_one': '{taken} seat taken',
+  'status.other': 'Other',
+};
 
 describe('renderCatalogTypes', () => {
-  it('declares the locales and folds every file of the default locale into the messages', () => {
-    const out = renderCatalogTypes({ files: FILES, defaultLocale: 'en' });
+  it('declares every locale folder', () => {
+    const out = renderCatalogTypes({ locales: ['fr', 'en', 'pt-BR'], source: SOURCE });
 
-    expect(out).toContain("import type aboutMessages from './en/about.json';");
-    expect(out).toContain("    locale: 'en' | 'fr';");
-    expect(out).toContain('      typeof aboutMessages &\n      typeof addProfileMessages;');
-    expect(out).not.toContain('draft');
+    expect(out).toContain("    locale: 'en' | 'fr' | 'pt-BR';");
   });
 
-  it('refuses a default locale that has no folder', () => {
-    expect(() => renderCatalogTypes({ files: FILES, defaultLocale: 'de' })).toThrow('"de"');
+  it('declares a message with no variables as taking none', () => {
+    const out = renderCatalogTypes({ locales: ['en'], source: SOURCE });
+
+    expect(out).toContain("      'nav.home': {};");
+    expect(out).toContain("      'status.other': {};");
   });
 
-  it('renders the same text for the same files in any order', () => {
-    expect(renderCatalogTypes({ files: [...FILES].reverse(), defaultLocale: 'en' })).toBe(
-      renderCatalogTypes({ files: FILES, defaultLocale: 'en' }),
+  it('folds plural variants into their base key and types the selector as a number', () => {
+    const out = renderCatalogTypes({ locales: ['en'], source: SOURCE });
+
+    expect(out).toContain("      'cart.items': { count: number; store: V };");
+    expect(out).toContain("      'cart.seats': { taken: number };");
+    expect(out).not.toContain('cart.items_one');
+  });
+
+  it('augments the package rather than replacing it', () => {
+    const out = renderCatalogTypes({ locales: ['en'], source: SOURCE });
+
+    expect(out).toContain('export {};');
+  });
+
+  it('renders the same text whatever order the keys and locales arrive in', () => {
+    const reversed = Object.fromEntries(Object.entries(SOURCE).reverse());
+
+    expect(renderCatalogTypes({ locales: ['fr', 'en'], source: reversed })).toBe(
+      renderCatalogTypes({ locales: ['en', 'fr'], source: SOURCE }),
     );
   });
 });

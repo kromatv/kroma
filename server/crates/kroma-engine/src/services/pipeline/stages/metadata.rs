@@ -29,7 +29,7 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     let show_pins = crate::db::tmdb_pin::all_for_kind(&state.db, SHOW)?;
     // The languages and the stored payload's revision are part of it too, or a
     // title already done is never revisited when either of them changes.
-    let langs = crate::i18n::SUPPORTED_LOCALES.join(",");
+    let langs = crate::i18n::content_locales().join(",");
     let rev = crate::db::translations::REV;
     for i in crate::db::list_items(&state.db, None)? {
         if matches!(i.kind, Kind::Movie | Kind::Video) {

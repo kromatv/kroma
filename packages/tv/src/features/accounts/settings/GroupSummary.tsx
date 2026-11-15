@@ -1,6 +1,6 @@
 import { useLocale, useT } from '@kromatv/ui';
 import { useMemo } from 'react';
-import type { ChoiceItem, SettingsItem } from '#tv/app/settings/items';
+import { type ChoiceItem, choiceValueText, type SettingsItem } from '#tv/app/settings/items';
 
 /** A group's current values on one line, each choice read through its own hook. */
 export function GroupSummary({ items }: Readonly<{ items: readonly SettingsItem[] }>) {
@@ -22,7 +22,7 @@ function SummaryPart({ item, lead }: Readonly<{ item: ChoiceItem; lead: boolean 
   const [value] = item.useValue();
   const options = useMemo(() => item.options(t, locale), [item, t, locale]);
   if (options.length < 2) return null;
-  const label = t(item.valueLabel(value));
+  const label = choiceValueText(item, t, value);
   const text = item.summary ? t(item.summary, { value: label }) : label;
   return `${lead ? ' · ' : ''}${text}`;
 }

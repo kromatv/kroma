@@ -1,16 +1,11 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { catalogsByLocale } from '@kromatv/i18n';
+import { readLocale } from '@kromatv/i18n/vite';
 
 const CATALOGS = fileURLToPath(new URL('../../core/src/locales/', import.meta.url));
 
 function catalog(locale: string): Map<string, unknown> {
-  const files: Record<string, Record<string, string>> = {};
-  for (const file of readdirSync(`${CATALOGS}${locale}`)) {
-    if (!file.endsWith('.json')) continue;
-    files[`${locale}/${file}`] = JSON.parse(readFileSync(`${CATALOGS}${locale}/${file}`, 'utf8'));
-  }
-  return new Map(Object.entries(catalogsByLocale(files)[locale] ?? {}));
+  return new Map(Object.entries(readLocale(CATALOGS, locale)));
 }
 
 export function locales(): string[] {

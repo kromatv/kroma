@@ -1,4 +1,5 @@
 use crate::domain::metadata::Metadata;
+use crate::i18n::tmdb_language;
 
 use super::super::cache::Cache;
 use super::super::search;
@@ -55,7 +56,7 @@ pub fn lookup(
 /// TMDB poster carries the title printed on it, so `poster_url`, `backdrop_url`
 /// and `logo_url` are the ones TMDB holds for that language, and a language
 /// with none of its own repeats whatever the request fell back to. Keyed by
-/// base language code (e.g. `"en"`).
+/// the locale that was asked for, whatever tag TMDB was sent for it.
 pub struct Resolved {
     pub by_lang: std::collections::HashMap<String, Metadata>,
     /// Languages whose request failed rather than came back empty. Absent from
@@ -64,9 +65,10 @@ pub struct Resolved {
     pub unreachable: std::collections::HashSet<String>,
 }
 
-/// Resolve `title`/`year` in every language in `langs`. The TMDB id is resolved
-/// once (a search in `search_lang`), then details are fetched per language
-/// against that id; a language whose fetch fails transiently is omitted.
+/// Resolve `title`/`year` in every locale in `langs`, each asked for under
+/// [`crate::i18n::tmdb_language`]. The TMDB id is resolved once (a search in
+/// `search_lang`, the household's language), then details are fetched per
+/// locale against that id; one whose fetch fails transiently is omitted.
 /// `None` means the title did not resolve at all.
 pub fn lookup_all(
     cache: &Cache,
@@ -82,9 +84,9 @@ pub fn lookup_all(
         // No match or a transient search failure: retried on the next pass.
         _ => return None,
     };
-    let (by_lang, unreachable) = details_by_lang(cache, api_key, langs, target, id, |lang| {
-        detail_key(target, lang, title, year)
-    });
+    let key_for = |lang: &str| detail_key(target, lang, title, year);
+    let (by_lang, unreachable) =
+        details_by_lang(cache, api_key, search_lang, langs, target, id, key_for);
     (!by_lang.is_empty()).then_some(Resolved {
         by_lang,
         unreachable,
@@ -93,17 +95,19 @@ pub fn lookup_all(
 
 /// Same as [`lookup_all`] but for an already-known TMDB id: no search. Used for
 /// a pinned id (import or operator correction), which must never be
-/// re-guessed by title.
+/// re-guessed by title. `household` is the household's TMDB language, whose
+/// country rates a title asked for in a locale that names none.
 pub fn lookup_all_by_id(
     cache: &Cache,
     api_key: &str,
+    household: &str,
     langs: &[&str],
     target: Target,
     id: u64,
 ) -> Option<Resolved> {
-    let (by_lang, unreachable) = details_by_lang(cache, api_key, langs, target, id, |lang| {
-        detail_key_id(target, lang, id)
-    });
+    let key_for = |lang: &str| detail_key_id(target, lang, id);
+    let (by_lang, unreachable) =
+        details_by_lang(cache, api_key, household, langs, target, id, key_for);
     (!by_lang.is_empty()).then_some(Resolved {
         by_lang,
         unreachable,
@@ -113,6 +117,7 @@ pub fn lookup_all_by_id(
 fn details_by_lang(
     cache: &Cache,
     api_key: &str,
+    household: &str,
     langs: &[&str],
     target: Target,
     id: u64,
@@ -128,7 +133,7 @@ fn details_by_lang(
         let meta = match cache.get(&key) {
             Some(Some(m)) => m,
             Some(None) => continue,
-            None => match fetch_details(api_key, lang, target, id) {
+            None => match fetch_details(api_key, &tmdb_language(lang), household, target, id) {
                 Ok(m) => {
                     cache.put(key, Some(m.clone()));
                     m
@@ -154,7 +159,9 @@ fn fetch(
     year: Option<u32>,
 ) -> Result<Option<Metadata>, ()> {
     match search::best_id(api_key, language, target, title, year)? {
-        Some(id) => Ok(Some(fetch_details(api_key, language, target, id)?)),
+        Some(id) => Ok(Some(fetch_details(
+            api_key, language, language, target, id,
+        )?)),
         None => Ok(None),
     }
 }

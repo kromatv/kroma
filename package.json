@@ -96,7 +96,8 @@
     "server:build": "cd server && cargo build --release",
     "prepare": "(git config core.hooksPath .githooks || true) && bun run gen:types",
     "hooks:install": "git config core.hooksPath .githooks",
-    "gen:types": "bun packages/core/vite/types.ts"
+    "i18n": "bun packages/i18n-tools/src/cli.ts",
+    "gen:types": "bun packages/i18n-tools/src/cli.ts types"
   },
   "devDependencies": {
     "@kromatv/bundler": "workspace:*",

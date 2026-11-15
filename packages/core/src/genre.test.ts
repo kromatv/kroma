@@ -27,6 +27,12 @@ describe('findGenre', () => {
     expect(findGenre('telefilm')).toBe('tv-movie');
   });
 
+  it('does not guess a genre for a name in a script the slug has no letters for', () => {
+    expect(findGenre('劇情')).toBeUndefined();
+    expect(findGenre('Драма')).toBeUndefined();
+    expect(findGenre('   ')).toBeUndefined();
+  });
+
   it('keeps a compound TV genre apart from the movie genre it starts with', () => {
     expect(findGenre('War')).toBe('war');
     expect(findGenre('War & Politics')).toBe('war-politics');

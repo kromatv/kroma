@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { ProviderId } from '@kromatv/client/sso';
+import type { Translate } from '@kromatv/i18n';
 import { recordingClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -48,7 +49,7 @@ function gate(finish: object) {
   const deps = {
     session: { serverUrl, adopt: vi.fn(), requestLocale: () => 'en' },
     clientFor: () => client,
-    t: (key: string) => key,
+    t: ((key: string) => key) as Translate,
     serverName: 'Home',
     enterApp: vi.fn(),
     setBusy: vi.fn(),

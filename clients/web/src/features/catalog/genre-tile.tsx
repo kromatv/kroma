@@ -1,10 +1,11 @@
 import {
-  type GenreCount,
+  findGenre,
   genreColors,
   genreLabel,
   genreSegment,
   genreTint,
   sizedImageUrl,
+  type GenreCount,
 } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
@@ -74,7 +75,7 @@ export function GenreTile({ genre, count, backdrop }: Readonly<GenreTileProps>) 
   const t = useT();
   const [from, to] = genreColors(genre.slug);
   const icon = genreIcon(genre.slug);
-  const label = genreLabel(t, genre.name);
+  const label = genreLabel(t, findGenre(genre.slug) ?? genre.name);
   return (
     <Focusable sv={genreTile} label={label} style={wash(from, to, 150, scope)} asChild>
       {({ hovered, slots }) => (

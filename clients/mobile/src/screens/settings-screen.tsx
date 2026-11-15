@@ -1,7 +1,7 @@
 // App settings: appearance, interface language (dedicated page), server
 // identity, and what build of the app this actually is.
 
-import { formatBuildDate, LOCALES } from '@kromatv/core';
+import { formatBuildDate, LOCALES, localeLabel } from '@kromatv/core';
 import { Box, Icon, type IconName, styles, Text, ThemeSwitch, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -23,7 +23,7 @@ export default function Settings() {
   const { serverUrl } = useSession();
   const client = useClient();
   const { locale } = useI18n();
-  const localeLabel = LOCALES.find((l) => l.code === locale)?.labelKey;
+  const offered = LOCALES.find((l) => l.code === locale);
   // The server names its own version on the public health endpoint, the same
   // place the web client's sidebar reads it from.
   const health = useQuery(client.query.media.health());
@@ -47,7 +47,7 @@ export default function Settings() {
           </Box>
           <Row
             label={t('account.uiLanguage')}
-            value={localeLabel ? t(localeLabel) : locale}
+            value={offered ? localeLabel(t, offered) : locale}
             icon="chevron-right"
             onPress={() => router.push('/settings/language' as never)}
           />

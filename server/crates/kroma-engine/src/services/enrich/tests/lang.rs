@@ -30,6 +30,36 @@ fn primary_lang_takes_whatever_is_left_without_english() {
 }
 
 #[test]
+fn primary_lang_of_a_regional_household_is_the_region_it_stored() {
+    let map = langs(&["en", "pt-BR"]);
+
+    assert_eq!(primary_lang(&map, "pt-BR"), "pt-BR");
+    assert_eq!(primary_lang(&map, "pt_br"), "pt-BR");
+}
+
+#[test]
+fn primary_lang_of_a_region_nobody_stored_is_another_region_of_its_language() {
+    let map = langs(&["en", "pt-BR"]);
+
+    assert_eq!(primary_lang(&map, "pt-PT"), "pt-BR");
+}
+
+#[test]
+fn primary_lang_of_a_chinese_household_is_the_script_its_region_writes_in() {
+    let map = langs(&["en", "zh-Hans", "zh-Hant"]);
+
+    assert_eq!(primary_lang(&map, "zh-TW"), "zh-Hant");
+    assert_eq!(primary_lang(&map, "zh-CN"), "zh-Hans");
+}
+
+#[test]
+fn primary_lang_without_english_is_the_same_whatever_order_the_map_iterates_in() {
+    let map = langs(&["it", "de", "nl"]);
+
+    assert_eq!(primary_lang(&map, "sv-SE"), "de");
+}
+
+#[test]
 fn primary_lang_of_nothing_is_empty() {
     let map: HashMap<String, ()> = HashMap::new();
 

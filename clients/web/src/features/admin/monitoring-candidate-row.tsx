@@ -1,4 +1,3 @@
-import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, CheckboxFace, ListRow, Row, Skeleton, Text } from '@kromatv/ui/kit';
 import type { MonitorCandidate } from '#web/features/admin/monitoring-model';
@@ -34,7 +33,7 @@ export function CandidateRow({
       <ListRow.Label>{candidate.title}</ListRow.Label>
       <Row gap={8} align="center" wrap>
         <Pill ink={km.color} bg={km.bg} variant="overline">
-          {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+          {t(`pipeline.type.${km.typeKey}`)}
         </Pill>
         {candidate.year ? (
           <Text variant="meta" color="textDim">

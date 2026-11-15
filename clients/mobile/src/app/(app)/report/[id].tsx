@@ -76,7 +76,7 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
           <Box style={s.doneBadge}>
             <Icon name="check" size={30} thickness={2.4} color="accentInk" />
           </Box>
-          <Text style={s.doneText}>{t('report.submitted')}</Text>
+          <Text style={s.doneText}>{t('report.sent')}</Text>
         </Box>
       ) : (
         <KeyboardAvoidingView

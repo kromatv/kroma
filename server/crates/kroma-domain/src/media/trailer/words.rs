@@ -1,0 +1,67 @@
+//! The words a trailer's name is read for. A name is matched in lower case, a
+//! short Latin word only where it stands alone, and a word in a script that
+//! writes no spaces wherever it appears.
+
+pub(super) const SUBTITLED: &[&str] = &[
+    "vost",
+    "vostfr",
+    "sous-titr",
+    "subtitled",
+    "subtitulado",
+    "subtitulada",
+    "sottotitolato",
+    "legendado",
+    "untertitel",
+    "omu",
+    "ondertitel",
+    "napisy",
+    "titulky",
+    "felirat",
+    "altyaz",
+    "субтитр",
+    "字幕",
+    "中字",
+    "자막",
+];
+
+pub(super) const TRAILER_WORDS: &[&str] = &[
+    "trailer",
+    "bande-annonce",
+    "bande annonce",
+    "tráiler",
+    "avance",
+    "fragman",
+    "trailer oficial",
+    "zwiastun",
+    "трейлер",
+    "预告",
+    "預告",
+    "予告",
+    "トレーラー",
+    "예고편",
+];
+
+pub(super) const PROMOTION_WORDS: &[&str] = &[
+    "ticket",
+    "réserv",
+    "billet",
+    "sign language",
+    "asl",
+    "tv spot",
+    "spot tv",
+    "now playing",
+    "in cinemas",
+    "au cinéma",
+    "featurette",
+    "behind",
+    "review",
+    "reaction",
+    "early screening",
+    "imax",
+    "prime video",
+    "own it",
+    "on digital",
+    "blu-ray",
+    "tomorrow",
+    "demain",
+];

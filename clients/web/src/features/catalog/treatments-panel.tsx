@@ -22,7 +22,6 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { hasPermission } from '@kromatv/client/accounts';
 import { ItemId, ShowId } from '@kromatv/client/media';
 import type { Treatment } from '@kromatv/client/pipeline';
-import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 
 import {
@@ -142,7 +141,7 @@ export function TreatmentsPanel({
             <span
               key={tr.key}
               className={classes(s.treatment)}
-              title={t(`pipeline.st.${tr.status}` as MessageKey)}
+              title={t(`pipeline.st.${tr.status}`)}
             >
               {spin ? (
                 <Spinner size={16} color={meta.ink} />
@@ -150,7 +149,7 @@ export function TreatmentsPanel({
                 <Icon size={16} color={color(meta.ink, activeTheme(scope.theme))} />
               )}
               <Text variant="meta" color="white/80">
-                {t(`pipeline.t.${tr.key}` as MessageKey)}
+                {t(`pipeline.t.${tr.key}`)}
               </Text>
             </span>
           );

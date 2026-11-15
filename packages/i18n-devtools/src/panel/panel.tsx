@@ -19,6 +19,7 @@ import { GRIP_DATA } from './drag';
 import { EditorPicker } from './editor-picker';
 import { EngineBadge } from './engine-badge';
 import { LocalePicker } from './locale-picker';
+import { TranslationStatus } from './translation-status';
 
 export interface PanelProps {
   locale: string;
@@ -73,6 +74,7 @@ export function Panel({
       </Row>
 
       <LocalePicker locale={locale} onLocale={onLocale} />
+      <TranslationStatus />
 
       <Column gap={6}>
         <Text variant="meta" color="textMuted">

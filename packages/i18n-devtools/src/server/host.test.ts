@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ask, type Channel, openChannel, refresh } from './host';
+import { ask, type Channel, onCatalogSaved, openChannel, refresh } from './host';
 
 const sent: Array<{ event: string; data: { at: number } }> = [];
 const heard = new Map<string, (answer: unknown) => void>();
@@ -106,5 +106,28 @@ describe('a question already answered', () => {
     vi.advanceTimersByTime(60_000);
 
     await expect(asked).resolves.toMatchObject({ editors: [] });
+  });
+});
+
+describe('hearing that a catalog file was saved', () => {
+  it('tells whoever listens, each time the dev server says so', () => {
+    const heardOf = vi.fn();
+    const stop = onCatalogSaved(heardOf);
+
+    answer('kroma:catalog', { file: 'nav', locale: 'fr', catalog: {} });
+    answer('kroma:catalog', { file: 'nav', locale: 'en', catalog: {} });
+
+    expect(heardOf).toHaveBeenCalledTimes(2);
+
+    stop();
+  });
+
+  it('tells nobody who has stopped listening', () => {
+    const heardOf = vi.fn();
+    onCatalogSaved(heardOf)();
+
+    answer('kroma:catalog', {});
+
+    expect(heardOf).not.toHaveBeenCalled();
   });
 });

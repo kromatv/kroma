@@ -48,10 +48,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         // Many collections × many members is a large reply: floor the budget
         // well above the provider's default or the JSON array comes back
         // truncated and unparseable.
-        let max_tokens = crate::services::settings::default_provider(&state.settings)
-            .map(|p| p.max_tokens)
-            .unwrap_or(900)
-            .clamp(4096, 8192) as u32;
+        let max_tokens = crate::services::llm::localized_reply_budget(&state.settings, 4096);
         if llm.supports_tools() {
             match curate_with_tools(ctx, &*llm, &catalog, max_tokens) {
                 Ok(rows) if !rows.is_empty() => llm_rows = rows,

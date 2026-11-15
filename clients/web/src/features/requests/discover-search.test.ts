@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateDiscoverSearch } from './search';
+import { validateDiscoverSearch } from './discover-search';
 
 describe('validateDiscoverSearch', () => {
   it('defaults to an empty query and all types', () => {

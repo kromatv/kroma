@@ -3,7 +3,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gradeOfNode, installHighlight, shows, walkGraded } from './highlight';
 import type { Grade } from './mark';
-import { mark } from './mark';
+import { forgetMarks, mark } from './mark';
+import { holdStatus, wantStatus } from './review';
 
 const FR = { scope: null, locale: 'fr' };
 
@@ -24,9 +25,24 @@ function graded(outline: 'problems' | 'all'): Record<string, number> {
   return found;
 }
 
+function locked(as: 'outdated' | 'unreviewed'): void {
+  const none: string[] = [];
+  wantStatus('fr');
+  holdStatus({
+    locale: 'fr',
+    coverage: 1,
+    missing: 0,
+    outdated: 0,
+    unreviewed: 0,
+    sets: [{ scope: null, outdated: none, unreviewed: none, [as]: ['auth.login'] }],
+  });
+}
+
 afterEach(() => {
   document.body.innerHTML = '';
   document.head.innerHTML = '';
+  wantStatus(null);
+  forgetMarks();
   vi.unstubAllGlobals();
 });
 
@@ -43,6 +59,38 @@ describe('grading one text node', () => {
   it('grades the punctuation a layout writes between two messages as nothing', () => {
     expect(gradeOfNode(' · ')).toBeNull();
     expect(gradeOfNode('\n  ')).toBeNull();
+  });
+});
+
+describe('grading a translation the lock does not vouch for', () => {
+  it.each(['outdated', 'unreviewed'] as const)(
+    'reads a string its own catalog answered as %s',
+    (review) => {
+      locked(review);
+
+      expect(gradeOfNode(drew('Connexion', FR))).toBe(review);
+    },
+  );
+
+  it('leaves a string nothing answered missing, whatever the lock says of its key', () => {
+    locked('outdated');
+
+    expect(gradeOfNode(drew('auth.login', undefined))).toBe('missing');
+  });
+
+  it('counts it among the problems a mode shows', () => {
+    locked('outdated');
+    page(`<p>${drew('Connexion', FR)}</p>`);
+
+    expect(graded('problems')).toEqual({ outdated: 1 });
+  });
+
+  it('keeps the mark for a string it marked but no longer remembers', () => {
+    const drawn = drew('Connexion', FR);
+    forgetMarks();
+    locked('outdated');
+
+    expect(gradeOfNode(drawn)).toBe('catalog');
   });
 });
 
@@ -112,7 +160,9 @@ describe('putting the overlay up', () => {
       'kroma-i18n-catalog',
       'kroma-i18n-fallback',
       'kroma-i18n-missing',
+      'kroma-i18n-outdated',
       'kroma-i18n-raw',
+      'kroma-i18n-unreviewed',
       'kroma-i18n-vars',
     ]);
     expect(held.get('kroma-i18n-catalog')?.size).toBe(1);
@@ -228,5 +278,17 @@ describe('putting the overlay up', () => {
     vi.useRealTimers();
 
     expect(drawn).toBe(0);
+  });
+
+  it('repaints when the lock says something new of what is already drawn', async () => {
+    const held = registry();
+    page(`<p>${drew('Connexion', FR)}</p>`);
+    const stop = installHighlight('all');
+
+    locked('unreviewed');
+    await vi.waitFor(() => expect(held.get('kroma-i18n-unreviewed')?.size).toBe(1));
+
+    expect(held.get('kroma-i18n-catalog')?.size).toBe(0);
+    stop();
   });
 });

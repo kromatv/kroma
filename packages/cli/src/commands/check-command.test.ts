@@ -14,13 +14,14 @@ import { checkCommand } from './check';
 
 let dir = '';
 
+function manifestOf(id: string) {
+  return { schemaVersion: MODULE_SCHEMA_VERSION, id, name: id, version: '0.1.0' };
+}
+
 function moduleAt(name: string, id: string, entry?: string): void {
   const at = join(dir, 'modules', name);
   mkdirSync(at, { recursive: true });
-  writeFileSync(
-    join(at, 'module.json'),
-    JSON.stringify({ schemaVersion: MODULE_SCHEMA_VERSION, id, name: id, version: '0.1.0' }),
-  );
+  writeFileSync(join(at, 'module.json'), JSON.stringify(manifestOf(id)));
   if (entry === undefined) return;
   mkdirSync(join(at, 'ui', 'src'), { recursive: true });
   writeFileSync(join(at, 'ui', 'src', 'module.tsx'), entry);
@@ -123,6 +124,32 @@ describe('checkCommand', () => {
 
     expect(code).toBe(1);
     expect(said()).toContain('names "b", which locales/en.json lacks');
+  });
+
+  it('reads them from a folder per language too, every file of it', async () => {
+    modules();
+    moduleAt('notes', 'tv.acme.notes');
+    const at = join(dir, 'modules', 'notes');
+    const shared = { type: 'tv.acme.notes/note.shared', category: 'media' };
+    const notifications = [{ ...shared, titleKey: 'note.title', bodyKey: 'share.body' }];
+    writeFileSync(
+      join(at, 'module.json'),
+      JSON.stringify({ ...manifestOf('tv.acme.notes'), notifications }),
+    );
+    mkdirSync(join(at, 'locales', 'fr', 'share'), { recursive: true });
+    writeFileSync(join(at, 'locales', 'fr', 'note.json'), JSON.stringify({ 'note.title': 'T' }));
+    writeFileSync(
+      join(at, 'locales', 'fr', 'share', 'text.json'),
+      JSON.stringify({ 'share.body': 'B' }),
+    );
+    mkdirSync(join(at, 'locales', 'en'));
+    writeFileSync(join(at, 'locales', 'en', 'note.json'), JSON.stringify({ 'note.title': 'T' }));
+
+    const code = await checkCommand({ dirs: [], rust: false, ts: false, cwd: dir });
+
+    expect(code).toBe(1);
+    expect(said()).toContain('names "share.body", which locales/en/ lacks');
+    expect(said()).not.toContain('locales/fr/');
   });
 
   it('lints the crate here and its component for wasm32-wasip2, with the features the build enables', async () => {

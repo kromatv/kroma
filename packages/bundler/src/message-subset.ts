@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { namespaceOf } from '@kromatv/i18n/layout';
+import { namespaceOf, parseCatalogPath } from '@kromatv/i18n/layout';
 import { LABEL_NAMESPACE } from '@kromatv/i18n/locales';
 import type { Plugin } from 'vite';
 
@@ -85,7 +85,8 @@ export function messageSubset(options: MessageSubsetOptions = {}): Plugin {
     load(id) {
       const query = id.indexOf('?');
       const file = query < 0 ? id : id.slice(0, query);
-      if (!file.startsWith(CATALOG_DIR) || !file.endsWith('.json')) return null;
+      if (!file.startsWith(CATALOG_DIR)) return null;
+      if (!parseCatalogPath(file.slice(CATALOG_DIR.length))) return null;
       keys ??= new Set([
         ...messageKeysIn([KIT_SRC, ...(options.roots ?? [])]),
         ...(options.keep ?? []),

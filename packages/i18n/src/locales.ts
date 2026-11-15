@@ -1,4 +1,4 @@
-import type { LocaleSet } from './types';
+import type { LocaleSet, OfferedLocale } from './types.ts';
 
 /** The namespace holding each locale's name for itself, the one catalog an app
  *  needs before anything renders. */
@@ -10,31 +10,49 @@ export function labelKey<L extends string>(code: L): `lang.${L}` {
   return `${LABEL_NAMESPACE}.${code}`;
 }
 
-/** The locales a product ships, knowable without loading a single message:
- *  `createLocales({ fr: 'Français', en: 'English' }, 'fr')`. The value of each
- *  entry is the endonym `normalizeLocale` accepts next to a BCP 47 tag, because
- *  that is how the server stores an account's language. */
+function subtags(tag: string): string[] {
+  return tag.toLowerCase().split(/[-_]/);
+}
+
+/** The locales a product offers its readers, knowable without loading a single
+ *  message: `createLocales({ fr: 'Français', en: 'English' }, 'fr')`. The value
+ *  of each entry is the endonym `normalizeLocale` accepts next to a BCP 47 tag,
+ *  because that is how the server stores an account's language. `beta` names
+ *  the ones still being translated. */
 export function createLocales<
   const N extends Record<string, string>,
   const D extends keyof N & string,
->(names: N, defaultLocale: D): LocaleSet<keyof N & string, D> {
+>(
+  names: N,
+  defaultLocale: D,
+  beta: readonly (keyof N & string)[] = [],
+): LocaleSet<keyof N & string, D> {
   type L = keyof N & string;
 
   const codes = Object.keys(names) as L[];
   const supported = new Set<L>(codes);
+  const folded = new Map<string, L>(codes.map((code) => [subtags(code).join('-'), code]));
 
   const isLocale = (value: unknown): value is L =>
     typeof value === 'string' && supported.has(value as L);
 
+  // The longest prefix a locale is named after wins, `pt-BR` before `pt`; a
+  // bare language then takes its first regional locale, so a reader asking for
+  // `pt` is not sent to the default while `pt-BR` is offered.
+  const byTag = (tag: string): L | null => {
+    const parts = subtags(tag);
+    for (let length = parts.length; length > 0; length -= 1) {
+      const code = folded.get(parts.slice(0, length).join('-'));
+      if (code) return code;
+    }
+    const language = parts[0];
+    return codes.find((code) => subtags(code)[0] === language) ?? null;
+  };
+
   const normalizeLocale = (tag?: string | null): L | null => {
     if (!tag) return null;
     const lower = tag.toLowerCase();
-    const base = lower.split(/[-_]/)[0];
-    if (isLocale(base)) return base;
-    for (const code of codes) {
-      if (names[code]?.toLowerCase() === lower) return code;
-    }
-    return null;
+    return byTag(tag) ?? codes.find((code) => names[code]?.toLowerCase() === lower) ?? null;
   };
 
   const detectLocale = (preferred?: string | null): L => {
@@ -56,9 +74,10 @@ export function createLocales<
     return defaultLocale;
   };
 
-  const LOCALES = codes.map((code): LocaleSet<L, D>['LOCALES'][number] => ({
+  const LOCALES = codes.map((code): OfferedLocale<L> => ({
     code,
     labelKey: labelKey(code),
+    stage: beta.includes(code) ? 'beta' : 'stable',
   }));
 
   return {

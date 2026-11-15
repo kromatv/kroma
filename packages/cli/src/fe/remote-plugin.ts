@@ -1,4 +1,6 @@
 import { dirname, relative } from 'node:path';
+import { catalogLayout } from '@kromatv/i18n/vite';
+import { readCatalogs } from '@kromatv/i18n-tools';
 import {
   REMOTE_ENTRY,
   REMOTE_SHARED,
@@ -47,6 +49,13 @@ function posix(path: string): string {
 function relativeImport(from: string, to: string): string {
   const rel = posix(relative(dirname(from), to));
   return rel.startsWith('.') ? rel : `./${rel}`;
+}
+
+function catalogsExpression(localesDir: string, glob: string): string {
+  if (catalogLayout(localesDir) === 'flat') {
+    return `import.meta.glob('${glob}', { eager: true, import: 'default' })`;
+  }
+  return JSON.stringify(readCatalogs({ dir: localesDir, layout: 'folder' }));
 }
 
 function clean(id: string): string {
@@ -129,7 +138,9 @@ function byCodeUnit(a: string, b: string): number {
 /**
  * The build half of the host contract: the plugins `kroma build` runs a module
  * frontend through. The first injects `module.json` and the locale catalogs into
- * the `defineModule({ ... })` call the way the compiled-in tier did. The second
+ * the `defineModule({ ... })` call the way the compiled-in tier did: a glob over
+ * `locales/<code>.json`, or one catalog per code merged here where the module
+ * keeps a folder per language. The second
  * rewrites every import of a package the host provides into a read from the
  * host's global, so the bundle carries none of them and one React, one design
  * system and one query cache live on the page, and writes `REMOTE_SHARED`
@@ -146,9 +157,10 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
     enforce: 'pre',
     transform(code, id) {
       if (posix(clean(id)) !== entry || !OPTIONS_ONLY_CALL.test(code)) return null;
+      const locales = catalogsExpression(options.localesDir, localesGlob);
       const injected = `import __kromaManifest from '${manifestImport}';\n${code}`.replace(
         OPTIONS_ONLY_CALL,
-        `defineModule({ manifest: __kromaManifest, locales: import.meta.glob('${localesGlob}', { eager: true, import: 'default' }),`,
+        () => `defineModule({ manifest: __kromaManifest, locales: ${locales},`,
       );
       return { code: injected, map: null };
     },

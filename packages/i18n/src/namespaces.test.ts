@@ -200,3 +200,84 @@ describe('what a view suspends on', () => {
     expect(i18n.ready('en')).toMatchObject({ status: 'fulfilled' });
   });
 });
+
+describe('a locale that falls back', () => {
+  const chain = (locale: string) => (locale === 'en' ? ['en'] : [locale, 'en']);
+
+  function partial(complete?: readonly string[]) {
+    const loads = {
+      en: vi.fn(() => Promise.resolve({ 'cart.pay': 'Pay', 'cart.back': 'Back' })),
+      de: vi.fn(() => Promise.resolve({ 'cart.pay': 'Zahlen' })),
+    };
+    const i18n = createI18n({
+      catalogs: { en: { greeting: 'Hi' }, de: { greeting: 'Hallo' } },
+      defaultLocale: 'en',
+      chain,
+    });
+    i18n.warm('de');
+    i18n.register('cart', loads, complete);
+    return { i18n, loads };
+  }
+
+  it('is fetched with its fallback, and waits for both', async () => {
+    const { i18n, loads } = partial();
+
+    await i18n.ready('de');
+
+    expect(i18n.translate('de', 'cart.back' as 'greeting')).toBe('Back');
+    expect(loads.en).toHaveBeenCalledTimes(1);
+  });
+
+  it('is fetched alone in a file it has translated whole', async () => {
+    const { i18n, loads } = partial(['en', 'de']);
+
+    await i18n.ready('de');
+
+    expect(loads.en).not.toHaveBeenCalled();
+  });
+
+  it('shares one fetch of the fallback with a reader of that fallback', async () => {
+    const { i18n, loads } = partial();
+
+    i18n.warm('en');
+    await Promise.all([i18n.ready('de'), i18n.ready('en')]);
+
+    expect(loads.en).toHaveBeenCalledTimes(1);
+    expect([i18n.pending('de'), i18n.pending('en')]).toEqual([null, null]);
+  });
+});
+
+describe('a namespace split into files', () => {
+  it('fetches every file of the namespace when a key of it misses', async () => {
+    const users = vi.fn(() => Promise.resolve({ 'admin.invite': 'Invite' }));
+    const backup = vi.fn(() => Promise.resolve({ 'admin.backupNow': 'Back up now' }));
+    const i18n = createI18n({
+      catalogs: { en: { greeting: 'Hi' } },
+      defaultLocale: 'en',
+      lazy: { 'admin/users': { en: users }, 'admin/backup': { en: backup } },
+    });
+
+    i18n.translate('en', 'admin.invite' as 'greeting');
+    await vi.waitFor(() =>
+      expect(i18n.translate('en', 'admin.invite' as 'greeting')).toBe('Invite'),
+    );
+
+    expect([users.mock.calls.length, backup.mock.calls.length]).toEqual([1, 1]);
+  });
+
+  it('fetches only the file a chunk announced', async () => {
+    const users = vi.fn(() => Promise.resolve({ 'admin.invite': 'Invite' }));
+    const backup = vi.fn(() => Promise.resolve({ 'admin.backupNow': 'Back up now' }));
+    const i18n = createI18n({
+      catalogs: { en: { greeting: 'Hi' } },
+      defaultLocale: 'en',
+      lazy: { 'admin/users': { en: users }, 'admin/backup': { en: backup } },
+    });
+    i18n.warm('en');
+
+    i18n.register('admin/users', { en: users });
+    await i18n.ready('en');
+
+    expect([users.mock.calls.length, backup.mock.calls.length]).toEqual([1, 0]);
+  });
+});

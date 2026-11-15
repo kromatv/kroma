@@ -1,17 +1,28 @@
 import type { AdminUser, HistoryLibrary } from '@kromatv/client/admin';
 import { resolveImageUrl } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Avatar, Chip, Row, Select } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import {
   EVERY_WINDOW,
   HISTORY_RANGES,
+  type HistoryRange,
   type HistorySearch,
   isHistoryRange,
 } from '#web/features/admin/history-query';
 import { apiBase } from '#web/shared/lib/api';
 
 const ANY_ID = 'all';
+
+const RANGE_LABEL: Record<HistoryRange, MessageKey> = {
+  '24h': 'admin.range24h',
+  '7d': 'admin.range7d',
+  '30d': 'admin.range30d',
+  '90d': 'admin.range90d',
+  '1y': 'admin.range1y',
+  all: 'admin.rangeAll',
+};
 // The well a Select row gives its media slot.
 const MARK = 18;
 
@@ -117,7 +128,11 @@ export function HistoryFilters({
       >
         <Select.Trigger />
         {HISTORY_RANGES.map((option) => (
-          <Select.Item key={option.value} value={option.value} label={t(option.labelKey)} />
+          <Select.Item
+            key={option.value}
+            value={option.value}
+            label={t(RANGE_LABEL[option.value])}
+          />
         ))}
       </Select.Root>
     </Row>

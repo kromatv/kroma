@@ -1,6 +1,5 @@
 import type { LibraryTitle } from '@kromatv/client/monitoring';
 import { datedDayLabel } from '@kromatv/core';
-import type { MessageKey } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useFormat, useLocale, useT } from '@kromatv/ui';
 import {
@@ -183,7 +182,7 @@ function TitleCell({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowC
         </Text>
         <Box shrink={0}>
           <Pill ink={km.color} bg={km.bg} variant="overline">
-            {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+            {t(`pipeline.type.${km.typeKey}`)}
           </Pill>
         </Box>
       </Row>

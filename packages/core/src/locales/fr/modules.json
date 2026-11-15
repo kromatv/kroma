@@ -1,8 +1,6 @@
 {
   "modules.accessDenied": "Accès refusé",
   "modules.errorDetails": "Détails",
-  "modules.errorDisabled": "Ce module est désactivé.",
-  "modules.errorDisabledHint": "Activez-le dans Modules pour utiliser cette page.",
   "modules.errorNotRunning": "Le module est installé mais son processus ne tourne pas.",
   "modules.errorNotRunningHint": "Il n'a peut-être pas réussi à démarrer. Le redémarrer résout généralement le problème.",
   "modules.errorServerDown": "Le serveur ne répond pas.",

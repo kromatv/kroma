@@ -11,6 +11,7 @@ export default defineConfig({
       dedupe: ['react-call'],
       start: { spa: { enabled: true } },
       precompress: true,
+      bootMessages: 500,
     }),
     kromaModule(),
     standaloneScript(swScript),

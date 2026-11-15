@@ -1,13 +1,9 @@
-import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
 import {
   type AudioCandidate,
   langBase,
-  langKey,
-  langOptions,
   langRegion,
   matchesLang,
-  PREF_LANGS,
   preferredAudioIndex,
   preferredSubIndex,
   refineTrackLang,
@@ -62,77 +58,6 @@ describe('langRegion', () => {
     expect(langRegion(null)).toBeNull();
     expect(langRegion(undefined)).toBeNull();
     expect(langRegion('')).toBeNull();
-  });
-});
-
-describe('langKey', () => {
-  it('resolves every spelling of a labelled language to one catalog key', () => {
-    expect(langKey('fr')).toBe('lang.fr');
-    expect(langKey('fre')).toBe('lang.fr');
-    expect(langKey('fra')).toBe('lang.fr');
-  });
-
-  it('keeps a dub variant the catalog names, and only that one', () => {
-    // fr-CA is offered (VFQ is a different dub from VFF, with a different cast),
-    // so it keeps its own name rather than collapsing to French.
-    expect(langKey('fr-CA')).toBe('lang.fr-CA');
-    expect(langKey('fr-ca')).toBe('lang.fr-CA'); // the server stores it lower-cased
-    expect(langKey('fre-CA')).toBe('lang.fr-CA');
-    expect(langKey('es-419')).toBe('lang.es-419');
-    // A region nobody offers falls back to the base rather than to nothing.
-    expect(langKey('fr-BE')).toBe('lang.fr');
-    expect(langKey('pt-AO')).toBe('lang.pt');
-  });
-
-  it('names every language a muxer can plausibly tag, not a curated few', () => {
-    expect(langKey('swe')).toBe('lang.sv');
-    expect(langKey('pol')).toBe('lang.pl');
-    expect(langKey('tha')).toBe('lang.th');
-    // Deprecated tags still written by old encoders.
-    expect(langKey('iw')).toBe('lang.he');
-    expect(langKey('in')).toBe('lang.id');
-    // Filipino has no 639-1 code; "tl" is the tag files actually carry.
-    expect(langKey('tl')).toBe('lang.fil');
-  });
-
-  it('is null for a code no catalog entry covers', () => {
-    expect(langKey('xyz')).toBeNull();
-    expect(langKey(null)).toBeNull();
-  });
-});
-
-describe('PREF_LANGS / langOptions', () => {
-  const t = ((key: string) => NAMES[key] ?? key) as Translate;
-  const NAMES: Record<string, string> = {
-    'lang.sv': 'Suédois',
-    'lang.de': 'Allemand',
-    'lang.fr': 'Français',
-  };
-
-  it('offers the whole ISO 639-1 set, plus the codes that never got one', () => {
-    // The count is not the point; "no longer a curated handful" is.
-    expect(PREF_LANGS.length).toBeGreaterThan(150);
-    for (const code of ['sv', 'pl', 'th', 'ar', 'hi', 'tr', 'uk', 'vi', 'fil', 'yue']) {
-      expect(PREF_LANGS).toContain(code);
-    }
-  });
-
-  it('names every offered code (no raw keys leak into a picker)', () => {
-    for (const code of PREF_LANGS) expect(langKey(code)).toBe(`lang.${code}`);
-  });
-
-  it('orders rows by their translated label, not by code', () => {
-    const labels = langOptions(t, 'fr').map((o) => o.label);
-    expect(labels.indexOf('Allemand')).toBeLessThan(labels.indexOf('Français'));
-    expect(labels.indexOf('Français')).toBeLessThan(labels.indexOf('Suédois'));
-  });
-
-  it('still orders rows on a runtime that rejects the locale', () => {
-    const sharing = ((key: string) =>
-      key === 'lang.fr-CA' ? 'Français' : (NAMES[key] ?? key)) as Translate;
-    const labels = langOptions(sharing, 'not a language tag').map((o) => o.label);
-    expect(labels.indexOf('Allemand')).toBeLessThan(labels.indexOf('Suédois'));
-    expect(labels.filter((l) => l === 'Français')).toHaveLength(2);
   });
 });
 

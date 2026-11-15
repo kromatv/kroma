@@ -2,7 +2,7 @@
 // device) plus the preferred audio and subtitle languages. Each one is saved
 // the moment it is chosen.
 
-import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kromatv/core';
+import { LANG_NO_PREF, LOCALES, langName, langOptions, localeLabel } from '@kromatv/core';
 import { prefValue } from '@kromatv/core/react';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import { ListRow, Select, Switch, Text } from '@kromatv/ui/kit';
@@ -74,7 +74,7 @@ export function PreferencesCard() {
           >
             <Select.Trigger />
             {LOCALES.map((l) => (
-              <Select.Item key={l.code} value={l.code} label={t(l.labelKey)} />
+              <Select.Item key={l.code} value={l.code} label={localeLabel(t, l)} />
             ))}
           </Select.Root>
         }

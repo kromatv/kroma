@@ -1,9 +1,7 @@
 import { UserId } from '@kromatv/client/accounts';
 import { LibraryId } from '@kromatv/client/media';
-import type { MessageKey } from '@kromatv/i18n';
 import type { SortColumn, SortDirection } from '@kromatv/ui/kit';
 import { z } from 'zod';
-import { type HistorySort, isHistorySort } from '#web/features/admin/history-columns';
 
 const NO_WINDOW = 0;
 const MAX_ID_LENGTH = 128;
@@ -12,14 +10,22 @@ export const HISTORY_PAGE = 50;
 
 const NEWEST_FIRST: SortColumn = { column: 'endedAt', direction: 'desc' };
 
+export const HISTORY_SORTS = ['username', 'kind', 'title', 'device', 'player', 'endedAt'] as const;
+
+export type HistorySort = (typeof HISTORY_SORTS)[number];
+
+export function isHistorySort(value: unknown): value is HistorySort {
+  return (HISTORY_SORTS as readonly unknown[]).includes(value);
+}
+
 export const HISTORY_RANGES = [
-  { value: '24h', labelKey: 'admin.range24h', days: 1 },
-  { value: '7d', labelKey: 'admin.range7d', days: 7 },
-  { value: '30d', labelKey: 'admin.range30d', days: 30 },
-  { value: '90d', labelKey: 'admin.range90d', days: 90 },
-  { value: '1y', labelKey: 'admin.range1y', days: 365 },
-  { value: 'all', labelKey: 'admin.rangeAll', days: NO_WINDOW },
-] as const satisfies readonly { value: string; labelKey: MessageKey; days: number }[];
+  { value: '24h', days: 1 },
+  { value: '7d', days: 7 },
+  { value: '30d', days: 30 },
+  { value: '90d', days: 90 },
+  { value: '1y', days: 365 },
+  { value: 'all', days: NO_WINDOW },
+] as const satisfies readonly { value: string; days: number }[];
 
 export type HistoryRange = (typeof HISTORY_RANGES)[number]['value'];
 

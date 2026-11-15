@@ -26,6 +26,24 @@ describe('endsAtClock', () => {
     expect(/h\d{2}$/.test(endsAtClock(remainingMs))).toBe(true);
   });
 
+  it('writes the time the way another language does, and a regional French as French', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
+
+    const german = endsAtClock(90 * 60_000, 'de');
+    const swiss = endsAtClock(90 * 60_000, 'fr-CH');
+
+    expect(german).toMatch(/^\d{1,2}:\d{2}$/);
+    expect(swiss).toMatch(/^\d{1,2}h\d{2}$/);
+  });
+
+  it('falls back to the French clock for a locale the runtime does not know', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
+
+    expect(endsAtClock(90 * 60_000, 'not a locale')).toMatch(/^\d{1,2}h\d{2}$/);
+  });
+
   it('formats the en locale as a 12h AM/PM clock', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));

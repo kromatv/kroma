@@ -44,7 +44,7 @@ export function ReportPanel({ onReport }: Readonly<ReportPanelProps>) {
   if (state === 'done') {
     return (
       <Box style={panelScoped.panelList}>
-        <Text variant="subheadingTv">{t('report.submitted')}</Text>
+        <Text variant="subheadingTv">{t('report.sent')}</Text>
       </Box>
     );
   }

@@ -1,15 +1,11 @@
 {
-  "discover.addToMyList": "Add to my list",
   "discover.all": "All",
-  "discover.allSeasons": "All seasons",
   "discover.back": "Back to search",
   "discover.empty": "Start typing to search.",
   "discover.episodesN": "{n} episodes",
   "discover.episodesPartial": "{have}/{total} episodes",
-  "discover.fillGapsHint": "Request to fill the missing episodes",
   "discover.kindMovie": "Movie",
   "discover.kindShow": "Show",
-  "discover.markWatched": "Mark watched",
   "discover.movies": "Movies",
   "discover.next": "Next",
   "discover.noResults": "No results.",
@@ -20,13 +16,8 @@
   "discover.prev": "Previous",
   "discover.request": "Request",
   "discover.requestFailed": "Request failed",
-  "discover.requestN": "Request {n} season(s)",
-  "discover.requestSeasons": "Choose seasons",
-  "discover.requestSeasonsHint": "Request the missing seasons of this show",
   "discover.requestShow": "Request series",
-  "discover.requesting": "Requesting…",
   "discover.seasonN": "Season {n}",
-  "discover.seasonsTitle": "Seasons",
   "discover.sectionDiscover": "Discover",
   "discover.sectionLibrary": "In your library",
   "discover.seeAll": "See all",
@@ -36,6 +27,5 @@
   "discover.title": "Search",
   "discover.trending": "Trending this week",
   "discover.trendingMovies": "Trending movies",
-  "discover.trendingShows": "Trending shows",
-  "discover.viewInLibrary": "View in library"
+  "discover.trendingShows": "Trending shows"
 }

@@ -4,7 +4,7 @@
 // account. They differ in what a pick DOES, which is the prop, and in nothing
 // else.
 
-import { LOCALES } from '@kromatv/core';
+import { LOCALES, localeLabel } from '@kromatv/core';
 import type { Locale } from '@kromatv/i18n';
 import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
@@ -27,7 +27,7 @@ export function LocalePicker({
           style={({ pressed }) => [s.row, pressed && s.rowPressed]}
         >
           <Text style={[s.rowLabel, locale === l.code && { fontWeight: '700' }]}>
-            {t(l.labelKey)}
+            {localeLabel(t, l)}
           </Text>
           {locale === l.code ? (
             <Icon name="check" size={17} thickness={2.4} color="accentText" />

@@ -1,17 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { catalogsByLocale, namespaceOf, parseCatalogPath, sourcesByNamespace } from './layout';
+import { catalogsByLocale, namespaceOf, parseCatalogPath, sourcesByFile } from './layout';
 
 describe('parseCatalogPath', () => {
   it('reads the locale and namespace off a path, with or without the leading dot', () => {
-    expect(parseCatalogPath('./en/about.json')).toEqual({ locale: 'en', namespace: 'about' });
-    expect(parseCatalogPath('fr/nav.json')).toEqual({ locale: 'fr', namespace: 'nav' });
+    expect(parseCatalogPath('./en/about.json')).toEqual({
+      locale: 'en',
+      namespace: 'about',
+      file: 'about',
+    });
+    expect(parseCatalogPath('fr/nav.json')).toMatchObject({ locale: 'fr', namespace: 'nav' });
+  });
+
+  it('reads a file a namespace is split into as part of that namespace', () => {
+    expect(parseCatalogPath('./en/admin/users.json')).toEqual({
+      locale: 'en',
+      namespace: 'admin',
+      file: 'admin/users',
+    });
+    expect(parseCatalogPath('./en/admin/sign-in/providers.json')).toMatchObject({
+      namespace: 'admin',
+      file: 'admin/sign-in/providers',
+    });
   });
 
   it('answers null for anything that is not a catalog file', () => {
     expect(parseCatalogPath('./messages.d.ts')).toBeNull();
     expect(parseCatalogPath('./stray.json')).toBeNull();
     expect(parseCatalogPath('./en/about.ts')).toBeNull();
-    expect(parseCatalogPath('./en/deeper/x.json')).toBeNull();
   });
 });
 
@@ -20,30 +35,34 @@ describe('catalogsByLocale', () => {
     const catalogs = catalogsByLocale({
       './en/about.json': { 'about.title': 'About' },
       './en/nav.json': { 'nav.home': 'Home' },
+      './en/admin/users.json': { 'admin.invite': 'Invite' },
       './fr/about.json': { 'about.title': 'À propos' },
       './stray.json': { ignored: 'yes' },
     });
 
     expect(catalogs).toEqual({
-      en: { 'about.title': 'About', 'nav.home': 'Home' },
+      en: { 'about.title': 'About', 'nav.home': 'Home', 'admin.invite': 'Invite' },
       fr: { 'about.title': 'À propos' },
     });
   });
 });
 
-describe('sourcesByNamespace', () => {
-  it('regroups per-file loaders by namespace, then by locale', async () => {
+describe('sourcesByFile', () => {
+  it('regroups per-file loaders by catalog file, then by locale', async () => {
     const en = () => Promise.resolve({ 'admin.title': 'Console' });
     const fr = () => Promise.resolve({ 'admin.title': 'Console (fr)' });
+    const users = () => Promise.resolve({ 'admin.invite': 'Invite' });
 
-    const sources = sourcesByNamespace({
+    const sources = sourcesByFile({
       './en/admin.json': en,
       './fr/admin.json': fr,
+      './en/admin/users.json': users,
       './en/about.json': () => Promise.resolve({ 'about.title': 'About' }),
     });
 
-    expect(Object.keys(sources).sort()).toEqual(['about', 'admin']);
+    expect(Object.keys(sources).sort()).toEqual(['about', 'admin', 'admin/users']);
     expect(sources.admin).toEqual({ en, fr });
+    expect(sources['admin/users']).toEqual({ en: users });
     await expect(sources.admin?.fr?.()).resolves.toEqual({ 'admin.title': 'Console (fr)' });
   });
 });

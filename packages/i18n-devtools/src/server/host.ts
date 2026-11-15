@@ -1,9 +1,43 @@
+/** One message as the dev server reads it off the catalogs: the source
+ *  language's forms to read against, the forms the asked locale writes itself,
+ *  and every placeholder a text may name. */
+export interface CatalogMessage {
+  readonly set: string;
+  readonly source: string;
+  readonly reference: Readonly<Record<string, string>>;
+  readonly forms: Readonly<Record<string, string>>;
+  readonly variables: readonly string[];
+}
+
+/** The keys of one scope whose translation the lock does not vouch for. No
+ *  scope is the app's own catalogs. */
+export interface Pending {
+  readonly scope: string | null;
+  readonly outdated: readonly string[];
+  readonly unreviewed: readonly string[];
+}
+
+/** How one locale stands against the source language: the share a reader gets
+ *  in it, the three counts, and the keys behind two of them, by scope. */
+export interface TranslationStatus {
+  readonly locale: string;
+  readonly coverage: number;
+  readonly missing: number;
+  readonly outdated: number;
+  readonly unreviewed: number;
+  readonly sets: readonly Pending[];
+}
+
 /** What the panel asks the dev server, over the channel Vite already keeps
  *  open to every module it serves. */
 export interface Asks {
   'kroma:i18n:editors': { editors: Array<{ id: string; name: string }> };
   'kroma:i18n:where': { line: number | null };
   'kroma:i18n:open': { opened: boolean };
+  'kroma:i18n:message': { message: CatalogMessage | null; refused: string | null };
+  'kroma:i18n:edit': { written: string[]; refused: string | null };
+  'kroma:i18n:status': { status: TranslationStatus | null; refused: string | null };
+  'kroma:i18n:confirm': { settled: string[]; refused: string | null };
 }
 
 /** The dev server's end of that channel: `import.meta.hot`, narrowed to what
@@ -15,10 +49,20 @@ export interface Channel {
 }
 
 const REFRESH = 'kroma:i18n:refresh';
-const EVENTS = ['kroma:i18n:editors', 'kroma:i18n:where', 'kroma:i18n:open'] as const;
+const SAVED = 'kroma:catalog';
+const EVENTS = [
+  'kroma:i18n:editors',
+  'kroma:i18n:where',
+  'kroma:i18n:open',
+  'kroma:i18n:message',
+  'kroma:i18n:edit',
+  'kroma:i18n:status',
+  'kroma:i18n:confirm',
+] as const satisfies ReadonlyArray<keyof Asks>;
 const TIMEOUT_MS = 3000;
 
 const waiting = new Map<number, (answer: unknown) => void>();
+const saved = new Set<() => void>();
 let channel: Channel | null = null;
 let next = 0;
 
@@ -27,6 +71,9 @@ let next = 0;
 export function openChannel(hot: Channel | null): void {
   channel = hot;
   if (!hot) return;
+  hot.on(SAVED, () => {
+    for (const listener of saved) listener();
+  });
   for (const event of EVENTS) {
     hot.on(event, (answer) => {
       const { at } = answer as { at: number };
@@ -48,6 +95,19 @@ export function openChannel(hot: Channel | null): void {
  */
 export function refresh(): void {
   channel?.send(REFRESH, {});
+}
+
+/**
+ * Call `listener` each time the dev server says a catalog file was saved,
+ * whoever saved it: the editor, a hand in the file, the command line. That is
+ * the event KROMA's catalogs plugin sends in place of a reload, so an app on
+ * another engine never hears it. Returns a disposer.
+ */
+export function onCatalogSaved(listener: () => void): () => void {
+  saved.add(listener);
+  return () => {
+    saved.delete(listener);
+  };
 }
 
 /**

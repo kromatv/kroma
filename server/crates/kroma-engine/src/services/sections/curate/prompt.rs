@@ -6,9 +6,9 @@ use super::catalog::{CatalogEntry, MIN_ITEMS};
 pub(super) const MAX_LLM: usize = 14;
 
 // JSON shape fragment for one collection, with `title`/`reason` as objects keyed
-// by every supported language code (e.g. `"title":{"en":string,"fr":string}`).
+// by every content language code (e.g. `"title":{"en":string,"fr":string}`).
 fn collection_shape() -> String {
-    let fields = i18n::SUPPORTED_LOCALES
+    let fields = i18n::content_locales()
         .iter()
         .map(|l| format!("\"{l}\":string"))
         .collect::<Vec<_>>()
@@ -18,7 +18,7 @@ fn collection_shape() -> String {
 
 // The language rule shared by both curate prompts.
 fn language_rule() -> String {
-    let codes = i18n::SUPPORTED_LOCALES.join(", ");
+    let codes = i18n::content_locales().join(", ");
     format!(
         "- \"title\" and \"reason\" are objects keyed by language code ({codes}) \
          provide EVERY listed language. Title < 5 words; reason is one short clause."

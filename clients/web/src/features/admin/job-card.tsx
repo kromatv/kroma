@@ -206,11 +206,7 @@ function StatusPill({ job }: Readonly<{ job: JobInfo }>) {
   }
   const status = job.lastRun?.status;
   if (!status) return null;
-  return (
-    <Badge tone={STATUS_TONE[status] ?? 'neutral'}>
-      {t(`jobs.status.${status}` as MessageKey)}
-    </Badge>
-  );
+  return <Badge tone={STATUS_TONE[status] ?? 'neutral'}>{t(`jobs.status.${status}`)}</Badge>;
 }
 
 function ScheduleChip({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }>) {

@@ -1,5 +1,5 @@
 import type { CatalogOrLoader, NamespaceCatalogs } from './announce';
-import { namespaceOf } from './layout';
+import { namespaceOf, namespaceOfFile } from './layout';
 import type { Catalog } from './types';
 
 const LANDED: Promise<void> = Object.assign(Promise.resolve(), {
@@ -12,8 +12,20 @@ interface Entry {
   readonly loaded: Set<string>;
   readonly loading: Map<string, Promise<void>>;
   readonly failed: Set<string>;
+  readonly complete: Set<string>;
   needed: boolean;
 }
+
+/** What a locale reads in, and which locales never need another's help. */
+export interface Reach {
+  /** The locales a message is looked up in when `locale` renders, itself
+   *  first. */
+  chain(locale: string): readonly string[];
+  /** Whether `locale` is held complete in every file. */
+  whole(locale: string): boolean;
+}
+
+const ALONE: Reach = { chain: (locale) => [locale], whole: () => true };
 
 /** Where a landed catalog goes, and how a view hears that a locale is whole. */
 export interface CatalogSink {
@@ -22,14 +34,21 @@ export interface CatalogSink {
 }
 
 /**
- * Which namespaces exist, where each locale's catalog comes from, and which of
- * them have landed. A namespace a chunk announced is `needed`: its catalog for
- * every warmed locale is fetched at once. One only the folder glob offered is
- * fetched when a key of it misses. A view is told once per locale, when the
- * last fetch in flight for it lands, rather than once per namespace.
+ * Which catalog files exist, where each locale's comes from, and which of them
+ * have landed. A file is a file, or one of the files a file is split
+ * into. One a chunk announced is `needed`: its catalog for every warmed locale
+ * is fetched at once. One only the folder glob offered is fetched when a key
+ * of its file misses. A view is told once per locale, when the last fetch
+ * in flight for it lands, rather than once per file.
+ *
+ * A locale that is not complete in a file is fetched together with the
+ * locales it falls back to, down to the first complete one, so an unfinished
+ * translation reads in its fallback and never as a key.
  */
 export class Namespaces {
   private readonly entries = new Map<string, Entry>();
+  private readonly byNamespace = new Map<string, Set<string>>();
+  private readonly shipped = new Map<string, Set<string>>();
   private readonly warmed = new Set<string>();
   private readonly inFlight = new Map<string, Set<Promise<void>>>();
   private readonly pendingByLocale = new Map<string, Promise<void>>();
@@ -37,14 +56,24 @@ export class Namespaces {
   constructor(
     private readonly sink: CatalogSink,
     shipped: Readonly<Record<string, Catalog>>,
+    private readonly reach: Reach = ALONE,
   ) {
     for (const [locale, catalog] of Object.entries(shipped)) {
-      for (const key of Object.keys(catalog)) this.settle(namespaceOf(key), locale);
+      this.shipped.set(locale, new Set(Object.keys(catalog).map(namespaceOf)));
     }
   }
 
-  announce(namespace: string, catalogs: NamespaceCatalogs, needed: boolean): void {
-    const entry = this.entry(namespace);
+  /** `complete` names the locales whose catalog answers every message of the
+   *  file, where the caller knows; a locale it leaves out is fetched with its
+   *  fallbacks unless it is whole everywhere. */
+  announce(
+    file: string,
+    catalogs: NamespaceCatalogs,
+    needed: boolean,
+    complete: readonly string[] = [],
+  ): void {
+    const entry = this.entry(file);
+    for (const locale of complete) entry.complete.add(locale);
     let landed = false;
     for (const [locale, source] of Object.entries(catalogs)) {
       if (typeof source === 'function') {
@@ -52,22 +81,22 @@ export class Namespaces {
         continue;
       }
       this.sink.extend(locale, source);
-      this.settle(namespace, locale);
+      this.settle(file, locale);
       landed = true;
     }
     if (landed) this.sink.changed();
     entry.needed ||= needed;
     if (entry.needed) {
-      for (const locale of this.warmed) this.ensure(namespace, locale)?.catch(() => undefined);
+      for (const locale of this.warmed) this.want(file, locale);
     }
   }
 
-  /** From now on, fetch every needed namespace's catalog for `locale`. */
+  /** From now on, fetch every needed catalog for `locale`. */
   warm(locale: string): void {
     if (this.warmed.has(locale)) return;
     this.warmed.add(locale);
-    for (const [namespace, entry] of this.entries) {
-      if (entry.needed) this.ensure(namespace, locale)?.catch(() => undefined);
+    for (const [file, entry] of this.entries) {
+      if (entry.needed) this.want(file, locale);
     }
   }
 
@@ -95,18 +124,29 @@ export class Namespaces {
     return this.pending(locale) ?? LANDED;
   }
 
-  /** A key nothing answered in `locale`: fetch its namespace for that locale,
-   *  unless a fetch already failed. */
+  /** A key nothing answered in `locale`: fetch every file of its file
+   *  for that locale, leaving alone a catalog whose fetch already failed. */
   missed(key: string, locale: string): void {
-    const namespace = namespaceOf(key);
-    const entry = this.entries.get(namespace);
-    if (!entry || entry.failed.has(locale)) return;
-    this.ensure(namespace, locale)?.catch(() => undefined);
+    for (const file of this.byNamespace.get(namespaceOf(key)) ?? []) {
+      this.want(file, locale, false);
+    }
   }
 
-  private ensure(namespace: string, locale: string): Promise<void> | null {
-    const entry = this.entry(namespace);
+  private want(file: string, rendered: string, retry = true): void {
+    const entry = this.entry(file);
+    for (const locale of this.reach.chain(rendered)) {
+      if (retry || !entry.failed.has(locale)) {
+        const flight = this.ensure(file, locale);
+        if (flight) this.flying(rendered).add(flight);
+      }
+      if (entry.complete.has(locale) || this.reach.whole(locale)) return;
+    }
+  }
+
+  private ensure(file: string, locale: string): Promise<void> | null {
+    const entry = this.entry(file);
     if (entry.loaded.has(locale)) return null;
+    if (this.shipped.get(locale)?.has(namespaceOfFile(file))) return null;
     const started = entry.loading.get(locale);
     if (started) return started;
     const source = entry.sources.get(locale);
@@ -115,25 +155,25 @@ export class Namespaces {
     const flight: Promise<void> = source().then(
       (catalog) => {
         this.sink.extend(locale, catalog);
-        this.settle(namespace, locale);
-        this.landed(locale, flight);
+        this.settle(file, locale);
+        this.landed(flight);
       },
-      (error: unknown) => {
+      () => {
         entry.failed.add(locale);
         entry.loading.delete(locale);
-        this.landed(locale, flight);
-        throw error;
+        this.landed(flight);
       },
     );
     entry.loading.set(locale, flight);
-    this.flying(locale).add(flight);
     return flight;
   }
 
-  private landed(locale: string, flight: Promise<void>): void {
-    const flying = this.flying(locale);
-    flying.delete(flight);
-    if (flying.size === 0) this.sink.changed();
+  private landed(flight: Promise<void>): void {
+    let whole = false;
+    for (const flying of this.inFlight.values()) {
+      if (flying.delete(flight) && flying.size === 0) whole = true;
+    }
+    if (whole) this.sink.changed();
   }
 
   private flying(locale: string): Set<Promise<void>> {
@@ -145,25 +185,29 @@ export class Namespaces {
     return flying;
   }
 
-  private settle(namespace: string, locale: string): void {
-    const entry = this.entry(namespace);
+  private settle(file: string, locale: string): void {
+    const entry = this.entry(file);
     entry.loaded.add(locale);
     entry.loading.delete(locale);
     entry.sources.delete(locale);
     entry.failed.delete(locale);
   }
 
-  private entry(namespace: string): Entry {
-    let entry = this.entries.get(namespace);
+  private entry(file: string): Entry {
+    let entry = this.entries.get(file);
     if (!entry) {
       entry = {
         sources: new Map(),
         loaded: new Set(),
         loading: new Map(),
         failed: new Set(),
+        complete: new Set(),
         needed: false,
       };
-      this.entries.set(namespace, entry);
+      this.entries.set(file, entry);
+      const files = this.byNamespace.get(namespaceOfFile(file)) ?? new Set();
+      files.add(file);
+      this.byNamespace.set(namespaceOfFile(file), files);
     }
     return entry;
   }

@@ -1,10 +1,10 @@
-import type { Translate } from '@kromatv/i18n';
+import type { Translate, TVars } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
 import { departmentLabel, formatDay, personAge, personFacts } from './person-facts';
 
 // Echoes the key with its interpolations.
-const t: Translate = (key, vars) =>
-  vars ? `${key}:${Object.values(vars).join(',')}` : String(key);
+const t = ((key: string, vars?: TVars) =>
+  vars ? `${key}:${Object.values(vars).join(',')}` : key) as Translate;
 
 describe('personAge', () => {
   it('counts whole years up to today', () => {

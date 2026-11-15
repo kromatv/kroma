@@ -3,9 +3,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { openChannel } from '../server/host';
 import { mark } from './mark';
+import { holdStatus, wantStatus } from './review';
 import { installProbe, probed } from './probe';
 
 const FR = { scope: null, locale: 'fr' };
+
+const CURRENT = { locale: 'fr', coverage: 1, missing: 0, outdated: 0, unreviewed: 0, sets: [] };
 
 let stop = () => {};
 
@@ -37,6 +40,7 @@ beforeEach(() => {
 
 afterEach(() => {
   stop();
+  wantStatus(null);
   document.body.innerHTML = '';
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -49,6 +53,28 @@ describe('pointing at a message', () => {
     pointAt('#a');
 
     expect(probed()).toMatchObject({ key: 'auth.login', locale: 'fr', grade: 'catalog' });
+  });
+
+  it('grades it by what the lock says of its translation', () => {
+    wantStatus('fr');
+    holdStatus({ ...CURRENT, sets: [{ scope: null, outdated: ['auth.login'], unreviewed: [] }] });
+    page(`<p id="a">${drew('Connexion')}</p>`);
+
+    pointAt('#a');
+
+    expect(probed()).toMatchObject({ key: 'auth.login', grade: 'outdated' });
+  });
+
+  it('grades it again, without the pointer moving, once the lock says otherwise', () => {
+    wantStatus('fr');
+    holdStatus({ ...CURRENT, sets: [{ scope: null, outdated: ['auth.login'], unreviewed: [] }] });
+    page(`<p id="a">${drew('Connexion')}</p>`);
+    pointAt('#a');
+
+    holdStatus(CURRENT);
+    vi.runAllTimers();
+
+    expect(probed()).toMatchObject({ key: 'auth.login', grade: 'catalog' });
   });
 
   it('carries the variables it was rendered with', () => {

@@ -27,14 +27,19 @@ pub(super) fn fill_langs(eng: &Engine, job: &Job, tmdb_id: u64, missing: &[Strin
     let want: Vec<&str> = missing
         .iter()
         .map(String::as_str)
-        .filter(|l| crate::i18n::SUPPORTED_LOCALES.contains(l))
+        .filter(|l| crate::i18n::content_locales().contains(l))
         .collect();
     if want.is_empty() {
         return;
     }
-    let Some(resolved) =
-        metadata::lookup_all_by_id(&eng.cache, &eng.api_key, &want, job.target, tmdb_id)
-    else {
+    let Some(resolved) = metadata::lookup_all_by_id(
+        &eng.cache,
+        &eng.api_key,
+        &eng.language,
+        &want,
+        job.target,
+        tmdb_id,
+    ) else {
         warn!(id = %job.id, "metadata unreachable; keeping the language it already has");
         return;
     };
@@ -73,14 +78,14 @@ pub(super) fn process_job(
     activity: Option<&Activity>,
     job: Job,
 ) {
-    let langs: Vec<&str> = crate::i18n::SUPPORTED_LOCALES.to_vec();
+    let langs = crate::i18n::content_locales();
     if let Some(tmdb_id) = job.resolved_tmdb {
         if job.is_show {
             enrich_episodes(
                 &eng.pool,
                 &eng.api_key,
                 &eng.language,
-                &langs,
+                langs,
                 &eng.data_dir,
                 &eng.bus,
                 &job.id,
@@ -88,7 +93,7 @@ pub(super) fn process_job(
             );
         }
         let kind = subject_kind(job.is_show);
-        let stale = stale_langs(&eng.pool, kind, &job.id, &langs);
+        let stale = stale_langs(&eng.pool, kind, &job.id, langs);
         if !stale.is_empty() {
             fill_langs(eng, &job, tmdb_id, &stale);
         }
@@ -97,14 +102,19 @@ pub(super) fn process_job(
         return;
     }
     let resolved = match job.pin.or(job.refetch) {
-        Some(tmdb_id) => {
-            metadata::lookup_all_by_id(&eng.cache, &eng.api_key, &langs, job.target, tmdb_id)
-        }
+        Some(tmdb_id) => metadata::lookup_all_by_id(
+            &eng.cache,
+            &eng.api_key,
+            &eng.language,
+            langs,
+            job.target,
+            tmdb_id,
+        ),
         None => metadata::lookup_all(
             &eng.cache,
             &eng.api_key,
             &eng.language,
-            &langs,
+            langs,
             job.target,
             &job.title,
             job.year,
@@ -149,7 +159,7 @@ pub(super) fn process_job(
         db::set_item_metadata(&eng.pool, &job.id, &meta)
     };
     match write {
-        Ok(()) => on_write_ok(eng, counters, &job, &meta, &vector, &by_lang, &langs),
+        Ok(()) => on_write_ok(eng, counters, &job, &meta, &vector, &by_lang, langs),
         Err(e) => {
             counters.failed.fetch_add(1, Ordering::Relaxed);
             warn!(id = %job.id, error = %e, "failed to store metadata");

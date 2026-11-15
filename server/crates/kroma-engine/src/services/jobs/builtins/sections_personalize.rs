@@ -28,11 +28,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         return Ok(());
     }
     ctx.info(format!("personalizing with {}", llm.describe()));
-    // Output cap from the default provider (per-provider since multi-provider).
-    let max_tokens = crate::services::settings::default_provider(&state.settings)
-        .map(|p| p.max_tokens)
-        .unwrap_or(900)
-        .clamp(64, 8192) as u32;
+    let max_tokens = crate::services::llm::localized_reply_budget(&state.settings, 64);
     state.vectors.refresh_if_stale(&state.db)?;
     let vocabulary = crate::db::catalogue_genres(&state.db).unwrap_or_default();
 

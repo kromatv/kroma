@@ -23,11 +23,21 @@ export type PluralCategory = Intl.LDMLPluralRule;
  *  `Intl.PluralRules` is absent or wrong for a language you ship. */
 export type PluralRule = (locale: string, count: number) => PluralCategory;
 
+/** One language a reader can be offered. */
+export interface OfferedLocale<L extends string> {
+  readonly code: L;
+  /** The message holding the language's name for itself. */
+  readonly labelKey: `lang.${L}`;
+  /** `beta` while the translation is unfinished and reads in its fallback
+   *  where it has nothing; `stable` once it is held complete. */
+  readonly stage: 'beta' | 'stable';
+}
+
 export interface LocaleSet<L extends string, D extends L = L> {
   readonly detectLocale: (preferred?: string | null) => L;
   readonly isLocale: (value: unknown) => value is L;
   readonly normalizeLocale: (tag?: string | null) => L | null;
   readonly DEFAULT_LOCALE: D;
   readonly SUPPORTED_LOCALES: ReadonlySet<L>;
-  readonly LOCALES: ReadonlyArray<{ readonly code: L; readonly labelKey: `lang.${L}` }>;
+  readonly LOCALES: ReadonlyArray<OfferedLocale<L>>;
 }

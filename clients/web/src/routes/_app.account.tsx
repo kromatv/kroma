@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { ACCOUNT_SECTIONS, AccountPage } from '#web/features/accounts/account/account-page';
+import { AccountPage } from '#web/features/accounts/account/account-page';
+import { ACCOUNT_SECTIONS } from '#web/features/accounts/account/account-sections';
 
 const Search = z.object({ section: z.enum(ACCOUNT_SECTIONS).optional().catch(undefined) });
 

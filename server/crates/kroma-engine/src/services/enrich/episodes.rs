@@ -10,7 +10,7 @@ use crate::infra::image;
 use crate::infra::metadata;
 use crate::model::{ListedEpisode, MediaItem, Metadata};
 
-use super::lang::primary_lang;
+use super::lang::{primary_lang, season_by_locale};
 
 pub(super) fn blank_metadata() -> Metadata {
     Metadata {
@@ -92,7 +92,7 @@ pub(super) fn enrich_episodes(
         if missing.is_empty() && !needs_cast && !needs_guide && !stale_text && !stale_cast {
             continue;
         }
-        let per_lang = metadata::season_episodes_multi(api_key, langs, tv_id, season.number);
+        let per_lang = season_by_locale(api_key, langs, tv_id, season.number);
         if per_lang.is_empty() {
             continue;
         }

@@ -1,8 +1,7 @@
 import type { PlayEntry } from '@kromatv/client/admin';
 import type { MessageKey } from '@kromatv/i18n';
 import type { TableColumn } from '@kromatv/ui/kit';
-
-export type HistorySort = 'username' | 'kind' | 'title' | 'device' | 'player' | 'endedAt';
+import type { HistorySort } from '#web/features/admin/history-query';
 
 export interface HistoryColumn extends TableColumn {
   column: HistorySort;
@@ -21,10 +20,6 @@ export const HISTORY_COLUMNS: readonly HistoryColumn[] = [
 export const ITEM_HISTORY_COLUMNS: readonly HistoryColumn[] = HISTORY_COLUMNS.filter(
   (column) => column.column !== 'title',
 );
-
-export function isHistorySort(value: unknown): value is HistorySort {
-  return HISTORY_COLUMNS.some((column) => column.column === value);
-}
 
 export function kindKey(kind: string): MessageKey {
   return kind === 'movie' ? 'admin.kindMovie' : 'admin.kindTv';

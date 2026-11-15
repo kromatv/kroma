@@ -14,7 +14,5 @@
   "offline.remove": "Supprimer le téléchargement",
   "offline.resume": "Reprendre",
   "offline.storageFree": "Libre",
-  "offline.storageOther": "Utilisé",
-  "offline.storageUsed": "{size} utilisés",
-  "offline.unavailable": "Indisponible hors ligne sur cet appareil"
+  "offline.storageOther": "Utilisé"
 }

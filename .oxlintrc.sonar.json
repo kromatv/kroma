@@ -224,6 +224,7 @@
     "**/*.gen.ts",
     "**/routeTree.gen.ts",
     "packages/core/src/locales/messages.d.ts",
+    "modules/*/ui/src/messages.d.ts",
     "apps/www/src/paraglide",
     "**/*.template.html",
     "clients/synology",
@@ -235,6 +236,8 @@
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "**/*.test.mjs",
+    "server/updater/test_*.py",
+    "clients/*/modules/*/tizen/test/**",
     "packages/cli/templates/**",
     "**/node_modules/**",
     "**/__pycache__/**",
@@ -345,6 +348,30 @@
       }
     },
     {
+      "files": ["packages/i18n-tools/src/claude-code.ts"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
+      "files": ["packages/installer/src/discovery/local-network.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
+      "files": ["packages/installer/src/discovery/mdns.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
+      "files": ["packages/installer/src/discovery/ssdp.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
       "files": ["packages/mdns-beacon/src/wire.ts"],
       "rules": {
         "sonarjs/no-hardcoded-ip": "off"
@@ -360,24 +387,6 @@
       "files": ["packages/synology-repo/src/spk.ts"],
       "rules": {
         "sonarjs/hashing": "off"
-      }
-    },
-    {
-      "files": ["packages/installer/src/discovery/ssdp.ts"],
-      "rules": {
-        "sonarjs/no-hardcoded-ip": "off"
-      }
-    },
-    {
-      "files": ["packages/installer/src/discovery/mdns.ts"],
-      "rules": {
-        "sonarjs/no-hardcoded-ip": "off"
-      }
-    },
-    {
-      "files": ["packages/installer/src/discovery/local-network.ts"],
-      "rules": {
-        "sonarjs/no-hardcoded-ip": "off"
       }
     },
     {

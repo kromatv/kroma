@@ -1,7 +1,6 @@
 {
   "cast.connectedTo": "Connecté à {device}",
   "cast.continueHere": "Continuer sur ce téléphone",
-  "cast.devices": "Appareils",
   "cast.disconnect": "Déconnecter",
   "cast.failed": "Impossible de joindre cet appareil",
   "cast.gone": "Cet appareil n'est plus disponible",
@@ -24,8 +23,6 @@
   "cast.signInThisTv": "Pas encore de compte · touchez pour la connecter",
   "cast.stop": "Arrêter la diffusion",
   "cast.stopHint": "Arrête la lecture sur {device}",
-  "cast.takeOver": "{device} lit déjà {title}.",
-  "cast.takeOverConfirm": "Lire quand même",
   "cast.thisDevice": "Cet appareil",
   "cast.title": "Lire sur la TV",
   "cast.titleGone": "Ce titre n'est plus dans la bibliothèque"

@@ -12,7 +12,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::services::settings;
 use crate::state::SharedState;
 
@@ -116,7 +116,7 @@ pub async fn list_progress(State(state): State<SharedState>, AuthUser(user): Aut
 pub async fn continue_watching(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Response {
     let uid = user.id.clone();
     let played_percent = settings::played_percent(&state.settings);

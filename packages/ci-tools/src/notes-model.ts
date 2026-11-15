@@ -80,7 +80,7 @@ function brief(c: Commit): PullRequestBrief {
 
 function catalogs(lang: string) {
   const dir = join(CATALOGS, lang);
-  return readdirSync(join(root, dir))
+  return readdirSync(join(root, dir), { recursive: true, encoding: 'utf8' })
     .filter((file) => file.endsWith('.json'))
     .sort()
     .map((file) => ({ lang, file, text: read(join(dir, file)) }));

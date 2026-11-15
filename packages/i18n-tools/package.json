@@ -1,0 +1,29 @@
+{
+  "name": "@kromatv/i18n-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The translation workbench: `bun run i18n` reports how far every language has come, checks the catalogs, keeps the lock that tells an outdated translation from a current one, adds a language, and hands a translator what is left to do.",
+  "author": "KROMA",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/kroma.git",
+    "directory": "packages/i18n-tools"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kromatv/i18n": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "bun-types": "^1.4.3",
+    "typescript": "^7.0.2"
+  },
+  "homepage": "https://kroma.tv"
+}

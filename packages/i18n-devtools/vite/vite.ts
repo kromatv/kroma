@@ -11,6 +11,7 @@ import {
 import launchEditor from 'launch-editor';
 import type { Plugin, ViteDevServer } from 'vite';
 import { installedEditors, launcherOf, resolveFile, within } from './editors.ts';
+import { serveCatalogs } from './serve-catalogs.ts';
 import { forgetMaps, type Served, sourceOf } from './where.ts';
 
 /**
@@ -25,11 +26,13 @@ const ADAPTERS = {
     anchor: /[\\/]i18n[\\/]src[\\/]react[\\/]provider\.tsx$/,
     engine: '@kromatv/i18n-devtools/kroma',
     wire: null,
+    catalogs: true,
   },
   paraglide: {
     anchor: /[\\/]paraglide[\\/]messages\.js$/,
     engine: '@kromatv/i18n-devtools/paraglide',
     wire: throughParaglide,
+    catalogs: false,
   },
 } as const;
 
@@ -159,7 +162,7 @@ export interface DevtoolsOptions {
 
 export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOptions = {}): Plugin {
   const speaking = adapter ?? speaks(process.cwd());
-  const { anchor, engine, wire } = ADAPTERS[speaking];
+  const { anchor, engine, wire, catalogs } = ADAPTERS[speaking];
   const entry = panelEntry();
   const adapterEntry = adapterFor(entry, speaking);
   // The module the tools went into, remembered so the panel can ask for it to
@@ -234,6 +237,7 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
         // when one file reaches many boundaries.
         if (updates.length > 0) hot.send({ type: 'update', updates });
       });
+      if (catalogs) serveCatalogs(server);
       server.watcher.on('change', forgetMaps);
     },
 

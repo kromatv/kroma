@@ -1,13 +1,15 @@
-import {
-  type AudioTrack,
-  artworkWidth,
-  type MediaItem,
-  type VideoTrack,
-} from '@kromatv/client/media';
-import type { Translate } from '@kromatv/i18n';
-import { langKey } from './lang';
+import { artworkWidth, type MediaItem, type VideoTrack } from '@kromatv/client/media';
 import { match } from './match';
-import { formatRuntime } from './player';
+
+/** Formats a runtime as `"2h08"` or `"47min"`. */
+export function formatRuntime(durationMs: number | null | undefined): string {
+  if (!durationMs || durationMs <= 0) return '';
+  const totalMin = Math.round(durationMs / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h <= 0) return `${m}min`;
+  return `${h}h${m.toString().padStart(2, '0')}`;
+}
 
 /** Requests a downscaled rendition of locally-cached artwork (`?w=`, snapped to
  * a server-side bucket) for the given DISPLAY width, through the same
@@ -144,29 +146,6 @@ export function channelLabel(ch: number | null | undefined): string | null {
   if (ch === 6) return '5.1';
   if (ch === 8) return '7.1';
   return `${ch}.0`;
-}
-
-/** Localized language name for an ISO code (any spelling `langBase` knows, so
- * "fre"/"fra"/"fr-FR" all read "Français"), the upper-cased code if unknown, or
- * null when there is no code at all. */
-export function langName(t: Translate, code: string | null | undefined): string | null {
-  if (!code) return null;
-  const key = langKey(code);
-  return key ? t(key) : code.toUpperCase();
-}
-
-/** Concise label for a selected audio track, language first: "Français · 5.1 ·
- * EAC3" (a stream `title` tag wins over the language name). Undefined when
- * there is no track. */
-export function audioTrackLabel(
-  t: Translate,
-  track: AudioTrack | null | undefined,
-): string | undefined {
-  if (!track) return undefined;
-  const name = track.title?.trim() || langName(t, track.language) || undefined;
-  const codec = track.codec ? track.codec.toUpperCase() : undefined;
-  const label = [name, channelLabel(track.channels), codec].filter(Boolean).join(' · ');
-  return label || undefined;
 }
 
 // Build-identity helpers take primitives rather than a BuildInfo, since each

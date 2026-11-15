@@ -8,6 +8,8 @@ mod context;
 pub mod curate;
 pub mod featured;
 pub mod generate;
+mod language_name;
+mod localized;
 mod math;
 mod memo;
 mod phrases;
@@ -105,9 +107,10 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
 
     // Overlay every row's items into the request locale (title/overview/genres).
     // Best-effort a translation-cache miss leaves the household-language blob.
+    let content_locale = i18n::content_locale(locale);
     let mut sections = out.sections;
     for s in &mut sections {
-        let _ = db::localize::overlay_section_items(pool, &mut s.items, locale);
+        let _ = db::localize::overlay_section_items(pool, &mut s.items, content_locale);
     }
     sections
 }
@@ -235,18 +238,11 @@ fn curated_rows(pool: &Pool, locale: &str) -> Vec<(String, String, Option<String
     (0..n)
         .map(|i| {
             let row = &all[(offset + i) % all.len()];
-            let title = pick_lang(&row.titles, locale).unwrap_or_else(|| row.key.clone());
-            let reason = pick_lang(&row.reasons, locale);
+            let title = i18n::pick(&row.titles, locale).unwrap_or(&row.key).clone();
+            let reason = i18n::pick(&row.reasons, locale).cloned();
             (row.key.clone(), title, reason, row.item_ids.clone())
         })
         .collect()
-}
-
-fn pick_lang(map: &std::collections::HashMap<String, String>, locale: &str) -> Option<String> {
-    map.get(locale)
-        .or_else(|| map.get("en"))
-        .or_else(|| map.values().next())
-        .cloned()
 }
 
 // Enforces the caps, the quality gate, and cross-row de-duplication: a title
@@ -321,19 +317,23 @@ mod tests {
     }
 
     #[test]
-    fn pick_lang_prefers_locale_then_en_then_any() {
-        let mut m = HashMap::new();
-        m.insert("fr".to_string(), "Bonjour".to_string());
-        m.insert("en".to_string(), "Hello".to_string());
-        assert_eq!(pick_lang(&m, "fr").as_deref(), Some("Bonjour"));
-        // Missing locale -> English fallback.
-        assert_eq!(pick_lang(&m, "de").as_deref(), Some("Hello"));
-        // Only a non-en language present -> any value.
-        let mut only_fr = HashMap::new();
-        only_fr.insert("fr".to_string(), "Salut".to_string());
-        assert_eq!(pick_lang(&only_fr, "en").as_deref(), Some("Salut"));
-        // Empty -> None.
-        assert!(pick_lang(&HashMap::new(), "en").is_none());
+    fn a_curated_text_is_read_in_the_readers_language_then_english_then_what_there_is() {
+        let text = |pairs: &[(&str, &str)]| -> HashMap<String, String> {
+            pairs
+                .iter()
+                .map(|(locale, text)| ((*locale).to_string(), (*text).to_string()))
+                .collect()
+        };
+        let both = text(&[("fr", "Bonjour"), ("en", "Hello")]);
+        let only_fr = text(&[("fr", "Salut")]);
+
+        assert_eq!(i18n::pick(&both, "fr").map(String::as_str), Some("Bonjour"));
+        assert_eq!(i18n::pick(&both, "de").map(String::as_str), Some("Hello"));
+        assert_eq!(
+            i18n::pick(&only_fr, "en").map(String::as_str),
+            Some("Salut")
+        );
+        assert!(i18n::pick(&text(&[]), "en").is_none());
     }
 
     fn curated(key: &str) -> crate::db::CuratedRow {
