@@ -44,7 +44,9 @@ jobs:
       rust_modules: ${{ steps.lanes.outputs.rust_modules }}
       sdk: ${{ steps.lanes.outputs.sdk }}
       spec: ${{ steps.lanes.outputs.spec }}
+      dependencies: ${{ steps.lanes.outputs.dependencies }}
       sonar: ${{ steps.sonar.outputs.run }}
+      snyk: ${{ steps.snyk.outputs.run }}
       sccache: ${{ steps.sccache.outputs.on }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,12 +59,16 @@ jobs:
         run: bun run ci lanes
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      # Secrets cannot be read in a job-level `if`, so the scan's precondition
+      # Secrets cannot be read in a job-level `if`, so each scan's precondition
       # is an output here. A fork's pull request has no token and skips clean.
       - id: sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: echo "run=${{ env.SONAR_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - id: snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: echo "run=${{ env.SNYK_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
       # The R2 compile cache the Rust tests share once its bucket is set up
       # (docs/ci.md); without the secret they compile as before.
       - id: sccache
@@ -664,3 +670,67 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
+
+  # Snyk beside Sonar: every workspace's dependency tree against Snyk's
+  # advisories, and the source through Snyk Code. Neither gates a merge. Both
+  # upload SARIF, so a pull request's code scanning check names the alerts it
+  # adds; on main the results also reach the Snyk dashboard, where `snyk
+  # monitor` keeps the tree watched for advisories published later.
+  # Snyk reads no bun.lock, so the install writes the yarn.lock it does read.
+  snyk-dependencies:
+    name: Snyk Open Source
+    needs: lanes
+    if: needs.lanes.outputs.snyk == 'true' && needs.lanes.outputs.dependencies == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+        with:
+          snyk-version: v1.1305.0
+      - run: bun install --frozen-lockfile --yarn --ignore-scripts
+      - run: bun run ci snyk dependencies ${{ github.ref == 'refs/heads/main' && '--publish' || '' }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_CFG_ORG: kromatv
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: ${{ !cancelled() && hashFiles('.snyk-reports/open-source.sarif') != '' }}
+        with:
+          sarif_file: .snyk-reports/open-source.sarif
+          category: snyk-open-source
+
+  snyk-code:
+    name: Snyk Code
+    needs: lanes
+    if: needs.lanes.outputs.snyk == 'true' && needs.lanes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+        with:
+          snyk-version: v1.1305.0
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: bun run ci snyk code ${{ github.ref == 'refs/heads/main' && '--publish' || '' }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_CFG_ORG: kromatv
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: ${{ !cancelled() && hashFiles('.snyk-reports/code.sarif') != '' }}
+        with:
+          sarif_file: .snyk-reports/code.sarif
+          category: snyk-code

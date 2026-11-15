@@ -33,8 +33,14 @@ describe('matchLanes', () => {
 
   it('opens every lane for a lockfile change', () => {
     expect(matchLanes(['bun.lock'])).toEqual(
-      only('code', 'fleet', 'android', 'desktop', 'synology', 'site', 'sdk'),
+      only('code', 'fleet', 'android', 'desktop', 'synology', 'site', 'sdk', 'dependencies'),
     );
+  });
+
+  it('scans the dependencies when a workspace manifest or a patch changes, and not for its source', () => {
+    expect(matchLanes(['modules/tv.kroma.vpn/package.json']).dependencies).toBe(true);
+    expect(matchLanes(['patches/react-native-tvos.patch']).dependencies).toBe(true);
+    expect(matchLanes(['packages/ui/src/index.ts']).dependencies).toBe(false);
   });
 
   it('puts the published SDK packages and the crates they vendor in the sdk lane', () => {

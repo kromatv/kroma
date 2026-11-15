@@ -94,6 +94,7 @@ export const LANES = {
     keep: GUIDES,
   },
   spec: { paths: ['docs/spec/**'] },
+  dependencies: { paths: ['bun.lock', '**/package.json', 'patches/**'], except: PROSE },
 } as const satisfies Record<string, Lane>;
 
 export type LaneName = keyof typeof LANES;

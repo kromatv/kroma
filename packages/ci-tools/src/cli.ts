@@ -13,6 +13,7 @@ const COMMANDS = {
   cache: async (args: string[]) => (await import('./cache')).main(args),
   tools: async (args: string[]) => (await import('./tools')).main(args),
   sonar: async (args: string[]) => (await import('./sonar')).main(args),
+  snyk: async (args: string[]) => (await import('./snyk')).main(args),
   sdk: async (args: string[]) => (await import('./sdk-command')).main(args),
   npm: async (args: string[]) => (await import('./npm-command')).main(args),
   embeds: async () => (await import('./embeds-command')).main(),

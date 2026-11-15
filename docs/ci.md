@@ -16,6 +16,7 @@ bun run ci canary publish [--rename] ...  files onto the rolling `canary` prerel
 bun run ci cache prune --prefix X         retire older Actions cache entries under a key prefix
 bun run ci tools ffmpeg | tauri-deps      apt installs with retries
 bun run ci sonar prepare                  the tree as the scanner wants it
+bun run ci snyk dependencies | code       a Snyk scan, as SARIF for code scanning; --publish adds the dashboard
 ```
 
 ## ci.yml: the gate
@@ -33,7 +34,9 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ module audit                                  rust
        ├─ wasm host {ubuntu, macos, windows}            rust
        ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
-       └─ required ◄── lanes + every job above but wasm host and sonar
+       ├─ snyk open source                              dependencies, SNYK_TOKEN present
+       ├─ snyk code                                     code, SNYK_TOKEN present
+       └─ required ◄── lanes + every job above but wasm host, sonar and snyk
 ```
 
 The one required check on `main` is **Required** (`bun run ci required`). A
@@ -132,6 +135,47 @@ On a warm laptop the whole run takes about two minutes. It is part of
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the
 quality gate scores new code, and such a change has no new Rust lines.
+
+### Snyk
+
+Snyk reads what the other scanners leave out: the dependency tree of every
+workspace, against Snyk's advisories (CodeQL and Sonar read the source, `cargo
+audit` the Cargo lockfiles), plus a second static analysis of the source,
+Snyk Code. Snyk's GitHub integration already imports the Dockerfiles, the
+Gradle modules and the dmg's `requirements.txt`, but no `bun.lock`, which is
+why these jobs exist.
+
+**Snyk Open Source** runs on the **dependencies** lane: `bun.lock`, any
+`package.json`, or `patches/**`. Snyk reads npm, pnpm and Yarn lockfiles and
+not Bun's, so the job installs with `bun install --yarn`, which writes a
+`yarn.lock` of the same tree, and `bun run ci snyk dependencies` tests it with
+`--yarn-workspaces`, one Snyk project per workspace. On a laptop, run `bun
+install --yarn` first: the command refuses a `yarn.lock` older than `bun.lock`.
+**Snyk Code** runs on the **code** lane and needs no install; the whole tree
+took 34 s on a laptop.
+
+Neither job is in `required`, and neither fails on a finding: each fails only
+when its scan did not complete (Snyk's exit codes 2 and 3). The findings go to
+two places:
+
+- **GitHub code scanning**, as SARIF in the `snyk-open-source` and `snyk-code`
+  categories, beside CodeQL's. A pull request's code scanning check lists the
+  alerts it adds against main's last analysis, and a finding accepted as it is
+  gets dismissed there. Snyk writes a SARIF run per workspace; the command
+  joins them into one, since code scanning refuses several runs of one tool
+  in one category.
+- **The Snyk dashboard**, from `main` only (`--publish`). `snyk monitor`
+  snapshots each workspace and alerts on advisories published after it, and
+  Snyk Code's results go to the `kromatv/kroma` project with `--report`. A pull
+  request publishes nothing, so it never overwrites main's snapshot.
+
+Snyk tests Rust only from an SBOM, and `snyk sbom test` is an Enterprise
+feature, so the Cargo lockfiles stay with `cargo audit` in `codeql.yml`. Snyk
+Code is switched on per organization (Settings, Snyk Code); off, `snyk code
+test` answers 403 (`SNYK-CODE-0005`). The free plan counts tests per month,
+one per workspace manifest for Open Source, and Snyk's documentation says the
+limits apply to private repositories only. The organization's usage page shows
+what these runs count.
 
 ### What changed, and why
 
@@ -352,9 +396,9 @@ branch that writes `environment: release` itself is refused before it starts:
 `Branch "x" is not allowed to deploy to release`. `deployment: false` keeps
 those jobs from filling the repository's deployment history.
 
-Two secrets stay at the repository level because pull requests need them:
-`SONAR_TOKEN`, and the `SCCACHE_R2_*` four if the cache below is ever turned
-on. Neither signs or publishes anything. A new secret goes in an environment
+Three secrets stay at the repository level because pull requests need them:
+`SONAR_TOKEN`, `SNYK_TOKEN`, and the `SCCACHE_R2_*` four if the cache below is
+ever turned on. None signs a build or publishes a release. A new secret goes in an environment
 (`gh secret set NAME --env release`) unless a pull request has to read it.
 
 ## Caches and the 10 GB budget
