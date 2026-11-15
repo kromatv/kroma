@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 import { epKey, toEpisodeRefs, toggle } from '#web/features/catalog/episode-selection';
 import { useAuth } from '#web/shared/lib/auth';
-import type { TitleView } from '#web/shared/lib/titleView';
+import type { TitleView } from '#web/shared/lib/title-view';
 
 function nextViewAfterRequest(
   v: TitleView,

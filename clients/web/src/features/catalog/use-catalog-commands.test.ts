@@ -8,7 +8,7 @@ import { useCatalogCommands } from './use-catalog-commands';
 
 const mocks = vi.hoisted(() => ({ modulePages: [] as ModuleNav[] }));
 vi.mock('@kromatv/ui', () => ({ useT: () => (key: string) => key }));
-vi.mock('#web/modules/ModuleHostProvider', () => ({ useModuleNav: () => mocks.modulePages }));
+vi.mock('#web/modules/module-host-provider', () => ({ useModuleNav: () => mocks.modulePages }));
 vi.mock('#web/shared/lib/command-menu', async () => ({
   useCommands: (await import('#web/shared/lib/command-menu.fixture')).useFakeCommands,
 }));

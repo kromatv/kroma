@@ -8,7 +8,7 @@ import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import type { HomeEntry } from '#mobile/lib/home-sections';
 import { useGutters } from '#mobile/lib/layout';
 import { posterWidth, radius, type } from '#mobile/lib/theme';
-import { FadeImage } from './FadeImage';
+import { FadeImage } from './fade-image';
 
 const GAP = 12;
 

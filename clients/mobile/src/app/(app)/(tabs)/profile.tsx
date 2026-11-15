@@ -14,7 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar } from '#mobile/components/Avatar';
+import { Avatar } from '#mobile/components/avatar';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';

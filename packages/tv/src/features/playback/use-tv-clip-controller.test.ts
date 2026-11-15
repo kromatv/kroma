@@ -8,8 +8,8 @@ import {
   CLIP_LENGTH_SEC,
   type FakeClip,
   fakeClipBackend,
-} from '#tv/features/playback/player/clipBackend.fixture';
-import { useClipPlayback } from '#tv/features/playback/player/useClipPlayback';
+} from '#tv/features/playback/player/clip-backend.fixture';
+import { useClipPlayback } from '#tv/features/playback/player/use-clip-playback';
 import { useTvClipController } from '#tv/features/playback/use-tv-clip-controller';
 
 const TRAILER = 'http://kroma.test/api/trailers/movie/1061474/qu5n7RALVpE/stream?t=tk';

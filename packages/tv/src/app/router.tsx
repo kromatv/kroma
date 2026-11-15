@@ -17,9 +17,9 @@ import {
   useState,
 } from 'react';
 import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
-import { loadDevStack, useDevStackMirror } from './devStack';
+import { loadDevStack, useDevStackMirror } from './dev-stack';
 import { useDevicePreferences } from './device-preferences';
-import { PlayerDockProvider, PlayerSlot } from './playerDock';
+import { PlayerDockProvider, PlayerSlot } from './player-dock';
 
 // The screen registry of the in-memory router: a TV has no address bar, so
 // history is a stack. Adding a key here type-checks `go` / `reset` / `<TvOutlet>`.

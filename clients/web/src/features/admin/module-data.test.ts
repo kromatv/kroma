@@ -23,7 +23,7 @@ vi.mock('#web/features/admin/hooks', () => ({
   },
 }));
 
-vi.mock('#web/modules/ModuleHostProvider', () => ({
+vi.mock('#web/modules/module-host-provider', () => ({
   useRefreshModules: () => async () => {
     H.order.push('host');
   },

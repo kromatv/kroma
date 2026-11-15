@@ -16,7 +16,7 @@ import { createRootRouteWithContext, HeadContent, Scripts } from '@tanstack/reac
 import { lazy, type ReactNode, Suspense } from 'react';
 import { preload } from 'react-dom';
 import { NotificationBell } from '#web/features/notifications/panel';
-import { ModuleHostProvider } from '#web/modules/ModuleHostProvider';
+import { ModuleHostProvider } from '#web/modules/module-host-provider';
 import type { WebRuntime } from '#web/shared/lib/api';
 import { AuthProvider } from '#web/shared/lib/auth';
 import { BlurPreferenceProvider } from '#web/shared/lib/blur-pref';

@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
-import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
+import { gridMetrics, PosterGrid } from '#mobile/components/poster-grid';
 import { EmptyState, ErrorView, Loading } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';

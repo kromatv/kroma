@@ -11,9 +11,9 @@ import {
   selectEngine,
 } from '@kromatv/core';
 import { webDocument } from '@kromatv/ui/kit';
-import type { EnginePref } from '#tv/app/enginePref';
-import type { CreateEngineArgs } from '#tv/features/playback/player/playbackBackend';
-import { AvplayEngine } from '#tv/features/playback/player/avplayEngine';
+import type { EnginePref } from '#tv/app/engine-pref';
+import type { CreateEngineArgs } from '#tv/features/playback/player/playback-backend';
+import { AvplayEngine } from '#tv/features/playback/player/avplay-engine';
 import { type Surface, shakaAvailable, type TvEngine } from '#tv/features/playback/player/engine';
 import {
   deviceLabelFor,
@@ -22,9 +22,9 @@ import {
   resolveEngine,
   surfaceFor,
   tvDirectPlay,
-} from '#tv/features/playback/player/engineChoice';
-import { HtmlEngine } from '#tv/features/playback/player/htmlEngine';
-import { MpvEngine } from '#tv/features/playback/player/mpvEngine';
+} from '#tv/features/playback/player/engine-choice';
+import { HtmlEngine } from '#tv/features/playback/player/html-engine';
+import { MpvEngine } from '#tv/features/playback/player/mpv-engine';
 
 // The video surface an engine renders to. `video` is an in-tree element the
 // chrome can transform; the others are planes behind a transparent page.

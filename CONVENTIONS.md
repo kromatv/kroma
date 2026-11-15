@@ -123,10 +123,9 @@ for how the list is read and what to do when the check fails.
 ## A file name says what it exports, and a suffix says how it resolves
 
 Kebab-case, named after its export: `focusable.tsx` exports `Focusable`,
-`stage-ratio.ts` exports `useStageRatio`. Rust is snake_case. `packages/ui` holds
-this without exception; `packages/tv` has drifted to PascalCase in about a third
-of its files, so name a new file correctly wherever it lands and rename a
-neighbour only when you are already changing it.
+`stage-ratio.ts` exports `useStageRatio`. Rust is snake_case. Lint holds it
+(`unicorn/filename-case`) everywhere but where a router reads the name: a file
+under `clients/mobile/src/app` is a route, and `[tmdbId].tsx` names its parameter.
 
 A suffix is a resolution instruction, not decoration. These are the ones in use,
 and there are no others:

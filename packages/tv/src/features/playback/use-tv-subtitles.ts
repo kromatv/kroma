@@ -14,8 +14,8 @@ import {
   useSubtitleGenerations,
 } from '@kromatv/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { LangPrefs } from '#tv/app/langPref';
-import { useSubtitleSelection } from '#tv/features/playback/player/useSubtitleSelection';
+import type { LangPrefs } from '#tv/app/lang-pref';
+import { useSubtitleSelection } from '#tv/features/playback/player/use-subtitle-selection';
 
 export interface TvSubtitles {
   subtitles: PlayerSub[];

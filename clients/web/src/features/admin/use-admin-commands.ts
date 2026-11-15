@@ -7,7 +7,7 @@ import { adminNavSections } from '#web/features/admin/admin-nav';
 import { isAnyAdmin } from '#web/features/admin/hooks';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { useModuleActions } from '#web/features/admin/use-module-actions';
-import { useModuleNavAll } from '#web/modules/ModuleHostProvider';
+import { useModuleNavAll } from '#web/modules/module-host-provider';
 import { modulePageCommand } from '#web/modules/module-page-command';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';

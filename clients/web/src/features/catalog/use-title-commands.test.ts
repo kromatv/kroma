@@ -2,7 +2,7 @@
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
-import type { TitleView } from '#web/shared/lib/titleView';
+import type { TitleView } from '#web/shared/lib/title-view';
 import { useTitleCommands } from './use-title-commands';
 
 vi.mock('@kromatv/ui', () => ({ useT: () => (key: string) => key }));

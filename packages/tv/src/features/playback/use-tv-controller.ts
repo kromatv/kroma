@@ -8,9 +8,9 @@ import {
   ENGINE_LABEL_KEY,
   ENGINE_NOTE_KEY,
   type EnginePref,
-} from '#tv/app/enginePref';
-import { useLangPrefs } from '#tv/app/langPref';
-import { type Playback, useDirectPlayback } from '#tv/features/playback/player/useDirectPlayback';
+} from '#tv/app/engine-pref';
+import { useLangPrefs } from '#tv/app/lang-pref';
+import { type Playback, useDirectPlayback } from '#tv/features/playback/player/use-direct-playback';
 import type { TvPip } from '#tv/features/playback/use-tv-pip';
 import { type TvSubtitles, useTvSubtitles } from '#tv/features/playback/use-tv-subtitles';
 

@@ -15,7 +15,7 @@ import { FollowState } from '#web/features/catalog/follow-state';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { TrailerButton } from '#web/features/catalog/trailer-button';
 import { savedTitleId } from '#web/shared/lib/saved-title-id';
-import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
+import { type TitleView, tmdbMetaLine } from '#web/shared/lib/title-view';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 export function TitleHero({

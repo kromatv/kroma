@@ -21,7 +21,7 @@ import { type EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-conte
 import { useT } from '#mobile/lib/i18n';
 import { controlsLift } from '#mobile/player/controls-lift';
 import type { Transport } from '#mobile/player/engine';
-import { useChromeReveal } from '#mobile/player/useChromeReveal';
+import { useChromeReveal } from '#mobile/player/use-chrome-reveal';
 
 const NO_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 

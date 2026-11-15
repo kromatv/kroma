@@ -4,8 +4,8 @@
 import type { Locale } from '@kromatv/i18n';
 import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { LocalePicker } from '#mobile/components/LocalePicker';
-import { PageHeader } from '#mobile/components/PageHeader';
+import { LocalePicker } from '#mobile/components/locale-picker';
+import { PageHeader } from '#mobile/components/page-header';
 import { Screen } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';

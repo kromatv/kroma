@@ -1,8 +1,8 @@
 import type { KromaClient } from '@kromatv/client';
 import { posterColors } from '@kromatv/core';
 import type { TvNav } from '#tv/app/router';
-import { type CatalogEntry, entryPoster } from '#tv/features/catalog/home/AmbientBackdrop';
-import type { GridCard } from '#tv/features/catalog/home/PosterGrid';
+import { type CatalogEntry, entryPoster } from '#tv/features/catalog/home/ambient-backdrop';
+import type { GridCard } from '#tv/features/catalog/home/poster-grid';
 
 export interface EntryCardHandlers {
   client: KromaClient;

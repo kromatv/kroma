@@ -38,7 +38,7 @@ vi.mock('@tanstack/react-query', async (original) => ({
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ user: mocks.user, client: mocks.client }),
 }));
-vi.mock('#web/modules/ModuleHostProvider', () => ({
+vi.mock('#web/modules/module-host-provider', () => ({
   useModuleNavAll: () => mocks.moduleNav,
   useRefreshModules: () => vi.fn(),
 }));

@@ -3,8 +3,8 @@ import { Box, IconButton, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 import type { Transport } from './engine';
-import { ScrubBar } from './ScrubBar';
-import type { StoryboardTile } from './useStoryboard';
+import { ScrubBar } from './scrub-bar';
+import type { StoryboardTile } from './use-storyboard';
 
 export function PortraitPlaybackStrip({
   engine,

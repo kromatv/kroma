@@ -5,7 +5,7 @@ const acquisitionModule = defineModule({
   pages: [
     {
       path: 'acquisition',
-      component: lazy(() => import('./AcquisitionPage')),
+      component: lazy(() => import('./acquisition-page')),
       nav: {
         label: 'nav.acquisition',
         icon: 'magnet',

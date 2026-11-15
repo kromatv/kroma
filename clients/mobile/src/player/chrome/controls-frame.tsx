@@ -26,9 +26,9 @@ import { StyleSheet, View } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';
-import { useControlsHold } from '#mobile/player/chrome/useControlsHold';
+import { useControlsHold } from '#mobile/player/chrome/use-controls-hold';
 import type { Transport } from '#mobile/player/engine';
-import type { StoryboardTile } from '#mobile/player/useStoryboard';
+import type { StoryboardTile } from '#mobile/player/use-storyboard';
 import { PlayerScrubRow } from './scrub-row';
 import { TransportControls } from './transport-controls';
 

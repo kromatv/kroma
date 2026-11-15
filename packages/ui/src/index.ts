@@ -14,8 +14,8 @@ export {
 export { mediaFollowsDirectRoute, withLocalAddressSpace } from './lib/lan-reach';
 export { useForeground } from './lib/use-foreground';
 export { useAccountStorage } from './services/account-storage';
-export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
-export { useAiSuggest, useEstimatedProgress } from './services/aiSuggest';
+export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/ai-suggest';
+export { useAiSuggest, useEstimatedProgress } from './services/ai-suggest';
 export type { ActivateResult, AuthSession } from './services/auth';
 export { useAuthSession } from './services/auth';
 export type { Cast, CastFailure, CastProviderProps } from './services/cast';
@@ -42,8 +42,8 @@ export { useStoryboard } from './services/storyboard';
 export type {
   SubtitleGenerationsOptions,
   SubtitleGenerationsResult,
-} from './services/subtitleGenerations';
-export { useSubtitleGenerations } from './services/subtitleGenerations';
-export type { ThemeAudio } from './services/themeAudio';
-export { useThemeAudio } from './services/themeAudio';
+} from './services/subtitle-generations';
+export { useSubtitleGenerations } from './services/subtitle-generations';
+export type { ThemeAudio } from './services/theme-audio';
+export { useThemeAudio } from './services/theme-audio';
 export { type UpNext, useUpNext } from './services/up-next';

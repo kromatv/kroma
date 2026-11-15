@@ -17,7 +17,7 @@ import {
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
-import { PageHeader } from '#mobile/components/PageHeader';
+import { PageHeader } from '#mobile/components/page-header';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack, routeParam } from '#mobile/lib/nav';

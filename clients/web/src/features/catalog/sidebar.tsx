@@ -12,7 +12,7 @@ import {
   ServerUpdateNotice,
 } from '#web/features/catalog/server-update-notice';
 import { WhatsNewLink } from '#web/features/catalog/whats-new-link';
-import { useModuleNav } from '#web/modules/ModuleHostProvider';
+import { useModuleNav } from '#web/modules/module-host-provider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { useNavActions } from '#web/shared/ui/nav-actions';

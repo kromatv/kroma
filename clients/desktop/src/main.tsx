@@ -9,7 +9,7 @@ import { installStage } from '@kromatv/tv/stage';
 // `scale=1920:1080` x264 crf18 re-encode (avc1 + faststart), see packages/ui
 // KromaIntro/constants.ts.
 import introFilm from './assets/kroma-intro-h264-1080.mp4';
-import { desktopDeviceName } from './deviceName';
+import { desktopDeviceName } from './device-name';
 import { startGamepadBridge } from './gamepad';
 import { startUpdater } from './updater';
 import { installVideoHole, nativePlane } from './video-hole';

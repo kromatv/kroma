@@ -3,7 +3,7 @@ import { useT } from '@kromatv/ui';
 import { toast, useConfirm } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type AdminModule, message, UninstallConflictError } from '#web/features/admin/module-api';
-import { useRefreshModules } from '#web/modules/ModuleHostProvider';
+import { useRefreshModules } from '#web/modules/module-host-provider';
 import { useAuth } from '#web/shared/lib/auth';
 import type { CommandActionDef } from '#web/shared/lib/command-menu';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
