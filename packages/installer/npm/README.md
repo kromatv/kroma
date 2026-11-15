@@ -46,7 +46,7 @@ native app, use `--no-web` the same way.
 | --- | --- | --- |
 | Samsung | Turn on developer mode. The first install opens Samsung's sign-in in your browser, to get the certificate of the TV | [Samsung TV](https://kroma.tv/docs/samsung-tv) |
 | LG | Install the Dev Mode app, turn on Dev Mode and its key server | [LG TV](https://kroma.tv/docs/lg-tv) |
-| Android TV, Google TV | Turn on network debugging in the developer options | [Android TV](https://kroma.tv/docs/android-tv) |
+| Android TV, Google TV | Turn on Wireless debugging or Network debugging in the developer options | [Android TV](https://kroma.tv/docs/android-tv) |
 | Apple TV | Nothing to do here: KROMA for Apple TV comes from TestFlight | [Apple TV](https://kroma.tv/docs/apple-tv) |
 
 ## What it puts on your computer
@@ -60,7 +60,8 @@ native app, use `--no-web` the same way.
   It keeps the key in `~/.kroma/keys/webos`, readable by you alone, and sends
   the app to the TV itself. LG's command-line tools are not needed.
 - For an Android TV, no tool: the installer talks to the TV itself. It keeps
-  the key the TV is asked to trust in `~/.kroma/adb`.
+  the key the TV is asked to trust in `~/.kroma/adb`. A TV with Wireless
+  debugging shows a pairing code, which the installer asks for once.
 - The KROMA apps it downloads, in `~/.kroma/downloads`. Each download is
   checked against the SHA-256 that the release lists.
 - The list of the TVs it installed KROMA on, in `~/.kroma/televisions.json`:
@@ -85,7 +86,7 @@ Settings** > **Privacy & Security** > **Local Network**. Without it, every
 connection fails and the scan finds nothing.
 
 A TV also stays hidden until its one-time step is done: an LG without the Dev
-Mode app running and an Android TV without network debugging do not answer.
+Mode app running and an Android TV without debugging turned on do not answer.
 
 ### A Samsung TV refuses the certificate
 

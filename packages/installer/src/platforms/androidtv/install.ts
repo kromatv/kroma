@@ -1,19 +1,25 @@
 import { basename } from 'node:path';
 import type { LogLine } from '../../shared/run';
-import type { InstallContext } from '../platform';
-import { AdbConnection, AdbUnauthorized } from './adb/connection';
+import { type InstallContext, stringOption } from '../platform';
+import { AdbConnection, AdbUnauthorized, AdbUnpaired } from './adb/connection';
 import { installApk, shell } from './adb/install-apk';
 import { adbKeys } from './adb/key';
 import { androidAppId } from './app-id';
+import { adbEndpoint } from './endpoint';
+import { PAIRING_STEPS, pairingCode, pairSet } from './pair-set';
 
-const ADB_PORT = 5555;
 const LEANBACK = 'android.intent.category.LEANBACK_LAUNCHER';
 const ALLOW_PROMPT =
   'the TV asks to allow this computer: accept the prompt on the TV, and tick Always allow';
+const NO_ADB =
+  'the TV does not answer adb: turn on Wireless debugging, or Network debugging, in Developer options';
 
 function reason(error: unknown): Error {
   if (error instanceof AdbUnauthorized) {
     return new Error(`${error.message}: accept the prompt on screen, then run this again`);
+  }
+  if (error instanceof AdbUnpaired) {
+    return new Error(`${error.message}: ${PAIRING_STEPS}, then give the code with --pairing-code`);
   }
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes('ECONNREFUSED') || message.includes('did not answer adb')) {
@@ -32,18 +38,38 @@ function progress(name: string, log: LogLine): (sent: number, total: number) => 
   };
 }
 
-/**
- * Installs KROMA over adb spoken by this tool itself: no adb to download.
- * The first time, the TV asks to trust this computer, and the install waits
- * for the owner to accept.
- */
-export async function installAndroid({ tv, artifact, log, launch }: InstallContext): Promise<void> {
-  const connection = await AdbConnection.open(tv.host, ADB_PORT, {
-    keys: await adbKeys(),
-    onPrompt: () => log(ALLOW_PROMPT),
-  }).catch((error: unknown) => {
+async function connect(host: string, typed: string | undefined, log: LogLine) {
+  const endpoint = await adbEndpoint(host);
+  if (!endpoint) throw new Error(NO_ADB);
+  const open = async () =>
+    AdbConnection.open(host, endpoint.port, {
+      keys: await adbKeys(),
+      onPrompt: () => log(ALLOW_PROMPT),
+    });
+
+  try {
+    return await open();
+  } catch (error) {
+    if (!(error instanceof AdbUnpaired) || typed === undefined) throw reason(error);
+  }
+  const code = pairingCode(typed);
+  if (code === null) throw new Error('a pairing code is the six digits the TV shows');
+  log('pairing this computer with the TV');
+  await pairSet(host, code);
+  return open().catch((error: unknown) => {
     throw reason(error);
   });
+}
+
+/**
+ * Installs KROMA over adb spoken by this tool itself: no adb to download.
+ * The first time, the TV asks to trust this computer: with a prompt the owner
+ * accepts on a TV in Network debugging, with a pairing code on one in
+ * Wireless debugging.
+ */
+export async function installAndroid(context: InstallContext): Promise<void> {
+  const { tv, artifact, log, launch } = context;
+  const connection = await connect(tv.host, stringOption(context.options, 'pairing-code'), log);
 
   try {
     const answer = await installApk(connection, artifact, progress(basename(artifact), log));

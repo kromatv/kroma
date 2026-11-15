@@ -369,6 +369,12 @@
       }
     },
     {
+      "files": ["packages/installer/src/discovery/mdns.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
       "files": ["packages/installer/src/discovery/local-network.ts"],
       "rules": {
         "sonarjs/no-hardcoded-ip": "off"

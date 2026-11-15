@@ -3,7 +3,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { authorSubject, certificationRequest, distributorSubject } from './csr';
 import { OPENSSL } from './openssl';
-import { toPem } from './x509';
+import { toPem } from '../../../shared/x509';
 
 const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 

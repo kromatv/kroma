@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { selfSignedCertificate, toPem } from '../certificate/x509';
+import { selfSignedCertificate, toPem } from '../../../shared/x509';
 import { VD_AUTHOR_CA, VD_PUBLIC_CA } from './authorities';
 import { issueAuthor, issueDistributor } from './issuer';
 import { keptDuids } from './profile';

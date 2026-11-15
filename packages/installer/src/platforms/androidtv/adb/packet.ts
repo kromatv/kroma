@@ -11,6 +11,7 @@ export const AUTH_SIGNATURE = 2;
 export const AUTH_RSAPUBLICKEY = 3;
 
 export const ADB_VERSION = 0x01000001;
+export const STLS_VERSION = 0x01000000;
 export const HOST_MAX_PAYLOAD = 256 * 1024;
 
 const HEADER_BYTES = 24;
@@ -43,15 +44,16 @@ export function encodePacket({ command, arg0, arg1, payload }: Packet): Buffer {
 }
 
 /**
- * Cuts the bytes a socket delivers into messages. A header that does not
- * check out, or a payload larger than adb ever sends, ends the connection.
+ * Cuts the bytes a socket delivers into messages, one at a time, so whoever
+ * reads them can stop at a message that changes what the next bytes are. A
+ * header that does not check out, or a payload larger than adb ever sends,
+ * ends the connection.
  */
 export class PacketReader {
   private pending = Buffer.alloc(0);
 
-  push(chunk: Buffer): Packet[] {
+  *push(chunk: Buffer): Generator<Packet> {
     this.pending = Buffer.concat([this.pending, chunk]);
-    const packets: Packet[] = [];
     while (this.pending.length >= HEADER_BYTES) {
       const command = this.pending.readUInt32LE(0);
       const length = this.pending.readUInt32LE(12);
@@ -62,14 +64,21 @@ export class PacketReader {
       if (length > LARGEST_PAYLOAD) throw new Error('the TV sent an adb message far too large');
       if (this.pending.length < HEADER_BYTES + length) break;
 
-      packets.push({
+      const packet = {
         command,
         arg0: this.pending.readUInt32LE(4),
         arg1: this.pending.readUInt32LE(8),
         payload: Buffer.from(this.pending.subarray(HEADER_BYTES, HEADER_BYTES + length)),
-      });
+      };
       this.pending = this.pending.subarray(HEADER_BYTES + length);
+      yield packet;
     }
-    return packets;
+  }
+
+  /** Hands over the bytes not yet cut into a message, and forgets them. */
+  rest(): Buffer {
+    const rest = this.pending;
+    this.pending = Buffer.alloc(0);
+    return rest;
   }
 }

@@ -1,5 +1,6 @@
 import { constants, type KeyObject, publicDecrypt, randomBytes } from 'node:crypto';
 import { createServer, type Server, type Socket } from 'node:net';
+import { createSecureContext, TLSSocket } from 'node:tls';
 import {
   A_AUTH,
   A_CLSE,
@@ -15,6 +16,7 @@ import {
   type Packet,
   PacketReader,
 } from './packet';
+import { presented, SERVER_TLS } from './fake-tls.fixture';
 
 export interface ServiceSide {
   write(data: Buffer | string): void;
@@ -59,17 +61,24 @@ type Side = ServiceSide & { remote: number };
 
 class Session {
   private readonly sides = new Map<number, Side>();
+  private reader = new PacketReader();
   private token = randomBytes(20);
   private nextId = 100;
 
   constructor(
-    private readonly socket: Socket,
+    private socket: Socket,
     private readonly options: FakeAdbdOptions,
     private readonly fake: FakeAdbd,
   ) {}
 
-  handle(packet: Packet): void {
+  feed(chunk: Buffer): void {
+    if (this.options.silent) return;
+    for (const packet of this.reader.push(chunk)) this.handle(packet);
+  }
+
+  private handle(packet: Packet): void {
     if (packet.command === A_CNXN) this.greet();
+    else if (packet.command === A_STLS) this.secure();
     else if (packet.command === A_AUTH) this.authenticate(packet);
     else if (packet.command === A_OPEN) this.open(packet);
     else if (packet.command === A_WRTE) this.take(packet);
@@ -85,8 +94,30 @@ class Session {
     this.send(A_CNXN, 0x01000001, this.options.maxData ?? 4096, Buffer.from(banner));
   }
 
+  private secure(): void {
+    const plain = this.socket;
+    plain.removeAllListeners('data');
+    plain.pause();
+    plain.unshift(this.reader.rest());
+    this.reader = new PacketReader();
+    const secured = new TLSSocket(plain, {
+      isServer: true,
+      secureContext: createSecureContext(SERVER_TLS),
+      requestCert: true,
+      rejectUnauthorized: false,
+    });
+    secured.on('error', () => undefined);
+    secured.once('secure', () => {
+      const { trusted } = this.options;
+      if (trusted && !presented(secured, trusted)) return secured.destroy();
+      this.socket = secured;
+      listen(secured, this);
+      this.connect();
+    });
+  }
+
   private greet(): void {
-    if (this.options.tls) this.send(A_STLS, 1, 0);
+    if (this.options.tls) this.send(A_STLS, 0x01000000, 0);
     else if (this.options.trusted) this.send(A_AUTH, AUTH_TOKEN, 0, this.token);
     else this.connect();
   }
@@ -129,14 +160,13 @@ class Session {
   }
 }
 
-function serve(socket: Socket, options: FakeAdbdOptions, fake: FakeAdbd): void {
-  const reader = new PacketReader();
-  const session = new Session(socket, options, fake);
-  socket.on('data', (chunk: Buffer) => {
-    if (options.silent) return;
-    for (const packet of reader.push(chunk)) session.handle(packet);
-  });
+function listen(socket: Socket, session: Session): void {
+  socket.on('data', (chunk: Buffer) => session.feed(chunk));
   socket.on('error', () => undefined);
+}
+
+function serve(socket: Socket, options: FakeAdbdOptions, fake: FakeAdbd): void {
+  listen(socket, new Session(socket, options, fake));
 }
 
 /** An adb daemon in this process, just enough of one to test a client against. */
