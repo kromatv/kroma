@@ -169,7 +169,7 @@
   "admin.maxConcurrent": "Concurrent streams (max)",
   "admin.maxConcurrentHint": "Maximum simultaneous HLS remux/playback sessions.",
   "admin.mediaConcurrency": "Media processing (max)",
-  "admin.mediaConcurrencyHint": "How many heavy background passes (storyboards, subtitles, intro/credits) run at once. 0 = auto (leaves a core free). Lower it if processing makes the server sluggish.",
+  "admin.mediaConcurrencyHint": "How many heavy background passes (storyboards, subtitles, intro/credits) run at once. 0 = auto (leaves a core free). On Linux, fewer run while memory is short. Lower it if processing makes the server sluggish.",
   "admin.membersSharing": "Members & sharing",
   "admin.mostWatched": "Most watched",
   "admin.mostWatchedEmpty": "Nothing played in this window.",

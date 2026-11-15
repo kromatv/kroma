@@ -10,6 +10,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
+use kroma_media::ffmpeg_gate::Footprint;
 use kroma_media::input;
 use rusty_chromaprint::{match_fingerprints, Configuration, Fingerprinter};
 
@@ -47,7 +48,7 @@ pub fn fingerprint_window(
     // Share the process-wide ffmpeg budget (see `kroma_media::ffmpeg_gate`); the permit
     // is held only for the decode and dropped as this block ends.
     let out = {
-        let _permit = kroma_media::ffmpeg_gate::acquire();
+        let _permit = kroma_media::ffmpeg_gate::acquire(Footprint::LIGHT);
         cmd.output().context("spawn ffmpeg for fingerprint")?
     };
     if !out.status.success() {

@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 
 use tracing::info;
 
+use crate::ffmpeg_gate::Footprint;
 use crate::ffmpeg_run::{run_capturing, run_capturing_cancellable, Cancel};
 use crate::input;
 
@@ -41,12 +42,12 @@ impl Decode {
 /// a real head-to-head over `input` and then kept. Hardware decode offloads the
 /// CPU, but each tile is its own process, so the per-process device init can
 /// make it a net loss for single-frame seeks on a fast CPU and a clear win on a
-/// weak NAS with an iGPU.
-pub fn probe(input: &str, dur_s: f64) -> Decode {
-    *MEASURED.get_or_init(|| measure(input, dur_s))
+/// weak NAS with an iGPU. Each trial pass draws `need` from the budget.
+pub fn probe(input: &str, dur_s: f64, need: Footprint) -> Decode {
+    *MEASURED.get_or_init(|| measure(input, dur_s, need))
 }
 
-fn measure(input: &str, dur_s: f64) -> Decode {
+fn measure(input: &str, dur_s: f64, need: Footprint) -> Decode {
     // No GPU device node means `-hwaccel auto` can only fall back to software,
     // so the head-to-head (four more full keyframe decodes, ~10 s on a weak
     // NAS) would be pure startup waste. A GPU-less Synology box lands here.
@@ -61,14 +62,14 @@ fn measure(input: &str, dur_s: f64) -> Decode {
     };
     let frame = scratch.path().join("frame.png");
     // Warm the GOP into cache, and confirm software decode works at all.
-    if extract_one(input, at, &frame, Decode::Keyframes, &|| false).is_err() {
+    if extract_one(input, at, &frame, Decode::Keyframes, need, &|| false).is_err() {
         return Decode::Keyframes;
     }
     // Interleaved and best of two, so scheduling noise and any residual warming
     // do not systematically favour one path.
     let timed = |decode: Decode| -> Option<Duration> {
         let started = Instant::now();
-        extract_one(input, at, &frame, decode, &|| false)
+        extract_one(input, at, &frame, decode, need, &|| false)
             .ok()
             .map(|()| started.elapsed())
     };
@@ -95,7 +96,8 @@ fn measure(input: &str, dur_s: f64) -> Decode {
 }
 
 /// Grab the tiles `wanted` names with a fast keyframe seek, several in
-/// parallel, writing `px_<NNNN>.png` into `scratch`. Answers which of them
+/// parallel as far as the budget admits passes holding `need` each, writing
+/// `px_<NNNN>.png` into `scratch`. Answers which of them
 /// landed: one failed seek is tolerated (it becomes black padding through
 /// [`fill_gaps`]), and nothing landing at all is an error carrying the first
 /// cause captured. Blocking; run it on a blocking thread.
@@ -105,6 +107,7 @@ pub fn grab_tiles(
     plan: &Plan,
     wanted: &[u32],
     decode: Decode,
+    need: Footprint,
     cancel: Cancel,
 ) -> Result<Vec<u32>, String> {
     if wanted.is_empty() {
@@ -121,7 +124,7 @@ pub fn grab_tiles(
                         break;
                     }
                     let out = scratch.join(name_of(index));
-                    match extract_one(input, plan.at(index), &out, decode, cancel) {
+                    match extract_one(input, plan.at(index), &out, decode, need, cancel) {
                         Ok(()) => landed.lock().unwrap().push(index),
                         Err(why) => {
                             let mut held = first_err.lock().unwrap();
@@ -190,15 +193,14 @@ fn extract_one(
     at_s: u32,
     out: &Path,
     decode: Decode,
+    need: Footprint,
     cancel: Cancel,
 ) -> Result<(), String> {
     let filter = format!(
         "scale={TILE_W}:{TILE_H}:force_original_aspect_ratio=increase,crop={TILE_W}:{TILE_H}"
     );
     let mut cmd = Command::new("ffmpeg");
-    // `-threads 2`: the pool already runs one process per core, so a per-process
-    // decoder pool only multiplies into oversubscription.
-    cmd.args(["-v", "error", "-nostdin", "-threads", "2"]);
+    cmd.args(["-v", "error", "-nostdin", "-threads", "1"]);
     cmd.args(decode.args());
     cmd.args(["-ss", &at_s.to_string()])
         .arg("-noaccurate_seek")
@@ -209,7 +211,7 @@ fn extract_one(
         // grid of those out as a black sheet.
         .args(["-pix_fmt", "rgb24", "-y"])
         .arg(out);
-    run_capturing_cancellable(cmd, TILE_TIMEOUT, cancel)?;
+    run_capturing_cancellable(cmd, TILE_TIMEOUT, need, cancel)?;
     match out.exists() {
         true => Ok(()),
         false => Err("ffmpeg reported success but produced no frame".to_string()),
