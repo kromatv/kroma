@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LANE_NAMES, matchLanes } from './lanes';
+import { forPush, LANE_NAMES, matchLanes } from './lanes';
 
 const only = (...on: string[]) =>
   Object.fromEntries(LANE_NAMES.map((name) => [name, on.includes(name)]));
@@ -92,5 +92,17 @@ describe('matchLanes', () => {
     expect(matchLanes(['modules/README.md'])).toEqual(only());
     expect(matchLanes(['server/README.md'])).toEqual(only());
     expect(matchLanes(['packages/ui/src/components/README.md'])).toEqual(only());
+  });
+});
+
+describe('forPush', () => {
+  it('leaves the client builds and the SDK package to Build & Release', () => {
+    expect(forPush(matchLanes(['bun.lock']))).toEqual(
+      only('code', 'android', 'desktop', 'synology', 'site'),
+    );
+  });
+
+  it('keeps every other lane a change opens', () => {
+    expect(forPush(matchLanes(['server/src/main.rs']))).toEqual(only('code', 'rust', 'synology'));
   });
 });

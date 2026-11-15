@@ -124,8 +124,9 @@ workspace in one run, or copy the file aside between two `--only` runs and
 pass the copies with `--lcov`.
 
 A report made on another machine works as it is, since a record is matched to
-a source file from the repository root down. The `coverage-rust` artifact of a
-CI run that built Rust is one, kept for a day.
+a source file from the repository root down. The `coverage-rust-<n>` artifacts
+of a CI run that built Rust are reports of this kind, one per Rust job, kept for
+a day.
 
 A language no report covers is scored on complexity alone, and the summary
 says so in place of printing a CRAP that is only complexity squared.
