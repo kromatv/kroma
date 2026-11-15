@@ -1,7 +1,7 @@
 import { posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, classes, styles, useStyles } from '@kromatv/ui/kit';
-import { type KeyboardEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import {
   entryBackdrop,
   entryId,
@@ -35,7 +35,6 @@ const sDefinition = styles({
     paddingTop: 'clamp(72px, 9vw, 120px)',
     pb: 28,
   },
-  listener: { display: 'contents' },
   fadeIn: {
     fill: true,
     animationKeyframes: 'fade-in',
@@ -92,62 +91,93 @@ function useHeroBackdrop(entry: HomeEntry | undefined) {
   return { backdrop, previous: useCrossfade(backdrop) };
 }
 
-function useArrowKeys(carousel: Carousel) {
-  return (event: KeyboardEvent) => {
+function useListener<K extends keyof HTMLElementEventMap>(
+  node: HTMLElement | null,
+  type: K,
+  handle: (event: HTMLElementEventMap[K]) => void,
+) {
+  const handleLatest = useEffectEvent(handle);
+  useEffect(() => {
+    if (!node) {
+      return undefined;
+    }
+    const listener = (event: HTMLElementEventMap[K]) => handleLatest(event);
+    node.addEventListener(type, listener);
+    return () => node.removeEventListener(type, listener);
+  }, [node, type]);
+}
+
+function useArrowKeys(node: HTMLElement | null, carousel: Carousel) {
+  useListener(node, 'keydown', (event) => {
     if (event.key === 'ArrowRight') {
       carousel.step(1);
     } else if (event.key === 'ArrowLeft') {
       carousel.step(-1);
     }
-  };
+  });
 }
 
-function useResting() {
+function useResting(node: HTMLElement | null) {
   const still = useReducedMotion();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  return {
-    resting: hovered || focused || still,
-    listeners: {
-      onPointerEnter: () => setHovered(true),
-      onPointerLeave: () => setHovered(false),
-      onFocus: () => setFocused(true),
-      onBlur: () => setFocused(false),
-    },
-  };
+  useListener(node, 'pointerenter', () => setHovered(true));
+  useListener(node, 'pointerleave', () => setHovered(false));
+  useListener(node, 'focusin', () => setFocused(true));
+  useListener(node, 'focusout', () => setFocused(false));
+  return hovered || focused || still;
+}
+
+function useHeroCarousel(count: number) {
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  const carousel = useCarousel(count, { resting: useResting(node) });
+  useArrowKeys(node, carousel);
+  return { setNode, carousel };
+}
+
+interface CurrentSlideProps {
+  section: HomeSection;
+  entry: HomeEntry;
+  carousel: Carousel;
+}
+
+function CurrentSlide({ section, entry, carousel }: Readonly<CurrentSlideProps>) {
+  const t = useT();
+  return (
+    <HeroSlide
+      entry={entry}
+      note={section.notes[entryId(entry)] ?? section.title}
+      position={t('content.heroPosition', {
+        current: carousel.index + 1,
+        total: section.items.length,
+      })}
+    />
+  );
 }
 
 /** The few titles the home opens on, one at a time: it pages by itself, by
  * the arrow keys, and by the strip of the titles still to come. */
 export function HeroCarousel({ section }: Readonly<{ section: HomeSection }>) {
   const s = useStyles(sDefinition);
-  const t = useT();
-  const { resting, listeners } = useResting();
   const entries = section.items;
-  const carousel = useCarousel(entries.length, { resting });
+  const { setNode, carousel } = useHeroCarousel(entries.length);
   const entry = entries[carousel.index];
   const { backdrop, previous } = useHeroBackdrop(entry);
-  const onKeyDown = useArrowKeys(carousel);
 
   if (!entry || !backdrop) {
     return null;
   }
 
   return (
-    <section className={classes(s.hero)} aria-roledescription="carousel" aria-label={section.title}>
-      <div role="presentation" className={classes(s.listener)} {...listeners} onKeyDown={onKeyDown}>
-        <HeroBackdrop id={entryId(entry)} src={backdrop} previous={previous} />
-        <HeroSlide
-          key={entryId(entry)}
-          entry={entry}
-          note={section.notes[entryId(entry)] ?? section.title}
-          position={t('content.heroPosition', {
-            current: carousel.index + 1,
-            total: entries.length,
-          })}
-        />
-        {entries.length > 1 ? <HeroPager entries={entries} carousel={carousel} /> : null}
-      </div>
+    <section
+      ref={setNode}
+      className={classes(s.hero)}
+      aria-roledescription="carousel"
+      aria-label={section.title}
+    >
+      <HeroBackdrop id={entryId(entry)} src={backdrop} previous={previous} />
+      <CurrentSlide key={entryId(entry)} section={section} entry={entry} carousel={carousel} />
+      {entries.length > 1 ? <HeroPager entries={entries} carousel={carousel} /> : null}
     </section>
   );
 }
