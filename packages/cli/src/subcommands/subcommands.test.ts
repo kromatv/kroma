@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { audit } from './audit';
 import { build } from './build';
 import { cargo } from './cargo';
 import { check } from './check';
@@ -15,6 +16,7 @@ const handlers = vi.hoisted(() => ({
   dev: vi.fn(),
   build: vi.fn(),
   check: vi.fn(),
+  audit: vi.fn(),
   install: vi.fn(),
   login: vi.fn(),
   cargo: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock('../commands/create', () => ({ createCommand: handlers.create }));
 vi.mock('../commands/dev', () => ({ devCommand: handlers.dev }));
 vi.mock('../commands/build', () => ({ buildCommand: handlers.build }));
 vi.mock('../commands/check', () => ({ checkCommand: handlers.check }));
+vi.mock('../commands/audit', () => ({ auditCommand: handlers.audit }));
 vi.mock('../commands/install', () => ({ installCommand: handlers.install }));
 vi.mock('../commands/login', () => ({ loginCommand: handlers.login }));
 vi.mock('../commands/cargo', () => ({ cargoCommand: handlers.cargo }));
@@ -87,6 +90,18 @@ describe('build', () => {
     expect(handlers.build.mock.calls).toEqual([
       [{ dirs: ['a'], out: 'o', profile: 'release-kmod' }],
       [{ dirs: [], out: undefined, profile: 'dev' }],
+    ]);
+  });
+});
+
+describe('audit', () => {
+  it('hands the directories on, and the JSON flag when it is set', async () => {
+    await runOf(audit)({ args: { _: ['a'] }, rawArgs: [] });
+    await runOf(audit)({ args: { _: [], json: true }, rawArgs: [] });
+
+    expect(handlers.audit.mock.calls).toEqual([
+      [{ dirs: ['a'], json: false }],
+      [{ dirs: [], json: true }],
     ]);
   });
 });

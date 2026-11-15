@@ -228,6 +228,7 @@ CLI), assembled at release time from the private workspace packages
 ```bash
 bun run kroma create tv.kroma.notes   # scaffold under modules/
 bun run kroma check                   # manifests, frontend types, clippy
+bun run kroma audit                   # each module alone: what it attempts vs declares
 bun run kroma build                   # every .kmod into dist/modules
 cd modules/tv.kroma.notes && bunx kroma dev   # install on a server, rebuild on save
 bun run kroma release --dry-run --repo <owner/repo>   # CI's publish verdict

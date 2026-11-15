@@ -506,6 +506,39 @@ jobs:
       - run: sccache --show-stats
         if: needs.lanes.outputs.sccache == 'true'
 
+  # Every module a change can reach, started alone behind a network that
+  # records each connection and lets none out. An attempt outside the
+  # permissions its manifest declares fails the job, and the log names it.
+  module-audit:
+    name: Module audit
+    needs: lanes
+    if: needs.lanes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        if: needs.lanes.outputs.sccache == 'true'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools' --filter '@kromatv/cli'
+      - run: rustup target add wasm32-wasip2
+      - run: bun run ci rust audit --only "${{ needs.lanes.outputs.rust_modules }}"
+        env:
+          RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
+          SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
+          SCCACHE_ENDPOINT: ${{ secrets.SCCACHE_R2_ENDPOINT }}
+          SCCACHE_REGION: auto
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCCACHE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_R2_SECRET_ACCESS_KEY }}
+      - run: sccache --show-stats
+        if: needs.lanes.outputs.sccache == 'true'
+
   # The required check: green when every Rust job is, with their coverage in
   # one report for the scan. Skipped, like the jobs, when no Rust can be
   # reached.
@@ -546,7 +579,7 @@ jobs:
   # changes.
   required:
     name: Required
-    needs: [lanes, checks, test-report, audit, spec, build, tv-native, sdk, desktop, rust, rust-components]
+    needs: [lanes, checks, test-report, audit, spec, build, tv-native, sdk, desktop, rust, rust-components, module-audit]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -566,7 +599,7 @@ jobs:
             {"checks": "code", "test-report": "code", "audit": "code",
             "spec": "spec", "build": "fleet", "tv-native": "android",
             "sdk": "sdk", "desktop": "desktop", "rust": "rust",
-            "rust-components": "rust"}
+            "rust-components": "rust", "module-audit": "rust"}
 
   # The scan reads the coverage the gates above produced; nothing runs twice.
   # Rust coverage is absent on a change that touched no Rust, and the scan

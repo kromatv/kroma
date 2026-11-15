@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { parse as parseToml } from 'smol-toml';
 import { z } from 'zod';
 
-/** The crates a module links, closed over their dependencies on each other. */
+/** The crates a module links, then the host `kroma audit` runs it on, closed
+ *  over their dependencies on each other. */
 export const CLOSURE = [
   'kroma-module-sdk',
   'kroma-module-runtime',
@@ -18,6 +19,10 @@ export const CLOSURE = [
   'kroma-i18n',
   'kroma-primitives',
   'kroma-testing',
+  'kroma-egress',
+  'kroma-wasm-host',
+  'kroma-module-supervisor',
+  'kroma-module-audit',
 ] as const;
 
 const Dep = z.union([
@@ -178,6 +183,23 @@ function rewriteLine(line: string, table: string, ws: Ws, state: Rewrite): void 
   keep(state, line);
 }
 
+/** The `[features]` table with every dropped feature taken out of the lists
+ *  that turned it on, such as `default`, so no list names a feature that is
+ *  gone. */
+function withoutDroppedFeatures(lines: string[], dropped: readonly string[]): string[] {
+  if (dropped.length === 0) return lines;
+  let table = '';
+  return lines.map((line) => {
+    const header = /^\[([^\]]+)\]\s*$/.exec(line);
+    if (header) table = header[1] ?? '';
+    if (table !== 'features' || header) return line;
+    const kept = line.replaceAll(/"([^"]*)"\s*,?\s*/g, (entry, name: string) =>
+      dropped.includes(name) ? '' : entry,
+    );
+    return kept.replace(/,\s*\]/, ']');
+  });
+}
+
 /**
  * A member crate's `Cargo.toml` rewritten to stand alone: `*.workspace = true`
  * package fields inlined, `{ workspace = true }` dependencies replaced by the
@@ -198,6 +220,7 @@ export function standaloneCargoToml(text: string, ws: Ws): string {
     rewriteLine(line, table, ws, state);
   }
   state.out.push(...state.comments);
+  state.out = withoutDroppedFeatures(state.out, state.droppedFeatures);
   while (state.out.at(-1) === '') state.out.pop();
   state.out.push(...lintsForDroppedFeatures(state.droppedFeatures));
   return `${state.out.join('\n')}\n`;

@@ -12,10 +12,8 @@ kroma-module-host = { workspace = true }
 kroma-module-manifest = { workspace = true }
 # The per-module host token every callback names its caller with.
 kroma-primitives = { workspace = true }
-# The `User` the session callback answers with.
-kroma-domain = { workspace = true }
 # Moving a module's tables out of the core database, before it is spawned.
-kroma-db = { workspace = true }
+kroma-db = { workspace = true, optional = true }
 rusqlite = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
@@ -48,6 +46,12 @@ kroma-media = { workspace = true }
 kroma-sqlite = { workspace = true }
 kroma-module-wire = { workspace = true }
 mdns-sd = "0.21"
+
+[features]
+default = ["core"]
+# Knows the core database: a module's tables are moved out of it before the
+# module starts. Off for a host with no core beside it, such as `kroma audit`.
+core = ["dep:kroma-db"]
 
 [dev-dependencies]
 # The install/stop tests scratch in a directory that removes itself.

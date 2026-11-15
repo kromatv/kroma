@@ -44,7 +44,8 @@ function packageRoot(from: string): string {
   }
 }
 
-const CLI_ROOT = packageRoot(import.meta.dirname);
+/** This CLI's own package: `packages/cli` here, the SDK package once published. */
+export const CLI_ROOT = packageRoot(import.meta.dirname);
 
 /** The npm slug of an id: `tv.acme.notes` → `notes`; `tv.acme.my-notes` → `my-notes`. */
 export function slugOf(id: string): string {

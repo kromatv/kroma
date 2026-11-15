@@ -48,6 +48,7 @@ the `kroma` package it depends on, as `bunx kroma <command>`.
 bun run kroma build modules/tv.kroma.remote   # -> dist/modules/<id>.kmod (+ .sha256)
 bun run kroma build                           # every module under modules/
 bun run kroma check                           # manifests, frontend types, clippy
+bun run kroma audit modules/tv.kroma.notes    # what it attempts, beside what it declares
 cd modules/tv.kroma.remote/server && cargo build   # a normal standalone crate
 ```
 
@@ -706,6 +707,62 @@ module's `module.json`: a `Fetch` made for a purpose that no
 `permissions.net.connect` entry declares panics where it is made, naming the
 purpose, because the host refuses every such call. Only the purpose is
 compared, since a test server on loopback never matches a declared host.
+
+### Auditing your module
+
+```bash
+bun run kroma audit modules/tv.kroma.notes   # one module
+bun run kroma audit                          # every module under modules/
+```
+
+`kroma audit` builds the component and starts it alone, with no server beside
+it: the supervisor and component host the server uses, a network that writes
+down every connection and lets none out, and a host that holds no library, no
+account and no secret. Then it makes the module work, and prints what it
+attempted beside what `permissions` declares:
+
+```
+tv.kroma.notes 1.2.0
+
+Declared
+  net.connect  {"purpose":"metadata","to":["api.example.org"]}
+
+Connections attempted
+  ok            metadata  api.example.org:443
+  NOT DECLARED  telemetry  stats.example.org:443
+
+1 attempt outside the declaration.
+```
+
+It exits non-zero on anything `NOT DECLARED`: a connection no `net.connect`
+entry covers, a program `run` does not name, a file asked of the host outside
+the folders the module holds. CI runs it on every module here (`Module audit`).
+
+On its own an audit runs every job the module registers, sends every event
+topic it listens on and calls every method of every point the module answers,
+when the point is its own or is defined by a module in the folder beside it. A
+point the core defines lists no methods anywhere, so those calls, and whatever
+else the module should be asked, go in an `audit.json` beside `module.json`:
+
+```json
+{
+  "settings": { "indexerUrl": "https://indexer.example.org/api" },
+  "requests": [
+    { "path": "/search?q=dune" },
+    { "method": "POST", "path": "/_port/embedder/embed_batch", "body": { "texts": ["dune"] } }
+  ]
+}
+```
+
+`settings` are what the module finds set when it asks the host, and what a
+`setting:<key>` destination in `net.connect` resolves to. `requests` are made
+in order once the module is up, a `GET` unless one names a method. Nothing
+leaves the machine: every connection is refused after it is written down, so a
+request that needs an answer from the network sees a refusal, and the attempt is
+what the audit is for.
+
+An audit judges what the module did while it was driven. A path the requests
+did not take is a path it did not see.
 
 `id` must be reverse-DNS (`^[a-z0-9]+(?:\.[a-z0-9-]+)+$`) and unique, and
 `version` semver: `kroma check` refuses a manifest that is not, and `kroma

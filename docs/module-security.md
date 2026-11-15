@@ -337,8 +337,7 @@ written on its log.
 
 ## Auditing a module on its own
 
-Two tools let a module be judged on its own. The dashboard one is on `main`; the
-command-line one is planned:
+Two tools let a module be judged on its own:
 
 - **In the dashboard** (#496), Admin → Modules → a module shows its declared
   permissions next to what it actually did: where its connections went over the
@@ -346,10 +345,26 @@ command-line one is planned:
   marked. A host rule written there applies to that module alone. Attempts
   outside the declaration are kept in the journal, which holds the latest 5,000
   connections and is emptied when the server restarts.
-- **From the command line** (#495), `kroma audit <module>` starts the module
-  alone behind a recording gateway, drives its routes and jobs, and prints every
-  connection and file access it attempted against what it declared. CI runs it on
-  every first-party module, and a third-party author runs it before publishing.
+- **From the command line** (#495), `kroma audit <module>` builds the module's
+  component and starts it alone, with no server beside it: the same supervisor
+  and component host the server uses, a network policy that writes down every
+  connection and lets none out, and a host that holds no library, no account and
+  no secret. It then runs every job the module registers, sends every event topic
+  it listens on, calls every method of every point it answers whose definition is
+  on disk, and makes the requests the module's own `audit.json` names. The report sets what the module
+  declares beside every connection it attempted, every program it asked to
+  start and every file it asked of the host, each marked `ok` or `NOT DECLARED`.
+  It exits non-zero on anything outside the declaration. The `Module audit` job
+  runs it in CI on every first-party module a change can reach, and a
+  third-party author runs `bunx kroma audit` before publishing: the SDK carries
+  the host.
+
+What an audit sees is what the module did while it was driven. A path the
+requests did not take is a path it did not judge, so a module whose work hangs
+off a setting or a request body says so in `audit.json`
+(see [`modules/README.md`](../modules/README.md#auditing-your-module)). Plain
+file access is not listed: a component cannot open a path outside the folders
+it holds, so only what it asks of the host's own file calls can be refused.
 
 ## Testing that nothing leaks
 
@@ -413,4 +428,4 @@ writes a new key.
 | Strict tier by uid, Watch scanner | dropped: no module is a native process (#489, #490) |
 | Escape suite on Ubuntu, macOS and Windows | on `main` (#523) |
 | Per-module network view | on `main` (#496) |
-| `kroma audit` | planned (#495) |
+| `kroma audit` | on `main` (#495) |

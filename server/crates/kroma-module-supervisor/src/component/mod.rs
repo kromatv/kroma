@@ -29,6 +29,7 @@ use kroma_wasm_host::{Limits, Readied, WasmHost};
 use tokio::net::{TcpListener, UnixListener};
 use tokio::sync::Semaphore;
 
+use super::asked::Watch;
 use super::gateway::{ModulePolicy, Running};
 use super::lifecycle::Proc;
 use super::private_folder::private_folder;
@@ -173,6 +174,7 @@ impl Supervisor {
             .as_ref()
             .filter(|p| p.media.contains(&MediaTool::Decode))
             .map(|_| Arc::new(media::ModuleMedia::new(roots.clone())));
+        let watch = Watch::over(id, self.watching.get().cloned());
         let programs = Arc::new(programs::Programs::new(
             id,
             own_dir,
@@ -181,7 +183,8 @@ impl Supervisor {
             manifest.helpers.clone(),
             gateway.clone(),
             first_party,
-        ));
+        )
+        .watched(watch.clone()));
         programs.reap_all_stale();
         let port_token = self.port_token(id);
         let mut env = vec![
@@ -216,10 +219,11 @@ impl Supervisor {
                 network: wiring.network.0.clone(),
                 no_network,
                 roots: roots.clone(),
+                watch: watch.clone(),
             }),
             env,
             limits: limits_of(needs),
-            files: Arc::new(files::ModuleFiles::new(roots.clone())),
+            files: Arc::new(files::ModuleFiles::new(roots.clone()).watched(watch)),
             roots,
             databases,
             programs,

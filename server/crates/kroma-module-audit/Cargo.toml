@@ -1,0 +1,26 @@
+[package]
+name = "kroma-module-audit"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.97"
+description = "Starts one module alone, behind a network that records every connection and lets none out, and reports what it attempted beside what it declares."
+license.workspace = true
+
+[[bin]]
+name = "kroma-audit"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+axum = { workspace = true }
+hex = { workspace = true }
+kroma-http = { workspace = true }
+kroma-module-host = { workspace = true, features = ["testing"] }
+kroma-module-manifest = { workspace = true }
+kroma-module-supervisor = { path = "../kroma-module-supervisor", default-features = false }
+kroma-module-wire = { workspace = true }
+kroma-testing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true }

@@ -120,6 +120,20 @@ async function componentTests(list: Workspace[]): Promise<void> {
   if (failed.length > 0) throw new Error(`the component run failed in: ${failed.join(', ')}`);
 }
 
+async function audit(list: Workspace[]): Promise<void> {
+  const dirs = list
+    .map((ws) => join(root, 'modules', ws.id))
+    .filter((dir) => existsSync(join(dir, 'module.json')));
+  if (dirs.length === 0) {
+    console.log('no module to audit');
+    return;
+  }
+  const audited = await $`bun packages/cli/src/cli.ts audit ${dirs}`.cwd(root).nothrow();
+  if (audited.exitCode !== 0) {
+    throw new Error('a module attempted something it does not declare, or could not be audited');
+  }
+}
+
 export async function main(argv: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args: argv,
@@ -131,5 +145,6 @@ export async function main(argv: string[]): Promise<void> {
   if (verb === 'clippy') return clippy(list);
   if (verb === 'test') return test(list);
   if (verb === 'wasm-test') return componentTests(list);
-  throw new Error(`usage: bun run ci rust <clippy|test|wasm-test> [--only id,id]`);
+  if (verb === 'audit') return audit(list);
+  throw new Error(`usage: bun run ci rust <clippy|test|wasm-test|audit> [--only id,id]`);
 }

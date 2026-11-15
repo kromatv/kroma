@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { defineCommand, runMain } from 'citty';
+import { audit } from './subcommands/audit';
 import { create } from './subcommands/create';
 import { dev } from './subcommands/dev';
 import { build } from './subcommands/build';
@@ -13,7 +14,19 @@ import { release } from './subcommands/release';
 
 const main = defineCommand({
   meta: { name: 'kroma', description: 'Build KROMA modules.' },
-  subCommands: { create, dev, build, check, install, login, cargo, registry, serve, release },
+  subCommands: {
+    create,
+    dev,
+    build,
+    check,
+    audit,
+    install,
+    login,
+    cargo,
+    registry,
+    serve,
+    release,
+  },
 });
 
 runMain(main);

@@ -9,6 +9,7 @@ cd tv.acme.notes
 bunx kroma login http://localhost:4040   # once; an account with settings.manage
 bunx kroma dev                    # build, install, rebuild on every save
 bunx kroma check                  # manifest, types, clippy
+bunx kroma audit                  # start it alone and list what it attempts
 bunx kroma build                  # dist/modules/tv.acme.notes.kmod (+ .sha256)
 bunx kroma install --server http://kroma.local:4040
 ```

@@ -2233,6 +2233,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-module-audit"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "hex",
+ "kroma-http",
+ "kroma-module-host",
+ "kroma-module-manifest",
+ "kroma-module-supervisor",
+ "kroma-module-wire",
+ "kroma-testing",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tokio",
+]
+
+[[package]]
 name = "kroma-module-host"
 version = "0.1.0"
 dependencies = [
