@@ -31,12 +31,14 @@ For this repository that means [`CLAUDE.md`](../../CLAUDE.md),
 | `typescript-best-practices` | Discriminated unions, branded types, `unknown` over `any`, no `as`, exhaustiveness, strict compiler options, errors as values, no floating promises. Examples in `references/patterns.md`. |
 | `rust-best-practices` | The same table one language over: enums with data, newtypes, errors by layer, borrow in and own out, nothing blocking the async runtime, `SAFETY:` on every unsafe. |
 | `no-comments` | Runs the comment hunter over a diff and acts on what it finds. Slash-only, it never fires on its own. |
+| `add-dependency` | The checks before a package is added, updated or removed: need, security history, maintenance, install scripts, age, licence, the tree it brings, and where it is declared. |
 
 ## Tests and the gate
 
 | Skill | What it does |
 |-------|--------------|
 | `tdd` | The failing test first, for new behaviour and for bug fixes, and when to skip the loop and say so. |
+| `ub-mode` | Robert C. Martin's reduced principles: make it work with a failing test first, make it right with the CRAP, duplication and mutation tools, commit small. Vendored from [unclebob/ub-mode](https://github.com/unclebob/ub-mode); `SOURCE.md` beside it pins the commit and says what this project overrides. |
 | `typescript-tests` | The name is a sentence, the body is setup, mock, test and verify blocks separated by blank lines, no comments, and the runner's config decides where the file goes. |
 | `rust-tests` | Cargo tests: the same block shape, sentence names, shared setup in a named test-support module, unit tests beside the code. |
 | `sonar-loop` | Drives a PR to the project's quality targets, then watches the checks until every one passes. |
