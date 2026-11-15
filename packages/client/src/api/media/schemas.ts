@@ -183,6 +183,9 @@ export const Health = z.object({
   instanceId: z.string().optional(),
   bootId: z.string().optional(),
   version: z.string(),
+  /** The oldest app version this server serves. Absent on a server from
+   * before it said. */
+  minClient: z.string().optional(),
   build: z.number().optional(),
   commit: z.string().optional(),
   ffprobe: z.boolean(),

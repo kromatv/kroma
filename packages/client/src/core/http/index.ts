@@ -1,5 +1,6 @@
 export * from './adopt-media-ticket';
 export * from './api-error';
+export * from './app-version';
 export * from './path';
 export * from './preconnect';
 export * from './query';

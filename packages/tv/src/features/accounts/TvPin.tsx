@@ -3,6 +3,7 @@ import { Avatar, Box, Icon, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import { isTokenRevoked, useAuth } from '#tv/app/providers/auth';
+import { useConnectionMaybe } from '#tv/app/providers/connection';
 import { useNav, useParams } from '#tv/app/router';
 import { AuthScreen, artUrl } from '#tv/shared/ui';
 import { PinEntry } from './PinEntry';
@@ -13,9 +14,10 @@ export function TvPin() {
   const t = useT();
   const { account } = useParams('pin');
   const { activate, forget } = useAuth();
+  const shell = useConnectionMaybe()?.platform;
   const client = useMemo(
-    () => (account.serverUrl ? makeClient(account.serverUrl) : null),
-    [account],
+    () => (account.serverUrl ? makeClient(account.serverUrl, { shell }) : null),
+    [account, shell],
   );
 
   useFocusNav({ onBack: nav.back });

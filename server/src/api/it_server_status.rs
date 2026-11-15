@@ -21,6 +21,7 @@ async fn health_and_status_are_public_and_report_the_demo_counts() {
     assert_eq!(body["ffprobe"], json!(false));
     assert!(body["build"].is_u64());
     assert!(body["commit"].is_string());
+    assert_eq!(body["minClient"], json!(crate::model::MIN_CLIENT));
 
     // /status is the public scan/enrichment snapshot (idle in the test app).
     let (status, snap) = get(&t.app, "/api/status", None).await;

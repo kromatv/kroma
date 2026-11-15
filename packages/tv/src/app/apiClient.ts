@@ -1,4 +1,5 @@
 import {
+  type AppIdentity,
   clientUserAgent,
   createKromaClient,
   type DeviceIdentity,
@@ -21,12 +22,18 @@ export function tvIdentity(version = buildInfo().version): DeviceIdentity | null
   return device ? { version, ...device } : null;
 }
 
-export function makeClient(
-  baseUrl: string,
-  version = buildInfo().version,
-  artworkScale?: () => number,
-  storage?: SessionStorage | null,
-): KromaClient {
+export interface ClientOptions {
+  shell?: string;
+  version?: string;
+  artworkScale?: () => number;
+  storage?: SessionStorage | null;
+}
+
+/** A client for `baseUrl` that names this television on every request: the
+ * hardware in its User-Agent, and the app in `X-Kroma-Client` when `shell`
+ * says which one it is. */
+export function makeClient(baseUrl: string, options: ClientOptions = {}): KromaClient {
+  const { shell, version = buildInfo().version, artworkScale, storage } = options;
   const identity = tvIdentity(version);
   return createKromaClient({
     baseUrl,
@@ -35,5 +42,6 @@ export function makeClient(
     artworkScale,
     locale: deviceLocale(storage),
     ...(identity ? { userAgent: clientUserAgent(identity) } : {}),
+    ...(shell ? { app: { shell, version } satisfies AppIdentity } : {}),
   });
 }

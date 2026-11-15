@@ -34,5 +34,11 @@ const UA = userAgent();
 
 /** A client for `baseUrl` that identifies this phone on every request. */
 export function makeClient(baseUrl: string, locale: string = deviceLocale()): QueryClient {
-  return createQueryClient({ baseUrl, userAgent: UA, locale, directMedia: true });
+  return createQueryClient({
+    baseUrl,
+    userAgent: UA,
+    app: { shell: Platform.OS, version: buildInfo.version },
+    locale,
+    directMedia: true,
+  });
 }

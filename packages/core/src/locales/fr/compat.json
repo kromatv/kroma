@@ -1,3 +1,9 @@
 {
+  "compat.clientOutdated": "Cette application est en version {client}, et le serveur {server} ne la prend plus en charge. Mettez-la à jour pour continuer.",
+  "compat.clientOutdatedTitle": "Cette application doit être mise à jour",
+  "compat.howToUpdateMobile": "Mettez à jour KROMA depuis l'App Store ou Google Play.",
+  "compat.howToUpdateTv": "Mettez à jour KROMA depuis la boutique d'applications de votre téléviseur, ou depuis l'endroit où vous l'avez installée.",
+  "compat.howToUpdateWeb": "Rechargez la page. Si ce message persiste, l'application web a été installée séparément du serveur et doit être mise à jour.",
+  "compat.reload": "Recharger",
   "compat.serverOutdated": "Votre serveur (v{server}) est trop ancien pour cette application (v{client}). Mettez-le à jour pour éviter les problèmes."
 }

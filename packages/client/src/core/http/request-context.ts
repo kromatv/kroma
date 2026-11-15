@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { KromaApiError, KromaSchemaError } from './api-error';
+import { APP_VERSION_HEADER, type AppIdentity } from './app-version';
 import { readBoundedJson } from './body';
 import { type Concurrency, concurrencyGate } from './concurrency';
 import { buildPath, type PathParam, type PathParams } from './path';
@@ -14,6 +15,9 @@ export interface KromaClientOptions {
   authToken?: string;
   locale?: string;
   userAgent?: string;
+  /** Which app and version this is, sent on every request as `X-Kroma-Client`
+   * so the server can tell an app that is too old from one that never said. */
+  app?: AppIdentity;
   /** Root-owned artwork quality, read when a URL is minted. */
   artworkScale?: () => number;
 }
@@ -116,6 +120,8 @@ export interface TransportConfig {
   artworkScale?: () => number;
   token(): string | undefined;
   locale(): string | undefined;
+  /** The `X-Kroma-Client` value, `<shell>/<version>`, or nothing to send. */
+  app?: string;
   /** Mint a fresh bearer after a 401, or resolve undefined to give up. */
   refresh(): Promise<string | undefined>;
   mediaTicket(): string | undefined;
@@ -179,6 +185,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
     const locale = config.locale();
     if (token) headers.set('Authorization', `Bearer ${token}`);
     if (locale) headers.set('Accept-Language', locale);
+    if (config.app) headers.set(APP_VERSION_HEADER, config.app);
     const send = (base: string, signal: AbortSignal | undefined) =>
       fetchFn(`${base}/api${path}`, { ...init, headers, signal });
     const signal = init?.signal ?? config.signal;

@@ -133,6 +133,11 @@ A migration that deletes rows, drops a table or moves one means the owner backs
 up before updating, and the note says so. The Updates section of
 `docs/spec/admin/README.md` already asks for that nudge.
 
+A release that raises the oldest app version the server serves (`MIN_CLIENT` in
+`server/crates/kroma-domain/src/app_version.rs`) says so under Action required,
+naming the version: every app below it shows an update screen the moment the
+server updates, and a television updates on its vendor's schedule.
+
 ## Reading a PR here
 
 PR titles are written for reviewers and are often figurative. Read the body. Its
