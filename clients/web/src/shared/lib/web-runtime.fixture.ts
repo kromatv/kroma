@@ -22,6 +22,7 @@ export function createWebTestRuntime(client: object, queryCache?: () => QueryCli
   const cache = queryCache ? null : new QueryClient();
   return {
     client: owned,
+    app: undefined,
     get queryClient() {
       const value = queryCache?.() ?? cache;
       if (!value) throw new Error('test query root missing');

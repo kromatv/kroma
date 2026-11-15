@@ -72,6 +72,24 @@ describe('the request itself', () => {
     expect(calls[0]?.headers.get('Accept-Language')).toBe('fr');
   });
 
+  it('names the app on every request, public ones included, once the transport knows it', async () => {
+    const { ctx, calls } = transport({ text: '{"id":"i1"}' }, { app: 'tizen/0.1.39' });
+
+    await ctx.get('/items/:id', Item, { params: { id: 'i1' } });
+    await ctx.get('/health', Item, { auth: 'public' });
+
+    expect(calls[0]?.headers.get('X-Kroma-Client')).toBe('tizen/0.1.39');
+    expect(calls[1]?.headers.get('X-Kroma-Client')).toBe('tizen/0.1.39');
+  });
+
+  it('sends no app header when the build has none', async () => {
+    const { ctx, calls } = transport({ text: '{"id":"i1"}' });
+
+    await ctx.get('/items/:id', Item, { params: { id: 'i1' } });
+
+    expect(calls[0]?.headers.get('X-Kroma-Client')).toBeNull();
+  });
+
   it('sends a JSON body with its content type, and none when there is no body', async () => {
     const { ctx, calls } = transport();
 

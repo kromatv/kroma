@@ -12,6 +12,7 @@ import {
 import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import { useAuth } from '#tv/app/providers/auth';
+import { useConnectionMaybe } from '#tv/app/providers/connection';
 import { artUrl } from '#tv/shared/ui';
 
 function ProfileMenu({
@@ -21,11 +22,12 @@ function ProfileMenu({
 }: Readonly<{ account: StoredSession; open: boolean; onClose: () => void }>) {
   const t = useT();
   const { forget } = useAuth();
+  const shell = useConnectionMaybe()?.platform;
 
   const signOut = () => {
     onClose();
     if (account.serverUrl) {
-      void makeClient(account.serverUrl)
+      void makeClient(account.serverUrl, { shell })
         .accounts.logout(account.accessToken)
         .catch(() => undefined);
     }

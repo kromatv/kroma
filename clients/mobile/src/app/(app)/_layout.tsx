@@ -1,6 +1,7 @@
 import { activeTheme, color, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 import { Redirect, Stack } from 'expo-router';
 import type { ComponentProps } from 'react';
+import { CompatGate } from '#mobile/components/CompatGate';
 import { lockUpright, PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';
 
@@ -29,15 +30,17 @@ export default function AppLayout() {
   if (status === 'booting') return null;
   if (status !== 'signedIn') return <Redirect href={serverUrl ? '/sign-in' : '/connect'} />;
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: color('bg', activeTheme(scope.theme)) },
-        orientation: UPRIGHT,
-      }}
-    >
-      <Stack.Screen name="player/[id]" {...PLAYER_SCREEN} />
-      <Stack.Screen name="trailer/[kind]/[tmdbId]" {...PLAYER_SCREEN} />
-    </Stack>
+    <CompatGate>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: color('bg', activeTheme(scope.theme)) },
+          orientation: UPRIGHT,
+        }}
+      >
+        <Stack.Screen name="player/[id]" {...PLAYER_SCREEN} />
+        <Stack.Screen name="trailer/[kind]/[tmdbId]" {...PLAYER_SCREEN} />
+      </Stack>
+    </CompatGate>
   );
 }

@@ -203,15 +203,20 @@ editor. `npm-pick-manifest` skips versions whose `engines` the running Node does
 - **Hand-written upper bounds in `engines.server`.** Still a guess. The component already
   says what it imports.
 
+## Decided with part 4
+
+- A canary app compares as the release it leads to, the rule part 0 already gives the
+  server: only the leading numbers of a version count on both sides, so
+  `0.1.39-canary.<build>` meets a `minClient` of 0.1.39. A canary built before the change
+  that raised the floor is let through, which is the cost of not stranding every canary
+  built after it.
+- `minClient` is one number. Every shell ships under the product version, and a floor
+  per shell would be a second thing to forget.
+- A television says "update KROMA from your television's app store, or from where you
+  installed it", one line for every way it may have been installed. A phone names the
+  stores, and the web app says to reload, since its server normally ships it.
+
 ## Unresolved
 
-- How a canary app compares with `minClient`. Semver orders `0.1.39-canary.<build>`
-  before 0.1.39, so a `minClient` of 0.1.39 refuses every canary of that release,
-  including the ones built after the change that raised it. Decided with the app work in
-  part 4, before any client sends its version.
-- Whether `minClient` is one number or one per shell. All shells share one product version
-  today, so one number is proposed. Decided with the app work in part 4.
 - Whether the Store offers an explicit "install this version" for a rollback. The history
   makes it possible. Nothing in this RFC needs it.
-- How a television app words "update this app", which depends on how it was installed:
-  from LG's or Samsung's store, or sideloaded. Decided with the app work in part 4.

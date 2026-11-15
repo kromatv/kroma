@@ -21,7 +21,7 @@ const H = vi.hoisted(() => {
     readDeepLink: vi.fn(),
     onDeepLink: vi.fn(),
     publishPreview: vi.fn(),
-    checkServerCompat: vi.fn(),
+    checkCompat: vi.fn(),
     instances: [] as { baseUrl: string }[],
     streams: [] as { url: string; opts: StreamHooks }[],
     reconnect: undefined as (() => void) | undefined,
@@ -73,7 +73,7 @@ vi.mock('@kromatv/client', () => ({
 vi.mock('@kromatv/core', () => ({
   deviceLocale: () => 'fr',
   discoverServer: H.discoverServer,
-  checkServerCompat: H.checkServerCompat,
+  checkCompat: H.checkCompat,
   startDirectConnection: () => ({
     setSignedIn: () => undefined,
     setForeground: () => undefined,
@@ -134,7 +134,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   H.instances.length = 0;
   H.streams.length = 0;
-  H.checkServerCompat.mockReturnValue('ok');
+  H.checkCompat.mockReturnValue('ok');
   H.loadSession.mockReturnValue(null);
   H.initialServers.mockReturnValue([]);
   H.movieCards.mockResolvedValue([]);

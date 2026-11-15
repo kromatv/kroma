@@ -17,6 +17,10 @@ pub struct Health {
     #[serde(rename = "instanceId")]
     pub instance_id: String,
     pub version: &'static str,
+    /// The oldest app version this server serves. An app below it shows one
+    /// screen saying so instead of failing a feature.
+    #[serde(rename = "minClient")]
+    pub min_client: &'static str,
     pub build: u64,
     pub commit: String,
     #[serde(rename = "bootId")]

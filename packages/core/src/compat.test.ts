@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ClientBuild, checkServerCompat, compareVersions } from './compat';
+import { checkCompat, type ClientBuild, compareVersions } from './compat';
 
 describe('compareVersions', () => {
   it('orders dotted numeric versions', () => {
@@ -15,6 +15,11 @@ describe('compareVersions', () => {
     expect(compareVersions('0.2', '0.2.0')).toBe(0);
     expect(compareVersions('0.2.1', '0.2')).toBe(1);
   });
+
+  it('reads a canary as the release it leads to', () => {
+    expect(compareVersions('0.1.39-canary.4', '0.1.39')).toBe(0);
+    expect(compareVersions('0.1.38-canary.9', '0.1.39')).toBe(-1);
+  });
 });
 
 describe('non-numeric version parts', () => {
@@ -24,26 +29,54 @@ describe('non-numeric version parts', () => {
   });
 });
 
-describe('checkServerCompat', () => {
+describe('checkCompat', () => {
   const client = (over: Partial<ClientBuild> = {}): ClientBuild => ({
     version: '0.1.31',
     minServerVersion: '0.1.0',
     ...over,
   });
 
-  it('is ok when the server meets the client requirement', () => {
-    expect(checkServerCompat(client(), '0.1.31')).toBe('ok');
-    expect(checkServerCompat(client({ minServerVersion: '0.1.30' }), '0.1.31')).toBe('ok');
+  it('is ok when each side meets what the other asks', () => {
+    expect(checkCompat(client(), { version: '0.1.31', minClient: '0.1.30' })).toBe('ok');
+    expect(checkCompat(client({ minServerVersion: '0.1.30' }), { version: '0.1.31' })).toBe('ok');
   });
 
   it('flags the server as outdated when it predates the client requirement', () => {
-    expect(checkServerCompat(client({ minServerVersion: '0.2.0' }), '0.1.31')).toBe(
+    expect(checkCompat(client({ minServerVersion: '0.2.0' }), { version: '0.1.31' })).toBe(
       'server-outdated',
     );
   });
 
+  it('flags the client as outdated when the server no longer serves its version', () => {
+    expect(checkCompat(client(), { version: '0.1.39', minClient: '0.1.39' })).toBe(
+      'client-outdated',
+    );
+  });
+
+  it('lets a canary of the oldest served release through', () => {
+    expect(
+      checkCompat(client({ version: '0.1.39-canary.4' }), {
+        version: '0.1.39',
+        minClient: '0.1.39',
+      }),
+    ).toBe('ok');
+  });
+
+  it('gives the server the last word when both sides are unhappy', () => {
+    expect(
+      checkCompat(client({ minServerVersion: '0.2.0' }), {
+        version: '0.1.39',
+        minClient: '0.1.39',
+      }),
+    ).toBe('client-outdated');
+  });
+
   it('never warns on dev/unknown placeholders', () => {
-    expect(checkServerCompat(client({ minServerVersion: 'dev' }), '0.1.31')).toBe('ok');
-    expect(checkServerCompat(client(), 'unknown')).toBe('ok');
+    expect(checkCompat(client({ minServerVersion: 'dev' }), { version: '0.1.31' })).toBe('ok');
+    expect(checkCompat(client(), { version: 'unknown' })).toBe('ok');
+    expect(
+      checkCompat(client({ version: 'dev' }), { version: '0.1.39', minClient: '0.1.39' }),
+    ).toBe('ok');
+    expect(checkCompat(client(), { version: '0.1.39', minClient: null })).toBe('ok');
   });
 });

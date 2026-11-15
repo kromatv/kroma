@@ -9,10 +9,11 @@ import {
   useStyleScope,
 } from '@kromatv/ui/kit';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { canExitOnBack, exitOnBack } from '#tv/app/appQuit';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
+import { ClientOutdatedScreen } from '#tv/app/ClientOutdatedScreen';
 import { CrashBoundary } from '#tv/app/CrashBoundary';
 import { CrashScreen } from '#tv/app/CrashScreen';
 import { type DeviceNameSource, useDeviceName } from '#tv/app/deviceName';
@@ -116,6 +117,13 @@ function CrashFallback({ onRetry }: Readonly<{ onRetry: () => void }>) {
 
 const crashFallback = (retry: () => void) => <CrashFallback onRetry={retry} />;
 
+// Rendered inside <ConnectionProvider>, which TvApp mounts, so TvApp cannot
+// read the verdict itself.
+function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
+  const { compat } = useConnection();
+  return compat === 'client-outdated' ? <ClientOutdatedScreen /> : children;
+}
+
 export function TvApp({
   platform = 'TV',
   capabilities,
@@ -192,44 +200,46 @@ export function TvApp({
                                       fallback={crashFallback}
                                     >
                                       <CompatBanner />
-                                      <ContinueProvider>
-                                        <RecommendProvider>
-                                          <MyListProvider>
-                                            <WatchedProvider>
-                                              {/* Above the router: a TV must be castable from its home
+                                      <CompatGate>
+                                        <ContinueProvider>
+                                          <RecommendProvider>
+                                            <MyListProvider>
+                                              <WatchedProvider>
+                                                {/* Above the router: a TV must be castable from its home
                             screen, not only from the player. */}
-                                              <CastReceiverProvider
-                                                client={client}
-                                                lan={lan}
-                                                name={name}
-                                                identity={identity}
-                                              >
-                                                {/* Also above the router: the beacon has to be up on
-                              whichever gate screen the TV is showing. */}
-                                                <HandoffBeaconProvider
+                                                <CastReceiverProvider
                                                   client={client}
                                                   lan={lan}
                                                   name={name}
                                                   identity={identity}
                                                 >
-                                                  {/* A television cannot use React Native's <Modal>: its
+                                                  {/* Also above the router: the beacon has to be up on
+                              whichever gate screen the TV is showing. */}
+                                                  <HandoffBeaconProvider
+                                                    client={client}
+                                                    lan={lan}
+                                                    name={name}
+                                                    identity={identity}
+                                                  >
+                                                    {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
                               (see @kromatv/ui lib/overlay-host). */}
-                                                  <OverlayHost>
-                                                    <TvRouterGuard />
-                                                    {/* Above the router so notices survive a screen
+                                                    <OverlayHost>
+                                                      <TvRouterGuard />
+                                                      {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
-                                                    <Toaster
-                                                      position="top-right"
-                                                      inset={TOAST_INSET}
-                                                    />
-                                                  </OverlayHost>
-                                                </HandoffBeaconProvider>
-                                              </CastReceiverProvider>
-                                            </WatchedProvider>
-                                          </MyListProvider>
-                                        </RecommendProvider>
-                                      </ContinueProvider>
+                                                      <Toaster
+                                                        position="top-right"
+                                                        inset={TOAST_INSET}
+                                                      />
+                                                    </OverlayHost>
+                                                  </HandoffBeaconProvider>
+                                                </CastReceiverProvider>
+                                              </WatchedProvider>
+                                            </MyListProvider>
+                                          </RecommendProvider>
+                                        </ContinueProvider>
+                                      </CompatGate>
                                     </CrashBoundary>
                                   </LocaleProvider>
                                 </AuthProvider>

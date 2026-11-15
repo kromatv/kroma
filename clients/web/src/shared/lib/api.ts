@@ -3,7 +3,7 @@ import { createQueries } from './queries';
 import { makeQueryClient } from './query';
 // KROMA API origin resolution.
 
-import type { KromaClient } from '@kromatv/client';
+import type { AppIdentity, KromaClient } from '@kromatv/client';
 import { loadSession } from '@kromatv/client/accounts';
 import type { MediaCard, MediaItem, Show } from '@kromatv/client/media';
 import { createQueryClient, type QueryClient } from '@kromatv/client/query';
@@ -50,14 +50,17 @@ export function isAuthed(): boolean {
   return loadSession() != null;
 }
 
-/** Request state and query factories belong to one router, including SSR. */
-export function createWebRuntime(options: { client?: QueryClient } = {}) {
+/** Request state and query factories belong to one router, including SSR.
+ * `app` is this build as `X-Kroma-Client` names it, and what the compat gate
+ * compares with the server's oldest served version. */
+export function createWebRuntime(options: { client?: QueryClient; app?: AppIdentity } = {}) {
   const client =
     options.client ??
     createQueryClient({
       baseUrl: apiBase(),
       locale: deviceLocale(),
       fetch: withLocalAddressSpace(globalThis.fetch.bind(globalThis)),
+      app: options.app,
     });
   const queryClient = makeQueryClient();
   async function exchangeStoredSession(): Promise<string | undefined> {
@@ -77,6 +80,7 @@ export function createWebRuntime(options: { client?: QueryClient } = {}) {
   client.setRefreshHandler(exchangeStoredSession);
   return {
     client,
+    app: options.app,
     queryClient,
     queries: createQueries(client),
     moduleApi: createAdminApi(client),

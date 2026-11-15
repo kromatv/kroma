@@ -11,6 +11,7 @@ vi.mock('#web/shared/lib/api', () => ({
   createWebRuntime: () => ({ ...H.runtime, ensureSession: H.ensureSession }),
 }));
 vi.mock('#web/modules/remotes', () => ({ prefetchModules: H.prefetchModules }));
+vi.mock('virtual:build-info', () => ({ version: '0.1.39' }));
 vi.mock('#web/routeTree.gen', async () => {
   const { createRootRoute } = await import('@tanstack/react-router');
   return { routeTree: createRootRoute() };

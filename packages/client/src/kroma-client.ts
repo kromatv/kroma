@@ -1,6 +1,7 @@
 import { domains } from './api/discover';
 import { bindDomains, type Domains } from './core/client';
 import {
+  appVersionHeader,
   createRequestContext,
   createRoute,
   type KromaClientOptions,
@@ -85,6 +86,7 @@ export function kromaClientParts(options: KromaClientOptions): {
     fetchFn: options.userAgent ? withUserAgent(base, options.userAgent) : base,
     token: session.sessionToken,
     locale: () => locale,
+    app: options.app ? appVersionHeader(options.app) : undefined,
     artworkScale: options.artworkScale,
     refresh: refreshSession,
     mediaTicket: sessionMediaTicket,
