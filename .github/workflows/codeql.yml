@@ -41,29 +41,29 @@ jobs:
       security-events: write # upload the SARIF results to code-scanning
       actions: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # No overlay database: the action otherwise keeps a ~190 MB base
       # database per push to main in the repository's Actions cache, which
       # buys seconds on a three-minute scan.
-      - uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: javascript-typescript, actions
         env:
           CODEQL_OVERLAY_DATABASE_MODE: none
-      - uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
 
   cargo-audit:
     name: cargo audit (RustSec advisories)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       # A prebuilt binary instead of `cargo install cargo-audit --locked` (which
       # compiled the tool from source) - and NO rust-cache: the audit only reads
       # Cargo.lock, so the 142 MB target-dir cache it kept per key was pure
       # pressure on the repo's 10 GB cache quota.
-      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2
         with:
           tool: cargo-audit
       # Every lockfile that ships: the server, each module (its own workspace,
