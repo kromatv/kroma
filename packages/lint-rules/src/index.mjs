@@ -1,3 +1,4 @@
+import importBoundaries from './rules/import-boundaries.mjs';
 import indexReexportsOnly from './rules/index-reexports-only.mjs';
 import noBooleanFlagParam from './rules/no-boolean-flag-param.mjs';
 import noCommentBanners from './rules/no-comment-banners.mjs';
@@ -34,5 +35,6 @@ export default {
     'use-state-pair': useStatePair,
     'no-boolean-flag-param': noBooleanFlagParam,
     'zod-nonempty': zodNonempty,
+    'import-boundaries': importBoundaries,
   },
 };

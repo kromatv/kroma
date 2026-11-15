@@ -2162,6 +2162,14 @@
     "packages/ui/src/components/molecules/select/select.tsx": 1,
     "packages/ui/src/components/organisms/selection-bar/selection-bar.fixtures.tsx": 1
   },
+  "kroma/import-boundaries": {
+    "clients/web/src/features/catalog/whats-new-link.test.tsx": 1,
+    "clients/web/src/shared/lib/api.ts": 1,
+    "clients/web/src/shared/lib/web-runtime.fixture.ts": 1,
+    "packages/tv/src/features/catalog/home/TopNav.tsx": 1,
+    "packages/tv/src/features/playback/TvPlayer.tsx": 1,
+    "packages/ui/src/components/molecules/select/select-options-dialog.tsx": 1
+  },
   "kroma/no-boolean-flag-param": {
     "apps/kit/src/guides/install-check.tsx": 1,
     "apps/packages/src/lib/api.ts": 1,
