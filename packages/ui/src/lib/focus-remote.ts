@@ -42,6 +42,7 @@ const HELD: Record<string, Direction> = {
   longRight: Directions.RIGHT,
 };
 const REPEAT_MS = 150;
+const HELD_OK_MS = 2000;
 
 const RELEASE = Directions.RELEASE;
 const HOLD = Directions.HOLD;
@@ -55,10 +56,25 @@ export function createRemoteTransport({ enabled }: RemoteTransportOptions) {
   const typists = new Set<(key: string) => void>();
   const remoteKeys = new Set<(key: RemoteKey) => void>();
   let owner: Transport | null = null;
+  let okDownAt: number | null = null;
   return {
     enabled,
     typists,
     remoteKeys,
+    /** Whether this OK key-down is the auto-repeat of one still held. Android
+     *  repeats a held key as more key-downs that say nothing of being repeats,
+     *  and sends them to whichever screen holds the focus by then, so the
+     *  memory is the transport's. A hold whose key-up never came stops counting
+     *  once the repeats have been silent for {@link HELD_OK_MS}. */
+    okRepeats(): boolean {
+      const now = Date.now();
+      const held = okDownAt !== null && now - okDownAt < HELD_OK_MS;
+      okDownAt = now;
+      return held;
+    },
+    okReleased() {
+      okDownAt = null;
+    },
     subscribe(handle: (direction: Direction) => void) {
       if (!enabled) return () => {};
       handlers.add(handle);
@@ -174,7 +190,7 @@ export function useRemoteHostProps(on = true): RemoteHostProps {
       // Auto-repeat from a held direction is how a TV scrolls a long rail.
       const direction = KEY_CODES[code];
       if (direction) {
-        if (direction !== Directions.ENTER || !event.nativeEvent.repeat)
+        if (direction !== Directions.ENTER || !remote.okRepeats())
           remote.stepRing(direction, 'host', perf);
         // Fanned to the player chrome as well, the same way `useTVEventHandler`
         // feeds both the navigator bridge and the player on tvOS. Sent whatever
@@ -194,8 +210,9 @@ export function useRemoteHostProps(on = true): RemoteHostProps {
   );
   const onKeyUp = useCallback(
     (event: NativeSyntheticEvent<TVKeyEvent>) => {
-      if (KEY_CODES[event.nativeEvent.code] === Directions.ENTER)
-        remote.stepRing(RELEASE, 'host', perf);
+      if (KEY_CODES[event.nativeEvent.code] !== Directions.ENTER) return;
+      remote.okReleased();
+      remote.stepRing(RELEASE, 'host', perf);
     },
     [perf, remote],
   );

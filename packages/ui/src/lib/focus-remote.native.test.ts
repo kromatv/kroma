@@ -94,6 +94,17 @@ function press(eventType: string, eventKeyAction = 0) {
   });
 }
 
+function keyUp(
+  props: { onKeyUp?: (e: NativeSyntheticEvent<TVKeyEvent>) => void },
+  over: Partial<TVKeyEvent>,
+) {
+  act(() => {
+    props.onKeyUp?.({
+      nativeEvent: { code: '', key: '', ...over },
+    } as NativeSyntheticEvent<TVKeyEvent>);
+  });
+}
+
 function keyDown(
   props: { onKeyDown?: (e: NativeSyntheticEvent<TVKeyEvent>) => void },
   over: Partial<TVKeyEvent>,
@@ -286,9 +297,49 @@ describe('the Android key host', () => {
     const { result } = renderHook(() => remote.useRemoteHostProps());
 
     keyDown(result.current, { code: 'Enter' });
-    keyDown(result.current, { code: 'Enter', repeat: true });
+    for (let i = 0; i < 12; i++) keyDown(result.current, { code: 'Enter' });
+    keyUp(result.current, { code: 'Enter' });
 
-    expect(nav1.moves).toEqual(['enter']);
+    expect(nav1.moves).toEqual(['enter', 'release']);
+  });
+
+  it('swallows the repeat even when it lands on the screen the hold opened', async () => {
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    const opener = renderHook(() => remote.useRemoteHostProps());
+    const opened = renderHook(() => remote.useRemoteHostProps());
+
+    keyDown(opener.result.current, { code: 'Enter' });
+    keyDown(opened.result.current, { code: 'Enter' });
+    keyUp(opened.result.current, { code: 'Enter' });
+
+    expect(nav1.moves).toEqual(['enter', 'release']);
+  });
+
+  it('takes the next OK as a new press once the held one came back up', async () => {
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+
+    keyDown(result.current, { code: 'Enter' });
+    keyUp(result.current, { code: 'Enter' });
+    keyDown(result.current, { code: 'Enter' });
+
+    expect(nav1.moves).toEqual(['enter', 'release', 'enter']);
+  });
+
+  it('stops counting a hold whose release never arrived', async () => {
+    vi.useFakeTimers();
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+
+    keyDown(result.current, { code: 'Enter' });
+    vi.advanceTimersByTime(2500);
+    keyDown(result.current, { code: 'Enter' });
+    vi.useRealTimers();
+
+    expect(nav1.moves).toEqual(['enter', 'enter']);
   });
 
   it('passes auto-repeat straight through, which is how a long rail scrolls', async () => {
