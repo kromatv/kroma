@@ -1,0 +1,9 @@
+{
+  "name": "OneLogin",
+  "issuer": "https://SUBDOMAIN.onelogin.com/oidc/2",
+  "docs": "https://developers.onelogin.com/docs/openid-connect/",
+  "sources": {
+    "mark": "theSVG `onelogin` (MIT), via https://api.iconify.design/thesvg-color/onelogin.svg, read 2026-11-13",
+    "issuer": "https://developers.onelogin.com/openid-connect/api/provider-config, read 2026-11-13"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "authentik",
+  "issuer": "https://auth.example.com/application/o/SLUG/",
+  "docs": "https://docs.goauthentik.io/add-secure-apps/providers/oauth2/create-oauth2-provider/",
+  "brand": {
+    "fill": "#fd4b2d",
+    "ink": "#ffffff",
+    "mark": "white.svg"
+  },
+  "sources": {
+    "mark": "authentik's press kit, icon-color.svg and icon-white.svg, untouched, https://goauthentik.io/press/, read 2026-11-13",
+    "brand": "https://goauthentik.io/press/: the primary colour, for calls to action, and the name in lower case",
+    "issuer": "docs/reference/sign-in-providers.md, run against Authentik 2025.10"
+  }
+}

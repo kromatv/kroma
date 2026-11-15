@@ -2,6 +2,7 @@
 // are `@kromatv/client`, a domain's schemas are `@kromatv/client/<domain>`, and what
 // is here is what neither of those owns - the rules built on top of them.
 export * from './airdate';
+export * from './auth';
 export * from './browse';
 export * from './compat';
 export * from './direct';

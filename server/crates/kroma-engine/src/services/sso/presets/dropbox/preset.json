@@ -1,0 +1,11 @@
+{
+  "name": "Dropbox",
+  "icon": "cloud",
+  "issuer": "https://www.dropbox.com",
+  "console": "https://www.dropbox.com/developers/apps",
+  "docs": "https://docs.dropboxapi.com/dropbox-api/docs/oidc",
+  "sources": {
+    "mark": "Iconify `logos:dropbox`, via https://api.iconify.design/logos/dropbox.svg, read 2026-11-13 (SVG Logos, CC0 1.0)",
+    "issuer": "https://www.dropbox.com/.well-known/openid-configuration, read 2026-11-13: RS256, with the profile and email scopes"
+  }
+}

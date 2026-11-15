@@ -24,9 +24,9 @@
     "bundle:check": "bun ../expo-build/bundle-check.ts ."
   },
   "dependencies": {
-    "@kromatv/android-build": "workspace:*",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@kesha-antonov/react-native-background-downloader": "^4.6.4",
+    "@kromatv/android-build": "workspace:*",
     "@kromatv/build-info": "workspace:*",
     "@kromatv/client": "workspace:*",
     "@kromatv/core": "workspace:*",
@@ -63,6 +63,7 @@
     "expo-status-bar": "~58.0.3",
     "expo-system-ui": "~58.0.6",
     "expo-video": "~58.0.12",
+    "expo-web-browser": "~58.0.8",
     "react": "19.3.0",
     "react-native": "npm:react-native-tvos@0.88.0-0",
     "react-native-gesture-handler": "~3.3.0",

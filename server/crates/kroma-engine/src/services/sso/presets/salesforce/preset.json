@@ -1,0 +1,10 @@
+{
+  "name": "Salesforce",
+  "icon": "cloud",
+  "issuer": "https://login.salesforce.com",
+  "docs": "https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_using_openid.htm&type=5",
+  "sources": {
+    "mark": "Iconify `logos:salesforce`, via https://api.iconify.design/logos/salesforce.svg, read 2026-11-13 (SVG Logos, CC0 1.0)",
+    "issuer": "https://login.salesforce.com/.well-known/openid-configuration, read 2026-11-13: RS256, with the profile and email scopes"
+  }
+}

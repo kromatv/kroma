@@ -1,0 +1,9 @@
+{
+  "name": "Dex",
+  "issuer": "https://dex.example.com/dex",
+  "docs": "https://dexidp.io/docs/guides/using-dex/",
+  "sources": {
+    "mark": "selfh.st/icons `dex-auth` (CC BY 4.0), via https://api.iconify.design/selfhst/dex-auth.svg, read 2026-11-13",
+    "issuer": "https://dexidp.io/docs/guides/using-dex/, read 2026-11-13: the issuer is whatever the Dex configuration names"
+  }
+}

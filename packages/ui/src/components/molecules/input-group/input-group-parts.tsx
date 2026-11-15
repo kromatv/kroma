@@ -65,12 +65,14 @@ function shellWiring(group: InputGroupContext, own: Readonly<EntryOwn>) {
   };
 }
 
-/** The entry, stripped of the shell it usually draws: that belongs to Root. */
+/** The entry, stripped of the shell it usually draws: that belongs to Root. A
+ *  caller's `entryRef` is the one the shell focuses through too. */
 function GroupInput(props: Readonly<Omit<TextFieldProps, 'size'>>) {
   const group = useInputGroup('Input');
   const { registerFocus } = group;
-  const entry = useRef<TextInput>(null);
-  const focus = useCallback(() => entry.current?.focus(), []);
+  const own = useRef<TextInput>(null);
+  const entry = props.entryRef ?? own;
+  const focus = useCallback(() => entry.current?.focus(), [entry]);
   useEffect(() => registerFocus(focus), [registerFocus, focus]);
   return (
     <TextField {...shellProps(group)} {...props} {...shellWiring(group, props)} entryRef={entry} />

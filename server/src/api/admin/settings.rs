@@ -31,6 +31,8 @@ pub fn routes() -> Router<SharedState> {
         .route("/settings/relay-test", post(relay_test))
 }
 
+const KEYS_WITH_THEIR_OWN_ENDPOINT: &[&str] = &[settings::SIGN_IN_KEY];
+
 #[derive(Debug, Deserialize)]
 pub struct SettingsQuery {
     #[serde(default)]
@@ -63,6 +65,7 @@ pub async fn put_settings(
     Json(mut patch): Json<BTreeMap<String, Value>>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
+    patch.retain(|key, _| !KEYS_WITH_THEIR_OWN_ENDPOINT.contains(&key.as_str()));
     // Automatic installation requires discovery. Turning discovery off also
     // revokes permission to install without a manual confirmation.
     if patch.get("autoUpdate") == Some(&json!(false)) {

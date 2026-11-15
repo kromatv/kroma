@@ -31,18 +31,28 @@ pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) ->
     }
 }
 
-/// `DELETE /api/auth/me/passkeys/:id` (Bearer) → 204, or `404` if the id does
-/// not belong to the caller.
+/// `DELETE /api/auth/me/passkeys/:id` (Bearer) → 204, `404` if the id does not
+/// belong to the caller, `409` if it is the account's last way in.
 pub async fn remove(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Response {
-    let uid = user.id.clone();
-    match query(&state.db, move |pool| db::delete_passkey(&pool, &uid, &id)).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => lerr(loc, StatusCode::NOT_FOUND, "passkey.notFound"),
+    let config = crate::api::sso::sign_in_config(&state);
+    let removed = query(&state.db, move |pool| {
+        let mut means = db::sign_in_means(&pool, &user.id)?;
+        means.passkeys -= 1;
+        if !crate::api::sso::has_a_way_in(&config, &user, &means) {
+            return Ok(None);
+        }
+        db::delete_passkey(&pool, &user.id, &id).map(Some)
+    })
+    .await;
+    match removed {
+        Ok(Some(true)) => StatusCode::NO_CONTENT.into_response(),
+        Ok(Some(false)) => lerr(loc, StatusCode::NOT_FOUND, "passkey.notFound"),
+        Ok(None) => lerr(loc, StatusCode::CONFLICT, "sso.lastWayIn"),
         Err(resp) => resp,
     }
 }

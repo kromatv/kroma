@@ -6,8 +6,8 @@ use serde::Serialize;
 use super::{inbound, summary, Arrival, FlowFilter, FlowPage, FlowReport, InboundSummary, Network, Summary, CORE};
 
 pub const CORE_PURPOSES: &[&str] = &[
-    "address", "ai", "artwork", "email", "metadata", "push", "registry", "stats", "themes",
-    "updates",
+    "address", "ai", "artwork", "email", "metadata", "push", "registry", "sign-in", "stats",
+    "themes", "updates",
 ];
 
 pub const FLUSH_EVERY: Duration = Duration::from_secs(30);

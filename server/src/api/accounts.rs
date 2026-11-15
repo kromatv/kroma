@@ -31,7 +31,7 @@ use reset::{check_reset, redeem_reset, request_reset};
 use session::{exchange_token, list_sessions, logout, relock, revoke_session};
 use verify_email::{check_verification, confirm_verification};
 
-pub(crate) use session::issue_tokens;
+pub(crate) use session::{auth_result, issue_tokens};
 pub(super) use session::mint_device_tokens;
 
 /// PIN routes live in [`super::pin`]; invitations in [`super::invites`].
@@ -113,9 +113,10 @@ pub(crate) fn device_hints(headers: &HeaderMap) -> db::DeviceHints {
     }
 }
 
-/// `GET /api/auth/config` → `{ publicUserList, hasAccounts }`. Unauthenticated: the
-/// login gate reads it before any credential to choose between register, the
-/// profile picker, and a plain email/password form.
+/// `GET /api/auth/config` → `{ publicUserList, hasAccounts, signIn }`.
+/// Unauthenticated: the login gate reads it before any credential to choose
+/// between register, the profile picker, a plain email/password form, and
+/// which ways in to offer.
 pub async fn auth_config(State(state): State<SharedState>) -> Response {
     let has_accounts = match query(&state.db, move |pool| db::user_count(&pool)).await {
         Ok(n) => n > 0,
@@ -125,6 +126,7 @@ pub async fn auth_config(State(state): State<SharedState>) -> Response {
     let relay = crate::services::settings::email_delivery(&state.settings)
         == crate::services::settings::EmailDelivery::Relay;
     Json(crate::api::dto::AuthConfig {
+        sign_in: crate::api::sso::gate_methods(&state),
         public_user_list: state.settings.get_bool("publicUserList", false),
         has_accounts,
         server_name: crate::services::settings::server_name(&state.settings),

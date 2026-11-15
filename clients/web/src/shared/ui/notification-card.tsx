@@ -132,6 +132,7 @@ const EVENT_META: Record<(typeof KNOWN_NOTIFICATION_EVENTS)[number], EventMeta> 
   'download.failed': { icon: 'alert-triangle', fg: 'dangerHover' },
   'system.job.failed': { icon: 'server-bolt', fg: 'dangerHover' },
   'system.disk.low': { icon: 'database', fg: 'accent' },
+  'system.join.requested': { icon: 'user-plus', fg: 'accent' },
   'system.test': { icon: 'bell-ringing', fg: 'accent' },
   // A module's own event has no vocabulary this app can read, so it stays neutral.
   custom: { icon: 'sparkles', fg: 'textMuted' },

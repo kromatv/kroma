@@ -9,6 +9,7 @@ mod direct;
 mod media;
 mod modules;
 mod requests;
+mod sso;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -30,6 +31,7 @@ pub use media::{
 };
 pub use modules::{installed_module, read_setting, store_settings, write_settings};
 pub use requests::{get, get_from, raw, send, text};
+pub use sso::{at_provider, ProviderRound, ORIGIN};
 
 static SEQ: AtomicU32 = AtomicU32::new(0);
 
@@ -110,6 +112,13 @@ pub fn test_app_served_at(web_url: Option<&str>, public_ip_url: Option<&str>) ->
     build_app_with(None, &[], |config| {
         config.web_url = web_url.map(str::to_string);
         config.public_ip_url = public_ip_url.map(str::to_string);
+    })
+}
+
+/// Like [`test_app`] but with a sign-in provider named by the environment.
+pub fn test_app_with_sign_in_provider(provider: crate::config::ProviderEnv) -> TestApp {
+    build_app_with(None, &[], |config| {
+        config.sign_in_provider = Some(provider);
     })
 }
 

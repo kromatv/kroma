@@ -22,8 +22,9 @@ its own settings, and a set of signed-in devices. Nothing else hangs off it.
 **ACCT-2** (SHIPPED) - The first account created at first-run is the **owner**, an account
 like any other that also holds the server itself.
 
-**ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, created by invitation
-from [`admin/`](../admin/). A KROMA server is never self-signup.
+**ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, admitted by an admin:
+by invitation from [`admin/`](../admin/), or through a sign-in provider under the rules an
+admin set for it (ACCT-79). A KROMA server is never self-signup.
 
 **ACCT-4** (SHIPPED) - There are no profiles under an account, and there will not be. A person
 who wants their own Continue Watching gets an account; a shared screen in the kitchen signs
@@ -44,10 +45,11 @@ accounts on the device, not inventing passwordless sub-identities to avoid it.
 
 Status: **SHIPPED**
 
-**ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is
-the only credential the server stores, and it stores only a verifier for it, never the
-password. Strength, reset and lockout policy are the operator's concern
-([`admin/`](../admin/)).
+**ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**, a
+**passkey**, or a **sign-in provider** the operator added. The server stores a verifier for
+the password and never the password, the public half of a passkey, and for a provider only
+which person there the account is. Strength, reset and lockout policy are the operator's
+concern ([`admin/`](../admin/)).
 
 **ACCT-6** (SHIPPED) - A successful authentication mints a **session**: a long-lived,
 server-issued token bound to one device. Every request carries the session, so the password is
@@ -61,6 +63,66 @@ forced periodic re-authentication.
 disturbing any other session the same account holds.
 
 The television rule below is the hard case this policy is built around.
+
+### Sign-in providers
+
+Status: **SHIPPED** on the web and the phone. The desktop app is **AGREED**.
+
+A household that already runs an identity provider can let it prove who people are
+([RFC 657](../../rfcs/657-oidc-sign-in.md)). The provider says who someone is. Whether they come
+in, and what they may see, stays this server's decision.
+
+**ACCT-75** (SHIPPED) - An admin may add sign-in providers that speak OpenID Connect. Each one
+adds a "Continue with" button to the sign-in screen.
+
+**ACCT-76** (SHIPPED) - A provider's button appears only after an admin's test sign-in passed
+with the provider's current connection. Changing the connection takes the button away until
+a test passes again.
+
+**ACCT-77** (SHIPPED) - A provider sign-in ends in an ordinary session (ACCT-6), like a
+password sign-in. The server keeps nothing the provider issued.
+
+**ACCT-78** (SHIPPED) - An account is tied to a person at a provider by that provider's own
+identifier for them, never by an email address. An existing account gains a provider by
+linking it while signed in.
+
+**ACCT-79** (SHIPPED) - A person the provider vouches for and the server has never seen gets
+what the admin chose for that provider: a join request an admin approves (the default), an
+account at once, or a refusal unless they hold an invitation.
+
+**ACCT-80** (SHIPPED) - A provider may require a group. A person outside it is refused at every
+sign-in, account or not.
+
+**ACCT-81** (SHIPPED) - An admin who declines a join request stops that person asking again,
+until the admin lifts it.
+
+**ACCT-82** (SHIPPED) - An admin may turn password sign-in and passkey sign-in off. Passwords
+go off only while a provider is live.
+
+**ACCT-87** (SHIPPED) - Passwords, passkeys and each provider are one list of sign-in methods.
+The sign-in screen draws the buttons as one group and the password form as another. The
+group an admin listed first comes first and carries the main action, and the buttons keep
+the list's order.
+
+**ACCT-88** (SHIPPED) - A provider's button shows the logo of the provider it was set up as,
+or a picture an admin uploaded in its place, or an icon when it has neither.
+
+**ACCT-83** (SHIPPED) - An account that can change server settings keeps its password
+whatever ACCT-82 says, so a provider that is down never locks the server.
+
+**ACCT-84** (SHIPPED) - An account cannot remove its last way to sign in.
+
+**ACCT-85** (SHIPPED) - No claim from a provider grants a permission or a library.
+Authorisation is set in KROMA.
+
+**ACCT-86** (SHIPPED) - The phone app offers the provider buttons. It opens the provider in
+the system browser and comes back signed in.
+
+**ACCT-89** (AGREED) - The desktop app offers the provider buttons the same way.
+
+Removing a person at the provider does not end the sessions they already hold here: sessions
+do not expire on a clock (ACCT-7). A required group stops their next sign-in, and deleting
+the account ends everything at once (ACCT-27).
 
 ## Devices and pairing
 

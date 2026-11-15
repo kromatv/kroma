@@ -50,6 +50,8 @@ const TABLES: &[&str] = &[
     "watched",
     "my_list",
     "passkeys",
+    "identities",
+    "join_requests",
     "notification_prefs",
     "notification_type_prefs",
     "reports",

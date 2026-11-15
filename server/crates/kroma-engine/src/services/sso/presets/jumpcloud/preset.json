@@ -1,0 +1,11 @@
+{
+  "name": "JumpCloud",
+  "issuer": "https://oauth.id.jumpcloud.com/",
+  "console": "https://console.jumpcloud.com",
+  "docs": "https://jumpcloud.com/support/sso-with-oidc",
+  "mark": "mark.png",
+  "sources": {
+    "mark": "JumpCloud's own apple-icon-180x180-light.png, untouched, a PNG because its press kit (JumpCloud-Logos.zip) holds no SVG of the mark alone, https://jumpcloud.com/wp-content/themes/jumpcloud/assets/images/favicons/apple-icon-180x180-light.png, read 2026-11-14",
+    "issuer": "https://oauth.id.jumpcloud.com/.well-known/openid-configuration, read 2026-11-14: one address for every organisation, slash included"
+  }
+}

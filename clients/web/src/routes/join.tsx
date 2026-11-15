@@ -1,12 +1,22 @@
-import { InviteToken } from '@kromatv/client/accounts';
+import { apiErrorText } from '@kromatv/client';
+import {
+  DEFAULT_SIGN_IN_METHODS,
+  InviteToken,
+  offersSignIn,
+  type SignInButton,
+  type SignInMethods,
+  signInButtons,
+} from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Logo, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, Button, classes, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { Spinner } from '#web/features/accounts/auth-gate';
+import { ProviderButton } from '#web/shared/ui/provider-button';
+import { PublicScreen } from '#web/features/accounts/public-screen';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_RADIAL } from '#web/shared/ui';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
 
 // Public invitation acceptance page. An admin (with `users.manage`) shares
 // `/join?invite=TOKEN`; the invitee creates their account here. The global
@@ -33,7 +43,35 @@ function JoinPage() {
   const [avatar, setAvatar] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [methods, setMethods] = useState<SignInMethods>(DEFAULT_SIGN_IN_METHODS);
+  const flows = useAuthFlows();
   const { email, username, password } = values;
+
+  useEffect(() => {
+    let cancelled = false;
+    client.accounts.config().then(
+      (config) => {
+        if (!cancelled && config.signIn) setMethods(config.signIn);
+      },
+      () => undefined,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [client]);
+
+  async function joinWith(provider: SignInButton) {
+    if (!invite) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await flows.signIn.with(provider.id, { returnTo: '/', invite });
+    } catch (e) {
+      setError(apiErrorText(e, t('auth.providerFailed', { provider: provider.label })));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!invite) return;
@@ -73,72 +111,104 @@ function JoinPage() {
   }
 
   return (
-    <main className={classes(s.screen)}>
-      {/* Auto margins (not justify-center) so a form taller than a small phone
-          viewport scrolls instead of clipping its top. */}
-      <Box w="100%" align="center" m="auto">
-        <Box mb={40}>
-          <Logo size={24} />
+    <PublicScreen>
+      {status === 'checking' ? <Spinner /> : null}
+      {status === 'invalid' ? (
+        <Box>
+          <Text variant="heading" accessibilityRole="header" textAlign="center" mb={8}>
+            {t('auth.inviteInvalidTitle')}
+          </Text>
+          <Text variant="body" color="textMuted" textAlign="center">
+            {t('auth.inviteInvalidDesc')}
+          </Text>
         </Box>
+      ) : null}
+      {status === 'ok' ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit();
+          }}
+          className={classes(s.form)}
+        >
+          <Text variant="heading" accessibilityRole="header">
+            {t('auth.joinKroma')}
+          </Text>
 
-        {status === 'checking' ? <Spinner /> : null}
-        {status === 'invalid' ? (
-          <Box>
-            <Text variant="heading" accessibilityRole="header" textAlign="center" mb={8}>
-              {t('auth.inviteInvalidTitle')}
-            </Text>
-            <Text variant="body" color="textMuted" textAlign="center">
-              {t('auth.inviteInvalidDesc')}
-            </Text>
-          </Box>
-        ) : null}
-        {status === 'ok' ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void submit();
-            }}
-            className={classes(s.form)}
-          >
-            <Text variant="heading" accessibilityRole="header">
-              {t('auth.joinKroma')}
-            </Text>
-
+          {offersSignIn(methods, 'password') ? (
             <RegisterFields values={values} onChange={setValues} onAvatar={setAvatar} />
+          ) : (
+            <Text variant="body" color="textMuted" textAlign="center">
+              {t('auth.joinProviderOnly')}
+            </Text>
+          )}
 
-            {error ? (
-              <Text variant="meta" color="danger">
-                {error}
-              </Text>
-            ) : null}
+          {error ? (
+            <Text variant="meta" color="danger">
+              {error}
+            </Text>
+          ) : null}
 
-            <Button
-              block
-              size="md"
-              label={busy ? t('auth.creating') : t('auth.createMyAccount')}
-              onPress={() => void submit()}
-              loading={busy}
-              disabled={!valid}
-            />
-          </form>
-        ) : null}
-      </Box>
-    </main>
+          <JoinActions
+            methods={methods}
+            busy={busy}
+            valid={valid}
+            onCreate={() => void submit()}
+            onProvider={(provider) => void joinWith(provider)}
+          />
+        </form>
+      ) : null}
+    </PublicScreen>
+  );
+}
+
+function JoinActions({
+  methods,
+  busy,
+  valid,
+  onCreate,
+  onProvider,
+}: Readonly<{
+  methods: SignInMethods;
+  busy: boolean;
+  valid: boolean;
+  onCreate: () => void;
+  onProvider: (provider: SignInButton) => void;
+}>) {
+  const t = useT();
+  const password = offersSignIn(methods, 'password');
+  const providers = signInButtons(methods);
+  return (
+    <>
+      {password ? (
+        <Button
+          block
+          size="md"
+          label={busy ? t('auth.creating') : t('auth.createMyAccount')}
+          onPress={onCreate}
+          loading={busy}
+          disabled={!valid}
+        />
+      ) : null}
+      {password && providers.length > 0 ? (
+        <Text variant="meta" color="textMuted" textAlign="center">
+          {t('auth.joinWithProvider')}
+        </Text>
+      ) : null}
+      {providers.map((provider, index) => (
+        <ProviderButton
+          key={provider.id}
+          provider={provider}
+          primary={!password && index === 0}
+          disabled={busy}
+          onPress={() => onProvider(provider)}
+        />
+      ))}
+    </>
   );
 }
 
 const sDefinition = styles({
-  screen: {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 100,
-    display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'auto',
-    paddingInline: 24,
-    paddingBlock: 48,
-    backgroundImage: PAGE_RADIAL,
-  },
   form: {
     display: 'flex',
     width: '100%',

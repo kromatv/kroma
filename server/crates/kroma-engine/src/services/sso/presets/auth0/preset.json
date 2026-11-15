@@ -1,0 +1,9 @@
+{
+  "name": "Auth0",
+  "issuer": "https://YOUR_TENANT.auth0.com/",
+  "console": "https://manage.auth0.com/",
+  "docs": "https://auth0.com/docs/get-started/auth0-overview/create-applications/regular-web-apps",
+  "sources": {
+    "mark": "SVG Logos `auth0-icon` (CC0 1.0), via https://api.iconify.design/logos/auth0-icon.svg, read 2026-11-13. It is the Shield of the press kit at https://www.okta.com/press-room/media-assets/, which ships lockups only."
+  }
+}

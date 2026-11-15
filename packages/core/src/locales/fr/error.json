@@ -11,6 +11,7 @@
   "error.forbiddenBody": "Votre compte n'a pas l'autorisation de voir cette page.",
   "error.forbiddenTitle": "Accès refusé",
   "error.home": "Retour à l'accueil",
+  "error.imageUnreadable": "Ce fichier n'est pas une image que KROMA peut lire",
   "error.indexerNotFound": "Indexeur introuvable",
   "error.internal": "Erreur interne",
   "error.itemNotFound": "Élément introuvable",

@@ -2,7 +2,7 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Client-side authentication context: one authed KromaClient plus the
 // web-specific login, passkey and registration flows over `useAuthSession`.
 
-import type { InviteToken, StoredSession } from '@kromatv/client/accounts';
+import type { AuthResult, InviteToken, StoredSession } from '@kromatv/client/accounts';
 import { type ActivateResult, useAuthSession } from '@kromatv/ui';
 import { useRouter } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useMemo } from 'react';
@@ -36,6 +36,15 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     void router.invalidate();
     void webRuntime.queryClient.invalidateQueries();
   }, [client, auth, router, webRuntime.queryClient.invalidateQueries]);
+
+  const enter = useCallback(
+    (result: AuthResult) => {
+      auth.apply(result);
+      void router.invalidate();
+      void webRuntime.queryClient.invalidateQueries();
+    },
+    [auth, router, webRuntime.queryClient.invalidateQueries],
+  );
 
   const register = useCallback(
     async (
@@ -95,6 +104,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       accounts: auth.accounts,
       login,
       loginPasskey,
+      enter,
       register,
       activate,
       switchProfile,
@@ -102,7 +112,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       logout,
       updateUser: auth.updateUser,
     }),
-    [auth, client, login, loginPasskey, register, activate, logout, switchProfile],
+    [auth, client, login, loginPasskey, enter, register, activate, logout, switchProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -25,5 +25,6 @@
   "common.save": "Enregistrer",
   "common.saved": "Enregistré",
   "common.saving": "Enregistrement…",
-  "common.space": "Espace"
+  "common.space": "Espace",
+  "common.unsaved": "Modifications non enregistrées"
 }

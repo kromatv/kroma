@@ -79,6 +79,8 @@
   "notifications.system.disk.low.title": "Stockage presque plein",
   "notifications.system.job.failed.body": "La tâche {job} a échoué.",
   "notifications.system.job.failed.title": "Tâche en échec",
+  "notifications.system.join.requested.body": "{user} demande l'accès via {provider}.",
+  "notifications.system.join.requested.title": "Une personne souhaite rejoindre le serveur",
   "notifications.test.body": "Si vous lisez ceci, cet appareil recevra vos notifications.",
   "notifications.test.title": "Les notifications fonctionnent",
   "notifications.title": "Notifications",

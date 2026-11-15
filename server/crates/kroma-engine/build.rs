@@ -1,7 +1,8 @@
 //! Gathers the shared message catalogs, `packages/core/src/locales/<locale>/<namespace>.json`,
 //! into one `include_str!` list, so the server embeds exactly the files the
 //! TypeScript clients bundle without naming each namespace by hand. The release
-//! notes under `releases/<version>/` are gathered the same way.
+//! notes under `releases/<version>/` are gathered the same way, and so are the
+//! sign-in presets, one folder each under `src/services/sso/presets/`.
 
 use std::env;
 use std::ffi::OsStr;
@@ -10,12 +11,14 @@ use std::path::{Path, PathBuf};
 
 const LOCALES: &str = "../../../packages/core/src/locales";
 const RELEASES: &str = "../../../releases";
+const PRESETS: &str = "src/services/sso/presets";
 
 fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR"));
     write_catalog_parts(&manifest, &out_dir);
     write_release_parts(&manifest, &out_dir);
+    write_preset_parts(&manifest, &out_dir);
 }
 
 fn write_catalog_parts(manifest: &Path, out_dir: &Path) {
@@ -78,6 +81,36 @@ fn write_release_parts(manifest: &Path, out_dir: &Path) {
         parts.join("\n")
     );
     fs::write(out_dir.join("release_parts.rs"), body).expect("write release_parts.rs");
+}
+
+fn write_preset_parts(manifest: &Path, out_dir: &Path) {
+    let presets = manifest.join(PRESETS);
+    rerun_if_changed(&presets);
+
+    let mut parts = Vec::new();
+    for preset in sorted_children(&presets, Path::is_dir) {
+        rerun_if_changed(&preset);
+        let id = file_name(&preset).to_owned();
+        for file in sorted_children(&preset, is_preset_file) {
+            rerun_if_changed(&file);
+            let name = file_name(&file);
+            let rel = format!("{PRESETS}/{id}/{name}");
+            parts.push(format!(
+                "    ({id:?}, {name:?}, include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{rel}\"))),"
+            ));
+        }
+    }
+
+    let body = format!(
+        "pub(crate) const PRESET_FILES: &[(&str, &str, &[u8])] = &[\n{}\n];\n",
+        parts.join("\n")
+    );
+    fs::write(out_dir.join("preset_parts.rs"), body).expect("write preset_parts.rs");
+}
+
+fn is_preset_file(path: &Path) -> bool {
+    path.extension().is_some_and(|e| e == "svg" || e == "png")
+        || path.file_name() == Some(OsStr::new("preset.json"))
 }
 
 fn is_release_file(path: &Path) -> bool {

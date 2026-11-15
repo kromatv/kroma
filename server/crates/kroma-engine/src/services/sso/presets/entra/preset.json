@@ -1,0 +1,26 @@
+{
+  "name": "Microsoft Entra ID",
+  "label": "Microsoft",
+  "icon": "brand-windows",
+  "issuer": "https://login.microsoftonline.com/TENANT_ID/v2.0",
+  "console": "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
+  "docs": "https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app",
+  "brand": {
+    "dark": {
+      "fill": "#2f2f2f",
+      "ink": "#ffffff",
+      "mark": "mark.svg"
+    },
+    "light": {
+      "fill": "#ffffff",
+      "stroke": "#8c8c8c",
+      "ink": "#5e5e5e",
+      "mark": "mark.svg"
+    }
+  },
+  "sources": {
+    "mark": "Microsoft's ms-symbollockup_mssymbol_19.svg, width, height and title dropped, linked from the brand page below, read 2026-11-13",
+    "brand": "https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-branding-in-apps, colours read from its light and dark button files, read 2026-11-13",
+    "issuer": "https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc"
+  }
+}

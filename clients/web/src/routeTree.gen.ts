@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetRouteImport } from './routes/reset'
+import { Route as SsoRouteImport } from './routes/sso'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppSplatRouteImport } from './routes/_app.$'
@@ -38,6 +39,7 @@ import { Route as AdminNetworkRouteImport } from './routes/admin.network'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminSignInRouteImport } from './routes/admin.sign-in'
 import { Route as AdminStorageRouteImport } from './routes/admin.storage'
 import { Route as AdminStoreRouteImport } from './routes/admin.store'
 import { Route as AdminTranscoderRouteImport } from './routes/admin.transcoder'
@@ -82,6 +84,11 @@ const LoginRoute = LoginRouteImport.update({
 const ResetRoute = ResetRouteImport.update({
   id: '/reset',
   path: '/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SsoRoute = SsoRouteImport.update({
+  id: '/sso',
+  path: '/sso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -203,6 +210,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSignInRoute = AdminSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminStorageRoute = AdminStorageRouteImport.update({
   id: '/storage',
   path: '/storage',
@@ -317,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/reset': typeof ResetRoute
+  '/sso': typeof SsoRoute
   '/verify-email': typeof VerifyEmailRoute
   '/$': typeof AppSplatRoute
   '/account': typeof AppAccountRoute
@@ -338,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/sign-in': typeof AdminSignInRoute
   '/admin/storage': typeof AdminStorageRoute
   '/admin/store': typeof AdminStoreRoute
   '/admin/transcoder': typeof AdminTranscoderRoute
@@ -365,6 +379,7 @@ export interface FileRoutesByTo {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/reset': typeof ResetRoute
+  '/sso': typeof SsoRoute
   '/verify-email': typeof VerifyEmailRoute
   '/$': typeof AppSplatRoute
   '/': typeof AppIndexRoute
@@ -387,6 +402,7 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/sign-in': typeof AdminSignInRoute
   '/admin/storage': typeof AdminStorageRoute
   '/admin/store': typeof AdminStoreRoute
   '/admin/transcoder': typeof AdminTranscoderRoute
@@ -417,6 +433,7 @@ export interface FileRoutesById {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/reset': typeof ResetRoute
+  '/sso': typeof SsoRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_app/$': typeof AppSplatRoute
   '/_app/_player': typeof AppPlayerRouteWithChildren
@@ -439,6 +456,7 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/sign-in': typeof AdminSignInRoute
   '/admin/storage': typeof AdminStorageRoute
   '/admin/store': typeof AdminStoreRoute
   '/admin/transcoder': typeof AdminTranscoderRoute
@@ -471,6 +489,7 @@ export interface FileRouteTypes {
     | '/join'
     | '/login'
     | '/reset'
+    | '/sso'
     | '/verify-email'
     | '/$'
     | '/account'
@@ -492,6 +511,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/pipeline'
     | '/admin/reports'
+    | '/admin/sign-in'
     | '/admin/storage'
     | '/admin/store'
     | '/admin/transcoder'
@@ -519,6 +539,7 @@ export interface FileRouteTypes {
     | '/join'
     | '/login'
     | '/reset'
+    | '/sso'
     | '/verify-email'
     | '/$'
     | '/'
@@ -541,6 +562,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/pipeline'
     | '/admin/reports'
+    | '/admin/sign-in'
     | '/admin/storage'
     | '/admin/store'
     | '/admin/transcoder'
@@ -570,6 +592,7 @@ export interface FileRouteTypes {
     | '/join'
     | '/login'
     | '/reset'
+    | '/sso'
     | '/verify-email'
     | '/_app/$'
     | '/_app/_player'
@@ -592,6 +615,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/pipeline'
     | '/admin/reports'
+    | '/admin/sign-in'
     | '/admin/storage'
     | '/admin/store'
     | '/admin/transcoder'
@@ -623,6 +647,7 @@ export interface RootRouteChildren {
   JoinRoute: typeof JoinRoute
   LoginRoute: typeof LoginRoute
   ResetRoute: typeof ResetRoute
+  SsoRoute: typeof SsoRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
@@ -661,6 +686,13 @@ declare module '@tanstack/react-router' {
       path: '/reset'
       fullPath: '/reset'
       preLoaderRoute: typeof ResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sso': {
+      id: '/sso'
+      path: '/sso'
+      fullPath: '/sso'
+      preLoaderRoute: typeof SsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email': {
@@ -829,6 +861,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/sign-in': {
+      id: '/admin/sign-in'
+      path: '/sign-in'
+      fullPath: '/admin/sign-in'
+      preLoaderRoute: typeof AdminSignInRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/storage': {
@@ -1054,6 +1093,7 @@ interface AdminRouteChildren {
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPipelineRoute: typeof AdminPipelineRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminSignInRoute: typeof AdminSignInRoute
   AdminStorageRoute: typeof AdminStorageRoute
   AdminStoreRoute: typeof AdminStoreRoute
   AdminTranscoderRoute: typeof AdminTranscoderRoute
@@ -1080,6 +1120,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPipelineRoute: AdminPipelineRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminSignInRoute: AdminSignInRoute,
   AdminStorageRoute: AdminStorageRoute,
   AdminStoreRoute: AdminStoreRoute,
   AdminTranscoderRoute: AdminTranscoderRoute,
@@ -1101,6 +1142,7 @@ const rootRouteChildren: RootRouteChildren = {
   JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
   ResetRoute: ResetRoute,
+  SsoRoute: SsoRoute,
   VerifyEmailRoute: VerifyEmailRoute,
 }
 export const routeTree = rootRouteImport

@@ -122,6 +122,19 @@ pub(super) fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec 
         .param("free", "4 GB")
         .param("path", "/media")
         .link("/admin/storage"),
+        NotificationEvent::SystemJoinRequested => NotificationSpec::new(
+            event,
+            "notifications.system.join.requested.title",
+            "notifications.system.join.requested.body",
+        )
+        .param("user", "Léa")
+        .param("provider", "Authentik")
+        .link("/admin/users")
+        .action(link_action(
+            "review",
+            "notifications.action.review",
+            "/admin/users",
+        )),
         // The push self-check's own wording, so "does push work" can be asked
         // from here too and not only from a viewer's own settings.
         NotificationEvent::SystemTest => {

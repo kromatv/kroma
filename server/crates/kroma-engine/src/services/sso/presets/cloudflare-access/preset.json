@@ -1,0 +1,12 @@
+{
+  "name": "Cloudflare Access",
+  "label": "Cloudflare",
+  "icon": "cloud",
+  "issuer": "https://TEAM_NAME.cloudflareaccess.com/cdn-cgi/access/sso/oidc/CLIENT_ID",
+  "console": "https://one.dash.cloudflare.com/",
+  "docs": "https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/saas-apps/generic-oidc-saas/",
+  "sources": {
+    "mark": "selfh.st/icons `cloudflare` (CC BY 4.0), via https://api.iconify.design/selfhst/cloudflare.svg, read 2026-11-13",
+    "issuer": "https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/saas-apps/generic-oidc-saas/, read 2026-11-13"
+  }
+}
