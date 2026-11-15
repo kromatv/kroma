@@ -24,7 +24,7 @@ const COMPOSE = `services:
 volumes:
   kroma-data:`;
 
-const CARGO = `# Rust ≥ 1.86 + ffprobe. From the repo:
+const CARGO = `# Rust ≥ 1.100 + ffprobe. From the repo:
 cd server
 KROMA_MEDIA_DIRS=/mnt/media cargo run --release`;
 

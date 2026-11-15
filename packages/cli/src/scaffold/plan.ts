@@ -77,7 +77,7 @@ export function versions(cwd: string): Versions {
   return {
     sdk,
     server: server ?? sdk,
-    rustChannel: channel ?? '1.98.0',
+    rustChannel: channel ?? '1.100.0',
   };
 }
 
