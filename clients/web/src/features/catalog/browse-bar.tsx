@@ -58,7 +58,7 @@ const barStyleDefinition = styles({
   },
   stuck: {
     borderBottomColor: 'white/6',
-    backgroundColor: 'color-mix(in srgb, var(--kroma-bg) 72%, transparent)',
+    bg: 'bg/85',
     backdropFilter: 'blur(24px)',
     WebkitBackdropFilter: 'blur(24px)',
   },
