@@ -26,6 +26,7 @@ kroma-i18n = { workspace = true }
 semver = "1"
 # `storage` unconditionally: the engine IS the core database.
 kroma-module-host = { workspace = true, features = ["storage"] }
+kroma-module-wire = { workspace = true }
 kroma-module-manifest = { workspace = true }
 kroma-http = { workspace = true }
 kroma-push = { workspace = true }

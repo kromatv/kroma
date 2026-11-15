@@ -19,6 +19,7 @@ mod history;
 mod host_policy;
 mod inbound;
 mod journal;
+mod middleware;
 mod offers;
 mod permissions;
 mod rules;
@@ -30,6 +31,7 @@ pub use flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute, Verdict};
 pub use history::{CallerPurpose, CORE_PURPOSES, FLUSH_EVERY};
 pub use inbound::{via_of, Arrival, InboundJournal, InboundSummary, Via};
 pub use journal::{Journal, CARRIED_METHOD, RECENT_CAPACITY, TALLIED_PUBLIC_ADDRESS};
+pub use middleware::{Placed, Skip, Standing, DEADLINE, MIDDLEWARE_SETTING, POLICY_POINT};
 pub use offers::{NetworkProviders, NO_NETWORK};
 pub use permissions::{DeclaredListeners, DeclaredPermissions, PERMISSION_NET_CONNECT};
 pub use rules::{
@@ -37,6 +39,7 @@ pub use rules::{
 };
 pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 
+use middleware::Middleware;
 use offers::Offers;
 
 pub const NETWORK_POINT: &str = "network";
@@ -59,6 +62,7 @@ pub struct Network {
     core_port: Option<u16>,
     https_port: Option<u16>,
     declared: DeclaredPermissions,
+    middleware: Middleware,
 }
 
 impl Network {
@@ -77,7 +81,15 @@ impl Network {
             core_port: None,
             https_port: None,
             declared: Arc::new(|_| None),
+            middleware: Middleware::answering(Point::absent(POLICY_POINT)),
         }
+    }
+
+    /// The point every middleware answers, normally [`POLICY_POINT`]. Without
+    /// it no module sees a decision.
+    pub fn with_middleware(mut self, point: Point) -> Self {
+        self.middleware = Middleware::answering(point);
+        self
     }
 
     /// The `permissions` block each module declares, which its calls must stay
@@ -136,8 +148,7 @@ impl Network {
         }))?;
         let sink = Arc::clone(self);
         kroma_http::egress::set_sink(Arc::new(move |exchange, at| {
-            sink.journal
-                .record(CORE, exchange.into(), kroma_primitives::epoch_ms(at));
+            sink.record_at(CORE, exchange.into(), kroma_primitives::epoch_ms(at));
         }))
     }
 
@@ -162,12 +173,20 @@ impl Network {
             Vec::new()
         };
         let (action, rule) = decide(&self.rules(), caller, purpose, target, &own_ports);
-        let decision = match action {
+        let chosen = self.tightened(caller, purpose, target, action, rule);
+        let decision = match chosen.action {
             Action::Direct => Decision::Direct,
-            Action::Block => Decision::Block(refusal(rule.as_deref())),
+            Action::Block => Decision::Block(
+                chosen
+                    .reason
+                    .unwrap_or_else(|| refusal(chosen.rule.as_deref())),
+            ),
             Action::Network(name) => self.through(&name),
         };
-        Ruling { decision, rule }
+        Ruling {
+            decision,
+            rule: chosen.rule,
+        }
     }
 }
 

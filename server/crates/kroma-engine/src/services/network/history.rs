@@ -20,8 +20,26 @@ pub struct CallerPurpose {
 
 impl Network {
     pub fn record(&self, caller: &str, report: FlowReport) {
-        self.journal
-            .record(caller, report, kroma_primitives::now_ms());
+        self.record_at(caller, report, kroma_primitives::now_ms());
+    }
+
+    pub(super) fn record_at(&self, caller: &str, report: FlowReport, at_ms: i64) {
+        self.observed(serde_json::json!({
+            "at": at_ms,
+            "caller": caller,
+            "purpose": report.purpose,
+            "method": report.method,
+            "host": report.host,
+            "port": report.port,
+            "route": report.route,
+            "status": report.status,
+            "bytesIn": report.bytes_in,
+            "bytesOut": report.bytes_out,
+            "durationMs": report.duration_ms,
+            "error": report.error,
+            "rule": report.rule,
+        }));
+        self.journal.record(caller, report, at_ms);
     }
 
     pub fn flows(&self, filter: &FlowFilter) -> FlowPage {
@@ -66,6 +84,7 @@ impl Network {
     }
 
     pub fn flush(&self) -> anyhow::Result<()> {
+        self.flush_observed();
         let outbound = self.journal.flush(&self.db);
         self.inbound.flush(&self.db)?;
         outbound

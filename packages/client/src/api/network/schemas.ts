@@ -192,3 +192,37 @@ export type Listener = z.infer<typeof Listener>;
 /** `GET /api/admin/network/listeners`. */
 export const ListenersView = z.object({ listeners: z.array(Listener) });
 export type ListenersView = z.infer<typeof ListenersView>;
+
+/** A middleware that did not answer in time, and whether that blocked the
+ * connection it was asked about. `at` is epoch milliseconds. */
+export const MiddlewareSkip = z.object({
+  at: z.number(),
+  module: z.string(),
+  caller: z.string(),
+  purpose: z.string(),
+  host: z.string(),
+  port: z.number(),
+  blocked: z.boolean(),
+});
+export type MiddlewareSkip = z.infer<typeof MiddlewareSkip>;
+
+/** One module that sees a network decision before it is applied. A `required`
+ * one blocks the connection when it does not answer in time. `skipped` counts
+ * the times it did not, since the server started. */
+export const Middleware = z.object({
+  module: z.string(),
+  required: z.boolean(),
+  answering: z.boolean(),
+  skipped: z.number(),
+  lastSkip: MiddlewareSkip.nullish(),
+});
+export type Middleware = z.infer<typeof Middleware>;
+
+/** `GET /api/admin/network/middleware`, in the order each is asked. */
+export const MiddlewareView = z.object({ middleware: z.array(Middleware) });
+export type MiddlewareView = z.infer<typeof MiddlewareView>;
+
+/** `PUT /api/admin/network/middleware`: the whole order. */
+export interface MiddlewareOrder {
+  middleware: { module: string; required: boolean }[];
+}

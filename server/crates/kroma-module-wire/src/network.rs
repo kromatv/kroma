@@ -156,3 +156,45 @@ pub enum NetworkSeal {
     Down,
 }
 
+
+/// What a middleware is asked about one connection, as it answers the
+/// core-called point `network-policy`: who is calling, why, where to, and the
+/// decision the guards and the operator's rules reached. Never a URL path, a
+/// query string or a credential.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyAsk {
+    pub caller: String,
+    pub purpose: String,
+    pub host: String,
+    pub port: u16,
+    pub decision: PolicyDecision,
+}
+
+/// The route chosen so far. `action` is spelled as a rule's action: `direct`
+/// or a network's name. A blocked connection is never asked about.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyDecision {
+    pub action: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rule: Option<String>,
+}
+
+/// A middleware's answer to a [`PolicyAsk`]. It can keep the decision, block
+/// the connection, or move it to another network. There is no answer that
+/// unblocks a connection or sends one direct.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "verdict", rename_all = "camelCase")]
+pub enum PolicyVerdict {
+    Keep,
+    Block {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+    },
+    Network {
+        network: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+    },
+}

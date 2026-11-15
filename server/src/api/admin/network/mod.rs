@@ -22,6 +22,7 @@ use crate::services::network::{
 use crate::state::SharedState;
 
 mod listeners;
+mod middleware;
 
 const DEFAULT_FLOWS: usize = 200;
 const DEFAULT_SUMMARY_DAYS: u32 = 7;
@@ -62,6 +63,12 @@ pub fn routes() -> Router<SharedState> {
                 .layer(DefaultBodyLimit::max(MAX_BODY_BYTES)),
         )
         .route("/network/listeners", get(listeners::list))
+        .route(
+            "/network/middleware",
+            get(middleware::list)
+                .put(middleware::put)
+                .layer(DefaultBodyLimit::max(middleware::MAX_BODY_BYTES)),
+        )
         .route("/network/networks", get(networks))
 }
 

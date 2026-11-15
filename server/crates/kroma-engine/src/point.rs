@@ -17,12 +17,14 @@ pub struct Point {
     answer: Answer,
 }
 
-type StubFn = Arc<dyn Fn(&str, &Value) -> Option<Value> + Send + Sync>;
+/// One module's answers in a [`Point::stubs`]: the method and the body in, the
+/// answer out, `None` for no answer.
+pub type StubFn = Arc<dyn Fn(&str, &Value) -> Option<Value> + Send + Sync>;
 
 #[derive(Clone)]
 enum Answer {
     Live(Contributions),
-    Stub(StubFn),
+    Stub(Vec<(String, StubFn)>),
     Absent,
 }
 
@@ -41,7 +43,21 @@ impl Point {
     ) -> Self {
         Self {
             name,
-            answer: Answer::Stub(Arc::new(f)),
+            answer: Answer::Stub(vec![(name.to_string(), Arc::new(f))]),
+        }
+    }
+
+    /// A point answered in this process by several modules, each by its id, in
+    /// the order given.
+    pub fn stubs(name: &'static str, answering: Vec<(&str, StubFn)>) -> Self {
+        Self {
+            name,
+            answer: Answer::Stub(
+                answering
+                    .into_iter()
+                    .map(|(module, f)| (module.to_string(), f))
+                    .collect(),
+            ),
         }
     }
 
@@ -79,7 +95,48 @@ impl Point {
                 )
                 .ok()
             }
-            Answer::Stub(f) => {
+            Answer::Stub(answering) => {
+                let (_, f) = answering.first()?;
+                let sent = serde_json::to_value(body).ok()?;
+                serde_json::from_value(f(method, &sent)?).ok()
+            }
+            Answer::Absent => None,
+        }
+    }
+
+    /// The id of every module answering this point right now.
+    pub fn answering(&self) -> Vec<String> {
+        match &self.answer {
+            Answer::Live(resolve) => resolve(self.name)
+                .into_iter()
+                .map(|found| found.module_id)
+                .collect(),
+            Answer::Stub(answering) => answering.iter().map(|(module, _)| module.clone()).collect(),
+            Answer::Absent => Vec::new(),
+        }
+    }
+
+    /// [`Self::call`], to the one module `module` among those answering.
+    pub fn call_module<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+        &self,
+        module: &str,
+        method: &str,
+        body: &B,
+    ) -> Option<T> {
+        match &self.answer {
+            Answer::Live(resolve) => {
+                let found = resolve(self.name)
+                    .into_iter()
+                    .find(|found| found.module_id == module)?;
+                kroma_module_host::call_raw(
+                    &found.resolver(),
+                    &format!("{}/{method}", self.name),
+                    body,
+                )
+                .ok()
+            }
+            Answer::Stub(answering) => {
+                let (_, f) = answering.iter().find(|(id, _)| id == module)?;
                 let sent = serde_json::to_value(body).ok()?;
                 serde_json::from_value(f(method, &sent)?).ok()
             }
@@ -109,12 +166,18 @@ impl Point {
                     (found.module_id, answer)
                 })
                 .collect(),
-            Answer::Stub(f) => {
+            Answer::Stub(answering) => {
                 let sent = serde_json::to_value(body).ok();
-                let answer = sent
-                    .and_then(|sent| f(method, &sent))
-                    .and_then(|value| serde_json::from_value(value).ok());
-                vec![(self.name.to_string(), answer)]
+                answering
+                    .iter()
+                    .map(|(module, f)| {
+                        let answer = sent
+                            .as_ref()
+                            .and_then(|sent| f(method, sent))
+                            .and_then(|value| serde_json::from_value(value).ok());
+                        (module.clone(), answer)
+                    })
+                    .collect()
             }
             Answer::Absent => Vec::new(),
         }
