@@ -47,7 +47,7 @@ export async function deployTo(tv: Television, options: DeployOptions): Promise<
     options: platformOptions,
     log: options.log,
   });
-  await module.install({
+  const settled = await module.install({
     tv,
     artifact,
     log: options.log,
@@ -62,7 +62,7 @@ export async function deployTo(tv: Television, options: DeployOptions): Promise<
       model: tv.model,
       package: basename(artifact),
       source: options.source,
-      options: repeated(module, platformOptions),
+      options: repeated(module, { ...platformOptions, ...settled }),
       installedAt: new Date().toISOString(),
     }).catch(() => undefined);
   }

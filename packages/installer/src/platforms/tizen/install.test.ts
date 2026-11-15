@@ -20,6 +20,7 @@ const {
   readDuid,
   readProfile,
   rm,
+  eitherAuthor,
 } = vi.hoisted(() => ({
   run: vi.fn(async (_command: readonly string[], _options?: unknown) => ({ code: 0, output: '' })),
   runOk: vi.fn(async (_command: readonly string[], _options?: unknown) => ''),
@@ -37,6 +38,16 @@ const {
   readDuid: vi.fn(async (_sdb: string, _log: unknown): Promise<string | null> => null),
   readProfile: vi.fn(async (_name?: string): Promise<SigningProfile | null> => null),
   rm: vi.fn(async (_path: string, _options?: unknown) => {}),
+  eitherAuthor: vi.fn(
+    async (
+      _context: unknown,
+      chosen: SigningProfile,
+      install: (profile: SigningProfile) => Promise<void>,
+    ) => {
+      await install(chosen);
+      return {};
+    },
+  ),
 }));
 vi.mock('../../shared/run', () => ({ run, runOk }));
 vi.mock('../../toolchain/detect', async (original) => ({
@@ -47,6 +58,7 @@ vi.mock('../../toolchain/detect', async (original) => ({
 vi.mock('./native', () => ({ installOverSdb }));
 vi.mock('./signing', () => ({ profileFor, resign, readDuid }));
 vi.mock('./profiles', () => ({ readProfile }));
+vi.mock('./either-author', () => ({ eitherAuthor }));
 vi.mock('node:fs/promises', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   rm,
@@ -153,6 +165,32 @@ describe('installTizen', () => {
 
     expect(readProfile).toHaveBeenCalledWith('LUMA');
     expect(profileFor).not.toHaveBeenCalled();
+  });
+
+  it('signs again with whichever author the set is offered next', async () => {
+    const studioProfile: SigningProfile = {
+      name: 'KROMA',
+      author: { archive: '/studio/kroma.p12', password: 'x' },
+    };
+    eitherAuthor.mockImplementationOnce(async (_context, _chosen, install) => {
+      await install(studioProfile);
+      return { profile: 'KROMA' };
+    });
+
+    const settled = await installTizen(context());
+
+    expect(resign).toHaveBeenCalledWith(
+      '/out/KROMA-tizen-0.1.33.wgt',
+      studioProfile,
+      expect.any(Function),
+    );
+    expect(installOverSdb).toHaveBeenCalledWith(
+      expect.anything(),
+      '/tmp/kroma-tizen-1/KROMA.wgt',
+      widget,
+      'KROMA',
+    );
+    expect(settled).toEqual({ profile: 'KROMA' });
   });
 
   it('refuses a profile name this machine has no certificate for', async () => {

@@ -45,7 +45,7 @@ export interface Platform {
   prompt?(sets: readonly Television[]): Promise<Map<string, PlatformOptions> | null>;
   sources(): readonly Source[];
   resolve(request: ArtifactRequest): Promise<string>;
-  install(context: InstallContext): Promise<void>;
+  install(context: InstallContext): Promise<PlatformOptions | void>;
 }
 
 export function stringOption(options: PlatformOptions, name: string): string | undefined {
