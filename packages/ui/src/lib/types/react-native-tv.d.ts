@@ -58,7 +58,6 @@ declare module 'react-native' {
     key: string;
     /** The physical key. The one to switch on. */
     code: string;
-    repeat?: boolean | undefined;
     altKey?: boolean | undefined;
     ctrlKey?: boolean | undefined;
     metaKey?: boolean | undefined;
