@@ -179,6 +179,7 @@ const EVENT_GLYPH: Record<string, { name: IconName; color: string }> = {
   'download.failed': { name: 'alert-triangle', color: DANGER_INK },
   'system.job.failed': { name: 'server-bolt', color: DANGER_INK },
   'system.disk.low': { name: 'database', color: 'accentText' },
+  'system.join.requested': { name: 'user-plus', color: 'accentText' },
   'system.test': { name: 'bell-ringing', color: 'accentText' },
   custom: { name: 'sparkles', color: 'textMuted' },
 };

@@ -79,6 +79,8 @@
   "notifications.system.disk.low.title": "Storage almost full",
   "notifications.system.job.failed.body": "The task {job} failed.",
   "notifications.system.job.failed.title": "Task failed",
+  "notifications.system.join.requested.body": "{user} asked to join through {provider}.",
+  "notifications.system.join.requested.title": "Someone wants to join",
   "notifications.test.body": "If you can read this, this device will get your notifications.",
   "notifications.test.title": "Push is working",
   "notifications.title": "Notifications",

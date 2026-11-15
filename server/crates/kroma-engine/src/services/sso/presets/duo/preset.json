@@ -1,0 +1,10 @@
+{
+  "name": "Duo",
+  "issuer": "https://sso-ID.sso.duosecurity.com/oidc/CLIENT_ID",
+  "console": "https://admin.duosecurity.com",
+  "docs": "https://duo.com/docs/sso-oidc-generic",
+  "sources": {
+    "mark": "Duo's own duo-logo.svg with the Cisco wordmark above it cut away, the letters untouched, https://duo.com/images/duo-logo.svg, read 2026-11-14",
+    "issuer": "https://duo.com/docs/sso-oidc-generic, read 2026-11-14: the Issuer shown with the application, which ends in its client ID"
+  }
+}

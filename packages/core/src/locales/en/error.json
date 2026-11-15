@@ -11,6 +11,7 @@
   "error.forbiddenBody": "Your account doesn't have permission to view this page.",
   "error.forbiddenTitle": "No access",
   "error.home": "Back to home",
+  "error.imageUnreadable": "This file is not an image KROMA can read",
   "error.indexerNotFound": "Indexer not found",
   "error.internal": "Internal error",
   "error.itemNotFound": "Item not found",

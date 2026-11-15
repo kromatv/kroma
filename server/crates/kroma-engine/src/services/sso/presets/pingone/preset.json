@@ -1,0 +1,10 @@
+{
+  "name": "PingOne",
+  "issuer": "https://auth.pingone.com/ENVIRONMENT_ID/as",
+  "console": "https://console.pingone.com",
+  "docs": "https://docs.pingidentity.com/pingone/applications/p1_edit_application_oidc.html",
+  "sources": {
+    "mark": "Ping Identity's own Ping-Logo.svg, untouched, https://www.pingidentity.com/content/dam/ping-6-2-assets/topnav-json-configs/Ping-Logo.svg, read 2026-11-14",
+    "issuer": "https://docs.pingidentity.com/pingone/applications/p1_edit_application_oidc.html, read 2026-11-14: auth.pingone.com in North America, and .eu, .asia, .ca, .com.au or .sg for the other regions"
+  }
+}

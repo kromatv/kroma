@@ -31,6 +31,7 @@ const domains = {
   accounts: { sessions: endpoint(), passkeys: { list: endpoint() } },
   notifications: { list: endpoint(), prefs: endpoint(), push: { key: endpoint() } },
   releases: { list: endpoint() },
+  sso: { identities: endpoint() },
 };
 
 type Endpoint = (...args: unknown[]) => unknown;

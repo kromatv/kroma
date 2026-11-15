@@ -1,0 +1,11 @@
+{
+  "name": "GitLab",
+  "issuer": "https://gitlab.com",
+  "groupClaim": "groups_direct",
+  "console": "https://gitlab.com/-/user_settings/applications",
+  "docs": "https://docs.gitlab.com/integration/openid_connect_provider/",
+  "sources": {
+    "mark": "selfh.st/icons `gitlab` (CC BY 4.0), via https://api.iconify.design/selfhst/gitlab.svg, read 2026-11-13",
+    "issuer": "https://gitlab.com/.well-known/openid-configuration and https://docs.gitlab.com/integration/openid_connect_provider/, read 2026-11-13: groups_direct is the claim in the ID token"
+  }
+}

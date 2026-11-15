@@ -262,17 +262,14 @@ pub(in crate::api) async fn mint_device_tokens(
 }
 
 /// Mints the token pair for a freshly authenticated `user`. The access token is
-/// PIN-verified at birth: password auth already proved identity, so silent
+/// PIN-verified at birth: the sign-in already proved identity, so silent
 /// refreshes work until the profile is switched away and re-locked.
-pub(crate) async fn issue_tokens(
-    state: SharedState,
+pub(crate) async fn auth_result(
+    state: &SharedState,
     user: User,
     hints: db::DeviceHints,
-) -> Response {
-    let (token, access) = match mint_device_tokens(&state, &user.id, hints).await {
-        Ok(pair) => pair,
-        Err(resp) => return resp,
-    };
+) -> Result<crate::api::dto::AuthResult, Response> {
+    let (token, access) = mint_device_tokens(state, &user.id, hints).await?;
 
     let uid = user.id.clone();
     let _ = query(&state.db, move |pool| {
@@ -280,11 +277,24 @@ pub(crate) async fn issue_tokens(
         Ok(())
     })
     .await;
-    Json(crate::api::dto::AuthResult {
-        media_ticket: crate::services::media_ticket::for_access_token(&state.media_ticket_key, &access),
+    Ok(crate::api::dto::AuthResult {
+        media_ticket: crate::services::media_ticket::for_access_token(
+            &state.media_ticket_key,
+            &access,
+        ),
         token,
         access_token: access,
         user,
     })
-    .into_response()
+}
+
+pub(crate) async fn issue_tokens(
+    state: SharedState,
+    user: User,
+    hints: db::DeviceHints,
+) -> Response {
+    match auth_result(&state, user, hints).await {
+        Ok(result) => Json(result).into_response(),
+        Err(resp) => resp,
+    }
 }

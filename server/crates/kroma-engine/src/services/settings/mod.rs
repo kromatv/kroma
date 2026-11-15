@@ -26,6 +26,7 @@ mod email_delivery;
 mod keys;
 mod llm;
 mod schema;
+mod sign_in;
 mod store;
 
 pub use accessors::*;
@@ -33,6 +34,7 @@ pub use email_delivery::*;
 pub use keys::reach_of_setting;
 pub use llm::*;
 pub use schema::*;
+pub use sign_in::*;
 pub use store::*;
 
 /// The statistics feature's own settings keys and the identity behind them.

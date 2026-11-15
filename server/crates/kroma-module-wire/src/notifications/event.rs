@@ -78,6 +78,8 @@ pub enum NotificationEvent {
     SystemJobFailed,
     #[serde(rename = "system.disk.low")]
     SystemDiskLow,
+    #[serde(rename = "system.join.requested")]
+    SystemJoinRequested,
     // A "push is working" message from settings. Never persisted.
     #[serde(rename = "system.test")]
     SystemTest,
@@ -101,6 +103,7 @@ impl NotificationEvent {
             NotificationEvent::DownloadFailed => "download.failed",
             NotificationEvent::SystemJobFailed => "system.job.failed",
             NotificationEvent::SystemDiskLow => "system.disk.low",
+            NotificationEvent::SystemJoinRequested => "system.join.requested",
             NotificationEvent::SystemTest => "system.test",
             NotificationEvent::Custom => "custom",
         }
@@ -121,6 +124,7 @@ impl NotificationEvent {
             "download.failed" => Some(NotificationEvent::DownloadFailed),
             "system.job.failed" => Some(NotificationEvent::SystemJobFailed),
             "system.disk.low" => Some(NotificationEvent::SystemDiskLow),
+            "system.join.requested" => Some(NotificationEvent::SystemJoinRequested),
             "system.test" => Some(NotificationEvent::SystemTest),
             "custom" => Some(NotificationEvent::Custom),
             _ => None,
@@ -129,7 +133,7 @@ impl NotificationEvent {
 
     /// The admin console's test bench walks this, so an event missing here is
     /// an event nobody can preview.
-    pub const ALL: [NotificationEvent; 14] = [
+    pub const ALL: [NotificationEvent; 15] = [
         NotificationEvent::RequestSubmitted,
         NotificationEvent::RequestApproved,
         NotificationEvent::RequestDenied,
@@ -143,6 +147,7 @@ impl NotificationEvent {
         NotificationEvent::DownloadFailed,
         NotificationEvent::SystemJobFailed,
         NotificationEvent::SystemDiskLow,
+        NotificationEvent::SystemJoinRequested,
         NotificationEvent::SystemTest,
     ];
 
@@ -163,6 +168,7 @@ impl NotificationEvent {
             }
             NotificationEvent::SystemJobFailed
             | NotificationEvent::SystemDiskLow
+            | NotificationEvent::SystemJoinRequested
             | NotificationEvent::SystemTest
             // Fallback bucket; a spec that means otherwise says so with `in_category`.
             | NotificationEvent::Custom => NotificationCategory::System,

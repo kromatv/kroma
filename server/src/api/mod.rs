@@ -48,6 +48,7 @@ mod requests;
 pub mod seam;
 mod search;
 mod server_status;
+mod sso;
 mod stream;
 mod suggest;
 mod themes;
@@ -162,6 +163,12 @@ mod it_server_status;
 #[cfg(test)]
 mod it_store_versions;
 #[cfg(test)]
+mod it_sso;
+#[cfg(test)]
+mod it_sso_account;
+#[cfg(test)]
+mod it_sso_admin;
+#[cfg(test)]
 mod it_stream_hls;
 #[cfg(test)]
 mod it_suggest;
@@ -246,6 +253,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     let public = Router::new()
         .merge(accounts::routes())
         .merge(passkeys::routes())
+        .merge(sso::routes())
         .merge(pin::routes())
         .merge(handoff::public_routes(state.clone()))
         .merge(invites::routes())

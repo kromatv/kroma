@@ -1,0 +1,9 @@
+{
+  "name": "ZITADEL",
+  "issuer": "https://INSTANCE.zitadel.cloud",
+  "docs": "https://zitadel.com/docs/guides/integrate/login/oidc/login-users",
+  "sources": {
+    "mark": "selfh.st/icons `zitadel` (CC BY 4.0), via https://api.iconify.design/selfhst/zitadel.svg, read 2026-11-13",
+    "issuer": "https://zitadel.com/docs/apis/openidoauth/endpoints, read 2026-11-13: the issuer is the instance's domain"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Logto",
+  "issuer": "https://logto.example.com/oidc",
+  "scopes": [
+    "roles"
+  ],
+  "groupClaim": "roles",
+  "docs": "https://docs.logto.io/quick-starts/traditional-web",
+  "sources": {
+    "mark": "Logto's own logto-icon.svg, untouched (MPL-2.0), https://github.com/logto-io/logto/blob/master/packages/device-demo-app/src/assets/logto-icon.svg, read 2026-11-14",
+    "issuer": "docs/reference/sign-in-providers.md, run against Logto 1.46.0: the Logto endpoint followed by /oidc, and a person's roles in the roles claim once the roles scope is asked for"
+  }
+}

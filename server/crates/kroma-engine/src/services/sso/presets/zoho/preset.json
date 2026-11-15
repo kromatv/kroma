@@ -1,0 +1,10 @@
+{
+  "name": "Zoho",
+  "issuer": "https://accounts.zoho.com",
+  "console": "https://api-console.zoho.com/",
+  "docs": "https://www.zoho.com/developer/oauth/sign-in-using-zoho-oidc.html",
+  "sources": {
+    "mark": "Iconify `logos:zoho`, via https://api.iconify.design/logos/zoho.svg, read 2026-11-13 (SVG Logos, CC0 1.0)",
+    "issuer": "https://accounts.zoho.com/.well-known/openid-configuration, read 2026-11-13: RS256, with the profile and email scopes"
+  }
+}
