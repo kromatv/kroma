@@ -95,7 +95,9 @@ fn a_compiled_copy_changed_after_it_was_kept_is_compiled_again() {
     let mut changed = std::fs::read(&copy).unwrap();
     let last = changed.len() - 1;
     changed[last] ^= 0xff;
-    std::fs::write(&copy, changed).unwrap();
+    let replacement = copy.with_extension("cwasm.new");
+    std::fs::write(&replacement, changed).unwrap();
+    std::fs::rename(&replacement, &copy).unwrap();
 
     let endpoint = server.supervisor.spawn(GUEST).unwrap();
     let answered = server.get(&endpoint, "/echo");
