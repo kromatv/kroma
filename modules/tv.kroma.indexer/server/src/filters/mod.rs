@@ -48,8 +48,8 @@ fn apply_one(name: &str, value: &str, args: &[String]) -> String {
                 value.trim_matches(|c| cut.contains(&c)).to_string()
             }
         }
-        "trimprefix" => value.strip_prefix(arg(0)).unwrap_or(value).to_string(),
-        "trimsuffix" => value.strip_suffix(arg(0)).unwrap_or(value).to_string(),
+        "trimprefix" => value.trim_prefix(arg(0)).to_string(),
+        "trimsuffix" => value.trim_suffix(arg(0)).to_string(),
         "prepend" => format!("{}{}", arg(0), value),
         "append" => format!("{}{}", value, arg(0)),
         "tolower" => value.to_lowercase(),

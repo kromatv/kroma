@@ -24,7 +24,6 @@ kroma-module-wire = { workspace = true }
 kroma-http = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
@@ -37,6 +36,8 @@ tokio = { package = "tokio", version = "1", default-features = false, features =
 tower = { version = "0.5", features = ["util"] }
 http-body-util = { workspace = true }
 wit-bindgen = { version = "0.63", default-features = false, features = ["macros", "realloc", "std"] }
+tracing-subscriber = { workspace = true }
 [dev-dependencies]
 async-trait = { workspace = true }
 kroma-testing = { workspace = true }
+tracing-subscriber = { workspace = true }

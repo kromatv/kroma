@@ -7,7 +7,7 @@
 name = "kroma-vector"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "Content embeddings (lexical default + optional MiniLM/candle semantic backend)"
 license = "AGPL-3.0-or-later"
 

@@ -30,16 +30,6 @@ pub(super) struct Counters {
     pub(super) finished: AtomicUsize,
 }
 
-// Counts a worker done on every exit path, including an unwinding panic in
-// `process_job`: `run_tracked` polls for `finished == worker_count`, so a bare
-// `fetch_add` after the loop would hang the (uncancellable) job forever.
-pub(super) struct FinishGuard<'a>(pub(super) &'a Counters);
-impl Drop for FinishGuard<'_> {
-    fn drop(&mut self) {
-        self.0.finished.fetch_add(1, Ordering::Relaxed);
-    }
-}
-
 pub(super) fn engine_for(state: &SharedState, api_key: String) -> Engine {
     Engine {
         pool: state.db.clone(),

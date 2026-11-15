@@ -46,7 +46,7 @@ impl<S: HostCtx + Clone> FromRequestParts<S> for AuthUser {
 pub struct OptionalAuthUser(pub Option<User>);
 
 impl<S: HostCtx + Clone> FromRequestParts<S> for OptionalAuthUser {
-    type Rejection = std::convert::Infallible;
+    type Rejection = !;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         Ok(OptionalAuthUser(resolve_session(parts, state).await))

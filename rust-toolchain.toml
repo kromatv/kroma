@@ -1,11 +1,9 @@
-# Repo build toolchain. Pinned to a concrete current stable (>= 1.86, the project
-# floor) so every cargo invocation in the repo - server AND the desktop Tauri app -
-# uses one modern toolchain. Tauri v2's dependency graph needs >= 1.88 (darling /
-# time / serde_with), and the server's semantic-embeddings (candle/MiniLM) graph
-# needs edition2024 (>= 1.85), so a recent stable satisfies both. rustup
+# Repo build toolchain. Pinned to a concrete stable, which is also the
+# `rust-version` floor every manifest declares, so every cargo invocation in the
+# repo - server, modules AND the desktop Tauri app - uses one toolchain. rustup
 # auto-installs this in the repo.
 [toolchain]
-channel = "1.98.0"
+channel = "1.100.0"
 # This file overrides any CI-installed toolchain (e.g. dtolnay/rust-toolchain@stable)
 # whenever cargo runs in the repo, so the components must be declared HERE or
 # `cargo clippy`/`cargo fmt` break on the pinned toolchain (which ships neither by

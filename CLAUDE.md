@@ -74,9 +74,10 @@ into any workflow today. Run them by hand after touching a module.
 `bun run quality:mutate <package>` are a report, never a gate: see
 [`docs/quality.md`](docs/quality.md).
 
-Rust is pinned by `rust-toolchain.toml` (1.98.0, with clippy + rustfmt); the
-workspace `rust-version` floor is 1.88. `cargo fmt --check` is non-blocking: the
-codebase uses a custom import grouping, so do not reformat files wholesale.
+Rust is pinned by `rust-toolchain.toml` (1.100.0, with clippy + rustfmt), and
+every manifest's `rust-version` floor is that same 1.100. `cargo fmt --check` is
+non-blocking: the codebase uses a custom import grouping, so do not reformat
+files wholesale.
 
 ## Running things
 
