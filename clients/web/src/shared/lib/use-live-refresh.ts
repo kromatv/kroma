@@ -37,7 +37,9 @@ export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
       refresh: () => eventClient.refreshSession(),
 
       onEvent: (e) => {
-        if (e.type !== want || e.id !== id || pending) return;
+        if (e.type !== want || e.id !== id || pending) {
+          return;
+        }
         pending = setTimeout(() => {
           pending = null;
           void queryClient.invalidateQueries({ queryKey: subjectKey(kind, id, webRuntime) });
@@ -46,7 +48,9 @@ export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
     });
     ev.connect();
     return () => {
-      if (pending) clearTimeout(pending);
+      if (pending) {
+        clearTimeout(pending);
+      }
       ev.close();
     };
   }, [kind, id, queryClient, webRuntime, eventClient.sessionToken, eventClient.refreshSession]);

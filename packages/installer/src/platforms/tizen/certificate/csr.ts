@@ -69,7 +69,9 @@ export function certificationRequest(request: CsrRequest): Buffer {
 }
 
 function alternativeNames(uris: readonly string[]): Buffer {
-  if (uris.length === 0) return Buffer.alloc(0);
+  if (uris.length === 0) {
+    return Buffer.alloc(0);
+  }
   const names = uris.map((uri) => der.encode(GENERAL_NAME_URI, Buffer.from(uri, 'ascii')));
   const extension = der.sequence(der.oid(OID.subjectAltName), der.octets(der.sequence(...names)));
   return der.sequence(der.oid(OID.extensionRequest), der.set(der.sequence(extension)));

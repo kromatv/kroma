@@ -19,7 +19,9 @@ export function serveSftp(sftp: SFTPWrapper, onFile: (path: string, data: Buffer
   });
   sftp.on('CLOSE', (request: number, handle: Buffer) => {
     const file = open.get(handle.toString('hex'));
-    if (file) onFile(file.path, Buffer.concat(file.chunks));
+    if (file) {
+      onFile(file.path, Buffer.concat(file.chunks));
+    }
     open.delete(handle.toString('hex'));
     sftp.status(request, STATUS_CODE.OK);
   });

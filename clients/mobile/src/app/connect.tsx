@@ -24,7 +24,9 @@ export default function Connect() {
 
   const submit = async () => {
     const raw = url.trim();
-    if (!raw || busy) return;
+    if (!raw || busy) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -46,7 +48,9 @@ export default function Connect() {
           value={url}
           onValueChange={(next) => {
             setUrl(next);
-            if (error) setError(null);
+            if (error) {
+              setError(null);
+            }
           }}
         >
           <Field.Input

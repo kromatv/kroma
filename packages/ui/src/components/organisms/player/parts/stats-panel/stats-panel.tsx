@@ -131,12 +131,18 @@ function record(hist: Map<string, number[]>, snap: PlayerStats): void {
     live.add(m.key);
     const series = hist.get(m.key) ?? [];
     series.push(Number.isFinite(m.value) ? m.value : 0);
-    if (series.length > CHART_WINDOW) series.shift();
+    if (series.length > CHART_WINDOW) {
+      series.shift();
+    }
     hist.set(m.key, series);
   }
   // Deleting the current key while iterating a Map is well-defined, so no
   // snapshot copy is needed.
-  for (const key of hist.keys()) if (!live.has(key)) hist.delete(key);
+  for (const key of hist.keys()) {
+    if (!live.has(key)) {
+      hist.delete(key);
+    }
+  }
 }
 
 // The memo comparators below compare by CONTENT: every array and tuple these
@@ -148,7 +154,9 @@ function sameStrings(a: readonly string[], b: readonly string[]): boolean {
 function SummaryBlockView({ headline, pairs }: Readonly<{ headline?: string; pairs: string[] }>) {
   const sx = useStyles(sxDefinition);
 
-  if (!headline && pairs.length === 0) return null;
+  if (!headline && pairs.length === 0) {
+    return null;
+  }
   return (
     <Box gap={8}>
       {headline ? <Text style={sx.headline}>{headline}</Text> : null}
@@ -173,7 +181,9 @@ const SummaryBlock = memo(
 function GroupGridView({ groups }: Readonly<{ groups: [string, [string, string][]][] }>) {
   const sx = useStyles(sxDefinition);
 
-  if (groups.length === 0) return null;
+  if (groups.length === 0) {
+    return null;
+  }
   return (
     <Box row wrap gap={COL_GAP} align="flex-start" style={sx.topRule}>
       {groups.map(([title, rows]) => (
@@ -189,10 +199,14 @@ function sameGroups(
   a: readonly [string, [string, string][]][],
   b: readonly [string, [string, string][]][],
 ): boolean {
-  if (a.length !== b.length) return false;
+  if (a.length !== b.length) {
+    return false;
+  }
   return a.every(([title, rows], at) => {
     const other = b[at];
-    if (other?.[0] !== title || other[1].length !== rows.length) return false;
+    if (other?.[0] !== title || other[1].length !== rows.length) {
+      return false;
+    }
     return rows.every(
       ([label, value], row) => other[1][row]?.[0] === label && other[1][row]?.[1] === value,
     );
@@ -202,7 +216,9 @@ function sameGroups(
 function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, string][] }>) {
   const sx = useStyles(sxDefinition);
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return null;
+  }
   return (
     <Box gap={8} style={sx.column}>
       <Text style={sx.blockTitle} color="text/38">
@@ -237,7 +253,9 @@ function summaryPairs(
 ): { headline?: string; pairs: string[] } {
   const pairs: string[] = [];
   const push = (label: string, value?: string) => {
-    if (value == null || value === '' || charted.has(label)) return;
+    if (value == null || value === '' || charted.has(label)) {
+      return;
+    }
     pairs.push(`${label} ${value}`);
   };
   push(t('stats.resolution'), s.resolution);
@@ -248,7 +266,9 @@ function summaryPairs(
   push(t('stats.buffer'), s.buffer);
   push(t('stats.droppedFrames'), s.dropped);
   for (const row of s.extra ?? []) {
-    if (!row.group) push(row.label, row.value);
+    if (!row.group) {
+      push(row.label, row.value);
+    }
   }
   return { headline: s.mode, pairs };
 }
@@ -256,10 +276,15 @@ function summaryPairs(
 function groupBlocks(s: PlayerStats, charted: ReadonlySet<string>): [string, [string, string][]][] {
   const groups = new Map<string, [string, string][]>();
   for (const row of s.extra ?? []) {
-    if (!row.group || row.value == null || row.value === '' || charted.has(row.label)) continue;
+    if (!row.group || row.value == null || row.value === '' || charted.has(row.label)) {
+      continue;
+    }
     const block = groups.get(row.group);
-    if (block) block.push([row.label, row.value]);
-    else groups.set(row.group, [[row.label, row.value]]);
+    if (block) {
+      block.push([row.label, row.value]);
+    } else {
+      groups.set(row.group, [[row.label, row.value]]);
+    }
   }
   return [...groups];
 }

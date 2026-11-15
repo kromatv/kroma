@@ -4,7 +4,9 @@ import type { FocusableProps, FocusState, HostElement } from './focusable-types'
 
 function hostOf(children: ReactNode): HostElement {
   const child = Children.only(children);
-  if (!isValidElement(child)) throw new Error('asChild needs exactly one element child');
+  if (!isValidElement(child)) {
+    throw new Error('asChild needs exactly one element child');
+  }
   return child as HostElement;
 }
 
@@ -19,7 +21,9 @@ function contentFor<R extends AnySv>(
   asChild: boolean,
   children: FocusableProps<R>['children'],
 ): FocusableProps<R>['children'] {
-  if (!asChild) return children;
+  if (!asChild) {
+    return children;
+  }
   return (state) => hostFor(children, state).props.children;
 }
 
@@ -40,7 +44,9 @@ type Delegate =
     };
 
 function delegateOf(asChild: boolean | undefined, children: ReactNode): Delegate {
-  if (asChild !== true) return { host: null, content: children, wrap: (face) => face };
+  if (asChild !== true) {
+    return { host: null, content: children, wrap: (face) => face };
+  }
   const host = hostOf(children);
   return {
     host,

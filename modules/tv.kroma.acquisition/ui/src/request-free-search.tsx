@@ -182,7 +182,9 @@ export function RequestFreeSearch({
 }
 
 function kindOf(r: ManualReleaseView): 'season' | 'episode' | 'movie' {
-  if (r.fullSeason) return 'season';
+  if (r.fullSeason) {
+    return 'season';
+  }
   return r.episode != null ? 'episode' : 'movie';
 }
 

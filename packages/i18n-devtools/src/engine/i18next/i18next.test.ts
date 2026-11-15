@@ -37,7 +37,9 @@ function inspected(text: string, asked: Asked = {}, over: Partial<I18n> = {}): R
   });
   render(text, 'greeting', asked);
   const [first] = seen;
-  if (!first) throw new Error('the post-processor never ran');
+  if (!first) {
+    throw new Error('the post-processor never ran');
+  }
   return first;
 }
 

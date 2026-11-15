@@ -71,23 +71,33 @@ export function ChromeSurface({
   const [zoomNote, setZoomNote] = useState<string | null>(null);
   const [barHeight, setBarHeight] = useState(0);
   useEffect(() => {
-    if (!zoomNote) return;
+    if (!zoomNote) {
+      return;
+    }
     const id = setTimeout(() => setZoomNote(null), 1100);
     return () => clearTimeout(id);
   }, [zoomNote]);
 
   const onTap = useStableCallback(() => toggle());
   const onDoubleTap = useStableCallback((x: number) => {
-    if (x < width / 3) engine.skip(-10);
-    else if (x > (width * 2) / 3) engine.skip(10);
-    else return;
+    if (x < width / 3) {
+      engine.skip(-10);
+    } else if (x > (width * 2) / 3) {
+      engine.skip(10);
+    } else {
+      return;
+    }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     poke();
   });
   const onPinch = useStableCallback((scale: number) => {
-    if (Math.abs(scale - 1) < 0.15) return;
+    if (Math.abs(scale - 1) < 0.15) {
+      return;
+    }
     const wantFill = scale > 1;
-    if (wantFill === fill) return;
+    if (wantFill === fill) {
+      return;
+    }
     onZoom(wantFill);
     setZoomNote(wantFill ? t('player.zoomFill') : t('player.zoomFit'));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -100,7 +110,9 @@ export function ChromeSurface({
     runOnJS: true,
     numberOfTaps: 2,
     onDeactivate: (e) => {
-      if (!e.canceled) onDoubleTap(e.x);
+      if (!e.canceled) {
+        onDoubleTap(e.x);
+      }
     },
   });
   const pinch = usePinchGesture({

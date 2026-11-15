@@ -126,7 +126,9 @@ function heard(target: EventTarget): KeyboardEvent[] {
 }
 
 afterEach(() => {
-  for (const step of undo.splice(0)) step();
+  for (const step of undo.splice(0)) {
+    step();
+  }
   document.body.replaceChildren();
   vi.restoreAllMocks();
 });

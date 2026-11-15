@@ -18,6 +18,8 @@ export function controlForm({
   renderTouch: () => ReactNode;
   renderNavigator: () => ReactNode;
 }>): ReactNode {
-  if (!controlled && (scoped || NAVIGATED)) return renderNavigator();
+  if (!controlled && (scoped || NAVIGATED)) {
+    return renderNavigator();
+  }
   return asChild && WEB ? renderLink() : renderTouch();
 }

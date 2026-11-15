@@ -61,10 +61,14 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'target', '.
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name.startsWith('.') && e.name !== '.github') continue;
+    if (e.name.startsWith('.') && e.name !== '.github') {
+      continue;
+    }
     const p = join(dir, e.name);
     if (e.isDirectory()) {
-      if (!SKIP_DIRS.has(e.name)) walk(p, out);
+      if (!SKIP_DIRS.has(e.name)) {
+        walk(p, out);
+      }
     } else {
       out.push(p);
     }
@@ -133,7 +137,9 @@ for (const key of LISTS) {
   }
 
   for (const [p, matched] of hits) {
-    if (matched.length === 0) continue;
+    if (matched.length === 0) {
+      continue;
+    }
     const covered = patterns.find(
       (q) =>
         q !== p && (hits.get(q)?.length ?? 0) > 0 && matched.every((f) => hits.get(q)?.includes(f)),
@@ -165,7 +171,9 @@ for (const id of ids) {
 
 if (problems.length > 0) {
   console.log(`${NAME}\n`);
-  for (const p of problems) console.log(`  ${p}`);
+  for (const p of problems) {
+    console.log(`  ${p}`);
+  }
   console.log(`\n${problems.length} problem(s).`);
   process.exit(1);
 }

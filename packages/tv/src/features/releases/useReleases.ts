@@ -11,12 +11,16 @@ export function useReleases(): ReleasesView | null {
   const [view, setView] = useState<ReleasesView | null>(null);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!ready || !user) {
+      return;
+    }
     let cancelled = false;
     client.releases
       .list()
       .then((next) => {
-        if (!cancelled) setView(next);
+        if (!cancelled) {
+          setView(next);
+        }
       })
       .catch(() => undefined);
     return () => {

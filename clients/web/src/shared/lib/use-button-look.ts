@@ -9,7 +9,9 @@ import { useGround } from '#web/shared/lib/use-ground';
 export function useButtonLook(brand: ButtonBrand | null | undefined) {
   const scope = useStyleScope();
   const ground = useGround();
-  if (!brand) return null;
+  if (!brand) {
+    return null;
+  }
   const look = brand[ground];
   const edge = look.stroke ?? look.fill;
   return {

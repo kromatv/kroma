@@ -50,7 +50,9 @@ export default function ProfilePin() {
   // The switch means "Face ID instead of the pad" with a PIN, and "Face ID
   // required to open this profile" without one.
   useEffect(() => {
-    if (!serverUrl || !user) return;
+    if (!serverUrl || !user) {
+      return;
+    }
     const load = user.hasPin ? isBiometricUnlockEnabled : isBiometricLockEnabled;
     void load(serverUrl, user.id).then(setBioEnabled);
   }, [serverUrl, user]);
@@ -70,10 +72,14 @@ export default function ProfilePin() {
   };
 
   const syncVault = async (newPin: string | null) => {
-    if (!serverUrl || !user) return;
-    if (newPin && bioEnabled && bioSupported)
+    if (!serverUrl || !user) {
+      return;
+    }
+    if (newPin && bioEnabled && bioSupported) {
       await savePinBehindBiometrics(serverUrl, user.id, newPin);
-    else if (!newPin) await deletePinBehindBiometrics(serverUrl, user.id);
+    } else if (!newPin) {
+      await deletePinBehindBiometrics(serverUrl, user.id);
+    }
   };
 
   const submitPin = async (code: string, current?: string) => {
@@ -83,7 +89,9 @@ export default function ProfilePin() {
       setUser(updated);
       if (!hasPin && serverUrl && user) {
         // First PIN here: an active standalone lock folds into the PIN vault.
-        if (bioEnabled) await setBiometricUnlockEnabled(serverUrl, user.id, true);
+        if (bioEnabled) {
+          await setBiometricUnlockEnabled(serverUrl, user.id, true);
+        }
         await setBiometricLockEnabled(serverUrl, user.id, false);
       }
       await syncVault(code);
@@ -111,7 +119,9 @@ export default function ProfilePin() {
   };
 
   const enableBio = async (code: string) => {
-    if (!serverUrl || !user) return;
+    if (!serverUrl || !user) {
+      return;
+    }
     setBusy(true);
     try {
       await client.accounts.verifyPin(code);
@@ -132,7 +142,9 @@ export default function ProfilePin() {
   };
 
   const disableBio = async () => {
-    if (!serverUrl || !user) return;
+    if (!serverUrl || !user) {
+      return;
+    }
     setBioEnabled(false);
     if (hasPin) {
       await setBiometricUnlockEnabled(serverUrl, user.id, false);
@@ -145,7 +157,9 @@ export default function ProfilePin() {
   // Confirm with a real prompt: a device that cannot pass must not end up
   // locked out.
   const enableBioLock = async () => {
-    if (!serverUrl || !user) return;
+    if (!serverUrl || !user) {
+      return;
+    }
     setBusy(true);
     setError(null);
     setSaved(false);
@@ -167,9 +181,13 @@ export default function ProfilePin() {
 
   const complete = (code: string) => {
     if (step.kind === 'current') {
-      if (step.after === 'remove') void removePin(code);
-      else if (step.after === 'bio') void enableBio(code);
-      else begin({ kind: 'new', current: code });
+      if (step.after === 'remove') {
+        void removePin(code);
+      } else if (step.after === 'bio') {
+        void enableBio(code);
+      } else {
+        begin({ kind: 'new', current: code });
+      }
       return;
     }
     if (step.kind === 'new') {
@@ -187,9 +205,12 @@ export default function ProfilePin() {
   };
 
   const stepSubtitle = () => {
-    if (step.kind === 'current')
+    if (step.kind === 'current') {
       return step.after === 'remove' ? t('pin.clearSubtitle') : t('pin.changeSubtitle');
-    if (step.kind === 'confirm') return t('pin.confirmSubtitle');
+    }
+    if (step.kind === 'confirm') {
+      return t('pin.confirmSubtitle');
+    }
     return t('pin.setSubtitle');
   };
 
@@ -232,9 +253,13 @@ export default function ProfilePin() {
                 value={bioEnabled}
                 disabled={busy}
                 onChange={(next) => {
-                  if (!next) void disableBio();
-                  else if (hasPin) begin({ kind: 'current', after: 'bio' });
-                  else void enableBioLock();
+                  if (!next) {
+                    void disableBio();
+                  } else if (hasPin) {
+                    begin({ kind: 'current', after: 'bio' });
+                  } else {
+                    void enableBioLock();
+                  }
                 }}
               />
             </LockCard>
@@ -251,7 +276,9 @@ export default function ProfilePin() {
           error={error}
           onChange={(next) => {
             setPin(next);
-            if (next.length === 4) complete(next);
+            if (next.length === 4) {
+              complete(next);
+            }
           }}
           onCancel={() => backToMenu(false)}
         />

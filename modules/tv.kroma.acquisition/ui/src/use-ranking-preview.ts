@@ -43,7 +43,9 @@ export function useRankingPreview(profile: QualityProfile): RankingPreview {
     const timer = setTimeout(() => {
       Promise.all(SAMPLE_NAMES.map((name) => acquisition.testRules(name, 'en')))
         .then((views) => {
-          if (!live) return;
+          if (!live) {
+            return;
+          }
           setSamples(
             views.map((view, at) => ({
               name: SAMPLE_NAMES[at] as string,
@@ -53,7 +55,9 @@ export function useRankingPreview(profile: QualityProfile): RankingPreview {
           );
         })
         .catch(() => {
-          if (live) setFailed(true);
+          if (live) {
+            setFailed(true);
+          }
         });
     }, DEBOUNCE_MS);
     return () => {
@@ -84,6 +88,8 @@ function rank(samples: readonly Sample[], profile: QualityProfile): RankedSample
 }
 
 function better(a: RankedSample, b: RankedSample): number {
-  if (a.rank === null || b.rank === null) return Number(a.rank === null) - Number(b.rank === null);
+  if (a.rank === null || b.rank === null) {
+    return Number(a.rank === null) - Number(b.rank === null);
+  }
   return a.rank - b.rank || b.score - a.score;
 }

@@ -31,9 +31,13 @@ export function gridMetrics(
   gutterSum: number = spacing.md * 2,
 ): { cols: number; cardW: number } {
   let cols = 3;
-  if (width >= 1000) cols = 6;
-  else if (width >= 700) cols = 5;
-  else if (width >= 500) cols = 4;
+  if (width >= 1000) {
+    cols = 6;
+  } else if (width >= 700) {
+    cols = 5;
+  } else if (width >= 500) {
+    cols = 4;
+  }
   const cardW = Math.floor((width - gutterSum - GAP * (cols - 1)) / cols);
   return { cols, cardW };
 }
@@ -94,11 +98,15 @@ export function PosterGrid({
   }));
 
   const spy = useCallback(() => {
-    if (!onVisibleItems) return;
+    if (!onVisibleItems) {
+      return;
+    }
     const { y, height } = scroll.current;
     const next = height === 0 ? null : visibleItems(geometry, y + insets.top, y + height);
     const prev = reported.current;
-    if (prev?.first === next?.first && prev?.last === next?.last) return;
+    if (prev?.first === next?.first && prev?.last === next?.last) {
+      return;
+    }
     reported.current = next;
     onVisibleItems(next);
   }, [geometry, insets.top, onVisibleItems]);

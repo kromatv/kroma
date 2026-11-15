@@ -48,7 +48,9 @@ export function ConnectionProvider({
 
 export function useConnection(): Connection {
   const c = useContext(ConnectionCtx);
-  if (!c) throw new Error('useConnection() must be used inside <ConnectionProvider>');
+  if (!c) {
+    throw new Error('useConnection() must be used inside <ConnectionProvider>');
+  }
   return c;
 }
 

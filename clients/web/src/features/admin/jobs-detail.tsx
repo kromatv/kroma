@@ -111,8 +111,12 @@ function RunRow({
 }
 
 function logColor(level: string): ColorValue {
-  if (level === 'error') return 'danger';
-  if (level === 'warn') return 'accent';
+  if (level === 'error') {
+    return 'danger';
+  }
+  if (level === 'warn') {
+    return 'accent';
+  }
   return 'glyph';
 }
 
@@ -131,8 +135,14 @@ function LogLine({ log }: Readonly<{ log: JobLog }>) {
 }
 
 function statusColor(status: string): ColorValue {
-  if (status === 'success') return 'success';
-  if (status === 'failed') return 'danger';
-  if (status === 'running') return 'accent';
+  if (status === 'success') {
+    return 'success';
+  }
+  if (status === 'failed') {
+    return 'danger';
+  }
+  if (status === 'running') {
+    return 'accent';
+  }
   return 'glyph';
 }

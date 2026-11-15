@@ -21,7 +21,9 @@ export function run(
     encoding: as === 'buffer' ? 'buffer' : 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   });
-  if (result.error) throw new Error(`${command}: ${result.error.message}`);
+  if (result.error) {
+    throw new Error(`${command}: ${result.error.message}`);
+  }
   if (result.status !== 0 && !options.allowFailure) {
     const stderr = String(result.stderr ?? '').trim();
     const detail = stderr ? `\n${stderr}` : '';

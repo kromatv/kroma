@@ -116,7 +116,9 @@ function CheckboxMark({
   indeterminate,
   size,
 }: Readonly<{ checked: boolean; indeterminate: boolean; size: CheckboxSize }>) {
-  if (!checked && !indeterminate) return null;
+  if (!checked && !indeterminate) {
+    return null;
+  }
   return (
     <Icon
       name={indeterminate && !checked ? 'minus' : 'check'}

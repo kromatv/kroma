@@ -21,7 +21,9 @@ function useDeliberateHover<T>(onHover: (target: T) => void): (target: T) => voi
     }
     const onMove = () => {
       atRest.current = false;
-      if (under.current !== null) report(under.current);
+      if (under.current !== null) {
+        report(under.current);
+      }
       under.current = null;
     };
     const onKey = () => {
@@ -36,8 +38,11 @@ function useDeliberateHover<T>(onHover: (target: T) => void): (target: T) => voi
   }, [report]);
 
   return useStableCallback((target: T) => {
-    if (atRest.current) under.current = target;
-    else report(target);
+    if (atRest.current) {
+      under.current = target;
+    } else {
+      report(target);
+    }
   });
 }
 

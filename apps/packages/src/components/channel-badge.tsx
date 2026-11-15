@@ -8,7 +8,9 @@ export interface ChannelBadgeProps {
 }
 
 export function ChannelBadge({ channel, current = false }: Readonly<ChannelBadgeProps>) {
-  if (channel === 'stable' && !current) return null;
+  if (channel === 'stable' && !current) {
+    return null;
+  }
   return (
     <Box shrink={0}>
       <Badge tone={channel === 'canary' ? 'warning' : 'success'}>{channel}</Badge>

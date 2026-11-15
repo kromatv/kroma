@@ -10,7 +10,9 @@ const subject = (name: string) => ['-subj', `/CN=${name}/O=KROMA/C=CH`];
 
 function openssl(args: string[]): void {
   const result = spawnSync(OPENSSL, args, { encoding: 'utf8' });
-  if (result.status !== 0) throw new Error(`openssl ${args[0]}: ${result.stderr ?? result.error}`);
+  if (result.status !== 0) {
+    throw new Error(`openssl ${args[0]}: ${result.stderr ?? result.error}`);
+  }
 }
 
 /**

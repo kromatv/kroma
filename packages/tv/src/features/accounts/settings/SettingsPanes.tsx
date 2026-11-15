@@ -30,7 +30,9 @@ interface SettingsPanesProps {
 }
 
 function shown(pane: SettingsPane): boolean {
-  if (pane.kind === 'group') return groupAvailable(pane.group);
+  if (pane.kind === 'group') {
+    return groupAvailable(pane.group);
+  }
   return !pane.available || pane.available();
 }
 
@@ -53,7 +55,9 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
 
   useFocusNav({
     onBack: () => {
-      if (popups.current > 0) return false;
+      if (popups.current > 0) {
+        return false;
+      }
       if (onLeft.current || !active) {
         nav.back();
         return;
@@ -68,8 +72,11 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
   };
 
   const register = (id: string) => (handle: FocusHandle | null) => {
-    if (handle) rows.current.set(id, handle);
-    else rows.current.delete(id);
+    if (handle) {
+      rows.current.set(id, handle);
+    } else {
+      rows.current.delete(id);
+    }
   };
 
   return (

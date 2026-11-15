@@ -31,7 +31,9 @@ export function createRoute(canonical: string, options: RouteOptions = {}): Rout
   let current: { base: string; abort: AbortController } | undefined;
   const listeners = new Set<(direct: string | undefined) => void>();
   const announce = () => {
-    for (const listener of listeners) listener(current?.base);
+    for (const listener of listeners) {
+      listener(current?.base);
+    }
   };
 
   return {
@@ -41,13 +43,17 @@ export function createRoute(canonical: string, options: RouteOptions = {}): Rout
     direct: () => current?.base,
     directSignal: () => current?.abort.signal,
     useDirect(base) {
-      if (current?.base === base) return;
+      if (current?.base === base) {
+        return;
+      }
       current?.abort.abort();
       current = { base, abort: new AbortController() };
       announce();
     },
     drop(base) {
-      if (!current || (base !== undefined && current.base !== base)) return;
+      if (!current || (base !== undefined && current.base !== base)) {
+        return;
+      }
       current.abort.abort();
       current = undefined;
       announce();
@@ -75,14 +81,20 @@ export async function sendOnRoute(
   const caller = request.signal ?? undefined;
   const base = route.api();
   const dropped = route.directSignal();
-  if (base === route.canonical || !dropped) return send(base, caller);
+  if (base === route.canonical || !dropped) {
+    return send(base, caller);
+  }
   const both = linked(caller, dropped);
   try {
     return await send(base, both.signal);
   } catch (error) {
-    if (caller?.aborted) throw error;
+    if (caller?.aborted) {
+      throw error;
+    }
     route.drop(base);
-    if (!IDEMPOTENT.has(request.method.toUpperCase())) throw error;
+    if (!IDEMPOTENT.has(request.method.toUpperCase())) {
+      throw error;
+    }
     return send(route.canonical, caller);
   } finally {
     both.settle();
@@ -92,7 +104,9 @@ export async function sendOnRoute(
 function linked(caller: AbortSignal | undefined, dropped: AbortSignal) {
   const controller = new AbortController();
   const abort = () => controller.abort();
-  if (caller?.aborted || dropped.aborted) abort();
+  if (caller?.aborted || dropped.aborted) {
+    abort();
+  }
   caller?.addEventListener('abort', abort, { once: true });
   dropped.addEventListener('abort', abort, { once: true });
   return {

@@ -62,10 +62,14 @@ function revealPath(
     return open;
   }
   for (const { group, entries } of groups) {
-    if (entries.some((story) => story.id === selected)) open.add(group);
+    if (entries.some((story) => story.id === selected)) {
+      open.add(group);
+    }
   }
   // A deep link to a story that has since moved must still leave something open.
-  if (open.size === 0 && groups[0]) open.add(groups[0].group);
+  if (open.size === 0 && groups[0]) {
+    open.add(groups[0].group);
+  }
   return open;
 }
 
@@ -93,7 +97,9 @@ function Sidebar({
   const toggle = (key: string) =>
     setOpen((prev) => {
       const next = new Set(prev);
-      if (!next.delete(key)) next.add(key);
+      if (!next.delete(key)) {
+        next.add(key);
+      }
       return next;
     });
 
@@ -101,7 +107,9 @@ function Sidebar({
   // visible here. Additive, never a reset: the branches someone opened to compare
   // two components stay open behind the one that just got revealed.
   const path = revealPath(groups, pages, selected);
-  if (![...path].every((key) => open.has(key))) setOpen(new Set([...open, ...path]));
+  if (![...path].every((key) => open.has(key))) {
+    setOpen(new Set([...open, ...path]));
+  }
 
   return (
     <Box

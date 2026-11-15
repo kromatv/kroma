@@ -76,10 +76,16 @@ export async function openSigned(
   nowSecs: number,
 ): Promise<{ instance: Instance; payload: unknown } | null> {
   const instance = await openInstance(secret, request.instance, nowSecs);
-  if (!instance) return null;
+  if (!instance) {
+    return null;
+  }
   const key = await importPublicKey(instance.k);
-  if (!key) return null;
-  if (!(await verify(key, request.payload, request.signature))) return null;
+  if (!key) {
+    return null;
+  }
+  if (!(await verify(key, request.payload, request.signature))) {
+    return null;
+  }
   try {
     return { instance, payload: JSON.parse(request.payload) };
   } catch {

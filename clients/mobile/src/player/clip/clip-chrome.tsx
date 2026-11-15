@@ -32,8 +32,12 @@ export function ClipChrome({
 }>) {
   const t = useT();
   const controls = (frame: ChromeFrame) => {
-    if (!frame.visible) return null;
-    if (compact) return <PortraitControls engine={clip} poke={frame.poke} />;
+    if (!frame.visible) {
+      return null;
+    }
+    if (compact) {
+      return <PortraitControls engine={clip} poke={frame.poke} />;
+    }
     return (
       <ControlsFrame
         engine={clip}

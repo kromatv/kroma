@@ -161,7 +161,9 @@ export function JobCard({
   const toggle = (enabled: boolean) =>
     action.run(() => client.jobs.update(job.key, { enabled }).then(reload));
   const editSchedule = async () => {
-    if (await ScheduleModal.call({ job })) reload();
+    if (await ScheduleModal.call({ job })) {
+      reload();
+    }
   };
 
   const prog = job.running
@@ -228,7 +230,9 @@ function LastRun({ job }: Readonly<{ job: JobInfo }>) {
   const t = useT();
   const locale = useLocale();
   const last = job.lastRun;
-  if (!last || job.running) return null;
+  if (!last || job.running) {
+    return null;
+  }
   return (
     <Text variant="meta" color="textMuted">
       {t('jobs.last')} {rel(last.startedAt, locale)}

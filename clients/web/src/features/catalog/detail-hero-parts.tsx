@@ -43,7 +43,9 @@ export function DirectorsLine({ directors }: Readonly<{ directors?: CrewMember[]
   const s = useStyles(sDefinition);
 
   const t = useT();
-  if (!directors || directors.length === 0) return null;
+  if (!directors || directors.length === 0) {
+    return null;
+  }
   return (
     <Text variant="meta" color="white/60" mb={12}>
       <Text variant="meta" color="white/80" style={s.bold}>
@@ -64,7 +66,9 @@ export function WatchedButton({
   onToggle,
 }: Readonly<{ watched?: boolean; onToggle?: () => void }>) {
   const t = useT();
-  if (!onToggle) return null;
+  if (!onToggle) {
+    return null;
+  }
   return (
     <Button
       variant="outline"
@@ -83,7 +87,9 @@ export function ListButton({
 }: Readonly<{ inList?: boolean; onToggle?: () => void }>) {
   const entryDefaults = useEntryDefaults();
   const t = useT();
-  if (!onToggle) return null;
+  if (!onToggle) {
+    return null;
+  }
   return (
     <IconButton
       diameter={CONTROL[entryDefaults.size].height}
@@ -101,7 +107,9 @@ export function ListButton({
 export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
   const entryDefaults = useEntryDefaults();
   const t = useT();
-  if (!onReport) return null;
+  if (!onReport) {
+    return null;
+  }
   return (
     <IconButton
       diameter={CONTROL[entryDefaults.size].height}
@@ -118,7 +126,9 @@ export function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subt
   const s = useStyles(sDefinition);
 
   const t = useT();
-  if (audio == null && subtitles == null) return null;
+  if (audio == null && subtitles == null) {
+    return null;
+  }
   return (
     <Box row wrap gapX={FIELD_GAP_X} gapY={16} py={18} style={s.rule}>
       {audio != null ? (

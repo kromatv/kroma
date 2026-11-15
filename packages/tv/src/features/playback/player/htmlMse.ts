@@ -54,7 +54,9 @@ function attachShaka(opts: Readonly<MseMasterOptions>): void {
     return;
   }
   void import('shaka-player/dist/shaka-player.compiled.js').then((mod) => {
-    if (opts.stale()) return;
+    if (opts.stale()) {
+      return;
+    }
     const shaka = (mod as unknown as { default: ShakaStatic }).default;
     shaka.polyfill.installAll();
     // A TV Chromium Shaka rejects still plays the same master through hls.js.
@@ -78,7 +80,9 @@ function startShaka(shaka: ShakaStatic, opts: Readonly<MseMasterOptions>): void 
 
 function attachHls(opts: Readonly<MseMasterOptions>): void {
   void import('hls.js').then(({ default: Hls }) => {
-    if (opts.stale()) return;
+    if (opts.stale()) {
+      return;
+    }
     if (!Hls.isSupported()) {
       opts.onNative();
       return;

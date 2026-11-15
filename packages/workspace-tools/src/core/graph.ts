@@ -34,8 +34,11 @@ export function dependents(graph: Graph): Map<string, string[]> {
   for (const project of graph.projects) {
     for (const dep of project.deps) {
       const list = map.get(dep);
-      if (list) list.push(project.name);
-      else map.set(dep, [project.name]);
+      if (list) {
+        list.push(project.name);
+      } else {
+        map.set(dep, [project.name]);
+      }
     }
   }
   return map;

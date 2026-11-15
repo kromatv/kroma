@@ -8,7 +8,9 @@ export function useMarkReleaseSeen(unseen: string | null): void {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!unseen) return;
+    if (!unseen) {
+      return;
+    }
     void webRuntime.client.releases
       .markSeen(unseen)
       .then(() =>

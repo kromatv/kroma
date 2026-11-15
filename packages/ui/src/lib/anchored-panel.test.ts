@@ -129,7 +129,9 @@ describe('useAnchoredPlacement', () => {
       .mockImplementation((cb: FrameRequestCallback) => queued.push(cb));
     const flush = () =>
       act(() => {
-        for (const cb of queued.splice(0)) cb(0);
+        for (const cb of queued.splice(0)) {
+          cb(0);
+        }
       });
     const { result } = renderHook(() =>
       useAnchoredPlacement(anchor, { minWidth: 180, maxHeight: 320 }),
@@ -159,7 +161,9 @@ describe('useAnchoredPlacement', () => {
       });
     renderHook(() => useAnchoredPlacement(anchor, { minWidth: 180, maxHeight: 320 }));
     act(() => {
-      for (let i = 0; i < 5; i++) window.dispatchEvent(new Event('scroll'));
+      for (let i = 0; i < 5; i++) {
+        window.dispatchEvent(new Event('scroll'));
+      }
     });
     expect(queued).toHaveLength(1);
     raf.mockRestore();

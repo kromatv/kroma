@@ -66,8 +66,11 @@ export function HeroBillboard({
   const play = () => {
     // A movie plays (here or on the TV being driven); a show has no single file,
     // so it opens its page and the viewer picks the episode.
-    if (entry.type === 'movie') void playNow(entry.item.id);
-    else router.push(detailRoute as never);
+    if (entry.type === 'movie') {
+      void playNow(entry.item.id);
+    } else {
+      router.push(detailRoute as never);
+    }
   };
 
   const w = Math.min(width - gutters.left - gutters.right, landscape ? 820 : 480);

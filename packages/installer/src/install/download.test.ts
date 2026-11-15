@@ -13,7 +13,9 @@ const dest = join(folder, 'tools.zip');
 
 const body = (count: number) =>
   (async function* stream() {
-    for (let index = 0; index < count; index++) yield new Uint8Array(10);
+    for (let index = 0; index < count; index++) {
+      yield new Uint8Array(10);
+    }
   })();
 
 const sha256 = (bytes: number) => createHash('sha256').update(new Uint8Array(bytes)).digest('hex');

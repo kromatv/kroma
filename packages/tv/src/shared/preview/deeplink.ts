@@ -11,7 +11,7 @@ const MAX_ID_LEN = 128;
 
 const Link = z.object({
   type: z.enum(['movie', 'show']),
-  id: z.string().min(1).max(MAX_ID_LEN),
+  id: z.string().nonempty().max(MAX_ID_LEN),
 });
 
 // Tizen delivers `action_data` either verbatim or wrapped as
@@ -19,13 +19,19 @@ const Link = z.object({
 const Wrapped = z.object({ values: z.string() });
 
 function parsePayload(raw: string): DeepLink | null {
-  if (raw.length > MAX_PAYLOAD_LEN) return null;
+  if (raw.length > MAX_PAYLOAD_LEN) {
+    return null;
+  }
   try {
     const first: unknown = JSON.parse(raw);
     const direct = Link.safeParse(first);
-    if (direct.success) return direct.data;
+    if (direct.success) {
+      return direct.data;
+    }
     const wrapped = Wrapped.safeParse(first);
-    if (!wrapped.success) return null;
+    if (!wrapped.success) {
+      return null;
+    }
     const inner = Link.safeParse(JSON.parse(decodeURIComponent(wrapped.data.values)));
     return inner.success ? inner.data : null;
   } catch {
@@ -47,7 +53,9 @@ export function createDeepLinks() {
       pending = link;
       return;
     }
-    for (const listener of listeners) listener(link);
+    for (const listener of listeners) {
+      listener(link);
+    }
   }
 
   function takePendingDeepLink(): DeepLink | null {
@@ -59,7 +67,9 @@ export function createDeepLinks() {
   /** The tile selection that launched/targeted the app, or null. */
   function readDeepLink(): DeepLink | null {
     const t = tizen();
-    if (!t) return takePendingDeepLink();
+    if (!t) {
+      return takePendingDeepLink();
+    }
     try {
       const req = t.application.getCurrentApplication().getRequestedAppControl();
       const payload = req?.appControl.data.find((d) => d.key === 'PAYLOAD')?.value?.[0];
@@ -74,7 +84,9 @@ export function createDeepLinks() {
   function onDeepLink(cb: (link: DeepLink) => void): () => void {
     listeners.add(cb);
     const link = takePendingDeepLink();
-    if (link) cb(link);
+    if (link) {
+      cb(link);
+    }
     const unsubscribe = () => {
       listeners.delete(cb);
     };
@@ -86,10 +98,14 @@ export function createDeepLinks() {
     }
     // Tizen warm start: the platform re-targets the running app with a new
     // appControl when another preview tile is selected.
-    if (!tizen()) return unsubscribe;
+    if (!tizen()) {
+      return unsubscribe;
+    }
     const handler = () => {
       const link = readDeepLink();
-      if (link) cb(link);
+      if (link) {
+        cb(link);
+      }
     };
     window.addEventListener('appcontrol', handler);
     return () => {

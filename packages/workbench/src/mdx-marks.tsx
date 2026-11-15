@@ -153,7 +153,9 @@ function runs(children: ReactNode): ReactNode[] {
   const out: ReactNode[] = [];
   let run: ReactNode[] = [];
   const flush = () => {
-    if (run.length === 0) return;
+    if (run.length === 0) {
+      return;
+    }
     out.push(
       <Prose key={`run-${out.length}`} variant={BODY.variant} color={BODY.color}>
         {run}

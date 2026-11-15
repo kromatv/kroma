@@ -68,7 +68,9 @@ export function LogsPage({
   const missing = source !== 'all' && !known.includes(source) ? [source] : [];
   const sources = ['all', ...known, ...missing];
   const sourceLabel = (s: string) => {
-    if (s === 'all') return t('logs.allSources');
+    if (s === 'all') {
+      return t('logs.allSources');
+    }
     return s === 'core' ? t('logs.sourceCore') : s;
   };
 

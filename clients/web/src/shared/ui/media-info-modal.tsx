@@ -119,7 +119,9 @@ function editionGroups(item: MediaItem, files: MediaFile[]) {
 // A synthetic single-file result from the top-level fields, for legacy rows
 // that predate the per-file list.
 function filesOf(item: MediaItem): MediaFile[] {
-  if (item.files.length) return item.files;
+  if (item.files.length) {
+    return item.files;
+  }
   return [
     {
       id: MediaFileId.parse(item.id),

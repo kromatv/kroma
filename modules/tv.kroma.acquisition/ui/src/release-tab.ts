@@ -12,7 +12,9 @@ export function releaseTabOf(value: string): ReleaseTab | null {
 /** Whether a release belongs under a tab: the profile accepted it, refused it,
  *  or either. */
 export function inTab(release: Pick<ScoredReleaseView, 'score'>, tab: ReleaseTab): boolean {
-  if (tab === 'all') return true;
+  if (tab === 'all') {
+    return true;
+  }
   return (release.score != null) === (tab === 'accepted');
 }
 

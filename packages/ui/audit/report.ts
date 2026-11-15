@@ -25,7 +25,9 @@ function totalsOf(measured: readonly Measured[]): Totals {
   for (const entry of measured) {
     nodes += entry.cost.nodes;
     leaves += entry.cost.leaves;
-    for (const smell of entry.cost.smells) smells[smell.kind] += 1;
+    for (const smell of entry.cost.smells) {
+      smells[smell.kind] += 1;
+    }
   }
   return { views: measured.length, nodes, leaves, overhead: nodes - leaves, smells };
 }

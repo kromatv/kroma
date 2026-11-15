@@ -47,7 +47,9 @@ function useStageView(story: Story | undefined) {
   const pickTheme = useCallback(
     (next: string) => {
       const chosen = PREVIEW_THEMES.find((candidate) => candidate.id === next);
-      if (!chosen) return;
+      if (!chosen) {
+        return;
+      }
       applyTheme(chosen.theme, chosen.light);
       setThemeId(chosen.id);
     },
@@ -219,8 +221,12 @@ function StoryHeading({
 }
 
 function renderBody(story: Story, view: View, args: Record<string, unknown>): ReactNode {
-  if (view === 'matrix') return <Matrix rows={story.matrix} args={args} render={story.render} />;
-  if (view === 'preview' || view === 'docs') return story.render(args);
+  if (view === 'matrix') {
+    return <Matrix rows={story.matrix} args={args} render={story.render} />;
+  }
+  if (view === 'preview' || view === 'docs') {
+    return story.render(args);
+  }
   const at = viewIndex(view);
   return view.startsWith('demo:') ? story.demos[at]?.render() : story.scenes[at]?.render(args);
 }
@@ -228,13 +234,19 @@ function renderBody(story: Story, view: View, args: Record<string, unknown>): Re
 // A scene may drive the component differently enough to want its own script;
 // falling back to the story's keeps one written play running on every view of it.
 function playFor(story: Story, view: View): PlayFunction | undefined {
-  if (view === 'preview' || view === 'matrix') return story.play;
-  if (view === 'docs' || view.startsWith('demo:')) return undefined;
+  if (view === 'preview' || view === 'matrix') {
+    return story.play;
+  }
+  if (view === 'docs' || view.startsWith('demo:')) {
+    return undefined;
+  }
   return story.scenes[viewIndex(view)]?.play ?? story.play;
 }
 
 function viewDocs(story: Story, view: View): string | undefined {
-  if (view === 'preview' || view === 'matrix' || view === 'docs') return undefined;
+  if (view === 'preview' || view === 'matrix' || view === 'docs') {
+    return undefined;
+  }
   const at = viewIndex(view);
   return view.startsWith('demo:') ? story.demos[at]?.docs : story.scenes[at]?.docs;
 }
@@ -248,7 +260,9 @@ function viewDocs(story: Story, view: View): string | undefined {
 // where the source says nothing a reader could copy; but it flattens a compound
 // into props it does not have, so authored markup wins wherever there is any.
 function viewCode(story: Story, view: View, args: Record<string, unknown>): string | null {
-  if (view.startsWith('demo:')) return story.demos[viewIndex(view)]?.code ?? null;
+  if (view.startsWith('demo:')) {
+    return story.demos[viewIndex(view)]?.code ?? null;
+  }
   // A scene that declares neither `example` nor `render` is drawn by the story's
   // own render, so that is the code that drew it - but only where the story has
   // something to show. A story whose render the build could not read has just
@@ -256,11 +270,17 @@ function viewCode(story: Story, view: View, args: Record<string, unknown>): stri
   // not draw is a guess.
   if (view.startsWith('scene:')) {
     const scene = story.scenes[viewIndex(view)];
-    if (scene?.code) return inlineArgs(scene.code, args);
-    if (story.code) return inlineArgs(story.code, args);
+    if (scene?.code) {
+      return inlineArgs(scene.code, args);
+    }
+    if (story.code) {
+      return inlineArgs(story.code, args);
+    }
     return story.named ? snippet(story, args) : null;
   }
-  if (view !== 'preview') return null;
+  if (view !== 'preview') {
+    return null;
+  }
   return previewCode(story, args);
 }
 
@@ -270,8 +290,12 @@ function viewCode(story: Story, view: View, args: Record<string, unknown>): stri
 // nothing, and 29 of the kit's stories get a code panel because of it.
 function previewCode(story: Story, args: Record<string, unknown>): string | null {
   const authored = fullyInlined(story.code, args);
-  if (authored) return authored;
-  if (story.controls.some((control) => control.variant)) return snippet(story, args);
+  if (authored) {
+    return authored;
+  }
+  if (story.controls.some((control) => control.variant)) {
+    return snippet(story, args);
+  }
   // Source that did not resolve still reads as source, minus the arrow around
   // it. With no source at all there are two cases, and only one of them has an
   // answer: a story that NAMED its component is drawn from the args, so the

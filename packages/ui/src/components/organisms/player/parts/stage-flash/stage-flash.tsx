@@ -36,9 +36,13 @@ export interface StageFlashProps {
 
 function useLinger<T>(value: T | null): T | null {
   const [held, setHeld] = useState(value);
-  if (value && held !== value) setHeld(value);
+  if (value && held !== value) {
+    setHeld(value);
+  }
   useEffect(() => {
-    if (value) return;
+    if (value) {
+      return;
+    }
     const out = setTimeout(() => setHeld(null), FADE_MS);
     return () => clearTimeout(out);
   }, [value]);
@@ -56,8 +60,12 @@ function seekGlyph(seek: { dir: -1 | 1; deltaSec: number }, size: number) {
 }
 
 function volumeGlyph(level: number, size: number) {
-  if (level <= 0) return <IconMute size={size} />;
-  if (level < 0.5) return <IconVolLow size={size} />;
+  if (level <= 0) {
+    return <IconMute size={size} />;
+  }
+  if (level < 0.5) {
+    return <IconVolLow size={size} />;
+  }
   return <IconVolHigh size={size} />;
 }
 
@@ -81,7 +89,9 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
   const held = useLinger(flash);
   const fade = useFadeRise(flash != null);
   const px = scaler(scale);
-  if (!held) return null;
+  if (!held) {
+    return null;
+  }
 
   const glyph = held.kind === 'seek' ? seekGlyph(held, px(30)) : volumeGlyph(held.level, px(26));
   const label =

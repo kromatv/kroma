@@ -16,7 +16,9 @@ const groups = (source: Partial<PermissionSource> & { permissions?: ModulePermis
 
 function group(source: Parameters<typeof groups>[0], category: PermissionCategory) {
   const found = groups(source).find((one) => one.category === category);
-  if (!found) throw new Error(`no ${category} group`);
+  if (!found) {
+    throw new Error(`no ${category} group`);
+  }
   return found;
 }
 

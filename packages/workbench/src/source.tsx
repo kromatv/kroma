@@ -85,7 +85,9 @@ function useSourceLink(
   const showing = useRef<string | undefined>(undefined);
   const go = useRef<Navigate | undefined>(undefined);
   return useMemo(() => {
-    if (!source) return { router, binding: null };
+    if (!source) {
+      return { router, binding: null };
+    }
     const paths = new Map(stories.map((story) => [story.id, story.path]));
     const first = stories[0]?.id ?? '';
     // The workbench calls the router at the top of its own render, before the
@@ -113,7 +115,9 @@ function SourceProvider({
  * its code lives or the build cannot name the revision it holds. */
 function useStorySource(): SourceLink | null {
   const binding = useContext(SourceContext);
-  if (!binding) return null;
+  if (!binding) {
+    return null;
+  }
   const href = sourceUrl(binding.source, binding.showing.current);
   return href ? { href, dirty: binding.source.dirty } : null;
 }
@@ -121,10 +125,14 @@ function useStorySource(): SourceLink | null {
 /** What git knows about the open story, or null where the build read nothing. */
 function useStoryHistory(): Provenance | null {
   const binding = useContext(SourceContext);
-  if (!binding) return null;
+  if (!binding) {
+    return null;
+  }
   const { source, showing } = binding;
   const entry = historyOf(source.history, source.root, showing.current);
-  if (!entry) return null;
+  if (!entry) {
+    return null;
+  }
   return { href: sourceUrl(source, showing.current), entry, repository: source.repository };
 }
 
@@ -132,11 +140,15 @@ function useStoryHistory(): Provenance | null {
  * story is a whole folder. */
 function usePathSource(path: string | undefined): Provenance | null {
   const binding = useContext(SourceContext);
-  if (!(binding && path)) return null;
+  if (!(binding && path)) {
+    return null;
+  }
   const { source } = binding;
   const href = fileUrl(source.repository, source.commit, source.root, path);
   const entry = historyOf(source.history, source.root, path);
-  if (!(href || entry)) return null;
+  if (!(href || entry)) {
+    return null;
+  }
   return { href, entry, repository: source.repository };
 }
 
@@ -175,7 +187,9 @@ function useKitHistory(): {
         : [],
     [binding],
   );
-  if (!binding) return null;
+  if (!binding) {
+    return null;
+  }
   return {
     rows,
     shallow: binding.source.history?.shallow ?? false,

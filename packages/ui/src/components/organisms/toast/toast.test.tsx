@@ -18,7 +18,9 @@ const passTime = (ms: number) =>
 
 const say = (...messages: string[]) =>
   act(() => {
-    for (const message of messages) toast({ message });
+    for (const message of messages) {
+      toast({ message });
+    }
   });
 
 // Document order, one entry per notice: every element wrapping a card's text
@@ -66,7 +68,9 @@ describe('<Toaster>', () => {
   it('keeps the newest few, so a column of notices is never a wall', () => {
     render(<Toaster />);
     act(() => {
-      for (let i = 1; i <= 5; i++) toast({ message: `Notice ${i}` });
+      for (let i = 1; i <= 5; i++) {
+        toast({ message: `Notice ${i}` });
+      }
     });
     expect(screen.queryAllByText('Notice 1')).toHaveLength(0);
     expect(screen.queryAllByText('Notice 2')).toHaveLength(0);

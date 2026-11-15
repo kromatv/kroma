@@ -9,7 +9,9 @@ import { m } from '#site/paraglide/messages';
 export function BlogTeaser() {
   const lang = useLang();
   const posts = getAllPosts(lang).slice(0, 2);
-  if (posts.length === 0) return null;
+  if (posts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-20 sm:py-28">

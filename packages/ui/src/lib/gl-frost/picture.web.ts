@@ -5,7 +5,9 @@ import type { FrostPicture } from './engine.web';
 function load(src: string, cors: boolean): Promise<HTMLImageElement | null> {
   return new Promise((done) => {
     const img = new Image();
-    if (cors) img.crossOrigin = 'anonymous';
+    if (cors) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => done(img);
     img.onerror = () => done(null);
     img.src = src;
@@ -22,7 +24,9 @@ export async function loadPicture(
   amount: number,
 ): Promise<FrostPicture | null> {
   const art = (await load(src, true)) ?? (await load(fresh(src), true));
-  if (!art) return null;
+  if (!art) {
+    return null;
+  }
   const ramp = veil ? veilBitmap(veil) : null;
   return {
     art,

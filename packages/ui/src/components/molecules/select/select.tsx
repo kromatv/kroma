@@ -140,7 +140,9 @@ function Root(props: Readonly<SelectRootProps>) {
         next,
         options.find((option) => option.value === next),
       );
-      if (!multiple) setOpen(false, 'select');
+      if (!multiple) {
+        setOpen(false, 'select');
+      }
     },
     [options, choose, multiple, setOpen],
   );
@@ -238,7 +240,9 @@ function triggerName(
   placeholder: string | undefined,
   picked: readonly SelectOption[],
 ): string | undefined {
-  if (picked.length === 0) return label ?? placeholder;
+  if (picked.length === 0) {
+    return label ?? placeholder;
+  }
   const names = picked.map((option) => option.label).join(', ');
   return label ? `${label}: ${names}` : names;
 }

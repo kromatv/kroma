@@ -82,16 +82,22 @@ export function startDirectConnection(
   const schedule = () => {
     timers.clearTimeout(timer);
     timer = undefined;
-    if (idle() || client.route.direct()) return;
+    if (idle() || client.route.direct()) {
+      return;
+    }
     timer = timers.setTimeout(() => void attempt(), options.recheckMs ?? RECHECK_MS);
   };
 
   async function attempt(): Promise<void> {
-    if (idle() || inFlight) return;
+    if (idle() || inFlight) {
+      return;
+    }
     inFlight = true;
     try {
       const offer = await askDirectOffer(client);
-      if (!offer || idle()) return;
+      if (!offer || idle()) {
+        return;
+      }
       lastOffer = offer;
       const permission = (await options.permission?.()) ?? 'granted';
       askable = permission === 'prompt' && offer.sameNetwork && lanRoutes(offer, client).length > 0;
@@ -115,7 +121,9 @@ export function startDirectConnection(
   return {
     state,
     setSignedIn(next) {
-      if (next === signedIn) return;
+      if (next === signedIn) {
+        return;
+      }
       signedIn = next;
       if (next) {
         void attempt();
@@ -134,17 +142,23 @@ export function startDirectConnection(
       }
       const away = awaySince === undefined ? 0 : now() - awaySince;
       awaySince = undefined;
-      if (away >= (options.awayMs ?? AWAY_MS)) void attempt();
+      if (away >= (options.awayMs ?? AWAY_MS)) {
+        void attempt();
+      }
     },
     recheck: () => void attempt(),
     async connectNow() {
-      if (idle() || !lastOffer) return { kind: 'unknown' };
+      if (idle() || !lastOffer) {
+        return { kind: 'unknown' };
+      }
       const outcome = await connectDirect(client, {
         fetch: options.fetch,
         timeoutMs: options.promptTimeoutMs ?? PROMPT_TIMEOUT_MS,
         routesFrom: lastOffer,
       });
-      if (outcome.kind === 'direct') askable = false;
+      if (outcome.kind === 'direct') {
+        askable = false;
+      }
       emit();
       return outcome;
     },

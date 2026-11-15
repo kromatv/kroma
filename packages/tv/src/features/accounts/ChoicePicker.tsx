@@ -60,7 +60,9 @@ export function ChoicePicker({
   const t = useT();
   // Unmounted while closed rather than hidden, so `initialIndex` below fires on
   // every opening instead of only the first.
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   const current = options.indexOf(value);
 

@@ -40,7 +40,9 @@ export function useEngineDecision(item: MovieView): EngineChoice {
         aacMaster: masterNeedsAac(item, env.safari ? SAFARI_CAPS : MSE_CAPS),
       };
     }
-    if (enginePref === 'direct') return { kind: 'direct', aacMaster: false };
+    if (enginePref === 'direct') {
+      return { kind: 'direct', aacMaster: false };
+    }
     return selectEngine(item, env);
   }, [item, env, forceHls, enginePref]);
 

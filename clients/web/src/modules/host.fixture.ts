@@ -27,13 +27,17 @@ export const listModules = vi.fn(async () => {
   const res = await fetchMock(`${auth.client.baseUrl}/api/modules`, {
     headers: auth.client.authHeaders(),
   });
-  if (!res.ok) throw new Error(`GET /api/modules failed (${res.status})`);
+  if (!res.ok) {
+    throw new Error(`GET /api/modules failed (${res.status})`);
+  }
   return res.json();
 });
 
 export function base() {
   const call = registry.start.mock.calls.at(-1);
-  if (!call) throw new Error('the registry was never started');
+  if (!call) {
+    throw new Error('the registry was never started');
+  }
   return call[0] as {
     api: { get(path: string): Promise<unknown>; listModules(): Promise<unknown> };
     auth: { userId: string | null; can(capability: string): boolean };

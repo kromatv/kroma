@@ -8,6 +8,7 @@ export async function reach(host: string): Promise<SdbDevice> {
     const said = error instanceof Error ? error.message : String(error);
     throw new Error(
       `${said}. Nothing answered on ${SDB_PORT}: developer mode has to be on, naming this computer as the host PC, and the set rebooted since`,
+      { cause: error },
     );
   }
 }

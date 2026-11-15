@@ -72,6 +72,12 @@ beforeEach(() => {
     restartable: false,
   };
 });
+function patchData(patch: Partial<UpdateStatus>) {
+  if (mocks.data) {
+    Object.assign(mocks.data, patch);
+  }
+}
+
 function show(props: Parameters<typeof ServerUpdatesPage>[0] = {}) {
   render(
     <I18nProvider locale="en">
@@ -88,7 +94,11 @@ it('requires a restart confirmation before requesting the exact reviewed build',
   expect(dialog.textContent).toContain('every active stream will be interrupted');
   clearPressGuard();
   const buttons = screen.getAllByRole('button', { name: 'Update server' });
-  fireEvent.click(buttons[buttons.length - 1]!);
+  const confirm = buttons.at(-1);
+  if (!confirm) {
+    throw new Error('no confirm button');
+  }
+  fireEvent.click(confirm);
   await waitFor(() =>
     expect(mocks.install).toHaveBeenCalledWith({
       channel: 'Stable',
@@ -99,7 +109,7 @@ it('requires a restart confirmation before requesting the exact reviewed build',
 });
 
 it('disables installation while the host updater is offline', () => {
-  mocks.data!.installer!.ready = false;
+  patchData({ installer: { platform: 'docker', ready: false } });
   show();
   expect(screen.getByRole('button', { name: 'Update server' }).getAttribute('aria-disabled')).toBe(
     'true',
@@ -117,12 +127,14 @@ it('switches channel and checks its feed without installing', async () => {
 
 it('retains restart progress while reconnecting and blocks duplicate installs', () => {
   mocks.failed = true;
-  mocks.data!.operation = {
-    id: 'request',
-    target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
-    phase: 'restarting',
-    requestedAt: '2026-10-29T10:01:00Z',
-  };
+  patchData({
+    operation: {
+      id: 'request',
+      target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
+      phase: 'restarting',
+      requestedAt: '2026-10-29T10:01:00Z',
+    },
+  });
   show();
   expect(screen.getByText('Waiting for your server…')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Update server' })).toBeNull();
@@ -138,12 +150,14 @@ it('enables automatic installation separately from release checks', async () => 
 });
 
 it('shows backup creation directly in the main update view', () => {
-  mocks.data!.operation = {
-    id: 'backup',
-    target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
-    phase: 'backing_up',
-    requestedAt: '2026-10-29T10:01:00Z',
-  };
+  patchData({
+    operation: {
+      id: 'backup',
+      target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
+      phase: 'backing_up',
+      requestedAt: '2026-10-29T10:01:00Z',
+    },
+  });
   show();
   expect(screen.getByText('Step 1 of 5')).toBeTruthy();
   expect(screen.getByText('Updating your server')).toBeTruthy();
@@ -163,7 +177,7 @@ it('offers no restart where nothing would start the server again', () => {
 });
 
 it('asks before restarting a server that can restart itself', () => {
-  mocks.data!.restartable = true;
+  patchData({ restartable: true });
   show();
   expect(screen.queryByText('Restart dialog')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Restart server' }));
@@ -171,13 +185,15 @@ it('asks before restarting a server that can restart itself', () => {
 });
 
 it('offers no restart while an update is being applied', () => {
-  mocks.data!.restartable = true;
-  mocks.data!.operation = {
-    id: 'request',
-    target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
-    phase: 'installing',
-    requestedAt: '2026-10-29T10:01:00Z',
-  };
+  patchData({ restartable: true });
+  patchData({
+    operation: {
+      id: 'request',
+      target: { channel: 'Stable', version: '0.1.42', build: 3600000 },
+      phase: 'installing',
+      requestedAt: '2026-10-29T10:01:00Z',
+    },
+  });
   show({ restartAsked: true });
   expect(screen.queryByRole('button', { name: 'Restart server' })).toBeNull();
   expect(screen.queryByText('Restart dialog')).toBeNull();
@@ -185,7 +201,7 @@ it('offers no restart while an update is being applied', () => {
 
 it('opens the restart the command menu asked for, and forgets the request once closed', () => {
   const closed = vi.fn();
-  mocks.data!.restartable = true;
+  patchData({ restartable: true });
   show({ restartAsked: true, onRestartClosed: closed });
   expect(closed).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText('Restart dialog'));

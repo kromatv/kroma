@@ -60,8 +60,11 @@ function pressOf(e: KeyboardEvent): SeekPress {
 // In immersive mode (fullscreen + chrome hidden) a media shortcut keeps the UI
 // dark, the stage echoing what happened instead; elsewhere it reveals the chrome.
 function keepChrome(nav: PlayerNav, controller: PlayerController, flags: PlayerFlags): void {
-  if (!nav.revealed && flags.fullscreen && controller.fullscreen) nav.rearmHide();
-  else nav.poke();
+  if (!nav.revealed && flags.fullscreen && controller.fullscreen) {
+    nav.rearmHide();
+  } else {
+    nav.poke();
+  }
 }
 
 // On the web (flags.volume = true), ArrowUp/Down adjust volume globally: no
@@ -69,8 +72,12 @@ function keepChrome(nav: PlayerNav, controller: PlayerController, flags: PlayerF
 // D-pad navigation inside the panel still works.
 function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
-  if (!flags.volume || nav.overlay) return false;
-  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return false;
+  if (!flags.volume || nav.overlay) {
+    return false;
+  }
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+    return false;
+  }
   takeKey(e);
   keepChrome(nav, controller, flags);
   const dir = e.key === 'ArrowUp' ? 1 : -1;
@@ -85,10 +92,16 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
 // controls, and only gets the seek in immersive mode (fullscreen + chrome hidden).
 function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
-  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return false;
-  if (nav.overlay || p.credits?.active || p.resume?.active || p.postPlay?.active) return false;
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+    return false;
+  }
+  if (nav.overlay || p.credits?.active || p.resume?.active || p.postPlay?.active) {
+    return false;
+  }
   const immersive = flags.fullscreen && controller.fullscreen && !nav.revealed;
-  if (!flags.arrowSeek && !immersive) return false;
+  if (!flags.arrowSeek && !immersive) {
+    return false;
+  }
   takeKey(e);
   keepChrome(nav, controller, flags);
   p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1, pressOf(e));
@@ -96,13 +109,17 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
 }
 
 function belongsElsewhere(e: KeyboardEvent): boolean {
-  if (e.metaKey || e.ctrlKey || e.altKey) return true;
+  if (e.metaKey || e.ctrlKey || e.altKey) {
+    return true;
+  }
   return e.target instanceof Element && holdsCaret(e.target);
 }
 
 function lockedKey(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): void {
   const key = resolveRemoteKey(e);
-  if (key !== 'Back' && key !== 'Enter') return;
+  if (key !== 'Back' && key !== 'Enter') {
+    return;
+  }
   takeKey(e);
   routeRemoteKey(p, key);
 }
@@ -119,25 +136,37 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     mirror: { redeliverKey },
   } = useFocusServices();
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    if (belongsElsewhere(e)) return;
+    if (belongsElsewhere(e)) {
+      return;
+    }
     if (params.locked) {
       lockedKey(e, params);
       return;
     }
 
-    if (!params.postPlay?.active && letterShortcut(e, params)) return;
-    if (arrowSeekShortcut(e, params)) return;
-    if (arrowVolumeShortcut(e, params)) return;
+    if (!params.postPlay?.active && letterShortcut(e, params)) {
+      return;
+    }
+    if (arrowSeekShortcut(e, params)) {
+      return;
+    }
+    if (arrowVolumeShortcut(e, params)) {
+      return;
+    }
 
     const remote = resolveRemoteKey(e);
-    if (!remote || WALKED.has(remote)) return;
+    if (!remote || WALKED.has(remote)) {
+      return;
+    }
     takeKey(e);
     routeRemoteKey(params, remote);
   });
 
   const active = params.active !== false;
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     window.addEventListener('keydown', redeliverKey, true);
     window.addEventListener('keydown', onKeyDown, true);
     return () => {

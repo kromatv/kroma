@@ -21,7 +21,9 @@ const manifest = (directory: string, contents: string) =>
 const checkout = () => tree('packages', `installer-${randomInt(1000, 9999)}`, 'src');
 
 afterAll(() => {
-  for (const base of bases) rmSync(base, { recursive: true, force: true });
+  for (const base of bases) {
+    rmSync(base, { recursive: true, force: true });
+  }
 });
 
 describe('root', () => {

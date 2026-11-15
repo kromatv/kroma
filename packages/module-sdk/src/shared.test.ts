@@ -3,7 +3,9 @@ import { remoteEntryUrl, SHARED_MODULES, sharedKey } from './shared';
 
 describe('sharedKey', () => {
   it('hands a shared package back by its own name', () => {
-    for (const spec of SHARED_MODULES) expect(sharedKey(spec)).toBe(spec);
+    for (const spec of SHARED_MODULES) {
+      expect(sharedKey(spec)).toBe(spec);
+    }
   });
 
   it('reads the public package name as the SDK itself', () => {

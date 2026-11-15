@@ -57,12 +57,18 @@ export async function devicectl(
 
 export function failureText(report: unknown): string | null {
   const parsed = CommandReport.safeParse(report);
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   return parsed.data.error?.userInfo?.NSLocalizedDescription?.string ?? null;
 }
 
 export function devicectlAdvice(message: string): string {
-  for (const [pattern, advice] of ADVICE) if (pattern.test(message)) return advice;
+  for (const [pattern, advice] of ADVICE) {
+    if (pattern.test(message)) {
+      return advice;
+    }
+  }
   return `devicectl failed: ${message}`;
 }
 
@@ -71,7 +77,9 @@ async function readReport(path: string): Promise<unknown> {
     (file) => file.size,
     () => null,
   );
-  if (size === null) return null;
+  if (size === null) {
+    return null;
+  }
   if (size > MAX_REPORT_BYTES) {
     throw new Error(`devicectl wrote a ${size} byte report, past the ${MAX_REPORT_BYTES} read`);
   }

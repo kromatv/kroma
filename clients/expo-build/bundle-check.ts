@@ -57,7 +57,9 @@ const platforms = ['ios', 'android'] as const;
 // size must not fail the build, it is the bundle that is being tested here.
 function bytesOf(size: string): number {
   const match = /^([\d.]+)\s*([kMG]?B)$/.exec(size.trim());
-  if (!match) return Number.NaN;
+  if (!match) {
+    return Number.NaN;
+  }
   const scale = { B: 1, kB: 1e3, MB: 1e6, GB: 1e9 }[match[2] as string] ?? Number.NaN;
   return Number(match[1]) * scale;
 }
@@ -95,7 +97,9 @@ async function bundle(platform: (typeof platforms)[number]): Promise<string | nu
 
 const failures = (await Promise.all(platforms.map(bundle))).filter((f) => f !== null);
 if (failures.length > 0) {
-  for (const output of failures) console.error(output);
+  for (const output of failures) {
+    console.error(output);
+  }
   process.exit(1);
 }
 console.log('\nBoth native bundles build from the shared source.');

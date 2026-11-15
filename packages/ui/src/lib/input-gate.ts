@@ -19,10 +19,14 @@ export function createInputGate() {
       holders += 1;
       let released = false;
       return () => {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         holders = Math.max(0, holders - 1);
-        if (holders === 0) guard.armPressGuard();
+        if (holders === 0) {
+          guard.armPressGuard();
+        }
       };
     },
     inputHeld: () => holders > 0,
@@ -39,6 +43,8 @@ export function useInputGate(): InputGate {
   const provided = useContext(Context);
   const [owned] = useState(() => (provided ? null : createInputGate()));
   const gate = provided ?? owned;
-  if (!gate) throw new Error('Input gate requires its owning root');
+  if (!gate) {
+    throw new Error('Input gate requires its owning root');
+  }
   return gate;
 }

@@ -23,18 +23,34 @@ export interface LibraryFilter {
 const CONTINUING = new Set(['Returning Series', 'In Production', 'Planned']);
 
 function matchesState(row: LibraryTitle, state: LibraryState): boolean {
-  if (state === 'monitored') return row.monitored;
-  if (state === 'unmonitored') return !row.monitored;
-  if (state === 'missing') return row.missing > 0;
-  if (state === 'continuing') return CONTINUING.has(row.airStatus ?? '');
+  if (state === 'monitored') {
+    return row.monitored;
+  }
+  if (state === 'unmonitored') {
+    return !row.monitored;
+  }
+  if (state === 'missing') {
+    return row.missing > 0;
+  }
+  if (state === 'continuing') {
+    return CONTINUING.has(row.airStatus ?? '');
+  }
   return true;
 }
 
 function compare(a: LibraryTitle, b: LibraryTitle, sort: LibrarySort): number {
-  if (sort === 'year') return (a.year ?? 0) - (b.year ?? 0);
-  if (sort === 'missing') return a.missing - b.missing;
-  if (sort === 'size') return a.sizeBytes - b.sizeBytes;
-  if (sort === 'added') return (a.addedAt ?? '').localeCompare(b.addedAt ?? '');
+  if (sort === 'year') {
+    return (a.year ?? 0) - (b.year ?? 0);
+  }
+  if (sort === 'missing') {
+    return a.missing - b.missing;
+  }
+  if (sort === 'size') {
+    return a.sizeBytes - b.sizeBytes;
+  }
+  if (sort === 'added') {
+    return (a.addedAt ?? '').localeCompare(b.addedAt ?? '');
+  }
   return a.title.localeCompare(b.title);
 }
 
@@ -58,7 +74,9 @@ export function filterLibrary(
 /** How much of what is monitored is on disk, as 0..1. Null when nothing is
  * monitored, which is not the same as nothing being held. */
 export function heldRatio(row: LibraryTitle): number | null {
-  if (row.monitoredUnits === 0) return null;
+  if (row.monitoredUnits === 0) {
+    return null;
+  }
   return Math.min(row.available, row.monitoredUnits) / row.monitoredUnits;
 }
 

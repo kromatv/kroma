@@ -11,10 +11,10 @@ const SignUp = z
   .object({
     email: z
       .string()
-      .min(1, msg('form.required'))
+      .nonempty(msg('form.required'))
       .pipe(z.email(msg('form.email'))),
     password: z.string().min(8, msg('form.tooShort', { min: 8 })),
-    confirm: z.string().min(1, msg('form.required')),
+    confirm: z.string().nonempty(msg('form.required')),
     terms: z.boolean().refine((accepted) => accepted, msg('form.required')),
   })
   .refine((entered) => entered.password === entered.confirm, msg('form.mismatch'));
@@ -36,7 +36,9 @@ export default function SignUpForm() {
     t: useT(),
     onSubmit: async ({ email }) => {
       await wait(900);
-      if (email === 'ada@example.org') throw new Error('That email is already registered.');
+      if (email === 'ada@example.org') {
+        throw new Error('That email is already registered.');
+      }
     },
   });
   const email = form.field('email');

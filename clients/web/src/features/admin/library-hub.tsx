@@ -40,7 +40,9 @@ export function LibraryHubPage({
     ...(library ? (['upcoming'] as const) : []),
     ...(requests ? (['requests'] as const) : []),
   ];
-  if (tabs.length === 0) return <Denied />;
+  if (tabs.length === 0) {
+    return <Denied />;
+  }
   const shown = tabs.includes(tab) ? tab : (tabs[0] as LibraryTab);
   return (
     <>

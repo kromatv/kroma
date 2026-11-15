@@ -45,7 +45,11 @@ describe('TextField', () => {
 function rules(): CSSStyleRule[] {
   const all: CSSStyleRule[] = [];
   for (const sheet of document.styleSheets) {
-    for (const rule of sheet.cssRules) if (rule instanceof CSSStyleRule) all.push(rule);
+    for (const rule of sheet.cssRules) {
+      if (rule instanceof CSSStyleRule) {
+        all.push(rule);
+      }
+    }
   }
   return all;
 }

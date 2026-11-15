@@ -23,7 +23,9 @@ function power(base: bigint, exponent: bigint): bigint {
   let result = 1n;
   let square = mod(base);
   for (let rest = exponent; rest > 0n; rest >>= 1n) {
-    if (rest & 1n) result = mod(result * square);
+    if (rest & 1n) {
+      result = mod(result * square);
+    }
     square = mod(square * square);
   }
   return result;
@@ -31,7 +33,9 @@ function power(base: bigint, exponent: bigint): bigint {
 
 function fromLittleEndian(bytes: Uint8Array): bigint {
   let value = 0n;
-  for (let at = bytes.length - 1; at >= 0; at -= 1) value = (value << 8n) | BigInt(bytes[at] ?? 0);
+  for (let at = bytes.length - 1; at >= 0; at -= 1) {
+    value = (value << 8n) | BigInt(bytes[at] ?? 0);
+  }
   return value;
 }
 
@@ -65,7 +69,9 @@ function multiply(scalar: bigint, point: Point): Point {
   let result: Point = { x: 0n, y: 1n, z: 1n, t: 0n };
   let doubled = point;
   for (let rest = scalar; rest > 0n; rest >>= 1n) {
-    if (rest & 1n) result = add(result, doubled);
+    if (rest & 1n) {
+      result = add(result, doubled);
+    }
     doubled = add(doubled, doubled);
   }
   return result;
@@ -80,21 +86,31 @@ function encode(point: Point): Buffer {
 }
 
 function decode(bytes: Uint8Array): Point | null {
-  if (bytes.length !== POINT_BYTES) return null;
+  if (bytes.length !== POINT_BYTES) {
+    return null;
+  }
   const y = mod(fromLittleEndian(bytes) & (2n ** 255n - 1n));
   const u = mod(y * y - 1n);
   const v = mod(D * y * y + 1n);
   const wanted = mod(u * power(v, P - 2n));
   let x = power(wanted, (P + 3n) / 8n);
-  if (mod(x * x) !== wanted) x = mod(x * SQRT_MINUS_ONE);
-  if (mod(x * x) !== wanted) return null;
-  if (Number(x & 1n) !== (bytes[POINT_BYTES - 1] ?? 0) >> 7) x = mod(-x);
+  if (mod(x * x) !== wanted) {
+    x = mod(x * SQRT_MINUS_ONE);
+  }
+  if (mod(x * x) !== wanted) {
+    return null;
+  }
+  if (Number(x & 1n) !== (bytes[POINT_BYTES - 1] ?? 0) >> 7) {
+    x = mod(-x);
+  }
   return { x, y, z: 1n, t: mod(x * y) };
 }
 
 function constant(hex: string): Point {
   const point = decode(Buffer.from(hex, 'hex'));
-  if (!point) throw new Error('a SPAKE2 constant is not on the curve');
+  if (!point) {
+    throw new Error('a SPAKE2 constant is not on the curve');
+  }
   return point;
 }
 
@@ -109,7 +125,9 @@ function lengthPrefixed(data: Uint8Array): Buffer {
 function passwordScalar(hash: Uint8Array): bigint {
   let scalar = mod(fromLittleEndian(hash), ORDER);
   for (let bit = 1n; bit < COFACTOR; bit <<= 1n) {
-    if (scalar & bit) scalar += ORDER * bit;
+    if (scalar & bit) {
+      scalar += ORDER * bit;
+    }
   }
   return scalar;
 }
@@ -149,7 +167,9 @@ export class Spake2 {
   /** The key both sides share, from the message the other side sent. */
   key(theirMessage: Uint8Array): Buffer {
     const masked = decode(theirMessage);
-    if (!masked) throw new Error('the other side sent a SPAKE2 message that is not a point');
+    if (!masked) {
+      throw new Error('the other side sent a SPAKE2 message that is not a point');
+    }
     const mask = multiply(this.scalar, this.role === 'alice' ? N : M);
     const shared = encode(multiply(this.privateKey, add(masked, negate(mask))));
 
@@ -163,7 +183,9 @@ export class Spake2 {
       this.passwordHash,
     ];
     const hash = createHash('sha512');
-    for (const part of transcript) hash.update(lengthPrefixed(part));
+    for (const part of transcript) {
+      hash.update(lengthPrefixed(part));
+    }
     return hash.digest();
   }
 }

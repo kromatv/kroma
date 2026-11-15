@@ -13,13 +13,19 @@ const unique = (items: readonly string[]) => [...new Set(items)];
 const outward = (to: string) => to !== 'lan';
 
 function destinationWord(to: string, t: Translate): string {
-  if (to === 'public') return t('modulePermissions.toAnywhere');
-  if (to.startsWith('setting:')) return t('modulePermissions.toSetting');
+  if (to === 'public') {
+    return t('modulePermissions.toAnywhere');
+  }
+  if (to.startsWith('setting:')) {
+    return t('modulePermissions.toSetting');
+  }
   return to;
 }
 
 function withPorts(where: string | null, ports: readonly number[] | undefined, t: Translate) {
-  if (!ports?.length) return where ?? undefined;
+  if (!ports?.length) {
+    return where ?? undefined;
+  }
   const said = t('modulePermissions.ports', { ports: ports.join(', '), count: ports.length });
   return where
     ? t('modulePermissions.destinationPorts', { to: where, ports: said })
@@ -34,7 +40,9 @@ function purposeDetail(connect: Connect | Listen, hint: string | undefined, t: T
 export function internetGroup(connects: readonly Connect[], t: Translate): PermissionGroup | null {
   const reaching = connects.filter((connect) => connect.to.some(outward));
   const [only] = reaching;
-  if (!only) return null;
+  if (!only) {
+    return null;
+  }
   const to = reaching.flatMap((connect) => connect.to.filter(outward));
   const anywhere = to.includes('public');
   const where = anywhere
@@ -74,10 +82,15 @@ const LAN_SAID = {
 export function lanGroup(net: Net | undefined, t: Translate): PermissionGroup | null {
   const local = (net?.connect ?? []).filter((connect) => connect.to.includes('lan'));
   const discovery = net?.discovery ?? [];
-  if (local.length === 0 && discovery.length === 0) return null;
+  if (local.length === 0 && discovery.length === 0) {
+    return null;
+  }
   let said: (typeof LAN_SAID)[keyof typeof LAN_SAID] = LAN_SAID.searches;
-  if (local.length > 0) said = LAN_SAID.talks;
-  else if (discovery.includes('mdns')) said = LAN_SAID.announces;
+  if (local.length > 0) {
+    said = LAN_SAID.talks;
+  } else if (discovery.includes('mdns')) {
+    said = LAN_SAID.announces;
+  }
   return {
     category: 'lan',
     summary: t(said[0]),
@@ -102,14 +115,18 @@ function listenPorts({ port, count = 1 }: Listen, t: Translate): string | undefi
       ? t('modulePermissions.portSettingRun', { count: after })
       : t('modulePermissions.portSetting');
   }
-  if (after === 0) return withPorts(null, [port], t);
+  if (after === 0) {
+    return withPorts(null, [port], t);
+  }
   return opening(t('modulePermissions.portRange', { first: port, last: port + after }));
 }
 
 /** The incoming connections a program the module starts accepts. */
 export function listenGroup(listens: readonly Listen[], t: Translate): PermissionGroup | null {
   const [only] = listens;
-  if (!only) return null;
+  if (!only) {
+    return null;
+  }
   const one = listens.length === 1;
   return {
     category: 'listen',

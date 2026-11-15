@@ -31,7 +31,9 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   const done = states.filter((st) => st.status === 'done').length;
   const busy = states.filter((st) => st.status === 'downloading' || st.status === 'queued').length;
 
-  if (episodes.length === 0) return null;
+  if (episodes.length === 0) {
+    return null;
+  }
   if (done === episodes.length) {
     return (
       <Box style={s.seasonDl}>
@@ -50,7 +52,9 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
         onPress={() => {
           for (const ep of episodes) {
             const st = downloads.stateFor(ep.id);
-            if (st.status === 'downloading' || st.status === 'queued') downloads.cancel(ep.id);
+            if (st.status === 'downloading' || st.status === 'queued') {
+              downloads.cancel(ep.id);
+            }
           }
         }}
       >
@@ -66,7 +70,9 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
       icon="download"
       label={t('offline.downloadSeason')}
       onPress={() => {
-        for (const ep of episodes) downloads.start(ep);
+        for (const ep of episodes) {
+          downloads.start(ep);
+        }
       }}
     />
   );

@@ -57,7 +57,9 @@ function check(path: string, checks: Check[]): void {
   const text = readFileSync(dist(path), 'utf8');
   for (const [re, why] of checks) {
     const m = re.exec(text);
-    if (!m) continue;
+    if (!m) {
+      continue;
+    }
     const at = m.index ?? 0;
     console.error(`\n[check-legacy] dist/${path}: ${why}`);
     console.error(`  ...${text.slice(Math.max(0, at - 80), at + 80).replaceAll('\n', ' ')}...`);
@@ -84,12 +86,16 @@ if (hasDeep) {
 
 const html = readFileSync(dist('index.html'), 'utf8');
 for (const dir of hasDeep ? ['legacy', 'deep'] : ['legacy']) {
-  if (html.includes(`./${dir}/index.js`)) continue;
+  if (html.includes(`./${dir}/index.js`)) {
+    continue;
+  }
   console.error(`[check-legacy] dist/index.html does not gate to ./${dir}/index.js`);
   failed = true;
 }
 
-if (failed) process.exit(1);
+if (failed) {
+  process.exit(1);
+}
 console.log(
   hasDeep
     ? '[check-legacy] legacy bundle OK for Chromium 53, deep bundle OK for Chromium 47'

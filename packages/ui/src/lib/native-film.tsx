@@ -25,7 +25,9 @@ const FILM: number = require('../assets/kroma-intro-hevc-1080.mp4');
 
 function pickFilm(videoSrc?: string, portraitSrc?: number | string): number | string {
   const { width, height } = Dimensions.get('window');
-  if (portraitSrc !== undefined && height > width) return portraitSrc;
+  if (portraitSrc !== undefined && height > width) {
+    return portraitSrc;
+  }
   return videoSrc ?? FILM;
 }
 
@@ -62,7 +64,9 @@ export function NativeFilm({ videoSrc, portraitSrc, onDone }: Readonly<NativeFil
   });
 
   const exit = useCallback(() => {
-    if (exited.current) return;
+    if (exited.current) {
+      return;
+    }
     exited.current = true;
     clearTimeout(safety.current);
 
@@ -72,7 +76,9 @@ export function NativeFilm({ videoSrc, portraitSrc, onDone }: Readonly<NativeFil
       try {
         player.volume = Math.max(0, 1 - step / AUDIO_FADE_STEPS);
       } catch {}
-      if (step >= AUDIO_FADE_STEPS) clearInterval(audioFade.current);
+      if (step >= AUDIO_FADE_STEPS) {
+        clearInterval(audioFade.current);
+      }
     }, EXIT_MS / AUDIO_FADE_STEPS);
 
     Animated.timing(veil, { toValue: 1, duration: EXIT_MS, useNativeDriver: true }).start();
@@ -98,11 +104,15 @@ export function NativeFilm({ videoSrc, portraitSrc, onDone }: Readonly<NativeFil
         if (status === 'error') {
           console.warn('[KROMA] brand intro could not play, skipping:', error?.message ?? status);
           exit();
-        } else if (status === 'readyToPlay') armSafety(player.duration);
+        } else if (status === 'readyToPlay') {
+          armSafety(player.duration);
+        }
       }),
     ];
     return () => {
-      for (const subscription of subscriptions) subscription.remove();
+      for (const subscription of subscriptions) {
+        subscription.remove();
+      }
     };
   }, [player, exit, armSafety]);
 
@@ -118,7 +128,9 @@ export function NativeFilm({ videoSrc, portraitSrc, onDone }: Readonly<NativeFil
   }, [armSafety, holdInput]);
 
   useRemoteEvents((event: HWEvent) => {
-    if (SKIP_EVENTS.has(event.eventType)) exit();
+    if (SKIP_EVENTS.has(event.eventType)) {
+      exit();
+    }
   });
 
   return (

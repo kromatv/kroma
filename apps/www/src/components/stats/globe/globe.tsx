@@ -37,7 +37,9 @@ function place(pins: readonly GlobePin[]): PlacedPin[] {
 }
 
 function frameloopFor(visible: boolean, reduced: boolean): 'always' | 'demand' | 'never' {
-  if (!visible) return 'never';
+  if (!visible) {
+    return 'never';
+  }
   return reduced ? 'demand' : 'always';
 }
 

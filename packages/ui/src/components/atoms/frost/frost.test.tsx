@@ -20,7 +20,9 @@ describe('root frost preferences', () => {
   it('reaches a surface already on screen through provider updates', () => {
     const root = render(<Surface enabled />);
     const node = contentRoot(root.container);
-    if (!node) throw new Error('expected a surface');
+    if (!node) {
+      throw new Error('expected a surface');
+    }
     expect(declared(node, 'backdropFilter')).toContain('blur');
     root.rerender(<Surface enabled={false} />);
     expect(declared(node, 'backdropFilter')).toBeNull();
@@ -33,7 +35,9 @@ describe('root frost preferences', () => {
     const b = render(<Surface enabled />);
     const first = contentRoot(a.container);
     const second = contentRoot(b.container);
-    if (!(first && second)) throw new Error('expected both surfaces');
+    if (!(first && second)) {
+      throw new Error('expected both surfaces');
+    }
     expect(declared(first, 'backdropFilter')).toBeNull();
     expect(declared(second, 'backdropFilter')).toContain('blur');
     a.unmount();

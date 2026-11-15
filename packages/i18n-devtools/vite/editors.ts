@@ -44,7 +44,9 @@ function table(platform: string): Array<[string, string]> {
 /** What `command` is called on a platform: Windows spells the extension out,
  *  and which extensions count is the operator's `PATHEXT`. */
 export function commandNames(command: string, platform: string, pathExt?: string): string[] {
-  if (platform !== 'win32' || /\.\w+$/.test(command)) return [command];
+  if (platform !== 'win32' || /\.\w+$/.test(command)) {
+    return [command];
+  }
   return (pathExt ?? '.COM;.EXE;.BAT;.CMD')
     .split(';')
     .filter(Boolean)
@@ -64,7 +66,9 @@ export function onPath(
  *  The only condition that matters, since an editor that cannot be run is one
  *  the panel should not offer. */
 export function runnable(command: string, where: Where): boolean {
-  if (isAbsolute(command)) return where.exists(command);
+  if (isAbsolute(command)) {
+    return where.exists(command);
+  }
   const dirs = (where.path ?? '').split(delimiter).filter(Boolean);
   return onPath(dirs, commandNames(command, where.platform, where.pathExt), where.exists);
 }
@@ -104,7 +108,9 @@ const NAMES: Readonly<Record<string, string>> = {
  *  macOS, the command everywhere else. */
 export function nameOf(install: string): string {
   const app = install.split(sep).find((part) => part.endsWith('.app'));
-  if (app) return app.slice(0, -'.app'.length);
+  if (app) {
+    return app.slice(0, -'.app'.length);
+  }
   const id = idOf(install);
   return NAMES[id.toLowerCase().replace(/64$/, '')] ?? id;
 }
@@ -129,7 +135,9 @@ function found(where: Where): Map<string, Editor & { run: string }> {
   const editors = new Map<string, Editor & { run: string }>();
   for (const [install, command] of table(where.platform)) {
     const id = idOf(command);
-    if (editors.has(id) || !runnable(command, where)) continue;
+    if (editors.has(id) || !runnable(command, where)) {
+      continue;
+    }
     editors.set(id, { id, name: nameOf(install), run: command });
   }
   return editors;
@@ -165,7 +173,9 @@ export function resolveFile(
   const at = POSITION.exec(file);
   const path = at ? file.slice(0, at.index) : file;
   const position = at?.[0] ?? '';
-  if (exists(path)) return path + position;
+  if (exists(path)) {
+    return path + position;
+  }
   const inRoot = join(root, path);
   return exists(inRoot) ? inRoot + position : null;
 }

@@ -53,7 +53,9 @@ function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {})
   const layer = useFrostLayer();
   const { frost, frostEnabled, frostLayerOnly } = useKitSettings();
   const { on = true, amount = 12, tint } = options;
-  if (!(frostEnabled && on)) return BARE;
+  if (!(frostEnabled && on)) {
+    return BARE;
+  }
   return frostCoat(surface, amount, tint, frost, scope, { layer, layerOnly: frostLayerOnly });
 }
 
@@ -61,8 +63,12 @@ function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {})
 // and the native layer clips itself to whichever it used.
 function cornerOf(props: Record<string, unknown>, scope: StyleScope): ViewStyle {
   const flat = StyleSheet.flatten(props.style as StyleProp<ViewStyle>);
-  if (typeof flat?.borderRadius === 'number') return flat;
-  if (props.radius == null) return EMPTY;
+  if (typeof flat?.borderRadius === 'number') {
+    return flat;
+  }
+  if (props.radius == null) {
+    return EMPTY;
+  }
   return {
     borderRadius: radiusValue(props.radius as CornerValue, undefined, activeTheme(scope.theme)),
   };
@@ -86,7 +92,9 @@ function Frost({ children, ...options }: Readonly<FrostProps>) {
 
   const el = Children.only(children) as ReactElement<Record<string, unknown>>;
   const coat = useFrostCoat(cornerOf(el.props, scope), options);
-  if (!coat.style && !coat.layer) return el;
+  if (!coat.style && !coat.layer) {
+    return el;
+  }
   const merged = mergeSlotProps(coat.style ? { style: coat.style } : {}, el.props);
   if (coat.layer) {
     const inner = el.props.children;

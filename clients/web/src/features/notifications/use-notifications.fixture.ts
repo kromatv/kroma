@@ -67,7 +67,9 @@ export async function push(e: ServerFrame) {
 
 export function stream() {
   const s = H.streams.at(-1);
-  if (!s) throw new Error('no stream was connected');
+  if (!s) {
+    throw new Error('no stream was connected');
+  }
   return s;
 }
 

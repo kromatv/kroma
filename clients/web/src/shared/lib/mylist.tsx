@@ -28,7 +28,9 @@ const MyListContext = createContext<MyListValue | null>(null);
 
 function revertMembership(id: SubjectId, wasAdding: boolean) {
   return (prev: readonly SubjectId[]): readonly SubjectId[] => {
-    if (wasAdding) return prev.filter((x) => x !== id);
+    if (wasAdding) {
+      return prev.filter((x) => x !== id);
+    }
     return prev.includes(id) ? prev : [id, ...prev];
   };
 }
@@ -41,7 +43,9 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
   const ids = user ? storedIds : NONE;
 
   useEffect(() => {
-    if (!authReady || !user) return;
+    if (!authReady || !user) {
+      return;
+    }
     let cancelled = false;
     client.playback
       .myList()
@@ -52,7 +56,9 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
         }
       })
       .catch(() => {
-        if (!cancelled) setLoadedFor(user);
+        if (!cancelled) {
+          setLoadedFor(user);
+        }
       });
     return () => {
       cancelled = true;
@@ -61,9 +67,13 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
 
   const setInList = useCallback(
     (id: SubjectId, inList: boolean) => {
-      if (!user) return;
+      if (!user) {
+        return;
+      }
       setStoredIds((prev) => {
-        if (prev.includes(id) === inList) return prev;
+        if (prev.includes(id) === inList) {
+          return prev;
+        }
         return inList ? [id, ...prev] : prev.filter((x) => x !== id);
       });
       const call = inList ? client.playback.addToList(id) : client.playback.removeFromList(id);
@@ -91,6 +101,8 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
 /** Throws if used outside `<MyListProvider>`. */
 export function useMyList(): MyListValue {
   const ctx = useContext(MyListContext);
-  if (!ctx) throw new Error('useMyList must be used within <MyListProvider>');
+  if (!ctx) {
+    throw new Error('useMyList must be used within <MyListProvider>');
+  }
   return ctx;
 }

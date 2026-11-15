@@ -115,7 +115,9 @@ function takeOf(child, doc, fail) {
 // helper is identity at runtime and exists so an editor can hand the arrow the
 // story's own args.
 function liveArrow(expression) {
-  if (!expression) return undefined;
+  if (!expression) {
+    return undefined;
+  }
   const called =
     expression.type === 'CallExpression' &&
     expression.callee.type === 'MemberExpression' &&
@@ -132,17 +134,25 @@ function sceneObject(node, file) {
 
   const attributes = new Map();
   for (const attribute of node.attributes) {
-    if (attribute.type !== 'mdxJsxAttribute') fail('a spread attribute has no scene to describe');
+    if (attribute.type !== 'mdxJsxAttribute') {
+      fail('a spread attribute has no scene to describe');
+    }
     attributes.set(attribute.name, attribute);
   }
   const name = attributes.get('name');
-  if (typeof name?.value !== 'string') fail('every scene names itself: name="..."');
+  if (typeof name?.value !== 'string') {
+    fail('every scene names itself: name="..."');
+  }
   for (const written of ['render', 'example']) {
-    if (attributes.has(written)) fail(`the take is written as a child, not a \`${written}\` prop`);
+    if (attributes.has(written)) {
+      fail(`the take is written as a child, not a \`${written}\` prop`);
+    }
   }
 
   const takes = node.children.filter(isTake);
-  if (takes.length > 1) fail('one take per scene; compose two elements under one');
+  if (takes.length > 1) {
+    fail('one take per scene; compose two elements under one');
+  }
   const args = attributes.get('args');
   const take = takes[0] ? takeOf(takes[0], doc, fail) : undefined;
   if (take?.name === 'example' && args) {
@@ -197,9 +207,15 @@ function scenesExport(elements) {
 }
 
 function collect(node, found) {
-  if (node.type === 'mdxJsxFlowElement' && node.name === 'Scene') found.push(node);
-  if (!Array.isArray(node.children)) return;
-  for (const child of node.children) collect(child, found);
+  if (node.type === 'mdxJsxFlowElement' && node.name === 'Scene') {
+    found.push(node);
+  }
+  if (!Array.isArray(node.children)) {
+    return;
+  }
+  for (const child of node.children) {
+    collect(child, found);
+  }
 }
 
 const GUIDED = new Set(['Do', 'Dont']);
@@ -276,7 +292,9 @@ function declarationOf(statement) {
 // out on its own.
 function definitionIn(declaration) {
   for (const declared of declaration.declarations) {
-    if (declared.id.type !== 'Identifier' || declared.id.name !== 'story') continue;
+    if (declared.id.type !== 'Identifier' || declared.id.name !== 'story') {
+      continue;
+    }
     const init = declared.init;
     const definition = init?.type === 'CallExpression' ? init.arguments[0] : init;
     return definition?.type === 'ObjectExpression' ? definition : null;
@@ -287,26 +305,38 @@ function definitionIn(declaration) {
 function storyDefinition(body) {
   for (const statement of body) {
     const declaration = declarationOf(statement);
-    if (declaration) return definitionIn(declaration);
+    if (declaration) {
+      return definitionIn(declaration);
+    }
   }
   return null;
 }
 
 function renderProperty(definition) {
   for (const entry of definition.properties) {
-    if (entry.type !== 'Property' || entry.key.type !== 'Identifier') continue;
-    if (entry.key.name === 'render') return entry.value;
+    if (entry.type !== 'Property' || entry.key.type !== 'Identifier') {
+      continue;
+    }
+    if (entry.key.name === 'render') {
+      return entry.value;
+    }
   }
   return null;
 }
 
 function renderCode(tree, doc) {
   for (const node of tree.children) {
-    if (node.type !== 'mdxjsEsm' || !node.data?.estree) continue;
+    if (node.type !== 'mdxjsEsm' || !node.data?.estree) {
+      continue;
+    }
     const definition = storyDefinition(node.data.estree.body);
-    if (!definition) continue;
+    if (!definition) {
+      continue;
+    }
     const value = renderProperty(definition);
-    if (!value) return undefined;
+    if (!value) {
+      return undefined;
+    }
     const shown = shownRender(value);
     return dedent(doc.slice(shown.start, shown.end).trim());
   }
@@ -321,7 +351,9 @@ function renderCode(tree, doc) {
  * untouched. */
 export function remarkStoryScenes() {
   return (tree, file) => {
-    if (!String(file.path ?? '').endsWith(SUFFIX)) return;
+    if (!String(file.path ?? '').endsWith(SUFFIX)) {
+      return;
+    }
     const doc = String(file.value);
     const found = [];
     collect(tree, found);
@@ -329,7 +361,9 @@ export function remarkStoryScenes() {
       tree.children.push(scenesExport(found.map((node) => sceneObject(node, file))));
     }
     const code = renderCode(tree, doc);
-    if (code) tree.children.push(namedExport('__code', literal(code)));
+    if (code) {
+      tree.children.push(namedExport('__code', literal(code)));
+    }
     pairGuidance(tree);
   };
 }

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { decodeLand, LAND_SCALE, toVector } from './geo';
 
 const close = (actual: readonly number[], expected: readonly number[]) => {
-  for (const [i, value] of expected.entries()) expect(actual[i]).toBeCloseTo(value, 6);
+  for (const [i, value] of expected.entries()) {
+    expect(actual[i]).toBeCloseTo(value, 6);
+  }
 };
 
 describe('toVector', () => {
@@ -29,8 +31,8 @@ describe('decodeLand', () => {
     const decoded = decodeLand([90 * LAND_SCALE, 0, 0, 90 * LAND_SCALE]);
 
     expect(decoded).toHaveLength(6);
-    close([...decoded.slice(0, 3)], [0, 1, 0]);
-    close([...decoded.slice(3, 6)], [1, 0, 0]);
+    close(Array.from(decoded.slice(0, 3)), [0, 1, 0]);
+    close(Array.from(decoded.slice(3, 6)), [1, 0, 0]);
   });
 
   it('drops a trailing half pair rather than inventing a point', () => {

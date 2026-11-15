@@ -40,7 +40,9 @@ const chromecast: AdbDevice = {
 const philips = (routes: Record<string, unknown>) =>
   vi.stubGlobal('fetch', (url: string) => {
     const body = routes[url];
-    if (body === undefined) return Promise.resolve(new Response('', { status: 404 }));
+    if (body === undefined) {
+      return Promise.resolve(new Response('', { status: 404 }));
+    }
     return Promise.resolve(new Response(JSON.stringify(body)));
   });
 

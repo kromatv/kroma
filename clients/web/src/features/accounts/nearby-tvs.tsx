@@ -24,7 +24,9 @@ export function NearbyTvs() {
     connect,
   });
 
-  if (rows.length === 0 && !asking) return null;
+  if (rows.length === 0 && !asking) {
+    return null;
+  }
 
   return (
     <Box role="region" mb={32}>

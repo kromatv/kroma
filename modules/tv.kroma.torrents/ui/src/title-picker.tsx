@@ -43,27 +43,30 @@ export function TitlePicker({
     setRequest({ text: initialQuery.trim() });
   }
   const answered =
-    answer !== null &&
-    answer.request === request &&
-    answer.kind === kind &&
-    answer.year === (year ?? null);
+    answer?.request === request && answer.kind === kind && answer.year === (year ?? null);
   const searching = request.text !== '' && !answered;
   const results = answer?.results ?? null;
 
   const search = (text: string) => {
     const words = text.trim();
-    if (words) setRequest({ text: words });
+    if (words) {
+      setRequest({ text: words });
+    }
   };
 
   useEffect(() => {
-    if (!request.text) return;
+    if (!request.text) {
+      return;
+    }
     let stale = false;
-    torrents
+    void torrents
       .searchTitles(request.text, kind, year ?? undefined)
       .then((view) => view.results)
       .catch(() => [])
       .then((found) => {
-        if (!stale) setAnswer({ request, kind, year: year ?? null, results: found });
+        if (!stale) {
+          setAnswer({ request, kind, year: year ?? null, results: found });
+        }
       });
     return () => {
       stale = true;

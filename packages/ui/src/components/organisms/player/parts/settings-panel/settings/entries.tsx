@@ -80,10 +80,14 @@ export function movedEntries(
   at: Readonly<{ muted: boolean; onControl?: (id: ControlId) => void }>,
 ): Entry[] {
   const run = at.onControl;
-  if (!run) return [];
+  if (!run) {
+    return [];
+  }
   return ids.flatMap((id) => {
     const row = MOVEABLE[id];
-    if (!row) return [];
+    if (!row) {
+      return [];
+    }
     return [
       {
         id,
@@ -182,7 +186,9 @@ export function menuEntries(
 
 /** The panel's title: the menu's own, or the row that opened the sub-view. */
 export function panelTitle(view: View, entries: readonly Entry[], t: T): string {
-  if (view === 'menu') return t('player.settings');
+  if (view === 'menu') {
+    return t('player.settings');
+  }
   return entries.find((e) => e.id === view)?.label ?? '';
 }
 

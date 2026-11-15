@@ -31,8 +31,12 @@ function sectionList<T extends MediaCard | Show>(
   other: boolean,
   myList: { has: (id: SubjectId) => boolean },
 ): T[] {
-  if (own) return items;
-  if (other) return [];
+  if (own) {
+    return items;
+  }
+  if (other) {
+    return [];
+  }
   return items.filter((it) => myList.has(it.id));
 }
 

@@ -15,10 +15,14 @@ export async function identifyTizen(
   host: string,
   openPorts: ReadonlySet<number>,
 ): Promise<Television | null> {
-  if (!openPorts.has(SAMSUNG_API_PORT)) return null;
+  if (!openPorts.has(SAMSUNG_API_PORT)) {
+    return null;
+  }
 
   const info = await fetchJson(`http://${host}:${SAMSUNG_API_PORT}/api/v2/`, SamsungInfo);
-  if (!info || !isTelevision(info)) return null;
+  if (!info || !isTelevision(info)) {
+    return null;
+  }
 
   const sdb = openPorts.has(SDB_PORT);
   const declared = info.device.developerMode === '1';

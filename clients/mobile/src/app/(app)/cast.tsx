@@ -101,8 +101,11 @@ export default function CastRemoteScreen() {
               const at = Math.round(positionMs / 1000);
               void send({ type: 'stop' });
               select(null);
-              if (item) router.replace(`/player/${item.id}?start=${at}` as never);
-              else goBack(router);
+              if (item) {
+                router.replace(`/player/${item.id}?start=${at}` as never);
+              } else {
+                goBack(router);
+              }
             }}
             onStop={() => {
               void send({ type: 'stop' });
@@ -129,7 +132,9 @@ export default function CastRemoteScreen() {
         onPick={(id) => {
           devices.current?.dismiss();
           select(id);
-          if (!id) goBack(router);
+          if (!id) {
+            goBack(router);
+          }
         }}
       />
       <TrackPickerSheet
@@ -139,7 +144,9 @@ export default function CastRemoteScreen() {
         activeIndex={playing?.audioIndex ?? null}
         onPick={(index) => {
           audio.current?.dismiss();
-          if (index != null) void send({ type: 'setAudio', index });
+          if (index != null) {
+            void send({ type: 'setAudio', index });
+          }
         }}
       />
       <TrackPickerSheet

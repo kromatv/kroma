@@ -47,7 +47,9 @@ let keys: DevModeKeys | null = null;
 
 /** The set's key pair, encrypted with `PASSPHRASE` the way its key server hands it out. */
 export function devModeKeys(): DevModeKeys {
-  if (keys) return keys;
+  if (keys) {
+    return keys;
+  }
   const { privateKey } = generateKeyPairSync('rsa', {
     modulusLength: 2048,
     publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -59,7 +61,9 @@ export function devModeKeys(): DevModeKeys {
     },
   });
   const parsed = utils.parseKey(privateKey, PASSPHRASE);
-  if (parsed instanceof Error) throw parsed;
+  if (parsed instanceof Error) {
+    throw parsed;
+  }
   keys = {
     encrypted: privateKey,
     publicSsh: parsed.getPublicSSH(),
@@ -89,7 +93,9 @@ export async function startFakeTv(options: FakeTvOptions = {}): Promise<FakeTv> 
   const sshPort = await listen(ssh);
   const http = keyServer(options.keyServer ?? 'on');
   const keyServerPort = await listen(http);
-  if (options.keyServer === 'off') await shut(http);
+  if (options.keyServer === 'off') {
+    await shut(http);
+  }
 
   return {
     host: '127.0.0.1',
@@ -121,7 +127,9 @@ function serveSession(session: Session, device: Device): void {
     answer(info.command, accept(), device);
   });
   session.on('sftp', (accept, reject) => {
-    if (device.options.sftp === false) return reject();
+    if (device.options.sftp === false) {
+      return reject();
+    }
     serveSftp(accept(), store);
   });
 }
@@ -135,7 +143,9 @@ function authenticate(context: AuthContext, device: Device): void {
   const offered = context.key.data;
   const same =
     offered.length === known.publicSsh.length && timingSafeEqual(offered, known.publicSsh);
-  if (!same) return context.reject();
+  if (!same) {
+    return context.reject();
+  }
   const { signature, blob } = context;
   if (signature && !(blob && known.verify(blob, signature, context.hashAlgo))) {
     return context.reject();
@@ -164,13 +174,19 @@ interface Device {
 
 function answer(command: string, channel: ServerChannel, device: Device): void {
   const quoted = /"([^"]+)"/.exec(command)?.[1] ?? '';
-  if (command.startsWith('/usr/bin/test -d')) return exit(channel, device.options.mkdirCode ?? 0);
+  if (command.startsWith('/usr/bin/test -d')) {
+    return exit(channel, device.options.mkdirCode ?? 0);
+  }
   if (command.startsWith('/bin/rm -f')) {
     device.files.delete(quoted);
     return exit(channel, 0);
   }
-  if (command.startsWith('/bin/cat >')) return receive(channel, quoted, device);
-  if (command.startsWith('/usr/bin/luna-send-pub')) return luna(command, channel, device);
+  if (command.startsWith('/bin/cat >')) {
+    return receive(channel, quoted, device);
+  }
+  if (command.startsWith('/usr/bin/luna-send-pub')) {
+    return luna(command, channel, device);
+  }
   channel.stderr.write(`sh: ${command}: not found\n`);
   exit(channel, 127);
 }
@@ -197,7 +213,9 @@ function luna(command: string, channel: ServerChannel, device: Device): void {
     const half = Math.floor(text.length / 2);
     channel.write(text.slice(0, half));
     channel.write(`${text.slice(half)}\n`);
-    if (options.installExits) exit(channel, 0);
+    if (options.installExits) {
+      exit(channel, 0);
+    }
     return;
   }
   if (command.includes('getSessionList')) {

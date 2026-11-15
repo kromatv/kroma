@@ -31,9 +31,15 @@ const REFUSED: Record<string, MessageKey> = {
 };
 
 function searchSaid(t: Translate, search: SearchNow | null): string {
-  if (!search) return t('monitoring.searchStarted');
-  if (!search.started) return t(REFUSED[search.reason ?? ''] ?? 'monitoring.searchRefused');
-  if (search.units > 0) return t('monitoring.searchStartedCount', { count: search.units });
+  if (!search) {
+    return t('monitoring.searchStarted');
+  }
+  if (!search.started) {
+    return t(REFUSED[search.reason ?? ''] ?? 'monitoring.searchRefused');
+  }
+  if (search.units > 0) {
+    return t('monitoring.searchStartedCount', { count: search.units });
+  }
   return t('monitoring.searchStarted');
 }
 
@@ -41,7 +47,9 @@ export function MonitoringDetailPage({
   kind,
   tmdbId,
 }: Readonly<{ kind: RequestKind; tmdbId: number }>) {
-  if (!useCap('library.manage')) return <Denied />;
+  if (!useCap('library.manage')) {
+    return <Denied />;
+  }
   return <MonitoringDetail kind={kind} tmdbId={tmdbId} />;
 }
 
@@ -104,7 +112,9 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
   const unmonitor = () =>
     act(t('monitoring.toastUnfollowed'), () => client.monitoring.unmonitor(kind, tmdbId));
 
-  if (ledger.isPending || listLoading) return <MonitoringDetailSkeleton />;
+  if (ledger.isPending || listLoading) {
+    return <MonitoringDetailSkeleton />;
+  }
 
   return (
     <>

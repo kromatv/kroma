@@ -7,15 +7,22 @@ function matching(text: string, from: number, open: '(' | '{'): number {
   for (let at = from; at < text.length; at += 1) {
     const char = text[at];
     if (quote) {
-      if (char === '\\') at += 1;
-      else if (char === quote) quote = '';
+      if (char === '\\') {
+        at += 1;
+      } else if (char === quote) {
+        quote = '';
+      }
       continue;
     }
-    if (char === '"' || char === "'" || char === '`') quote = char;
-    else if (char === open) depth += 1;
-    else if (char === shut) {
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+    } else if (char === open) {
+      depth += 1;
+    } else if (char === shut) {
       depth -= 1;
-      if (depth === 0) return at;
+      if (depth === 0) {
+        return at;
+      }
     }
   }
   return -1;

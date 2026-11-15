@@ -15,7 +15,9 @@ const GROUP_ACTION = {
 } as const;
 
 function episodesOf(group: MissingGroup): CalendarEntry[] {
-  if (group.kind === 'movie') return [];
+  if (group.kind === 'movie') {
+    return [];
+  }
   return group.items.filter((i) => i.season != null && i.episode != null);
 }
 
@@ -129,7 +131,9 @@ function GroupActionButton({
   onPress,
 }: Readonly<{ action: GroupAction; busy: boolean; started: boolean; onPress: () => void }>) {
   const t = useT();
-  if (action === 'none') return null;
+  if (action === 'none') {
+    return null;
+  }
   const { icon, key, started: startedKey } = GROUP_ACTION[action];
   if (started) {
     return <Button variant="glass" size="sm" icon="check" label={t(startedKey)} disabled />;

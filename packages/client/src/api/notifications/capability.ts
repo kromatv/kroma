@@ -37,7 +37,9 @@ export async function enablePush(capability: PushCapability, client: KromaClient
   // Check before prompting: iOS grants one permission dialog per install, so
   // prompting on a device that cannot receive push burns it for good.
   const blocker = await capability.blocker();
-  if (blocker) throw new Error(blocker);
+  if (blocker) {
+    throw new Error(blocker);
+  }
 
   const { publicKey } = await client.notifications.push.key();
   const subscription = await capability.subscribe({ applicationServerKey: publicKey });
@@ -50,5 +52,7 @@ export async function enablePush(capability: PushCapability, client: KromaClient
 export async function disablePush(capability: PushCapability, client: KromaClient): Promise<void> {
   const endpoint = await capability.endpoint();
   await capability.unsubscribe();
-  if (endpoint) await client.notifications.push.unsubscribe(endpoint);
+  if (endpoint) {
+    await client.notifications.push.unsubscribe(endpoint);
+  }
 }

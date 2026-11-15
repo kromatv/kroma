@@ -49,13 +49,19 @@ function declared(key: string): string | null {
  * handed to the system browser.
  */
 export function browsableRemote(remote: string | null | undefined): string | null {
-  if (!remote) return null;
+  if (!remote) {
+    return null;
+  }
   const cleaned = remote.trim().replace(/\.git$/, '');
   // scp-style, which is what `git clone git@…` writes and has no scheme.
   const scp = /^[\w.-]+@([^:/]+):(.+)$/.exec(cleaned);
-  if (scp) return `https://${scp[1]}/${scp[2]}`;
+  if (scp) {
+    return `https://${scp[1]}/${scp[2]}`;
+  }
   const scheme = /^(?:ssh|git|https?):\/\/(?:[^@/]+@)?(.+)$/.exec(cleaned);
-  if (scheme) return `https://${scheme[1]}`;
+  if (scheme) {
+    return `https://${scheme[1]}`;
+  }
   return null;
 }
 
@@ -65,7 +71,9 @@ export function browsableRemote(remote: string | null | undefined): string | nul
  * neither is readable, leaving the caller's own package version to stand.
  */
 export function productVersion(repoRoot: string): string | null {
-  if (process.env.KROMA_VERSION) return process.env.KROMA_VERSION;
+  if (process.env.KROMA_VERSION) {
+    return process.env.KROMA_VERSION;
+  }
   try {
     const toml = fs.readFileSync(path.join(repoRoot, 'server', 'Cargo.toml'), 'utf8');
     return /^version\s*=\s*"([^"]+)"/m.exec(toml)?.[1] ?? null;
@@ -112,8 +120,12 @@ function ciBuild(): number | null {
  */
 function treeIsDirty(projectRoot: string): boolean {
   const declared = process.env.KROMA_BUILD_DIRTY;
-  if (declared === '0') return false;
-  if (declared === '1') return true;
+  if (declared === '0') {
+    return false;
+  }
+  if (declared === '1') {
+    return true;
+  }
   return Boolean(git('status --porcelain', projectRoot));
 }
 

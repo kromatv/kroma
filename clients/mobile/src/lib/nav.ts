@@ -7,8 +7,11 @@ import type { useRouter } from 'expo-router';
 type Router = ReturnType<typeof useRouter>;
 
 export function goBack(router: Router): void {
-  if (router.canGoBack()) router.back();
-  else router.replace('/' as never);
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/' as never);
+  }
 }
 
 /**
@@ -20,6 +23,8 @@ export function goBack(router: Router): void {
  */
 export function routeParam(value: string | string[] | undefined): string | null {
   const first = Array.isArray(value) ? value[0] : value;
-  if (!first || first === 'undefined' || first === 'null') return null;
+  if (!first || first === 'undefined' || first === 'null') {
+    return null;
+  }
   return first;
 }

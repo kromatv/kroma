@@ -17,7 +17,9 @@ export function CastMiniBar() {
   const client = useClient();
   const { active, send, positionMs } = useCast();
 
-  if (!active) return null;
+  if (!active) {
+    return null;
+  }
 
   const playing = active.nowPlaying;
   const title = playing ? (playing.item.metadata?.title ?? playing.item.title) : t('cast.idle');

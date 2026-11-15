@@ -35,7 +35,9 @@ interface NavigatorNodeProps {
  */
 function NavigatorNode({ children, ...node }: Readonly<NavigatorNodeProps>) {
   const host = useNavigatorHost();
-  if (!host) return <>{typeof children === 'function' ? children(INERT) : children}</>;
+  if (!host) {
+    return <>{typeof children === 'function' ? children(INERT) : children}</>;
+  }
   return <SpatialNode {...node}>{children}</SpatialNode>;
 }
 

@@ -11,7 +11,9 @@ import { webDocument } from '@kromatv/ui/kit';
  */
 export function revealNativeSurface(): () => void {
   const doc = webDocument();
-  if (!doc) return () => {};
+  if (!doc) {
+    return () => {};
+  }
   const chain = [doc.documentElement, doc.body, doc.getElementById('root')];
   const undo = chain
     .filter((el): el is HTMLElement => el !== null)
@@ -23,6 +25,8 @@ export function revealNativeSurface(): () => void {
       };
     });
   return () => {
-    for (const restore of undo) restore();
+    for (const restore of undo) {
+      restore();
+    }
   };
 }

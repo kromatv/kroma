@@ -23,9 +23,13 @@ const DISC = 88;
 
 function useSpinnerShown(waiting: boolean): boolean {
   const [shown, setShown] = useState(false);
-  if (!waiting && shown) setShown(false);
+  if (!waiting && shown) {
+    setShown(false);
+  }
   useEffect(() => {
-    if (!waiting) return;
+    if (!waiting) {
+      return;
+    }
     const spin = setTimeout(() => setShown(true), SPIN_AFTER_MS);
     return () => clearTimeout(spin);
   }, [waiting]);
@@ -49,7 +53,9 @@ function StageOverlay({ error, hint, waiting = false, reason }: Readonly<StageOv
       </Box>
     );
   }
-  if (!shown) return null;
+  if (!shown) {
+    return null;
+  }
   return (
     <Box fill z={4} center>
       <Box w={DISC} h={DISC} radius="circle" bg="black/50" center style={s.frost}>

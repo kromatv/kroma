@@ -79,7 +79,9 @@ function sessionOver(client: Client): DevModeSession {
   const open = (command: string, onData: Listener, onError: Listener = ignore) =>
     new Promise<Watched>((resolve, reject) => {
       client.exec(command, (error, channel) => {
-        if (error) return reject(error);
+        if (error) {
+          return reject(error);
+        }
         channel.stderr.on('data', onError);
         resolve({ channel, ...watch(channel, onData) });
       });
@@ -99,7 +101,9 @@ function sessionOver(client: Client): DevModeSession {
 
   const run = async (command: string) => {
     const { code, stdout, stderr } = await exec(command);
-    if (code !== 0) throw new Error(`'${command}' exited with ${code}: ${stderr.trim()}`);
+    if (code !== 0) {
+      throw new Error(`'${command}' exited with ${code}: ${stderr.trim()}`);
+    }
     return stdout;
   };
 
@@ -107,14 +111,18 @@ function sessionOver(client: Client): DevModeSession {
     const { channel, exited } = await open(`/bin/cat > "${remote}"`, ignore);
     await pipeline(createReadStream(local), channel);
     const code = await exited;
-    if (code !== 0) throw new Error(`the TV did not take ${remote}: cat exited with ${code}`);
+    if (code !== 0) {
+      throw new Error(`the TV did not take ${remote}: cat exited with ${code}`);
+    }
   };
 
   const put = async (local: string, remote: string) => {
     const sftp = await new Promise<SFTPWrapper | null>((resolve) =>
       client.sftp((error, opened) => resolve(error ? null : opened)),
     );
-    if (!sftp) return streamPut(local, remote);
+    if (!sftp) {
+      return streamPut(local, remote);
+    }
     try {
       await pipeline(createReadStream(local), sftp.createWriteStream(remote));
     } finally {
@@ -151,7 +159,9 @@ function bounded(): { add: (chunk: Buffer) => void; text: () => string } {
   return {
     add: (chunk) => {
       size += chunk.byteLength;
-      if (size <= MAX_OUTPUT_BYTES) chunks.push(chunk);
+      if (size <= MAX_OUTPUT_BYTES) {
+        chunks.push(chunk);
+      }
     },
     text: () => Buffer.concat(chunks).toString('utf8'),
   };

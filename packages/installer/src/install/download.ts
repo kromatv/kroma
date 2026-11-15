@@ -23,7 +23,9 @@ export async function download(
   pinned?: Pinned,
 ): Promise<void> {
   const response = await fetch(url, { redirect: pinned ? 'follow' : 'error' });
-  if (!response.ok || !response.body) throw new Error(`GET ${url} answered ${response.status}`);
+  if (!response.ok || !response.body) {
+    throw new Error(`GET ${url} answered ${response.status}`);
+  }
 
   const total = pinned?.size ?? Number(response.headers.get('content-length') ?? '0');
   const hash = createHash('sha256');
@@ -32,7 +34,9 @@ export async function download(
   const metered = async function* (source: AsyncIterable<Uint8Array>) {
     for await (const chunk of source) {
       written += chunk.byteLength;
-      if (pinned && written > pinned.size) throw new Error(`${url} serves more than it lists`);
+      if (pinned && written > pinned.size) {
+        throw new Error(`${url} serves more than it lists`);
+      }
       hash.update(chunk);
       const percent = total ? Math.floor((written / total) * 100) : 0;
       if (percent >= reported + 10) {
@@ -50,7 +54,9 @@ export async function download(
       throw new Error(`${url} did not serve the file its release lists`);
     }
   } catch (error) {
-    if (!sink.closed) await new Promise<void>((resolve) => sink.once('close', resolve));
+    if (!sink.closed) {
+      await new Promise<void>((resolve) => sink.once('close', resolve));
+    }
     await rm(dest, { force: true });
     throw error;
   }

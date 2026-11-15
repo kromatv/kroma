@@ -369,7 +369,9 @@ describe('sv cache bounds', () => {
     const r = sv({ base: { bg: 'accent' }, variants: { n: { a: {} } } });
     // Undeclared picks each mint a key; well past the cap the recipe still
     // resolves correctly, it simply stops remembering.
-    for (let i = 0; i < 1200; i++) r({ n: `x${i}` as 'a' });
+    for (let i = 0; i < 1200; i++) {
+      r({ n: `x${i}` as 'a' });
+    }
     expect(r({ n: 'a' }).root).toEqual({ backgroundColor: 'var(--kroma-accent)' });
   });
 });

@@ -17,7 +17,7 @@ describe('exitAfterBuild', () => {
     const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
     const { handler } = exitAfterBuild().buildApp as { handler: () => Promise<void> };
 
-    await handler.call(null);
+    await handler();
     expect(exit).not.toHaveBeenCalled();
 
     await new Promise((resolve) => setImmediate(resolve));

@@ -16,7 +16,9 @@ const fetched = vi.fn(async () => Response.json({ unread: 0, items: [] }));
 async function load() {
   const runtime = createWebTestRuntime({});
   const loader = Route.options.loader;
-  if (typeof loader !== 'function') throw new Error('the app layout loads with a function');
+  if (typeof loader !== 'function') {
+    throw new Error('the app layout loads with a function');
+  }
   await loader({ context: { runtime, queryClient: runtime.queryClient } } as never);
 }
 

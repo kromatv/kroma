@@ -22,7 +22,9 @@ export default function LanguageSettings() {
   const [saving, setSaving] = useState(false);
 
   const pick = async (next: Locale) => {
-    if (next === locale || saving) return;
+    if (next === locale || saving) {
+      return;
+    }
     setOverride(next);
     setSaving(true);
     try {

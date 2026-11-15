@@ -11,8 +11,11 @@ const HOST = StyleSheet.create({
 }).host;
 
 function stampGround(page: HTMLElement, ground: 'light' | 'dark' | undefined): void {
-  if (ground) page.dataset.theme = ground;
-  else delete page.dataset.theme;
+  if (ground) {
+    page.dataset.theme = ground;
+  } else {
+    delete page.dataset.theme;
+  }
 }
 
 /** Stamps a styling root's theme, ground and breakpoint steps on an element of
@@ -39,12 +42,16 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
     [themeScope, id, ground, steps, parent],
   );
   useLayoutEffect(() => {
-    if (host.current && themeScope) return runtime.theme.attach(host.current, id);
+    if (host.current && themeScope) {
+      return runtime.theme.attach(host.current, id);
+    }
   }, [runtime, id, themeScope]);
   const outermost = parent === null;
   useLayoutEffect(() => {
     const page = host.current?.ownerDocument.documentElement;
-    if (!outermost || !page) return;
+    if (!outermost || !page) {
+      return;
+    }
     stampGround(page, ground);
   }, [outermost, ground]);
   return (

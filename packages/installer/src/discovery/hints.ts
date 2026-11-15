@@ -27,7 +27,9 @@ export interface EmptyScan {
 
 /** Why a scan for the kinds of TV given came back empty, most likely cause first. */
 export async function diagnoseEmptyScan(kinds?: readonly string[]): Promise<EmptyScan> {
-  if (!(await localNetworkBlocked())) return { blocked: false, hints: quiet(kinds) };
+  if (!(await localNetworkBlocked())) {
+    return { blocked: false, hints: quiet(kinds) };
+  }
 
   const app = (await responsibleApp()) ?? 'this terminal';
   return { blocked: true, hints: [...blocked(app), ...quiet(kinds)] };

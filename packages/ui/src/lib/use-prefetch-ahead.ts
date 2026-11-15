@@ -8,8 +8,11 @@ const CONCURRENCY = 3;
 
 function whenIdle(run: () => void): void {
   const idle = globalThis.requestIdleCallback;
-  if (idle) idle(run, { timeout: 250 });
-  else setTimeout(run, 0);
+  if (idle) {
+    idle(run, { timeout: 250 });
+  } else {
+    setTimeout(run, 0);
+  }
 }
 
 /** Fetch and decode `uris` in order, a few at a time when the device is idle, so

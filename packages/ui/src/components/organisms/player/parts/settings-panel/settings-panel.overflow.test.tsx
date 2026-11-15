@@ -52,7 +52,9 @@ describe('the player settings panel, holding what the row shed', () => {
         next: 'Next episode',
         volume: 'Mute',
       }[id as 'cast' | 'pip' | 'next' | 'volume'];
-      if (label) expect(screen.getByLabelText(label)).toBeTruthy();
+      if (label) {
+        expect(screen.getByLabelText(label)).toBeTruthy();
+      }
     }
     expect(screen.getAllByLabelText('Audio track')).toHaveLength(1);
     expect(screen.getAllByLabelText('Subtitles')).toHaveLength(1);

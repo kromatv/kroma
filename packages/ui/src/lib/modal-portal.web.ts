@@ -17,7 +17,9 @@ function useModalPortalRepair(mounted: boolean): void {
   // value reads as a mistake. This is a re-render request and says so.
   const [, repair] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
-    if (mounted) repair();
+    if (mounted) {
+      repair();
+    }
   }, [mounted]);
 }
 

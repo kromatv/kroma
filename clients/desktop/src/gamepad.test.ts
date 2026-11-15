@@ -49,15 +49,12 @@ function tick(ms = 16) {
 }
 
 function setPads(...gamepads: (Gamepad | null)[]) {
-  vi.stubGlobal('navigator', {
-    ...navigator,
-    getGamepads: () => gamepads,
-  });
+  vi.stubGlobal('navigator', { getGamepads: () => gamepads });
 }
 
 function livePad() {
   let current: Gamepad | null = pad([]);
-  vi.stubGlobal('navigator', { ...navigator, getGamepads: () => [current] });
+  vi.stubGlobal('navigator', { getGamepads: () => [current] });
   return {
     set(next: Gamepad | null) {
       current = next;
@@ -203,7 +200,7 @@ describe('startGamepadBridge', () => {
 
   it('reads several pads at once', () => {
     let pads: (Gamepad | null)[] = [pad([], 'One', 0), pad([], 'Two', 1)];
-    vi.stubGlobal('navigator', { ...navigator, getGamepads: () => pads });
+    vi.stubGlobal('navigator', { getGamepads: () => pads });
     startGamepadBridge();
     calibrate();
     pads = [pad([DPAD_UP], 'One', 0), pad([B], 'Two', 1)];
@@ -269,7 +266,7 @@ describe('startGamepadBridge', () => {
   it('re-reads a pad that was swapped for another at the same index', () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     let current = pad([], 'First Pad', 0);
-    vi.stubGlobal('navigator', { ...navigator, getGamepads: () => [current] });
+    vi.stubGlobal('navigator', { getGamepads: () => [current] });
     startGamepadBridge();
     calibrate();
 
@@ -282,7 +279,7 @@ describe('startGamepadBridge', () => {
 
   it('names an unmapped pad in the connect log', () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
-    setPads({ ...pad([], 'Raw Pad', 0), mapping: '' } as unknown as Gamepad);
+    setPads(Object.assign({}, pad([], 'Raw Pad', 0), { mapping: '' }));
     startGamepadBridge();
     tick();
     expect(info.mock.calls.map(([line]) => String(line)).join(' ')).toContain('mapping=none');

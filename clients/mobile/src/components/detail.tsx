@@ -55,7 +55,9 @@ export function GenreChips({ meta }: Readonly<{ meta: TitleGenres | null | undef
   const t = useT();
   const slugs = genreSlugs(meta).slice(0, MAX_GENRE_CHIPS);
   const labels = genreLabels(t, meta);
-  if (slugs.length === 0) return null;
+  if (slugs.length === 0) {
+    return null;
+  }
   return (
     <Box style={s.genreRow}>
       {slugs.map((slug, index) => (
@@ -145,7 +147,9 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   const client = useClient();
   const router = useRouter();
   const gutters = useGutters();
-  if (cast.length === 0) return null;
+  if (cast.length === 0) {
+    return null;
+  }
   return (
     <ScrollView
       horizontal

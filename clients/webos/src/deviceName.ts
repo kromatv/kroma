@@ -42,12 +42,16 @@ const DeviceInfo = z.object({ modelName: z.string() });
 const MAX_REPLY = 8192;
 
 function readDeviceName(message: string): string | null {
-  if (message.length > MAX_REPLY) return null;
+  if (message.length > MAX_REPLY) {
+    return null;
+  }
   const body: unknown = JSON.parse(message);
   const reply = Reply.safeParse(body);
   for (const row of reply.success ? reply.data.values : [body]) {
     const named = NameRow.safeParse(row);
-    if (named.success) return named.data[DEVICE_NAME_KEY];
+    if (named.success) {
+      return named.data[DEVICE_NAME_KEY];
+    }
   }
   return null;
 }
@@ -59,14 +63,18 @@ const pending = new Set<Bridge>();
 
 function askPreferences(globals: WebOsGlobals, found: (name: string) => void): boolean {
   const Bridge = globals.PalmServiceBridge;
-  if (!Bridge) return false;
+  if (!Bridge) {
+    return false;
+  }
   const bridge = new Bridge();
   pending.add(bridge);
   bridge.onservicecallback = (message) => {
     pending.delete(bridge);
     try {
       const name = readDeviceName(message);
-      if (name) found(name);
+      if (name) {
+        found(name);
+      }
     } catch {
       /* a bus that answered with something else is a bus with nothing to say */
     }
@@ -79,7 +87,9 @@ function askPreferences(globals: WebOsGlobals, found: (name: string) => void): b
 function askDeviceInfo(globals: WebOsGlobals, found: (name: string) => void): void {
   globals.webOS?.deviceInfo?.((info) => {
     const parsed = DeviceInfo.safeParse(info);
-    if (parsed.success) found(parsed.data.modelName);
+    if (parsed.success) {
+      found(parsed.data.modelName);
+    }
   });
 }
 
@@ -90,7 +100,9 @@ export function resolveWebOsDeviceName(): DeviceNameSource {
   const globals = globalThis as unknown as WebOsGlobals;
   try {
     // Only fall back to the model when there is no bus to ask for the name.
-    if (!askPreferences(globals, name.found)) askDeviceInfo(globals, name.found);
+    if (!askPreferences(globals, name.found)) {
+      askDeviceInfo(globals, name.found);
+    }
   } catch {
     /* absent on this firmware */
   }

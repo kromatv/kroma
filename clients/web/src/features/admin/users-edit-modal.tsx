@@ -69,7 +69,9 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     await run(
       async () => {
         await client.admin.deleteUser(user.id);
@@ -86,7 +88,9 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       confirmLabel: t('admin.resetAccess'),
       cancelLabel: t('common.cancel'),
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     await run(
       async () => setReset(await client.admin.resetUser(user.id)),
       () => t('admin.resetAccessFailed'),
@@ -107,7 +111,9 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     await run(
       async () => {
         await client.admin.clearUserPin(user.id);

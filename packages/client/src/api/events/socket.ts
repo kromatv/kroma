@@ -4,7 +4,7 @@ import type { ServerEvent } from './schemas';
 
 const OPEN = 1;
 
-const Frame = z.object({ type: z.string().min(1) });
+const Frame = z.object({ type: z.string().nonempty() });
 
 function decodeFrame<E extends { type: string }>(data: string): E | null {
   let parsed: unknown;
@@ -50,7 +50,9 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
    * the HTTP path rather than silently dropping the message. */
   send(message: CastClientMessage): boolean {
     const ws = this.ws;
-    if (ws?.readyState !== OPEN) return false;
+    if (ws?.readyState !== OPEN) {
+      return false;
+    }
     try {
       ws.send(JSON.stringify(message));
       return true;
@@ -64,9 +66,13 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
   }
 
   connect(): void {
-    if (this.closed) return;
+    if (this.closed) {
+      return;
+    }
     const WS = this.opts.WebSocketImpl ?? globalThis.WebSocket;
-    if (!WS) return;
+    if (!WS) {
+      return;
+    }
 
     let ws: WebSocket;
     // A browser can't set headers on a WS handshake, so the bearer rides as a
@@ -96,9 +102,13 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
       this.opts.onOpen?.();
     };
     ws.onmessage = (ev: MessageEvent) => {
-      if (typeof ev.data !== 'string') return;
+      if (typeof ev.data !== 'string') {
+        return;
+      }
       const frame = decodeFrame<E>(ev.data);
-      if (frame) this.opts.onEvent?.(frame);
+      if (frame) {
+        this.opts.onEvent?.(frame);
+      }
     };
     ws.onclose = () => {
       this.opts.onClose?.();
@@ -127,7 +137,9 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     } catch {
       token = undefined;
     }
-    if (this.closed) return;
+    if (this.closed) {
+      return;
+    }
     if (!token) {
       this.scheduleReconnect();
       return;
@@ -143,7 +155,9 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
   }
 
   private scheduleReconnect(): void {
-    if (this.closed) return;
+    if (this.closed) {
+      return;
+    }
     this.timer = this.after(Math.min(1000 * 2 ** this.retry, this.maxBackoff));
     this.retry += 1;
   }

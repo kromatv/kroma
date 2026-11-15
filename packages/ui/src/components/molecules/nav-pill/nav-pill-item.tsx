@@ -84,13 +84,19 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
     (event: LayoutChangeEvent) => {
       const { x, y, width, height } = event.nativeEvent.layout;
       rect.current = { x, y, width, height };
-      if (active) claim(id, rect.current);
+      if (active) {
+        claim(id, rect.current);
+      }
     },
     [active, claim, id],
   );
   useEffect(() => {
-    if (active && rect.current) claim(id, rect.current);
-    if (!active) release(id);
+    if (active && rect.current) {
+      claim(id, rect.current);
+    }
+    if (!active) {
+      release(id);
+    }
   }, [active, claim, release, id]);
 
   // Never enrolled while disabled: an unenrolled item is invisible to the
@@ -98,7 +104,9 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
   // slide never fires a stale closure.
   const select = useEffectEvent(() => onPress());
   useEffect(() => {
-    if (focus.disabled) return;
+    if (focus.disabled) {
+      return;
+    }
     enrol(id, { label, rect: () => rect.current, select });
     return () => withdraw(id);
   }, [enrol, withdraw, id, label, focus.disabled]);

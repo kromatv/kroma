@@ -68,7 +68,9 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  if (repo) rmSync(repo, { recursive: true, force: true });
+  if (repo) {
+    rmSync(repo, { recursive: true, force: true });
+  }
 });
 
 describe('readGitHistory', { timeout: 30_000 }, () => {

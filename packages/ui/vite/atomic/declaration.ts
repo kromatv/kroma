@@ -19,7 +19,9 @@ export interface CompiledLeaf {
 }
 
 function checkSerializable(value: unknown, at: string): void {
-  if (value === null || value === undefined) return;
+  if (value === null || value === undefined) {
+    return;
+  }
   switch (typeof value) {
     case 'string':
     case 'number':
@@ -38,7 +40,9 @@ function checkSerializable(value: unknown, at: string): void {
 function layer(perStep: readonly Record<string, unknown>[], at: string): StepLayer {
   for (const longhands of perStep) {
     for (const [key, value] of Object.entries(longhands)) {
-      if (breakpointBits(value) !== 0) throw new Unstatic(`a ${key} stated per breakpoint`);
+      if (breakpointBits(value) !== 0) {
+        throw new Unstatic(`a ${key} stated per breakpoint`);
+      }
     }
     checkSerializable(longhands, at);
   }
@@ -52,7 +56,9 @@ function layer(perStep: readonly Record<string, unknown>[], at: string): StepLay
  */
 export function compileDeclaration(decl: object): CompiledLeaf {
   const piece = split(decl, 0, BROWSER_THEME);
-  if (!piece) throw new Unstatic('an empty declaration');
+  if (!piece) {
+    throw new Unstatic('an empty declaration');
+  }
   const perStep =
     piece.breakpoints === 0 ? [piece] : STEPS.map((at) => split(decl, at, BROWSER_THEME) as Split);
   const rest = layer(

@@ -6,11 +6,16 @@ const WORD_CHAR = new Set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0
 function attributes(args: Record<string, unknown>): string | null {
   const out: string[] = [];
   for (const [key, value] of Object.entries(args)) {
-    if (value === undefined || value === null || value === '') continue;
-    if (value === true) out.push(key);
-    else {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+    if (value === true) {
+      out.push(key);
+    } else {
       const written = asAttribute(value);
-      if (written === null) return null;
+      if (written === null) {
+        return null;
+      }
       out.push(`${key}=${written}`);
     }
   }
@@ -20,14 +25,22 @@ function attributes(args: Record<string, unknown>): string | null {
 // How a value is written back into the JSX it came from: as an attribute it
 // keeps its braces unless it is a string, and as a child it is just the text.
 function asAttribute(value: unknown): string | null {
-  if (typeof value === 'string') return JSON.stringify(value);
-  if (typeof value === 'number' || typeof value === 'boolean') return `{${String(value)}}`;
+  if (typeof value === 'string') {
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return `{${String(value)}}`;
+  }
   return null;
 }
 
 function asChild(value: unknown): string | null {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return null;
 }
 
@@ -44,9 +57,13 @@ interface Hole {
 // or between tags (a child).
 function holeAt(text: string, open: number): Hole | null {
   const close = matching(text, open, '{');
-  if (close < 0) return null;
+  if (close < 0) {
+    return null;
+  }
   let before = open - 1;
-  while (before >= 0 && text[before] === ' ') before -= 1;
+  while (before >= 0 && text[before] === ' ') {
+    before -= 1;
+  }
   return { inner: text.slice(open + 1, close), attribute: text[before] === '=' };
 }
 
@@ -74,7 +91,9 @@ function resolve(
   // `{flag ? <Thing /> : null}`: the one conditional a story writes, and the
   // canvas has already decided which way it went.
   const ternary = conditional(inner);
-  if (!ternary || !names.includes(ternary.name)) return null;
+  if (!ternary || !names.includes(ternary.name)) {
+    return null;
+  }
   const taken = (truthy(args[ternary.name]) ? ternary.whenTrue : ternary.whenFalse).trim();
   const empty = taken === 'null' || taken === 'undefined';
   return { text: empty ? '' : taken, nested: !empty };
@@ -141,8 +160,12 @@ function holdsWord(text: string, word: string): boolean {
   for (let at = text.indexOf(word); at !== -1; at = text.indexOf(word, at + 1)) {
     const before = text[at - 1];
     const after = text[at + word.length];
-    if (before !== undefined && (WORD_CHAR.has(before) || before === '.')) continue;
-    if (after !== undefined && WORD_CHAR.has(after)) continue;
+    if (before !== undefined && (WORD_CHAR.has(before) || before === '.')) {
+      continue;
+    }
+    if (after !== undefined && WORD_CHAR.has(after)) {
+      continue;
+    }
     return true;
   }
   return false;
@@ -155,7 +178,9 @@ function holdsWord(text: string, word: string): boolean {
 function tidy(before: string, after: string): string {
   const was = before.split('\n');
   const now = after.split('\n');
-  if (was.length !== now.length) return after;
+  if (was.length !== now.length) {
+    return after;
+  }
   return now.filter((line, at) => line.trim() || !was[at]?.trim()).join('\n');
 }
 

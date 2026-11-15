@@ -99,7 +99,9 @@ describe('CastReceiverProvider', () => {
     const deviceId = createDeviceIdentity();
     mount(deviceId);
     const hooks = H.hooks;
-    if (!hooks) throw new Error('expected the receiver to have opened a socket');
+    if (!hooks) {
+      throw new Error('expected the receiver to have opened a socket');
+    }
     const command = { type: 'cast.command', receiverId: deviceId(), seq: 1, command: PLAY };
 
     await act(async () => {

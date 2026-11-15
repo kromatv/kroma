@@ -29,7 +29,9 @@ export function CanaryRuns({ filter = NO_FILTER }: Readonly<CanaryRunsProps>) {
   useEffect(() => {
     let live = true;
     void fetchCanary().then((builds) => {
-      if (live) setState({ status: 'ready', builds });
+      if (live) {
+        setState({ status: 'ready', builds });
+      }
     });
     return () => {
       live = false;

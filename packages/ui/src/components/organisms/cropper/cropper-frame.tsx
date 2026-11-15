@@ -39,7 +39,9 @@ function placedStyle(placed: CropPlacement, rotation: number): ViewStyle {
 function Picture({ cropper }: Readonly<{ cropper: CropperState }>) {
   const { src, image, transform, aspect } = cropper;
   const backend = useImageBackend();
-  if (!src) return null;
+  if (!src) {
+    return null;
+  }
   const placed = image ? placeImage(image, transform, aspect) : null;
   const picture = backend.render({
     uri: src,

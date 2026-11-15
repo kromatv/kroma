@@ -101,7 +101,9 @@ function AxisScroll({
       // The content view, not the scroller's box: only content coordinates are
       // what a scroll offset is expressed in.
       const measuredAgainst = inner.current ?? scroller.current?.getInnerViewNode();
-      if (!target || !measuredAgainst) return;
+      if (!target || !measuredAgainst) {
+        return;
+      }
       target.measureLayout(
         measuredAgainst,
         (left, top, width, height) => {
@@ -114,9 +116,13 @@ function AxisScroll({
             contentStyle,
             ...extent.current,
           });
-          if (mode === 'nearest' && offset === current.current) return;
+          if (mode === 'nearest' && offset === current.current) {
+            return;
+          }
           current.current = offset;
-          if (!reduced && frost?.glide(scroller.current, horizontal, offset)) return;
+          if (!reduced && frost?.glide(scroller.current, horizontal, offset)) {
+            return;
+          }
           scroller.current?.scrollTo(
             horizontal ? { x: offset, animated: !reduced } : { y: offset, animated: !reduced },
           );
@@ -133,9 +139,13 @@ function AxisScroll({
   const reportOffset = useCallback(
     (offset: number) => {
       current.current = offset;
-      if (!nativeOffset) position.offset.setValue(offset);
+      if (!nativeOffset) {
+        position.offset.setValue(offset);
+      }
       const scrolled = offset > 1;
-      if (scrolled === wasScrolled.current) return;
+      if (scrolled === wasScrolled.current) {
+        return;
+      }
       wasScrolled.current = scrolled;
       onScrolledChange?.(scrolled);
     },
@@ -170,7 +180,9 @@ function AxisScroll({
             // Re-reveal: the content may only now be long enough to bring the
             // anchor where it belongs. Not under the pointer, where re-pinning the
             // old anchor snatches the page back mid-scroll.
-            if (showing.current && !pointerDriving()) reveal(showing.current);
+            if (showing.current && !pointerDriving()) {
+              reveal(showing.current);
+            }
           }}
           // A television has no wheel or trackpad, and a scrollable view there is
           // one more thing for the platform to try to focus.

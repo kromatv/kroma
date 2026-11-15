@@ -39,7 +39,9 @@ export function EpisodeProgress({
       d.status !== 'imported' &&
       d.status !== 'failed',
   );
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
   const progress = Math.min(1, Math.max(0, row.progress));
   return (
     <Row gap={8} align="center" mt={2}>

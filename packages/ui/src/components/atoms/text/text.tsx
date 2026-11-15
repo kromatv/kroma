@@ -65,15 +65,21 @@ function sizeFix(
   style: StyleProp<TextStyle>,
   scope: StyleScope = DEFAULT_STYLE_SCOPE,
 ): TextStyle | null {
-  if (!style) return null;
+  if (!style) {
+    return null;
+  }
   const flat = StyleSheet.flatten(style);
   const size = flat?.fontSize;
   const spec = activeTheme(scope.theme).typeSpec[variant];
-  if (typeof size !== 'number' || size === spec.size) return null;
+  if (typeof size !== 'number' || size === spec.size) {
+    return null;
+  }
   const em = 'em' in spec ? spec.em : undefined;
   const fixLine = flat.lineHeight === undefined;
   const fixTracking = flat.letterSpacing === undefined && em !== undefined;
-  if (!fixLine && !fixTracking) return null;
+  if (!fixLine && !fixTracking) {
+    return null;
+  }
   return sharedStyle(
     `txt:fix:${variant}:${size}:${fixLine ? 'l' : ''}${fixTracking ? 's' : ''}`,
     {

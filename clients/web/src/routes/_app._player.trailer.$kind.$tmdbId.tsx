@@ -19,9 +19,13 @@ export const Route = createFileRoute('/_app/_player/trailer/$kind/$tmdbId')({
     title: typeof s.title === 'string' ? s.title : undefined,
   }),
   loader: async ({ params, context: { runtime, queryClient } }) => {
-    if (!isAuthed()) throw redirect({ to: '/' });
+    if (!isAuthed()) {
+      throw redirect({ to: '/' });
+    }
     const kind = TmdbKind.safeParse(params.kind);
-    if (!kind.success) throw redirect({ to: '/' });
+    if (!kind.success) {
+      throw redirect({ to: '/' });
+    }
     await queryClient.ensureQueryData(
       runtime.client.query.trailers.list(kind.data, Number(params.tmdbId)),
     );
@@ -39,13 +43,20 @@ function TrailerPage() {
   const { data } = useSuspenseQuery(client.query.trailers.list(tmdbKind, Number(tmdbId)));
   const trailer = playableTrailer(data);
   const close = () => {
-    if (router.history.canGoBack()) router.history.back();
-    else void router.navigate({ to: '/', replace: true });
+    if (router.history.canGoBack()) {
+      router.history.back();
+    } else {
+      void router.navigate({ to: '/', replace: true });
+    }
   };
   useEffect(() => {
-    if (!trailer) close();
+    if (!trailer) {
+      close();
+    }
   });
-  if (!trailer) return <PendingTrailer />;
+  if (!trailer) {
+    return <PendingTrailer />;
+  }
   return (
     <TrailerPlayer
       key={trailer.video}

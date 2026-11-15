@@ -45,12 +45,16 @@ export function reachedEnd(s: HeartbeatSnapshot): boolean {
 }
 
 function pingState(s: HeartbeatSnapshot): 'buffering' | 'playing' | 'paused' {
-  if (s.waiting) return 'buffering';
+  if (s.waiting) {
+    return 'buffering';
+  }
   return s.playing ? 'playing' : 'paused';
 }
 
 function pingMode(s: HeartbeatSnapshot): 'direct' | 'remux' | 'transcode' {
-  if (s.mode === 'direct') return 'direct';
+  if (s.mode === 'direct') {
+    return 'direct';
+  }
   return s.aac ? 'transcode' : 'remux';
 }
 
@@ -114,18 +118,23 @@ export function useHeartbeat(
   const inFlight = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
-    if (session.current?.itemId !== item.id)
+    if (session.current?.itemId !== item.id) {
       session.current = openSession(item.id, device, owner, sequence.current++);
+    }
     const live = session.current;
     const fireTerminated = (message: string) => {
-      if (live.terminated) return;
+      if (live.terminated) {
+        return;
+      }
       live.terminated = true;
       notifyTerminated(message);
     };
 
     const save = () => {
       const s = readSnapshot();
-      if (s.positionSec <= 0) return;
+      if (s.positionSec <= 0) {
+        return;
+      }
       const positionMs = Math.round(s.positionSec * 1000);
       const durationMs = Math.round(s.durationSec * 1000) || null;
       void client.playback
@@ -135,18 +144,26 @@ export function useHeartbeat(
     };
 
     const ping = () => {
-      if (live.terminated) return;
+      if (live.terminated) {
+        return;
+      }
       const s = readSnapshot();
       const now = Date.now();
       const previous = live.lastBeat;
       live.lastBeat = { at: now, positionSec: s.positionSec };
       const beforeGap = previous && now - previous.at > SESSION_TTL_MS ? previous : null;
-      if (beforeGap) live.opened = false;
+      if (beforeGap) {
+        live.opened = false;
+      }
       if (!live.opened) {
-        if (pingState(s) !== 'playing') return;
+        if (pingState(s) !== 'playing') {
+          return;
+        }
         // Re-opening across a gap takes a playhead that moved through it: the
         // transport flag survives a suspended app, the position does not.
-        if (beforeGap && s.positionSec <= beforeGap.positionSec) return;
+        if (beforeGap && s.positionSec <= beforeGap.positionSec) {
+          return;
+        }
       }
       live.opened = true;
       inFlight.current = client.playback
@@ -164,7 +181,9 @@ export function useHeartbeat(
         })
         .catch((e: unknown) => {
           // 410 Gone → an admin terminated this session (WS fallback).
-          if (e instanceof KromaApiError && e.status === 410) fireTerminated('');
+          if (e instanceof KromaApiError && e.status === 410) {
+            fireTerminated('');
+          }
         });
     };
 
@@ -202,7 +221,9 @@ export function useHeartbeat(
   useEffect(() => {
     return () => {
       const live = session.current;
-      if (!live || live.terminated || !live.opened) return;
+      if (!live || live.terminated || !live.opened) {
+        return;
+      }
       live.opened = false;
       const owner = currentClient();
       inFlight.current = inFlight.current

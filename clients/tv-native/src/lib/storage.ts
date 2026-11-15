@@ -23,7 +23,9 @@ const LOCATIONS = [
 
 function handleIn(base: Directory): File {
   const dir = new Directory(base, 'kroma');
-  if (!dir.exists) dir.create({ intermediates: true });
+  if (!dir.exists) {
+    dir.create({ intermediates: true });
+  }
   return new File(dir, FILE_NAME);
 }
 
@@ -33,8 +35,12 @@ function pickLocation(): File | null {
   for (const location of LOCATIONS) {
     try {
       const file = handleIn(location.dir());
-      if (!file.exists) file.writeSync('{}');
-      if (file.exists) return file;
+      if (!file.exists) {
+        file.writeSync('{}');
+      }
+      if (file.exists) {
+        return file;
+      }
     } catch {
       // A device that refuses every location keeps the in-memory store.
     }
@@ -63,14 +69,18 @@ class DeviceStore implements SessionStorage {
   load(raw: string): void {
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') this.data = parsed as Record<string, string>;
+      if (parsed && typeof parsed === 'object') {
+        this.data = parsed as Record<string, string>;
+      }
     } catch {
       // A truncated or hand-edited file must not stop the app from starting.
     }
   }
 
   private flush(): void {
-    if (!this.target) return;
+    if (!this.target) {
+      return;
+    }
     try {
       this.target.writeSync(JSON.stringify(this.data));
     } catch (cause) {
@@ -89,11 +99,15 @@ export async function hydrateSessionStorage(): Promise<DeviceStore> {
   let raw: string | null = null;
   try {
     target = pickLocation();
-    if (target?.exists) raw = await target.text();
+    if (target?.exists) {
+      raw = await target.text();
+    }
   } catch (cause) {
     console.warn('[kroma] session store unreadable, starting empty:', cause);
   }
   const store = new DeviceStore(target);
-  if (raw !== null) store.load(raw);
+  if (raw !== null) {
+    store.load(raw);
+  }
   return store;
 }

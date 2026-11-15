@@ -35,7 +35,9 @@ const TIZEN_TIERS = ['modern', 'legacy', 'deep'] as const;
 
 async function sliceTizen(): Promise<void> {
   const tizen = join(root, 'clients/tizen');
-  for (const tier of TIZEN_TIERS) await $`bun run slice ${tier}`.cwd(tizen);
+  for (const tier of TIZEN_TIERS) {
+    await $`bun run slice ${tier}`.cwd(tizen);
+  }
   setOutput('slices', 'clients/tizen/dist-*');
 }
 
@@ -53,11 +55,15 @@ export async function main(argv: string[]): Promise<void> {
   await $`bun run ${target.script}`.cwd(root);
 
   if (target.dist !== null) {
-    if (!existsSync(join(root, target.dist))) throw new Error(`${name} left no ${target.dist}`);
+    if (!existsSync(join(root, target.dist))) {
+      throw new Error(`${name} left no ${target.dist}`);
+    }
     setOutput('dist', target.dist);
   }
   if (values.slice) {
-    if (name !== 'tizen') throw new Error('--slice is a Tizen option');
+    if (name !== 'tizen') {
+      throw new Error('--slice is a Tizen option');
+    }
     await sliceTizen();
   }
 }

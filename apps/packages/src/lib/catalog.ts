@@ -77,7 +77,9 @@ function ghHeaders(env: Env): HeadersInit {
     accept: 'application/vnd.github+json',
     'x-github-api-version': '2022-11-28',
   };
-  if (env.GITHUB_TOKEN) h.authorization = `Bearer ${env.GITHUB_TOKEN}`;
+  if (env.GITHUB_TOKEN) {
+    h.authorization = `Bearer ${env.GITHUB_TOKEN}`;
+  }
   return h;
 }
 
@@ -87,12 +89,18 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
 
   const entries: Entry[] = [];
   for (const r of releases) {
-    if (r.draft) continue;
+    if (r.draft) {
+      continue;
+    }
     const spk = newestSpk(r.assets);
-    if (!spk) continue; // desktop-latest & friends carry no package
+    if (!spk) {
+      continue;
+    } // desktop-latest & friends carry no package
     const nonCanary = r.prerelease ? null : 'stable';
     const channel = r.tag_name === 'canary' ? 'canary' : nonCanary;
-    if (!channel) continue;
+    if (!channel) {
+      continue;
+    }
     // The rolling `canary` tag keeps the date it was first cut; its asset does not.
     const rolling = channel === 'canary' ? spk.updated_at : null;
     entries.push({
@@ -113,12 +121,16 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
     entries.slice(0, MAX_SIDECARS).map(async (e) => {
       const rel = releases.find((r) => r.tag_name === e.tag);
       const sidecar = rel?.assets.find((a) => a.name === `${e.spkName}.info.json`);
-      if (!sidecar) return;
+      if (!sidecar) {
+        return;
+      }
       try {
         const res = await fetch(sidecar.browser_download_url, {
           headers: { 'user-agent': 'kroma-package-source-worker' },
         });
-        if (res.ok) e.info = (await res.json()) as SpkInfo;
+        if (res.ok) {
+          e.info = (await res.json()) as SpkInfo;
+        }
       } catch {
         // tolerate a missing/broken sidecar; the entry just loses md5/desc
       }
@@ -137,10 +149,14 @@ async function fetchReleases(repo: string, env: Env): Promise<GhRelease[]> {
       `https://api.github.com/repos/${repo}/releases?per_page=${PER_PAGE}${paged}`,
       { headers: ghHeaders(env) },
     );
-    if (!res.ok) throw new Error(`GitHub releases API ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`GitHub releases API ${res.status}`);
+    }
     const batch = (await res.json()) as GhRelease[];
     releases.push(...batch);
-    if (batch.length < PER_PAGE) break;
+    if (batch.length < PER_PAGE) {
+      break;
+    }
   }
   return releases;
 }
@@ -153,9 +169,13 @@ export async function loadCatalog(
 ): Promise<Catalog> {
   const cache = edgeCache();
   const hit = await cache?.match(CACHE_FRESH);
-  if (hit) return (await hit.json()) as Catalog;
+  if (hit) {
+    return (await hit.json()) as Catalog;
+  }
   const held = memory.get(env);
-  if (!cache && held && Date.now() - held.at < MEMORY_TTL) return held.catalog;
+  if (!cache && held && Date.now() - held.at < MEMORY_TTL) {
+    return held.catalog;
+  }
   try {
     const catalog = await fetchCatalogFromGitHub(env);
     const body = JSON.stringify(catalog);
@@ -167,8 +187,12 @@ export async function loadCatalog(
     return catalog;
   } catch (err) {
     const stale = await cache?.match(CACHE_STALE);
-    if (stale) return (await stale.json()) as Catalog;
-    if (held) return held.catalog;
+    if (stale) {
+      return (await stale.json()) as Catalog;
+    }
+    if (held) {
+      return held.catalog;
+    }
     throw err;
   }
 }
@@ -199,7 +223,9 @@ export function entryVersion(e: Entry): string {
 // a canary carries two (`1.2.3-canary-20260811`) and DSM shows the first.
 const splitBuild = (raw: string): [string, string | undefined] => {
   const cut = raw.indexOf('-');
-  if (cut < 0) return [raw, undefined];
+  if (cut < 0) {
+    return [raw, undefined];
+  }
   const rest = raw.slice(cut + 1);
   const next = rest.indexOf('-');
   return [raw.slice(0, cut), next < 0 ? rest : rest.slice(0, next)];
@@ -216,7 +242,9 @@ const splitBuild = (raw: string): [string, string | undefined] => {
 export function dsmVersion(raw: string): string {
   const [feat, suffix] = splitBuild(raw);
   // A build already inside the feature version needs no suffix beside it.
-  if (feat.split('.').length > 3) return feat;
+  if (feat.split('.').length > 3) {
+    return feat;
+  }
   return suffix ? `${feat}-${suffix}` : feat;
 }
 
@@ -234,7 +262,9 @@ export function cmpDsmVersion(a: string, b: string): number {
   const pb = parse(b);
   for (let i = 0; i < Math.max(pa.seg.length, pb.seg.length); i++) {
     const d = (pa.seg[i] ?? 0) - (pb.seg[i] ?? 0);
-    if (d !== 0) return d;
+    if (d !== 0) {
+      return d;
+    }
   }
   return pa.build - pb.build;
 }
@@ -268,7 +298,9 @@ const X86_64_ARCHES = new Set([
 ]);
 
 export function archSupported(arch: string | null): boolean {
-  if (!arch) return true; // no arch reported: stay permissive
+  if (!arch) {
+    return true;
+  } // no arch reported: stay permissive
   return X86_64_ARCHES.has(arch.toLowerCase()) || arch.toLowerCase() === 'noarch';
 }
 

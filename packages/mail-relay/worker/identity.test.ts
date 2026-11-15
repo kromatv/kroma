@@ -34,7 +34,9 @@ describe('a signature', () => {
   it('holds for the key that made it and for nothing else', async () => {
     const { publicKey, privateKey } = await keypair();
     const key = await importPublicKey(publicKey);
-    if (!key) throw new Error('key did not import');
+    if (!key) {
+      throw new Error('key did not import');
+    }
     const sig = await sign(privateKey, 'hello');
 
     expect(await verify(key, 'hello', sig)).toBe(true);

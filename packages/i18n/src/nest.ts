@@ -16,7 +16,9 @@ export function hasUnresolvedRef(template: string): boolean {
 function firstTemplate(chain: readonly Catalog[], key: string): string | undefined {
   for (const catalog of chain) {
     const template = catalog[key];
-    if (template !== undefined) return template;
+    if (template !== undefined) {
+      return template;
+    }
   }
   return undefined;
 }
@@ -28,11 +30,17 @@ function resolveOne(
   visiting: Set<string>,
 ): string | undefined {
   const cached = done.get(key);
-  if (cached !== undefined) return cached;
-  if (visiting.has(key)) return undefined;
+  if (cached !== undefined) {
+    return cached;
+  }
+  if (visiting.has(key)) {
+    return undefined;
+  }
 
   const template = firstTemplate(chain, key);
-  if (template === undefined) return undefined;
+  if (template === undefined) {
+    return undefined;
+  }
 
   visiting.add(key);
   const expanded = template.replace(REF, (whole, ref: string) => {
@@ -70,7 +78,9 @@ export function expandRefs<C extends Record<string, Record<string, string>>>(
   const out: Record<string, Catalog> = {};
 
   for (const [locale, catalog] of Object.entries(cats)) {
-    if (!catalog) continue;
+    if (!catalog) {
+      continue;
+    }
     // A catalog that quotes nothing is handed back as it came. Most are: this
     // runs at import, over every key of every locale, and rebuilding a few
     // thousand properties to reproduce them exactly is the kind of cost that

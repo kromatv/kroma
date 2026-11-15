@@ -13,7 +13,9 @@ export function createFrostHost(): FrostHost {
   const layers: FrostLayer[] = [];
   const listeners = new Set<() => void>();
   const changed = () => {
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   };
   return {
     current: () => layers.at(-1) ?? null,
@@ -26,7 +28,9 @@ export function createFrostHost(): FrostHost {
       changed();
       return () => {
         const at = layers.lastIndexOf(layer);
-        if (at >= 0) layers.splice(at, 1);
+        if (at >= 0) {
+          layers.splice(at, 1);
+        }
         changed();
       };
     },

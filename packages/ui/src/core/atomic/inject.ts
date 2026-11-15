@@ -15,6 +15,10 @@ interface OrderedSheet {
 
 export function injectRules(entries: readonly RuleEntry[]): void {
   const insert = (StyleSheet as OrderedSheet).insertStatic;
-  if (!insert) return;
-  for (const [group, css] of entries) insert(css, group);
+  if (!insert) {
+    return;
+  }
+  for (const [group, css] of entries) {
+    insert(css, group);
+  }
 }

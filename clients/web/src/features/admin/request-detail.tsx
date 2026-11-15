@@ -56,7 +56,9 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
       flash(label);
       await reload();
     }).then(() => {
-      if (!ok) flash(t('requests.actionFailed'));
+      if (!ok) {
+        flash(t('requests.actionFailed'));
+      }
       return ok;
     });
   };
@@ -84,7 +86,9 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
       </>
     );
   }
-  if (!req) return <DetailSkeleton />;
+  if (!req) {
+    return <DetailSkeleton />;
+  }
 
   const canModerate = canReview && !!user && hasPermission(user, 'requests.manage');
   // A denied request has nothing to acquire, so the slot is not even offered.
@@ -114,7 +118,9 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
                   void act(`« ${req.title} » ${t('requests.toastDeleted')}`, () =>
                     client.requests.delete(req.id),
                   ).then((ok) => {
-                    if (ok) backToQueue();
+                    if (ok) {
+                      void backToQueue();
+                    }
                   });
                 }}
               />
@@ -134,7 +140,9 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
               void act(`« ${req.title} » ${t('requests.toastDenied')}`, () =>
                 client.requests.deny(req.id, n || undefined),
               ).then((ok) => {
-                if (ok) setDenying(false);
+                if (ok) {
+                  setDenying(false);
+                }
               });
             }}
           />

@@ -61,7 +61,9 @@ app.notFound((c) => c.json({ error: 'not found' }, 404));
 // an unbounded body to discover it was junk is exactly the work an attacker
 // would like the relay to do. Runs before `zValidator`.
 app.use('/v1/*', async (c, next) => {
-  if (c.req.method === 'GET' || c.req.method === 'HEAD') return next();
+  if (c.req.method === 'GET' || c.req.method === 'HEAD') {
+    return next();
+  }
   const declared = c.req.header('content-length');
   // A body with no declared length would have to be buffered to be measured,
   // which is the work a flood wants done: not accepted at all.
@@ -84,12 +86,16 @@ app.use('/v1/*', async (c, next) => {
 // Shared shape for a zod rejection: name the field, never echo the payload.
 const validate = <T extends typeof GrantRequest | typeof PushRequest>(schema: T) =>
   zValidator('json', schema, (result, c) => {
-    if (!result.success) return c.json({ error: firstIssue(result.error) }, 400);
+    if (!result.success) {
+      return c.json({ error: firstIssue(result.error) }, 400);
+    }
     return undefined;
   });
 
 function appleConfig(env: Env): apns.AppleConfig | null {
-  if (!env.APNS_KEY_P8 || !env.APNS_KEY_ID || !env.APNS_TEAM_ID) return null;
+  if (!env.APNS_KEY_P8 || !env.APNS_KEY_ID || !env.APNS_TEAM_ID) {
+    return null;
+  }
   return {
     p8: env.APNS_KEY_P8,
     keyId: env.APNS_KEY_ID,
@@ -117,7 +123,9 @@ app.get('/health', (c) =>
 app.post('/v1/grant', validate(GrantRequest), async (c) => {
   const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
   const { success } = await c.env.MINT_LIMIT.limit({ key: ip });
-  if (!success) return c.json({ error: 'too many grant requests' }, 429);
+  if (!success) {
+    return c.json({ error: 'too many grant requests' }, 429);
+  }
 
   const { transport, token } = c.req.valid('json');
   const expiresAt = Math.floor(Date.now() / 1000) + GRANT_TTL_SECS;
@@ -136,20 +144,26 @@ app.post('/v1/push', validate(PushRequest), async (c) => {
   const payload = await open(c.env.GRANT_SECRET, grant, nowSecs);
   // One answer for forged, corrupt and expired alike: a caller learns only that
   // this grant is not usable, never which of those it was.
-  if (!payload) return c.json({ error: 'invalid grant' }, 401);
+  if (!payload) {
+    return c.json({ error: 'invalid grant' }, 401);
+  }
 
   // Keyed on the device rather than the grant or the caller, so re-minting
   // cannot buy a fresh budget and two servers pushing to the same phone share
   // one. This is what bounds a compromised server: it can be noisy to its own
   // users, briefly, and to nobody else.
   const { success } = await c.env.PUSH_LIMIT.limit({ key: await deviceKey(payload.d) });
-  if (!success) return c.json({ error: 'too many notifications for this device' }, 429);
+  if (!success) {
+    return c.json({ error: 'too many notifications for this device' }, 429);
+  }
 
   let delivery: Delivery;
   try {
     if (payload.t === 'apns') {
       const config = appleConfig(c.env);
-      if (!config) return c.json({ error: 'apple push is not configured on this relay' }, 503);
+      if (!config) {
+        return c.json({ error: 'apple push is not configured on this relay' }, 503);
+      }
       delivery = await apns.send(config, payload.d, notification, nowSecs);
     } else {
       if (!c.env.FCM_SERVICE_ACCOUNT) {
@@ -167,10 +181,14 @@ app.post('/v1/push', validate(PushRequest), async (c) => {
     return c.json({ error: 'upstream push service failed' }, 502);
   }
 
-  if (delivery.ok) return c.json({ delivered: true });
+  if (delivery.ok) {
+    return c.json({ delivered: true });
+  }
   // 410 is the one status a server acts on: it evicts the subscription. Anything
   // else is transient and must not cost the reader their registration.
-  if (delivery.gone) return c.json({ delivered: false, gone: true }, 410);
+  if (delivery.gone) {
+    return c.json({ delivered: false, gone: true }, 410);
+  }
   console.error(
     JSON.stringify({
       event: 'relay.rejected',

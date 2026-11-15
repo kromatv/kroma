@@ -55,7 +55,9 @@ export function localAddresses(): string[] {
   const out: string[] = [];
   for (const entries of Object.values(networkInterfaces())) {
     for (const entry of entries ?? []) {
-      if (entry.family !== 'IPv4' || entry.internal) continue;
+      if (entry.family !== 'IPv4' || entry.internal) {
+        continue;
+      }
       out.push(entry.address);
     }
   }
@@ -93,17 +95,23 @@ export function publish(options: Readonly<BeaconOptions>): Beacon {
   const timers: ReturnType<typeof setTimeout>[] = [];
 
   const send = (packet: Buffer, to?: { address: string; port: number }) => {
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     socket.send(packet, to?.port ?? MDNS_PORT, to?.address ?? MDNS_ADDRESS, () => undefined);
   };
 
   socket.on('message', (message, remote) => {
     const questions = readQuestions(message);
-    if (!questions.some((q) => asksAbout(q, service))) return;
+    if (!questions.some((q) => asksAbout(q, service))) {
+      return;
+    }
     // Answered to the group rather than to the asker: every other phone in the
     // room is looking for the same thing, and one packet serves them all.
     send(answerPacket(service));
-    if (remote.port !== MDNS_PORT) send(answerPacket(service), remote);
+    if (remote.port !== MDNS_PORT) {
+      send(answerPacket(service), remote);
+    }
   });
 
   // A socket that cannot bind must not take the app down with it: a television
@@ -130,12 +138,16 @@ export function publish(options: Readonly<BeaconOptions>): Beacon {
 
   return {
     stop() {
-      if (stopped) return;
+      if (stopped) {
+        return;
+      }
       // The goodbye goes out BEFORE the flag: a phone that keeps a departed
       // television on screen is worse than one that finds it a moment late.
       send(answerPacket({ ...service, ttl: 0 }));
       stopped = true;
-      for (const timer of timers) clearTimeout(timer as ReturnType<typeof setTimeout>);
+      for (const timer of timers) {
+        clearTimeout(timer as ReturnType<typeof setTimeout>);
+      }
       setTimeout(() => socket.close(), 50);
     },
   };

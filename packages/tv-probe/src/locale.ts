@@ -22,6 +22,8 @@ export function locales(): string[] {
  */
 export function message(locale: string, key: string): string {
   const text = catalog(locale).get(key);
-  if (typeof text !== 'string') throw new Error(`${locale}: no message "${key}"`);
+  if (typeof text !== 'string') {
+    throw new Error(`${locale}: no message "${key}"`);
+  }
   return text;
 }

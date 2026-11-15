@@ -7,15 +7,21 @@ import { isValidElement, type ReactNode } from 'react';
  * part of its own (<ChoiceList.Label>), and the row still has to name itself.
  */
 function nameOf(node: ReactNode): string | undefined {
-  if (typeof node === 'string') return node || undefined;
+  if (typeof node === 'string') {
+    return node || undefined;
+  }
   if (Array.isArray(node)) {
     for (const child of node as ReactNode[]) {
       const found = nameOf(child);
-      if (found !== undefined) return found;
+      if (found !== undefined) {
+        return found;
+      }
     }
     return undefined;
   }
-  if (!isValidElement(node)) return undefined;
+  if (!isValidElement(node)) {
+    return undefined;
+  }
   return nameOf((node.props as { children?: ReactNode }).children);
 }
 

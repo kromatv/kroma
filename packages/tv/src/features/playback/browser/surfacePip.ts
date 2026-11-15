@@ -21,8 +21,12 @@ function videoPip(): boolean {
 
 /** Whether `surface` can hand its picture to a picture-in-picture window here. */
 export function browserPictureInPicture(surface: Surface): boolean {
-  if (surface === 'mpv') return shellPip();
-  if (surface === 'video') return videoPip();
+  if (surface === 'mpv') {
+    return shellPip();
+  }
+  if (surface === 'video') {
+    return videoPip();
+  }
   return false;
 }
 
@@ -31,7 +35,9 @@ export function useShellPip(pip: PipBinding, aspect: number | undefined): void {
   const { attach, onStart, onStop } = pip;
   useEffect(() => {
     const bridge = getTauri();
-    if (!bridge || !shellPip()) return;
+    if (!bridge || !shellPip()) {
+      return;
+    }
     attach({
       startPictureInPicture: () =>
         bridge.core.invoke('pip_start', { aspect: aspect ?? 16 / 9 }).then(() => undefined),
@@ -42,13 +48,21 @@ export function useShellPip(pip: PipBinding, aspect: number | undefined): void {
     void bridge.event
       .listen('pip-changed', (e) => {
         const change = PipChanged.safeParse(e.payload);
-        if (!change.success) return;
-        if (change.data.active) onStart();
-        else onStop(change.data.playing);
+        if (!change.success) {
+          return;
+        }
+        if (change.data.active) {
+          onStart();
+        } else {
+          onStop(change.data.playing);
+        }
       })
       .then((u) => {
-        if (dead) u();
-        else un = u;
+        if (dead) {
+          u();
+        } else {
+          un = u;
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -64,7 +78,9 @@ export function useVideoPip(pip: PipBinding, video: HTMLVideoElement | null): vo
   const { attach, onStart, onStop } = pip;
   useEffect(() => {
     const doc = webDocument();
-    if (!video || !doc || !videoPip()) return;
+    if (!video || !doc || !videoPip()) {
+      return;
+    }
     attach({
       startPictureInPicture: () => video.requestPictureInPicture().then(() => undefined),
       stopPictureInPicture: () => doc.exitPictureInPicture(),

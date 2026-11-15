@@ -70,12 +70,16 @@ describe('pageWindow', () => {
   });
 
   it('always carries the current page', () => {
-    for (let page = 1; page <= 40; page += 1) expect(pageWindow(page, 40)).toContain(page);
+    for (let page = 1; page <= 40; page += 1) {
+      expect(pageWindow(page, 40)).toContain(page);
+    }
   });
 
   it('is the same width on every page of a range, so the row cannot reflow', () => {
     const widths = new Set<number>();
-    for (let page = 1; page <= 40; page += 1) widths.add(pageWindow(page, 40).length);
+    for (let page = 1; page <= 40; page += 1) {
+      widths.add(pageWindow(page, 40).length);
+    }
     expect([...widths]).toEqual([7]);
   });
 

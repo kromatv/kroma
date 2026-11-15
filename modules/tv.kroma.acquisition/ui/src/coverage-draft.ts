@@ -45,12 +45,18 @@ export function seasonCoverage(
   season: number,
   episodes: readonly LedgerEpisode[] | null,
 ): SeasonCoverage {
-  if (draft.seasons.has(season)) return 'all';
+  if (draft.seasons.has(season)) {
+    return 'all';
+  }
   // Without the season's rows, individually-picked episodes are all that can be
   // seen: enough to say "some", never enough to say "all".
   const picked = [...draft.episodes].filter((k) => k.startsWith(`${season}:`)).length;
-  if (picked === 0) return 'none';
-  if (episodes && picked >= episodes.length) return 'all';
+  if (picked === 0) {
+    return 'none';
+  }
+  if (episodes && picked >= episodes.length) {
+    return 'all';
+  }
   return 'some';
 }
 
@@ -58,8 +64,11 @@ export function seasonCoverage(
 export function toggleSeason(draft: CoverageDraft, season: number, on: boolean): CoverageDraft {
   const seasons = new Set(draft.seasons);
   const episodes = new Set([...draft.episodes].filter((k) => !k.startsWith(`${season}:`)));
-  if (on) seasons.add(season);
-  else seasons.delete(season);
+  if (on) {
+    seasons.add(season);
+  } else {
+    seasons.delete(season);
+  }
   return { seasons, episodes };
 }
 
@@ -77,14 +86,19 @@ export function toggleEpisode(
     seasons.delete(season);
     const episodes = new Set(draft.episodes);
     for (const ep of all) {
-      if (ep.episode !== episode) episodes.add(keyOf(season, ep.episode));
+      if (ep.episode !== episode) {
+        episodes.add(keyOf(season, ep.episode));
+      }
     }
     return { seasons, episodes };
   }
   const episodes = new Set(draft.episodes);
   const key = keyOf(season, episode);
-  if (episodes.has(key)) episodes.delete(key);
-  else episodes.add(key);
+  if (episodes.has(key)) {
+    episodes.delete(key);
+  } else {
+    episodes.add(key);
+  }
   return { seasons: draft.seasons, episodes };
 }
 
@@ -102,7 +116,9 @@ export function coveredCount(draft: CoverageDraft, all: readonly LedgerSeason[])
 export function toBody(draft: CoverageDraft, all: readonly LedgerSeason[]): RequestCoverage {
   const seasons = [...draft.seasons].sort((a, b) => a - b);
   const wholeShow = all.length > 0 && seasons.length === all.length && draft.episodes.size === 0;
-  if (wholeShow) return { seasons: null, episodes: null };
+  if (wholeShow) {
+    return { seasons: null, episodes: null };
+  }
   const episodes = [...draft.episodes]
     .map((k) => k.split(':').map(Number))
     .map(([season, episode]) => ({ season: season ?? 0, episode: episode ?? 0 }))

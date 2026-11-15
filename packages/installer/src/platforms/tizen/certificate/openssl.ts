@@ -12,7 +12,9 @@ export const OPENSSL = INSTALLED_AT.find((path) => existsSync(path)) ?? onPath()
 function onPath(): string | null {
   for (const directory of (process.env.PATH ?? '').split(delimiter)) {
     const candidate = join(directory, 'openssl');
-    if (directory !== '' && existsSync(candidate)) return candidate;
+    if (directory !== '' && existsSync(candidate)) {
+      return candidate;
+    }
   }
   return null;
 }

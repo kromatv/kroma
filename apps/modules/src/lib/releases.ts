@@ -41,7 +41,9 @@ const HEX_DIGEST = /^sha256:([0-9a-f]{64})$/i;
 // GitHub reports `sha256:<hex>`; the wire format wants SRI.
 function integrityOf(digest: string | null | undefined): string | null {
   const hex = digest?.match(HEX_DIGEST)?.[1];
-  if (!hex) return null;
+  if (!hex) {
+    return null;
+  }
   const bytes = hex.match(/../g)?.map((byte) => Number.parseInt(byte, 16)) ?? [];
   return `sha256-${base64(Uint8Array.from(bytes))}`;
 }
@@ -58,12 +60,16 @@ function toHistory(releases: z.infer<typeof Releases>): History {
   const out: History = {};
   for (const release of releases) {
     const match = release.draft ? null : TAG.exec(release.tag_name);
-    if (!match?.[1] || !match[2]) continue;
+    if (!match?.[1] || !match[2]) {
+      continue;
+    }
     const [, id, version] = match;
     const artifacts = release.assets.flatMap((asset) => {
       const integrity = asset.name.endsWith('.kmod') ? integrityOf(asset.digest) : null;
       // No digest, no entry: an artifact nothing vouches for may not be offered.
-      if (!integrity) return [];
+      if (!integrity) {
+        return [];
+      }
       return [
         {
           target: targetOf(asset.name, id),
@@ -73,7 +79,9 @@ function toHistory(releases: z.infer<typeof Releases>): History {
         },
       ];
     });
-    if (artifacts.length === 0) continue;
+    if (artifacts.length === 0) {
+      continue;
+    }
     const versions = out[id]?.versions ?? {};
     versions[version] = { artifacts };
     out[id] = { versions };
@@ -89,10 +97,14 @@ async function fetchReleases(env: Env | undefined): Promise<History> {
       `https://api.github.com/repos/${repo}/releases?per_page=${PER_PAGE}&page=${page}`,
       { headers: { ...githubHeaders(env), accept: 'application/vnd.github+json' } },
     );
-    if (!res.ok) throw new Error(`releases ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`releases ${res.status}`);
+    }
     const parsed = Releases.parse(await res.json());
     releases.push(...parsed);
-    if (parsed.length < PER_PAGE) break;
+    if (parsed.length < PER_PAGE) {
+      break;
+    }
   }
   return toHistory(releases);
 }
@@ -105,7 +117,9 @@ export async function releaseHistory(
 ): Promise<History> {
   const cache = edgeCache();
   const hit = await cache?.match(CACHE_HISTORY);
-  if (hit) return (await hit.json()) as History;
+  if (hit) {
+    return (await hit.json()) as History;
+  }
   try {
     const history = await fetchReleases(env);
     if (cache) {

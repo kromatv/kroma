@@ -66,21 +66,37 @@ function reply(status: number, body: unknown) {
   } as unknown as Response;
 }
 
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.href;
+  }
+  return input.url;
+}
+
 // The server this TV boots against: `/auth/token` mints the bearer, and
 // everything else answers 401 without it, exactly as the real one does.
 function serve(input: string | URL | Request, init?: RequestInit) {
-  const path = new URL(String(input)).pathname.replace(/^\/api/, '');
+  const path = new URL(urlOf(input)).pathname.replace(/^\/api/, '');
   const sent = new Headers(init?.headers).get('authorization');
   const authed = Boolean(bearer) && sent === `Bearer ${bearer}`;
   calls.push({ method: init?.method ?? 'GET', path, authed });
   if (path === '/auth/token') {
     exchanges += 1;
-    if (exchanges >= exchangeFailsFrom) return reply(401, { error: 'token invalid', ...refusal });
+    if (exchanges >= exchangeFailsFrom) {
+      return reply(401, { error: 'token invalid', ...refusal });
+    }
     const token = sessionTokenOf(exchanges);
-    if (exchanges >= bearerAcceptedFrom) bearer = token;
+    if (exchanges >= bearerAcceptedFrom) {
+      bearer = token;
+    }
     return reply(200, { token, user: USER });
   }
-  if (!authed) return reply(401, { error: 'unauthorized' });
+  if (!authed) {
+    return reply(401, { error: 'unauthorized' });
+  }
   return reply(200, BODIES[path] ?? null);
 }
 

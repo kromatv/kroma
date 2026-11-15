@@ -8,19 +8,25 @@ export const UPRIGHT: StackOrientation = isTablet ? 'default' : 'portrait';
 export const PLAYER_ORIENTATION: StackOrientation = UPRIGHT;
 
 export function playerOrientation(fullscreen: boolean): StackOrientation {
-  if (isTablet) return 'default';
+  if (isTablet) {
+    return 'default';
+  }
   return fullscreen ? 'landscape' : 'portrait';
 }
 
 /** Reapply the iPhone scene's portrait lock after a player modal dismisses. */
 export function lockUpright(): void {
-  if (Platform.OS !== 'ios' || isTablet) return;
+  if (Platform.OS !== 'ios' || isTablet) {
+    return;
+  }
   void lockPlayerOrientation(false);
 }
 
 /** Request phone scene rotation independently of its physical posture. */
 export async function lockPlayerOrientation(fullscreen: boolean): Promise<void> {
-  if (isTablet) return;
+  if (isTablet) {
+    return;
+  }
   const lock = fullscreen
     ? ScreenOrientation.OrientationLock.LANDSCAPE
     : ScreenOrientation.OrientationLock.PORTRAIT_UP;

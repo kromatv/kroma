@@ -33,8 +33,12 @@ const WARN: Tone = { ink: 'accent', bg: 'accentWash/16' };
 const BAD: Tone = { ink: 'danger', bg: 'danger/14' };
 
 function speedTone(speed: number): Tone {
-  if (speed <= 0) return { ink: 'textMuted', bg: 'tint/6' };
-  if (speed < FALLING_BEHIND) return BAD;
+  if (speed <= 0) {
+    return { ink: 'textMuted', bg: 'tint/6' };
+  }
+  if (speed < FALLING_BEHIND) {
+    return BAD;
+  }
   return speed < NO_LEAD ? WARN : OK;
 }
 
@@ -45,28 +49,40 @@ function frame(w?: number | null, h?: number | null) {
 // `h264-1080` is the wire token; what an operator wants to read is the box the
 // picture is being fitted into.
 function pictureLabel(s: LiveTranscode, t: ReturnType<typeof useT>) {
-  if (!s.transcodesVideo) return t('admin.tcVideoCopy');
+  if (!s.transcodesVideo) {
+    return t('admin.tcVideoCopy');
+  }
   const from = frame(s.sourceWidth, s.sourceHeight);
   const to = frame(s.targetWidth, s.targetHeight);
-  if (from && to) return `${from} → ${to}`;
+  if (from && to) {
+    return `${from} → ${to}`;
+  }
   return to ?? t('admin.tcVideoReencode');
 }
 
 function soundLabel(s: LiveTranscode, t: ReturnType<typeof useT>) {
-  if (!s.transcodesAudio) return t('admin.tcAudioCopy');
+  if (!s.transcodesAudio) {
+    return t('admin.tcAudioCopy');
+  }
   return s.audio === 'aac' ? 'AAC' : `AAC · ${s.audio.replace('aac-', '')}`;
 }
 
 function title(s: LiveTranscode, t: ReturnType<typeof useT>) {
   const name = s.showTitle ?? s.title;
-  if (!name) return t('admin.tcUnknownTitle');
-  if (s.season == null) return name;
+  if (!name) {
+    return t('admin.tcUnknownTitle');
+  }
+  if (s.season == null) {
+    return name;
+  }
   return `${name} · ${t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' })}`;
 }
 
 function producedSpan(s: LiveTranscode, t: ReturnType<typeof useT>, fmt: Format) {
   const fromMs = (s.startSecs ?? s.anchorSecs) * 1000;
-  if (s.outTimeMs <= 0 || s.outTimeMs < fromMs) return '-';
+  if (s.outTimeMs <= 0 || s.outTimeMs < fromMs) {
+    return '-';
+  }
   return t('admin.tcProducedSpan', { from: fmt.timecode(fromMs), to: fmt.timecode(s.outTimeMs) });
 }
 

@@ -17,7 +17,9 @@ const ANY_CITY = '';
 type Held = Extract<VpnProvider, { kind: 'mullvad' }>;
 
 function placesFor(countries: readonly MullvadCountry[], ownedOnly: boolean): MullvadCountry[] {
-  if (!ownedOnly) return [...countries];
+  if (!ownedOnly) {
+    return [...countries];
+  }
   return countries
     .filter((country) => country.owned)
     .map((country) => ({ ...country, cities: country.cities.filter((city) => city.owned) }));
@@ -66,8 +68,11 @@ export function MullvadPanel({
       onConnected();
     } catch (cause: unknown) {
       const parsed = cause instanceof KromaApiError ? Refusal.safeParse(cause.body) : null;
-      if (parsed?.success) setRefusal(parsed.data);
-      else setError(apiErrorText(cause, t('vpn.mullvadUnavailable')));
+      if (parsed?.success) {
+        setRefusal(parsed.data);
+      } else {
+        setError(apiErrorText(cause, t('vpn.mullvadUnavailable')));
+      }
     } finally {
       setBusy(false);
     }

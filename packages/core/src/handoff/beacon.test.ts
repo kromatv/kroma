@@ -128,7 +128,9 @@ describe('publishing on this television s own link', () => {
     expect(published).toHaveLength(1);
 
     // Several polls, all pending.
-    for (let i = 0; i < 4; i++) await tick(3000);
+    for (let i = 0; i < 4; i++) {
+      await tick(3000);
+    }
     expect(client.handoff.poll).toHaveBeenCalledTimes(4);
     expect(unpublish, 'the record was taken down while still waiting').not.toHaveBeenCalled();
     expect(published, 'the record was republished for no reason').toHaveLength(1);

@@ -57,7 +57,7 @@ export interface TransferHooks {
 
 const TransferMeta = z.object({
   item: MediaItem,
-  fileUri: z.string().min(1),
+  fileUri: z.string().nonempty(),
   raw: z.boolean(),
   estimatedTotal: z.number().nullable(),
 });
@@ -107,7 +107,9 @@ function driveTask(
   return new Promise<void>((resolve, reject) => {
     let watchdog: ReturnType<typeof setTimeout> | null = null;
     const clearWatchdog = () => {
-      if (watchdog) clearTimeout(watchdog);
+      if (watchdog) {
+        clearTimeout(watchdog);
+      }
       watchdog = null;
     };
     const fail = (err: Error) => {
@@ -131,7 +133,7 @@ function driveTask(
     task.done(() => {
       clearWatchdog();
       // Releases iOS's stored background-session completion handler.
-      completeHandler(task.id);
+      void completeHandler(task.id)?.catch(() => undefined);
       resolve();
     });
     task.error(({ error, errorCode }) => {
@@ -164,10 +166,13 @@ function driveTask(
     }
     // A reattached task may have ended before its handlers were rewired, with
     // its events gone; settle from the state snapshot instead.
-    if (task.state === 'DONE') resolve();
-    else if (task.state === 'FAILED' || task.state === 'STOPPED')
+    if (task.state === 'DONE') {
+      resolve();
+    } else if (task.state === 'FAILED' || task.state === 'STOPPED') {
       reject(new TransferInterrupted('transfer died while unattended'));
-    else if (fresh) task.start();
+    } else if (fresh) {
+      task.start();
+    }
     // else a reattached PAUSED task stays parked until the user resumes it.
   });
 }
@@ -183,7 +188,9 @@ async function finalizeTransfer(client: KromaClient, meta: TransferMeta): Promis
   if (raw && estimatedTotal && size !== estimatedTotal) {
     throw new Error(`truncated: ${size} of ${estimatedTotal} bytes`);
   }
-  if (size < MIN_PLAUSIBLE_BYTES) throw new Error(`truncated: ${size} bytes`);
+  if (size < MIN_PLAUSIBLE_BYTES) {
+    throw new Error(`truncated: ${size} bytes`);
+  }
 
   const { subs, storyboard } = await fetchSidecars(client, item);
   return {
@@ -240,8 +247,11 @@ export async function adoptTransfer(
   hooks: TransferHooks,
 ): Promise<DownloadEntry> {
   try {
-    if (task.state === 'DONE') completeHandler(task.id);
-    else await driveTask(task, meta, hooks, false);
+    if (task.state === 'DONE') {
+      void completeHandler(task.id)?.catch(() => undefined);
+    } else {
+      await driveTask(task, meta, hooks, false);
+    }
     return await finalizeTransfer(client, meta);
   } catch (err) {
     await FileSystem.deleteAsync(meta.fileUri, { idempotent: true }).catch(() => undefined);

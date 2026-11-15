@@ -20,15 +20,21 @@ export function useResumeProgress(
   const [resumeAt, setResumeAt] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     let cancelled = false;
     client.playback
       .itemProgress(item.id)
       .then((p) => {
-        if (cancelled || !p) return;
+        if (cancelled || !p) {
+          return;
+        }
         const durMs = p.durationMs ?? item.durationMs ?? 0;
         const posSec = p.positionMs / 1000;
-        if (posSec > 15 && (!durMs || p.positionMs < durMs * 0.95)) setResumeAt(posSec);
+        if (posSec > 15 && (!durMs || p.positionMs < durMs * 0.95)) {
+          setResumeAt(posSec);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -38,22 +44,30 @@ export function useResumeProgress(
 
   const saveProgress = useCallback(() => {
     const v = videoRef.current;
-    if (!v || !user) return;
+    if (!v || !user) {
+      return;
+    }
     // ABSOLUTE position + catalogue runtime the seamless stream's own
     // currentTime/duration is relative to the -ss offset, so never use them here.
     const pos = position ? position.getPosition() : v.currentTime;
     const durSec = item.durationMs ? item.durationMs / 1000 : v.duration;
-    if (!Number.isFinite(durSec) || durSec <= 0 || pos < 5) return;
+    if (!Number.isFinite(durSec) || durSec <= 0 || pos < 5) {
+      return;
+    }
     client.playback
       .save(item.id, pos * 1000, durSec * 1000)
       .then((receipt) => {
-        if (receipt.watched) noteWatched(item.id);
+        if (receipt.watched) {
+          noteWatched(item.id);
+        }
       })
       .catch(() => undefined);
   }, [videoRef, client, user, item.id, item.durationMs, position, noteWatched]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     const v = videoRef.current;
     const interval = setInterval(saveProgress, 10000);
     const onUnload = () => saveProgress();

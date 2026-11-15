@@ -80,7 +80,9 @@ function TierGroup({
   onAllowed: (index: number, next: boolean) => void;
 }>) {
   const t = useT();
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return null;
+  }
   return (
     <Box gap={6}>
       <Text variant="overline" color="textMuted">

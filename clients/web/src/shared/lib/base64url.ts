@@ -7,7 +7,9 @@
 export function bytesToBase64Url(source: Uint8Array | ArrayBuffer): string {
   const bytes = source instanceof Uint8Array ? source : new Uint8Array(source);
   let binary = '';
-  for (const b of bytes) binary += String.fromCodePoint(b);
+  for (const b of bytes) {
+    binary += String.fromCodePoint(b);
+  }
   const b64 = btoa(binary).replaceAll('+', '-').replaceAll('/', '_');
   // btoa pads to a multiple of four, so the padding is at most `==` and only
   // ever trailing, which is what keeps this bounded rather than a backtracking
@@ -22,6 +24,8 @@ export function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
   // BufferSource over a plain ArrayBuffer, and a bare `new Uint8Array(n)` is
   // typed over the possibly-shared `ArrayBufferLike`.
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.codePointAt(i) ?? 0;
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.codePointAt(i) ?? 0;
+  }
   return bytes;
 }

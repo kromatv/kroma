@@ -61,7 +61,9 @@ try {
   rmSync(declarationConfig, { force: true });
 }
 cpSync(join(typesTmp, 'ui', 'src'), dist, { recursive: true });
-for (const { dir } of bundled) cpSync(join(typesTmp, dir), join(dist, dir), { recursive: true });
+for (const { dir } of bundled) {
+  cpSync(join(typesTmp, dir), join(dist, dir), { recursive: true });
+}
 rmSync(typesTmp, { recursive: true, force: true });
 rmSync(join(dist, 'workbench-config.d.ts'), { force: true });
 internalizeWorkspaceSpecifiers(dist, bundled);
@@ -104,7 +106,9 @@ writeFileSync(
 for (const file of declarations(dist)) {
   const before = readFileSync(file, 'utf8');
   const after = before.replaceAll('@tabler/icons-react-native', '@tabler/icons-react');
-  if (after !== before) writeFileSync(file, after);
+  if (after !== before) {
+    writeFileSync(file, after);
+  }
 }
 
 // A subpath ships as its built pair. `types` first: a consumer's `moduleResolution`
@@ -183,7 +187,9 @@ const manifest = {
 writeFileSync(join(dist, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 for (const file of ['README.md', 'LICENSE']) {
   const from = join(pkgRoot, file);
-  if (existsSync(from)) cpSync(from, join(dist, file));
+  if (existsSync(from)) {
+    cpSync(from, join(dist, file));
+  }
 }
 
 console.log(`staged @kromatv/ui@${version} into ${dist}`);

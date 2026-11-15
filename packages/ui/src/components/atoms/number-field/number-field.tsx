@@ -30,8 +30,12 @@ interface NumberFieldProps extends Omit<
 
 function clampTo(n: number, min?: number, max?: number): number {
   let out = n;
-  if (min !== undefined) out = Math.max(min, out);
-  if (max !== undefined) out = Math.min(max, out);
+  if (min !== undefined) {
+    out = Math.max(min, out);
+  }
+  if (max !== undefined) {
+    out = Math.min(max, out);
+  }
   return out;
 }
 
@@ -57,20 +61,28 @@ function NumberField({
   const [seen, setSeen] = useState(value);
   if (value !== seen) {
     setSeen(value);
-    if (Number(text.trim()) !== value) setText(String(value));
+    if (Number(text.trim()) !== value) {
+      setText(String(value));
+    }
   }
 
   const commit = (n: number) => {
     setSeen(n);
-    if (n !== value) onValueChange(n);
+    if (n !== value) {
+      onValueChange(n);
+    }
   };
 
   const edit = (raw: string) => {
     setText(raw);
     const trimmed = raw.trim();
-    if (trimmed === '') return;
+    if (trimmed === '') {
+      return;
+    }
     const n = Number(trimmed);
-    if (Number.isNaN(n)) return;
+    if (Number.isNaN(n)) {
+      return;
+    }
     commit(n);
   };
 
@@ -125,8 +137,11 @@ function NumberField({
       // bubbled event from the focused entry.
       onKeyDown={(event) => {
         const key = event.nativeEvent.key;
-        if (key === 'ArrowUp') nudge(1);
-        else if (key === 'ArrowDown') nudge(-1);
+        if (key === 'ArrowUp') {
+          nudge(1);
+        } else if (key === 'ArrowDown') {
+          nudge(-1);
+        }
       }}
     />
   );

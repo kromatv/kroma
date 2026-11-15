@@ -46,7 +46,9 @@ describe('the plugin', () => {
     // `buildStart` fires once per Vite environment; without this the worker is
     // bundled again for the SSR pass.
     const applyTo = standaloneScript(OPTS).applyToEnvironment;
-    if (typeof applyTo !== 'function') throw new Error('the plugin must scope itself');
+    if (typeof applyTo !== 'function') {
+      throw new Error('the plugin must scope itself');
+    }
     const env = (name: string) => ({ name }) as unknown as Parameters<typeof applyTo>[0];
     expect(applyTo(env('client'))).toBe(true);
     expect(applyTo(env('ssr'))).toBe(false);
@@ -55,7 +57,7 @@ describe('the plugin', () => {
   it('bundles at buildStart, which covers both dev and build', async () => {
     const plugin = standaloneScript(OPTS);
     expect(plugin.configureServer).toBeTypeOf('function');
-    await (plugin.buildStart as () => Promise<void>).call(null);
+    await (plugin.buildStart as () => Promise<void>)();
     expect(esbuild.build).toHaveBeenCalledWith(standaloneOptions(OPTS));
   });
 });
@@ -66,15 +68,19 @@ describe('watching in dev', () => {
     const watcher = {
       add: vi.fn(),
       on: vi.fn((event: string, handler: (file: string) => void) => {
-        if (event === 'change') listeners.push(handler);
+        if (event === 'change') {
+          listeners.push(handler);
+        }
       }),
     };
     const error = vi.fn();
     const server = { watcher, config: { logger: { error } } };
     const configure = standaloneScript(options).configureServer as (s: unknown) => void;
-    configure.call(null, server);
+    configure(server);
     const change = (file: string) => {
-      for (const listener of listeners) listener(file);
+      for (const listener of listeners) {
+        listener(file);
+      }
     };
     return { watcher, error, change };
   }

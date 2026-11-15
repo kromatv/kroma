@@ -27,9 +27,13 @@ class OwnedCrashBoundary extends Component<Props & { reporting: () => boolean },
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
-    if (!this.props.reporting()) return;
+    if (!this.props.reporting()) {
+      return;
+    }
     const { client, platform } = this.props;
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     const report = buildCrashReport(error, info.componentStack, platform, Date.now());
     client.diagnostics.crash(report).catch(() => {});
   }

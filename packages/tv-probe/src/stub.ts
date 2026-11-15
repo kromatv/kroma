@@ -43,10 +43,18 @@ function movie(at: number): MediaItem {
 const EMPTY_LISTS = new Set(['/shows', '/continue', '/watched', '/my-list', '/home']);
 
 function payload(path: string, movies: readonly MediaItem[]): unknown {
-  if (path === '/auth/token') return SESSION;
-  if (path === '/movies') return movies;
-  if (path === '/home/featured') return null;
-  if (EMPTY_LISTS.has(path)) return [];
+  if (path === '/auth/token') {
+    return SESSION;
+  }
+  if (path === '/movies') {
+    return movies;
+  }
+  if (path === '/home/featured') {
+    return null;
+  }
+  if (EMPTY_LISTS.has(path)) {
+    return [];
+  }
   return {};
 }
 

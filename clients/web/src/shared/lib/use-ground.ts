@@ -7,7 +7,9 @@ const LIGHT = '(prefers-color-scheme: light)';
 
 function read(): Ground {
   const stated = document.documentElement.dataset.theme;
-  if (stated === 'light' || stated === 'dark') return stated;
+  if (stated === 'light' || stated === 'dark') {
+    return stated;
+  }
   return window.matchMedia(LIGHT).matches ? 'light' : 'dark';
 }
 

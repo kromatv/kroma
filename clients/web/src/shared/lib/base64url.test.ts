@@ -13,7 +13,9 @@ describe('base64url conversion', () => {
 
   it('round-trips every byte value', () => {
     const bytes = new Uint8Array(256);
-    for (let i = 0; i < 256; i += 1) bytes[i] = i;
+    for (let i = 0; i < 256; i += 1) {
+      bytes[i] = i;
+    }
     expect(Array.from(base64UrlToBytes(bytesToBase64Url(bytes)))).toEqual(Array.from(bytes));
   });
 

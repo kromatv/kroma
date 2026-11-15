@@ -17,7 +17,9 @@ function filesUnder(dir: string): string[] {
 
 function repository(): string {
   const repo = process.env.GH_REPO ?? process.env.GITHUB_REPOSITORY;
-  if (!repo) throw new Error('GH_REPO is not set');
+  if (!repo) {
+    throw new Error('GH_REPO is not set');
+  }
   return repo;
 }
 
@@ -44,7 +46,9 @@ export async function main(argv: string[]): Promise<void> {
   });
   const [verb, dir] = positionals;
   const { tag, version, sha } = values;
-  if (verb !== 'publish' || !dir || !tag || !version || !sha) throw new Error(USAGE);
+  if (verb !== 'publish' || !dir || !tag || !version || !sha) {
+    throw new Error(USAGE);
+  }
 
   const pairs = signedBundles(filesUnder(dir));
   const bundles = pairs.map(({ bundle, sig }) => ({

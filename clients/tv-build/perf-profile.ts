@@ -140,7 +140,9 @@ await page.goto(URL_);
 // its own problem and would swamp the steady-state numbers this is after.
 await page.waitForTimeout(5000);
 
-if (THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
+if (THROTTLE > 1) {
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
+}
 
 const trace = collectTrace(cdp);
 await cdp.send('Tracing.start', {
@@ -178,9 +180,13 @@ const carried = await page.evaluate(() => ({
 
 console.log(`\n  ${URL_}   ${SCENARIO}   CPU /${THROTTLE}   ${wall}ms recorded\n`);
 console.log('  mounted at end');
-for (const [k, v] of Object.entries(carried)) console.log(`    ${k.padEnd(20)} ${v}`);
+for (const [k, v] of Object.entries(carried)) {
+  console.log(`    ${k.padEnd(20)} ${v}`);
+}
 console.log('\n  main thread');
-for (const [k, v] of Object.entries(summary)) console.log(`    ${k.padEnd(20)} ${v}`);
+for (const [k, v] of Object.entries(summary)) {
+  console.log(`    ${k.padEnd(20)} ${v}`);
+}
 console.log('\n  self time (bottom-up)');
 for (const row of top.slice(0, 25)) {
   console.log(`    ${String(row.ms).padStart(6)}ms  ${String(row.pct).padStart(5)}%  ${row.label}`);
@@ -202,8 +208,12 @@ if (worst) {
   }
   const nested = new Map<string, { ms: number; n: number }>();
   for (const e of events) {
-    if (e.ph !== 'X' || e.ts == null || e.dur == null || e.name === 'RunTask') continue;
-    if (e.ts < worst.start || e.ts > worst.end) continue;
+    if (e.ph !== 'X' || e.ts == null || e.dur == null || e.name === 'RunTask') {
+      continue;
+    }
+    if (e.ts < worst.start || e.ts > worst.end) {
+      continue;
+    }
     const seen = nested.get(e.name) ?? { ms: 0, n: 0 };
     nested.set(e.name, { ms: seen.ms + e.dur / 1000, n: seen.n + 1 });
   }

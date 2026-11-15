@@ -18,7 +18,9 @@ export const Route = createFileRoute('/admin/notifications')({
 function NotificationsPage() {
   const t = useT();
   const canManage = useCap('settings.manage');
-  if (!canManage) return <Denied />;
+  if (!canManage) {
+    return <Denied />;
+  }
 
   return (
     <>

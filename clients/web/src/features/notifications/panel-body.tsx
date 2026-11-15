@@ -45,13 +45,17 @@ export function PanelBody({
   // only decide that a frame after it had already gone.
   const [sticky, setSticky] = useState<ReadonlySet<string>>(NO_STICKY);
 
-  if (isPending) return <PanelSkeleton />;
+  if (isPending) {
+    return <PanelSkeleton />;
+  }
 
   const all = data?.notifications ?? [];
   let rows = all;
   if (filter === 'unread') {
     const view = unreadView(all, sticky);
-    if (!sameMembers(view.sticky, sticky)) setSticky(view.sticky);
+    if (!sameMembers(view.sticky, sticky)) {
+      setSticky(view.sticky);
+    }
     rows = view.items;
   } else if (sticky !== NO_STICKY) {
     setSticky(NO_STICKY);
@@ -103,8 +107,11 @@ function PanelEmpty({
 }: Readonly<{ shelf: boolean; unreadOnly: boolean; inboxEmpty: boolean }>) {
   const t = useT();
   let kind: keyof typeof EMPTY = 'none';
-  if (shelf) kind = 'archived';
-  else if (unreadOnly && !inboxEmpty) kind = 'allRead';
+  if (shelf) {
+    kind = 'archived';
+  } else if (unreadOnly && !inboxEmpty) {
+    kind = 'allRead';
+  }
   const [icon, title, hint] = EMPTY[kind];
   return (
     <EmptyState.Root size="sm" layout="fill" icon={icon}>

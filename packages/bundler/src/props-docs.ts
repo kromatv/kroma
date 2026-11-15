@@ -19,9 +19,13 @@ async function lockfileOf(root: string): Promise<string> {
   for (let dir = root; ;) {
     const candidate = join(dir, 'bun.lock');
     const s = await stat(candidate).catch(() => null);
-    if (s) return candidate;
+    if (s) {
+      return candidate;
+    }
     const up = dirname(dir);
-    if (up === dir) return candidate;
+    if (up === dir) {
+      return candidate;
+    }
     dir = up;
   }
 }

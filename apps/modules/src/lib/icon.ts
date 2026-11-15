@@ -25,15 +25,21 @@ export async function iconResponse(
   waitUntil: (p: Promise<unknown>) => void,
 ): Promise<Response | null> {
   const match = ICON_ROUTE.exec(path);
-  if (!match?.[1]) return null;
+  if (!match?.[1]) {
+    return null;
+  }
   const id = decodeURIComponent(match[1]);
 
   const body = await loadCatalog(env, waitUntil);
-  if (!body) return new Response('catalog unavailable', { status: 503 });
+  if (!body) {
+    return new Response('catalog unavailable', { status: 503 });
+  }
 
   const { parseCatalog } = await import('#site/catalog');
   const icon = parseCatalog(body)?.modules.find((m) => m.id === id)?.icon;
-  if (!icon?.startsWith(DATA_SVG)) return new Response('no such icon', { status: 404 });
+  if (!icon?.startsWith(DATA_SVG)) {
+    return new Response('no such icon', { status: 404 });
+  }
 
   return new Response(atob(icon.slice(DATA_SVG.length)), {
     headers: {

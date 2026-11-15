@@ -10,7 +10,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  act(() => vi.runOnlyPendingTimers());
+  act(() => {
+    vi.runOnlyPendingTimers();
+  });
   cleanup();
   vi.useRealTimers();
 });

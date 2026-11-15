@@ -8,7 +8,9 @@ const BARE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 /** A semver range as a reader writes it: a bare version is a floor, `>=` and `<=` are symbols. */
 export function readableRange(range: string): string {
   const trimmed = range.trim();
-  if (BARE.test(trimmed)) return `≥ ${trimmed}`;
+  if (BARE.test(trimmed)) {
+    return `≥ ${trimmed}`;
+  }
   return trimmed.replaceAll(/>=\s*/g, '≥ ').replaceAll(/<=\s*/g, '≤ ');
 }
 
@@ -86,8 +88,12 @@ function updateText(refusal: StoreRefusal, version: string, t: Translate): strin
  * the installed version is ahead of the catalog's.
  */
 export function refusalText(m: StoreModule | undefined, t: Translate): string | null {
-  if (!m || m.compatible || installedAhead(m)) return null;
-  if (!m.refusal) return m.reason ?? null;
+  if (!m || m.compatible || installedAhead(m)) {
+    return null;
+  }
+  if (!m.refusal) {
+    return m.reason ?? null;
+  }
   return m.updateBlocked ? updateText(m.refusal, m.version, t) : entryText(m.refusal, t);
 }
 
@@ -103,7 +109,9 @@ export function useRefusalText(m: StoreModule | undefined): string | null {
  */
 export function newestText(m: StoreModule | undefined, t: Translate): string | null {
   const newest = m?.newest;
-  if (!m || !newest) return null;
+  if (!m || !newest) {
+    return null;
+  }
   const refusal = newest.refusal;
   if (refusal?.kind === 'engine' && refusal.engine === 'server') {
     return t('admin.modulesNewestNeedsServer', {

@@ -39,7 +39,9 @@ export async function pushFile(
       const reason = await stream.readExactly(Math.min(answer.readUInt32LE(4), LARGEST_REASON));
       throw new Error(`the TV refused ${remote}: ${reason.toString('utf8')}`);
     }
-    if (id !== 'OKAY') throw new Error(`the TV answered the copy of ${remote} with ${id}`);
+    if (id !== 'OKAY') {
+      throw new Error(`the TV answered the copy of ${remote} with ${id}`);
+    }
     await stream.write(request('QUIT', 0));
   } finally {
     stream.close();

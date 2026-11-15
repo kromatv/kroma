@@ -277,7 +277,9 @@ describe('a phone that can hear its own link', () => {
     await waitFor(() => expect(result.current.devices).toHaveLength(1));
 
     const heard = result.current.devices[0];
-    if (!heard) throw new Error('expected the heard row');
+    if (!heard) {
+      throw new Error('expected the heard row');
+    }
     await act(async () => {
       await result.current.connect(heard);
     });

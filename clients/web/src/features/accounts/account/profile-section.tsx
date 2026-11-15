@@ -14,7 +14,9 @@ export function ProfileSection() {
   const [email, setEmail] = useState(user?.email ?? '');
   const save = useSave();
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   const name = username.trim();
   const address = email.trim();
@@ -23,11 +25,17 @@ export function ProfileSection() {
 
   const submit = (e?: React.SyntheticEvent) => {
     e?.preventDefault();
-    if (!canSave) return;
+    if (!canSave) {
+      return;
+    }
     const patch: AccountPatch = {};
-    if (name !== user.username) patch.username = name;
-    if (address !== user.email) patch.email = address;
-    save.run(async () => {
+    if (name !== user.username) {
+      patch.username = name;
+    }
+    if (address !== user.email) {
+      patch.email = address;
+    }
+    void save.run(async () => {
       const { user: saved } = await client.accounts.update(patch);
       updateUser({ username: saved.username, email: saved.email });
       setUsername(saved.username);

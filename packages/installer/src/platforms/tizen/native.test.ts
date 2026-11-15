@@ -182,7 +182,9 @@ describe('installOverSdb', () => {
   it('reports the push every fifth of the way, and not on every packet', async () => {
     vi.mocked(device.install).mockImplementation(
       async (_artifact: string, { onProgress }: InstallOptions) => {
-        for (const sent of [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]) onProgress?.(sent, 100);
+        for (const sent of [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]) {
+          onProgress?.(sent, 100);
+        }
         return { verdict: 'success', code: 0, output: 'install completed' };
       },
     );

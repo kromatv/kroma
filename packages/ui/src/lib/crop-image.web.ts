@@ -14,7 +14,9 @@ const OTHER_ORIGIN = /^https?:/i;
 
 function decoded(doc: Document, src: string): Promise<HTMLImageElement | null> {
   const image = doc.createElement('img');
-  if (OTHER_ORIGIN.test(src)) image.crossOrigin = 'anonymous';
+  if (OTHER_ORIGIN.test(src)) {
+    image.crossOrigin = 'anonymous';
+  }
   return new Promise((resolve) => {
     image.onload = () => resolve(image);
     image.onerror = () => resolve(null);
@@ -53,9 +55,13 @@ function encoded(canvas: HTMLCanvasElement, output: CropOutput): Promise<Blob | 
 /** The crop as an encoded file. Null when the image cannot be decoded, drawn or read back. */
 export async function cropImage(crop: CropSource, output: CropOutput = {}): Promise<Blob | null> {
   const doc = webDocument();
-  if (!doc) return null;
+  if (!doc) {
+    return null;
+  }
   const image = await decoded(doc, crop.src);
-  if (!image || image.naturalWidth === 0 || image.naturalHeight === 0) return null;
+  if (!image || image.naturalWidth === 0 || image.naturalHeight === 0) {
+    return null;
+  }
   const natural = { width: image.naturalWidth, height: image.naturalHeight };
   const size = outputSize(
     output,
@@ -66,7 +72,9 @@ export async function cropImage(crop: CropSource, output: CropOutput = {}): Prom
   canvas.width = size.width;
   canvas.height = size.height;
   const context = canvas.getContext('2d');
-  if (!context) return null;
+  if (!context) {
+    return null;
+  }
   paint(context, image, crop.transform, size);
   return encoded(canvas, output);
 }

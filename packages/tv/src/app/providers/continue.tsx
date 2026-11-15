@@ -31,11 +31,15 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
   const [wasActive, setWasActive] = useState(active);
   if (wasActive !== active) {
     setWasActive(active);
-    if (!active) setItems([]);
+    if (!active) {
+      setItems([]);
+    }
   }
 
   const refresh = useCallback(() => {
-    if (!ready || !user || !client) return;
+    if (!ready || !user || !client) {
+      return;
+    }
     client.playback
       .continueWatching()
       .then(setItems)
@@ -50,9 +54,13 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
   // rows, so guard on the serialized payload.
   const lastPushed = useRef<{ backend: typeof launcher; json: string } | null>(null);
   useEffect(() => {
-    if (!launcher || !client) return;
+    if (!launcher || !client) {
+      return;
+    }
     const json = JSON.stringify(buildWatchNext(items, client));
-    if (lastPushed.current?.backend === launcher && json === lastPushed.current.json) return;
+    if (lastPushed.current?.backend === launcher && json === lastPushed.current.json) {
+      return;
+    }
     lastPushed.current = { backend: launcher, json };
     launcher.setContinueWatching(json);
   }, [items, client, launcher]);
@@ -63,6 +71,8 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
 
 export function useContinue(): Continue {
   const c = useContext(ContinueCtx);
-  if (!c) throw new Error('useContinue() must be used inside <ContinueProvider>');
+  if (!c) {
+    throw new Error('useContinue() must be used inside <ContinueProvider>');
+  }
   return c;
 }

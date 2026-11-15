@@ -55,9 +55,13 @@ function isPage(pages: readonly Page[] | undefined, id: string): boolean {
 function useCaptureKey(match: (event: KeyboardEvent) => boolean, onKey: () => void): void {
   useEffect(() => {
     const document = webDocument();
-    if (!document) return;
+    if (!document) {
+      return;
+    }
     const listener = (event: KeyboardEvent) => {
-      if (!match(event)) return;
+      if (!match(event)) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       onKey();

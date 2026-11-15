@@ -20,7 +20,11 @@ beforeEach(() => {
   vi.stubGlobal('fetch', async (url: string, init: { body: FormData }) => {
     const csr = init.body.get('csr') as File;
     const fields: Record<string, string> = {};
-    for (const [name, value] of init.body) if (typeof value === 'string') fields[name] = value;
+    for (const [name, value] of init.body) {
+      if (typeof value === 'string') {
+        fields[name] = value;
+      }
+    }
     asked.push({ url, fields, file: { name: csr.name, text: await csr.text() } });
     return answers.shift() ?? new Response(LISTED_CERTIFICATE);
   });

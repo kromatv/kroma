@@ -62,9 +62,15 @@ type StaticRest = { children?: string | number | Array<string | number>; testID?
 /** Whether a string can skip react-native-web's Text: nothing beside its
  *  children and `testID`, and children that are only strings and numbers. */
 export function isStaticText(rest: Readonly<Record<string, unknown>>): rest is StaticRest {
-  for (const key in rest) if (!PASS.has(key)) return false;
+  for (const key in rest) {
+    if (!PASS.has(key)) {
+      return false;
+    }
+  }
   const { children, testID } = rest;
-  if (testID !== undefined && typeof testID !== 'string') return false;
+  if (testID !== undefined && typeof testID !== 'string') {
+    return false;
+  }
   return children == null || plain(children) || (Array.isArray(children) && children.every(plain));
 }
 

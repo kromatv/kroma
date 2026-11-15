@@ -38,7 +38,9 @@ describe('compileDeclaration', () => {
 
     const runtime = (StyleSheet as unknown as { getSheet(): { textContent: string } }).getSheet()
       .textContent;
-    for (const rule of leaf.rules) expect(runtime).toContain(rule.css);
+    for (const rule of leaf.rules) {
+      expect(runtime).toContain(rule.css);
+    }
   });
 
   it('orders a shorthand under the longhands, as the runtime does', () => {

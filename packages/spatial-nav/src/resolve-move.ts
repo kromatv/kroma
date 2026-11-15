@@ -13,7 +13,9 @@ export function resolveMove(tree: FocusTree, from: TreeNode, move: Move): TreeNo
   for (const container of tree.ancestorsOf(from)) {
     if (container.orientation === move.orientation) {
       const target = stepAcross(tree, container, child, from, move);
-      if (target !== null) return target;
+      if (target !== null) {
+        return target;
+      }
     }
     child = container;
   }
@@ -36,7 +38,9 @@ function stepAcross(
   }
   for (const sibling of ahead) {
     const target = alignedIn(tree, sibling, column);
-    if (target !== null) return target;
+    if (target !== null) {
+      return target;
+    }
   }
   return null;
 }

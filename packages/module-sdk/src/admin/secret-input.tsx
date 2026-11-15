@@ -16,7 +16,9 @@ export function SecretInput({
   const t = useT();
   const [v, setV] = useState('');
   const commit = () => {
-    if (!v.trim()) return;
+    if (!v.trim()) {
+      return;
+    }
     onCommit(v);
     setV('');
   };

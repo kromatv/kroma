@@ -128,7 +128,9 @@ describe('minting twice in the same millisecond', () => {
       ids.add(createDeviceIdentity()());
     }
     expect(ids.size).toBe(5);
-    for (const id of ids) expect(id).toMatch(ACCEPTABLE);
+    for (const id of ids) {
+      expect(id).toMatch(ACCEPTABLE);
+    }
   });
 });
 

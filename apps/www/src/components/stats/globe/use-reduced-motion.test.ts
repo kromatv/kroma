@@ -16,7 +16,9 @@ function preference(matches: boolean): Preference {
     matches,
     queried: [],
     announce: () => {
-      for (const listen of listeners) listen();
+      for (const listen of listeners) {
+        listen();
+      }
     },
     get listeners() {
       return listeners.size;

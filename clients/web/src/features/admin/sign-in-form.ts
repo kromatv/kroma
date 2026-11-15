@@ -106,14 +106,18 @@ export function presetPatch(
     preset: next?.id ?? '',
     icon: next?.icon ?? provider.icon,
   };
-  if (next && untouched(provider.label, previous?.label ?? '')) patch.label = next.label;
+  if (next && untouched(provider.label, previous?.label ?? '')) {
+    patch.label = next.label;
+  }
   if (!provider.fromEnv && untouched(provider.issuer, previous?.issuer ?? '')) {
     patch.issuer = next?.issuer ?? '';
   }
   if (untouched(provider.groupClaim, previous?.groupClaim ?? DEFAULT_GROUP_CLAIM)) {
     patch.groupClaim = next?.groupClaim ?? DEFAULT_GROUP_CLAIM;
   }
-  if (sameList(provider.scopes, previous?.scopes ?? [])) patch.scopes = [...(next?.scopes ?? [])];
+  if (sameList(provider.scopes, previous?.scopes ?? [])) {
+    patch.scopes = [...(next?.scopes ?? [])];
+  }
   return patch;
 }
 
@@ -176,7 +180,9 @@ export function moved(methods: readonly MethodForm[], from: number, by: -1 | 1):
   const to = from + by;
   const next = [...methods];
   const [taken] = next.splice(from, 1);
-  if (!taken || to < 0 || to >= methods.length) return [...methods];
+  if (!taken || to < 0 || to >= methods.length) {
+    return [...methods];
+  }
   next.splice(to, 0, taken);
   return next;
 }
@@ -186,7 +192,9 @@ export function providersOf(form: SignInForm): ProviderForm[] {
 }
 
 function toInput(method: MethodForm): MethodInput {
-  if (method.kind !== 'oidc') return { kind: method.kind, enabled: method.enabled };
+  if (method.kind !== 'oidc') {
+    return { kind: method.kind, enabled: method.enabled };
+  }
   return {
     kind: 'oidc',
     id: method.id,

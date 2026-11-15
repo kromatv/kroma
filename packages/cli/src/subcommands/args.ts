@@ -12,6 +12,8 @@ export const serverArgs = {
 export const text = (v: unknown): string | undefined =>
   typeof v === 'string' && v !== '' ? v : undefined;
 export const list = (v: unknown): string[] => {
-  if (Array.isArray(v)) return v.map(String);
+  if (Array.isArray(v)) {
+    return v.map(String);
+  }
   return typeof v === 'string' && v !== '' ? [v] : [];
 };

@@ -40,19 +40,25 @@ function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
       fadeMs,
       accessibilityLabel: at.alt || undefined,
       onLoad: (size: Size | null) => {
-        if (size) at.setNatural?.(size);
+        if (size) {
+          at.setNatural?.(size);
+        }
         markImageReady(uri);
         at.markLoaded();
         const cover = () => at.onCovered?.(uri);
         if (backend.fades) {
-          if (at.onCovered) setTimeout(cover, fadeMs);
+          if (at.onCovered) {
+            setTimeout(cover, fadeMs);
+          }
         } else {
           Animated.timing(at.opacity, {
             toValue: 1,
             duration: fadeMs,
             useNativeDriver: true,
           }).start(({ finished }) => {
-            if (finished) cover();
+            if (finished) {
+              cover();
+            }
           });
         }
         at.onLoad?.();

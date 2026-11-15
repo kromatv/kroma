@@ -30,7 +30,9 @@ export function usePipelineReloadEvents(onReload: () => void): void {
       refresh: () => eventClient.refreshSession(),
 
       onEvent: (e) => {
-        if (RELOAD_EVENTS.has(e.type)) onReload();
+        if (RELOAD_EVENTS.has(e.type)) {
+          onReload();
+        }
       },
     });
     ev.connect();
@@ -42,7 +44,7 @@ export function pipelineActions(deps: {
   client: KromaClient;
   canManage: boolean;
   t: ReturnType<typeof useT>;
-  reload: () => void;
+  reload: () => unknown;
   paused: boolean;
   setPaused: Dispatch<SetStateAction<boolean>>;
   setBusy: Dispatch<SetStateAction<boolean>>;
@@ -50,7 +52,9 @@ export function pipelineActions(deps: {
 }) {
   const { client, canManage, t, reload, paused, setPaused, setBusy, flash } = deps;
   const togglePause = () => {
-    if (!canManage) return;
+    if (!canManage) {
+      return;
+    }
     const next = !paused;
     setPaused(next); // optimistic
     client.pipeline
@@ -62,7 +66,9 @@ export function pipelineActions(deps: {
       .catch(() => setPaused(!next));
   };
   const reprocess = (el: ElementRow) => {
-    if (!canManage) return;
+    if (!canManage) {
+      return;
+    }
     setBusy(true);
     client.pipeline
       .reprocessSubject(apiKind(el), subjectId(el))
@@ -70,10 +76,13 @@ export function pipelineActions(deps: {
         flash(`« ${el.title} » ${t('pipeline.toastReprocess')}`);
         reload();
       })
+      .catch(() => flash(t('error.serverTitle')))
       .finally(() => setBusy(false));
   };
   const retryStage = (el: ElementRow, stage: string) => {
-    if (!canManage) return;
+    if (!canManage) {
+      return;
+    }
     setBusy(true);
     client.pipeline
       .retryElement(apiKind(el), subjectId(el), stage)
@@ -82,6 +91,7 @@ export function pipelineActions(deps: {
         flash(`${stageName} ${t('pipeline.toastRetry')}`);
         reload();
       })
+      .catch(() => flash(t('error.serverTitle')))
       .finally(() => setBusy(false));
   };
   return { togglePause, reprocess, retryStage };

@@ -31,7 +31,9 @@ function Guard({ signedIn }: Readonly<{ signedIn: boolean }>) {
   const nav = useNav();
   useEffect(() => {
     const target = resolveRedirect(GUARD, { signedIn }, nav.route.name);
-    if (target) nav.replace(target);
+    if (target) {
+      nav.replace(target);
+    }
   }, [signedIn, nav]);
   return <TvOutlet />;
 }

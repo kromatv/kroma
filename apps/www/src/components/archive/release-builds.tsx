@@ -18,7 +18,9 @@ export function ReleaseBuilds({ releases, filter = NO_FILTER }: Readonly<Release
     (r) => ({ version: r.version, downloads: r.downloads }),
     filter,
   );
-  if (rows.length === 0) return <p className="text-sm text-muted">{m.archive_no_match()}</p>;
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted">{m.archive_no_match()}</p>;
+  }
 
   const months = groupByMonth(rows, (row) => row.item.publishedAt);
   const newest = rows[0]?.item.tag;

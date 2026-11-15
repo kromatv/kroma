@@ -11,8 +11,8 @@ import { z } from 'zod';
  * server's, applied when the save lands.
  */
 export const PendingProgress = z.object({
-  serverUrl: z.string().min(1),
-  userId: z.string().min(1),
+  serverUrl: z.string().nonempty(),
+  userId: z.string().nonempty(),
   itemId: ItemId,
   positionMs: z.number().int().nonnegative(),
   durationMs: z.number().int().positive().nullable(),

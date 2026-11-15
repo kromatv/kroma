@@ -42,10 +42,14 @@ export function FolderPicker({
     webRuntime.client.library
       .browse(path)
       .then((res) => {
-        if (active) setLoaded({ path, list: res });
+        if (active) {
+          setLoaded({ path, list: res });
+        }
       })
       .catch(() => {
-        if (active) setLoaded({ path, list: null });
+        if (active) {
+          setLoaded({ path, list: null });
+        }
       });
     return () => {
       active = false;

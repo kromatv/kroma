@@ -15,7 +15,9 @@ import { webWindow } from './dom';
 export function suppressSelection(): () => void {
   const win = webWindow();
   const root = win?.document?.documentElement as HTMLElement | undefined;
-  if (!win || !root) return NOOP;
+  if (!win || !root) {
+    return NOOP;
+  }
 
   const style = root.style as CSSStyleDeclaration & { webkitUserSelect?: string };
   const previous = style.userSelect;

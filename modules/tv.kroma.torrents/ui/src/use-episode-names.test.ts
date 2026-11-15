@@ -12,7 +12,9 @@ let answer: EpisodeInfo[] | null = null;
 vi.mock('@kromatv/module-sdk', () => ({
   useFetch: (key: readonly unknown[] | null, fn: () => Promise<unknown>) => {
     keys.push(key);
-    if (key) void fn();
+    if (key) {
+      void fn();
+    }
     return { data: key ? answer : null };
   },
 }));

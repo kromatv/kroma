@@ -30,22 +30,26 @@ const SQUARE: Feature<MultiPolygon> = {
 };
 
 function resolve(plugin: Plugin, id: string): string | null {
-  if (typeof plugin.resolveId !== 'function') throw new Error('the plugin lost its resolveId');
+  if (typeof plugin.resolveId !== 'function') {
+    throw new Error('the plugin lost its resolveId');
+  }
   const resolved = plugin.resolveId.call({} as never, id, undefined, { isEntry: false });
   return typeof resolved === 'string' ? resolved : null;
 }
 
 async function load(plugin: Plugin, id: string): Promise<string | null> {
-  if (typeof plugin.load !== 'function') throw new Error('the plugin lost its load');
+  if (typeof plugin.load !== 'function') {
+    throw new Error('the plugin lost its load');
+  }
   const loaded = await plugin.load.call({} as never, id, undefined);
   return typeof loaded === 'string' ? loaded : null;
 }
 
-function settle(plugin: Plugin, root: string): void {
+async function settle(plugin: Plugin, root: string): Promise<void> {
   if (typeof plugin.configResolved !== 'function') {
     throw new Error('the plugin lost its configResolved');
   }
-  plugin.configResolved.call({} as never, { root } as never);
+  await plugin.configResolved.call({} as never, { root } as never);
 }
 
 beforeEach(() => {
@@ -88,7 +92,7 @@ describe('landPlugin', () => {
   it('reads the atlas out of the root vite resolved, not the working directory', async () => {
     const plugin = landPlugin({ rows: 8 });
 
-    settle(plugin, '/repo/apps/www');
+    await settle(plugin, '/repo/apps/www');
     await load(plugin, RESOLVED_ID);
 
     expect(loadLand).toHaveBeenCalledWith('/repo/apps/www');

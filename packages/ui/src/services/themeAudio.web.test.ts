@@ -68,7 +68,9 @@ function memoryStorage(initial: Record<string, string> = {}) {
  *  test that quietly skipped its assertions would be worse than one that fails. */
 function audioAt(i = 0): FakeAudio {
   const a = created[i];
-  if (!a) throw new Error(`no Audio element was created at index ${i}`);
+  if (!a) {
+    throw new Error(`no Audio element was created at index ${i}`);
+  }
   return a;
 }
 

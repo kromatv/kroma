@@ -10,7 +10,9 @@ function claimProps(
 ): A11yState {
   const claimed = Object.values(state).some((claim) => claim !== undefined);
   const mark = currentMark(current);
-  if (!claimed && !value && !mark) return undefined;
+  if (!claimed && !value && !mark) {
+    return undefined;
+  }
   return {
     ...(claimed ? a11yState(state) : null),
     ...(value ? a11yValue(value) : null),

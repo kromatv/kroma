@@ -17,8 +17,11 @@ function arriving(outcome: 'load' | 'error') {
     this: HTMLImageElement,
   ) {
     queueMicrotask(() => {
-      if (outcome === 'load') this.onload?.(new Event('load'));
-      else this.onerror?.(new Event('error'));
+      if (outcome === 'load') {
+        this.onload?.(new Event('load'));
+      } else {
+        this.onerror?.(new Event('error'));
+      }
     });
   });
 }

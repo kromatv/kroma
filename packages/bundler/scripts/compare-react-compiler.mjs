@@ -17,8 +17,11 @@ const { compileReactSource } = req('@kromatv/bundler/react-compiler-transform');
 function* walk(dir) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const file = join(dir, e.name);
-    if (e.isDirectory()) yield* walk(file);
-    else if (/\.tsx?$/.test(file) && !/\.(test|stories|demo)\./.test(file)) yield file;
+    if (e.isDirectory()) {
+      yield* walk(file);
+    } else if (/\.tsx?$/.test(file) && !/\.(test|stories|demo)\./.test(file)) {
+      yield file;
+    }
   }
 }
 const corpus = [...walk(join(root, 'packages/ui/src'))].map((file) => ({
@@ -41,19 +44,25 @@ const times = { babel: [], oxc: [] };
 const memoizedFiles = { babel: 0, oxc: 0 };
 for (const mode of Object.keys(modes)) {
   for (const input of corpus) {
-    if (modes[mode](input)?.code?.includes('react/compiler-runtime')) memoizedFiles[mode] += 1;
+    if (modes[mode](input)?.code?.includes('react/compiler-runtime')) {
+      memoizedFiles[mode] += 1;
+    }
   }
 }
 for (let round = 0; round < 5; round++) {
   for (const mode of round % 2 ? ['oxc', 'babel'] : ['babel', 'oxc']) {
     const started = performance.now();
-    for (const input of corpus) modes[mode](input);
+    for (const input of corpus) {
+      modes[mode](input);
+    }
     times[mode].push((performance.now() - started) / 1000);
   }
 }
 const median = (a) => [...a].sort((a, b) => a - b)[2];
 const corpusHash = createHash('sha256');
-for (const input of corpus) corpusHash.update(input.file.slice(root.length)).update(input.source);
+for (const input of corpus) {
+  corpusHash.update(input.file.slice(root.length)).update(input.source);
+}
 const result = {
   host: { platform: platform(), arch: arch(), cpu: cpus()[0]?.model },
   corpusHash: corpusHash.digest('hex'),

@@ -11,12 +11,18 @@ export function releaseRows(release: Release): ReleaseRow[] {
     kind: 'highlight',
     highlight,
   }));
-  if (release.fixed.length > 0) rows.push({ kind: 'fixed', lines: release.fixed });
-  if (release.owner.length > 0) rows.push({ kind: 'owner', lines: release.owner });
+  if (release.fixed.length > 0) {
+    rows.push({ kind: 'fixed', lines: release.fixed });
+  }
+  if (release.owner.length > 0) {
+    rows.push({ kind: 'owner', lines: release.owner });
+  }
   return rows;
 }
 
 export function rowLabel(row: ReleaseRow, t: Translate): string {
-  if (row.kind === 'highlight') return row.highlight.title;
+  if (row.kind === 'highlight') {
+    return row.highlight.title;
+  }
   return t(row.kind === 'fixed' ? 'releases.fixed' : 'releases.owner');
 }

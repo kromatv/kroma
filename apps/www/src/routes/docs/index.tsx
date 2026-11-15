@@ -7,7 +7,9 @@ import { seo } from '#site/lib/seo';
 export const Route = createFileRoute('/docs/')({
   loader: () => {
     const doc = getDoc('index', getLocale());
-    if (!doc) throw notFound();
+    if (!doc) {
+      throw notFound();
+    }
     const { Component: _Component, ...meta } = doc;
     return { meta };
   },

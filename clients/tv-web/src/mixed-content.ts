@@ -25,9 +25,13 @@ const DISMISSED = 'kroma.tvweb.mixedContentDismissed';
  * plain-http LAN box learns why it will never be found here. No-op on http
  * origins (a local `vite preview`), and no-op once dismissed. */
 export function warnIfMixedContent(): void {
-  if (globalThis.location?.protocol !== 'https:') return;
+  if (globalThis.location?.protocol !== 'https:') {
+    return;
+  }
   try {
-    if (localStorage.getItem(DISMISSED) === '1') return;
+    if (localStorage.getItem(DISMISSED) === '1') {
+      return;
+    }
   } catch {
     // Storage denied (private mode): show the notice rather than suppress it.
   }

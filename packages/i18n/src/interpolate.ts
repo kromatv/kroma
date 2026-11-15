@@ -10,7 +10,9 @@ const ANY_TOKEN = /\{\w+}/;
  *  the catalog. The `kroma-i18n` crate pins the same guarantee. Reuse between
  *  messages is a catalog concern, handled once at build by {@link expandRefs}. */
 export function interpolate(template: string, vars?: TVars): string {
-  if (!vars) return template;
+  if (!vars) {
+    return template;
+  }
   return template.replace(TOKEN, (whole, name: string) =>
     Object.hasOwn(vars, name) ? String(vars[name]) : whole,
   );

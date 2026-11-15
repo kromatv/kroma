@@ -85,14 +85,18 @@ export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<Vi
   const [value] = useState(() => new Animated.Value(breathes(kind) ? 1 : 0));
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     value.setValue(breathes(kind) ? 1 : 0);
     const loop = Animated.loop(cycle(kind, value, ms));
     loop.start();
     return () => loop.stop();
   }, [kind, ms, active, value]);
 
-  if (!active) return null;
+  if (!active) {
+    return null;
+  }
   if (kind === 'spin') {
     return {
       transform: [

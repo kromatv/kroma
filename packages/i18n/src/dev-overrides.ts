@@ -39,7 +39,9 @@ const SHARED = '__kromaI18nOverrides';
 
 function overrides(): Overrides {
   const found = Reflect.get(globalThis, SHARED) as Overrides | undefined;
-  if (found) return found;
+  if (found) {
+    return found;
+  }
   const fresh: Overrides = {
     inspector: null,
     app: null,
@@ -52,7 +54,9 @@ function overrides(): Overrides {
 }
 
 function notify(): void {
-  for (const listener of overrides().listeners) listener();
+  for (const listener of overrides().listeners) {
+    listener();
+  }
 }
 
 function changed(): void {
@@ -70,7 +74,9 @@ export function activeKeyInspector(): KeyInspector | null {
  *  front end bundles its own. */
 export function installKeyInspector(next: KeyInspector | null): void {
   const state = overrides();
-  if (state.inspector === next) return;
+  if (state.inspector === next) {
+    return;
+  }
   state.inspector = next;
   changed();
 }
@@ -80,8 +86,12 @@ export function installKeyInspector(next: KeyInspector | null): void {
 export function installAppLocales(next: AppLocales | null): void {
   const state = overrides();
   const held = state.app;
-  if (held === next) return;
-  if (next && held?.resolved === next.resolved && same(held.codes, next.codes)) return;
+  if (held === next) {
+    return;
+  }
+  if (next && held?.resolved === next.resolved && same(held.codes, next.codes)) {
+    return;
+  }
   state.app = next;
   notify();
 }
@@ -103,7 +113,9 @@ export function activeLocaleOverride(): string | null {
  *  moves: this lasts as long as the page does. */
 export function installLocaleOverride(next: string | null): void {
   const state = overrides();
-  if (state.locale === next) return;
+  if (state.locale === next) {
+    return;
+  }
   state.locale = next;
   changed();
 }

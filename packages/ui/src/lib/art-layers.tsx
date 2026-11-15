@@ -22,7 +22,9 @@ export function useArtLayers(input: Readonly<ArtLayersInput>): ArtLayers {
   const placed = fit === 'cover' && (focal.x !== 0.5 || focal.y !== 0.5);
 
   useLayoutEffect(() => {
-    if (src) opacity.setValue(0);
+    if (src) {
+      opacity.setValue(0);
+    }
   }, [src, opacity]);
 
   const rect = placed ? coverRect(box, natural, focal) : null;

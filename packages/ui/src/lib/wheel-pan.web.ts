@@ -11,8 +11,12 @@ type WheelHost = RefObject<View | ScrollView | null>;
 const LINE_PX = 16;
 
 function unitPx(mode: number, viewport: number): number {
-  if (mode === WheelEvent.DOM_DELTA_LINE) return LINE_PX;
-  if (mode === WheelEvent.DOM_DELTA_PAGE) return viewport;
+  if (mode === WheelEvent.DOM_DELTA_LINE) {
+    return LINE_PX;
+  }
+  if (mode === WheelEvent.DOM_DELTA_PAGE) {
+    return viewport;
+  }
   return 1;
 }
 
@@ -25,14 +29,20 @@ function useWheelTravel(ref: WheelHost, onTravel: (delta: number) => void, enabl
   useEffect(() => {
     // The RNW View IS the DOM node, but the types do not say so.
     const node = ref.current as unknown as HTMLElement | null;
-    if (!node || !enabled) return;
+    if (!node || !enabled) {
+      return;
+    }
     const onWheel = (event: WheelEvent) => {
       // ctrl + wheel is pinch zoom. It is the browser's gesture, not the list's.
-      if (event.ctrlKey) return;
+      if (event.ctrlKey) {
+        return;
+      }
       const x = event.deltaX * unitPx(event.deltaMode, window.innerWidth);
       const y = event.deltaY * unitPx(event.deltaMode, window.innerHeight);
       const delta = Math.abs(x) > Math.abs(y) ? x : y;
-      if (delta === 0) return;
+      if (delta === 0) {
+        return;
+      }
       event.preventDefault();
       onTravel(delta);
     };

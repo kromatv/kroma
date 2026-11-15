@@ -45,7 +45,9 @@ const NAMESPACE = /export \* as m from '([^']+)';?/;
 
 function throughParaglide(code: string, engine: string): string {
   const found = NAMESPACE.exec(code);
-  if (!found) return code;
+  if (!found) {
+    return code;
+  }
   return code.replace(
     found[0],
     [
@@ -76,7 +78,9 @@ function speaks(from: string): Adapter {
     };
     const named = { ...manifest.dependencies, ...manifest.devDependencies };
     for (const [dependency, adapter] of Object.entries(SPEAKS)) {
-      if (named[dependency]) return adapter;
+      if (named[dependency]) {
+        return adapter;
+      }
     }
   } catch {}
   return 'kroma';
@@ -145,7 +149,9 @@ function open(file: string, editor: string, server: ViteDevServer): boolean {
 // missing one is an engine these tools cannot inspect, which is a reason to
 // stay out of the way rather than to break the app that loaded them.
 function adapterFor(entry: string | null, speaking: Adapter): string | null {
-  if (!entry) return null;
+  if (!entry) {
+    return null;
+  }
   const at = entry.replace(/index\.ts$/, `engine/${speaking}/${speaking}.ts`);
   return existsSync(at) ? at : null;
 }
@@ -177,7 +183,9 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
     // kit component has no reason to carry it. `apply: 'serve'` keeps all of
     // it out of the build.
     config() {
-      if (!entry || !adapterEntry) return {};
+      if (!entry || !adapterEntry) {
+        return {};
+      }
       const web = webResolve();
       const aliased = web.alias as AliasEntry[];
       return {
@@ -222,7 +230,9 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
         const at = Date.now();
         const updates = [];
         for (const importer of module?.importers ?? []) {
-          if (!importer.isSelfAccepting || !importer.url) continue;
+          if (!importer.isSelfAccepting || !importer.url) {
+            continue;
+          }
           client.moduleGraph.invalidateModule(importer);
           updates.push({
             type: 'js-update' as const,
@@ -235,17 +245,23 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
         // trip, its own render and its own paint, and the page would be seen
         // rebuilding itself a piece at a time. This is the shape Vite sends
         // when one file reaches many boundaries.
-        if (updates.length > 0) hot.send({ type: 'update', updates });
+        if (updates.length > 0) {
+          hot.send({ type: 'update', updates });
+        }
       });
       if (catalogs) serveCatalogs(server);
       server.watcher.on('change', forgetMaps);
     },
 
     transform(code, id, options) {
-      if (entry === null || adapterEntry === null || options?.ssr) return null;
+      if (entry === null || adapterEntry === null || options?.ssr) {
+        return null;
+      }
       const query = id.indexOf('?');
       const file = query === -1 ? id : id.slice(0, query);
-      if (!anchor.test(file)) return null;
+      if (!anchor.test(file)) {
+        return null;
+      }
       // Without the query a dev server appends, so the graph can be asked for
       // it by the same name whichever version was served.
       anchored = file;

@@ -31,7 +31,9 @@ const open = async (set: FakeDevice, options?: ConnectionOptions): Promise<SdbCo
 };
 
 afterEach(async () => {
-  for (const connection of connections.splice(0)) connection.close();
+  for (const connection of connections.splice(0)) {
+    connection.close();
+  }
   await Promise.all(televisions.splice(0).map((set) => set.close()));
 });
 

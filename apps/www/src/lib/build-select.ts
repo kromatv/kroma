@@ -25,7 +25,9 @@ export function selectBuilds<T>(
 
   return items.flatMap((item) => {
     const { version, downloads } = read(item);
-    if (wanted && !(version ?? '').toLowerCase().includes(wanted)) return [];
+    if (wanted && !(version ?? '').toLowerCase().includes(wanted)) {
+      return [];
+    }
 
     const kept = onlyLabel(downloads, label);
     return kept.length > 0 ? [{ item, downloads: kept }] : [];

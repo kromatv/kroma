@@ -38,12 +38,18 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
 
   useEffect(() => {
     const { x, y } = readSession();
-    if (open && x !== null && y !== null) place(host, x, y);
-    if (!open) anchor(host);
+    if (open && x !== null && y !== null) {
+      place(host, x, y);
+    }
+    if (!open) {
+      anchor(host);
+    }
   }, [open, host]);
 
   useEffect(() => {
-    if (outline === 'off') return;
+    if (outline === 'off') {
+      return;
+    }
     const stopHighlight = installHighlight(outline);
     const stopProbe = installProbe(outline, editor);
     return () => {

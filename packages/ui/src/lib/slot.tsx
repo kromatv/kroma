@@ -31,8 +31,12 @@ import type { AnyStyle } from '#ui/core/types';
 type AnyProps = Record<string, unknown>;
 
 function composeHandlers(child: unknown, slot: unknown): unknown {
-  if (typeof child !== 'function') return slot;
-  if (typeof slot !== 'function') return child;
+  if (typeof child !== 'function') {
+    return slot;
+  }
+  if (typeof slot !== 'function') {
+    return child;
+  }
   return (...args: unknown[]) => {
     child(...args);
     slot(...args);
@@ -40,12 +44,19 @@ function composeHandlers(child: unknown, slot: unknown): unknown {
 }
 
 function composeRefs<T>(child: Ref<T> | undefined, slot: Ref<T> | undefined): Ref<T> | undefined {
-  if (!child) return slot;
-  if (!slot) return child;
+  if (!child) {
+    return slot;
+  }
+  if (!slot) {
+    return child;
+  }
   return (node: T | null) => {
     for (const ref of [child, slot]) {
-      if (typeof ref === 'function') ref(node);
-      else if (ref) ref.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
     }
   };
 }
@@ -65,7 +76,9 @@ function isHandler(name: string, value: unknown): boolean {
 function mergeSlotProps(slotProps: AnyProps, childProps: AnyProps): AnyProps {
   const merged: AnyProps = { ...slotProps, ...childProps };
   for (const [name, slotValue] of Object.entries(slotProps)) {
-    if (!(name in childProps)) continue;
+    if (!(name in childProps)) {
+      continue;
+    }
     const childValue = childProps[name];
     if (name === 'style') {
       merged.style = childValue == null ? slotValue : [slotValue, childValue];
@@ -105,7 +118,9 @@ function propsOf(child: ReactElement): AnyProps {
  */
 function Slot({ children, ...slotProps }: Readonly<SlotProps>) {
   const child = Children.only(children);
-  if (!isValidElement(child)) throw new Error('<Slot> needs exactly one element child');
+  if (!isValidElement(child)) {
+    throw new Error('<Slot> needs exactly one element child');
+  }
   return cloneElement(child as ReactElement<AnyProps>, mergeSlotProps(slotProps, propsOf(child)));
 }
 

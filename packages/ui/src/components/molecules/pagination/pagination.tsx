@@ -104,7 +104,9 @@ function Root({
   // the context, paging re-rendered even the two ends that never move.
   const go = useStableCallback((next: number) => {
     const to = clamp(next, total);
-    if (to !== at) onPageChange(to);
+    if (to !== at) {
+      onPageChange(to);
+    }
   });
 
   const ctx = useMemo<PaginationContext>(

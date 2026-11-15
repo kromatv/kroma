@@ -28,12 +28,18 @@ export function relativeAirDate(
   locale: string,
   now: Date = new Date(),
 ): string {
-  if (!airDate) return '';
+  if (!airDate) {
+    return '';
+  }
   const days = daysFromToday(airDate, now);
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  if (Math.abs(days) < 31) return rtf.format(days, 'day');
+  if (Math.abs(days) < 31) {
+    return rtf.format(days, 'day');
+  }
   const months = Math.round(days / 30);
-  if (Math.abs(months) < 12) return rtf.format(months, 'month');
+  if (Math.abs(months) < 12) {
+    return rtf.format(months, 'month');
+  }
   return rtf.format(Math.round(days / 365), 'year');
 }
 
@@ -42,7 +48,9 @@ export function relativeAirDate(
  * `Intl.RelativeTimeFormat` has no sentence-case option and `::first-letter`
  * has no React Native spelling. */
 export function sentenceCase(text: string, locale: string): string {
-  if (!text) return text;
+  if (!text) {
+    return text;
+  }
   return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
 }
 

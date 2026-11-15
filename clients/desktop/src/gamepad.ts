@@ -35,7 +35,9 @@ export function startGamepadBridge(): () => void {
   let stopped = false;
 
   const fire = (type: 'keydown' | 'keyup', k: EmitKey, repeat: boolean): void => {
-    if (debug && !repeat) console.debug(`[gamepad] ${type} ${KEY_NAME[k]}`);
+    if (debug && !repeat) {
+      console.debug(`[gamepad] ${type} ${KEY_NAME[k]}`);
+    }
     window.dispatchEvent(
       new KeyboardEvent(type, { key: KEY_NAME[k], bubbles: true, cancelable: true, repeat }),
     );
@@ -61,23 +63,35 @@ export function startGamepadBridge(): () => void {
   };
 
   const dumpRaw = (raw: string[]): void => {
-    if (!debug) return;
-    for (const line of raw.splice(0)) console.debug(line);
+    if (!debug) {
+      return;
+    }
+    for (const line of raw.splice(0)) {
+      console.debug(line);
+    }
   };
 
   const pollPads = (raw: string[]): Set<EmitKey> => {
     const active = new Set<EmitKey>();
     const seen = new Set<number>();
     for (const pad of navigator.getGamepads()) {
-      if (!pad) continue;
+      if (!pad) {
+        continue;
+      }
       seen.add(pad.index);
       const state = stateFor(pad);
       updateCalibration(pad, state);
-      for (const k of activeKeys(pad, state)) active.add(k);
-      if (debug) raw.push(rawSnapshot(pad));
+      for (const k of activeKeys(pad, state)) {
+        active.add(k);
+      }
+      if (debug) {
+        raw.push(rawSnapshot(pad));
+      }
     }
     for (const index of pads.keys()) {
-      if (!seen.has(index)) pads.delete(index);
+      if (!seen.has(index)) {
+        pads.delete(index);
+      }
     }
     return active;
   };
@@ -106,7 +120,9 @@ export function startGamepadBridge(): () => void {
   };
 
   const tick = () => {
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     const raw: string[] = [];
     const active = pollPads(raw);
     const t = now();

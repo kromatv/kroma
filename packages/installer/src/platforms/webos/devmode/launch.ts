@@ -18,7 +18,7 @@ const SessionList = z.object({
       z.object({
         sessionId: z
           .string()
-          .min(1)
+          .nonempty()
           .max(256)
           .regex(/^[\w.-]+$/),
         deviceSetInfo: z.object({ displayId: z.number() }),
@@ -49,7 +49,9 @@ export async function launchApp(session: DevModeSession, appId: string): Promise
       timeoutMs: ANSWER_TIMEOUT_MS,
     },
     (reply) => {
-      if (Launched.safeParse(reply).success) return true;
+      if (Launched.safeParse(reply).success) {
+        return true;
+      }
       throw new Error(`the TV did not start ${appId}`);
     },
   );
@@ -68,7 +70,9 @@ async function displaySession(session: DevModeSession): Promise<string | null> {
       },
       (reply) => {
         const listed = SessionList.safeParse(reply);
-        if (!listed.success) return null;
+        if (!listed.success) {
+          return null;
+        }
         const shown = listed.data.sessionList.find(
           (entry) => entry.deviceSetInfo.displayId === DEFAULT_DISPLAY,
         );

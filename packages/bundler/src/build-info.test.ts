@@ -93,10 +93,13 @@ describe('the stamp it serves', () => {
   function stamp(projectRoot = PROJECT_ROOT): object {
     const code = hooks(projectRoot).load(RESOLVED) ?? '';
     const json = /export default (\{.*?\});/s.exec(code)?.[1];
-    if (!json) throw new Error('no default export in the generated module');
+    if (!json) {
+      throw new Error('no default export in the generated module');
+    }
     const stamp: unknown = JSON.parse(json);
-    if (!stamp || typeof stamp !== 'object' || Array.isArray(stamp))
+    if (!stamp || typeof stamp !== 'object' || Array.isArray(stamp)) {
       throw new Error('build stamp is not an object');
+    }
     return stamp;
   }
 

@@ -25,7 +25,9 @@ export class FocusOwner {
 
   move(next: TreeNode | null): void {
     const previous = this.focused;
-    if (previous === next) return;
+    if (previous === next) {
+      return;
+    }
     if (next === null) {
       previous?.config.onBlur?.();
       this.focused = null;
@@ -60,6 +62,8 @@ export class FocusOwner {
   }
 
   private notify(ids: readonly string[], event: 'onActive' | 'onInactive'): void {
-    for (const id of ids) this.tree.get(id)?.config[event]?.();
+    for (const id of ids) {
+      this.tree.get(id)?.config[event]?.();
+    }
   }
 }

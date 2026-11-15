@@ -57,7 +57,9 @@ export async function requestCertificates(order: CertificateOrder): Promise<Obta
   const { access, duid, log, directory = SAMSUNG_PROFILE, generateKeys = rsaKeys } = order;
   const now = order.now ?? new Date();
   const files = samsungFiles(directory);
-  if (!access.email) throw new Error('the sign-in named no address for the Samsung account');
+  if (!access.email) {
+    throw new Error('the sign-in named no address for the Samsung account');
+  }
   await mkdir(directory, { recursive: true, mode: OWNER_ONLY });
 
   let authorUntil = keptUntil(files.authorChain);

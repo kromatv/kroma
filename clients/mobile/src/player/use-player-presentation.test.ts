@@ -36,7 +36,9 @@ vi.mock('#mobile/lib/orientation', () => ({
   lockPlayerOrientation: state.rotate,
   allowPlayerRotation: state.allow,
   playerOrientation: (fullscreen: boolean) => {
-    if (state.tablet) return 'default';
+    if (state.tablet) {
+      return 'default';
+    }
     return fullscreen ? 'landscape' : 'portrait';
   },
 }));

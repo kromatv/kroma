@@ -3,10 +3,14 @@ export type Concurrency = 'share' | 'latest';
 // Two signals, one abort: the policy's and the caller's. Built by hand rather
 // than with `AbortSignal.any`, which the legacy webOS tier has not got.
 function linked(policy: AbortSignal, caller?: AbortSignal): AbortSignal {
-  if (!caller) return policy;
+  if (!caller) {
+    return policy;
+  }
   const controller = new AbortController();
   for (const signal of [policy, caller]) {
-    if (signal.aborted) return signal;
+    if (signal.aborted) {
+      return signal;
+    }
     signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
   }
   return controller.signal;
@@ -26,7 +30,9 @@ export function concurrencyGate() {
   ): Promise<T> {
     if (options?.concurrency === 'share') {
       const running = shared.get(key);
-      if (running) return running as Promise<T>;
+      if (running) {
+        return running as Promise<T>;
+      }
       const fresh = task().finally(() => shared.delete(key));
       shared.set(key, fresh);
       return fresh;
@@ -36,7 +42,9 @@ export function concurrencyGate() {
       const controller = new AbortController();
       newest.set(key, controller);
       return task(linked(controller.signal, options.signal)).finally(() => {
-        if (newest.get(key) === controller) newest.delete(key);
+        if (newest.get(key) === controller) {
+          newest.delete(key);
+        }
       });
     }
     return task(options?.signal);

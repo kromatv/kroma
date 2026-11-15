@@ -23,7 +23,9 @@ function samePerson(a: string, b: string): boolean {
 /** Does `meta` credit `name` in its cast OR key crew? `name` is a display name
  * or a URL slug. */
 export function creditsPerson(meta: Metadata | null | undefined, name: string): boolean {
-  if (!meta || !name.trim()) return false;
+  if (!meta || !name.trim()) {
+    return false;
+  }
   return (
     (meta.cast ?? []).some((c) => samePerson(c.name, name)) ||
     (meta.crew ?? []).some((c) => samePerson(c.name, name))
@@ -44,17 +46,27 @@ type CrewCredit = NonNullable<Metadata['crew']>[number];
 
 function scanCast(acc: PersonInvolvement, cast: readonly CastCredit[], name: string): void {
   for (const c of cast) {
-    if (!samePerson(c.name, name)) continue;
+    if (!samePerson(c.name, name)) {
+      continue;
+    }
     acc.acted = true;
-    if (!acc.profileUrl && c.profileUrl) acc.profileUrl = c.profileUrl;
+    if (!acc.profileUrl && c.profileUrl) {
+      acc.profileUrl = c.profileUrl;
+    }
   }
 }
 
 function scanCrew(acc: PersonInvolvement, crew: readonly CrewCredit[], name: string): void {
   for (const c of crew) {
-    if (!samePerson(c.name, name)) continue;
-    if (!acc.jobs.includes(c.job)) acc.jobs.push(c.job);
-    if (!acc.profileUrl && c.profileUrl) acc.profileUrl = c.profileUrl;
+    if (!samePerson(c.name, name)) {
+      continue;
+    }
+    if (!acc.jobs.includes(c.job)) {
+      acc.jobs.push(c.job);
+    }
+    if (!acc.profileUrl && c.profileUrl) {
+      acc.profileUrl = c.profileUrl;
+    }
   }
 }
 
@@ -65,7 +77,9 @@ export function personInvolvement(
 ): PersonInvolvement {
   const acc: PersonInvolvement = { acted: false, jobs: [], profileUrl: null };
   for (const meta of metas) {
-    if (!meta) continue;
+    if (!meta) {
+      continue;
+    }
     scanCast(acc, meta.cast ?? [], name);
     scanCrew(acc, meta.crew ?? [], name);
   }
@@ -79,9 +93,19 @@ export function personDisplayName(
   name: string,
 ): string {
   for (const meta of metas) {
-    if (!meta) continue;
-    for (const c of meta.cast ?? []) if (samePerson(c.name, name)) return c.name;
-    for (const c of meta.crew ?? []) if (samePerson(c.name, name)) return c.name;
+    if (!meta) {
+      continue;
+    }
+    for (const c of meta.cast ?? []) {
+      if (samePerson(c.name, name)) {
+        return c.name;
+      }
+    }
+    for (const c of meta.crew ?? []) {
+      if (samePerson(c.name, name)) {
+        return c.name;
+      }
+    }
   }
   return name;
 }
@@ -90,8 +114,12 @@ export function personDisplayName(
  * distinct crew job (known jobs translated; anything else shown verbatim). */
 export function roleLabels(t: Translate, inv: PersonInvolvement): string[] {
   const roles: string[] = [];
-  if (inv.acted) roles.push(t('person.role.actor'));
-  for (const job of inv.jobs) roles.push(jobLabel(t, job));
+  if (inv.acted) {
+    roles.push(t('person.role.actor'));
+  }
+  for (const job of inv.jobs) {
+    roles.push(jobLabel(t, job));
+  }
   return [...new Set(roles)];
 }
 

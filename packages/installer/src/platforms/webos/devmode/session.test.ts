@@ -16,7 +16,9 @@ const listening = (server: Server) =>
 
 beforeAll(() => {
   const parsed = utils.parseKey(devModeKeys().encrypted, PASSPHRASE);
-  if (parsed instanceof Error) throw parsed;
+  if (parsed instanceof Error) {
+    throw parsed;
+  }
   privateKey = parsed.getPrivatePEM();
 });
 

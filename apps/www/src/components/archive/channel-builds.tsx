@@ -18,7 +18,9 @@ export function ChannelBuilds({ builds, filter = NO_FILTER }: Readonly<ChannelBu
     (b) => ({ version: b.version, downloads: b.downloads }),
     filter,
   );
-  if (rows.length === 0) return <p className="text-sm text-muted">{m.archive_no_match()}</p>;
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted">{m.archive_no_match()}</p>;
+  }
 
   const months = groupByMonth(rows, (row) => row.item.builtAt);
   const newest = rows[0]?.item.builtAt;

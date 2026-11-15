@@ -10,9 +10,13 @@ export function ServerStatusPill({ probe }: Readonly<{ probe?: ServerProbe }>) {
   const t = useT();
   const online = probe?.online;
   let label = t('addProfile.checking');
-  if (online === false) label = t('addProfile.unreachable');
-  else if (probe?.latencyMs !== undefined) label = `${probe.latencyMs} ms`;
-  else if (online) label = t('addProfile.reachable');
+  if (online === false) {
+    label = t('addProfile.unreachable');
+  } else if (probe?.latencyMs !== undefined) {
+    label = `${probe.latencyMs} ms`;
+  } else if (online) {
+    label = t('addProfile.reachable');
+  }
 
   return (
     <Box row align="center" gap={8} shrink={0}>

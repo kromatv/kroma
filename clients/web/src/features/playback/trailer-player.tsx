@@ -96,6 +96,7 @@ export function TrailerPlayer({
                   href={youtubeWatchUrl(trailer.video)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={t('trailer.openOnYoutube')}
                 />
               </Button>
               <Button

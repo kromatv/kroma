@@ -27,7 +27,9 @@ const servers: Server[] = [];
 
 const portOf = (server: Server): number => {
   const address = server.address();
-  if (address === null || typeof address === 'string') throw new Error('the server took no port');
+  if (address === null || typeof address === 'string') {
+    throw new Error('the server took no port');
+  }
   return address.port;
 };
 

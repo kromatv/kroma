@@ -51,10 +51,14 @@ export default function IndexersPage() {
 
   const { data, failed, reload } = usePoll(['admin', 'indexers'], () => indexerApi.list(), 30000);
 
-  if (!canManage) return <Denied />;
+  if (!canManage) {
+    return <Denied />;
+  }
   // Before the first answer there is no list to be empty: an empty state here
   // would read as "you have no indexers", which is a claim we cannot make yet.
-  if (!data) return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading />;
+  if (!data) {
+    return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading />;
+  }
   const indexers = data.indexers;
 
   const toggle = (ix: IndexerView, enabled: boolean) => {
@@ -79,19 +83,27 @@ export default function IndexersPage() {
       .catch((e) =>
         setTests((s) => ({ ...s, [ix.id]: { error: apiErrorText(e, t('indexers.testFailed')) } })),
       )
-      .finally(reload);
+      .finally(() => {
+        void reload();
+      });
   };
 
   const openEdit = async (ix: IndexerView) => {
-    if (await IndexerModal.call({ indexer: ix })) await reload();
+    if (await IndexerModal.call({ indexer: ix })) {
+      await reload();
+    }
   };
 
   // Built-in flow: browse/pick a Cardigann definition, then fill its settings.
   const openPicker = async () => {
     const added = indexers.flatMap((ix) => (ix.definitionId ? [ix.definitionId] : []));
     const definitionId = await DefinitionPickerModal.call({ added });
-    if (!definitionId) return;
-    if (await BuiltinIndexerModal.call({ definitionId, indexer: null })) await reload();
+    if (!definitionId) {
+      return;
+    }
+    if (await BuiltinIndexerModal.call({ definitionId, indexer: null })) {
+      await reload();
+    }
   };
 
   // Generic engine (e.g. Torznab): the shared field form over the engine's schema.
@@ -113,7 +125,9 @@ export default function IndexersPage() {
           })
           .then(() => {}),
     });
-    if (changed) await reload();
+    if (changed) {
+      await reload();
+    }
   };
 
   // One add-flow per enabled engine: the native Cardigann engine opens its

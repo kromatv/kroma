@@ -84,7 +84,9 @@ const full = () => JSON.parse(readFileSync(EN, 'utf8')) as Record<string, string
 
 function loader(options?: Parameters<typeof messageSubset>[0]) {
   const load = messageSubset(options).load;
-  if (typeof load !== 'function') throw new Error('the plugin must expose a load hook');
+  if (typeof load !== 'function') {
+    throw new Error('the plugin must expose a load hook');
+  }
   return (id: string) => load.call(null as never, id, undefined) as string | null;
 }
 
@@ -105,7 +107,9 @@ describe('the plugin', () => {
   it('keeps a key the scanned roots reach and drops the rest of the catalog', () => {
     const catalog = full();
     const reached = Object.keys(catalog).find((k) => !k.startsWith('lang.'));
-    if (!reached) throw new Error('the catalog is empty');
+    if (!reached) {
+      throw new Error('the catalog is empty');
+    }
     const root = tree({ 'page.tsx': `const label = t(${JSON.stringify(reached)});` });
 
     const kept = JSON.parse(loader({ roots: [root] })(EN) ?? '{}') as Record<string, string>;
@@ -118,7 +122,9 @@ describe('the plugin', () => {
     const catalog = full();
     const scanned = JSON.parse(loader()(EN) ?? '{}') as Record<string, string>;
     const dropped = Object.keys(catalog).find((k) => !(k in scanned));
-    if (!dropped) throw new Error('the design system reaches every message');
+    if (!dropped) {
+      throw new Error('the design system reaches every message');
+    }
 
     const kept = JSON.parse(loader({ keep: [dropped] })(EN) ?? '{}') as Record<string, string>;
     expect(kept[dropped]).toBe(catalog[dropped]);

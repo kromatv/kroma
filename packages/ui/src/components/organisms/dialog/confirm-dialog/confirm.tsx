@@ -49,14 +49,18 @@ export function ConfirmHost({ children }: Readonly<{ children?: ReactNode }>) {
   useEffect(() => {
     const requests = pending.current;
     return () => {
-      for (const resolve of requests) resolve(false);
+      for (const resolve of requests) {
+        resolve(false);
+      }
       requests.clear();
     };
   }, []);
 
   const current = queue[0];
   const answer = (value: boolean) => {
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     pending.current.delete(current.resolve);
     current.resolve(value);
     setQueue((queue) => queue.slice(1));

@@ -60,7 +60,9 @@ describe('the roving highlight', () => {
     const p = panel();
     p.press('ArrowUp');
     expect(p.setActive).not.toHaveBeenCalled();
-    for (let i = 0; i < 6; i++) p.press('ArrowDown');
+    for (let i = 0; i < 6; i++) {
+      p.press('ArrowDown');
+    }
     expect(p.state.active).toBe(ROWS.length - 1);
   });
 
@@ -210,7 +212,9 @@ function scrolling(measured = true) {
   });
   result.current.scroll.ref.current = { scrollTo } as unknown as ScrollView;
   act(() => {
-    if (measured) result.current.scroll.onLayout(boxOf(FOLD));
+    if (measured) {
+      result.current.scroll.onLayout(boxOf(FOLD));
+    }
     for (let i = 0; i < ROWS_IN_PANEL; i++) {
       result.current.onRowLayout(i, i * ROW_HEIGHT, ROW_HEIGHT);
     }

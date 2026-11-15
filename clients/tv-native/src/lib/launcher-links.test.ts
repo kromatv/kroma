@@ -12,7 +12,9 @@ const linking = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Linking: {
     getInitialURL: async () => {
-      if (linking.initialFails) throw new Error('no activity attached');
+      if (linking.initialFails) {
+        throw new Error('no activity attached');
+      }
       return linking.initial;
     },
     addEventListener: (_event: string, handler: (e: { url: string }) => void) => {

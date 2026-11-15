@@ -73,7 +73,9 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
 
   /** Event plumbing for the surface: VLC reports in milliseconds. */
   reportTime(timeMs: number, lengthMs: number): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     this.elSec = timeMs / 1000;
     this.listeners.onTime(this.position());
     this.listeners.onBuffered(this.bufferedEnd());
@@ -85,7 +87,9 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
   }
 
   reportState(state: string, percent = 100): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     if (state === 'buffering') {
       this.bufferPercent = percent;
       this.listeners.onBuffered(this.bufferedEnd());
@@ -100,7 +104,9 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
       }
       this.lastState = this.paused ? 'paused' : 'playing';
       this.listeners.onReady();
-      if (!this.paused) this.listeners.onPlaying();
+      if (!this.paused) {
+        this.listeners.onPlaying();
+      }
       return;
     }
     this.lastState = state;
@@ -117,12 +123,16 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
   }
 
   reportError(): void {
-    if (!this.destroyed) this.listeners.onError();
+    if (!this.destroyed) {
+      this.listeners.onError();
+    }
   }
 
   /** libVLC's own media counters, pushed from the plane on the time tick. */
   reportStats(stats: VlcPlaneStats): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     this.stats = stats;
   }
 
@@ -135,7 +145,9 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
       { label: 'VLC buffer', value: `${Math.round(this.bufferPercent)}%` },
     ];
     const stats = this.stats;
-    if (!stats) return rows;
+    if (!stats) {
+      return rows;
+    }
     if (stats.displayedPictures > 0) {
       rows.push({
         label: 'Dropped frames',

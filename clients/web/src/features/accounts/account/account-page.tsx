@@ -63,7 +63,9 @@ function AccountTabs({ section, onSection }: Readonly<AccountPageProps>) {
         <SegmentGroup.Root
           value={section}
           onValueChange={(next) => {
-            if (isSection(next)) onSection(next);
+            if (isSection(next)) {
+              onSection(next);
+            }
           }}
           label={t('account.title')}
         >

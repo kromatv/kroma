@@ -101,7 +101,9 @@ function useOutline(article: string): Outline {
     article,
     claims: { byKey: new Map(), byBase: new Map() },
   });
-  if (seen.article !== article) setSeen({ article, sections: [], top: 0 });
+  if (seen.article !== article) {
+    setSeen({ article, sections: [], top: 0 });
+  }
   if (claimed.article !== article) {
     setClaimed({ article, claims: { byKey: new Map(), byBase: new Map() } });
   }
@@ -113,7 +115,9 @@ function useOutline(article: string): Outline {
     (key: string, base: string) => {
       const { byKey, byBase } = claimed.claims;
       const known = byKey.get(key);
-      if (known) return known;
+      if (known) {
+        return known;
+      }
       const nth = (byBase.get(base) ?? 0) + 1;
       byBase.set(base, nth);
       const id = nth === 1 ? base : `${base}-${nth}`;
@@ -126,9 +130,13 @@ function useOutline(article: string): Outline {
   const reportSection = useCallback((next: Section) => {
     setSeen((prev) => {
       const at = prev.sections.findIndex((entry) => entry.id === next.id);
-      if (at < 0) return { ...prev, sections: [...prev.sections, next] };
+      if (at < 0) {
+        return { ...prev, sections: [...prev.sections, next] };
+      }
       const found = prev.sections[at];
-      if (found?.y === next.y && found.label === next.label) return prev;
+      if (found?.y === next.y && found.label === next.label) {
+        return prev;
+      }
       const sections = [...prev.sections];
       sections[at] = next;
       return { ...prev, sections };
@@ -167,10 +175,14 @@ function activeSection(
   scrollY: number,
   atEnd = false,
 ): string | undefined {
-  if (atEnd) return sections.at(-1)?.id;
+  if (atEnd) {
+    return sections.at(-1)?.id;
+  }
   let active: string | undefined;
   for (const section of sections) {
-    if (top + section.y - ACTIVE_BAND > scrollY) break;
+    if (top + section.y - ACTIVE_BAND > scrollY) {
+      break;
+    }
     active = section.id;
   }
   return active;
@@ -201,10 +213,18 @@ function sectionAtScroll(
 /** The flattened text of a heading: MDX gives it as a tree of inline marks, and
  * an outline entry is a string. */
 function textOf(node: ReactNode): string {
-  if (typeof node === 'string') return node;
-  if (typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(textOf).join('');
-  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(textOf).join('');
+  }
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return textOf(node.props.children);
+  }
   return '';
 }
 

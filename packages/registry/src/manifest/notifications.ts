@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const MessageKey = z.string().min(1);
+const MessageKey = z.string().nonempty();
 
 /** One kind of notification a module sends. */
 export const NotificationType = z.object({
@@ -38,7 +38,9 @@ export function notificationsProblem(
     if (!type.startsWith(`${id}/`)) {
       return `notifications: "${type}" is not in this module's namespace (write ${id}/<name>)`;
     }
-    if (seen.has(type)) return `notifications: "${type}" is declared twice`;
+    if (seen.has(type)) {
+      return `notifications: "${type}" is declared twice`;
+    }
     seen.add(type);
   }
   return null;

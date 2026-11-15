@@ -110,9 +110,15 @@ describe('createRegistryClient', () => {
   const seen: string[] = [];
   const fetchJson = async (url: string) => {
     seen.push(url);
-    if (url.endsWith('/registry.json')) return descriptor;
-    if (url.endsWith('/m/tv.kroma.torrents.json')) return record;
-    if (url.endsWith('/index.json')) return index;
+    if (url.endsWith('/registry.json')) {
+      return descriptor;
+    }
+    if (url.endsWith('/m/tv.kroma.torrents.json')) {
+      return record;
+    }
+    if (url.endsWith('/index.json')) {
+      return index;
+    }
     throw new Error(`unexpected ${url}`);
   };
   const client = createRegistryClient('https://r/', fetchJson);

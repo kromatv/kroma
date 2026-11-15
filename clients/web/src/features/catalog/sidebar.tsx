@@ -70,7 +70,9 @@ export function Sidebar() {
   const s = useStyles(sDefinition);
 
   const step = useBreakpoint();
-  if (step !== 'lg' && step !== 'tv') return null;
+  if (step !== 'lg' && step !== 'tv') {
+    return null;
+  }
   return (
     <aside className={classes(s.sidebar)}>
       <SideNav.Header>
@@ -144,7 +146,9 @@ export function MobileTopbar() {
     setOpenedAt(pathname);
     setOpen(false);
   }
-  if (step === 'lg' || step === 'tv') return null;
+  if (step === 'lg' || step === 'tv') {
+    return null;
+  }
   return (
     <header className={classes(s.topbar)}>
       <Box row align="center" gap={8}>
@@ -186,7 +190,9 @@ export function MobileTopbar() {
 function RequestsLink() {
   const t = useT();
   const { user } = useAuth();
-  if (!user || !hasPermission(user, 'requests.create')) return null;
+  if (!user || !hasPermission(user, 'requests.create')) {
+    return null;
+  }
   return (
     <SideNav.Item to="/requests" icon="inbox">
       <SideNav.Label>{t('nav.requests')}</SideNav.Label>
@@ -197,7 +203,9 @@ function RequestsLink() {
 function InviteLink() {
   const t = useT();
   const { user } = useAuth();
-  if (!user || !hasPermission(user, 'users.manage')) return null;
+  if (!user || !hasPermission(user, 'users.manage')) {
+    return null;
+  }
   return (
     <SideNav.Item to="/invite" icon="user-plus">
       <SideNav.Label>{t('nav.inviteUser')}</SideNav.Label>
@@ -214,7 +222,9 @@ function AdminLink() {
       hasPermission(user, 'library.manage') ||
       hasPermission(user, 'settings.manage') ||
       hasPermission(user, 'requests.manage'));
-  if (!isAdmin) return null;
+  if (!isAdmin) {
+    return null;
+  }
   return (
     <SideNav.Item to="/admin" icon="settings">
       <SideNav.Label>{t('nav.server')}</SideNav.Label>

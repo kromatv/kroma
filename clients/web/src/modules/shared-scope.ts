@@ -64,8 +64,12 @@ export async function provideShared(): Promise<Record<string, unknown>> {
 }
 
 async function provide(key: string, names: ReadonlySet<string>): Promise<unknown> {
-  if (key.startsWith(CLIENT_DOMAIN)) return domainModules[key.slice(CLIENT_DOMAIN.length)];
-  if (!isShared(key)) return undefined;
+  if (key.startsWith(CLIENT_DOMAIN)) {
+    return domainModules[key.slice(CLIENT_DOMAIN.length)];
+  }
+  if (!isShared(key)) {
+    return undefined;
+  }
   const standIn = STAND_INS[key];
   const light =
     standIn !== undefined &&

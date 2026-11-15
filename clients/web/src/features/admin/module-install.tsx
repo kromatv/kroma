@@ -50,14 +50,22 @@ function RunningRow({ name, op }: Readonly<{ name: string; op: OpModule | undefi
 }
 
 function dialogTitle(stage: Stage, name: string, updating: boolean, t: Translate): string {
-  if (stage === 'done') return t('admin.modulesPhaseDone');
-  if (stage === 'error') return t('admin.modulesInstallFailed');
+  if (stage === 'done') {
+    return t('admin.modulesPhaseDone');
+  }
+  if (stage === 'error') {
+    return t('admin.modulesInstallFailed');
+  }
   return t(updating ? 'admin.modulesUpdateTitle' : 'admin.modulesInstallTitle', { name });
 }
 
 function Outcome({ stage, result }: Readonly<{ stage: Stage; result: string | null }>) {
-  if (stage === 'error') return <ErrorBox text={result ?? ''} />;
-  if (stage !== 'done') return null;
+  if (stage === 'error') {
+    return <ErrorBox text={result ?? ''} />;
+  }
+  if (stage !== 'done') {
+    return null;
+  }
   return (
     <Box row align="flex-start" gap={10}>
       <Box mt={2} shrink={0}>
@@ -122,14 +130,18 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
   const defaulted = useRef(false);
 
   useEffect(() => {
-    if (stage !== 'plan') return;
+    if (stage !== 'plan') {
+      return;
+    }
     let alive = true;
     setPlanBusy(true);
     setPlanError(null);
     webRuntime.moduleApi
       .fetchInstallPlan(id, include)
       .then((p) => {
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         setPlan(p);
         // The opt-in list only ever grows: a checked add-on moves into the
         // plan, but its row (and checkbox) must not vanish.
@@ -149,10 +161,14 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
         }
       })
       .catch((e) => {
-        if (alive) setPlanError(message(e));
+        if (alive) {
+          setPlanError(message(e));
+        }
       })
       .finally(() => {
-        if (alive) setPlanBusy(false);
+        if (alive) {
+          setPlanBusy(false);
+        }
       });
     return () => {
       alive = false;
@@ -161,9 +177,13 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
 
   // Adopt the op stream the server opened for this install.
   useEffect(() => {
-    if (stage !== 'running' || opId) return;
+    if (stage !== 'running' || opId) {
+      return;
+    }
     const match = Object.values(ops).find((o) => o.kind === 'install' && o.requested === id);
-    if (match) setOpId(match.op);
+    if (match) {
+      setOpId(match.op);
+    }
   }, [ops, stage, opId, id]);
 
   const op = opId ? ops[opId] : undefined;
@@ -198,7 +218,9 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
     stage === 'plan' && plan ? planSubtitle(plan, optional, fmt.bytes, t) : undefined;
   // A running install is not cancellable, so neither is the dialog.
   const close = () => {
-    if (stage === 'running') return;
+    if (stage === 'running') {
+      return;
+    }
     call.end(stage === 'done' || stage === 'error');
   };
 

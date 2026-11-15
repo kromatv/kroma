@@ -63,9 +63,13 @@ function useOnePress(
 ): (key: RemoteKey, from: Transport) => void {
   const owner = useRef<Transport | null>(null);
   return useEffectEvent((key: RemoteKey, from: Transport) => {
-    if (params.active === false) return;
-    if (owner.current === null) owner.current = from;
-    if (owner.current !== from) return;
+    if (params.active === false) {
+      return;
+    }
+    owner.current ??= from;
+    if (owner.current !== from) {
+      return;
+    }
     routeRemoteKey(params, key);
   });
 }
@@ -86,11 +90,15 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const route = useOnePress(params);
 
   const onRemote = useEffectEvent((evt: HWEvent) => {
-    if (isRemoteKeyUp(evt)) return;
+    if (isRemoteKeyUp(evt)) {
+      return;
+    }
     const key = REMOTE_KEYS[evt.eventType];
     // focus/blur/pan and the long-press variants land here; ignoring them is the
     // whole point of an explicit map.
-    if (key) route(key, 'events');
+    if (key) {
+      route(key, 'events');
+    }
   });
   useRemoteEvents(onRemote);
   // Android's new architecture never fires `useRemoteEvents`; there the focus
@@ -107,7 +115,9 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   // alone either: on a phone the back button belongs to the navigator.
   const onBack = useEffectEvent(() => routeRemoteKey(params, 'Back'));
   useEffect(() => {
-    if (!active || !backThroughBackHandler() || !Platform.isTV) return;
+    if (!active || !backThroughBackHandler() || !Platform.isTV) {
+      return;
+    }
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       onBack();
       return true;

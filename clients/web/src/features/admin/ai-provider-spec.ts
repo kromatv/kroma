@@ -52,7 +52,9 @@ export const SPEC: Record<string, Spec> = {
 };
 
 export function hostOf(baseUrl: string, isAnthropic: boolean): string {
-  if (!baseUrl) return isAnthropic ? 'api.anthropic.com' : '';
+  if (!baseUrl) {
+    return isAnthropic ? 'api.anthropic.com' : '';
+  }
   try {
     return new URL(baseUrl).host;
   } catch {

@@ -28,20 +28,26 @@ const Ctx = createContext<I18n | null>(null);
 
 export function useT(): Translate {
   const value = useContext(Ctx);
-  if (!value) throw new Error('useT outside I18nProvider');
+  if (!value) {
+    throw new Error('useT outside I18nProvider');
+  }
   return value.t;
 }
 
 export function useI18n(): I18n {
   const value = useContext(Ctx);
-  if (!value) throw new Error('useI18n outside I18nProvider');
+  if (!value) {
+    throw new Error('useI18n outside I18nProvider');
+  }
   return value;
 }
 
 function osLocale(): Locale | null {
   for (const l of getLocales()) {
     const match = normalizeLocale(l.languageTag);
-    if (match) return match;
+    if (match) {
+      return match;
+    }
   }
   return null;
 }

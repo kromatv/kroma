@@ -17,7 +17,9 @@ export function findPlatform(platform: string): Platform | undefined {
 
 export function platformFor(platform: string): Platform {
   const module = findPlatform(platform);
-  if (!module) throw new Error(`no module answers for ${platform}`);
+  if (!module) {
+    throw new Error(`no module answers for ${platform}`);
+  }
   return module;
 }
 
@@ -39,13 +41,17 @@ export function browsedServices(): string[] {
 
 export function platformArgs(): ArgsDef {
   const args: ArgsDef = {};
-  for (const module of REGISTRY) Object.assign(args, module.flags);
+  for (const module of REGISTRY) {
+    Object.assign(args, module.flags);
+  }
   return args;
 }
 
 export function platformCommands(): SubCommandsDef {
   const commands: SubCommandsDef = {};
-  for (const module of REGISTRY) Object.assign(commands, module.commands);
+  for (const module of REGISTRY) {
+    Object.assign(commands, module.commands);
+  }
   return commands;
 }
 
@@ -53,7 +59,9 @@ export function platformOptions(args: Record<string, unknown>): PlatformOptions 
   const options: Record<string, string | boolean> = {};
   for (const name of Object.keys(platformArgs())) {
     const value = args[name];
-    if (typeof value === 'string' || typeof value === 'boolean') options[name] = value;
+    if (typeof value === 'string' || typeof value === 'boolean') {
+      options[name] = value;
+    }
   }
   return options;
 }

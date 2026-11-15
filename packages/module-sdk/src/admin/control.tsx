@@ -7,9 +7,15 @@ import { SettingSelect } from './setting-select';
 
 // An object would otherwise stringify to "[object Object]".
 function asText(v: unknown): string {
-  if (v == null) return '';
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v == null) {
+    return '';
+  }
+  if (typeof v === 'string') {
+    return v;
+  }
+  if (typeof v === 'number' || typeof v === 'boolean') {
+    return String(v);
+  }
   return JSON.stringify(v);
 }
 

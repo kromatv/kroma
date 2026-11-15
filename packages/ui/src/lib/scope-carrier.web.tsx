@@ -11,7 +11,9 @@ const CONTENTS = { display: 'contents' } as const;
  */
 export function ScopeCarrier({ children }: Readonly<{ children: ReactNode }>) {
   const marks = useScopeMarks();
-  if (!marks) return <>{children}</>;
+  if (!marks) {
+    return <>{children}</>;
+  }
   return (
     <div style={CONTENTS} {...marks}>
       {children}

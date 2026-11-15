@@ -130,7 +130,9 @@ export function SavedTitlesBar({
         value={sort}
         onValueChange={(value) => {
           const next = toSavedSort(value);
-          if (next) onSort(next);
+          if (next) {
+            onSort(next);
+          }
         }}
       >
         <Select.Trigger size="sm" style={phone ? undefined : s.sortTrigger}>

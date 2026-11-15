@@ -11,7 +11,9 @@ const MAX = 8;
 /** The saved recent searches, most recent first (empty when none / unavailable). */
 export function getRecentSearches(storage?: SessionStorage | null): string[] {
   const raw = readDeviceValue(KEY, storage);
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     const parsed: unknown = JSON.parse(raw);
     if (Array.isArray(parsed)) {
@@ -28,7 +30,9 @@ export function getRecentSearches(storage?: SessionStorage | null): string[] {
 export function addRecentSearch(query: string, storage?: SessionStorage | null): string[] {
   const q = query.trim();
   const list = getRecentSearches(storage);
-  if (!q) return list;
+  if (!q) {
+    return list;
+  }
   const next = [q, ...list.filter((old) => old.toLowerCase() !== q.toLowerCase())].slice(0, MAX);
   writeDeviceValue(KEY, JSON.stringify(next), storage);
   return next;

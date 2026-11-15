@@ -37,7 +37,9 @@ const CONDITION_KEYS: ReadonlySet<string> = new Set(['base', ...SV_STATES]);
 // keys are all conditions and at least one of them a state, which is what
 // tells it apart from a value stated per breakpoint.
 function conditional(value: unknown): value is Partial<Record<'base' | SvStateName, unknown>> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
   const keys = Object.keys(value);
   const stated =
     keys.length > 0 &&
@@ -69,9 +71,13 @@ function sortValue(key: string, value: unknown, into: Sorted): void {
     return;
   }
   const stated = value;
-  if ('base' in stated) into.authored[key] = stated.base;
+  if ('base' in stated) {
+    into.authored[key] = stated.base;
+  }
   for (const name of SV_STATES) {
-    if (!(name in stated)) continue;
+    if (!(name in stated)) {
+      continue;
+    }
     const layer = into.byState[name] ?? {};
     layer[key] = stated[name];
     into.byState[name] = layer;
@@ -83,12 +89,16 @@ function sortKeys(decl: object): Sorted {
   for (const [key, value] of Object.entries(decl)) {
     if (key.startsWith('_')) {
       const state = stateOf(key);
-      if (value === undefined) continue;
+      if (value === undefined) {
+        continue;
+      }
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         throw new Error(`sv: state "${key}" must be a style object.`);
       }
       sorted.explicit[state] = value;
-    } else sortValue(key, value, sorted);
+    } else {
+      sortValue(key, value, sorted);
+    }
   }
   return sorted;
 }
@@ -98,7 +108,9 @@ export function split(
   index: number,
   theme: Theme = KROMA,
 ): Split | undefined {
-  if (!decl) return undefined;
+  if (!decl) {
+    return undefined;
+  }
   if (isStaticStyle(decl)) {
     const states = staticStates(decl);
     return { rest: decl, states, declared: Object.keys(states) as SvStateName[], breakpoints: 0 };
@@ -110,7 +122,9 @@ export function split(
   for (const name of SV_STATES) {
     const stated = byState[name];
     const layer = explicit[name];
-    if (!stated && !layer) continue;
+    if (!stated && !layer) {
+      continue;
+    }
     const merged = { ...stated, ...layer };
     breakpoints |= declaredBreakpoints(merged);
     states[name] = normalize(merged, index, theme);
@@ -141,16 +155,22 @@ export function normalize(
   index: number,
   theme: Theme = KROMA,
 ): Record<string, unknown> {
-  if (isStaticStyle(decl)) return decl;
+  if (isStaticStyle(decl)) {
+    return decl;
+  }
   const { shorthand, rest, any } = splitShorthand(decl);
   // Text before colour: `text` may bring keys the loop below never touches, and
   // consuming `text`/`font` first keeps them out of the colour pass entirely.
   const type = textStyle(rest, theme);
   for (const key of Object.keys(rest)) {
     const value = rest[key];
-    if (COLOR_KEYS.has(key) && typeof value === 'string') rest[key] = color(value, theme);
+    if (COLOR_KEYS.has(key) && typeof value === 'string') {
+      rest[key] = color(value, theme);
+    }
   }
-  if (!any && !type) return rest;
+  if (!any && !type) {
+    return rest;
+  }
   // Shorthands first, the role's bundle under them, so a longhand in the same
   // layer wins over both.
   return { ...type, ...boxStyle(shorthand as BoxStyleProps, index, theme), ...rest };

@@ -11,7 +11,9 @@ export async function identify(
 ): Promise<Television | null> {
   for (const module of platforms()) {
     const television = await module.identify?.(host, openPorts, upnp, advertised);
-    if (television) return television;
+    if (television) {
+      return television;
+    }
   }
   return null;
 }

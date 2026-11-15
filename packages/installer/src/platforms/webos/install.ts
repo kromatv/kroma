@@ -27,7 +27,9 @@ export async function installWebos(
   try {
     const state = await installIpk(session, artifact, log);
     log(state);
-    if (launch) await launchApp(session, appId);
+    if (launch) {
+      await launchApp(session, appId);
+    }
   } finally {
     session.end();
   }

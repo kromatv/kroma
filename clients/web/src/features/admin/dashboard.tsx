@@ -40,11 +40,15 @@ export function DashboardScreen() {
 
   const sessions = sessionsData?.sessions ?? [];
   const askStop = async (session: PlaybackSession) => {
-    if (await StopStreamModal.call({ session })) await reloadSessions();
+    if (await StopStreamModal.call({ session })) {
+      await reloadSessions();
+    }
   };
   const avatarByUser = useMemo(() => {
     const known = new Map<string, string | null>();
-    for (const user of roster) known.set(user.id, user.avatarUrl ?? null);
+    for (const user of roster) {
+      known.set(user.id, user.avatarUrl ?? null);
+    }
     return known;
   }, [roster]);
 

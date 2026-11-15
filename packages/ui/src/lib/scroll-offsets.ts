@@ -10,7 +10,9 @@ interface PageMetrics {
 }
 
 function pageOffset({ top, offsetFromStart, viewport, content, size, lead }: PageMetrics): number {
-  if (lead != null && size != null && top <= lead && top + size <= viewport) return 0;
+  if (lead != null && size != null && top <= lead && top + size <= viewport) {
+    return 0;
+  }
   const last = Math.max(0, content - viewport);
   return Math.min(Math.max(top - offsetFromStart, 0), last);
 }
@@ -28,7 +30,9 @@ interface NearestMetrics {
  *  only when the row is not already there. */
 function nearestOffset({ top, size, current, margin, viewport, content }: NearestMetrics): number {
   const last = Math.max(0, content - viewport);
-  if (top - margin < current) return Math.min(Math.max(top - margin, 0), last);
+  if (top - margin < current) {
+    return Math.min(Math.max(top - margin, 0), last);
+  }
   if (top + size + margin > current + viewport) {
     return Math.min(Math.max(top + size + margin - viewport, 0), last);
   }

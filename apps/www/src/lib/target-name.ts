@@ -17,7 +17,9 @@ const LIBC = new Map([
 export function targetName(key: string): string {
   const [os, env] = key.split('-');
   const name = os === undefined ? undefined : OS.get(os);
-  if (!name) return key;
+  if (!name) {
+    return key;
+  }
   const libc = env === undefined ? undefined : LIBC.get(env);
   return libc ? `${name} (${libc})` : name;
 }

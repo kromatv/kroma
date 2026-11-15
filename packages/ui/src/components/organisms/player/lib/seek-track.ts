@@ -18,7 +18,9 @@ const spanOf = (seg: TrackSegment) => Math.max(1, seg.endMs - seg.startMs);
  * proportion to how long each chapter runs. This is what the layout produces
  * from `flex={span}`, computed here so the maths can be checked without one. */
 function segmentWidths(segs: readonly TrackSegment[], trackWidth: number): number[] {
-  if (segs.length === 0) return [];
+  if (segs.length === 0) {
+    return [];
+  }
   const total = segs.reduce((sum, seg) => sum + spanOf(seg), 0);
   const content = Math.max(0, trackWidth - SEGMENT_GAP * (segs.length - 1));
   return segs.map((seg) => (content * spanOf(seg)) / total);
@@ -28,13 +30,19 @@ function segmentWidths(segs: readonly TrackSegment[], trackWidth: number): numbe
  * A time inside a gap (there are none - gaps sit exactly on chapter boundaries)
  * resolves to the boundary itself. */
 function offsetAt(ms: number, segs: readonly TrackSegment[], trackWidth: number): number {
-  if (trackWidth <= 0 || segs.length === 0) return 0;
+  if (trackWidth <= 0 || segs.length === 0) {
+    return 0;
+  }
   const widths = segmentWidths(segs, trackWidth);
   let left = 0;
   for (const [at, seg] of segs.entries()) {
     const width = widths[at] ?? 0;
-    if (ms <= seg.startMs) return left;
-    if (ms <= seg.endMs) return left + width * ((ms - seg.startMs) / spanOf(seg));
+    if (ms <= seg.startMs) {
+      return left;
+    }
+    if (ms <= seg.endMs) {
+      return left + width * ((ms - seg.startMs) / spanOf(seg));
+    }
     left += width + SEGMENT_GAP;
   }
   return trackWidth;
@@ -43,7 +51,9 @@ function offsetAt(ms: number, segs: readonly TrackSegment[], trackWidth: number)
 /** The inverse: the moment under a pixel. A press in a gap lands on the start of
  * the segment after it, which is the chapter boundary the user aimed at. */
 function msAtOffset(x: number, segs: readonly TrackSegment[], trackWidth: number): number {
-  if (trackWidth <= 0 || segs.length === 0) return 0;
+  if (trackWidth <= 0 || segs.length === 0) {
+    return 0;
+  }
   const widths = segmentWidths(segs, trackWidth);
   let left = 0;
   for (const [at, seg] of segs.entries()) {

@@ -101,10 +101,15 @@ export function freshPadState(id: string): PadState {
 }
 
 function dominantDirection(x: number, y: number, keys: Set<EmitKey>): void {
-  if (Math.abs(x) <= STICK_DEADZONE && Math.abs(y) <= STICK_DEADZONE) return;
+  if (Math.abs(x) <= STICK_DEADZONE && Math.abs(y) <= STICK_DEADZONE) {
+    return;
+  }
   // One dominant direction - a diagonal push must not fire two keys.
-  if (Math.abs(x) > Math.abs(y)) keys.add(x < 0 ? 'Left' : 'Right');
-  else keys.add(y < 0 ? 'Up' : 'Down');
+  if (Math.abs(x) > Math.abs(y)) {
+    keys.add(x < 0 ? 'Left' : 'Right');
+  } else {
+    keys.add(y < 0 ? 'Up' : 'Down');
+  }
 }
 
 // Classic single-axis hat encoding (axis 9 on 10-axis raw layouts): 8 positions
@@ -123,21 +128,33 @@ const HAT9_DIRS: ReadonlyArray<ReadonlyArray<EmitKey>> = [
 ];
 
 function decodeHat9(v: number, keys: Set<EmitKey>): void {
-  if (Math.abs(v) > 1.001) return; // at rest
+  if (Math.abs(v) > 1.001) {
+    return;
+  } // at rest
   const step = Math.round(((v + 1) * 7) / 2);
   const exact = (step * 2) / 7 - 1;
-  if (Math.abs(v - exact) > 0.05) return; // not on an 8-way notch
-  for (const k of HAT9_DIRS[step] ?? []) keys.add(k);
+  if (Math.abs(v - exact) > 0.05) {
+    return;
+  } // not on an 8-way notch
+  for (const k of HAT9_DIRS[step] ?? []) {
+    keys.add(k);
+  }
 }
 
 export function updateCalibration(pad: Gamepad, state: PadState): void {
   pad.axes.forEach((v, i) => {
-    if (Math.abs(v) < NEUTRAL_AXIS) state.axisReady[i] = true;
+    if (Math.abs(v) < NEUTRAL_AXIS) {
+      state.axisReady[i] = true;
+    }
   });
   pad.buttons.forEach((b, i) => {
-    if (!b.pressed && b.value < NEUTRAL_BUTTON) state.buttonReady[i] = true;
+    if (!b.pressed && b.value < NEUTRAL_BUTTON) {
+      state.buttonReady[i] = true;
+    }
   });
-  if (Math.abs(pad.axes[9] ?? 0) > 1.001) state.hat9Ready = true;
+  if (Math.abs(pad.axes[9] ?? 0) > 1.001) {
+    state.hat9Ready = true;
+  }
 }
 
 /** The keys a pad is asserting this frame (buttons + left stick + hat D-pad). */
@@ -148,12 +165,16 @@ export function activeKeys(pad: Gamepad, state: PadState): Set<EmitKey> {
 
   pad.buttons.forEach((b, i) => {
     const k = table[i];
-    if (!k || !state.buttonReady[i]) return;
+    if (!k || !state.buttonReady[i]) {
+      return;
+    }
     const pressed =
       standard && STANDARD_TRIGGERS.has(i)
         ? b.value >= TRIGGER_PULL
         : b.pressed || b.value >= TRIGGER_PULL;
-    if (pressed) keys.add(k);
+    if (pressed) {
+      keys.add(k);
+    }
   });
 
   // Left stick as a D-pad.
@@ -168,7 +189,9 @@ export function activeKeys(pad: Gamepad, state: PadState): Set<EmitKey> {
     const hy = state.axisReady[7] ? (pad.axes[7] ?? 0) : 0;
     dominantDirection(hx, hy, keys);
   }
-  if (pad.axes.length >= 10 && state.hat9Ready) decodeHat9(pad.axes[9] ?? 0, keys);
+  if (pad.axes.length >= 10 && state.hat9Ready) {
+    decodeHat9(pad.axes[9] ?? 0, keys);
+  }
 
   return keys;
 }

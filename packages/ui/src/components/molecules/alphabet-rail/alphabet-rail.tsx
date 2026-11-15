@@ -32,7 +32,9 @@ const HAND = { rowH: 21, fontSize: textSizes.caption } as const;
 function slotsOf(children: ReactNode): Slot[] {
   const out: Slot[] = [];
   for (const child of Children.toArray(children)) {
-    if (!isValidElement(child) || child.type !== Item) continue;
+    if (!isValidElement(child) || child.type !== Item) {
+      continue;
+    }
     const props = child.props as AlphabetItemProps;
     out.push({ value: props.value, present: props.disabled !== true });
   }
@@ -40,10 +42,14 @@ function slotsOf(children: ReactNode): Slot[] {
 }
 
 function rangeIndices(slots: readonly Slot[], range: LetterRange | undefined) {
-  if (!range) return null;
+  if (!range) {
+    return null;
+  }
   const first = slots.findIndex((slot) => slot.value === range.first);
   const last = slots.findIndex((slot) => slot.value === range.last);
-  if (first < 0 || last < first) return null;
+  if (first < 0 || last < first) {
+    return null;
+  }
   return [first, last] as [number, number];
 }
 

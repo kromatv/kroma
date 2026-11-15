@@ -38,14 +38,18 @@ const BYTES_PER_GB = 1024 ** 3;
 
 function readCpuCores(source: HardwareSource | null): number | null {
   const injected = fromSource(source, (s) => s.cpuCores());
-  if (injected !== null) return injected;
+  if (injected !== null) {
+    return injected;
+  }
   const nav = globalThis.navigator as DeviceNavigator | undefined;
   return positive(nav?.hardwareConcurrency);
 }
 
 function readMemoryGb(source: HardwareSource | null): number | null {
   const injected = fromSource(source, (s) => s.memoryBytes());
-  if (injected !== null) return Math.round(injected / BYTES_PER_GB) || null;
+  if (injected !== null) {
+    return Math.round(injected / BYTES_PER_GB) || null;
+  }
   // No `performance.memory` fallback: that is the JS heap cap, not the set's
   // RAM, and printing it under "Memory" would be a wrong number rather than none.
   const nav = globalThis.navigator as DeviceNavigator | undefined;
@@ -65,7 +69,9 @@ function fromSource(
   source: HardwareSource | null,
   read: (s: HardwareSource) => number | null,
 ): number | null {
-  if (!source) return null;
+  if (!source) {
+    return null;
+  }
   try {
     return positive(read(source));
   } catch {

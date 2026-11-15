@@ -26,10 +26,18 @@ function safeDetail(message: string): string | undefined {
 }
 
 function statusKind(status: number): PlaybackFailure['kind'] | null {
-  if (status === 404 || status === 410) return 'missing';
-  if (status === 401 || status === 403) return 'denied';
-  if (status === 408 || status === 504) return 'network';
-  if (status >= 500) return 'server';
+  if (status === 404 || status === 410) {
+    return 'missing';
+  }
+  if (status === 401 || status === 403) {
+    return 'denied';
+  }
+  if (status === 408 || status === 504) {
+    return 'network';
+  }
+  if (status >= 500) {
+    return 'server';
+  }
   return null;
 }
 
@@ -44,14 +52,18 @@ export function nativePlaybackFailure(error: unknown): PlaybackFailure {
   const message = parsed.success ? parsed.data.message : '';
   const detail = safeDetail(error instanceof Error ? error.message : message);
   const text = detail?.toLowerCase() ?? '';
-  if (/not found|no such file|does not exist|file.*missing|\b404\b/.test(text))
+  if (/not found|no such file|does not exist|file.*missing|\b404\b/.test(text)) {
     return { kind: 'missing', detail };
-  if (/unauthori[sz]ed|forbidden|permission|access denied|\b40[13]\b/.test(text))
+  }
+  if (/unauthori[sz]ed|forbidden|permission|access denied|\b40[13]\b/.test(text)) {
     return { kind: 'denied', detail };
-  if (/network|connection|internet|timed? out|offline|nsurlerrordomain/.test(text))
+  }
+  if (/network|connection|internet|timed? out|offline|nsurlerrordomain/.test(text)) {
     return { kind: 'network', detail };
-  if (/unsupported|not supported|format|codec|decod/.test(text))
+  }
+  if (/unsupported|not supported|format|codec|decod/.test(text)) {
     return { kind: 'unsupported', detail };
+  }
   return { kind: 'unknown', detail };
 }
 
@@ -60,7 +72,9 @@ export async function diagnosePlaybackFailure(
   error: unknown,
 ): Promise<PlaybackFailure> {
   const fallback = nativePlaybackFailure(error);
-  if (!/^https?:\/\//i.test(uri)) return fallback;
+  if (!/^https?:\/\//i.test(uri)) {
+    return fallback;
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4000);
   try {

@@ -59,7 +59,9 @@ function optionRows(args: Record<string, UsageArg>): string[] {
 }
 
 function flagCell(name: string, arg: UsageArg): string {
-  if (arg.type !== 'boolean') return `\`--${name} <${arg.valueHint ?? 'value'}>\``;
+  if (arg.type !== 'boolean') {
+    return `\`--${name} <${arg.valueHint ?? 'value'}>\``;
+  }
   return arg.default === true ? `\`--${name}\`, \`--no-${name}\`` : `\`--${name}\``;
 }
 

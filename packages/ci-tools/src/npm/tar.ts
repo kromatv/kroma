@@ -26,14 +26,19 @@ export function readTarball(gzipped: Uint8Array): PackageFiles {
   let offset = 0;
   while (offset + BLOCK <= tar.length) {
     const header = tar.subarray(offset, offset + BLOCK);
-    if (header.every((byte) => byte === 0)) break;
+    if (header.every((byte) => byte === 0)) {
+      break;
+    }
     const size = Number.parseInt(text(header, 124, 12).trim() || '0', 8);
-    const type = String.fromCodePoint(header[156] || 48);
+    const typeByte = header[156] ?? 0;
+    const type = String.fromCodePoint(typeByte === 0 ? 48 : typeByte);
     const body = tar.subarray(offset + BLOCK, offset + BLOCK + size);
     offset += BLOCK + Math.ceil(size / BLOCK) * BLOCK;
-    if (type === 'x') override = paxPath(body);
-    else if (type === 'L') override = text(body, 0, body.length);
-    else if (type === '0') {
+    if (type === 'x') {
+      override = paxPath(body);
+    } else if (type === 'L') {
+      override = text(body, 0, body.length);
+    } else if (type === '0') {
       const prefix = text(header, 345, 155);
       const name =
         override ?? (prefix ? `${prefix}/${text(header, 0, 100)}` : text(header, 0, 100));

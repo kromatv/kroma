@@ -67,8 +67,11 @@ export default function NotificationSettings() {
 
   const toggle = useMutation({
     mutationFn: async () => {
-      if (subscribed) await disablePush(nativePush, client);
-      else await enablePush(nativePush, client);
+      if (subscribed) {
+        await disablePush(nativePush, client);
+      } else {
+        await enablePush(nativePush, client);
+      }
     },
     onSuccess: async () => {
       setError(null);

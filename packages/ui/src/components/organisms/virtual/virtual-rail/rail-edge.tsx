@@ -27,7 +27,9 @@ const EDGE_INSET = 8;
 const widthOf = (width: number, scope: StyleScope) =>
   sharedStyle(`rail-edge:width:${width}`, { width }, scope);
 export function edgeWidth(row: number): number {
-  if (row <= 0) return EDGE_MIN;
+  if (row <= 0) {
+    return EDGE_MIN;
+  }
   return Math.round(Math.min(EDGE_MAX, Math.max(EDGE_MIN, row * EDGE_SHARE)));
 }
 

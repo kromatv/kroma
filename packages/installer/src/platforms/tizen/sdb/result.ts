@@ -34,8 +34,12 @@ export function parseResult(output: string): SdbResult {
     return { verdict: ok ? 'success' : 'failure', code, output: text };
   }
 
-  if (SUCCESS.test(text)) return { verdict: 'success', code: 0, output: text };
-  if (FAILURE.test(text)) return { verdict: 'failure', code: null, output: text };
+  if (SUCCESS.test(text)) {
+    return { verdict: 'success', code: 0, output: text };
+  }
+  if (FAILURE.test(text)) {
+    return { verdict: 'failure', code: null, output: text };
+  }
   return { verdict: 'unknown', code: null, output: text };
 }
 

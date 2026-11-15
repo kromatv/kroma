@@ -23,8 +23,12 @@ async function fetchCatalog(): Promise<SiteCatalog> {
   const body = await fetchBody(CATALOG_URL, { timeoutMs: TIMEOUT_MS, maxBytes: MAX_BYTES });
 
   const parsed = Catalog.safeParse(JSON.parse(body));
-  if (!parsed.success) throw new Error(`${CATALOG_URL} is not a catalog: ${parsed.error.message}`);
-  if (parsed.data.modules.length === 0) throw new Error(`${CATALOG_URL} listed no modules`);
+  if (!parsed.success) {
+    throw new Error(`${CATALOG_URL} is not a catalog: ${parsed.error.message}`);
+  }
+  if (parsed.data.modules.length === 0) {
+    throw new Error(`${CATALOG_URL} listed no modules`);
+  }
 
   return toSiteCatalog(parsed.data);
 }
@@ -49,10 +53,14 @@ export function modulesPlugin(): Plugin {
       return id === VIRTUAL_ID ? RESOLVED_ID : null;
     },
     async load(id) {
-      if (id !== RESOLVED_ID) return null;
+      if (id !== RESOLVED_ID) {
+        return null;
+      }
       catalog ??= fetchCatalog().catch((err: unknown) => {
         const reason = err instanceof Error ? err.message : String(err);
-        if (isBuild) throw new Error(`Module catalog unavailable: ${reason}`);
+        if (isBuild) {
+          throw new Error(`Module catalog unavailable: ${reason}`);
+        }
         this.warn(`Module catalog unavailable, serving an empty list: ${reason}`);
         return EMPTY;
       });

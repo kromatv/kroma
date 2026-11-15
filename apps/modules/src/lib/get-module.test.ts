@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { moduleIdInput, moduleVersions } from './get-module';
+import { requestUrl } from './request-url.fixture';
 
 const RELEASES = [
   {
@@ -21,7 +22,7 @@ function upstream() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+      calls.push(requestUrl(input));
       return Response.json(RELEASES);
     }),
   );

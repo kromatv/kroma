@@ -89,7 +89,9 @@ export function useSubtitleSelection(
   const appliedRef = useRef<string | null>(null);
   useEffect(() => {
     const round = `${item.id}:${complete !== null}`;
-    if (appliedRef.current === round) return;
+    if (appliedRef.current === round) {
+      return;
+    }
     appliedRef.current = round;
     setActive(preferredSubIndex(filmTracks, subtitleLanguage));
   }, [item.id, complete, filmTracks, subtitleLanguage]);

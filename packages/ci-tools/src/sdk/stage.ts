@@ -110,8 +110,9 @@ function tablerIconNames(uiDir: string): string[] {
     'utf8',
   );
   const names = [...typings.matchAll(/ as (Icon[A-Za-z0-9]+)\b/g)].map((m) => m[1] ?? '');
-  if (names.length < 1000)
+  if (names.length < 1000) {
     throw new Error(`Tabler typings list ${names.length} icons; expected thousands`);
+  }
   return [...new Set(names)].sort((a, b) => (a < b ? -1 : 1));
 }
 
@@ -193,7 +194,9 @@ export async function stage(options: StageOptions): Promise<string> {
     ['i18n', 'schema/catalog.schema.json'],
   ] as const) {
     const source = join(root, 'packages', dir, rel);
-    if (!existsSync(source)) continue;
+    if (!existsSync(source)) {
+      continue;
+    }
     mkdirSync(join(to, rel, '..'), { recursive: true });
     copyFileSync(source, join(to, rel));
   }
@@ -201,7 +204,9 @@ export async function stage(options: StageOptions): Promise<string> {
   const packed = await $`bun pm pack --destination ${out} --quiet`.cwd(to).text();
   const file = packed.trim().split('\n').pop() ?? '';
   const path = join(out, file.split('/').pop() ?? file);
-  if (!existsSync(path)) throw new Error(`bun pm pack produced no tarball at ${path}`);
+  if (!existsSync(path)) {
+    throw new Error(`bun pm pack produced no tarball at ${path}`);
+  }
   rmSync(join(out, 'stage'), { recursive: true, force: true });
   return path;
 }

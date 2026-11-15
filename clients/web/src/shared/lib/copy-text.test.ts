@@ -8,7 +8,9 @@ function stubClipboard(writeText: ((text: string) => Promise<void>) | null) {
 
 function stubSelectionCopy(result: boolean | Error) {
   const execCommand = vi.fn(() => {
-    if (result instanceof Error) throw result;
+    if (result instanceof Error) {
+      throw result;
+    }
     return result;
   });
   Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true });

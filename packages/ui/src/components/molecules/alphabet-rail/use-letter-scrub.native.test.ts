@@ -69,7 +69,9 @@ function scrub(node: object) {
   const rail = { current: node as unknown as View } as RefObject<View | null>;
   const onJump = vi.fn();
   const view = renderHook(() => useLetterScrub(rail, SLOTS, ROW, onJump));
-  if (!rn.config) throw new Error('the responder was never created');
+  if (!rn.config) {
+    throw new Error('the responder was never created');
+  }
   return { ...view, gesture: rn.config, onJump };
 }
 

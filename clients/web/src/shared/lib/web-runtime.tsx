@@ -11,7 +11,9 @@ export function WebRuntimeProvider({
 /** Root API state is shared by the router's loaders and the rendered auth tree. */
 export function useWebRuntime(): WebRuntime {
   const runtime = useContext(Context);
-  if (!runtime) throw new Error('WebRuntimeProvider is required');
+  if (!runtime) {
+    throw new Error('WebRuntimeProvider is required');
+  }
   return runtime;
 }
 export function useKromaClient() {

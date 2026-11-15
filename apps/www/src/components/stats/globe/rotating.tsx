@@ -21,7 +21,9 @@ export function Rotating({ group, motion, rest, tour, children }: Readonly<Rotat
     const current = motion.current;
     advance(current, Math.min(delta, MAX_FRAME_SECONDS), rest, tour);
     group.current?.rotation.set(current.pitch, current.yaw, 0);
-    if (state.frameloop === 'demand' && restless(current)) state.invalidate();
+    if (state.frameloop === 'demand' && restless(current)) {
+      state.invalidate();
+    }
   });
 
   return (

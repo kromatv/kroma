@@ -14,7 +14,9 @@ function exported(tree: TestNode): Record<string, string> {
   const out: Record<string, string> = {};
   for (const node of tree.children ?? []) {
     const match = /^export const (\w+) = (.*);$/.exec(node.value ?? '');
-    if (node.type === 'mdxjsEsm' && match?.[1] && match[2]) out[match[1]] = JSON.parse(match[2]);
+    if (node.type === 'mdxjsEsm' && match?.[1] && match[2]) {
+      out[match[1]] = JSON.parse(match[2]);
+    }
   }
   return out;
 }

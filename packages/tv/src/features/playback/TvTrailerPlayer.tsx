@@ -29,7 +29,9 @@ export function TvTrailerPlayer<E extends ClipEngine>({
   const { mousePointer } = useEnv();
   const { docked, undock } = usePlayerDock();
   useEffect(() => {
-    if (docked) undock();
+    if (docked) {
+      undock();
+    }
   }, [docked, undock]);
 
   const state = useTrailerPreparation(

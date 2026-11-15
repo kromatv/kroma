@@ -58,7 +58,9 @@ function bucketOf(path: string): string {
     return parts[0]?.startsWith('@') ? `${parts[0]}/${parts[1]}` : (parts[0] ?? '?');
   }
   const parts = path.split('/');
-  if (parts[0] === 'packages' || parts[0] === 'clients') return `${parts[0]}/${parts[1]}`;
+  if (parts[0] === 'packages' || parts[0] === 'clients') {
+    return `${parts[0]}/${parts[1]}`;
+  }
   return parts[0] ?? '?';
 }
 

@@ -14,7 +14,9 @@ const components = { a: DocAnchor };
 
 function Pager({ slug }: Readonly<{ slug: DocSlug }>) {
   const { prev, next } = neighbours(slug);
-  if (!prev && !next) return null;
+  if (!prev && !next) {
+    return null;
+  }
   return (
     <div className="mt-16 grid gap-3 border-t border-border pt-8 sm:grid-cols-2">
       {prev ? (
@@ -55,7 +57,9 @@ function Pager({ slug }: Readonly<{ slug: DocSlug }>) {
 export function DocPage({ slug }: Readonly<{ slug: DocSlug }>) {
   const lang = useLang();
   const doc = getDoc(slug, lang);
-  if (!doc) return null;
+  if (!doc) {
+    return null;
+  }
   const { Component } = doc;
 
   return (

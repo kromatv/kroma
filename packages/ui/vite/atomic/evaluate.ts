@@ -35,17 +35,25 @@ function binary(node: Node, frame: Frame): unknown {
   const a = evaluateIn(node.left as Node, frame);
   const b = evaluateIn(node.right as Node, frame);
   const op = node.operator as string;
-  if (op === '+' && (typeof a === 'string' || typeof b === 'string')) return String(a) + String(b);
+  if (op === '+' && (typeof a === 'string' || typeof b === 'string')) {
+    return String(a) + String(b);
+  }
   const fn = arithmetic[op];
-  if (fn && typeof a === 'number' && typeof b === 'number') return fn(a, b);
+  if (fn && typeof a === 'number' && typeof b === 'number') {
+    return fn(a, b);
+  }
   throw new Unstatic(`the operator ${op}`);
 }
 
 function logical(node: Node, frame: Frame): unknown {
   const a = evaluateIn(node.left as Node, frame);
   const right = () => evaluateIn(node.right as Node, frame);
-  if (node.operator === '??') return a ?? right();
-  if (node.operator === '||') return a || right();
+  if (node.operator === '??') {
+    return a ?? right();
+  }
+  if (node.operator === '||') {
+    return a || right();
+  }
   return a && right();
 }
 
@@ -53,10 +61,14 @@ function unary(node: Node, frame: Frame): unknown {
   const value = evaluateIn(node.argument as Node, frame);
   switch (node.operator) {
     case '-':
-      if (typeof value === 'number') return -value;
+      if (typeof value === 'number') {
+        return -value;
+      }
       break;
     case '+':
-      if (typeof value === 'number') return value;
+      if (typeof value === 'number') {
+        return value;
+      }
       break;
     case '!':
       return !value;
@@ -70,8 +82,9 @@ function object(node: Node, frame: Frame): Record<string, unknown> {
   for (const property of node.properties as Node[]) {
     if (property.type === 'SpreadElement') {
       const spread = evaluateIn(property.argument as Node, frame);
-      if (typeof spread !== 'object' || spread === null)
+      if (typeof spread !== 'object' || spread === null) {
         throw new Unstatic('a spread of a non-object');
+      }
       Object.assign(out, spread);
       continue;
     }
@@ -93,7 +106,9 @@ function array(node: Node, frame: Frame): unknown[] {
       out.push(null);
     } else if (element.type === 'SpreadElement') {
       const spread = evaluateIn(element.argument as Node, frame);
-      if (!Array.isArray(spread)) throw new Unstatic('a spread of a non-array');
+      if (!Array.isArray(spread)) {
+        throw new Unstatic('a spread of a non-array');
+      }
       out.push(...spread);
     } else {
       out.push(evaluateIn(element, frame));
@@ -104,14 +119,24 @@ function array(node: Node, frame: Frame): unknown[] {
 
 function identifier(node: Node, frame: Frame): unknown {
   const name = node.name as string;
-  if (name === 'undefined') return undefined;
+  if (name === 'undefined') {
+    return undefined;
+  }
   const local = frame.scope.consts.get(name);
-  if (local) return evaluateIn(local, { ...frame, depth: frame.depth + 1 });
+  if (local) {
+    return evaluateIn(local, { ...frame, depth: frame.depth + 1 });
+  }
   const imported = frame.scope.imports.get(name);
-  if (!imported) throw new Unstatic(`the binding ${name}`);
+  if (!imported) {
+    throw new Unstatic(`the binding ${name}`);
+  }
   const target = frame.loader.resolve(imported.source, frame.scope.file);
-  if (!target) throw new Unstatic(`${name} from ${imported.source}`);
-  if (frame.chain >= MAX_MODULE_CHAIN) throw new Unstatic(`${name}: too many modules deep`);
+  if (!target) {
+    throw new Unstatic(`${name} from ${imported.source}`);
+  }
+  if (frame.chain >= MAX_MODULE_CHAIN) {
+    throw new Unstatic(`${name}: too many modules deep`);
+  }
   const found = frame.loader.exportOf(target, imported.imported, frame.chain + 1);
   return evaluateIn(found.init, {
     scope: found.scope,
@@ -126,8 +151,9 @@ function member(node: Node, frame: Frame): unknown {
   const key = node.computed
     ? String(evaluateIn(node.property as Node, frame))
     : nameOf(node.property as Node);
-  if (typeof target !== 'object' || target === null)
+  if (typeof target !== 'object' || target === null) {
     throw new Unstatic(`a member of ${typeof target}`);
+  }
   return Reflect.get(target, key);
 }
 
@@ -141,18 +167,24 @@ function call(node: Node, frame: Frame): unknown {
   const receiver = callee.type === 'MemberExpression' ? (callee.object as Node) : null;
   if (method === 'freeze' && receiver?.type === 'Identifier' && receiver.name === 'Object') {
     const argument = args[0];
-    if (argument) return evaluateIn(argument, frame);
+    if (argument) {
+      return evaluateIn(argument, frame);
+    }
   }
   if (method === 'join' && receiver) {
     const list = evaluateIn(receiver, frame);
     const separator = args[0] ? evaluateIn(args[0], frame) : ',';
-    if (Array.isArray(list)) return list.join(String(separator));
+    if (Array.isArray(list)) {
+      return list.join(String(separator));
+    }
   }
   throw new Unstatic(`a call to ${nameOfCallee(callee)}`);
 }
 
 function nameOfCallee(callee: Node): string {
-  if (callee.type === 'Identifier') return callee.name as string;
+  if (callee.type === 'Identifier') {
+    return callee.name as string;
+  }
   if (callee.type === 'MemberExpression' && !callee.computed) {
     return `${nameOfCallee(callee.object as Node)}.${(callee.property as Node).name as string}`;
   }
@@ -166,16 +198,22 @@ function template(node: Node, frame: Frame): string {
   quasis.forEach((quasi, i) => {
     out += (quasi.value as { cooked: string }).cooked;
     const expression = expressions[i];
-    if (expression) out += String(evaluateIn(expression, frame));
+    if (expression) {
+      out += String(evaluateIn(expression, frame));
+    }
   });
   return out;
 }
 
 function evaluateIn(node: Node, frame: Frame): unknown {
-  if (frame.depth > MAX_DEPTH) throw new Unstatic('a value nested too deep');
+  if (frame.depth > MAX_DEPTH) {
+    throw new Unstatic('a value nested too deep');
+  }
   switch (node.type) {
     case 'Literal':
-      if ('regex' in node && node.regex) throw new Unstatic('a regular expression');
+      if ('regex' in node && node.regex) {
+        throw new Unstatic('a regular expression');
+      }
       return node.value;
     case 'TemplateLiteral':
       return template(node, frame);

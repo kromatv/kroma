@@ -57,7 +57,9 @@ describe('every story renders', () => {
 describe('interactive stories respond to a press', () => {
   it('opens the Dialog story from its own trigger', () => {
     const story = LOADED.find((entry) => entry.name === 'Dialog');
-    if (!story) throw new Error('the Dialog story has gone missing');
+    if (!story) {
+      throw new Error('the Dialog story has gone missing');
+    }
     render(story.render(story.args));
 
     expect(screen.queryByText(String(story.args.title))).toBeNull();
@@ -74,7 +76,9 @@ describe('interactive stories respond to a press', () => {
   it('fills, submits and clears the Add-a-server demo', async () => {
     const story = LOADED.find((entry) => entry.name === 'Form');
     const demo = story?.demos.find((entry) => entry.name === 'Add a server');
-    if (!demo) throw new Error('the Add a server demo has gone missing');
+    if (!demo) {
+      throw new Error('the Add a server demo has gone missing');
+    }
     render(demo.render());
 
     const fill = (label: string, text: string) =>
@@ -99,7 +103,9 @@ describe('interactive stories respond to a press', () => {
 
   it('closes a dialog when the backdrop is pressed', () => {
     const story = LOADED.find((entry) => entry.name === 'Dialog');
-    if (!story) throw new Error('the Dialog story has gone missing');
+    if (!story) {
+      throw new Error('the Dialog story has gone missing');
+    }
     render(story.render(story.args));
 
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));

@@ -25,10 +25,16 @@ export interface Television {
 
 /** `Android 12, WebView 108`, trailed by `by model` for a version nothing reported. */
 export function runtimeLabel(runtime: Runtime | null): string {
-  if (!runtime) return '';
+  if (!runtime) {
+    return '';
+  }
   const { engine } = runtime;
   const parts = [`${runtime.name} ${runtime.version}`];
-  if (engine) parts.push(engine.version ? `${engine.name} ${engine.version}` : engine.name);
-  if (runtime.learned === 'derived') parts.push('by model');
+  if (engine) {
+    parts.push(engine.version ? `${engine.name} ${engine.version}` : engine.name);
+  }
+  if (runtime.learned === 'derived') {
+    parts.push('by model');
+  }
   return parts.join(', ');
 }

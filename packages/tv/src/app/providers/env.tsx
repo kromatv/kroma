@@ -46,9 +46,13 @@ function onRealTv(platform: string): boolean {
   // Native clients have no DOM at all, so they must short-circuit here: without
   // it, tvOS reported a hardware keyboard and broke the PIN screen, whose input
   // listener is DOM-only.
-  if (!webWindow()) return true;
+  if (!webWindow()) {
+    return true;
+  }
   const probe = TV_RUNTIME[platform];
-  if (!probe) return false;
+  if (!probe) {
+    return false;
+  }
   try {
     return probe(navigator.userAgent);
   } catch {

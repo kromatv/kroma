@@ -9,8 +9,12 @@ interface MdNode {
 }
 
 function plain(node: MdNode): string {
-  if (node.type === 'text' || node.type === 'inlineCode') return node.value ?? '';
-  if (node.type === 'break') return ' ';
+  if (node.type === 'text' || node.type === 'inlineCode') {
+    return node.value ?? '';
+  }
+  if (node.type === 'break') {
+    return ' ';
+  }
   return (node.children ?? []).map(plain).join('');
 }
 
@@ -20,7 +24,9 @@ function plain(node: MdNode): string {
  *  because GitHub would render it as a table above the text. */
 export function remarkDocMeta() {
   return (tree: MdNode, file: { path?: string }) => {
-    if (!isDocFile(file.path) || !tree.children) return;
+    if (!isDocFile(file.path) || !tree.children) {
+      return;
+    }
     const at = tree.children.findIndex((n) => n.type === 'heading' && n.depth === 1);
     const heading = at === -1 ? undefined : tree.children.splice(at, 1)[0];
     const lead = tree.children.find((n) => n.type === 'paragraph');

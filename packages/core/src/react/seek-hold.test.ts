@@ -54,7 +54,9 @@ describe('what the chrome draws after a seek is committed', () => {
     });
     act(() => result.current.seekTo(300));
 
-    act(() => vi.advanceTimersByTime(20_000));
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
     rerender({ cur: 61 });
 
     expect(result.current.cur).toBe(61);

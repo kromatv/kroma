@@ -36,7 +36,9 @@ export function CastBar() {
   const { active, positionMs, send, select } = useCast();
   const wide = useWindowDimensions().width >= breakpoint.md;
 
-  if (!active) return null;
+  if (!active) {
+    return null;
+  }
 
   const playing = active.nowPlaying;
   const playingOn = t('cast.playingOn', { device: active.name });
@@ -97,7 +99,9 @@ function NowPlaying({
           label={playingOn}
           onPress={async () => {
             const picked = await castPicker({ offerLocal: true });
-            if (picked !== undefined) onSelect(picked);
+            if (picked !== undefined) {
+              onSelect(picked);
+            }
           }}
         >
           {(state) => (
@@ -170,7 +174,9 @@ function Scrubber({
   const shownMs = dragMs ?? positionMs;
 
   const commit = () => {
-    if (dragMs == null) return;
+    if (dragMs == null) {
+      return;
+    }
     void send({ type: 'seek', positionMs: Math.round(dragMs) });
     setDragMs(null);
   };

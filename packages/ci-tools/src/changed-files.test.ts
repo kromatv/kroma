@@ -18,8 +18,12 @@ const pullRequest: Event = {
 const answers = (...replies: (Response | Error)[]) => {
   const fetch = vi.fn(async () => {
     const reply = replies.shift();
-    if (reply === undefined) throw new Error('no more replies');
-    if (reply instanceof Error) throw reply;
+    if (reply === undefined) {
+      throw new Error('no more replies');
+    }
+    if (reply instanceof Error) {
+      throw reply;
+    }
     return reply;
   });
   vi.stubGlobal('fetch', fetch);

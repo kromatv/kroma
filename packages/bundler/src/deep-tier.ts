@@ -27,7 +27,7 @@ import { parse } from 'acorn';
 // @ts-expect-error -- untyped package
 import polyfillCorejs3 from 'babel-plugin-polyfill-corejs3';
 import { build } from 'esbuild';
-import postcss from 'postcss';
+import postcss, { parse as parseCss } from 'postcss';
 import customProperties from 'postcss-custom-properties';
 
 const THEME_ATTR = /\[data-theme\s*=\s*["']?([\w-]+)["']?\]/g;
@@ -82,7 +82,9 @@ export async function trimCorejs(path: string, chrome: number, minify = true): P
   const injected = await babelPass(readFileSync(path, 'utf8'), path, [
     [polyfillCorejs3, { method: 'usage-global', version: COREJS, targets: { chrome } }],
   ]);
-  if (!injected?.code) throw new Error(`deep-tier: core-js injection failed for ${path}`);
+  if (!injected?.code) {
+    throw new Error(`deep-tier: core-js injection failed for ${path}`);
+  }
   writeFileSync(path, injected.code);
   // Injection emits bare `require`s; nothing resolves them but a bundler.
   await bundleInPlace(path, minify);
@@ -101,7 +103,9 @@ export async function lowerJs(
   chrome: number,
   { polyfill = false }: { polyfill?: boolean } = {},
 ): Promise<void> {
-  if (polyfill) await trimCorejs(path, chrome, false);
+  if (polyfill) {
+    await trimCorejs(path, chrome, false);
+  }
 
   const lowered = await babelPass(
     readFileSync(path, 'utf8'),
@@ -109,21 +113,33 @@ export async function lowerJs(
     [transformClasses, transformArrows],
     [[presetEnv, { targets: { chrome: String(chrome) }, modules: false }]],
   );
-  if (!lowered?.code) throw new Error(`deep-tier: babel produced no output for ${path}`);
+  if (!lowered?.code) {
+    throw new Error(`deep-tier: babel produced no output for ${path}`);
+  }
   writeFileSync(path, lowered.code);
-  if (polyfill) await bundleInPlace(path, true);
+  if (polyfill) {
+    await bundleInPlace(path, true);
+  }
 }
 
 function walk(node: unknown, visit: (type: string, kind: unknown) => void): void {
-  if (node === null || typeof node !== 'object') return;
+  if (node === null || typeof node !== 'object') {
+    return;
+  }
   if (Array.isArray(node)) {
-    for (const child of node) walk(child, visit);
+    for (const child of node) {
+      walk(child, visit);
+    }
     return;
   }
   const type: unknown = Reflect.get(node, 'type');
-  if (typeof type === 'string') visit(type, Reflect.get(node, 'kind'));
+  if (typeof type === 'string') {
+    visit(type, Reflect.get(node, 'kind'));
+  }
   for (const [key, value] of Object.entries(node)) {
-    if (key !== 'type') walk(value, visit);
+    if (key !== 'type') {
+      walk(value, visit);
+    }
   }
 }
 
@@ -164,8 +180,12 @@ function pinSelector(selector: string, theme: string): string | null {
     .filter(Boolean)
     .flatMap((part) => {
       const named = [...part.matchAll(THEME_ATTR)].map((m) => m[1]);
-      if (named.length === 0) return [part];
-      if (named.some((name) => name !== theme)) return [];
+      if (named.length === 0) {
+        return [part];
+      }
+      if (named.some((name) => name !== theme)) {
+        return [];
+      }
       const bare = part.replace(THEME_ATTR, '').trim();
       return [bare === '' ? ':root' : bare];
     });
@@ -175,18 +195,26 @@ function pinSelector(selector: string, theme: string): string | null {
 /** Resolves every `var()` in `path` against `theme`, in place. Throws rather
  * than emit a stylesheet an engine below M49 would drop declarations from. */
 export async function flattenCustomProperties(path: string, theme: string): Promise<void> {
-  const root = postcss.parse(readFileSync(path, 'utf8'), { from: path });
+  const root = parseCss(readFileSync(path, 'utf8'), { from: path });
 
   root.walkAtRules('media', (at) => {
     const scheme = COLOR_SCHEME.exec(at.params)?.[1];
-    if (!scheme) return;
-    if (scheme === theme) at.replaceWith(at.nodes ?? []);
-    else at.remove();
+    if (!scheme) {
+      return;
+    }
+    if (scheme === theme) {
+      at.replaceWith(at.nodes ?? []);
+    } else {
+      at.remove();
+    }
   });
   root.walkRules((rule) => {
     const pinned = pinSelector(rule.selector, theme);
-    if (pinned === null) rule.remove();
-    else rule.selector = pinned;
+    if (pinned === null) {
+      rule.remove();
+    } else {
+      rule.selector = pinned;
+    }
   });
 
   const out = await postcss([customProperties({ preserve: false })]).process(root, {
@@ -198,13 +226,19 @@ export async function flattenCustomProperties(path: string, theme: string): Prom
   // is itself a var(). An engine below M49 parses none of them, so they are
   // weight at best; dropping them also makes the guard below exact.
   out.root.walkDecls((decl) => {
-    if (decl.prop.startsWith('--')) decl.remove();
+    if (decl.prop.startsWith('--')) {
+      decl.remove();
+    }
   });
   out.root.walkRules((rule) => {
-    if (rule.nodes.length === 0) rule.remove();
+    if (rule.nodes.length === 0) {
+      rule.remove();
+    }
   });
   out.root.walkAtRules((at) => {
-    if ((at.nodes?.length ?? 0) === 0) at.remove();
+    if ((at.nodes?.length ?? 0) === 0) {
+      at.remove();
+    }
   });
 
   const css = out.root.toString();

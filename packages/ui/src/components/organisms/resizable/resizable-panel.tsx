@@ -102,7 +102,9 @@ function Panel({ asChild, onResize, style, children }: Readonly<ResizablePanelPr
   const report = useEffectEvent(() => onResize?.(size, { points, collapsed }));
   const was = useRef<number | null>(null);
   useEffect(() => {
-    if (was.current === size) return;
+    if (was.current === size) {
+      return;
+    }
     was.current = size;
     report();
   }, [size]);

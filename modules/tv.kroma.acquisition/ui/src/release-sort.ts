@@ -32,15 +32,21 @@ export function sortReleases(
 ): ScoredReleaseView[] {
   return [...releases].sort((a, b) => {
     const rejected = Number(a.score == null) - Number(b.score == null);
-    if (rejected !== 0) return rejected;
+    if (rejected !== 0) {
+      return rejected;
+    }
     return rank(b, sort) - rank(a, sort);
   });
 }
 
 /** `S03E07` / `S03 pack` / null for a movie: what this release would satisfy. */
 export function targetLabel(r: ScoredReleaseView): string | null {
-  if (r.target === 'movie') return null;
+  if (r.target === 'movie') {
+    return null;
+  }
   const s = String(r.season ?? 0).padStart(2, '0');
-  if (r.target === 'season') return `S${s}`;
+  if (r.target === 'season') {
+    return `S${s}`;
+  }
   return `S${s}E${String(r.episodes?.[0] ?? 0).padStart(2, '0')}`;
 }

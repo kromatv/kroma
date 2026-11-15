@@ -37,7 +37,9 @@ export function ForgotForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (identifier.trim()) onSubmit(identifier.trim());
+        if (identifier.trim()) {
+          onSubmit(identifier.trim());
+        }
       }}
       className={classes(s.form)}
     >
@@ -76,7 +78,9 @@ export function ForgotForm({
               loading={busy}
               disabled={busy || !identifier.trim()}
               onPress={() => {
-                if (identifier.trim()) onSubmit(identifier.trim());
+                if (identifier.trim()) {
+                  onSubmit(identifier.trim());
+                }
               }}
             />
           </>
@@ -121,7 +125,9 @@ export function RegisterForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
+        if (valid) {
+          onSubmit(email.trim(), username.trim(), password, avatar);
+        }
       }}
       className={classes(s.form)}
     >
@@ -143,7 +149,9 @@ export function RegisterForm({
           size="md"
           label={busy ? t('auth.creating') : t('auth.createAccount')}
           onPress={() => {
-            if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
+            if (valid) {
+              onSubmit(email.trim(), username.trim(), password, avatar);
+            }
           }}
           loading={busy}
           disabled={!valid}

@@ -96,7 +96,9 @@ interface Ring {
 }
 
 function pose(ring: Ring, t: number): void {
-  if (!ring.mesh || !ring.material) return;
+  if (!ring.mesh || !ring.material) {
+    return;
+  }
   ring.mesh.scale.setScalar(1 + easeOut(t) * (RING_REACH - 1));
   ring.material.opacity = (1 - t) ** 1.6 * RING_OPACITY;
 }

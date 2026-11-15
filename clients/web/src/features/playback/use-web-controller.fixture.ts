@@ -18,7 +18,9 @@ function fakeVideo() {
   return {
     addEventListener: vi.fn((ev: string, h: () => void) => {
       H.handlers[ev] = h;
-      if (ev === 'ended') H.endedHandler = h;
+      if (ev === 'ended') {
+        H.endedHandler = h;
+      }
     }),
     removeEventListener: vi.fn(),
     requestPictureInPicture: vi.fn(() => Promise.resolve()),

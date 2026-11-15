@@ -178,7 +178,9 @@ function permitted(
   cap: AdminNavItem['cap'],
   allowed: (cap: Permission | null) => boolean,
 ): boolean {
-  if (cap === null || typeof cap === 'string') return allowed(cap);
+  if (cap === null || typeof cap === 'string') {
+    return allowed(cap);
+  }
   return cap.some(allowed);
 }
 

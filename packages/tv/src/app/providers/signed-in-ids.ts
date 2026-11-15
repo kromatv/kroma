@@ -19,11 +19,15 @@ export function useSignedInIds(load: (client: KromaClient) => Promise<readonly S
   const [wasActive, setWasActive] = useState(active);
   if (wasActive !== active) {
     setWasActive(active);
-    if (!active) setIds(new Set());
+    if (!active) {
+      setIds(new Set());
+    }
   }
 
   const refresh = useCallback(() => {
-    if (!ready || !user || !client) return;
+    if (!ready || !user || !client) {
+      return;
+    }
     load(client)
       .then((list) => setIds(new Set(list)))
       .catch(() => undefined);

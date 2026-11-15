@@ -15,7 +15,9 @@ async function runStage(argv: string[]): Promise<void> {
     },
   });
   const version = values.version ?? process.env.VERSION;
-  if (!version) throw new Error('sdk stage: --version X.Y.Z is required (or VERSION)');
+  if (!version) {
+    throw new Error('sdk stage: --version X.Y.Z is required (or VERSION)');
+  }
   console.log(`staged ${await stage({ version, out: values.out ?? DEFAULT_OUT })}`);
 }
 
@@ -32,7 +34,11 @@ async function runSmoke(argv: string[]): Promise<void> {
 
 export async function main(argv: string[]): Promise<void> {
   const [sub, ...rest] = argv;
-  if (sub === 'stage') return runStage(rest);
-  if (sub === 'smoke') return runSmoke(rest);
+  if (sub === 'stage') {
+    return runStage(rest);
+  }
+  if (sub === 'smoke') {
+    return runSmoke(rest);
+  }
   throw new Error('usage: bun run ci sdk <stage|smoke> [options]');
 }

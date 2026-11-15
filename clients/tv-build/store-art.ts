@@ -10,7 +10,9 @@ const REPO = new URL('../..', import.meta.url).pathname;
 // `resolve()` validates nothing and the caller `mkdirSync`s the result, so the
 // repo checkout is the hard boundary.
 function outDirIn(repo, arg, usage) {
-  if (!arg) throw new Error(usage);
+  if (!arg) {
+    throw new Error(usage);
+  }
   const root = resolve(repo);
   const dir = resolve(root, arg);
   if (dir !== root && !dir.startsWith(`${root}${sep}`)) {

@@ -17,7 +17,9 @@ export function EditableText({
       <Field.Input
         minW={200}
         onBlur={() => {
-          if (v !== value) onCommit(v);
+          if (v !== value) {
+            onCommit(v);
+          }
         }}
       />
     </Field.Root>

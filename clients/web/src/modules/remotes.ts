@@ -31,17 +31,23 @@ export const modulesQuery = (client: KromaClient) =>
  *  the list travels with the first page's data rather than after the signed-in
  *  tree mounts. A no-op without a session. */
 export function prefetchModules(queryClient: QueryClient, client: KromaClient): Promise<void> {
-  if (!client.hasAuth) return Promise.resolve();
+  if (!client.hasAuth) {
+    return Promise.resolve();
+  }
   return queryClient.prefetchQuery(modulesQuery(client));
 }
 
 function remoteOf(m: ModuleInfo, base: string): RemoteSpec | null {
-  if (m.enabled === false) return null;
+  if (m.enabled === false) {
+    return null;
+  }
   if (m.frontend) {
     const entry = remoteEntryUrl(base, m.id, m.frontend.revision);
     return { id: m.id, entry, listed: true, reads: m.frontend.shared ?? null };
   }
-  if (!m.feRemote) return null;
+  if (!m.feRemote) {
+    return null;
+  }
   const declaration = remoteSharedUrl(base, m.id);
   return { id: m.id, entry: remoteEntryUrl(base, m.id), listed: false, declaration };
 }
@@ -57,9 +63,13 @@ function remotesOf(listed: readonly ModuleInfo[]): RemoteSpec[] {
 export async function readDeclaration(url: string): Promise<EntryReads | null> {
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const text = await res.text();
-    if (text.length > MAX_DECLARATION_BYTES) return null;
+    if (text.length > MAX_DECLARATION_BYTES) {
+      return null;
+    }
     const parsed = EntryReads.safeParse(JSON.parse(text));
     return parsed.success ? parsed.data : null;
   } catch {
@@ -117,12 +127,18 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
   }
 
   async function provideFor(specs: readonly RemoteSpec[]): Promise<void> {
-    if (sharedReady) return sharedReady;
+    if (sharedReady) {
+      return sharedReady;
+    }
     const reads = await Promise.all(
-      specs.map((s) => (s.listed ? s.reads : loaders.readDeclaration(s.declaration))),
+      specs.map((s) =>
+        s.listed ? Promise.resolve(s.reads) : loaders.readDeclaration(s.declaration),
+      ),
     );
     const declared = reads.filter((r): r is EntryReads => r !== null);
-    if (declared.length < reads.length) return ensureShared();
+    if (declared.length < reads.length) {
+      return ensureShared();
+    }
     installShared(await loaders.provideEntryShared(declared), false);
   }
 
@@ -130,7 +146,9 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
     loadedRemotes.add(spec.id);
     try {
       const mod = (await loaders.importRemote(spec.entry)).default;
-      if (mod) return mod;
+      if (mod) {
+        return mod;
+      }
       console.warn(`[modules] runtime remote "${spec.id}" has no default export`);
     } catch (e) {
       console.warn(`[modules] runtime remote "${spec.id}" failed to load`, e);
@@ -145,7 +163,9 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
    *  arrived in cannot decide which modules survive. */
   function settle(registry: ModuleRegistry, fresh: KromaModule[]): string[] {
     const added = fresh.filter((m) => !registry.has(m.id));
-    for (const m of added) registry.register(m);
+    for (const m of added) {
+      registry.register(m);
+    }
     const drop = (m: KromaModule, why: string) => {
       registry.unregister(m.id);
       loadedRemotes.delete(m.id);
@@ -157,7 +177,9 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
       changed = false;
       for (const m of kept) {
         const missing = unmet(registry, m);
-        if (missing === null) continue;
+        if (missing === null) {
+          continue;
+        }
         drop(m, `depends on "${missing}", which is not installed`);
         kept.delete(m);
         changed = true;
@@ -166,8 +188,9 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
     try {
       registry.order();
     } catch (err) {
-      for (const m of kept)
-        drop(m, `dependency cycle (${err instanceof Error ? err.message : err})`);
+      for (const m of kept) {
+        drop(m, `dependency cycle (${err instanceof Error ? err.message : String(err)})`);
+      }
       return [];
     }
     return [...kept].map((m) => m.id);
@@ -181,8 +204,12 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
     registry: ModuleRegistry,
     given?: RemoteLoaders,
   ): Promise<string[]> {
-    if (given) loaders = given;
-    if (disposed || typeof window === 'undefined') return [];
+    if (given) {
+      loaders = given;
+    }
+    if (disposed || typeof window === 'undefined') {
+      return [];
+    }
     let specs: RemoteSpec[];
     try {
       specs = remotesOf(await listModules());
@@ -190,21 +217,31 @@ export function createRuntimeRemotes(listModules: () => Promise<readonly ModuleI
       console.warn('[modules] remote discovery failed', e);
       return [];
     }
-    if (disposed) return [];
+    if (disposed) {
+      return [];
+    }
     const fresh = specs.filter((s) => !loadedRemotes.has(s.id));
-    if (fresh.length === 0) return [];
+    if (fresh.length === 0) {
+      return [];
+    }
     try {
       await provideFor(fresh);
     } catch (e) {
       console.warn('[modules] shared modules failed to load', e);
       return [];
     }
-    if (disposed) return [];
+    if (disposed) {
+      return [];
+    }
     const loaded = (await Promise.all(fresh.map(fetchRemote))).filter(
       (m): m is KromaModule => m !== null,
     );
-    if (loaded.some((m) => m.setup || m.exports)) await ready();
-    if (disposed) return [];
+    if (loaded.some((m) => m.setup ?? m.exports)) {
+      await ready();
+    }
+    if (disposed) {
+      return [];
+    }
     return settle(registry, loaded);
   }
 

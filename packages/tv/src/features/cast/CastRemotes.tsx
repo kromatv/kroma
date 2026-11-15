@@ -28,9 +28,13 @@ export function CastRemotes() {
 
   // With the last remote gone the chip that opened this dialog is gone too, so
   // there would be nothing left to return focus to.
-  if (count === 0 && open) setOpen(false);
+  if (count === 0 && open) {
+    setOpen(false);
+  }
 
-  if (count === 0) return null;
+  if (count === 0) {
+    return null;
+  }
 
   return (
     <>

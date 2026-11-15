@@ -8,17 +8,25 @@ export type QueryValue = string | number | boolean | readonly string[] | null | 
 export type Query = Readonly<Record<string, QueryValue>>;
 
 function encode(value: QueryValue): string | undefined {
-  if (Array.isArray(value)) return value.join(',');
-  if (value === undefined || value === null || value === false || value === '') return undefined;
+  if (Array.isArray(value)) {
+    return value.join(',');
+  }
+  if (value === undefined || value === null || value === false || value === '') {
+    return undefined;
+  }
   return String(value);
 }
 
 export function queryString(query?: Query): string {
-  if (!query) return '';
+  if (!query) {
+    return '';
+  }
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     const encoded = encode(value);
-    if (encoded !== undefined) params.set(key, encoded);
+    if (encoded !== undefined) {
+      params.set(key, encoded);
+    }
   }
   const search = params.toString();
   return search ? `?${search}` : '';

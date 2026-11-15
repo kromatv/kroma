@@ -10,6 +10,8 @@ import { useClient } from '#mobile/lib/session';
 export function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
   const client = useClient();
   const { data: health } = useQuery({ ...client.query.media.health(), staleTime: 5 * 60_000 });
-  if (!health || checkCompat(buildInfo, health) !== 'client-outdated') return children;
+  if (!health || checkCompat(buildInfo, health) !== 'client-outdated') {
+    return children;
+  }
   return <ClientOutdatedScreen server={health.version} />;
 }

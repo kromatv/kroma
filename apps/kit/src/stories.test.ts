@@ -28,7 +28,9 @@ describe('the story registry', () => {
   });
 
   it('derives every id from its name', () => {
-    for (const story of STORIES) expect(story.id).toBe(slug(story.name));
+    for (const story of STORIES) {
+      expect(story.id).toBe(slug(story.name));
+    }
   });
 
   it('only uses groups the sidebar knows how to order', () => {

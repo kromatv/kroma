@@ -36,7 +36,9 @@ export interface EnterSavedDeps {
 
 async function vaultedPin(deps: EnterSavedDeps, account: MobileAccount): Promise<string | null> {
   const { serverUrl, user } = account;
-  if (!(await isBiometricUnlockEnabled(serverUrl, user.id))) return null;
+  if (!(await isBiometricUnlockEnabled(serverUrl, user.id))) {
+    return null;
+  }
   return readPinBehindBiometrics(serverUrl, user.id, deps.t('auth.faceUnlock'));
 }
 
@@ -82,7 +84,9 @@ export async function enterSavedAccount(
   // on the gate IS the profile having been left, so the credential is relocked
   // before it is spent. Best-effort: a server that cannot be asked cannot
   // complete the exchange below either.
-  if (withPin === undefined) await deps.session.relockAccount(account).catch(() => undefined);
+  if (withPin === undefined) {
+    await deps.session.relockAccount(account).catch(() => undefined);
+  }
   // PIN-less profiles may carry a device Face ID lock; it must pass first.
   if (!(await passProfileBiometricGate(account, deps.t('auth.faceUnlock')))) {
     deps.setBusy(null);
@@ -92,11 +96,12 @@ export async function enterSavedAccount(
     await deps.session.switchAccount(account, withPin);
     // A PIN typed on the pad worked: keep it behind Face ID for next time
     // (unless biometric unlock is turned off in the profile-lock settings).
-    if (withPin !== undefined)
+    if (withPin !== undefined) {
       void isBiometricUnlockEnabled(account.serverUrl, account.user.id).then(
         (enabled) =>
           enabled && savePinBehindBiometrics(account.serverUrl, account.user.id, withPin),
       );
+    }
     deps.enterApp();
   } catch (err) {
     if (!(err instanceof KromaApiError)) {

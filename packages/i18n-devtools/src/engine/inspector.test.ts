@@ -7,7 +7,9 @@ const FR = { scope: null, locale: 'fr' };
 
 function inspecting(keys: boolean, outline: Outline) {
   const inspector = inspectorFor(keys, outline);
-  if (!inspector) throw new Error('these switches ask for an inspector');
+  if (!inspector) {
+    throw new Error('these switches ask for an inspector');
+  }
   return inspector;
 }
 

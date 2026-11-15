@@ -31,7 +31,9 @@ export function usePlayerCredits(opts: {
   const advancedRef = useRef(false);
 
   const advance = useCallback(() => {
-    if (advancedRef.current) return;
+    if (advancedRef.current) {
+      return;
+    }
     advancedRef.current = true;
     onAdvance();
   }, [onAdvance]);
@@ -47,18 +49,24 @@ export function usePlayerCredits(opts: {
     setSecondsLeft(AUTO_NEXT);
   }
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+      return;
+    }
     const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [show]);
 
   useEffect(() => {
-    if (show && secondsLeft === 0) advance();
+    if (show && secondsLeft === 0) {
+      advance();
+    }
   }, [show, secondsLeft, advance]);
 
   // Reaching the real end advances too (covers streams that stop early).
   useEffect(() => {
-    if (endedNonce > 0 && hasNext && !cancelled) advance();
+    if (endedNonce > 0 && hasNext && !cancelled) {
+      advance();
+    }
   }, [endedNonce, hasNext, cancelled, advance]);
 
   return { show, secondsLeft, total: AUTO_NEXT, cancel: useCallback(() => setCancelled(true), []) };

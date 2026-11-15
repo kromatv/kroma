@@ -51,7 +51,9 @@ const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
  * to this before its shot is counted. */
 export function assertPng(file: string, targetId: string): void {
   const bytes = existsSync(file) ? readFileSync(file) : Buffer.alloc(0);
-  if (bytes.length && bytes.subarray(0, 4).equals(PNG_MAGIC)) return;
+  if (bytes.length && bytes.subarray(0, 4).equals(PNG_MAGIC)) {
+    return;
+  }
   throw new Error(
     `${targetId}: the capture produced ${bytes.length ? 'something that is not a PNG' : 'an empty file'}. ` +
       `Nothing was written that could be published.`,

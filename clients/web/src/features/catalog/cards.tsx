@@ -137,7 +137,9 @@ export const SectionPoster = memo(function SectionPoster({
 });
 
 export function ShowRail({ title, shows }: Readonly<{ title: string; shows: ShowView[] }>) {
-  if (shows.length === 0) return null;
+  if (shows.length === 0) {
+    return null;
+  }
   return (
     <section>
       <SectionHeading>{title}</SectionHeading>

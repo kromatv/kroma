@@ -21,11 +21,15 @@ export function parseSsdpReply(message: string, host: string): SsdpReply | null 
   const headers = new Map<string, string>();
   for (const line of message.split(/\r?\n/).slice(1)) {
     const at = line.indexOf(':');
-    if (at < 1) continue;
+    if (at < 1) {
+      continue;
+    }
     headers.set(line.slice(0, at).trim().toLowerCase(), line.slice(at + 1).trim());
   }
   const location = headers.get('location');
-  if (!location) return null;
+  if (!location) {
+    return null;
+  }
   return {
     host,
     location,
@@ -45,13 +49,17 @@ export async function ssdpSearch(
 
   socket.on('message', (buffer, from) => {
     const reply = parseSsdpReply(buffer.toString('utf8'), from.address);
-    if (reply) replies.set(`${reply.host}|${reply.location}`, reply);
+    if (reply) {
+      replies.set(`${reply.host}|${reply.location}`, reply);
+    }
   });
   // Closing twice throws, and a multicast send fails outright when the link is
   // down, so a scan on a sleeping interface must come back empty rather than die.
   let closed = false;
   const close = () => {
-    if (closed) return;
+    if (closed) {
+      return;
+    }
     closed = true;
     socket.close();
   };

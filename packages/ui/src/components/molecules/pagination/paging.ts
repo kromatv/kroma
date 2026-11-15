@@ -9,7 +9,9 @@ function clamp(page: number, pageCount: number): number {
 
 function range(from: number, to: number): number[] {
   const out: number[] = [];
-  for (let at = from; at <= to; at += 1) out.push(at);
+  for (let at = from; at <= to; at += 1) {
+    out.push(at);
+  }
   return out;
 }
 
@@ -24,12 +26,18 @@ function pageWindow(page: number, pageCount: number, siblings = 1): PageSlot[] {
   const at = clamp(page, total);
   const side = Math.max(0, Math.trunc(siblings) || 0);
   const width = side * 2 + 5;
-  if (total <= width) return range(1, total);
+  if (total <= width) {
+    return range(1, total);
+  }
 
   const left = Math.max(at - side, 1);
   const right = Math.min(at + side, total);
-  if (left <= 2) return [...range(1, side * 2 + 3), 'gap', total];
-  if (right >= total - 1) return [1, 'gap', ...range(total - side * 2 - 2, total)];
+  if (left <= 2) {
+    return [...range(1, side * 2 + 3), 'gap', total];
+  }
+  if (right >= total - 1) {
+    return [1, 'gap', ...range(total - side * 2 - 2, total)];
+  }
   return [
     1,
     left === 3 ? 2 : 'gap',

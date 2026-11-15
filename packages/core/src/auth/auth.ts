@@ -104,9 +104,13 @@ export function createAuth({ client, browser, store, passkey }: AuthOptions) {
    * same flow at the same time share one answer. */
   function resume(address: string | { flow: string; code: string }): Promise<FlowEnd | null> {
     const named = typeof address === 'string' ? keysIn(address) : address;
-    if (!named) return Promise.resolve(null);
+    if (!named) {
+      return Promise.resolve(null);
+    }
     const shared = collecting.get(named.flow);
-    if (shared) return shared;
+    if (shared) {
+      return shared;
+    }
     const answer = collect(named).finally(() => collecting.delete(named.flow));
     collecting.set(named.flow, answer);
     return answer;
@@ -114,11 +118,15 @@ export function createAuth({ client, browser, store, passkey }: AuthOptions) {
 
   async function collect(named: { flow: string; code: string }): Promise<FlowEnd | null> {
     const pending = store.load(named.flow);
-    if (!pending) return null;
+    if (!pending) {
+      return null;
+    }
     const keys: FlowKeys = { flowId: pending.flowId, secret: pending.secret, code: named.code };
     try {
       const result = await client.sso.finish(keys);
-      if (!waits(result)) store.clear();
+      if (!waits(result)) {
+        store.clear();
+      }
       return {
         purpose: pending.purpose,
         provider: pending.provider,
@@ -161,7 +169,9 @@ export function createAuth({ client, browser, store, passkey }: AuthOptions) {
 
       /** Rejects when the shell gave no passkey prompt. */
       passkey: async (): Promise<AuthResult> => {
-        if (!passkey) throw new Error('this shell has no passkey prompt');
+        if (!passkey) {
+          throw new Error('this shell has no passkey prompt');
+        }
         const { ceremonyId, options } = await client.accounts.passkeys.authStart();
         const credential = await passkey(options);
         return client.accounts.passkeys.authFinish({ ceremonyId, credential });

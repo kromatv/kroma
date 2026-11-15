@@ -27,7 +27,9 @@ export function createFocusProbe() {
   // list it sits in may have scrolled, and a remembered box would be the answer to
   // where the control WAS.
   function focusBox(): FocusBox | null {
-    if (!held) return null;
+    if (!held) {
+      return null;
+    }
     const { top, left, height } = held.getBoundingClientRect();
     return { top, left, height };
   }

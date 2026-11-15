@@ -24,10 +24,14 @@ function onePerPath() {
       page.sitemap = { ...page.sitemap, exclude: true };
       return false;
     };
-    if (page.path.includes('#')) return drop();
+    if (page.path.includes('#')) {
+      return drop();
+    }
     const key =
       page.path.length > 1 && page.path.endsWith('/') ? page.path.slice(0, -1) : page.path;
-    if (seen.has(key)) return drop();
+    if (seen.has(key)) {
+      return drop();
+    }
     seen.add(key);
     return true;
   };

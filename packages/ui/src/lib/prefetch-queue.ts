@@ -29,12 +29,18 @@ export function createPrefetchQueue({
     queued = false;
     while (inFlight.size < concurrency && pending.length > 0) {
       const uri = pending.shift();
-      if (uri === undefined) break;
-      if (isImageReady(uri) || inFlight.has(uri)) continue;
+      if (uri === undefined) {
+        break;
+      }
+      if (isImageReady(uri) || inFlight.has(uri)) {
+        continue;
+      }
       inFlight.add(uri);
       const settle = (ok: boolean) => {
         inFlight.delete(uri);
-        if (ok) markImageReady(uri);
+        if (ok) {
+          markImageReady(uri);
+        }
         request();
       };
       prefetch(uri).then(settle, () => settle(false));
@@ -42,7 +48,9 @@ export function createPrefetchQueue({
   };
 
   const request = () => {
-    if (queued) return;
+    if (queued) {
+      return;
+    }
     queued = true;
     schedule(pump);
   };

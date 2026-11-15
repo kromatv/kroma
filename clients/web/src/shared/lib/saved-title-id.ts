@@ -13,6 +13,8 @@ export function savedTitleId(
   tmdbId: number | null,
 ): SubjectId | null {
   const id = localId || (tmdbId != null ? `${TMDB_PREFIX}${tmdbId}` : null);
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
   return kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
 }

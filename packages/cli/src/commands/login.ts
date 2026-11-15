@@ -15,11 +15,15 @@ export interface LoginOptions {
 }
 
 async function ask(label: string, given: string | undefined, secret: boolean): Promise<string> {
-  if (given) return given;
+  if (given) {
+    return given;
+  }
   const answer = secret
     ? await p.password({ message: label })
     : await p.text({ message: label, validate: (v) => (v ? undefined : 'required') });
-  if (p.isCancel(answer)) throw new Error('cancelled');
+  if (p.isCancel(answer)) {
+    throw new Error('cancelled');
+  }
   return answer;
 }
 
@@ -35,7 +39,9 @@ export async function loginCommand(options: LoginOptions): Promise<number> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) throw new Error(`login failed (${res.status}): ${(await res.text()).trim()}`);
+  if (!res.ok) {
+    throw new Error(`login failed (${res.status}): ${(await res.text()).trim()}`);
+  }
   const { token, user } = Login.parse(await res.json());
   const config = readConfig();
   config.servers[url] = { token, user: user?.email ?? user?.name ?? email };

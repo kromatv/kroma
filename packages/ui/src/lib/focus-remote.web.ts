@@ -53,7 +53,9 @@ const TAB_CODE = 9;
 // the focus to (see `focus-mirror`), which is not stray at all.
 function dropStrayFocus(document: Document, isMirrored: (element: unknown) => boolean): void {
   const held = document.activeElement as (HTMLElement & { blur?: () => void }) | null;
-  if (!held || held === document.body || holdsCaret(held) || isMirrored(held)) return;
+  if (!held || held === document.body || holdsCaret(held) || isMirrored(held)) {
+    return;
+  }
   held.blur?.();
 }
 
@@ -61,7 +63,9 @@ export function createRemoteTransport({ enabled, probe, mirror }: RemoteTranspor
   const handlers = new Set<(direction: Direction) => void>();
   return {
     subscribe(handle: (direction: Direction) => void) {
-      if (!enabled) return () => {};
+      if (!enabled) {
+        return () => {};
+      }
       handlers.add(handle);
       const document = webDocument();
       if (!document) {
@@ -87,7 +91,9 @@ export function createRemoteTransport({ enabled, probe, mirror }: RemoteTranspor
         // reporting `Unidentified` alongside a legacy keyCode would otherwise
         // steer the navigator instead of being ignored.
         const direction = event.key ? KEYS[event.key] : CODES[legacyCode(event)];
-        if (!direction) return;
+        if (!direction) {
+          return;
+        }
         if (direction === Directions.ENTER && event.repeat) {
           event.preventDefault();
           return;
@@ -103,7 +109,9 @@ export function createRemoteTransport({ enabled, probe, mirror }: RemoteTranspor
       };
       const onKeyUp = (event: KeyboardEvent) => {
         const direction = event.key ? KEYS[event.key] : CODES[legacyCode(event)];
-        if (direction === Directions.ENTER) handle(Directions.RELEASE);
+        if (direction === Directions.ENTER) {
+          handle(Directions.RELEASE);
+        }
       };
       document.addEventListener('keydown', onKey);
       document.addEventListener('keyup', onKeyUp);
@@ -114,7 +122,9 @@ export function createRemoteTransport({ enabled, probe, mirror }: RemoteTranspor
       };
     },
     postRemoteDirection(direction: Direction) {
-      for (const handle of handlers) handle(direction);
+      for (const handle of handlers) {
+        handle(direction);
+      }
     },
     enabled,
   };
@@ -125,7 +135,9 @@ export function useRemoteBridge(on = true): void {
   const perf = usePerfSampler();
   useEffect(() => {
     const document = webDocument();
-    if (!on || !perf || !document) return;
+    if (!on || !perf || !document) {
+      return;
+    }
     const pressed = (event: KeyboardEvent) => {
       if (
         KEYS[event.key] ||

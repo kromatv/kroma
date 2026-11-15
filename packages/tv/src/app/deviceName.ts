@@ -55,9 +55,13 @@ export function lateDeviceName(): LateDeviceName {
     },
     found(next) {
       const answer = clean(next);
-      if (!answer || answer === name) return;
+      if (!answer || answer === name) {
+        return;
+      }
       name = answer;
-      for (const listener of listeners) listener();
+      for (const listener of listeners) {
+        listener();
+      }
     },
   };
 }

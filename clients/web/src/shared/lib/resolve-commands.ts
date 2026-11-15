@@ -14,13 +14,19 @@ export interface ResolvedCommand {
 }
 
 function allowed({ cap }: CommandActionDef, user: User): boolean {
-  if (!cap) return true;
-  if (typeof cap === 'string') return hasPermission(user, cap);
+  if (!cap) {
+    return true;
+  }
+  if (typeof cap === 'string') {
+    return hasPermission(user, cap);
+  }
   return cap.some((one) => hasPermission(user, one));
 }
 
 function commandId({ id, to, params, search, group, label }: CommandDef): string {
-  if (id) return id;
+  if (id) {
+    return id;
+  }
   return to && !params && !search ? to : `${group ?? ''}:${label}`;
 }
 
@@ -37,7 +43,9 @@ function routeActions(
   t: Translate,
   hrefOf: (command: CommandDef) => string,
 ): CommandActionDef[] {
-  if (!command.to) return [];
+  if (!command.to) {
+    return [];
+  }
   return [
     {
       label: t('commands.actionNewTab'),
@@ -83,7 +91,9 @@ export function visibleCommands(
   const items: CommandItem[] = [];
   for (const command of commands) {
     const id = commandId(command);
-    if (byId.has(id) || !allowed(command, user)) continue;
+    if (byId.has(id) || !allowed(command, user)) {
+      continue;
+    }
     const actions = actionsOf(command, user, t, hrefOf);
     const named = actions.map((action, at) => ({ id: `${id}#${at}`, action }));
     byId.set(id, { command, actions: new Map(named.map(({ id: key, action }) => [key, action])) });
@@ -126,7 +136,9 @@ export function commandAt(
   pathname: string,
 ): string | undefined {
   for (const [id, { command }] of byId) {
-    if (!command.search && pathOf(command) === pathname) return id;
+    if (!command.search && pathOf(command) === pathname) {
+      return id;
+    }
   }
   return undefined;
 }
@@ -152,10 +164,13 @@ export async function runAction(
         cancelLabel: t('common.cancel'),
         destructive: action.tone === 'danger',
       });
-      if (!sure) return;
+      if (!sure) {
+        return;
+      }
     }
-    if (action.to === undefined) await action.run();
-    else {
+    if (action.to === undefined) {
+      await action.run();
+    } else {
       await navigate({
         to: action.to,
         params: action.params,
@@ -163,7 +178,9 @@ export async function runAction(
         hash: action.hash,
       } as Parameters<typeof navigate>[0]);
     }
-    if (action.done) toast({ message: action.done, tone: 'success' });
+    if (action.done) {
+      toast({ message: action.done, tone: 'success' });
+    }
   } catch (error) {
     toast({ message: apiErrorText(error, t('commands.failed')), icon: 'alert-triangle' });
   }

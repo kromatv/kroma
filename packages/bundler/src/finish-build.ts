@@ -19,7 +19,9 @@ async function filesUnder(dir: string): Promise<string[]> {
 async function raisePage(file: string): Promise<void> {
   const html = await readFile(file, 'utf8');
   const raised = raiseEntryPreload(html);
-  if (raised !== html) await writeFile(file, raised);
+  if (raised !== html) {
+    await writeFile(file, raised);
+  }
 }
 
 /**
@@ -36,10 +38,14 @@ export function finishBuild(options: FinishBuildOptions): Plugin {
       order: 'post',
       async handler(builder) {
         const client = builder.environments.client;
-        if (!client) return;
+        if (!client) {
+          return;
+        }
         const files = await filesUnder(resolve(client.config.root, client.config.build.outDir));
         await Promise.all(files.filter((file) => file.endsWith('.html')).map(raisePage));
-        if (!options.precompress) return;
+        if (!options.precompress) {
+          return;
+        }
         const { assets, saved } = await precompress(files);
         client.config.logger.info(
           `precompress: ${assets} assets, ${(saved / 1024).toFixed(0)} KiB saved`,

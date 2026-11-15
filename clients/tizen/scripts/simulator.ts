@@ -39,7 +39,9 @@ const NWJS_BY_PLATFORM: Record<string, string> = {
 
 function simulatorBinary(): string {
   const relative = NWJS_BY_PLATFORM[platform()];
-  if (!relative) throw new Error(`no Tizen TV simulator known for ${platform()}`);
+  if (!relative) {
+    throw new Error(`no Tizen TV simulator known for ${platform()}`);
+  }
   const home = process.env.TIZEN_HOME ?? join(homedir(), 'tizen-studio');
   const binary = join(home, 'tools', 'sec-tv-simulator', relative);
   if (!existsSync(binary)) {
@@ -123,16 +125,22 @@ export class Simulator {
   ) {
     ws.onmessage = (event) => {
       const reply = Reply.safeParse(JSON.parse(String(event.data)));
-      if (!reply.success) return;
+      if (!reply.success) {
+        return;
+      }
       const { id, method, result, params } = reply.data;
       if (id !== undefined && this.pending.has(id)) {
         this.pending.get(id)?.(result);
         this.pending.delete(id);
         return;
       }
-      if (method !== 'Runtime.exceptionThrown') return;
+      if (method !== 'Runtime.exceptionThrown') {
+        return;
+      }
       const detail = Thrown.safeParse(params);
-      if (!detail.success) return;
+      if (!detail.success) {
+        return;
+      }
       const { text, exception } = detail.data.exceptionDetails;
       this.thrown.push(exception?.description ?? text ?? 'unknown exception');
     };
@@ -241,7 +249,9 @@ export class Simulator {
     while (Date.now() < deadline) {
       await wait(500);
       const ringed = await this.call(z.string().nullable(), readFocusRing).catch(() => null);
-      if (ringed) return;
+      if (ringed) {
+        return;
+      }
     }
     throw new Error('the app never took focus in the simulator');
   }
@@ -249,7 +259,9 @@ export class Simulator {
   /** Which bundle the gate actually chose, plus what it painted. */
   async inspect(): Promise<Painted> {
     const seen = await this.call(PaintedShape.nullable(), readPainted);
-    if (!seen) throw new Error('the simulator has no app in its viewport');
+    if (!seen) {
+      throw new Error('the simulator has no app in its viewport');
+    }
     return seen;
   }
 
@@ -261,7 +273,9 @@ export class Simulator {
   /** Press one button on the simulator's remote, then let the shell settle. */
   async press(key: RemoteKey): Promise<void> {
     const spot = await this.call(Point.nullable(), readButtonSpot, REMOTE_BUTTONS[key]);
-    if (!spot) throw new Error(`simulator remote has no ${key} button`);
+    if (!spot) {
+      throw new Error(`simulator remote has no ${key} button`);
+    }
     for (const type of ['mousePressed', 'mouseReleased'] as const) {
       await this.send('Input.dispatchMouseEvent', { ...spot, type, button: 'left', clickCount: 1 });
     }

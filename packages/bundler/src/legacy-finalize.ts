@@ -121,32 +121,46 @@ ${branches}
 function dedupeAssets(distDir: string, dir: string): number {
   const legacyAssets = join(distDir, dir, 'assets');
   const modernAssets = join(distDir, 'assets');
-  if (!existsSync(legacyAssets) || !existsSync(modernAssets)) return 0;
+  if (!existsSync(legacyAssets) || !existsSync(modernAssets)) {
+    return 0;
+  }
 
   let saved = 0;
   const shared: string[] = [];
   for (const name of readdirSync(legacyAssets)) {
     const legacyFile = join(legacyAssets, name);
     const modernFile = join(modernAssets, name);
-    if (!existsSync(modernFile)) continue;
+    if (!existsSync(modernFile)) {
+      continue;
+    }
     // Size first: it rejects any genuine mismatch for the price of a stat, and
     // the pair here includes an 8 MB video that would otherwise be read twice.
     const size = statSync(legacyFile).size;
-    if (statSync(modernFile).size !== size) continue;
-    if (!readFileSync(legacyFile).equals(readFileSync(modernFile))) continue;
+    if (statSync(modernFile).size !== size) {
+      continue;
+    }
+    if (!readFileSync(legacyFile).equals(readFileSync(modernFile))) {
+      continue;
+    }
     saved += size;
     rmSync(legacyFile);
     shared.push(name);
   }
-  if (shared.length === 0) return 0;
+  if (shared.length === 0) {
+    return 0;
+  }
 
   // Each file has exactly ONE prefix, because of where its URLs resolve from:
   // the JS against the document (dist/index.html), the stylesheet against itself.
   const rewrite = (file: string, from: string, to: string) => {
     const p = join(distDir, file);
-    if (!existsSync(p)) return;
+    if (!existsSync(p)) {
+      return;
+    }
     let text = readFileSync(p, 'utf8');
-    for (const name of shared) text = text.split(from + name).join(to + name);
+    for (const name of shared) {
+      text = text.split(from + name).join(to + name);
+    }
     writeFileSync(p, text);
   };
   rewrite(`${dir}/index.js`, `./${dir}/assets/`, './assets/');
@@ -175,8 +189,11 @@ function inlineFonts(distDir: string): number {
   const collect = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const path = join(dir, entry.name);
-      if (entry.isDirectory()) collect(path);
-      else if (entry.name.endsWith('.css')) sheets.push(path);
+      if (entry.isDirectory()) {
+        collect(path);
+      } else if (entry.name.endsWith('.css')) {
+        sheets.push(path);
+      }
     }
   };
   collect(distDir);
@@ -188,11 +205,15 @@ function inlineFonts(distDir: string): number {
     const before = readFileSync(sheet, 'utf8');
     let after = before.replace(/url\((["']?)([^)"']*\.woff2)\1\)/g, (whole, _q, ref) => {
       const file = join(base, ref);
-      if (!existsSync(file)) return whole;
+      if (!existsSync(file)) {
+        return whole;
+      }
       inlined.add(file);
       return `url(data:font/woff2;base64,${readFileSync(file).toString('base64')})`;
     });
-    if (after === before) continue;
+    if (after === before) {
+      continue;
+    }
     after = after.replace(/font-display\s*:\s*optional/g, 'font-display:swap');
     writeFileSync(sheet, after);
     added += after.length - before.length;
@@ -211,13 +232,17 @@ function inlineFonts(distDir: string): number {
         return !(tag.startsWith('<link ') && tag.includes('as="font"'));
       })
       .join('\n');
-    if (stripped !== html) writeFileSync(index, stripped);
+    if (stripped !== html) {
+      writeFileSync(index, stripped);
+    }
   }
 
   // The files themselves are dead once every reference to them is a data: URI
   // and the preloads are gone, and a package pays for them all the same.
   for (const file of inlined) {
-    if (!mentioned(distDir, basename(file))) rmSync(file);
+    if (!mentioned(distDir, basename(file))) {
+      rmSync(file);
+    }
   }
   return added;
 }
@@ -226,8 +251,12 @@ function inlineFonts(distDir: string): number {
 // to be droppable rather than assumed to be.
 function mentioned(distDir: string, needle: string): boolean {
   for (const entry of readdirSync(distDir, { withFileTypes: true, recursive: true })) {
-    if (entry.isDirectory() || entry.name.endsWith('.woff2')) continue;
-    if (readFileSync(join(entry.parentPath, entry.name)).includes(needle)) return true;
+    if (entry.isDirectory() || entry.name.endsWith('.woff2')) {
+      continue;
+    }
+    if (readFileSync(join(entry.parentPath, entry.name)).includes(needle)) {
+      return true;
+    }
   }
   return false;
 }
@@ -268,7 +297,9 @@ export function legacyFinalize({
       // Both older tiers import `core-js/stable`, which is every polyfill the
       // library has. The deep tier trims it as part of lowering; this tier needs
       // no lowering, so it is the only thing done to its bundle.
-      if (!deep) await trimCorejs(join(distDir, dir, 'index.js'), chrome);
+      if (!deep) {
+        await trimCorejs(join(distDir, dir, 'index.js'), chrome);
+      }
       if (deep) {
         const theme = pinnedTheme(distDir);
         await flattenCustomProperties(join(distDir, dir, 'style.css'), theme);

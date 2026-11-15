@@ -18,7 +18,9 @@ export class FakeWS {
     FakeWS.instances.push(this);
   }
   send(data: string): void {
-    if (this.sendThrows) throw new Error('socket buffer full');
+    if (this.sendThrows) {
+      throw new Error('socket buffer full');
+    }
     this.sent.push(data);
   }
   close(): void {

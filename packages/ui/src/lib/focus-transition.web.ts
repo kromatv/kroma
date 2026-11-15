@@ -45,7 +45,9 @@ const scaled = (
 export function useFocusScale(focused: boolean, to: number): Record<string, unknown> {
   const scope = useStyleScope();
 
-  if (to === 1) return RING_ONLY;
+  if (to === 1) {
+    return RING_ONLY;
+  }
   return scaled('focus', focused ? to : 1, DURATION, TIMING, scope, true);
 }
 

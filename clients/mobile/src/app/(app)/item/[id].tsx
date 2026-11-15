@@ -27,7 +27,9 @@ import { useClient } from '#mobile/lib/session';
 import { posterWidth, spacing, type } from '#mobile/lib/theme';
 
 function episodeContext(media: MediaItem): string | undefined {
-  if (media.kind !== 'episode' || !media.showTitle) return undefined;
+  if (media.kind !== 'episode' || !media.showTitle) {
+    return undefined;
+  }
   const numbering = episodeTag(media);
   return numbering ? `${media.showTitle} · ${numbering}` : media.showTitle;
 }
@@ -40,8 +42,12 @@ function resumeSeconds(progress: ProgressEntry | null | undefined): number {
 
 // With a TV connected, Play stops meaning "here": the label says where it will land.
 function playLabel(t: Translate, device: string | undefined, resumeSec: number): string {
-  if (device) return t('cast.playOn', { device });
-  if (resumeSec > 0) return t('player.resumeAt', { time: formatTimecode(resumeSec) });
+  if (device) {
+    return t('cast.playOn', { device });
+  }
+  if (resumeSec > 0) {
+    return t('player.resumeAt', { time: formatTimecode(resumeSec) });
+  }
   return t('player.play');
 }
 
@@ -106,8 +112,10 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
     onSettled: () => queryClient.invalidateQueries({ queryKey: watchedQuery.queryKey }),
   });
 
-  if (item.isPending) return <Loading label={t('common.loading')} />;
-  if (item.isError)
+  if (item.isPending) {
+    return <Loading label={t('common.loading')} />;
+  }
+  if (item.isError) {
     return (
       <ErrorView
         message={t('error.serverBody')}
@@ -115,6 +123,7 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
         onRetry={() => item.refetch()}
       />
     );
+  }
 
   const media = item.data;
   const backdrop = sizedImageUrl(

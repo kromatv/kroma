@@ -82,7 +82,9 @@ function extension(id: string, value: Buffer): Buffer {
 function distinguishedName(subject: Subject): Buffer {
   const parts: Buffer[] = [];
   const add = (id: string, value: string | undefined, printable = false) => {
-    if (!value) return;
+    if (!value) {
+      return;
+    }
     const text = printable ? der.printable(value) : der.utf8(value);
     parts.push(der.set(der.sequence(der.oid(id), text)));
   };

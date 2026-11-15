@@ -69,8 +69,11 @@ export function PinDialog({ task, onClose }: Readonly<{ task: PinTask; onClose: 
     setError(null);
     if (step === 'current') {
       setCurrent(code);
-      if (task === 'remove') void commit(() => client.accounts.clearPin(code));
-      else setAt(at + 1);
+      if (task === 'remove') {
+        void commit(() => client.accounts.clearPin(code));
+      } else {
+        setAt(at + 1);
+      }
       return;
     }
     if (step === 'new') {
@@ -85,7 +88,9 @@ export function PinDialog({ task, onClose }: Readonly<{ task: PinTask; onClose: 
     void commit(() => client.accounts.setPin(code, task === 'change' ? current : undefined));
   };
 
-  if (forgot) return <ForgottenPinDialog onClose={onClose} />;
+  if (forgot) {
+    return <ForgottenPinDialog onClose={onClose} />;
+  }
 
   return (
     <Dialog.Root open title={t(TITLE[task])} width="sm" onClose={busy ? () => {} : onClose}>

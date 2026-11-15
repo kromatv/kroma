@@ -25,7 +25,9 @@ export function useTvClipController<E extends ClipEngine>(clip: ClipPlayback<E>)
 
   const scrubPreview = useCallback(
     (abs: number | null) => {
-      if (abs != null) gesture.scrub(abs);
+      if (abs != null) {
+        gesture.scrub(abs);
+      }
     },
     [gesture],
   );

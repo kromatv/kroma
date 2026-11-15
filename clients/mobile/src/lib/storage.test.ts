@@ -11,15 +11,21 @@ const undeletable = new Set<string>();
 
 vi.mock('expo-secure-store', () => ({
   getItemAsync: vi.fn(async (key: string) => {
-    if (unreadable.has(key)) throw new Error('keychain locked');
+    if (unreadable.has(key)) {
+      throw new Error('keychain locked');
+    }
     return store.get(key) ?? null;
   }),
   setItemAsync: vi.fn(async (key: string, value: string) => {
-    if (unwritable.has(key)) throw new Error('no biometrics enrolled');
+    if (unwritable.has(key)) {
+      throw new Error('no biometrics enrolled');
+    }
     store.set(key, value);
   }),
   deleteItemAsync: vi.fn(async (key: string) => {
-    if (undeletable.has(key)) throw new Error('keychain locked');
+    if (undeletable.has(key)) {
+      throw new Error('keychain locked');
+    }
     store.delete(key);
   }),
   canUseBiometricAuthentication: vi.fn(() => true),

@@ -50,7 +50,9 @@ const { bindMediaEvents } = await import('#web/features/playback/media-events');
 const lastAttach = () => {
   const calls = vi.mocked(attachMediaSource).mock.calls;
   const last = calls.at(-1)?.[0];
-  if (!last) throw new Error('expected attachMediaSource to have been called');
+  if (!last) {
+    throw new Error('expected attachMediaSource to have been called');
+  }
   return last;
 };
 
@@ -161,7 +163,9 @@ describe('useVideoPlayback direct-play safety net', () => {
     result.current.videoRef.current = fakeVideo({
       currentTime: 31.7,
       addEventListener: vi.fn((type: string, handler: () => void) => {
-        if (type === 'error') onError = handler;
+        if (type === 'error') {
+          onError = handler;
+        }
       }),
     }) as unknown as HTMLVideoElement;
     act(() => result.current.setAudio(1));

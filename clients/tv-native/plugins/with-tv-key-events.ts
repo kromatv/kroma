@@ -52,7 +52,9 @@ const withTvKeyEvents: ConfigPlugin = (config) =>
   withMainApplication(config, (cfg) => {
     let contents = cfg.modResults.contents;
     // Idempotent: prebuild without --clean re-runs plugins over an already-patched file.
-    if (contents.includes('enableKeyEvents')) return cfg;
+    if (contents.includes('enableKeyEvents')) {
+      return cfg;
+    }
 
     if (!contents.includes(IMPORT_ANCHOR)) {
       throw new Error(

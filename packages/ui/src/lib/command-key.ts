@@ -27,9 +27,13 @@ function commandKeyLabel(apple = onAppleHardware()): string {
  * letters. AltGr reports as Ctrl+Alt, so it never counts.
  */
 function isCommandKey(press: CommandKeyPress, apple = onAppleHardware()): boolean {
-  if (press.altKey || press.shiftKey || press.isComposing) return false;
+  if (press.altKey || press.shiftKey || press.isComposing) {
+    return false;
+  }
   const modified = apple ? press.metaKey && !press.ctrlKey : press.ctrlKey && !press.metaKey;
-  if (!modified) return false;
+  if (!modified) {
+    return false;
+  }
   return LATIN_LETTER.test(press.key) ? press.key.toLowerCase() === 'k' : press.code === 'KeyK';
 }
 
@@ -40,15 +44,21 @@ function isCommandKey(press: CommandKeyPress, apple = onAppleHardware()): boolea
  */
 function useCommandKey(onPress: () => void, enabled = true): void {
   const onKey = useEffectEvent((event: KeyboardEvent) => {
-    if (!isCommandKey(event)) return;
+    if (!isCommandKey(event)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
-    if (!event.repeat) onPress();
+    if (!event.repeat) {
+      onPress();
+    }
   });
 
   useEffect(() => {
     const document = webDocument();
-    if (!document || !enabled) return;
+    if (!document || !enabled) {
+      return;
+    }
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [enabled]);

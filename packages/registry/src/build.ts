@@ -20,7 +20,9 @@ const HEX_SHA256 = /^[0-9a-f]{64}$/i;
  *  `null` when the input is not one - an artifact nothing vouches for is dropped
  *  rather than described with an integrity a client cannot check. */
 export function sriFromHex(hexSha256: string | null | undefined): string | null {
-  if (!hexSha256 || !HEX_SHA256.test(hexSha256)) return null;
+  if (!hexSha256 || !HEX_SHA256.test(hexSha256)) {
+    return null;
+  }
   const bytes = hexSha256.match(/../g)?.map((byte) => Number.parseInt(byte, 16)) ?? [];
   return `sha256-${base64(Uint8Array.from(bytes))}`;
 }
@@ -33,7 +35,9 @@ const someMap = (map: Record<string, string>) => (Object.keys(map).length > 0 ? 
 // is the filterable word; the defining module's id is not what someone browses by.
 function tagsOf(entry: DescribedModule): string[] | undefined {
   const explicit = some(entry.tags);
-  if (explicit) return explicit;
+  if (explicit) {
+    return explicit;
+  }
   const points = (entry.contributes ?? [])
     .map((c) => (c && typeof c === 'object' ? (c as { point?: string }).point : undefined))
     .filter((p): p is string => typeof p === 'string')
@@ -56,7 +60,9 @@ function metaOf(entry: DescribedModule) {
 }
 
 function helpersOf(entry: DescribedModule) {
-  if (entry.helpers) return entry.helpers;
+  if (entry.helpers) {
+    return entry.helpers;
+  }
   return entry.permissions?.run?.length ? {} : undefined;
 }
 
@@ -78,7 +84,9 @@ export function buildVersion(entry: DescribedModule): RegistryVersion {
     helpers: helpersOf(entry),
     artifacts: entry.artifacts.flatMap((a) => {
       const integrity = sriFromHex(a.sha256);
-      if (!integrity) return [];
+      if (!integrity) {
+        return [];
+      }
       return [
         {
           target: a.target,

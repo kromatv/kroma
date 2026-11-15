@@ -51,7 +51,9 @@ function walk(
         });
       continue;
     }
-    if (isPlainObject(member)) out[name] = walk(member, here, run, baseUrl);
+    if (isPlainObject(member)) {
+      out[name] = walk(member, here, run, baseUrl);
+    }
   }
   return out;
 }
@@ -74,13 +76,19 @@ export function createQueryClient(options: KromaClientOptions): QueryClient {
   const run = (path: readonly string[], args: readonly unknown[], signal: AbortSignal) => {
     const [domain = '', ...rest] = path;
     const factory = domains[domain];
-    if (!factory) throw new Error(`no domain named ${domain}`);
+    if (!factory) {
+      throw new Error(`no domain named ${domain}`);
+    }
     let node: unknown = factory(createRequestContext({ ...config, signal }));
     for (const step of rest) {
-      if (!isPlainObject(node)) throw new Error(`${path.join('.')} is not callable`);
+      if (!isPlainObject(node)) {
+        throw new Error(`${path.join('.')} is not callable`);
+      }
       node = node[step];
     }
-    if (typeof node !== 'function') throw new Error(`${path.join('.')} is not callable`);
+    if (typeof node !== 'function') {
+      throw new Error(`${path.join('.')} is not callable`);
+    }
     return (node as (...a: unknown[]) => Promise<unknown>)(...args);
   };
 

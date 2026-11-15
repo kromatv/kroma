@@ -28,7 +28,9 @@ interface StandardSchemaV1<Input = unknown, Output = Input> {
  *  check (zod's `.refine()` on the object) has no path and belongs to the form itself. */
 function issueField(issue: StandardIssue): string | undefined {
   const head = issue.path?.[0];
-  if (head === undefined || head === null) return undefined;
+  if (head === undefined || head === null) {
+    return undefined;
+  }
   const key = typeof head === 'object' ? head.key : head;
   return typeof key === 'symbol' ? undefined : String(key);
 }

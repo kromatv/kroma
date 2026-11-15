@@ -14,9 +14,15 @@ import { useAuth } from '#web/shared/lib/auth';
 import { type CommandDef, useCommandQuery, useCommands } from '#web/shared/lib/command-menu';
 
 function moduleStatus({ enabled, hasSidecar, running, unmet }: AdminModule) {
-  if (!enabled) return { key: 'admin.modulesDisabled', tone: 'neutral' } as const;
-  if (hasSidecar && !running) return { key: 'admin.modulesNotRunning', tone: 'danger' } as const;
-  if (unmet?.length) return { key: 'admin.modulesUnmet', tone: 'warning' } as const;
+  if (!enabled) {
+    return { key: 'admin.modulesDisabled', tone: 'neutral' } as const;
+  }
+  if (hasSidecar && !running) {
+    return { key: 'admin.modulesNotRunning', tone: 'danger' } as const;
+  }
+  if (unmet?.length) {
+    return { key: 'admin.modulesUnmet', tone: 'warning' } as const;
+  }
   return { key: 'admin.modulesEnabled', tone: 'success' } as const;
 }
 
@@ -60,7 +66,9 @@ export function useAdminCommands(): void {
     const { moduleId, label } = page;
     const module = modules.find((candidate) => candidate.id === moduleId);
     const row = { ...modulePageCommand(page), group };
-    if (!module) return { ...row, actions: [] };
+    if (!module) {
+      return { ...row, actions: [] };
+    }
     return {
       ...row,
       ...(typing ? moduleFace(module, label, t) : {}),

@@ -108,7 +108,9 @@ export function genreOfSegment(segment: string): string {
   const id = Number(segment);
   if (Number.isInteger(id) && segment.trim() !== '') {
     const slug = genreOfTmdbId(id);
-    if (slug) return slug;
+    if (slug) {
+      return slug;
+    }
   }
   return genreSlug(segment);
 }

@@ -24,7 +24,9 @@ interface Params {
 }
 
 function bufferedAhead(video: HTMLVideoElement | null, baseSec: number): number | undefined {
-  if (!video) return undefined;
+  if (!video) {
+    return undefined;
+  }
   const { buffered, currentTime } = video;
   for (let i = 0; i < buffered.length; i++) {
     if (currentTime >= buffered.start(i) && currentTime <= buffered.end(i)) {
@@ -35,19 +37,32 @@ function bufferedAhead(video: HTMLVideoElement | null, baseSec: number): number 
 }
 
 function uaInfo(): { player: string; device: string } {
-  if (typeof navigator === 'undefined') return { player: 'KROMA Web', device: 'Navigateur' };
+  if (typeof navigator === 'undefined') {
+    return { player: 'KROMA Web', device: 'Navigateur' };
+  }
   const ua = navigator.userAgent;
   let player = 'Navigateur';
-  if (/Edg\//.test(ua)) player = 'Edge';
-  else if (/Firefox\//.test(ua)) player = 'Firefox';
-  else if (/Chrome\//.test(ua)) player = 'Chrome';
-  else if (/Safari\//.test(ua)) player = 'Safari';
+  if (/Edg\//.test(ua)) {
+    player = 'Edge';
+  } else if (/Firefox\//.test(ua)) {
+    player = 'Firefox';
+  } else if (/Chrome\//.test(ua)) {
+    player = 'Chrome';
+  } else if (/Safari\//.test(ua)) {
+    player = 'Safari';
+  }
   let device = 'Web';
-  if (/iPhone|iPad/.test(ua)) device = 'iOS';
-  else if (/Android/.test(ua)) device = 'Android';
-  else if (/Mac OS X/.test(ua)) device = 'macOS';
-  else if (/Windows/.test(ua)) device = 'Windows';
-  else if (/Linux/.test(ua)) device = 'Linux';
+  if (/iPhone|iPad/.test(ua)) {
+    device = 'iOS';
+  } else if (/Android/.test(ua)) {
+    device = 'Android';
+  } else if (/Mac OS X/.test(ua)) {
+    device = 'macOS';
+  } else if (/Windows/.test(ua)) {
+    device = 'Windows';
+  } else if (/Linux/.test(ua)) {
+    device = 'Linux';
+  }
   return { player, device };
 }
 
@@ -62,7 +77,9 @@ export function usePlaybackSession(params: Params): void {
     getPosition: params.getPosition,
     getBuffered: () => bufferedAhead(params.videoRef.current, params.baseSec),
     getState: () => {
-      if (!params.playing) return 'paused';
+      if (!params.playing) {
+        return 'paused';
+      }
       return params.waiting ? 'buffering' : 'playing';
     },
     getAudio: () => params.audioLabel,

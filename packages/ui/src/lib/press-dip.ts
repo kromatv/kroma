@@ -12,7 +12,9 @@ import { motion } from '#ui/core/tokens';
 const DIP_PX = 6;
 
 export function pressScaleFor(longest: number): number {
-  if (longest <= 0) return motion.pressScale;
+  if (longest <= 0) {
+    return motion.pressScale;
+  }
   return Math.max(motion.pressScale, 1 - DIP_PX / longest);
 }
 

@@ -83,12 +83,16 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   // resumed the film.
   private open(url: string, seekSec: number, autoplay: boolean): void {
     this.teardown();
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     const player = createVideoPlayer({ uri: url });
     player.timeUpdateEventInterval = TIME_UPDATE_SEC;
     // Survives `replace`, so a re-anchor keeps the bounds this player opened with.
     const budget = nativeBufferBudget();
-    if (budget) player.bufferOptions = budget;
+    if (budget) {
+      player.bufferOptions = budget;
+    }
     // Only direct mode needs a seek: master's clock already starts at baseSec.
     this.pendingSeek = this.mode === 'direct' && seekSec > 0 ? seekSec : null;
     this.pendingAudio = this.mode === 'direct';
@@ -97,7 +101,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     // Notify the surface before playing: React hasn't re-rendered <VideoView>
     // onto the new player yet.
     this.listeners.onSurfaceChange?.();
-    if (autoplay) player.play();
+    if (autoplay) {
+      player.play();
+    }
     this.paused = !autoplay;
   }
 
@@ -110,7 +116,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       // events (AVFoundation can report failure seconds late) must not
       // overwrite the replacement's state.
       const guarded = (payload: never) => {
-        if (this.destroyed || this.player !== player) return;
+        if (this.destroyed || this.player !== player) {
+          return;
+        }
         (handler as (p: never) => void)(payload);
       };
       this.subscriptions.push(player.addListener(event, guarded as never));
@@ -121,7 +129,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       // The event carries it, so take it from there: reading the property back
       // off a player that is mid-swap throws, and `readNumber` answers that with
       // a 0 the seek bar draws as "nothing buffered".
-      if (payload.bufferedPosition != null) this.bufSec = payload.bufferedPosition;
+      if (payload.bufferedPosition != null) {
+        this.bufSec = payload.bufferedPosition;
+      }
       this.listeners.onTime(this.position());
       const duration = this.readNumber(() => player.duration);
       // In master mode the reported duration is the remaining anchored span,
@@ -135,8 +145,11 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
 
     add('playingChange', (payload: { isPlaying: boolean }) => {
       this.paused = !payload.isPlaying;
-      if (payload.isPlaying) this.listeners.onPlay();
-      else this.listeners.onPause();
+      if (payload.isPlaying) {
+        this.listeners.onPlay();
+      } else {
+        this.listeners.onPause();
+      }
     });
 
     add('statusChange', (payload: { status: string; error?: unknown }) => {
@@ -150,7 +163,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         this.listeners.onReady();
         return;
       }
-      if (payload.status === 'error') this.fail();
+      if (payload.status === 'error') {
+        this.fail();
+      }
     });
 
     add('playToEnd', () => {
@@ -162,21 +177,31 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     const { player, pendingSeek: seek, pendingAudio: audio } = this;
     this.pendingSeek = null;
     this.pendingAudio = false;
-    if (!player) return;
+    if (!player) {
+      return;
+    }
     const track = audio ? player.availableAudioTracks[this.rendition] : undefined;
-    if (track && player.audioTrack?.id !== track.id) player.audioTrack = track;
-    if (seek == null) return;
+    if (track && player.audioTrack?.id !== track.id) {
+      player.audioTrack = track;
+    }
+    if (seek == null) {
+      return;
+    }
     player.currentTime = seek;
     this.elSec = seek;
   }
 
   private teardown(now = false): void {
-    for (const sub of this.subscriptions) sub.remove();
+    for (const sub of this.subscriptions) {
+      sub.remove();
+    }
     this.subscriptions = [];
     const retiring = this.player;
     this.player = null;
     this.bufSec = null;
-    if (retiring) retire(retiring, now);
+    if (retiring) {
+      retire(retiring, now);
+    }
   }
 
   // Every path that moves the anchor comes through here, so none can leave the
@@ -201,7 +226,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (player && !this.destroyed) {
       try {
         player.replace({ uri: this.sourceUrl() });
-        if (!this.paused) player.play();
+        if (!this.paused) {
+          player.play();
+        }
         return;
       } catch {
         // Fall through to a full reopen: a player refusing a new source is one
@@ -229,7 +256,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   debugRows(): { label: string; value: string }[] {
     const rows = [{ label: 'Plane', value: PLANE }];
     const player = this.player;
-    if (!player) return rows;
+    if (!player) {
+      return rows;
+    }
     const read = <T>(get: () => T): T | null => {
       try {
         return get();
@@ -239,24 +268,39 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     };
 
     const status = read(() => player.status);
-    if (status) rows.push({ label: 'Player state', value: status });
+    if (status) {
+      rows.push({ label: 'Player state', value: status });
+    }
 
     const rate = read(() => player.playbackRate);
-    if (rate != null && rate !== 1) rows.push({ label: 'Rate', value: `${rate}x` });
+    if (rate != null && rate !== 1) {
+      rows.push({ label: 'Rate', value: `${rate}x` });
+    }
 
     const track = read(() => player.videoTrack);
-    if (!track) return rows;
+    if (!track) {
+      return rows;
+    }
 
-    if (track.mimeType) rows.push({ label: 'Track', value: track.mimeType });
+    if (track.mimeType) {
+      rows.push({ label: 'Track', value: track.mimeType });
+    }
     if (track.size.width > 0) {
       rows.push({ label: 'Track size', value: `${track.size.width}×${track.size.height}` });
     }
-    if (track.frameRate)
+    if (track.frameRate) {
       rows.push({ label: 'Frame rate', value: `${track.frameRate.toFixed(2)} fps` });
+    }
     const bitrate = track.peakBitrate ?? track.averageBitrate ?? track.bitrate;
-    if (bitrate) rows.push({ label: 'Bitrate', value: `${(bitrate / 1e6).toFixed(1)} Mb/s` });
-    if (track.videoRange) rows.push({ label: 'Range', value: track.videoRange });
-    if (!track.isSupported) rows.push({ label: 'Decoder', value: 'unsupported' });
+    if (bitrate) {
+      rows.push({ label: 'Bitrate', value: `${(bitrate / 1e6).toFixed(1)} Mb/s` });
+    }
+    if (track.videoRange) {
+      rows.push({ label: 'Range', value: track.videoRange });
+    }
+    if (!track.isSupported) {
+      rows.push({ label: 'Decoder', value: 'unsupported' });
+    }
     return rows;
   }
 
@@ -280,7 +324,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
 
   seekTo(absSec: number): void {
     const player = this.player;
-    if (!player) return;
+    if (!player) {
+      return;
+    }
     if (this.mode === 'direct') {
       player.currentTime = absSec;
       this.elSec = absSec;
@@ -302,10 +348,14 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   }
 
   setAudioRendition(rendition: number): void {
-    if (rendition === this.rendition) return;
+    if (rendition === this.rendition) {
+      return;
+    }
     this.rendition = rendition;
     const player = this.player;
-    if (!player) return;
+    if (!player) {
+      return;
+    }
     // Direct mode exposes the file's own audio tracks: switch in place, no
     // server round trip.
     if (this.mode === 'direct') {

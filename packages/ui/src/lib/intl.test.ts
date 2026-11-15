@@ -34,9 +34,11 @@ describe('decimal', () => {
 
 describe('formatCount', () => {
   it('groups thousands the way toLocaleString does', () => {
-    for (const n of [0, 7, 1064, 1234567])
-      for (const locale of ['fr', 'en'] as const)
+    for (const n of [0, 7, 1064, 1234567]) {
+      for (const locale of ['fr', 'en'] as const) {
         expect(formatCount(n, locale)).toBe(n.toLocaleString(locale));
+      }
+    }
   });
 });
 

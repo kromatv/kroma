@@ -13,7 +13,9 @@ function parse(notes: string): Line[] {
   const out: Line[] = [];
   for (const raw of notes.split('\n')) {
     const line = raw.trim();
-    if (!line) continue;
+    if (!line) {
+      continue;
+    }
     const id = `line-${out.length}`;
     const heading = /^#{1,6}\s+(\S.*)?$/.exec(line)?.[1];
     if (heading) {

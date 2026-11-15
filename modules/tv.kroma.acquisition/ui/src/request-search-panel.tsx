@@ -47,6 +47,7 @@ export function RequestSearchPanel({
   // what a request covers is a deliberate act, not a stray click away.
   const [draft, setDraft] = useState<CoverageDraft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [picked, setPicked] = useState<number | null>(null);
   const search = useReleaseSearch(requestId);
 
@@ -135,6 +136,7 @@ export function RequestSearchPanel({
               onCancel={() => setDraft(null)}
               onSave={() => {
                 setSaving(true);
+                setSaveFailed(false);
                 client.requests
                   .setCoverage(requestId, toBody(draft, ledger.data?.seasons ?? []))
                   .then(() => {
@@ -143,9 +145,15 @@ export function RequestSearchPanel({
                     // changed, so neither may keep answering from cache.
                     void queryClient.invalidateQueries({ queryKey: ['admin', 'requests'] });
                   })
+                  .catch(() => setSaveFailed(true))
                   .finally(() => setSaving(false));
               }}
             />
+          ) : null}
+          {draft && saveFailed ? (
+            <Callout.Root tone="danger">
+              <Callout.Title>{t('requests.actionFailed')}</Callout.Title>
+            </Callout.Root>
           ) : null}
         </Box>
       </Surface>
@@ -279,7 +287,9 @@ function Catalog({
       onSearchEpisode={(s, e) => onSearch({ scope: 'episode', season: s, episode: e })}
       onOpenTitle={onOpenTitle}
       onFileInfo={(ep) => {
-        if (ep.itemId) openMediaInfo?.(ep.itemId, ep.name ?? '');
+        if (ep.itemId) {
+          openMediaInfo?.(ep.itemId, ep.name ?? '');
+        }
       }}
     />
   );

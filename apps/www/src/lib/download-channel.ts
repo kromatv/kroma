@@ -18,7 +18,9 @@ export const channelFromSearch = (search: string): DownloadChannel =>
 export function canaryRelease(builds: readonly ChannelBuild[]): SiteRelease | null {
   const ordered = [...builds].sort((a, b) => Date.parse(b.builtAt) - Date.parse(a.builtAt));
   const newest = ordered[0];
-  if (!newest) return null;
+  if (!newest) {
+    return null;
+  }
   const seen = new Set<SiteDownload['target']>();
   const downloads: SiteDownload[] = [];
   const files = ordered
@@ -28,7 +30,9 @@ export function canaryRelease(builds: readonly ChannelBuild[]): SiteRelease | nu
     .sort((a, b) => b.at - a.at)
     .map(({ file }) => file);
   for (const file of files) {
-    if (seen.has(file.target)) continue;
+    if (seen.has(file.target)) {
+      continue;
+    }
     seen.add(file.target);
     downloads.push(file);
   }

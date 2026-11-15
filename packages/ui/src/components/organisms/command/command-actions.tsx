@@ -28,7 +28,9 @@ interface CommandTriggerProps {
  *  nothing while the row under the cursor has nothing to offer. */
 function Trigger({ label }: Readonly<CommandTriggerProps>) {
   const { current, actions } = useCommand('Trigger');
-  if (!current?.actions?.length) return null;
+  if (!current?.actions?.length) {
+    return null;
+  }
   return (
     <Focusable
       label={label}
@@ -51,7 +53,9 @@ function Trigger({ label }: Readonly<CommandTriggerProps>) {
 function Primary() {
   const { current, actions, choose, chooseAction } = useCommand('Primary');
   const action = actions.open ? actions.cursor : current?.actions?.[0];
-  if (!action) return null;
+  if (!action) {
+    return null;
+  }
   return (
     <Focusable
       label={action.label}
@@ -79,7 +83,9 @@ interface CommandActionsProps {
 function Actions({ label, closeLabel = 'Close actions' }: Readonly<CommandActionsProps>) {
   const s = useStyles(sDefinition);
   const { actions, current } = useCommand('Actions');
-  if (!actions.open) return null;
+  if (!actions.open) {
+    return null;
+  }
 
   return (
     <>
@@ -188,7 +194,9 @@ function ActionRow({
 }
 
 function ActionKeys({ place }: Readonly<{ place: number }>) {
-  if (place > 1) return null;
+  if (place > 1) {
+    return null;
+  }
   const modifier = onAppleHardware() ? <Kbd icon="command" /> : <Kbd>Ctrl</Kbd>;
   return (
     <Row gap={3}>

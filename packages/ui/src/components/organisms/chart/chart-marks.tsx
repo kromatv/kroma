@@ -60,7 +60,9 @@ function Line({ series, curve = 'monotone', thickness = TRACE }: Readonly<ChartT
 
   const state = useChart('Line');
   const found = seriesOf(state, series);
-  if (!found) return null;
+  if (!found) {
+    return null;
+  }
   const d = linePath(found.column, state.domain, state.plot, curve);
   return d ? (
     <Trace paint={color(found.color, activeTheme(scope.theme))} d={d} thickness={thickness} />
@@ -73,9 +75,13 @@ function Area({ series, curve = 'monotone', thickness = TRACE }: Readonly<ChartT
 
   const state = useChart('Area');
   const found = seriesOf(state, series);
-  if (!found) return null;
+  if (!found) {
+    return null;
+  }
   const d = linePath(found.column, state.domain, state.plot, curve);
-  if (!d) return null;
+  if (!d) {
+    return null;
+  }
   const paint = color(found.color, activeTheme(scope.theme));
   return (
     <>
@@ -92,7 +98,9 @@ function Area({ series, curve = 'monotone', thickness = TRACE }: Readonly<ChartT
 
 function spanOf(entry: ChartSeries, at: number, state: ChartState): BarSpan | null {
   const value = entry.column[at];
-  if (value === null || value === undefined) return null;
+  if (value === null || value === undefined) {
+    return null;
+  }
   const foot = entry.base?.[at] ?? 0;
   const y = px(yAt(foot + value, state.domain, state.plot));
   const height = px(yAt(foot, state.domain, state.plot)) - y;
@@ -104,7 +112,9 @@ function extentOf(stack: readonly ChartSeries[], at: number, state: ChartState):
   let foot = Number.NEGATIVE_INFINITY;
   for (const entry of stack) {
     const span = spanOf(entry, at, state);
-    if (!span) continue;
+    if (!span) {
+      continue;
+    }
     top = Math.min(top, span.y);
     foot = Math.max(foot, span.y + span.height);
   }
@@ -117,7 +127,9 @@ function Bar({ series }: Readonly<ChartBarProps>) {
 
   const state = useChart('Bar');
   const found = seriesOf(state, series);
-  if (!found) return null;
+  if (!found) {
+    return null;
+  }
   const stack = state.series.filter(
     (entry) => entry.mark === 'bar' && entry.stackAt === found.stackAt,
   );
@@ -126,7 +138,9 @@ function Bar({ series }: Readonly<ChartBarProps>) {
     <>
       {found.column.map((_, at) => {
         const span = spanOf(found, at, state);
-        if (!span) return null;
+        if (!span) {
+          return null;
+        }
         const band = bandAt(at, state.count, state.plot.width);
         const whole = { x: band.x, width: band.width, ...extentOf(stack, at, state) };
         return (

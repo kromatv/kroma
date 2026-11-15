@@ -20,7 +20,9 @@ const answering = async (prints: string | null): Promise<[FakeDevice, SdbConnect
 };
 
 afterEach(async () => {
-  for (const connection of connections.splice(0)) connection.close();
+  for (const connection of connections.splice(0)) {
+    connection.close();
+  }
   await Promise.all(televisions.splice(0).map((set) => set.close()));
 });
 

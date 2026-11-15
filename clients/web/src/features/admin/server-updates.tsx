@@ -100,12 +100,13 @@ function UpdatesContent({ restartAsked = false, onRestartClosed }: Readonly<Rest
               data={data}
               busy={busy || active}
               onInstall={() => {
-                if (data.latest?.build)
+                if (data.latest?.build) {
                   setConfirm({
                     channel: data.channel,
                     version: data.latest.version,
                     build: data.latest.build,
                   });
+                }
               }}
             />
           )}
@@ -206,14 +207,22 @@ function updateIsActive(operation: UpdateOperation | null | undefined) {
 }
 function mainProgress(data: UpdateStatus | null) {
   const operation = data?.operation;
-  if (!operation) return null;
-  if (updateIsActive(operation)) return operation;
-  if (operation.phase === 'complete' && !data?.available) return operation;
+  if (!operation) {
+    return null;
+  }
+  if (updateIsActive(operation)) {
+    return operation;
+  }
+  if (operation.phase === 'complete' && !data?.available) {
+    return operation;
+  }
   return null;
 }
 function UpdateFailure({ operation }: Readonly<{ operation: UpdateOperation | null | undefined }>) {
   const t = useT();
-  if (operation?.phase !== 'failed') return null;
+  if (operation?.phase !== 'failed') {
+    return null;
+  }
   return (
     <Box mt={16}>
       <Callout.Root tone="accent" icon="alert-triangle">

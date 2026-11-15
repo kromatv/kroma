@@ -23,16 +23,22 @@ export function TvPin() {
   useFocusNav({ onBack: nav.back });
 
   const verify = async (pin: string): Promise<undefined> => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     const sess = await client.accounts
       .exchangeToken(account.accessToken, pin)
       .catch((e: unknown) => {
-        if (!isTokenRevoked(e)) throw e;
+        if (!isTokenRevoked(e)) {
+          throw e;
+        }
         forget(account.user.id, account.serverUrl);
         nav.replace('addProfile');
         return null;
       });
-    if (!sess) return;
+    if (!sess) {
+      return;
+    }
     client.setAuthToken(sess.token);
     await client.accounts.verifyPin(pin);
     activate(account);

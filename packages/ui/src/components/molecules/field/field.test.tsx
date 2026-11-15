@@ -184,7 +184,9 @@ describe('a field welded into a <ButtonGroup>', () => {
 
   const raisedAncestor = (entry: HTMLElement) => {
     let at: HTMLElement | null = entry;
-    while (at && !(Number(declared(at, 'z-index')) > 0)) at = at.parentElement;
+    while (at && !(Number(declared(at, 'z-index')) > 0)) {
+      at = at.parentElement;
+    }
     return at;
   };
 

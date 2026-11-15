@@ -93,7 +93,9 @@ function Shell() {
   const segments: string[] = useSegments();
   const inPlayer = segments.includes('player');
   useEffect(() => {
-    if (!inPlayer) lockUpright();
+    if (!inPlayer) {
+      lockUpright();
+    }
   }, [inPlayer]);
   const overArtwork = status !== 'signedIn' || inPlayer;
   const ground = useTheme();
@@ -109,7 +111,9 @@ function Shell() {
   }
 
   useEffect(() => {
-    if (status !== 'booting') SplashScreen.hideAsync().catch(() => undefined);
+    if (status !== 'booting') {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
   }, [status]);
 
   return (

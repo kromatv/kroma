@@ -72,7 +72,9 @@ function refreshExchange(
 ): Promise<string | undefined> {
   const { loadSession, saveSession, clearSession } = persistence;
   const active = loadSession();
-  if (!active) return Promise.resolve(undefined);
+  if (!active) {
+    return Promise.resolve(undefined);
+  }
   return client.session
     .sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
     .then((res) => {
@@ -121,7 +123,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   // PIN) for a new session. Coalesced app-wide via `sharedTokenExchange` so
   // concurrent 401s (and the boot exchange / data layer) share one exchange.
   useEffect(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     client.setRefreshHandler(() => refreshExchange(client, setSession, persistence));
     return () => client.setRefreshHandler();
   }, [client, persistence]);
@@ -148,11 +152,15 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
           );
     exchanged
       .then((res) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         adopt(active, res.token, res.user, res.mediaTicket);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         if (!(error instanceof KromaApiError) || ![401, 403].includes(error.status)) {
           setSession(active);
           return;
@@ -163,7 +171,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
         setSession(null);
       })
       .finally(() => {
-        if (!cancelled) setReady(true);
+        if (!cancelled) {
+          setReady(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -179,7 +189,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
 
   const activate = useCallback(
     async (s: StoredSession, pin?: string): Promise<ActivateResult> => {
-      if (!client) return { ok: false, needsPin: false, unreachable: true };
+      if (!client) {
+        return { ok: false, needsPin: false, unreachable: true };
+      }
       try {
         const res = await client.accounts.exchangeToken(s.accessToken, pin);
         adopt(s, res.token, res.user, res.mediaTicket);
@@ -187,7 +199,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       } catch (e) {
         // Nothing came back from the server (offline, DNS, TLS): the token is
         // not implicated, so this is not a dead-token failure.
-        if (!(e instanceof KromaApiError)) return { ok: false, needsPin: false, unreachable: true };
+        if (!(e instanceof KromaApiError)) {
+          return { ok: false, needsPin: false, unreachable: true };
+        }
         const { retryAfter, tokenInvalid, pinRequired } = apiErrorBody(e);
         const error = apiErrorText(e, '');
         // Rate-limited (429): too many wrong PINs. Keep the PIN screen and pass
@@ -198,7 +212,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
         // A dead/expired access token is tagged `tokenInvalid` by the server. A
         // PIN can't rescue it (even for a PIN profile), so DON'T ask for one
         // report it as a non-PIN failure so the UI routes to a full re-login.
-        if (e.status === 401 && tokenInvalid) return { ok: false, needsPin: false, error };
+        if (e.status === 401 && tokenInvalid) {
+          return { ok: false, needsPin: false, error };
+        }
         // A PIN-locked profile 401s until the correct PIN is supplied ask the
         // UI to collect it. Trust the server's `pinRequired` flag (so a PIN
         // added on another device is handled even if our cached `hasPin` is
@@ -214,7 +230,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
 
   const switchProfile = useCallback(() => {
     const active = loadSession();
-    if (active && client) client.accounts.relock(active.accessToken).catch(() => {});
+    if (active && client) {
+      client.accounts.relock(active.accessToken).catch(() => {});
+    }
     client?.setAuthToken();
     clearSession();
     setSession(null);
@@ -225,8 +243,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       const active = loadSession();
       // Revoke server-side only when it's the active account (the logout call
       // also drops the current bearer, which we're discarding anyway).
-      if (active?.user.id === userId && client)
+      if (active?.user.id === userId && client) {
         client.accounts.logout(active.accessToken).catch(() => {});
+      }
       forgetAccount(userId);
       setAccounts(loadAccounts());
       setSession((s) => {
@@ -253,8 +272,11 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       }
     }
     client?.setAuthToken();
-    if (active) forgetAccount(active.user.id);
-    else clearSession();
+    if (active) {
+      forgetAccount(active.user.id);
+    } else {
+      clearSession();
+    }
     setAccounts(loadAccounts());
     setSession(null);
   }, [client, forgetAccount, loadSession, loadAccounts, clearSession]);
@@ -262,7 +284,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   const updateUser = useCallback(
     (patch: Partial<User>) => {
       setSession((s) => {
-        if (!s) return s;
+        if (!s) {
+          return s;
+        }
         const next: StoredSession = { ...s, user: { ...s.user, ...patch } };
         saveSession(next);
         return next;

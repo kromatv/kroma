@@ -30,7 +30,9 @@ export function audioFilterLabels(t: Translate): Record<AudioFilterMode, string>
 export function storedAudioFilter(store: DeviceStore | null = deviceStore()): AudioFilterMode {
   try {
     const raw = store?.getItem(KEY) ?? null;
-    if (raw === 'standard' || raw === 'night' || raw === 'boost') return raw;
+    if (raw === 'standard' || raw === 'night' || raw === 'boost') {
+      return raw;
+    }
   } catch {
     /* ignore */
   }
@@ -57,7 +59,9 @@ interface FilterDebugHandle {
 function publishDebugHandle(handle: FilterDebugHandle): void {
   // Cast rather than `vite/client` types: @kromatv/ui is also consumed outside a
   // Vite build (module SDK), where `import.meta.env` is undefined.
-  if (!(import.meta as { env?: { DEV?: boolean } }).env?.DEV) return;
+  if (!(import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
+    return;
+  }
   (globalThis as { __kromaAudioFilter?: FilterDebugHandle }).__kromaAudioFilter = handle;
 }
 
@@ -117,14 +121,18 @@ export function createAudioFilterOwner() {
   // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
   function audioCtx(): AudioContext | null {
     // oxlint-disable-next-line no-restricted-globals -- audited - Web Audio is the browser's own leveling path; the native engines do their own (mpv af, Exo DynamicsProcessing, server-side aac-night), and this returns null there.
-    if (typeof AudioContext === 'undefined') return null;
+    if (typeof AudioContext === 'undefined') {
+      return null;
+    }
     if (!sharedCtx) {
       // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
       sharedCtx = new AudioContext();
       // Hydrating a persisted filter isn't a user gesture, so the context can be
       // born suspended (a suspended context MUTES routed audio); any interaction un-sticks it.
       const resume = () => {
-        if (sharedCtx?.state === 'suspended') void sharedCtx.resume();
+        if (sharedCtx?.state === 'suspended') {
+          void sharedCtx.resume();
+        }
       };
       const doc = webDocument();
       doc?.addEventListener('pointerdown', resume, true);
@@ -134,7 +142,9 @@ export function createAudioFilterOwner() {
         doc?.removeEventListener('keydown', resume, true);
       };
     }
-    if (sharedCtx.state === 'suspended') void sharedCtx.resume();
+    if (sharedCtx.state === 'suspended') {
+      void sharedCtx.resume();
+    }
     return sharedCtx;
   }
 
@@ -146,9 +156,13 @@ export function createAudioFilterOwner() {
   // the volume past the element's own ceiling; the limiter only sits in the path
   // while it is above unity, so a plain 100% is never coloured by it.
   function wire(el: HTMLMediaElement, mode: AudioFilterMode, boost: number): void {
-    if (mode === 'off' && boost <= 1 && !graphs.has(el)) return;
+    if (mode === 'off' && boost <= 1 && !graphs.has(el)) {
+      return;
+    }
     const ctx = audioCtx();
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     let g = graphs.get(el);
     if (!g) {
@@ -174,21 +188,28 @@ export function createAudioFilterOwner() {
     generation += 1;
     let released = false;
     return () => {
-      if (released) return;
+      if (released) {
+        return;
+      }
       released = true;
       holds -= 1;
       const releasedAt = ++generation;
       // StrictMode immediately restarts effects on the same video. Defer the
       // teardown so that replay keeps its one permitted MediaElementSource.
       queueMicrotask(() => {
-        if (holds > 0 || generation !== releasedAt) return;
+        if (holds > 0 || generation !== releasedAt) {
+          return;
+        }
         const ctx = sharedCtx;
         sharedCtx = null;
         unlisten();
         const handle = Reflect.get(globalThis, '__kromaAudioFilter');
-        if (handle && typeof handle === 'object' && 'ctx' in handle && handle.ctx === ctx)
+        if (handle && typeof handle === 'object' && 'ctx' in handle && handle.ctx === ctx) {
           Reflect.deleteProperty(globalThis, '__kromaAudioFilter');
-        if (ctx) void ctx.close().catch(() => undefined);
+        }
+        if (ctx) {
+          void ctx.close().catch(() => undefined);
+        }
       });
     };
   }
@@ -234,7 +255,9 @@ export function useAudioFilter(
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- remountKey tracks the element identity.
   useEffect(() => {
     const v = videoRef.current;
-    if (v) owner.wire(v, modeState, boost);
+    if (v) {
+      owner.wire(v, modeState, boost);
+    }
   }, [modeState, boost, remountKey, videoRef, owner]);
 
   const setMode = useCallback(

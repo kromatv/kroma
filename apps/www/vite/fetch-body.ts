@@ -34,7 +34,9 @@ async function once(url: string, options: Options): Promise<string> {
   });
   if (!res.ok) {
     const answered = `${url} answered ${res.status} ${res.statusText}`;
-    if (TRANSIENT_STATUS.has(res.status)) throw new Error(answered);
+    if (TRANSIENT_STATUS.has(res.status)) {
+      throw new Error(answered);
+    }
     throw new Permanent(answered);
   }
 
@@ -56,13 +58,19 @@ export async function fetchBody(url: string, options: Options): Promise<string> 
   const backoff = options.backoffMs ?? BACKOFF_MS;
 
   const attempt = async (n: number): Promise<string> => {
-    if (n > 1) await wait(backoff * (n - 1));
+    if (n > 1) {
+      await wait(backoff * (n - 1));
+    }
     try {
       return await once(url, options);
     } catch (err) {
-      if (err instanceof Permanent) throw err;
+      if (err instanceof Permanent) {
+        throw err;
+      }
       if (n === ATTEMPTS) {
-        throw new Error(`${url} could not be read after ${ATTEMPTS} attempts: ${chain(err)}`);
+        throw new Error(`${url} could not be read after ${ATTEMPTS} attempts: ${chain(err)}`, {
+          cause: err,
+        });
       }
       return attempt(n + 1);
     }

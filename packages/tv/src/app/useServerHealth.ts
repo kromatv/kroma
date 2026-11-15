@@ -37,7 +37,9 @@ export function useServerHealth(
   }
 
   useEffect(() => {
-    if (!client || !enabled) return;
+    if (!client || !enabled) {
+      return;
+    }
     const monitor = startHealthMonitor({
       probe: async () => {
         const ctrl = new AbortController();

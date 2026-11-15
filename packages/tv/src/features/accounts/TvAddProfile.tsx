@@ -64,8 +64,9 @@ export function TvAddProfile() {
       const saved = servers.find((entry) => entry.url === url);
       return of(url, saved, !saved);
     });
-    for (const other of servers.filter((entry) => !localUrls.includes(entry.url)))
+    for (const other of servers.filter((entry) => !localUrls.includes(entry.url))) {
       out.push(of(other.url, other));
+    }
     return out;
   }, [discovered, servers]);
 

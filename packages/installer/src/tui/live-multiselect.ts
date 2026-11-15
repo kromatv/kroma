@@ -94,9 +94,13 @@ export function liveMultiselect<TValue>({
         options[known] = option;
       } else {
         options.push(option);
-        if (option.ticked) prompt.value = [...(prompt.value ?? []), option.value];
+        if (option.ticked) {
+          prompt.value = [...(prompt.value ?? []), option.value];
+        }
       }
-      if (options[prompt.cursor]?.disabled) prompt.cursor = firstTickable(options);
+      if (options[prompt.cursor]?.disabled) {
+        prompt.cursor = firstTickable(options);
+      }
       prompt.redraw();
     },
     status(line) {
@@ -135,7 +139,9 @@ function row<TValue>(option: LiveOption<TValue>, active: boolean, ticked: boolea
     const label = active ? option.label : dim(option.label);
     return `${styleText('green', S_CHECKBOX_SELECTED)} ${label}${hint}`;
   }
-  if (active) return `${styleText('cyan', S_CHECKBOX_ACTIVE)} ${option.label}${hint}`;
+  if (active) {
+    return `${styleText('cyan', S_CHECKBOX_ACTIVE)} ${option.label}${hint}`;
+  }
   return `${dim(S_CHECKBOX_INACTIVE)} ${dim(option.label)}${hint}`;
 }
 
@@ -145,8 +151,12 @@ function recap<TValue>(
   state: 'submit' | 'cancel',
 ): string {
   const chosen = options.filter((option) => ticked.includes(option.value));
-  if (state === 'cancel') return chosen.map((option) => struck(option.label)).join(dim(', '));
-  if (chosen.length === 0) return dim('none');
+  if (state === 'cancel') {
+    return chosen.map((option) => struck(option.label)).join(dim(', '));
+  }
+  if (chosen.length === 0) {
+    return dim('none');
+  }
   return chosen.map((option) => dim(option.label)).join(dim(', '));
 }
 

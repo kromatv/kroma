@@ -65,11 +65,15 @@ let nextId = 1;
 const pending = new Map<number, (result: unknown) => void>();
 socket.addEventListener('message', (event) => {
   const message = JSON.parse(String(event.data)) as { id?: unknown; result?: unknown };
-  if (typeof message.id !== 'number') return; // an event, not an answer
+  if (typeof message.id !== 'number') {
+    return;
+  } // an event, not an answer
   // Found among the calls we made rather than looked up by what arrived: the id
   // is off the wire, and only ever compared here, never used to reach anything.
   for (const [id, settle] of pending) {
-    if (id !== message.id) continue;
+    if (id !== message.id) {
+      continue;
+    }
     pending.delete(id);
     settle(message.result);
     return;
@@ -101,7 +105,9 @@ const KEYS: Record<string, { code: number; key: string; name: string }> = {
 
 async function press(name: string): Promise<void> {
   const k = KEYS[name];
-  if (!k) return;
+  if (!k) {
+    return;
+  }
   const common = {
     windowsVirtualKeyCode: k.code,
     nativeVirtualKeyCode: k.code,
@@ -186,7 +192,9 @@ interface CpuProfile {
 
 function bottomUp(profile: CpuProfile): { label: string; ms: number; pct: number }[] {
   const byNode = new Map<number, CpuProfileNode>();
-  for (const n of profile.nodes) byNode.set(n.id, n);
+  for (const n of profile.nodes) {
+    byNode.set(n.id, n);
+  }
   const total = Math.max(1, profile.endTime - profile.startTime) / 1000;
 
   const self = new Map<number, number>();
@@ -200,7 +208,9 @@ function bottomUp(profile: CpuProfile): { label: string; ms: number; pct: number
   const merged = new Map<string, number>();
   for (const [id, ms] of self) {
     const frame = byNode.get(id)?.callFrame;
-    if (!frame) continue;
+    if (!frame) {
+      continue;
+    }
     const where = frame.url ? frame.url.split('/').pop() : '';
     const name = frame.functionName || '(anonymous)';
     merged.set(
@@ -234,7 +244,9 @@ const about = await evaluate<Record<string, unknown>>(`(() => ({
   controls: document.querySelectorAll('[role="button"]').length,
 }))()`);
 console.log(`\n  ${page.title}\n`);
-for (const [k, v] of Object.entries(about)) console.log(`    ${k.padEnd(10)} ${v}`);
+for (const [k, v] of Object.entries(about)) {
+  console.log(`    ${k.padEnd(10)} ${typeof v === 'string' ? v : JSON.stringify(v)}`);
+}
 
 const css = ABLATIONS[ABLATE];
 if (css === undefined) {
@@ -275,13 +287,17 @@ if (report) {
   // Scalars only: the report also carries the frame durations the on-screen
   // chart draws, and as a row they bury every number below them.
   for (const [k, v] of Object.entries(report)) {
-    if (typeof v === 'number') console.log(`    ${k.padEnd(16)} ${v}`);
+    if (typeof v === 'number') {
+      console.log(`    ${k.padEnd(16)} ${v}`);
+    }
   }
 } else {
   console.log('  (KROMA_PERF is off - enable it in device settings for frame times)');
 }
 console.log('\n  mounted at end');
-for (const [k, v] of Object.entries(after)) console.log(`    ${k.padEnd(16)} ${v}`);
+for (const [k, v] of Object.entries(after)) {
+  console.log(`    ${k.padEnd(16)} ${v}`);
+}
 
 console.log('\n  self time (bottom-up)');
 for (const row of bottomUp(profile).slice(0, 25)) {

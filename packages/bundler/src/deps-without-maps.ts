@@ -21,7 +21,9 @@ export function depsWithoutMaps(): Plugin {
       deps = `${config.cacheDir}${sep}deps${sep}`;
     },
     transform(code, id) {
-      if (!id.startsWith(deps)) return undefined;
+      if (!id.startsWith(deps)) {
+        return undefined;
+      }
       return { code, map: { mappings: '' } };
     },
   };

@@ -262,7 +262,9 @@ describe('ListRow', () => {
       const text = Array.from(node.querySelectorAll('div'))
         .reverse()
         .find((el) => el.textContent === value);
-      if (!text?.parentElement) throw new Error(`no tail holding ${value}`);
+      if (!text?.parentElement) {
+        throw new Error(`no tail holding ${value}`);
+      }
       return getComputedStyle(text.parentElement);
     };
 

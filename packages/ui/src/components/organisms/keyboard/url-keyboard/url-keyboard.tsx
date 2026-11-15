@@ -69,8 +69,11 @@ function UrlKeyboard({
   // One handler for the whole grid, whose identity never moves: a closure over
   // `value` is rebuilt on every keystroke, and every key element with it.
   const press = useStableCallback((k: string) => {
-    if (k === DELETE_KEY) onValueChange(value.slice(0, -1));
-    else onValueChange(value + k);
+    if (k === DELETE_KEY) {
+      onValueChange(value.slice(0, -1));
+    } else {
+      onValueChange(value + k);
+    }
   });
   const clear = useStableCallback(() => onValueChange(''));
   return (

@@ -10,7 +10,9 @@ export function slugify(raw: string): string {
   let slug = SLUGS.get(raw);
   if (slug === undefined) {
     slug = fold(raw);
-    if (SLUGS.size < 4096) SLUGS.set(raw, slug);
+    if (SLUGS.size < 4096) {
+      SLUGS.set(raw, slug);
+    }
   }
   return slug;
 }

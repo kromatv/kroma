@@ -37,15 +37,22 @@ function walk(directory: string, prefix: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isSymbolicLink()) continue;
-    if (entry.isDirectory()) found.push(...walk(join(directory, entry.name), relative));
-    else if (entry.isFile()) found.push(relative);
+    if (entry.isSymbolicLink()) {
+      continue;
+    }
+    if (entry.isDirectory()) {
+      found.push(...walk(join(directory, entry.name), relative));
+    } else if (entry.isFile()) {
+      found.push(relative);
+    }
   }
   return found;
 }
 
 function excluded(name: string, role: SignatureRole): boolean {
-  if (BUILD_LEFTOVERS.has(name) || DISTRIBUTOR_SIGNATURE.test(name)) return true;
+  if (BUILD_LEFTOVERS.has(name) || DISTRIBUTOR_SIGNATURE.test(name)) {
+    return true;
+  }
   return role === 'author' && name === AUTHOR_SIGNATURE;
 }
 
@@ -53,9 +60,13 @@ function escapeUri(path: string): string {
   let escaped = '';
   for (const character of path) {
     const code = character.codePointAt(0) ?? 0;
-    if (code > 127) escaped += percent(Buffer.from(character, 'utf8'));
-    else if (UNSAFE.includes(character)) escaped += percent(Buffer.from(character, 'ascii'));
-    else escaped += ATTRIBUTE[character] ?? character;
+    if (code > 127) {
+      escaped += percent(Buffer.from(character, 'utf8'));
+    } else if (UNSAFE.includes(character)) {
+      escaped += percent(Buffer.from(character, 'ascii'));
+    } else {
+      escaped += ATTRIBUTE[character] ?? character;
+    }
   }
   return escaped;
 }

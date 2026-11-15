@@ -29,7 +29,9 @@ const WIDTH = params.get('w');
 const LOADERS = Number(params.get('loaders') ?? 0);
 
 const artFor = (n: number): string | null => {
-  if (!ART) return null;
+  if (!ART) {
+    return null;
+  }
   const sized = WIDTH ? `${ART}?w=${WIDTH}&v=${n}` : `${ART}?v=${n}`;
   return sized;
 };
@@ -95,7 +97,9 @@ function Bench() {
 }
 
 function Loaders({ count }: Readonly<{ count: number }>) {
-  if (count <= 0) return null;
+  if (count <= 0) {
+    return null;
+  }
   return (
     <Box row wrap gap={12} mt={24}>
       {Array.from({ length: count }, (_, n) => (
@@ -110,5 +114,8 @@ function Loaders({ count }: Readonly<{ count: number }>) {
 }
 
 const root = document.getElementById('root');
-if (root && params.has('mount')) mountBench(params, root);
-else if (root) createRoot(root).render(<Bench />);
+if (root && params.has('mount')) {
+  mountBench(params, root);
+} else if (root) {
+  createRoot(root).render(<Bench />);
+}

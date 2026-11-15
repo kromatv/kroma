@@ -50,23 +50,31 @@ const unavailable = () =>
 /** `GET /registry.json`: who this registry is and which ids it serves. */
 export async function descriptorResponse(env: Env, waitUntil: WaitUntil, origin: string) {
   const found = await modules(env, waitUntil);
-  if (!found) return unavailable();
+  if (!found) {
+    return unavailable();
+  }
   return jsonResponse(JSON.stringify(buildDescriptor(REGISTRY_NAME, origin, found)), DOCUMENT_TTL);
 }
 
 /** `GET /index.json`: one record per module, the version a bare install gets. */
 export async function indexResponse(env: Env, waitUntil: WaitUntil) {
   const found = await modules(env, waitUntil);
-  if (!found) return unavailable();
+  if (!found) {
+    return unavailable();
+  }
   return jsonResponse(JSON.stringify(buildIndex(found)), DOCUMENT_TTL);
 }
 
 /** `GET /m/{id}.json`: one module, every version. */
 export async function moduleResponse(id: string, env: Env, waitUntil: WaitUntil) {
   const found = await modules(env, waitUntil);
-  if (!found) return unavailable();
+  if (!found) {
+    return unavailable();
+  }
   const entry = found.find((m) => m.id === id);
-  if (!entry) return jsonResponse(JSON.stringify({ error: 'no such module' }), MISS_TTL, 404);
+  if (!entry) {
+    return jsonResponse(JSON.stringify({ error: 'no such module' }), MISS_TTL, 404);
+  }
   // Only the full record carries history: the catalog names the current version
   // of each module, the releases hold every version ever cut, and the version
   // history says what each of them needs.
@@ -83,10 +91,14 @@ export async function moduleResponse(id: string, env: Env, waitUntil: WaitUntil)
  *  `null` when nothing publishes that name at that version. */
 export function schemaResponse(name: string, version: number | undefined, origin: string) {
   const known = SCHEMA_NAMES.find((candidate) => candidate === name) as SchemaName | undefined;
-  if (!known) return null;
+  if (!known) {
+    return null;
+  }
   // Every version this build still publishes answers, not only the current one:
   // a `$id` pinned against an older contract must keep resolving to the schema
   // it was pinned to.
-  if (version !== undefined && !publishesSchema(known, version)) return null;
+  if (version !== undefined && !publishesSchema(known, version)) {
+    return null;
+  }
   return jsonResponse(JSON.stringify(jsonSchema(known, version, origin)), SCHEMA_TTL);
 }

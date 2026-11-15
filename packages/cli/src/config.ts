@@ -14,13 +14,17 @@ export type Config = z.infer<typeof Config>;
 /** `~/.config/kroma/cli.json`, or wherever `KROMA_CLI_CONFIG` points. */
 export function configPath(): string {
   const env = process.env.KROMA_CLI_CONFIG?.trim();
-  if (env) return env;
+  if (env) {
+    return env;
+  }
   const base = process.env.XDG_CONFIG_HOME?.trim() || join(homedir(), '.config');
   return join(base, 'kroma', 'cli.json');
 }
 
 export function readConfig(path = configPath()): Config {
-  if (!existsSync(path)) return { servers: {} };
+  if (!existsSync(path)) {
+    return { servers: {} };
+  }
   try {
     return Config.parse(JSON.parse(readFileSync(path, 'utf8')));
   } catch {
@@ -40,6 +44,8 @@ export function normalizeServer(url: string): string {
   const withScheme =
     url.startsWith('http://') || url.startsWith('https://') ? url : `http://${url}`;
   let end = withScheme.length;
-  while (end > 0 && withScheme[end - 1] === '/') end -= 1;
+  while (end > 0 && withScheme[end - 1] === '/') {
+    end -= 1;
+  }
   return withScheme.slice(0, end);
 }

@@ -17,14 +17,18 @@ const NOBODY_HOME = [253, 252, 251];
 
 /** macOS only: whether this process is being refused the local network outright. */
 export async function localNetworkBlocked(): Promise<boolean> {
-  if (process.platform !== 'darwin') return false;
+  if (process.platform !== 'darwin') {
+    return false;
+  }
 
   const known = new Set(await arpHosts());
   const targets = localSubnets()
     .flatMap((subnet) => NOBODY_HOME.map((last) => `${subnet.prefix}.${last}`))
     .filter((host) => !known.has(host))
     .slice(0, 2);
-  if (targets.length === 0) return false;
+  if (targets.length === 0) {
+    return false;
+  }
 
   const results = await Promise.all(
     targets.map((host) => connect(host, DISCARD_PORT, PROBE_TIMEOUT_MS)),
@@ -43,7 +47,9 @@ const MAX_DEPTH = 12;
  * the entry to allow in the Local Network list: a terminal, an editor, an IDE.
  */
 export async function responsibleApp(): Promise<string | null> {
-  if (process.platform !== 'darwin') return null;
+  if (process.platform !== 'darwin') {
+    return null;
+  }
 
   let pid = process.pid;
   for (let depth = 0; depth < MAX_DEPTH && pid > 1; depth++) {
@@ -51,10 +57,14 @@ export async function responsibleApp(): Promise<string | null> {
       timeoutMs: 2000,
     });
     const [, parent, command] = PROCESS_LINE.exec(output.trim()) ?? [];
-    if (code !== 0 || !parent || !command) return null;
+    if (code !== 0 || !parent || !command) {
+      return null;
+    }
 
     const app = APP_BUNDLE.exec(command)?.[1];
-    if (app) return app;
+    if (app) {
+      return app;
+    }
     pid = Number(parent);
   }
   return null;
@@ -97,16 +107,22 @@ function queryOn(socket: Socket, address: string, query: Buffer): void {
  * this is what puts the responsible app there for the switch to be flipped.
  */
 export async function askForLocalNetwork(): Promise<void> {
-  if (process.platform !== 'darwin') return;
+  if (process.platform !== 'darwin') {
+    return;
+  }
   const subnets = localSubnets();
-  if (subnets.length === 0) return;
+  if (subnets.length === 0) {
+    return;
+  }
 
   const socket = createSocket({ type: 'udp4', reuseAddr: true });
   socket.on('error', () => undefined);
   await new Promise<void>((resolve) => socket.bind(resolve));
 
   const query = mdnsQuery('_services._dns-sd._udp.local');
-  for (const subnet of subnets) queryOn(socket, subnet.address, query);
+  for (const subnet of subnets) {
+    queryOn(socket, subnet.address, query);
+  }
 
   await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
   socket.close();

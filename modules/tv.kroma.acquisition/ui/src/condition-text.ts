@@ -12,9 +12,15 @@ function languageName(t: Translate, tag: string): string {
 }
 
 function range(t: Translate, from: string | null, to: string | null): string {
-  if (from && to) return t('acq.rangeBetween', { from, to });
-  if (from) return t('acq.rangeFrom', { from });
-  if (to) return t('acq.rangeTo', { to });
+  if (from && to) {
+    return t('acq.rangeBetween', { from, to });
+  }
+  if (from) {
+    return t('acq.rangeFrom', { from });
+  }
+  if (to) {
+    return t('acq.rangeTo', { to });
+  }
   return t('acq.anyValue');
 }
 

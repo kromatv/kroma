@@ -86,7 +86,9 @@ export function LangPickerSheet({
       search: fold(label),
     });
     const head = [sentinel(null, t('account.noPreference'))];
-    if (offerOff) head.push(sentinel(LANG_OFF, t('player.subtitlesOff')));
+    if (offerOff) {
+      head.push(sentinel(LANG_OFF, t('player.subtitlesOff')));
+    }
     return [...head, ...languages];
   }, [t, locale, offerOff]);
 
@@ -95,8 +97,12 @@ export function LangPickerSheet({
   const current = value && value !== LANG_OFF ? offeredLang(value) : null;
   const isActive = useCallback(
     (row: Row) => {
-      if (row.value == null) return !value;
-      if (row.value === LANG_OFF) return value === LANG_OFF;
+      if (row.value == null) {
+        return !value;
+      }
+      if (row.value === LANG_OFF) {
+        return value === LANG_OFF;
+      }
       return row.value === current;
     },
     [value, current],
@@ -104,7 +110,9 @@ export function LangPickerSheet({
 
   const shown = useMemo(() => {
     const q = fold(query.trim());
-    if (!q) return rows;
+    if (!q) {
+      return rows;
+    }
     return rows.filter((row) => row.search.includes(q));
   }, [rows, query]);
 
@@ -112,9 +120,13 @@ export function LangPickerSheet({
   // `initialScrollIndex` (read once at mount; the sheet stays mounted for the screen's life).
   const onChange = useCallback(
     (index: number) => {
-      if (index < 0) return;
+      if (index < 0) {
+        return;
+      }
       const at = shown.findIndex(isActive);
-      if (at > 0) list.current?.scrollToIndex({ index: at, animated: false, viewPosition: 0.5 });
+      if (at > 0) {
+        list.current?.scrollToIndex({ index: at, animated: false, viewPosition: 0.5 });
+      }
     },
     [shown, isActive],
   );

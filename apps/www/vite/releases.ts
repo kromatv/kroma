@@ -32,7 +32,9 @@ function headers(): HeadersInit {
   // Anonymous GitHub allows sixty requests an hour per IP, which CI runners
   // share. Without a token a build can fail on someone else's traffic.
   const token = process.env.GITHUB_TOKEN;
-  if (token) head.authorization = `Bearer ${token}`;
+  if (token) {
+    head.authorization = `Bearer ${token}`;
+  }
   return head;
 }
 
@@ -45,7 +47,9 @@ async function page(number: number): Promise<unknown[]> {
   });
 
   const entries: unknown = JSON.parse(body);
-  if (!Array.isArray(entries)) throw new Error(`${url} did not answer with a list of releases`);
+  if (!Array.isArray(entries)) {
+    throw new Error(`${url} did not answer with a list of releases`);
+  }
   return entries;
 }
 
@@ -61,12 +65,16 @@ async function fetchReleases(): Promise<Published> {
   for (let number = 1; number <= PAGES; number++) {
     const batch = await page(number);
     entries.push(...batch);
-    if (batch.length < 100) break;
+    if (batch.length < 100) {
+      break;
+    }
   }
 
   const feed = Feed.parse(entries);
   const releases = toSiteReleases(feed);
-  if (releases.length === 0) throw new Error(`${RELEASES_URL} published no vX.Y.Z release`);
+  if (releases.length === 0) {
+    throw new Error(`${RELEASES_URL} published no vX.Y.Z release`);
+  }
 
   // Only the newest has to be whole. An old release predates a platform, and
   // failing the build over that would pin the archive to whatever shipped first.
@@ -96,10 +104,14 @@ export function releasesPlugin(): Plugin {
       return id === VIRTUAL_ID ? RESOLVED_ID : null;
     },
     async load(id) {
-      if (id !== RESOLVED_ID) return null;
+      if (id !== RESOLVED_ID) {
+        return null;
+      }
       published ??= fetchReleases().catch((err: unknown) => {
         const reason = err instanceof Error ? err.message : String(err);
-        if (isBuild) throw new Error(`Releases unavailable: ${reason}`);
+        if (isBuild) {
+          throw new Error(`Releases unavailable: ${reason}`);
+        }
         this.warn(`Releases unavailable, offering no downloads: ${reason}`);
         return EMPTY;
       });

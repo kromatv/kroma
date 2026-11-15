@@ -70,7 +70,9 @@ function Radio({
       checked={checked}
       disabled={disabled}
       onPress={() => {
-        if (!checked) onValueChange?.();
+        if (!checked) {
+          onValueChange?.();
+        }
       }}
       sv={radioVariants}
       vars={{ size, checked }}

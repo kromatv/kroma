@@ -93,7 +93,9 @@ function Root({
     onSortChange?.(nextSort(sort ?? NO_SORT, column, { multiple, required }), { column });
   });
   const sorting = useMemo<TableSort | null>(() => {
-    if (!sort && !onSortChange) return null;
+    if (!sort && !onSortChange) {
+      return null;
+    }
     return { columns: sort ?? NO_SORT, press: onSortChange ? press : null };
   }, [sort, onSortChange, press]);
   return (

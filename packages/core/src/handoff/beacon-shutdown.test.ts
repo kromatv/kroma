@@ -163,7 +163,9 @@ describe('stopping while a request is in flight', () => {
       name: 'Apple TV',
       platform: 'Apple TV',
       onBeacon: (b) => {
-        if (b) handle?.stop();
+        if (b) {
+          handle?.stop();
+        }
       },
       onAuthenticated: () => undefined,
     });

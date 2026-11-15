@@ -61,7 +61,7 @@ function titleFrom(slug: string): string {
 // block comment anywhere in the file (a header, a note on a helper) would
 // swallow everything between the two, and `codeFrom` would strip the imports
 // and the helper along with it, producing a snippet that doesn't compile.
-// Forbidding `*​/` inside the body pins the match to the LAST comment instead.
+// Forbidding `*/` inside the body pins the match to the LAST comment instead.
 const DOC_ABOVE_EXPORT = /\/\*\*((?:(?!\*\/)[\s\S])*)\*\/\s*export default/;
 
 // A jsdoc tag opening a line: `@name`, `@see`, `@todo`. Matches the tag and
@@ -80,7 +80,9 @@ interface DemoMeta {
 // can carry `@see` or `@todo` for the next reader without it turning up in the UI.
 function metaFrom(source: string | undefined): DemoMeta {
   const block = source?.match(DOC_ABOVE_EXPORT)?.[1];
-  if (!block) return {};
+  if (!block) {
+    return {};
+  }
   // Each line of a block comment carries the leading ` * ` the formatter puts
   // there; the prose starts after it.
   const lines = block.split('\n').map((line) => line.replace(/^\s*\*/, '').trim());
@@ -98,7 +100,9 @@ function metaFrom(source: string | undefined): DemoMeta {
     }
     if (tag[1] === 'name') {
       const value = line.slice(tag[0].length).trim();
-      if (value) name = value;
+      if (value) {
+        name = value;
+      }
     }
   }
   // One paragraph: the panel renders a sentence or two under the tab, and a
@@ -112,7 +116,9 @@ function metaFrom(source: string | undefined): DemoMeta {
 // default` are part of how the example is really written, and a sample that quietly differs
 // from the file is the thing this whole module exists to stop.
 function codeFrom(source: string | undefined): string | undefined {
-  if (!source) return undefined;
+  if (!source) {
+    return undefined;
+  }
   const code = source.replace(DOC_ABOVE_EXPORT, 'export default').trim();
   return code || undefined;
 }
@@ -152,13 +158,18 @@ function demoOwner(path: string, known: ReadonlySet<string>): string {
 // `?view=demo:1` link keeps pointing at the same example.
 function attachDemos(stories: readonly Story[], files: readonly DemoFile[]): Story[] {
   const known = new Set(stories.map((entry) => entry.id));
-  for (const file of files) demoOwner(file.path, known);
+  for (const file of files) {
+    demoOwner(file.path, known);
+  }
   const byStory = new Map<string, DemoDef[]>();
   for (const file of [...files].sort((a, b) => a.path.localeCompare(b.path))) {
     const { story, ...demo } = demoFrom(file);
     const list = byStory.get(story);
-    if (list) list.push(demo);
-    else byStory.set(story, [demo]);
+    if (list) {
+      list.push(demo);
+    } else {
+      byStory.set(story, [demo]);
+    }
   }
   return stories.map((story) => {
     const demos = byStory.get(story.id);

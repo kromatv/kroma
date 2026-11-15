@@ -46,7 +46,9 @@ export function AlphabetRail({ available, range, onJump }: Readonly<AlphabetRail
   const t = useT();
   // A phone flicks the grid instead; the rail is a pointer and a wide-screen
   // affordance, so below `md` it is not rendered at all.
-  if (useBreakpoint() === 'base') return null;
+  if (useBreakpoint() === 'base') {
+    return null;
+  }
   return (
     <nav aria-label={t('browse.letterNav')} className={classes(s.rail)}>
       <Rail.Root range={range} onJump={onJump} label={t('browse.letterNav')}>

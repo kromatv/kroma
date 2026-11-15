@@ -41,7 +41,9 @@ async function audit(): Promise<void> {
 }
 
 function gatherAttempts(): void {
-  if (!existsSync(ATTEMPTS)) return;
+  if (!existsSync(ATTEMPTS)) {
+    return;
+  }
   mkdirSync(REPORTS, { recursive: true });
   for (const artifact of newestAttempts(readdirSync(ATTEMPTS))) {
     cpSync(join(ATTEMPTS, artifact), REPORTS, { recursive: true });
@@ -52,13 +54,19 @@ async function merge(total: number | undefined): Promise<void> {
   gatherAttempts();
   if (total !== undefined) {
     const missing = expectedBlobs(total).filter((name) => !existsSync(join(REPORTS, name)));
-    if (missing.length > 0) throw new Error(`missing shard report(s): ${missing.join(', ')}`);
+    if (missing.length > 0) {
+      throw new Error(`missing shard report(s): ${missing.join(', ')}`);
+    }
   }
   await codegen();
   const run = await $`${vitest} run --merge-reports=${REPORTS} ${COVERAGE}`.cwd(root).nothrow();
   const out = run.stdout.toString();
-  if (run.exitCode !== 0) throw new Error(`vitest --merge-reports exited ${run.exitCode}`);
-  if (!existsSync(LCOV)) throw new Error(`merge wrote no ${LCOV}`);
+  if (run.exitCode !== 0) {
+    throw new Error(`vitest --merge-reports exited ${run.exitCode}`);
+  }
+  if (!existsSync(LCOV)) {
+    throw new Error(`merge wrote no ${LCOV}`);
+  }
 
   const files = readFileSync(LCOV, 'utf8')
     .split('\n')
@@ -79,9 +87,15 @@ export async function main(argv: string[]): Promise<void> {
       expect: { type: 'string' },
     },
   });
-  if (values.shard !== undefined) return shard(values.shard);
-  if (values.audit) return audit();
-  if (values.merge) return merge(values.expect === undefined ? undefined : Number(values.expect));
+  if (values.shard !== undefined) {
+    return shard(values.shard);
+  }
+  if (values.audit) {
+    return audit();
+  }
+  if (values.merge) {
+    return merge(values.expect === undefined ? undefined : Number(values.expect));
+  }
   await codegen();
   await $`${vitest} run`.cwd(root);
 }

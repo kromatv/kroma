@@ -14,7 +14,9 @@ export interface Browse extends Page<ModuleEntry> {
 /** The matched set in words: a total on one page, a range over several. */
 export function sliceLabel(b: Pick<Browse, 'first' | 'last' | 'total'>): string {
   const noun = b.total === 1 ? 'module' : 'modules';
-  if (b.first === 1 && b.last === b.total) return `${b.total} ${noun}`;
+  if (b.first === 1 && b.last === b.total) {
+    return `${b.total} ${noun}`;
+  }
   return `${b.first}-${b.last} of ${b.total} ${noun}`;
 }
 

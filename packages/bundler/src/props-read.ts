@@ -73,7 +73,9 @@ export function ownDeclaration(path: string): boolean {
 // document the author's intent, not the prop.
 function docsFrom(memberText: string): string {
   const block = /^\s*\/\*\*((?:(?!\*\/)[\s\S])*)\*\//.exec(memberText);
-  if (!block?.[1]) return '';
+  if (!block?.[1]) {
+    return '';
+  }
   return block[1]
     .split('\n')
     .map((line) => line.replace(/^\s*\*?/, '').trim())
@@ -96,14 +98,18 @@ type FileOf = (path: string) => ReturnType<Project['program']['getSourceFile']>;
 // One property, as the panel shows it - or null when it is noise, or has no declaration to read
 // a written type and a doc comment out of.
 async function propDocOf(symbol: PropSymbol, fileOf: FileOf): Promise<PropDoc | null> {
-  if (NOISE.has(symbol.name)) return null;
+  if (NOISE.has(symbol.name)) {
+    return null;
+  }
   // A re-declared prop carries both declarations; ours is the one to read.
   const handle = symbol.declarations?.find((declaration) => ownDeclaration(declaration.path));
   const node = (await handle?.resolve()) as
     | { pos: number; end: number; type?: { pos: number; end: number } }
     | undefined;
   const file = handle && (await fileOf(handle.path));
-  if (!node || !file) return null;
+  if (!node || !file) {
+    return null;
+  }
   const source = file.text;
   // `pos` starts at the end of the previous token, so this span carries the
   // member's leading trivia - which is where its JSDoc is.
@@ -137,9 +143,13 @@ async function componentEntries(
   claimed: ReadonlySet<string>,
 ): Promise<Entry[]> {
   const declared = (statement as { name?: { text?: string } }).name?.text;
-  if (!declared?.endsWith('Props')) return [];
+  if (!declared?.endsWith('Props')) {
+    return [];
+  }
   const component = declared.slice(0, -'Props'.length);
-  if (!component || claimed.has(component)) return [];
+  if (!component || claimed.has(component)) {
+    return [];
+  }
   const type = await checker.getTypeAtLocation((statement as { name?: unknown }).name as never);
   const props = type && (await propsOfType(type, checker, fileOf));
   return props?.length ? [[component, props]] : [];
@@ -169,10 +179,16 @@ const capitalised = (name: string): boolean => /^[A-Z]/.test(name);
 // says this is not a namespace.
 function partOf(property: ObjectLiteralElementLike): Part | null {
   const shorthand = isShorthandPropertyAssignment(property);
-  if (!shorthand && !isPropertyAssignment(property)) return null;
+  if (!shorthand && !isPropertyAssignment(property)) {
+    return null;
+  }
   const name = property.name;
-  if (!isIdentifier(name) || !capitalised(name.text)) return null;
-  if (shorthand) return { name: name.text, value: name };
+  if (!isIdentifier(name) || !capitalised(name.text)) {
+    return null;
+  }
+  if (shorthand) {
+    return { name: name.text, value: name };
+  }
   return isIdentifier(property.initializer)
     ? { name: name.text, value: property.initializer }
     : null;
@@ -182,15 +198,23 @@ function partOf(property: ObjectLiteralElementLike): Part | null {
 // the order the namespace declares them. Null for anything else, including the
 // object literals that are lookup tables rather than components.
 function namespaceOf(statement: Statement): Namespace | null {
-  if (!isVariableStatement(statement)) return null;
+  if (!isVariableStatement(statement)) {
+    return null;
+  }
   const { declarations } = statement.declarationList;
   const declaration = declarations.length === 1 ? declarations[0] : undefined;
   const name = declaration?.name;
-  if (!name || !isIdentifier(name) || !capitalised(name.text)) return null;
+  if (!name || !isIdentifier(name) || !capitalised(name.text)) {
+    return null;
+  }
   const initializer = declaration?.initializer;
-  if (!initializer || !isObjectLiteralExpression(initializer)) return null;
+  if (!initializer || !isObjectLiteralExpression(initializer)) {
+    return null;
+  }
   const parts = initializer.properties.map(partOf);
-  if (!parts.length || parts.includes(null)) return null;
+  if (!parts.length || parts.includes(null)) {
+    return null;
+  }
   return { name: name.text, parts: parts as Part[] };
 }
 
@@ -204,7 +228,9 @@ async function partProps(
   const type = await checker.getTypeAtLocation(part.value);
   const signatures = type && (await checker.getSignaturesOfType(type, SignatureKind.Call));
   const signature = signatures?.[0];
-  if (!signature) return undefined;
+  if (!signature) {
+    return undefined;
+  }
   const parameter = await checker.getParameterType(signature, 0);
   return parameter && (await propsOfType(parameter, checker, fileOf));
 }
@@ -234,7 +260,9 @@ async function namespaceEntries(
 export function claimedByParts(namespaces: readonly NamespaceShape[]): Set<string> {
   const names = new Set<string>();
   for (const namespace of namespaces) {
-    for (const part of namespace.parts) names.add(`${namespace.name}${part.name}`);
+    for (const part of namespace.parts) {
+      names.add(`${namespace.name}${part.name}`);
+    }
   }
   return names;
 }
@@ -255,7 +283,9 @@ export async function readPropDocs(
   try {
     const snapshot = await api.updateSnapshot({ openProjects: [tsconfig] });
     const project = snapshot.getProject(tsconfig) ?? snapshot.getProjects()[0];
-    if (!project) throw new Error(`props-docs: could not open ${tsconfig}`);
+    if (!project) {
+      throw new Error(`props-docs: could not open ${tsconfig}`);
+    }
     const { program, checker } = project;
 
     // Each declaring file, fetched once. An inherited prop is declared in the
@@ -291,7 +321,9 @@ export async function readPropDocs(
     ]);
 
     const out: PropDocs = {};
-    for (const [name, props] of found.flat()) out[name] = props;
+    for (const [name, props] of found.flat()) {
+      out[name] = props;
+    }
     return out;
   } finally {
     await api.close();

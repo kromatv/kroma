@@ -36,7 +36,9 @@ export function RuleDialog({
 
   const confirm = () => {
     setTouched(true);
-    if (result.ok) onDone(result.rule);
+    if (result.ok) {
+      onDone(result.rule);
+    }
   };
 
   return (

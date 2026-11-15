@@ -12,12 +12,16 @@ const SCHEMA = join(root, 'server/crates/kroma-db/src/schema');
  */
 export async function main(args: string[]): Promise<void> {
   const [verb, slug] = args;
-  if (verb !== 'new' || !slug) throw new Error('usage: bun run ci schema new <snake_case_name>');
+  if (verb !== 'new' || !slug) {
+    throw new Error('usage: bun run ci schema new <snake_case_name>');
+  }
   const stepsRs = join(SCHEMA, 'steps.rs');
   const baseline = baselineVersion(await readFile(join(SCHEMA, '../schema.rs'), 'utf8'));
   const step = nextStep(await readFile(stepsRs, 'utf8'), baseline, slug);
   const file = join(SCHEMA, step.file);
-  if (existsSync(file)) throw new Error(`${step.file} already exists`);
+  if (existsSync(file)) {
+    throw new Error(`${step.file} already exists`);
+  }
   await mkdir(join(SCHEMA, 'steps'), { recursive: true });
   await writeFile(file, '');
   await writeFile(stepsRs, step.steps);

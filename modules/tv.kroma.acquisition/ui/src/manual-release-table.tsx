@@ -124,7 +124,11 @@ function ManualRow({
 /** `S03E07` / `S03` / null for anything the parser read as a film. */
 function parsedTarget(r: ManualReleaseView): string | null {
   const pad = (n: number) => String(n).padStart(2, '0');
-  if (r.season == null) return null;
-  if (r.fullSeason || r.episode == null) return `S${pad(r.season)}`;
+  if (r.season == null) {
+    return null;
+  }
+  if (r.fullSeason || r.episode == null) {
+    return `S${pad(r.season)}`;
+  }
   return `S${pad(r.season)}E${pad(r.episode)}`;
 }

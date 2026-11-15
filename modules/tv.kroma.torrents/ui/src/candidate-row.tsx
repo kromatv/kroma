@@ -9,8 +9,12 @@ const CONFIDENT = 0.55;
 const PLAUSIBLE = 0.35;
 
 function toneFor(score: number): 'success' | 'info' | 'neutral' {
-  if (score >= CONFIDENT) return 'success';
-  if (score >= PLAUSIBLE) return 'info';
+  if (score >= CONFIDENT) {
+    return 'success';
+  }
+  if (score >= PLAUSIBLE) {
+    return 'info';
+  }
   return 'neutral';
 }
 

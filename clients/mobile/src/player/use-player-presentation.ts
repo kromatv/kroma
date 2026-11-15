@@ -37,27 +37,38 @@ export function usePlayerPresentation() {
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      if (automaticInterface || isTablet) void allowPlayerRotation();
-      else void lockPlayerOrientation(fullscreen);
+      if (automaticInterface || isTablet) {
+        void allowPlayerRotation();
+      } else {
+        void lockPlayerOrientation(fullscreen);
+      }
     });
     return () => cancelAnimationFrame(frame);
   }, [automaticInterface, fullscreen]);
 
   useEffect(() => {
     const current = physical.orientation;
-    if (current === null) return;
+    if (current === null) {
+      return;
+    }
     const previous = previousPhysical.current;
     previousPhysical.current = current;
-    if (previous === null || current === previous) return;
+    if (previous === null || current === previous) {
+      return;
+    }
     const revision = manualRevision.current;
     const frame = requestAnimationFrame(() => {
-      if (revision === manualRevision.current) setRequested(null);
+      if (revision === manualRevision.current) {
+        setRequested(null);
+      }
     });
     return () => cancelAnimationFrame(frame);
   }, [physical.orientation]);
 
   useEffect(() => {
-    if (physical.available !== false || requested !== false || landscape) return;
+    if (physical.available !== false || requested !== false || landscape) {
+      return;
+    }
     const frame = requestAnimationFrame(() => setRequested(null));
     return () => cancelAnimationFrame(frame);
   }, [physical.available, requested, landscape]);
@@ -65,7 +76,9 @@ export function usePlayerPresentation() {
   useEffect(() => () => lockUpright(), []);
 
   useEffect(() => {
-    if (!fullscreen) return;
+    if (!fullscreen) {
+      return;
+    }
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       collapse();
       return true;

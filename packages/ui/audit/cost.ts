@@ -69,15 +69,31 @@ function borders(style: CSSStyleDeclaration): boolean {
 }
 
 function paints(style: CSSStyleDeclaration): boolean {
-  if (!TRANSPARENT.has(style.backgroundColor)) return true;
-  if (declared(style.backgroundImage)) return true;
-  if (borders(style)) return true;
-  if (declared(style.boxShadow)) return true;
-  if (declared(style.transform)) return true;
-  if (declared(style.filter)) return true;
+  if (!TRANSPARENT.has(style.backgroundColor)) {
+    return true;
+  }
+  if (declared(style.backgroundImage)) {
+    return true;
+  }
+  if (borders(style)) {
+    return true;
+  }
+  if (declared(style.boxShadow)) {
+    return true;
+  }
+  if (declared(style.transform)) {
+    return true;
+  }
+  if (declared(style.filter)) {
+    return true;
+  }
   const opacity = Number.parseFloat(style.opacity || '1');
-  if (opacity > 0 && opacity < 1) return true;
-  if (clips(style) || positioned(style)) return true;
+  if (opacity > 0 && opacity < 1) {
+    return true;
+  }
+  if (clips(style) || positioned(style)) {
+    return true;
+  }
   const zIndex = style.zIndex;
   return zIndex !== '' && zIndex !== 'auto' && Number.parseInt(zIndex, 10) !== 0;
 }
@@ -106,7 +122,9 @@ function sizing(style: CSSStyleDeclaration): readonly string[] {
 // How a flex box arranges its children. Only a flex box does: jsdom answers
 // `flex-direction: row` for a plain block as readily as for a real one.
 function arranging(style: CSSStyleDeclaration): readonly string[] {
-  if (!['flex', 'inline-flex'].includes(style.display)) return [];
+  if (!['flex', 'inline-flex'].includes(style.display)) {
+    return [];
+  }
   return [
     ['flex-start', 'normal', ''].includes(style.justifyContent) ? '' : 'justify-content',
     style.flexDirection === 'row' ? 'flex-direction' : '',
@@ -116,8 +134,12 @@ function arranging(style: CSSStyleDeclaration): readonly string[] {
 
 function layout(style: CSSStyleDeclaration): readonly string[] {
   const found: string[] = [...spacing(style), ...sizing(style)];
-  if (Number.parseFloat(style.flexGrow || '0') !== 0) found.push('flex-grow');
-  if (style.alignSelf && !['auto', ''].includes(style.alignSelf)) found.push('align-self');
+  if (Number.parseFloat(style.flexGrow || '0') !== 0) {
+    found.push('flex-grow');
+  }
+  if (style.alignSelf && !['auto', ''].includes(style.alignSelf)) {
+    found.push('align-self');
+  }
   return [...found, ...arranging(style)];
 }
 
@@ -128,7 +150,9 @@ function semantic(el: Element): readonly string[] {
 }
 
 function hidden(style: CSSStyleDeclaration): boolean {
-  if (style.display === 'none' || style.visibility === 'hidden') return true;
+  if (style.display === 'none' || style.visibility === 'hidden') {
+    return true;
+  }
   return Number.parseFloat(style.opacity || '1') === 0;
 }
 
@@ -171,7 +195,9 @@ function smellOf(el: Element, facts: Facts): Omit<Smell, 'at'> | undefined {
   if (facts.kids === 0 && structural && facts.layout.length === 0 && !DRAWS_ITSELF.has(facts.tag)) {
     return { kind: 'void', note: 'no children, no text, draws nothing' };
   }
-  if (facts.kids !== 1 || !structural) return undefined;
+  if (facts.kids !== 1 || !structural) {
+    return undefined;
+  }
   const [child] = kidsOf(el);
   if (child && tagOf(child) === 'svg') {
     return { kind: 'glyph-wrapper', note: 'wraps one glyph; style belongs on the svg' };
@@ -196,10 +222,16 @@ function costOf(roots: readonly Element[]): Cost {
       const facts = factsOf(el);
       nodes += 1;
       depth = Math.max(depth, at);
-      if (facts.kids === 0) leaves += 1;
-      if (facts.tag === 'svg') svg += el.querySelectorAll('*').length;
+      if (facts.kids === 0) {
+        leaves += 1;
+      }
+      if (facts.tag === 'svg') {
+        svg += el.querySelectorAll('*').length;
+      }
       const smell = smellOf(el, facts);
-      if (smell) smells.push({ ...smell, at: path });
+      if (smell) {
+        smells.push({ ...smell, at: path });
+      }
     });
     bytes += root.outerHTML.length;
   }

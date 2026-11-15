@@ -67,7 +67,9 @@ export function ordered(modules: readonly SiteModule[]): SiteModule[] {
 
 /** `2026-08-15T13:19:46.343Z` as `2026-08-15`, or null when it is not a date. */
 export function catalogDay(generatedAt: string | null): string | null {
-  if (!generatedAt) return null;
+  if (!generatedAt) {
+    return null;
+  }
   const t = Date.parse(generatedAt);
   return Number.isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
 }

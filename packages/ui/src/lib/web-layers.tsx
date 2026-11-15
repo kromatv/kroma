@@ -53,8 +53,11 @@ function hold(unit: HTMLElement | null): void {
 
 function release(unit: HTMLElement | null, shown: boolean): void {
   unit?.removeAttribute(WAIT);
-  if (shown) unit?.parentElement?.setAttribute(ART_IN, '');
-  else unit?.parentElement?.removeAttribute(ART_IN);
+  if (shown) {
+    unit?.parentElement?.setAttribute(ART_IN, '');
+  } else {
+    unit?.parentElement?.removeAttribute(ART_IN);
+  }
 }
 
 function reveal(event: SyntheticEvent<HTMLImageElement>): void {
@@ -93,7 +96,9 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           alt={at.alt}
           {...{ [REVEAL]: 'wait' }}
           ref={(el) => {
-            if (!el) return;
+            if (!el) {
+              return;
+            }
             const unit = el.closest<HTMLElement>(UNIT);
             if (el.getAttribute(REVEAL) === 'in') {
               release(unit, true);
@@ -115,9 +120,13 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           draggable={false}
           onLoad={(event) => {
             markImageReady(src);
-            if (event.currentTarget.getAttribute(REVEAL) !== 'shown') reveal(event);
+            if (event.currentTarget.getAttribute(REVEAL) !== 'shown') {
+              reveal(event);
+            }
             at.markLoaded();
-            if (at.onCovered) setTimeout(() => at.onCovered?.(src), at.duration);
+            if (at.onCovered) {
+              setTimeout(() => at.onCovered?.(src), at.duration);
+            }
             at.onLoad?.();
           }}
           onError={at.onError}

@@ -30,11 +30,15 @@ function mint(): DeviceId {
 export function createDeviceIdentity(storage?: SessionStorage | null) {
   let cached: DeviceId | null = null;
   return function deviceId(): DeviceId {
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
     const stored = readDeviceValue(KEY, storage);
     const kept = DeviceId.safeParse(stored);
     const id = kept.success ? kept.data : mint();
-    if (id !== stored) writeDeviceValue(KEY, id, storage);
+    if (id !== stored) {
+      writeDeviceValue(KEY, id, storage);
+    }
     cached = id;
     return id;
   };

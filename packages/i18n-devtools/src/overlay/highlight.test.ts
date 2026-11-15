@@ -19,7 +19,9 @@ function page(html: string): void {
 function graded(outline: 'problems' | 'all'): Record<string, number> {
   const found: Record<string, number> = {};
   walkGraded((grade) => {
-    if (!shows(outline, grade)) return;
+    if (!shows(outline, grade)) {
+      return;
+    }
     found[grade] = (found[grade] ?? 0) + 1;
   });
   return found;
@@ -270,7 +272,9 @@ describe('putting the overlay up', () => {
     held.get('kroma-i18n-catalog')?.clear();
 
     const panel = document.querySelector('[data-kroma-devtool="i18n"]');
-    if (panel?.firstChild) panel.firstChild.nodeValue = 'redrawn';
+    if (panel?.firstChild) {
+      panel.firstChild.nodeValue = 'redrawn';
+    }
     await Promise.resolve();
     vi.runAllTimers();
     const drawn = held.get('kroma-i18n-catalog')?.size;

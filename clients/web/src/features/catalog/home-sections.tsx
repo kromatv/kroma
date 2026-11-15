@@ -22,7 +22,9 @@ export function SectionsSkeleton() {
 
 export function HomeSections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
   const { user, ready } = useAuth();
-  if (!ready || !user) return null;
+  if (!ready || !user) {
+    return null;
+  }
   return (
     <Suspense fallback={<SectionsSkeleton />}>
       <Sections excludeId={excludeId} />
@@ -35,7 +37,9 @@ function Sections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
 
   const { data: sections } = useSuspenseQuery(webRuntime.queries.userQueries.home());
 
-  if (sections.length === 0) return null;
+  if (sections.length === 0) {
+    return null;
+  }
 
   return (
     <>
@@ -45,7 +49,9 @@ function Sections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
         const items = section.items.filter(
           (e) => (e.type === 'show' ? e.show.id : e.item.id) !== excludeId,
         );
-        if (items.length === 0) return null;
+        if (items.length === 0) {
+          return null;
+        }
         return (
           <section key={section.id}>
             <SectionHeading>{section.title}</SectionHeading>

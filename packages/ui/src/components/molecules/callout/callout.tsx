@@ -79,9 +79,13 @@ function sort(children: ReactNode): Sorted {
   const at: Sorted = { leading: [], message: [], trailing: [] };
   for (const child of Children.toArray(children)) {
     const part = isValidElement(child) ? child.type : null;
-    if (part === Media) at.leading.push(child);
-    else if (part === Actions) at.trailing.push(child);
-    else at.message.push(child);
+    if (part === Media) {
+      at.leading.push(child);
+    } else if (part === Actions) {
+      at.trailing.push(child);
+    } else {
+      at.message.push(child);
+    }
   }
   return at;
 }
@@ -151,7 +155,9 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
  *  `children`. */
 function Media({ name, children }: Readonly<{ name?: IconName; children?: ReactNode }>) {
   const { shape, paint } = useCallout('Media');
-  if (name) return <Icon name={name} size={shape.glyph} color={paint.ink} />;
+  if (name) {
+    return <Icon name={name} size={shape.glyph} color={paint.ink} />;
+  }
   return <Box shrink={0}>{children}</Box>;
 }
 

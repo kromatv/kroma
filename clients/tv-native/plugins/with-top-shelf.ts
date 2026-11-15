@@ -153,7 +153,9 @@ const withExtensionTarget: ConfigPlugin = (config) =>
     // Prebuild without --clean re-runs every mod on the existing project; a
     // second addTarget would mint a duplicate, so presence is the guard.
     const exists = Object.values(targets).some((t) => t?.name?.replaceAll('"', '') === TARGET);
-    if (exists) return cfg;
+    if (exists) {
+      return cfg;
+    }
 
     const appBundleId = cfg.ios?.bundleIdentifier;
     if (!appBundleId) {
@@ -182,7 +184,9 @@ const withExtensionTarget: ConfigPlugin = (config) =>
     // tvOS or Swift; teach them. INFOPLIST_FILE already matches the
     // `<target>/<target>-Info.plist` file the dangerous mod wrote.
     for (const c of Object.values(configurations)) {
-      if (c?.buildSettings?.PRODUCT_NAME !== `"${TARGET}"`) continue;
+      if (c?.buildSettings?.PRODUCT_NAME !== `"${TARGET}"`) {
+        continue;
+      }
       Object.assign(c.buildSettings, {
         SDKROOT: 'appletvos',
         TARGETED_DEVICE_FAMILY: '3',

@@ -16,7 +16,9 @@ export async function assertMetro(port: number, targetId: string, start: string)
   } catch {
     body = '';
   }
-  if (body.includes('packager-status:running')) return;
+  if (body.includes('packager-status:running')) {
+    return;
+  }
   throw new Error(
     `${targetId}: no Metro bundler on port ${port}, so the app would open on a redbox. ` +
       `Start it with \`${start}\`, or pass --metro-port if it is on another one.`,

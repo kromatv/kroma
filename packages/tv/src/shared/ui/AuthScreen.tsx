@@ -64,8 +64,12 @@ function useSplashCovers(): SplashCover[] {
       for (const url of urls) {
         try {
           const entries = await createKromaClient({ baseUrl: url }).media.splash();
-          if (cancelled) return;
-          if (entries.length === 0) continue;
+          if (cancelled) {
+            return;
+          }
+          if (entries.length === 0) {
+            continue;
+          }
           setCovers(
             entries.map((e) => ({
               // <Img> never rewrites a URL, so the SIZE is the caller's to ask
@@ -162,7 +166,9 @@ export function BeaconMark() {
 
   const t = useT();
   const beacon = useHandoffBeacon();
-  if (!beacon) return null;
+  if (!beacon) {
+    return null;
+  }
   return (
     <Box style={s.beacon} pointerEvents="none">
       <Text variant="label" color="textDim">

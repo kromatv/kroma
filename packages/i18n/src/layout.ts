@@ -38,7 +38,9 @@ export function catalogsByLocale(
   const merged: Record<string, Record<string, string>> = {};
   for (const [path, catalog] of Object.entries(files)) {
     const at = parseCatalogPath(path);
-    if (!at) continue;
+    if (!at) {
+      continue;
+    }
     const own = merged[at.locale] ?? {};
     Object.assign(own, catalog);
     merged[at.locale] = own;

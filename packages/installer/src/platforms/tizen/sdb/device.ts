@@ -74,8 +74,12 @@ export async function connect(
       log?.(`> ${command}`);
       const result = parseResult(await shell(connection, command));
       log?.(describeResult(command, result));
-      if (result.verdict === 'success') return result;
-      if (result.verdict === 'failure' && !UNSUPPORTED.test(result.output)) return result;
+      if (result.verdict === 'success') {
+        return result;
+      }
+      if (result.verdict === 'failure' && !UNSUPPORTED.test(result.output)) {
+        return result;
+      }
       fallback ??= result;
     }
     return fallback ?? NOTHING_RAN;
@@ -84,7 +88,9 @@ export async function connect(
   const remove = async (path: string): Promise<void> => {
     for (const command of removeCommands(path)) {
       const result = parseResult(await shell(connection, command, { limit: 4096 }));
-      if (result.verdict !== 'failure') return;
+      if (result.verdict !== 'failure') {
+        return;
+      }
     }
   };
 
@@ -155,7 +161,9 @@ async function temporaryDirectory(
   capability: Capability,
 ): Promise<string> {
   const advertised = capability.sdk_toolpath?.trim();
-  if (advertised && ABSOLUTE_PATH.test(advertised)) return advertised;
+  if (advertised && ABSOLUTE_PATH.test(advertised)) {
+    return advertised;
+  }
 
   const queried = (await shell(connection, PACKAGE_TEMP_DIR_QUERY, { limit: 512 })).trim();
   return ABSOLUTE_PATH.test(queried) ? queried : PACKAGE_TEMP_DIR;

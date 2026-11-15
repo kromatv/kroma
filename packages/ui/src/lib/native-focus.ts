@@ -16,7 +16,9 @@ function createNativeFocusHost(): NativeFocusHost {
   const claims: string[] = [];
   const listeners = new Set<() => void>();
   const notify = () => {
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   };
   return {
     claim: (claim) => {
@@ -25,7 +27,9 @@ function createNativeFocusHost(): NativeFocusHost {
     },
     release: (claim) => {
       const at = claims.indexOf(claim);
-      if (at < 0) return;
+      if (at < 0) {
+        return;
+      }
       claims.splice(at, 1);
       notify();
     },
@@ -64,7 +68,9 @@ export function useNativeFocus(focused: boolean): boolean {
   const wants = NATIVE_FOCUS && focused && host !== null;
   const claim = useId();
   useEffect(() => {
-    if (!wants || !host) return;
+    if (!wants || !host) {
+      return;
+    }
     host.claim(claim);
     return () => host.release(claim);
   }, [wants, host, claim]);

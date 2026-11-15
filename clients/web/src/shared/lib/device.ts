@@ -4,7 +4,11 @@
 export type DeviceKind = 'tv' | 'mobile' | 'desktop';
 
 function match<T extends string>(s: string, table: readonly (readonly [RegExp, T])[]): T | null {
-  for (const [re, label] of table) if (re.test(s)) return label;
+  for (const [re, label] of table) {
+    if (re.test(s)) {
+      return label;
+    }
+  }
   return null;
 }
 
@@ -49,7 +53,9 @@ export function deviceInfo(
   unknown: string,
 ): { label: string; kind: DeviceKind } {
   const raw = (ua ?? '').trim();
-  if (!raw) return { label: unknown, kind: 'desktop' };
+  if (!raw) {
+    return { label: unknown, kind: 'desktop' };
+  }
   const s = raw.toLowerCase();
   const kind = match(s, KINDS) ?? 'desktop';
   // A native UA names the hardware ("iPhone 17 Pro"), which tells two phones on

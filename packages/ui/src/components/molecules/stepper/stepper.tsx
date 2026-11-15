@@ -48,7 +48,9 @@ function useStepRegistry() {
   const mark = useStableCallback((value: string, disabled: boolean) => {
     setMembers((current) => {
       const at = current.findIndex((member) => member.value === value);
-      if (at === -1 || current[at]?.disabled === disabled) return current;
+      if (at === -1 || current[at]?.disabled === disabled) {
+        return current;
+      }
       const next = [...current];
       next[at] = { value, disabled };
       return next;
@@ -145,7 +147,9 @@ function Panel({ value, keepMounted = false, children }: Readonly<StepperPanelPr
   const { flow, size, stepLabel } = useStepperPart('Panel');
   const active = flow.value === value;
   const at = flow.steps.indexOf(value);
-  if (!active && !keepMounted) return null;
+  if (!active && !keepMounted) {
+    return null;
+  }
   const body = (
     <Box
       role="tabpanel"
@@ -159,7 +163,9 @@ function Panel({ value, keepMounted = false, children }: Readonly<StepperPanelPr
       {children}
     </Box>
   );
-  if (!keepMounted) return body;
+  if (!keepMounted) {
+    return body;
+  }
   return <Activity mode={active ? 'visible' : 'hidden'}>{body}</Activity>;
 }
 

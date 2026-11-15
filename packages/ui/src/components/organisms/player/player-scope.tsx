@@ -18,7 +18,9 @@ function PlayerScope({ children }: Readonly<{ children: ReactNode }>) {
 
 function useSlot(part: string): void {
   const inRoot = useContext(PlayerSlotContext);
-  if (!inRoot) throw new Error(`<Player.${part}> must be a direct child of <Player.Root>`);
+  if (!inRoot) {
+    throw new Error(`<Player.${part}> must be a direct child of <Player.Root>`);
+  }
 }
 
 export { PlayerScope, useSlot };

@@ -36,8 +36,11 @@ export function groupByHost(rows: readonly SummaryRow[]): DestinationGroup[] {
   const byHost = new Map<string, SummaryRow[]>();
   for (const row of rows) {
     const group = byHost.get(row.host);
-    if (group) group.push(row);
-    else byHost.set(row.host, [row]);
+    if (group) {
+      group.push(row);
+    } else {
+      byHost.set(row.host, [row]);
+    }
   }
   return [...byHost]
     .map(([host, hostRows]) => fold(host, hostRows))

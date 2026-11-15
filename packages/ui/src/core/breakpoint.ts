@@ -28,9 +28,13 @@ export function createBreakpointRuntime(width?: number) {
   let stop = () => {};
   const settle = () => {
     const next = breakpointAt(pinned ?? measure());
-    if (next === current) return;
+    if (next === current) {
+      return;
+    }
     current = next;
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   };
   return {
     index: () => current,
@@ -50,10 +54,14 @@ export function createBreakpointRuntime(width?: number) {
       }
       let released = false;
       return () => {
-        if (released) return;
+        if (released) {
+          return;
+        }
         released = true;
         holds -= 1;
-        if (!holds) stop();
+        if (!holds) {
+          stop();
+        }
       };
     },
     subscribe(listener: () => void) {

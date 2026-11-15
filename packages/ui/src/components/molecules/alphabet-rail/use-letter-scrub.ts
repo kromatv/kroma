@@ -49,7 +49,9 @@ function useLetterScrub(
     const at = clampNum(0, Math.floor((offsetY - PAD) / rowH), slots.length - 1);
     const best = nearestPresent(slots, at);
     const letter = best < 0 ? undefined : slots[best]?.value;
-    if (letter === undefined) return;
+    if (letter === undefined) {
+      return;
+    }
     setBubble({ letter, y: PAD + best * rowH + rowH / 2 });
     if (scrubbed.current !== letter) {
       scrubbed.current = letter;

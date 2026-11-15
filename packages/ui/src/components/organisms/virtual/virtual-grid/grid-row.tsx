@@ -34,7 +34,9 @@ function GridRowImpl<T>({
   for (let column = 0; column < columns; column += 1) {
     const index = first + column;
     const item = data[index];
-    if (item === undefined) break;
+    if (item === undefined) {
+      break;
+    }
     cells.push(
       // The column a vertical press keeps, DECLARED rather than counted among
       // the tiles that happen to be here: the last row of a library is short,

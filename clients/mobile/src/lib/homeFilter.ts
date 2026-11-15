@@ -12,13 +12,17 @@ const RESUME_KIND: Record<'movie' | 'show', MediaItem['kind']> = {
  *  empty result is the caller's cue to drop the rail rather than draw a heading
  *  over nothing. */
 export function filterEntries(entries: SectionItem[], filter: TitleFilter): SectionItem[] {
-  if (filter === null) return entries;
+  if (filter === null) {
+    return entries;
+  }
   return entries.filter((entry) => entry.type === filter);
 }
 
 /** The resume rail narrowed the same way. An episode counts toward its series;
  *  a loose video belongs to neither type and falls out of both. */
 export function filterResume(entries: ContinueItem[], filter: TitleFilter): ContinueItem[] {
-  if (filter === null) return entries;
+  if (filter === null) {
+    return entries;
+  }
   return entries.filter((entry) => entry.item.kind === RESUME_KIND[filter]);
 }

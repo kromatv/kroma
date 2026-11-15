@@ -22,7 +22,9 @@ const IMPORT = /import\s*\{\s*WEB\s*\}\s*from\s*['"]#ui\/lib\/platform['"];?/;
 /** The source with the platform import collapsed to a literal, or the source
  * untouched when it does not import one. */
 function inlinePlatformConst(src, platform) {
-  if (!IMPORT.test(src)) return src;
+  if (!IMPORT.test(src)) {
+    return src;
+  }
   return src.replace(IMPORT, `const WEB = ${platform === 'web'};`);
 }
 

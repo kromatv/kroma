@@ -46,7 +46,9 @@ export function rankArtifacts(candidates: readonly Candidate[], preferred?: RegE
   return [...candidates]
     .sort((a, b) => {
       const byKind = rank(b.path) - rank(a.path);
-      if (byKind !== 0) return byKind;
+      if (byKind !== 0) {
+        return byKind;
+      }
       const byAge = b.mtimeMs - a.mtimeMs;
       return byAge !== 0 ? byAge : basename(b.path).localeCompare(basename(a.path));
     })
@@ -62,9 +64,13 @@ export function localArtifact(kind: PackageKind): string | null {
 
 export function availableSources(kind: PackageKind, buildable: boolean): Source[] {
   const sources: Source[] = [];
-  if (localArtifact(kind)) sources.push('local');
+  if (localArtifact(kind)) {
+    sources.push('local');
+  }
   sources.push('stable', 'canary');
-  if (buildable) sources.push('build');
+  if (buildable) {
+    sources.push('build');
+  }
   return sources;
 }
 
@@ -77,9 +83,15 @@ export async function resolveArtifact(
   from: ArtifactSource,
   { given, source, log }: ArtifactRequest,
 ): Promise<string> {
-  if (given) return given;
-  if (source === 'build' && from.build) return from.build(log);
-  if (source === 'stable' || source === 'canary') return fromRelease(from, source, log);
+  if (given) {
+    return given;
+  }
+  if (source === 'build' && from.build) {
+    return from.build(log);
+  }
+  if (source === 'stable' || source === 'canary') {
+    return fromRelease(from, source, log);
+  }
 
   const local = localArtifact(from.kind);
   if (local) {

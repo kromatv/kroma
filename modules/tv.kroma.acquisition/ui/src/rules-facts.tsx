@@ -38,7 +38,9 @@ function label(value: string | null | undefined): string | null {
 
 function languages(facts: Facts, originalLabel: string): string {
   const tags = [...facts.languages.explicit];
-  if (facts.languages.original) tags.unshift(originalLabel);
+  if (facts.languages.original) {
+    tags.unshift(originalLabel);
+  }
   return tags.join(', ');
 }
 

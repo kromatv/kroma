@@ -67,8 +67,11 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
 
   const markPaused = useCallback((id: string, on: boolean) => {
     const next = new Set(pausedRef.current);
-    if (on) next.add(id);
-    else next.delete(id);
+    if (on) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
     pausedRef.current = next;
     setPausedIds([...next]);
   }, []);
@@ -103,13 +106,17 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
   }, []);
   useEffect(
     () => () => {
-      for (const timer of retryTimersRef.current) clearTimeout(timer);
+      for (const timer of retryTimersRef.current) {
+        clearTimeout(timer);
+      }
     },
     [],
   );
   useEffect(() => {
     const sub = Network.addNetworkStateListener((state) => {
-      if (state.isConnected) pumpRef.current?.();
+      if (state.isConnected) {
+        pumpRef.current?.();
+      }
     });
     return () => sub.remove();
   }, []);
@@ -120,7 +127,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
       run: (hooks: TransferHooks) => Promise<DownloadEntry>,
       startingProgress: number,
     ) => {
-      if (runningRef.current.has(item.id)) return;
+      if (runningRef.current.has(item.id)) {
+        return;
+      }
       runningRef.current.add(item.id);
       rememberItem(item);
       persistWanted();
@@ -136,7 +145,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
             },
             onProgress: (frac) => {
               // Bytes are flowing again: the network is fine, forget the streak.
-              if (frac > 0) attemptsRef.current.delete(item.id);
+              if (frac > 0) {
+                attemptsRef.current.delete(item.id);
+              }
               trackProgress(item.id, frac);
             },
           });
@@ -174,8 +185,11 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
             const { [item.id]: _dropped, ...rest } = a;
             return rest;
           });
-          if (requeue) scheduleRetry(attemptsRef.current.get(item.id) ?? 1);
-          else pumpRef.current?.();
+          if (requeue) {
+            scheduleRetry(attemptsRef.current.get(item.id) ?? 1);
+          } else {
+            pumpRef.current?.();
+          }
         }
       })();
     },
@@ -194,27 +208,37 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
 
   const runDownload = useCallback(
     (item: MediaItem) => {
-      if (!client) return;
+      if (!client) {
+        return;
+      }
       execute(item, (hooks) => runTransfer(client, item, hooks), 0);
     },
     [client, execute],
   );
 
   const pump = useCallback(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     while (runningRef.current.size < MAX_CONCURRENT && queueRef.current.length > 0) {
       const [id, ...rest] = queueRef.current;
-      if (!id) break;
+      if (!id) {
+        break;
+      }
       syncQueue(rest);
       const item = activeItemsRef.current.get(id);
-      if (item) runDownload(item);
+      if (item) {
+        runDownload(item);
+      }
     }
   }, [client, runDownload, syncQueue]);
   useEffect(() => {
     pumpRef.current = pump;
   }, [pump]);
   useEffect(() => {
-    if (client) pumpRef.current?.();
+    if (client) {
+      pumpRef.current?.();
+    }
   }, [client]);
 
   const start = useCallback(
@@ -224,8 +248,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
         runningRef.current.has(item.id) ||
         queueRef.current.includes(item.id) ||
         hasEntry(item.id)
-      )
+      ) {
         return;
+      }
       rememberItem(item);
       syncQueue([...queueRef.current, item.id]);
       persistWanted();
@@ -236,7 +261,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
 
   const reconciledRef = useRef(false);
   useEffect(() => {
-    if (!client || reconciledRef.current) return;
+    if (!client || reconciledRef.current) {
+      return;
+    }
     reconciledRef.current = true;
     void reconcileTransfers({
       client,
@@ -251,7 +278,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
   const pause = useCallback(
     (itemId: string) => {
       const handle = handlesRef.current.get(itemId);
-      if (!handle) return;
+      if (!handle) {
+        return;
+      }
       markPaused(itemId, true);
       handle.pause();
     },
@@ -261,7 +290,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
   const resume = useCallback(
     (itemId: string) => {
       const handle = handlesRef.current.get(itemId);
-      if (!handle) return;
+      if (!handle) {
+        return;
+      }
       markPaused(itemId, false);
       handle.resume();
     },
@@ -281,7 +312,9 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
       if (!handle) {
         // Running, but no platform task yet: flag it so the transfer cancels
         // itself once it has a handle, instead of a silent no-op.
-        if (runningRef.current.has(itemId)) cancelledRef.current.add(itemId);
+        if (runningRef.current.has(itemId)) {
+          cancelledRef.current.add(itemId);
+        }
         return;
       }
       handle.cancel();

@@ -27,7 +27,9 @@ type WorkbenchRouter = () => readonly [WorkbenchLocation, Navigate];
 // either drops the other, so no caller has to remember to clear it.
 function merge(prev: WorkbenchLocation, next: WorkbenchLocation): WorkbenchLocation {
   const at = { ...prev, ...next };
-  if (next.story !== undefined) return { ...at, page: undefined, section: undefined };
+  if (next.story !== undefined) {
+    return { ...at, page: undefined, section: undefined };
+  }
   // A section belongs to the article it is in, so moving to another page drops
   // it unless the caller named one in the same breath.
   if (next.page !== undefined && next.page !== prev.page) {
@@ -71,7 +73,9 @@ function pathRouter({ base = '/' }: { base?: string } = {}): WorkbenchRouter {
     const [at, setAt] = useState(() => readPath(prefix));
     useEffect(() => {
       const win = webWindow();
-      if (!win) return;
+      if (!win) {
+        return;
+      }
       const onPop = () => setAt(readPath(prefix));
       win.addEventListener('popstate', onPop);
       return () => win.removeEventListener('popstate', onPop);
@@ -95,7 +99,9 @@ function pathRouter({ base = '/' }: { base?: string } = {}): WorkbenchRouter {
 
 function readPath(prefix: string): WorkbenchLocation {
   const win = webWindow();
-  if (!win) return {};
+  if (!win) {
+    return {};
+  }
   const { pathname, search } = win.location;
   const params = new URLSearchParams(search);
   const shot = params.has('shot');
@@ -120,26 +126,38 @@ function readPath(prefix: string): WorkbenchLocation {
 
 function writePath(prefix: string, at: WorkbenchLocation, replace: boolean): void {
   const win = webWindow();
-  if (!win?.history) return;
+  if (!win?.history) {
+    return;
+  }
   if (at.page) {
     const fragment = at.section ? `#${encodeURIComponent(at.section)}` : '';
     const url = `${prefix}${encodeURIComponent(at.page)}${win.location.search}${fragment}`;
-    if (replace) win.history.replaceState(null, '', url);
-    else win.history.pushState(null, '', url);
+    if (replace) {
+      win.history.replaceState(null, '', url);
+    } else {
+      win.history.pushState(null, '', url);
+    }
     return;
   }
-  if (!at.story) return;
+  if (!at.story) {
+    return;
+  }
   const view = viewPath(at.view);
   const suffix = view ? `/${view}` : '';
   const path = `${prefix}story/${encodeURIComponent(at.story)}${suffix}`;
   const url = `${path}${win.location.search}`;
-  if (replace) win.history.replaceState(null, '', url);
-  else win.history.pushState(null, '', url);
+  if (replace) {
+    win.history.replaceState(null, '', url);
+  } else {
+    win.history.pushState(null, '', url);
+  }
 }
 
 function read(): WorkbenchLocation {
   const win = webWindow();
-  if (!win) return {};
+  if (!win) {
+    return {};
+  }
   const params = new URLSearchParams(win.location.search);
   return {
     story: params.get('story') ?? undefined,
@@ -152,12 +170,19 @@ function read(): WorkbenchLocation {
 // shells decide to show the workbench at all.
 function write(next: WorkbenchLocation): void {
   const win = webWindow();
-  if (!win?.history) return;
+  if (!win?.history) {
+    return;
+  }
   const params = new URLSearchParams(win.location.search);
   params.set('workbench', '');
-  if (next.story) params.set('story', next.story);
-  if (next.view === 'preview') params.delete('view');
-  else if (next.view) params.set('view', String(next.view));
+  if (next.story) {
+    params.set('story', next.story);
+  }
+  if (next.view === 'preview') {
+    params.delete('view');
+  } else if (next.view) {
+    params.set('view', String(next.view));
+  }
   win.history.replaceState(null, '', `${win.location.pathname}?${params}`);
 }
 

@@ -8,7 +8,9 @@ const LOW = /\sfetchPriority="low"/i;
  *  module entry comes back unchanged. */
 export function raiseEntryPreload(html: string): string {
   const entry = ENTRY_SCRIPT.exec(html)?.[1];
-  if (!entry) return html;
+  if (!entry) {
+    return html;
+  }
   return html.replace(LINK, (tag) =>
     tag.includes('rel="modulepreload"') && tag.includes(`href="${entry}"`)
       ? tag.replace(LOW, ' fetchPriority="high"')

@@ -32,7 +32,9 @@ export function useWheelScroll(
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return () => {
-      if (settle.current) clearTimeout(settle.current);
+      if (settle.current) {
+        clearTimeout(settle.current);
+      }
     };
   }, []);
 
@@ -55,7 +57,9 @@ export function useWheelScroll(
         committed.current = nearest;
         focusRow(nearest);
       }
-      if (settle.current) clearTimeout(settle.current);
+      if (settle.current) {
+        clearTimeout(settle.current);
+      }
       settle.current = setTimeout(() => {
         active.current = false;
         setFraction(null);

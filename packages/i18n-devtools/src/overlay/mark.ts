@@ -69,7 +69,9 @@ export function mark(rendered: Rendered, drawn: string): string {
   const grade = gradeOf(rendered);
   const marked = MARKS[grade] + drawn;
   const seen = remembered.get(marked);
-  if (seen?.key === rendered.key) return marked;
+  if (seen?.key === rendered.key) {
+    return marked;
+  }
   remembered.set(marked, {
     key: rendered.key,
     scope: rendered.from?.scope ?? null,
@@ -98,11 +100,17 @@ export function forgetMarks(): void {
  */
 export function sightingIn(text: string): Sighting | null {
   const whole = remembered.get(text) ?? remembered.get(text.trim());
-  if (whole) return whole;
+  if (whole) {
+    return whole;
+  }
   const start = text.trim();
-  if (!start) return null;
+  if (!start) {
+    return null;
+  }
   for (const [marked, sighting] of remembered) {
-    if (marked.startsWith(start)) return sighting;
+    if (marked.startsWith(start)) {
+      return sighting;
+    }
   }
   return null;
 }

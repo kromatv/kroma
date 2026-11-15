@@ -87,9 +87,14 @@ export function savedFacets(titles: readonly SavedTitle[]): SavedFacets {
   let shows = 0;
   let unavailable = 0;
   for (const title of titles) {
-    if (title.kind === 'movie') movies += 1;
-    else shows += 1;
-    if (!title.available) unavailable += 1;
+    if (title.kind === 'movie') {
+      movies += 1;
+    } else {
+      shows += 1;
+    }
+    if (!title.available) {
+      unavailable += 1;
+    }
   }
   return { total: titles.length, movies, shows, unavailable };
 }
@@ -99,7 +104,9 @@ export function filterSavedTitles(
   filter: SavedFilter,
 ): SavedTitle[] {
   return titles.filter((title) => {
-    if (filter.kind !== 'all' && title.kind !== filter.kind) return false;
+    if (filter.kind !== 'all' && title.kind !== filter.kind) {
+      return false;
+    }
     return !(filter.unavailableOnly && title.available);
   });
 }
@@ -109,8 +116,12 @@ export function filterSavedTitles(
 export function featuredSavedTitle(titles: readonly SavedTitle[]): SavedTitle | undefined {
   let best: SavedTitle | undefined;
   for (const title of titles) {
-    if (!title.backdrop) continue;
-    if (!best || (title.rating ?? -1) > (best.rating ?? -1)) best = title;
+    if (!title.backdrop) {
+      continue;
+    }
+    if (!best || (title.rating ?? -1) > (best.rating ?? -1)) {
+      best = title;
+    }
   }
   return best;
 }

@@ -63,7 +63,9 @@ describe('a dialog over a navigated screen', () => {
     expect(lit('Annuler')).toBe(true);
     expect(lit('Confirmer')).toBe(false);
 
-    for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowUp']) press(key);
+    for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowUp']) {
+      press(key);
+    }
     expect(lit('Voisin')).toBe(false);
     expect(lit('Annuler') || lit('Confirmer')).toBe(true);
   });

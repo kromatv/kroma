@@ -68,7 +68,9 @@ async function listen(firstPort: number): Promise<{ server: Server; port: number
       server.once('error', () => resolve(false));
       server.listen(port, LOOPBACK, () => resolve(true));
     });
-    if (bound) return { server, port };
+    if (bound) {
+      return { server, port };
+    }
   }
   throw new Error(`no free port from ${firstPort} to ${firstPort + PORTS - 1} for the sign-in`);
 }
@@ -78,12 +80,16 @@ async function answered(request: IncomingMessage): Promise<SamsungAccess> {
   let size = 0;
   for await (const chunk of request) {
     size += (chunk as Buffer).byteLength;
-    if (size > MAX_CALLBACK_BYTES) throw new Error('the sign-in answer is far too long');
+    if (size > MAX_CALLBACK_BYTES) {
+      throw new Error('the sign-in answer is far too long');
+    }
     chunks.push(chunk as Buffer);
   }
   const posted = new URLSearchParams(Buffer.concat(chunks).toString('utf8')).get('code');
   const queried = new URL(request.url ?? '', `http://${LOOPBACK}`).searchParams.get('code');
   const code = posted ?? queried;
-  if (!code) throw new Error('Samsung sent no sign-in answer back');
+  if (!code) {
+    throw new Error('Samsung sent no sign-in answer back');
+  }
   return parseAccess(code);
 }

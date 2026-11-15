@@ -36,7 +36,9 @@ function run(
   tour: Tour | null,
   rest = REST_SPIN,
 ) {
-  for (let t = 0; t < seconds; t += FRAME) advance(motion, FRAME, rest, tour);
+  for (let t = 0; t < seconds; t += FRAME) {
+    advance(motion, FRAME, rest, tour);
+  }
 }
 
 describe('tourOf', () => {

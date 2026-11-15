@@ -24,7 +24,9 @@ export const DEFAULT_DISCOVERY_CANDIDATES = ['http://kroma.local:4040'];
 
 export async function discoverServer(opts: DiscoverOptions = {}): Promise<string | null> {
   const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
-  if (!fetchFn) return null;
+  if (!fetchFn) {
+    return null;
+  }
   const port = opts.port ?? 4040;
 
   // Browse and named candidates run concurrently: wifi that blocks multicast
@@ -35,8 +37,12 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
     browsedOrigins(opts, fetchFn),
     raceForServer(named, fetchFn, opts.timeoutMs ?? 2000),
   ]);
-  if (announced.length > 0) return announced[0] ?? null;
-  if (namedHit) return namedHit;
+  if (announced.length > 0) {
+    return announced[0] ?? null;
+  }
+  if (namedHit) {
+    return namedHit;
+  }
 
   if (opts.scanSubnet !== false) {
     const ip = opts.localIp ?? (await getLocalIPv4());
@@ -48,7 +54,9 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
         opts.timeoutMs ?? 1500,
         opts.concurrency ?? 48,
       );
-      if (scanHit) return scanHit;
+      if (scanHit) {
+        return scanHit;
+      }
     }
   }
   return null;
@@ -60,7 +68,9 @@ async function browsedOrigins(
   opts: DiscoverOptions,
   fetchFn: typeof globalThis.fetch,
 ): Promise<string[]> {
-  if (!opts.browse) return [];
+  if (!opts.browse) {
+    return [];
+  }
   let announced: Array<{ host: string; port: number }> = [];
   try {
     announced = await opts.browse(opts.browseMs ?? 1500);
@@ -88,7 +98,9 @@ export interface DiscoveredServer {
 // The fingerprint fallback (servers too old to send an `instanceId`) is a guess,
 // so it is namespaced and cannot collide with a real id.
 function identityOf(body: HealthProbe): string {
-  if (body.instanceId) return `id:${body.instanceId}`;
+  if (body.instanceId) {
+    return `id:${body.instanceId}`;
+  }
   return `fp:${[body.name, body.version, body.libraries, body.items, body.shows].join('|')}`;
 }
 
@@ -96,14 +108,20 @@ function identityOf(body: HealthProbe): string {
  *  (its mDNS name and its IP) collapse on identity, keeping the first origin. */
 export async function discoverServers(opts: DiscoverOptions = {}): Promise<DiscoveredServer[]> {
   const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
-  if (!fetchFn) return [];
+  if (!fetchFn) {
+    return [];
+  }
   const port = opts.port ?? 4040;
 
   const named = (opts.candidates ?? DEFAULT_DISCOVERY_CANDIDATES).map(stripTrailingSlash);
   const subnet = async () => {
-    if (opts.scanSubnet === false) return [];
+    if (opts.scanSubnet === false) {
+      return [];
+    }
     const ip = opts.localIp ?? (await getLocalIPv4());
-    if (!ip) return [];
+    if (!ip) {
+      return [];
+    }
     return probeAll(
       subnetCandidates(ip, port),
       fetchFn,
@@ -129,7 +147,9 @@ export async function discoverServers(opts: DiscoverOptions = {}): Promise<Disco
   const found: DiscoveredServer[] = [];
   for (const hit of [...announcedHits, ...namedHits, ...subnetHits]) {
     const key = identityOf(hit.body);
-    if (seen.has(key)) continue;
+    if (seen.has(key)) {
+      continue;
+    }
     seen.add(key);
     found.push({
       url: hit.url,
@@ -145,12 +165,16 @@ export async function discoverServers(opts: DiscoverOptions = {}): Promise<Disco
  *  excluding the device's own address. */
 export function subnetCandidates(ip: string, port = 4040): string[] {
   const m = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.(\d{1,3})$/.exec(ip);
-  if (!m) return [];
+  if (!m) {
+    return [];
+  }
   const prefix = m[1];
   const self = Number(m[2]);
   const hosts: string[] = [];
   for (let i = 1; i <= 254; i++) {
-    if (i !== self) hosts.push(`http://${prefix}.${i}:${port}`);
+    if (i !== self) {
+      hosts.push(`http://${prefix}.${i}:${port}`);
+    }
   }
   return hosts;
 }

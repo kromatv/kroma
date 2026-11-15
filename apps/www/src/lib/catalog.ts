@@ -14,7 +14,7 @@ const Icon = z
   .transform((v) => (v?.startsWith('data:image/') ? v : null));
 
 const Entry = Manifest.extend({
-  id: z.string().min(1),
+  id: z.string().nonempty(),
   // A catalog missing these still lists; the card falls back to the id.
   name: z.string().default(''),
   version: z.string().default(''),

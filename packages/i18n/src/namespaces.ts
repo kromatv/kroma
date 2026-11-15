@@ -77,14 +77,18 @@ export class Namespaces {
     let landed = false;
     for (const [locale, source] of Object.entries(catalogs)) {
       if (typeof source === 'function') {
-        if (!entry.loaded.has(locale)) entry.sources.set(locale, source);
+        if (!entry.loaded.has(locale)) {
+          entry.sources.set(locale, source);
+        }
         continue;
       }
       this.sink.extend(locale, source);
       this.settle(file, locale);
       landed = true;
     }
-    if (landed) this.sink.changed();
+    if (landed) {
+      this.sink.changed();
+    }
     entry.needed ||= needed;
     if (entry.needed) {
       for (const locale of this.warmed) this.want(file, locale);
@@ -93,7 +97,9 @@ export class Namespaces {
 
   /** From now on, fetch every needed catalog for `locale`. */
   warm(locale: string): void {
-    if (this.warmed.has(locale)) return;
+    if (this.warmed.has(locale)) {
+      return;
+    }
     this.warmed.add(locale);
     for (const [file, entry] of this.entries) {
       if (entry.needed) this.want(file, locale);
@@ -105,11 +111,17 @@ export class Namespaces {
    *  settles, which is what `use()` needs to resume. */
   pending(locale: string): Promise<void> | null {
     const flying = this.inFlight.get(locale);
-    if (!flying?.size) return null;
+    if (!flying?.size) {
+      return null;
+    }
     const held = this.pendingByLocale.get(locale);
-    if (held) return held;
+    if (held) {
+      return held;
+    }
     const forget = () => {
-      if (this.pendingByLocale.get(locale) === all) this.pendingByLocale.delete(locale);
+      if (this.pendingByLocale.get(locale) === all) {
+        this.pendingByLocale.delete(locale);
+      }
     };
     const all: Promise<void> = Promise.all(flying).then(forget, forget);
     this.pendingByLocale.set(locale, all);
@@ -148,9 +160,13 @@ export class Namespaces {
     if (entry.loaded.has(locale)) return null;
     if (this.shipped.get(locale)?.has(namespaceOfFile(file))) return null;
     const started = entry.loading.get(locale);
-    if (started) return started;
+    if (started) {
+      return started;
+    }
     const source = entry.sources.get(locale);
-    if (typeof source !== 'function') return null;
+    if (typeof source !== 'function') {
+      return null;
+    }
     entry.failed.delete(locale);
     const flight: Promise<void> = source().then(
       (catalog) => {

@@ -6,11 +6,11 @@ import { z } from 'zod';
 const MAX_FILE_CHARS = 1_000_000;
 
 const RememberedSet = z.object({
-  host: z.string().min(1).max(255),
-  platform: z.string().min(1).max(64),
+  host: z.string().nonempty().max(255),
+  platform: z.string().nonempty().max(64),
   name: z.string().max(255),
   model: z.string().max(255),
-  package: z.string().min(1).max(255),
+  package: z.string().nonempty().max(255),
   source: z.enum(['local', 'stable', 'canary', 'build']).optional(),
   options: z.record(z.string().max(64), z.union([z.string().max(255), z.boolean()])).optional(),
   installedAt: z.iso.datetime(),
@@ -27,7 +27,9 @@ export const REMEMBERED = join(homedir(), '.kroma', 'televisions.json');
 export async function rememberedSets(path = REMEMBERED): Promise<RememberedSet[]> {
   try {
     const text = await readFile(path, 'utf8');
-    if (text.length > MAX_FILE_CHARS) return [];
+    if (text.length > MAX_FILE_CHARS) {
+      return [];
+    }
     const parsed = Remembered.safeParse(JSON.parse(text));
     return parsed.success ? parsed.data.televisions : [];
   } catch {

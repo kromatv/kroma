@@ -32,7 +32,9 @@ describe('useIntroExit', () => {
     expect(result.current.exiting).toBe(true);
     expect(onDone).not.toHaveBeenCalled();
 
-    act(() => vi.advanceTimersByTime(EXIT_MS));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS);
+    });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
@@ -42,7 +44,9 @@ describe('useIntroExit', () => {
 
     act(() => result.current.exit());
     act(() => result.current.exit());
-    act(() => vi.advanceTimersByTime(EXIT_MS * 2));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS * 2);
+    });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
@@ -55,11 +59,15 @@ describe('useIntroExit', () => {
     expect(result.current.exiting).toBe(false);
     expect(result.current.exitedRef.current).toBe(false);
 
-    act(() => vi.advanceTimersByTime(EXIT_MS * 2));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS * 2);
+    });
     expect(onDone).not.toHaveBeenCalled();
 
     act(() => result.current.exit());
-    act(() => vi.advanceTimersByTime(EXIT_MS));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS);
+    });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
@@ -69,7 +77,9 @@ describe('useIntroExit', () => {
 
     act(() => result.current.exit());
     act(() => result.current.clearTimers());
-    act(() => vi.advanceTimersByTime(EXIT_MS * 2));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS * 2);
+    });
     expect(onDone).not.toHaveBeenCalled();
   });
 });

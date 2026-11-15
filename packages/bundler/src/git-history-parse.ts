@@ -85,16 +85,24 @@ export function parseStatus(output: string): WorkingTree {
   const records = output.split('\0');
   for (let at = 0; at < records.length; at += 1) {
     const record = records[at];
-    if (!record) continue;
+    if (!record) {
+      continue;
+    }
     const code = record.slice(0, 2);
     const path = record.slice(3);
-    if (!path) continue;
+    if (!path) {
+      continue;
+    }
     dirty.add(path);
-    if (code === '??') untracked.push(path);
+    if (code === '??') {
+      untracked.push(path);
+    }
     if (code.includes('R') || code.includes('C')) {
       at += 1;
       const from = records[at];
-      if (from) renamedFrom.set(path, from);
+      if (from) {
+        renamedFrom.set(path, from);
+      }
     }
   }
   return { renamedFrom, dirty, untracked };
@@ -108,7 +116,9 @@ export function parseLog(output: string): LogCommit[] {
   let current: LogCommit | undefined;
   for (let at = 0; at < records.length; at += 1) {
     const record = token(records[at]);
-    if (!record) continue;
+    if (!record) {
+      continue;
+    }
     if (record.startsWith(COMMIT_MARK)) {
       const [sha, date, ...subject] = record.slice(1).split(FIELD_MARK);
       current = {
@@ -120,7 +130,9 @@ export function parseLog(output: string): LogCommit[] {
       commits.push(current);
       continue;
     }
-    if (!current) continue;
+    if (!current) {
+      continue;
+    }
     // A rename carries two paths, the name it had and the name it took.
     let from: string | undefined;
     if (record.startsWith('R') || record.startsWith('C')) {
@@ -129,15 +141,20 @@ export function parseLog(output: string): LogCommit[] {
     }
     at += 1;
     const path = token(records[at]);
-    if (path) current.changes.push({ status: record, path, ...(from ? { from } : null) });
+    if (path) {
+      current.changes.push({ status: record, path, ...(from ? { from } : null) });
+    }
   }
   return commits;
 }
 
 function push<T>(map: Map<string, T[]>, key: string, value: T): void {
   const held = map.get(key);
-  if (held) held.push(value);
-  else map.set(key, [value]);
+  if (held) {
+    held.push(value);
+  } else {
+    map.set(key, [value]);
+  }
 }
 
 /**
@@ -155,8 +172,11 @@ function tracking(targets: ReadonlyMap<string, string>): Map<string, Set<string>
   const live = new Map<string, Set<string>>();
   for (const [now, head] of targets) {
     const held = live.get(head);
-    if (held) held.add(now);
-    else live.set(head, new Set([now]));
+    if (held) {
+      held.add(now);
+    } else {
+      live.set(head, new Set([now]));
+    }
   }
   return live;
 }
@@ -166,8 +186,13 @@ function tracking(targets: ReadonlyMap<string, string>): Map<string, Set<string>
 function follow(live: Map<string, Set<string>>, from: string, path: string, holders: Set<string>) {
   live.delete(path);
   const earlier = live.get(from);
-  if (earlier) for (const holder of holders) earlier.add(holder);
-  else live.set(from, holders);
+  if (earlier) {
+    for (const holder of holders) {
+      earlier.add(holder);
+    }
+  } else {
+    live.set(from, holders);
+  }
 }
 
 export function attribute(
@@ -179,11 +204,15 @@ export function attribute(
   for (const commit of commits) {
     for (const change of commit.changes) {
       const holders = live.get(change.path);
-      if (!holders) continue;
+      if (!holders) {
+        continue;
+      }
       for (const holder of holders) {
         push(found, holder, { sha: commit.sha, date: commit.date, subject: commit.subject });
       }
-      if (change.from) follow(live, change.from, change.path, holders);
+      if (change.from) {
+        follow(live, change.from, change.path, holders);
+      }
     }
   }
   return found;
@@ -200,8 +229,12 @@ const stemOf = (story: string): string => nameOf(story).slice(0, -STORY.length);
 function storyFor(file: string, byFolder: ReadonlyMap<string, string[]>): string | null {
   for (let folder = folderOf(file); folder; folder = folderOf(folder)) {
     const stories = byFolder.get(folder);
-    if (!stories?.length) continue;
-    if (stories.length === 1) return stories[0] as string;
+    if (!stories?.length) {
+      continue;
+    }
+    if (stories.length === 1) {
+      return stories[0] as string;
+    }
     const name = nameOf(file);
     return stories.find((story) => name.startsWith(`${stemOf(story)}.`)) ?? null;
   }
@@ -218,7 +251,11 @@ function storyFor(file: string, byFolder: ReadonlyMap<string, string[]>): string
  */
 export function groupFiles(files: readonly string[]): Map<string, string[]> {
   const byFolder = new Map<string, string[]>();
-  for (const file of files) if (file.endsWith(STORY)) push(byFolder, folderOf(file), file);
+  for (const file of files) {
+    if (file.endsWith(STORY)) {
+      push(byFolder, folderOf(file), file);
+    }
+  }
   const groups = new Map<string, string[]>();
   for (const file of files) {
     if (file.endsWith(PAGE)) {
@@ -226,7 +263,9 @@ export function groupFiles(files: readonly string[]): Map<string, string[]> {
       continue;
     }
     const story = storyFor(file, byFolder);
-    if (story) push(groups, story, file);
+    if (story) {
+      push(groups, story, file);
+    }
   }
   return groups;
 }
@@ -249,14 +288,18 @@ export function entriesOf(
   for (const [key, files] of [...groups].sort(([a], [b]) => (a < b ? -1 : 1))) {
     const seen = new Map<string, HistoryCommit>();
     for (const file of files) {
-      for (const commit of commits.get(file) ?? []) seen.set(commit.sha, commit);
+      for (const commit of commits.get(file) ?? []) {
+        seen.set(commit.sha, commit);
+      }
     }
     const found = [...seen.values()].sort(newestFirst);
     const changed = found[0];
     const created = found.at(-1);
     const edited = files.some((file) => dirty.has(file));
     if (!(changed && created)) {
-      if (edited) entries[key] = { dirty: true, commits: [] };
+      if (edited) {
+        entries[key] = { dirty: true, commits: [] };
+      }
       continue;
     }
     entries[key] = {

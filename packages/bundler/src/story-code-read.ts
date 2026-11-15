@@ -40,7 +40,9 @@ function declarationOf(statement: Node): Node | null {
 function definitionIn(declaration: Node): Node | null {
   for (const declared of declaration.declarations as Node[]) {
     const id = declared.id as Node;
-    if (id.type !== 'Identifier' || id.name !== 'story') continue;
+    if (id.type !== 'Identifier' || id.name !== 'story') {
+      continue;
+    }
     const init = declared.init as Node | null;
     const object = (init?.type === 'CallExpression' ? (init.arguments as Node[])[0] : init) as
       | Node
@@ -53,7 +55,9 @@ function definitionIn(declaration: Node): Node | null {
 function storyObject(program: { body: readonly Node[] }): Node | null {
   for (const statement of program.body) {
     const declaration = declarationOf(statement);
-    if (declaration) return definitionIn(declaration);
+    if (declaration) {
+      return definitionIn(declaration);
+    }
   }
   return null;
 }
@@ -62,11 +66,17 @@ function storyObject(program: { body: readonly Node[] }): Node | null {
  * a value the index cannot know without running the module. */
 function wordOf(definition: Node, name: string): string | undefined {
   for (const entry of definition.properties as Node[]) {
-    if (entry.type !== 'Property' || entry.computed) continue;
+    if (entry.type !== 'Property' || entry.computed) {
+      continue;
+    }
     const key = entry.key as Node;
     const value = entry.value as Node;
-    if (key.type !== 'Identifier' || key.name !== name) continue;
-    if (value.type === 'Literal' && typeof value.value === 'string') return value.value;
+    if (key.type !== 'Identifier' || key.name !== name) {
+      continue;
+    }
+    if (value.type === 'Literal' && typeof value.value === 'string') {
+      return value.value;
+    }
   }
   return undefined;
 }
@@ -78,7 +88,9 @@ async function parseModule(fileName: string): Promise<{ body: readonly Node[] } 
     import('acorn'),
   ]);
   const text = await readFile(fileName, 'utf8').catch(() => null);
-  if (text === null) return null;
+  if (text === null) {
+    return null;
+  }
   try {
     const compiled = await compileMdx(text, fileName);
     return Parser.parse(compiled, {
@@ -93,10 +105,14 @@ async function parseModule(fileName: string): Promise<{ body: readonly Node[] } 
 async function mdxIdentity(fileName: string): Promise<StoryCode | null> {
   const program = await parseModule(fileName);
   const definition = program && storyObject(program);
-  if (!definition) return null;
+  if (!definition) {
+    return null;
+  }
   const name = wordOf(definition, 'name');
   const group = wordOf(definition, 'group');
-  if (!name && !group) return null;
+  if (!name && !group) {
+    return null;
+  }
   return { ...(name ? { name } : null), ...(group ? { group } : null) };
 }
 
@@ -110,7 +126,9 @@ export async function readStoryMdxCode(
   const read = await Promise.all(files.map(mdxIdentity));
   for (const [at, code] of read.entries()) {
     const file = files[at];
-    if (code && file) out[keyOf(repo, file)] = code;
+    if (code && file) {
+      out[keyOf(repo, file)] = code;
+    }
   }
   return out;
 }

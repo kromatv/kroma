@@ -22,12 +22,19 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
 
   const setWatched = useCallback(
     (id: SubjectId, watched: boolean) => {
-      if (!client) return;
+      if (!client) {
+        return;
+      }
       setIds((prev) => {
-        if (prev.has(id) === watched) return prev;
+        if (prev.has(id) === watched) {
+          return prev;
+        }
         const next = new Set(prev);
-        if (watched) next.add(id);
-        else next.delete(id);
+        if (watched) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
         return next;
       });
       const call = watched
@@ -36,8 +43,11 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
       call.catch(() => {
         setIds((prev) => {
           const next = new Set(prev);
-          if (watched) next.delete(id);
-          else next.add(id);
+          if (watched) {
+            next.delete(id);
+          } else {
+            next.add(id);
+          }
           return next;
         });
       });
@@ -59,6 +69,8 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
 
 export function useWatched(): Watched {
   const c = useContext(Ctx);
-  if (!c) throw new Error('useWatched() must be used inside <WatchedProvider>');
+  if (!c) {
+    throw new Error('useWatched() must be used inside <WatchedProvider>');
+  }
   return c;
 }

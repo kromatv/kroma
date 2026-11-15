@@ -154,7 +154,9 @@ export function DetailHero({
   const unsupported = useSyncExternalStore(
     subscribeNever,
     () => {
-      if (!playable) return null;
+      if (!playable) {
+        return null;
+      }
       const v = canDirectPlay(playable);
       return v.canDirectPlay ? null : t(v.messageKey, v.messageVars);
     },
@@ -265,7 +267,9 @@ export function DetailHero({
 
 function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudio> }>) {
   const t = useT();
-  if (!theme.active) return null;
+  if (!theme.active) {
+    return null;
+  }
   return (
     <Box absolute z={3} right={CORNER_LEFT} top={CORNER_TOP}>
       <Ground tone="dark">

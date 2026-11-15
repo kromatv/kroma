@@ -53,14 +53,18 @@ export function PlayerDockProvider({ children }: Readonly<{ children: ReactNode 
  * which would unmount the player and close its window. */
 export function usePlayerDock(): PlayerDock {
   const dock = use(DockCtx);
-  if (!dock) throw new Error('usePlayerDock outside a PlayerDockProvider');
+  if (!dock) {
+    throw new Error('usePlayerDock outside a PlayerDockProvider');
+  }
   return dock;
 }
 
 /** The film the player screen is showing, and whether it is docked out of sight. */
 export function usePlayerSlot(): PlayerSlotState {
   const slot = use(SlotCtx);
-  if (!slot) throw new Error('usePlayerSlot outside the player slot');
+  if (!slot) {
+    throw new Error('usePlayerSlot outside the player slot');
+  }
   return slot;
 }
 
@@ -73,11 +77,15 @@ export function PlayerSlot({
 }: Readonly<{ top: MediaItem | null; Screen: ComponentType }>): ReactNode {
   const { docked, undock } = usePlayerDock();
   useEffect(() => {
-    if (top && docked) undock();
+    if (top && docked) {
+      undock();
+    }
   }, [top, docked, undock]);
   const item = top ?? docked;
   const slot = useMemo(() => (item ? { item, docked: top == null } : null), [item, top]);
-  if (!slot) return null;
+  if (!slot) {
+    return null;
+  }
   const key = `player:${slot.item.id}`;
   return (
     <SlotCtx value={slot}>

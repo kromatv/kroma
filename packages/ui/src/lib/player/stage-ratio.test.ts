@@ -16,7 +16,9 @@ function stage(id: string, width: number, height: number): HTMLElement {
 }
 
 afterEach(() => {
-  for (const node of NODES.splice(0)) node.remove();
+  for (const node of NODES.splice(0)) {
+    node.remove();
+  }
 });
 
 describe('useStageRatio (web)', () => {

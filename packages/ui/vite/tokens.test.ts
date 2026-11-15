@@ -105,7 +105,9 @@ describe('the alpha steps', () => {
   });
 
   it('scans the repo, not the working directory a build happens to run from', () => {
-    for (const root of SOURCE_ROOTS) expect(isAbsolute(root)).toBe(true);
+    for (const root of SOURCE_ROOTS) {
+      expect(isAbsolute(root)).toBe(true);
+    }
     expect(SOURCE_ROOTS.some((root) => root.endsWith(`${sep}packages`))).toBe(true);
     // `tint/10` is <Button glass>'s rest fill: only a scan reaching packages/ui finds it.
     expect(tokensCss()).toContain('--kroma-tint-10:');
@@ -190,7 +192,9 @@ describe('pageCss', () => {
       selectorDeclaring(css, `--gutter-web: ${width};`),
     );
 
-    for (const selector of selectors) expect(selector).toContain('[data-kroma-theme]');
+    for (const selector of selectors) {
+      expect(selector).toContain('[data-kroma-theme]');
+    }
   });
 });
 

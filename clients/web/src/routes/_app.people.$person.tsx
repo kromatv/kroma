@@ -31,7 +31,9 @@ const PORTRAIT_W = 104;
 
 export const Route = createFileRoute('/_app/people/$person')({
   loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) throw redirect({ to: '/' });
+    if (!isAuthed()) {
+      throw redirect({ to: '/' });
+    }
     void queryClient.prefetchQuery(webRuntime.queries.catalogQueries.personDetails(params.person));
     await queryClient.ensureQueryData(
       webRuntime.queries.catalogQueries.personCredits(params.person),
@@ -119,8 +121,12 @@ function renderPersonBody(
   entries: CatalogEntry[],
   tmdbCredits: readonly TmdbCredit[],
 ) {
-  if (entries.length) return <CatalogGrid entries={entries} />;
-  if (tmdbCredits.length) return <TmdbFilmography credits={tmdbCredits} />;
+  if (entries.length) {
+    return <CatalogGrid entries={entries} />;
+  }
+  if (tmdbCredits.length) {
+    return <TmdbFilmography credits={tmdbCredits} />;
+  }
   return (
     <EmptyState.Root icon="user-x">
       <EmptyState.Title>{t('person.empty')}</EmptyState.Title>

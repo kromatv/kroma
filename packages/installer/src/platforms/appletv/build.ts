@@ -34,8 +34,12 @@ export function buildableAppleTv(): boolean {
 
 export function appleTvSources(): AppleTvSource[] {
   const sources: AppleTvSource[] = [];
-  if (localAppleTvApp()) sources.push('local');
-  if (buildableAppleTv()) sources.push('build');
+  if (localAppleTvApp()) {
+    sources.push('local');
+  }
+  if (buildableAppleTv()) {
+    sources.push('build');
+  }
   return sources;
 }
 
@@ -45,7 +49,9 @@ export async function resolveAppleTvApp({
   udid,
   log,
 }: AppleTvAppRequest): Promise<string> {
-  if (given) return given;
+  if (given) {
+    return given;
+  }
 
   const local = source === 'build' ? null : localAppleTvApp();
   if (local) {
@@ -80,6 +86,8 @@ export async function buildAppleTvApp(udid: string, log: LogLine): Promise<strin
   });
 
   const built = localAppleTvApp();
-  if (!built) throw new Error(`the build left no appletvos .app under ${SHELL}/ios/build`);
+  if (!built) {
+    throw new Error(`the build left no appletvos .app under ${SHELL}/ios/build`);
+  }
   return built;
 }

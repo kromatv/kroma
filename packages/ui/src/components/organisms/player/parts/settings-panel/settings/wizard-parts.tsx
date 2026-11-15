@@ -34,9 +34,13 @@ export function CycleField({
       role="adjustable"
       label={`${label}: ${value}`}
       onKey={(direction) => {
-        if (direction === 'left') onDec();
-        else if (direction === 'right') onInc();
-        else return false;
+        if (direction === 'left') {
+          onDec();
+        } else if (direction === 'right') {
+          onInc();
+        } else {
+          return false;
+        }
         return true;
       }}
       states={CYCLE_FOCUS}

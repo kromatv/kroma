@@ -19,13 +19,15 @@ import {
 import { useCallback, useRef, useState } from 'react';
 
 /** Coalesce event-driven reloads to at most one call per 1.5 s. */
-export function useThrottledReload(reload: () => void): () => void {
+export function useThrottledReload(reload: () => unknown): () => void {
   const lastReloadRef = useRef(0);
   return useCallback(() => {
     const now = Date.now();
-    if (now - lastReloadRef.current < 1500) return;
+    if (now - lastReloadRef.current < 1500) {
+      return;
+    }
     lastReloadRef.current = now;
-    reload();
+    void reload();
   }, [reload]);
 }
 

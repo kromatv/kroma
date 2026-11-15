@@ -19,7 +19,9 @@ export interface AdbEndpoint {
  * every time that is switched on. Null when it offers neither.
  */
 export async function adbEndpoint(host: string): Promise<AdbEndpoint | null> {
-  if (await tcpOpen(host, ADB_PORT, CLASSIC_TIMEOUT_MS)) return { port: ADB_PORT, wireless: false };
+  if (await tcpOpen(host, ADB_PORT, CLASSIC_TIMEOUT_MS)) {
+    return { port: ADB_PORT, wireless: false };
+  }
   const port = await mdnsPort(host, ADB_CONNECT_SERVICE, ADVERTISED_TIMEOUT_MS);
   return port === null ? null : { port, wireless: true };
 }

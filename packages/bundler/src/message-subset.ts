@@ -22,10 +22,15 @@ function sources(dir: string, out: string[] = []): string[] {
     return out;
   }
   for (const entry of entries) {
-    if (entry === 'node_modules' || entry.startsWith('.')) continue;
+    if (entry === 'node_modules' || entry.startsWith('.')) {
+      continue;
+    }
     const full = `${dir}/${entry}`;
-    if (statSync(full).isDirectory()) sources(full, out);
-    else if (SOURCE.test(entry)) out.push(full);
+    if (statSync(full).isDirectory()) {
+      sources(full, out);
+    } else if (SOURCE.test(entry)) {
+      out.push(full);
+    }
   }
   return out;
 }
@@ -38,7 +43,9 @@ export function messageKeysIn(roots: readonly string[]): Set<string> {
   const keys = new Set<string>();
   for (const root of roots) {
     for (const file of sources(root)) {
-      for (const call of readFileSync(file, 'utf8').matchAll(CALL)) keys.add(call[0]);
+      for (const call of readFileSync(file, 'utf8').matchAll(CALL)) {
+        keys.add(call[0]);
+      }
     }
   }
   return keys;

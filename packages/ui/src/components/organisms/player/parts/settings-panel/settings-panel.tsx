@@ -136,10 +136,17 @@ export function SettingsPanel({
     ref,
     () => ({
       onKey: (key) => {
-        if (key !== 'Back') return false;
-        if (subRef.current?.onKey(key)) return true;
-        if (view === 'menu') onClose();
-        else backToMenu();
+        if (key !== 'Back') {
+          return false;
+        }
+        if (subRef.current?.onKey(key)) {
+          return true;
+        }
+        if (view === 'menu') {
+          onClose();
+        } else {
+          backToMenu();
+        }
         return true;
       },
     }),

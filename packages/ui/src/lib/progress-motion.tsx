@@ -30,7 +30,9 @@ function useSettling(to: number): Animated.Value {
   useEffect(() => {
     // A first render mounts AT the value: a browse grid of half-watched tiles
     // must not animate two dozen bars into place.
-    if (target.current === to) return;
+    if (target.current === to) {
+      return;
+    }
     target.current = to;
     const anim = Animated.timing(value, {
       toValue: to,
@@ -48,7 +50,9 @@ function useSettling(to: number): Animated.Value {
 /** The arc of a <ProgressRing>, easing to a new length when the value changes
  *  unless `eased` is off. */
 export function ProgressArc({ eased, ...arc }: Readonly<ProgressArcProps>) {
-  if (!eased) return <Circle {...arcShape(arc)} strokeDashoffset={arc.dashOffset} />;
+  if (!eased) {
+    return <Circle {...arcShape(arc)} strokeDashoffset={arc.dashOffset} />;
+  }
   return <SettlingArc {...arc} />;
 }
 

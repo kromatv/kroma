@@ -23,7 +23,9 @@ export function TrailerButton({
   const t = useT();
   const nav = useNav();
   const trailer = usePlayableTrailer(kind, tmdbId);
-  if (!trailer || tmdbId == null) return null;
+  if (!trailer || tmdbId == null) {
+    return null;
+  }
   return (
     <Button
       variant="outline"

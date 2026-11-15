@@ -27,8 +27,12 @@ function bus(message: string | null, opts: { throwOnCall?: boolean } = {}) {
     onservicecallback: ((message: string) => void) | null = null;
     call(uri: string, payload: string) {
       calls.push({ uri, payload });
-      if (opts.throwOnCall) throw new Error('no such service');
-      if (message !== null) this.onservicecallback?.(message);
+      if (opts.throwOnCall) {
+        throw new Error('no such service');
+      }
+      if (message !== null) {
+        this.onservicecallback?.(message);
+      }
     }
   }
   Object.assign(globalThis, { PalmServiceBridge: StubBridge });

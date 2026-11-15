@@ -20,8 +20,12 @@ export function sizedImageUrl(
   displayWidth: number,
   scale = 1,
 ): string | null {
-  if (!url) return null;
-  if (!url.includes('/api/images/') || url.includes('?')) return url;
+  if (!url) {
+    return null;
+  }
+  if (!url.includes('/api/images/') || url.includes('?')) {
+    return url;
+  }
   return `${url}?w=${artworkWidth(displayWidth, scale)}`;
 }
 
@@ -32,7 +36,9 @@ export function sizedImageUrl(
  * gradients, placeholder tilts) keys off the same value for the same string. */
 export function hashString(s: string): number {
   let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + (s.codePointAt(i) ?? 0)) >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + (s.codePointAt(i) ?? 0)) >>> 0;
+  }
   return h;
 }
 
@@ -77,7 +83,9 @@ export function codecLabel(codec: string): string {
 
 /** Top-right quality badge text for a video track, or null. */
 export function qualityBadgeForVideo(video: VideoTrack | null | undefined): string | null {
-  if (!video) return null;
+  if (!video) {
+    return null;
+  }
   return match(video)
     .when((v) => v.hdr === true, 'HDR')
     .when((v) => (v.width ?? 0) >= 3840, '4K')
@@ -95,7 +103,9 @@ export function qualityBadge(item: Pick<MediaItem, 'video'>): string | null {
 export function episodeTag(
   item: Pick<MediaItem, 'season' | 'episode'> & { episodeEnd?: number | null },
 ): string {
-  if (item.season == null || item.episode == null) return '';
+  if (item.season == null || item.episode == null) {
+    return '';
+  }
   const pad = (n: number) => String(n).padStart(2, '0');
   const base = `S${pad(item.season)}E${pad(item.episode)}`;
   return item.episodeEnd != null && item.episodeEnd > item.episode
@@ -108,7 +118,9 @@ export function episodeTag(
 export function playerSubtitle(item: MediaItem): string {
   if (item.kind === 'episode') {
     const parts = [item.showTitle, episodeTag(item)].filter(Boolean);
-    if (parts.length) return parts.join(' · ');
+    if (parts.length) {
+      return parts.join(' · ');
+    }
   }
   return metaLine(item);
 }
@@ -116,35 +128,59 @@ export function playerSubtitle(item: MediaItem): string {
 /** Terse dot-separated metadata line, e.g. "2024 · 2h08 · H.265 · 4K". */
 export function metaLine(item: Pick<MediaItem, 'year' | 'durationMs' | 'video'>): string {
   const parts: string[] = [];
-  if (item.year) parts.push(String(item.year));
+  if (item.year) {
+    parts.push(String(item.year));
+  }
   const rt = formatRuntime(item.durationMs);
-  if (rt) parts.push(rt);
-  if (item.video?.codec) parts.push(codecLabel(item.video.codec));
-  if ((item.video?.width ?? 0) >= 3840) parts.push('4K');
-  if (item.video?.hdr) parts.push('HDR');
+  if (rt) {
+    parts.push(rt);
+  }
+  if (item.video?.codec) {
+    parts.push(codecLabel(item.video.codec));
+  }
+  if ((item.video?.width ?? 0) >= 3840) {
+    parts.push('4K');
+  }
+  if (item.video?.hdr) {
+    parts.push('HDR');
+  }
   return parts.join(' · ');
 }
 
 /** Resolve a metadata image path (relative `/api/...` cached art, or an
  * absolute URL) against a KROMA origin. */
 export function resolveImageUrl(apiBase: string, url: string | null | undefined): string | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   return /^https?:\/\//.test(url) ? url : `${apiBase}${url}`;
 }
 
 /** Two-letter language code for a track badge, e.g. "FR" (or "ST" when unknown). */
 export function langCode(lang: string | null | undefined): string {
-  if (!lang) return 'ST';
+  if (!lang) {
+    return 'ST';
+  }
   return lang.slice(0, 2).toUpperCase();
 }
 
 /** Channel-layout label, e.g. 6 → "5.1", 2 → "2.0", 1 → "Mono". Null when unknown. */
 export function channelLabel(ch: number | null | undefined): string | null {
-  if (!ch) return null;
-  if (ch <= 1) return 'Mono';
-  if (ch === 2) return '2.0';
-  if (ch === 6) return '5.1';
-  if (ch === 8) return '7.1';
+  if (!ch) {
+    return null;
+  }
+  if (ch <= 1) {
+    return 'Mono';
+  }
+  if (ch === 2) {
+    return '2.0';
+  }
+  if (ch === 6) {
+    return '5.1';
+  }
+  if (ch === 8) {
+    return '7.1';
+  }
   return `${ch}.0`;
 }
 
@@ -154,7 +190,9 @@ export function channelLabel(ch: number | null | undefined): string | null {
 /** The commit as it should be READ - flagged when the tree it was built from had
  * uncommitted changes, since that hash alone no longer describes the binary. */
 export function commitLabel(commit: string | null | undefined, dirty: boolean): string | null {
-  if (!commit) return null;
+  if (!commit) {
+    return null;
+  }
   return dirty ? `${commit}-dirty` : commit;
 }
 
@@ -168,9 +206,13 @@ export function repoLabel(repository: string | null | undefined): string | null 
 /** The build stamp in the reader's own locale. Falls back to the raw ISO string
  * rather than to nothing: an unparseable date is still information. */
 export function formatBuildDate(iso: string | null | undefined, locale: string): string | null {
-  if (!iso) return null;
+  if (!iso) {
+    return null;
+  }
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
   try {
     return date.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
   } catch {

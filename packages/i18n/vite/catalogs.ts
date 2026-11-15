@@ -58,7 +58,9 @@ const UNQUOTABLE = /["'`\\\r\n\u2028\u2029]/;
  *  directory named with one is refused rather than written into a module. */
 export function specifier(path: string): string {
   const forward = path.split(sep).join('/');
-  if (UNQUOTABLE.test(forward)) throw new Error(`catalog path cannot be imported: ${path}`);
+  if (UNQUOTABLE.test(forward)) {
+    throw new Error(`catalog path cannot be imported: ${path}`);
+  }
   return `"${forward}"`;
 }
 

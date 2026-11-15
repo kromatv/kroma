@@ -62,25 +62,35 @@ export function createFrostEngine(
       renderer = null;
     }
     fitFor = '';
-    if (renderer && picture) renderer.setArt(picture);
+    if (renderer && picture) {
+      renderer.setArt(picture);
+    }
   };
 
   const setReady = (next: boolean) => {
-    if (next === ready) return;
+    if (next === ready) {
+      return;
+    }
     ready = next;
     onReady(next);
   };
 
   const resolve = (entry: Entry) => {
-    if (entry.top !== null) return;
+    if (entry.top !== null) {
+      return;
+    }
     entry.top = !entry.surface.parentElement?.closest(`[${MARK}]`);
-    if (!entry.top) return;
+    if (!entry.top) {
+      return;
+    }
     entry.radius = Number.parseFloat(getComputedStyle(entry.surface).borderTopLeftRadius) || 0;
     entry.follow = followScale(entry.surface);
   };
 
   const draw = () => {
-    if (!renderer || !picture) return;
+    if (!renderer || !picture) {
+      return;
+    }
     const frame = canvas.getBoundingClientRect();
     const dpr = globalThis.devicePixelRatio || 1;
     const w = Math.max(1, Math.round(frame.width * dpr));
@@ -103,7 +113,9 @@ export function createFrostEngine(
     }
     const rects: GlRect[] = [];
     for (const entry of entries.values()) {
-      if (!entry.top) continue;
+      if (!entry.top) {
+        continue;
+      }
       const r = glRect(
         entry.surface.getBoundingClientRect(),
         frame,
@@ -111,7 +123,9 @@ export function createFrostEngine(
         entry.radius,
         entry.surface.offsetWidth,
       );
-      if (r) rects.push(r);
+      if (r) {
+        rects.push(r);
+      }
     }
     renderer.draw(rects);
     setReady(true);
@@ -121,14 +135,22 @@ export function createFrostEngine(
     let moving = false;
     for (const [node, g] of glides) {
       const { value, done } = tweenAt(g.tween, now, ease.out.native);
-      if (g.horizontal) node.scrollLeft = value;
-      else node.scrollTop = value;
-      if (done) glides.delete(node);
-      else moving = true;
+      if (g.horizontal) {
+        node.scrollLeft = value;
+      } else {
+        node.scrollTop = value;
+      }
+      if (done) {
+        glides.delete(node);
+      } else {
+        moving = true;
+      }
     }
     for (const entry of entries.values()) {
       resolve(entry);
-      if (entry.follow?.step(now)) moving = true;
+      if (entry.follow?.step(now)) {
+        moving = true;
+      }
     }
     draw();
     return moving;
@@ -153,10 +175,14 @@ export function createFrostEngine(
   const changes = new MutationObserver((records) => {
     const now = performance.now();
     for (const record of records) {
-      if (record.type !== 'attributes') continue;
+      if (record.type !== 'attributes') {
+        continue;
+      }
       const entry = [...entries.values()].find((e) => e.surface === record.target);
       const follow = entry?.follow;
-      if (follow && (record.attributeName === 'class' || !follow.ownWrite())) follow.retarget(now);
+      if (follow && (record.attributeName === 'class' || !follow.ownWrite())) {
+        follow.retarget(now);
+      }
     }
     loop.request();
   });
@@ -185,7 +211,9 @@ export function createFrostEngine(
   return {
     register(mark) {
       const surface = mark.parentElement;
-      if (!surface) return () => {};
+      if (!surface) {
+        return () => {};
+      }
       surface.setAttribute(MARK, '');
       const entry: Entry = { surface, top: null, radius: 0, follow: null };
       entries.set(mark, entry);
@@ -201,7 +229,9 @@ export function createFrostEngine(
     },
     glide(scroller, horizontal, offset) {
       const node = nodeOf(scroller);
-      if (!node || !renderer || !ready) return false;
+      if (!node || !renderer || !ready) {
+        return false;
+      }
       const from = horizontal ? node.scrollLeft : node.scrollTop;
       const tween = {
         from,
@@ -216,8 +246,12 @@ export function createFrostEngine(
     show(next) {
       picture = next;
       fitFor = '';
-      if (next && renderer) renderer.setArt(next);
-      if (!next) setReady(false);
+      if (next && renderer) {
+        renderer.setArt(next);
+      }
+      if (!next) {
+        setReady(false);
+      }
       loop.request();
     },
     dispose() {
@@ -227,7 +261,9 @@ export function createFrostEngine(
       root.removeEventListener('scroll', onScroll, true);
       canvas.removeEventListener('webglcontextlost', onLost);
       canvas.removeEventListener('webglcontextrestored', onRestored);
-      for (const entry of entries.values()) entry.follow?.release();
+      for (const entry of entries.values()) {
+        entry.follow?.release();
+      }
       renderer?.dispose();
       renderer = null;
     },

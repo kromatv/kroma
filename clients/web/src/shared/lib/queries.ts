@@ -62,7 +62,9 @@ export function createQueries(client: QueryClient) {
         queryFn: async (): Promise<HeroEntry | null> => {
           const c = client;
           const hero = await c.media.featured().catch(() => null);
-          if (!hero) return null;
+          if (!hero) {
+            return null;
+          }
           return hero.type === 'movie'
             ? { type: 'movie', movie: toMovieView(c, hero.item) }
             : { type: 'show', show: toShowView(c, hero.show) };

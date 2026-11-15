@@ -47,7 +47,9 @@ function groupSlot(
 ): GroupSlot {
   const key = `${orientation}:${position}:${radius}:${size}`;
   const hit = slots.get(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const made: GroupSlot = { orientation, position, radius, size };
   slots.set(key, made);
   return made;
@@ -138,11 +140,15 @@ function useGroupMember(onFocus?: () => void, onBlur?: () => void): GroupMember 
   const [raised, setRaised] = useState(false);
   const grouped = slot !== null;
   const enter = useCallback(() => {
-    if (grouped) setRaised(true);
+    if (grouped) {
+      setRaised(true);
+    }
     onFocus?.();
   }, [grouped, onFocus]);
   const leave = useCallback(() => {
-    if (grouped) setRaised(false);
+    if (grouped) {
+      setRaised(false);
+    }
     onBlur?.();
   }, [grouped, onBlur]);
   return {

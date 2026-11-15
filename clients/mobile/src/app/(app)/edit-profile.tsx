@@ -27,8 +27,12 @@ export default function EditProfile() {
   const sheet = useRef<LangPickerRef>(null);
 
   const langLabel = (value: string | null | undefined): string => {
-    if (value === LANG_OFF) return t('player.subtitlesOff');
-    if (!value) return t('account.noPreference');
+    if (value === LANG_OFF) {
+      return t('player.subtitlesOff');
+    }
+    if (!value) {
+      return t('account.noPreference');
+    }
     return langName(t, value) ?? value.toUpperCase();
   };
 

@@ -28,15 +28,21 @@ export function useDiscoveredTitles(needle: string, enabled: boolean): DiscoverS
   const query = needle.trim();
   const short = query.length < MIN_CHARS;
   const active = enabled && !short;
-  if (!active && answer !== IDLE) setAnswer(IDLE);
+  if (!active && answer !== IDLE) {
+    setAnswer(IDLE);
+  }
 
   useEffect(() => {
-    if (!enabled || short) return;
+    if (!enabled || short) {
+      return;
+    }
     let live = true;
     const at = setTimeout(() => {
       client.discovery.search(query).then(
         (found) => {
-          if (!live) return;
+          if (!live) {
+            return;
+          }
           setAnswer({
             query,
             results: found.results.map((entry) => ({
@@ -50,7 +56,9 @@ export function useDiscoveredTitles(needle: string, enabled: boolean): DiscoverS
           });
         },
         (cause: unknown) => {
-          if (!live) return;
+          if (!live) {
+            return;
+          }
           setAnswer({
             query,
             results: null,

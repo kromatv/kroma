@@ -26,8 +26,11 @@ const serverChannel = (): DownloadChannel => 'stable';
 
 const choose = (next: DownloadChannel) => {
   const url = new URL(globalThis.location.href);
-  if (next === 'canary') url.searchParams.set('channel', 'canary');
-  else url.searchParams.delete('channel');
+  if (next === 'canary') {
+    url.searchParams.set('channel', 'canary');
+  } else {
+    url.searchParams.delete('channel');
+  }
   globalThis.history.replaceState(globalThis.history.state, '', url);
   globalThis.dispatchEvent(new Event(CHANGED));
 };

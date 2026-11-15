@@ -61,17 +61,26 @@ function readCommit(root: Root, previous: Set<Fiber>, deleted: Record<string, nu
     const name = nameOf(fiber);
     if (name) {
       census[name] = (census[name] ?? 0) + 1;
-      if (isHost(fiber)) hostsByType[name] = (hostsByType[name] ?? 0) + 1;
+      if (isHost(fiber)) {
+        hostsByType[name] = (hostsByType[name] ?? 0) + 1;
+      }
     }
 
     // Not written this commit: whatever its flags say is left over from whenever
     // React last cloned it, which may be its original mount.
-    if (previous.has(fiber) || !performedWork(fiber)) continue;
+    if (previous.has(fiber) || !performedWork(fiber)) {
+      continue;
+    }
     touched += 1;
-    if (!name) continue;
+    if (!name) {
+      continue;
+    }
     work[name] ??= { mounted: 0, updated: 0 };
-    if (fiber.alternate == null) work[name].mounted += 1;
-    else work[name].updated += 1;
+    if (fiber.alternate == null) {
+      work[name].mounted += 1;
+    } else {
+      work[name].updated += 1;
+    }
   }
 
   return {
@@ -119,7 +128,9 @@ function record(): { stop: () => Result } {
 
   const offUnmount = onUnmount((fiber) => {
     const name = nameOf(fiber);
-    if (name) pending[name] = (pending[name] ?? 0) + 1;
+    if (name) {
+      pending[name] = (pending[name] ?? 0) + 1;
+    }
   });
   const offCommit = onCommit((root) => {
     const pass = readCommit(root, previous, pending);

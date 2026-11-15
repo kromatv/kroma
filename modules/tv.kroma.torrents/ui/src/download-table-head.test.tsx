@@ -48,7 +48,9 @@ function Queue() {
 
 function heading(label: string): HTMLElement {
   const found = screen.getAllByRole('columnheader').find((cell) => cell.textContent === label);
-  if (!found) throw new Error(`no column headed ${label}`);
+  if (!found) {
+    throw new Error(`no column headed ${label}`);
+  }
   return found;
 }
 

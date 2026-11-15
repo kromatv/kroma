@@ -58,7 +58,9 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
-  for (const path of temporary) rmSync(path, { recursive: true, force: true });
+  for (const path of temporary) {
+    rmSync(path, { recursive: true, force: true });
+  }
 });
 
 describe('signWidget', () => {

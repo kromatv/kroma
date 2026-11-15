@@ -35,7 +35,9 @@ export function FormatPills({
   formats,
 }: Readonly<{ formats: readonly { name: string; score: number }[] }>) {
   const scored = scoredFirst(formats).filter((format) => format.score !== 0);
-  if (scored.length === 0) return null;
+  if (scored.length === 0) {
+    return null;
+  }
   return (
     <Row wrap gapX={6} gapY={4}>
       {scored.map((format) => (
@@ -55,7 +57,9 @@ export function FormatPills({
 /** What a tracker's volume factors say about a release, as small badges. */
 export function FlagBadges({ flags }: Readonly<{ flags: readonly string[] }>) {
   const t = useT();
-  if (flags.length === 0) return null;
+  if (flags.length === 0) {
+    return null;
+  }
   return (
     <Row wrap gapX={6} gapY={4}>
       {flags.map((flag) => (
@@ -107,6 +111,8 @@ function signed(score: number): string {
 }
 
 function scoreColor(score: number): 'success' | 'dangerHover' | 'textDim' {
-  if (score > 0) return 'success';
+  if (score > 0) {
+    return 'success';
+  }
   return score < 0 ? 'dangerHover' : 'textDim';
 }

@@ -16,7 +16,9 @@ function base128(buf: Buffer, at: { i: number }): number {
   for (let n = 0; n < 5; n++) {
     const byte = buf[at.i++] as number;
     value = ((value << 7) | (byte & 0x7f)) >>> 0;
-    if ((byte & 0x80) === 0) return value;
+    if ((byte & 0x80) === 0) {
+      return value;
+    }
   }
   throw new Error('malformed UIntBase128');
 }
@@ -28,12 +30,13 @@ function fvarAxes(file: string): Record<string, [number, number]> {
   for (let t = buf.readUInt16BE(12); t > 0; t--) {
     const flags = buf[at.i++] as number;
     const index = flags & 0x3f;
-    if (index === ARBITRARY_TAG) at.i += 4;
+    if (index === ARBITRARY_TAG) {
+      at.i += 4;
+    }
     const version = (flags >> 6) & 0x03;
     const original = base128(buf, at);
-    const transformed = (index === GLYF || index === LOCA ? version === 3 : version === 0)
-      ? original
-      : base128(buf, at);
+    const isNullTransform = index === GLYF || index === LOCA ? version === 3 : version === 0;
+    const transformed = isNullTransform ? original : base128(buf, at);
     lengths.push({ index, length: transformed });
   }
 

@@ -78,7 +78,9 @@ describe('a story compiled from its .story.mdx', () => {
 describe('the document half', () => {
   it('shows every scene as a live specimen fed by the story scope', () => {
     const Docs = story.docs;
-    if (typeof Docs !== 'function') throw new Error('the docs did not compile to a component');
+    if (typeof Docs !== 'function') {
+      throw new Error('the docs did not compile to a component');
+    }
     render(
       <StoryDocContext.Provider value={{ args: story.args, render: story.render }}>
         <MdxDoc content={Docs} />
@@ -96,7 +98,9 @@ describe('the document half', () => {
   // is what carries the verdict, which is why the lines inside need not.
   it('heads each guidance card with its own verdict', () => {
     const Docs = story.docs;
-    if (typeof Docs !== 'function') throw new Error('the docs did not compile to a component');
+    if (typeof Docs !== 'function') {
+      throw new Error('the docs did not compile to a component');
+    }
     render(<MdxDoc content={Docs} />);
 
     expect(screen.getByText('Do')).toBeTruthy();

@@ -23,7 +23,9 @@ const RENAMED_PATH: Readonly<Record<string, string>> = {
 
 function current(link: string): string {
   const whole = RENAMED_PATH[link];
-  if (whole) return whole;
+  if (whole) {
+    return whole;
+  }
   const [, head, ...rest] = link.split('/');
   const moved = RENAMED_HEAD[head ?? ''];
   return moved ? [moved, ...rest].join('/') : link;
@@ -36,7 +38,9 @@ function current(link: string): string {
 export function notificationLink(notification: Notification): string | undefined {
   const fromSubject =
     notification.subject && subjectRoute(notification.subject, notification.event);
-  if (fromSubject) return fromSubject;
+  if (fromSubject) {
+    return fromSubject;
+  }
   const link = notification.link ?? notification.actions.find((a) => a.kind === 'link')?.href;
   return link === undefined ? undefined : current(link);
 }

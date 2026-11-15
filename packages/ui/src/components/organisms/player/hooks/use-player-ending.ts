@@ -50,7 +50,9 @@ export function usePlayerEnding(opts: {
   const [over, setOver] = useState(false);
   const goHome = onGoHome ?? onLeave;
   const playOffer = () => {
-    if (postPlay) onPlayItem?.({ id: postPlay.id, title: postPlay.title });
+    if (postPlay) {
+      onPlayItem?.({ id: postPlay.id, title: postPlay.title });
+    }
   };
 
   usePlayerOutro({

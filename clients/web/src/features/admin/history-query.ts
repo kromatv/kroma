@@ -51,7 +51,7 @@ export interface HistoryRequest {
   offset: number;
 }
 
-const optionalId = () => z.string().min(1).max(MAX_ID_LENGTH).optional().catch(undefined);
+const optionalId = () => z.string().nonempty().max(MAX_ID_LENGTH).optional().catch(undefined);
 
 const HistoryParams = z
   .object({
@@ -77,13 +77,27 @@ function daysIn(range: HistoryRange | undefined): number {
 export function validateHistorySearch(params: Record<string, unknown>): HistorySearch {
   const { library, user, item, range, sort, dir, page } = HistoryParams.parse(params);
   const search: HistorySearch = {};
-  if (library) search.library = LibraryId.parse(library);
-  if (user) search.user = UserId.parse(user);
-  if (item) search.item = item;
-  if (isHistoryRange(range)) search.range = range;
-  if (isHistorySort(sort)) search.sort = sort;
-  if (dir) search.dir = dir;
-  if (page !== undefined && page > 1) search.page = page;
+  if (library) {
+    search.library = LibraryId.parse(library);
+  }
+  if (user) {
+    search.user = UserId.parse(user);
+  }
+  if (item) {
+    search.item = item;
+  }
+  if (isHistoryRange(range)) {
+    search.range = range;
+  }
+  if (isHistorySort(sort)) {
+    search.sort = sort;
+  }
+  if (dir) {
+    search.dir = dir;
+  }
+  if (page !== undefined && page > 1) {
+    search.page = page;
+  }
   return search;
 }
 
@@ -117,8 +131,14 @@ export function historyRequest(search: HistorySearch): HistoryRequest {
     limit: HISTORY_PAGE,
     offset: (page - 1) * HISTORY_PAGE,
   };
-  if (search.user) request.user = search.user;
-  if (search.library) request.library = search.library;
-  if (search.item) request.item = search.item;
+  if (search.user) {
+    request.user = search.user;
+  }
+  if (search.library) {
+    request.library = search.library;
+  }
+  if (search.item) {
+    request.item = search.item;
+  }
   return request;
 }

@@ -50,17 +50,23 @@ export function useResumeNotice(opts: {
     setSecondsLeft(RESUME_WINDOW);
   }
 
-  if (phase === 'counting' && secondsLeft === 0) setPhase('gone');
+  if (phase === 'counting' && secondsLeft === 0) {
+    setPhase('gone');
+  }
 
   useEffect(() => {
-    if (phase !== 'counting') return;
+    if (phase !== 'counting') {
+      return;
+    }
     const tick = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(tick);
   }, [phase]);
 
   if (track.cur !== cur || track.shown !== shown || track.at !== at) {
     const landed = track.at === at && track.landed;
-    if (shown && landed && Math.abs(cur - track.cur) > SEEK_JUMP_SEC) setPhase('gone');
+    if (shown && landed && Math.abs(cur - track.cur) > SEEK_JUMP_SEC) {
+      setPhase('gone');
+    }
     setTrack({
       cur,
       shown,

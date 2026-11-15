@@ -19,7 +19,9 @@ export function CutoffView() {
   const searchNow = useSearchNow();
   const entries = cutoff.data ?? [];
 
-  if (cutoff.loading) return <TableSkeleton rows={5} />;
+  if (cutoff.loading) {
+    return <TableSkeleton rows={5} />;
+  }
 
   return (
     <Box gap={14}>

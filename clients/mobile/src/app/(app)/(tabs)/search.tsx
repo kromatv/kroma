@@ -117,8 +117,10 @@ export default function Search() {
     ) : undefined;
 
   function searchBody(): React.ReactElement | null {
-    if (q.length >= 2 && results.isPending) return <Loading label={t('common.loading')} />;
-    if (q.length >= 2 && (cards.length > 0 || beyondBlock))
+    if (q.length >= 2 && results.isPending) {
+      return <Loading label={t('common.loading')} />;
+    }
+    if (q.length >= 2 && (cards.length > 0 || beyondBlock)) {
       return (
         <PosterGrid
           cards={cards}
@@ -131,7 +133,8 @@ export default function Search() {
           footer={beyondBlock}
         />
       );
-    if (q.length >= 2 && results.isSuccess)
+    }
+    if (q.length >= 2 && results.isSuccess) {
       return (
         <EmptyState
           icon={<Icon name="search" size={34} thickness={1.8} color="textMuted" />}
@@ -139,6 +142,7 @@ export default function Search() {
           hint={t('search.placeholder')}
         />
       );
+    }
     return (
       <FlatList
         data={(suggested.data ?? []).slice(0, 12)}

@@ -39,15 +39,27 @@ export type ControlId =
  * Absent controls leave no gap and no trapped D-pad stop. */
 export function controlOrder(flags: PlayerFlags, hasNext: boolean): ControlId[] {
   const row: ControlId[] = ['rewind', 'play', 'forward'];
-  if (hasNext) row.push('next');
-  if (flags.volume) row.push('volume');
-  if (flags.tracks !== false) row.push('subtitles', 'audio');
+  if (hasNext) {
+    row.push('next');
+  }
+  if (flags.volume) {
+    row.push('volume');
+  }
+  if (flags.tracks !== false) {
+    row.push('subtitles', 'audio');
+  }
   row.push('settings');
   // Right after settings, left of the window controls: casting is about the
   // film, pip and fullscreen are about this window.
-  if (flags.cast) row.push('cast');
-  if (flags.pip) row.push('pip');
-  if (flags.fullscreen) row.push('fullscreen');
+  if (flags.cast) {
+    row.push('cast');
+  }
+  if (flags.pip) {
+    row.push('pip');
+  }
+  if (flags.fullscreen) {
+    row.push('fullscreen');
+  }
   return row;
 }
 

@@ -163,7 +163,9 @@ describe('when the server asks for a PIN', () => {
     const attempts: Array<string | undefined> = [];
     const { d, state } = deps(async (_a, pin) => {
       attempts.push(pin);
-      if (pin === undefined) await pinRequired();
+      if (pin === undefined) {
+        await pinRequired();
+      }
     });
 
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());

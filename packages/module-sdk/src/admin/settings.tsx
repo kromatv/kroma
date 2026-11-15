@@ -33,7 +33,9 @@ interface SettingsViewProps {
 export function SettingsView(props: Readonly<SettingsViewProps>) {
   // Settings views require the `settings.manage` capability (server enforces it
   // too); deny cleanly instead of rendering a page that would 403 on every call.
-  if (!useCap('settings.manage')) return <Denied />;
+  if (!useCap('settings.manage')) {
+    return <Denied />;
+  }
   return <SettingsViewInner {...props} />;
 }
 

@@ -30,9 +30,13 @@ import { productVersion } from '../build-info/index.js';
  * pre-test rejects. */
 export function packageVersion(version: string): string | null {
   const m = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
-  if (!m) return null;
+  if (!m) {
+    return null;
+  }
   const [, major, minor, patch] = m;
-  if (Number(major) > 255 || Number(minor) > 255 || Number(patch) > 65535) return null;
+  if (Number(major) > 255 || Number(minor) > 255 || Number(patch) > 65535) {
+    return null;
+  }
   return `${major}.${minor}.${patch}`;
 }
 
@@ -44,7 +48,9 @@ const appinfoSchema = z
   .refine((value) => Object.keys(value).length <= 256);
 
 export function stampAppinfo(source: string, version: string): string {
-  if (source.length > 1_000_000) throw new Error('appinfo.json exceeds 1 MB');
+  if (source.length > 1_000_000) {
+    throw new Error('appinfo.json exceeds 1 MB');
+  }
   const info = appinfoSchema.parse(JSON.parse(source));
   info.version = version;
   return `${JSON.stringify(info, null, 2)}\n`;
@@ -58,7 +64,9 @@ export function stampAppinfo(source: string, version: string): string {
  * no-op, and a no-op is not a failure. */
 export function stampConfigXml(source: string, version: string): string {
   const widget = /(<widget\b[^>]*?\sversion=")[^"]*(")/;
-  if (!widget.test(source)) throw new Error('no <widget version="..."> to stamp');
+  if (!widget.test(source)) {
+    throw new Error('no <widget version="..."> to stamp');
+  }
   return source.replace(widget, (_full, head: string, tail: string) => `${head}${version}${tail}`);
 }
 

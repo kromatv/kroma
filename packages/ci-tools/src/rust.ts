@@ -23,9 +23,13 @@ async function each(
   for (const ws of list) {
     console.log(`\n=== ${ws.id}: cargo ${args(ws).join(' ')}`);
     const result = await $`cargo ${args(ws)}`.cwd(ws.dir).env(env(ws)).nothrow();
-    if (result.exitCode !== 0) failed.push(ws.id);
+    if (result.exitCode !== 0) {
+      failed.push(ws.id);
+    }
   }
-  if (failed.length > 0) throw new Error(`${verb} failed in: ${failed.join(', ')}`);
+  if (failed.length > 0) {
+    throw new Error(`${verb} failed in: ${failed.join(', ')}`);
+  }
   console.log(`\n${verb}: every workspace passed`);
 }
 
@@ -51,13 +55,17 @@ const withFeatures = (list: Workspace[]) =>
 
 function chosen(only: string | undefined): Workspace[] {
   const all = workspaces();
-  if (only === undefined) return all;
+  if (only === undefined) {
+    return all;
+  }
   const ids = only
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
   const unknown = ids.filter((id) => !all.some((ws) => ws.id === id));
-  if (unknown.length > 0) throw new Error(`unknown workspace(s): ${unknown.join(', ')}`);
+  if (unknown.length > 0) {
+    throw new Error(`unknown workspace(s): ${unknown.join(', ')}`);
+  }
   return all.filter((ws) => ids.includes(ws.id));
 }
 
@@ -80,7 +88,9 @@ async function test(list: Workspace[]): Promise<void> {
     existsSync(at),
   );
   writeFileSync(report, measured.map((at) => readFileSync(at, 'utf8')).join('\n'));
-  for (const at of measured) rmSync(at);
+  for (const at of measured) {
+    rmSync(at);
+  }
 
   const records = readFileSync(report, 'utf8')
     .split('\n')
@@ -93,7 +103,9 @@ async function buildRunner(): Promise<void> {
   const built = await $`cargo build --profile wasm-test-runner --target-dir ${RUNNER_TARGET_DIR}`
     .cwd(RUNNER_CRATE)
     .nothrow();
-  if (built.exitCode !== 0) throw new Error('the wasm test runner did not build');
+  if (built.exitCode !== 0) {
+    throw new Error('the wasm test runner did not build');
+  }
 }
 
 async function componentTests(list: Workspace[]): Promise<void> {
@@ -117,7 +129,9 @@ async function componentTests(list: Workspace[]): Promise<void> {
   }
   summary(`### Module tests as components\n\n${componentTable(runs)}`);
   const failed = runs.filter((run) => !run.passed).map((run) => run.id);
-  if (failed.length > 0) throw new Error(`the component run failed in: ${failed.join(', ')}`);
+  if (failed.length > 0) {
+    throw new Error(`the component run failed in: ${failed.join(', ')}`);
+  }
 }
 
 async function audit(list: Workspace[]): Promise<void> {
@@ -142,9 +156,17 @@ export async function main(argv: string[]): Promise<void> {
   });
   const [verb] = positionals;
   const list = chosen(values.only);
-  if (verb === 'clippy') return clippy(list);
-  if (verb === 'test') return test(list);
-  if (verb === 'wasm-test') return componentTests(list);
-  if (verb === 'audit') return audit(list);
+  if (verb === 'clippy') {
+    return clippy(list);
+  }
+  if (verb === 'test') {
+    return test(list);
+  }
+  if (verb === 'wasm-test') {
+    return componentTests(list);
+  }
+  if (verb === 'audit') {
+    return audit(list);
+  }
   throw new Error(`usage: bun run ci rust <clippy|test|wasm-test|audit> [--only id,id]`);
 }

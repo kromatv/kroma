@@ -15,14 +15,18 @@ export function createFrameLoop(
   let handle: number | null = null;
   const run = (now: number) => {
     handle = null;
-    if (tick(now)) handle = schedule(run);
+    if (tick(now)) {
+      handle = schedule(run);
+    }
   };
   return {
     request() {
       handle ??= schedule(run);
     },
     stop() {
-      if (handle !== null) cancel(handle);
+      if (handle !== null) {
+        cancel(handle);
+      }
       handle = null;
     },
   };

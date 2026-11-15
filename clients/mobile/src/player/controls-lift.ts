@@ -16,7 +16,11 @@ export function controlsLift({
   barHeight,
   bottomInset,
 }: Readonly<ControlsLiftInput>): number {
-  if (!visible) return REST + bottomInset;
-  if (compact) return INLINE + bottomInset;
+  if (!visible) {
+    return REST + bottomInset;
+  }
+  if (compact) {
+    return INLINE + bottomInset;
+  }
   return barHeight > 0 ? barHeight + GAP : DESIGN + bottomInset;
 }
