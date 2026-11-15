@@ -1,11 +1,11 @@
 name: Security scan
 
-# Static analysis (CodeQL) for the JS/TS surface and the workflows themselves +
-# a RustSec advisory audit of every Cargo lockfile that ships. Runs on
-# pushes/PRs to main and weekly (catches new CVEs on unchanged code).
-# Docs-only changes reach neither analyzer (CodeQL scans JS/TS and workflows,
-# cargo-audit reads Cargo.lock); the weekly schedule keeps full coverage of
-# unchanged code.
+# Static analysis (CodeQL) for the JS/TS surface and the workflows themselves,
+# a RustSec advisory audit of every Cargo lockfile that ships, and an advisory
+# audit of bun.lock. Runs on pushes/PRs to main and weekly (catches new CVEs
+# on unchanged code). Docs-only changes reach no analyzer (CodeQL scans JS/TS
+# and workflows, the audits read lockfiles); the weekly schedule keeps full
+# coverage of unchanged code.
 on:
   push:
     branches: [main]
@@ -51,6 +51,29 @@ jobs:
         env:
           CODEQL_OVERLAY_DATABASE_MODE: none
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+
+  # Every package in bun.lock against GitHub's advisory database. Unlike
+  # cargo audit it fails on no advisory: the SARIF goes to code scanning,
+  # whose check on a pull request names the alerts that change adds.
+  bun-audit:
+    name: bun audit (npm advisories)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: bun run ci advisories
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: .sarif/bun-audit.sarif
+          category: bun-audit
 
   cargo-audit:
     name: cargo audit (RustSec advisories)
