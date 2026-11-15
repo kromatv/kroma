@@ -108,6 +108,10 @@ export default function accountsApi(ctx: RequestContext) {
     /** Clear the PIN, verifying `current`. */
     clearPin: (current: string) => ctx.delete('/auth/me/pin', Me, { body: { current } }),
 
+    /** Clear a forgotten PIN, proving who is asking with the account's password. */
+    clearPinWithPassword: (password: string) =>
+      ctx.delete('/auth/me/pin', Me, { body: { password } }),
+
     /** Upload the current user's avatar (raw image bytes). */
     uploadAvatar: (file: Blob) => ctx.upload('/users/avatar', file, AvatarUploaded),
 
@@ -116,6 +120,9 @@ export default function accountsApi(ctx: RequestContext) {
 
     /** Revoke one of the account's own devices, signing it out. */
     revokeSession: (id: SessionId) => ctx.delete('/auth/me/sessions/:id', { params: { id } }),
+
+    /** Sign every other device out at once. The calling device stays signed in. */
+    revokeOtherSessions: () => ctx.delete('/auth/me/sessions'),
 
     /** Check a credential-reset token (public, used by the reset page). */
     checkReset: (token: string) => ctx.get('/auth/reset/:token', ResetCheck, { params: { token } }),

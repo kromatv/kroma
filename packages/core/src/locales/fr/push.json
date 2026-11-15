@@ -13,6 +13,7 @@
   "push.failed": "Impossible d'activer les notifications push.",
   "push.sendTest": "Envoyer un test",
   "push.testFailed": "Rien n'a été délivré.",
+  "push.testHint": "Vérifiez qu'une notification arrive sur cet appareil.",
   "push.testSent": "Envoyé. Regardez vos notifications.",
   "push.title": "Push sur cet appareil"
 }

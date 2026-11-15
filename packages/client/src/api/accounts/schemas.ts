@@ -157,10 +157,17 @@ export type SessionResult = z.infer<typeof SessionResult>;
 export const AppBuild = z.object({ shell: z.string(), version: z.string() });
 export type AppBuild = z.infer<typeof AppBuild>;
 
-/** One signed-in device from `GET /auth/me/sessions`. `id` is a non-secret
- * handle used to revoke it; `current` marks the device making the request.
- * `app` is absent for a device that never named its build, and `outdated` says
- * the build is older than the oldest its server serves. */
+/** The road a device took to the server: its own network, the VPN, the
+ * server's tunnel, or the open internet. */
+export const SessionVia = z.enum(['lan', 'vpn', 'tunnel', 'internet']);
+export type SessionVia = z.infer<typeof SessionVia>;
+
+/** One signed-in device from `GET /auth/me/sessions`, this device first and
+ * then the one seen last. `id` is a non-secret handle used to revoke it;
+ * `current` marks the device making the request. `app` is absent for a device
+ * that never named its build, and `outdated` says the build is older than the
+ * oldest its server serves. `address` and `via` say where it last reached the
+ * server from, absent for a device last seen before they were kept. */
 export const SessionInfo = z.object({
   id: SessionId,
   userAgent: z.string().nullish(),
@@ -168,6 +175,8 @@ export const SessionInfo = z.object({
   lastSeen: z.string().nullish(),
   app: AppBuild.nullish(),
   outdated: z.boolean().optional(),
+  address: z.string().nullish(),
+  via: SessionVia.nullish().catch(null),
   current: z.boolean(),
 });
 export type SessionInfo = z.infer<typeof SessionInfo>;

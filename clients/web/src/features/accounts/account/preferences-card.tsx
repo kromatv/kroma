@@ -1,33 +1,51 @@
-// Preferences section: UI language and the background blur (both applied
-// immediately, the blur per device) plus the preferred audio and subtitle
-// languages, which the parent persists with `PATCH /auth/me`.
+// Preferences section: UI language and the background blur (the blur per
+// device) plus the preferred audio and subtitle languages. Each one is saved
+// the moment it is chosen.
 
 import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kromatv/core';
+import { prefValue } from '@kromatv/core/react';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
-import { ListRow, Select, Switch } from '@kromatv/ui/kit';
-import { useMemo } from 'react';
-import { PrefRow } from '#web/features/accounts/account/ui';
+import { ListRow, Select, Switch, Text } from '@kromatv/ui/kit';
+import { useMemo, useState } from 'react';
+import { PrefRow, useSave } from '#web/features/accounts/account/ui';
+import { useAuth } from '#web/shared/lib/auth';
 import { useBlurPreference } from '#web/shared/lib/blur-pref';
 
 // '' means "nothing picked" to <Select>, so "no preference" uses this sentinel
 // and is mapped back to `null` on the way to the server.
 export const NONE = LANG_NO_PREF;
 
-export function PreferencesCard({
-  audio,
-  subtitle,
-  onAudio,
-  onSubtitle,
-}: Readonly<{
-  audio: string;
-  subtitle: string;
-  onAudio: (value: string) => void;
-  onSubtitle: (value: string) => void;
-}>) {
+type Track = 'audioLanguage' | 'subtitleLanguage';
+
+export function PreferencesCard() {
   const t = useT();
   const locale = useLocale();
   const setLocale = useSetLocale();
   const [blur, setBlur] = useBlurPreference();
+  const { user, client, updateUser } = useAuth();
+  // The server lower-cases a playback language (`fr-ca`) while the picker's
+  // option is `fr-CA`; `prefValue` normalizes so a raw seed still matches.
+  const [audio, setAudio] = useState(prefValue(user?.audioLanguage ?? null));
+  const [subtitle, setSubtitle] = useState(prefValue(user?.subtitleLanguage ?? null));
+  const save = useSave();
+
+  const choose = (track: Track, value: string) => {
+    const set = track === 'audioLanguage' ? setAudio : setSubtitle;
+    const before = track === 'audioLanguage' ? audio : subtitle;
+    set(value);
+    void save.run(async () => {
+      try {
+        const { user: saved } = await client.accounts.update({
+          [track]: value === NONE ? null : value,
+        });
+        updateUser({ [track]: saved[track] ?? null });
+        set(prefValue(saved[track] ?? null));
+      } catch (error) {
+        set(before);
+        throw error;
+      }
+    }, t('account.saveFailed'));
+  };
 
   // Sorting ~190 names on every keystroke in the profile form above this card.
   const langs = useMemo(
@@ -72,7 +90,11 @@ export function PreferencesCard({
         label={t('account.audioLanguage')}
         desc={t('account.audioDesc')}
         control={
-          <Select.Root label={t('account.audioLanguage')} value={audio} onValueChange={onAudio}>
+          <Select.Root
+            label={t('account.audioLanguage')}
+            value={audio}
+            onValueChange={(value) => choose('audioLanguage', value)}
+          >
             <Select.Trigger />
             {withCurrent(audio, [{ value: NONE, label: t('account.noPreference') }, ...langs]).map(
               (o) => (
@@ -90,7 +112,7 @@ export function PreferencesCard({
           <Select.Root
             label={t('account.subtitleLanguage')}
             value={subtitle}
-            onValueChange={onSubtitle}
+            onValueChange={(value) => choose('subtitleLanguage', value)}
           >
             <Select.Trigger />
             {withCurrent(subtitle, [
@@ -103,6 +125,13 @@ export function PreferencesCard({
           </Select.Root>
         }
       />
+      {save.status === 'error' ? (
+        <ListRow.Root>
+          <Text variant="meta" color="danger">
+            {save.error}
+          </Text>
+        </ListRow.Root>
+      ) : null}
     </ListRow.Group>
   );
 }

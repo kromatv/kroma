@@ -3,7 +3,7 @@
 
 # Requirement index
 
-555 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+559 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -96,6 +96,10 @@
 - **ACCT-87** (SHIPPED) - Passwords, passkeys and each provider are one list of sign-in methods. <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-88** (SHIPPED) - A provider's button shows the logo of the provider it was set up as, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-89** (AGREED) - The desktop app offers the provider buttons the same way. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-90** (SHIPPED) - A device opens onto what the server knows of it: the address it last <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-91** (SHIPPED) - The device list puts the device in hand first, then the others by most <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-92** (SHIPPED) - One action signs out every device except the one in hand. <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-93** (SHIPPED) - An account holder who no longer knows their profile PIN turns the lock <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 

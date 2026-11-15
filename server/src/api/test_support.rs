@@ -261,7 +261,7 @@ pub fn seed_session(
         &db::DeviceHints {
             user_agent: Some("integration-test".to_string()),
             language: Some("fr".to_string()),
-            app: None,
+            ..Default::default()
         },
     )
     .expect("create access token");
@@ -293,7 +293,7 @@ pub fn seed_session_pw(
         &db::DeviceHints {
             user_agent: Some("integration-test".to_string()),
             language: Some("fr".to_string()),
-            app: None,
+            ..Default::default()
         },
     )
     .expect("create access token");
@@ -366,7 +366,7 @@ pub fn seed_access_token(state: &SharedState, user_id: &str, pin_verified: bool)
         &db::DeviceHints {
             user_agent: Some("integration-test".to_string()),
             language: Some("fr".to_string()),
-            app: None,
+            ..Default::default()
         },
     )
     .expect("create access token");

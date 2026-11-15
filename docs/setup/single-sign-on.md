@@ -117,7 +117,8 @@ An existing account does not link itself by email. Each person links their
 own:
 
 1. Sign in to KROMA the usual way.
-2. Open **Account**, find **Sign-in providers** and select **Link**.
+2. Open **Account**, select **Security**, find **Sign-in providers** and select
+   **Link**.
 3. Sign in at the provider.
 
 A person who selects the provider button first, before linking, is told an

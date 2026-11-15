@@ -1,22 +1,89 @@
-import type { AccountPatch } from '@kromatv/client/accounts';
-import { prefValue } from '@kromatv/core/react';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Button, EmptyState, Field, PageHeader, Section, Surface } from '@kromatv/ui/kit';
-import { useState } from 'react';
-import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
+import { Box, EmptyState, type IconName, SegmentGroup } from '@kromatv/ui/kit';
+import { type CSSProperties, useEffect, useRef } from 'react';
+import { AccountHeader } from '#web/features/accounts/account/account-header';
 import { IdentitiesCard } from '#web/features/accounts/account/identities-card';
+import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
 import { PinCard } from '#web/features/accounts/account/pin-card';
-import { NONE, PreferencesCard } from '#web/features/accounts/account/preferences-card';
-import { PhotoCard } from '#web/features/accounts/account/profile-card';
+import { PreferencesCard } from '#web/features/accounts/account/preferences-card';
+import { ProfileSection } from '#web/features/accounts/account/profile-section';
 import { SecurityCard } from '#web/features/accounts/account/security-card';
 import { SessionsCard } from '#web/features/accounts/account/sessions-card';
-import { useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame } from '#web/shared/ui';
-import { SaveDock } from '#web/shared/ui/save-dock';
 
-export function AccountPage() {
+export const ACCOUNT_SECTIONS = [
+  'profile',
+  'preferences',
+  'notifications',
+  'security',
+  'devices',
+] as const;
+export type AccountSection = (typeof ACCOUNT_SECTIONS)[number];
+
+const LABEL: Record<AccountSection, MessageKey> = {
+  profile: 'account.profile',
+  preferences: 'account.preferences',
+  notifications: 'account.sectionNotifications',
+  security: 'account.sectionSecurity',
+  devices: 'account.devices',
+};
+
+const ICON: Record<AccountSection, IconName> = {
+  profile: 'user',
+  preferences: 'adjustments-horizontal',
+  notifications: 'bell',
+  security: 'shield-lock',
+  devices: 'devices',
+};
+
+const COLUMN = 920;
+
+function isSection(value: string): value is AccountSection {
+  return (ACCOUNT_SECTIONS as readonly string[]).includes(value);
+}
+
+interface AccountPageProps {
+  section: AccountSection;
+  onSection: (section: AccountSection) => void;
+}
+
+const STRIP: CSSProperties = { overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%' };
+
+function AccountTabs({ section, onSection }: Readonly<AccountPageProps>) {
+  const t = useT();
+  const strip = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    strip.current
+      ?.querySelector(`[aria-checked="true"]`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [section]);
+
+  return (
+    <Box mt={28} mb={24} align="flex-start">
+      <div ref={strip} style={STRIP}>
+        <SegmentGroup.Root
+          value={section}
+          onValueChange={(next) => {
+            if (isSection(next)) onSection(next);
+          }}
+          label={t('account.title')}
+        >
+          {ACCOUNT_SECTIONS.map((one) => (
+            <SegmentGroup.Item key={one} value={one} icon={ICON[one]}>
+              <SegmentGroup.Label>{t(LABEL[one])}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
+      </div>
+    </Box>
+  );
+}
+
+export function AccountPage({ section, onSection }: Readonly<AccountPageProps>) {
   const t = useT();
   const { user } = useAuth();
 
@@ -30,151 +97,27 @@ export function AccountPage() {
     );
   }
 
-  // Keyed by account id so switching profiles remounts the editor and re-seeds it.
-  return <ProfileEditor key={user.id} />;
-}
-
-function ProfileEditor() {
-  const t = useT();
-  const { user, client, updateUser, logout } = useAuth();
-
-  const [username, setUsername] = useState(user?.username ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  // The server lower-cases a playback language (`fr-ca`) while the picker's
-  // option is `fr-CA`; `prefValue` normalizes so a raw seed still matches.
-  const [audio, setAudio] = useState(prefValue(user?.audioLanguage ?? null));
-  const [subtitle, setSubtitle] = useState(prefValue(user?.subtitleLanguage ?? null));
-  const save = useSave();
-
-  if (!user) return null;
-
-  const trimmedName = username.trim();
-  const trimmedEmail = email.trim();
-  const dirty =
-    trimmedName !== user.username ||
-    trimmedEmail !== user.email ||
-    audio !== prefValue(user.audioLanguage ?? null) ||
-    subtitle !== prefValue(user.subtitleLanguage ?? null);
-  const canSave = dirty && trimmedName.length > 0 && trimmedEmail.length > 0;
-
-  const reset = () => {
-    setUsername(user.username);
-    setEmail(user.email);
-    setAudio(prefValue(user.audioLanguage ?? null));
-    setSubtitle(prefValue(user.subtitleLanguage ?? null));
-  };
-
-  const saveProfile = () => {
-    if (!canSave) return;
-    const patch: AccountPatch = {};
-    if (trimmedName !== user.username) patch.username = trimmedName;
-    if (trimmedEmail !== user.email) patch.email = trimmedEmail;
-    if (audio !== prefValue(user.audioLanguage ?? null))
-      patch.audioLanguage = audio === NONE ? null : audio;
-    if (subtitle !== prefValue(user.subtitleLanguage ?? null))
-      patch.subtitleLanguage = subtitle === NONE ? null : subtitle;
-
-    save.run(async () => {
-      const { user: u } = await client.accounts.update(patch);
-      updateUser({
-        username: u.username,
-        email: u.email,
-        audioLanguage: u.audioLanguage ?? null,
-        subtitleLanguage: u.subtitleLanguage ?? null,
-      });
-      // Mirror the server's normalisation back so the form settles to clean.
-      setUsername(u.username);
-      setEmail(u.email);
-      setAudio(prefValue(u.audioLanguage ?? null));
-      setSubtitle(prefValue(u.subtitleLanguage ?? null));
-    }, t('account.saveFailed'));
-  };
-
   return (
-    <PageFrame>
-      <PageHeader.Root>
-        <PageHeader.Title>{t('account.title')}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('account.subtitle')}</PageHeader.Subtitle>
-        <PageHeader.Actions>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="logout"
-            label={t('auth.logout')}
-            onPress={() => void logout()}
-          />
-        </PageHeader.Actions>
-      </PageHeader.Root>
-
-      <Box gap={28} mt={24}>
-        <Section.Root>
-          <Section.Header>
-            <Section.Title>{t('account.sectionPhoto')}</Section.Title>
-          </Section.Header>
-          <PhotoCard />
-        </Section.Root>
-
-        <Section.Root>
-          <Section.Header>
-            <Section.Title>{t('account.sectionInfo')}</Section.Title>
-          </Section.Header>
-          <Surface elevated pad="none" p={22} radius="xl" border="border" gap={18}>
-            <Box maxW={{ base: '100%', md: '50%' }}>
-              <Field.Root label={t('auth.username')}>
-                <Field.Input
-                  icon="at"
-                  value={username}
-                  onValueChange={setUsername}
-                  autoComplete="nickname"
-                />
-              </Field.Root>
-            </Box>
-            <Field.Root label={t('auth.email')}>
-              <Field.Input type="email" icon="mail" value={email} onValueChange={setEmail} />
-            </Field.Root>
-          </Surface>
-        </Section.Root>
-
-        <Section.Root>
-          <Section.Header>
-            <Section.Title>{t('account.sectionPrefs')}</Section.Title>
-          </Section.Header>
-          <PreferencesCard
-            audio={audio}
-            subtitle={subtitle}
-            onAudio={setAudio}
-            onSubtitle={setSubtitle}
-          />
-        </Section.Root>
-
-        <Section.Root>
-          <Section.Header>
-            <Section.Title>{t('account.sectionNotifications')}</Section.Title>
-          </Section.Header>
-          <NotificationsCard />
-        </Section.Root>
-
-        <Section.Root>
-          <Section.Header>
-            <Section.Title>{t('account.sectionSecurity')}</Section.Title>
-          </Section.Header>
-          <SecurityCard />
-          <PinCard />
-          <PasskeysCard />
-          <IdentitiesCard />
-          <SessionsCard />
-        </Section.Root>
+    <PageFrame pt={20}>
+      <Box w="100%" maxW={COLUMN} self="center">
+        <AccountHeader />
+        <AccountTabs section={section} onSection={onSection} />
+        {/* Keyed by account id so switching profiles re-seeds every form. */}
+        <Box key={user.id} gap={16}>
+          {section === 'profile' ? <ProfileSection /> : null}
+          {section === 'preferences' ? <PreferencesCard /> : null}
+          {section === 'notifications' ? <NotificationsCard /> : null}
+          {section === 'security' ? (
+            <>
+              <SecurityCard />
+              <PasskeysCard />
+              <IdentitiesCard />
+              <PinCard />
+            </>
+          ) : null}
+          {section === 'devices' ? <SessionsCard /> : null}
+        </Box>
       </Box>
-
-      <SaveDock
-        dirty={dirty}
-        status={save.status}
-        error={save.error}
-        savedLabel={t('account.profileSaved')}
-        canSave={canSave}
-        onCancel={reset}
-        onSave={saveProfile}
-      />
     </PageFrame>
   );
 }

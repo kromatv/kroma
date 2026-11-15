@@ -31,7 +31,7 @@ pub enum Via {
 }
 
 impl Via {
-    fn as_str(self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             Via::Lan => "lan",
             Via::Vpn => "vpn",

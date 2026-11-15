@@ -191,11 +191,35 @@ pub async fn set_pin(
 
 #[derive(Debug, Deserialize)]
 pub struct DeletePinBody {
-    pub current: String,
+    #[serde(default)]
+    pub current: Option<String>,
+    #[serde(default)]
+    pub password: Option<String>,
 }
 
-/// `DELETE /api/auth/me/pin` (Bearer) `{ current }` → `{ user }`. Clears the
-/// caller's PIN after verifying the current one (idempotent when none is set).
+async fn check_password(
+    state: &SharedState,
+    uid: &str,
+    password: &str,
+    loc: &str,
+) -> Result<(), Response> {
+    if let Some(secs) = lock_remaining(state, uid).await? {
+        return Err(locked_response(loc, secs));
+    }
+    let owner = uid.to_string();
+    let stored = query(&state.db, move |pool| db::user_password_hash(&pool, &owner)).await?;
+    if stored.is_some_and(|hash| auth::verify_password(password, &hash)) {
+        return Ok(());
+    }
+    match record_fail(state, uid).await? {
+        0 => Err(lerr(loc, StatusCode::UNAUTHORIZED, "auth.passwordCurrentWrong")),
+        secs => Err(locked_response(loc, secs)),
+    }
+}
+
+/// `DELETE /api/auth/me/pin` (Bearer) `{ current }` or `{ password }` →
+/// `{ user }`. Clears the caller's PIN after verifying the current one, or the
+/// account's password when the PIN is forgotten (idempotent when none is set).
 pub async fn delete_pin(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -206,7 +230,13 @@ pub async fn delete_pin(
         Ok(h) => h,
         Err(resp) => return resp,
     };
-    if let Err(resp) = check_current_pin(&existing, Some(body.current.as_str()), loc) {
+    let proven = match body.password.as_deref() {
+        Some(password) if existing.is_some() => {
+            check_password(&state, &user.id, password, loc).await
+        }
+        _ => check_current_pin(&existing, body.current.as_deref(), loc),
+    };
+    if let Err(resp) = proven {
         return resp;
     }
     if existing.is_some() {

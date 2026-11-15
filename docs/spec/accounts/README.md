@@ -151,11 +151,28 @@ paired television that you cannot do to a phone.
 **ACCT-74** (SHIPPED) - A device that never sent its app version shows "version unknown", never
 outdated.
 
+**ACCT-90** (SHIPPED) - A device opens onto what the server knows of it: the address it last
+connected from, the road it took (the same network, a VPN, a tunnel or the internet), when it
+signed in, when it was last active, and its user agent.
+
+**ACCT-91** (SHIPPED) - The device list puts the device in hand first, then the others by most
+recent use.
+
+**ACCT-92** (SHIPPED) - One action signs out every device except the one in hand.
+
 **ACCT-13** (SHIPPED) - **Unbinding is revocation.** Revoking a device's session ends its
 access at the next request it makes. The device is not consulted, wiped or asked to cooperate;
 the server simply stops honouring its token.
 
 **ACCT-14** (SHIPPED) - A revoked device that returns must pair or sign in afresh.
+
+### A forgotten profile PIN
+
+Status: **SHIPPED**
+
+**ACCT-93** (SHIPPED) - An account holder who no longer knows their profile PIN turns the lock
+off with the account's password, and may then set a new PIN. Wrong passwords are held back the
+same way wrong PINs are.
 
 ### Session lifetime on a television
 

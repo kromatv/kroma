@@ -37,3 +37,37 @@ export function typeSwitched(
   const next = { ...type, ...patch };
   return { types: [{ type: next.type, inApp: next.inApp, push: next.push }] };
 }
+
+/** One of the two ways a notification reaches its reader. */
+export type NotificationChannel = 'inApp' | 'push';
+
+/** How many of a category's kinds a channel reaches. A category that lists no
+ * kind counts as one: its own switch. */
+export function channelReach(
+  section: PrefsSection,
+  channel: NotificationChannel,
+): { on: number; of: number } {
+  if (section.types.length === 0) return { on: section.category[channel] ? 1 : 0, of: 1 };
+  return {
+    on: section.types.filter((type) => type[channel]).length,
+    of: section.types.length,
+  };
+}
+
+/** The update a category's master switch sends for one channel: the category
+ * and every kind under it take the value, so no kind is left saying otherwise. */
+export function sectionSwitched(
+  section: PrefsSection,
+  channel: NotificationChannel,
+  on: boolean,
+): PrefsUpdate {
+  return {
+    categories: [{ ...section.category, [channel]: on }],
+    types: section.types.map((type) => ({
+      type: type.type,
+      inApp: type.inApp,
+      push: type.push,
+      [channel]: on,
+    })),
+  };
+}

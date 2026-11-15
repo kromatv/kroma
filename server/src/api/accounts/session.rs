@@ -18,7 +18,7 @@ use crate::model::User;
 use crate::services::auth;
 use crate::state::SharedState;
 
-use super::device_hints;
+use super::ThisDevice;
 
 // Tagged `tokenInvalid` so the client can tell a dead token from a retryable
 // wrong-PIN 401 and send the user to re-login instead of looping on the PIN screen.
@@ -92,7 +92,7 @@ pub struct ExchangeBody {
 pub async fn exchange_token(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    headers: HeaderMap,
+    ThisDevice(device): ThisDevice,
     Json(body): Json<ExchangeBody>,
 ) -> Response {
     let access = body.access_token.trim().to_string();
@@ -116,7 +116,7 @@ pub async fn exchange_token(
 
     // Also refreshes the device's labels: the UA captured at sign-in may be
     // unnameable, and a reader can change the device's language after it.
-    let hints = device_hints(&headers);
+    let hints = device.clone();
     let token = auth::random_token();
     let expires_at = time::OffsetDateTime::now_utc().unix_timestamp() + auth::SESSION_TTL_SECS;
     let token_db = token.clone();
@@ -199,7 +199,7 @@ pub async fn list_sessions(
         Ok(id) => id,
         Err(resp) => return resp,
     };
-    let out: Vec<crate::api::dto::SessionInfo> = rows
+    let mut out: Vec<crate::api::dto::SessionInfo> = rows
         .into_iter()
         .map(|r| crate::api::dto::SessionInfo {
             current: current_id.as_deref() == Some(r.id.as_str()),
@@ -209,9 +209,31 @@ pub async fn list_sessions(
             created_at: r.created_at,
             last_seen: r.last_seen,
             app: r.app,
+            address: r.address,
+            via: r.via,
         })
         .collect();
+    out.sort_by_key(|device| !device.current);
     Json(out).into_response()
+}
+
+/// `DELETE /api/auth/me/sessions` (Bearer) → 204. Signs every other device out
+/// at once: each one's credential and sessions go, and the calling device keeps
+/// its own.
+pub async fn revoke_other_sessions(
+    State(state): State<SharedState>,
+    AuthToken(bearer): AuthToken,
+    AuthUser(user): AuthUser,
+) -> Response {
+    let uid = user.id.clone();
+    match query(&state.db, move |pool| {
+        db::revoke_other_sessions(&pool, &uid, &bearer)
+    })
+    .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(resp) => resp,
+    }
 }
 
 /// `DELETE /api/auth/me/sessions/:id` (Bearer) → 204. Revokes one of the account's

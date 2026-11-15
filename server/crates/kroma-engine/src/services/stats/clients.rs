@@ -83,7 +83,7 @@ mod tests {
         DeviceHints {
             user_agent: user_agent.map(str::to_string),
             language: None,
-            app: None,
+            ..Default::default()
         }
     }
 

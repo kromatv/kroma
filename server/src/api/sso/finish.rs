@@ -1,11 +1,11 @@
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
 use super::now;
-use crate::api::accounts::{auth_result, device_hints};
+use crate::api::accounts::{auth_result, ThisDevice};
 use crate::api::dto::{FlowResult, TestReportView};
 use crate::api::error::lerr;
 use crate::api::util::query;
@@ -56,7 +56,7 @@ fn report_view(report: TestReport) -> TestReportView {
 pub async fn finish(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    headers: HeaderMap,
+    ThisDevice(device): ThisDevice,
     Json(keys): Json<FlowKeys>,
 ) -> Response {
     let collected = state
@@ -75,7 +75,7 @@ pub async fn finish(
                 Ok(None) => return lerr(loc, StatusCode::NOT_FOUND, "sso.flowExpired"),
                 Err(resp) => return resp,
             };
-            match auth_result(&state, user, device_hints(&headers)).await {
+            match auth_result(&state, user, device.clone()).await {
                 Ok(result) => FlowResult::SignedIn(result),
                 Err(resp) => return resp,
             }

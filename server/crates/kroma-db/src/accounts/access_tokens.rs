@@ -9,14 +9,16 @@ use super::stored_token::{device_id, stored};
 use crate::rows::row_to_user;
 use crate::{now_or_blank, Pool};
 
-/// What the calling device said about itself on the request that minted or
-/// refreshed a credential: the raw `User-Agent`, the language tag it asked
-/// for, and the app build it named. All three are labels, never identity.
+/// What a device looked like on the request that minted or refreshed its
+/// credential: the raw `User-Agent`, the language tag it asked for, the app
+/// build it named, and the address and road it came by. Labels, never identity.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DeviceHints {
     pub user_agent: Option<String>,
     pub language: Option<String>,
     pub app: Option<AppVersion>,
+    pub address: Option<String>,
+    pub via: Option<String>,
 }
 
 /// `pin_verified` is true when the token was minted through a strong check
@@ -32,8 +34,8 @@ pub fn create_access_token(
 ) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
-        "INSERT INTO access_tokens (token,user_id,created_at,expires_at,pin_verified,last_seen,user_agent,language,app) \
-         VALUES (?1,?2,?3,?4,?5,?3,?6,?7,?8)",
+        "INSERT INTO access_tokens (token,user_id,created_at,expires_at,pin_verified,last_seen,user_agent,language,app,address,via) \
+         VALUES (?1,?2,?3,?4,?5,?3,?6,?7,?8,?9,?10)",
         params![
             stored(token),
             user_id,
@@ -42,7 +44,9 @@ pub fn create_access_token(
             pin_verified as i64,
             hints.user_agent,
             hints.language,
-            hints.app.as_ref().map(AppVersion::header)
+            hints.app.as_ref().map(AppVersion::header),
+            hints.address,
+            hints.via
         ],
     )?;
     Ok(())
@@ -54,15 +58,18 @@ pub struct AccessTokenRow {
     pub created_at: String,
     pub last_seen: Option<String>,
     pub app: Option<AppVersion>,
+    pub address: Option<String>,
+    pub via: Option<String>,
 }
 
-/// A user's live (non-expired) device credentials, newest first.
+/// A user's live (non-expired) device credentials, the one seen last first.
 pub fn list_access_tokens(pool: &Pool, user_id: &str) -> Result<Vec<AccessTokenRow>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut stmt = conn.prepare(
-        "SELECT token,created_at,last_seen,user_agent,app FROM access_tokens \
-         WHERE user_id = ?1 AND expires_at > ?2 ORDER BY created_at DESC",
+        "SELECT token,created_at,last_seen,user_agent,app,address,via FROM access_tokens \
+         WHERE user_id = ?1 AND expires_at > ?2 \
+         ORDER BY COALESCE(last_seen, created_at) DESC, created_at DESC",
     )?;
     let rows = stmt.query_map(params![user_id, now], |r| {
         let kept: String = r.get(0)?;
@@ -75,6 +82,8 @@ pub fn list_access_tokens(pool: &Pool, user_id: &str) -> Result<Vec<AccessTokenR
                 .get::<_, Option<String>>(4)?
                 .as_deref()
                 .and_then(AppVersion::parse),
+            address: r.get(5)?,
+            via: r.get(6)?,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -94,7 +103,7 @@ pub fn devices_seen_since(pool: &Pool, since: &str) -> Result<Vec<DeviceHints>> 
         Ok(DeviceHints {
             user_agent: r.get(0)?,
             language: r.get(1)?,
-            app: None,
+            ..DeviceHints::default()
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -166,13 +175,16 @@ pub fn access_token_user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
 pub fn touch_access_token(conn: &Connection, token: &str, hints: &DeviceHints) -> Result<()> {
     conn.execute(
         "UPDATE access_tokens SET last_seen = ?2, user_agent = COALESCE(?3, user_agent), \
-         language = COALESCE(?4, language), app = COALESCE(?5, app) WHERE token = ?1",
+         language = COALESCE(?4, language), app = COALESCE(?5, app), \
+         address = COALESCE(?6, address), via = COALESCE(?7, via) WHERE token = ?1",
         params![
             stored(token),
             now_or_blank(),
             hints.user_agent,
             hints.language,
-            hints.app.as_ref().map(AppVersion::header)
+            hints.app.as_ref().map(AppVersion::header),
+            hints.address,
+            hints.via
         ],
     )?;
     Ok(())

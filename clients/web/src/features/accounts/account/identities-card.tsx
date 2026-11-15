@@ -119,7 +119,7 @@ export function IdentitiesCard() {
     setLinking(provider.id);
     setError(null);
     try {
-      await flows.link(provider.id, { returnTo: '/account' });
+      await flows.link(provider.id, { returnTo: '/account?section=security' });
     } catch (e) {
       setError(apiErrorText(e, t('account.identityLinkFailed', { provider: provider.label })));
     } finally {

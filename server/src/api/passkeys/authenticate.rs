@@ -9,7 +9,7 @@ use webauthn_rs::prelude::{DiscoverableKey, PublicKeyCredential, Uuid};
 use super::ceremony::{
     allowed_origins, parse_passkeys, relying_party, stash, take, user_uuid, Ceremony,
 };
-use crate::api::accounts::{device_hints, issue_tokens};
+use crate::api::accounts::{issue_tokens, ThisDevice};
 use crate::api::error::lerr;
 use crate::api::util::query;
 use crate::db;
@@ -59,6 +59,7 @@ async fn account_for_handle(state: &SharedState, handle: Uuid) -> Option<String>
 pub async fn authenticate_finish(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
+    ThisDevice(device): ThisDevice,
     headers: HeaderMap,
     Json(body): Json<AuthFinishBody>,
 ) -> Response {
@@ -117,5 +118,5 @@ pub async fn authenticate_finish(
         Ok(None) => return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed"),
         Err(resp) => return resp,
     };
-    issue_tokens(state, user, device_hints(&headers)).await
+    issue_tokens(state, user, device.clone()).await
 }

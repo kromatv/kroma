@@ -28,7 +28,9 @@ use credentials::{change_password, login, register};
 use profile::{update_me, upload_avatar};
 use quick_connect::{quick_authorize, quick_initiate, quick_poll};
 use reset::{check_reset, redeem_reset, request_reset};
-use session::{exchange_token, list_sessions, logout, relock, revoke_session};
+use session::{
+    exchange_token, list_sessions, logout, relock, revoke_other_sessions, revoke_session,
+};
 use verify_email::{check_verification, confirm_verification};
 
 pub(crate) use session::{auth_result, issue_tokens};
@@ -45,7 +47,10 @@ pub fn routes() -> Router<SharedState> {
         .route("/auth/logout", post(logout))
         .route("/auth/me", get(me).patch(update_me))
         .route("/auth/me/password", patch(change_password))
-        .route("/auth/me/sessions", get(list_sessions))
+        .route(
+            "/auth/me/sessions",
+            get(list_sessions).delete(revoke_other_sessions),
+        )
         .route(
             "/auth/me/sessions/{id}",
             axum::routing::delete(revoke_session),
@@ -119,6 +124,40 @@ pub(crate) fn device_hints(headers: &HeaderMap) -> db::DeviceHints {
         user_agent: user_agent(headers),
         language: accept_language(headers),
         app: app_version(headers),
+        ..db::DeviceHints::default()
+    }
+}
+
+/// The calling device as this request shows it: what it says about itself, and
+/// the address and road it reached the server by.
+pub(crate) struct ThisDevice(pub db::DeviceHints);
+
+impl axum::extract::FromRequestParts<SharedState> for ThisDevice {
+    type Rejection = std::convert::Infallible;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &SharedState,
+    ) -> Result<Self, Self::Rejection> {
+        let mut hints = device_hints(&parts.headers);
+        let peer = parts
+            .extensions
+            .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>();
+        if let Some(axum::extract::ConnectInfo(peer)) = peer {
+            let proxies = &state.config.trusted_proxies;
+            let seen = crate::api::util::client_ip(&parts.headers, peer, proxies);
+            let address = seen
+                .parse::<std::net::IpAddr>()
+                .map_or(seen.clone(), |ip| ip.to_canonical().to_string());
+            let road = crate::services::network::via_of(
+                &address,
+                crate::api::util::tunnelled(&parts.headers, peer, proxies),
+                &crate::services::settings::local_networks(&state.settings),
+            );
+            hints.via = Some(road.as_str().to_string());
+            hints.address = Some(address);
+        }
+        Ok(Self(hints))
     }
 }
 
@@ -236,6 +275,7 @@ mod tests {
                 user_agent: Some("Kroma/1.0".to_string()),
                 language: Some("fr".to_string()),
                 app: crate::model::AppVersion::parse("webos/0.1.39"),
+                ..db::DeviceHints::default()
             }
         );
         assert_eq!(device_hints(&HeaderMap::new()), db::DeviceHints::default());
