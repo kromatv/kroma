@@ -118,6 +118,46 @@ Both Expo shells set the manifest flag through `plugins/with-cleartext-traffic.t
 and ship no network security config, so plain http reaches the LAN today. Moving
 to a network security config is due before targeting API 38.
 
+## Android: service discovery and the local network permission
+
+Sources: the [local network permission guide](https://developer.android.com/privacy-and-security/local-network-permission)
+and the [Wi-Fi permissions page](https://developer.android.com/develop/connectivity/wifi/wifi-permissions),
+documented, read 2026-11-15. AOSP `platform/packages/modules/Connectivity` at
+`2519a7873152`, Apache-2.0: `service-t/src/com/android/server/NsdService.java`
+and `framework-t/src/android/net/nsd/NsdManager.java`, read from source the
+same day. One measurement, marked as such.
+
+- Through Android 16, `NsdManager` asks an app for no runtime permission. The
+  service behind it enforces `INTERNET` on its callers and nothing else
+  (`NsdService`), and the only permission the public API names is
+  `ACCESS_NETWORK_STATE`, for the `discoverServices` overload that takes a
+  `NetworkRequest`.
+- `NEARBY_WIFI_DEVICES` gates a list of Wi-Fi APIs for apps targeting API 33 or
+  higher: the local-only hotspot, Wi-Fi Aware, Wi-Fi Direct and Wi-Fi RTT.
+  `NsdManager` is not on it.
+- Measured on an Android TV emulator (`sdk_google_atv64_arm64`, Android 16) with
+  a debug build that declared `NEARBY_WIFI_DEVICES` and did not hold it
+  (`granted=false`): `registerService` and `discoverServices` for
+  `_kroma-tv._tcp` both went through, and the app's own browse heard the record
+  it had just published.
+- So `@kromatv/lan-beacon` asks for nothing, and neither shell declares the
+  permission. It used to ask for `NEARBY_WIFI_DEVICES` before publishing or
+  browsing and stay silent when refused: a prompt at whatever moment the first
+  browse happened, and a television nobody could hear after a "no".
+- From Android 17 (API 37), local network protection is enforced for apps
+  **targeting 37 or higher**. Outgoing and incoming TCP, every UDP send and
+  receive, `.local` resolution and every networking API, `NsdManager` included,
+  need `ACCESS_LOCAL_NETWORK`: a runtime permission in the Nearby devices group.
+  An app targeting 36 or lower keeps its access through `INTERNET`.
+- Without it, a TCP connection typically times out, UDP fails with `EPERM`, and
+  `NsdManager` reports `FAILURE_PERMISSION_DENIED`.
+
+Both Expo shells target API 36 (`targetSdk` in React Native 0.88's
+`libs.versions.toml`), so nothing is asked today. Due before targeting API 37:
+declare `ACCESS_LOCAL_NETWORK` and ask for it before the first request to the
+LAN, which is the server search of a first run, because from then on the server
+itself is behind that permission, not only discovery.
+
 ## Samsung Tizen and LG webOS
 
 Not re-verified against vendor documentation: Samsung's pages returned 404 or

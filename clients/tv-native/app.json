@@ -26,7 +26,7 @@
     },
     "android": {
       "package": "tv.kroma.app",
-      "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"]
+      "permissions": ["android.permission.INTERNET"]
     },
     "plugins": [
       ["@kromatv/android-build/plugin", { "formFactor": "tv" }],

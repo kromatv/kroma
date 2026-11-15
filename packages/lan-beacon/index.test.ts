@@ -15,10 +15,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 type FoundEvent = { services: LanService[]; epoch: number };
 
 const env = vi.hoisted(() => ({
-  os: 'ios' as 'ios' | 'android',
-  version: 17 as number,
-  permission: 'granted' as string,
-  permissionThrows: false,
   permissionRequests: 0,
   hasNative: true,
   nativeThrows: false,
@@ -65,21 +61,11 @@ vi.mock('expo', () => ({
 }));
 
 vi.mock('react-native', () => ({
-  Platform: {
-    get OS() {
-      return env.os;
-    },
-    get Version() {
-      return env.version;
-    },
-  },
   PermissionsAndroid: {
     request: async () => {
       env.permissionRequests += 1;
-      if (env.permissionThrows) throw new Error('no such permission');
-      return env.permission;
+      return 'granted';
     },
-    RESULTS: { GRANTED: 'granted' },
   },
 }));
 
@@ -90,16 +76,11 @@ async function load(): Promise<LanDiscoveryBridge | null> {
   return mod.lanBeacon;
 }
 
-/** Lets the permission promise settle before asserting on what followed it. */
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const SERVICE: LanService = { name: 'Salon', txt: { handle: 'h-salon' } };
 
 beforeEach(() => {
-  env.os = 'ios';
-  env.version = 17;
-  env.permission = 'granted';
-  env.permissionThrows = false;
   env.permissionRequests = 0;
   env.hasNative = true;
   env.nativeThrows = false;
@@ -144,14 +125,6 @@ describe('publishing a record', () => {
 
     stopFirst?.();
     expect(native.unpublished).toBe(0);
-  });
-
-  it('does not publish a record that was released before the permission came back', async () => {
-    const lan = await load();
-    const stop = lan?.publish?.(SERVICE);
-    stop?.();
-    await settled();
-    expect(native.published).toEqual([]);
   });
 });
 
@@ -237,92 +210,27 @@ describe('browsing, with more than one caller', () => {
   });
 });
 
-describe('Android 13, where discovery moved behind a runtime permission', () => {
-  it('asks, and browses once it is granted', async () => {
-    env.os = 'android';
-    env.version = 33;
+describe('permissions', () => {
+  it('asks for none: the platform lets an app browse and publish with the network alone', async () => {
     const lan = await load();
-    lan?.browse?.(() => undefined);
-    await settled();
-    expect(native.started).toHaveLength(1);
-  });
 
-  // A refusal simply leaves the server path doing the work it was already doing.
-  it('does not browse or publish when it is refused', async () => {
-    env.os = 'android';
-    env.version = 33;
-    env.permission = 'denied';
-    const lan = await load();
     lan?.browse?.(() => undefined);
     lan?.publish?.(SERVICE);
     await settled();
-    expect(native.started).toEqual([]);
-    expect(native.published).toEqual([]);
-  });
 
-  it('asks once, however many times a refused browse is restarted', async () => {
-    env.os = 'android';
-    env.version = 33;
-    env.permission = 'denied';
-    const lan = await load();
-
-    for (let restart = 0; restart < 3; restart += 1) {
-      const stop = lan?.browse?.(() => undefined);
-      await settled();
-      stop?.();
-    }
-    lan?.publish?.(SERVICE);
-    await settled();
-
-    expect(env.permissionRequests).toBe(1);
-    expect(native.started).toEqual([]);
-  });
-
-  it('starts one browse when a caller leaves and returns while the prompt is up', async () => {
-    env.os = 'android';
-    env.version = 33;
-    const lan = await load();
-
-    const stop = lan?.browse?.(() => undefined);
-    stop?.();
-    lan?.browse?.(() => undefined);
-    await settled();
-
+    expect(env.permissionRequests).toBe(0);
     expect(native.started).toHaveLength(1);
-  });
-
-  it('treats a throwing permission request as a refusal', async () => {
-    env.os = 'android';
-    env.version = 33;
-    env.permissionThrows = true;
-    const lan = await load();
-    lan?.browse?.(() => undefined);
-    await settled();
-    expect(native.started).toEqual([]);
-  });
-
-  it('asks for nothing on an older Android, where the manifest entry is enough', async () => {
-    env.os = 'android';
-    env.version = 31;
-    const lan = await load();
-    lan?.browse?.(() => undefined);
-    await settled();
-    expect(native.started).toHaveLength(1);
+    expect(native.published).toHaveLength(1);
   });
 });
 
 describe('a native half that throws', () => {
-  it('leaves the link unheard instead of an unhandled rejection', async () => {
+  it('leaves the link unheard instead of throwing at its caller', async () => {
     env.nativeThrows = true;
-    const rejections: unknown[] = [];
-    const note = (reason: unknown) => rejections.push(reason);
-    process.on('unhandledRejection', note);
     const lan = await load();
-    lan?.browse?.(() => undefined);
-    lan?.publish?.(SERVICE);
-    await settled();
-    process.off('unhandledRejection', note);
-    expect(rejections).toEqual([]);
+
+    expect(() => lan?.browse?.(() => undefined)).not.toThrow();
+    expect(() => lan?.publish?.(SERVICE)).not.toThrow();
     expect(native.started).toEqual([]);
     expect(native.published).toEqual([]);
   });
