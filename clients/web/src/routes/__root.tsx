@@ -27,6 +27,7 @@ import { MyListProvider } from '#web/shared/lib/mylist';
 import { WatchedProvider } from '#web/shared/lib/watched';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { BOOT_SCREEN_CSS, BootScreen } from '#web/shared/ui/boot-screen';
+import { CompatGate } from '#web/shared/ui/compat-gate';
 import { CommandMenuButton } from '#web/shared/ui/command-menu-button';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
 
@@ -123,7 +124,9 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                             <ModuleHostProvider>
                               <CommandMenuProvider load={loadCommandMenu}>
                                 <NavActionsProvider actions={NAV_ACTIONS}>
-                                  <BootScreen>{children}</BootScreen>
+                                  <BootScreen>
+                                    <CompatGate>{children}</CompatGate>
+                                  </BootScreen>
                                 </NavActionsProvider>
                               </CommandMenuProvider>
                             </ModuleHostProvider>

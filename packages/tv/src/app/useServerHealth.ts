@@ -1,5 +1,5 @@
 import type { KromaClient } from '@kromatv/client';
-import { type CompatVerdict, checkServerCompat } from '@kromatv/core';
+import { type CompatVerdict, checkCompat, type ServerBuild } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLIENT_BUILD } from '#tv/app/clientBuild';
 import { startHealthMonitor } from '#tv/app/healthMonitor';
@@ -18,7 +18,7 @@ export function useServerHealth(
   onReconnect?: () => void,
 ): { online: boolean; recheck: () => void; serverVersion: string | null; compat: CompatVerdict } {
   const [online, setOnline] = useState(true);
-  const [serverVersion, setServerVersion] = useState<string | null>(null);
+  const [server, setServer] = useState<ServerBuild | null>(null);
   // Ref so a fresh `onReconnect` closure each render doesn't restart the monitor.
   const reconnectRef = useRef(onReconnect);
   useEffect(() => {
@@ -32,7 +32,7 @@ export function useServerHealth(
     setWasActive(active);
     if (!active) {
       setOnline(true);
-      setServerVersion(null);
+      setServer(null);
     }
   }
 
@@ -44,7 +44,7 @@ export function useServerHealth(
         const to = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
         try {
           const health = await client.media.health({ signal: ctrl.signal });
-          setServerVersion(health.version);
+          setServer({ version: health.version, minClient: health.minClient });
           return true;
         } catch {
           return false;
@@ -65,8 +65,6 @@ export function useServerHealth(
   }, [client, enabled]);
 
   const recheck = useCallback(() => kickRef.current(), []);
-  const compat: CompatVerdict = serverVersion
-    ? checkServerCompat(CLIENT_BUILD, serverVersion)
-    : 'ok';
-  return { online, recheck, serverVersion, compat };
+  const compat: CompatVerdict = server ? checkCompat(CLIENT_BUILD, server) : 'ok';
+  return { online, recheck, serverVersion: server?.version ?? null, compat };
 }

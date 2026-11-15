@@ -72,7 +72,7 @@ export function useCatalogue(
     // No initial bearer: the auth provider exchanges the active account's access
     // token for a session token and calls `setAuthToken` (+ installs the refresh
     // handler) once the session belongs to this server.
-    return makeClient(activeServerUrl, undefined, artworkScale, storage);
+    return makeClient(activeServerUrl, { shell: platform, artworkScale, storage });
   }, [activeServerUrl, artworkScale, storage]);
   const liveClient = useRef(client);
   useEffect(() => {

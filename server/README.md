@@ -223,7 +223,7 @@ Only `/api/health`, `/api/status`, `/api/splash`, the two `/poster` routes and
 
 | Method | Path                       | Description                                   |
 | ------ | -------------------------- | --------------------------------------------- |
-| GET    | `/api/health`              | Health + ffprobe presence + counts.           |
+| GET    | `/api/health`              | Health, versions (`version`, `minClient`), ffprobe presence, counts. |
 | GET    | `/api/libraries`           | All scanned libraries.                        |
 | GET    | `/api/items`               | All playable items (`?library=<id>` filter).  |
 | GET    | `/api/movies`              | Movies only (`?library=<id>` to filter).      |

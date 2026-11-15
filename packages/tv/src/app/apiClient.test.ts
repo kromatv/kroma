@@ -105,7 +105,7 @@ describe('makeClient', () => {
       constants: { systemName: 'tvOS', osVersion: '26.0' },
     };
     const seen = recorded();
-    await makeClient('http://kroma.test', '0.1.35').media.health();
+    await makeClient('http://kroma.test', { version: '0.1.35' }).media.health();
     expect(seen[0]?.get('User-Agent')).toBe('Kroma/0.1.35 (Apple TV; tvOS 26.0)');
     vi.unstubAllGlobals();
   });
@@ -113,8 +113,24 @@ describe('makeClient', () => {
   it('leaves the header alone in a browser shell', async () => {
     platform.current = { OS: 'web' };
     const seen = recorded();
-    await makeClient('http://kroma.test', '0.1.35').media.health();
+    await makeClient('http://kroma.test', { version: '0.1.35' }).media.health();
     expect(seen[0]?.get('User-Agent')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('names the shell and the build on every request once the shell says which it is', async () => {
+    platform.current = { OS: 'web' };
+    const seen = recorded();
+    await makeClient('http://kroma.test', { shell: 'webOS', version: '0.1.39' }).media.health();
+    expect(seen[0]?.get('X-Kroma-Client')).toBe('webos/0.1.39');
+    vi.unstubAllGlobals();
+  });
+
+  it('names no app when the shell did not say which it is', async () => {
+    platform.current = { OS: 'web' };
+    const seen = recorded();
+    await makeClient('http://kroma.test', { version: '0.1.39' }).media.health();
+    expect(seen[0]?.get('X-Kroma-Client')).toBeNull();
     vi.unstubAllGlobals();
   });
 });

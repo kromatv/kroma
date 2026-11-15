@@ -7,6 +7,7 @@
 
 pub mod accounts;
 pub mod admin;
+pub mod app_version;
 pub mod cast;
 pub mod crash;
 pub mod jobs;
@@ -30,6 +31,7 @@ pub mod slug;
 // `people` and `slug` are intentionally not globbed here; reach them via their module path.
 pub use accounts::*;
 pub use admin::*;
+pub use app_version::*;
 pub use cast::*;
 pub use crash::*;
 pub use jobs::*;

@@ -1,3 +1,4 @@
+import { version } from 'virtual:build-info';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { NotFound, RouteError } from '#web/features/errors/error-page';
 import { prefetchModules } from '#web/modules/remotes';
@@ -5,7 +6,7 @@ import { routeTree } from '#web/routeTree.gen';
 import { createWebRuntime } from '#web/shared/lib/api';
 
 export function getRouter() {
-  const runtime = createWebRuntime();
+  const runtime = createWebRuntime({ app: { shell: 'web', version } });
   void runtime.ensureSession().then(() => prefetchModules(runtime.queryClient, runtime.client));
   return createTanStackRouter({
     routeTree,
