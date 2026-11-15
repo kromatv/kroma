@@ -1,14 +1,19 @@
 // @vitest-environment jsdom
 
-import type { CardSection, SectionItem, Show } from '@kromatv/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { CardSection, SectionItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { act, cleanup, render } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LauncherProvider } from '#tv/app/launcher';
 import { RecommendProvider, useRecommend } from '#tv/app/providers/recommend';
+import { mediaCard, show } from '#tv/features/catalog/media.fixtures';
 
-const session = vi.hoisted(() => ({ client: null as unknown, user: { id: 'u1' } }));
+const session = vi.hoisted((): { client: KromaClient | null; user: { id: string } } => ({
+  client: null,
+  user: { id: 'u1' },
+}));
 
 vi.mock('#tv/app/providers/auth', () => ({
   useAuth: () => ({ user: session.user, ready: true }),
@@ -17,7 +22,7 @@ vi.mock('#tv/app/providers/connection', () => ({
   useConnection: () => ({ client: session.client }),
 }));
 
-const SILO: SectionItem = { type: 'show', show: { id: 's1', title: 'Silo' } as unknown as Show };
+const SILO: SectionItem = { type: 'show', show: show({ id: 's1', title: 'Silo' }) };
 
 const section = (id: string, layout: CardSection['layout']): CardSection => ({
   id,
@@ -43,7 +48,10 @@ async function boot(
 ) {
   const asked = { homeCards: vi.fn(async () => home), featured: vi.fn(pick) };
   session.client = fakeClient({ media: { ...asked, artwork: { backdropFor: () => null } } });
-  const launcher = { setContinueWatching: vi.fn(), setHomeChannel: vi.fn() };
+  const launcher = {
+    setContinueWatching: vi.fn(),
+    setHomeChannel: vi.fn<(json: string) => void>(),
+  };
   render(
     <LauncherProvider value={launcher}>
       <RecommendProvider>
@@ -96,16 +104,16 @@ describe('RecommendProvider', () => {
   });
 
   it('mirrors the generic rows to the launcher from card sections', async () => {
-    const dune = { id: 'm1', title: 'Dune', year: 2021, addedAt: '2026-01-01' };
-    const recent = {
+    const dune = mediaCard({ id: 'm1', title: 'Dune', year: 2021, addedAt: '2026-01-01' });
+    const recent: CardSection = {
       ...section('recent', 'rail'),
       title: 'New movies',
       items: [{ type: 'movie', item: dune }],
-    } as unknown as CardSection;
+    };
 
     const { launcher } = await boot([section('hero', 'hero'), recent]);
 
-    const published = JSON.parse(launcher.setHomeChannel.mock.calls[0]?.[0] as string);
+    const published = JSON.parse(String(launcher.setHomeChannel.mock.calls[0]?.[0]));
     expect(published).toEqual([
       { title: 'New movies', items: [expect.objectContaining({ id: 'm1', subtitle: '2021' })] },
     ]);

@@ -1,3 +1,4 @@
+import type { KromaClient } from '@kromatv/client';
 import { ItemId, type SectionItem, ShowId } from '@kromatv/client/media';
 import { Box } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +12,30 @@ import { posterWidth } from '#mobile/lib/theme';
 
 const MAX_TITLES = 24;
 
+async function savedTitle(client: KromaClient, id: string): Promise<SectionItem | null> {
+  const movie = await client.media.item(ItemId.parse(id)).catch(() => null);
+  if (movie) {
+    return { type: 'movie', item: movie };
+  }
+  const detail = await client.media.show(ShowId.parse(id)).catch(() => null);
+  return detail ? { type: 'show', show: detail.show } : null;
+}
+
+function useMyListItems() {
+  const client = useClient();
+  const ids = useQuery(client.query.playback.myList());
+  return useQuery({
+    queryKey: ['myListItems', ids.data],
+    enabled: (ids.data?.length ?? 0) > 0,
+    queryFn: async (): Promise<SectionItem[]> => {
+      const found = await Promise.all(
+        (ids.data ?? []).slice(0, MAX_TITLES).map((id) => savedTitle(client, id)),
+      );
+      return found.filter((entry) => entry !== null);
+    },
+  });
+}
+
 /** The saved titles, assembled one request per title: only for a server whose
  *  home carries no section of them. */
 export function MyListRail({ filter }: Readonly<{ filter: TitleFilter }>) {
@@ -18,26 +43,7 @@ export function MyListRail({ filter }: Readonly<{ filter: TitleFilter }>) {
   const client = useClient();
   const { width } = useWindowDimensions();
   const cardW = posterWidth(width);
-  const ids = useQuery(client.query.playback.myList());
-  const items = useQuery({
-    queryKey: ['myListItems', ids.data],
-    enabled: (ids.data?.length ?? 0) > 0,
-    // A list id names a movie OR a show, so a miss on the item endpoint is
-    // retried as a show rather than dropped.
-    queryFn: async (): Promise<SectionItem[]> => {
-      const found = await Promise.all(
-        (ids.data ?? []).slice(0, MAX_TITLES).map(async (id): Promise<SectionItem | null> => {
-          const movie = await client.media.item(ItemId.parse(id)).catch(() => null);
-          if (movie) {
-            return { type: 'movie', item: movie };
-          }
-          const detail = await client.media.show(ShowId.parse(id)).catch(() => null);
-          return detail ? { type: 'show', show: detail.show } : null;
-        }),
-      );
-      return found.filter((entry) => entry !== null);
-    },
-  });
+  const items = useMyListItems();
   const entries = filterEntries(items.data ?? [], filter);
   if (entries.length === 0) {
     return null;

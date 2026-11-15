@@ -1,6 +1,7 @@
-import type { KromaClient } from '@kromatv/client';
-import type { CardSection, MediaCard, Show } from '@kromatv/client/media';
+import type { CardSection } from '@kromatv/client/media';
+import { recordingClient } from '@kromatv/client/test';
 import { describe, expect, it } from 'vitest';
+import { movieCard, movieEntry, showCard, showEntry } from './home-entry.fixture';
 import {
   drawsClientMyList,
   entryBackdrop,
@@ -14,8 +15,8 @@ import {
   servesHero,
 } from './home-sections';
 
-const movie = (id: string): HomeEntry => ({ type: 'movie', item: { id } as MediaCard });
-const show = (id: string): HomeEntry => ({ type: 'show', show: { id } as Show });
+const movie = (id: string) => movieEntry(id);
+const show = (id: string) => showEntry(id);
 
 const section = (id: string, items: HomeEntry[], over: Partial<CardSection> = {}): CardSection => ({
   id,
@@ -30,40 +31,36 @@ const ids = (row: HomeRow | null) => (row?.entries ?? []).map(({ entry }) => ent
 
 describe('entryTitle', () => {
   it('prefers the name the catalogue matched over the one the file gave', () => {
-    const entry: HomeEntry = {
-      type: 'movie',
-      item: { id: 'a', title: 'heat.1995', metadata: { title: 'Heat' } } as MediaCard,
-    };
+    const entry = movieEntry('a', { title: 'heat.1995', matched: 'Heat' });
 
     expect(entryTitle(entry)).toBe('Heat');
   });
 
   it('falls back to the name of an unmatched title', () => {
-    const entry: HomeEntry = { type: 'show', show: { id: 'a', title: 'Severance' } as Show };
+    const entry = showEntry('a', { title: 'Severance' });
 
     expect(entryTitle(entry)).toBe('Severance');
   });
 });
 
 describe('entryBackdrop', () => {
-  const client = (backdrop: string | null) =>
-    ({
-      media: {
-        artwork: {
-          backdropFor: () => backdrop,
-          posterFor: () => 'movie-poster',
-          showPosterFor: () => 'show-poster',
-        },
-      },
-    }) as unknown as KromaClient;
+  const { client } = recordingClient();
+  const { artwork } = client.media;
 
   it('draws a title on its backdrop', () => {
-    expect(entryBackdrop(movie('a'), client('backdrop'))).toBe('backdrop');
+    const entry = movieEntry('a', { backdrop: '/api/images/b.webp' });
+
+    expect(entryBackdrop(entry, client)).toBe('http://kroma.test/api/images/b.webp');
   });
 
   it('falls back to the poster of a title that has no backdrop', () => {
-    expect(entryBackdrop(movie('a'), client(null))).toBe('movie-poster');
-    expect(entryBackdrop(show('b'), client(null))).toBe('show-poster');
+    const film = movieCard('a');
+    const series = showCard('b');
+
+    expect(entryBackdrop({ type: 'movie', item: film }, client)).toBe(artwork.posterFor(film));
+    expect(entryBackdrop({ type: 'show', show: series }, client)).toBe(
+      artwork.showPosterFor(series),
+    );
   });
 });
 

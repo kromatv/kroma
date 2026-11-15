@@ -25,13 +25,21 @@ export interface Carousel {
   toggle: () => void;
 }
 
+export interface CarouselOptions {
+  resting: boolean;
+  holdMs?: number;
+}
+
 /**
  * Which of `count` slides is up. It advances every `holdMs` unless `resting`
  * (the pointer or the keyboard is on it), the tab is hidden, or the viewer
  * paused it. Paging by hand restarts the hold, so a slide just chosen is not
  * taken away a second later.
  */
-export function useCarousel(count: number, resting: boolean, holdMs: number = HOLD_MS): Carousel {
+export function useCarousel(
+  count: number,
+  { resting, holdMs = HOLD_MS }: Readonly<CarouselOptions>,
+): Carousel {
   const [at, setAt] = useState(0);
   const [stopped, setStopped] = useState(false);
   const hidden = useTabHidden();
@@ -40,7 +48,7 @@ export function useCarousel(count: number, resting: boolean, holdMs: number = HO
 
   useEffect(() => {
     if (!running) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setAt((index + 1) % count), holdMs);
     return () => clearTimeout(timer);

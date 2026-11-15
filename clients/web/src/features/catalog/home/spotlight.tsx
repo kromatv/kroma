@@ -7,6 +7,7 @@ import {
   entryId,
   entryMetadata,
   entryTitle,
+  type HomeEntry,
   type HomeSection,
 } from '#web/features/catalog/home/entries';
 import { entryLink } from '#web/features/catalog/home/entry-link';
@@ -44,76 +45,110 @@ const sDefinition = styles({
   copy: { p: { base: 20, md: 36 }, maxW: 560 },
 });
 
+function SpotlightArt({ entry }: Readonly<{ entry: HomeEntry }>) {
+  const s = useStyles(sDefinition);
+  const { client } = useAuth();
+
+  return (
+    <Box style={s.art}>
+      <Image
+        src={entryBackdrop(client, entry, BACKDROP_W)}
+        background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
+        fit="cover"
+        position="center 22%"
+        fill
+      />
+    </Box>
+  );
+}
+
+function SpotlightActions({ entry }: Readonly<{ entry: HomeEntry }>) {
+  const t = useT();
+
+  return (
+    <Row wrap gap={12}>
+      {entry.type === 'movie' ? (
+        <Button icon="player-play-filled" label={t('content.play')} asChild>
+          <RouteLink to="/watch/$id" params={{ id: entry.item.id }} />
+        </Button>
+      ) : null}
+      <Button
+        variant={entry.type === 'movie' ? 'glass' : undefined}
+        label={t('content.moreInfo')}
+        asChild
+      >
+        {entryLink(entry)}
+      </Button>
+    </Row>
+  );
+}
+
+function SpotlightFacts({ entry }: Readonly<{ entry: HomeEntry }>) {
+  const t = useT();
+  const rating = entryMetadata(entry)?.rating;
+
+  return (
+    <Row wrap gap={12} mb={12}>
+      {rating ? <Text variant="meta" color="accent">{`${rating.toFixed(1)}★`}</Text> : null}
+      <Text variant="meta" color="textMuted">
+        {entryFacts(t, entry).join(' · ')}
+      </Text>
+    </Row>
+  );
+}
+
+interface SpotlightCopyProps {
+  entry: HomeEntry;
+  title: string;
+  note: string | null;
+}
+
+function SpotlightCopy({ entry, title, note }: Readonly<SpotlightCopyProps>) {
+  const s = useStyles(sDefinition);
+  const synopsis = synopsisLead(entryMetadata(entry)?.overview, SYNOPSIS_BUDGET);
+
+  return (
+    <Box style={s.copy}>
+      <Row wrap gap={10} mb={10}>
+        <Text variant="overline" color="accent">
+          {title}
+        </Text>
+        {note ? (
+          <Text variant="overline" color="textMuted">
+            {note}
+          </Text>
+        ) : null}
+      </Row>
+      <h2>
+        <Text variant="h1" lines={2} mb={10}>
+          {entryTitle(entry)}
+        </Text>
+      </h2>
+      <SpotlightFacts entry={entry} />
+      {synopsis ? (
+        <Text variant="body" mb={20} color="text/82">
+          {synopsis}
+        </Text>
+      ) : null}
+      <SpotlightActions entry={entry} />
+    </Box>
+  );
+}
+
 /** One title given the width of the page, with why it was picked. */
 export function Spotlight({ section }: Readonly<{ section: HomeSection }>) {
   const s = useStyles(sDefinition);
-  const t = useT();
-  const { client } = useAuth();
   const entry = section.items[0];
   if (!entry) {
     return null;
   }
-  const id = entryId(entry);
-  const metadata = entryMetadata(entry);
-  const note = section.notes[id] ?? section.reason ?? null;
-  const synopsis = synopsisLead(metadata?.overview, SYNOPSIS_BUDGET);
+  const note = section.notes[entryId(entry)] ?? section.reason ?? null;
 
   return (
     <section className={classes(s.band)} aria-label={section.title}>
-      <Box style={s.art}>
-        <Image
-          src={entryBackdrop(client, entry, BACKDROP_W)}
-          background={`linear-gradient(158deg, ${posterColors(id).join(', ')})`}
-          fit="cover"
-          position="center 22%"
-          fill
-        />
-      </Box>
+      <SpotlightArt entry={entry} />
       <Box fill pointerEvents="none" style={s.scrim} />
-      <Box style={s.copy}>
-        <Row wrap gap={10} mb={10}>
-          <Text variant="overline" color="accent">
-            {section.title}
-          </Text>
-          {note ? (
-            <Text variant="overline" color="textMuted">
-              {note}
-            </Text>
-          ) : null}
-        </Row>
-        <h2>
-          <Text variant="h1" lines={2} mb={10}>
-            {entryTitle(entry)}
-          </Text>
-        </h2>
-        <Row wrap gap={12} mb={12}>
-          {metadata?.rating ? (
-            <Text variant="meta" color="accent">{`${metadata.rating.toFixed(1)}★`}</Text>
-          ) : null}
-          <Text variant="meta" color="textMuted">
-            {entryFacts(t, entry).join(' · ')}
-          </Text>
-        </Row>
-        {synopsis ? (
-          <Text variant="body" mb={20} color="text/82">
-            {synopsis}
-          </Text>
-        ) : null}
-        <Row wrap gap={12}>
-          {entry.type === 'movie' ? (
-            <Button icon="player-play-filled" label={t('content.play')} asChild>
-              <RouteLink to="/watch/$id" params={{ id: entry.item.id }} />
-            </Button>
-          ) : null}
-          <Button
-            variant={entry.type === 'movie' ? 'glass' : undefined}
-            label={t('content.moreInfo')}
-            asChild
-          >
-            {entryLink(entry)}
-          </Button>
-        </Row>
-      </Box>
+      <SpotlightCopy entry={entry} title={section.title} note={note} />
     </section>
   );
 }

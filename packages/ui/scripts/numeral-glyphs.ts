@@ -89,68 +89,93 @@ function glyphIdOf(font: DataView, cmap: number, code: number): number {
   throw new Error(`${FACE} maps no glyph to U+${code.toString(16)}`);
 }
 
-function outlineOf(font: DataView, tables: Map<string, number>, glyph: number): Outline {
+interface Reader {
+  font: DataView;
+  at: number;
+}
+
+function glyphStart(font: DataView, tables: Map<string, number>, glyph: number): number {
   const long = font.getInt16(table(tables, 'head') + 50) === 1;
   const loca = table(tables, 'loca');
   const offset = long ? font.getUint32(loca + glyph * 4) : font.getUint16(loca + glyph * 2) * 2;
-  const at = table(tables, 'glyf') + offset;
-  const contourCount = font.getInt16(at);
-  if (contourCount < 0) {
-    throw new Error(`glyph ${glyph} is a composite, which a digit is not`);
-  }
+  return table(tables, 'glyf') + offset;
+}
 
-  const ends: number[] = [];
-  for (let c = 0; c < contourCount; c += 1) {
-    ends.push(font.getUint16(at + 10 + c * 2));
-  }
-  const pointCount = (ends.at(-1) ?? -1) + 1;
-  let cursor = at + 10 + contourCount * 2;
-  cursor += 2 + font.getUint16(cursor);
-
+function flagsOf(reader: Reader, pointCount: number): number[] {
+  const { font } = reader;
   const flags: number[] = [];
   while (flags.length < pointCount) {
-    const flag = font.getUint8(cursor);
-    cursor += 1;
-    const repeats = flag & REPEAT ? font.getUint8(cursor) : 0;
+    const flag = font.getUint8(reader.at);
+    reader.at += 1;
+    const repeats = flag & REPEAT ? font.getUint8(reader.at) : 0;
     if (flag & REPEAT) {
-      cursor += 1;
+      reader.at += 1;
     }
     for (let r = 0; r <= repeats; r += 1) {
       flags.push(flag);
     }
   }
+  return flags;
+}
 
-  const axis = (short: number, sameOrPositive: number): number[] => {
-    const values: number[] = [];
-    let value = 0;
-    for (const flag of flags) {
-      if (flag & short) {
-        const step = font.getUint8(cursor);
-        cursor += 1;
-        value += flag & sameOrPositive ? step : -step;
-      } else if (!(flag & sameOrPositive)) {
-        value += font.getInt16(cursor);
-        cursor += 2;
-      }
-      values.push(value);
+function axisOf(
+  reader: Reader,
+  flags: number[],
+  masks: { short: number; sameOrPositive: number },
+): number[] {
+  const { font } = reader;
+  const values: number[] = [];
+  let value = 0;
+  for (const flag of flags) {
+    if (flag & masks.short) {
+      const step = font.getUint8(reader.at);
+      reader.at += 1;
+      value += flag & masks.sameOrPositive ? step : -step;
+    } else if (!(flag & masks.sameOrPositive)) {
+      value += font.getInt16(reader.at);
+      reader.at += 2;
     }
-    return values;
-  };
-  const xs = axis(X_SHORT, X_SAME_OR_POSITIVE);
-  const ys = axis(Y_SHORT, Y_SAME_OR_POSITIVE);
+    values.push(value);
+  }
+  return values;
+}
 
+function contoursOf(ends: number[], flags: number[], coords: { xs: number[]; ys: number[] }) {
   const contours: Point[][] = [];
   let first = 0;
   for (const end of ends) {
     const contour: Point[] = [];
     for (let p = first; p <= end; p += 1) {
-      contour.push({ x: xs[p] ?? 0, y: ys[p] ?? 0, on: ((flags[p] ?? 0) & ON_CURVE) !== 0 });
+      contour.push({
+        x: coords.xs[p] ?? 0,
+        y: coords.ys[p] ?? 0,
+        on: ((flags[p] ?? 0) & ON_CURVE) !== 0,
+      });
     }
     contours.push(contour);
     first = end + 1;
   }
+  return contours;
+}
+
+function outlineOf(font: DataView, tables: Map<string, number>, glyph: number): Outline {
+  const at = glyphStart(font, tables, glyph);
+  const contourCount = font.getInt16(at);
+  if (contourCount < 0) {
+    throw new Error(`glyph ${glyph} is a composite, which a digit is not`);
+  }
+  const ends: number[] = [];
+  for (let c = 0; c < contourCount; c += 1) {
+    ends.push(font.getUint16(at + 10 + c * 2));
+  }
+  const pointCount = (ends.at(-1) ?? -1) + 1;
+  const instructions = at + 10 + contourCount * 2;
+  const reader: Reader = { font, at: instructions + 2 + font.getUint16(instructions) };
+  const flags = flagsOf(reader, pointCount);
+  const xs = axisOf(reader, flags, { short: X_SHORT, sameOrPositive: X_SAME_OR_POSITIVE });
+  const ys = axisOf(reader, flags, { short: Y_SHORT, sameOrPositive: Y_SAME_OR_POSITIVE });
   return {
-    contours,
+    contours: contoursOf(ends, flags, { xs, ys }),
     xMin: font.getInt16(at + 2),
     yMin: font.getInt16(at + 4),
     xMax: font.getInt16(at + 6),
@@ -207,7 +232,7 @@ const file = readFileSync(FONT);
 const font = new DataView(file.buffer, file.byteOffset, file.byteLength);
 const tables = tablesOf(font);
 const cmap = table(tables, 'cmap');
-const outlines = [...DIGITS].map((digit) =>
+const outlines = Array.from(DIGITS).map((digit) =>
   outlineOf(font, tables, glyphIdOf(font, cmap, digit.codePointAt(0) ?? 0)),
 );
 

@@ -1,8 +1,9 @@
-import type { CardSection, MediaCard, Show } from '@kromatv/client/media';
+import type { CardSection } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { describe, expect, it } from 'vitest';
 import { heroSlides } from '#tv/features/catalog/home/hero-slides';
 import type { HomeEntry } from '#tv/features/catalog/home/sectionEntry';
+import { mediaCard, metadata, show, video } from '#tv/features/catalog/media.fixtures';
 
 const client = fakeClient({
   media: {
@@ -14,13 +15,13 @@ const client = fakeClient({
   },
 });
 
-const dune = {
+const dune = mediaCard({
   id: 'm1',
   title: 'Dune',
-  video: { codec: 'hevc', width: 3840, hdr: true },
-  metadata: { backdropUrl: 'backdrop:m1' },
-} as unknown as MediaCard;
-const silo = { id: 's1', title: 'Silo', video: null, metadata: null } as unknown as Show;
+  video: video({ codec: 'hevc', width: 3840, hdr: true }),
+  metadata: metadata({ backdropUrl: 'backdrop:m1' }),
+});
+const silo = show({ id: 's1', title: 'Silo' });
 
 const DUNE: HomeEntry = { type: 'movie', item: dune };
 const SILO: HomeEntry = { type: 'show', show: silo };

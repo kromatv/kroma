@@ -1,6 +1,7 @@
 import { posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, Focusable, IconButton, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
+import type { ReactNode } from 'react';
 import {
   entryBackdrop,
   entryId,
@@ -44,52 +45,65 @@ export interface HeroPagerProps {
   carousel: Carousel;
 }
 
-/** The titles of the hero as a strip to page through: thumbnails where there
- * is room, bars where there is not, the one that is up filling as its hold
- * runs out. */
-export function HeroPager({ entries, carousel }: Readonly<HeroPagerProps>) {
+interface PagerStopProps {
+  entry: HomeEntry;
+  index: number;
+  carousel: Carousel;
+  roomy: boolean;
+}
+
+function PagerHold({ carousel, up }: Readonly<{ carousel: Carousel; up: boolean }>) {
   const s = useStyles(sDefinition);
-  const t = useT();
-  const { client } = useAuth();
-  const step = useBreakpoint();
-  const roomy = step === 'lg' || step === 'tv';
 
   return (
-    <Box row align="center" gap={10} style={s.bar}>
-      {entries.map((entry, index) => {
-        const up = index === carousel.index;
-        const hold = (
-          <Box
-            key={`${carousel.index}:${carousel.running}`}
-            style={[s.fill, up && carousel.running ? s.filling : null]}
-            opacity={up ? 1 : 0}
-          />
-        );
-        return (
-          <Focusable
-            key={entryId(entry)}
-            label={t('content.heroShow', { title: entryTitle(entry) })}
-            pressed={up}
-            onPress={() => carousel.go(index)}
-            style={roomy ? [s.thumb, up ? s.thumbUp : null] : s.dot}
-          >
-            {roomy ? (
-              <>
-                <Image
-                  src={entryBackdrop(client, entry, THUMB_W * 2)}
-                  background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
-                  fit="cover"
-                  fill
-                />
-                <Box style={s.track}>{hold}</Box>
-              </>
-            ) : (
-              hold
-            )}
-          </Focusable>
-        );
-      })}
-      <Box grow={1} />
+    <Box
+      key={`${carousel.index}:${carousel.running}`}
+      style={[s.fill, up && carousel.running ? s.filling : null]}
+      opacity={up ? 1 : 0}
+    />
+  );
+}
+
+function PagerThumb({ entry, children }: Readonly<{ entry: HomeEntry; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+  const { client } = useAuth();
+
+  return (
+    <>
+      <Image
+        src={entryBackdrop(client, entry, THUMB_W * 2)}
+        background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
+        fit="cover"
+        fill
+      />
+      <Box style={s.track}>{children}</Box>
+    </>
+  );
+}
+
+function PagerStop({ entry, index, carousel, roomy }: Readonly<PagerStopProps>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  const up = index === carousel.index;
+  const hold = <PagerHold carousel={carousel} up={up} />;
+
+  return (
+    <Focusable
+      label={t('content.heroShow', { title: entryTitle(entry) })}
+      pressed={up}
+      onPress={() => carousel.go(index)}
+      style={roomy ? [s.thumb, up ? s.thumbUp : null] : s.dot}
+    >
+      {roomy ? <PagerThumb entry={entry}>{hold}</PagerThumb> : hold}
+    </Focusable>
+  );
+}
+
+function PagerControls({ carousel }: Readonly<{ carousel: Carousel }>) {
+  const t = useT();
+
+  return (
+    <>
       <IconButton
         variant="glass"
         diameter={36}
@@ -111,6 +125,31 @@ export function HeroPager({ entries, carousel }: Readonly<HeroPagerProps>) {
         label={t('content.heroNext')}
         onPress={() => carousel.step(1)}
       />
+    </>
+  );
+}
+
+/** The titles of the hero as a strip to page through: thumbnails where there
+ * is room, bars where there is not, the one that is up filling as its hold
+ * runs out. */
+export function HeroPager({ entries, carousel }: Readonly<HeroPagerProps>) {
+  const s = useStyles(sDefinition);
+  const step = useBreakpoint();
+  const roomy = step === 'lg' || step === 'tv';
+
+  return (
+    <Box row align="center" gap={10} style={s.bar}>
+      {entries.map((entry, index) => (
+        <PagerStop
+          key={entryId(entry)}
+          entry={entry}
+          index={index}
+          carousel={carousel}
+          roomy={roomy}
+        />
+      ))}
+      <Box grow={1} />
+      <PagerControls carousel={carousel} />
     </Box>
   );
 }

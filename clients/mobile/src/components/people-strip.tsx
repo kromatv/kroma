@@ -10,14 +10,29 @@ import { useClient } from '#mobile/lib/session';
 
 const PORTRAIT_W = 320;
 
+function PersonLink({ person }: Readonly<{ person: PersonHit }>) {
+  const t = useT();
+  const client = useClient();
+  const router = useRouter();
+
+  return (
+    <PersonCard
+      size="sm"
+      name={person.name}
+      role={t('person.titleCount', { count: person.titles })}
+      photo={client.media.artwork.resolve(person.profileUrl, PORTRAIT_W)}
+      gradient={tintGradient(posterColors(person.name))}
+      onPress={() => router.push(`/person/${encodeURIComponent(person.name)}`)}
+    />
+  );
+}
+
 /** The people a search matched by name, each opening their credits page.
  *  Nothing is drawn for a search that matched nobody. */
 export function PeopleStrip({ people }: Readonly<{ people: readonly PersonHit[] }>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const client = useClient();
-  const router = useRouter();
   const gutters = useGutters();
   if (people.length === 0) {
     return null;
@@ -32,15 +47,7 @@ export function PeopleStrip({ people }: Readonly<{ people: readonly PersonHit[] 
         contentContainerStyle={[s.strip, gutters.style]}
       >
         {people.map((person) => (
-          <PersonCard
-            key={person.name}
-            size="sm"
-            name={person.name}
-            role={t('person.titleCount', { count: person.titles })}
-            photo={client.media.artwork.resolve(person.profileUrl, PORTRAIT_W)}
-            gradient={tintGradient(posterColors(person.name))}
-            onPress={() => router.push(`/person/${encodeURIComponent(person.name)}` as never)}
-          />
+          <PersonLink key={person.name} person={person} />
         ))}
       </ScrollView>
     </Box>

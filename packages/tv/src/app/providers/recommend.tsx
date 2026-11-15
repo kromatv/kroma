@@ -43,14 +43,14 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
 
   useEffect(() => {
     if (!ready || !user || !client) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.media
       .homeCards({ layouts: DRAWN_LAYOUTS })
       .then((home) => {
         if (cancelled) {
-          return;
+          return null;
         }
         setSections(home);
         if (home.some((section) => section.layout === 'hero')) {

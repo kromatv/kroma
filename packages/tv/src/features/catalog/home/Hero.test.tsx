@@ -9,11 +9,13 @@ import { Hero } from '#tv/features/catalog/home/Hero';
 import type { HeroSlide } from '#tv/features/catalog/home/hero-slides';
 import { HERO_DWELL_MS } from '#tv/features/catalog/home/use-hero-pager';
 
-const reducedMotion = (on: boolean) =>
-  vi.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(on);
+const reduceMotion = () =>
+  vi.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+const keepMotion = () =>
+  vi.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
 
 beforeEach(() => {
-  reducedMotion(false);
+  keepMotion();
 });
 
 afterEach(() => {
@@ -211,7 +213,7 @@ describe('the hero slideshow', () => {
 
   it('holds still for a viewer who asked for less motion', async () => {
     vi.useFakeTimers();
-    reducedMotion(true);
+    reduceMotion();
     mount([film('Big Fish'), series('Silo')]);
     await waits(0);
 

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import type { CardSection, MediaCard, Show } from '@kromatv/client/media';
+import type { CardSection } from '@kromatv/client/media';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type HomeEntry, planHome } from '#mobile/lib/home-sections';
+import { movieEntry, showEntry } from '#mobile/lib/home-entry.fixture';
+import { planHome } from '#mobile/lib/home-sections';
 
 const app = vi.hoisted(() => ({ push: vi.fn(), play: vi.fn() }));
 
@@ -40,14 +41,8 @@ vi.mock('#mobile/lib/session', () => ({
 
 const { HomeSection } = await import('./home-section');
 
-const movie = (id: string, title: string, overview?: string): HomeEntry => ({
-  type: 'movie',
-  item: { id, title, metadata: overview ? { overview, genres: [] } : null } as unknown as MediaCard,
-});
-const show = (id: string, title: string): HomeEntry => ({
-  type: 'show',
-  show: { id, title, metadata: null } as unknown as Show,
-});
+const movie = (id: string, title: string, overview?: string) => movieEntry(id, { title, overview });
+const show = (id: string, title: string) => showEntry(id, { title });
 
 const section = (over: Partial<CardSection> & Pick<CardSection, 'items'>): CardSection => ({
   id: 'section',
@@ -164,26 +159,27 @@ describe('a home section', () => {
   });
 });
 
+const finger = (target: HTMLElement) => ({
+  identifier: 0,
+  target,
+  clientX: 0,
+  clientY: 0,
+  pageX: 0,
+  pageY: 0,
+  force: 1,
+});
+
+const rest = (on: HTMLElement) =>
+  fireEvent.touchStart(on, { touches: [finger(on)], changedTouches: [finger(on)] });
+const lift = (from: HTMLElement) =>
+  fireEvent.touchEnd(from, { touches: [], changedTouches: [finger(from)] });
+
 describe('a hero left alone', () => {
   const PHONE_WIDTH = 390;
   const TURN_EVERY_MS = 8000;
   const scroll = vi.fn();
   const turns = () => scroll.mock.calls.filter(([to]) => to.behavior === 'smooth');
   const hero = section({ layout: 'hero', items: [movie('a', 'Heat'), show('b', 'Andor')] });
-
-  const finger = (target: HTMLElement) => ({
-    identifier: 0,
-    target,
-    clientX: 0,
-    clientY: 0,
-    pageX: 0,
-    pageY: 0,
-    force: 1,
-  });
-  const rest = (on: HTMLElement) =>
-    fireEvent.touchStart(on, { touches: [finger(on)], changedTouches: [finger(on)] });
-  const lift = (from: HTMLElement) =>
-    fireEvent.touchEnd(from, { touches: [], changedTouches: [finger(from)] });
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -198,37 +194,40 @@ describe('a hero left alone', () => {
     vi.useRealTimers();
   });
 
-  it('turns to its next title', () => {
+  it('turns to its next title', async () => {
     draw(hero);
 
-    act(() => vi.advanceTimersByTime(TURN_EVERY_MS));
+    await act(async () => vi.advanceTimersByTime(TURN_EVERY_MS));
 
     expect(turns()).toEqual([[{ top: 0, left: PHONE_WIDTH, behavior: 'smooth' }]]);
   });
 
-  it('stays on its page while a finger rests on it', () => {
+  it('stays on its page while a finger rests on it', async () => {
     draw(hero);
 
     rest(screen.getByText('Heat'));
-    act(() => vi.advanceTimersByTime(TURN_EVERY_MS * 4));
+    await act(async () => vi.advanceTimersByTime(TURN_EVERY_MS * 4));
 
     expect(turns()).toEqual([]);
   });
 
-  it('turns again once the finger lifts', () => {
+  it('turns again once the finger lifts', async () => {
     draw(hero);
     rest(screen.getByText('Heat'));
-    act(() => vi.advanceTimersByTime(TURN_EVERY_MS * 4));
+    await act(async () => vi.advanceTimersByTime(TURN_EVERY_MS * 4));
 
     lift(screen.getByText('Heat'));
-    act(() => vi.advanceTimersByTime(TURN_EVERY_MS));
+    await act(async () => vi.advanceTimersByTime(TURN_EVERY_MS));
 
     expect(turns()).toHaveLength(1);
   });
 
   it('marks the page a swipe lands on', () => {
     draw(hero);
-    const pager = screen.getByRole('tablist').previousElementSibling as HTMLElement;
+    const pager = screen.getByRole('tablist').previousElementSibling;
+    if (!(pager instanceof HTMLElement)) {
+      throw new Error('the pager is not drawn before its dots');
+    }
 
     pager.scrollLeft = PHONE_WIDTH;
     fireEvent.scroll(pager);

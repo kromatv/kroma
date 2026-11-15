@@ -17,6 +17,34 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 
 const SYNOPSIS_BUDGET = 160;
 
+function useSpotlightWidth() {
+  const gutters = useGutters();
+  const { width } = useWindowDimensions();
+  return Math.min(width - gutters.left - gutters.right, contentWidth.reading);
+}
+
+function SpotlightText({ entry, note }: Readonly<RowEntry>) {
+  const s = useStyles(sDefinition);
+  const synopsis = synopsisLead(
+    (entry.type === 'movie' ? entry.item : entry.show).metadata?.overview,
+    SYNOPSIS_BUDGET,
+  );
+
+  return (
+    <Box style={s.text}>
+      {note ? (
+        <Text lines={1} style={s.note}>
+          {note}
+        </Text>
+      ) : null}
+      <Text lines={2} style={s.title}>
+        {entryTitle(entry)}
+      </Text>
+      {synopsis ? <Text style={s.overview}>{synopsis}</Text> : null}
+    </Box>
+  );
+}
+
 /** One title given the width of the page: its backdrop, why it was picked and
  *  the start of its synopsis. */
 export function SpotlightCard({ row }: Readonly<{ row: RowEntry }>) {
@@ -25,21 +53,14 @@ export function SpotlightCard({ row }: Readonly<{ row: RowEntry }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
-  const gutters = useGutters();
-  const { width: windowWidth } = useWindowDimensions();
-  const { entry, note } = row;
-  const width = Math.min(windowWidth - gutters.left - gutters.right, contentWidth.reading);
-  const title = entryTitle(entry);
-  const synopsis = synopsisLead(
-    (entry.type === 'movie' ? entry.item : entry.show).metadata?.overview,
-    SYNOPSIS_BUDGET,
-  );
+  const width = useSpotlightWidth();
+  const { entry } = row;
 
   return (
     <Pressable
       onPress={() => router.push(entryRoute(entry))}
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={entryTitle(entry)}
       accessibilityHint={t('content.seeDetails')}
       style={({ pressed }) => [s.card, { width }, pressed && s.cardPressed]}
     >
@@ -48,17 +69,7 @@ export function SpotlightCard({ row }: Readonly<{ row: RowEntry }>) {
         seed={entryId(entry)}
         style={s.art}
       />
-      <Box style={s.text}>
-        {note ? (
-          <Text lines={1} style={s.note}>
-            {note}
-          </Text>
-        ) : null}
-        <Text lines={2} style={s.title}>
-          {title}
-        </Text>
-        {synopsis ? <Text style={s.overview}>{synopsis}</Text> : null}
-      </Box>
+      <SpotlightText {...row} />
     </Pressable>
   );
 }

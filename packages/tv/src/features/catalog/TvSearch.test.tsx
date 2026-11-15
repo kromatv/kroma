@@ -13,6 +13,7 @@ import {
   movie,
   series,
   tmdb,
+  tmdbInLibrary,
   type,
 } from '#tv/features/catalog/TvSearch.fixtures';
 
@@ -191,7 +192,7 @@ describe('TvSearch', () => {
   it('leaves a title the library already holds out of the half that is not in it', async () => {
     mount({
       search: vi.fn(async () => found({ type: 'movie', item: movie('m1', 'Sintel') })),
-      discover: vi.fn(async () => known(tmdb(45_745, 'Sintel', true))),
+      discover: vi.fn(async () => known(tmdbInLibrary(45_745, 'Sintel'))),
     });
     type('S');
 

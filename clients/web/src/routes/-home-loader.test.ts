@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 it('starts the home and the continue row without waiting for either', async () => {
-  fetched.mockReturnValue(new Promise(() => undefined) as never);
+  fetched.mockReturnValue(new Promise<Response>(() => undefined));
 
   const queryClient = await load();
 

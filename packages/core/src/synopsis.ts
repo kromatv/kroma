@@ -23,7 +23,7 @@ function isLetter(char: string): boolean {
 }
 
 function lastWord(text: string): string {
-  const letters = [...text];
+  const letters = Array.from(text);
   let from = letters.length;
   while (from > 0 && isLetter(letters[from - 1] ?? '')) {
     from -= 1;
@@ -44,31 +44,46 @@ const WIDE_STOPS = '。！？';
 const CLOSERS = '"\'”»)]」』';
 const SPACE = /\s/;
 
+function skipOver(text: string, from: number, chars: string): number {
+  let end = from;
+  while (end < text.length && chars.includes(text[end] ?? '')) {
+    end += 1;
+  }
+  return end;
+}
+
 function endOfSentence(text: string, at: number): number {
   const wide = WIDE_STOPS.includes(text[at] ?? '');
-  const stops = wide ? WIDE_STOPS : LATIN_STOPS;
-  let end = at;
-  while (end < text.length && stops.includes(text[end] ?? '')) {
-    end += 1;
-  }
-  while (end < text.length && CLOSERS.includes(text[end] ?? '')) {
-    end += 1;
-  }
+  const stopped = skipOver(text, at, wide ? WIDE_STOPS : LATIN_STOPS);
+  const end = skipOver(text, stopped, CLOSERS);
   const followed = end < text.length && SPACE.test(text[end] ?? '');
   return wide || followed ? end : -1;
 }
 
+interface Scan {
+  text: string;
+  known: Set<string>;
+}
+
+function sentenceEndAt({ text, known }: Scan, at: number, from: number): number {
+  const stop = text[at] ?? '';
+  if (!LATIN_STOPS.includes(stop) && !WIDE_STOPS.includes(stop)) {
+    return -1;
+  }
+  if (stop === '.' && endsOnAbbreviation(text.slice(from, at), known)) {
+    return -1;
+  }
+  return endOfSentence(text, at);
+}
+
 function byPunctuation(text: string): string[] {
-  const known = abbreviations();
+  const scan: Scan = { text, known: abbreviations() };
   const sentences: string[] = [];
   let from = 0;
   let at = 0;
   while (at < text.length) {
-    const stop = text[at] ?? '';
-    const end =
-      LATIN_STOPS.includes(stop) || WIDE_STOPS.includes(stop) ? endOfSentence(text, at) : -1;
-    const abbreviated = stop === '.' && endsOnAbbreviation(text.slice(from, at), known);
-    if (end === -1 || abbreviated) {
+    const end = sentenceEndAt(scan, at, from);
+    if (end === -1) {
       at += 1;
       continue;
     }
@@ -87,18 +102,22 @@ interface SentenceSegmenter {
   segment(text: string): Iterable<{ segment: string }>;
 }
 
-type SegmenterHost = {
-  Segmenter?: new (
+interface SegmenterHost {
+  Segmenter: new (
     locale: string | undefined,
     options: { granularity: 'sentence' },
   ) => SentenceSegmenter;
-};
+}
+
+function hasSegmenter(host: object): host is SegmenterHost {
+  return 'Segmenter' in host && typeof host.Segmenter === 'function';
+}
 
 function sentencesOf(text: string, locale?: string): string[] {
-  const { Segmenter } = Intl as unknown as SegmenterHost;
-  if (!Segmenter) {
+  if (!hasSegmenter(Intl)) {
     return byPunctuation(text);
   }
+  const { Segmenter } = Intl;
   const sentences: string[] = [];
   for (const { segment } of new Segmenter(locale, { granularity: 'sentence' }).segment(text)) {
     const sentence = segment.trim();

@@ -1,31 +1,27 @@
 // @vitest-environment jsdom
-import type { CardSection, MediaCard, Show } from '@kromatv/client/media';
+import type { CardSection } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  TvClientProvider,
-  type TvNav,
-  TvNavProvider,
-  type TvScreens,
-  useNav,
-} from '#tv/app/router';
+import { TvClientProvider, type TvNav, TvNavProvider, useNav } from '#tv/app/router';
+import { stubScreens } from '#tv/app/router.fixtures';
 import { HomeSection } from '#tv/features/catalog/home/home-section';
+import { mediaCard, metadata, show } from '#tv/features/catalog/media.fixtures';
 
-const { clearPressGuard, render } = createInputTestHost();
+const host = createInputTestHost();
 
 vi.mock('#tv/app/providers/watched', () => ({
   useWatched: () => ({ has: (id: string) => id === 'seen' }),
 }));
 
-const DUNE = {
+const DUNE = mediaCard({
   id: 'm1',
   title: 'Dune',
-  metadata: { genres: ['sci-fi'], overview: 'A duke takes a desert planet.' },
-} as unknown as MediaCard;
-const ALIEN = { id: 'seen', title: 'Alien', metadata: null } as unknown as MediaCard;
-const SILO = { id: 's1', title: 'Silo', metadata: null, progress: 40 } as unknown as Show;
+  metadata: metadata({ genres: ['sci-fi'], overview: 'A duke takes a desert planet.' }),
+});
+const ALIEN = mediaCard({ id: 'seen', title: 'Alien' });
+const SILO = show({ id: 's1', title: 'Silo', progress: 40 });
 
 const ENTRIES: CardSection['items'] = [
   { type: 'movie', item: ALIEN },
@@ -61,10 +57,10 @@ function mount(drawn: CardSection) {
   });
   const onHold = vi.fn();
   let nav!: TvNav;
-  render(
+  host.render(
     onScreen(
       <TvClientProvider client={client}>
-        <TvNavProvider screens={{} as TvScreens}>
+        <TvNavProvider screens={stubScreens()}>
           <NavHandle
             onReady={(n) => {
               nav = n;
@@ -76,7 +72,7 @@ function mount(drawn: CardSection) {
       { remote: true },
     ),
   );
-  clearPressGuard();
+  host.clearPressGuard();
   return { nav: () => nav, onHold };
 }
 
@@ -92,7 +88,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  host.clearPressGuard();
   vi.useRealTimers();
 });
 
@@ -145,7 +141,7 @@ describe('HomeSection', () => {
   });
 
   it('draws a layout it has no shape for as a rail', () => {
-    mount(section('mosaic' as Layout));
+    mount(section('hero'));
 
     expect(screen.getByRole('button', { name: 'Alien' })).toBeTruthy();
     expect(screen.getByText('Movie')).toBeTruthy();

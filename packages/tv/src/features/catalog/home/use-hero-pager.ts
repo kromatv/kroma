@@ -9,24 +9,34 @@ interface HeroPager {
   touch: () => void;
 }
 
+interface HeroPagerOptions {
+  count: number;
+  held: boolean;
+}
+
+interface Position {
+  index: number;
+}
+
+const shownOf = ({ index }: Position, count: number) => (index < count ? index : 0);
+
 /** Which of `count` hero entries is shown. It moves on by itself after a dwell
  * with no `touch`, only while `held` and never under reduced motion, and stops
  * for good once `page` was called. */
-export function useHeroPager(count: number, held: boolean): HeroPager {
+export function useHeroPager({ count, held }: HeroPagerOptions): HeroPager {
   const reducedMotion = useReducedMotion();
-  const [index, setIndex] = useState(0);
+  const [position, setPosition] = useState<Position>({ index: 0 });
   const [pagedByHand, setPagedByHand] = useState(false);
-  const [presses, setPresses] = useState(0);
-  const shown = index < count ? index : 0;
   const playing = held && !pagedByHand && !reducedMotion && count > 1;
 
   useEffect(() => {
     if (!playing) {
-      return;
+      return undefined;
     }
-    const dwell = setTimeout(() => setIndex((shown + 1) % count), HERO_DWELL_MS);
+    const next = (shownOf(position, count) + 1) % count;
+    const dwell = setTimeout(() => setPosition({ index: next }), HERO_DWELL_MS);
     return () => clearTimeout(dwell);
-  }, [playing, shown, count, presses]);
+  }, [playing, position, count]);
 
   const page = useCallback(
     (by: 1 | -1) => {
@@ -34,11 +44,11 @@ export function useHeroPager(count: number, held: boolean): HeroPager {
         return;
       }
       setPagedByHand(true);
-      setIndex((at) => ((at < count ? at : 0) + by + count) % count);
+      setPosition((at) => ({ index: (shownOf(at, count) + by + count) % count }));
     },
     [count],
   );
-  const touch = useCallback(() => setPresses((n) => n + 1), []);
+  const touch = useCallback(() => setPosition((at) => ({ index: at.index })), []);
 
-  return { index: shown, page, touch };
+  return { index: shownOf(position, count), page, touch };
 }

@@ -136,6 +136,19 @@ function creditsOutsideLibrary(
   return credits.filter((credit) => !inLibrary.has(creditKey(credit.mediaType, credit.tmdbId)));
 }
 
+function renderLibrary(entries: CatalogEntry[], heading: string | null) {
+  return (
+    <section>
+      {heading ? (
+        <Text variant="h2" mb={20}>
+          {heading}
+        </Text>
+      ) : null}
+      <CatalogGrid entries={entries} />
+    </section>
+  );
+}
+
 function renderPersonBody(
   t: ReturnType<typeof useT>,
   entries: CatalogEntry[],
@@ -148,18 +161,10 @@ function renderPersonBody(
       </EmptyState.Root>
     );
   }
+  const heading = elsewhere.length > 0 ? t('discover.sectionLibrary') : null;
   return (
     <>
-      {entries.length > 0 ? (
-        <section>
-          {elsewhere.length > 0 ? (
-            <Text variant="h2" mb={20}>
-              {t('discover.sectionLibrary')}
-            </Text>
-          ) : null}
-          <CatalogGrid entries={entries} />
-        </section>
-      ) : null}
+      {entries.length > 0 ? renderLibrary(entries, heading) : null}
       {elsewhere.length > 0 ? (
         <Box mt={entries.length > 0 ? 48 : 0}>
           <TmdbFilmography credits={elsewhere} />

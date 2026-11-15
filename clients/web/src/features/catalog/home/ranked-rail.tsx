@@ -56,15 +56,46 @@ const sDefinition = styles({
   posterLit: { outlineColor: color('accent'), transform: [{ translateY: motion.focusLift }] },
 });
 
+interface RankedFaceProps {
+  entry: HomeEntry;
+  rank: number;
+  hovered: boolean;
+}
+
+function RankedFace({ entry, rank, hovered }: Readonly<RankedFaceProps>) {
+  const s = useStyles(sDefinition);
+  const { client } = useAuth();
+
+  return (
+    <>
+      <Box style={s.numeral}>
+        <Numeral
+          value={rank}
+          height={NUMERAL_H}
+          maxWidth={COLUMN}
+          color={hovered ? 'accent' : 'textDim'}
+        />
+      </Box>
+      <Box style={[s.poster, hovered ? s.posterLit : null]}>
+        <Image
+          src={entryPoster(client, entry, POSTER_W * 2)}
+          background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
+          alt={entryTitle(entry)}
+          fit="cover"
+          fill
+        />
+      </Box>
+    </>
+  );
+}
+
 const RankedCard = memo(function RankedCard({
   entry,
   rank,
 }: Readonly<{ entry: HomeEntry; rank: number }>) {
   const s = useStyles(sDefinition);
   const t = useT();
-  const { client } = useAuth();
   const [hovered, setHovered] = useState(false);
-  const id = entryId(entry);
 
   return (
     <Box
@@ -77,28 +108,7 @@ const RankedCard = memo(function RankedCard({
         style={s.hit}
         asChild
       >
-        {entryLink(
-          entry,
-          <>
-            <Box style={s.numeral}>
-              <Numeral
-                value={rank}
-                height={NUMERAL_H}
-                maxWidth={COLUMN}
-                color={hovered ? 'accent' : 'textDim'}
-              />
-            </Box>
-            <Box style={[s.poster, hovered ? s.posterLit : null]}>
-              <Image
-                src={entryPoster(client, entry, POSTER_W * 2)}
-                background={`linear-gradient(158deg, ${posterColors(id).join(', ')})`}
-                alt={entryTitle(entry)}
-                fit="cover"
-                fill
-              />
-            </Box>
-          </>,
-        )}
+        {entryLink(entry, <RankedFace entry={entry} rank={rank} hovered={hovered} />)}
       </Focusable>
     </Box>
   );

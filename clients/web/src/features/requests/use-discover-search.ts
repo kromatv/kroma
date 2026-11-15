@@ -1,3 +1,4 @@
+import type { WebRuntime } from '#web/shared/lib/api';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Debounced dual search: the local catalog (always) + TMDB discovery (gated
 // on requests.create). Backed by TanStack Query (dedup + cache); latest-wins is
@@ -18,45 +19,65 @@ export interface DiscoverSearchState {
   canDiscover: boolean;
 }
 
-export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSearchState {
-  const webRuntime = useWebRuntime();
+const NO_LOCAL: { results: SearchHit[]; people: PersonHit[] } = { results: [], people: [] };
+const NO_DISCOVER: DiscoverEntry[] = [];
 
+const NOTHING_FOUND = { local: NO_LOCAL.results, people: NO_LOCAL.people, discover: NO_DISCOVER };
+
+function narrowLocal(local: SearchHit[], type: DiscoverType): SearchHit[] {
+  if (type === 'all') {
+    return local;
+  }
+  return local.filter((h) => (type === 'movie' ? h.type === 'movie' : h.type !== 'movie'));
+}
+
+interface SearchScope {
+  client: WebRuntime['client'];
+  q: string;
+  type: DiscoverType;
+  canDiscover: boolean;
+}
+
+function searchDiscovery({ client, q, type, canDiscover }: Readonly<SearchScope>) {
+  if (!canDiscover) {
+    return Promise.resolve(NO_DISCOVER);
+  }
+  return client.discovery
+    .search(q, { type })
+    .then((r) => r.results)
+    .catch(() => NO_DISCOVER);
+}
+
+async function searchEverywhere(scope: Readonly<SearchScope>) {
+  const { client, q, type } = scope;
+  const [{ results, people }, discover] = await Promise.all([
+    client.media.search(q, { limit: 24 }).catch(() => NO_LOCAL),
+    searchDiscovery(scope),
+  ]);
+  return { local: narrowLocal(results, type), people, discover };
+}
+
+function useCanDiscover(): boolean {
   const { user } = useAuth();
-  const canDiscover = !!user && hasPermission(user, 'requests.create');
+  return !!user && hasPermission(user, 'requests.create');
+}
+
+export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSearchState {
+  const { client } = useWebRuntime();
+  const canDiscover = useCanDiscover();
   const q = useDebouncedValue(query.trim(), 250);
+  const searching = q.length > 0;
 
   const { data, isFetching } = useQuery({
     queryKey: ['discoverSearch', q, type, canDiscover],
-    queryFn: async () => {
-      const c = webRuntime.client;
-      const [{ results: local, people }, discover] = await Promise.all([
-        c.media
-          .search(q, { limit: 24 })
-          .catch(() => ({ results: [] as SearchHit[], people: [] as PersonHit[] })),
-        canDiscover
-          ? c.discovery
-              .search(q, { type })
-              .then((r) => r.results)
-              .catch(() => [] as DiscoverEntry[])
-          : Promise.resolve<DiscoverEntry[]>([]),
-      ]);
-      // The type filter also narrows the local library hits: `movie` keeps
-      // movies; `tv` keeps shows + episodes; `all` keeps everything.
-      const filteredLocal =
-        type === 'all'
-          ? local
-          : local.filter((h) => (type === 'movie' ? h.type === 'movie' : h.type !== 'movie'));
-      return { local: filteredLocal, people, discover };
-    },
-    enabled: q.length > 0,
+    queryFn: () => searchEverywhere({ client, q, type, canDiscover }),
+    enabled: searching,
     placeholderData: keepPreviousData,
   });
 
   return {
-    loading: q.length > 0 && isFetching && data === undefined,
-    local: data?.local ?? [],
-    people: data?.people ?? [],
-    discover: data?.discover ?? [],
+    loading: searching && isFetching && data === undefined,
+    ...(data ?? NOTHING_FOUND),
     canDiscover,
   };
 }

@@ -52,15 +52,60 @@ const sDefinition = styles({
   progress: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
 
+interface WideFaceProps {
+  entry: HomeEntry;
+  note?: string;
+  hovered: boolean;
+}
+
+function WideCaption({ entry, note }: Readonly<{ entry: HomeEntry; note?: string }>) {
+  const s = useStyles(sDefinition);
+
+  return (
+    <Box style={s.caption}>
+      {note ? (
+        <Text variant="overline" color="accent" lines={1} mb={4}>
+          {note}
+        </Text>
+      ) : null}
+      <Text variant="label" lines={1}>
+        {entryTitle(entry)}
+      </Text>
+    </Box>
+  );
+}
+
+function WideFace({ entry, note, hovered }: Readonly<WideFaceProps>) {
+  const s = useStyles(sDefinition);
+  const { client } = useAuth();
+  const progress = entry.type === 'show' ? (entry.show.progress ?? null) : null;
+
+  return (
+    <Box style={[s.art, hovered ? s.artLit : null]}>
+      <Image
+        src={entryBackdrop(client, entry, CARD_W * 2)}
+        background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
+        fit="cover"
+        position="center 24%"
+        fill
+      />
+      <ArtScrim variant="deep" />
+      <WideCaption entry={entry} note={note} />
+      {progress === null ? null : (
+        <Box style={s.progress}>
+          <Progress value={progress / 100} thickness={4} rounded={false} />
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 const WideCard = memo(function WideCard({
   entry,
   note,
 }: Readonly<{ entry: HomeEntry; note?: string }>) {
   const s = useStyles(sDefinition);
-  const { client } = useAuth();
   const [hovered, setHovered] = useState(false);
-  const id = entryId(entry);
-  const progress = entry.type === 'show' ? (entry.show.progress ?? null) : null;
 
   return (
     <Box
@@ -72,34 +117,7 @@ const WideCard = memo(function WideCard({
     >
       <Box style={hovered ? [s.lift, s.lifted] : s.lift}>
         <Focusable label={entryTitle(entry)} style={s.hit} asChild>
-          {entryLink(
-            entry,
-            <Box style={[s.art, hovered ? s.artLit : null]}>
-              <Image
-                src={entryBackdrop(client, entry, CARD_W * 2)}
-                background={`linear-gradient(158deg, ${posterColors(id).join(', ')})`}
-                fit="cover"
-                position="center 24%"
-                fill
-              />
-              <ArtScrim variant="deep" />
-              <Box style={s.caption}>
-                {note ? (
-                  <Text variant="overline" color="accent" lines={1} mb={4}>
-                    {note}
-                  </Text>
-                ) : null}
-                <Text variant="label" lines={1}>
-                  {entryTitle(entry)}
-                </Text>
-              </Box>
-              {progress === null ? null : (
-                <Box style={s.progress}>
-                  <Progress value={progress / 100} thickness={4} rounded={false} />
-                </Box>
-              )}
-            </Box>,
-          )}
+          {entryLink(entry, <WideFace entry={entry} note={note} hovered={hovered} />)}
         </Focusable>
       </Box>
     </Box>

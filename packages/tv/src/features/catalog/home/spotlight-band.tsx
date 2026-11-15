@@ -35,6 +35,67 @@ const sDefinition = styles({
   copy: { pl: 48, py: 40, maxWidth: 760 + 48, gap: 10 },
 });
 
+interface SpotlightCopyProps {
+  heading: string;
+  title: string;
+  note: string | undefined;
+  synopsis: string | null;
+}
+
+function SpotlightCopy({ heading, title, note, synopsis }: Readonly<SpotlightCopyProps>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+
+  return (
+    <Box style={s.copy}>
+      <Text variant="overlineTv" color="accentText">
+        {heading}
+      </Text>
+      <Text variant="titleTv" lines={1}>
+        {title}
+      </Text>
+      {note ? (
+        <Text variant="labelTv" color="textMuted">
+          {note}
+        </Text>
+      ) : null}
+      {synopsis ? (
+        <Text variant="bodyTv" color="text/82">
+          {synopsis}
+        </Text>
+      ) : null}
+      <Box row align="center" gap={6} mt={6}>
+        <Text variant="strongTv" color="accentText">
+          {t('content.seeDetails')}
+        </Text>
+        <Icon name="chevron-right" size={20} color="accentText" />
+      </Box>
+    </Box>
+  );
+}
+
+interface SpotlightArtProps {
+  entry: CardSection['items'][number];
+  tint: Parameters<typeof tintGradient>[0];
+}
+
+function SpotlightArt({ entry, tint }: Readonly<SpotlightArtProps>) {
+  const client = useClient();
+
+  return (
+    <>
+      <Img
+        src={entryBackdrop(entry, client, SPOTLIGHT_ART_W)}
+        background={tintGradient(tint)}
+        position="50% 25%"
+        fill
+        noCrossFade
+      />
+      <Veil ramp={SPOTLIGHT_VEIL} />
+    </>
+  );
+}
+
 interface SpotlightBandProps {
   section: CardSection;
   onHold: (title: HeldTitle) => void;
@@ -45,16 +106,12 @@ interface SpotlightBandProps {
 export function SpotlightBand({ section, onHold }: Readonly<SpotlightBandProps>) {
   const s = useStyles(sDefinition);
 
-  const client = useClient();
-  const t = useT();
   const tileOf = useHomeTile(onHold);
   const entry = section.items[0];
   if (!entry) {
     return null;
   }
   const tile = tileOf(entry);
-  const note = section.notes[entryId(entry)];
-  const synopsis = synopsisLead(entryMetadata(entry)?.overview, SYNOPSIS_BUDGET);
 
   return (
     <Box px={gutter.tv} mt={26} mb={16}>
@@ -66,38 +123,13 @@ export function SpotlightBand({ section, onHold }: Readonly<SpotlightBandProps>)
         style={s.band}
       >
         <Box style={s.frame}>
-          <Img
-            src={entryBackdrop(entry, client, SPOTLIGHT_ART_W)}
-            background={tintGradient(tile.tint)}
-            position="50% 25%"
-            fill
-            noCrossFade
+          <SpotlightArt entry={entry} tint={tile.tint} />
+          <SpotlightCopy
+            heading={section.title}
+            title={tile.title}
+            note={section.notes[entryId(entry)]}
+            synopsis={synopsisLead(entryMetadata(entry)?.overview, SYNOPSIS_BUDGET)}
           />
-          <Veil ramp={SPOTLIGHT_VEIL} />
-          <Box style={s.copy}>
-            <Text variant="overlineTv" color="accentText">
-              {section.title}
-            </Text>
-            <Text variant="titleTv" lines={1}>
-              {tile.title}
-            </Text>
-            {note ? (
-              <Text variant="labelTv" color="textMuted">
-                {note}
-              </Text>
-            ) : null}
-            {synopsis ? (
-              <Text variant="bodyTv" color="text/82">
-                {synopsis}
-              </Text>
-            ) : null}
-            <Box row align="center" gap={6} mt={6}>
-              <Text variant="strongTv" color="accentText">
-                {t('content.seeDetails')}
-              </Text>
-              <Icon name="chevron-right" size={20} color="accentText" />
-            </Box>
-          </Box>
         </Box>
       </Focusable>
     </Box>

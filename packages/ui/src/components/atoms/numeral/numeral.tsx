@@ -34,7 +34,7 @@ function digitsOf(value: number): number[] {
   if (!Number.isFinite(value)) {
     return [];
   }
-  return [...String(Math.trunc(Math.abs(value)))].map(Number);
+  return Array.from(String(Math.trunc(Math.abs(value)))).map(Number);
 }
 
 function place(value: number, height: number, thickness: number) {
@@ -54,7 +54,13 @@ function place(value: number, height: number, thickness: number) {
   return { placed, scale, width, height };
 }
 
-function fit(value: number, height: number, thickness: number, maxWidth?: number) {
+interface Fit {
+  height: number;
+  thickness: number;
+  maxWidth?: number;
+}
+
+function fit(value: number, { height, thickness, maxWidth }: Fit) {
   const natural = place(value, height, thickness);
   if (maxWidth === undefined || natural.width <= maxWidth) {
     return natural;
@@ -64,6 +70,32 @@ function fit(value: number, height: number, thickness: number, maxWidth?: number
   const perHeight = drawn / NUMERAL_BOX + TRACKING * (digits.length - 1);
   const fixed = thickness * 2 - (thickness * 2 * drawn) / NUMERAL_BOX;
   return place(value, Math.max(Math.floor((maxWidth - fixed) / perHeight), 0), thickness);
+}
+
+interface DigitProps {
+  d: string;
+  x: number;
+  scale: number;
+  thickness: number;
+  stroke: string;
+  ground: string;
+}
+
+function Digit({ d, x, scale, thickness, stroke, ground }: Readonly<DigitProps>) {
+  const at = `translate(${x} ${thickness}) scale(${scale})`;
+  return (
+    <G>
+      <Path
+        d={d}
+        transform={at}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={(thickness * 2) / scale}
+        strokeLinejoin="round"
+      />
+      <Path d={d} transform={at} fill={ground} />
+    </G>
+  );
 }
 
 /** How wide `<Numeral>` draws `value` at `height`, for a layout that has to
@@ -76,6 +108,41 @@ function numeralWidth(value: number, height: number, thickness = DEFAULT_THICKNE
  * one. A row of ranks reserves this and passes it as `maxWidth`. */
 function numeralColumn(height: number, thickness = DEFAULT_THICKNESS): number {
   return Math.max(...NUMERAL_GLYPHS.map((_, digit) => numeralWidth(digit, height, thickness)));
+}
+
+interface FigureProps {
+  fitted: ReturnType<typeof fit>;
+  thickness: number;
+  stroke: string;
+  ground: string;
+  label?: string;
+}
+
+function Figure({ fitted, thickness, stroke, ground, label }: Readonly<FigureProps>) {
+  const { placed, scale, width, height } = fitted;
+  const box = Math.ceil(width);
+  return (
+    <View
+      accessibilityRole={label ? 'image' : undefined}
+      accessibilityLabel={label}
+      accessibilityElementsHidden={!label}
+      importantForAccessibility={label ? 'yes' : 'no-hide-descendants'}
+    >
+      <Svg width={box} height={height} viewBox={`0 0 ${box} ${height}`}>
+        {placed.map((digit) => (
+          <Digit
+            key={digit.key}
+            d={digit.d}
+            x={digit.x}
+            scale={scale}
+            thickness={thickness}
+            stroke={stroke}
+            ground={ground}
+          />
+        ))}
+      </Svg>
+    </View>
+  );
 }
 
 /**
@@ -93,40 +160,14 @@ function Numeral({
   label,
 }: Readonly<NumeralProps>) {
   const theme = activeTheme(useStyleScope().theme);
-  const { placed, scale, width, height: drawn } = fit(value, height, thickness, maxWidth);
-  if (placed.length === 0 || scale === 0) {
+  const fitted = fit(value, { height, thickness, maxWidth });
+  if (fitted.placed.length === 0 || fitted.scale === 0) {
     return null;
   }
-  const box = Math.ceil(width);
   const stroke = resolve(color, theme);
   const ground = resolve(fill, theme);
-
   return (
-    <View
-      accessibilityRole={label ? 'image' : undefined}
-      accessibilityLabel={label}
-      accessibilityElementsHidden={!label}
-      importantForAccessibility={label ? 'yes' : 'no-hide-descendants'}
-    >
-      <Svg width={box} height={drawn} viewBox={`0 0 ${box} ${drawn}`}>
-        {placed.map((digit) => {
-          const at = `translate(${digit.x} ${thickness}) scale(${scale})`;
-          return (
-            <G key={digit.key}>
-              <Path
-                d={digit.d}
-                transform={at}
-                fill="none"
-                stroke={stroke}
-                strokeWidth={(thickness * 2) / scale}
-                strokeLinejoin="round"
-              />
-              <Path d={digit.d} transform={at} fill={ground} />
-            </G>
-          );
-        })}
-      </Svg>
-    </View>
+    <Figure fitted={fitted} thickness={thickness} stroke={stroke} ground={ground} label={label} />
   );
 }
 

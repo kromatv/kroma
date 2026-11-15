@@ -7,16 +7,28 @@ import { createStyleTestHost } from '#ui/testing-style';
 import { Numeral, numeralColumn, numeralWidth } from './numeral';
 import { NUMERAL_BOX, NUMERAL_GLYPHS } from './numeral-glyphs.gen';
 
-const { render } = createStyleTestHost();
+const styleHost = createStyleTestHost();
 
 afterEach(cleanup);
 
-describe('Numeral', () => {
-  const outlines = (container: HTMLElement) =>
-    [...container.querySelectorAll('path')].filter((path) => path.getAttribute('fill') === 'none');
+const outlines = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('path')).filter(
+    (path) => path.getAttribute('fill') === 'none',
+  );
 
+function weightAt(height: number): number {
+  const { container } = styleHost.render(
+    onScreen(<Numeral value={3} height={height} thickness={4} />),
+  );
+  const path = outlines(container)[0];
+  const scale = (height - 8) / NUMERAL_BOX;
+  cleanup();
+  return (Number(path?.getAttribute('stroke-width')) * scale) / 2;
+}
+
+describe('Numeral', () => {
   it('draws one outline per digit, in the order they are read', () => {
-    const { container } = render(onScreen(<Numeral value={10} height={120} />));
+    const { container } = styleHost.render(onScreen(<Numeral value={10} height={120} />));
 
     const drawn = outlines(container).map((path) => path.getAttribute('d'));
 
@@ -24,7 +36,9 @@ describe('Numeral', () => {
   });
 
   it('fills each digit over its own outline, so the seams of the face do not show', () => {
-    const { container } = render(onScreen(<Numeral value={8} height={120} thickness={3} />));
+    const { container } = styleHost.render(
+      onScreen(<Numeral value={8} height={120} thickness={3} />),
+    );
 
     const [outline, cover] = [...container.querySelectorAll('path')];
 
@@ -35,20 +49,12 @@ describe('Numeral', () => {
   });
 
   it('keeps its outline the same weight at every height', () => {
-    const weightAt = (height: number) => {
-      const { container } = render(onScreen(<Numeral value={3} height={height} thickness={4} />));
-      const path = outlines(container)[0];
-      const scale = (height - 8) / NUMERAL_BOX;
-      cleanup();
-      return (Number(path?.getAttribute('stroke-width')) * scale) / 2;
-    };
-
     expect(weightAt(60)).toBeCloseTo(4);
     expect(weightAt(240)).toBeCloseTo(4);
   });
 
   it('takes the height it is given and the width its digits need', () => {
-    const { container } = render(onScreen(<Numeral value={10} height={120} />));
+    const { container } = styleHost.render(onScreen(<Numeral value={10} height={120} />));
 
     const svg = container.querySelector('svg');
 
@@ -63,7 +69,9 @@ describe('Numeral', () => {
 
   it('draws a number too wide for its column smaller, so ten stands where one digit does', () => {
     const column = numeralColumn(120);
-    const { container } = render(onScreen(<Numeral value={10} height={120} maxWidth={column} />));
+    const { container } = styleHost.render(
+      onScreen(<Numeral value={10} height={120} maxWidth={column} />),
+    );
 
     const svg = container.querySelector('svg');
 
@@ -74,7 +82,9 @@ describe('Numeral', () => {
 
   it('leaves a number that fits its column at the height it was given', () => {
     const column = numeralColumn(120);
-    const { container } = render(onScreen(<Numeral value={1} height={120} maxWidth={column} />));
+    const { container } = styleHost.render(
+      onScreen(<Numeral value={1} height={120} maxWidth={column} />),
+    );
 
     expect(container.querySelector('svg')?.getAttribute('height')).toBe('120');
   });
@@ -89,16 +99,18 @@ describe('Numeral', () => {
   });
 
   it('names itself only when asked, so a control around it says the number once', () => {
-    render(onScreen(<Numeral value={3} height={120} label="Number 3" />));
+    styleHost.render(onScreen(<Numeral value={3} height={120} label="Number 3" />));
 
     expect(screen.getByLabelText('Number 3').getAttribute('role')).toBe('img');
   });
 
   it('draws the whole part of a number and nothing for one that is not a number', () => {
-    const { container } = render(onScreen(<Numeral value={-4.9} height={120} />));
+    const { container } = styleHost.render(onScreen(<Numeral value={-4.9} height={120} />));
     const paths = outlines(container);
     cleanup();
-    const { container: none } = render(onScreen(<Numeral value={Number.NaN} height={120} />));
+    const { container: none } = styleHost.render(
+      onScreen(<Numeral value={Number.NaN} height={120} />),
+    );
 
     expect(paths).toHaveLength(1);
     expect(paths[0]?.getAttribute('d')).toBe(NUMERAL_GLYPHS[4]?.d);

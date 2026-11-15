@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { CardSection } from '@kromatv/client/media';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { HomeSection } from '#web/features/catalog/home/entries';
@@ -15,17 +16,29 @@ vi.mock('#web/shared/ui', () => ({
 
 import { HomeSectionView } from '#web/features/catalog/home/home-sections';
 
-const entry = { type: 'show', show: { id: 's1', title: 'Dark' } };
+const entry = {
+  type: 'show',
+  show: {
+    id: 's1',
+    title: 'Dark',
+    year: null,
+    library: 'l1',
+    video: null,
+    addedAt: '2026-01-01T00:00:00Z',
+    seasonCount: 1,
+    episodeCount: 1,
+  },
+};
 
 function section(layout: string, extra: Partial<HomeSection> = {}): HomeSection {
-  return {
+  return CardSection.parse({
     id: 'row',
     title: 'A row',
     layout,
     notes: {},
     items: [entry],
     ...extra,
-  } as unknown as HomeSection;
+  });
 }
 
 afterEach(cleanup);

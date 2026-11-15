@@ -161,6 +161,10 @@ function People({ people }: Readonly<{ people: readonly PersonHit[] }>) {
   );
 }
 
+function foundNothing({ local, discover, people }: Readonly<DiscoverSearchState>): boolean {
+  return local.length === 0 && discover.length === 0 && people.length === 0;
+}
+
 export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }>) {
   const t = useT();
 
@@ -172,9 +176,7 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
     );
   }
 
-  const nothing =
-    state.local.length === 0 && state.discover.length === 0 && state.people.length === 0;
-  if (nothing) {
+  if (foundNothing(state)) {
     return (
       <EmptyState.Root icon="mood-empty">
         <EmptyState.Title>{t('discover.noResults')}</EmptyState.Title>

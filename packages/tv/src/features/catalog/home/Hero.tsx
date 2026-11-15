@@ -83,7 +83,7 @@ export function Hero({ slides, onPlay, onSelectEntry, maskInset }: Readonly<Hero
   const primary = useRef<FocusHandle>(null);
   const [focused, setFocused] = useState<HeroButton | null>(null);
   const held = focused !== null;
-  const { index, page, touch } = useHeroPager(slides.length, held);
+  const { index, page, touch } = useHeroPager({ count: slides.length, held });
 
   const shownBefore = useRef(index);
   useEffect(() => {

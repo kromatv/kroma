@@ -1,28 +1,32 @@
 // @vitest-environment jsdom
 
-import type { CardSection, ContinueItem, MediaCard, MediaItem } from '@kromatv/client/media';
+import type { CardSection, ContinueItem, MediaCard, SectionItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  TvClientProvider,
-  type TvNav,
-  TvNavProvider,
-  type TvScreens,
-  useNav,
-} from '#tv/app/router';
+import { TvClientProvider, type TvNav, TvNavProvider, useNav } from '#tv/app/router';
+import { stubScreens } from '#tv/app/router.fixtures';
+import { mediaCard, mediaItem } from '#tv/features/catalog/media.fixtures';
 import { TvHome } from '#tv/features/catalog/TvHome';
 
-const { clearPressGuard, render } = createInputTestHost();
+const host = createInputTestHost();
 
-const home = vi.hoisted(() => ({
-  sections: [] as unknown[],
-  featured: null as unknown,
-  movies: [] as unknown[],
-  resuming: [] as unknown[],
-  refresh: () => undefined,
-}));
+const home = vi.hoisted(
+  (): {
+    sections: CardSection[];
+    featured: SectionItem | null;
+    movies: MediaCard[];
+    resuming: ContinueItem[];
+    refresh: () => undefined;
+  } => ({
+    sections: [],
+    featured: null,
+    movies: [],
+    resuming: [],
+    refresh: () => undefined,
+  }),
+);
 
 vi.mock('#tv/app/providers/connection', () => ({
   useConnection: () => ({ movies: home.movies }),
@@ -41,7 +45,7 @@ vi.mock('#tv/app/providers/watched', () => ({
 }));
 vi.mock('#tv/app/useRootBack', () => ({ useRootBack: () => undefined }));
 
-const film = (id: string, title: string) => ({ id, title, video: null }) as unknown as MediaCard;
+const film = (id: string, title: string) => mediaCard({ id, title });
 
 const DUNE = film('m1', 'Dune');
 
@@ -64,7 +68,7 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 }
 
 function mount() {
-  const item = vi.fn(async (id: string) => ({ id, title: 'Dune', files: [] }) as never);
+  const item = vi.fn(async (id: string) => mediaItem({ id, title: 'Dune' }));
   const client = fakeClient({
     media: {
       item,
@@ -76,10 +80,10 @@ function mount() {
     },
   });
   let nav!: TvNav;
-  render(
+  host.render(
     onScreen(
       <TvClientProvider client={client}>
-        <TvNavProvider screens={{} as TvScreens}>
+        <TvNavProvider screens={stubScreens()}>
           <NavHandle
             onReady={(n) => {
               nav = n;
@@ -91,7 +95,7 @@ function mount() {
       { remote: true },
     ),
   );
-  clearPressGuard();
+  host.clearPressGuard();
   return { nav: () => nav, item };
 }
 
@@ -115,7 +119,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  host.clearPressGuard();
 });
 
 describe('TvHome', () => {
@@ -137,7 +141,7 @@ describe('TvHome', () => {
   });
 
   it('keeps continue watching right under the hero, ahead of the server rows', () => {
-    const resumed = { id: 'e1', title: 'Pilot', kind: 'movie' } as unknown as MediaItem;
+    const resumed = mediaItem({ id: 'e1', title: 'Pilot' });
     home.resuming = [
       { item: resumed, positionMs: 30, durationMs: 60, updatedAt: '' } satisfies ContinueItem,
     ];
@@ -149,7 +153,7 @@ describe('TvHome', () => {
   });
 
   it('resumes a title from continue watching in the player', () => {
-    const resumed = { id: 'e1', title: 'Pilot', kind: 'movie' } as unknown as MediaItem;
+    const resumed = mediaItem({ id: 'e1', title: 'Pilot' });
     home.resuming = [{ item: resumed, positionMs: 30, durationMs: null, updatedAt: '' }];
     const { nav } = mount();
 
