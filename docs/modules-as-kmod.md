@@ -269,9 +269,10 @@ A restart starts from the compiled copy in about 60 ms instead of compiling.
    with dependency resolution, checksums and the `engines` compatibility gate.
 6. ~~**Independent releases**~~ shipped (see "The release train" above):
    per-module tags, a merged catalog, and a CI gate on the version bump.
-7. **Helpers as host capabilities.** WireGuard inside the gateway (#512) and the
-   torrent engine as a component at full speed (#514) would retire `wireproxy`
-   and `rqbit`. Neither is done.
+7. ~~**Helpers as host capabilities**~~ dropped. WireGuard inside the gateway
+   (#512) and the torrent engine as a component at full speed (#514) would have
+   retired `wireproxy` and `rqbit`. Both issues are closed as not planned, so the
+   two helpers stay.
 
 ## Trade-offs to weigh
 
