@@ -12,7 +12,7 @@
     "directory": "packages/stats-relay"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "deploy": "wrangler deploy --config worker/wrangler.jsonc",
     "migrate": "wrangler d1 migrations apply kroma-stats --remote --config worker/wrangler.jsonc",
     "migrate:local": "wrangler d1 migrations apply kroma-stats --local --config worker/wrangler.jsonc"

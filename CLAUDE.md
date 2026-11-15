@@ -47,9 +47,9 @@ These are the CI hard gates (`.github/workflows/ci.yml`, see
 [`docs/ci.md`](docs/ci.md)):
 
 ```bash
-bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool)
+bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool of `bun check`)
 bun run test             # vitest (two projects: web + native)
-bun run check            # oxlint with types + the Sonar mirror + the lint debt list + oxfmt  (check:fix to write)
+bun run check            # oxlint with types + the Sonar mirror + the lint debt list + `bun fmt --check`  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
 bun run modules:test:wasm  # every module's tests again, each one a component

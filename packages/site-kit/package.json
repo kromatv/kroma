@@ -19,7 +19,7 @@
     "./worker-env": "./src/worker-env.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@kromatv/site-meta": "workspace:*",

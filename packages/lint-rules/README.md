@@ -1,7 +1,7 @@
 # KROMA lint rules
 
 Oxc enforces concrete requirements from `CONVENTIONS.md` and `CODE_STYLE.md`.
-The root `lint` command runs Oxlint; `check` runs it and then `oxfmt --check`.
+The root `lint` command runs Oxlint; `check` runs it and then `bun fmt --check`.
 CI runs the rule tests and `check`.
 
 ## Commands
@@ -20,7 +20,7 @@ package and use:
 | `bun run compare [--rounds 5] [--output /tmp/results.json]` | Run the comparison |
 
 Use `bun run lint --format agent` at the repository root for agent diagnostics.
-Oxfmt remains available with `bunx oxfmt --check .` for evaluation.
+Formatting is `bun fmt`, which reads `.oxfmtrc.json`.
 
 ## Use the rules
 

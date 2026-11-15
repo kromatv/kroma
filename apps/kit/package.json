@@ -28,7 +28,7 @@
     "expo:prebuild:tv": "EXPO_TV=1 expo prebuild --clean",
     "pod": "cd ios && pod install",
     "bundle:check": "bun ../../clients/expo-build/bundle-check.ts .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@kromatv/core": "workspace:*",

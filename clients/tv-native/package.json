@@ -18,7 +18,7 @@
     "prebuild": "EXPO_TV=1 expo prebuild --clean",
     "pod": "cd ios && REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/../node_modules\" pod install",
     "bundle:check": "bun ../expo-build/bundle-check.ts . EXPO_TV=1 --max 10",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "focus:probe": "bun ./scripts/focus-probe.ts",
     "perf:androidtv": "bun ./scripts/perf-androidtv.ts"
   },

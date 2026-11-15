@@ -17,7 +17,7 @@
   "scripts": {
     "gen": "bun run src/gen-catalog.ts",
     "preview": "bun run src/preview.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "build": "tsc --noEmit"
   },
   "devDependencies": {

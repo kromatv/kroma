@@ -16,7 +16,7 @@
     "build": "vite build",
     "preview": "vite preview --port 3000",
     "generate-routes": "tsr generate",
-    "typecheck": "tsr generate && tsc --noEmit && tsc -p tsconfig.sw.json"
+    "typecheck": "tsr generate && bun check && bun check -p tsconfig.sw.json"
   },
   "dependencies": {
     "@kromatv/client": "workspace:*",

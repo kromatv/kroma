@@ -17,7 +17,7 @@
     "./wire": "./src/wire.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

@@ -36,7 +36,7 @@
 # TanStack Start prerender spawns a `node` render server, both absent from
 # oven/bun. bun does the workspace install + runs the scripts.
 FROM node:22-bookworm-slim AS web
-RUN npm install -g bun@1.4.0
+RUN npm install -g bun@1.4.4
 WORKDIR /app
 COPY . .
 # TanStack Start's SPA prerender spawns a render server on `localhost`; in a

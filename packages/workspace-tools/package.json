@@ -19,7 +19,7 @@
     "workspace-tools": "src/cli.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "devDependencies": {
     "bun-types": "^1.4.3",

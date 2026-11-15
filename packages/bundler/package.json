@@ -39,7 +39,7 @@
     "./react-compiler-transform": "./src/react-compiler-transform.cjs"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@babel/core": "^7.29.7",

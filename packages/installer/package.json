@@ -18,7 +18,7 @@
     "kroma-tv": "./src/bin.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "typecheck": "bun check && bun check -p scripts",
     "compile": "bun scripts/compile.ts"
   },
   "dependencies": {

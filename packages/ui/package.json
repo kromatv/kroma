@@ -52,7 +52,7 @@
     "./src/assets/*": "./src/assets/*"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "build": "tsc --noEmit",
     "shots": "bun ./scripts/shoot-stories.ts",
     "subset-fonts": "python3 ./scripts/subset-fonts.py"
