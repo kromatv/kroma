@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import type { UpNextItem } from '../parts/up-next-sheet';
+import { PEEK_HEIGHT, type UpNextItem } from '../parts/up-next-sheet';
 import { fakeController } from '../player.fixture';
 import { Credits, Resume, UpNext } from '../player-parts';
 import { type PlayerController, WEB_FLAGS } from '../types';
@@ -68,6 +68,31 @@ describe('usePlayerRoot', () => {
     const lifted = result.current.introLift;
 
     expect(lifted).toBeGreaterThan(0);
+  });
+
+  it('clears the transport with the cue while the controls are shown', () => {
+    const { result } = root();
+
+    act(() => result.current.onTransportLayout(layout(800, 140)));
+
+    expect(result.current.cueClearance).toBeGreaterThan(result.current.bottomInset + 140);
+  });
+
+  it('clears the up-next peek with the cue while the peek is shown', () => {
+    const data = { nextEpisodes: [{ id: 'e2' } as unknown as UpNextItem], recommendations: [] };
+    const { result } = root({}, createElement(UpNext, { data }));
+
+    act(() => result.current.onTransportLayout(layout(800, 140)));
+
+    expect(result.current.cueClearance).toBeGreaterThan(PEEK_HEIGHT + 140);
+  });
+
+  it('lets the cue rest at the foot of the picture while the controls are hidden', () => {
+    const { result } = root();
+
+    act(() => result.current.openSheet());
+
+    expect(result.current.cueClearance).toBe(0);
   });
 
   it('starts over from the beginning when the resume prompt is declined', () => {

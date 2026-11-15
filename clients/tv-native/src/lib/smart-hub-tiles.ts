@@ -1,4 +1,4 @@
-import type { PreviewSection, PreviewTile } from '@kromatv/react-native-tizen/preview-json';
+import type { PreviewSection, PreviewTile } from '@kromatv/react-native-tv/tizen/preview-json';
 import { z } from 'zod';
 
 const MAX_TILES = 40;

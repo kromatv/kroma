@@ -21,7 +21,9 @@ const rolling = (tag: string, assets: ReturnType<typeof asset>[]) =>
 
 const CANARY_RUN = [
   asset('tv.kroma.webos_0.1.39_all.ipk', '2026-08-21T03:58:37Z'),
+  asset('KROMA-webos-0.1.39-canary.20260821.ipk', '2026-08-21T03:58:37Z'),
   asset('KROMA_0.1.39-canary.20260821_amd64.AppImage', '2026-08-21T03:58:37Z'),
+  asset('KROMA-tizen-0.1.39-canary.20260821.tpk', '2026-08-21T03:58:36Z'),
   asset('KROMA-tizen-0.1.39-canary.20260821.wgt', '2026-08-21T03:58:36Z'),
   asset('canary-manifest.json', '2026-08-21T03:58:35Z'),
   asset('KROMA_0.1.39-canary.20260821_x64-setup.exe', '2026-08-21T03:58:35Z'),
@@ -62,9 +64,19 @@ describe('toChannelBuilds', () => {
       'linux-deb',
       'macos',
       'tizen',
+      'tizen-web',
       'webos',
       'windows-exe',
     ]);
+  });
+
+  it('offers the native LG app and leaves the web .ipk beside it unclaimed', () => {
+    const [canary] = toChannelBuilds(rolling('canary', CANARY_RUN));
+
+    expect(canary?.downloads.map((d) => d.name)).toContain(
+      'KROMA-webos-0.1.39-canary.20260821.ipk',
+    );
+    expect(canary?.downloads.map((d) => d.name)).not.toContain('tv.kroma.webos_0.1.39_all.ipk');
   });
 
   it('keeps two pushes inside the same hour apart', () => {
@@ -79,10 +91,13 @@ describe('toChannelBuilds', () => {
   });
 
   it('folds the file naming only the bare version into the dated build beside it', () => {
-    const [canary] = toChannelBuilds(rolling('canary', CANARY_RUN));
+    const bare = asset('KROMA-webos-0.1.39.ipk', '2026-08-21T03:58:37Z');
+    const run = [...CANARY_RUN.filter((a) => !a.name.startsWith('KROMA-webos-')), bare];
+
+    const [canary] = toChannelBuilds(rolling('canary', run));
 
     expect(canary?.version).toBe('0.1.39-canary.20260821');
-    expect(canary?.downloads.map((d) => d.name)).toContain('tv.kroma.webos_0.1.39_all.ipk');
+    expect(canary?.downloads.map((d) => d.name)).toContain('KROMA-webos-0.1.39.ipk');
   });
 
   it('holds a run whose uploads are spread over twenty minutes together', () => {

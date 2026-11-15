@@ -48,7 +48,10 @@ as it is.
 `lanes` lists the changed files through the GitHub API (pull request files, or
 the push's compare) and matches them against `packages/ci-tools/src/lanes.ts`.
 A change to `.github/workflows/ci.yml` or `packages/ci-tools` opens every lane;
-so does a push with no parent or a manual run. Another workflow, or a script
+so does a push with no parent or a manual run. A GitHub that answers 5xx or 429
+is asked again, four times in all, and a change that still cannot be listed
+opens every lane with a warning: one failed API call costs a longer run, not a
+red one. Another workflow, or a script
 only a release workflow calls, cannot change what CI checks: it is linted as
 code and builds nothing (`synology.yml` reaches the synology lane).
 
@@ -173,11 +176,13 @@ it attaches, so `sha256sum -c SHA256SUMS` checks a whole download folder.
 that same number.
 
 What a candidate does publish is the **canary channel**: the `canary` job
-copies the sideloadable installers (Samsung `.wgt`, LG `.ipk`, Android TV and
-Android `.apk`, the macOS, Windows and Linux installers) onto the rolling
-`canary` prerelease, with the dated version in the name
-(`KROMA-tizen-0.1.39-canary.3493975.wgt`). The Synology `.spk` lands on the
-same tag from `synology.yml`. `ci canary publish` keeps, per kind of file, the
+copies the sideloadable installers (Samsung `.tpk` and `.wgt`, LG `.ipk`,
+Android TV and Android `.apk`, the macOS, Windows and Linux installers) onto
+the rolling `canary` prerelease, with the dated version in the name
+(`KROMA-tizen-0.1.39-canary.3493975.tpk`). Each platform lands on its own: the
+job runs whatever the builds ended as and publishes the installers that exist,
+so a platform whose build failed keeps its previous canary and holds back
+nobody else's. The Synology `.spk` lands on the same tag from `synology.yml`. `ci canary publish` keeps, per kind of file, the
 newest five whatever their age and anything younger than two weeks; the rest
 is retired. That window stays above the seven-day stale copy
 `packages.kroma.tv` serves when the GitHub API is down, which is what made an
@@ -187,13 +192,30 @@ The two `.ipa` bundles are not on the channel: TestFlight is the only way onto
 an Apple device. The channel is not a gate either: a failed upload does not
 make a candidate unpromotable.
 
-Samsung ships as four files from one build (`clients/tizen/scripts/package-all.ts`):
-`KROMA-tizen-<v>.wgt` with every engine tier for the Store, and one package
-per Tizen version for sideloading (`KROMA-tizen8-`, `KROMA-tizen4to7-`,
-`KROMA-tizen3-`), each floored at its own `required_version`. The site's
-`release-targets.ts` matches `KROMA-tizen-` only, so the per-version files are
-on the tag and in the candidate but not yet on the page: offering them there
-is the channel-switch work below.
+Android TV builds in `_release-androidtv.yml`, apart from the other TVs, so
+that the Google Play job waits for the Android TV bundle alone: a Samsung or
+LG package that fails to build does not hold the Play drafts back.
+
+Samsung and LG ship the native app first: `KROMA-tizen-<v>.tpk` and
+`KROMA-webos-<v>.ipk`, built from `clients/tv-native` by the `tizen-native`
+and `webos-native` jobs of `_release-tv.yml`. Neither job installs an SDK. The
+Samsung job fetches two Tizen packages by the SHA-256 Tizen's package lists
+give, the IoT Headed 6.0 armv7 rootstrap and the GCC 14.2 runtime, unpacks
+them into `$TIZEN_SDK_DIR`, and signs with a self-signed pair made for the
+run, which the installer replaces per TV. The LG job needs nothing from LG:
+`rn-webos` downloads its sysroot and writes the `.ipk` itself. Both keep
+`ccache` and the packages' downloads in one cache entry each, pruned to the
+newest.
+
+The web apps are still built beside them. Samsung's ships as four files from
+one build (`clients/tizen/scripts/package-all.ts`): `KROMA-tizen-<v>.wgt` with
+every engine tier for the Store, and one package per Tizen version for
+sideloading (`KROMA-tizen8-`, `KROMA-tizen4to7-`, `KROMA-tizen3-`), each
+floored at its own `required_version`. The site offers `KROMA-tizen-<v>.wgt`
+for the 2017-2020 sets the `.tpk` cannot reach, and matches no per-version
+file, so those are on the tag and in the candidate but not on the page. LG's
+web `tv.kroma.webos_<v>_all.ipk` is on the tag for `--web` in the installer
+and not on the page: the native `.ipk` reaches every set it did.
 
 ### How the site reads the channels
 
@@ -263,9 +285,10 @@ libmpv, since tauri-action packs its bundle before anything could be embedded.
 off. It is the release's macOS leg (libmpv embedded, the styled dmg, the
 launch check) stamped `<X.Y.Z>-pr.<number>`, without an updater bundle and
 publishing nothing. The dmg is a run artifact kept seven days, and one comment
-on the pull request links the newest. A pull request from this repository is
-signed and notarized; a fork's run has no secrets, so it gets an unsigned dmg
-and no comment. It reads the release build's Rust cache and never writes one.
+on the pull request links the newest. The dmg is unsigned, because the job
+runs the pull request's own scripts and the signing secrets are out of its
+reach (see [Secrets](#secrets-only-main-can-read-them)); a fork's run also
+gets no comment. It reads the release build's Rust cache and never writes one.
 
 ## modules.yml: the module train
 
@@ -274,6 +297,12 @@ all of them: it adds the `wasm32-wasip2` target to the pinned toolchain, runs
 `bun run kroma build`, and uploads `dist/modules`, one `<id>.kmod` and its
 `.sha256` per module. The bundle is the same on every platform a server runs
 on, so nothing is built twice.
+
+Beside it, `test` runs every module's tests as the component it ships as
+(`bun run ci rust wasm-test`). A push to `main` is not held by the CI run
+beside it, and the catalog is what every server reads its updates from, so the
+tests that decide a publish run in this workflow and `publish` waits for both
+jobs.
 
 `publish` then runs `kroma release` against the live catalog at
 `modules.kroma.tv`. A module whose version moved publishes on its own
@@ -287,6 +316,38 @@ The workflow runs on a push to `main` that touches `modules/`, the module
 crates under `server/crates`, `packages/cli`, `packages/module-sdk` or the
 toolchain pin. No lane reaches it: like the other release workflows, a change
 to it is linted as code in `ci.yml` and builds nothing there.
+
+## Secrets: only `main` can read them
+
+A repository secret reaches a workflow on any branch, so anyone who can push
+a branch can print it. The signing and publishing secrets are therefore
+environment secrets, and both environments allow one branch, `main`:
+
+| environment | holds | read by |
+|---|---|---|
+| `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
+| `sites` | `CLOUDFLARE_API_TOKEN` | `kit.yml`, `site.yml`, `tv-web.yml`, `repo-worker.yml` |
+| `production` | nothing: it is the approval before a Release | `deploy.yml`'s `publish` |
+
+A job that needs one declares it the same way everywhere:
+
+```yaml
+environment:
+  name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+  deployment: false
+```
+
+On `main` the job gets the environment and its secrets. Anywhere else the name
+is empty, so the job runs with no environment and every secret reads as empty,
+which each workflow already treats as "build unsigned" or "skip the deploy". A
+branch that writes `environment: release` itself is refused before it starts:
+`Branch "x" is not allowed to deploy to release`. `deployment: false` keeps
+those jobs from filling the repository's deployment history.
+
+Two secrets stay at the repository level because pull requests need them:
+`SONAR_TOKEN`, and the `SCCACHE_R2_*` four if the cache below is ever turned
+on. Neither signs or publishes anything. A new secret goes in an environment
+(`gh secret set NAME --env release`) unless a pull request has to read it.
 
 ## Caches and the 10 GB budget
 

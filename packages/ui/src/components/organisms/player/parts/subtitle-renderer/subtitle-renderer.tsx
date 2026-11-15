@@ -2,6 +2,7 @@ import { activeCueText, type Cue, parseVtt } from '@kromatv/core';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
+import { cueBottom } from '#ui/components/organisms/player/lib/cue-bottom';
 import {
   type SubtitleAppearance,
   subtitleStyle,
@@ -26,8 +27,8 @@ interface SubtitleRendererProps {
   subtitles: PlayerSub[];
   activeIndex: number | null;
   appearance: SubtitleAppearance;
-  /** When true the controls are visible, so lift the caption above them. */
-  raised: boolean;
+  /** Height of the controls drawn over the picture's foot, 0 when none are up. */
+  clearance: number;
   /** The active track's WebVTT could not be fetched, or held zero cues. The
    *  HOST decides what that means (mark the picker row unavailable, fall back
    *  to off) - a renderer that swallows the failure leaves a settings row that
@@ -49,7 +50,7 @@ export function SubtitleRenderer({
   subtitles,
   activeIndex,
   appearance,
-  raised,
+  clearance,
   onTrackFailed,
 }: Readonly<SubtitleRendererProps>) {
   const scope = useStyleScope();
@@ -134,7 +135,6 @@ export function SubtitleRenderer({
 
   if (activeIndex == null || !text) return null;
 
-  // 17% clears the control chrome when it's up, 9% hugs the frame otherwise.
   // Multi-line cues keep their hard breaks, which <Text> already does for newlines.
   return (
     <Box
@@ -142,7 +142,7 @@ export function SubtitleRenderer({
       absolute
       left={0}
       right={0}
-      bottom={raised ? '17%' : '9%'}
+      bottom={cueBottom(clearance)}
       z={3}
       align="center"
       gap={7}

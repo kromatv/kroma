@@ -41,6 +41,9 @@ permissions:
 jobs:
   deploy:
     name: Build + deploy (kroma.tv)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'sites' || '' }}
+      deployment: false
     # A finished run that failed published nothing, so there is nothing new to
     # bake. Every other trigger always builds: the build IS the gate.
     if: >-
@@ -95,4 +98,4 @@ jobs:
         working-directory: apps/www
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bunx wrangler@4 deploy -c dist/server/wrangler.json
+        run: bun run wrangler deploy -c dist/server/wrangler.json

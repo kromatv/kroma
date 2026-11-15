@@ -8,12 +8,25 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { colors } from '#ui/core/tokens';
 import { splitBoxLayers } from '#ui/lib/box-layers';
-import { GPU_MASKS } from '#ui/lib/gpu-masks';
+import { GPU_MASKS, PAGE_MASKS } from '#ui/lib/gpu-masks';
 import { ScrollPositionContext } from '#ui/lib/scroll-position';
 import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
 const RAMP = 80;
+// Where a mask the size of a page is costly: Evas draws every rounded clip
+// under it into a surface of its own on each frame the page scrolls.
+const COVERS = GPU_MASKS && !PAGE_MASKS;
+const COVER_CLIP: ViewStyle = {
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+  overflow: 'hidden',
+  zIndex: 10,
+};
 const MASKED = GPU_MASKS;
 const PROBE: ViewStyle = { position: 'absolute', top: 0, left: 0, width: 0, height: 0 };
 const OPAQUE = '#000';
@@ -55,6 +68,28 @@ interface Frame {
   height: number;
 }
 
+function CoverRamp({ inset }: Readonly<{ inset: number }>) {
+  const height = inset + RAMP;
+  return (
+    <Svg width="100%" height={height}>
+      <Defs>
+        <LinearGradient
+          id="scroll-cover"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2={height}
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset={inset / height} stopColor={colors.bg} stopOpacity={1} />
+          <Stop offset={1} stopColor={colors.bg} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height={height} fill="url(#scroll-cover)" />
+    </Svg>
+  );
+}
+
 function Ramp() {
   return (
     <Svg width="100%" height={RAMP}>
@@ -69,12 +104,18 @@ function Ramp() {
   );
 }
 
-/** Content inside a page scroller that dissolves to transparent as it scrolls up past `inset` below the scroller's top edge, over the next 80 px: a real mask, so whatever is truly behind it shows. Android draws it unmasked. */
+/** Content inside a page scroller that dissolves to transparent as it scrolls up past `inset` below the scroller's top edge, over the next 80 px: a real mask, so whatever is truly behind it shows. Android draws it unmasked. `ground` says nothing but the ground colour lies behind the content, so a platform where a page-sized mask is costly fades it under a cover of that colour instead. */
 export function ScrollMask({
   inset,
+  ground = false,
   style,
   children,
-}: Readonly<{ inset: number; style?: StyleProp<ViewStyle>; children: ReactNode }>) {
+}: Readonly<{
+  inset: number;
+  ground?: boolean;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}>) {
   const position = useContext(ScrollPositionContext);
   const probe = useRef<View>(null);
   const height = useRef(0);
@@ -111,12 +152,38 @@ export function ScrollMask({
 
   if (!MASKED || !position) return <View style={style}>{children}</View>;
 
-  const split = splitBoxLayers(style);
-  const layers = withRoom(split.box, split.face);
   const onLayout = (e: LayoutChangeEvent) => {
     height.current = e.nativeEvent.layout.height;
     measure();
   };
+
+  if (COVERS && ground) {
+    return (
+      <View style={style} onLayout={onLayout}>
+        <View ref={probe} style={PROBE} pointerEvents="none" />
+        {children}
+        {frame ? (
+          <View style={COVER_CLIP} pointerEvents="none">
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: inset + RAMP,
+                transform: [{ translateY: Animated.add(position.offset, -frame.top) }],
+              }}
+            >
+              <CoverRamp inset={inset} />
+            </Animated.View>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  const split = splitBoxLayers(style);
+  const layers = withRoom(split.box, split.face);
 
   const mask = frame ? (
     <Animated.View

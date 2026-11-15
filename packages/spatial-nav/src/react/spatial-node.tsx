@@ -1,4 +1,4 @@
-import type { Direction, Orientation } from '@kromatv/spatial-nav';
+import type { Direction, Orientation, Rect } from '@kromatv/spatial-nav';
 import {
   type ReactNode,
   type Ref,
@@ -28,6 +28,9 @@ interface SpatialNodeProps {
   focusable?: boolean;
   orientation?: Orientation;
   alignInGrid?: boolean;
+  spatial?: boolean;
+  /** Where the node shows on screen, asked when a move has to choose by place. */
+  rect?: () => Rect | null;
   index?: number;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -44,6 +47,8 @@ function SpatialNode({
   focusable = false,
   orientation = 'vertical',
   alignInGrid = false,
+  spatial = false,
+  rect,
   index,
   onFocus,
   onBlur,
@@ -70,6 +75,7 @@ function SpatialNode({
     onActive,
     onInactive,
     onKey,
+    rect,
     watched: false,
   });
   useEffect(() => {
@@ -81,6 +87,7 @@ function SpatialNode({
       onActive,
       onInactive,
       onKey,
+      rect,
       watched: typeof children === 'function',
     };
   });
@@ -94,6 +101,8 @@ function SpatialNode({
       focusable,
       orientation,
       alignInGrid,
+      spatial,
+      rect: () => latest.current.rect?.() ?? null,
       index,
       onFocus: () => {
         latest.current.onFocus?.();
@@ -117,7 +126,7 @@ function SpatialNode({
       },
     });
     return () => navigator.unregisterNode(id);
-  }, [navigator, id, parentId, focusable, orientation, alignInGrid, index]);
+  }, [navigator, id, parentId, focusable, orientation, alignInGrid, spatial, index]);
 
   useEffect(() => {
     if (focusable && wantsFocus) host.claimFocus(id);

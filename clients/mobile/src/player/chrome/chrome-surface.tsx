@@ -19,6 +19,7 @@ import {
 } from 'react-native-gesture-handler';
 import { type EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
+import { controlsLift } from '#mobile/player/controls-lift';
 import type { Transport } from '#mobile/player/engine';
 import { useChromeReveal } from '#mobile/player/useChromeReveal';
 
@@ -33,6 +34,7 @@ export interface ChromeFrame {
   height: number;
   poke(): void;
   hold(): () => void;
+  onBarLayout(height: number): void;
 }
 
 /** The touch surface under a phone player's chrome: a tap shows or hides the
@@ -67,6 +69,7 @@ export function ChromeSurface({
   const width = bounds.width || window.width;
   const height = bounds.height || window.height;
   const [zoomNote, setZoomNote] = useState<string | null>(null);
+  const [barHeight, setBarHeight] = useState(0);
   useEffect(() => {
     if (!zoomNote) return;
     const id = setTimeout(() => setZoomNote(null), 1100);
@@ -107,9 +110,9 @@ export function ChromeSurface({
   const taps = useExclusiveGestures(doubleTap, tap);
   const gestures = useCompetingGestures(pinch, taps);
 
-  const controls = compact ? { lift: 16, top: 42 } : { lift: 110, top: 64 };
-  const lift = (visible ? controls.lift : 20) + insets.bottom;
-  const top = (visible ? controls.top : 12) + insets.top;
+  const lift = controlsLift({ visible, compact, barHeight, bottomInset: insets.bottom });
+  const topGap = compact ? 42 : 64;
+  const top = (visible ? topGap : 12) + insets.top;
 
   return (
     <Box
@@ -132,7 +135,17 @@ export function ChromeSurface({
             <Text style={s.zoomNoteText}>{zoomNote ?? notice}</Text>
           </Box>
         ) : null}
-        {children({ visible, insets, lift, top, width, height, poke, hold })}
+        {children({
+          visible,
+          insets,
+          lift,
+          top,
+          width,
+          height,
+          poke,
+          hold,
+          onBarLayout: setBarHeight,
+        })}
       </Box>
     </Box>
   );

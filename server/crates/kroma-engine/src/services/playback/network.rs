@@ -3,7 +3,8 @@
 use std::net::IpAddr;
 
 /// Classify a client IP as `LAN` or `WAN` against the configured local networks
-/// (CIDR `a.b.c.d/n` or a bare prefix like `192.168.`). Loopback is always LAN.
+/// (a CIDR of either family, or a bare IPv4 prefix like `192.168.`). Loopback is
+/// always LAN.
 pub fn classify_network(ip: &str, local_nets: &[String]) -> String {
     if is_lan(ip, local_nets) {
         "LAN".into()
@@ -13,56 +14,53 @@ pub fn classify_network(ip: &str, local_nets: &[String]) -> String {
 }
 
 /// Whether a client IP counts as LAN: loopback, an RFC1918 / link-local / IPv6
-/// unique-local address (always local regardless of config), or a match against
-/// a configured local network. Backs both the session label and the dashboard's
-/// LAN/WAN byte-throughput split. An unparseable IP is treated as WAN.
+/// unique-local address, an IPv6 address inside a /64 this machine holds (all
+/// local regardless of config), or a match against a configured local network.
+/// Backs both the session label and the dashboard's LAN/WAN byte-throughput
+/// split. An unparseable IP is treated as WAN.
 pub fn is_lan(ip: &str, local_nets: &[String]) -> bool {
     let Ok(addr) = ip.parse::<IpAddr>() else {
         return false;
     };
     let addr = addr.to_canonical();
-    if addr.is_loopback() || is_private(&addr) {
-        return true;
-    }
-    local_nets.iter().any(|net| cidr_contains(net, &addr))
+    addr.is_loopback()
+        || is_private(&addr)
+        || local_nets.iter().any(|net| cidr_contains(net, &addr))
+        || crate::services::direct::is_neighbour(addr)
 }
 
 fn is_private(addr: &IpAddr) -> bool {
     match addr {
         IpAddr::V4(v4) => v4.is_private() || v4.is_link_local(),
-        IpAddr::V6(v6) => v6.is_loopback() || (v6.segments()[0] & 0xfe00) == 0xfc00,
+        IpAddr::V6(v6) => v6.is_unique_local() || v6.is_unicast_link_local(),
     }
 }
 
-/// Minimal IPv4 CIDR / prefix match. Accepts `a.b.c.d/n` and bare `a.b.`
-/// prefixes. Public because the trusted-proxy list is matched the same way, and
-/// two parsers for one syntax is one too many.
+/// CIDR match for either family (`a.b.c.d/n`, `2001:db8::/56`), plus bare
+/// `a.b.` IPv4 prefixes. A range only ever holds an address of its own family.
+/// Public because the trusted-proxy list is matched the same way, and two
+/// parsers for one syntax is one too many.
 pub fn cidr_contains(net: &str, addr: &IpAddr) -> bool {
-    let IpAddr::V4(ip) = addr.to_canonical() else {
+    let addr = addr.to_canonical();
+    let Some((base, bits)) = net.split_once('/') else {
+        return matches!(addr, IpAddr::V4(ip) if ip.to_string().starts_with(net.trim()));
+    };
+    let Ok(bits) = bits.trim().parse::<u32>() else {
         return false;
     };
-    let ip = u32::from(ip);
-    if let Some((base, bits)) = net.split_once('/') {
-        let Ok(base_ip) = base.trim().parse::<std::net::Ipv4Addr>() else {
-            return false;
-        };
-        let Ok(bits) = bits.trim().parse::<u32>() else {
-            return false;
-        };
-        if bits == 0 {
-            return true;
+    match (base.trim().parse::<IpAddr>(), addr) {
+        (Ok(IpAddr::V4(base)), IpAddr::V4(ip)) => {
+            shares_leading_bits(u32::from(base).into(), u32::from(ip).into(), bits, 32)
         }
-        if bits > 32 {
-            return false;
+        (Ok(IpAddr::V6(base)), IpAddr::V6(ip)) => {
+            shares_leading_bits(u128::from(base), u128::from(ip), bits, 128)
         }
-        let mask = u32::MAX << (32 - bits);
-        (u32::from(base_ip) & mask) == (ip & mask)
-    } else {
-        // Bare prefix string match on the dotted form.
-        std::net::Ipv4Addr::from(ip)
-            .to_string()
-            .starts_with(net.trim())
+        _ => false,
     }
+}
+
+fn shares_leading_bits(a: u128, b: u128, bits: u32, width: u32) -> bool {
+    bits <= width && (bits == 0 || (a ^ b) >> (width - bits) == 0)
 }
 
 #[cfg(test)]
@@ -133,6 +131,45 @@ mod tests {
     }
 
     #[test]
+    fn an_ipv6_client_on_the_servers_own_link_is_lan() {
+        assert_eq!(classify_network("fe80::1c2d:3e4f:5a6b:7c8d", &[]), "LAN");
+        assert_eq!(classify_network("febf::1", &[]), "LAN");
+        assert_eq!(classify_network("fec0::1", &[]), "WAN");
+    }
+
+    #[test]
+    fn a_configured_ipv6_range_makes_its_addresses_lan() {
+        let nets = vec!["2001:4860:1:200::/56".to_string()];
+
+        assert_eq!(classify_network("2001:4860:1:2ff::9", &nets), "LAN");
+        assert_eq!(classify_network("2001:4860:1:300::9", &nets), "WAN");
+    }
+
+    #[test]
+    fn an_ipv6_range_holds_the_addresses_that_share_its_leading_bits() {
+        let inside: IpAddr = "2001:db8:1:2::99".parse().unwrap();
+
+        assert!(cidr_contains("2001:db8:1:2::/64", &inside));
+        assert!(cidr_contains(" 2001:db8:1::/48 ", &inside));
+        assert!(cidr_contains("2001:db8:1:2::99/128", &inside));
+        assert!(cidr_contains("::/0", &inside));
+        assert!(!cidr_contains("2001:db8:1:3::/64", &inside));
+        assert!(!cidr_contains("2001:db8:1:2::98/128", &inside));
+        assert!(!cidr_contains("2001:db8:1:2::/129", &inside));
+        assert!(!cidr_contains("2001:db8:1:2::/xx", &inside));
+        assert!(!cidr_contains("2001:db8:", &inside));
+    }
+
+    #[test]
+    fn a_range_never_holds_an_address_of_the_other_family() {
+        let v4: IpAddr = "10.0.0.5".parse().unwrap();
+        let v6: IpAddr = "2001:db8::1".parse().unwrap();
+
+        assert!(!cidr_contains("::/0", &v4));
+        assert!(!cidr_contains("0.0.0.0/0", &v6));
+    }
+
+    #[test]
     fn cidr_contains_edge_cases() {
         let a: IpAddr = "10.0.0.5".parse().unwrap();
         // /0 always matches.
@@ -156,6 +193,7 @@ mod tests {
         assert!(is_private(&"169.254.0.1".parse().unwrap()));
         assert!(!is_private(&"8.8.8.8".parse().unwrap()));
         assert!(is_private(&"fc00::1".parse().unwrap()));
+        assert!(is_private(&"fe80::1".parse().unwrap()));
         assert!(!is_private(&"2001:db8::1".parse().unwrap()));
     }
 }

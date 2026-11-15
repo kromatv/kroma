@@ -89,14 +89,40 @@ jobs:
           path: dist/modules/*.kmod*
           if-no-files-found: error
 
+  # Every module's tests, each run as the component it ships as. The catalog is
+  # what every server reads its updates from, and a push to main is not held by
+  # the CI run beside it, so the tests that decide a publish run here.
+  test:
+    name: Modules (tests as components)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+
+      - name: Install the pinned toolchain and the component target
+        run: |
+          cargo --version
+          rustup target add wasm32-wasip2
+
+      - run: bun run ci rust wasm-test
+
   # Decide, then publish. `kroma release` compares every packed bundle against
   # the live catalog and answers per module: publish under a new tag, skip
   # identical bytes, or leave out a module whose bytes moved under the same
-  # version. A build that failed publishes nothing, and the previous catalog
-  # keeps serving.
+  # version. A build or a test that failed publishes nothing, and the previous
+  # catalog keeps serving.
   publish:
     name: Publish the module releases
-    needs: modules
+    needs: [modules, test]
     runs-on: ubuntu-latest
     permissions:
       contents: write # cut per-module releases, refresh the catalog release

@@ -91,8 +91,17 @@ describe('deployTo', () => {
       tv: shield,
       given: '/out/other.apk',
       source: 'canary',
+      options: {},
       log,
     });
+  });
+
+  it('lets the package choice see the options remembered for that set', async () => {
+    rememberedSets.mockResolvedValue([remembered({ options: { web: true } })]);
+
+    await deployTo(shield, { log });
+
+    expect(resolve).toHaveBeenCalledWith(expect.objectContaining({ options: { web: true } }));
   });
 
   it('remembers the set and the package it put on it', async () => {

@@ -1,4 +1,4 @@
-import type { Platform } from '../platform';
+import { type Platform, WEB_FLAG } from '../platform';
 import { resolveTizenArtifact, tizenSources } from './artifact';
 import { certificateCommand } from './certificate-command';
 import { identifyTizen, TIZEN_PORTS } from './identify';
@@ -9,7 +9,7 @@ export const tizen: Platform = {
   id: 'tizen',
   label: 'Samsung',
   brands: 'Samsung',
-  package: '.wgt',
+  package: '.tpk',
   notReadyHint: 'developer mode off',
   enableSteps: 'Apps, then 1 2 3 4 5',
   setup: (computer) => [
@@ -32,8 +32,9 @@ export const tizen: Platform = {
       negativeDescription:
         "Samsung only: drive Tizen Studio's own tizen and sdb, already installed",
     },
+    ...WEB_FLAG,
   },
-  remembers: ['profile'],
+  remembers: ['profile', 'web'],
   commands: { probe: probeCommand, certificate: certificateCommand },
   identify: identifyTizen,
   sources: tizenSources,

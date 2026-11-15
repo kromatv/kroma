@@ -1,0 +1,28 @@
+diff --git a/build/src/index.js b/build/src/index.js
+index f0ece59212500276e5b7e89115eea187c5f727ab..405e5d1c3e2df17153e54f34ec898ba8398d3202 100644
+--- a/build/src/index.js
++++ b/build/src/index.js
+@@ -72,6 +72,23 @@ const commands = {
+     register: ()=>import('../src/register/index.js').then((i)=>i.expoRegister),
+     whoami: ()=>import('../src/whoami/index.js').then((i)=>i.expoWhoami)
+ };
++{
++    let tvCommands = null;
++    try {
++        tvCommands = require.resolve('@kromatv/react-native-tv/expo-cli', {
++            paths: [
++                process.cwd()
++            ]
++        });
++    } catch {}
++    if (tvCommands !== null) {
++        try {
++            require(tvCommands).extendExpoCli(commands);
++        } catch (error) {
++            console.warn('@kromatv/react-native-tv could not add its commands:', error);
++        }
++    }
++}
+ const args = (0, _arg().default)({
+     // Types
+     '--version': Boolean,

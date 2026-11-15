@@ -29,8 +29,12 @@ the artifacts of a finished run:
 ```bash
 gh workflow run "Build & Release" -f targets=tv   # or all, desktop, spk
 gh run watch
-gh run download -n kroma-webos-ipk                 # or kroma-tizen-wgt, kroma-androidtv-apk
+gh run download -n kroma-tizen-tpk                 # or kroma-webos-native-ipk, kroma-androidtv-apk
 ```
+
+`kroma-tizen-tpk` and `kroma-webos-native-ipk` are the native Samsung and LG
+apps. `kroma-tizen-wgt` is the Samsung web app, for TVs from 2017 to 2020, and
+`kroma-webos-ipk` the LG web app.
 
 GitHub wraps each artifact in a ZIP file, and keeps it for 90 days. The
 artifacts of the **CI** workflow are web bundles for debugging, not packages

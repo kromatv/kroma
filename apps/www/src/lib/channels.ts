@@ -20,9 +20,10 @@ export interface ChannelBuild {
 // and only the version says so.
 //
 // The window is for the one case a version cannot settle: a canary writes the
-// dated version into every file but the .ipk, whose name carries the bare
-// `0.1.39`. A bucket whose version is the stem of another's, uploaded around the
-// same time, is the same build.
+// dated version into every file whose name carries the candidate's, and a file
+// named otherwise (LG's web .ipk did) keeps the bare `0.1.39`. A bucket whose
+// version is the stem of another's, uploaded around the same time, is the same
+// build.
 const RUN_WINDOW_MS = 45 * 60 * 1000;
 
 // Every quantifier is bounded. Unanchored, an unbounded `\d+` before a literal

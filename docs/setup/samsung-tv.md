@@ -6,6 +6,14 @@ issues for that one TV. This guide turns on developer mode, then installs
 KROMA with its own installer, which also gets the certificate. The first TV
 takes about 10 minutes. The next one takes two.
 
+KROMA for Samsung comes in two files. The installer chooses the one your TV
+can run:
+
+| TV | KROMA file | What it is |
+| --- | --- | --- |
+| 2021 or later (Tizen 6.0 or later) | `KROMA-tizen-VERSION.tpk` | the native app: it runs on the TV itself, with no browser |
+| 2017 to 2020 | `KROMA-tizen-VERSION.wgt` | the web app: Samsung does not let a native app run on these TVs |
+
 ## Before you begin
 
 - A Samsung smart TV from 2017 or later.
@@ -76,10 +84,22 @@ Enter to answer.
 
    The browser shows **Signed in**. The installer downloads the latest KROMA
    for Samsung, signs it with the certificate, sends it to the TV and starts
-   it.
+   it. On a TV from 2021 or later it is the native app, the `.tpk`. On an
+   older TV it is the web app, the `.wgt`, and the installer says why.
 
 KROMA appears in **Apps** on the TV. Follow
 [Connect the TV to your server](tv.md#connect-the-tv-to-your-server).
+
+To install the web app on a TV from 2021 or later, install by the address of
+the TV with `--web`:
+
+```bash
+npx @kromatv/installer install 192.168.1.62 --web
+```
+
+Replace `192.168.1.62` with the address of your TV. The installer remembers
+the web app for that TV, and `update` keeps it. Use `--no-web` the same way
+to go back to the native app.
 
 The certificate is in the `.kroma/certificates/samsung` folder of your home
 folder. Samsung makes it valid for one year. Keep that folder: an update of
@@ -97,16 +117,28 @@ npx @kromatv/installer update
 The installer asks nothing. It installs the latest version, signed with the
 same certificate. The TV keeps your server address and your sign-in.
 
+### Move from the web app to the native app
+
+Before KROMA had a native app, every Samsung TV got the web app. On a TV from
+2021 or later, the next install or update puts the native app beside it. The
+two are separate apps, so **Apps** then shows two KROMA tiles, and the native
+app asks for your server and your sign-in once.
+
+When the native app works, delete the web app: in **Apps**, hold the select
+button on the older KROMA tile, then choose **Delete**.
+
 ## Optional: install with Tizen Studio
 
 Tizen Studio is Samsung's own development tool. Use it on Windows, where
 KROMA's installer does not run. It replaces
 [Install KROMA](#install-kroma) and [Update KROMA](#update-kroma) above. You
-also need the KROMA file for Samsung, `KROMA-tizen-VERSION.wgt`, from
+also need the KROMA file for your TV, from
 [kroma.tv/download](https://kroma.tv/download) or from the
-[releases](https://github.com/kromatv/kroma/releases), and the address of
-your TV, in **Settings** > **General** > **Network** > **Network Status** >
-**IP Settings** on the TV.
+[releases](https://github.com/kromatv/kroma/releases):
+`KROMA-tizen-VERSION.tpk` for a TV from 2021 or later,
+`KROMA-tizen-VERSION.wgt` for a TV from 2017 to 2020. You also need the
+address of your TV, in **Settings** > **General** > **Network** >
+**Network Status** > **IP Settings** on the TV.
 
 ### Install Samsung's tools
 
@@ -157,10 +189,33 @@ page.
 
 ### Sign and install KROMA
 
-The `.wgt` file you downloaded is signed by KROMA. Sign it again with your own
-certificate, then send it to the TV.
+The file you downloaded is signed by KROMA. Sign it again with your own
+certificate, then send it to the TV. In a terminal, in the folder where you
+downloaded the file, follow the steps for your file.
 
-On macOS or Linux, in a terminal, in the folder where you downloaded the file:
+#### The native app, `.tpk` (2021 or later)
+
+1. Sign the file with your profile:
+
+   ```bash
+   ~/tizen-studio/tools/ide/bin/tizen package -t tpk -s kroma -- KROMA-tizen-VERSION.tpk
+   ```
+
+   Replace `kroma` with the profile name you chose, and `VERSION` with the
+   version in the file name. The command signs the file again where it is.
+
+2. Install it on the TV:
+
+   ```bash
+   ~/tizen-studio/tools/ide/bin/tizen install -n KROMA-tizen-VERSION.tpk -- .
+   ```
+
+On Windows, run the same two commands in **Command Prompt**, with
+`C:\tizen-studio\tools\ide\bin\tizen.bat`.
+
+#### The web app, `.wgt` (2017 to 2020)
+
+On macOS or Linux:
 
 1. Unpack the file and remove its signatures:
 
@@ -196,8 +251,8 @@ KROMA appears in **Apps** on the TV. Open it, then follow
 
 ### Update with Tizen Studio
 
-Install the new `.wgt` the same way, signed with the same profile. The TV keeps
-your server address and your sign-in.
+Install the new `.tpk` or `.wgt` the same way, signed with the same profile.
+The TV keeps your server address and your sign-in.
 
 ## Troubleshooting
 
@@ -225,9 +280,22 @@ npx @kromatv/installer certificate 192.168.1.62
 
 Replace `192.168.1.62` with the address of your TV.
 
-With Tizen Studio, this also happens with the `.wgt` as downloaded, or with a
-profile whose distributor certificate does not list the TV. Sign it again with
-your Samsung profile, as in [Sign and install KROMA](#sign-and-install-kroma).
+With Tizen Studio, this also happens with the `.tpk` or the `.wgt` as
+downloaded, or with a profile whose distributor certificate does not list the
+TV. Sign it again with your Samsung profile, as in
+[Sign and install KROMA](#sign-and-install-kroma).
+
+### The TV refuses the `.tpk`
+
+A TV from 2020 or earlier cannot run the native app. The installer sends it
+the web app when it can tell the year of the TV. When it cannot, it sends the
+native app, and the TV refuses it. Install the web app instead:
+
+```bash
+npx @kromatv/installer install 192.168.1.62 --web
+```
+
+Replace `192.168.1.62` with the address of your TV.
 
 ### `Author certificate not match`
 

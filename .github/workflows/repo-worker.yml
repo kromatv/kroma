@@ -30,6 +30,9 @@ concurrency:
 
 jobs:
   deploy:
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'sites' || '' }}
+      deployment: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

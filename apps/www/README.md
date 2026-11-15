@@ -191,7 +191,7 @@ domains on deploy.
 ```bash
 bun run --filter '@kromatv/site' deploy
 # or, if dist/ is already built:
-cd apps/www && bunx wrangler@4 deploy -c dist/server/wrangler.json
+cd apps/www && bunx wrangler deploy -c dist/server/wrangler.json
 ```
 
 The `-c` is load-bearing: the build rewrites the config to `dist/server/` with

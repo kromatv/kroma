@@ -82,6 +82,34 @@ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 KROMA lit aussi `CF-Connecting-IP`, envoyé par Cloudflare, quand la requête
 n'a pas d'en-tête `X-Forwarded-For`.
 
+### En IPv6
+
+Avec IPv6, l'ordinateur qui fait tourner KROMA a sa propre adresse publique :
+votre routeur n'a aucun port à rediriger. La plupart des routeurs bloquent
+quand même les connexions qui viennent d'Internet. Autorisez-les dans le
+pare-feu IPv6 du routeur, uniquement vers l'adresse de cet ordinateur.
+
+IPv6 ne remplace pas HTTPS. Gardez un reverse proxy devant KROMA et autorisez
+le port `443` vers lui, jamais le port `4040`. Dans le DNS de votre nom de
+domaine, ajoutez un enregistrement `AAAA` avec l'adresse IPv6 du proxy.
+
+Un appareil ne joint cette adresse que depuis un réseau qui a lui aussi IPv6.
+C'est le cas de la plupart des réseaux mobiles. Beaucoup de réseaux
+d'entreprise et d'hôtel ne l'ont pas.
+
+KROMA lui-même écoute en IPv4. Un reverse proxy sur le même ordinateur n'a
+besoin de rien d'autre, car il joint KROMA à `http://127.0.0.1:4040`. Pour que
+KROMA réponde aussi en IPv6, définissez `KROMA_HOST` :
+
+```bash
+KROMA_HOST="::"
+```
+
+Chez vous, KROMA considère un appareil comme local quand il est dans le même
+réseau IPv6 que le serveur, le même `/64`. Si votre domicile compte plusieurs
+réseaux IPv6, ajoutez leurs plages, par exemple `2001:db8:1::/56`, à
+**Réseaux locaux autorisés** dans **Serveur** > **Réseau** > **Réglages**.
+
 ## Activer HTTPS sur votre réseau local
 
 Les navigateurs n'autorisent les clés d'accès, et quelques autres fonctions de

@@ -58,7 +58,7 @@ describe('searchTargets', () => {
 
 describe('platformArgs', () => {
   it('merges the flags every module adds to the install command', () => {
-    expect(Object.keys(platformArgs())).toEqual(['profile', 'native', 'passphrase']);
+    expect(Object.keys(platformArgs())).toEqual(['profile', 'native', 'web', 'passphrase']);
   });
 });
 

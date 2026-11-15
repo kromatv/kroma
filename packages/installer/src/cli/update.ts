@@ -29,7 +29,13 @@ async function updateSet(
     );
   }
   const source = options.source ?? set.source ?? 'stable';
-  const artifact = await platformFor(tv.platform).resolve({ tv, source, log });
+  const platformOptions = { ...set.options, ...options.platformOptions };
+  const artifact = await platformFor(tv.platform).resolve({
+    tv,
+    source,
+    options: platformOptions,
+    log,
+  });
   if (!options.force && basename(artifact) === set.package) {
     log(`already has ${set.package}`);
     return;

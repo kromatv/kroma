@@ -40,7 +40,7 @@ export function TvFamily() {
           icon={SamsungIcon}
           wideIcon
           name={m.download_tv_samsung_title()}
-          badge="Tizen"
+          badge="Tizen 6.0+"
           description={m.download_tv_samsung_body()}
           help={
             <div className="space-y-4">
@@ -61,6 +61,7 @@ export function TvFamily() {
           }
         >
           <PlatformDownload target="tizen" label={m.download_for_chip({ chip: 'Samsung' })} />
+          <PlatformDownload target="tizen-web" label={m.download_tv_samsung_older()} secondary />
         </PlatformEntry>
       )}
       {selected === 'lg' && (

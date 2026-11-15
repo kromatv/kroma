@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Finds the televisions on this network and sideloads KROMA onto them: a Samsung .wgt, an LG .ipk, an Android TV .apk.",
+  "description": "Finds the televisions on this network and sideloads KROMA onto them: a Samsung .tpk, an LG .ipk, an Android TV .apk.",
   "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {

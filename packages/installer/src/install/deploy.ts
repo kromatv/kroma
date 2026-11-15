@@ -42,6 +42,7 @@ export async function deployTo(tv: Television, options: DeployOptions): Promise<
     tv,
     given: options.artifact,
     source: options.source,
+    options: platformOptions,
     log: options.log,
   });
   await module.install({

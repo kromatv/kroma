@@ -5,6 +5,7 @@ import { stillArt } from '#ui/lib/sample-art';
 
 import { DEFAULT_SUB_APPEARANCE, type SubtitleAppearance } from './lib/subtitle-appearance';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
+import { TRACK } from './parts/subtitle-renderer/subtitle-renderer.fixtures';
 
 import type { PlayerFlags } from './types';
 
@@ -23,6 +24,8 @@ export const TV: PlayerFlags = {
   pointer: false,
   arrowSeek: false,
 };
+
+export const CUE_ON = { cur: 25, subtitles: TRACK, subtitleIndex: 0 };
 
 export const NO_GEN: SubtitleGenBundle = {
   canCreate: false,

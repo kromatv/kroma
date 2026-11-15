@@ -2,7 +2,7 @@
 // be looked at (and shared) without touching the apex or provisioning a custom domain.
 //
 //   bun run build
-//   bunx wrangler@4 deploy --config wrangler.preview.jsonc
+//   bunx wrangler deploy --config wrangler.preview.jsonc
 //
 // That is the whole invocation - there is no `--temporary` or `--x-provision` flag in
 // wrangler 4, which an earlier version of this comment claimed. The separate `name` is

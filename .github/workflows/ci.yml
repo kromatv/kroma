@@ -277,7 +277,7 @@ jobs:
   # a change under clients/tv-native or to the install can reach it; the
   # Metro bundle check in `build` covers the TypeScript for everything else.
   #
-  # The job id is the release job's (`tv-native` in _release-tv.yml) because
+  # The job id is the release job's (`tv-native` in _release-androidtv.yml) because
   # setup-gradle keys a Gradle home on it and falls back across workflows by
   # it: named anything else, this job restored the PHONE app's home and
   # compiled the TV app against it.

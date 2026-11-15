@@ -6,9 +6,9 @@ name: Desktop preview
 #
 # It is the release's macOS leg (libmpv embedded, the styled dmg, the launch
 # check) without the release: no updater bundle, nothing published, a version
-# of `<X.Y.Z>-pr.<number>`. A pull request from this repository is signed and
-# notarized like a release. A fork's run has no secrets and gets an unsigned
-# dmg and no comment, which `pull_request` makes safe to build.
+# of `<X.Y.Z>-pr.<number>`. The dmg is unsigned: this job runs the pull
+# request's own scripts, and the signing secrets live in an environment only
+# `main` can use. A fork's run also gets no comment.
 
 on:
   pull_request:
@@ -57,13 +57,6 @@ jobs:
 
       - run: brew install mpv dylibbundler
 
-      - name: Check macOS signing cert
-        id: macsign
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: .github/scripts/macos-check-signing-cert.sh
-
       # No updater bundle, so no update key: a preview is never on a feed.
       - name: Build .app
         working-directory: clients/desktop
@@ -75,18 +68,9 @@ jobs:
           APP=$(find clients/desktop/src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)
           bash clients/desktop/scripts/bundle-libmpv-macos.sh "$APP"
 
-      - name: Sign + notarize + package dmg
+      - name: Package the dmg, unsigned
         env:
-          SIGN: ${{ steps.macsign.outputs.sign }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          SIGN: 'false'
         run: .github/scripts/macos-sign-and-package-dmg.sh
 
       - name: Launch the app from the dmg
@@ -106,17 +90,13 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           URL: ${{ steps.upload.outputs.artifact-url }}
-          SIGNED: ${{ steps.macsign.outputs.sign }}
           SHA: ${{ github.event.pull_request.head.sha }}
         with:
           script: |
             const marker = '<!-- kroma-desktop-preview -->';
-            const how = process.env.SIGNED === 'true'
-              ? 'signed with the Developer ID'
-              : 'unsigned: open it with right-click > Open';
             const body = [
               marker,
-              `**macOS preview** of ${process.env.SHA.slice(0, 7)}: [download the dmg](${process.env.URL}) (zipped, kept 7 days), ${how}.`,
+              `**macOS preview** of ${process.env.SHA.slice(0, 7)}: [download the dmg](${process.env.URL}) (zipped, kept 7 days), unsigned: open it with right-click > Open.`,
               '',
               'Rebuilt on every push while the `preview:mac` label is on.',
             ].join('\n');

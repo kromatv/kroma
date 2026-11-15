@@ -76,7 +76,7 @@ export function PlayerChrome({
 
   return (
     <ChromeSurface engine={engine} fill={fill} onZoom={onZoom} notice={notice} compact={compact}>
-      {({ visible, insets, lift, top, width, height, poke, hold }) => (
+      {({ visible, insets, lift, top, width, height, poke, hold, onBarLayout }) => (
         <>
           <CueLine cue={cue} bottom={lift} appearance={appearance} />
 
@@ -135,6 +135,7 @@ export function PlayerChrome({
               onPip={onPip}
               onCast={onCast}
               onFullscreen={onFullscreen}
+              onBarLayout={onBarLayout}
             />
           ) : null}
         </>

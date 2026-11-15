@@ -1,9 +1,9 @@
 import { basename } from 'node:path';
 import type { LogLine } from '../../shared/run';
 import type { InstallContext } from '../platform';
-import { tizenAppId } from './app-id';
 import { duidOf } from './duid';
 import { installFailure, refusedChain } from './install-failure';
+import type { TizenPackage } from './package-manifest';
 import { reach } from './reach';
 
 /**
@@ -13,16 +13,18 @@ import { reach } from './reach';
 export async function installOverSdb(
   context: InstallContext,
   artifact: string,
+  tizenPackage: TizenPackage,
   profile: string | null,
 ): Promise<void> {
   const { tv, log, launch } = context;
-  const application = tizenAppId();
   const device = await reach(tv.host);
 
   try {
     log(`${device.banner} on ${tv.host}`);
     const result = await device.install(artifact, {
-      appId: application,
+      appId: tizenPackage.appId,
+      packageId: tizenPackage.packageId,
+      type: tizenPackage.type,
       log,
       onProgress: progress(basename(artifact), log),
     });
@@ -30,7 +32,7 @@ export async function installOverSdb(
       const duid = refusedChain(result.output) ? await duidOf(device) : null;
       throw new Error(installFailure(result.output, profile, duid));
     }
-    if (launch) await device.launch(application);
+    if (launch) await device.launch(tizenPackage.appId);
   } finally {
     device.close();
   }

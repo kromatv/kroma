@@ -8,12 +8,19 @@ set -euo pipefail
 
 run="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID")"
 name="$(jq -r '.name' <<<"$run")"
+workflow="$(jq -r '.path' <<<"$run")"
+event="$(jq -r '.event' <<<"$run")"
+origin="$(jq -r '.head_repository.full_name' <<<"$run")"
 status="$(jq -r '.status' <<<"$run")"
 branch="$(jq -r '.head_branch' <<<"$run")"
 SHA="$(jq -r '.head_sha' <<<"$run")"
 
-[[ "$name" = "Build & Release" ]] \
-  || { echo "::error::Run $RUN_ID is '$name', not a Build & Release run."; exit 1; }
+[[ "$workflow" = ".github/workflows/release.yml" ]] \
+  || { echo "::error::Run $RUN_ID is '$name' from $workflow, not a Build & Release run."; exit 1; }
+[[ "$origin" = "$GH_REPO" ]] \
+  || { echo "::error::Run $RUN_ID built $origin, a fork. Only $GH_REPO is promotable."; exit 1; }
+[[ "$event" = "push" ]] \
+  || { echo "::error::Run $RUN_ID answered a $event, not a push. Only a push to main is a candidate."; exit 1; }
 [[ "$status" = "completed" ]] \
   || { echo "::error::Run $RUN_ID is still $status."; exit 1; }
 [[ "$branch" = "main" ]] \
@@ -64,7 +71,7 @@ fi
 # The .spk comes from synology.yml, a separate workflow, so it is matched by
 # commit rather than by run id.
 SYN="$(gh api "repos/$GH_REPO/actions/runs?head_sha=$SHA&status=success" --paginate \
-  --jq '[.workflow_runs[] | select(.name == "Synology")] | max_by(.run_started_at) | .id // empty')"
+  --jq "[.workflow_runs[] | select(.path == \".github/workflows/synology.yml\" and .head_repository.full_name == \"$GH_REPO\" and .head_branch == \"main\" and (.event == \"push\" or .event == \"workflow_dispatch\"))] | max_by(.run_started_at) | .id // empty")"
 [[ -n "$SYN" ]] \
   || { echo "::error::No successful Synology run for $SHA; the .spk would be missing."; exit 1; }
 

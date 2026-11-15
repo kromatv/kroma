@@ -19,7 +19,8 @@ two version codes share one namespace, so both must be unique across tracks.
 ## Build and signing
 
 Build & Release produces both APKs and Play-ready AABs. Both Android jobs restore
-the same upload identity from the existing repository secrets:
+the same upload identity from the secrets of the `release` environment, which
+only `main` can read (see [`ci.md`](ci.md#secrets-only-main-can-read-them)):
 
 - `ANDROID_KEYSTORE`: base64-encoded keystore.
 - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
@@ -78,22 +79,40 @@ account, then installs from the Play listing's device list.
 
 After the manual setup, configure a dedicated Google Play publisher service
 account with access to this app's testing releases and the Android Publisher API.
-Store its JSON credential as `PLAY_SERVICE_ACCOUNT_JSON`. Set repository variables:
+Store its JSON credential as `PLAY_SERVICE_ACCOUNT_JSON` in the `release`
+environment (`gh secret set PLAY_SERVICE_ACCOUNT_JSON --env release`). Set
+repository variables:
 
-- `PLAY_MOBILE_TRACK`: the mobile testing-track ID returned by Play.
-- `PLAY_TV_TRACK`: the dedicated TV testing-track ID, prefixed `tv:`.
-- `PLAY_STORE_READY=true` only after the app and both tracks are ready.
+- `PLAY_MOBILE_TRACK`: the mobile testing tracks, comma-separated.
+- `PLAY_TV_TRACK`: the Android TV testing tracks, comma-separated, each prefixed `tv:`.
+- `PLAY_STORE_READY=true` only after the app and its tracks are ready.
 
 Track names must match the API; consult Google's
 [form-factor track documentation](https://developers.google.com/android-publisher/tracks#ff-track-name).
-The workflow permits internal (`internal`/`qa`), alpha or beta testing tracks,
-with the corresponding `tv:` prefix, and refuses production tracks.
+A custom closed track keeps the name it was created with. The workflow refuses
+`production` and `tv:production`. The upload action checks every name before it
+uploads, and a name Play does not know fails the job with the list of the
+app's tracks.
 
-`_release-play.yml` waits for both Android artifacts, serializes uploads and
-creates **draft releases**, with changes not sent for review. A push candidate,
-stable release or explicitly distributed manual build can prepare drafts.
-Review and roll them out in Play Console. Without `PLAY_STORE_READY`, builds
-still produce signed AAB artifacts, with no Play upload.
+| Variable | Value today | Who gets each push to `main` |
+| --- | --- | --- |
+| `PLAY_MOBILE_TRACK` | `internal,alpha` | internal testers at once; the beta group (closed track "Alpha") after Google's review |
+| `PLAY_TV_TRACK` | `tv:internal,tv:Android TV beta` | internal testers at once; the beta group (closed track "Android TV beta") after Google's review |
+
+`_release-play.yml` waits for both Android artifacts and serializes uploads. A
+push candidate, a stable release or a manual build run with `distribute` uploads
+each bundle once and gives it to every track its variable names, as a finished
+release, with no step in Play Console.
+
+The workflow does not set `changesNotSentForReview`. This app sends its changes
+for review automatically, and Play refuses a commit that sets it ("Changes are
+sent for review automatically"). Without `PLAY_STORE_READY`, builds still
+produce signed AAB artifacts, with no Play upload.
+
+The key in use today belongs to the Firebase Admin service account of the
+`kroma-media` Google Cloud project, where the Google Play Android Developer API
+is on. In Play Console it has access to `tv.kroma.app` only, and may release to
+and manage the testing tracks, never production.
 
 ## Older Android TV installs
 

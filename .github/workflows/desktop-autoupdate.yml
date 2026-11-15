@@ -119,6 +119,9 @@ jobs:
 
   build:
     needs: [version, create-release]
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     permissions:
       contents: write # upload signed bundles + latest.json to the release
     strategy:

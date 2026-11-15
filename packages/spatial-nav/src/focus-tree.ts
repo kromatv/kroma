@@ -1,5 +1,13 @@
 import type { Direction, Orientation } from './directions';
 
+/** Where a node shows on screen, in a unit every node of a tree shares. */
+export interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /** What a node declares when it registers. `index` is its slot among its
  *  siblings: omitted, the node lands after the highest index its parent has
  *  handed out, and a tie is broken by registration order. */
@@ -9,6 +17,12 @@ export interface NodeConfig {
   focusable?: boolean;
   orientation?: Orientation;
   alignInGrid?: boolean;
+  /** A move across this container's children lands on the focusable nearest
+   *  on screen to the one it leaves, by what {@link NodeConfig.rect} answers,
+   *  rather than on the child the next container was last left on. */
+  spatial?: boolean;
+  /** Where the node shows on screen right now, or null when it cannot say. */
+  rect?: () => Rect | null;
   onFocus?: () => void;
   onBlur?: () => void;
   onActive?: () => void;

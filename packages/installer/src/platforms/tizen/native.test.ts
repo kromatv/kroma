@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InstallContext } from '../platform';
 import { installOverSdb } from './native';
+import type { TizenPackage } from './package-manifest';
 import { connect, type InstallOptions, type SdbDevice } from './sdb';
 
-vi.mock('./app-id', () => ({ tizenAppId: () => 'KromaTV001.KROMA' }));
 vi.mock('./sdb', async (original) => ({
   ...(await original<typeof import('./sdb')>()),
   connect: vi.fn(),
 }));
 
 const lines: string[] = [];
+
+const widget: TizenPackage = { type: 'wgt', packageId: 'KromaTV001', appId: 'KromaTV001.KROMA' };
+const native: TizenPackage = { type: 'tpk', packageId: 'tv.kroma.app', appId: 'tv.kroma.app' };
 
 const context = (launch = true): InstallContext => ({
   tv: {
@@ -56,27 +59,42 @@ afterEach(() => {
 
 describe('installOverSdb', () => {
   it('pushes the package to the set under the id the widget declares', async () => {
-    await installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(vi.mocked(connect)).toHaveBeenCalledWith('192.168.1.31');
     expect(vi.mocked(device.install).mock.calls[0]?.[0]).toBe('/out/KROMA.wgt');
-    expect(vi.mocked(device.install).mock.calls[0]?.[1]?.appId).toBe('KromaTV001.KROMA');
+    expect(vi.mocked(device.install).mock.calls[0]?.[1]).toMatchObject({
+      appId: 'KromaTV001.KROMA',
+      packageId: 'KromaTV001',
+      type: 'wgt',
+    });
+  });
+
+  it('installs the native app as a .tpk under the package id its manifest declares', async () => {
+    await installOverSdb(context(), '/out/KROMA.tpk', native, 'kroma');
+
+    expect(vi.mocked(device.install).mock.calls[0]?.[1]).toMatchObject({
+      appId: 'tv.kroma.app',
+      packageId: 'tv.kroma.app',
+      type: 'tpk',
+    });
+    expect(vi.mocked(device.launch)).toHaveBeenCalledWith('tv.kroma.app');
   });
 
   it('names the set it reached before it pushes anything', async () => {
-    await installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(lines[0]).toBe('sdbd::UE50AU7172 on 192.168.1.31');
   });
 
   it('starts the app once the package is on', async () => {
-    await installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(vi.mocked(device.launch)).toHaveBeenCalledWith('KromaTV001.KROMA');
   });
 
   it('leaves the app alone when it was told to install without starting it', async () => {
-    await installOverSdb(context(false), '/out/KROMA.wgt', 'kroma');
+    await installOverSdb(context(false), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(vi.mocked(device.launch)).not.toHaveBeenCalled();
   });
@@ -88,7 +106,7 @@ describe('installOverSdb', () => {
       output: 'processing result : INSTALL_ERROR [118]',
     });
 
-    await expect(installOverSdb(context(), '/out/KROMA.wgt', 'kroma')).rejects.toThrow(
+    await expect(installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma')).rejects.toThrow(
       'the install failed: processing result : INSTALL_ERROR [118]',
     );
     expect(vi.mocked(device.shell)).not.toHaveBeenCalled();
@@ -102,7 +120,7 @@ describe('installOverSdb', () => {
     });
     vi.mocked(device.shell).mockResolvedValue('1900A2C4D6E8\r\n');
 
-    const installed = installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
+    const installed = installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
 
     await expect(installed).rejects.toThrow(
       'profile kroma signed it and the set refused that chain. A retail Samsung takes only certificates Samsung issued for its own DUID: the certificate command of this tool gets them, with the address of the set. The DUID of this set is 1900A2C4D6E8.',
@@ -117,7 +135,7 @@ describe('installOverSdb', () => {
       output: 'install failed[118, -11], reason: Author certificate not match :',
     });
 
-    const installed = installOverSdb(context(), '/out/KROMA.wgt', 'samsung');
+    const installed = installOverSdb(context(), '/out/KROMA.wgt', widget, 'samsung');
 
     await expect(installed).rejects.toThrow('another author signed the KROMA already on this set');
     expect(vi.mocked(device.shell)).not.toHaveBeenCalled();
@@ -131,7 +149,7 @@ describe('installOverSdb', () => {
     });
     vi.mocked(device.shell).mockRejectedValue(new Error('closed'));
 
-    const installed = installOverSdb(context(), '/out/KROMA.wgt', null);
+    const installed = installOverSdb(context(), '/out/KROMA.wgt', widget, null);
 
     await expect(installed).rejects.toThrow(/^A retail Samsung takes only .* of the set\.$/);
   });
@@ -139,7 +157,7 @@ describe('installOverSdb', () => {
   it('says what developer mode needs when nothing answers on the bridge port', async () => {
     vi.mocked(connect).mockRejectedValue(new Error('connect ECONNREFUSED 192.168.1.31:26101'));
 
-    await expect(installOverSdb(context(), '/out/KROMA.wgt', 'kroma')).rejects.toThrow(
+    await expect(installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma')).rejects.toThrow(
       'connect ECONNREFUSED 192.168.1.31:26101. Nothing answered on 26101: developer mode has to be on, naming this computer as the host PC, and the set rebooted since',
     );
   });
@@ -147,7 +165,7 @@ describe('installOverSdb', () => {
   it('quotes a failure to connect that is not an error object', async () => {
     vi.mocked(connect).mockRejectedValue('socket hang up');
 
-    await expect(installOverSdb(context(), '/out/KROMA.wgt', 'kroma')).rejects.toThrow(
+    await expect(installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma')).rejects.toThrow(
       /^socket hang up\. Nothing answered on 26101/,
     );
   });
@@ -155,7 +173,7 @@ describe('installOverSdb', () => {
   it('closes the connection even when the push threw', async () => {
     vi.mocked(device.install).mockRejectedValue(new Error('the set went away'));
 
-    await expect(installOverSdb(context(), '/out/KROMA.wgt', 'kroma')).rejects.toThrow(
+    await expect(installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma')).rejects.toThrow(
       'the set went away',
     );
     expect(vi.mocked(device.close)).toHaveBeenCalledOnce();
@@ -169,7 +187,7 @@ describe('installOverSdb', () => {
       },
     );
 
-    await installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(lines.slice(1)).toEqual([
       'pushing KROMA.wgt, 20%',
@@ -188,7 +206,7 @@ describe('installOverSdb', () => {
       },
     );
 
-    await installOverSdb(context(), '/out/KROMA.wgt', 'kroma');
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(lines.slice(1)).toEqual([]);
   });

@@ -1,5 +1,5 @@
 import { deviceLocale, translate } from '@kromatv/core';
-import { SmartHubPreview } from '@kromatv/react-native-tizen/preview';
+import { SmartHubPreview } from '@kromatv/react-native-tv/tizen/preview';
 import type { LauncherBackend } from '@kromatv/tv';
 import { smartHubSections } from './smart-hub-tiles';
 

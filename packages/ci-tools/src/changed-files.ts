@@ -1,10 +1,14 @@
+import { setTimeout as delay } from 'node:timers/promises';
 import { $ } from 'bun';
 import { z } from 'zod';
+import { warning } from './actions';
 import type { Event, Repo } from './event';
 
 const NO_COMMIT = '0'.repeat(40);
 const PER_PAGE = 100;
 const MAX_PAGES = 30;
+const ATTEMPTS = 4;
+const BACKOFF_MS = 2000;
 
 const FileList = z.array(z.object({ filename: z.string().min(1) }));
 const Compare = z.object({ files: FileList.default([]) });
@@ -18,9 +22,29 @@ async function api(repo: Repo, path: string): Promise<unknown> {
     'x-github-api-version': '2022-11-28',
   };
   if (repo.token) headers.authorization = `Bearer ${repo.token}`;
-  const res = await fetch(`https://api.github.com/repos/${repo.slug}${path}`, { headers });
-  if (!res.ok) throw new Error(`GitHub ${path} answered ${res.status}`);
-  return res.json();
+  let failure = '';
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    if (attempt > 1) await delay(BACKOFF_MS * 2 ** (attempt - 2));
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repo.slug}${path}`, { headers });
+      if (res.ok) return await res.json();
+      failure = `answered ${res.status}`;
+      if (res.status !== 429 && res.status < 500) break;
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
+    }
+  }
+  throw new Error(`GitHub ${path} ${failure}`);
+}
+
+async function orAll(list: () => Promise<Changed>): Promise<Changed> {
+  try {
+    return await list();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    warning(`${reason}; the change cannot be listed, so every lane runs`);
+    return 'all';
+  }
 }
 
 async function paged(
@@ -61,15 +85,20 @@ async function localFiles(base: string): Promise<string[]> {
 
 /**
  * The files a change touches, or `'all'` when they cannot be listed: a push
- * with no parent, a diff GitHub truncates, anything that is not a push or a
- * pull request. Off Actions it is the working tree against `base`.
+ * with no parent, a diff GitHub truncates, a GitHub that still fails after its
+ * retries, anything that is not a push or a pull request. Off Actions it is
+ * the working tree against `base`.
  */
 export async function changedFiles(event: Event, repo: () => Repo, base: string): Promise<Changed> {
   switch (event.kind) {
-    case 'pull_request':
-      return pullRequestFiles(repo(), event.number);
-    case 'push':
-      return pushFiles(repo(), event.before, event.after);
+    case 'pull_request': {
+      const from = repo();
+      return orAll(() => pullRequestFiles(from, event.number));
+    }
+    case 'push': {
+      const from = repo();
+      return orAll(() => pushFiles(from, event.before, event.after));
+    }
     case 'local':
       return localFiles(base);
     default:

@@ -6,7 +6,7 @@ import { Text } from '#ui/components/atoms/text';
 import { stillArt } from '#ui/lib/sample-art';
 import { Player } from './player';
 import { CHAPTERS, fakeController } from './player.fixture';
-import { WEB, TV, NO_GEN, UP_NEXT, ASPECTS, LiveAppearance, Surface } from './player.fixtures';
+import { WEB, TV, NO_GEN, UP_NEXT, ASPECTS, CUE_ON, LiveAppearance, Surface } from './player.fixtures';
 
 export const story = defineStory({
   group: 'Player',
@@ -22,14 +22,15 @@ export const story = defineStory({
     intro: false,
     actions: false,
     stopped: false,
+    cue: false,
   },
   controls: { format: Object.keys(ASPECTS) },
-  render: ({ playing, format, warn, tv, intro, actions, stopped }) => (
+  render: ({ playing, format, warn, tv, intro, actions, stopped, cue }) => (
     <LiveAppearance>
       {(appearance, onAppearanceChange) => (
         <Box flex bg="#000000" overflow="hidden">
           <Player.Root
-            controller={fakeController({ playing, aspect: ASPECTS[String(format)] })}
+            controller={fakeController({ playing, aspect: ASPECTS[String(format)], ...(cue ? CUE_ON : {}) })}
             flags={tv ? TV : WEB}
             title="Blade Runner 2049"
             onClose={() => {}}
@@ -115,6 +116,10 @@ The chrome is composed, not configured. A part is a direct child, and there are 
 
 <Scene name="Skip intro" args={{ intro: true }}>
   The pill sits on top of the transport, measured against it, including the 150px the up-next peek lifts the whole bottom chrome by. Narrow the frame and it stays clear of the seek bar at every width.
+</Scene>
+
+<Scene name="Subtitle above the controls" args={{ cue: true }}>
+  A cue on screen while the chrome is up sits at the top of the transport, measured against it, including the 150px the up-next peek lifts the whole bottom chrome by. Hide the chrome and it drops back to the foot of the picture.
 </Scene>
 
 <Scene name="Host actions" args={{ actions: true, warn: 'Transcoding: this device cannot direct-play HEVC' }}>

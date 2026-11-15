@@ -2,9 +2,10 @@ name: Release Apple TV beta channel
 
 # The Apple TV client, to TestFlight.
 #
-# WHY THIS IS NOT IN _release-tv.yml, WHICH BUILDS EVERY OTHER TELEVISION. The
-# other three TV clients produce a FILE - a webOS .ipk, a Tizen .wgt, an Android
-# TV .apk - which is attached to the GitHub Release and sideloaded by hand, so
+# WHY THIS IS NOT IN _release-tv.yml OR _release-androidtv.yml, WHICH BUILD THE
+# OTHER TELEVISIONS. The other three TV clients produce a FILE - a webOS .ipk, a
+# Tizen .tpk or .wgt, an Android TV .apk - which is attached to the GitHub
+# Release and sideloaded by hand, so
 # `publish` rightly waits on them: the release is not complete without its
 # assets. This one produces nothing a user can install; an App Store .ipa is
 # only reachable through TestFlight. Leaving it in that workflow would put the
@@ -53,6 +54,9 @@ on:
 jobs:
   appletv:
     name: Apple TV .ipa (TestFlight)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     # macos-26, NOT macos-15, for the reason the phone job spells out: Expo SDK
     # 57 pulls Swift packages built with Swift tools 6.2 (expo-modules-jsi), and
@@ -215,7 +219,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/asc"
           printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
           if ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
-             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles"; then
+             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles" --only tvos,tvos-topshelf; then
             echo "minted=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::minting failed; falling back to the stored profile secrets"

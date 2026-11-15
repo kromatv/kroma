@@ -32,7 +32,7 @@ const mic = vi.hoisted(() => {
 });
 
 vi.mock('expo-speech-recognition', () => ({ ExpoSpeechRecognitionModule: speech }));
-vi.mock('@kromatv/react-native-tizen/mic-button', () => ({ MicButton: mic.MicButton }));
+vi.mock('@kromatv/react-native-tv/tizen/mic-button', () => ({ MicButton: mic.MicButton }));
 
 async function load() {
   vi.resetModules();

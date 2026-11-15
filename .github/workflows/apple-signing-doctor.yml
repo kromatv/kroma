@@ -23,6 +23,9 @@ on:
 jobs:
   doctor:
     name: Inspect the signing assets
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
     runs-on: macos-26
     permissions:
       contents: read

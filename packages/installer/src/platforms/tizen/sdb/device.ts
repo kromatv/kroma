@@ -26,6 +26,7 @@ const NOTHING_RAN: SdbResult = {
 
 export interface InstallOptions {
   appId: string;
+  packageId?: string;
   type?: string;
   log?: LogLine;
   onProgress?: (sent: number, total: number) => void;
@@ -98,13 +99,16 @@ export async function connect(
     uninstall: (packageId) => attempt(uninstallCommands(packageId)),
     close: () => connection.close(),
 
-    async install(artifact, { appId, type = 'wgt', log, onProgress }) {
+    async install(
+      artifact,
+      { appId, packageId = packageIdOf(appId), type = 'wgt', log, onProgress },
+    ) {
       const directory = await temporaryDirectory(connection, await capabilities());
       const remote = remotePath(directory, basename(artifact));
       log?.(`pushing ${basename(artifact)} to ${remote}`);
       await pushFile(connection, artifact, remote, { onProgress });
 
-      const result = await attempt(installCommands(packageIdOf(appId), remote, type), log);
+      const result = await attempt(installCommands(packageId, remote, type), log);
       await remove(remote).catch(() => undefined);
       return result;
     },

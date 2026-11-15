@@ -18,9 +18,10 @@ and the [launch post](https://developer.chrome.com/blog/local-network-access)
   DNS.
 - `fetch()` takes `targetAddressSpace: 'local' | 'loopback'`. The guide calls it
   mandatory for LAN targets; the post lists an IP literal as enough on its own.
-  KROMA sends it on every request to a private address
-  (`withLocalAddressSpace` in `packages/ui/src/lib/lan-reach.ts`). It does not
-  apply to WebSocket, where the options object throws.
+  KROMA sends it from an https page only, on every request to a private address
+  (`withLocalAddressSpace` in `packages/ui/src/lib/lan-reach.ts`): an older
+  engine reads the same word as loopback, see [below](#chromium-124-to-138-local-is-loopback).
+  It does not apply to WebSocket, where the options object throws.
 - Query the state with `navigator.permissions.query({ name: 'local-network' })`:
   `granted`, `prompt` or `denied`. **Never** query `local-network-access`: older
   Chrome crashes the renderer on it and `try`/`catch` cannot stop that. An
@@ -40,6 +41,36 @@ and the [launch post](https://developer.chrome.com/blog/local-network-access)
 
 Chromium caps a cached CORS preflight at 7200 s. Inferred from Chromium's
 `Access-Control-Max-Age` cap; not re-read for this change.
+
+## Chromium 124 to 138: `'local'` is loopback
+
+Sources: Chromium's source at its release tags,
+`third_party/blink/renderer/core/fetch/request.{idl,cc}`,
+`third_party/blink/renderer/platform/runtime_enabled_features.json5`,
+`services/network/private_network_access_checker.cc` and
+`services/network/url_loader.cc`. Read from source 2026-11-13.
+
+- `RequestInit.targetAddressSpace` exists from Chromium 124, where
+  `PrivateNetworkAccessPermissionPrompt` turns stable. Chromium 120, the engine
+  of webOS 25 and of LG's simulators, has no such member and ignores it.
+- Through 138 its values are Private Network Access's: `'local'` is loopback,
+  `'private'` the LAN. From 139 `'loopback'` is added, `'local'` means the LAN
+  and `'private'` stays as another name for it.
+- A request that names a target space is checked against the address it
+  connected to, after the connection opens and before the request is written. A
+  mismatch fails with `ERR_INCONSISTENT_IP_ADDRESS_SPACE`. The request never
+  reaches the server; a CORS preflight before it, which names no target, can.
+- Measured on Chrome for Testing 132 (macOS, 2026-11-13), a JSON `POST` to a
+  server at a private address: from a `file://` page, `'local'` and `'private'`
+  both reject with `TypeError: Failed to fetch`; from an `http://` page on the
+  LAN, `'local'` rejects and `'private'` passes. Without the option both pages
+  get their answer. No value is safe on these engines, which is why KROMA names
+  none off an https page.
+- Seen on an LG OLED C5 running webOS 26 (issue #606): the address probe, the
+  health poll and the sign-in splash, all sent with a plain `fetch`, reached the
+  server; Quick Connect and the nearby beacon, sent through the API client with
+  `'local'`, did not. That its engine is in this range is inferred from that,
+  not read.
 
 ## Apple: App Transport Security and local network privacy
 

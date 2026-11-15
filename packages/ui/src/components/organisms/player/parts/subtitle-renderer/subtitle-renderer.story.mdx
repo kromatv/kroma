@@ -15,7 +15,7 @@ export const story = defineStory({
   args: {
     positionSec: 8,
     playing: false,
-    raised: false,
+    clearance: 0,
     backdrop: 'still',
     size: 'md',
     edge: 'shadow',
@@ -27,8 +27,9 @@ export const story = defineStory({
     size: ['sm', 'md', 'lg', 'xl'],
     edge: ['none', 'shadow', 'outline', 'box'],
     opacity: { min: 20, max: 100, step: 5 },
+    clearance: { min: 0, max: 320, step: 10 },
   },
-  render: ({ positionSec, playing, raised, size, edge, opacity, backdrop }) => (
+  render: ({ positionSec, playing, clearance, size, edge, opacity, backdrop }) => (
     <Box aspect={16 / 9} bg="#000000" radius="lg" overflow="hidden" justify="flex-end">
       {/* Over black every setting looks fine, which is why it is the wrong
           background to judge them on: `bright` is the hard case. */}
@@ -47,7 +48,7 @@ export const story = defineStory({
         subtitles={TRACK}
         activeIndex={0}
         appearance={{ ...DEFAULT_SUB_APPEARANCE, size, edge, opacity }}
-        raised={raised}
+        clearance={clearance}
       />
     </Box>
   ),
@@ -63,7 +64,7 @@ One position-driven subtitle renderer for the browser AND the television. It fet
   subtitles={controller.subtitles}
   activeIndex={controller.subtitleIndex}
   appearance={appearance}
-  raised={chromeVisible}
+  clearance={chromeVisible ? controlsHeight : 0}
 />
 ```
 
@@ -79,13 +80,13 @@ One position-driven subtitle renderer for the browser AND the television. It fet
   The middle ground: an edge on the glyphs themselves, no box.
 </Scene>
 
-<Scene name="Raised" args={{ raised: true, positionSec: 45 }}>
-  Lifted clear of the controls while the chrome is visible.
+<Scene name="Above the controls" args={{ clearance: 180, positionSec: 45 }}>
+  Lifted to the top of the controls while the chrome is visible.
 </Scene>
 
 <Do>
 - Bump `seekNonce` on every seek so the cue search re-syncs instead of scanning forward.
-- Pass `raised` while the chrome is up, or the caption sits under the controls.
+- Pass the controls' measured height as `clearance` while the chrome is up, or the caption sits over them.
 </Do>
 
 <Dont>

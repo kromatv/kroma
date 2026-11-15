@@ -254,7 +254,7 @@ export function TvHome() {
             />
           </FocusSlot>
 
-          <ScrollMask inset={NAV_BOTTOM}>
+          <ScrollMask inset={NAV_BOTTOM} ground>
             {/* Rails below the fold mount only once focus comes near them. Bench
               (clients/tv-build/perf-bench.ts, TV-throttled CPU): 480 mounted
               controls run at 46fps/73ms frames, 128 runs clean. */}

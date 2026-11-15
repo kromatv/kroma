@@ -1,4 +1,4 @@
-import type { PublishResult } from '@kromatv/react-native-tizen/preview';
+import type { PublishResult } from '@kromatv/react-native-tv/tizen/preview';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const preview = vi.hoisted(() => {
@@ -9,7 +9,7 @@ const preview = vi.hoisted(() => {
   return { set: vi.fn(published), clear: vi.fn(published) };
 });
 
-vi.mock('@kromatv/react-native-tizen/preview', () => ({ SmartHubPreview: preview }));
+vi.mock('@kromatv/react-native-tv/tizen/preview', () => ({ SmartHubPreview: preview }));
 
 const card = (id: string) => `http://192.168.1.20:4040/api/items/${id}/card`;
 const resume = JSON.stringify([

@@ -3,7 +3,11 @@ import type { Television } from '../../shared/television';
 import type { Tool } from '../../toolchain/detect';
 import type { InstallContext } from '../platform';
 import { installTizen, parseSdbSerial } from './install';
+import type { TizenPackage } from './package-manifest';
 import type { SigningProfile } from './profiles';
+
+const widget: TizenPackage = { type: 'wgt', packageId: 'KromaTV001', appId: 'KromaTV001.KROMA' };
+const native: TizenPackage = { type: 'tpk', packageId: 'tv.kroma.app', appId: 'tv.kroma.app' };
 
 const {
   run,
@@ -21,11 +25,14 @@ const {
   runOk: vi.fn(async (_command: readonly string[], _options?: unknown) => ''),
   locate: vi.fn((_tool: unknown): string | null => '/tizen-studio/tools/sdb'),
   requireTool: vi.fn((_tool: unknown) => ''),
-  installOverSdb: vi.fn(async (_context: unknown, _artifact: string, _profile: unknown) => {}),
+  installOverSdb: vi.fn(
+    async (_context: unknown, _artifact: string, _package: unknown, _profile: unknown) => {},
+  ),
   profileFor: vi.fn(async (_host: string, _log: unknown) => ({ name: 'kroma' }) as SigningProfile),
   resign: vi.fn(async (_artifact: string, _profile: unknown, _log: unknown) => ({
-    path: '/tmp/kroma-wgt-1/KROMA.wgt',
+    path: '/tmp/kroma-tizen-1/KROMA.wgt',
     staged: false,
+    package: {} as TizenPackage,
   })),
   readDuid: vi.fn(async (_sdb: string, _log: unknown): Promise<string | null> => null),
   readProfile: vi.fn(async (_name?: string): Promise<SigningProfile | null> => null),
@@ -40,7 +47,6 @@ vi.mock('../../toolchain/detect', async (original) => ({
 vi.mock('./native', () => ({ installOverSdb }));
 vi.mock('./signing', () => ({ profileFor, resign, readDuid }));
 vi.mock('./profiles', () => ({ readProfile }));
-vi.mock('./app-id', () => ({ tizenAppId: () => 'KromaTV001.KROMA' }));
 vi.mock('node:fs/promises', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   rm,
@@ -100,7 +106,11 @@ beforeEach(() => {
   locate.mockReturnValue(SDB);
   requireTool.mockImplementation((tool) => ((tool as Tool).id === 'sdb' ? SDB : TIZEN));
   runOk.mockImplementation(async (command) => (command.includes('devices') ? devices : ''));
-  resign.mockResolvedValue({ path: '/tmp/kroma-wgt-1/KROMA.wgt', staged: false });
+  resign.mockResolvedValue({
+    path: '/tmp/kroma-tizen-1/KROMA.wgt',
+    staged: false,
+    package: widget,
+  });
 });
 
 describe('parseSdbSerial', () => {
@@ -156,7 +166,8 @@ describe('installTizen', () => {
 
     expect(installOverSdb).toHaveBeenCalledWith(
       expect.anything(),
-      '/tmp/kroma-wgt-1/KROMA.wgt',
+      '/tmp/kroma-tizen-1/KROMA.wgt',
+      widget,
       'kroma',
     );
     expect(argv()).toEqual([]);
@@ -166,7 +177,34 @@ describe('installTizen', () => {
     await installTizen(studio());
 
     expect(installOverSdb).not.toHaveBeenCalled();
-    expect(argv()).toContainEqual([TIZEN, 'install', '-n', 'KROMA.wgt', '--', '/tmp/kroma-wgt-1']);
+    expect(argv()).toContainEqual([
+      TIZEN,
+      'install',
+      '-n',
+      'KROMA.wgt',
+      '--',
+      '/tmp/kroma-tizen-1',
+    ]);
+  });
+
+  it('installs and starts the native app by the names its manifest gives', async () => {
+    resign.mockResolvedValue({
+      path: '/tmp/kroma-tizen-1/KROMA.tpk',
+      staged: false,
+      package: native,
+    });
+
+    await installTizen(studio());
+
+    expect(argv()).toContainEqual([
+      TIZEN,
+      'install',
+      '-n',
+      'KROMA.tpk',
+      '--',
+      '/tmp/kroma-tizen-1',
+    ]);
+    expect(argv()).toContainEqual([TIZEN, 'run', '-p', 'tv.kroma.app']);
   });
 
   it('drops every other target before it connects to this one', async () => {
@@ -187,7 +225,14 @@ describe('installTizen', () => {
   it('installs the signed widget by name, out of the directory it was staged in', async () => {
     await installTizen(studio());
 
-    expect(argv()).toContainEqual([TIZEN, 'install', '-n', 'KROMA.wgt', '--', '/tmp/kroma-wgt-1']);
+    expect(argv()).toContainEqual([
+      TIZEN,
+      'install',
+      '-n',
+      'KROMA.wgt',
+      '--',
+      '/tmp/kroma-tizen-1',
+    ]);
   });
 
   it('starts the app with the CLI once it is installed', async () => {
@@ -225,11 +270,15 @@ describe('installTizen', () => {
   });
 
   it('deletes a widget it staged, whatever the install did', async () => {
-    resign.mockResolvedValue({ path: '/tmp/kroma-wgt-1/KROMA.wgt', staged: true });
+    resign.mockResolvedValue({
+      path: '/tmp/kroma-tizen-1/KROMA.wgt',
+      staged: true,
+      package: widget,
+    });
     runOk.mockImplementation(async () => 'List of devices attached');
 
     await expect(installTizen(studio())).rejects.toThrow('the TV refused the connection');
 
-    expect(rm).toHaveBeenCalledWith('/tmp/kroma-wgt-1', { recursive: true, force: true });
+    expect(rm).toHaveBeenCalledWith('/tmp/kroma-tizen-1', { recursive: true, force: true });
   });
 });

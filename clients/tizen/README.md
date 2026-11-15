@@ -5,6 +5,12 @@
 Thin shell over `@kromatv/tv`, the shared 10-foot experience. Tizen TVs decode
 HEVC/H.265 (incl. 10-bit / HDR) in hardware, so playback is direct-play.
 
+This is the **web** Samsung app. A sideloaded set from 2021 or later (Tizen
+6.0+) gets the native app of [`clients/tv-native`](../tv-native)
+(`KROMA-tizen-<v>.tpk`) instead. This shell stays for the 2017-2020 sets,
+which refuse the native library a `.tpk` carries, for the Samsung store, and
+for `npx @kromatv/installer install <address> --web`.
+
 ## Three bundles, one package (2017-2023 sets)
 
 Samsung freezes Chromium per Tizen major (3.0 = 47, 4.0 = 56, 5.0 = 63, 5.5 = 69,

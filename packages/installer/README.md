@@ -25,10 +25,31 @@ release. That is what `npx @kromatv/installer` runs, the same tool published to
 npm
 ([docs/tv-installer-publishing.md](../../docs/tv-installer-publishing.md)).
 
-Three platforms take a sideloaded package: Samsung (Tizen, `.wgt`), LG (webOS,
+Three platforms take a sideloaded package: Samsung (Tizen, `.tpk`), LG (webOS,
 `.ipk`) and Android TV (`.apk`, which covers Philips, Sony, TCL, Shield and
 Chromecast with Google TV). An Apple TV never appears in the list. Install one
 with `bun run --filter '@kromatv/tv-native' ios`.
+
+### Native app or web app
+
+A Samsung and an LG get the native app: the React Native app of
+`clients/tv-native`, which runs on the set with no browser. It is a `.tpk` on
+Samsung and an `.ipk` on LG, and it runs on Tizen 6.0 (2021) and webOS 4 (2018)
+and every later version.
+
+The web app (`clients/tizen`, `clients/webos`) is still built, for two cases:
+
+- **A Samsung from 2017 to 2020.** Below Tizen 6.0 Samsung refuses the native
+  library a `.tpk` carries, so a set the scan dates there gets the web `.wgt`,
+  and the install says why. A set no table dates gets the native app.
+- **`--web`.** `install <address> --web` installs the web app on a Samsung or
+  an LG of any year. `update` remembers it for that set; `--no-web` goes back
+  to the native app. The picker takes no platform flag, so it is not offered
+  there.
+
+The two are separate apps on the set (`tv.kroma.app` beside `KromaTV001.KROMA`
+on Samsung, beside `tv.kroma.webos` on LG), so installing one leaves the other
+where it is.
 
 ## What the scan probes
 
@@ -134,7 +155,7 @@ kind of set itself:
 
 | Platform | What the tool does itself |
 | --- | --- |
-| Samsung | signs the package and talks sdb |
+| Samsung | signs the package, `.tpk` or `.wgt`, and talks sdb |
 | LG | fetches the Dev Mode key and installs over SSH |
 | Android TV | speaks adb |
 
@@ -190,29 +211,41 @@ Tizen Studio's own `tizen` and `sdb`, which then have to be installed already.
 In order:
 
 1. The path given on the command line, used as it is.
-2. The newest matching build in this checkout: `clients/tizen/out|dist/*.wgt`,
-   `clients/webos/out|build/*.ipk`, `out/*.apk` or the tv-native release output.
-   For Tizen the every-tier `KROMA-tizen-<n>` build is preferred over the
-   per-generation slices.
+2. The newest matching build in this checkout. The native app is
+   `clients/tv-native/tizen/bin/Release/*/*.tpk` and
+   `clients/tv-native/webos/*.ipk`, the web app `clients/tizen/out|dist/*.wgt`
+   and `clients/webos/out|build/*.ipk`, Android TV `out/*.apk` or the tv-native
+   release output. For the web `.wgt` the every-tier `KROMA-tizen-<n>` build is
+   preferred over the per-generation slices. When only the web app is built
+   here, `--source local` installs it.
 3. The latest release on GitHub, read over HTTPS with no account, into
-   `~/.kroma/downloads/<channel>/<platform>`. `--source canary` takes the newest
-   build of the rolling `canary` prerelease instead. A download is checked
-   against the size and the SHA-256 the release lists, and a package already
-   there with that digest is not fetched again.
+   `~/.kroma/downloads/<channel>/<platform>`: `KROMA-tizen-<v>.tpk` and
+   `KROMA-webos-<v>.ipk`, or `KROMA-tizen-<v>.wgt` and
+   `tv.kroma.webos_<v>_all.ipk` for the web app. `--source canary` takes the
+   newest build of the rolling `canary` prerelease instead. A download is
+   checked against the size and the SHA-256 the release lists, and a package
+   already there with that digest is not fetched again.
+
+`--source build` builds the native packages with `bunx rn-tv tizen package` and
+`bunx rn-tv webos package` in `clients/tv-native`, which takes the toolchains
+listed in [its README](../../clients/tv-native/README.md).
 
 GitHub answers 60 anonymous requests an hour for one address, which is what the
 tool says when the release will not list. With none of the three it stops and
 prints the `gh run download` line for the matching Build & Release artifact.
 
-The id the app is launched by is read from the shell that ships it
-(`clients/tizen/public/config.xml`, `clients/webos/public/appinfo.json`,
-`clients/tv-native/app.json`), so renaming one there is enough.
+The id a Samsung or an LG app is installed and launched by is read from the
+package itself: `tizen-manifest.xml` in a `.tpk`, `config.xml` in a `.wgt`, the
+control file of an `.ipk`. An id that is not a plain reverse-DNS name is
+refused, since it reaches the set's shell. The Android TV id comes from
+`clients/tv-native/app.json`.
 
 ## Updating
 
 Every install that succeeds is written to `~/.kroma/televisions.json`, one
 entry per address: the set's name and model, the package put on it, the channel
-that package came from, and on a Samsung the `--profile` it was signed with.
+that package came from, on a Samsung the `--profile` it was signed with, and
+`--web` where the install asked for the web app.
 `update` reads the file back and asks nothing:
 
 ```bash
@@ -250,7 +283,7 @@ markers is written by hand.
 | option | what it does |
 | --- | --- |
 | `--host <ip>` | Probe this address instead of sweeping the network, repeatable |
-| `--package <path>` | The .wgt, .ipk, .apk or .app to install, instead of the newest built here |
+| `--package <path>` | The .tpk, .ipk, .apk or .app to install, instead of the newest built here |
 | `--source <local\|stable\|canary\|build>` | Where the package comes from, instead of the newest build in this checkout |
 | `--launch`, `--no-launch` | Start the app once it is installed |
 | `--json` | Print what answered as JSON |
@@ -318,9 +351,14 @@ signature `bun build --compile` leaves behind is one the system kills on sight.
   kept from an earlier install. Turn Key Server on and install again with
   `--passphrase` and the passphrase the app shows now, which fetches the key
   afresh.
-- **`the stable release carries no KROMA-tizen-*.wgt`, and the same for the
-  other two.** Nothing is built here and the release has no package of that
-  kind. Build the shell, or download the artifact from a Build & Release run.
+- **`the stable release carries no KROMA-tizen-*.tpk`, and the same for the
+  other kinds.** Nothing is built here and the release has no package of that
+  kind: a release from before the native apps has no `.tpk` and no
+  `KROMA-webos-*.ipk`. Take the web app with `--web`, use `--source canary`, or
+  download the artifact from a Build & Release run.
+- **A Samsung refuses the `.tpk` on a set from 2020 or earlier.** The scan could
+  not date the set, so it got the native app, which Samsung blocks below Tizen
+  6.0. Install again with `--web`.
 - **`GitHub did not list the stable release`.** No network, or this address has
   used its 60 anonymous requests for the hour. Try again later, or pass a
   package you already have with `--package`.

@@ -215,4 +215,18 @@ describe('hovering an item', () => {
 
     expect(screen.getByTestId('b')).toBeTruthy();
   });
+
+  it('hands its view to a ref given in viewProps as well as keeping it for itself', () => {
+    const given = { current: null as unknown };
+
+    render(
+      <NavigatorRoot>
+        <NavigatorItem viewProps={{ ref: given, testID: 'box' } as never}>
+          {() => <View />}
+        </NavigatorItem>
+      </NavigatorRoot>,
+    );
+
+    expect(given.current).toBe(screen.getByTestId('box'));
+  });
 });

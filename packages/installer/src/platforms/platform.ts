@@ -54,3 +54,17 @@ export function booleanOption(options: PlatformOptions, name: string): boolean |
   const value = options[name];
   return typeof value === 'boolean' ? value : undefined;
 }
+
+/** The flag that installs a television's web app in place of its native one. */
+export const WEB_FLAG: ArgsDef = {
+  web: {
+    type: 'boolean',
+    description: 'Samsung and LG: install the web app instead of the native one',
+    negativeDescription: 'Samsung and LG: install the native app, also where the web one was',
+  },
+};
+
+/** True when the install asked for the web app, here or on an earlier install. */
+export function wantsWeb(options: PlatformOptions | undefined): boolean {
+  return booleanOption(options ?? {}, 'web') === true;
+}

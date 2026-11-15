@@ -6,12 +6,14 @@
  * install. The two `.ipa` bundles are not here: TestFlight and the App Store are
  * the only ways onto an Apple device, so a downloaded one installs nowhere. The
  * Synology `.spk` is built by `synology.yml` on its own run and reaches the site
- * from the rolling tag it publishes to. Tizen ships one signed package carrying
- * all three engine tiers and choosing at runtime; `ci.yml` also slices those
- * tiers apart, but into unsigned directories a set would refuse.
+ * from the rolling tag it publishes to. Samsung and LG ship the native app; the
+ * web `.wgt` stays for the 2017-2020 Samsung sets, one signed package carrying
+ * all three engine tiers and choosing at runtime. LG's web `.ipk` is uploaded
+ * too but has no row, as on the download page.
  */
 export const TARGET_IDS = [
   'tizen',
+  'tizen-web',
   'webos',
   'androidtv',
   'android',
@@ -34,8 +36,9 @@ interface Target {
 }
 
 export const TARGETS: Readonly<Record<TargetId, Target>> = {
-  tizen: { artifact: 'kroma-tizen-wgt', label: 'Samsung', contains: ['.wgt'] },
-  webos: { artifact: 'kroma-webos-ipk', label: 'LG', contains: ['.ipk'] },
+  tizen: { artifact: 'kroma-tizen-tpk', label: 'Samsung', contains: ['.tpk'] },
+  'tizen-web': { artifact: 'kroma-tizen-wgt', label: 'Samsung', contains: ['.wgt'] },
+  webos: { artifact: 'kroma-webos-native-ipk', label: 'LG', contains: ['.ipk'] },
   androidtv: { artifact: 'kroma-androidtv-apk', label: 'Android TV', contains: ['.apk'] },
   android: { artifact: 'kroma-mobile-apk', label: 'Android', contains: ['.apk'] },
   macos: { artifact: 'kroma-desktop-macos', label: 'macOS', contains: ['.dmg'] },

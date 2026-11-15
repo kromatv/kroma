@@ -4,8 +4,9 @@ An LG TV installs apps from outside its store through LG's **Developer Mode**
 app, sent from a computer on the same network. This guide turns Developer Mode
 on, then installs KROMA with its own installer, in about 15 minutes.
 
-One KROMA file works on every LG TV with webOS 4.0 or later, which means sets
-from 2018 onward. Sets from 2016 and 2017 cannot run it.
+One KROMA file, `KROMA-webos-VERSION.ipk`, works on every LG TV with webOS 4.0
+or later, which means sets from 2018 onward. Sets from 2016 and 2017 cannot run
+it. It is the native app: it runs on the TV itself, with no browser.
 
 ## Before you begin
 
@@ -92,6 +93,27 @@ npx @kromatv/installer update
 
 The installer asks nothing. The TV keeps your server address and your sign-in.
 
+### Move from the web app to the native app
+
+Before KROMA had a native app, LG TVs got the web app. The next install or
+update puts the native app beside it. The two are separate apps, so the TV
+then lists KROMA twice, and the native app asks for your server and your
+sign-in once.
+
+When the native app works, delete the web app from the TV's app list.
+
+The web app is still in every release, as `tv.kroma.webos_VERSION_all.ipk`.
+To install it instead of the native app, install by the address of the TV with
+`--web`:
+
+```bash
+npx @kromatv/installer install 192.168.1.60 --web
+```
+
+Replace `192.168.1.60` with the IP address that **Developer Mode** shows. The
+installer remembers the web app for that TV, and `update` keeps it. Use
+`--no-web` the same way to go back to the native app.
+
 ## Optional: install with webOS Dev Manager
 
 [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) is a
@@ -100,7 +122,7 @@ community. It is not an LG product. Use it on Windows, where KROMA's installer
 does not run. It replaces [Install KROMA](#install-kroma) and
 [Update KROMA](#update-kroma) above.
 
-You also need the KROMA file for LG, `tv.kroma.webos_VERSION_all.ipk`, from
+You also need the KROMA file for LG, `KROMA-webos-VERSION.ipk`, from
 [kroma.tv/download](https://kroma.tv/download) or from the
 [releases](https://github.com/kromatv/kroma/releases).
 

@@ -31,38 +31,30 @@
     "plugins": [
       ["@kromatv/android-build/plugin", { "formFactor": "tv" }],
       [
-        "@react-native-tvos/config-tv",
-        {
-          "isTV": true,
-          "androidTVRequired": true,
-          "showVerboseWarnings": false,
-          "androidTVBanner": "./assets/tv/android-tv-banner.png",
-          "androidTVIcon": "./assets/tv/android-tv-icon.png",
-          "appleTVImages": {
-            "iconSmall": "./assets/tv/apple-icon-small.png",
-            "iconSmall2x": "./assets/tv/apple-icon-small-2x.png",
-            "icon": "./assets/tv/apple-icon.png",
-            "topShelf": "./assets/tv/apple-top-shelf.png",
-            "topShelf2x": "./assets/tv/apple-top-shelf-2x.png",
-            "topShelfWide": "./assets/tv/apple-top-shelf-wide.png",
-            "topShelfWide2x": "./assets/tv/apple-top-shelf-wide-2x.png"
-          }
-        }
-      ],
-      [
-        "@kromatv/react-native-tizen",
+        "@kromatv/react-native-tv",
         {
           "package": "tv.kroma.app",
-          "label": "KROMA",
           "locales": ["fr", "en"],
-          "preview": { "refreshMinutes": 30 }
+          "tvos": {
+            "androidTVRequired": true,
+            "showVerboseWarnings": false,
+            "androidTVBanner": "./assets/tv/android-tv-banner.png",
+            "androidTVIcon": "./assets/tv/android-tv-icon.png",
+            "appleTVImages": {
+              "iconSmall": "./assets/tv/apple-icon-small.png",
+              "iconSmall2x": "./assets/tv/apple-icon-small-2x.png",
+              "icon": "./assets/tv/apple-icon.png",
+              "topShelf": "./assets/tv/apple-top-shelf.png",
+              "topShelf2x": "./assets/tv/apple-top-shelf-2x.png",
+              "topShelfWide": "./assets/tv/apple-top-shelf-wide.png",
+              "topShelfWide2x": "./assets/tv/apple-top-shelf-wide-2x.png"
+            }
+          },
+          "tizen": { "label": "KROMA", "preview": { "refreshMinutes": 30 } },
+          "webos": { "title": "KROMA" }
         }
       ],
       "expo-speech-recognition",
-      [
-        "@kromatv/react-native-webos",
-        { "package": "tv.kroma.app", "title": "KROMA", "locales": ["fr", "en"] }
-      ],
       [
         "expo-splash-screen",
         {

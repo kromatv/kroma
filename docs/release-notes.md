@@ -95,16 +95,21 @@ out of the repository: drag the file into any GitHub comment box and paste the
 
 ## Budget
 
-Counted in French, which runs longer. It is tighter than the skill's default
-because the same text is drawn on a television card, and a remote cannot scroll
-a paragraph.
+Counted in French, which runs longer. The lines are shorter than the skill's
+default because the same text is drawn on a television, and a remote cannot
+scroll a paragraph.
 
 | Section | At most |
 |---------|---------|
 | Action required | 2 lines of 200 characters |
-| New | 3 highlights, each a 45-character title and a 200-character paragraph |
-| Fixed | 5 lines of 90 characters |
-| For the server owner | 3 lines of 160 characters |
+| New | 6 highlights, each a 45-character title and a 200-character paragraph |
+| Fixed | 10 lines of 90 characters |
+| For the server owner | 8 lines of 160 characters |
+
+These are ceilings, for a release that carries months of work. The television
+sets them: its list shows eight rows without scrolling, six highlights and the
+two sections under them, and a pane of lines does not scroll either. A release
+of a few weeks fills about half.
 
 ## What stays in and out
 

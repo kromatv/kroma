@@ -1,4 +1,4 @@
-import { MicButton } from '@kromatv/react-native-tizen/mic-button';
+import { MicButton } from '@kromatv/react-native-tv/tizen/mic-button';
 import type { VoiceSearchBackend, VoiceSessionProps } from '@kromatv/tv';
 import { ExpoSpeechRecognitionModule as Speech } from 'expo-speech-recognition';
 import { useEffect, useRef } from 'react';
