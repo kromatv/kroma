@@ -87,7 +87,7 @@ export function createQueryClient(options: KromaClientOptions): QueryClient {
       node = node[step];
     }
     if (typeof node !== 'function') {
-      throw new Error(`${path.join('.')} is not callable`);
+      throw new TypeError(`${path.join('.')} is not callable`);
     }
     return (node as (...a: unknown[]) => Promise<unknown>)(...args);
   };

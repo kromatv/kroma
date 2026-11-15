@@ -45,7 +45,7 @@ try {
 
   const found: unknown = JSON.parse(await say('scan', '--host', '127.0.0.1', '--json'));
   if (!Array.isArray(found)) {
-    throw new Error('scan --json did not print a list');
+    throw new TypeError('scan --json did not print a list');
   }
 
   const version = (await say('--version')).trim();

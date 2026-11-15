@@ -31,7 +31,7 @@ function seedEntries(seedPath: string | undefined): Record<string, string> {
   const entries: Record<string, string> = {};
   for (const [key, value] of Object.entries(parsed)) {
     if (typeof value !== 'string') {
-      throw new Error(`${seedPath}: "${key}" is not a string`);
+      throw new TypeError(`${seedPath}: "${key}" is not a string`);
     }
     entries[key] = value;
   }

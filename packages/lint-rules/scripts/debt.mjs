@@ -15,7 +15,8 @@ const TSGOLINT = join(repo, 'node_modules/.bin/tsgolint');
 const MAX_OUTPUT = 512 * 1024 * 1024;
 
 function strictFindings() {
-  const { extends: _debt, ...strict } = JSON.parse(readFileSync(CONFIG, 'utf8'));
+  const strict = JSON.parse(readFileSync(CONFIG, 'utf8'));
+  delete strict.extends;
   writeFileSync(STRICT, JSON.stringify(strict));
   try {
     const run = spawnSync(

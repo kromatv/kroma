@@ -48,7 +48,7 @@ async function page(number: number): Promise<unknown[]> {
 
   const entries: unknown = JSON.parse(body);
   if (!Array.isArray(entries)) {
-    throw new Error(`${url} did not answer with a list of releases`);
+    throw new TypeError(`${url} did not answer with a list of releases`);
   }
   return entries;
 }

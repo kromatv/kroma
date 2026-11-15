@@ -16,6 +16,7 @@ import {
   type Packet,
   PacketReader,
 } from './packet';
+import { listenOnLoopback } from './fake-listener.fixture';
 import { presented, SERVER_TLS } from './fake-tls.fixture';
 
 export interface ServiceSide {
@@ -203,17 +204,7 @@ export async function fakeAdbd(options: FakeAdbdOptions = {}): Promise<FakeAdbd>
     sockets.add(socket);
     serve(socket, options, fake);
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const address = server.address();
-  fake.port = typeof address === 'object' && address ? address.port : 0;
-  fake.close = () =>
-    new Promise((resolve) => {
-      for (const socket of sockets) {
-        socket.destroy();
-      }
-      server.close(() => resolve());
-    });
-  return fake;
+  return Object.assign(fake, await listenOnLoopback(server, sockets));
 }
 
 /** A service that answers one text and closes. */

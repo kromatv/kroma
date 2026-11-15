@@ -1,6 +1,13 @@
 const CODE = /^([a-z0-9-]+)\((.+)\)$/;
 const GLOB_SIGNS = /[\\[\]{}()*?!]/g;
 
+function byCodeUnit(left, right) {
+  if (left < right) {
+    return -1;
+  }
+  return left > right ? 1 : 0;
+}
+
 /** The config name of the rule a diagnostic code names, or null when no rule owns it. */
 export function ruleOf(code) {
   const match = CODE.exec(code ?? '');
@@ -65,9 +72,9 @@ export function shrink(recorded, actual) {
 /** The same counts with rules and files in a stable order. */
 export function sorted(counts) {
   const ordered = {};
-  for (const rule of Object.keys(counts).sort()) {
+  for (const rule of Object.keys(counts).sort(byCodeUnit)) {
     ordered[rule] = {};
-    for (const file of Object.keys(counts[rule]).sort()) {
+    for (const file of Object.keys(counts[rule]).sort(byCodeUnit)) {
       ordered[rule][file] = counts[rule][file];
     }
   }
@@ -77,10 +84,10 @@ export function sorted(counts) {
 /** One oxlint override per rule, switching it off in the files that still owe it. */
 export function overridesOf(recorded) {
   return Object.keys(recorded)
-    .sort()
+    .sort(byCodeUnit)
     .map((rule) => ({
       files: Object.keys(recorded[rule])
-        .sort()
+        .sort(byCodeUnit)
         .map((file) => file.replace(GLOB_SIGNS, String.raw`\$&`)),
       rules: { [rule]: 'off' },
     }));

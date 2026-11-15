@@ -119,7 +119,7 @@ export function contentRoot(container: Element): HTMLElement {
     node = node.firstElementChild;
   }
   if (!(node instanceof HTMLElement)) {
-    throw new Error('expected rendered screen content');
+    throw new TypeError('expected rendered screen content');
   }
   return node;
 }
