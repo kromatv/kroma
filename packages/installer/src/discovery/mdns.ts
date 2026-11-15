@@ -141,7 +141,7 @@ export async function mdnsBrowse(
       pending.set(record.target, { host: from.address, type });
       if (!ports.has(record.target)) unresolved.push({ name: record.target, type: DNS_TYPE.srv });
     }
-    for (const name of [...pending.keys()]) settle(name);
+    for (const name of pending.keys()) settle(name);
     const still = unresolved.filter((question) => pending.has(question.name));
     if (still.length > 0) ask(still, [from.address]);
   };

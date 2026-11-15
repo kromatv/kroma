@@ -76,7 +76,7 @@ export async function pairWithCode(request: PairRequest): Promise<string> {
     socket.destroy();
     throw error;
   }
-  if (!answer || answer[0] !== PEER.deviceGuid) {
+  if (answer?.[0] !== PEER.deviceGuid) {
     socket.destroy();
     throw new PairingRefused('the TV refused that pairing code');
   }
