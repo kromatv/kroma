@@ -1,0 +1,58 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Avatar, Cover, Demo } from './cropper.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  component: Demo,
+  args: { shape: 'rect', aspect: 1, minZoom: 1, maxZoom: 3 },
+  controls: { shape: ['rect', 'circle'] },
+});
+
+Frames a picture before it is kept. The Root holds the picture and where it sits behind the frame: a zoom, two offsets and a quarter turn. The image always covers the frame, so there is never an empty edge to crop, and the offsets are fractions of the frame, so the crop drawn on screen is the crop written to a file of any size.
+
+The frame is the whole control. Drag it to pan, turn the wheel or pinch to zoom. It is one D-pad stop: **press** it to take the arrow keys (and plus and minus on a keyboard), press it again to give them back. The tools are parts of their own, so a screen puts them where it wants them.
+
+```tsx
+<Cropper.Root src={photo} shape="circle">
+  <Cropper.Frame label="Move the photo" />
+  <Cropper.Zoom outLabel="Zoom out" inLabel="Zoom in" />
+  <Cropper.Rotate label="Rotate left" />
+  <Cropper.Reset label="Start over" />
+  <Save />
+</Cropper.Root>
+```
+
+The file comes from `useCropper()`, which is how a button of the caller's own produces it:
+
+```tsx
+function Save() {
+  const { crop } = useCropper();
+  const save = async () => upload((await crop({ width: 512, height: 512 })) ?? original);
+  return <Button label="Save" onPress={() => void save()} />;
+}
+```
+
+`crop()` answers `image/webp` at quality 0.9 unless told otherwise. It resolves `null` where there is no canvas to draw on, which is every native target today, and for a picture the browser may not read back, so a caller always has a fallback.
+
+<Scene name="An avatar">
+  `shape="circle"` dims what falls outside the largest circle in the frame. It is a guide: the file is still the whole square, and the screen that shows the avatar rounds it.
+
+  <Avatar />
+</Scene>
+
+<Scene name="A cover">
+  `aspect` is the frame's width over its height. `minZoom` and `maxZoom` bound the zoom, and 1 is always the floor: under it the picture would stop covering the frame.
+
+  <Cover />
+</Scene>
+
+<Do>
+- Label the frame and every tool in the reader's language: the defaults are English placeholders.
+- Key the Root by its picture when the picture can change, so a new one opens centred.
+- Keep a way to send the original for when `crop()` answers `null`.
+</Do>
+
+<Dont>
+- Put a control inside the frame: it is one D-pad stop, and the drag would take every press.
+- Hand it a picture from another origin that sends no CORS headers. It draws, and `crop()` answers `null`.
+</Dont>

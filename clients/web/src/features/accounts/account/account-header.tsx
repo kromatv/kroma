@@ -11,8 +11,8 @@ import {
   useStyleScope,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useMemo, useRef } from 'react';
-import { StatusText, useSave } from '#web/features/accounts/account/ui';
+import { useMemo, useRef, useState } from 'react';
+import { AvatarDialog } from '#web/features/accounts/account/avatar-dialog';
 import { imageUrl } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { avatarGradient, UserAvatar } from '#web/shared/ui/user-avatar';
@@ -45,9 +45,9 @@ export function AccountHeader() {
   const locale = useLocale();
   const scope = useStyleScope();
   const s = useStyles(sDefinition);
-  const { user, client, updateUser, logout } = useAuth();
+  const { user, logout } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
-  const photo = useSave();
+  const [picked, setPicked] = useState<{ file: File; url: string } | null>(null);
 
   const since = useMemo(() => {
     const joined = user ? new Date(user.createdAt) : null;
@@ -59,12 +59,12 @@ export function AccountHeader() {
 
   const photoUrl = sizedImageUrl(imageUrl(user.avatarUrl), 160);
 
-  const pick = (file: File | null) => {
-    if (!file) return;
-    photo.run(async () => {
-      const { avatarUrl } = await client.accounts.uploadAvatar(file);
-      updateUser({ avatarUrl });
-    }, t('account.avatarFailed'));
+  const pick = (file: File | undefined) => {
+    if (file) setPicked({ file, url: URL.createObjectURL(file) });
+  };
+  const closePicked = () => {
+    if (picked) URL.revokeObjectURL(picked.url);
+    setPicked(null);
   };
 
   return (
@@ -83,13 +83,12 @@ export function AccountHeader() {
               size={AVATAR}
             />
           </Box>
-          <Box absolute bottom={-6} right={-6}>
+          <Box absolute bottom={-9} right={-9} radius="pill" p={3} bg="bg">
             <IconButton
               icon="camera"
-              variant="glass"
+              variant="primary"
               diameter={36}
               label={t('account.changePhoto')}
-              disabled={photo.status === 'saving'}
               onPress={() => fileRef.current?.click()}
             />
           </Box>
@@ -106,10 +105,6 @@ export function AccountHeader() {
               {t('account.memberSince', { date: since })}
             </Text>
           ) : null}
-          <StatusText
-            status={photo.status === 'saved' ? 'idle' : photo.status}
-            error={photo.error}
-          />
         </Box>
         <Box pb={8}>
           <Button
@@ -126,8 +121,12 @@ export function AccountHeader() {
         type="file"
         accept="image/*"
         hidden
-        onChange={(e) => pick(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          pick(e.target.files?.[0]);
+          e.target.value = '';
+        }}
       />
+      {picked ? <AvatarDialog file={picked.file} src={picked.url} onClose={closePicked} /> : null}
     </Box>
   );
 }
