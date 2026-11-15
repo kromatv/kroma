@@ -63,9 +63,9 @@ describe('textOf', () => {
   });
 });
 
-describe('useOutline', () => {
-  const at = (id: string, y: number, level = 2): Section => ({ id, label: id, level, y });
+const at = (id: string, y: number, level = 2): Section => ({ id, label: id, level, y });
 
+describe('useOutline', () => {
   it('puts the headings in the order the document laid them out, not the order they arrived', () => {
     const { result } = renderHook(() => useOutline('installing'));
     act(() => {
@@ -124,7 +124,7 @@ describe('useOutline', () => {
   });
 
   it('empties in the same render as the article changes, never inheriting the last one', () => {
-    const { result, rerender } = renderHook(({ article }) => useOutline(article), {
+    const { result, rerender } = renderHook(({ article: current }) => useOutline(current), {
       initialProps: { article: 'installing' },
     });
     act(() => {
@@ -139,14 +139,14 @@ describe('useOutline', () => {
   });
 });
 
-describe('a heading inside an article', () => {
-  function article() {
-    const outline = renderHook(() => useOutline('installing'));
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(OutlineContext.Provider, { value: outline.result.current.sink }, children);
-    return { outline, wrapper };
-  }
+function article() {
+  const outline = renderHook(() => useOutline('installing'));
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(OutlineContext.Provider, { value: outline.result.current.sink }, children);
+  return { outline, wrapper };
+}
 
+describe('a heading inside an article', () => {
   it('reports itself where it landed, under the id its own words earn', () => {
     const { outline, wrapper } = article();
     const heading = renderHook(() => useSection(3, 'The stylesheet'), { wrapper });

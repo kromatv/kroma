@@ -24,7 +24,7 @@ beforeAll(() => {
     }
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver;
+  };
 });
 
 const held: { cropper: CropperState | null } = { cropper: null };

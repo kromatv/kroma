@@ -57,12 +57,9 @@ export function registryApp(dir: string) {
       return c.json({ error: 'no such bundle' }, 404);
     }
     const bytes = readFileSync(path);
-    return new Response(
-      new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength),
-      {
-        headers: { 'content-type': 'application/octet-stream' },
-      },
-    );
+    return new Response(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength), {
+      headers: { 'content-type': 'application/octet-stream' },
+    });
   });
   return app;
 }

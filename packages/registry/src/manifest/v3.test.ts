@@ -44,6 +44,10 @@ describe('seam', () => {
   });
 });
 
+const at = (sha256: string) => ({
+  wireproxy: { assets: { 'linux-x86_64': { url: 'https://h/w.tar.gz', sha256 } } },
+});
+
 describe('helpers', () => {
   it('keeps each program by name, one pinned build per platform', () => {
     const parsed = Manifest.parse({ ...base, helpers: { wireproxy } });
@@ -63,10 +67,6 @@ describe('helpers', () => {
   });
 
   it('refuses a build with no sha256 to verify it by, or one that is not hex', () => {
-    const at = (sha256: string) => ({
-      wireproxy: { assets: { 'linux-x86_64': { url: 'https://h/w.tar.gz', sha256 } } },
-    });
-
     expect(() => Manifest.parse({ ...base, helpers: at('') })).toThrow();
     expect(() => Manifest.parse({ ...base, helpers: at('z'.repeat(64)) })).toThrow();
   });

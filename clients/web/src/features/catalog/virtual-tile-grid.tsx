@@ -40,7 +40,7 @@ function useRoom(box: RefObject<HTMLDivElement | null>): number {
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) {
-      return;
+      return undefined;
     }
     const measure = () =>
       setRoom((current) => (current === el.clientWidth ? current : el.clientWidth));

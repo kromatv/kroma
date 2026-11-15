@@ -40,9 +40,10 @@ export const client = {
   },
 };
 
+const wrapper = ({ children }: { children: ReactNode }) =>
+  createElement(QueryClientProvider, { client: H.client }, children);
+
 export function render<T>(hook: () => T) {
-  const wrapper = ({ children }: { children: ReactNode }) =>
-    createElement(QueryClientProvider, { client: H.client }, children);
   return renderHook(hook, { wrapper });
 }
 

@@ -4,6 +4,10 @@ import { reach } from './reach';
 
 vi.mock('./reach', () => ({ reach: vi.fn() }));
 
+const closedShell = async () => {
+  throw new Error('closed');
+};
+
 describe('duidOf', () => {
   it('asks the set for its DUID and trims what it printed', async () => {
     const shell = vi.fn(async () => '1900A2C4D6E8\r\n');
@@ -17,11 +21,7 @@ describe('duidOf', () => {
   });
 
   it('answers nothing when the set closed the shell', async () => {
-    const shell = async () => {
-      throw new Error('closed');
-    };
-
-    expect(await duidOf({ shell })).toBeNull();
+    expect(await duidOf({ shell: closedShell })).toBeNull();
   });
 });
 
@@ -37,10 +37,7 @@ describe('duidAt', () => {
 
   it('lets go of a set whose shell failed', async () => {
     const close = vi.fn();
-    const shell = async () => {
-      throw new Error('closed');
-    };
-    vi.mocked(reach).mockResolvedValue({ shell, close } as never);
+    vi.mocked(reach).mockResolvedValue({ shell: closedShell, close } as never);
 
     expect(await duidAt('192.168.1.31')).toBeNull();
     expect(close).toHaveBeenCalledOnce();

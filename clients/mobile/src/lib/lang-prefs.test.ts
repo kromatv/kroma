@@ -4,9 +4,9 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const useSharedLangPrefs = vi.hoisted(() =>
-  vi.fn((host: unknown) => {
-    shared.host = host as Host;
-    return { audio: null, subtitle: null } as unknown;
+  vi.fn((received: unknown) => {
+    shared.host = received as Host;
+    return { audio: null, subtitle: null };
   }),
 );
 const shared = { host: null as Host | null };

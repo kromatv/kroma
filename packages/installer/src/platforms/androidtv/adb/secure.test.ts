@@ -35,9 +35,10 @@ describe('adbCertificate', () => {
   });
 });
 
+let seen: (value: [boolean, string | null]) => void = () => undefined;
+
 describe('secure', () => {
   it('shows the TV the adb key as its certificate, over TLS 1.3', async () => {
-    let seen: (value: [boolean, string | null]) => void = () => undefined;
     const served = new Promise<[boolean, string | null]>((resolve) => {
       seen = resolve;
     });

@@ -119,11 +119,11 @@ function ciBuild(): number | null {
  * measures the checkout before it stamps and passes the answer down.
  */
 function treeIsDirty(projectRoot: string): boolean {
-  const declared = process.env.KROMA_BUILD_DIRTY;
-  if (declared === '0') {
+  const override = process.env.KROMA_BUILD_DIRTY;
+  if (override === '0') {
     return false;
   }
-  if (declared === '1') {
+  if (override === '1') {
     return true;
   }
   return Boolean(git('status --porcelain', projectRoot));

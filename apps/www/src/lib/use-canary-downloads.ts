@@ -7,7 +7,7 @@ export function useCanaryDownloads(baked: readonly ChannelBuild[], enabled: bool
   const [fresh, setFresh] = useState<ChannelBuild[] | null>(null);
   useEffect(() => {
     if (!enabled) {
-      return;
+      return undefined;
     }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);

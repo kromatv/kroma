@@ -8,7 +8,7 @@ export function useSettingsPopup(open: boolean): void {
   const count = useContext(SettingsPopups);
   useEffect(() => {
     if (!open || !count) {
-      return;
+      return undefined;
     }
     count(1);
     return () => count(-1);

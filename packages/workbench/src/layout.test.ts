@@ -65,20 +65,21 @@ describe('layoutFor', () => {
   });
 });
 
+function windowIs(width: number, height: number): void {
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(document.documentElement, 'clientHeight', {
+    configurable: true,
+    value: height,
+  });
+  fireEvent(window, new Event('resize'));
+}
+
 describe('useLayout', () => {
   // jsdom lays nothing out, so react-native-web reads the window through the
   // documentElement box it is told about here.
-  function windowIs(width: number, height: number): void {
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      configurable: true,
-      value: width,
-    });
-    Object.defineProperty(document.documentElement, 'clientHeight', {
-      configurable: true,
-      value: height,
-    });
-    fireEvent(window, new Event('resize'));
-  }
 
   it('moves the regions when the window does, without a media query anywhere', () => {
     windowIs(1440, 900);

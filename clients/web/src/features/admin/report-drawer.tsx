@@ -68,17 +68,14 @@ function Identity({ report }: Readonly<{ report: Report }>) {
 // Open with `await ReportDrawer.call({ report, canManage, onResolve, ... })`.
 // The action callbacks perform the mutation + parent list refresh + toast, so
 // the queue keeps updating live while the drawer stays open.
-export const ReportDrawer = createCallable<
-  {
-    report: Report;
-    canManage: boolean;
-    onResolve: (r: Report) => Promise<void>;
-    onDismiss: (r: Report) => Promise<void>;
-    onReopen: (r: Report) => Promise<void>;
-    onDelete: (r: Report) => Promise<void>;
-  },
-  void
->(({ call, report: initial, canManage, onResolve, onDismiss, onReopen, onDelete }) => {
+export const ReportDrawer = createCallable<{
+  report: Report;
+  canManage: boolean;
+  onResolve: (r: Report) => Promise<void>;
+  onDismiss: (r: Report) => Promise<void>;
+  onReopen: (r: Report) => Promise<void>;
+  onDelete: (r: Report) => Promise<void>;
+}>(({ call, report: initial, canManage, onResolve, onDismiss, onReopen, onDelete }) => {
   const scope = useStyleScope();
   useThemeVersion();
   const t = useT();

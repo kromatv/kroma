@@ -30,7 +30,7 @@ function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) 
     const mod = VoiceSearch;
     if (!mod) {
       handlers.current.onDone();
-      return;
+      return undefined;
     }
     let live = true;
     const finish = () => {

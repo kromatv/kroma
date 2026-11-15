@@ -4,8 +4,8 @@ import { useEffect, useRef } from 'react';
  * or when the caller unmounts, so a touch that ends out of order never leaves
  * the controls pinned up. Taking it twice holds once. */
 export function useControlsHold(hold: (() => () => void) | undefined): {
-  take(): void;
-  give(): void;
+  take: () => void;
+  give: () => void;
 } {
   const release = useRef<(() => void) | null>(null);
 

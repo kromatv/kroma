@@ -32,6 +32,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const title = (id: string) => page('Dune', { id, params: { id } });
+
 describe('visibleCommands', () => {
   it('keeps the order it was given', () => {
     expect(labels([action('b'), action('a')])).toEqual(['b', 'a']);
@@ -80,8 +82,6 @@ describe('visibleCommands', () => {
   });
 
   it('tells apart two titles that share a route and a name, by their id', () => {
-    const title = (id: string) => page('Dune', { id, params: { id } });
-
     expect(labels([title('a'), title('b')])).toEqual(['Dune', 'Dune']);
   });
 
@@ -188,22 +188,22 @@ describe('a row’s actions', () => {
   });
 });
 
-describe('commandAt', () => {
-  const at = (commands: readonly CommandDef[], pathname: string) =>
-    commandAt(resolve(commands).byId, pathname);
+const at = (commands: readonly CommandDef[], pathname: string) =>
+  commandAt(resolve(commands).byId, pathname);
 
-  const title = page('Dark', { id: 'title:s1', to: '/shows/$id', params: { id: 's1' } });
+describe('commandAt', () => {
+  const darkTitle = page('Dark', { id: 'title:s1', to: '/shows/$id', params: { id: 's1' } });
 
   it('finds a plain page by its route', () => {
     expect(at([page('Stats')], '/stats')).toBe('/stats');
   });
 
   it('finds a title by the route its params fill in', () => {
-    expect(at([title], '/shows/s1')).toBe('title:s1');
+    expect(at([darkTitle], '/shows/s1')).toBe('title:s1');
   });
 
   it('finds nothing for another title on the same route', () => {
-    expect(at([title], '/shows/s2')).toBeUndefined();
+    expect(at([darkTitle], '/shows/s2')).toBeUndefined();
   });
 
   it('does not take a particular view of a page for the page', () => {
@@ -222,18 +222,18 @@ describe('commandAt', () => {
   });
 });
 
+const does = (extra: Partial<CommandActionDef> = {}) =>
+  ({ label: 'Do', run: vi.fn(), ...extra }) as CommandActionDef;
+
+const context = (extra: object = {}) =>
+  ({
+    navigate: vi.fn().mockResolvedValue(undefined),
+    confirm: vi.fn().mockResolvedValue(true),
+    t,
+    ...extra,
+  }) as never;
+
 describe('runAction', () => {
-  const context = (extra: object = {}) =>
-    ({
-      navigate: vi.fn().mockResolvedValue(undefined),
-      confirm: vi.fn().mockResolvedValue(true),
-      t,
-      ...extra,
-    }) as never;
-
-  const does = (extra: Partial<CommandActionDef> = {}) =>
-    ({ label: 'Do', run: vi.fn(), ...extra }) as CommandActionDef;
-
   it('opens a route with its params, search and hash', async () => {
     const navigate = vi.fn().mockResolvedValue(undefined);
     const route = page('route', {

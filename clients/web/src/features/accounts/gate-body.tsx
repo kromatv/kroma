@@ -63,7 +63,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
 
   useEffect(() => {
     if (!listsProfiles) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.accounts.users().then(

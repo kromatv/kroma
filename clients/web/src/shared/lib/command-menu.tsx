@@ -174,7 +174,7 @@ export function CommandMenuProvider({
 
   useEffect(() => {
     if (!signedIn) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(warm, WARM_DELAY_MS);
     return () => clearTimeout(timer);

@@ -53,7 +53,7 @@ export function DocActions({ title, markdown, className }: Readonly<DocActionsPr
 
   useEffect(() => {
     if (!open) {
-      return;
+      return undefined;
     }
     const onPointer = (event: PointerEvent) => {
       if (event.target instanceof Node && !root.current?.contains(event.target)) {

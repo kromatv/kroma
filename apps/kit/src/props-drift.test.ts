@@ -69,12 +69,12 @@ describe('what the panel is spared', () => {
   });
 });
 
-describe('a compound component, read off its namespace object', () => {
-  const partsOf = (name: string) =>
-    Object.keys(docs)
-      .filter((key) => key.startsWith(`${name}.`))
-      .map((key) => key.slice(name.length + 1));
+const partsOf = (name: string) =>
+  Object.keys(docs)
+    .filter((key) => key.startsWith(`${name}.`))
+    .map((key) => key.slice(name.length + 1));
 
+describe('a compound component, read off its namespace object', () => {
   it('documents every part, in the order the namespace declares them', () => {
     expect(partsOf('Dialog')).toEqual(['Root', 'Header', 'Panel', 'Footer', 'Actions']);
   });

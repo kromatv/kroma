@@ -93,7 +93,7 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
   // (Re)create the audio element for the current theme.
   useEffect(() => {
     if (!themeUrl) {
-      return;
+      return undefined;
     }
     const a = new Audio(themeUrl);
     a.loop = true;

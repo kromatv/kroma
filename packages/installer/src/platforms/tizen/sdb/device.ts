@@ -36,13 +36,13 @@ export interface SdbDevice {
   readonly host: string;
   readonly port: number;
   readonly banner: string;
-  capability(): Promise<Capability>;
-  shell(command: string, options?: ShellOptions): Promise<string>;
-  push(localPath: string, remote: string, options?: PushOptions): Promise<void>;
-  install(artifact: string, options: InstallOptions): Promise<SdbResult>;
-  launch(appId: string): Promise<SdbResult>;
-  uninstall(packageId: string): Promise<SdbResult>;
-  close(): void;
+  capability: () => Promise<Capability>;
+  shell: (command: string, options?: ShellOptions) => Promise<string>;
+  push: (localPath: string, remote: string, options?: PushOptions) => Promise<void>;
+  install: (artifact: string, options: InstallOptions) => Promise<SdbResult>;
+  launch: (appId: string) => Promise<SdbResult>;
+  uninstall: (packageId: string) => Promise<SdbResult>;
+  close: () => void;
 }
 
 export interface DeviceInfo {

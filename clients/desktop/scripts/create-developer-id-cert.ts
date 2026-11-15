@@ -59,6 +59,8 @@ function expandHome(p: string): string {
   return p.startsWith('~') ? join(homedir(), p.slice(1)) : p;
 }
 
+const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+
 function token(keyId: string, issuerId: string, privateKey: string): string {
   const header = { alg: 'ES256', kid: keyId, typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
@@ -68,7 +70,6 @@ function token(keyId: string, issuerId: string, privateKey: string): string {
     exp: now + 15 * 60, // Apple rejects anything beyond 20 minutes out.
     aud: 'appstoreconnect-v1',
   };
-  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
   const signingInput = `${b64(header)}.${b64(payload)}`;
   // `dsaEncoding: 'ieee-p1363'` converts OpenSSL's DER ECDSA signature to the raw
   // r‖s pair JWS requires; without it Apple answers 401 on an otherwise valid signature.

@@ -127,7 +127,7 @@ describe('PageHeader.Actions', () => {
 });
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 describe('a PageHeader.Back that delegates its host to a link', () => {

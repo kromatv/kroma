@@ -29,7 +29,7 @@ function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   }
   useEffect(() => {
     if (open) {
-      return;
+      return undefined;
     }
     const out = setTimeout(() => setMounted(false), SLIDE_MS);
     return () => clearTimeout(out);
@@ -40,7 +40,7 @@ function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   // from. The second frame is on the far side of that paint.
   useEffect(() => {
     if (!open || !mounted) {
-      return;
+      return undefined;
     }
     let second = 0;
     const first = requestAnimationFrame(() => {

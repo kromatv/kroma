@@ -63,9 +63,10 @@ async function fetchText(path: string): Promise<string> {
   return text;
 }
 
+const tag = (block: string, name: string) =>
+  new RegExp(`<${name}>([^<]*)</${name}>`).exec(block)?.[1] ?? '';
+
 function exportedRules(xml: string): z.infer<typeof ExportedRule>[] {
-  const tag = (block: string, name: string) =>
-    new RegExp(`<${name}>([^<]*)</${name}>`).exec(block)?.[1] ?? '';
   return [...xml.matchAll(/<rule>([\s\S]*?)<\/rule>/g)].map(([, block = '']) =>
     ExportedRule.parse({
       repository: tag(block, 'repositoryKey'),

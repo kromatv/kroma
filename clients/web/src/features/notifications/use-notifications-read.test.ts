@@ -100,9 +100,9 @@ describe('moving one row between read and unread', () => {
       notifications: server.map((n) => ({ ...n })),
       unread: server.filter((n) => !n.read).length,
     }));
-    const flip = (read: boolean) => async (ids: string[]) => {
+    const flip = (read: boolean) => async (readIds: string[]) => {
       for (const n of server) {
-        if (ids.includes(n.id)) {
+        if (readIds.includes(n.id)) {
           n.read = read;
         }
       }

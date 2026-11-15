@@ -7,13 +7,13 @@ import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
 
-const { clearPressGuard, render: renderRaw } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 // Every story compiled, which is the one place in the suite that wants the
 // whole library at once: the point is that none of them throws.
 const LOADED = await Promise.all(STORIES.map((entry) => entry.load()));
 
-const render = (ui: ReactNode) => renderRaw(onScreen(ui as ReactElement));
+const render = (ui: ReactNode) => inputHost.render(onScreen(ui as ReactElement));
 
 afterEach(cleanup);
 
@@ -54,6 +54,9 @@ describe('every story renders', () => {
   }
 });
 
+const fill = (label: string, text: string) =>
+  fireEvent.change(screen.getByLabelText(label), { target: { value: text } });
+
 describe('interactive stories respond to a press', () => {
   it('opens the Dialog story from its own trigger', () => {
     const story = LOADED.find((entry) => entry.name === 'Dialog');
@@ -68,7 +71,7 @@ describe('interactive stories respond to a press', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
 
     // Opening a modal arms the press guard for 300ms; a test clicks faster.
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByText(String(story.args.title))).toBeNull();
   });
@@ -81,14 +84,12 @@ describe('interactive stories respond to a press', () => {
     }
     render(demo.render());
 
-    const fill = (label: string, text: string) =>
-      fireEvent.change(screen.getByLabelText(label), { target: { value: text } });
     fill('Name', 'Salon');
     fill('Address', 'kroma.local');
 
     const quality = screen.getByRole('combobox');
     fireEvent.click(quality);
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByText('1080p'));
     expect(quality.getAttribute('aria-label')).toBe('Quality: 1080p');
 
@@ -111,7 +112,7 @@ describe('interactive stories respond to a press', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
     expect(screen.getByText(String(story.args.title))).toBeTruthy();
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByLabelText('Close'));
     expect(screen.queryByText(String(story.args.title))).toBeNull();
   });

@@ -29,10 +29,10 @@ describe('the press dip', () => {
   });
 });
 
-describe('the measured side', () => {
-  const layout = (width: number, height: number) =>
-    ({ nativeEvent: { layout: { width, height, x: 0, y: 0 } } }) as LayoutChangeEvent;
+const layout = (width: number, height: number) =>
+  ({ nativeEvent: { layout: { width, height, x: 0, y: 0 } } }) as LayoutChangeEvent;
 
+describe('the measured side', () => {
   it('takes the longest side, whichever one that is', () => {
     // The dip is a scale, so it travels furthest on the longer edge: that is
     // the one the pixel budget has to be measured against.

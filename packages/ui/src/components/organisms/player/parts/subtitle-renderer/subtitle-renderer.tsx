@@ -80,7 +80,7 @@ export function SubtitleRenderer({
   useEffect(() => {
     pointer.current = 0;
     if (!activeUrl || isLoaded(activeUrl)) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     fetch(activeUrl)
@@ -131,7 +131,7 @@ export function SubtitleRenderer({
   // Tick the interpolated clock and update only when the visible line changes.
   useEffect(() => {
     if (cues.length === 0) {
-      return;
+      return undefined;
     }
     let last: string | null = null;
     const tick = () => {

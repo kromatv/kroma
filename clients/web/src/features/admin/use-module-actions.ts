@@ -8,6 +8,14 @@ import { useAuth } from '#web/shared/lib/auth';
 import type { CommandActionDef } from '#web/shared/lib/command-menu';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
+const act = (work: () => Promise<unknown>) => async () => {
+  try {
+    await work();
+  } catch (error) {
+    toast({ message: message(error), icon: 'alert-triangle' });
+  }
+};
+
 /** The installed modules, and what the command menu offers to do to each: what the
  *  module's own page offers, with the same confirmation before an uninstall, and the
  *  same second one when other modules still depend on it. */
@@ -25,14 +33,6 @@ export function useModuleActions(): {
     queryFn: moduleApi.fetchAdminModules,
     enabled: !!user && hasPermission(user, 'settings.manage'),
   });
-
-  const act = (work: () => Promise<unknown>) => async () => {
-    try {
-      await work();
-    } catch (error) {
-      toast({ message: message(error), icon: 'alert-triangle' });
-    }
-  };
 
   const toggle = async ({ id, name, enabled }: AdminModule) => {
     const { warning } = await moduleApi.setModuleEnabled(id, !enabled);

@@ -6,8 +6,8 @@ import { buildWebStats, type WebStatsInput } from './web-stats';
 
 // Echoes the key + vars, so an assertion names the catalog string a field used
 // without depending on the real catalog.
-const t: Translate = ((key: string, vars?: unknown) =>
-  vars ? `${key}(${JSON.stringify(vars)})` : key) as Translate;
+const t: Translate = (key: string, vars?: unknown) =>
+  vars ? `${key}(${JSON.stringify(vars)})` : key;
 
 const item = {
   title: 'Blade Runner 2049',
@@ -17,29 +17,30 @@ const item = {
 } as unknown as MovieView;
 
 const audioTracks: AudioTrack[] = [
-  { index: 0, codec: 'eac3', channels: 6, language: 'fr', default: true } as AudioTrack,
-  { index: 1, codec: 'aac', channels: 2, language: 'en', default: false } as AudioTrack,
+  { index: 0, codec: 'eac3', channels: 6, language: 'fr', default: true },
+  { index: 1, codec: 'aac', channels: 2, language: 'en', default: false },
 ];
 
 // v: null keeps this in the node env (no <video>): metrics degrade to metadata.
-const input = (over: Partial<WebStatsInput> = {}): WebStatsInput =>
-  ({
-    v: null,
-    item,
-    cur: 40,
-    dur: 3600,
-    bufEnd: 100,
-    useHls: true,
-    aac: false,
-    anchor: 12,
-    baseSec: 10,
-    audioTracks,
-    audioIndex: 0,
-    bytes: 1_000_000_000,
-    t,
-    locale: 'en',
-    ...over,
-  }) as WebStatsInput;
+const input = (over: Partial<WebStatsInput> = {}): WebStatsInput => ({
+  v: null,
+  item,
+  cur: 40,
+  dur: 3600,
+  bufEnd: 100,
+  useHls: true,
+  aac: false,
+  anchor: 12,
+  baseSec: 10,
+  audioTracks,
+  audioIndex: 0,
+  bytes: 1_000_000_000,
+  t,
+  locale: 'en',
+  ...over,
+});
+
+const labels = (s: ReturnType<typeof buildWebStats>) => (s.extra ?? []).map((r) => r.label);
 
 describe('buildWebStats', () => {
   it('summarises an HLS copy stream from the item metadata', () => {
@@ -86,7 +87,6 @@ describe('buildWebStats', () => {
   });
 
   it('includes an anchor diagnostics row only for HLS', () => {
-    const labels = (s: ReturnType<typeof buildWebStats>) => (s.extra ?? []).map((r) => r.label);
     expect(labels(buildWebStats(input({ useHls: true })))).toContain('stats.anchor');
     expect(labels(buildWebStats(input({ useHls: false })))).not.toContain('stats.anchor');
   });
@@ -126,10 +126,10 @@ describe('buildWebStats', () => {
   });
 
   it('omits engine rows entirely when no engine metrics are present', () => {
-    const labels = (buildWebStats(input()).extra ?? []).map((r) => r.label);
-    expect(labels).not.toContain('stats.streamBitrate');
-    expect(labels).not.toContain('stats.bandwidth');
-    expect(labels).not.toContain('stats.stalls');
+    const shown = (buildWebStats(input()).extra ?? []).map((r) => r.label);
+    expect(shown).not.toContain('stats.streamBitrate');
+    expect(shown).not.toContain('stats.bandwidth');
+    expect(shown).not.toContain('stats.stalls');
   });
 
   it('always emits a buffer meter, adding bandwidth/bitrate when the engine reports them', () => {
@@ -214,26 +214,26 @@ describe('buildWebStats', () => {
   });
 });
 
+const rowValue = (s: ReturnType<typeof buildWebStats>, label: string) =>
+  (s.extra ?? []).find((r) => r.label === label)?.value;
+
+const videoEl = (over: Record<string, unknown> = {}) =>
+  ({
+    videoWidth: 1920,
+    videoHeight: 1080,
+    clientWidth: 800,
+    clientHeight: 450,
+    volume: 0.5,
+    muted: true,
+    playbackRate: 1.5,
+    currentTime: 33,
+    readyState: 4,
+    networkState: 2,
+    getVideoPlaybackQuality: () => ({ droppedVideoFrames: 3, totalVideoFrames: 900 }),
+    ...over,
+  }) as unknown as HTMLVideoElement;
+
 describe('buildWebStats against a live element', () => {
-  const videoEl = (over: Record<string, unknown> = {}) =>
-    ({
-      videoWidth: 1920,
-      videoHeight: 1080,
-      clientWidth: 800,
-      clientHeight: 450,
-      volume: 0.5,
-      muted: true,
-      playbackRate: 1.5,
-      currentTime: 33,
-      readyState: 4,
-      networkState: 2,
-      getVideoPlaybackQuality: () => ({ droppedVideoFrames: 3, totalVideoFrames: 900 }),
-      ...over,
-    }) as unknown as HTMLVideoElement;
-
-  const rowValue = (s: ReturnType<typeof buildWebStats>, label: string) =>
-    (s.extra ?? []).find((r) => r.label === label)?.value;
-
   afterEach(() => vi.unstubAllGlobals());
 
   it('prefers the decoded frame size, the CSS box in device pixels, and the live volume', () => {

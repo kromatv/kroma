@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fetchAt, load } from '#web/sw.fixture';
 
-describe('notificationclick', () => {
-  const clickEvent = (over: Record<string, unknown> = {}) => {
-    const close = vi.fn();
-    return {
-      event: {
-        action: undefined,
-        notification: { close, data: { link: '/movies/ab12', actions: [] } },
-        ...over,
-      },
-      close,
-    };
+const clickEvent = (over: Record<string, unknown> = {}) => {
+  const close = vi.fn();
+  return {
+    event: {
+      action: undefined,
+      notification: { close, data: { link: '/movies/ab12', actions: [] } },
+      ...over,
+    },
+    close,
   };
+};
 
+describe('notificationclick', () => {
   it('opens the linked page and dismisses the notification', async () => {
     const sw = load();
     const { event, close } = clickEvent();

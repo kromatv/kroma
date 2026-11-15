@@ -51,7 +51,7 @@ describe('buildCommand', () => {
       );
       const bytes = readFileSync(kmod);
       const names = tarNames(
-        toTar(new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength)),
+        toTar(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)),
       );
       expect(names).toEqual(['icon.svg', 'module.json']);
     }

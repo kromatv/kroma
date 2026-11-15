@@ -84,10 +84,10 @@ export interface RequestContext {
   /** The credential the media byte routes take in a URL, for the players that
    * cannot send a header. Undefined until a sign-in has handed one over, and
    * against a server too old to mint one. */
-  mediaTicket(): string | undefined;
+  mediaTicket: () => string | undefined;
   /** Adopt the ticket a sign-in answered with, or clear it with `undefined`. The
    * accounts domain calls this; nothing else does. */
-  setMediaTicket(ticket: string | undefined): void;
+  setMediaTicket: (ticket: string | undefined) => void;
   get: Verb;
   post: Verb;
   put: Verb;
@@ -124,8 +124,8 @@ export interface TransportConfig {
   app?: string;
   /** Mint a fresh bearer after a 401, or resolve undefined to give up. */
   refresh(): Promise<string | undefined>;
-  mediaTicket(): string | undefined;
-  setMediaTicket(ticket: string | undefined): void;
+  mediaTicket: () => string | undefined;
+  setMediaTicket: (ticket: string | undefined) => void;
   /** Aborts every request this context makes unless the call named its own.
    * A query adapter builds one context per fetch and hands it the runner's
    * signal, so an endpoint needs no signal parameter of its own. */
@@ -168,14 +168,14 @@ function split(rest: readonly unknown[]) {
     : { response: undefined, options: first as AnyOptions | undefined };
 }
 
+const resolve = (template: string, options?: AnyOptions) =>
+  `${buildPath(template, options?.params)}${queryString(options?.query)}`;
+
 /** The shared transport: path templates, auth and locale headers, the 64 MiB
  * body bound, one silent refresh per 401, and a zod parse of every JSON answer. */
 export function createRequestContext(config: TransportConfig): RequestContext {
   const { route, fetchFn } = config;
   const underPolicy = concurrencyGate();
-  const resolve = (template: string, options?: AnyOptions) =>
-    `${buildPath(template, options?.params)}${queryString(options?.query)}`;
-
   const fetchPath = (
     path: string,
     init?: RequestInit,

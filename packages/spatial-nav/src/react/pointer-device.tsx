@@ -25,7 +25,7 @@ function PointerDeviceProvider({ children }: Readonly<{ children: ReactNode }>) 
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
-      return;
+      return undefined;
     }
     const pointerMoved = () => {
       device.current = 'pointer';

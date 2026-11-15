@@ -38,7 +38,7 @@ function useListCursorKeys<T>({
   useEffect(() => {
     const document = webDocument();
     if (!document) {
-      return;
+      return undefined;
     }
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

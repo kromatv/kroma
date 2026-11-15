@@ -147,13 +147,13 @@ describe('rest calibration', () => {
   });
 });
 
-describe('single-axis hat (axis 9)', () => {
-  const rest = () => {
-    const axes = zeros(10);
-    axes[9] = 1.2857; // classic out-of-range rest value
-    return axes;
-  };
+const rest = () => {
+  const axes = zeros(10);
+  axes[9] = 1.2857; // classic out-of-range rest value
+  return axes;
+};
 
+describe('single-axis hat (axis 9)', () => {
   it('decodes the 8-way notches once the rest signature has been seen', () => {
     const state = freshPadState('test-pad');
     frame(makePad({ mapping: '', buttons: zeros(11), axes: rest() }), state);

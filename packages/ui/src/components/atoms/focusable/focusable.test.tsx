@@ -48,6 +48,8 @@ function screenWith(children: React.ReactNode) {
   return render(<FocusScope>{children}</FocusScope>);
 }
 
+const wash = () => declared(painted('Nu'), 'backgroundColor');
+
 describe('Focusable on react-native-web', () => {
   it('renders an accessible host for every control', () => {
     screenWith(<Focusable label="Play" />);
@@ -250,7 +252,6 @@ describe('Focusable on react-native-web', () => {
     // clients/web. Nothing can focus it and no finger will press it, so the
     // hover is the ONLY answer a cursor gets there.
     render(<Focusable label="Nu" states={{ hover: { bg: 'accentSoft' } }} />);
-    const wash = () => declared(painted('Nu'), 'backgroundColor');
     expect(wash()).toBe('rgba(0, 0, 0, 0)');
 
     // A Pressable listens for the hover itself (react-native-web's useHover),

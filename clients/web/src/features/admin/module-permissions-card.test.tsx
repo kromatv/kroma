@@ -7,7 +7,7 @@ import type { PermissionSource } from '#web/features/admin/module-permissions';
 import { SecurityCard } from '#web/features/admin/module-permissions-card';
 import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(cleanup);
 
@@ -27,13 +27,13 @@ const TORRENTS: PermissionSource = {
 };
 
 function show(source: PermissionSource | null) {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <SecurityCard id="tv.kroma.torrents" name="Torrents" source={source} />
       <PermissionsSheet />
     </I18nProvider>,
   );
-  clearPressGuard();
+  inputHost.clearPressGuard();
 }
 
 it('opens with one verdict naming what reaches past the isolation, then four tiles', () => {

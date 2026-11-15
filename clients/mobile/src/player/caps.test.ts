@@ -237,7 +237,7 @@ describe('deciding whether the raw file can be downloaded', () => {
 
   it('refuses a track with no codec reported', () => {
     rn.os = 'android';
-    expect(canRawDownload(item({ audio: [{ codec: '' as string }] }))).toBe(false);
+    expect(canRawDownload(item({ audio: [{ codec: '' }] }))).toBe(false);
   });
 
   it('refuses a file whose container the server never reported', () => {

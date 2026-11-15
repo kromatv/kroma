@@ -23,7 +23,7 @@ export function useStallRecovery(opts: StallRecoveryOptions): boolean {
   useEffect(() => {
     const v = videoRef.current;
     if (!active || !v) {
-      return;
+      return undefined;
     }
     return driveStallRecovery(
       {

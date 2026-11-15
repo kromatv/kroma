@@ -4,13 +4,15 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { detail, client } = vi.hoisted(() => {
-  const detail = vi.fn<(kind: 'movie' | 'tv', tmdbId: number) => Promise<DiscoverDetail>>();
-  return { detail, client: { discovery: { detail } } };
+  const lookup = vi.fn<(kind: 'movie' | 'tv', tmdbId: number) => Promise<DiscoverDetail>>();
+  return { detail: lookup, client: { discovery: { detail: lookup } } };
 });
 
 vi.mock('#tv/app/router', () => ({ useClient: () => client }));
 
 import { useDiscoverDetail } from './use-discover-detail';
+
+const noop = () => undefined;
 
 const fiche = (tmdbId: number) =>
   ({ kind: 'movie', tmdbId, title: 'Sintel' }) as unknown as DiscoverDetail;
@@ -68,7 +70,7 @@ describe('useDiscoverDetail', () => {
   });
 
   it('drops an answer that lands after the viewer moved on', async () => {
-    let answer: (read: DiscoverDetail) => void = () => {};
+    let answer: (read: DiscoverDetail) => void = noop;
     detail.mockReturnValueOnce(
       new Promise((resolve) => {
         answer = resolve;

@@ -20,7 +20,7 @@ function Anchor({ to, onNavigate, ...host }: Readonly<Record<string, unknown>>) 
     event.preventDefault();
     (onNavigate as (() => void) | undefined)?.();
   };
-  return <View {...(host as object)} {...({ href: to, onClick: click } as object)} />;
+  return <View {...host} {...({ href: to, onClick: click } as object)} />;
 }
 
 interface RouterClick {

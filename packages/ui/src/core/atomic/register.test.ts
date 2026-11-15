@@ -71,9 +71,9 @@ describe('mergeStatic', () => {
   });
 });
 
-describe('a property stated per breakpoint, compiled', () => {
-  const cascade = () => staticStyle({ paddingLeft: 'var(--kaBcDeF,8px)' });
+const cascade = () => staticStyle({ paddingLeft: 'var(--kaBcDeF,8px)' });
 
+describe('a property stated per breakpoint, compiled', () => {
   it('is replaced whole by a later layer that states the property', () => {
     const flat = staticStyle({ paddingLeft: 20 });
 

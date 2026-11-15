@@ -34,7 +34,7 @@ export function useDiscoveryLoop(active: boolean): DiscoveredServer[] {
   const [found, setFound] = useState<DiscoveredServer[]>([]);
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -93,7 +93,7 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
   const [loaded, setLoaded] = useState<{ serverUrl: string; users: PublicUser[] } | null>(null);
   useEffect(() => {
     if (!serverUrl) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     void (async () => {

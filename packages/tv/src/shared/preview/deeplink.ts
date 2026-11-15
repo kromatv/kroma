@@ -102,9 +102,9 @@ export function createDeepLinks() {
       return unsubscribe;
     }
     const handler = () => {
-      const link = readDeepLink();
-      if (link) {
-        cb(link);
+      const opened = readDeepLink();
+      if (opened) {
+        cb(opened);
       }
     };
     window.addEventListener('appcontrol', handler);

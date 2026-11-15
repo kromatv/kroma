@@ -53,5 +53,5 @@ export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
       }
       ev.close();
     };
-  }, [kind, id, queryClient, webRuntime, eventClient.sessionToken, eventClient.refreshSession]);
+  }, [kind, id, queryClient, webRuntime, eventClient.sessionToken, eventClient]);
 }

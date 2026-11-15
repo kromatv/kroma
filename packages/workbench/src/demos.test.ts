@@ -132,7 +132,7 @@ describe('attachDemos', () => {
 // regex engine can start from - a file header or a note on a helper would
 // otherwise swallow everything between the two.
 describe('a demo with an earlier block comment', () => {
-  const SOURCE = `import { Button } from '@kromatv/ui/kit';
+  const COMMENTED_SOURCE = `import { Button } from '@kromatv/ui/kit';
 
 /** Reject an empty email. */
 function validate(email: string) {
@@ -149,11 +149,11 @@ export default function SignInForm() {
 `;
 
   it('reads only the comment that documents the export', () => {
-    expect(metaFrom(SOURCE)).toEqual({ docs: 'The sign-in form.', name: 'Sign in' });
+    expect(metaFrom(COMMENTED_SOURCE)).toEqual({ docs: 'The sign-in form.', name: 'Sign in' });
   });
 
   it('leaves the imports and the helper in the code sample', () => {
-    const code = codeFrom(SOURCE) ?? '';
+    const code = codeFrom(COMMENTED_SOURCE) ?? '';
     expect(code).toContain("import { Button } from '@kromatv/ui/kit';");
     expect(code).toContain('function validate');
     // Only the export's own doc comment is taken out.

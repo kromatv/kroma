@@ -46,8 +46,8 @@ export function DashboardScreen() {
   };
   const avatarByUser = useMemo(() => {
     const known = new Map<string, string | null>();
-    for (const user of roster) {
-      known.set(user.id, user.avatarUrl ?? null);
+    for (const member of roster) {
+      known.set(member.id, member.avatarUrl ?? null);
     }
     return known;
   }, [roster]);

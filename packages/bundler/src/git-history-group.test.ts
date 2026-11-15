@@ -11,14 +11,14 @@ const BUTTON = 'packages/ui/src/components/atoms/button/button.tsx';
 const STORY = 'packages/ui/src/components/atoms/button/button.story.mdx';
 const OLD_BUTTON = 'packages/ui/src/button.tsx';
 
-describe('attribute', () => {
-  const commit = (sha: string, date: string, changes: LogCommit['changes']): LogCommit => ({
-    sha,
-    date,
-    subject: sha,
-    changes,
-  });
+const commit = (sha: string, date: string, changes: LogCommit['changes']): LogCommit => ({
+  sha,
+  date,
+  subject: sha,
+  changes,
+});
 
+describe('attribute', () => {
   it('follows a rename into the file’s earlier life', () => {
     const commits = [
       commit('c333', '2026-08-10T00:00:00Z', [{ status: 'M', path: BUTTON }]),
@@ -139,8 +139,11 @@ describe('groupFiles', () => {
   });
 });
 
+const commits = (...list: HistoryCommit[]) => list;
+
+const at = (name: string) => `packages/ui/src/components/atoms/${name}.story.mdx`;
+
 describe('entriesOf', () => {
-  const commits = (...list: HistoryCommit[]) => list;
   const older: HistoryCommit = { sha: 'c111', date: '2026-07-01T00:00:00Z', subject: 'born' };
   const newer: HistoryCommit = { sha: 'c222', date: '2026-08-01T00:00:00Z', subject: 'grew' };
 
@@ -153,7 +156,7 @@ describe('entriesOf', () => {
     const entry = entriesOf(groups, found, new Set(), 6)[STORY];
     expect(entry?.created).toBe(older.date);
     expect(entry?.changed).toBe(newer.date);
-    expect(entry?.commits.map((commit) => commit.sha)).toEqual(['c222', 'c111']);
+    expect(entry?.commits.map((listed) => listed.sha)).toEqual(['c222', 'c111']);
   });
 
   it('lists a commit touching two of a component’s files once', () => {
@@ -166,9 +169,9 @@ describe('entriesOf', () => {
   });
 
   it('bounds the listed commits without moving the creation date', () => {
-    const many = Array.from({ length: 10 }, (_, at) => ({
-      sha: `c${at}`,
-      date: `2026-0${at % 9}-01T00:00:00Z`.replace('0-0', '1-0'),
+    const many = Array.from({ length: 10 }, (_, index) => ({
+      sha: `c${index}`,
+      date: `2026-0${index % 9}-01T00:00:00Z`.replace('0-0', '1-0'),
       subject: 'x',
     }));
     const entry = entriesOf(new Map([[STORY, [STORY]]]), new Map([[STORY, many]]), new Set(), 3)[
@@ -179,7 +182,6 @@ describe('entriesOf', () => {
   });
 
   it('keys the entries by path, whatever order the groups arrived in', () => {
-    const at = (name: string) => `packages/ui/src/components/atoms/${name}.story.mdx`;
     const groups = new Map(['chip', 'avatar', 'button'].map((name) => [at(name), [at(name)]]));
     const found = new Map([...groups.keys()].map((key) => [key, commits(newer)]));
     expect(Object.keys(entriesOf(groups, found, new Set(), 6))).toEqual([

@@ -7,6 +7,8 @@ import { AvplayEngine } from './avplay-engine';
 import type { EngineOptions } from './base-engine';
 import type { AvplayApi, AvplayListeners, AvplayTrack, EngineListeners } from './engine';
 
+const noop = () => undefined;
+
 // The Samsung AVPlay backend, driven against a fake `webapis.avplay` that
 // records every native call, so none of this needs a TV.
 
@@ -25,8 +27,8 @@ interface FakeAvplay {
 function fakeAvplay(refuses: string[] = []): FakeAvplay {
   const calls: Array<{ m: string; args: unknown[] }> = [];
   let listener: AvplayListeners = {};
-  let ok: () => void = () => {};
-  let err: () => void = () => {};
+  let ok: () => void = noop;
+  let err: () => void = noop;
   let tracks: AvplayTrack[] = [];
   let duration = 0;
   let time = 0;
@@ -155,7 +157,7 @@ function masterArrivedTo(arrivedSec: number) {
   });
 }
 
-const track = (index: number, type: string): AvplayTrack => ({ index, type }) as AvplayTrack;
+const track = (index: number, type: string): AvplayTrack => ({ index, type });
 
 function opts(over: Partial<EngineOptions> = {}): EngineOptions {
   return {

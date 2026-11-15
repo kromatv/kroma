@@ -250,7 +250,7 @@ function Root({
               appearance={appearance}
               onAppearanceChange={onAppearanceChange}
               statsOn={statsOn}
-              onToggleStats={() => setStatsOn((s) => !s)}
+              onToggleStats={() => setStatsOn((shown) => !shown)}
               subtitleGen={subtitleGen}
               onReport={onReport}
               overflow={metrics.overflow}

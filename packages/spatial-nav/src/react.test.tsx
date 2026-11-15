@@ -49,7 +49,7 @@ function Tile({ id, autoFocus = false }: Readonly<{ id: string; autoFocus?: bool
 }
 
 function RowOf({
-  ids,
+  ids: tiles,
   open,
   active = true,
   onEdge,
@@ -63,7 +63,7 @@ function RowOf({
     <NavigatorRoot active={active} onEdge={onEdge}>
       <Probe />
       <NavigatorView direction="horizontal">
-        {ids.map((id) => (
+        {tiles.map((id) => (
           <Tile key={id} id={id} autoFocus={id === open} />
         ))}
       </NavigatorView>
@@ -243,7 +243,7 @@ function Locker({ hold }: Readonly<{ hold: boolean }>) {
   const { lock, unlock } = useLockNavigator();
   useEffect(() => {
     if (!hold) {
-      return;
+      return undefined;
     }
     lock();
     return unlock;

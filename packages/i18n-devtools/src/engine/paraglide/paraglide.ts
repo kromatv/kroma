@@ -134,13 +134,13 @@ export function paraglide<L extends string, M extends Messages>({
       }
       const given = inputs ?? {};
       const read = new Set<string>();
-      const text = message(watched(given, read), options);
+      const rendered = message(watched(given, read), options);
       const locale = options?.locale ?? runtime.getLocale();
       return inspect({
         key,
         from: { scope: null, locale },
         locale,
-        text,
+        text: rendered,
         vars: varsIn(given),
         holes: [...read].filter((hole) => given[hole] === undefined),
       });

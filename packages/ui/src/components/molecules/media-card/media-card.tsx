@@ -25,7 +25,7 @@ function tintGradient(tint: readonly [string, string]): string {
 
 /** A card frame's stand-in fill, shown until the art covers it. */
 function tintFill(tint: readonly [string, string], scope: StyleScope): ViewStyle {
-  return sharedStyle(`card:tint:${tint[0]}`, { backgroundColor: tint[0] }, scope) as ViewStyle;
+  return sharedStyle(`card:tint:${tint[0]}`, { backgroundColor: tint[0] }, scope);
 }
 
 /** Marks the box a card's art and caption fade in with. */

@@ -11,6 +11,8 @@ afterEach(() => {
   setEngine(null);
 });
 
+let announce = () => {};
+
 describe('the locale picker', () => {
   it('explains why language switching is unavailable instead of offering an empty selector', () => {
     render(<LocalePicker locale="" onLocale={vi.fn()} />);
@@ -21,7 +23,6 @@ describe('the locale picker', () => {
 
   it('shows the active language when a provider registers after the panel opens', () => {
     let codes: readonly string[] = [];
-    let announce = () => {};
     setEngine(
       testEngine({
         locales: () => codes,

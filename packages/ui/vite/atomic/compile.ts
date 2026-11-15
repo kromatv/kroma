@@ -8,15 +8,15 @@ import { createRequire } from 'node:module';
 type OrderedRules = readonly (readonly [rules: readonly string[], group: number])[];
 
 interface Compiler {
-  atomic(style: Record<string, unknown>): [Record<string, unknown>, OrderedRules];
-  stringifyValueWithProperty(value: unknown, property: string): string;
+  atomic: (style: Record<string, unknown>) => [Record<string, unknown>, OrderedRules];
+  stringifyValueWithProperty: (value: unknown, property: string) => string;
 }
 
 interface Preprocessor {
-  preprocess(
+  preprocess: (
     style: Record<string, unknown>,
     options: Record<string, boolean>,
-  ): Record<string, unknown>;
+  ) => Record<string, unknown>;
 }
 
 const require = createRequire(import.meta.url);

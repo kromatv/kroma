@@ -29,6 +29,22 @@ const frame = async () => {
 
 const reveal = (img: Element | null) => img?.getAttribute('data-kroma-reveal');
 
+const box = (root: HTMLElement) => (root.firstElementChild as HTMLElement).className;
+
+const inUnit = (props: ImgProps) =>
+  createElement(
+    'div',
+    { 'data-testid': 'frame' },
+    createElement('div', { 'data-kroma-fade-unit': '', 'data-testid': 'unit' }, el(props)),
+  );
+
+const bare = () => box(render(el({ src: null })).container);
+
+const parts = (root: HTMLElement) => ({
+  frame: root.querySelector('[data-testid="frame"]') as HTMLElement,
+  unit: root.querySelector('[data-testid="unit"]') as HTMLElement,
+});
+
 describe('Img', () => {
   beforeEach(() => resetImageReady());
 
@@ -208,9 +224,6 @@ describe('Img', () => {
   });
 
   describe('over a background', () => {
-    const box = (root: HTMLElement) => (root.firstElementChild as HTMLElement).className;
-    const bare = () => box(render(el({ src: null })).container);
-
     it('stops painting it once opaque art has faded in', () => {
       vi.useFakeTimers();
       try {
@@ -251,22 +264,11 @@ describe('Img', () => {
   });
 
   describe('inside a card that fades as one unit', () => {
-    const inUnit = (props: ImgProps) =>
-      createElement(
-        'div',
-        { 'data-testid': 'frame' },
-        createElement('div', { 'data-kroma-fade-unit': '', 'data-testid': 'unit' }, el(props)),
-      );
-    const parts = (root: HTMLElement) => ({
-      frame: root.querySelector('[data-testid="frame"]') as HTMLElement,
-      unit: root.querySelector('[data-testid="unit"]') as HTMLElement,
-    });
-
     it('holds the unit until its art loads, then clears the frame under it', () => {
       const { container } = render(inUnit({ src: 'a.jpg' }));
-      const { frame, unit } = parts(container);
+      const { frame: artFrame, unit } = parts(container);
       expect(unit.hasAttribute('data-kroma-wait')).toBe(true);
-      expect(frame.hasAttribute('data-kroma-art-in')).toBe(false);
+      expect(artFrame.hasAttribute('data-kroma-art-in')).toBe(false);
 
       const img = main(container);
       if (!img) {
@@ -275,15 +277,15 @@ describe('Img', () => {
       fireEvent.load(img);
 
       expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
-      expect(frame.hasAttribute('data-kroma-art-in')).toBe(true);
+      expect(artFrame.hasAttribute('data-kroma-art-in')).toBe(true);
     });
 
     it('never holds a unit whose art the browser had already decoded', () => {
       alreadyDecoded();
       const { container } = render(inUnit({ src: 'a.jpg' }));
-      const { frame, unit } = parts(container);
+      const { frame: artFrame, unit } = parts(container);
       expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
-      expect(frame.hasAttribute('data-kroma-art-in')).toBe(true);
+      expect(artFrame.hasAttribute('data-kroma-art-in')).toBe(true);
     });
 
     it('lets the unit go when the art fails or goes away', () => {

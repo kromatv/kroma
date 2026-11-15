@@ -53,7 +53,7 @@ function authenticator(response: Record<string, unknown> | null, method: 'create
   });
 }
 
-const options = (publicKey: Record<string, unknown>) => ({ publicKey }) as WebAuthnOptions;
+const options = (publicKey: Record<string, unknown>) => ({ publicKey });
 
 const creationOptions = () =>
   options({
@@ -85,16 +85,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('passkeysSupported', () => {
-  const support = (over: Record<string, unknown> = {}) => {
-    vi.stubGlobal('window', {
-      isSecureContext: true,
-      PublicKeyCredential: class {},
-      ...over,
-    });
-    vi.stubGlobal('navigator', { credentials: { create: vi.fn() } });
-  };
+const support = (over: Record<string, unknown> = {}) => {
+  vi.stubGlobal('window', {
+    isSecureContext: true,
+    PublicKeyCredential: class {},
+    ...over,
+  });
+  vi.stubGlobal('navigator', { credentials: { create: vi.fn() } });
+};
 
+describe('passkeysSupported', () => {
   it('is true where a ceremony can actually run', () => {
     support();
     expect(passkeysSupported()).toBe(true);

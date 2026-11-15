@@ -19,10 +19,10 @@ interface PlayExpectation {
  * `label` prop the kit spells it with, or - failing both - the text it draws.
  */
 interface PlayContext {
-  press(name: string): Promise<void>;
-  type(name: string, text: string): Promise<void>;
-  expect(name: string): PlayExpectation;
-  step(label: string, body: () => Promise<void> | void): Promise<void>;
+  press: (name: string) => Promise<void>;
+  type: (name: string, text: string) => Promise<void>;
+  expect: (name: string) => PlayExpectation;
+  step: (label: string, body: () => Promise<void> | void) => Promise<void>;
 }
 
 type PlayFunction = (context: PlayContext) => Promise<void> | void;

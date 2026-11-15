@@ -14,7 +14,7 @@ interface TestNode {
 const text = (value: string): TestNode => ({ type: 'text', value });
 
 function run(tree: TestNode): TestNode {
-  remarkReadingTime()(tree as never);
+  remarkReadingTime()(tree);
   return tree.children?.[0] as TestNode;
 }
 

@@ -21,7 +21,7 @@ interface I18n {
   locale: Locale;
   t: Translate;
   override: Locale | null;
-  setOverride(locale: Locale | null): void;
+  setOverride: (locale: Locale | null) => void;
 }
 
 const Ctx = createContext<I18n | null>(null);

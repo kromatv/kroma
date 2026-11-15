@@ -55,7 +55,7 @@ function cueStyle(a: SubtitleAppearance): TextStyle {
     color: withOpacity(a.color, a.opacity),
     fontSize: CUE_SIZE[a.size],
     fontFamily: CUE_FONT[a.font],
-    ...(a.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
+    ...(a.font === 'smallCaps' ? { fontVariant: ['small-caps'] } : null),
     backgroundColor: a.bgOpacity > 0 ? withOpacity(a.bgColor, a.bgOpacity) : 'transparent',
     textShadowColor: a.edge === 'none' ? undefined : 'rgba(0, 0, 0, 0.9)',
     textShadowRadius: edge.radius,

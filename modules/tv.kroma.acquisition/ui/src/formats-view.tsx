@@ -29,6 +29,8 @@ const CHIP_INK = {
   excluded: 'dangerHover',
 } as const;
 
+const blank = () => ({ id: '', name: '', conditions: [blankCondition('releaseTitle')] });
+
 export function FormatsView({
   rules,
   onSaved,
@@ -39,8 +41,6 @@ export function FormatsView({
   const [editing, setEditing] = useState<CustomFormat | null>(null);
   const action = useAsyncAction();
   const taken = rules.formats.map((format) => format.id);
-
-  const blank = () => ({ id: '', name: '', conditions: [blankCondition('releaseTitle')] });
 
   const duplicate = (format: CustomFormat) =>
     setEditing({

@@ -116,7 +116,7 @@ function TouchPressable({
   return (
     <PressHost
       ref={boxRef}
-      {...(unfocusable ? (UNFOCUSABLE as object) : (webKeys ?? null))}
+      {...(unfocusable ? UNFOCUSABLE : (webKeys ?? null))}
       accessibilityRole={platformRole(role)}
       {...linkProps(href, role)}
       {...a11yState}

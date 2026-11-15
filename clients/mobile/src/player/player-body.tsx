@@ -84,6 +84,7 @@ export function PlayerBody({
       return () => clearTimeout(id);
     }
     prevFailedCount.current = subs.failed.size;
+    return undefined;
   }, [subs.failed, t]);
   const subNotice = subs.loading ? t('player.subPreparing') : subFailedNote;
   const navigatedRef = useRef(false);
@@ -147,9 +148,9 @@ export function PlayerBody({
     engine.shutdown();
     void client.playback
       .nextEpisode(item.id)
-      .then((next) => {
-        if (next) {
-          router.replace(`/player/${next.id}` as never);
+      .then((following) => {
+        if (following) {
+          router.replace(`/player/${following.id}` as never);
         } else {
           goBack(router);
         }

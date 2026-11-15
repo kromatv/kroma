@@ -22,47 +22,47 @@ interface FakePlayer {
 let players: FakePlayer[] = [];
 let sources: (string | null)[] = [];
 
+function build(setup?: (player: unknown) => void) {
+  const fake = {
+    loop: false,
+    play: vi.fn(),
+    pause: vi.fn(),
+    released: false,
+    reads: 0,
+    written: 0,
+    get volume() {
+      fake.reads += 1;
+      if (fake.released) {
+        throw new Error('NotFoundException: native shared object');
+      }
+      return fake.written;
+    },
+    set volume(next: number) {
+      if (fake.released) {
+        throw new Error('NotFoundException: native shared object');
+      }
+      fake.written = next;
+    },
+  };
+  setup?.(fake);
+  return fake;
+}
+
 const useVideoPlayer = vi.hoisted(() => {
   // One player per source, as the real hook does: a fresh object per render would
   // restart the theme on every render.
   const cache = new Map<string | null, unknown>();
-
-  const build = (setup?: (player: unknown) => void) => {
-    const player = {
-      loop: false,
-      play: vi.fn(),
-      pause: vi.fn(),
-      released: false,
-      reads: 0,
-      written: 0,
-      get volume() {
-        player.reads += 1;
-        if (player.released) {
-          throw new Error('NotFoundException: native shared object');
-        }
-        return player.written;
-      },
-      set volume(next: number) {
-        if (player.released) {
-          throw new Error('NotFoundException: native shared object');
-        }
-        player.written = next;
-      },
-    };
-    setup?.(player);
-    return player;
-  };
 
   const hook = vi.fn((source: string | null, setup?: (player: unknown) => void) => {
     const existing = cache.get(source);
     if (existing) {
       return existing;
     }
-    const player = build(setup);
-    cache.set(source, player);
-    players.push(player as unknown as FakePlayer);
+    const built = build(setup);
+    cache.set(source, built);
+    players.push(built);
     sources.push(source);
-    return player;
+    return built;
   });
 
   return Object.assign(hook, { reset: () => cache.clear() });

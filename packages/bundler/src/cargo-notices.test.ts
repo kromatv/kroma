@@ -20,8 +20,8 @@ const pkg = (
   source,
 });
 
-const dep = (pkg: string, ...kinds: (string | null)[]) => ({
-  pkg,
+const dep = (crate: string, ...kinds: (string | null)[]) => ({
+  pkg: crate,
   dep_kinds: kinds.map((kind) => ({ kind })),
 });
 

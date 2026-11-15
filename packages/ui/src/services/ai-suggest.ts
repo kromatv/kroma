@@ -61,7 +61,7 @@ export function useAiSuggest(
 
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     let tries = 0;

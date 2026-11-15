@@ -31,15 +31,15 @@ export function bundledPackages(packagesRoot: string, dependencies: Record<strin
     });
 }
 
-const isSource = (target: unknown): target is string =>
-  typeof target === 'string' && /\.tsx?$/.test(target);
+const isSource = (value: unknown): value is string =>
+  typeof value === 'string' && /\.tsx?$/.test(value);
 
 export function workspacePaths(bundled: Bundled[]): Record<string, string[]> {
   return Object.fromEntries(
     bundled.flatMap(({ name, dir, exports }) =>
       Object.entries(exports)
-        .filter(([, target]) => isSource(target))
-        .map(([key, target]) => [`${name}${key.slice(1)}`, [`../${dir}/${target as string}`]]),
+        .filter(([, file]) => isSource(file))
+        .map(([key, file]) => [`${name}${key.slice(1)}`, [`../${dir}/${file as string}`]]),
     ),
   );
 }

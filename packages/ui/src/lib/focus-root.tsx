@@ -42,7 +42,7 @@ export interface FocusRootProps {
 
 export function FocusRoot({
   children,
-  style,
+  style: rootStyle,
   active = true,
   keyHost = true,
   bridge = true,
@@ -87,7 +87,7 @@ export function FocusRoot({
             />
           ) : null}
           <FocusShield shielded={keyHost} style={FILL}>
-            <NavigatorView direction="vertical" style={flat([FILL, style])}>
+            <NavigatorView direction="vertical" style={flat([FILL, rootStyle])}>
               {children}
             </NavigatorView>
           </FocusShield>

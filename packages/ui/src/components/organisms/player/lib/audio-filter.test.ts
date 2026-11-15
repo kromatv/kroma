@@ -191,14 +191,14 @@ describe('useAudioFilter', () => {
   });
 
   it('builds no graph at all while the mode is off', () => {
-    const { ctx } = stubAudio();
+    stubAudio();
     const ref = videoRef();
     renderHook(() => useAudioFilter(ref, 'k1'));
     expect(ctx.createMediaElementSource).not.toHaveBeenCalled();
   });
 
   it('wires the element through the compressor once enabled', () => {
-    const { ctx, source, comp } = stubAudio();
+    stubAudio();
     const ref = videoRef();
     const { result } = renderHook(() => useAudioFilter(ref, 'k1'));
     act(() => result.current.setMode('standard'));
@@ -209,7 +209,7 @@ describe('useAudioFilter', () => {
   // `createMediaElementSource` is once-per-element for its LIFETIME - a second
   // call throws - so the graph is keyed by element, not by mode change.
   it('reuses one graph per element across mode changes', () => {
-    const { ctx } = stubAudio();
+    stubAudio();
     const ref = videoRef();
     const { result } = renderHook(() => useAudioFilter(ref, 'k1'));
     act(() => result.current.setMode('standard'));
@@ -219,7 +219,7 @@ describe('useAudioFilter', () => {
   });
 
   it('routes past the compressor when switched back off', () => {
-    const { ctx, source, boost } = stubAudio();
+    stubAudio();
     const ref = videoRef();
     const { result } = renderHook(() => useAudioFilter(ref, 'k1'));
     act(() => result.current.setMode('standard'));
@@ -230,7 +230,7 @@ describe('useAudioFilter', () => {
 
   describe('boost', () => {
     it('builds the graph for a level past 100% with the mode off, and limits it', () => {
-      const { ctx, source, boost, limiter } = stubAudio();
+      stubAudio();
       const ref = videoRef();
       renderHook(() => useAudioFilter(ref, 'k1', 1.5));
       expect(ctx.createMediaElementSource).toHaveBeenCalledTimes(1);
@@ -241,7 +241,7 @@ describe('useAudioFilter', () => {
     });
 
     it('drops the limiter and sits at unity once the level is back under 100%', () => {
-      const { ctx, boost } = stubAudio();
+      stubAudio();
       const ref = videoRef();
       const { rerender } = renderHook(({ level }) => useAudioFilter(ref, 'k1', level), {
         initialProps: { level: 2 },
@@ -252,7 +252,7 @@ describe('useAudioFilter', () => {
     });
 
     it('leaves the make-up gain of the mode alone', () => {
-      const { gain, boost } = stubAudio();
+      stubAudio();
       const ref = videoRef();
       const { result } = renderHook(() => useAudioFilter(ref, 'k1', 1.5));
       act(() => result.current.setMode('standard'));
@@ -263,7 +263,7 @@ describe('useAudioFilter', () => {
 
   describe('tuning', () => {
     it('standard lifts the quiet parts', () => {
-      const { gain, comp } = stubAudio();
+      stubAudio();
       const ref = videoRef();
       const { result } = renderHook(() => useAudioFilter(ref, 'k1'));
       act(() => result.current.setMode('standard'));
@@ -273,7 +273,7 @@ describe('useAudioFilter', () => {
 
     // The whole point of the mode: never louder than off or standard.
     it('night clamps harder AND sits below unity gain', () => {
-      const { gain, comp } = stubAudio();
+      stubAudio();
       const ref = videoRef();
       const { result } = renderHook(() => useAudioFilter(ref, 'k1'));
       act(() => result.current.setMode('night'));
@@ -283,7 +283,7 @@ describe('useAudioFilter', () => {
   });
 
   it('re-wires when the element is remounted', () => {
-    const { ctx } = stubAudio();
+    stubAudio();
     const first = videoRef();
     const { result, rerender } = renderHook(({ ref, key }) => useAudioFilter(ref, key), {
       initialProps: { ref: first, key: 'k1' },

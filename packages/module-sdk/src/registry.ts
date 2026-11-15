@@ -166,7 +166,7 @@ export class ModuleRegistry {
     const exports = new Map<string, unknown>();
     const host: KromaHost = {
       ...base,
-      getModuleApi: (id) => exports.get(id as string) as never,
+      getModuleApi: (id) => exports.get(id) as never,
     };
     for (const module of this.order()) {
       if (module.exports) {

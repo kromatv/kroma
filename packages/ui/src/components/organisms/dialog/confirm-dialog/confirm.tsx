@@ -41,7 +41,7 @@ export function ConfirmHost({ children }: Readonly<{ children?: ReactNode }>) {
     (options) =>
       new Promise((resolve) => {
         pending.current.add(resolve);
-        setQueue((queue) => [...queue, { ...options, resolve }]);
+        setQueue((asks) => [...asks, { ...options, resolve }]);
       }),
     [],
   );
@@ -63,7 +63,7 @@ export function ConfirmHost({ children }: Readonly<{ children?: ReactNode }>) {
     }
     pending.current.delete(current.resolve);
     current.resolve(value);
-    setQueue((queue) => queue.slice(1));
+    setQueue((asks) => asks.slice(1));
   };
 
   return (

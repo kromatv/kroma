@@ -129,11 +129,7 @@ export function publish(options: Readonly<BeaconOptions>): Beacon {
     for (const delay of ANNOUNCE_BURST) {
       timers.push(setTimeout(() => send(answerPacket(service)), delay));
     }
-    timers.push(
-      setInterval(() => send(answerPacket(service)), REANNOUNCE_MS) as unknown as ReturnType<
-        typeof setTimeout
-      >,
-    );
+    timers.push(setInterval(() => send(answerPacket(service)), REANNOUNCE_MS));
   });
 
   return {
@@ -146,7 +142,7 @@ export function publish(options: Readonly<BeaconOptions>): Beacon {
       send(answerPacket({ ...service, ttl: 0 }));
       stopped = true;
       for (const timer of timers) {
-        clearTimeout(timer as ReturnType<typeof setTimeout>);
+        clearTimeout(timer);
       }
       setTimeout(() => socket.close(), 50);
     },

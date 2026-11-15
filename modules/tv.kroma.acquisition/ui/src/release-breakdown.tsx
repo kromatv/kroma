@@ -7,12 +7,13 @@ import { useScoreLineText } from './score-line-text';
 const COLUMN_MIN = 260;
 const SCORE_MAX = 400;
 
+const kind = (line: ScoredReleaseView['breakdown'][number]) => line.code || line.rule;
+
 export function ScoreBreakdown({ release }: Readonly<{ release: ScoredReleaseView }>) {
   const t = useT();
   const fmt = useFormat();
   const lineText = useScoreLineText();
   const refusal = useRefusalText()(release.refusal, release.rejected);
-  const kind = (line: ScoredReleaseView['breakdown'][number]) => line.code || line.rule;
   const scored = release.breakdown
     .filter((line) => kind(line) === 'format' && line.delta !== 0)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));

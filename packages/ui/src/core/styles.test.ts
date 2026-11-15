@@ -56,8 +56,8 @@ describe('styles', () => {
   it('registers through StyleSheet, so the web compiles atomic classes', () => {
     // Registration is what turns a repeated declaration into one shared class
     // instead of bytes re-serialised onto every element.
-    const registered = StyleSheet.flatten(s.wash);
-    expect(registered).toEqual({ backgroundColor: 'rgba(255, 255, 255, 0.06)' });
+    const flattened = StyleSheet.flatten(s.wash);
+    expect(flattened).toEqual({ backgroundColor: 'rgba(255, 255, 255, 0.06)' });
   });
 
   it('deduplicates identical declarations across separate sets', () => {

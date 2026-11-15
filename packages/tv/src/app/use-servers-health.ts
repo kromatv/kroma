@@ -41,7 +41,7 @@ export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
   useEffect(() => {
     const list = key ? key.split('|') : [];
     if (list.length === 0) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;

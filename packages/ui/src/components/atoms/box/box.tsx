@@ -142,7 +142,7 @@ function layoutOf(split: Split, step: number, scope: StyleScope): ViewStyle {
     return EMPTY;
   }
   const key = split.breakpoints === 0 ? split.key : `${step}|${split.key}`;
-  return sharedBoxStyle(key, split.shorthand as BoxStyleProps, scope);
+  return sharedBoxStyle(key, split.shorthand, scope);
 }
 
 // A box with no shorthand at all still must not mint an object per render.

@@ -62,29 +62,29 @@ describe('the plugin', () => {
   });
 });
 
-describe('watching in dev', () => {
-  function serve(options = OPTS) {
-    const listeners: ((file: string) => void)[] = [];
-    const watcher = {
-      add: vi.fn(),
-      on: vi.fn((event: string, handler: (file: string) => void) => {
-        if (event === 'change') {
-          listeners.push(handler);
-        }
-      }),
-    };
-    const error = vi.fn();
-    const server = { watcher, config: { logger: { error } } };
-    const configure = standaloneScript(options).configureServer as (s: unknown) => void;
-    configure(server);
-    const change = (file: string) => {
-      for (const listener of listeners) {
-        listener(file);
+function serve(options = OPTS) {
+  const listeners: ((file: string) => void)[] = [];
+  const watcher = {
+    add: vi.fn(),
+    on: vi.fn((event: string, handler: (file: string) => void) => {
+      if (event === 'change') {
+        listeners.push(handler);
       }
-    };
-    return { watcher, error, change };
-  }
+    }),
+  };
+  const error = vi.fn();
+  const server = { watcher, config: { logger: { error } } };
+  const configure = standaloneScript(options).configureServer as (s: unknown) => void;
+  configure(server);
+  const change = (file: string) => {
+    for (const listener of listeners) {
+      listener(file);
+    }
+  };
+  return { watcher, error, change };
+}
 
+describe('watching in dev', () => {
   it('watches the entry itself, wherever it sits', () => {
     expect(serve().watcher.add).toHaveBeenCalledWith(OPTS.entry);
   });

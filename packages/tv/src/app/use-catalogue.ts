@@ -173,6 +173,7 @@ export function useCatalogue(
     if (servers.length === 0) {
       return runDiscovery();
     }
+    return undefined;
   }, [servers.length, runDiscovery]);
 
   // Fetch the catalogue. `quiet` skips the status/error toggles (used by the live
@@ -236,7 +237,7 @@ export function useCatalogue(
   // Smart Hub preview (Samsung TV): keep the home-screen carousel in sync.
   useEffect(() => {
     if (status !== 'ready' || !client) {
-      return;
+      return undefined;
     }
     const id = setTimeout(() => void publishPreview(client, movies), 1500);
     return () => clearTimeout(id);

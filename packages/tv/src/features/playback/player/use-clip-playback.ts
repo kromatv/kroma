@@ -50,7 +50,7 @@ export function useClipPlayback<E extends ClipEngine>(
 
   useEffect(() => {
     if (!url) {
-      return;
+      return undefined;
     }
     let started = false;
     const patch = (next: Partial<ClipState>) => setState((s) => ({ ...s, ...next }));
@@ -82,7 +82,7 @@ export function useClipPlayback<E extends ClipEngine>(
     };
     const engine = backend.createClipEngine({ url, video, listeners });
     if (!engine) {
-      return;
+      return undefined;
     }
     engineRef.current = engine;
     return () => {

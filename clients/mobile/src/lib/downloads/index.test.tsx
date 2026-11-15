@@ -90,6 +90,8 @@ interface Pending {
 
 const pending = new Map<string, Pending>();
 
+const noop = (): void => undefined;
+
 const park = (id: string, hooks: TransferHooks) =>
   new Promise<DownloadEntry>((settle, fail) => {
     pending.set(id, { hooks, settle, fail });
@@ -169,7 +171,7 @@ afterEach(() => {
 describe('the notification prompt', () => {
   it('holds a title back until the prompt has its answer', async () => {
     const view = await mounted();
-    let answer = () => {};
+    let answer: () => void = noop;
 
     prompt.mockImplementationOnce((then) => {
       answer = then;

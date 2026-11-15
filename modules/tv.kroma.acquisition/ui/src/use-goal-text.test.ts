@@ -4,8 +4,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { GoalFormat, TargetGoal } from './quality-target';
 import { useGoalHeadline, useRungLabel, useShortfallText } from './use-goal-text';
 
+const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
+
 vi.mock('@kromatv/module-sdk', () => {
-  const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
   return { useT: () => t };
 });
 

@@ -61,9 +61,10 @@ export function oid(dotted: string): Buffer {
   return encode(TAG.oid, Buffer.from(bytes));
 }
 
+const pad = (value: number) => String(value).padStart(2, '0');
+
 /** `YYMMDDhhmmssZ`, which is what X.509 dates before 2050 are written as. */
 export function utcTime(date: Date): Buffer {
-  const pad = (value: number) => String(value).padStart(2, '0');
   const stamp = [
     pad(date.getUTCFullYear() % 100),
     pad(date.getUTCMonth() + 1),

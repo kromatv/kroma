@@ -16,6 +16,8 @@ import { BREAKPOINTS, type BreakpointName, CANVAS } from '#ui/core/tokens';
 export type { Breakpoints, Responsive } from '#ui/core/breakpoint-cascade';
 export { breakpointBits, valueAt } from '#ui/core/breakpoint-cascade';
 
+const NO_STOP = () => {};
+
 /** Pure viewport reading for tools and declarations outside a mounted tree. */
 function measure(): number {
   return Platform.isTV ? CANVAS.width : Dimensions.get('window').width;
@@ -25,7 +27,7 @@ export function createBreakpointRuntime(width?: number) {
   let pinned = width;
   let current = breakpointAt(pinned ?? measure());
   let holds = 0;
-  let stop = () => {};
+  let stop = NO_STOP;
   const settle = () => {
     const next = breakpointAt(pinned ?? measure());
     if (next === current) {
@@ -41,11 +43,11 @@ export function createBreakpointRuntime(width?: number) {
     /** The step a server renders at: it has no window, so only a pinned width
      *  reaches it. What hydration must match before the real step lands. */
     serverIndex: () => breakpointAt(pinned ?? (Platform.isTV ? CANVAS.width : 0)),
-    pinDesignWidth(next?: number) {
+    pinDesignWidth: (next?: number) => {
       pinned = next;
       settle();
     },
-    retain() {
+    retain: () => {
       holds += 1;
       if (holds === 1) {
         settle();
@@ -64,7 +66,7 @@ export function createBreakpointRuntime(width?: number) {
         }
       };
     },
-    subscribe(listener: () => void) {
+    subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);

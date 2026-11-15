@@ -26,7 +26,7 @@ export interface VolumeBoost {
   volume: number;
   /** The gain past the element's ceiling, 1 while the level is at or under 100%. */
   boost: number;
-  setVolume(level: number): void;
+  setVolume: (level: number) => void;
 }
 
 /** Splits one 0..200% level between the element (up to 1, through the loudness

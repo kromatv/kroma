@@ -52,6 +52,11 @@ describe('AlphabetRail parts', () => {
   });
 });
 
+const ink = (letter: string) => {
+  const node = Array.from(document.querySelectorAll('div')).find((el) => el.textContent === letter);
+  return getComputedStyle(node as HTMLElement).color;
+};
+
 describe('AlphabetRail', () => {
   it('renders every letter, but only present ones as buttons', () => {
     rail();
@@ -96,12 +101,6 @@ describe('AlphabetRail', () => {
   });
 
   it('lights the letters the lens covers and dims the rest', () => {
-    const ink = (letter: string) => {
-      const node = Array.from(document.querySelectorAll('div')).find(
-        (el) => el.textContent === letter,
-      );
-      return getComputedStyle(node as HTMLElement).color;
-    };
     rail(vi.fn(), { first: 'A', last: 'A' });
     expect(ink('A')).not.toBe(ink('C'));
   });

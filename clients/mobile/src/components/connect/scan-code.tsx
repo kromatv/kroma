@@ -68,7 +68,7 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
 
   useEffect(() => {
     if (!camera) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     void (async () => {

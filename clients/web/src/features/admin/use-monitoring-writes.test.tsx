@@ -88,7 +88,7 @@ describe('following a title', () => {
       wrapper,
     });
 
-    act(() => result.current.set({ ...ROW, tmdbId: null } as LibraryTitle, true));
+    act(() => result.current.set({ ...ROW, tmdbId: null }, true));
 
     expect(client.monitoring.monitor).not.toHaveBeenCalled();
   });

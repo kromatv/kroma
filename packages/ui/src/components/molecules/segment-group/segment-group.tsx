@@ -57,7 +57,7 @@ function Root<T extends string>({
   size,
   stretch = false,
   children,
-  style,
+  style: placement,
 }: Readonly<RootProps<T>>) {
   const scope = useStyleScope();
 
@@ -164,7 +164,7 @@ function Root<T extends string>({
           move(1);
         }
       }}
-      style={style}
+      style={placement}
     >
       <Thumb at={thumb} radius={segmentRadius(shell, scope)} />
       {children}

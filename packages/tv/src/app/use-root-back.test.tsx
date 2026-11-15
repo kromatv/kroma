@@ -6,6 +6,8 @@ import { TvNavProvider } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
 import { useRootBack } from '#tv/app/use-root-back';
 
+const noop = () => undefined;
+
 const confirmMock = vi.fn(async () => true);
 
 vi.mock('@kromatv/ui', async (importOriginal) => ({
@@ -67,7 +69,7 @@ describe('useRootBack', () => {
 
   it('leaves a press unhandled while the question is up, so the panel takes it', async () => {
     tizen();
-    let answer: (yes: boolean) => void = () => {};
+    let answer: (yes: boolean) => void = noop;
     confirmMock.mockImplementation(() => new Promise<boolean>((r) => (answer = r)));
     const { result } = renderHook(() => useRootBack(), { wrapper: wrapper(vi.fn()) });
 

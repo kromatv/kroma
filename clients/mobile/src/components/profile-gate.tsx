@@ -18,7 +18,7 @@ export type GateTile = {
   busy?: boolean;
   offline?: boolean;
   locked?: boolean;
-  onPress(): void;
+  onPress: () => void;
 };
 
 export function ProfileGate({

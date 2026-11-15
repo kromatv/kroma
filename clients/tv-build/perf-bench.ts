@@ -119,7 +119,7 @@ await page.evaluate(() => {
 });
 
 for (let at = 0; at < KEYS; at += 1) {
-  await page.keyboard.press(WALK[at % WALK.length] as string);
+  await page.keyboard.press(WALK[at % WALK.length]);
   await page.waitForTimeout(160);
 }
 

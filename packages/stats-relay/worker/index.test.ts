@@ -78,9 +78,9 @@ describe('POST /v1/ping', () => {
     const res = await send(store, post(only));
 
     expect(res.status).toBe(200);
-    const row = store.rows.get(base.id);
-    expect(row?.version).toBe(base.version);
-    for (const absent of [row?.locales, row?.modules, row?.clients, row?.users, row?.titles]) {
+    const kept = store.rows.get(base.id);
+    expect(kept?.version).toBe(base.version);
+    for (const absent of [kept?.locales, kept?.modules, kept?.clients, kept?.users, kept?.titles]) {
       expect(absent).toBeUndefined();
     }
   });
@@ -213,19 +213,19 @@ describe('POST /v1/ping', () => {
   });
 });
 
-describe('POST /v1/forget', () => {
-  function forget(body: unknown) {
-    const json = JSON.stringify(body);
-    return new Request('https://stats.kroma.tv/v1/forget', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'content-length': String(json.length),
-      },
-      body: json,
-    });
-  }
+function forget(body: unknown) {
+  const json = JSON.stringify(body);
+  return new Request('https://stats.kroma.tv/v1/forget', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'content-length': String(json.length),
+    },
+    body: json,
+  });
+}
 
+describe('POST /v1/forget', () => {
   it('deletes the row the id names and nothing else', async () => {
     const store = memoryStore([row({ id: ping().id }), row({ id: OTHER_ID })]);
 
@@ -350,9 +350,9 @@ describe('GET /v1/stats', () => {
   });
 });
 
-describe('GET /v1/admin/stats', () => {
-  const request = () => new Request('https://stats.kroma.tv/v1/admin/stats');
+const request = () => new Request('https://stats.kroma.tv/v1/admin/stats');
 
+describe('GET /v1/admin/stats', () => {
   it('stays shut when no administrator is configured', async () => {
     const res = await send(memoryStore(), request());
 
@@ -430,13 +430,13 @@ describe('the body ceiling', () => {
   it('holds even when the caller declares no length at all', async () => {
     const store = memoryStore();
     const huge = JSON.stringify({ ...ping(), locales: Array.from({ length: 5000 }, () => 'fr') });
-    const request = new Request('https://stats.kroma.tv/v1/ping', {
+    const oversized = new Request('https://stats.kroma.tv/v1/ping', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: huge,
     });
 
-    const res = await send(store, request);
+    const res = await send(store, oversized);
 
     expect(res.status).toBe(413);
     expect(store.rows.size).toBe(0);

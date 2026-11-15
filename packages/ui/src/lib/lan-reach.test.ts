@@ -46,7 +46,7 @@ describe('withLocalAddressSpace', () => {
   it('names the local address space on a request to a private address, and only there', async () => {
     onPage('https:');
     const fetchFn = vi.fn(async () => new Response());
-    const lanFetch = withLocalAddressSpace(fetchFn as unknown as typeof fetch);
+    const lanFetch = withLocalAddressSpace(fetchFn);
 
     await lanFetch('http://192.168.1.2:4040/api/health', { method: 'GET' });
     await lanFetch('https://kroma.example/api/health');

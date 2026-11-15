@@ -47,7 +47,7 @@ const css = (el: Element) => getComputedStyle(el);
 
 // The navigator scope `render` adds contributes no DOM of its own, so the
 // disc is the first child.
-const disc = (container: HTMLElement) => contentRoot(container) as HTMLElement;
+const disc = (container: HTMLElement) => contentRoot(container);
 
 const padlock = (container: HTMLElement) =>
   (container.querySelector('svg') as SVGElement).parentElement as HTMLElement;
@@ -77,6 +77,9 @@ describe('Icon', () => {
     expect(container.querySelector('svg')?.getAttribute('stroke')).toBe('#ABCDEF');
   });
 });
+
+const primaryRoot = (state: Record<string, boolean>) =>
+  buttonVariants({ variant: 'primary' }, state).root;
 
 describe('Button', () => {
   it('renders its label and fires onPress', () => {
@@ -152,10 +155,10 @@ describe('Button', () => {
   });
 
   it('deepens under the finger, a step PAST hover rather than a repeat of it', () => {
-    const at = (state: Record<string, boolean>) =>
-      buttonVariants({ variant: 'primary' }, state).root;
-    expect(at({ hover: true }).backgroundColor).toBe('var(--kroma-accent-hover)');
-    expect(at({ hover: true, press: true }).backgroundColor).toBe('var(--kroma-accent-press)');
+    expect(primaryRoot({ hover: true }).backgroundColor).toBe('var(--kroma-accent-hover)');
+    expect(primaryRoot({ hover: true, press: true }).backgroundColor).toBe(
+      'var(--kroma-accent-press)',
+    );
   });
 
   it.each(['primary', 'glass', 'ghost', 'danger', 'dangerGhost', 'scrim', 'outline'] as const)(
@@ -425,9 +428,9 @@ describe('Progress', () => {
   });
 });
 
-describe('Skeleton', () => {
-  const lines = (container: HTMLElement) => [...(disc(container).children as never as Element[])];
+const lines = (container: HTMLElement) => [...(disc(container).children as never as Element[])];
 
+describe('Skeleton', () => {
   it('is one washed block by default, sized by the layout shorthands', () => {
     const { container } = render(<Skeleton w={220} h={22} />);
     const block = disc(container);

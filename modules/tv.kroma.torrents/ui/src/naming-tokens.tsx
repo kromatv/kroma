@@ -167,8 +167,7 @@ export const NamingTokenModal = createCallable<
     fieldLabel: string;
     value: string;
     onChange: (v: string) => void;
-  }>,
-  void
+  }>
 >(({ call, fieldKey, fieldLabel, value: initialValue, onChange: onParentChange }) => {
   const t = useT();
   // Own the working value locally so multiple inserts compose correctly, and
@@ -233,7 +232,7 @@ export const NamingTokenModal = createCallable<
             <Select.Trigger />
             {SEPARATORS.map((sep) => (
               <Select.Item key={sep.value} value={sep.value}>
-                {t(sep.labelKey as Parameters<typeof t>[0])}
+                {t(sep.labelKey)}
               </Select.Item>
             ))}
           </Select.Root>
@@ -264,7 +263,7 @@ export const NamingTokenModal = createCallable<
         {groups.map((g) => (
           <Section.Root key={g.titleKey} gap={6}>
             <Section.Header>
-              <Section.Title>{t(g.titleKey as Parameters<typeof t>[0])}</Section.Title>
+              <Section.Title>{t(g.titleKey)}</Section.Title>
             </Section.Header>
             <Grid columns={columns} gap={6}>
               {g.tokens.map((tok) => (

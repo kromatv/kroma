@@ -290,7 +290,7 @@ export function subtitleStyle(
       // React Native needs an absolute line height, not the design's 1.3 ratio.
       lineHeight: Math.round(size * 1.3),
       fontFamily: FONT_STACK[style.font],
-      ...(style.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
+      ...(style.font === 'smallCaps' ? { fontVariant: ['small-caps'] } : null),
       textAlign: 'center',
       borderRadius: cornerRadius.md,
       ...(hasBg

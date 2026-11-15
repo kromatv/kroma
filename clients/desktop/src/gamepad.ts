@@ -21,6 +21,12 @@ function now(): number {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
+const rawSnapshot = (pad: Gamepad): string => {
+  const btns = pad.buttons.flatMap((b, i) => (b.pressed || b.value > 0.05 ? [i] : []));
+  const axes = pad.axes.map((v) => v.toFixed(2)).join(',');
+  return `[gamepad] raw pad${pad.index} buttons=[${btns.join(',')}] axes=[${axes}]`;
+};
+
 /** Starts translating connected gamepads into TV key events, and returns the
  * stopper. A no-op where the Gamepad API is absent. */
 export function startGamepadBridge(): () => void {
@@ -54,12 +60,6 @@ export function startGamepadBridge(): () => void {
       );
     }
     return state;
-  };
-
-  const rawSnapshot = (pad: Gamepad): string => {
-    const btns = pad.buttons.flatMap((b, i) => (b.pressed || b.value > 0.05 ? [i] : []));
-    const axes = pad.axes.map((v) => v.toFixed(2)).join(',');
-    return `[gamepad] raw pad${pad.index} buttons=[${btns.join(',')}] axes=[${axes}]`;
   };
 
   const dumpRaw = (raw: string[]): void => {

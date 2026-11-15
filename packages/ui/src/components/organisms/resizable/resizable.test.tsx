@@ -23,7 +23,7 @@ beforeAll(() => {
     }
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver;
+  };
 });
 
 interface Sizes {
@@ -99,9 +99,9 @@ function memoryStore(): ResizableStorage & { held: Map<string, string> } {
   const held = new Map<string, string>();
   return {
     held,
-    getItem: (key) => held.get(key) ?? null,
-    setItem: (key, value) => {
-      held.set(key, value);
+    getItem: (name) => held.get(name) ?? null,
+    setItem: (name, value) => {
+      held.set(name, value);
     },
   };
 }

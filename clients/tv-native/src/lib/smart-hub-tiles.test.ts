@@ -3,6 +3,14 @@ import { smartHubSections } from './smart-hub-tiles';
 
 const card = (id: string) => `http://192.168.1.20:4040/api/items/${id}/card`;
 
+const many = (prefix: string) =>
+  Array.from({ length: 30 }, (_, index) => ({
+    id: `${prefix}${index}`,
+    title: 'T',
+    imageUrl: card(`${prefix}${index}`),
+    kind: 'movie',
+  }));
+
 const resume = JSON.stringify([
   { id: 'm1', title: 'Blade Runner', subtitle: '1982', imageUrl: card('m1'), kind: 'movie' },
   {
@@ -79,13 +87,6 @@ describe('smartHubSections', () => {
   });
 
   it('keeps to Samsung forty tiles', () => {
-    const many = (prefix: string) =>
-      Array.from({ length: 30 }, (_, index) => ({
-        id: `${prefix}${index}`,
-        title: 'T',
-        imageUrl: card(`${prefix}${index}`),
-        kind: 'movie',
-      }));
     const sections = smartHubSections(
       JSON.stringify(many('c')),
       JSON.stringify([{ title: 'Récemment ajoutés', items: many('n') }]),

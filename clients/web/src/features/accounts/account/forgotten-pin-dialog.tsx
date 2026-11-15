@@ -24,8 +24,8 @@ export function ForgottenPinDialog({ onClose }: Readonly<{ onClose: () => void }
       const { user } = await client.accounts.clearPinWithPassword(password);
       updateUser({ hasPin: user.hasPin });
       onClose();
-    } catch (e) {
-      setError(apiErrorText(e, t('account.saveFailed')));
+    } catch (cause) {
+      setError(apiErrorText(cause, t('account.saveFailed')));
     } finally {
       setBusy(false);
     }

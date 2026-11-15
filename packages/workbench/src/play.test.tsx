@@ -43,7 +43,7 @@ function mount(ui: ReactNode): { current: object | null } {
   const scene: ReactElement = (
     <View
       ref={(node) => {
-        stage.current = node as object | null;
+        stage.current = node;
       }}
     >
       {ui}
@@ -132,13 +132,13 @@ describe('a passing play', () => {
   });
 });
 
-describe('a failing play', () => {
-  const failure = async (script: PlayFunction) => {
-    const result = await play(<Episode />, script);
-    expect(result.status).toBe('failed');
-    return result;
-  };
+const failure = async (script: PlayFunction) => {
+  const result = await play(<Episode />, script);
+  expect(result.status).toBe('failed');
+  return result;
+};
 
+describe('a failing play', () => {
   it('fails only the step that threw and keeps the ones before it', async () => {
     const result = await failure(async ({ press, expect: want, step }) => {
       await step('opens the menu', () => press('Options'));

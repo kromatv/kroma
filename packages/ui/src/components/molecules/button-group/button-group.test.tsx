@@ -123,6 +123,8 @@ describe('ButtonGroup.Separator', () => {
   });
 });
 
+const chip = (text: string) => corners(screen.getByText(text).parentElement as Element);
+
 describe('ButtonGroup.Addon', () => {
   it('takes part in the shape as a prefix and as a suffix', () => {
     render(
@@ -132,7 +134,6 @@ describe('ButtonGroup.Addon', () => {
         <ButtonGroup.Addon>.tv</ButtonGroup.Addon>
       </ButtonGroup.Root>,
     );
-    const chip = (text: string) => corners(screen.getByText(text).parentElement as Element);
     expect(chip('https://')).toEqual(LEFT);
     expect(member('kroma')).toEqual(SQUARE);
     expect(chip('.tv')).toEqual(RIGHT);

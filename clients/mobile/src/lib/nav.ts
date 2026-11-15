@@ -10,7 +10,7 @@ export function goBack(router: Router): void {
   if (router.canGoBack()) {
     router.back();
   } else {
-    router.replace('/' as never);
+    router.replace('/');
   }
 }
 

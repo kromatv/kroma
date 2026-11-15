@@ -32,9 +32,9 @@ export interface ChromeFrame {
   top: number;
   width: number;
   height: number;
-  poke(): void;
-  hold(): () => void;
-  onBarLayout(height: number): void;
+  poke: () => void;
+  hold: () => () => void;
+  onBarLayout: (height: number) => void;
 }
 
 /** The touch surface under a phone player's chrome: a tap shows or hides the
@@ -72,7 +72,7 @@ export function ChromeSurface({
   const [barHeight, setBarHeight] = useState(0);
   useEffect(() => {
     if (!zoomNote) {
-      return;
+      return undefined;
     }
     const id = setTimeout(() => setZoomNote(null), 1100);
     return () => clearTimeout(id);
@@ -130,9 +130,11 @@ export function ChromeSurface({
     <Box
       fill
       onLayout={(event) => {
-        const { width, height } = event.nativeEvent.layout;
+        const { width: laidOutWidth, height: laidOutHeight } = event.nativeEvent.layout;
         setBounds((current) =>
-          current.width === width && current.height === height ? current : { width, height },
+          current.width === laidOutWidth && current.height === laidOutHeight
+            ? current
+            : { width: laidOutWidth, height: laidOutHeight },
         );
       }}
     >

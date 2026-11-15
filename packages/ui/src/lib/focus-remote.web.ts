@@ -136,7 +136,7 @@ export function useRemoteBridge(on = true): void {
   useEffect(() => {
     const document = webDocument();
     if (!on || !perf || !document) {
-      return;
+      return undefined;
     }
     const pressed = (event: KeyboardEvent) => {
       if (

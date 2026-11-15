@@ -53,7 +53,7 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; revision re-wires modules after install/uninstall/enable
   useEffect(() => {
     if (!authed) {
-      return;
+      return undefined;
     }
     let alive = true;
     const base: HostBase = {

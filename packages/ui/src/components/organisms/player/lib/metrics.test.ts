@@ -48,6 +48,17 @@ function designWidth(
   );
 }
 
+// `cast` outlives `audio` and `subtitles` (already rows of the settings
+// panel), which outlive `pip`.
+const widthOf = (id: (typeof WEB)[number]) => {
+  for (let w = 240; w <= 1400; w += 2) {
+    if (chromeMetrics(WEB, w).controls.includes(id)) {
+      return w;
+    }
+  }
+  return Number.POSITIVE_INFINITY;
+};
+
 describe('chromeMetrics', () => {
   it('draws the design at full size on a television stage', () => {
     expect(chromeMetrics(TV, 1920)).toMatchObject({ scale: 1, controls: TV, rail: true });
@@ -109,16 +120,6 @@ describe('chromeMetrics', () => {
   });
 
   it('sheds the controls the panel reaches before the ones it does not', () => {
-    // `cast` outlives `audio` and `subtitles` (already rows of the settings
-    // panel), which outlive `pip`.
-    const widthOf = (id: (typeof WEB)[number]) => {
-      for (let w = 240; w <= 1400; w += 2) {
-        if (chromeMetrics(WEB, w).controls.includes(id)) {
-          return w;
-        }
-      }
-      return Number.POSITIVE_INFINITY;
-    };
     expect(widthOf('cast')).toBeLessThan(widthOf('subtitles'));
     expect(widthOf('subtitles')).toBeLessThan(widthOf('audio'));
     expect(widthOf('audio')).toBeLessThan(widthOf('pip'));

@@ -127,9 +127,9 @@ describe('the activation link', () => {
   });
 });
 
-describe('the opt-out link', () => {
-  const now = () => Math.floor(Date.now() / 1000);
+const now = () => Math.floor(Date.now() / 1000);
 
+describe('the opt-out link', () => {
   it('shows the server’s host and a button, and blocks nothing until it is pressed', async () => {
     const blob = await sealBlock(SECRET, ADDRESS, ORIGIN, now());
 

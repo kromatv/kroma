@@ -3,9 +3,9 @@ import { type DownloadEntry, deleteEntryFiles, readIndex, writeIndex } from './s
 
 export interface EntryIndex {
   entries: DownloadEntry[];
-  hasEntry(itemId: string): boolean;
-  upsertEntry(itemId: string, entry: DownloadEntry): void;
-  remove(itemId: string): Promise<void>;
+  hasEntry: (itemId: string) => boolean;
+  upsertEntry: (itemId: string, entry: DownloadEntry) => void;
+  remove: (itemId: string) => Promise<void>;
 }
 
 export function useEntries(): EntryIndex {

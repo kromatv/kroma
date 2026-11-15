@@ -31,7 +31,7 @@ export function fakeFetch(map: Record<string, Health>): typeof globalThis.fetch 
           ? Promise.reject(new Error('bad json'))
           : Promise.resolve({ status: h.status ?? 'ok', ...h.body }),
     } as Response);
-  }) as unknown as typeof globalThis.fetch;
+  });
 }
 
 export const hangingFetch = ((_input: RequestInfo | URL, init?: RequestInit) =>

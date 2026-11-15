@@ -21,7 +21,7 @@ export function useNotificationStream(): void {
 
   useEffect(() => {
     if (!signedIn || !client) {
-      return;
+      return undefined;
     }
     const { queryKey } = client.query.notifications.list();
     const events = new KromaEvents(client.baseUrl, {

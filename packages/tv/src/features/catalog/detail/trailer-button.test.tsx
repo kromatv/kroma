@@ -11,7 +11,9 @@ import { TvClientProvider, TvNavProvider, TvOutlet, useParams } from '#tv/app/ro
 import { stubScreens } from '#tv/app/router.fixtures';
 import { LeadActions, TrailerButton } from '#tv/features/catalog/detail/trailer-button';
 
-const { clearPressGuard, render } = createInputTestHost();
+const noop = () => undefined;
+
+const inputHost = createInputTestHost();
 
 const SUPERMAN = 1061474;
 
@@ -34,7 +36,7 @@ function TrailerScreen() {
 
 function mount(list: () => Promise<TrailerList>, ui: ReactElement, remote = false) {
   const asked = vi.fn(list);
-  render(
+  inputHost.render(
     onScreen(
       <TvClientProvider client={fakeClient({ trailers: { list: asked } })}>
         <TvNavProvider screens={stubScreens({ trailer: TrailerScreen })}>
@@ -64,7 +66,7 @@ async function press(key: string) {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   sessionStorage.clear();
 });
 
@@ -127,7 +129,7 @@ describe('the trailer button', () => {
 
 describe('the lead actions', () => {
   it('reach the trailer right after the primary, however late the trailer arrives', async () => {
-    let answer: (list: TrailerList) => void = () => undefined;
+    let answer: (list: TrailerList) => void = noop;
     const late = new Promise<TrailerList>((resolve) => {
       answer = resolve;
     });

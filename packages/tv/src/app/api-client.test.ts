@@ -18,6 +18,20 @@ vi.mock('react-native', async (importOriginal) => ({
 
 import { makeClient, tvIdentity } from './api-client';
 
+function recorded(): Headers[] {
+  const seen: Headers[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_url: string, init?: RequestInit) => {
+      seen.push(new Headers(init?.headers));
+      return new Response(JSON.stringify(HEALTH), {
+        headers: { 'content-type': 'application/json' },
+      });
+    }),
+  );
+  return seen;
+}
+
 describe('tvIdentity', () => {
   it('names an Apple TV by its platform, which is the only model there is', () => {
     platform.current = {
@@ -84,20 +98,6 @@ const HEALTH = {
 };
 
 describe('makeClient', () => {
-  function recorded(): Headers[] {
-    const seen: Headers[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        seen.push(new Headers(init?.headers));
-        return new Response(JSON.stringify(HEALTH), {
-          headers: { 'content-type': 'application/json' },
-        });
-      }),
-    );
-    return seen;
-  }
-
   it('puts the television name on the requests a native shell makes', async () => {
     platform.current = {
       OS: 'ios',

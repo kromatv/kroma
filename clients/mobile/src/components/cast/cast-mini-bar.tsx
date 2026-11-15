@@ -30,7 +30,7 @@ export function CastMiniBar() {
 
   return (
     <Pressable
-      onPress={() => router.push('/cast' as never)}
+      onPress={() => router.push('/cast')}
       style={({ pressed }) => [s.bar, pressed && { opacity: 0.85 }]}
       accessibilityRole="button"
       accessibilityLabel={t('cast.playingOn', { device: active.name })}

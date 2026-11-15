@@ -10,9 +10,9 @@ const { checkout, scan, deployTo, askForLocalNetwork, diagnoseEmptyScan } = awai
   async () => {
     const { mkdtempSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
-    const { join } = await import('node:path');
+    const path = await import('node:path');
     return {
-      checkout: mkdtempSync(join(tmpdir(), 'kroma-tv-commands-')),
+      checkout: mkdtempSync(path.join(tmpdir(), 'kroma-tv-commands-')),
       scan: vi.fn(async (_options: unknown): Promise<unknown[]> => []),
       deployTo: vi.fn(async (_tv: unknown, _options: unknown) => {}),
       askForLocalNetwork: vi.fn(async () => {}),

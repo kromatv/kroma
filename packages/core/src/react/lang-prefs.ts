@@ -22,10 +22,10 @@ export interface LangPatch {
  * update, and the account PATCH. Nothing here knows which app it is. */
 export interface LangPrefsHost {
   user: LangPrefUser | null | undefined;
-  updateUser(patch: LangPatch): void;
+  updateUser: (patch: LangPatch) => void;
   // Failures are swallowed here on purpose: a lost PATCH must never interrupt
   // playback, and the next successful write settles it.
-  updateAccount(patch: LangPatch): Promise<unknown>;
+  updateAccount: (patch: LangPatch) => Promise<unknown>;
 }
 
 export interface LangPrefs {

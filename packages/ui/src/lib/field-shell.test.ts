@@ -88,12 +88,12 @@ describe('fieldShell', () => {
   });
 });
 
-describe('the zoom floor', () => {
-  const inkAt = (width: number, fontSize: number) => {
-    pinDesignWidth(width);
-    return renderHook(() => useEntryFontSize(fontSize)).result.current;
-  };
+const inkAt = (width: number, fontSize: number) => {
+  pinDesignWidth(width);
+  return renderHook(() => useEntryFontSize(fontSize)).result.current;
+};
 
+describe('the zoom floor', () => {
   it('lifts a field under the floor to it on a handset, iOS Safari zooming below', () => {
     expect(inkAt(390, CONTROL.sm.fontSize)).toBe(NO_ZOOM_FONT_SIZE);
   });

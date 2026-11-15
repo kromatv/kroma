@@ -31,7 +31,7 @@ export default function MyList() {
 
   const cards: CardModel[] = useMemo(() => {
     const movieById = new Map<string, MediaCard>((movies.data ?? []).map((m) => [m.id, m]));
-    const showById = new Map<string, Show>((shows.data ?? []).map((s) => [s.id, s]));
+    const showById = new Map<string, Show>((shows.data ?? []).map((show) => [show.id, show]));
     const out: CardModel[] = [];
     for (const id of ids.data ?? []) {
       const movie = movieById.get(id);

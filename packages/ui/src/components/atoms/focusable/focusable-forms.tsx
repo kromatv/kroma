@@ -205,7 +205,7 @@ function NavigatorForm({
       pressed={at.pressed}
       viewProps={{
         accessibilityRole: platformRole(at.role),
-        ...(at.a11yState as object | undefined),
+        ...at.a11yState,
         ...linkProps(at.href, at.role),
         ...(at.webKeys ?? null),
         accessibilityLabel: at.label,
