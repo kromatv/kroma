@@ -18,7 +18,7 @@ use crate::services::auth;
 use crate::services::loginguard;
 use crate::state::SharedState;
 
-use super::{device_hints, issue_tokens};
+use super::{issue_tokens, ThisDevice};
 
 pub(crate) const MIN_PASSWORD_LEN: usize = 8;
 
@@ -41,6 +41,7 @@ pub async fn register(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    ThisDevice(device): ThisDevice,
     headers: HeaderMap,
     Json(body): Json<RegisterBody>,
 ) -> Response {
@@ -120,7 +121,7 @@ pub async fn register(
         })
         .await
         {
-            Ok(Some(owner)) => return issue_tokens(state, owner, device_hints(&headers)).await,
+            Ok(Some(owner)) => return issue_tokens(state, owner, device.clone()).await,
             Ok(None) => {}
             Err(resp) => return resp,
         }
@@ -150,7 +151,7 @@ pub async fn register(
         Ok(u) => u,
         Err(resp) => return resp,
     };
-    issue_tokens(state, user, device_hints(&headers)).await
+    issue_tokens(state, user, device.clone()).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -172,6 +173,7 @@ pub async fn login(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    ThisDevice(device): ThisDevice,
     headers: HeaderMap,
     Json(body): Json<LoginBody>,
 ) -> Response {
@@ -204,7 +206,7 @@ pub async fn login(
     if !password_admits(&state, &user) {
         return lerr(loc, StatusCode::FORBIDDEN, "sso.passwordOff");
     }
-    issue_tokens(state, user, device_hints(&headers)).await
+    issue_tokens(state, user, device.clone()).await
 }
 
 // Whoever can change the sign-in settings keeps their password whatever those

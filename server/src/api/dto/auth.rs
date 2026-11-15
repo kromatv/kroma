@@ -31,7 +31,9 @@ pub struct SessionResult {
 /// (a short hash of the device's access token) used to revoke it; `current`
 /// marks the device making the request. `app` is the build the device last
 /// named itself by, absent when it never did, and `outdated` says that build is
-/// older than the oldest this server serves.
+/// older than the oldest this server serves. `address` is where it last reached
+/// the server from and `via` the road it took (`lan`, `vpn`, `tunnel` or
+/// `internet`), both absent for a device last seen before they were kept.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionInfo {
@@ -41,6 +43,8 @@ pub struct SessionInfo {
     pub last_seen: Option<String>,
     pub app: Option<crate::model::AppVersion>,
     pub outdated: bool,
+    pub address: Option<String>,
+    pub via: Option<String>,
     pub current: bool,
 }
 

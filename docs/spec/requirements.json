@@ -127,7 +127,7 @@
     "status": "SHIPPED",
     "text": "**Unbinding is revocation.** Revoking a device's session ends its",
     "file": "docs/spec/accounts/README.md",
-    "line": 154
+    "line": 163
   },
   {
     "id": "ACCT-14",
@@ -137,7 +137,7 @@
     "status": "SHIPPED",
     "text": "A revoked device that returns must pair or sign in afresh.",
     "file": "docs/spec/accounts/README.md",
-    "line": 158
+    "line": 167
   },
   {
     "id": "ACCT-15",
@@ -147,7 +147,7 @@
     "status": "SHIPPED",
     "text": "A television session is long-lived and revocable, and is **never",
     "file": "docs/spec/accounts/README.md",
-    "line": 164
+    "line": 181
   },
   {
     "id": "ACCT-16",
@@ -157,7 +157,7 @@
     "status": "AGREED",
     "text": "The device list is the control that replaces expiry: security comes",
     "file": "docs/spec/accounts/README.md",
-    "line": 167
+    "line": 184
   },
   {
     "id": "ACCT-17",
@@ -167,7 +167,7 @@
     "status": "SHIPPED",
     "text": "An **owner or admin** runs the server: users, settings, jobs and",
     "file": "docs/spec/accounts/README.md",
-    "line": 180
+    "line": 197
   },
   {
     "id": "ACCT-18",
@@ -177,7 +177,7 @@
     "status": "AGREED",
     "text": "The owner is the founding admin, the owner may grant admin to another",
     "file": "docs/spec/accounts/README.md",
-    "line": 183
+    "line": 200
   },
   {
     "id": "ACCT-19",
@@ -187,7 +187,7 @@
     "status": "SHIPPED",
     "text": "A **user** uses the server: browses and plays what they are permitted",
     "file": "docs/spec/accounts/README.md",
-    "line": 186
+    "line": 203
   },
   {
     "id": "ACCT-20",
@@ -197,7 +197,7 @@
     "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
-    "line": 189
+    "line": 206
   },
   {
     "id": "ACCT-21",
@@ -207,7 +207,7 @@
     "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 197
+    "line": 214
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 238
+    "line": 255
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 247
+    "line": 264
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 275
+    "line": 292
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 280
+    "line": 297
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 284
+    "line": 301
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 294
+    "line": 311
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 298
+    "line": 315
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 302
+    "line": 319
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 306
+    "line": 323
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 315
+    "line": 332
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 318
+    "line": 335
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 322
+    "line": 339
   },
   {
     "id": "ACCT-34",
@@ -337,7 +337,7 @@
     "status": "SHIPPED",
     "text": "A title outside a person's grant is absent from browse, search, every",
     "file": "docs/spec/accounts/README.md",
-    "line": 203
+    "line": 220
   },
   {
     "id": "ACCT-35",
@@ -347,7 +347,7 @@
     "status": "SHIPPED",
     "text": "Every request for media bytes carries a credential the grant can be",
     "file": "docs/spec/accounts/README.md",
-    "line": 208
+    "line": 225
   },
   {
     "id": "ACCT-36",
@@ -888,6 +888,46 @@
     "text": "The desktop app offers the provider buttons the same way.",
     "file": "docs/spec/accounts/README.md",
     "line": 121
+  },
+  {
+    "id": "ACCT-90",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 90,
+    "status": "SHIPPED",
+    "text": "A device opens onto what the server knows of it: the address it last",
+    "file": "docs/spec/accounts/README.md",
+    "line": 154
+  },
+  {
+    "id": "ACCT-91",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 91,
+    "status": "SHIPPED",
+    "text": "The device list puts the device in hand first, then the others by most",
+    "file": "docs/spec/accounts/README.md",
+    "line": 158
+  },
+  {
+    "id": "ACCT-92",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 92,
+    "status": "SHIPPED",
+    "text": "One action signs out every device except the one in hand.",
+    "file": "docs/spec/accounts/README.md",
+    "line": 161
+  },
+  {
+    "id": "ACCT-93",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 93,
+    "status": "SHIPPED",
+    "text": "An account holder who no longer knows their profile PIN turns the lock",
+    "file": "docs/spec/accounts/README.md",
+    "line": 173
   },
   {
     "id": "ADMIN-1",

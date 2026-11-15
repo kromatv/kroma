@@ -1,100 +1,89 @@
-import type { SessionInfo } from '@kromatv/client/accounts';
-import { useFormat, useT } from '@kromatv/ui';
-import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kromatv/ui/kit';
+import type { SessionId } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
+import { Button, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { type DeviceKind, deviceInfo } from '#web/shared/lib/device';
+import { SessionRow } from '#web/features/accounts/account/session-row';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
-const DEVICE_ICON: Record<DeviceKind, IconName> = {
-  tv: 'device-tv',
-  mobile: 'device-mobile',
-  desktop: 'device-desktop',
-};
+const SHOWN_AT_FIRST = 5;
 
-function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
+/** Every device this account is signed in on: this one first, then the one
+ * used most recently, with one action that signs all the others out. */
+export function SessionsCard() {
   const webRuntime = useWebRuntime();
-
   const t = useT();
-  const fmt = useFormat();
   const qc = useQueryClient();
-  const [revoking, setRevoking] = useState(false);
-  const { label, kind } = deviceInfo(session.userAgent, t('account.unknownDevice'));
-  const version = session.app
-    ? t('account.appVersion', { version: session.app.version })
-    : t('account.appVersionUnknown');
+  const { data: sessions, isPending } = useQuery(webRuntime.queries.userQueries.sessions());
+  const [all, setAll] = useState(false);
+  const [busy, setBusy] = useState<SessionId | 'others' | null>(null);
+  const [failed, setFailed] = useState(false);
 
-  const revoke = async () => {
-    setRevoking(true);
+  const list = sessions ?? [];
+  const others = list.filter((session) => !session.current).length;
+  const shown = all ? list : list.slice(0, SHOWN_AT_FIRST);
+
+  const signOut = async (which: SessionId | 'others') => {
+    setBusy(which);
+    setFailed(false);
     try {
-      await webRuntime.client.accounts.revokeSession(session.id);
+      if (which === 'others') await webRuntime.client.accounts.revokeOtherSessions();
+      else await webRuntime.client.accounts.revokeSession(which);
       await qc.invalidateQueries({ queryKey: webRuntime.queries.userQueries.sessions().queryKey });
+    } catch {
+      setFailed(true);
     } finally {
-      setRevoking(false);
+      setBusy(null);
     }
   };
 
   return (
-    <ListRow.Root>
-      <ListRow.Leading>
-        <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
-          <Icon name={DEVICE_ICON[kind]} size={19} thickness={1.7} color="textMuted" />
-        </Box>
-      </ListRow.Leading>
-      <Row gap={10}>
-        <ListRow.Label>{label}</ListRow.Label>
-        {session.current ? <Badge tone="success">{t('account.thisDevice')}</Badge> : null}
-        {session.outdated ? <Badge tone="warning">{t('account.appOutdated')}</Badge> : null}
-      </Row>
-      <ListRow.Hint>{`${version} · ${fmt.elapsed(session.lastSeen)}`}</ListRow.Hint>
-      <ListRow.Trailing>
-        {session.current ? (
-          <Text variant="meta" color="textDim">
-            {t('account.sessionActive')}
-          </Text>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            label={revoking ? t('common.saving') : t('account.signOutDevice')}
-            onPress={revoke}
-            loading={revoking}
-          />
-        )}
-      </ListRow.Trailing>
-    </ListRow.Root>
-  );
-}
-
-export function SessionsCard() {
-  const webRuntime = useWebRuntime();
-
-  const t = useT();
-  const { data: sessions, isPending } = useQuery(webRuntime.queries.userQueries.sessions());
-  const note = isPending ? t('common.loading') : sessionsNote(sessions, t);
-
-  return (
     <ListRow.Group size="md">
       <ListRow.Root>
-        <ListRow.Label>{t('account.sessions')}</ListRow.Label>
+        <ListRow.Label>{t('account.devices')}</ListRow.Label>
+        <ListRow.Hint>{t('account.devicesDesc')}</ListRow.Hint>
+        <ListRow.Leading>
+          <IconWell name="devices" size="sm" tone="accent" />
+        </ListRow.Leading>
+        {others > 0 ? (
+          <ListRow.Trailing>
+            <Button
+              variant="dangerGhost"
+              size="sm"
+              label={t('account.signOutOthers')}
+              onPress={() => void signOut('others')}
+              loading={busy === 'others'}
+            />
+          </ListRow.Trailing>
+        ) : null}
       </ListRow.Root>
-      {note ? (
+      {failed ? (
         <ListRow.Root>
-          <Text variant="meta" color="textMuted">
-            {note}
+          <Text variant="meta" color="danger">
+            {t('account.signOutOthersFailed')}
           </Text>
         </ListRow.Root>
       ) : null}
-      {(sessions ?? []).map((s) => (
-        <SessionRow key={s.id} session={s} />
+      {isPending ? (
+        <ListRow.Root>
+          <Text variant="meta" color="textMuted">
+            {t('common.loading')}
+          </Text>
+        </ListRow.Root>
+      ) : null}
+      {shown.map((session) => (
+        <SessionRow
+          key={session.id}
+          session={session}
+          revoking={busy === session.id}
+          onRevoke={() => void signOut(session.id)}
+        />
       ))}
+      {list.length > shown.length ? (
+        <ListRow.Root onPress={() => setAll(true)} chevron={false}>
+          <ListRow.Label>{t('account.sessionsShowAll', { count: list.length })}</ListRow.Label>
+        </ListRow.Root>
+      ) : null}
     </ListRow.Group>
   );
-}
-
-function sessionsNote(
-  sessions: SessionInfo[] | undefined,
-  t: ReturnType<typeof useT>,
-): string | null {
-  return !sessions || sessions.length === 0 ? t('account.sessionsEmpty') : null;
 }

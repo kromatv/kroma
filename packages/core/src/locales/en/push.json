@@ -13,6 +13,7 @@
   "push.failed": "Could not enable push notifications.",
   "push.sendTest": "Send a test",
   "push.testFailed": "Nothing was delivered.",
+  "push.testHint": "Check that a push reaches this device.",
   "push.testSent": "Sent. Check your notifications.",
   "push.title": "Push on this device"
 }

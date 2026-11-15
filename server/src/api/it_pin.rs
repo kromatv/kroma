@@ -236,3 +236,67 @@ async fn a_dead_access_token_says_so_rather_than_asking_for_a_pin() {
         assert_eq!(out["tokenInvalid"], json!(true), "{body}");
     }
 }
+
+async fn locked_account(t: &crate::api::test_support::TestApp, tag: &str) -> String {
+    let (_uid, token) = crate::api::test_support::seed_session_pw(
+        &t.state,
+        &format!("{tag}@test.dev"),
+        tag,
+        "the password",
+        &[Permission::Playback],
+    );
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me/pin",
+        Some(&token),
+        Some(json!({ "pin": "4821" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    token
+}
+
+#[tokio::test]
+async fn a_forgotten_pin_is_cleared_with_the_account_password() {
+    let t = test_app();
+    let token = locked_account(&t, "forgetful").await;
+
+    let (status, body) = send(
+        &t.app,
+        "DELETE",
+        "/api/auth/me/pin",
+        Some(&token),
+        Some(json!({ "password": "the password" })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["hasPin"], json!(false));
+}
+
+#[tokio::test]
+async fn a_wrong_password_leaves_the_pin_and_enough_of_them_start_the_cooldown() {
+    let t = test_app();
+    let token = locked_account(&t, "guesser").await;
+    let guess = || {
+        send(
+            &t.app,
+            "DELETE",
+            "/api/auth/me/pin",
+            Some(&token),
+            Some(json!({ "password": "a guess" })),
+        )
+    };
+
+    let (first, _) = guess().await;
+    let mut last = first;
+    for _ in 0..5 {
+        last = guess().await.0;
+    }
+    let (_, me) = crate::api::test_support::get(&t.app, "/api/auth/me", Some(&token)).await;
+
+    assert_eq!(first, StatusCode::UNAUTHORIZED);
+    assert_eq!(last, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(me["user"]["hasPin"], json!(true));
+}

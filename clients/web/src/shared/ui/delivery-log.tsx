@@ -6,14 +6,18 @@ import type { NotificationDelivery } from '@kromatv/client/notifications';
 import { DELIVERY_STATUS_LABEL, DELIVERY_STATUS_TONE, sentenceCase } from '@kromatv/core';
 import { useFormat, useLocale, useT } from '@kromatv/ui';
 import { Badge, Box, EmptyState, ListRow, Row, Skeleton, Text } from '@kromatv/ui/kit';
+import { useState } from 'react';
 
 interface DeliveryLogProps {
   deliveries: NotificationDelivery[];
   pending?: boolean;
 }
 
+const SHOWN_AT_FIRST = 8;
+
 export function DeliveryLog({ deliveries, pending = false }: Readonly<DeliveryLogProps>) {
   const t = useT();
+  const [all, setAll] = useState(false);
 
   if (pending) return <Skeleton h={120} radius="sm" />;
 
@@ -28,9 +32,16 @@ export function DeliveryLog({ deliveries, pending = false }: Readonly<DeliveryLo
 
   return (
     <ListRow.Group size="md">
-      {deliveries.map((delivery) => (
+      {(all ? deliveries : deliveries.slice(0, SHOWN_AT_FIRST)).map((delivery) => (
         <DeliveryRow key={delivery.id} delivery={delivery} />
       ))}
+      {!all && deliveries.length > SHOWN_AT_FIRST ? (
+        <ListRow.Root onPress={() => setAll(true)} chevron={false}>
+          <ListRow.Label>
+            {t('notifications.deliveriesShowAll', { count: deliveries.length })}
+          </ListRow.Label>
+        </ListRow.Root>
+      ) : null}
     </ListRow.Group>
   );
 }

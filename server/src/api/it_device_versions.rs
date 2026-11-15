@@ -69,3 +69,75 @@ async fn a_device_that_never_named_its_app_is_unknown_and_never_outdated() {
         assert_eq!(device["outdated"], json!(false));
     }
 }
+
+#[tokio::test]
+async fn the_device_list_says_where_a_device_reached_the_server_from() {
+    let t = test_app();
+
+    let device = device_after_exchange(&t, &[]).await;
+
+    assert_eq!(device["address"], json!("127.0.0.1"));
+    assert_eq!(device["via"], json!("lan"));
+}
+
+#[tokio::test]
+async fn the_calling_device_is_listed_first_whatever_was_seen_last() {
+    let t = test_app();
+    let (uid, _) = seed_session(&t.state, "tv@test.dev", "tv", &[Permission::Playback]);
+    let older = seed_access_token(&t.state, &uid, true);
+    let (_, _, mine) = raw(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": older })),
+        &[],
+    )
+    .await;
+    let later = seed_access_token(&t.state, &uid, true);
+    raw(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": later })),
+        &[],
+    )
+    .await;
+
+    let (_, devices) = get(
+        &t.app,
+        "/api/auth/me/sessions",
+        mine["token"].as_str(),
+    )
+    .await;
+
+    assert_eq!(devices[0]["current"], json!(true));
+    assert!(devices.as_array().unwrap().len() >= 3);
+}
+
+#[tokio::test]
+async fn signing_every_other_device_out_keeps_only_the_calling_one() {
+    let t = test_app();
+    let (uid, _) = seed_session(&t.state, "tv@test.dev", "tv", &[Permission::Playback]);
+    let access = seed_access_token(&t.state, &uid, true);
+    seed_access_token(&t.state, &uid, true);
+    let (_, _, mine) = raw(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+        &[],
+    )
+    .await;
+    let token = mine["token"].as_str().expect("session token");
+
+    let (status, _, _) = raw(&t.app, "DELETE", "/api/auth/me/sessions", Some(token), None, &[]).await;
+    let (_, devices) = get(&t.app, "/api/auth/me/sessions", Some(token)).await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let left = devices.as_array().expect("device list");
+    assert_eq!(left.len(), 1);
+    assert_eq!(left[0]["current"], json!(true));
+}
