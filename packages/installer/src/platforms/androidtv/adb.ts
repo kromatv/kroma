@@ -6,11 +6,13 @@ import { androidProps, androidRuntime } from './runtime';
 
 const CONNECT_TIMEOUT_MS = 5000;
 const WEBVIEW_PACKAGE = 'com.google.android.webview';
+const TV_FEATURE = 'android.software.leanback';
 
 export interface AdbDevice {
   runtime: Runtime | null;
   model: string;
   vendor: string;
+  tv: boolean;
 }
 
 /**
@@ -27,10 +29,12 @@ export async function adbDevice(host: string, port: number): Promise<AdbDevice |
     connection = await AdbConnection.open(host, port, { keys, timeoutMs: CONNECT_TIMEOUT_MS });
     const printed = androidProps(await shell(connection, 'getprop'));
     const webview = await shell(connection, `dumpsys package ${WEBVIEW_PACKAGE}`);
+    const leanback = await shell(connection, `cmd package has-feature ${TV_FEATURE}`);
     return {
       runtime: androidRuntime(printed, webview),
       model: printed['ro.product.model'] ?? '',
       vendor: printed['ro.product.manufacturer'] ?? '',
+      tv: leanback.trim() === 'true',
     };
   } catch {
     return null;

@@ -1,8 +1,15 @@
 import { identify } from '../platforms/identify';
-import { detailPorts, platforms, searchTargets, sweepPorts } from '../platforms/registry';
+import {
+  browsedServices,
+  detailPorts,
+  platforms,
+  searchTargets,
+  sweepPorts,
+} from '../platforms/registry';
 import type { Television } from '../shared/television';
 import { arpHosts } from './arp';
 import { compareHosts, localSubnets, prefixOf, subnetHosts } from './lan';
+import { type MdnsService, mdnsBrowse } from './mdns';
 import { mapPool } from './pool';
 import { ssdpSearch } from './ssdp';
 import { tcpOpen } from './tcp';
@@ -11,6 +18,7 @@ import { fetchDeviceDescription, type UpnpDevice } from './upnp';
 const CONNECT_TIMEOUT_MS = 500;
 const HOST_CONCURRENCY = 64;
 const SSDP_WINDOW_MS = 2000;
+const MDNS_WINDOW_MS = 3000;
 const BETWEEN_ROUNDS_MS = 1500;
 
 export interface ScanOptions {
@@ -37,6 +45,11 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
   );
   const announced = ssdpSearch(SSDP_WINDOW_MS, options.signal, searchTargets());
   const targets = options.hosts?.length ? [...options.hosts] : await sweepTargets();
+  const advertising = mdnsBrowse(browsedServices(), {
+    durationMs: MDNS_WINDOW_MS,
+    signal: options.signal,
+    hosts: targets,
+  });
 
   for (const television of (await discovered).flat()) {
     if (options.hosts?.length && !options.hosts.includes(television.host)) continue;
@@ -44,10 +57,9 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
     options.onFound?.(television);
   }
 
-  const upnp = new Map<string, UpnpDevice>();
   let done = 0;
   const visit = async (host: string) => {
-    const television = await examine(host, upnp.get(host), options.signal);
+    const television = await examine(host, {}, options.signal);
     options.onProgress?.(Math.min(++done, targets.length), targets.length);
     if (!television || !wanted(television.platform)) return;
     found.push(television);
@@ -60,9 +72,11 @@ export async function scan(options: ScanOptions = {}): Promise<Television[]> {
 
   // A set that answered a port was identified before its description arrived,
   // so it is asked again once there is a name and a model to give it.
-  for (const [host, device] of await describe(await announced)) {
-    upnp.set(host, device);
-    const television = await examine(host, device, options.signal);
+  const described = await describe(await announced);
+  const advertised = byAdvertiser(await advertising);
+  for (const host of new Set([...described.keys(), ...advertised.keys()])) {
+    const said = { upnp: described.get(host), advertised: advertised.get(host) };
+    const television = await examine(host, said, options.signal);
     if (!television || !wanted(television.platform)) continue;
 
     const at = found.findIndex((seen) => seen.host === host);
@@ -114,17 +128,26 @@ export async function sweepTargets(): Promise<string[]> {
   return [...known, ...rest];
 }
 
-async function examine(
-  host: string,
-  upnp: UpnpDevice | undefined,
-  signal?: AbortSignal,
-): Promise<Television | null> {
+interface Said {
+  upnp?: UpnpDevice;
+  advertised?: readonly MdnsService[];
+}
+
+async function examine(host: string, said: Said, signal?: AbortSignal): Promise<Television | null> {
   const ports = await openOf(host, sweepPorts());
-  if (ports.size === 0 && !upnp) return null;
+  if (ports.size === 0 && !said.upnp && !said.advertised) return null;
   if (signal?.aborted) return null;
 
   for (const port of await openOf(host, detailPorts())) ports.add(port);
-  return identify(host, ports, upnp);
+  return identify(host, ports, said.upnp, said.advertised);
+}
+
+function byAdvertiser(services: readonly MdnsService[]): Map<string, MdnsService[]> {
+  const byHost = new Map<string, MdnsService[]>();
+  for (const service of services) {
+    byHost.set(service.host, [...(byHost.get(service.host) ?? []), service]);
+  }
+  return byHost;
 }
 
 async function openOf(host: string, ports: readonly number[]): Promise<Set<number>> {

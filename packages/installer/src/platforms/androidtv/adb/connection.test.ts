@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { createServer, type Socket } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AdbConnection, AdbUnauthorized, parseBanner } from './connection';
+import { AdbConnection, AdbUnauthorized, AdbUnpaired, parseBanner } from './connection';
 import { answers, type FakeAdbd, fakeAdbd } from './fake-adbd.fixture';
 import { type AdbKey, androidPublicKey } from './key';
 
@@ -100,8 +100,36 @@ describe('AdbConnection.open', () => {
     ).rejects.toThrow('nobody allowed this computer on the TV within two minutes');
   });
 
-  it('says so when the TV wants Wireless debugging with a pairing code', async () => {
-    await expect(connectTo({ tls: true })).rejects.toThrow('pairing code');
+  it('speaks TLS to a TV on Wireless debugging that was paired with this computer', async () => {
+    const opened = await connectTo({
+      tls: true,
+      trusted: [trustedKey.privateKey],
+      services: { 'shell:getprop': answers('[ro.build.version.release]: [14]\n') },
+    });
+
+    const stream = await opened.open('shell:getprop');
+
+    expect(opened.banner.props['ro.product.model']).toBe('Fake TV');
+    expect((await stream.readAll(1024)).toString()).toBe('[ro.build.version.release]: [14]\n');
+  });
+
+  it('shows a TV on Wireless debugging each key in turn until it knows one', async () => {
+    const opened = await connectTo(
+      { tls: true, trusted: [trustedKey.privateKey] },
+      { keys: [strangerKey, trustedKey] },
+    );
+
+    expect(opened.banner.props['ro.product.model']).toBe('Fake TV');
+  });
+
+  it('says a TV on Wireless debugging was never paired when it knows none of the keys', async () => {
+    const refused = connectTo(
+      { tls: true, trusted: [trustedKey.privateKey] },
+      { keys: [strangerKey], onPrompt: () => undefined },
+    );
+
+    await expect(refused).rejects.toBeInstanceOf(AdbUnpaired);
+    expect(fake?.prompts).toEqual([]);
   });
 
   it('says so when the TV stops answering', async () => {

@@ -14,13 +14,20 @@ import {
   takes,
 } from './adb/fake-adbd.fixture';
 import { type AdbKey, adbKeys, androidPublicKey } from './adb/key';
+import { adbEndpoint } from './endpoint';
 import { installAndroid, installFailure } from './install';
+import { pairSet } from './pair-set';
 
 vi.mock('./adb/key', async (original) => ({
   ...(await original<typeof import('./adb/key')>()),
   adbKeys: vi.fn(),
 }));
 vi.mock('./app-id', () => ({ androidAppId: () => 'tv.kroma.tv' }));
+vi.mock('./endpoint', () => ({ adbEndpoint: vi.fn() }));
+vi.mock('./pair-set', async (original) => ({
+  ...(await original<typeof import('./pair-set')>()),
+  pairSet: vi.fn(),
+}));
 
 const base = mkdtempSync(join(tmpdir(), 'kroma-android-install-'));
 const artifact = join(base, 'KROMA.apk');
@@ -67,6 +74,7 @@ async function tvAnswering(options: FakeAdbdOptions, promptTimeoutMs?: number): 
 beforeEach(() => {
   lines.length = 0;
   vi.mocked(adbKeys).mockResolvedValue([ours]);
+  vi.mocked(adbEndpoint).mockResolvedValue({ port: 5555, wireless: false });
 });
 
 afterEach(async () => {
@@ -131,10 +139,86 @@ describe('installAndroid', () => {
     );
   });
 
-  it('passes any other refusal on as the TV said it', async () => {
-    await tvAnswering({ tls: true });
+  it('says what to turn on when the TV answers adb nowhere', async () => {
+    vi.mocked(adbEndpoint).mockResolvedValue(null);
 
-    await expect(installAndroid(context())).rejects.toThrow('pairing code');
+    await expect(installAndroid(context())).rejects.toThrow(
+      'the TV does not answer adb: turn on Wireless debugging, or Network debugging, in Developer options',
+    );
+  });
+
+  it('installs over TLS on a TV on Wireless debugging that was paired with this computer', async () => {
+    const tv = await tvAnswering({
+      tls: true,
+      trusted: [privateKey],
+      services: { [INSTALL]: takes(10_000, 'Success\n'), [LAUNCH]: answers('') },
+    });
+
+    await installAndroid(context());
+
+    expect(tv.opened).toEqual([INSTALL, LAUNCH]);
+    expect(pairSet).not.toHaveBeenCalled();
+  });
+
+  it('asks for the pairing code of a TV on Wireless debugging that was never paired', async () => {
+    await tvAnswering({ tls: true, trusted: [] });
+
+    await expect(installAndroid(context())).rejects.toThrow(
+      'the TV has not been paired with this computer: on the TV, open Developer options, Wireless debugging, Pair device with pairing code, then give the code with --pairing-code',
+    );
+    expect(pairSet).not.toHaveBeenCalled();
+  });
+
+  it('pairs with the code it was given, then installs', async () => {
+    const trusted: (typeof privateKey)[] = [];
+    const tv = await tvAnswering({
+      tls: true,
+      trusted,
+      services: { [INSTALL]: takes(10_000, 'Success\n') },
+    });
+    vi.mocked(pairSet).mockImplementation(async () => {
+      trusted.push(privateKey);
+    });
+
+    await installAndroid(context({ launch: false, options: { 'pairing-code': '701 965' } }));
+
+    expect(pairSet).toHaveBeenCalledWith(shield.host, '701965');
+    expect(tv.opened).toEqual([INSTALL]);
+    expect(lines[0]).toBe('pairing this computer with the TV');
+  });
+
+  it('refuses a pairing code that is not six digits before sending it', async () => {
+    await tvAnswering({ tls: true, trusted: [] });
+
+    const installing = installAndroid(context({ options: { 'pairing-code': '7019' } }));
+
+    await expect(installing).rejects.toThrow('a pairing code is the six digits the TV shows');
+    expect(pairSet).not.toHaveBeenCalled();
+  });
+
+  it('says so when the TV still knows no key after the pairing', async () => {
+    await tvAnswering({ tls: true, trusted: [] });
+
+    const installing = installAndroid(context({ options: { 'pairing-code': '701965' } }));
+
+    await expect(installing).rejects.toThrow('the TV has not been paired with this computer');
+  });
+
+  it('passes on why the pairing failed', async () => {
+    await tvAnswering({ tls: true, trusted: [] });
+    vi.mocked(pairSet).mockRejectedValue(new Error('the TV refused that pairing code'));
+
+    const installing = installAndroid(context({ options: { 'pairing-code': '701965' } }));
+
+    await expect(installing).rejects.toThrow('the TV refused that pairing code');
+  });
+
+  it('leaves the pairing code alone on a TV that already lets this computer in', async () => {
+    await tvAnswering({ services: { [INSTALL]: takes(10_000, 'Success\n') } });
+
+    await installAndroid(context({ launch: false, options: { 'pairing-code': '701965' } }));
+
+    expect(pairSet).not.toHaveBeenCalled();
   });
 
   it('answers the advice for the failure the package manager reported', async () => {

@@ -2,7 +2,7 @@ import { generateKeyPairSync, type KeyObject, X509Certificate } from 'node:crypt
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { LogLine } from '../../../shared/run';
 import { authorSubject, certificationRequest, distributorSubject } from '../certificate/csr';
-import { toPem } from '../certificate/x509';
+import { toPem } from '../../../shared/x509';
 import type { SamsungAccess } from './access';
 import { VD_AUTHOR_CA, VD_PUBLIC_CA } from './authorities';
 import { issueAuthor, issueDistributor } from './issuer';

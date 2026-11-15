@@ -20,9 +20,10 @@ const props = [
 
 const webview = 'Package [com.google.android.webview]\n    versionName=108.0.5359.128';
 
-const services = (dumpsys = webview): Record<string, Service> => ({
+const services = (dumpsys = webview, leanback = 'true\n'): Record<string, Service> => ({
   'shell:getprop': answers(props),
   'shell:dumpsys package com.google.android.webview': answers(dumpsys),
+  'shell:cmd package has-feature android.software.leanback': answers(leanback),
 });
 
 let fake: FakeAdbd | null = null;
@@ -43,6 +44,33 @@ describe('adbDevice', () => {
     const device = await adbDevice('127.0.0.1', fake.port);
 
     expect(device).toMatchObject({ model: 'SHIELD Android TV', vendor: 'NVIDIA' });
+  });
+
+  it('takes for a TV the set whose Android says it has the TV interface', async () => {
+    fake = await fakeAdbd({ trusted: [privateKey], services: services() });
+
+    expect((await adbDevice('127.0.0.1', fake.port))?.tv).toBe(true);
+  });
+
+  it('takes for no TV a phone, or an Android too old to answer the question', async () => {
+    fake = await fakeAdbd({ trusted: [privateKey], services: services(webview, 'false\n') });
+    const phone = await adbDevice('127.0.0.1', fake.port);
+    await fake.close();
+    fake = await fakeAdbd({
+      trusted: [privateKey],
+      services: services(webview, '/system/bin/sh: cmd: not found\n'),
+    });
+
+    expect(phone?.tv).toBe(false);
+    expect((await adbDevice('127.0.0.1', fake.port))?.tv).toBe(false);
+  });
+
+  it('reads a set on Wireless debugging the same way, over TLS', async () => {
+    fake = await fakeAdbd({ tls: true, trusted: [privateKey], services: services() });
+
+    const device = await adbDevice('127.0.0.1', fake.port);
+
+    expect(device).toMatchObject({ model: 'SHIELD Android TV', tv: true });
   });
 
   it('names the system WebView as the engine the set renders with', async () => {

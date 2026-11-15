@@ -232,6 +232,7 @@ describe('identify', () => {
       },
       model: 'BRAVIA 4K VH2',
       vendor: 'Sony',
+      tv: true,
     });
 
     const tv = await identify('192.168.1.36', new Set([5555]));

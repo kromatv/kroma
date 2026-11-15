@@ -1,6 +1,6 @@
 import { createSign, type KeyObject } from 'node:crypto';
-import * as der from './asn1';
-import { OID } from './x509';
+import * as der from '../../../shared/asn1';
+import { OID } from '../../../shared/x509';
 
 const GENERAL_NAME_URI = 0x86;
 const PRINTABLE = /^[A-Za-z0-9 '()+,./:=?-]*$/;
