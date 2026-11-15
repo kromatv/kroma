@@ -845,6 +845,17 @@
         "wrangler": "^4.151.3",
       },
     },
+    "packages/quality-tools": {
+      "name": "@kromatv/quality-tools",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.6.7",
+      },
+      "devDependencies": {
+        "bun-types": "^1.4.3",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/react-audit": {
       "name": "@kromatv/react-audit",
       "version": "0.0.0",
@@ -1766,6 +1777,8 @@
     "@kromatv/package-source": ["@kromatv/package-source@workspace:apps/packages"],
 
     "@kromatv/push-relay": ["@kromatv/push-relay@workspace:packages/push-relay"],
+
+    "@kromatv/quality-tools": ["@kromatv/quality-tools@workspace:packages/quality-tools"],
 
     "@kromatv/react-audit": ["@kromatv/react-audit@workspace:packages/react-audit"],
 
