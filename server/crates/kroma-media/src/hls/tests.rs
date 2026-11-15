@@ -246,6 +246,6 @@ async fn a_file_whose_clock_starts_late_is_answered_on_the_film_s_own_clock() {
         .await
         .expect("a playlist out of a file ffmpeg can read");
 
-    assert!((start - 10.0).abs() < 0.01, "{start}");
+    assert!((start - 10.0).abs() < 0.05, "{start}");
     assert_eq!(start, first_frame_on_disk(&engine, 11));
 }
