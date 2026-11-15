@@ -32,6 +32,7 @@ export const StoreRefusal = z.discriminatedUnion('kind', [
     range: z.string(),
     serverVersion: z.string(),
   }),
+  z.object({ kind: z.literal('interface'), built: z.string(), implements: z.string() }),
   z.object({ kind: z.literal('native') }),
 ]);
 export type StoreRefusal = z.infer<typeof StoreRefusal>;

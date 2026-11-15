@@ -40,6 +40,21 @@ describe('bundleName', () => {
 });
 
 describe('packBundle', () => {
+  it('records the interface the component imports in the manifest it carries', () => {
+    const input = fixture();
+    const authored = { ...input.project.manifest, engines: { server: '>=0.1.40' } };
+    writeFileSync(join(input.project.dir, 'module.json'), JSON.stringify(authored));
+    writeFileSync(input.binPath ?? '', '\0asm kroma:module/net@0.2.0');
+
+    const packed = packBundle(input);
+
+    const carried = tarRead(toTar(bytesOf(packed.path)), 'module.json');
+    expect(JSON.parse(Buffer.from(carried ?? []).toString('utf8')).engines).toEqual({
+      server: '>=0.1.40',
+      host: '0.2.0',
+    });
+  });
+
   it('holds the manifest, the component, the icon and the frontend', () => {
     const input = fixture();
 

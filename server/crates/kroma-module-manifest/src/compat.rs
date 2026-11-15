@@ -13,7 +13,9 @@ use std::collections::BTreeMap;
 /// The engines this build knows how to check. A module may only require what a
 /// server can verify: ignoring an unknown requirement is how a module gets
 /// installed onto a host that cannot run it, and then fails somewhere else.
-pub const KNOWN_ENGINES: &[&str] = &["server"];
+pub const KNOWN_ENGINES: &[&str] = &["host", "server"];
+
+const HOST_ENGINE: &str = "host";
 
 /// Why a module's `engines` map refuses this build.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +29,9 @@ pub enum EngineRefusal {
         range: String,
         server_version: String,
     },
+    /// The module was built against version `built` of the host interface, and
+    /// this build implements `implements`, which does not run it.
+    Interface { built: String, implements: String },
 }
 
 impl std::fmt::Display for EngineRefusal {
@@ -44,6 +49,10 @@ impl std::fmt::Display for EngineRefusal {
             } => write!(
                 f,
                 "requires {engine} {range} (this server is {server_version})"
+            ),
+            Self::Interface { built, implements } => write!(
+                f,
+                "was built against module interface {built} (this server implements {implements})"
             ),
         }
     }
@@ -63,6 +72,10 @@ pub fn engines_satisfied(
                 engine: engine.clone(),
             });
         }
+        if engine == HOST_ENGINE {
+            interface_satisfied(range)?;
+            continue;
+        }
         if !version_satisfies(Some(range), server_version) {
             return Err(EngineRefusal::Unsatisfied {
                 engine: engine.clone(),
@@ -72,6 +85,18 @@ pub fn engines_satisfied(
         }
     }
     Ok(())
+}
+
+/// The interface version a component was `built` against, taken from its
+/// manifest or from its own imports, against the one this build implements.
+pub fn interface_satisfied(built: &str) -> Result<(), EngineRefusal> {
+    if crate::interface_compatible(built, crate::HOST_INTERFACE) {
+        return Ok(());
+    }
+    Err(EngineRefusal::Interface {
+        built: built.trim().to_owned(),
+        implements: crate::HOST_INTERFACE.to_owned(),
+    })
 }
 
 /// Whether `version` satisfies a declaration that accepts a bare version
@@ -183,7 +208,31 @@ mod tests {
             .to_string();
         assert!(err.contains("cannot check"), "{err}");
         assert!(err.contains("ffmpeg"), "{err}");
-        assert!(err.contains("known: server"), "{err}");
+        assert!(err.contains("known: host, server"), "{err}");
+    }
+
+    #[test]
+    fn a_module_built_against_another_interface_is_refused_by_name() {
+        let met = engines(&[("host", crate::HOST_INTERFACE), ("server", ">=0.1.4")]);
+        let other = engines(&[("host", "9.0.0"), ("server", ">=0.1.4")]);
+
+        let refusal = engines_satisfied(&other, "0.2.0").unwrap_err();
+
+        assert!(engines_satisfied(&met, "0.2.0").is_ok());
+        assert_eq!(
+            refusal,
+            EngineRefusal::Interface {
+                built: "9.0.0".into(),
+                implements: crate::HOST_INTERFACE.into(),
+            }
+        );
+        assert_eq!(
+            refusal.to_string(),
+            format!(
+                "was built against module interface 9.0.0 (this server implements {})",
+                crate::HOST_INTERFACE
+            )
+        );
     }
 
     #[test]
