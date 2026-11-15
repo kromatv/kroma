@@ -575,11 +575,11 @@
 - **SURF-50** (SHIPPED) - From anywhere on web, one key combination (Command+K on a Mac,
 - **SURF-51** (SHIPPED) - A row in the command menu says what Enter will do, and can offer
 - **SURF-52** (SHIPPED) - The command menu forgives typos, word order and missing accents,
-- **SURF-53** (AGREED) - Every app tells its server which app it is and which version, on every
-- **SURF-54** (AGREED) - A server states the oldest app version it serves, where an app can read
+- **SURF-53** (SHIPPED) - Every app tells its server which app it is and which version, on every
+- **SURF-54** (SHIPPED) - A server states the oldest app version it serves, where an app can read
 - **SURF-55** (SHIPPED) - A server states its own version where an app can read it before
-- **SURF-56** (AGREED) - The release that raises the oldest app version a server serves says so
-- **SURF-57** (AGREED) - An app older than the oldest version its server serves shows one screen
-- **SURF-58** (AGREED) - An app never reports being too old as a playback or feature error.
-- **SURF-59** (AGREED) - A server treats a request that names no app version as coming from an
-- **SURF-60** (AGREED) - An app that needs a newer server than the one it reached shows one
+- **SURF-56** (SHIPPED) - The release that raises the oldest app version a server serves says so
+- **SURF-57** (SHIPPED) - An app older than the oldest version its server serves shows one screen
+- **SURF-58** (SHIPPED) - An app never reports being too old as a playback or feature error.
+- **SURF-59** (SHIPPED) - A server treats a request that names no app version as coming from an
+- **SURF-60** (SHIPPED) - An app that needs a newer server than the one it reached shows one
