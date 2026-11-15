@@ -32,7 +32,7 @@ const MAX_JOINED_WHOLE: usize = 4;
 /// and the whole of a short one. "Spider-Man" is typed "spiderman" as often as
 /// not, and a tokenizer that splits on the hyphen has no such word.
 pub(super) fn joined(title: &[String]) -> Vec<String> {
-    let mut out: Vec<String> = title.windows(2).map(|pair| pair.concat()).collect();
+    let mut out: Vec<String> = title.windows(2).map(<[String]>::concat).collect();
     if (3..=MAX_JOINED_WHOLE).contains(&title.len()) {
         out.push(title.concat());
     }

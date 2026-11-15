@@ -35,7 +35,7 @@ function tablesOf(font: DataView): Map<string, number> {
   const count = font.getUint16(4);
   for (let i = 0; i < count; i += 1) {
     const at = 12 + i * 16;
-    const tag = String.fromCharCode(...[0, 1, 2, 3].map((b) => font.getUint8(at + b)));
+    const tag = String.fromCodePoint(...[0, 1, 2, 3].map((b) => font.getUint8(at + b)));
     tables.set(tag, font.getUint32(at + 8));
   }
   return tables;

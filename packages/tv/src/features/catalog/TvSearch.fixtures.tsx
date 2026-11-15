@@ -67,8 +67,8 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 }
 
 export function mount({
-  search = vi.fn(async () => found()),
-  discover = vi.fn(async () => known()),
+  search = vi.fn(() => Promise.resolve(found())),
+  discover = vi.fn(() => Promise.resolve(known())),
   movies = [] as MediaCard[],
   shows = [] as Show[],
   requests = createSearchRequests(),

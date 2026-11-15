@@ -30,6 +30,7 @@ const sDefinition = styles({
     paddingTop: 'clamp(72px, 9vw, 120px)',
     pb: 28,
   },
+  listener: { display: 'contents' },
   fadeIn: {
     fill: true,
     animationKeyframes: 'fade-in',
@@ -82,33 +83,34 @@ export function HeroCarousel({ section }: Readonly<{ section: HomeSection }>) {
   };
 
   return (
-    <section
-      className={classes(s.hero)}
-      aria-roledescription="carousel"
-      aria-label={section.title}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      onKeyDown={onKeyDown}
-    >
-      {previous ? <Image src={previous} fit="cover" position="center 20%" fill /> : null}
-      <Box key={backdrop} style={s.fadeIn}>
-        <Image src={backdrop} fit="cover" position="center 20%" background={wash} fill priority />
-      </Box>
-      <Box style={s.glow} />
-      <Box fill pointerEvents="none" style={s.scrim} />
+    <section className={classes(s.hero)} aria-roledescription="carousel" aria-label={section.title}>
+      <div
+        role="presentation"
+        className={classes(s.listener)}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={onKeyDown}
+      >
+        {previous ? <Image src={previous} fit="cover" position="center 20%" fill /> : null}
+        <Box key={backdrop} style={s.fadeIn}>
+          <Image src={backdrop} fit="cover" position="center 20%" background={wash} fill priority />
+        </Box>
+        <Box style={s.glow} />
+        <Box fill pointerEvents="none" style={s.scrim} />
 
-      <HeroSlide
-        key={entryId(entry)}
-        entry={entry}
-        note={section.notes[entryId(entry)] ?? section.title}
-        position={t('content.heroPosition', {
-          current: carousel.index + 1,
-          total: entries.length,
-        })}
-      />
-      {entries.length > 1 ? <HeroPager entries={entries} carousel={carousel} /> : null}
+        <HeroSlide
+          key={entryId(entry)}
+          entry={entry}
+          note={section.notes[entryId(entry)] ?? section.title}
+          position={t('content.heroPosition', {
+            current: carousel.index + 1,
+            total: entries.length,
+          })}
+        />
+        {entries.length > 1 ? <HeroPager entries={entries} carousel={carousel} /> : null}
+      </div>
     </section>
   );
 }
