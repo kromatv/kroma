@@ -1,7 +1,7 @@
 //! What the audited module asked for, kept as it asks.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 use kroma_http::address::web_target;
 use kroma_module_host::{NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy};
@@ -42,16 +42,16 @@ impl Recorder {
     }
 
     pub fn heard(&self, asked: Asked) {
-        self.asked.lock().unwrap_or_else(|e| e.into_inner()).push(asked);
+        self.asked.lock().unwrap_or_else(PoisonError::into_inner).push(asked);
     }
 
     pub fn connections(&self) -> Vec<Connection> {
-        let seen = self.connections.lock().unwrap_or_else(|e| e.into_inner());
+        let seen = self.connections.lock().unwrap_or_else(PoisonError::into_inner);
         seen.iter().cloned().collect()
     }
 
     pub fn asked(&self) -> Vec<Asked> {
-        self.asked.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        self.asked.lock().unwrap_or_else(PoisonError::into_inner).clone()
     }
 
     fn declares(&self, ask: &NetworkAsk) -> bool {
@@ -93,7 +93,7 @@ impl NetworkPolicy for Recorder {
         };
         self.connections
             .lock()
-            .unwrap_or_else(|e| e.into_inner())
+            .unwrap_or_else(PoisonError::into_inner)
             .insert(connection);
         NetworkAnswer {
             action: NetworkAction::Block,
