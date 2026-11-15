@@ -18,9 +18,9 @@ describe('a module translator with declared messages', () => {
 
   it('refuses a key the module does not have, and a call missing its variables', () => {
     // @ts-expect-error not a message of the module
-    t('page.titel');
+    expectTypeOf(t('page.titel')).toBeString();
     // @ts-expect-error answer is missing
-    t('page.hello');
+    expectTypeOf(t('page.hello')).toBeString();
   });
 
   it('takes a key only runtime can name, held in a string or built from a template', () => {

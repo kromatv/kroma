@@ -20,10 +20,12 @@ function tree(files: Files): string {
   return dir;
 }
 
+const FRENCH: Project = { source: 'fr' };
+
 /** A catalog set on disk, from a map of path to content, for a test. */
 export function setOf(
   files: Files,
-  project: Project = { source: 'fr' },
+  project: Project = FRENCH,
   layout: Layout = 'folder',
 ): CatalogSet {
   return { name: 'app', dir: tree(files), layout, project };

@@ -66,6 +66,14 @@ type OwnMessages = ModuleRegister extends { messages: infer M extends Record<str
   ? M
   : null;
 
+type WithApp<Own> = {
+  [K in keyof Own | keyof Messages]: K extends keyof Own
+    ? Own[K]
+    : K extends keyof Messages
+      ? Messages[K]
+      : never;
+};
+
 // `string`, or a template with a hole in it like `flag.${string}`: a type that
 // names no finite set of keys. A key written out, or a union of them, is not.
 type OpenEnded<S extends string> = Record<never, never> extends Record<S, unknown> ? S : never;
@@ -87,7 +95,7 @@ export interface CheckedTranslate<M> {
  */
 export type ModuleTranslate = OwnMessages extends null
   ? ScopedTranslate<MessageKey>
-  : CheckedTranslate<string extends MessageKey ? OwnMessages : OwnMessages & Messages>;
+  : CheckedTranslate<string extends MessageKey ? OwnMessages : WithApp<OwnMessages>>;
 
 /** Translate against THIS module's catalog first, then the app's. Outside a
  *  module page it is the app's translator unchanged. */

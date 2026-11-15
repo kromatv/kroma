@@ -35,7 +35,7 @@ function strangerForm({ source, message }: Located, forms: readonly string[]): s
 
 function strangerVariables(message: Message, texts: readonly string[]): string[] {
   const known = variablesOf(message);
-  return [...new Set(texts.flatMap(tokensIn))].filter((name) => !known.has(name));
+  return [...new Set(texts.flatMap((text) => tokensIn(text)))].filter((name) => !known.has(name));
 }
 
 function refusal(at: Located, locale: string, forms: Readonly<Record<string, string>>) {

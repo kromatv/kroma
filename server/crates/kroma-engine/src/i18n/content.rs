@@ -101,7 +101,7 @@ impl<'a> Offered<'a> {
 /// [`super::SUPPORTED_LOCALES`] but a regional locale whose language is
 /// offered too, which reads that language's.
 pub fn content_locales() -> &'static [&'static str] {
-    static CONTENT: OnceLock<Vec<&'static str>> = OnceLock::new();
+    static CONTENT: OnceLock<Vec<&str>> = OnceLock::new();
     CONTENT.get_or_init(|| REAL.content_locales())
 }
 

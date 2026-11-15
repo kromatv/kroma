@@ -97,7 +97,8 @@ function renameIn(
 ): boolean {
   const files = readFiles(set, locale);
   const touched = new Set<string>();
-  for (const file of [...files.keys()]) {
+  const names = Array.from(files.keys());
+  for (const file of names) {
     const keys = Object.keys(files.get(file) ?? {});
     for (const [old, renamed] of renames(source, keys, rename.from, rename.to)) {
       const origin = { ...files.get(file) };
