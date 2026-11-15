@@ -169,7 +169,7 @@
   "admin.maxConcurrent": "Flux simultanés (max)",
   "admin.maxConcurrentHint": "Nombre maximum de remux/lectures HLS simultanés.",
   "admin.mediaConcurrency": "Traitement média (max)",
-  "admin.mediaConcurrencyHint": "Nombre de traitements lourds en arrière-plan (storyboards, sous-titres, intro/générique) exécutés en même temps. 0 = auto (laisse un cœur libre). À réduire si le traitement ralentit le serveur.",
+  "admin.mediaConcurrencyHint": "Nombre de traitements lourds en arrière-plan (storyboards, sous-titres, intro/générique) exécutés en même temps. 0 = auto (laisse un cœur libre). Sous Linux, il en tourne moins quand la mémoire manque. À réduire si le traitement ralentit le serveur.",
   "admin.membersSharing": "Membres & partage",
   "admin.mostWatched": "Les plus lus",
   "admin.mostWatchedEmpty": "Aucune lecture sur cette période.",

@@ -58,7 +58,7 @@ Ensuite, les bibliothèques se gèrent là, et les variables sont ignorées.
 | `KROMA_RENDER_NODE` | `/dev/dri/renderD128` | Le périphérique graphique à utiliser quand il y en a plusieurs. |
 | `KROMA_ENCODE_EFFORT` | choisi selon la machine | `quality` ou `realtime`, pour les conversions sur le processeur. |
 | `KROMA_MAX_TRANSCODES` | la moitié des cœurs, de 1 à 4 | Conversions vidéo simultanées. Une demande au-delà de la limite est refusée : le lecteur l'indique au lieu de saccader. |
-| `KROMA_FFMPEG_CONCURRENCY` | le nombre de cœurs moins un | Tâches média simultanées en arrière-plan, comme les miniatures et l'extraction des sous-titres. |
+| `KROMA_FFMPEG_CONCURRENCY` | le nombre de cœurs moins un | Tâches média simultanées en arrière-plan, comme les miniatures et l'extraction des sous-titres. Sous Linux, il en démarre moins quand la mémoire manque, et aucune tant que le serveur utilise son swap. |
 
 ## HTTPS et proxys
 

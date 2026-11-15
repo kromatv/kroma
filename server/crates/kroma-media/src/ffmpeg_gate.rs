@@ -1,22 +1,42 @@
-//! A process-wide cap on how many heavy ffmpeg passes run at once.
+//! A process-wide cap on the heavy ffmpeg passes running at once, by count and
+//! by memory.
 //!
 //! Every CPU-heavy media source (storyboard tiles/montage/jpeg, subtitle
 //! extraction, marker fingerprinting, on-demand storyboard scrubbing) draws
 //! from one budget here instead of each subsystem sizing its own worker pool
-//! blind to the others. The budget is live: [`set_capacity`] is called at
+//! blind to the others. The count is live: [`set_capacity`] is called at
 //! startup from the `mediaConcurrency` admin setting and again whenever it
 //! changes, so an operator can retune it without a restart.
 //!
+//! Each pass also names its [`Footprint`]. Where the host publishes
+//! `/proc/meminfo` (Linux), a pass starts only while the host is not swapping
+//! memory back in, and only when its footprint, plus those of the passes
+//! already running, fits in `MemAvailable` minus a reserve kept for the rest
+//! of the box. Elsewhere the count alone decides.
+//!
 //! A hand-rolled counting semaphore (Mutex + Condvar): every caller runs on a
 //! blocking thread, so a blocking acquire is correct and avoids pulling an
-//! async runtime into the leaf process plumbing. No caller holds a permit
-//! while waiting on another, so the single-budget gate cannot deadlock.
+//! async runtime into the leaf process plumbing. A waiter also wakes on a short
+//! timer, since memory comes back without anyone signalling it. No caller holds
+//! a permit while waiting on another, so the single-budget gate cannot
+//! deadlock.
 //!
 //! [`reserve`] is the other half: work a viewer is waiting on does not draw from
 //! the budget, it takes the budget away, because a box that is finishing a
 //! storyboard is a box that is not finishing the next segment.
 
+mod footprint;
+mod host;
+
 use std::sync::{Condvar, Mutex, OnceLock};
+use std::time::{Duration, Instant};
+
+use tracing::warn;
+
+pub use footprint::Footprint;
+
+use footprint::MIB;
+use host::{Reading, Swap, SwapWatch};
 
 struct Gate {
     inner: Mutex<Inner>,
@@ -27,19 +47,111 @@ struct Inner {
     capacity: usize,
     in_use: usize,
     reserved: usize,
+    committed: u64,
+    swap: SwapWatch,
+    warned: Option<Instant>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Hold {
+    Busy,
+    Unmeasured,
+    Swapping(u64),
+    Short { need: u64, room: u64 },
 }
 
 // What background work is left while the box is reserved. Not zero: a paused
 // library is worse than a slow one, and one pass at a time still finishes.
 const RESERVED_FLOOR: usize = 1;
+const RECHECK: Duration = Duration::from_millis(250);
+const WARN_EVERY: Duration = Duration::from_secs(300);
 
 impl Inner {
+    fn new(capacity: usize) -> Self {
+        Self {
+            capacity,
+            in_use: 0,
+            reserved: 0,
+            committed: 0,
+            swap: SwapWatch::default(),
+            warned: None,
+        }
+    }
+
     fn effective(&self) -> usize {
         if self.reserved > 0 {
             RESERVED_FLOOR.min(self.capacity)
         } else {
             self.capacity
         }
+    }
+
+    fn fits(&self, need: Footprint, host: Option<Reading>) -> Result<(), Hold> {
+        let Some(host) = host else {
+            return Ok(());
+        };
+        match host.swap {
+            Swap::Swapping(pages_per_s) => return Err(Hold::Swapping(pages_per_s)),
+            Swap::Unmeasured => return Err(Hold::Unmeasured),
+            Swap::Calm => {}
+        }
+        let room = host
+            .memory
+            .available
+            .saturating_sub(host.memory.reserve())
+            .saturating_sub(self.committed);
+        match need.bytes() <= room {
+            true => Ok(()),
+            false => Err(Hold::Short {
+                need: need.bytes(),
+                room,
+            }),
+        }
+    }
+
+    fn try_admit(&mut self, need: Footprint, now: Instant) -> bool {
+        let verdict = match self.in_use < self.effective() {
+            false => Err(Hold::Busy),
+            true => {
+                let reading = host::read(&mut self.swap, now);
+                self.fits(need, reading)
+            }
+        };
+        match verdict {
+            Ok(()) => {
+                self.in_use += 1;
+                self.committed += need.bytes();
+                true
+            }
+            Err(hold) => {
+                self.report(hold, now);
+                false
+            }
+        }
+    }
+
+    fn report(&mut self, hold: Hold, now: Instant) {
+        if self
+            .warned
+            .is_some_and(|at| now.saturating_duration_since(at) < WARN_EVERY)
+        {
+            return;
+        }
+        match hold {
+            Hold::Busy | Hold::Unmeasured => return,
+            Hold::Swapping(pages_per_s) => {
+                warn!(
+                    pages_per_s,
+                    "media passes wait: the host is swapping memory back in"
+                );
+            }
+            Hold::Short { need, room } => warn!(
+                need_mib = need / MIB,
+                room_mib = room / MIB,
+                "media passes wait: not enough memory free beside the system's reserve"
+            ),
+        }
+        self.warned = Some(now);
     }
 }
 
@@ -74,11 +186,7 @@ pub fn capacity_from(setting: i64) -> usize {
 
 fn gate() -> &'static Gate {
     GATE.get_or_init(|| Gate {
-        inner: Mutex::new(Inner {
-            capacity: auto_capacity(),
-            in_use: 0,
-            reserved: 0,
-        }),
+        inner: Mutex::new(Inner::new(auto_capacity())),
         changed: Condvar::new(),
     })
 }
@@ -95,9 +203,10 @@ pub fn set_capacity(permits: usize) {
     gate.changed.notify_all();
 }
 
-/// Held for the lifetime of one ffmpeg pass; returns its slot to the pool on drop
-/// (including on panic or an early `?` return), so a slot is never leaked.
-pub struct Permit;
+/// Held for the lifetime of one ffmpeg pass; returns its slot and its footprint
+/// to the pool on drop (including on panic or an early `?` return), so neither
+/// is ever leaked.
+pub struct Permit(Footprint);
 
 impl Drop for Permit {
     fn drop(&mut self) {
@@ -105,23 +214,38 @@ impl Drop for Permit {
         {
             let mut inner = gate.inner.lock().unwrap();
             inner.in_use = inner.in_use.saturating_sub(1);
+            inner.committed = inner.committed.saturating_sub(self.0.bytes());
         }
-        gate.changed.notify_one();
+        gate.changed.notify_all();
     }
 }
 
-/// Block until a slot is free, then take it. Call right before spawning ffmpeg and
-/// keep the returned permit alive (bind it, do not `let _ = `) until the process
-/// has exited.
+/// Block until a slot is free and the host can hold `need`, then take it. Call
+/// right before spawning ffmpeg and keep the returned permit alive (bind it, do
+/// not `let _ = `) until the process has exited.
 #[must_use]
-pub fn acquire() -> Permit {
+pub fn acquire(need: Footprint) -> Permit {
     let gate = gate();
     let mut inner = gate.inner.lock().unwrap();
-    while inner.in_use >= inner.effective() {
-        inner = gate.changed.wait(inner).unwrap();
+    while !inner.try_admit(need, Instant::now()) {
+        inner = gate.changed.wait_timeout(inner, RECHECK).unwrap().0;
     }
-    inner.in_use += 1;
-    Permit
+    Permit(need)
+}
+
+/// [`acquire`] that gives up, answering `None`, the moment `cancel` flips, so a
+/// cancelled job is not left queued behind a box short of memory.
+#[must_use]
+pub fn acquire_cancellable(need: Footprint, cancel: &dyn Fn() -> bool) -> Option<Permit> {
+    let gate = gate();
+    let mut inner = gate.inner.lock().unwrap();
+    while !inner.try_admit(need, Instant::now()) {
+        if cancel() {
+            return None;
+        }
+        inner = gate.changed.wait_timeout(inner, RECHECK).unwrap().0;
+    }
+    Some(Permit(need))
 }
 
 /// Held for as long as something the viewer is waiting on owns the box: the
@@ -153,46 +277,4 @@ pub fn reserve() -> Reservation {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const fn inner(capacity: usize, reserved: usize) -> Inner {
-        Inner {
-            capacity,
-            in_use: 0,
-            reserved,
-        }
-    }
-
-    #[test]
-    fn an_unreserved_box_spends_its_whole_budget() {
-        assert_eq!(inner(7, 0).effective(), 7);
-    }
-
-    #[test]
-    fn a_reservation_leaves_background_work_one_pass_at_a_time() {
-        assert_eq!(inner(7, 1).effective(), 1);
-    }
-
-    #[test]
-    fn two_viewers_do_not_take_the_box_away_twice_over() {
-        assert_eq!(inner(7, 2).effective(), 1);
-    }
-
-    #[test]
-    fn the_floor_never_hands_out_more_than_the_operator_allowed() {
-        assert_eq!(inner(1, 1).effective(), 1);
-    }
-
-    #[test]
-    fn an_operator_asking_for_more_than_the_box_allows_gets_the_ceiling() {
-        assert_eq!(capacity_from(4), 4);
-        assert_eq!(capacity_from(99), 32);
-    }
-
-    #[test]
-    fn a_setting_of_zero_leaves_the_box_to_size_itself() {
-        assert_eq!(capacity_from(0), auto_capacity());
-        assert_eq!(capacity_from(-1), auto_capacity());
-    }
-}
+mod tests;

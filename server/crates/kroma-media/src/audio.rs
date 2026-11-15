@@ -6,6 +6,7 @@ use std::time::Duration;
 
 pub use kroma_primitives::pcm::{Pcm, SampleFormat};
 
+use crate::ffmpeg_gate::Footprint;
 use crate::ffmpeg_run::run_capturing_cancellable;
 use crate::subtitles::timeout_for;
 use crate::tmp_file::{finalize, unique_tmp};
@@ -30,11 +31,12 @@ pub fn decode(
     let mut pass = Command::new("ffmpeg");
     pass.args(kroma_primitives::pcm::decode_args(input, track, pcm, &tmp));
     let budget = timeout_for(&input.to_string_lossy()).max(SHORTEST_BUDGET);
-    let written = run_capturing_cancellable(pass, budget, cancel).and_then(|()| {
-        std::fs::metadata(&tmp)
-            .map(|meta| meta.len())
-            .map_err(|error| format!("the decoded track is missing: {error}"))
-    });
+    let written =
+        run_capturing_cancellable(pass, budget, Footprint::LIGHT, cancel).and_then(|()| {
+            std::fs::metadata(&tmp)
+                .map(|meta| meta.len())
+                .map_err(|error| format!("the decoded track is missing: {error}"))
+        });
     match written {
         Ok(bytes) if finalize(&tmp, out) => Ok(bytes),
         Ok(_) => Err(format!(

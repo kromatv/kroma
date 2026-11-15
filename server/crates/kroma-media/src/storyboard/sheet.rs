@@ -57,6 +57,7 @@ mod tests {
 
     use std::path::PathBuf;
 
+    use crate::ffmpeg_gate::Footprint;
     use crate::storyboard::{grab_tiles, Decode};
 
     use super::super::tile::name_of;
@@ -114,6 +115,7 @@ mod tests {
             &plan,
             &[0],
             Decode::Keyframes,
+            Footprint::LIGHT,
             &|| false,
         );
         if drawn.is_err() {

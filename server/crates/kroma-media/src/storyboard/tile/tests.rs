@@ -10,6 +10,7 @@ fn nothing_asked_for_spawns_nothing() {
         &plan,
         &[],
         Decode::Keyframes,
+        Footprint::LIGHT,
         &|| false,
     );
 
@@ -27,6 +28,7 @@ fn a_tile_that_could_not_be_read_is_reported_with_its_cause() {
         &plan,
         &[0, 1],
         Decode::Keyframes,
+        Footprint::LIGHT,
         &|| false,
     );
 
@@ -59,6 +61,7 @@ fn every_tile_asked_for_lands_and_is_reported_in_order() {
         &plan,
         &plan.every(),
         Decode::Keyframes,
+        Footprint::LIGHT,
         &|| false,
     );
 
@@ -78,6 +81,7 @@ fn a_pass_cancelled_before_it_starts_grabs_nothing_and_says_so() {
         &plan,
         &plan.every(),
         Decode::Keyframes,
+        Footprint::LIGHT,
         &|| true,
     );
 
@@ -129,12 +133,15 @@ fn the_decode_path_is_measured_once_and_the_answer_is_kept() {
     let input = kroma_testing::clip(scratch.path());
     let path = input.to_str().unwrap();
 
-    let first = probe(path, 5.0);
+    let first = probe(path, 5.0, Footprint::LIGHT);
 
-    assert_eq!(probe(path, 5.0), first);
+    assert_eq!(probe(path, 5.0, Footprint::LIGHT), first);
 }
 
 #[test]
 fn a_box_whose_software_decode_fails_is_never_measured_against_hardware() {
-    assert_eq!(measure("/nowhere/absent.mkv", 5.0), Decode::Keyframes);
+    assert_eq!(
+        measure("/nowhere/absent.mkv", 5.0, Footprint::LIGHT),
+        Decode::Keyframes
+    );
 }

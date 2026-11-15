@@ -9,6 +9,8 @@
 use std::process::Command;
 use std::time::{Duration, Instant};
 
+use crate::ffmpeg_gate::{self, Footprint};
+
 /// A cheap "should I stop?" poll threaded through a pass so cancelling the work
 /// behind it interrupts ffmpeg at the next tick. `Sync`, so a scoped pool can
 /// share the one closure.
@@ -19,22 +21,26 @@ pub type Cancel<'a> = &'a (dyn Fn() -> bool + Sync);
 /// spawn error (ffmpeg missing), a non-zero exit (with the stderr tail), or a
 /// timeout.
 pub fn run_capturing(cmd: Command, dur: Duration) -> Result<(), String> {
-    run_capturing_cancellable(cmd, dur, &|| false)
+    run_capturing_cancellable(cmd, dur, Footprint::LIGHT, &|| false)
 }
 
-/// [`run_capturing`] that also polls `cancel` each tick, killing the child and
-/// returning `Err("cancelled")` the moment it flips so a cancelled job/stage stops
-/// the in-flight ffmpeg (a tile seek can otherwise hang up to its timeout) instead
-/// of waiting out `dur`.
+/// [`run_capturing`] for a pass expected to hold `need`, that also polls `cancel`
+/// each tick, killing the child and returning `Err("cancelled")` the moment it
+/// flips so a cancelled job/stage stops the in-flight ffmpeg (a tile seek can
+/// otherwise hang up to its timeout) instead of waiting out `dur`. A pass still
+/// queued for the budget gives up the same way.
 pub fn run_capturing_cancellable(
     mut cmd: Command,
     dur: Duration,
+    need: Footprint,
     cancel: &dyn Fn() -> bool,
 ) -> Result<(), String> {
     use std::io::Read;
     // One slot from the process-wide ffmpeg budget (see `crate::ffmpeg_gate`),
     // held until this pass exits.
-    let _permit = crate::ffmpeg_gate::acquire();
+    let Some(_permit) = ffmpeg_gate::acquire_cancellable(need, cancel) else {
+        return Err("cancelled".to_string());
+    };
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::piped());

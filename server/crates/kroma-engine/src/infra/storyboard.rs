@@ -13,6 +13,7 @@ use tokio::sync::Semaphore;
 use tracing::warn;
 
 use crate::model::MediaItem;
+use kroma_media::ffmpeg_gate::Footprint;
 use kroma_primitives::short_hash;
 
 mod render;
@@ -123,14 +124,14 @@ impl Storyboard {
     /// The manifest if cached; otherwise kick off generation (deduped +
     /// concurrency-bounded) and report `Pending` for the caller to poll.
     pub async fn get(&self, item: &MediaItem) -> Status {
-        let Some((abs, dur_s)) = playable(item) else {
+        let Some(source) = playable(item) else {
             return Status::Unavailable;
         };
         // `key` derivation does a blocking `fs::metadata`; run it off the async
         // worker so a stalled mount can't wedge the runtime. The same stat also
         // answers "does the source even exist" an offline mount must not spawn
         // a doomed ffmpeg (let alone one per poll).
-        let abs_key = abs.clone();
+        let abs_key = source.path.clone();
         let tiles = tile_path(item);
         let Ok((key, exists)) = tokio::task::spawn_blocking(move || {
             (Self::key(&abs_key, tiles), Path::new(&abs_key).exists())
@@ -166,7 +167,7 @@ impl Storyboard {
             let _permit = sem.acquire_owned().await; // bound concurrent ffmpeg
             let key2 = key.clone();
             let res = tokio::task::spawn_blocking(move || {
-                render::generate(&abs, &dir, &key2, &item_id, dur_s, &|| false)
+                render::generate(&source, &dir, &key2, &item_id, &|| false)
             })
             .await
             .unwrap_or_else(|e| Err(format!("generation task crashed: {e}")));
@@ -196,10 +197,20 @@ fn tiles_of(bit_depth: Option<u32>) -> &'static str {
     }
 }
 
-fn playable(item: &MediaItem) -> Option<(String, f64)> {
-    let abs = item.abs_path.clone()?;
+struct Source {
+    path: String,
+    duration_s: f64,
+    footprint: Footprint,
+}
+
+fn playable(item: &MediaItem) -> Option<Source> {
+    let path = item.abs_path.clone()?;
     let ms = item.duration_ms.filter(|&d| d > 0)?;
-    Some((abs, ms as f64 / 1000.0))
+    Some(Source {
+        path,
+        duration_s: ms as f64 / 1000.0,
+        footprint: Footprint::decoding(item.video.as_ref()),
+    })
 }
 
 #[cfg(test)]

@@ -48,8 +48,12 @@ pub fn extract_vtt(
             .map_err(|e| format!("could not create the subtitle output dir: {e}"))?;
     }
     let tmps: Vec<PathBuf> = tracks.iter().map(|(_, out)| unique_tmp(out)).collect();
-    let outcome =
-        crate::ffmpeg_run::run_capturing_cancellable(pass(input, tracks, &tmps), timeout, cancel);
+    let outcome = crate::ffmpeg_run::run_capturing_cancellable(
+        pass(input, tracks, &tmps),
+        timeout,
+        crate::ffmpeg_gate::Footprint::LIGHT,
+        cancel,
+    );
     let mut landed = 0;
     for ((_, out), tmp) in tracks.iter().zip(&tmps) {
         match outcome.is_ok() && wrote_anything(tmp) && finalize(tmp, out) {

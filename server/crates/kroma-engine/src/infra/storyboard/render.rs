@@ -10,7 +10,7 @@ use kroma_media::tmp_file::{finalize, unique_tmp};
 
 use crate::model::MediaItem;
 
-use super::{playable, Manifest, Storyboard};
+use super::{playable, Manifest, Source, Storyboard};
 
 const WEBP_QUALITY: &str = "58";
 
@@ -19,17 +19,17 @@ static SCRATCH_SEQ: AtomicU64 = AtomicU64::new(0);
 /// Publishes the sheet before the manifest, so a reader that sees the manifest
 /// always finds the sheet.
 pub(super) fn generate(
-    abs: &str,
+    source: &Source,
     dir: &Path,
     key: &str,
     item_id: &str,
-    dur_s: f64,
     cancel: Cancel,
 ) -> std::result::Result<(), String> {
     std::fs::create_dir_all(dir)
         .map_err(|e| format!("could not create the cache dir {}: {e}", dir.display()))?;
-    let plan = Plan::for_duration(dur_s);
-    render(abs, dir, key, &plan, storyboard::probe(abs, dur_s), cancel)?;
+    let plan = Plan::for_duration(source.duration_s);
+    let decode = storyboard::probe(&source.path, source.duration_s, source.footprint);
+    render(source, dir, key, &plan, decode, cancel)?;
     let manifest = Manifest {
         url: format!("/api/items/{item_id}/storyboard.img?v={key}"),
         interval: f64::from(plan.interval),
@@ -38,7 +38,7 @@ pub(super) fn generate(
         cols: plan.cols,
         rows: plan.rows,
         count: plan.count,
-        duration: dur_s,
+        duration: source.duration_s,
     };
     let body = serde_json::to_vec(&manifest)
         .map_err(|e| format!("could not serialize the manifest: {e}"))?;
@@ -53,7 +53,7 @@ pub(super) fn generate(
 }
 
 fn render(
-    abs: &str,
+    source: &Source,
     dir: &Path,
     key: &str,
     plan: &Plan,
@@ -65,13 +65,13 @@ fn render(
     let scratch = dir.join(format!(".sb-{key}-{}-{seq}", std::process::id()));
     std::fs::create_dir_all(&scratch)
         .map_err(|e| format!("could not create the storyboard scratch dir: {e}"))?;
-    let res = render_into(abs, dir, key, plan, &scratch, decode, cancel);
+    let res = render_into(source, dir, key, plan, &scratch, decode, cancel);
     let _ = std::fs::remove_dir_all(&scratch);
     res
 }
 
 fn render_into(
-    abs: &str,
+    source: &Source,
     dir: &Path,
     key: &str,
     plan: &Plan,
@@ -79,7 +79,15 @@ fn render_into(
     decode: Decode,
     cancel: Cancel,
 ) -> std::result::Result<&'static str, String> {
-    storyboard::grab_tiles(abs, scratch, plan, &plan.every(), decode, cancel)?;
+    storyboard::grab_tiles(
+        &source.path,
+        scratch,
+        plan,
+        &plan.every(),
+        decode,
+        source.footprint,
+        cancel,
+    )?;
     // Bail before the montage so a half-sampled sheet is never published.
     if cancel() {
         return Err("cancelled".to_string());
@@ -118,11 +126,11 @@ impl Storyboard {
         if self.is_cached(item) {
             return Ok(());
         }
-        let Some((abs, dur_s)) = playable(item) else {
+        let Some(source) = playable(item) else {
             return Err("no media file or unknown duration".to_string());
         };
-        let key = Self::key(&abs, super::tile_path(item));
-        generate(&abs, &self.dir, &key, &item.id, dur_s, cancel)
+        let key = Self::key(&source.path, super::tile_path(item));
+        generate(&source, &self.dir, &key, &item.id, cancel)
     }
 }
 
@@ -132,6 +140,7 @@ mod tests {
 
     use std::process::Command;
 
+    use kroma_media::ffmpeg_gate::Footprint;
     use kroma_media::input;
 
     #[test]
@@ -151,8 +160,12 @@ mod tests {
         assert!(ok, "could not create the test clip (is ffmpeg installed?)");
 
         let key = "testkey";
-        generate(clip.to_str().unwrap(), tmp, key, "x", 30.0, &|| false)
-            .expect("generation failed");
+        let source = Source {
+            path: clip.to_string_lossy().into_owned(),
+            duration_s: 30.0,
+            footprint: Footprint::LIGHT,
+        };
+        generate(&source, tmp, key, "x", &|| false).expect("generation failed");
 
         let plan = Plan::for_duration(30.0);
         let sheet = ["webp", "jpg"]
