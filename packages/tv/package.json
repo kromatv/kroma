@@ -21,7 +21,7 @@
     "./native-playback": "./src/features/playback/native/NativePlayer.tsx"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "build": "tsc --noEmit"
   },
   "dependencies": {

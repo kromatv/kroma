@@ -17,7 +17,7 @@
     "preview": "vite preview",
     "preview:edge": "wrangler dev",
     "deploy": "bun run build && wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@kromatv/tv": "workspace:*",

@@ -18,7 +18,7 @@
     "./shared": "./src/shared.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "build": "tsc --noEmit"
   },
   "dependencies": {

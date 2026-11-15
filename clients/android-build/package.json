@@ -11,7 +11,7 @@
     "./plugin": "./plugin.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "expo": "~58.0.16"

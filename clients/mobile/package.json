@@ -20,7 +20,7 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "prebuild": "expo prebuild",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "bundle:check": "bun ../expo-build/bundle-check.ts ."
   },
   "dependencies": {

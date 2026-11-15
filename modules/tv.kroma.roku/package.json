@@ -16,7 +16,7 @@
     "./schemas": "./ui/src/schemas.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@kromatv/module-sdk": "workspace:*",

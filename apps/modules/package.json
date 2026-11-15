@@ -17,7 +17,7 @@
   "scripts": {
     "dev": "vite dev --port 3300",
     "build": "vite build",
-    "typecheck": "tsr generate && tsc --noEmit",
+    "typecheck": "tsr generate && bun check",
     "generate-routes": "tsr generate",
     "deploy": "bun run build && wrangler deploy"
   },
