@@ -301,7 +301,7 @@ wasm holds none of them:
 Each is declared in `run`, pinned under `helpers` where it is downloaded, and
 shown at consent. Only a first-party module may start one. WireGuard inside the
 gateway (#512) and the torrent engine as a component at full speed (#514) would
-retire `wireproxy` and `rqbit`. Neither is done.
+retire `wireproxy` and `rqbit`. Both were dropped, so the two helpers stay.
 
 ## Identity
 
@@ -408,8 +408,8 @@ writes a new key.
 | LAN discovery as a host capability | on `main` (#552) |
 | Remote tunnel | a `cloudflared` helper the host runs, outside the gateway: it honours no proxy for its edge connection (#553) |
 | ffmpeg and inference | inference runs inside the component (#554); whisper decodes its audio through the host's `media` capability and starts no program |
-| WireGuard inside the gateway | not done: `wireproxy` stands in for it (#512) |
-| Torrent engine as a component at full speed | not done: `rqbit` stands in for it (#514) |
+| WireGuard inside the gateway | dropped: `wireproxy` keeps the tunnel (#512) |
+| Torrent engine as a component at full speed | dropped: `rqbit` stays a native helper the host starts (#514) |
 | Strict tier by uid, Watch scanner | dropped: no module is a native process (#489, #490) |
 | Escape suite on Ubuntu, macOS and Windows | on `main` (#523) |
 | Per-module network view | on `main` (#496) |

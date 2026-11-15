@@ -262,7 +262,7 @@ the SOCKS5 URL and its token.
 Peers are ruled the same way. The torrent engine (`rqbit`) dials them through the
 gateway with or without a VPN. Being sealed is a separate setting: behind a VPN the session
 also turns off DHT, its trackers and its listener, and without one it keeps them,
-outside the gateway until a network can carry UDP (#512).
+outside the gateway, because no network carries UDP.
 
 ## Enforcement
 
@@ -318,9 +318,9 @@ or not.
 | A socket the gateway listens on for a module (`net.listen`) | dropped: a component cannot listen, and a program it starts listens itself (#550) |
 | Strict tier by uid and nftables under Docker, Watch scanner | dropped: no module is a native process (#489, #490) |
 | `network` point, several networks at once, rules that name one or match a port or address range | on `main` (#491) |
-| WireGuard tunnels in the gateway | not done: `wireproxy` stands in for it (#512) |
+| WireGuard tunnels in the gateway | dropped: `wireproxy` keeps the tunnel (#512) |
 | Network middleware | planned (#493) |
-| A network that carries UDP | planned (#512) |
+| A network that carries UDP | dropped: a tunnel carries TCP only, so behind a VPN the torrent engine keeps DHT, its trackers and its listener off (#512) |
 | ffmpeg and ffprobe open local inputs only | on `main` (#515) |
 | A call that skips the gate fails CI, and SMTP mail asks the gate as `email` | on `main` (#541) |
 | A call made before boot installs the gate is refused, and journaled once the journal starts | on `main` (#545) |
@@ -329,5 +329,5 @@ or not.
 | Escape suite on Ubuntu, macOS and Windows | on `main` (#523) |
 | LAN discovery as a host capability | on `main` (#552) |
 | Remote tunnel | a `cloudflared` helper the host runs, outside the gateway: it honours no proxy for its edge connection (#553) |
-| Torrent engine as a component at full speed | not done: `rqbit` stands in for it (#514) |
+| Torrent engine as a component at full speed | dropped: `rqbit` stays a native helper the host starts (#514) |
 | A native bundle refused from every registry and from an upload | on `main` (#513) |
