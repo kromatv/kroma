@@ -10,6 +10,8 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { constants, zstdCompressSync } from 'node:zlib';
+import { catalogLayout } from '@kromatv/i18n/vite';
+import { readCatalogs } from '@kromatv/i18n-tools';
 import type { Project } from '../project';
 import { bundledManifest, interfaceOf } from './host-engine';
 import { deterministicTar } from './tar';
@@ -31,6 +33,20 @@ const zstd = (bytes: Uint8Array, level: number) =>
 /** `<id>.kmod`: one bundle per module, the same on every platform. */
 export function bundleName(id: string): string {
   return `${id}.kmod`;
+}
+
+function stageCatalogs(from: string, to: string): void {
+  if (catalogLayout(from) === 'flat') {
+    cpSync(from, to, {
+      recursive: true,
+      filter: (path) => path === from || path.endsWith('.json'),
+    });
+    return;
+  }
+  mkdirSync(to);
+  for (const [locale, catalog] of Object.entries(readCatalogs({ dir: from, layout: 'folder' }))) {
+    writeFileSync(join(to, `${locale}.json`), `${JSON.stringify(catalog, null, 2)}\n`);
+  }
 }
 
 function stage(input: PackInput): { staging: string; entries: string[] } {
@@ -61,10 +77,7 @@ function stage(input: PackInput): { staging: string; entries: string[] } {
   }
   const catalogs = join(project.dir, 'locales');
   if (existsSync(catalogs)) {
-    cpSync(catalogs, join(staging, 'locales'), {
-      recursive: true,
-      filter: (path) => path === catalogs || path.endsWith('.json'),
-    });
+    stageCatalogs(catalogs, join(staging, 'locales'));
     entries.push('locales');
   }
   return { staging, entries };

@@ -7,6 +7,7 @@
 // module is then reserved for what it should mean: addressing a DIFFERENT one.
 
 import { type ModuleApi, ModuleId } from '@kromatv/client/modules';
+import type { MessageKey, Messages, ScopedTranslate, TVars, VarsOf } from '@kromatv/i18n';
 import { useScopedT } from '@kromatv/ui';
 import { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
 import { useAdminHost } from './admin/context';
@@ -45,11 +46,62 @@ export function ModuleScope({ id, children }: Readonly<{ id: string; children: R
   return <ModuleIdContext.Provider value={ModuleId.parse(id)}>{children}</ModuleIdContext.Provider>;
 }
 
+/**
+ * What a module's own messages take, keyed by message key. The kroma CLI
+ * augments it from the module's `locales/`, in a `messages.d.ts` it keeps
+ * beside the front end:
+ *
+ * ```ts
+ * declare module '@kromatv/sdk' {
+ *   interface ModuleRegister {
+ *     messages: { 'page.title': {}; 'page.hello': { answer: string | number } };
+ *   }
+ * }
+ * ```
+ */
+// oxlint-disable-next-line typescript/no-empty-interface -- the augmentation target; a type alias cannot be reopened.
+export interface ModuleRegister {}
+
+type OwnMessages = ModuleRegister extends { messages: infer M extends Record<string, object> }
+  ? M
+  : null;
+
+type WithApp<Own> = {
+  [K in keyof Own | keyof Messages]: K extends keyof Own
+    ? Own[K]
+    : K extends keyof Messages
+      ? Messages[K]
+      : never;
+};
+
+// `string`, or a template with a hole in it like `flag.${string}`: a type that
+// names no finite set of keys. A key written out, or a union of them, is not.
+type OpenEnded<S extends string> = Record<never, never> extends Record<S, unknown> ? S : never;
+
+/** A translator checked against `M`, which maps each key to what it takes. */
+export interface CheckedTranslate<M> {
+  <K extends keyof M & string>(key: K, ...vars: VarsOf<M, K>): string;
+  /** A key only runtime can name: one held in a `string`, or built from a
+   *  template. A key written out never lands here, so a typo in one still
+   *  fails to compile. */
+  <S extends string>(key: OpenEnded<S>, vars?: TVars): string;
+}
+
+/**
+ * A module's translator. Once the module's messages are declared, a key
+ * written out is checked against them and the app's, with the variables its
+ * message takes, and a key held in a `string` variable is taken as it comes.
+ * Before that, it accepts any key, as a scoped translator does.
+ */
+export type ModuleTranslate = OwnMessages extends null
+  ? ScopedTranslate<MessageKey>
+  : CheckedTranslate<string extends MessageKey ? OwnMessages : WithApp<OwnMessages>>;
+
 /** Translate against THIS module's catalog first, then the app's. Outside a
  *  module page it is the app's translator unchanged. */
-export function useT(): ReturnType<ReturnType<typeof useScopedT>> {
+export function useT(): ModuleTranslate {
   const id = useContext(ModuleIdContext);
-  return useScopedT()(id ?? '');
+  return useScopedT()(id ?? '') as ModuleTranslate;
 }
 
 /** This module's own admin API, bound to `/api/admin/m/<its id>`. Paths are

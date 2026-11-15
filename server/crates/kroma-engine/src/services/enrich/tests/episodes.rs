@@ -28,6 +28,30 @@ fn enrich_episodes_stores_text_in_every_language_and_the_guide() {
 }
 
 #[test]
+fn a_script_locale_is_asked_under_the_tag_tmdb_knows_and_stored_under_its_own() {
+    let tmdb = tmdb();
+    let state = state_with_show();
+    let eng = engine_for(&state, "key".into());
+
+    enrich_episodes(
+        &eng.pool,
+        "key",
+        "en-US",
+        &["zh-Hant"],
+        &eng.data_dir,
+        &eng.bus,
+        SHOW_ID,
+        SHOW_TMDB,
+    );
+
+    let stored = db::translations::languages_for(&state.db, "episode", EPISODE_ID).unwrap();
+    let asked = tmdb.requests();
+    assert_eq!(stored, ["zh-Hant"]);
+    assert!(asked.iter().any(|r| r.contains("language=zh-TW")));
+    assert!(asked.iter().all(|r| !r.contains("Hant")));
+}
+
+#[test]
 fn enrich_episodes_on_an_unknown_show_does_nothing() {
     let tmdb = tmdb();
     let state = state();

@@ -11,7 +11,7 @@ function engine(word: string): KitI18n {
   return {
     ...providerI18n(),
     translator: () => (key: string) => (key === 'player.play' ? word : key),
-  };
+  } as unknown as KitI18n;
 }
 
 function scope(i18n: KitI18n) {

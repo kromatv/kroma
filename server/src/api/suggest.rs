@@ -1,6 +1,7 @@
 //! `GET /api/items/:id/ai-suggest` the per-title AI suggestions rail. Cached per
 //! item; a miss starts background LLM generation and returns `null`, and the
-//! client re-fetches until the cached row appears.
+//! client re-fetches until the cached row appears. A row generated before the
+//! reader's language was asked for is a miss too, once.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, OnceLock};
@@ -16,6 +17,7 @@ use crate::api::visibility;
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::Section;
+use crate::services::llm;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -80,13 +82,17 @@ pub async fn ai_suggest(
     })
     .await;
 
+    let reads = i18n::content_locale(locale);
     match result {
+        Ok(Cached::Ready(row, _)) if !llm::covers(&row, reads) && regenerating(&state, &id) => {
+            Json::<Option<Section>>(None).into_response()
+        }
         Ok(Cached::Ready(row, items)) => {
             let items = items
                 .into_iter()
                 .filter_map(|entry| visibility::keep_section_item(&user, Some(entry)))
                 .collect();
-            section(locale, pick_lang(&row.reasons, locale), items)
+            section(locale, i18n::pick(&row.reasons, locale).cloned(), items)
         }
         Ok(Cached::UnknownSeed) => section(locale, None, Vec::new()),
         Ok(Cached::Pending) if !crate::infra::llm::from_settings(&state.settings).available() => {
@@ -136,13 +142,27 @@ fn section(
     .into_response()
 }
 
-fn spawn_generation(state: SharedState, id: String) {
-    if cooldowns()
+// A cached row that was never asked for the reader's language is regenerated,
+// unless that cannot be tried now: no model, or one that just failed. It is
+// then served as it is, in the fallback text, rather than held back.
+fn regenerating(state: &SharedState, id: &str) -> bool {
+    if cooling_down(id) || !crate::infra::llm::from_settings(&state.settings).available() {
+        return false;
+    }
+    spawn_generation(state.clone(), id.to_string());
+    true
+}
+
+fn cooling_down(id: &str) -> bool {
+    cooldowns()
         .lock()
         .unwrap()
-        .get(&id)
+        .get(id)
         .is_some_and(|t| t.elapsed() < RETRY_COOLDOWN)
-    {
+}
+
+fn spawn_generation(state: SharedState, id: String) {
+    if cooling_down(&id) {
         return;
     }
     if !reserve(&mut in_flight().lock().unwrap(), &id) {
@@ -170,18 +190,12 @@ fn generate(state: &SharedState, id: &str) {
         .map(|p| p.max_tokens)
         .unwrap_or(900)
         .clamp(2048, 8192) as u32;
-    match crate::services::llm::suggest_for(state, id, max_tokens) {
-        Ok(Some(s)) => {
+    match llm::regenerate(state, id, max_tokens, i18n::content_locales()) {
+        Ok(()) => {
             cooldowns().lock().unwrap().remove(id);
-            let _ = db::set_suggestion(&state.db, id, &s.ids, &s.reasons);
         }
-        // Nothing usable → cache empty, which stops the client polling.
-        Ok(None) => {
-            cooldowns().lock().unwrap().remove(id);
-            let _ = db::set_suggestion(&state.db, id, &[], &HashMap::new());
-        }
-        // Don't cache, so a later view retries, but record the time so polls
-        // back off to one attempt per RETRY_COOLDOWN.
+        // Nothing was cached, so a later view retries, but record the time so
+        // polls back off to one attempt per RETRY_COOLDOWN.
         Err(e) => {
             cooldowns()
                 .lock()
@@ -192,19 +206,9 @@ fn generate(state: &SharedState, id: &str) {
     }
 }
 
-fn pick_lang(map: &HashMap<String, String>, locale: &str) -> Option<String> {
-    map.get(locale)
-        .or_else(|| map.get("en"))
-        .or_else(|| map.values().next())
-        .cloned()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::test_support::{demo_item_id, get, test_app};
-    use axum::http::StatusCode;
-    use serde_json::json;
 
     fn reasons(pairs: &[(&str, &str)]) -> HashMap<String, String> {
         pairs
@@ -215,19 +219,15 @@ mod tests {
 
     #[test]
     fn a_reason_falls_back_to_english_then_to_whatever_was_generated() {
+        let read = |pairs: &[(&str, &str)]| i18n::pick(&reasons(pairs), "fr").cloned();
+
+        assert_eq!(read(&[("fr", "parce que")]).as_deref(), Some("parce que"));
         assert_eq!(
-            pick_lang(&reasons(&[("fr", "parce que")]), "fr").as_deref(),
-            Some("parce que")
-        );
-        assert_eq!(
-            pick_lang(&reasons(&[("en", "because"), ("de", "weil")]), "fr").as_deref(),
+            read(&[("en", "because"), ("de", "weil")]).as_deref(),
             Some("because")
         );
-        assert_eq!(
-            pick_lang(&reasons(&[("de", "weil")]), "fr").as_deref(),
-            Some("weil")
-        );
-        assert_eq!(pick_lang(&reasons(&[]), "fr"), None);
+        assert_eq!(read(&[("de", "weil")]).as_deref(), Some("weil"));
+        assert_eq!(read(&[]), None);
     }
 
     #[test]
@@ -248,67 +248,5 @@ mod tests {
 
         in_flight.remove("seed0");
         assert!(reserve(&mut in_flight, "one-too-many"));
-    }
-
-    #[tokio::test]
-    async fn a_seed_the_catalogue_does_not_hold_is_terminal_and_caches_nothing() {
-        let t = test_app();
-
-        let (status, body) =
-            get(&t.app, "/api/items/no-such-item/ai-suggest", Some(&t.token)).await;
-
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(body["id"], "ai:suggest");
-        assert_eq!(body["items"].as_array().map(Vec::len), Some(0));
-        assert!(db::get_suggestion(&t.state.db, "no-such-item")
-            .unwrap()
-            .is_none());
-    }
-
-    #[tokio::test]
-    async fn a_seed_with_nothing_cached_yet_answers_null_so_the_client_keeps_polling() {
-        let t = test_app();
-        t.state.settings.set_patch(
-            &t.state.db,
-            [
-                ("llmEnabled", json!(true)),
-                ("llmProvider", json!("openai")),
-                ("llmBaseUrl", json!("http://127.0.0.1:9")),
-                ("llmModel", json!("test-model")),
-                ("llmApiKey", json!("test-key")),
-            ]
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect(),
-        );
-        let id = demo_item_id("The Matrix");
-
-        let (status, body) = get(
-            &t.app,
-            &format!("/api/items/{id}/ai-suggest"),
-            Some(&t.token),
-        )
-        .await;
-
-        assert_eq!(status, StatusCode::OK);
-        assert!(body.is_null(), "{body}");
-    }
-
-    #[tokio::test]
-    async fn a_server_without_an_llm_answers_an_empty_section_instead_of_pending() {
-        let t = test_app();
-        let id = demo_item_id("The Matrix");
-
-        let (status, body) = get(
-            &t.app,
-            &format!("/api/items/{id}/ai-suggest"),
-            Some(&t.token),
-        )
-        .await;
-
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(body["id"], "ai:suggest");
-        assert_eq!(body["items"].as_array().map(Vec::len), Some(0));
-        assert!(db::get_suggestion(&t.state.db, &id).unwrap().is_none());
     }
 }

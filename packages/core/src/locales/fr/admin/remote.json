@@ -1,0 +1,18 @@
+{
+  "admin.remoteAccess": "Accès distant",
+  "admin.remoteAccessDesc": "Diffusion en dehors de votre réseau local",
+  "admin.remoteBinaryMissing": "Binaire cloudflared indisponible sur le serveur.",
+  "admin.remoteConnected": "Connecté",
+  "admin.remoteConnecting": "Connexion…",
+  "admin.remoteDisconnected": "Arrêté",
+  "admin.remoteGetToken": "Obtenir un jeton sur Cloudflare",
+  "admin.remoteLogs": "Journaux du connecteur",
+  "admin.remoteManaged": "Connecteur géré (Cloudflare Tunnel)",
+  "admin.remoteManagedHint": "Optionnel. Si votre serveur n'a pas déjà de tunnel, KROMA peut lancer et superviser cloudflared pour exposer une URL HTTPS publique sans ouverture de port. Si vous utilisez déjà un tunnel (conteneur partagé, service système), laissez ceci désactivé et renseignez seulement l'URL publique.",
+  "admin.remoteNoLogs": "Aucun journal pour l'instant.",
+  "admin.remoteSaved": "Enregistré",
+  "admin.remoteSince": "Depuis",
+  "admin.remoteToken": "Jeton du tunnel",
+  "admin.remoteTokenHint": "Collez le jeton du connecteur Cloudflare Tunnel. Le serveur lance cloudflared et le supervise.",
+  "admin.remoteTokenKeep": "•••••• (laisser vide pour conserver)"
+}

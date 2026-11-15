@@ -17,9 +17,9 @@
   "report.message": "Détails (facultatif)",
   "report.messageEmpty": "Aucun détail",
   "report.messagePlaceholder": "Décrivez le problème...",
+  "report.sent": "Merci, votre signalement a bien été envoyé.",
   "report.subject": "Ce qui est concerné",
   "report.subjectWhole": "Toute la série",
   "report.submit": "Envoyer le signalement",
-  "report.submitted": "Merci, votre signalement a bien été envoyé.",
   "report.title": "Signaler un problème"
 }

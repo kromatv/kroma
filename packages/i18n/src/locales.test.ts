@@ -22,8 +22,28 @@ describe('createLocales', () => {
     expect(locales.DEFAULT_LOCALE).toBe('en');
     expect([...locales.SUPPORTED_LOCALES]).toEqual(['en', 'fr']);
     expect(locales.LOCALES).toEqual([
-      { code: 'en', labelKey: 'lang.en' },
-      { code: 'fr', labelKey: 'lang.fr' },
+      { code: 'en', labelKey: 'lang.en', stage: 'stable' },
+      { code: 'fr', labelKey: 'lang.fr', stage: 'stable' },
     ]);
+  });
+
+  it('marks the locales still being translated', () => {
+    const set = createLocales({ en: 'English', de: 'Deutsch' }, 'en', ['de']);
+
+    expect(set.LOCALES.map((locale) => locale.stage)).toEqual(['stable', 'beta']);
+  });
+
+  it('prefers the regional locale a tag names over the language it belongs to', () => {
+    const set = createLocales({ pt: 'Português', 'pt-BR': 'Português (Brasil)' }, 'pt');
+
+    expect(set.normalizeLocale('pt_br')).toBe('pt-BR');
+    expect(set.normalizeLocale('pt-PT')).toBe('pt');
+  });
+
+  it('hands a bare language its regional locale when that is all there is', () => {
+    const set = createLocales({ en: 'English', 'zh-Hant': '繁體中文' }, 'en');
+
+    expect(set.normalizeLocale('zh')).toBe('zh-Hant');
+    expect(set.normalizeLocale('zh-Hant-TW')).toBe('zh-Hant');
   });
 });

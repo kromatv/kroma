@@ -1,15 +1,14 @@
 import { type ReactNode, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { activeLocaleOverride, installAppLocales, onOverridesChange } from '../dev-overrides';
-import type { I18n } from '../i18n';
+import type { AnyI18n } from '../i18n';
 import type { Locale } from '../registry';
-import type { Catalog } from '../types';
 import { I18nContext, type I18nValue } from './context';
 
 const localeOverrideOnServer = () => null;
 
 export interface I18nProviderProps {
   /** The instance built by `createI18n`. */
-  i18n: I18n<string, Catalog>;
+  i18n: AnyI18n;
   /** Controlled: the app owns the resolved locale and `useSetLocale` asks for a
    *  change through `onLocaleChange` rather than setting it here. */
   locale: Locale;
@@ -53,7 +52,7 @@ export function I18nProvider({
       i18n,
       locale: active,
       version,
-      translator: (scope) => i18n.translator(active, scope as string) as never,
+      translator: (scope) => i18n.translator(active, scope) as never,
       setLocale: (next) => change.current?.(next),
     }),
     [i18n, active, version],

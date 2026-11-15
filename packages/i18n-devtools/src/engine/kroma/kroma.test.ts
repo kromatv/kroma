@@ -36,7 +36,7 @@ function watched(): Rendered[] {
 
 function Greeting() {
   const locale = useLocale();
-  return createElement('span', null, useI18n().translate(locale, 'greeting', VARS));
+  return createElement('span', null, useI18n().translator(locale)('greeting', VARS));
 }
 
 function screen(locale: 'en' | 'fr' = 'fr') {

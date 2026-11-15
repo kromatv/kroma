@@ -1,7 +1,6 @@
 // Language codes, normalized once for the whole app: the matcher, the option
 // list, and the two track pickers every client shares.
 
-import type { MessageKey, Translate } from '@kromatv/i18n';
 import { LANG_ALIAS, type LangCode, PREF_LANGS } from './lang-table';
 
 export { type LangCode, PREF_LANGS } from './lang-table';
@@ -45,39 +44,10 @@ export function offeredLang(code?: string | null): LangCode | null {
   return isLangCode(base) ? base : null;
 }
 
-export function langKey(code?: string | null): MessageKey | null {
-  const offered = offeredLang(code);
-  return offered ? `lang.${offered}` : null;
-}
-
 const LANG_CODES: ReadonlySet<string> = new Set(PREF_LANGS);
 
 function isLangCode(code: string): code is LangCode {
   return LANG_CODES.has(code);
-}
-
-export interface LangOption {
-  code: LangCode;
-  label: string;
-}
-
-/** {@link PREF_LANGS} as picker rows, labelled for `locale` and sorted by label
- * with that locale's collator. Built fresh per call. */
-export function langOptions(t: Translate, locale?: string): LangOption[] {
-  const options = PREF_LANGS.map((code) => ({ code, label: t(`lang.${code}`) }));
-  return options.sort(byLabel(locale));
-}
-
-function byLabel(locale?: string): (a: LangOption, b: LangOption) => number {
-  try {
-    const collator = new Intl.Collator(locale, { sensitivity: 'base' });
-    return (a, b) => collator.compare(a.label, b.label);
-  } catch {
-    return (a, b) => {
-      if (a.label === b.label) return 0;
-      return a.label < b.label ? -1 : 1;
-    };
-  }
 }
 
 export interface AudioCandidate {

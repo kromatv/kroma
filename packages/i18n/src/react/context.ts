@@ -1,7 +1,6 @@
 import { createContext, use, useContext } from 'react';
-import type { I18n, ScopedTranslate } from '../i18n';
+import type { AnyI18n, ScopedTranslate } from '../i18n';
 import type { Locale, MessageKey, Translate } from '../registry';
-import type { Catalog } from '../types';
 
 /** What a provider hands down. `version` changes when a scope is added or a
  *  dev switch moves; it is carried rather than derived because it is what
@@ -10,7 +9,7 @@ import type { Catalog } from '../types';
  *  provider watches the store once, on behalf of every consumer, rather than
  *  each of them opening its own subscription. */
 export interface I18nValue {
-  i18n: I18n<string, Catalog>;
+  i18n: AnyI18n;
   locale: Locale;
   version: number;
   translator: (scope?: string) => ScopedTranslate<MessageKey>;
@@ -68,6 +67,6 @@ export function useSetLocale(): (locale: Locale) => void {
 }
 
 /** The instance itself, for the caller that needs `add` when a module loads. */
-export function useI18n(): I18n<string, Catalog> {
+export function useI18n(): AnyI18n {
   return useI18nValue().i18n;
 }

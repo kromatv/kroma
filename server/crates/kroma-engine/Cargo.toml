@@ -89,3 +89,7 @@ kroma-testing = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 # The encoder builds the xz payload of a test server package.
 lzma-rust2 = { version = "0.24", default-features = false, features = ["std", "xz", "encoder"] }
+
+[build-dependencies]
+# `i18n.json` is read at build time, to embed the offered languages only.
+serde_json = { workspace = true }

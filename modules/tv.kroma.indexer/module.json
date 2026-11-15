@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.4.36",
+  "version": "0.4.37",
   "component": {
     "instances": 4,
     "cpuSeconds": 300

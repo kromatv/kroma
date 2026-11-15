@@ -53,7 +53,16 @@ export type {
   ModuleStatus,
 } from './registry';
 export { depEntries, ModuleRegistry } from './registry';
-export { ModuleScope, ModuleSharedProvider, moduleApiHook, useModuleApi, useT } from './scope';
+export {
+  type CheckedTranslate,
+  type ModuleRegister,
+  ModuleScope,
+  ModuleSharedProvider,
+  type ModuleTranslate,
+  moduleApiHook,
+  useModuleApi,
+  useT,
+} from './scope';
 export type { SharedModule } from './shared';
 export {
   PUBLIC_NAME,

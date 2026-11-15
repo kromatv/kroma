@@ -1,4 +1,6 @@
 import { GEN_LANGS, GEN_QUALITIES, type GenQuality } from '@kromatv/client/subtitles';
+import { langKey } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { type Ref, useImperativeHandle, useState } from 'react';
 import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -27,6 +29,13 @@ interface GenerateWizardProps {
   onStart: (req: SubtitleGenRequest) => void;
   onClose: () => void;
   ref?: Ref<PanelHandle>;
+}
+
+// The language named in the reader's own language. `label` is not for
+// reading: it is the track name the server resolves back to a language.
+function spoken(t: Translate, lang: (typeof GEN_LANGS)[number]): string {
+  const key = langKey(lang.code);
+  return key ? t(key) : lang.label;
 }
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
@@ -170,7 +179,7 @@ export function GenerateWizard({
           <>
             <CycleField
               label={t('player.subSpokenLang')}
-              value={curLang?.label ?? ''}
+              value={curLang ? spoken(t, curLang) : ''}
               onDec={() => cycleLang(-1)}
               onInc={() => cycleLang(1)}
             />

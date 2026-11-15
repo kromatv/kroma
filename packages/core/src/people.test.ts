@@ -12,7 +12,7 @@ import {
 } from './people';
 
 // Echoes the key, so role labels are asserted by key.
-const t: Translate = (key) => key;
+const t = ((key: string) => key) as Translate;
 
 function meta(p: {
   cast?: { name: string; profileUrl?: string | null }[];

@@ -11,6 +11,7 @@ import { cargo } from './subcommands/cargo';
 import { registry } from './subcommands/registry';
 import { serve } from './subcommands/serve';
 import { release } from './subcommands/release';
+import { i18n } from './subcommands/i18n';
 
 const main = defineCommand({
   meta: { name: 'kroma', description: 'Build KROMA modules.' },
@@ -20,6 +21,7 @@ const main = defineCommand({
     build,
     check,
     audit,
+    i18n,
     install,
     login,
     cargo,

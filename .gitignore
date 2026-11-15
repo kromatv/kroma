@@ -7,6 +7,7 @@ bun.lockb
 
 # Written by the i18n Vite plugin from the catalog folder (bun run i18n:types).
 packages/core/src/locales/messages.d.ts
+modules/*/ui/src/messages.d.ts
 
 # Builds
 dist/

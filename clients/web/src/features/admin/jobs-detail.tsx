@@ -4,7 +4,6 @@
 // feel live.
 
 import type { JobKey, JobLog, JobRun, JobRunId } from '@kromatv/client/jobs';
-import type { MessageKey } from '@kromatv/i18n';
 import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,
@@ -94,14 +93,14 @@ function RunRow({
 }: Readonly<{ run: JobRun; active: boolean; onClick: () => void }>) {
   const t = useT();
   const locale = useLocale();
-  const status = t(`jobs.status.${run.status}` as MessageKey);
+  const status = t(`jobs.status.${run.status}`);
   return (
     <ListRow.Root size="sm" selected={active} chevron={false} onPress={onClick}>
       <ListRow.Leading>
         <Box w={8} h={8} shrink={0} radius="circle" bg={statusColor(run.status)} />
       </ListRow.Leading>
       <ListRow.Label>
-        {status} · {t(`jobs.trigger.${run.trigger}` as MessageKey)}
+        {status} · {t(`jobs.trigger.${run.trigger}`)}
       </ListRow.Label>
       <ListRow.Hint>
         {rel(run.startedAt, locale)}

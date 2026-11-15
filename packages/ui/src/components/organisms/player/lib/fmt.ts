@@ -2,18 +2,28 @@
 
 import { clamp01 } from '#ui/components/atoms/progress';
 
+const FRENCH = /^fr(?:[-_]|$)/i;
+
+function frenchClock(at: Date): string {
+  return `${at.getHours()}h${at.getMinutes().toString().padStart(2, '0')}`;
+}
+
 /**
  * Wall-clock time the current playback will finish, given the remaining
- * milliseconds (§1, "fin à 22h38"). Localized: 24h `22h38` for fr, `10:38 PM`
- * for en. Empty string when the runtime is unknown.
+ * milliseconds (§1, "fin à 22h38"), written the way the reader's language
+ * writes a time: `22h38` in French, `10:38 PM` in English, `22:38` in German.
+ * French too when no locale is given, or for one the runtime does not know.
+ * Empty string when the runtime is unknown.
  */
 export function endsAtClock(remainingMs: number | null | undefined, locale?: string): string {
   if (!remainingMs || remainingMs <= 0) return '';
-  const d = new Date(Date.now() + remainingMs);
-  if (locale === 'en') {
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const at = new Date(Date.now() + remainingMs);
+  if (!locale || FRENCH.test(locale)) return frenchClock(at);
+  try {
+    return at.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  } catch {
+    return frenchClock(at);
   }
-  return `${d.getHours()}h${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
 /** The kit's one clamp (the progress atom's), re-exported for the chrome. */

@@ -36,6 +36,7 @@
   "devDependencies": {
     "@jridgewell/trace-mapping": "^0.3.31",
     "@kromatv/i18n": "workspace:*",
+    "@kromatv/i18n-tools": "workspace:*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "launch-editor": "^2.14.2",

@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import {
   HISTORY_COLUMNS,
   ITEM_HISTORY_COLUMNS,
-  isHistorySort,
   kindKey,
   titleLines,
   titlePage,
 } from './history-columns';
+import { HISTORY_SORTS } from './history-query';
 
 const play = (fields: Partial<PlayEntry>): PlayEntry => ({
   id: 'p1',
@@ -45,9 +45,10 @@ describe("the watch history's columns", () => {
     }
   });
 
-  it('orders by a column the table has and by nothing else', () => {
-    expect(isHistorySort('endedAt')).toBe(true);
-    expect(isHistorySort('watchedMs')).toBe(false);
+  it('draws a column for every order the address can name', () => {
+    const drawn = HISTORY_COLUMNS.map((column) => column.column);
+
+    expect([...drawn].sort()).toEqual([...HISTORY_SORTS].sort());
   });
 });
 

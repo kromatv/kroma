@@ -62,6 +62,10 @@ workspaces, so `--workspace` from `server/` does not reach them (see below).
 `cargo clippy --workspace --all-targets` and `cargo test --workspace` in
 `server/` are still the quick local loop for the server alone.
 
+`bun run i18n check` (catalog rules, stable languages complete, locks current)
+runs inside `bun run test`. `bun run i18n` alone prints how far every language
+has come.
+
 `bun run modules:check` (`kroma check` over every module: manifests valid,
 frontends typed, clippy clean) and `bun run deadcode` (knip) are **not** wired
 into any workflow today. Run them by hand after touching a module.
@@ -358,8 +362,11 @@ the build on anything a legacy engine cannot parse.
 - **English for code, comments, identifiers and commit messages.** User-facing copy
   is French. That is content, not code. No emoji in the product.
 - Every user-visible string is a translation key. The core catalogs are one
-  folder per language and one file per namespace,
-  `packages/core/src/locales/{en,fr}/<namespace>.json`: nothing lists them, the
-  Vite plugin finds, types and bundles them with the code that names their keys
-  (see [`docs/i18n.md`](docs/i18n.md)); modules ship their own
-  `locales/{en,fr}.json` resolved against the module's catalog first.
+  folder per language under `packages/core/src/locales/`, a file per namespace
+  or a folder of files where one is split, and `i18n.json` beside them is the
+  policy (source language `fr`, fallback, each language's stage). Write a new
+  message in `fr` and `en`, then run `bun run i18n sync`; no other language has
+  to change. Keys and their variables are typed from the `fr` files. See
+  [`docs/i18n.md`](docs/i18n.md), and [`docs/translating.md`](docs/translating.md)
+  for adding or translating a language. Modules ship their own
+  `locales/{en,fr}.json`, resolved against the module's catalog first.

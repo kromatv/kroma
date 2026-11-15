@@ -1,12 +1,17 @@
 import { IconButton } from '@kromatv/ui/kit';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { engine } from '../engine/engine';
+import { useRenderedLocale } from '../engine/rendered-locale';
 import { liveState, type Outline, onLiveChange, setLive } from '../live';
 import { installHighlight } from '../overlay/highlight';
-import { installProbe } from '../overlay/probe';
+import { confirmTarget, editTarget, type MessageTarget } from '../overlay/message-target';
+import { installProbe, probed } from '../overlay/probe';
 import { ProbeCard } from '../overlay/probe-card';
+import { onCatalogSaved } from '../server/host';
+import { confirmMessage, loadStatus } from '../server/status';
 import { type DevtoolsSession, readSession, writeSession } from '../session';
 import { anchor, place } from './drag';
+import { MessageEditor } from './message-editor';
 import { Panel } from './panel';
 import { letterOf } from './shortcut';
 import { useShortcut } from './use-shortcut';
@@ -14,12 +19,17 @@ import { useShortcut } from './use-shortcut';
 const KEYS_CODE = 'KeyK';
 const OUTLINE_CODE = 'KeyO';
 const PANEL_CODE = 'KeyI';
+const EDIT_CODE = 'KeyE';
+const CONFIRM_CODE = 'KeyC';
 
 const NEXT_OUTLINE: Record<Outline, Outline> = { off: 'problems', problems: 'all', all: 'off' };
 
 export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
   const [{ open, editor }, setSession] = useState<DevtoolsSession>(readSession);
   const { keys, outline, locale } = useSyncExternalStore(onLiveChange, liveState, liveState);
+  const [editing, setEditing] = useState<MessageTarget | null>(null);
+  const rendered = useRenderedLocale();
+  const watching = open || outline !== 'off';
 
   const patch = (fields: Partial<DevtoolsSession>) => {
     setSession((current) => ({ ...current, ...fields }));
@@ -42,16 +52,46 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
     };
   }, [outline, editor]);
 
+  useEffect(() => {
+    if (!watching) return;
+    void loadStatus(rendered);
+    return onCatalogSaved(() => void loadStatus(rendered));
+  }, [watching, rendered]);
+
+  const confirm = () => {
+    const target = confirmTarget(probed());
+    if (target) void confirmMessage(target);
+  };
+
   useShortcut(
     [
       { code: KEYS_CODE, run: () => setLive({ keys: !keys }) },
       { code: OUTLINE_CODE, run: () => setLive({ outline: NEXT_OUTLINE[outline] }) },
       { code: PANEL_CODE, run: () => patch({ open: !open }) },
+      { code: EDIT_CODE, run: () => setEditing(editTarget(probed()) ?? editing) },
+      { code: CONFIRM_CODE, run: confirm },
     ],
     () => {
-      if (open) patch({ open: false });
+      if (editing) setEditing(null);
+      else if (open) patch({ open: false });
     },
   );
+
+  const card = <ProbeCard editKey={letterOf(EDIT_CODE)} confirmKey={letterOf(CONFIRM_CODE)} />;
+
+  if (editing) {
+    return (
+      <>
+        <MessageEditor
+          key={`${editing.scope}@${editing.locale}/${editing.key}`}
+          target={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => setEditing(null)}
+        />
+        {card}
+      </>
+    );
+  }
 
   return (
     <>
@@ -75,7 +115,7 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
       ) : (
         <Bubble on={keys || outline !== 'off'} onPress={() => patch({ open: true })} />
       )}
-      <ProbeCard />
+      {card}
     </>
   );
 }

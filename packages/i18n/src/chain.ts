@@ -4,7 +4,7 @@ import type { Catalog, PluralRule, TVars } from './types';
 
 /** The catalogs a lookup walks, most specific first. A scoped translator puts
  *  the scope's own catalogs ahead of the base ones, and each locale is followed
- *  by the default locale it falls back to. */
+ *  by the locales it falls back to, the default one last. */
 export type Chain = readonly Catalog[];
 
 /** Render `key` against `chain`, or `undefined` when no catalog in it knows the

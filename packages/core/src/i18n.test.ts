@@ -35,8 +35,8 @@ describe('normalizeLocale', () => {
   });
 
   it('accepts every endonym the catalogs spell, so the two cannot drift apart', () => {
-    for (const { code, labelKey } of LOCALES) {
-      expect(normalizeLocale(translate(code, labelKey))).toBe(code);
+    for (const { code } of LOCALES) {
+      expect(normalizeLocale(translate(code, `lang.${code}`))).toBe(code);
     }
   });
 

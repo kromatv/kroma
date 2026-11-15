@@ -1,6 +1,6 @@
 import buildInfo from 'virtual:build-info';
 import type { Health } from '@kromatv/client/media';
-import { LOCALES } from '@kromatv/core';
+import { LOCALES, localeLabel } from '@kromatv/core';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import {
   Box,
@@ -153,7 +153,7 @@ export function LoginSettings() {
                   >
                     <Select.Trigger size="sm" />
                     {LOCALES.map((l) => (
-                      <Select.Item key={l.code} value={l.code} label={t(l.labelKey)} />
+                      <Select.Item key={l.code} value={l.code} label={localeLabel(t, l)} />
                     ))}
                   </Select.Root>
                 </Row>

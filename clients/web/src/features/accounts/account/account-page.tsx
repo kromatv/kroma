@@ -3,6 +3,10 @@ import { useT } from '@kromatv/ui';
 import { Box, EmptyState, type IconName, SegmentGroup } from '@kromatv/ui/kit';
 import { type CSSProperties, useEffect, useRef } from 'react';
 import { AccountHeader } from '#web/features/accounts/account/account-header';
+import {
+  ACCOUNT_SECTIONS,
+  type AccountSection,
+} from '#web/features/accounts/account/account-sections';
 import { IdentitiesCard } from '#web/features/accounts/account/identities-card';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
@@ -13,15 +17,6 @@ import { SecurityCard } from '#web/features/accounts/account/security-card';
 import { SessionsCard } from '#web/features/accounts/account/sessions-card';
 import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame } from '#web/shared/ui';
-
-export const ACCOUNT_SECTIONS = [
-  'profile',
-  'preferences',
-  'notifications',
-  'security',
-  'devices',
-] as const;
-export type AccountSection = (typeof ACCOUNT_SECTIONS)[number];
 
 const LABEL: Record<AccountSection, MessageKey> = {
   profile: 'account.profile',

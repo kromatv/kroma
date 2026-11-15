@@ -15,7 +15,7 @@ import {
 
 import { ItemId, ShowId } from '@kromatv/client/media';
 import type { ElementRow, Treatment } from '@kromatv/client/pipeline';
-import type { MessageKey, Translate } from '@kromatv/i18n';
+import type { Translate } from '@kromatv/i18n';
 import { Table } from '@kromatv/module-sdk';
 import { type Format, useFormat, useT } from '@kromatv/ui';
 
@@ -29,7 +29,7 @@ function subLine(t: Translate, fmt: Format, el: ElementRow): { text: string; col
   const names = (pred: (x: Treatment) => boolean) =>
     el.treatments
       .filter(pred)
-      .map((x) => t(`pipeline.t.${x.key}` as MessageKey))
+      .map((x) => t(`pipeline.t.${x.key}`))
       .join(', ');
   if (el.overall === 'failed') {
     return {
@@ -85,8 +85,8 @@ function Poster({
 function FlowDot({ treatment }: Readonly<{ treatment: Treatment }>) {
   const t = useT();
   const m = statusMeta(treatment.status);
-  const name = t(`pipeline.t.${treatment.key}` as MessageKey);
-  const state = t(`pipeline.st.${treatment.status}` as MessageKey);
+  const name = t(`pipeline.t.${treatment.key}`);
+  const state = t(`pipeline.st.${treatment.status}`);
   return (
     <Tooltip label={`${name} - ${state}`}>
       <Row
@@ -160,7 +160,7 @@ export function ElementRowView({
               </Text>
             </Box>
             <Pill ink={km.color} bg={km.bg} variant="overline">
-              {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+              {t(`pipeline.type.${km.typeKey}`)}
             </Pill>
           </Row>
           <Text variant="meta" color={sub.color} lines={1} mt={3}>
@@ -173,7 +173,7 @@ export function ElementRowView({
 
       <Table.Cell>
         <Pill ink={om.color} bg={om.bg} leading={<PillDot tone={om.dot} pulse={om.pulse} />}>
-          {t(`pipeline.overall.${el.overall}` as MessageKey)}
+          {t(`pipeline.overall.${el.overall}`)}
         </Pill>
       </Table.Cell>
 

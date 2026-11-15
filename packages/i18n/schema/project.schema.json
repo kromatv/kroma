@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kroma.tv/schema/i18n-project.json",
+  "title": "i18n project",
+  "description": "The policy of a catalog folder. Which languages exist is the folders beside this file and what they say is the files in them; this holds what a folder cannot say.",
+  "type": "object",
+  "required": ["source"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "source": {
+      "$ref": "#/$defs/locale",
+      "description": "The language the messages are written in. Its files are the complete set, they type the keys, and every fallback chain ends in it."
+    },
+    "fallback": {
+      "$ref": "#/$defs/locale",
+      "description": "What an unfinished translation reads in before the source language."
+    },
+    "locales": {
+      "type": "object",
+      "description": "Policy per locale folder. A folder left out is a draft.",
+      "propertyNames": { "$ref": "#/$defs/locale" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "enum": ["draft", "beta", "stable"],
+            "description": "draft: in the repository, offered to nobody. beta: offered, and reads in its fallback where it has no translation. stable: offered, and the check fails when a message is missing or out of date."
+          },
+          "fallback": {
+            "$ref": "#/$defs/locale",
+            "description": "The language this one reads in where it has no translation, ahead of the project's fallback. A regional locale already falls back to its language."
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "locale": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$" }
+  }
+}

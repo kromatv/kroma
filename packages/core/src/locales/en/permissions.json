@@ -3,7 +3,6 @@
   "permissions.libraryHint": "Scans, libraries, metadata",
   "permissions.playback": "Playback",
   "permissions.playbackHint": "Watch the catalogue + resume",
-  "permissions.playbackHintDefault": "Watch the catalogue + resume (default)",
   "permissions.reportsManage": "Manage reports",
   "permissions.reportsManageHint": "Triage user-submitted problem reports",
   "permissions.requestAuto": "Auto-approve",

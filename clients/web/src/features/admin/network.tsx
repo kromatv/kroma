@@ -9,19 +9,9 @@ import { NetworkInbound } from '#web/features/admin/network-inbound';
 import { NetworkListeners } from '#web/features/admin/network-listeners';
 import { NetworkMiddleware } from '#web/features/admin/network-middleware';
 import { RuleEditor } from '#web/features/admin/network-rule-editor';
+import { NETWORK_TABS, type NetworkTab } from '#web/features/admin/network-tabs';
 import { SettingsPage } from '#web/features/admin/settings';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
-
-export const NETWORK_TABS = [
-  'connections',
-  'destinations',
-  'inbound',
-  'rules',
-  'middleware',
-  'listeners',
-  'settings',
-] as const;
-type NetworkTab = (typeof NETWORK_TABS)[number];
 
 const LABEL: Record<NetworkTab, MessageKey> = {
   connections: 'network.tabConnections',

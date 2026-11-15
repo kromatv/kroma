@@ -4,36 +4,55 @@ import { activeKeyInspector, onOverridesChange, overridesRevision } from './dev-
 import { Namespaces } from './namespaces';
 import { CatalogStore, type SCHEMA_KEY } from './store';
 import type { Catalog, Catalogs, PluralRule, TVars } from './types';
+import type { Templated, VarsOf } from './vars';
 
 /** A catalog's messages: everything but the `$schema` pointer. Distinct from
  *  `Messages` in ./registry, which is the augmented map for the whole app. */
 export type CatalogMessages<C> = Omit<C, typeof SCHEMA_KEY>;
 
-/** Namespaces offered for fetching: by name, then by locale. */
+/** Catalog files offered for fetching: by file, then by locale. A file is a
+ *  namespace (`nav`) or one of the files it is split into (`admin/users`). */
 export type LazyCatalogs = Readonly<Record<string, NamespaceCatalogs>>;
 
 /** A translator bound to one scope: the scope's own keys are not knowable from
  *  here, so any string is accepted while the base keys still autocomplete. */
 export type ScopedTranslate<K extends string> = (key: K | (string & {}), vars?: TVars) => string;
 
-export interface I18n<L extends string, M extends Catalog> {
+/**
+ * A translator bound to one locale. A key written out is checked against the
+ * variables its message takes; see {@link VarsOf}. A key built from a template
+ * is checked against the messages it could name; see {@link Templated}.
+ */
+export interface BoundTranslate<M> {
+  <S extends string>(key: Templated<keyof M & string, S>, vars?: TVars): string;
+  <K extends keyof M & string>(key: K, ...vars: VarsOf<M, K>): string;
+}
+
+/**
+ * `M` maps each message key to what it takes. A catalog handed to
+ * {@link createI18n} maps keys to templates, which says nothing about
+ * variables, so any are accepted; the registry the Vite plugin declares maps
+ * each key to its variables, and those are checked.
+ */
+export interface I18n<L extends string, M> {
   readonly defaultLocale: L;
   /** Every locale the base catalogs answer in, the default one first. */
   locales(): readonly L[];
   /** Render one message. Unknown keys render as the key itself, which is a
    *  visible placeholder rather than an empty hole. */
-  translate(locale: L, key: keyof M & string, vars?: TVars): string;
+  translate<K extends keyof M & string>(locale: L, key: K, ...vars: VarsOf<M, K>): string;
   /** A translator bound to a locale. Pass a scope to put that scope's added
    *  catalogs ahead of the base ones. */
-  translator(locale: L): (key: keyof M & string, vars?: TVars) => string;
+  translator(locale: L): BoundTranslate<M>;
   translator(locale: L, scope: string): ScopedTranslate<keyof M & string>;
   /** Add a scope's catalogs at runtime, as a module being loaded would.
    *  Returns a disposer; adding the same scope again replaces it. */
   add(scope: string, catalogs: Catalogs<string>): () => void;
-  /** A namespace the running code needs, as the chunk carrying it says on
+  /** A catalog file the running code needs, as the chunk carrying it says on
    *  evaluation: a catalog given outright lands now, a loader is fetched for
-   *  every warmed locale. */
-  register(namespace: string, catalogs: NamespaceCatalogs): void;
+   *  every warmed locale. `complete` names the locales that answer every
+   *  message of it, which are fetched without their fallbacks. */
+  register(file: string, catalogs: NamespaceCatalogs, complete?: readonly string[]): void;
   /** Fetch every needed namespace in `locale`, now and as more are registered.
    *  The provider calls it for the locale it renders. */
   warm(locale: L): void;
@@ -49,15 +68,44 @@ export interface I18n<L extends string, M extends Catalog> {
   subscribe(listener: () => void): () => void;
 }
 
+/** An instance whatever it is typed with: what a provider or a dev tool needs
+ *  of one it only passes along. Every {@link I18n} is one. */
+export interface AnyI18n {
+  readonly defaultLocale: string;
+  locales(): readonly string[];
+  translator(locale: string, scope?: string): (key: string, vars?: TVars) => string;
+  add(scope: string, catalogs: Catalogs<string>): () => void;
+  register(file: string, catalogs: NamespaceCatalogs, complete?: readonly string[]): void;
+  warm(locale: string): void;
+  pending(locale: string): Promise<void> | null;
+  ready(locale: string): Promise<void>;
+  version(): number;
+  subscribe(listener: () => void): () => void;
+}
+
 export interface I18nConfig<C extends Record<string, Record<string, string>>> {
   catalogs: C;
   defaultLocale: keyof C & string;
   /** Override plural category selection. Only needed where `Intl.PluralRules`
    *  is absent or disagrees with a peer implementation you have to match. */
   plural?: PluralRule;
-  /** Namespaces not shipped in `catalogs`, fetched per locale when a key of
-   *  theirs misses. */
+  /** Catalog files not shipped in `catalogs`, fetched per locale when a key
+   *  of their namespace misses. */
   lazy?: LazyCatalogs;
+  /** Catalogs that are in the bundle and are read only when their locale is
+   *  first rendered: a native bundle carries every language, and a reader
+   *  uses one or two. A function per locale, called once, synchronously. */
+  deferred?: Readonly<Record<string, () => Catalog>>;
+  /** Locales the instance renders beyond the ones `catalogs` and `deferred`
+   *  name: those whose catalogs are all fetched on demand. */
+  locales?: readonly string[];
+  /** The locales a message is looked up in when `locale` renders, itself
+   *  first. Left out, a locale falls back to the default one, and nothing is
+   *  fetched for a locale but its own catalogs. */
+  chain?: (locale: string) => readonly string[];
+  /** Whether `locale` is held complete, so its fallbacks are never fetched.
+   *  Read only with `chain`. */
+  whole?: (locale: string) => boolean;
 }
 
 /**
@@ -75,17 +123,23 @@ export function createI18n<
   type L = keyof C & string;
   type K = keyof CatalogMessages<C[D]> & string;
 
-  const { catalogs, defaultLocale, plural, lazy } = config;
-  const store = new CatalogStore<L>(catalogs as unknown as Catalogs<L>, defaultLocale as L);
+  const { catalogs, defaultLocale, plural, lazy, chain, whole, deferred, locales } = config;
+  const store = new CatalogStore<L>(
+    catalogs as unknown as Catalogs<L>,
+    defaultLocale as L,
+    chain,
+    deferred,
+  );
   const namespaces = new Namespaces(
     {
       extend: (locale, catalog) => store.extend({ [locale]: catalog }),
       changed: () => store.changed(),
     },
     catalogs,
+    chain && { chain, whole: whole ?? ((locale) => locale === defaultLocale) },
   );
-  for (const [namespace, sources] of Object.entries(lazy ?? {})) {
-    namespaces.announce(namespace, sources, false);
+  for (const [file, sources] of Object.entries(lazy ?? {})) {
+    namespaces.announce(file, sources, false);
   }
   const missed = (locale: string, key: string): string => {
     namespaces.missed(key, locale);
@@ -94,16 +148,18 @@ export function createI18n<
 
   type Bound = (key: K | (string & {}), vars?: TVars) => string;
 
-  // One translator per locale and scope, forever. The closure reads the chain
+  // One translator per locale and scope, until a dev switch moves or a message
+  // is rewritten under a dev server. The closure reads the chain
   // on every call rather than capturing it, so an added catalog still reaches
   // it. Identity matters: a React hook hands this straight to callers who put
   // it in a `useMemo` dependency list, and a fresh closure per render would
   // quietly defeat all of them.
   const bound = new Map<string, Bound>();
-  let revision = overridesRevision();
+  const identity = () => overridesRevision() + store.rewrites();
+  let revision = identity();
 
   const translator = (locale: L, scope?: string) => {
-    const current = overridesRevision();
+    const current = identity();
     if (current !== revision) {
       bound.clear();
       revision = current;
@@ -133,17 +189,21 @@ export function createI18n<
   };
 
   const codes = [
-    defaultLocale as L,
-    ...(Object.keys(catalogs) as L[]).filter((code) => code !== defaultLocale),
+    ...new Set([
+      defaultLocale as L,
+      ...(Object.keys(catalogs) as L[]),
+      ...(Object.keys(deferred ?? {}) as L[]),
+      ...((locales ?? []) as L[]),
+    ]),
   ];
 
-  return {
+  const instance: I18n<L, Record<string, string>> = {
     defaultLocale: defaultLocale as L,
     locales: () => codes,
-    translate: (locale, key, vars) => translator(locale)(key, vars),
+    translate: (locale, key, vars?: TVars) => translator(locale)(key, vars),
     translator,
     add: (scope, added) => store.add(scope, added),
-    register: (namespace, announced) => namespaces.announce(namespace, announced, true),
+    register: (file, announced, complete) => namespaces.announce(file, announced, true, complete),
     warm: (locale) => namespaces.warm(locale),
     pending: (locale) => namespaces.pending(locale),
     ready: (locale) => namespaces.ready(locale),
@@ -156,5 +216,6 @@ export function createI18n<
         stopInspector();
       };
     },
-  } as I18n<L, CatalogMessages<C[D]>>;
+  };
+  return instance as unknown as I18n<L, CatalogMessages<C[D]>>;
 }

@@ -2,3 +2,4 @@ node_modules/
 dist/
 .bundle/
 server/target/
+ui/src/messages.d.ts

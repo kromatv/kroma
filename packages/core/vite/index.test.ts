@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { TYPES_FILE } from '@kromatv/i18n/vite';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LOCALE_CODE } from '../src/locales/default-locale.ts';
 import { CORE_LOCALES, kromaCatalogs } from './index.ts';
 
 interface Hooks {
@@ -15,12 +14,12 @@ interface Hooks {
 const hooks = (eager?: boolean): Hooks => kromaCatalogs({ eager }) as unknown as Hooks;
 
 describe('kromaCatalogs', () => {
-  it('points the catalog plugin at the core folder and its default locale', () => {
+  it('points the catalog plugin at the core folder and its project file', () => {
     const plugin = hooks();
     plugin.configResolved.call(null);
 
     expect(plugin.name).toBe('kroma:catalogs');
-    expect(existsSync(join(CORE_LOCALES, DEFAULT_LOCALE_CODE, 'lang.json'))).toBe(true);
+    expect(existsSync(join(CORE_LOCALES, 'i18n.json'))).toBe(true);
     expect(existsSync(join(CORE_LOCALES, TYPES_FILE))).toBe(true);
   });
 

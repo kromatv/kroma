@@ -29,6 +29,24 @@ export const id: RequestId = 'r1';
 export type Fetch = typeof useFetch;
 `;
 
+/** What a module author relies on the message types for: a key of the
+ *  module's own `locales/` is checked with its variables, and so is one of
+ *  the app's. */
+const MESSAGES_PROBE = `import { useT } from '@kromatv/sdk';
+
+export function useProbe(): string[] {
+  const t = useT();
+  return [
+    t('page.hello', { answer: 'yes' }),
+    t('common.cancel'),
+    // @ts-expect-error not a message of this module, nor of the app
+    t('page.helo'),
+    // @ts-expect-error the message takes an answer
+    t('page.hello'),
+  ];
+}
+`;
+
 const PackageJson = z
   .object({
     dependencies: z.record(z.string(), z.string()).default({}),
@@ -87,8 +105,11 @@ export async function smoke(options: SmokeOptions): Promise<void> {
       throw new Error('the scaffold installed react-native: the SDK must carry its types');
     }
     writeFileSync(join(project, 'ui', 'src', 'types-probe.ts'), TYPES_PROBE);
+    writeFileSync(join(project, 'ui', 'src', 'messages-probe.ts'), MESSAGES_PROBE);
     const check = options.rust ? [] : ['--no-rust'];
     await $`bun x kroma check ${check}`.cwd(project);
+    await $`bun x kroma i18n sync`.cwd(project);
+    await $`bun x kroma i18n check`.cwd(project);
     if (options.rust) {
       await $`bun x kroma build`.cwd(project);
       const bundle = join(project, 'dist', 'modules', `${ID}.kmod`);

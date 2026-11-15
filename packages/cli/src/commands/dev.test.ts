@@ -22,6 +22,7 @@ describe('partOf', () => {
   it('rebuilds the frontend for its sources, its catalogs and the manifest', () => {
     expect(part('ui/src/module.tsx')).toBe('ui');
     expect(part('locales/en.json')).toBe('ui');
+    expect(part('locales/en/settings/advanced.json')).toBe('ui');
     expect(part('module.json')).toBe('ui');
   });
 

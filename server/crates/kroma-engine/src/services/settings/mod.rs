@@ -28,6 +28,7 @@ mod llm;
 mod schema;
 mod sign_in;
 mod store;
+mod tmdb_language;
 
 pub use accessors::*;
 pub use email_delivery::*;
@@ -36,6 +37,7 @@ pub use llm::*;
 pub use schema::*;
 pub use sign_in::*;
 pub use store::*;
+pub use tmdb_language::*;
 
 /// The statistics feature's own settings keys and the identity behind them.
 pub mod stats {

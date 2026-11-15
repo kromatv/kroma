@@ -39,6 +39,9 @@ export interface KromaOptions {
    *  for a server that serves them precompressed. Off by default, because a
    *  CDN compresses on its own. */
   precompress?: boolean;
+  /** The most messages the client build may fetch before its first screen. A
+   *  build past it fails, naming each catalog file and the imports behind it. */
+  bootMessages?: number;
 }
 
 function buildDefine(dir: string): Record<string, string> {
@@ -80,12 +83,12 @@ function shell({ alias = {}, dedupe }: KromaOptions): Plugin {
  * own.
  */
 export function kroma(options: KromaOptions = {}): PluginOption[] {
-  const { mdx = false, start, precompress = false } = options;
+  const { mdx = false, start, precompress = false, bootMessages } = options;
   return [
     shell(options),
     depsWithoutMaps(),
     buildInfoPlugin(),
-    kromaCatalogs(),
+    kromaCatalogs({ boot: bootMessages }),
     kromaUI(),
     kromaI18nDevtools(),
     mdx ? kromaMdx() : [],

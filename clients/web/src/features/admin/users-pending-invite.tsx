@@ -1,5 +1,5 @@
 import type { Invite } from '@kromatv/client/accounts';
-import { useT } from '@kromatv/ui';
+import { useLocale, useT } from '@kromatv/ui';
 import { Button, Icon, ListRow, Row, styles, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
@@ -12,6 +12,7 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
   const s = useStyles(sDefinition);
 
   const t = useT();
+  const locale = useLocale();
   const { client } = useAuth();
   const [copied, setCopied] = useState(false);
   async function resend() {
@@ -29,7 +30,7 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
       <ListRow.Label>{inv.permissions.join(', ') || t('permissions.playback')}</ListRow.Label>
       <ListRow.Hint>
         {t('admin.expiresOn', {
-          date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
+          date: new Date(inv.expiresAt * 1000).toLocaleDateString(locale),
         })}
       </ListRow.Hint>
       <ListRow.Leading>

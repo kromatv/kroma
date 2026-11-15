@@ -16,7 +16,7 @@ use crate::api::permission::require;
 use crate::api::util::{blocking, query, service};
 use crate::db;
 use crate::i18n;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::model::{
     CalendarEntry, CreateRequestBody, MediaRequest, Permission, RequestCounts, RequestStatus,
     RequestsView, User,
@@ -128,7 +128,7 @@ fn overlay_active_downloads(
 /// (unless `?mine=true` forces own-only, like `GET /requests`).
 pub async fn calendar(
     State(state): State<SharedState>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {
@@ -149,7 +149,7 @@ pub async fn calendar(
 /// `library.manage` holder also sees what only monitoring wants.
 pub async fn missing(
     State(state): State<SharedState>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {

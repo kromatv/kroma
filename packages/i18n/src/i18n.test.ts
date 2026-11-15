@@ -181,3 +181,45 @@ describe('runtime catalogs', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+describe('a namespace that lands late', () => {
+  it('pluralises, though another message of the locale was pluralised before it landed', () => {
+    const i18n = build();
+    i18n.translate('en', 'item', { count: 1 });
+
+    i18n.register('cart', { en: { 'cart.rows': '{count} rows', 'cart.rows_one': '{count} row' } });
+
+    expect(i18n.translate('en', 'cart.rows' as 'item', { count: 1 })).toBe('1 row');
+  });
+});
+
+describe('a catalog saved while the app runs', () => {
+  it('is answered with its new text, by a translator a memoised view will ask again', () => {
+    const i18n = build();
+    const before = i18n.translator('en');
+
+    i18n.register('greeting', { en: { greeting: 'Hello' } });
+    const after = i18n.translator('en');
+
+    expect(after).not.toBe(before);
+    expect([before('greeting'), after('greeting')]).toEqual(['Hello', 'Hello']);
+  });
+
+  it('keeps the translator it handed out when a catalog only adds messages', () => {
+    const i18n = build();
+    const before = i18n.translator('en');
+
+    i18n.register('nav', { en: { 'nav.home': 'Home' } });
+
+    expect(i18n.translator('en')).toBe(before);
+  });
+
+  it('picks up a plural form added to a message that had none', () => {
+    const i18n = build();
+    i18n.translate('fr', 'greeting', { count: 1 });
+
+    i18n.register('greeting', { fr: { greeting: 'Bonjours', greeting_one: 'Bonjour seul' } });
+
+    expect(i18n.translate('fr', 'greeting', { count: 1 })).toBe('Bonjour seul');
+  });
+});

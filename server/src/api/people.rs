@@ -7,7 +7,7 @@ use crate::api::dto::{PersonDetailResponse, PersonResponse, SearchHit};
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::i18n::{AskedLocale, ReqLocale};
+use crate::i18n::{AskedLocale, ContentLocale};
 use crate::infra::{image, metadata};
 use crate::model::{MediaItem, Metadata, Show, User};
 use crate::services::settings;
@@ -32,7 +32,7 @@ pub struct PersonParams {
 pub async fn person(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Query(p): Query<PersonParams>,
 ) -> Result<Response, Response> {
     let lookup = p.name.unwrap_or_default().trim().to_string();

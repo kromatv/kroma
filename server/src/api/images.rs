@@ -11,7 +11,7 @@ use crate::api::error::json_error;
 use crate::api::poster::render_poster;
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::model::Kind;
 use crate::state::SharedState;
 use axum::routing::get;
@@ -43,7 +43,7 @@ pub async fn show_poster(
 pub async fn item_poster(
     State(state): State<SharedState>,
     Path(id): Path<String>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Result<Response, Response> {
     let id2 = id.clone();
     let item = query(&state.db, move |pool| {
@@ -232,7 +232,7 @@ pub async fn item_card(
     State(state): State<SharedState>,
     Path(id): Path<String>,
     Query(q): Query<CardQuery>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Result<Response, Response> {
     let item = query(&state.db, move |pool| {
         let Some(mut item) = db::get_item(&pool, &id)? else {

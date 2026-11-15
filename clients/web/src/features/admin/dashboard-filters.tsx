@@ -1,4 +1,5 @@
 import type { MetricRange, WatchKind } from '@kromatv/client/admin';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Select } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
@@ -105,12 +106,14 @@ export function useChoice<V extends string>(
 
 export function useRangeOptions<R extends MetricRange>(ranges: readonly R[]): FilterOption<R>[] {
   const t = useT();
-  return ranges.map((value) => ({ value, label: t(RANGE_LABEL[value]) }));
+  const label = (value: R): MessageKey => RANGE_LABEL[value];
+  return ranges.map((value) => ({ value, label: t(label(value)) }));
 }
 
 export function useScopeOptions<S extends ChartScope>(scopes: readonly S[]): FilterOption<S>[] {
   const t = useT();
-  return scopes.map((value) => ({ value, label: t(SCOPE_LABEL[value]) }));
+  const label = (value: S): MessageKey => SCOPE_LABEL[value];
+  return scopes.map((value) => ({ value, label: t(label(value)) }));
 }
 
 export function useKindOptions(): FilterOption<KindFilter>[] {

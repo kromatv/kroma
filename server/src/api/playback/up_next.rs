@@ -9,7 +9,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::state::SharedState;
 
 const UP_NEXT_EPISODES: usize = 20;
@@ -20,7 +20,7 @@ pub async fn up_next(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Path(show_id): Path<String>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Response {
     if let Err(resp) = visibility::gate_show(&state, &user, &show_id).await {
         return resp;
@@ -44,7 +44,7 @@ pub async fn next_episode(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Response {
     if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
         return resp;
@@ -68,7 +68,7 @@ pub async fn following_episodes(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Response {
     if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
         return resp;

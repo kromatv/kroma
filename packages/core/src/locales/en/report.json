@@ -17,9 +17,9 @@
   "report.message": "Details (optional)",
   "report.messageEmpty": "No details",
   "report.messagePlaceholder": "Describe the problem...",
+  "report.sent": "Thanks, your report has been sent.",
   "report.subject": "What is affected",
   "report.subjectWhole": "The whole series",
   "report.submit": "Send report",
-  "report.submitted": "Thanks, your report has been sent.",
   "report.title": "Report a problem"
 }

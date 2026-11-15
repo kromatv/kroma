@@ -606,6 +606,8 @@
       },
       "dependencies": {
         "@clack/prompts": "1.8.1",
+        "@kromatv/i18n": "workspace:*",
+        "@kromatv/i18n-tools": "workspace:*",
         "@kromatv/module-sdk": "workspace:*",
         "@kromatv/registry": "workspace:*",
         "citty": "0.2.2",
@@ -650,6 +652,7 @@
         "zod": "^4.6.7",
       },
       "devDependencies": {
+        "@kromatv/i18n-tools": "workspace:*",
         "@types/react": "^19.3.0",
         "react": "19.3.0",
         "typescript": "^7.0.2",
@@ -667,6 +670,9 @@
     "packages/i18n": {
       "name": "@kromatv/i18n",
       "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.6.7",
+      },
       "devDependencies": {
         "@types/react": "^19.3.0",
         "react": "19.3.0",
@@ -693,6 +699,7 @@
         "@jridgewell/trace-mapping": "^0.3.31",
         "@kromatv/bundler": "workspace:*",
         "@kromatv/i18n": "workspace:*",
+        "@kromatv/i18n-tools": "workspace:*",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "launch-editor": "^2.14.2",
@@ -715,6 +722,18 @@
         "@kromatv/i18n",
         "i18next",
       ],
+    },
+    "packages/i18n-tools": {
+      "name": "@kromatv/i18n-tools",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kromatv/i18n": "workspace:*",
+        "zod": "^4.6.7",
+      },
+      "devDependencies": {
+        "bun-types": "^1.4.3",
+        "typescript": "^7.0.2",
+      },
     },
     "packages/installer": {
       "name": "@kromatv/installer",
@@ -1708,6 +1727,8 @@
     "@kromatv/i18n": ["@kromatv/i18n@workspace:packages/i18n"],
 
     "@kromatv/i18n-devtools": ["@kromatv/i18n-devtools@workspace:packages/i18n-devtools"],
+
+    "@kromatv/i18n-tools": ["@kromatv/i18n-tools@workspace:packages/i18n-tools"],
 
     "@kromatv/installer": ["@kromatv/installer@workspace:packages/installer"],
 

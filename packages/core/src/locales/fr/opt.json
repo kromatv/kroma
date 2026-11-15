@@ -1,14 +1,3 @@
 {
-  "opt.auto": "Auto",
-  "opt.autoF": "Automatique",
-  "opt.beta": "Bêta",
-  "opt.darkKroma": "Sombre (Kroma)",
-  "opt.disabled": "Désactivées",
-  "opt.preferQuality": "Préférer la qualité",
-  "opt.preferSpeed": "Préférer la vitesse",
-  "opt.preferred": "Préférées",
-  "opt.required": "Requises",
-  "opt.stable": "Stable",
-  "opt.system": "Système",
   "opt.unlimited": "Illimité"
 }

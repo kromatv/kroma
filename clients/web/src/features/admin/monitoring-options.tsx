@@ -1,12 +1,11 @@
 import { MinAvailability, MonitorPreset } from '@kromatv/client/monitoring';
-import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Select, Switch, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 export function usePresetLabel(): (preset: MonitorPreset) => string {
   const t = useT();
-  return (preset) => t(`monitoring.preset.${preset}` as MessageKey);
+  return (preset) => t(`monitoring.preset.${preset}`);
 }
 
 export function SettingRow({
@@ -90,11 +89,7 @@ export function AvailabilitySelect({
     >
       <Select.Trigger block />
       {MinAvailability.options.map((option) => (
-        <Select.Item
-          key={option}
-          value={option}
-          label={t(`monitoring.avail.${option}` as MessageKey)}
-        />
+        <Select.Item key={option} value={option} label={t(`monitoring.avail.${option}`)} />
       ))}
     </Select.Root>
   );

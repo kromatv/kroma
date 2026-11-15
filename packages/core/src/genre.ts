@@ -29,12 +29,21 @@ const BY_TMDB: ReadonlyMap<number, GenreRow> = new Map(
 // catalog it lives in may still be on its way.
 const FOLDED = new Map<string, GenreRow>();
 
+// A name in a script the slug has no letters for, "劇情" or "Драма", folds to
+// nothing, and every such name would then match the first genre whose own name
+// folds to nothing too. Those are matched as they are spelled instead.
+function matchKey(name: string): string {
+  const folded = fold(name);
+  return folded === '' ? name.trim().toLowerCase() : folded;
+}
+
 function localized(key: string): GenreRow | undefined {
+  if (key === '') return undefined;
   for (const genre of GENRES) {
     const copy = labelKey(genre.slug);
     for (const locale of SUPPORTED_LOCALES) {
       const name = translate(locale, copy);
-      if (name !== copy && fold(name) === key) {
+      if (name !== copy && matchKey(name) === key) {
         FOLDED.set(key, genre);
         return genre;
       }
@@ -44,7 +53,7 @@ function localized(key: string): GenreRow | undefined {
 }
 
 function rowOf(nameOrSlug: string): GenreRow | undefined {
-  const key = fold(nameOrSlug);
+  const key = matchKey(nameOrSlug);
   return genreRowOfSlug(key) ?? FOLDED.get(key) ?? localized(key);
 }
 

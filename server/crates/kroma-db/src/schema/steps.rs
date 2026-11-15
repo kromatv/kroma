@@ -36,4 +36,5 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0015_sign_in_identities"),
     sql_step!("0016_device_app"),
     sql_step!("0017_device_address"),
+    sql_step!("0018_suggestion_languages"),
 ];

@@ -1,7 +1,12 @@
 import { useLocale, useT } from '@kromatv/ui';
 import { type FocusHandle, ListRow, Text } from '@kromatv/ui/kit';
 import { type Ref, useMemo, useState } from 'react';
-import type { ChoiceItem, SettingsEntry, ToggleItem } from '#tv/app/settings/items';
+import {
+  type ChoiceItem,
+  choiceValueText,
+  type SettingsEntry,
+  type ToggleItem,
+} from '#tv/app/settings/items';
 import { ChoicePicker } from './ChoicePicker';
 import { useSettingsPopup } from './settings/settingsPopups';
 
@@ -75,7 +80,7 @@ function ChoiceRow({
         <ListRow.Label>{t(item.label)}</ListRow.Label>
         <ListRow.Trailing>
           <Text variant="labelTv" color="accentText">
-            {t(item.valueLabel(value))}
+            {choiceValueText(item, t, value)}
           </Text>
         </ListRow.Trailing>
       </ListRow.Root>

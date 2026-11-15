@@ -15,7 +15,7 @@ use crate::api::dto::{SearchHit, SearchResponse};
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::model::User;
 use crate::services::search::{Hit, HitKind};
 use crate::state::SharedState;
@@ -43,7 +43,7 @@ pub struct SearchParams {
 pub async fn search(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Query(p): Query<SearchParams>,
 ) -> Result<Response, Response> {
     let q: String =

@@ -20,6 +20,7 @@ describe('cli', () => {
       'build',
       'check',
       'audit',
+      'i18n',
       'install',
       'login',
       'cargo',

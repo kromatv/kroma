@@ -1,6 +1,7 @@
 import type { Outline } from '../live';
 import { perFrame } from './frame';
-import { type Grade, markIn } from './mark';
+import { type Grade, markIn, sightingIn } from './mark';
+import { onStatusChange, reviewing, shownGrade } from './review';
 
 /**
  * What a subtree wears to say it is a developer tool rather than the product,
@@ -32,6 +33,8 @@ export const GRADE_PAINT = {
   raw: 'rgb(122 162 255)',
   fallback: 'rgb(255 186 68)',
   catalog: 'rgb(72 208 140)',
+  outdated: 'rgb(64 200 224)',
+  unreviewed: 'rgb(255 122 196)',
 } as const satisfies Record<Grade, string>;
 
 /** How much of that colour washes the text behind it. */
@@ -41,6 +44,8 @@ const ALPHA: Record<Grade, number> = {
   raw: 0.2,
   fallback: 0.22,
   catalog: 0.14,
+  outdated: 0.24,
+  unreviewed: 0.22,
 };
 
 const GRADES = Object.keys(GRADE_PAINT) as Grade[];
@@ -65,7 +70,10 @@ export function shows(outline: Outline, grade: Grade): boolean {
  * nobody's translation.
  */
 export function gradeOfNode(text: string): Grade | null {
-  return markIn(text) ?? (WORDS.test(text) ? 'raw' : null);
+  const marked = markIn(text);
+  if (marked !== 'catalog' || !reviewing()) return marked ?? (WORDS.test(text) ? 'raw' : null);
+  const sighting = sightingIn(text);
+  return sighting ? shownGrade(sighting) : marked;
 }
 
 /** Whether `node` is drawn by the page rather than by a tool watching it. */
@@ -172,9 +180,11 @@ export function installHighlight(outline: Outline): () => void {
     if (records.some((record) => onThePage(record.target))) repaint.fire();
   });
   observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+  const stopStatus = onStatusChange(repaint.fire);
   paint();
 
   return () => {
+    stopStatus();
     observer.disconnect();
     repaint.stop();
     for (const grade of GRADES) registry.delete(`${NAME}-${grade}`);

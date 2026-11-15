@@ -12,7 +12,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::api::{etag, visibility};
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n::ContentLocale;
 use crate::model::{show_card, MediaCard, MediaItem};
 use crate::state::SharedState;
 use axum::routing::get;
@@ -61,7 +61,7 @@ pub struct ListQuery {
 /// unlistable without a session.
 pub async fn splash(
     State(state): State<SharedState>,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
 ) -> Result<Response, Response> {
     let entries = query(&state.db, move |pool| db::splash_entries(&pool, 12, locale)).await?;
     Ok(Json(entries).into_response())
@@ -84,7 +84,7 @@ pub async fn list_libraries(
 pub async fn list_items(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Query(q): Query<LibraryQuery>,
 ) -> Result<Response, Response> {
     let mut items = query(&state.db, move |pool| {
@@ -103,7 +103,7 @@ pub async fn list_items(
 pub async fn list_movies(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
     let library = q.library;
@@ -135,7 +135,7 @@ pub fn items_in_view(items: Vec<MediaItem>, view: Option<ListView>) -> Response 
 pub async fn list_shows(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
     let uid = user.id.clone();
@@ -162,7 +162,7 @@ pub async fn list_shows(
 pub async fn get_show(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     visibility::gate_show(&state, &user, &id).await?;
@@ -185,7 +185,7 @@ pub async fn get_show(
 pub async fn get_item(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    ReqLocale(locale): ReqLocale,
+    ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     visibility::gate_item(&state, &user, &id).await?;

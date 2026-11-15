@@ -6,12 +6,12 @@ import { Box, EmptyState, type SortColumn, Table, Text } from '@kromatv/ui/kit';
 import type { ComponentType } from 'react';
 import {
   type HistoryColumn,
-  type HistorySort,
   kindKey,
   type TitleLines,
   titleLines,
   titlePage,
 } from '#web/features/admin/history-columns';
+import type { HistorySort } from '#web/features/admin/history-query';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 const ABSENT = '-';

@@ -71,14 +71,41 @@ describe('notificationProblems', () => {
     expect(notificationProblems(declaring(finished), { en: worded, fr: worded })).toEqual([]);
   });
 
-  it('names the key a catalog has no words for, and which catalog', () => {
+  it('names the key the English catalog has no words for', () => {
+    const found = notificationProblems(declaring(finished), {
+      en: { 'shared.title': 'Shared' },
+      fr: worded,
+    });
+
+    expect(found).toEqual([
+      'tv.acme.notes: tv.acme.notes/note.shared names "shared.body", which locales/en.json lacks',
+    ]);
+  });
+
+  it('lets another language lack the key, which then reads in English', () => {
     const found = notificationProblems(declaring(finished), {
       en: worded,
       fr: { 'shared.title': 'Partagée' },
     });
 
+    expect(found).toEqual([]);
+  });
+
+  it('holds every catalog to the key where the module has no English', () => {
+    const found = notificationProblems(declaring(finished), { fr: { 'shared.title': 'Partagée' } });
+
     expect(found).toEqual([
       'tv.acme.notes: tv.acme.notes/note.shared names "shared.body", which locales/fr.json lacks',
+    ]);
+  });
+
+  it('names the folder of a language where the module keeps one each', () => {
+    const catalogs = { en: { 'shared.title': 'Shared' }, fr: worded };
+
+    const found = notificationProblems(declaring(finished), catalogs, 'folder');
+
+    expect(found).toEqual([
+      'tv.acme.notes: tv.acme.notes/note.shared names "shared.body", which locales/en/ lacks',
     ]);
   });
 

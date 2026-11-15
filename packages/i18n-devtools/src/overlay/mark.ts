@@ -1,17 +1,24 @@
 import type { Rendered, Vars } from '../engine/engine';
 import { type Origin, originOf } from './origin';
 
-/** How the overlay grades a string: its own catalog answered, the fallback
- *  locale's did, a variable it names was never given a value, nothing answered,
- *  or it never went through a catalog at all. */
-export type Grade = 'catalog' | 'fallback' | 'vars' | 'missing' | 'raw';
+type Marked = 'catalog' | 'fallback' | 'vars' | 'missing';
+
+/** What only the lock can say of a translation: the source text moved since it
+ *  was made, or a machine wrote it and nobody has read it. */
+export type Review = 'outdated' | 'unreviewed';
+
+/** How the overlay grades a string. Four are what the mark the engine left
+ *  says: its own catalog answered, the fallback locale's did, a variable it
+ *  names was never given a value, or nothing answered. A {@link Review} takes
+ *  the first of them further, and `raw` never went through a catalog at all. */
+export type Grade = Marked | Review | 'raw';
 
 /** What answered one string on the page, and what it was rendered with. */
 export interface Sighting {
   readonly key: string;
   readonly scope: string | null;
   readonly locale: string | null;
-  readonly grade: Grade;
+  readonly grade: Marked;
   readonly vars: Vars | undefined;
   /** The `{name}` placeholders the message kept, having been given no value. */
   readonly holes: readonly string[];
@@ -19,7 +26,7 @@ export interface Sighting {
   readonly origin: Origin | null;
 }
 
-const MARKS: Record<Exclude<Grade, 'raw'>, string> = {
+const MARKS: Record<Marked, string> = {
   catalog: '\u2062',
   fallback: '\u2063',
   vars: '\u2064',
@@ -28,7 +35,7 @@ const MARKS: Record<Exclude<Grade, 'raw'>, string> = {
 
 const FIRST = 0x2061;
 const LAST = 0x2064;
-const OF_CODE: Record<number, Grade> = {
+const OF_CODE: Record<number, Marked> = {
   8289: 'missing',
   8290: 'catalog',
   8291: 'fallback',
@@ -36,12 +43,12 @@ const OF_CODE: Record<number, Grade> = {
 };
 
 /** Worst first: what a reader should be sent to fix, in that order. */
-const SEVERITY: Record<Grade, number> = { missing: 0, vars: 1, raw: 2, fallback: 3, catalog: 4 };
+const SEVERITY: Record<Marked, number> = { missing: 0, vars: 1, fallback: 2, catalog: 3 };
 
 const remembered = new Map<string, Sighting>();
 
 /** What answered a message: the grade a mark would carry. */
-export function gradeOf({ from, locale, holes }: Rendered): Exclude<Grade, 'raw'> {
+export function gradeOf({ from, locale, holes }: Rendered): Marked {
   if (!from) return 'missing';
   if (holes.length > 0) return 'vars';
   return from.locale === locale ? 'catalog' : 'fallback';
@@ -103,12 +110,12 @@ export function sightingIn(text: string): Sighting | null {
 /** The worst grade marked in `text`, or `null` where nothing is: a string with
  *  no mark never came from a catalog. A scan rather than a match: this runs for
  *  every text node on the page, every frame the page changes. */
-export function markIn(text: string): Grade | null {
-  let worst: Grade | null = null;
+export function markIn(text: string): Marked | null {
+  let worst: Marked | null = null;
   for (let at = 0; at < text.length; at += 1) {
     const code = text.codePointAt(at);
     if (code === undefined || code < FIRST || code > LAST) continue;
-    const grade = OF_CODE[code] as Grade;
+    const grade = OF_CODE[code] as Marked;
     if (grade === 'missing') return grade;
     if (worst === null || SEVERITY[grade] < SEVERITY[worst]) worst = grade;
   }

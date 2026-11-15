@@ -11,8 +11,6 @@ mod parts {
     include!(concat!(env!("OUT_DIR"), "/release_parts.rs"));
 }
 
-const FALLBACK_LOCALE: &str = "en";
-
 /// One release folder: its date, when it has one, and its notes per language.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Release {
@@ -63,9 +61,10 @@ pub fn assemble(files: &[(&str, &str, &str)]) -> Vec<Release> {
     by_version.into_values().collect()
 }
 
-/// The releases a server at `current` has reached, newest first, in `locale`
-/// where the release ships it and in English otherwise. The action and owner
-/// sections are the owner's, so they come back empty unless `owner`.
+/// The releases a server at `current` has reached, newest first, in the
+/// language `locale` reads where the release ships it and along
+/// [`crate::i18n::content_chain`] otherwise. The action and owner sections are
+/// the owner's, so they come back empty unless `owner`.
 pub fn view(releases: &[Release], current: &str, locale: &str, owner: bool) -> Vec<ReleaseView> {
     let Some(ceiling) = version_key(current) else {
         return Vec::new();
@@ -74,12 +73,7 @@ pub fn view(releases: &[Release], current: &str, locale: &str, owner: bool) -> V
         .iter()
         .filter_map(|release| {
             let key = version_key(&release.version).filter(|key| *key <= ceiling)?;
-            let mut notes = release
-                .notes
-                .get(locale)
-                .or_else(|| release.notes.get(FALLBACK_LOCALE))
-                .or_else(|| release.notes.values().next())?
-                .clone();
+            let mut notes = crate::i18n::pick(&release.notes, locale)?.clone();
             if !owner {
                 notes.action.clear();
                 notes.owner.clear();

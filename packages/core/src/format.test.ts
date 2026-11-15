@@ -1,16 +1,14 @@
-import type { AudioTrack, MediaItem, VideoTrack } from '@kromatv/client/media';
-import type { Translate } from '@kromatv/i18n';
+import type { MediaItem, VideoTrack } from '@kromatv/client/media';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  audioTrackLabel,
   channelLabel,
   codecLabel,
   commitLabel,
   episodeTag,
   formatBuildDate,
+  formatRuntime,
   hueFromString,
   langCode,
-  langName,
   metaLine,
   playerSubtitle,
   posterColors,
@@ -21,9 +19,6 @@ import {
   resolveImageUrl,
   sizedImageUrl,
 } from './format';
-
-// Echoes the message key so localized output is asserted by key.
-const t: Translate = (key) => key;
 
 function episode(p: {
   season?: number | null;
@@ -252,54 +247,6 @@ describe('channelLabel', () => {
   });
 });
 
-describe('langName', () => {
-  it('maps 2- and 3-letter ISO codes to a catalog key', () => {
-    expect(langName(t, 'fr')).toBe('lang.fr');
-    expect(langName(t, 'fra')).toBe('lang.fr');
-    expect(langName(t, 'FRE')).toBe('lang.fr');
-    expect(langName(t, 'eng')).toBe('lang.en');
-  });
-
-  it('upper-cases an unknown code, and returns null when absent', () => {
-    expect(langName(t, 'xx')).toBe('XX');
-    expect(langName(t, null)).toBeNull();
-    expect(langName(t, '')).toBeNull();
-  });
-});
-
-describe('audioTrackLabel', () => {
-  const track = (p: Partial<AudioTrack>): AudioTrack => p as AudioTrack;
-
-  it('joins name, channel layout and upper-cased codec', () => {
-    expect(audioTrackLabel(t, track({ language: 'fr', channels: 6, codec: 'eac3' }))).toBe(
-      'lang.fr · 5.1 · EAC3',
-    );
-  });
-
-  it('prefers a stream title over the language name', () => {
-    expect(
-      audioTrackLabel(
-        t,
-        track({ title: '  Commentary ', language: 'en', channels: 2, codec: 'aac' }),
-      ),
-    ).toBe('Commentary · 2.0 · AAC');
-  });
-
-  it('drops missing parts', () => {
-    expect(audioTrackLabel(t, track({ language: 'en', codec: 'aac' }))).toBe('lang.en · AAC');
-    expect(audioTrackLabel(t, track({ channels: 2 }))).toBe('2.0');
-  });
-
-  it('returns undefined for no track', () => {
-    expect(audioTrackLabel(t, null)).toBeUndefined();
-    expect(audioTrackLabel(t, undefined)).toBeUndefined();
-  });
-
-  it('returns undefined rather than an empty label for a track with nothing to say', () => {
-    expect(audioTrackLabel(t, track({}))).toBeUndefined();
-  });
-});
-
 describe('commitLabel', () => {
   it('flags a commit built from a dirty tree, since the hash no longer describes it', () => {
     expect(commitLabel('a1b2c3d', false)).toBe('a1b2c3d');
@@ -370,5 +317,32 @@ describe('posterGradient', () => {
     expect(a.startsWith('radial-gradient(')).toBe(true);
     expect(a).toContain('linear-gradient(');
     expect(a).not.toBe(posterGradient('Arrival'));
+  });
+});
+
+describe('formatRuntime', () => {
+  it('formats hours and zero-padded minutes', () => {
+    expect(formatRuntime(7620000)).toBe('2h07'); // 127 min
+    expect(formatRuntime(3600000)).toBe('1h00'); // exactly 1h
+    expect(formatRuntime(3660000)).toBe('1h01');
+  });
+
+  it('formats sub-hour durations as minutes only', () => {
+    expect(formatRuntime(2820000)).toBe('47min');
+    expect(formatRuntime(60000)).toBe('1min');
+  });
+
+  it('rounds to the nearest minute', () => {
+    // 89 s rounds to 1 min.
+    expect(formatRuntime(89000)).toBe('1min');
+    // 29 s rounds to 0 min.
+    expect(formatRuntime(29000)).toBe('0min');
+  });
+
+  it('returns an empty string for missing / non-positive durations', () => {
+    expect(formatRuntime(0)).toBe('');
+    expect(formatRuntime(-5000)).toBe('');
+    expect(formatRuntime(null)).toBe('');
+    expect(formatRuntime(undefined)).toBe('');
   });
 });

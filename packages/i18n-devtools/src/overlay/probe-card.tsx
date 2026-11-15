@@ -1,8 +1,9 @@
 import { Box, placeUnder, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useSyncExternalStore } from 'react';
 import { categoryOf } from '../engine/plural';
-import { Chord } from '../panel/chord';
+import { Chord, HOLD } from '../panel/chord';
 import type { Modifier } from '../panel/shortcut';
+import { confirmTarget, editTarget } from './message-target';
 import { GRADE_PAINT } from './highlight';
 import type { Grade } from './mark';
 import { onProbe, probed } from './probe';
@@ -17,6 +18,8 @@ const SAID: Record<Grade, string | null> = {
   vars: 'a variable it was not given',
   missing: 'no catalog answers it',
   raw: 'not a key',
+  outdated: 'source changed since it was translated',
+  unreviewed: 'machine translated, not reviewed',
 };
 
 function source(scope: string | null, locale: string | null): string | null {
@@ -32,10 +35,17 @@ function said(name: string, value: string | number, locale: string | null): stri
   return `${name} = ${value} → ${categoryOf(locale ?? 'en', value)}`;
 }
 
+export interface ProbeCardProps {
+  /** The letter that opens the editor on the message, held with `HOLD`. */
+  editKey: string;
+  /** The letter that confirms its translation as it reads, held with `HOLD`. */
+  confirmKey: string;
+}
+
 /** The card naming what drew the string under the pointer, in its own fixed
  *  layer beside it: below where there is room, above where there is not, so it
  *  never leaves the viewport. */
-export function ProbeCard() {
+export function ProbeCard({ editKey, confirmKey }: Readonly<ProbeCardProps>) {
   const probe = useSyncExternalStore(onProbe, probed, probed);
   const origin = useOrigin(probe?.origin ?? null);
   if (!probe) return null;
@@ -74,9 +84,11 @@ export function ProbeCard() {
             Key copied
           </Text>
         ) : (
-          <Row align="center" gap={10}>
+          <Row align="center" gap={10} wrap>
             {probe.key && <Chord hold={ALT} does="copy" />}
             {probe.origin && <Chord hold={ALT_SHIFT} does="open" />}
+            {editTarget(probe) && <Chord hold={HOLD} press={editKey} does="edit" />}
+            {confirmTarget(probe) && <Chord hold={HOLD} press={confirmKey} does="confirm" />}
           </Row>
         )}
       </Surface>

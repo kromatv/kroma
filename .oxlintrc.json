@@ -64,6 +64,7 @@
     "**/*.gen.ts",
     "**/routeTree.gen.ts",
     "packages/core/src/locales/messages.d.ts",
+    "modules/*/ui/src/messages.d.ts",
     "apps/www/src/paraglide",
     "**/*.template.html",
     "clients/synology",

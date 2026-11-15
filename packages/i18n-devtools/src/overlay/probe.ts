@@ -6,6 +6,7 @@ import { gradeOfNode, onThePage, shows } from './highlight';
 import type { Grade } from './mark';
 import { sightingIn, stripMarks } from './mark';
 import { fileOfOrigin, type Origin, originAt, sourceOrigin } from './origin';
+import { onStatusChange, shownGrade } from './review';
 
 /** What the pointer is over, and where a card anchors to it. `key` is absent
  *  for a string that never went through a catalog: there is none. */
@@ -51,7 +52,7 @@ function probeOf(node: Text, outline: Outline): Probe | null {
     text: stripMarks(text).trim(),
     scope: sighting?.scope ?? null,
     locale: sighting?.locale ?? null,
-    grade: sighting?.grade ?? marked,
+    grade: sighting ? shownGrade(sighting) : marked,
     vars: sighting?.vars,
     holes: sighting?.holes ?? [],
     origin: sighting?.origin ?? originAt(node),
@@ -111,10 +112,15 @@ export function installProbe(outline: Outline, editor: string | null): () => voi
     );
   };
 
+  const stopStatus = onStatusChange(() => {
+    over = null;
+    look.fire();
+  });
   document.addEventListener('pointermove', move);
   document.addEventListener('scroll', away, true);
   document.addEventListener('click', click, true);
   return () => {
+    stopStatus();
     document.removeEventListener('pointermove', move);
     document.removeEventListener('scroll', away, true);
     document.removeEventListener('click', click, true);

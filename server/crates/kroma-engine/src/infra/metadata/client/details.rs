@@ -8,6 +8,7 @@ use super::{api, tmdb_json, Target, IMG, MAX_CAST, MAX_CREW};
 pub(super) fn fetch_details(
     api_key: &str,
     language: &str,
+    household: &str,
     target: Target,
     id: u64,
 ) -> Result<Metadata, ()> {
@@ -30,7 +31,8 @@ pub(super) fn fetch_details(
         api_key,
         &detail_params,
     )?;
-    Ok(metadata_from(d, target, id, lang2, &country_of(language)))
+    let country = country_of(language, household);
+    Ok(metadata_from(d, target, id, lang2, &country))
 }
 
 fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str) -> Metadata {

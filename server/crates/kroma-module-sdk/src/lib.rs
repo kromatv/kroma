@@ -38,8 +38,10 @@ macro_rules! __link_test_hook {
     () => {};
 }
 
-/// `embedded_locales!()` collects a module's `locales/<code>.json` at compile
-/// time into the `&[(code, json)]` [`i18n::engine`] takes. Write
+/// `embedded_locales!()` collects a module's catalogs at compile time into the
+/// `&[(code, json)]` [`i18n::engine`] takes: its `locales/<code>.json`, or the
+/// `locales/<code>/<namespace>.json` files of a module that keeps one folder
+/// per language. Write
 /// `const LOCALES: &[(&str, &str)] = kroma_module_sdk::embedded_locales!();`.
 pub use kroma_module_macros::embedded_locales;
 

@@ -52,6 +52,10 @@ export interface Engine {
   /** Call `listener` whenever the answers above change, for an engine whose
    *  locales are not settled before the tools mount. Returns a disposer. */
   subscribe?(listener: () => void): () => void;
+  /** Whether the dev server reads and writes this engine's catalogs on disk.
+   *  Only an engine that says so is offered what needs them: the editor, the
+   *  translation status, and the grades a lock alone can tell. */
+  readonly writable?: boolean;
 }
 
 const NOTHING: readonly string[] = [];

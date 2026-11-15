@@ -40,6 +40,8 @@
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
+    "@kromatv/i18n": "workspace:*",
+    "@kromatv/i18n-tools": "workspace:*",
     "@kromatv/module-sdk": "workspace:*",
     "@kromatv/registry": "workspace:*",
     "citty": "0.2.2",

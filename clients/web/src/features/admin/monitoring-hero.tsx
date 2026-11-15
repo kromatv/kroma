@@ -1,7 +1,6 @@
 import type { MonitoredSummary } from '@kromatv/client/monitoring';
 import type { RequestLedgerView } from '@kromatv/client/requests';
 import { sizedImageUrl } from '@kromatv/core';
-import type { MessageKey } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import {
@@ -86,7 +85,7 @@ export function MonitoringHero({
 
           <Box flex minW={0} gap={10}>
             <Pill ink={km.color} bg={km.bg} variant="overline">
-              {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+              {t(`pipeline.type.${km.typeKey}`)}
             </Pill>
             <Text variant="h1" lines={2} accessibilityRole="header">
               {ledger.title}

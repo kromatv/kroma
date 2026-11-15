@@ -1,7 +1,6 @@
 {
   "cast.connectedTo": "Connected to {device}",
   "cast.continueHere": "Continue on this phone",
-  "cast.devices": "Devices",
   "cast.disconnect": "Disconnect",
   "cast.failed": "Couldn't reach that device",
   "cast.gone": "That device is no longer available",
@@ -24,8 +23,6 @@
   "cast.signInThisTv": "No account yet · tap to sign it in",
   "cast.stop": "Stop casting",
   "cast.stopHint": "Stops playback on {device}",
-  "cast.takeOver": "{device} is playing {title}.",
-  "cast.takeOverConfirm": "Play anyway",
   "cast.thisDevice": "This device",
   "cast.title": "Play on TV",
   "cast.titleGone": "That title is no longer in the library"

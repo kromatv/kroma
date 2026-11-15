@@ -22,6 +22,13 @@ function stemsOf(catalog: Catalog): ReadonlySet<string> {
   return stems;
 }
 
+/** Drop what is remembered about `catalog`'s plural variants. The catalog a
+ *  locale answers from grows in place as namespaces land, and one that gained
+ *  a plural message has to be read again or that message never pluralises. */
+export function forgetStems(catalog: Catalog): void {
+  STEMS.delete(catalog);
+}
+
 function rulesFor(locale: string): Intl.PluralRules | null {
   const cached = RULES.get(locale);
   if (cached !== undefined) return cached;

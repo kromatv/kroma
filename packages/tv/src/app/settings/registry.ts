@@ -2,7 +2,7 @@ import { useDevicePreferences } from '../device-preferences';
 // Every shared user-facing setting, declared once: identity, level, binding and
 // presentation. The groups in groups.ts arrange them into screens.
 
-import { LANG_NO_PREF, LANG_OFF, LOCALES, langKey, langOptions } from '@kromatv/core';
+import { LANG_NO_PREF, LANG_OFF, LOCALES, langKey, langOptions, localeLabel } from '@kromatv/core';
 import type { Locale, MessageKey, Translate } from '@kromatv/i18n';
 import { useLocale, useSetLocale } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
@@ -20,6 +20,10 @@ export const localeSetting: SettingsItem = choiceItem({
   icon: 'language',
   options: () => LOCALES.map((l) => l.code),
   valueLabel: (code) => LOCALES.find((l) => l.code === code)?.labelKey ?? 'common.language',
+  valueText: (t, code) => {
+    const offered = LOCALES.find((l) => l.code === code);
+    return offered ? localeLabel(t, offered) : t('common.language');
+  },
   useValue: () => [useLocale(), useSetLocale()] as const,
 });
 

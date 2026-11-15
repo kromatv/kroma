@@ -1,44 +1,67 @@
-//! KROMA's i18n wiring over the generic [`kroma_i18n`] engine: the default
-//! locale, the supported set, and the shared catalogs in
-//! `packages/core/src/locales/<locale>/<namespace>.json` (the same files the TS
-//! clients bundle), gathered by `build.rs` into one list of parts.
+//! KROMA's i18n wiring over the generic [`kroma_i18n`] engine: the shared
+//! catalogs under `packages/core/src/locales/<locale>/` (the same files the TS
+//! clients bundle), gathered by `build.rs` into one list of parts, and the
+//! policy `i18n.json` beside them sets: the language they are written in, the
+//! ones a reader is offered, and what an unfinished one reads in.
 
-use std::convert::Infallible;
+use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
 use kroma_i18n::I18n;
 
-use crate::state::SharedState;
+mod content;
+mod extract;
+mod fill;
+mod tag;
+mod tmdb;
 
-pub const DEFAULT_LOCALE: &str = "fr";
+pub use content::{content_chain, content_keyed, content_locale, content_locales, pick};
+pub use extract::{AskedLocale, ContentLocale, ReqLocale};
+pub use tag::{canonical, language, nearest, region};
+pub use tmdb::tmdb_language;
 
 mod parts {
     include!(concat!(env!("OUT_DIR"), "/catalog_parts.rs"));
 }
 
-/// Every locale with a catalog folder, in folder order. The folder is the one
-/// place a language is added, so this is read from it rather than repeated.
+/// The language the messages are written in: the complete one, which every
+/// other falls back to and an unknown reader is served.
+pub const DEFAULT_LOCALE: &str = parts::SOURCE;
+
+/// Every language a reader is offered, in folder order: the ones `i18n.json`
+/// stages past a draft. A folder is the one place a language is added and its
+/// stage the one place it is shipped, so this is read from them.
 pub const SUPPORTED_LOCALES: &[&str] = parts::LOCALES;
 
+fn parsed(code: &str) -> fill::Catalog {
+    let mut catalog = fill::Catalog::new();
+    for (_, json) in parts::CATALOG_PARTS.iter().filter(|(of, _)| *of == code) {
+        let part: HashMap<String, String> =
+            serde_json::from_str(json).expect("a KROMA catalog is a flat string map");
+        catalog.extend(part);
+    }
+    catalog
+}
+
 // The catalogs are shared with the TypeScript clients, which select a variant
-// through `Intl.PluralRules`. French puts zero in `one` there and English does
-// not, so the same key has to resolve the same way on both sides or a count of
-// zero renders differently in a notification than it does on screen.
+// through `Intl.PluralRules` and read an unfinished language in its fallbacks.
+// The same key has to resolve the same way on both sides, or a notification
+// reads differently than the screen that shows it.
 fn i18n() -> &'static I18n {
     static ENGINE: OnceLock<I18n> = OnceLock::new();
     ENGINE.get_or_init(|| {
-        parts::CATALOG_PARTS
-            .iter()
-            .fold(
-                I18n::builder()
-                    .default_locale(DEFAULT_LOCALE)
-                    .plural_rule(kroma_i18n::cldr),
-                |builder, (code, json)| builder.catalog_json(*code, *json),
-            )
-            .build()
-            .expect("KROMA i18n catalogs")
+        let mut builder = parts::CATALOG_PARTS.iter().fold(
+            I18n::builder()
+                .default_locale(DEFAULT_LOCALE)
+                .plural_rule(kroma_i18n::cldr),
+            |builder, (code, json)| builder.catalog_json(*code, *json),
+        );
+        for (code, chain) in parts::FALLBACKS {
+            let fallbacks: Vec<fill::Catalog> = chain.iter().map(|other| parsed(other)).collect();
+            let gaps = fill::gaps(&parsed(code), &fallbacks.iter().collect::<Vec<_>>());
+            builder = builder.catalog(*code, gaps);
+        }
+        builder.build().expect("KROMA i18n catalogs")
     })
 }
 
@@ -49,8 +72,12 @@ pub fn t(locale: &str, key: &str, vars: &[(&str, &str)]) -> String {
 }
 
 /// Map a BCP-47 tag or native display name to a supported locale, or `None`.
+/// The tag is read however it is spelled (`fr-ch`, `PT_br`), and a Chinese one
+/// given by region (`zh-TW`) names the script it writes in.
 pub fn normalize(tag: &str) -> Option<&'static str> {
-    i18n().normalize_locale(tag)
+    content::REAL
+        .resolve(tag)
+        .or_else(|| i18n().normalize_locale(tag))
 }
 
 /// Whether `key` names a real entry in the catalogs. Only
@@ -69,49 +96,23 @@ pub fn user_locale(user: &kroma_domain::User) -> &'static str {
         .unwrap_or(DEFAULT_LOCALE)
 }
 
-/// Best locale from an explicit preference and/or an `Accept-Language` header.
+/// Best locale from an explicit preference and/or an `Accept-Language` header:
+/// the preference, else the first entry of the header that [`normalize`] reads.
 pub fn detect_locale(preferred: Option<&str>, accept_language: Option<&str>) -> &'static str {
-    i18n().detect_locale(preferred, accept_language)
+    let listed = |header: &str| {
+        header
+            .split(',')
+            .filter_map(|entry| entry.split(';').next())
+            .find_map(normalize)
+    };
+    preferred
+        .and_then(normalize)
+        .or_else(|| accept_language.and_then(listed))
+        .unwrap_or(DEFAULT_LOCALE)
 }
 
-/// The resolved request locale, from `Accept-Language` (else [`DEFAULT_LOCALE`]).
-pub struct ReqLocale(pub &'static str);
-
-impl FromRequestParts<SharedState> for ReqLocale {
-    type Rejection = Infallible;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        _state: &SharedState,
-    ) -> Result<Self, Self::Rejection> {
-        let header = parts
-            .headers
-            .get(axum::http::header::ACCEPT_LANGUAGE)
-            .and_then(|v| v.to_str().ok());
-        Ok(ReqLocale(detect_locale(None, header)))
-    }
-}
-
-/// The locale the request actually asked for, `None` when it sent no
-/// `Accept-Language`. Separate from [`ReqLocale`], which answers "what do we
-/// serve" and so has to name a locale even when nothing was said.
-pub struct AskedLocale(pub Option<&'static str>);
-
-impl FromRequestParts<SharedState> for AskedLocale {
-    type Rejection = Infallible;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        _state: &SharedState,
-    ) -> Result<Self, Self::Rejection> {
-        let asked = parts
-            .headers
-            .get(axum::http::header::ACCEPT_LANGUAGE)
-            .and_then(|v| v.to_str().ok())
-            .map(|h| detect_locale(None, Some(h)));
-        Ok(AskedLocale(asked))
-    }
-}
+#[cfg(test)]
+mod policy;
 
 #[cfg(test)]
 mod tests {
@@ -138,6 +139,79 @@ mod tests {
             "1 season"
         );
         assert_eq!(normalize("en-US"), Some("en"));
+    }
+
+    #[test]
+    fn a_tag_is_read_however_it_is_spelled() {
+        assert_eq!(normalize("FR"), Some("fr"));
+        assert_eq!(normalize("en_us"), Some("en"));
+        assert_eq!(normalize("Français"), Some("fr"));
+        assert_eq!(normalize("xx"), None);
+    }
+
+    #[test]
+    fn the_first_entry_of_a_header_that_is_offered_is_the_locale_detected() {
+        let header = Some("de;q=0.9, en-US;q=0.8, fr;q=0.5");
+
+        assert_eq!(detect_locale(None, header), "en");
+        assert_eq!(detect_locale(Some("fr_FR"), header), "fr");
+        assert_eq!(detect_locale(None, Some("de")), DEFAULT_LOCALE);
+        assert_eq!(detect_locale(None, None), DEFAULT_LOCALE);
+    }
+
+    #[test]
+    fn every_offered_language_is_past_a_draft_and_the_source_is_among_them() {
+        let policy = policy::Policy::parse(include_str!(
+            "../../../../packages/core/src/locales/i18n.json"
+        ))
+        .expect("the policy file parses");
+
+        assert_eq!(policy.source, DEFAULT_LOCALE);
+        assert!(SUPPORTED_LOCALES.iter().all(|code| policy.offered(code)));
+    }
+
+    #[test]
+    fn a_policy_names_the_stage_of_a_folder_and_drafts_the_rest() {
+        let policy = policy::Policy::parse(
+            r#"{ "source": "fr", "locales": { "en": { "stage": "stable" }, "de": { "stage": "beta" } } }"#,
+        )
+        .expect("a valid policy");
+
+        assert_eq!(policy.stage("fr"), policy::Stage::Stable);
+        assert_eq!(policy.stage("de"), policy::Stage::Beta);
+        assert_eq!(policy.stage("it"), policy::Stage::Draft);
+        assert!(policy.offered("de") && !policy.offered("it"));
+    }
+
+    #[test]
+    fn a_locale_falls_back_to_its_language_then_the_project_fallback_then_the_source() {
+        let policy = policy::Policy::parse(r#"{ "source": "fr", "fallback": "en" }"#)
+            .expect("a valid policy");
+
+        let chain = policy.chain("pt-BR", &|code| ["pt-BR", "pt", "en", "fr"].contains(&code));
+
+        assert_eq!(chain, ["pt-BR", "pt", "en", "fr"]);
+    }
+
+    #[test]
+    fn a_named_fallback_replaces_the_language_and_a_missing_folder_is_skipped() {
+        let policy = policy::Policy::parse(
+            r#"{ "source": "fr", "fallback": "en", "locales": { "gsw": { "fallback": "de" } } }"#,
+        )
+        .expect("a valid policy");
+
+        let chain = policy.chain("gsw", &|code| ["gsw", "de", "fr"].contains(&code));
+
+        assert_eq!(chain, ["gsw", "de", "fr"]);
+    }
+
+    #[test]
+    fn a_policy_with_an_unknown_stage_is_refused_by_name() {
+        let refused = policy::Policy::parse(
+            r#"{ "source": "fr", "locales": { "de": { "stage": "live" } } }"#,
+        );
+
+        assert!(refused.is_err_and(|why| why.contains("live") && why.contains("de")));
     }
 
     #[test]
