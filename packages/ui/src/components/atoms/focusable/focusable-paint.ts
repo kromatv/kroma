@@ -39,6 +39,25 @@ function deltaOf(base: object | undefined, next: object | undefined): ViewStyle 
   return any ? (Object.freeze(out) as ViewStyle) : null;
 }
 
+function statedBy(style: unknown, keys = new Set<string>()): Set<string> {
+  if (Array.isArray(style)) {
+    for (const one of style) statedBy(one, keys);
+  } else if (style && typeof style === 'object') {
+    for (const key of Object.keys(style)) keys.add(key);
+  }
+  return keys;
+}
+
+/** `delta` without what the caller's own `style` states, so a fill the caller
+ *  chose holds while the control is pressed, the way it holds on hover. */
+function under(delta: ViewStyle | null, style: StyleProp<ViewStyle>): ViewStyle | null {
+  if (!delta || style == null) return delta;
+  const stated = statedBy(style);
+  const kept = Object.entries(delta).filter(([key]) => !stated.has(key));
+  if (kept.length === Object.keys(delta).length) return delta;
+  return kept.length > 0 ? (Object.freeze(Object.fromEntries(kept)) as ViewStyle) : null;
+}
+
 // `[a, b]` that keeps its identity while `a` and `b` keep theirs, so the
 // native `splitBoxLayers` memo below is not re-run on every render.
 function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
@@ -108,7 +127,8 @@ function useFocusablePaint({
   // Only what the press ADDS, not the whole root: the press coat lands after the
   // caller's `style`, so re-applying the resolved root there would revert a
   // one-off override for as long as the finger is down.
-  const pressDelta = recipe && canPress ? deltaOf(rest.root, resolve(true).root) : null;
+  const pressDelta =
+    recipe && canPress ? under(deltaOf(rest.root, resolve(true).root), style) : null;
   const paintedPressed = pressDelta ?? pressedStyle;
 
   // Native renders the control as two views, so the half of the style that says
