@@ -24,10 +24,10 @@ LIBVA_SHA="0b4a3649ee8d683b9cce2ef094df4fb039d276c0cef7e49337c43d3b297b9f42"
 # Both images are x86_64 hosts: the aarch64 one cross-compiles.
 case "$ARCH" in
   x86_64)
-    IMAGE="ghcr.io/btbn/ffmpeg-builds/linux64-gpl-shared@sha256:15a08979e1c135cd82fbc0c75f424eee6d0536e90bf1a0b1bffb60272ee0be99"
+    IMAGE="ghcr.io/btbn/ffmpeg-builds/linux64-gpl-shared@sha256:5fa297a134ac5a2c259f30812eebe6f6c781427ebadfdb23447806643ba4f5b5"
     ;;
   aarch64)
-    IMAGE="ghcr.io/btbn/ffmpeg-builds/linuxarm64-gpl-shared@sha256:4dcb5f9107539a5bbce1a2ebc7cc2472cec78b9955a83ce50d5fa2b09abc10e9"
+    IMAGE="ghcr.io/btbn/ffmpeg-builds/linuxarm64-gpl-shared@sha256:088de513dca2dc8985f8554d7cfc66e0b6cd05df146675e4be7e1b7a1a5abb4e"
     ;;
   *)
     echo "unknown arch $ARCH"
