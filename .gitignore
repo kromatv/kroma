@@ -162,9 +162,8 @@ clients/web/public/sw.js
 .vitest-reports/
 .vitest-attempts/
 
-# The yarn.lock `bun install --yarn` writes for Snyk, and the scans' reports (bun run ci snyk).
-yarn.lock
-.snyk-reports/
+# The security scans' SARIF (bun run ci advisories, bun run ci snyk code).
+.sarif/
 
 # Signed Tizen packages (clients/tizen/scripts/package-all.ts)
 clients/tizen/out/
