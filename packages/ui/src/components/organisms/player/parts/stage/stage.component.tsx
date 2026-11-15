@@ -206,7 +206,7 @@ function Stage({
         <Animated.View style={[contentShrink, s.inert]}>
           <SubtitleRenderer
             positionSec={c.cur}
-            playing={c.playing}
+            playing={c.playing && !c.waiting}
             subtitles={c.subtitles}
             activeIndex={c.subtitleIndex}
             appearance={appearance}

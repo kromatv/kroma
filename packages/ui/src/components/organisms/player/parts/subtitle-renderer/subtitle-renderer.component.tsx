@@ -13,6 +13,7 @@ import { style, useStyleScope } from '#ui/core';
 
 const MAX_VTT_BYTES = 8 * 1024 * 1024;
 const NO_CUES: Cue[] = [];
+const MAX_LEAD_SEC = 1;
 
 const NO_POINTER = style({ pointerEvents: 'none' });
 
@@ -21,6 +22,7 @@ const now = (): number => (typeof performance !== 'undefined' ? performance.now(
 interface SubtitleRendererProps {
   /** Absolute playback position in seconds. */
   positionSec: number;
+  /** Whether the picture is moving: false while paused and while the player waits for data. */
   playing: boolean;
   /** Bumped on every seek so the renderer can re-sync its cue search. */
   seekNonce?: number;
@@ -126,7 +128,7 @@ export function SubtitleRenderer({
   const clock = useRef({ pos: 0, at: 0 });
   useEffect(() => {
     clock.current = { pos: positionSec, at: now() };
-  }, [positionSec]);
+  }, [positionSec, playing]);
 
   // Tick the interpolated clock and update only when the visible line changes.
   useEffect(() => {
@@ -136,7 +138,8 @@ export function SubtitleRenderer({
     let last: string | null = null;
     const tick = () => {
       const c = clock.current;
-      const est = playing ? c.pos + (now() - c.at) / 1000 : c.pos;
+      const lead = Math.min((now() - c.at) / 1000, MAX_LEAD_SEC);
+      const est = playing ? c.pos + lead : c.pos;
       const { text: cur, index } = activeCueText(cues, est, pointer.current);
       pointer.current = index;
       if (cur !== last) {
