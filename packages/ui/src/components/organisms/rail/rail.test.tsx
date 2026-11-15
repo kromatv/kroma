@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Chip } from '#ui/components/atoms/chip';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { Rail } from './rail';
+import { Rail } from './rail.component';
 
 afterEach(cleanup);
 

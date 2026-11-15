@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Spinner } from './spinner';
+import { Spinner } from './spinner.component';
 
 afterEach(cleanup);
 

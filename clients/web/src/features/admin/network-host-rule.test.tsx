@@ -7,7 +7,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RULES_VIEW } from '#web/features/admin/network.fixture';
-import { useHostRule } from '#web/features/admin/network-host-rule';
+import { useHostRule } from '#web/features/admin/network-host-rule.hook';
 
 const api = vi.hoisted(() => ({
   rules: vi.fn(),

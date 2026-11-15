@@ -7,7 +7,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider } from '#tv/app/router';
-import { useSearchAnswers } from '#tv/features/catalog/use-search-answers';
+import { useSearchAnswers } from '#tv/features/catalog/use-search-answers.hook';
 
 const noop = () => undefined;
 

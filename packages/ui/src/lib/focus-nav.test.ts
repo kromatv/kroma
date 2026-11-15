@@ -5,7 +5,7 @@
 
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useFocusNav } from './focus-nav.web';
+import { useFocusNav } from './focus-nav.hook.web';
 
 // jsdom returns a zero rect for every element and has no scrollIntoView, so both
 // are stubbed.

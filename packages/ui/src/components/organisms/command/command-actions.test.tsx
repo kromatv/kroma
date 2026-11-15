@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { onScreen } from '#ui/testing';
-import { Command } from './command';
+import { Command } from './command.component';
 import { ACTION_METRICS, type CommandItem, METRICS, scrollActionsTo } from './command-list';
 
 const OPEN = { id: 'open', label: 'Open' };

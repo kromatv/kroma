@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
-import { DocPage } from '#site/components/docs/doc-page';
+import { DocPage } from '#site/components/docs/doc-page.component';
 import { getDoc } from '#site/lib/doc-pages';
 import { isDocSlug } from '#site/lib/docs';
 import { getLocale } from '#site/lib/i18n';

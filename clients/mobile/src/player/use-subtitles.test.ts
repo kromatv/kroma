@@ -10,7 +10,7 @@ const vtt = 'WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nHello\n';
 const local = vi.hoisted(() => ({ readAsStringAsync: vi.fn() }));
 vi.mock('expo-file-system/legacy', () => local);
 
-import { useSubtitles } from './use-subtitles';
+import { useSubtitles } from './use-subtitles.hook';
 
 const client = fakeClient({
   media: {

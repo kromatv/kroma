@@ -5,7 +5,7 @@ const rokuModule = defineModule({
   pages: [
     {
       path: 'roku',
-      component: lazy(() => import('./roku-page')),
+      component: lazy(() => import('./roku-page.component')),
       nav: { label: 'nav.roku', icon: 'tv', section: 'system', requires: 'settings.manage' },
     },
   ],

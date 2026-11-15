@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { usePlayerNav } from './hooks/use-player-nav';
+import type { usePlayerNav } from './hooks/use-player-nav.hook';
 import { playerInputHandlers } from './player-input';
 import { type PlayerController, type PlayerFlags, WEB_FLAGS } from './types';
 

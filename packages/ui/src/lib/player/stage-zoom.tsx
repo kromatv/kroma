@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Animated, Platform } from 'react-native';
 import type { StageCard } from '#ui/components/organisms/player/lib/stage-card';
-import { CARD_MS } from '#ui/components/organisms/player/lib/panel-slide';
+import { CARD_MS } from '#ui/components/organisms/player/lib/panel-slide.hook';
 import { style } from '#ui/core';
 import { ease } from '#ui/lib/ease';
 

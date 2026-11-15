@@ -1,0 +1,45 @@
+import { Column, Select, Text } from '@kromatv/ui/kit';
+import { engine } from '../engine/engine';
+import { useLocales } from '../engine/use-locales.hook';
+
+export interface LocalePickerProps {
+  /** The locale in force: the override, or the one the app resolved on its own
+   *  while there is none. */
+  locale: string;
+  onLocale: (locale: string) => void;
+}
+
+const NAMES = new Intl.DisplayNames(['en'], { type: 'language', fallback: 'code' });
+
+function nameOf(code: string): string {
+  return NAMES.of(code) ?? code;
+}
+
+/** The locale to render in: every locale the app ships, in a select, which is
+ *  a list the panel does not have to grow to hold. */
+export function LocalePicker({ locale, onLocale }: Readonly<LocalePickerProps>) {
+  const locales = useLocales();
+  if (locales.length === 0) {
+    return (
+      <Text variant="meta" color="textMuted">
+        No languages connected. Text inspection is available.
+      </Text>
+    );
+  }
+  const active = locale || engine().activeLocale();
+  return (
+    <Column gap={6}>
+      <Text variant="meta" color="textMuted">
+        Language
+      </Text>
+      <Select.Root label="Locale" placeholder={active} value={active} onValueChange={onLocale}>
+        <Select.Trigger size="sm" block />
+        {locales.map((code) => (
+          <Select.Item key={code} value={code} note={code.toUpperCase()}>
+            {nameOf(code)}
+          </Select.Item>
+        ))}
+      </Select.Root>
+    </Column>
+  );
+}

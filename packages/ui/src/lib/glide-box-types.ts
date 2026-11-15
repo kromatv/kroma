@@ -9,7 +9,7 @@ export interface GlideRect {
 }
 
 /** A box that travels to each rect it is given and fades out on null, keeping its last
- *  place. A native television has it jump instead (see glide-box.tsx). */
+ *  place. A native television has it jump instead (see glide-box.component.tsx). */
 export interface GlideBoxProps {
   rect: GlideRect | null;
   durationMs: number;

@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useDeliberateHover } from './deliberate-hover';
+import { useDeliberateHover } from './deliberate-hover.hook';
 
 function hovering() {
   const onHover = vi.fn();

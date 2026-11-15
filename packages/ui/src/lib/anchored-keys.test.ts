@@ -7,7 +7,12 @@ import type {
   ScrollView,
 } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type ListKeysAt, type PanelKeyEvent, useListKeys, useRowInView } from './anchored-keys';
+import {
+  type ListKeysAt,
+  type PanelKeyEvent,
+  useListKeys,
+  useRowInView,
+} from './anchored-keys.hook';
 
 function keyEvent(key: string) {
   const preventDefault = vi.fn();

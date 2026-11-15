@@ -35,7 +35,7 @@
     "./tv-frame": "./src/tv-frame.ts",
     "./third-party-notices": "./src/third-party-notices.ts",
     "./tv-shell-head": "./src/tv-shell-head.ts",
-    "./workbench-stub": "./src/workbench-stub.tsx",
+    "./workbench-stub": "./src/workbench-stub.component.tsx",
     "./react-compiler-transform": "./src/react-compiler-transform.cjs"
   },
   "scripts": {

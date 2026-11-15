@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
-import type { ClipPlayback } from '#tv/features/playback/player/use-clip-playback';
+import type { ClipPlayback } from '#tv/features/playback/player/use-clip-playback.hook';
 
 /** A short clip played straight from its file, such as a trailer: the film
  * engine's transport, without tracks, resume or a server remux to fall back on.

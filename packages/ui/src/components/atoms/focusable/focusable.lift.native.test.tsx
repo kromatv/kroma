@@ -2,8 +2,8 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
-import { Focusable } from './focusable';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
+import { Focusable } from './focusable.component';
 
 vi.mock('react-native', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-native')>();

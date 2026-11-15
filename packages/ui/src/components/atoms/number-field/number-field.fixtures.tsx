@@ -6,7 +6,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import { Field } from '#ui/components/molecules/field';
 
-import { NumberField } from './number-field';
+import { NumberField } from './number-field.component';
 
 export function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: number }>) {
   const [tokens, setTokens] = useState(2048);

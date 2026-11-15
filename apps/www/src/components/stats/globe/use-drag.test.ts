@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { PointerEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { initialMotion, START_YAW } from './motion';
-import { useDrag } from './use-drag';
+import { useDrag } from './use-drag.hook';
 
 const WIDTH = 360;
 

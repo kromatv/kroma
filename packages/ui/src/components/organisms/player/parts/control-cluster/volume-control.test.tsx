@@ -4,8 +4,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
-import { FocusScope } from '#ui/lib/focus-scope';
-import { VolumeControl } from './volume-control';
+import { FocusScope } from '#ui/lib/focus-scope.component';
+import { VolumeControl } from './volume-control.component';
 
 afterEach(cleanup);
 

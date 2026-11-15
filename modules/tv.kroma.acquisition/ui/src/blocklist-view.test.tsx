@@ -3,13 +3,13 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BlocklistView } from './blocklist-view';
+import { BlocklistView } from './blocklist-view.component';
 import type { BlockedRelease } from './judgement-schemas';
 
 const mocks = vi.hoisted(() => ({ entries: [] as BlockedRelease[] }));
 
-vi.mock('./api', () => ({ useAcquisitionApi: () => ({ unblock: vi.fn() }) }));
-vi.mock('./use-rules', () => ({
+vi.mock('./api.hook', () => ({ useAcquisitionApi: () => ({ unblock: vi.fn() }) }));
+vi.mock('./use-rules.hook', () => ({
   useBlocklist: () => ({ data: mocks.entries, loading: false, reload: vi.fn() }),
 }));
 

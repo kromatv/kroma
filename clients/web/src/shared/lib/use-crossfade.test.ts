@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CROSSFADE_MS, useCrossfade } from './use-crossfade';
+import { CROSSFADE_MS, useCrossfade } from './use-crossfade.hook';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());

@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import type { ControlSize } from '#ui/lib/field-shell';
-import { Timeline } from './timeline';
+import { Timeline } from './timeline.component';
 
 afterEach(cleanup);
 

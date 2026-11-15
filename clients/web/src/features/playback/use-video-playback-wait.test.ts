@@ -43,7 +43,7 @@ vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ client: H.client, user: H.user }),
 }));
 
-const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { useVideoPlayback } = await import('#web/features/playback/use-video-playback.hook');
 const { attachMediaSource } = await import('#web/features/playback/video-engine');
 
 installHarness();

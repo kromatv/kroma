@@ -1,6 +1,6 @@
-import { SamsungIcon } from '#site/components/download/samsung-icon';
-import { LgIcon } from '#site/components/download/lg-icon';
-import { LinuxIcon } from '#site/components/download/linux-icon';
+import { SamsungIcon } from '#site/components/download/samsung-icon.component';
+import { LgIcon } from '#site/components/download/lg-icon.component';
+import { LinuxIcon } from '#site/components/download/linux-icon.component';
 import {
   IconBrandAndroid,
   IconBrandApple,

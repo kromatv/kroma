@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flowOf, RULES_VIEW } from '#web/features/admin/network.fixture';
-import { FlowTable } from '#web/features/admin/network-flow-table';
+import { FlowTable } from '#web/features/admin/network-flow-table.component';
 
 const modules = vi.hoisted(() => vi.fn());
 

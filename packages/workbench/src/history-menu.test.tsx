@@ -5,7 +5,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { storyEntries } from './entry';
 import type { KitHistory } from './history';
-import { StoryHistory } from './history-menu';
+import { StoryHistory } from './history-menu.component';
 import { memoryRouter } from './router';
 import { SourceProvider, type StorySource, useSourceLink } from './source';
 import { type Story, story } from './story';

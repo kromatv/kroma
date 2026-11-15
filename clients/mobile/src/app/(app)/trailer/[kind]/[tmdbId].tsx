@@ -15,8 +15,8 @@ import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { trailerListQuery, trailerRoute } from '#mobile/lib/trailer';
-import { PlayerStatusScreen } from '#mobile/player/player-status-screen';
-import { TrailerPlayer } from '#mobile/player/trailer-player';
+import { PlayerStatusScreen } from '#mobile/player/player-status-screen.component';
+import { TrailerPlayer } from '#mobile/player/trailer-player.component';
 
 export default function TrailerRoute() {
   const route =

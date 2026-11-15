@@ -1,1 +1,1 @@
-export * from './category-tile';
+export * from './category-tile.component';

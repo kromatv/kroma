@@ -18,8 +18,8 @@ import {
 } from '@kromatv/ui/kit';
 import type { ColorToken } from '@kromatv/ui/tokens';
 import { type ReactNode, useCallback, useState } from 'react';
-import { Matrix, ViewportFrame } from './canvas';
-import { CanvasTabs } from './canvas-tabs';
+import { Matrix, ViewportFrame } from './canvas.component';
+import { CanvasTabs } from './canvas-tabs.component';
 import { RULE_TOP } from './chrome';
 import { RichText, snippet } from './docs';
 import type { WorkbenchLayout } from './layout';
@@ -27,9 +27,9 @@ import type { PlayRunner } from './play';
 import type { PlayFunction } from './play-types';
 import type { Story } from './story';
 import { fullyInlined, inlineArgs } from './story-code-inline';
-import { StoryDocs } from './story-docs';
+import { StoryDocs } from './story-docs.component';
 import { PREVIEW_THEMES } from './themes';
-import { Toolbar, type ToolbarLens } from './toolbar';
+import { Toolbar, type ToolbarLens } from './toolbar.component';
 import { type View, viewIndex } from './view';
 import type { ViewportName } from './viewport';
 

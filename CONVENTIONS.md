@@ -120,21 +120,33 @@ it stands and exists for one case, switching a new rule on. See
 [`packages/lint-rules/README.md`](packages/lint-rules/README.md#the-debt-list)
 for how the list is read and what to do when the check fails.
 
-## A file name says what it exports, and a suffix says how it resolves
+## A file name says what it exports
 
-Kebab-case, named after its export: `focusable.tsx` exports `Focusable`,
-`stage-ratio.ts` exports `useStageRatio`. Rust is snake_case. Lint holds it
-(`unicorn/filename-case`) everywhere but where a router reads the name: a file
-under `clients/mobile/src/app` is a route, and `[tmdbId].tsx` names its parameter.
+Kebab-case, named after its export, then the role when the file has one:
+`focusable.component.tsx` exports `Focusable`, `stage-ratio.hook.ts` exports
+`useStageRatio`, `colors.ts` exports values and takes no role. Rust is snake_case.
 
-A suffix is a resolution instruction, not decoration. These are the ones in use,
-and there are no others:
+| Suffix | The file exports | Decided by |
+|---|---|---|
+| `.component.tsx` | A React component, or a component's named parts (`ChoiceList = { Root, Item }`) | A PascalCase export in a `.tsx` file |
+| `.hook.ts` `.hook.tsx` | A React hook | A function named `use` and a capital |
+| none | Functions, values, types, or a mix of roles | Everything else |
+
+The role is read from the code, not chosen: the export named after the file
+decides, and when no export is, the exports decide if they all agree. A file that
+exports a provider and its hook is a mix and keeps a plain name. Lint holds both
+halves (`unicorn/filename-case`, `kroma/file-role`): a component in a plain file
+fails, and so does a `.hook.ts` with no hook in it. Two places are exempt because a
+router reads the name: `clients/mobile/src/app` and every `src/routes`.
+
+After the role comes what the file is for, and last how it resolves. These are
+the ones in use, and there are no others:
 
 | Suffix | Means |
 |---|---|
-| `.test.ts` `.test.tsx` | A vitest suite, beside the file it covers |
+| `.test.ts` `.test.tsx` | A vitest suite, beside the file it covers and named after it without the role: `button.test.tsx` covers `button.component.tsx` |
 | `.native.test.ts` | Must run under Metro resolution, where the plain file wins |
-| `.web.ts` `.web.tsx` | The web implementation, chosen by the shells' Vite config |
+| `.web.ts` `.web.tsx` | The web implementation, chosen by the shells' Vite config. It comes last: `glide-box.component.web.tsx` |
 | `.story.mdx` | The workbench story for a kit component |
 | `.fixtures.tsx` | Rendered demo props for a story |
 | `.fixture.ts` | Plain data a test or story imports |
@@ -142,8 +154,8 @@ and there are no others:
 | `.a11y.test.tsx` | An accessibility suite, kept separate so it can be run alone |
 | `.gen.ts` | Generated. Never hand-edited, exempt from every policy |
 
-Inventing a new suffix means changing the bundler config first and the file name
-second, so do not. A file that fits none of these is a plain `name.ts`.
+Inventing a new suffix means changing the bundler config and the lint rule first
+and the file name second, so do not.
 
 An `index.ts` re-exports and nothing else. Logic in an `index.ts` is logic nobody
 can find.

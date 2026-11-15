@@ -3,7 +3,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { AccessibilityInfo } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useReducedMotion } from './reduced-motion';
+import { useReducedMotion } from './reduced-motion.hook';
 
 afterEach(() => {
   vi.restoreAllMocks();

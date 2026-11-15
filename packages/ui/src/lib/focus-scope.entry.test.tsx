@@ -4,7 +4,7 @@ import { cleanup, render } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useFocusEntry } from '#ui/lib/focus-entry';
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 
 afterEach(cleanup);
 

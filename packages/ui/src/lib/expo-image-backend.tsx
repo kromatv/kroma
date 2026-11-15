@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Platform } from 'react-native';
-import type { ImageBackend } from './image-backend';
+import type { ImageBackend } from './image-backend.hook';
 
 const DOWNSCALE = Platform.OS !== 'ios';
 

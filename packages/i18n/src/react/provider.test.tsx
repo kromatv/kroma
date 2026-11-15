@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { installKeyInspector, installLocaleOverride } from '../dev-overrides';
 import { createI18n } from '../i18n';
 import { useLocale, useT } from './context';
-import { I18nProvider } from './provider';
+import { I18nProvider } from './provider.component';
 
 const asKey = ({ key }: { key: string }) => `[${key}]`;
 

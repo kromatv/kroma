@@ -9,7 +9,7 @@ const personDetails = vi.hoisted(() =>
 const client = vi.hoisted(() => ({ current: { media: { person: personDetails } } }));
 vi.mock('#tv/app/router', () => ({ useClient: () => client.current }));
 
-import { usePersonDetail } from './use-person-detail';
+import { usePersonDetail } from './use-person-detail.hook';
 
 const DENIS = { name: 'Denis Villeneuve', biography: 'Born in Bécancour.' };
 const GRETA = { name: 'Greta Gerwig', biography: 'Born in Sacramento.' };

@@ -2,7 +2,7 @@
 import { cleanup, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PerfProvider, usePerfSampler } from './perf-provider';
+import { PerfProvider, usePerfSampler } from './perf-provider.component';
 
 afterEach(() => {
   cleanup();

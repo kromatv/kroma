@@ -7,7 +7,10 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider } from '#tv/app/router';
-import { AmbientBackdrop, type CatalogEntry } from '#tv/features/catalog/home/ambient-backdrop';
+import {
+  AmbientBackdrop,
+  type CatalogEntry,
+} from '#tv/features/catalog/home/ambient-backdrop.component';
 
 const client = fakeClient({
   media: { artwork: { backdropFor: (item) => item.metadata?.backdropUrl ?? null } },

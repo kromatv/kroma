@@ -12,7 +12,7 @@ import { GUARD } from '#tv/app/nav-policy';
 import { EnvProvider } from '#tv/app/providers/env';
 import { TvClientProvider, type TvNav, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
-import { TvReport } from '#tv/features/reports/tv-report';
+import { TvReport } from '#tv/features/reports/tv-report.component';
 
 const inputHost = createInputTestHost();
 

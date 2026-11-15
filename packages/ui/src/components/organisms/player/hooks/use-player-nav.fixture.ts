@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 import { controlOrder } from '#ui/components/organisms/player/lib/nav';
 import { WEB_FLAGS } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
-import { type PlayerNavActions, usePlayerNav } from './use-player-nav';
+import { type PlayerNavActions, usePlayerNav } from './use-player-nav.hook';
 
 export function makeActions(over: Partial<PlayerNavActions> = {}): PlayerNavActions {
   return {

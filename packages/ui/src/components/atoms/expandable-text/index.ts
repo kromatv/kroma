@@ -1,1 +1,1 @@
-export * from './expandable-text';
+export * from './expandable-text.component';

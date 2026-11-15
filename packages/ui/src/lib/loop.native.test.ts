@@ -3,8 +3,8 @@
 import { renderHook } from '@testing-library/react';
 import { Animated, Easing } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type LoopKind, useLoop } from './loop';
-import { useLoop as useLoopWeb } from './loop.web';
+import { type LoopKind, useLoop } from './loop.hook';
+import { useLoop as useLoopWeb } from './loop.hook.web';
 
 const KINDS: LoopKind[] = ['spin', 'sweep', 'pulse', 'blink', 'halo'];
 

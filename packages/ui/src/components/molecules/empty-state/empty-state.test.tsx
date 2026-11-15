@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { declared } from '#ui/testing';
-import { EmptyState, type EmptyStateSize } from './empty-state';
+import { EmptyState, type EmptyStateSize } from './empty-state.component';
 
 afterEach(cleanup);
 

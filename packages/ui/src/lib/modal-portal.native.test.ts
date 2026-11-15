@@ -2,8 +2,8 @@
 
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useModalPortalRepair as useRepairNative } from './modal-portal';
-import { useModalPortalRepair as useRepairWeb } from './modal-portal.web';
+import { useModalPortalRepair as useRepairNative } from './modal-portal.hook';
+import { useModalPortalRepair as useRepairWeb } from './modal-portal.hook.web';
 
 function counting(hook: (mounted: boolean) => void) {
   let renders = 0;

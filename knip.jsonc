@@ -49,7 +49,7 @@
     "@vitejs/plugin-react",
     "lightningcss",
     // React Native peers: the app has to install them, the component library
-    // does the importing (`react-native-svg` in packages/ui/src/lib/svg.tsx).
+    // does the importing (`react-native-svg` in packages/ui/src/lib/svg.component.tsx).
     "react-native-svg",
     // Required by Metro/Expo at build time, never imported.
     "@babel/core",

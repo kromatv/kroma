@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Radio } from './radio';
+import { Radio } from './radio.component';
 
 export const MODES = [
   { value: 'auto', label: 'Auto' },

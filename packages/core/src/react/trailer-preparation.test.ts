@@ -2,7 +2,7 @@
 import type { TrailerPreparation } from '@kromatv/client/trailers';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTrailerPreparation } from './trailer-preparation';
+import { useTrailerPreparation } from './trailer-preparation.hook';
 
 const answers = (...statuses: TrailerPreparation['status'][]) => {
   const queue = [...statuses];

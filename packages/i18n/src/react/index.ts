@@ -7,4 +7,4 @@ export {
   useSetLocale,
   useT,
 } from './context';
-export { I18nProvider, type I18nProviderProps } from './provider';
+export { I18nProvider, type I18nProviderProps } from './provider.component';

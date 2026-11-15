@@ -1,1 +1,1 @@
-export * from './art-scrim';
+export * from './art-scrim.component';

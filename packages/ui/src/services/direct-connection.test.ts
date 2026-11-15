@@ -2,7 +2,7 @@
 import { recordingClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useDirectConnection } from './direct-connection';
+import { useDirectConnection } from './direct-connection.hook';
 
 const LAN = 'http://192.168.1.2:4040';
 const OFFER = { instanceId: 'srv-1', routes: [LAN], nonce: 'n1', answer: 'a1', sameNetwork: true };

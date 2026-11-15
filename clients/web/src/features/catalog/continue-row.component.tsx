@@ -1,0 +1,69 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+// "Reprendre la lecture" rail. Unlike the catalogue rails (SSR-loaded, public),
+// this is per-user so it loads client-side once a session is hydrated, then
+// renders resumable items with a progress bar straight to the player.
+
+import { episodeTag, posterColors } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Suspense } from 'react';
+import { SectionHeading } from '#web/features/catalog/home/section-heading';
+import { useAuth } from '#web/shared/lib/auth';
+
+import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link.component';
+
+export function ContinueRow() {
+  const { user, ready } = useAuth();
+  // Per-user data: don't fetch behind the login gate. A skeleton fills the rail
+  // while it loads, then collapses to nothing if there's nothing to resume.
+  if (!ready || !user) {
+    return null;
+  }
+  return (
+    <Suspense fallback={<RailSkeleton count={6} />}>
+      <ContinueRail />
+    </Suspense>
+  );
+}
+
+function ContinueRail() {
+  const webRuntime = useWebRuntime();
+
+  const t = useT();
+  const { client } = useAuth();
+  const { data: items } = useSuspenseQuery(webRuntime.queries.userQueries.continueWatching());
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <section>
+      <SectionHeading title={t('content.continueWatching')} />
+      <PosterRail
+        data={items}
+        renderItem={({ item, positionMs, durationMs }) => {
+          const dur = durationMs ?? item.durationMs ?? 0;
+          const pct = dur > 0 ? Math.min(100, Math.round((positionMs / dur) * 100)) : 0;
+          const label =
+            item.kind === 'episode' && item.showTitle
+              ? `${item.showTitle} · ${episodeTag(item)}`
+              : t('content.film');
+          return (
+            <Poster
+              title={item.title}
+              genre={label}
+              colors={posterColors(item.id)}
+              poster={client.media.artwork.posterFor(item)}
+              progress={pct}
+              asChild
+            >
+              <RouteLink to="/watch/$id" params={{ id: item.id }} />
+            </Poster>
+          );
+        }}
+      />
+    </section>
+  );
+}

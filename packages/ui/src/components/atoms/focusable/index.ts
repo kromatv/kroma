@@ -1,1 +1,1 @@
-export * from './focusable';
+export * from './focusable.component';

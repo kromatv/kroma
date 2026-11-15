@@ -1,0 +1,267 @@
+// A searchable select for long lists (the model picker on the IA page).
+// Renders as the design's chevron value-chip; opening reveals a sticky search
+// box that filters the options (model lists from Ollama/OpenRouter get long).
+// The current value is always selectable even if it isn't in the loaded list.
+//
+// The W3C combobox pattern by hand: the search input is the combobox, the
+// filtered list is a listbox it controls through aria-activedescendant, and
+// arrows/Enter/Escape drive it while typing filters.
+
+import { useT } from '@kromatv/ui';
+import {
+  armEscapeGuard,
+  Box,
+  classes,
+  Divider,
+  Focusable,
+  Icon,
+  PANEL_BACKDROP,
+  PANEL_SHELL,
+  Portal,
+  Row,
+  selectTriggerVariants,
+  styles,
+  Text,
+  useAnchoredPlacement,
+  useEntryDefaults,
+  useStableCallback,
+  useStyles,
+} from '@kromatv/ui/kit';
+import {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type { StyleProp, View, ViewStyle } from 'react-native';
+import { SearchOption } from './search-select-option.component';
+
+// A popup is `position: fixed` and its list scrolls on one axis, neither of
+// which React Native has, so the panel stays real CSS. Every value in it still
+// comes from a token.
+const sDefinition = styles({
+  ring: { ring: 'focusEdge' },
+  backdrop: { ...PANEL_BACKDROP, m: 0, p: 0, borderWidth: 0, bg: 'transparent', cursor: 'default' },
+  list: { maxHeight: 256, overflowY: 'auto', p: 6 },
+  panel: {
+    ...PANEL_SHELL,
+    minWidth: 240,
+    overflow: 'hidden',
+    radius: 'xs',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'borderStrong',
+    bg: 'surface1',
+  },
+  entry: {
+    text: 'meta',
+    width: '100%',
+    m: 0,
+    p: 0,
+    borderWidth: 0,
+    bg: 'transparent',
+    color: 'text',
+    outlineStyle: 'none',
+  },
+});
+
+export function SearchSelect({
+  value,
+  options,
+  onChange,
+  placeholder,
+  searchPlaceholder,
+  style,
+}: Readonly<{
+  value: string;
+  options: string[];
+  onChange?: (v: string) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  style?: StyleProp<ViewStyle>;
+}>) {
+  const entryDefaults = useEntryDefaults();
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<View>(null);
+  const label = value || placeholder || '';
+
+  const close = () => {
+    setOpen(false);
+    // react-native-web hands back the DOM node, which is what takes the focus.
+    (trigger.current as unknown as HTMLElement | null)?.focus?.();
+  };
+
+  return (
+    <>
+      <Focusable
+        ref={trigger}
+        role="combobox"
+        expanded={open}
+        label={label}
+        onPress={() => setOpen(true)}
+        sv={selectTriggerVariants}
+        vars={{ size: entryDefaults.size, filled: value !== '' }}
+        style={style}
+      >
+        {(state) => (
+          <>
+            <Text variant="body" lines={1} style={state.slots.ink}>
+              {label}
+            </Text>
+            <Box flex />
+            <Icon name="chevron-down" size={16} color="textDim" />
+          </>
+        )}
+      </Focusable>
+      {open ? (
+        <SearchPanel
+          anchor={trigger}
+          value={value}
+          options={options}
+          searchPlaceholder={searchPlaceholder}
+          onPick={(v) => {
+            onChange?.(v);
+            close();
+          }}
+          onClose={close}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function SearchPanel({
+  anchor,
+  value,
+  options,
+  searchPlaceholder,
+  onPick,
+  onClose,
+}: Readonly<{
+  anchor: RefObject<View | null>;
+  value: string;
+  options: string[];
+  searchPlaceholder?: string;
+  onPick: (v: string) => void;
+  onClose: () => void;
+}>) {
+  const s = useStyles(sDefinition);
+
+  const listId = useId();
+  const [q, setQ] = useState('');
+  const [focused, setFocused] = useState(false);
+  const [active, setActive] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const t = useT();
+  const pick = useStableCallback(onPick);
+  const at = useAnchoredPlacement(anchor, { minWidth: 240, matchWidth: true, maxHeight: 320 });
+
+  const all = useMemo(
+    () => (value && !options.includes(value) ? [value, ...options] : options),
+    [value, options],
+  );
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return needle ? all.filter((o) => o.toLowerCase().includes(needle)) : all;
+  }, [q, all]);
+
+  useEffect(() => {
+    input.current?.focus();
+  }, []);
+
+  const [activeFor, setActiveFor] = useState(q);
+  if (activeFor !== q) {
+    setActiveFor(q);
+    setActive(0);
+  }
+
+  useEffect(() => {
+    const rowId = CSS.escape(`${listId}-${active}`);
+    list.current?.querySelector(`[id="${rowId}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [active, listId]);
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const hit = filtered[active];
+      if (hit) {
+        pick(hit);
+      }
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
+      e.preventDefault();
+      if (e.key === 'Escape') {
+        armEscapeGuard();
+      }
+      onClose();
+    }
+  };
+
+  if (!at) {
+    return null;
+  }
+
+  return (
+    <Portal>
+      <button
+        type="button"
+        aria-label={t('common.close')}
+        tabIndex={-1}
+        onClick={onClose}
+        className={classes(s.backdrop)}
+      />
+      <div
+        className={classes(s.panel)}
+        style={{ left: at.left, top: at.top, bottom: at.bottom, width: at.width }}
+      >
+        <Row gap={8} px={12} py={10} style={focused ? s.ring : null}>
+          <Icon name="search" size={14} color="textDim" />
+          <input
+            ref={input}
+            role="combobox"
+            aria-expanded
+            aria-controls={listId}
+            aria-activedescendant={filtered.length ? `${listId}-${active}` : undefined}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={onKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={searchPlaceholder}
+            className={classes(s.entry)}
+          />
+        </Row>
+        <Divider />
+        <div ref={list} id={listId} role="listbox" className={classes(s.list)}>
+          {filtered.length === 0 ? (
+            <Text variant="meta" color="textDim" textAlign="center" px={12} py={16}>
+              -
+            </Text>
+          ) : (
+            filtered.map((o, i) => (
+              <SearchOption
+                key={o}
+                id={`${listId}-${i}`}
+                option={o}
+                index={i}
+                selected={o === value}
+                active={i === active}
+                onHover={setActive}
+                onPick={pick}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </Portal>
+  );
+}

@@ -87,8 +87,8 @@ vi.mock('@kromatv/core', () => ({
   }),
 }));
 
-type HealthModule = typeof import('#tv/app/use-server-health');
-vi.mock('#tv/app/use-server-health', async (importOriginal) => {
+type HealthModule = typeof import('#tv/app/use-server-health.hook');
+vi.mock('#tv/app/use-server-health.hook', async (importOriginal) => {
   const actual = await importOriginal<HealthModule>();
   const useServerHealth: HealthModule['useServerHealth'] = (client, enabled, onReconnect) => {
     H.reconnect = onReconnect;
@@ -104,7 +104,7 @@ vi.mock('#tv/shared/preview', () => ({
 }));
 
 // Imported after the mocks are registered (vi.mock is hoisted above this line).
-const { useCatalogue } = await import('#tv/app/use-catalogue');
+const { useCatalogue } = await import('#tv/app/use-catalogue.hook');
 
 async function settle() {
   await act(async () => {

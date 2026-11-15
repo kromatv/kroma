@@ -3,7 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlayerMarker } from '../media-types';
-import { usePlayerCredits } from './use-player-credits';
+import { usePlayerCredits } from './use-player-credits.hook';
 
 type Opts = Parameters<typeof usePlayerCredits>[0];
 

@@ -4,8 +4,8 @@ import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import type { PermissionSource } from '#web/features/admin/module-permissions';
-import { SecurityCard } from '#web/features/admin/module-permissions-card';
-import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet';
+import { SecurityCard } from '#web/features/admin/module-permissions-card.component';
+import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet.component';
 
 const inputHost = createInputTestHost();
 

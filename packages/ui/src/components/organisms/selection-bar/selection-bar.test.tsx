@@ -4,7 +4,7 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { layout, measuring } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { SelectionBar } from './selection-bar';
+import { SelectionBar } from './selection-bar.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

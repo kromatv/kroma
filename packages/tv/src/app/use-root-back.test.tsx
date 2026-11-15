@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvNavProvider } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
-import { useRootBack } from '#tv/app/use-root-back';
+import { useRootBack } from '#tv/app/use-root-back.hook';
 
 const noop = () => undefined;
 

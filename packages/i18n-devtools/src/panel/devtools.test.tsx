@@ -9,7 +9,7 @@ import { holdStatus, wantStatus } from '../overlay/review';
 import { openChannel } from '../server/host';
 import { readSession, writeSession } from '../session';
 import { testChannel, testEngine } from '../testing';
-import { Devtools } from './devtools';
+import { Devtools } from './devtools.component';
 
 const EN = { scope: null, locale: 'en' };
 

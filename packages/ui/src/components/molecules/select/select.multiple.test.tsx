@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Select, type SelectValueDetails } from './select';
+import { Select, type SelectValueDetails } from './select.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

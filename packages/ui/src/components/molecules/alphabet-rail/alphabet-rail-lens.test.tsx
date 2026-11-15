@@ -3,7 +3,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { declared } from '#ui/testing';
-import { AlphabetRail } from './alphabet-rail';
+import { AlphabetRail } from './alphabet-rail.component';
 import { PAD, ROW_W } from './alphabet-rail-context';
 import { Bubble, Lens, lensFor } from './alphabet-rail-lens';
 

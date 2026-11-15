@@ -9,12 +9,12 @@ import type { PlaybackPlatform } from '#tv/features/playback/player/playback-bac
  * their own chunk. */
 export const BROWSER_PLAYBACK: PlaybackPlatform = {
   Player: lazy(() =>
-    import('#tv/features/playback/browser/browser-player').then((m) => ({
+    import('#tv/features/playback/browser/browser-player.component').then((m) => ({
       default: m.BrowserPlayer,
     })),
   ),
   Trailer: lazy(() =>
-    import('#tv/features/playback/browser/browser-trailer').then((m) => ({
+    import('#tv/features/playback/browser/browser-trailer.component').then((m) => ({
       default: m.BrowserTrailer,
     })),
   ),

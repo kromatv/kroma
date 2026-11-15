@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '#ui/components/atoms/button';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Dialog } from './dialog';
+import { Dialog } from './dialog.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

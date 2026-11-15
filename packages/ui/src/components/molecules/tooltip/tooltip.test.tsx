@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Tooltip } from './tooltip';
+import { Tooltip } from './tooltip.component';
 
 const SHOW_DELAY_MS = 300;
 

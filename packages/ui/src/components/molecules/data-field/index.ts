@@ -1,1 +1,1 @@
-export * from './data-field';
+export * from './data-field.component';

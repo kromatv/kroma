@@ -1,4 +1,4 @@
-import { OtpField, REGEXP_ONLY_DIGITS_AND_CHARS } from './otp-field';
+import { OtpField, REGEXP_ONLY_DIGITS_AND_CHARS } from './otp-field.component';
 
 /**
  * The other direction: a code the television DISPLAYS for a phone to type. It is

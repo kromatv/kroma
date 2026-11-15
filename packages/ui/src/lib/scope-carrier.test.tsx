@@ -6,7 +6,7 @@ import { Text } from '#ui/components/atoms/text';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { Drawer } from '#ui/components/organisms/drawer';
 import { KitProvider } from '#ui/configure';
-import { Portal } from './portal';
+import { Portal } from './portal.component';
 
 afterEach(cleanup);
 

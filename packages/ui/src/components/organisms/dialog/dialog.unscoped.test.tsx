@@ -8,10 +8,10 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
+import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope.component';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Dialog } from './dialog';
+import { Dialog } from './dialog.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

@@ -27,7 +27,7 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-import { useSavedTitles } from './use-saved-titles';
+import { useSavedTitles } from './use-saved-titles.hook';
 
 function detail(over: Partial<DiscoverDetail> & { tmdbId: number }): DiscoverDetail {
   return {

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { WhatsNewPage } from '#web/features/releases/whats-new-page';
+import { WhatsNewPage } from '#web/features/releases/whats-new-page.component';
 
 export const Route = createFileRoute('/_app/whats-new')({
   component: WhatsNewPage,

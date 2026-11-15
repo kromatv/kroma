@@ -4,7 +4,7 @@ import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { onScreen } from '#ui/testing';
-import { SeekBar, type SeekBarProps } from './seek-bar';
+import { SeekBar, type SeekBarProps } from './seek-bar.component';
 
 afterEach(cleanup);
 

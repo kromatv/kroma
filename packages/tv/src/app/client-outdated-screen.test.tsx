@@ -3,7 +3,7 @@
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ClientOutdatedScreen } from '#tv/app/client-outdated-screen';
+import { ClientOutdatedScreen } from '#tv/app/client-outdated-screen.component';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
 import { EnvProvider } from '#tv/app/providers/env';
 

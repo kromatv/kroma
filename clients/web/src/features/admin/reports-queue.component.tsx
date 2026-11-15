@@ -1,0 +1,228 @@
+import { useServerUpdate } from '#web/shared/lib/use-server-update.hook';
+// Admin "Signalements" queue: every user-submitted problem report as a
+// searchable / filterable table (mirroring the Demandes queue), with a triage
+// drawer. Backed by GET /api/admin/reports + the report.updated WS event.
+
+import type { Report, ReportCategory, ReportStatus } from '@kromatv/client/reports';
+import { TABULAR, Table } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Avatar, EmptyState, Row, Text } from '@kromatv/ui/kit';
+
+import { useState } from 'react';
+import { Pill, PillDot } from '#web/features/admin/pill.component';
+import { ReportDrawer } from '#web/features/admin/report-drawer.component';
+import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
+import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import {
+  Chip,
+  ConsoleSearch,
+  ConsoleSummary,
+  ConsoleToast,
+  useConsoleToast,
+  useThrottledReload,
+} from '#web/features/admin/table-console';
+import { useAuth } from '#web/shared/lib/auth';
+import { TableSkeleton } from '#web/shared/ui';
+
+type StatusBucket = ReportStatus | 'all';
+type CategoryFilter = ReportCategory | 'all';
+
+const CATEGORIES: ReportCategory[] = ['metadata', 'video', 'audio', 'subtitles', 'other'];
+
+function ReportRow({ report, onOpen }: Readonly<{ report: Report; onOpen: () => void }>) {
+  const t = useT();
+  const cat = categoryMeta(report.category);
+  const st = statusMeta(report.status);
+  return (
+    <Table.Row onPress={onOpen}>
+      <Table.Cell>
+        <Text variant="label" lines={1}>
+          {report.subjectTitle}
+        </Text>
+        <Text variant="meta" color="textDim" lines={1} mt={3}>
+          {t(kindLabelKey(report.subjectKind))}
+          {report.message ? ` · ${report.message}` : ''}
+        </Text>
+      </Table.Cell>
+
+      <Table.Cell>
+        <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
+          {t(cat.labelKey)}
+        </Pill>
+      </Table.Cell>
+
+      <Table.Cell row gap={10}>
+        <Avatar name={report.reportedByName ?? '?'} size={26} circle />
+        <Text variant="meta" color="textMuted" lines={1}>
+          {report.reportedByName ?? t('reports.unknownUser')}
+        </Text>
+      </Table.Cell>
+
+      <Table.Cell>
+        <Text variant="meta" color="textDim" style={TABULAR}>
+          {new Date(report.createdAt).toLocaleDateString()}
+        </Text>
+      </Table.Cell>
+
+      <Table.Cell>
+        <Pill ink={st.color} bg={soft(st.color)} leading={<PillDot tone={st.color} />}>
+          {t(st.labelKey)}
+        </Pill>
+      </Table.Cell>
+    </Table.Row>
+  );
+}
+
+export function ReportsQueuePage() {
+  const t = useT();
+  const { client } = useAuth();
+  const canManage = useCap('reports.manage');
+
+  const [status, setStatus] = useState<StatusBucket>('open');
+  const [category, setCategory] = useState<CategoryFilter>('all');
+  const [q, setQ] = useState('');
+  const { toast, flash } = useConsoleToast();
+
+  const { data, reload } = usePoll(['admin', 'reports'], () => client.reports.list(), 30000);
+
+  const throttledReload = useThrottledReload(reload);
+  useServerUpdate('report.updated', throttledReload);
+
+  // Refreshes the list + toasts on success; rejects on failure so the drawer
+  // (which awaits this) can leave the report untouched.
+  const act = (label: string, fn: () => Promise<unknown>) =>
+    fn()
+      .then(() => {
+        flash(label);
+        void reload();
+      })
+      .catch((e) => {
+        flash(t('reports.actionFailed'));
+        throw e;
+      });
+  const resolve = (r: Report) =>
+    act(`« ${r.subjectTitle} » ${t('reports.toastResolved')}`, () => client.reports.resolve(r.id));
+  const dismiss = (r: Report) =>
+    act(`« ${r.subjectTitle} » ${t('reports.toastDismissed')}`, () => client.reports.dismiss(r.id));
+  const reopen = (r: Report) =>
+    act(`« ${r.subjectTitle} » ${t('reports.toastReopened')}`, () => client.reports.reopen(r.id));
+  const remove = (r: Report) =>
+    act(`« ${r.subjectTitle} » ${t('reports.toastDeleted')}`, () => client.reports.delete(r.id));
+
+  const openDrawer = (report: Report) =>
+    ReportDrawer.call({
+      report,
+      canManage,
+      onResolve: resolve,
+      onDismiss: dismiss,
+      onReopen: reopen,
+      onDelete: remove,
+    });
+
+  const all = data?.reports ?? [];
+  const c = data?.counts;
+  const needle = q.trim().toLowerCase();
+  const rows = all.filter(
+    (r) =>
+      (status === 'all' || r.status === status) &&
+      (category === 'all' || r.category === category) &&
+      (!needle ||
+        r.subjectTitle.toLowerCase().includes(needle) ||
+        (r.reportedByName ?? '').toLowerCase().includes(needle)),
+  );
+  const catCount = (cat: ReportCategory) => all.filter((r) => r.category === cat).length;
+
+  return (
+    <>
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.reportsTitle')}</PageHeader.Title>
+        <PageHeader.Actions>
+          <ConsoleSearch value={q} onChange={setQ} placeholder={t('reports.searchPlaceholder')} />
+        </PageHeader.Actions>
+      </PageHeader.Root>
+      <ConsoleSummary
+        total={c?.total ?? 0}
+        totalLabel={t('reports.totalLabel')}
+        accent={c?.open ?? 0}
+        accentLabel={t('reports.openLabel')}
+      />
+
+      <Row wrap gap={10} mb={12}>
+        <Chip
+          label={t('reports.status.open')}
+          count={c?.open}
+          dot="accent"
+          on={status === 'open'}
+          onClick={() => setStatus('open')}
+        />
+        <Chip
+          label={t('reports.status.resolved')}
+          count={c?.resolved}
+          dot="success"
+          on={status === 'resolved'}
+          onClick={() => setStatus('resolved')}
+        />
+        <Chip
+          label={t('reports.status.dismissed')}
+          count={c?.dismissed}
+          dot="glyph"
+          on={status === 'dismissed'}
+          onClick={() => setStatus('dismissed')}
+        />
+        <Chip
+          label={t('reports.filterAll')}
+          count={c?.total}
+          on={status === 'all'}
+          onClick={() => setStatus('all')}
+        />
+      </Row>
+
+      <Row wrap gap={8} mb={16}>
+        <Chip
+          label={t('reports.filterAll')}
+          on={category === 'all'}
+          tone="blue"
+          onClick={() => setCategory('all')}
+        />
+        {CATEGORIES.map((cat) => (
+          <Chip
+            key={cat}
+            label={t(categoryMeta(cat).labelKey)}
+            count={catCount(cat)}
+            tone="blue"
+            on={category === cat}
+            onClick={() => setCategory(cat)}
+          />
+        ))}
+      </Row>
+
+      <Table.Root
+        columns={[{ min: 200 }, { width: 128 }, { width: 150 }, { width: 96 }, { width: 116 }]}
+      >
+        <Table.Header>
+          <Table.Column>{t('reports.colTitle')}</Table.Column>
+          <Table.Column>{t('reports.colCategory')}</Table.Column>
+          <Table.Column>{t('reports.colReporter')}</Table.Column>
+          <Table.Column>{t('reports.colDate')}</Table.Column>
+          <Table.Column>{t('reports.colStatus')}</Table.Column>
+        </Table.Header>
+
+        {rows.map((r) => (
+          <ReportRow key={r.id} report={r} onOpen={() => void openDrawer(r)} />
+        ))}
+
+        {data === null ? <TableSkeleton rows={8} /> : null}
+
+        {data && rows.length === 0 ? (
+          <EmptyState.Root icon="flag">
+            <EmptyState.Title>
+              {all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
+            </EmptyState.Title>
+          </EmptyState.Root>
+        ) : null}
+      </Table.Root>
+
+      <ConsoleToast toast={toast} />
+    </>
+  );
+}

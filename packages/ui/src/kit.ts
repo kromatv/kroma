@@ -63,11 +63,11 @@ export { DEFAULT_STYLE_SCOPE } from './core/style-scope';
 export { resolveStyles, useStyles } from './core/styles';
 export { createThemeRuntime } from './core/theme';
 export * from './core/tokens';
-export { useThemeControls, useThemeVersion } from './core/use-theme';
+export { useThemeControls, useThemeVersion } from './core/use-theme.hook';
 export type { AnchorPlacement, AnchorRect, AnchorViewport } from './lib/anchor';
 export { placeUnder } from './lib/anchor';
-export type { ListKeysAt, PanelKeyEvent, PanelScroll } from './lib/anchored-keys';
-export { useListKeys, useRowInView } from './lib/anchored-keys';
+export type { ListKeysAt, PanelKeyEvent, PanelScroll } from './lib/anchored-keys.hook';
+export { useListKeys, useRowInView } from './lib/anchored-keys.hook';
 export {
   PANEL_BACKDROP,
   PANEL_SHELL,
@@ -81,9 +81,9 @@ export { matchText, textRuns } from './lib/text-match';
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';
-export { ScrollMask } from './lib/scroll-mask';
-export { TopFade } from './lib/top-fade';
-export { TopFadeBand } from './lib/top-fade-band';
+export { ScrollMask } from './lib/scroll-mask.component';
+export { TopFade } from './lib/top-fade.component';
+export { TopFadeBand } from './lib/top-fade-band.component';
 export { ARROW, HAND } from './lib/cursor';
 // The one sanctioned way to ask for the DOM from shared code (null on a TV).
 export { webDocument, webWindow } from './lib/dom';
@@ -96,19 +96,19 @@ export {
   useControlMetrics,
   useEntryDefaults,
 } from './lib/field-shell';
-export { useFocusNav } from './lib/focus-nav';
+export { useFocusNav } from './lib/focus-nav.hook';
 export type { FocusDirection, FocusOwner } from './lib/focus-platform';
 export { usePlatformFocus } from './lib/focus-platform';
 export { useHardwareKeys } from './lib/focus-remote';
-export type { FocusScopeProps, ScreenScopeProps } from './lib/focus-scope';
-export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
-export type { FocusScrollProps } from './lib/focus-scroll';
-export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll';
+export type { FocusScopeProps, ScreenScopeProps } from './lib/focus-scope.component';
+export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope.component';
+export type { FocusScrollProps } from './lib/focus-scroll.component';
+export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll.component';
 export { useFocusServices } from './lib/focus-services-context';
-export { FrostSource } from './lib/gl-frost/frost-source';
+export { FrostSource } from './lib/gl-frost/frost-source.component';
 export type { FrostSourceProps } from './lib/gl-frost/frost-source-types';
 export type { FocusNavHandlers } from './lib/focus-types';
-export { useFocusVisible } from './lib/focus-visible';
+export { useFocusVisible } from './lib/focus-visible.hook';
 export type {
   FieldErrors,
   Form,
@@ -130,23 +130,23 @@ export {
   useIconAssets,
   useIconLibrary,
 } from './lib/icons/library';
-export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
-export { reactNativeImage, useImageBackend } from './lib/image-backend';
+export type { ImageBackend, ImageBackendProps } from './lib/image-backend.hook';
+export { reactNativeImage, useImageBackend } from './lib/image-backend.hook';
 export { htmlVideoEngines } from './lib/html-video';
 export { createInputGate, InputGateProvider, useInputGate } from './lib/input-gate';
-export { PageMain } from './lib/landmark';
-export type { LoopKind } from './lib/loop';
-export { useLoop } from './lib/loop';
+export { PageMain } from './lib/landmark.component';
+export type { LoopKind } from './lib/loop.hook';
+export { useLoop } from './lib/loop.hook';
 export { monoFont } from './lib/mono-font';
 export type { NativeDevice } from './lib/native-device';
 export { nativeDevice } from './lib/native-device';
 export type { SessionFlag } from './lib/session-flag';
 export { sessionFlag } from './lib/session-flag';
-export { OverlayHost } from './lib/overlay-host';
+export { OverlayHost } from './lib/overlay-host.component';
 export type { PerfReport } from './lib/perf';
 export { createPerfSampler } from './lib/perf';
-export { PerfProvider, usePerfSampler } from './lib/perf-provider';
-export { Portal, PortalHost } from './lib/portal';
+export { PerfProvider, usePerfSampler } from './lib/perf-provider.component';
+export { Portal, PortalHost } from './lib/portal.component';
 export { createPressGuard, PRESS_GUARD_MS } from './lib/press-guard';
 export { useReducedMotion } from './lib/reduced-motion';
 export type { ReportCategoryMeta } from './lib/report-categories';
@@ -155,20 +155,20 @@ export type { RingGeometry, RingProps } from './lib/ring';
 export { RING_ROTATION, ringGeometry } from './lib/ring';
 export { ringRoomBlock, ringRoomInline } from './lib/ring-room';
 export { RingScopeProvider } from './lib/ring-scope';
-export { useShake } from './lib/shake';
-export type { SlotProps } from './lib/slot';
-export { Slot } from './lib/slot';
+export { useShake } from './lib/shake.hook';
+export type { SlotProps } from './lib/slot.component';
+export { Slot } from './lib/slot.component';
 export { SORT_ICON } from './lib/sort-icon';
-export { useStableCallback } from './lib/stable-callback';
-export type { SurfacePresentation } from './lib/surface-presentation';
+export { useStableCallback } from './lib/stable-callback.hook';
+export type { SurfacePresentation } from './lib/surface-presentation.hook';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
-export { SvgXml } from './lib/svg';
-export type { CopyState } from './lib/use-copy';
-export { useCopy } from './lib/use-copy';
-export type { GrowingCount } from './lib/use-growing-count';
-export { useGrowingCount } from './lib/use-growing-count';
-export { useSettledValue } from './lib/use-settled-value';
+export { SvgXml } from './lib/svg.component';
+export type { CopyState } from './lib/use-copy.hook';
+export { useCopy } from './lib/use-copy.hook';
+export type { GrowingCount } from './lib/use-growing-count.hook';
+export { useGrowingCount } from './lib/use-growing-count.hook';
+export { useSettledValue } from './lib/use-settled-value.hook';
 export type { WheelSpin } from './lib/wheel-paths';
 export {
   KROMA_WHEEL_COLORS,

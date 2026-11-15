@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Trend, type TrendSeries } from './trend.tsx';
+import { Trend, type TrendSeries } from './trend.component.tsx';
 
 const DAYS = ['2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19', '2026-09-20'];
 

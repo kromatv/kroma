@@ -14,10 +14,10 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { layout } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Select, type SelectSingleRootProps } from './select';
+import { Select, type SelectSingleRootProps } from './select.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

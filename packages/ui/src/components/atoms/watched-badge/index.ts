@@ -1,1 +1,1 @@
-export * from './watched-badge';
+export * from './watched-badge.component';

@@ -4,7 +4,7 @@ import { cleanup, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { declared } from '#ui/testing';
-import { Progress } from './progress';
+import { Progress } from './progress.component';
 
 afterEach(cleanup);
 

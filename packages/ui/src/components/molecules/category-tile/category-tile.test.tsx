@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { CategoryTile } from './category-tile';
+import { CategoryTile } from './category-tile.component';
 
 afterEach(cleanup);
 

@@ -1,7 +1,7 @@
 import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { TitleDetail } from '#web/features/catalog/title-detail';
+import { TitleDetail } from '#web/features/catalog/title-detail.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { buildTitleView } from '#web/shared/lib/title-view';

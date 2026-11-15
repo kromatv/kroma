@@ -7,14 +7,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { moved, NetworkMiddleware } from '#web/features/admin/network-middleware';
+import { moved, NetworkMiddleware } from '#web/features/admin/network-middleware.component';
 
 const api = vi.hoisted(() => ({ middleware: vi.fn(), saveMiddleware: vi.fn() }));
 
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ client: { network: api } }),
 }));
-vi.mock('#web/features/admin/network-callers', () => ({
+vi.mock('#web/features/admin/network-callers.hook', () => ({
   useCallerName: () => (caller: string) => caller,
 }));
 

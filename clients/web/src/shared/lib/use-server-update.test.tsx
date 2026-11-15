@@ -3,7 +3,7 @@ import { createQueryClient } from '@kromatv/client/query';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createWebRuntime } from './api';
-import { useServerUpdate } from './use-server-update';
+import { useServerUpdate } from './use-server-update.hook';
 import { WebRuntimeProvider } from './web-runtime';
 
 afterEach(() => vi.unstubAllGlobals());

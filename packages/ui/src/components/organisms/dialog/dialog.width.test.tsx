@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { Drawer } from '#ui/components/organisms/drawer';
 import { DIALOG_PAD, dialogPad, SURFACE_WIDTH } from '#ui/lib/surface-shell';
-import { Dialog } from './dialog';
+import { Dialog } from './dialog.component';
 
 afterEach(cleanup);
 

@@ -3,8 +3,8 @@ import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Callout, Row, Spinner, Text } from '@kromatv/ui/kit';
 import type { AdminModule } from '#web/features/admin/module-api';
-import { InstallList } from '#web/features/admin/module-install-list';
-import { ConsentSummary } from '#web/features/admin/module-permissions-consent';
+import { InstallList } from '#web/features/admin/module-install-list.component';
+import { ConsentSummary } from '#web/features/admin/module-permissions-consent.component';
 import { consentOf } from '#web/features/admin/module-permissions-sources';
 
 /** The dialog title already says the install failed, so the server's

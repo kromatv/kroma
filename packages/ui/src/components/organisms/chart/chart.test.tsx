@@ -3,7 +3,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SERIES_COLORS } from '#ui/core/tokens';
-import { Chart } from './chart';
+import { Chart } from './chart.component';
 
 afterEach(cleanup);
 

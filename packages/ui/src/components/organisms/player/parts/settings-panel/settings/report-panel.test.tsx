@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
-import { ReportPanel } from './report-panel';
+import { ReportPanel } from './report-panel.component';
 
 afterEach(cleanup);
 

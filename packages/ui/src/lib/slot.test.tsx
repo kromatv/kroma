@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { createRef } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cloneHost, mergeSlotProps, Slot } from './slot';
+import { cloneHost, mergeSlotProps, Slot } from './slot.component';
 
 afterEach(cleanup);
 

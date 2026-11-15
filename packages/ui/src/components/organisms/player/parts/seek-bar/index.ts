@@ -1,1 +1,1 @@
-export * from './seek-bar';
+export * from './seek-bar.component';

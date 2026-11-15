@@ -4,7 +4,7 @@ import { render } from '@testing-library/react';
 import { View } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { KitProvider } from '#ui/configure';
-import { Frost, type FrostBackdropProps } from './frost';
+import { Frost, type FrostBackdropProps } from './frost.component';
 
 describe('the blur view a native shell registers', () => {
   it('is asked for a strength and a tint, and for no Android blur method', () => {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Veil } from './veil';
+import { Veil } from './veil.component';
 import { KitProvider } from '#ui/configure';
 import { parseRamps } from '#ui/lib/veil-bitmap';
 

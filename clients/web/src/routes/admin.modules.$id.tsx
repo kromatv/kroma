@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ModuleDetailPage } from '#web/features/admin/module-detail';
+import { ModuleDetailPage } from '#web/features/admin/module-detail.component';
 
 export const Route = createFileRoute('/admin/modules/$id')({
   component: ModuleDetailRoute,

@@ -2,10 +2,10 @@ import { useT } from '@kromatv/ui';
 import { Box } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { BrowseTitle } from '#web/features/catalog/browse-hero';
-import { BrowseScreen } from '#web/features/catalog/browse-screen';
+import { BrowseTitle } from '#web/features/catalog/browse-hero.component';
+import { BrowseScreen } from '#web/features/catalog/browse-screen.component';
 import { validateBrowseSearch } from '#web/features/catalog/browse-search';
-import { ShowGrid } from '#web/features/catalog/cards';
+import { ShowGrid } from '#web/features/catalog/cards.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 

@@ -11,7 +11,7 @@ import {
   type AnchorViewport,
   placeUnder,
 } from '#ui/lib/anchor';
-import type { PanelKeyEvent } from '#ui/lib/anchored-keys';
+import type { PanelKeyEvent } from '#ui/lib/anchored-keys.hook';
 import { webWindow } from '#ui/lib/dom';
 import { OVERLAY_Z } from '#ui/lib/overlay-z';
 import { WEB } from '#ui/lib/platform';

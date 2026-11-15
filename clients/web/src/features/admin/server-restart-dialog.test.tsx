@@ -4,7 +4,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ServerRestartDialog } from './server-restart-dialog';
+import { ServerRestartDialog } from './server-restart-dialog.component';
 
 const mocks = vi.hoisted(() => ({
   health: vi.fn(),

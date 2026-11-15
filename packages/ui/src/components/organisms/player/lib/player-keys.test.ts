@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav.hook';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PanelHandle } from './nav';
 import { type PlayerKeysParams, routeRemoteKey } from './player-keys';

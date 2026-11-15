@@ -7,7 +7,7 @@ import { chromeMetrics } from '#ui/components/organisms/player/lib/metrics';
 import { type ControlId, controlOrder } from '#ui/components/organisms/player/lib/nav';
 import { WEB_FLAGS } from '#ui/components/organisms/player/types';
 import { I18nProvider } from '#ui/services/i18n';
-import { SettingsPanel } from './settings-panel';
+import { SettingsPanel } from './settings-panel.component';
 import { APPEARANCE, controller, GEN } from './settings-panel.fixture';
 
 afterEach(cleanup);

@@ -2,7 +2,7 @@
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Poster } from './poster';
+import { Poster } from './poster.component';
 
 afterEach(cleanup);
 

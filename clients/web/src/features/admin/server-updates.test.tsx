@@ -4,7 +4,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ServerUpdatesPage } from './server-updates';
+import { ServerUpdatesPage } from './server-updates.component';
 
 const mocks = vi.hoisted(() => ({
   data: null as UpdateStatus | null,
@@ -36,14 +36,14 @@ vi.mock('#web/features/admin/shell', async () => {
     usePoll: () => ({ data: mocks.data, failed: mocks.failed, reload: mocks.reload }),
   };
 });
-vi.mock('#web/features/admin/server-restart-dialog', () => ({
+vi.mock('#web/features/admin/server-restart-dialog.component', () => ({
   ServerRestartDialog: ({ onClose }: { onClose: () => void }) => (
     <button type="button" onClick={onClose}>
       Restart dialog
     </button>
   ),
 }));
-vi.mock('#web/shared/ui/route-link', () => ({
+vi.mock('#web/shared/ui/route-link.component', () => ({
   RouteLink: () => <a href="/admin/backup">Backup</a>,
 }));
 const inputHost = createInputTestHost();

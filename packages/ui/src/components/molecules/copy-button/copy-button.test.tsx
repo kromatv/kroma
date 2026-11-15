@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CopyButton } from './copy-button';
+import { CopyButton } from './copy-button.component';
 
 beforeEach(() => {
   Object.defineProperty(navigator, 'clipboard', {

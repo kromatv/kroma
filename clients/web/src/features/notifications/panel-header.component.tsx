@@ -1,0 +1,134 @@
+import { useT } from '@kromatv/ui';
+import {
+  Badge,
+  Box,
+  classes,
+  Drawer,
+  Icon,
+  IconButton,
+  Row,
+  SegmentGroup,
+  Spacer,
+  Spinner,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useArchive } from '#web/features/notifications/use-archive.hook';
+import {
+  type NotificationFilter,
+  useUnreadCount,
+} from '#web/features/notifications/use-notifications';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
+/** The drawer's fixed half: what the panel is, what it is showing, and the
+ * things that act on the whole of it. */
+export function PanelHeader({
+  filter,
+  onFilterChange,
+}: Readonly<{ filter: NotificationFilter; onFilterChange: (next: NotificationFilter) => void }>) {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
+  const t = useT();
+  const queryClient = useQueryClient();
+  const unread = useUnreadCount();
+  const [busy, setBusy] = useState(false);
+  const { archiveRead } = useArchive();
+  const [archiving, setArchiving] = useState(false);
+  const { data: anyRead = false } = useQuery({
+    ...webRuntime.queries.userQueries.notifications(),
+    select: (v) => v.notifications.some((n) => n.read),
+  });
+  const archiveOff = archiving || !anyRead;
+
+  async function archiveAllRead() {
+    setArchiving(true);
+    try {
+      await archiveRead();
+    } finally {
+      setArchiving(false);
+    }
+  }
+
+  async function markAll() {
+    setBusy(true);
+    try {
+      await webRuntime.client.notifications.markAllRead();
+      await queryClient.invalidateQueries({
+        queryKey: webRuntime.queries.userQueries.notifications().queryKey,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const markAllOff = unread === 0 || busy;
+  const unreadLabel = t('notifications.filterUnread');
+  return (
+    <Box gap={10}>
+      <Row gap={8}>
+        <h2 className={classes(s.heading)}>
+          <Text variant="label">{t('notifications.title')}</Text>
+        </h2>
+        <Spacer />
+        {/* Icon-only: the label is long in every language and crowded the title. */}
+        <Row gap={2}>
+          <IconButton
+            variant="ghost"
+            diameter={36}
+            radius="sm"
+            label={t('notifications.archiveRead')}
+            onPress={() => void archiveAllRead()}
+            disabled={archiveOff}
+            style={archiveOff ? s.off : undefined}
+          >
+            {archiving ? <Spinner size={17} /> : <Icon name="archive" size={18} />}
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            diameter={36}
+            radius="sm"
+            label={t('notifications.markAllRead')}
+            onPress={() => void markAll()}
+            disabled={markAllOff}
+            style={markAllOff ? s.off : undefined}
+          >
+            {busy ? <Spinner size={17} /> : <Icon name="checks" size={18} />}
+          </IconButton>
+          <Drawer.Close diameter={36} radius="sm" glyph={18} />
+        </Row>
+      </Row>
+      <SegmentGroup.Root<NotificationFilter>
+        value={filter}
+        onValueChange={onFilterChange}
+        label={t('notifications.filter')}
+        size="sm"
+        stretch
+      >
+        <SegmentGroup.Item value="all">
+          <SegmentGroup.Label>{t('notifications.filterAll')}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+        {/* The count is a badge rather than a number in brackets, and the spoken
+            name keeps it in a form meant to be heard. */}
+        <SegmentGroup.Item
+          value="unread"
+          label={unread > 0 ? t('notifications.filterUnreadCount', { count: unread }) : unreadLabel}
+        >
+          <Row gap={6} align="center">
+            <Text>{unreadLabel}</Text>
+            {unread > 0 ? <Badge tone="neutral">{unread}</Badge> : null}
+          </Row>
+        </SegmentGroup.Item>
+        <SegmentGroup.Item value="archived">
+          <SegmentGroup.Label>{t('notifications.filterArchived')}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      </SegmentGroup.Root>
+    </Box>
+  );
+}
+
+const sDefinition = styles({ heading: { m: 0 }, off: { opacity: 0.3 } });

@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
-import { NotificationMatrix } from './notification-matrix';
+import { NotificationMatrix } from './notification-matrix.component';
 
 afterEach(() => {
   cleanup();

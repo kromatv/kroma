@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { Button } from './button';
+import { Button } from './button.component';
 
 /**
  * The row from a title screen: the primary action, two stateful toggles and a

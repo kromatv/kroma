@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
 import { declared, onScreen } from '#ui/testing';
-import { ListRow } from './list-row';
+import { ListRow } from './list-row.component';
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
   return <View {...host} {...({ href: to } as object)} />;

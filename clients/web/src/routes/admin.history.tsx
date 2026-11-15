@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { HistoryScreen } from '#web/features/admin/history';
+import { HistoryScreen } from '#web/features/admin/history.component';
 import { validateHistorySearch } from '#web/features/admin/history-query';
 
 export const Route = createFileRoute('/admin/history')({

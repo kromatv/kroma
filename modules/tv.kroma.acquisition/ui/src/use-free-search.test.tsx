@@ -2,7 +2,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ManualSearchView } from './schemas';
-import { useFreeSearch } from './use-free-search';
+import { useFreeSearch } from './use-free-search.hook';
 
 vi.mock('@kromatv/module-sdk', () => ({ useT: () => (key: string) => key }));
 

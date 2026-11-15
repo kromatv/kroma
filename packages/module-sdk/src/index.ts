@@ -14,7 +14,7 @@ export type { MessageKey } from '@kromatv/i18n';
 export { useFormat, useLocale } from '@kromatv/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';
-export { Denied } from './admin/denied';
+export { Denied } from './admin/denied.component';
 export type { AddEngineOptions, EngineChoice } from './admin/engines';
 export {
   AddEngineHost,
@@ -25,14 +25,14 @@ export {
   useModuleEnabledCheck,
 } from './admin/engines';
 export { isAnyAdmin, useAsyncAction, useCap, useFetch, usePoll } from './admin/hooks';
-export { ModuleFailed, ModuleLoading, ModuleUnavailable } from './admin/page-states';
-export { SettingsView } from './admin/settings';
+export { ModuleFailed, ModuleLoading, ModuleUnavailable } from './admin/page-states.component';
+export { SettingsView } from './admin/settings.component';
 export type { EventBus, EventKey } from './bus';
 export { createEventBus } from './bus';
 export type { KromaEvents, ModuleApiRegistry } from './contracts';
 export type { DefineModuleOptions, ModuleManifestInput, ModulePage } from './define';
 export { defineModule, pageHref } from './define';
-export { useServerEvents } from './events';
+export { useServerEvents } from './events.hook';
 export type { HostApi, HostAuth, HostBase, HostI18n, HostNav, KromaHost } from './host';
 export { moduleIconUrl } from './icon';
 export type {
@@ -93,8 +93,8 @@ export type {
   TableColumnProps,
   TableRootProps,
   TableRowProps,
-} from './ui/table';
-export { TABULAR, Table } from './ui/table';
+} from './ui/table.component';
+export { TABULAR, Table } from './ui/table.component';
 export type {
   PlainColumn,
   SortableColumn,
@@ -106,5 +106,5 @@ export type {
   TableOrder,
   TablePage,
   TableQuery,
-} from './use-sorted-table';
-export { useSortedTable } from './use-sorted-table';
+} from './use-sorted-table.hook';
+export { useSortedTable } from './use-sorted-table.hook';

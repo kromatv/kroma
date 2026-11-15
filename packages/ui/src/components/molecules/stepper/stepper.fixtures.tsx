@@ -5,7 +5,7 @@ import { Switch } from '#ui/components/atoms/switch';
 import { Text } from '#ui/components/atoms/text';
 import { SegmentGroup } from '#ui/components/molecules/segment-group';
 import type { ControlSize } from '#ui/lib/field-shell';
-import { Stepper, type StepperOrientation, useStepper } from './stepper';
+import { Stepper, type StepperOrientation, useStepper } from './stepper.component';
 
 export interface DemoProps {
   orientation?: StepperOrientation;

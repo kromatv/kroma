@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { SsoReturn } from '#web/features/accounts/sso-return';
+import { SsoReturn } from '#web/features/accounts/sso-return.component';
 
 export const Route = createFileRoute('/sso')({
   validateSearch: (s: Record<string, unknown>): { flow?: string; code?: string } => ({

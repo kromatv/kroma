@@ -57,7 +57,7 @@ function assemble(
   const paths = pathsEnding(found, STORY_MDX);
   const stories = paths.map((path) => {
     const story = storyFromMdx(moduleAt<StoryMdxModule>(path), path);
-    // Matched by name: a story beside `button.tsx` is called `Button`, and a
+    // Matched by name: a story beside `button.component.tsx` is called `Button`, and a
     // compound one's parts are the keys under it.
     const documented = propSections(story.name, props);
     return { ...story, ...(documented.length ? { props: documented } : null), path };

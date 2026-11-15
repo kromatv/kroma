@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Pagination } from './pagination';
+import { Pagination } from './pagination.component';
 import { type PageSlot, pageWindow, paginate } from './paging';
 
 afterEach(cleanup);

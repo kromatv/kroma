@@ -5,7 +5,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
-import { MissingEpisodeRow } from './episode-row';
+import { MissingEpisodeRow } from './episode-row.component';
 
 vi.hoisted(() => {
   vi.stubEnv('NODE_ENV', 'development');

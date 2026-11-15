@@ -1,6 +1,6 @@
 import { Field } from '#ui/components/molecules/field';
 
-import { Disclosure } from './disclosure';
+import { Disclosure } from './disclosure.component';
 
 export function Parts() {
   return (

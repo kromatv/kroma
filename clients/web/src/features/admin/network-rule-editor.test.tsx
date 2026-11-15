@@ -16,7 +16,7 @@ import {
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RULES_VIEW } from '#web/features/admin/network.fixture';
-import { RuleEditor } from '#web/features/admin/network-rule-editor';
+import { RuleEditor } from '#web/features/admin/network-rule-editor.component';
 
 const api = vi.hoisted(() => ({
   rules: vi.fn(),

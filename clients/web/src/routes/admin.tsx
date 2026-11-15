@@ -4,7 +4,7 @@ import { Box, classes, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { AdminLayout } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
-import { useRequireAuth } from '#web/shared/lib/require-auth';
+import { useRequireAuth } from '#web/shared/lib/require-auth.hook';
 import { page } from '#web/shared/ui';
 
 // Any management capability unlocks the console; pages further gate their writes.

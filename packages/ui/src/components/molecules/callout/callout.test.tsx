@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
-import { Callout, type CalloutTone } from './callout';
+import { Callout, type CalloutTone } from './callout.component';
 
 afterEach(cleanup);
 

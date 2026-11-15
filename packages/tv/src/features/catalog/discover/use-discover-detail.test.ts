@@ -10,7 +10,7 @@ const { detail, client } = vi.hoisted(() => {
 
 vi.mock('#tv/app/router', () => ({ useClient: () => client }));
 
-import { useDiscoverDetail } from './use-discover-detail';
+import { useDiscoverDetail } from './use-discover-detail.hook';
 
 const noop = () => undefined;
 

@@ -7,7 +7,7 @@ async function pointerOn(os: string, isTV: boolean): Promise<{ has: boolean; les
     Platform: { OS: os, isTV },
     View: 'View',
   }));
-  vi.doMock('./focus-transition', () => ({ usePressScale: vi.fn() }));
+  vi.doMock('./focus-transition.hook', () => ({ usePressScale: vi.fn() }));
   vi.doMock('./platform', () => ({ WEB: false }));
   vi.doMock('./press-dip', () => ({ useFlatPress: vi.fn() }));
   const { POINTERLESS, TV_HAS_POINTER } = await import('./control-platform');
@@ -16,7 +16,7 @@ async function pointerOn(os: string, isTV: boolean): Promise<{ has: boolean; les
 
 afterEach(() => {
   vi.doUnmock('react-native');
-  vi.doUnmock('./focus-transition');
+  vi.doUnmock('./focus-transition.hook');
   vi.doUnmock('./platform');
   vi.doUnmock('./press-dip');
 });

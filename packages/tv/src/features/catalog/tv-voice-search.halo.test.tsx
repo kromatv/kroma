@@ -5,7 +5,7 @@ import { cleanup, render } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import type { VoiceSearchBackend } from '#tv/app/voice-search';
-import { TvVoiceSearch } from '#tv/features/catalog/tv-voice-search';
+import { TvVoiceSearch } from '#tv/features/catalog/tv-voice-search.component';
 
 // Two react-native-web facts this file is built on: it picks a mock Animated
 // that never touches the driver when NODE_ENV is `test`, and it warns about the

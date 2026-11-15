@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
-import { FocusCard, HAS_FOCUS_CARD } from './focus-card';
+import { FocusCard, HAS_FOCUS_CARD } from './focus-card.component';
 import { NATIVE_FOCUS, useNativeFocus } from './native-focus';
 
 const OVERLAY = StyleSheet.absoluteFill;

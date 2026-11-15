@@ -1,0 +1,206 @@
+import {
+  Avatar,
+  Box,
+  Button,
+  Drawer,
+  type HostElement,
+  IconButton,
+  Row,
+  resolveStyles,
+  styles,
+  Text,
+  useStyleScope,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+// Slide-in report drawer: subject identity (category + status + kind), the
+// reporter + date, the free-text message, a deep-link to the title's fiche, and
+// the triage actions (resolve / dismiss / reopen / delete).
+
+import type { Report, ReportStatus } from '@kromatv/client/reports';
+import { useT } from '@kromatv/ui';
+
+import { useState } from 'react';
+import { createCallable } from 'react-call';
+import { Pill } from '#web/features/admin/pill.component';
+import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
+import { RouteLink } from '#web/shared/ui/route-link.component';
+
+function ficheLink(report: Report): HostElement | null {
+  if (report.subjectKind === 'movie') {
+    return <RouteLink to="/movies/$id" params={{ id: report.subjectId }} />;
+  }
+  if (report.subjectKind === 'show') {
+    return <RouteLink to="/shows/$id" params={{ id: report.subjectId }} />;
+  }
+  return null;
+}
+
+function Identity({ report }: Readonly<{ report: Report }>) {
+  const t = useT();
+  const cat = categoryMeta(report.category);
+  const st = statusMeta(report.status);
+  return (
+    <>
+      <Row between mb={16}>
+        <Text variant="overline" color="textDim">
+          {t('reports.sheet')}
+        </Text>
+        <Drawer.Close />
+      </Row>
+      <Row wrap gap={8} mb={10}>
+        <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
+          {t(cat.labelKey)}
+        </Pill>
+        <Pill ink={st.color} bg={soft(st.color)} variant="overline">
+          {t(st.labelKey)}
+        </Pill>
+        <Text variant="overline" color="textDim">
+          {t(kindLabelKey(report.subjectKind))}
+        </Text>
+      </Row>
+      <Text variant="h2" accessibilityRole="header">
+        {report.subjectTitle}
+      </Text>
+    </>
+  );
+}
+
+// Open with `await ReportDrawer.call({ report, canManage, onResolve, ... })`.
+// The action callbacks perform the mutation + parent list refresh + toast, so
+// the queue keeps updating live while the drawer stays open.
+export const ReportDrawer = createCallable<{
+  report: Report;
+  canManage: boolean;
+  onResolve: (r: Report) => Promise<void>;
+  onDismiss: (r: Report) => Promise<void>;
+  onReopen: (r: Report) => Promise<void>;
+  onDelete: (r: Report) => Promise<void>;
+}>(({ call, report: initial, canManage, onResolve, onDismiss, onReopen, onDelete }) => {
+  const scope = useStyleScope();
+  useThemeVersion();
+  const t = useT();
+  const [report, setReport] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const fiche = ficheLink(report);
+  // react-call keeps us mounted for `unmountingDelay` ms after `call.end()`,
+  // which is the window the kit Drawer's slide-out plays in.
+  const close = () => call.end();
+
+  const run = (fn: (r: Report) => Promise<void>, next: ReportStatus) => {
+    setBusy(true);
+    fn(report)
+      .then(() => setReport({ ...report, status: next }))
+      .catch(() => {})
+      .finally(() => setBusy(false));
+  };
+  const del = () => {
+    void onDelete(report);
+    close();
+  };
+
+  return (
+    <Drawer.Root
+      open={!call.ended}
+      onClose={close}
+      title={report.subjectTitle}
+      panelStyle={resolveStyles(sDefinition, scope).drawerFill}
+    >
+      <Drawer.Header>
+        <Identity report={report} />
+      </Drawer.Header>
+
+      <Drawer.Panel>
+        <Box>
+          <Text variant="overline" color="textDim" mb={12}>
+            {t('reports.reportedBy')}
+          </Text>
+          <Row gap={12} px={16} py={14} radius="xl" bg="surface1" border="tint/7">
+            <Avatar name={report.reportedByName ?? '?'} size={34} circle />
+            <Box minW={0}>
+              <Text variant="label" lines={1}>
+                {report.reportedByName ?? t('reports.unknownUser')}
+              </Text>
+              <Text variant="meta" color="textDim">
+                {new Date(report.createdAt).toLocaleDateString()}{' '}
+                {new Date(report.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </Box>
+          </Row>
+
+          {report.message ? (
+            <Box mt={16} px={16} py={14} radius="xl" bg="surface1" border="tint/7">
+              <Text variant="meta" color="textMuted">
+                {report.message}
+              </Text>
+            </Box>
+          ) : (
+            <Text variant="meta" color="textDim" mt={16}>
+              {t('reports.noMessage')}
+            </Text>
+          )}
+
+          {fiche ? (
+            <Row mt={16} self="flex-start">
+              <Button
+                variant="glass"
+                size="sm"
+                icon="external-link"
+                label={t('reports.viewTitle')}
+                asChild
+              >
+                {fiche}
+              </Button>
+            </Row>
+          ) : null}
+        </Box>
+      </Drawer.Panel>
+
+      {canManage ? (
+        <Drawer.Footer>
+          <Row gap={10}>
+            {report.status === 'open' ? (
+              <>
+                <Button
+                  icon="check"
+                  label={t('reports.actionResolve')}
+                  onPress={() => run(onResolve, 'resolved')}
+                  loading={busy}
+                  style={resolveStyles(sDefinition, scope).flex1}
+                />
+                <Button
+                  variant="glass"
+                  icon="x"
+                  label={t('reports.actionDismiss')}
+                  onPress={() => run(onDismiss, 'dismissed')}
+                  disabled={busy}
+                  style={resolveStyles(sDefinition, scope).flex1}
+                />
+              </>
+            ) : (
+              <Button
+                variant="glass"
+                icon="arrow-back-up"
+                label={t('reports.actionReopen')}
+                onPress={() => run(onReopen, 'open')}
+                disabled={busy}
+                style={resolveStyles(sDefinition, scope).flex1}
+              />
+            )}
+            <IconButton
+              control="md"
+              icon="trash"
+              label={t('reports.actionDelete')}
+              onPress={del}
+              disabled={busy}
+            />
+          </Row>
+        </Drawer.Footer>
+      ) : null}
+    </Drawer.Root>
+  );
+}, 400);
+
+const sDefinition = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });

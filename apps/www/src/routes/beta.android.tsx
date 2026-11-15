@@ -1,11 +1,11 @@
 import { IconArrowLeft, IconBrandAndroid, IconDeviceTv, IconMail } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Container } from '#site/components/container';
-import { JoinButton } from '#site/components/download/join-button';
-import { join, ProseLink } from '#site/components/download/links';
-import { StepList } from '#site/components/download/step-list';
+import { Container } from '#site/components/container.component';
+import { JoinButton } from '#site/components/download/join-button.component';
+import { join, ProseLink } from '#site/components/download/links.component';
+import { StepList } from '#site/components/download/step-list.component';
 import { L } from '#site/components/localized-link';
-import { WheelMark } from '#site/components/wheel-mark';
+import { WheelMark } from '#site/components/wheel-mark.component';
 import { getLocale } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';

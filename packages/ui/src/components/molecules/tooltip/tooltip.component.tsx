@@ -1,0 +1,15 @@
+import { DomOnly } from '#ui/lib/dom-only.component';
+import { TooltipBubble } from './tooltip-bubble.component';
+import type { TooltipProps } from './tooltip-props';
+
+/** A short label over its child on hover or keyboard focus, or under it at the top of the window; where there is no pointer the child renders untouched. */
+function Tooltip({ label, children }: Readonly<TooltipProps>) {
+  return (
+    <DomOnly fallback={children}>
+      <TooltipBubble label={label}>{children}</TooltipBubble>
+    </DomOnly>
+  );
+}
+
+export type { TooltipProps };
+export { Tooltip };

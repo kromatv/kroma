@@ -46,7 +46,7 @@ export const Kit = defineWorkbench({
 
 `<Kit />` is the whole site. In KROMA the standing half of that (`title`, `brand`,
 `provider`) is a plain object in `@kromatv/ui/workbench-config` that every host
-spreads, so `apps/kit/src/config.tsx` is down to the discovery, the router and a
+spreads, so `apps/kit/src/config.component.tsx` is down to the discovery, the router and a
 footer. Four seams make the package app-agnostic.
 
 **`stories` is a prop, not an import.** Discovery needs a bundler primitive

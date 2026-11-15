@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Table } from './table';
+import { Table } from './table.component';
 
 afterEach(cleanup);
 

@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { markImageReady, resetImageReady } from '#ui/lib/image-ready';
-import { Img, type ImgProps } from './img';
+import { Img, type ImgProps } from './img.component';
 
 const el = (props: ImgProps) => createElement(Img, props);
 const main = (root: HTMLElement) =>

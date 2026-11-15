@@ -1,3 +1,3 @@
-export type { ListGroupProps } from './list-group';
-export { ListGroup } from './list-group';
-export * from './list-row';
+export type { ListGroupProps } from './list-group.component';
+export { ListGroup } from './list-group.component';
+export * from './list-row.component';

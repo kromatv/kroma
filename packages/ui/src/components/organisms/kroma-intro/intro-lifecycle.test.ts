@@ -2,8 +2,8 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EXIT_MS } from './constants';
-import { useIntroExit } from './use-intro-exit';
-import { useIntroKeys } from './use-intro-keys';
+import { useIntroExit } from './use-intro-exit.hook';
+import { useIntroKeys } from './use-intro-keys.hook';
 
 // The hooks own document/window listeners, so a hook left mounted by one test would
 // keep eating the next one's keys.

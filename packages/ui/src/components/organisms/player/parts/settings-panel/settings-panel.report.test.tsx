@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import type { PlayerReportCategory } from '../../media-types';
-import { SettingsPanel } from './settings-panel';
+import { SettingsPanel } from './settings-panel.component';
 import { APPEARANCE, controller, GEN } from './settings-panel.fixture';
 
 afterEach(cleanup);

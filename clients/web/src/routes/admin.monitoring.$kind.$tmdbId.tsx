@@ -1,6 +1,6 @@
 import { RequestKind } from '@kromatv/client/requests';
 import { createFileRoute } from '@tanstack/react-router';
-import { MonitoringDetailPage } from '#web/features/admin/monitoring-detail';
+import { MonitoringDetailPage } from '#web/features/admin/monitoring-detail.component';
 
 export const Route = createFileRoute('/admin/monitoring/$kind/$tmdbId')({
   component: MonitoringDetailRoute,

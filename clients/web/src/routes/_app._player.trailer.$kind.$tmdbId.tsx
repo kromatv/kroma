@@ -4,7 +4,7 @@ import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { TrailerPlayer } from '#web/features/playback/trailer-player';
+import { TrailerPlayer } from '#web/features/playback/trailer-player.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 

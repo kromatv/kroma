@@ -1,6 +1,6 @@
 import { IconArrowLeft } from '@tabler/icons-react';
 import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
-import { Container } from '#site/components/container';
+import { Container } from '#site/components/container.component';
 import { L } from '#site/components/localized-link';
 import { getLocale, useLang } from '#site/lib/i18n';
 import { getPost } from '#site/lib/posts';

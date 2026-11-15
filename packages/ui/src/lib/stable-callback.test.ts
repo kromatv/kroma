@@ -2,7 +2,7 @@
 
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useStableCallback } from './stable-callback';
+import { useStableCallback } from './stable-callback.hook';
 
 afterEach(cleanup);
 

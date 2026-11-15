@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { type TvNav, TvClientProvider, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
 import { fakeClipBackend } from '#tv/features/playback/player/clip-backend.fixture';
-import { TvTrailerPlayer } from '#tv/features/playback/tv-trailer-player';
+import { TvTrailerPlayer } from '#tv/features/playback/tv-trailer-player.component';
 
 const inputHost = createInputTestHost();
 

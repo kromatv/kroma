@@ -6,7 +6,7 @@ import { KitProvider } from '#ui/configure';
 
 import { onScreen as baseOnScreen } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Select } from './select';
+import { Select } from './select.component';
 
 const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 

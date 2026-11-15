@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Button } from './button';
+import { Button } from './button.component';
 
 afterEach(cleanup);
 

@@ -1,5 +1,5 @@
 import { Animated, Platform, View } from 'react-native';
-import { usePressScale } from './focus-transition';
+import { usePressScale } from './focus-transition.hook';
 import { WEB } from './platform';
 import { useFlatPress } from './press-dip';
 
