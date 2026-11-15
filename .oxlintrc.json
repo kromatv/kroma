@@ -167,7 +167,29 @@
     "unicorn/no-array-sort": "off",
     "unicorn/no-array-reverse": "off",
     "kroma/no-boolean-flag-param": "error",
-    "kroma/zod-nonempty": "error"
+    "kroma/zod-nonempty": "error",
+    "kroma/import-boundaries": [
+      "error",
+      {
+        "aliases": {
+          "#web/": "clients/web/src/",
+          "#tv/": "packages/tv/src/",
+          "#ui/": "packages/ui/src/"
+        },
+        "slices": ["clients/web/src/features", "packages/tv/src/features"],
+        "ladders": [
+          [
+            "packages/ui/src/core/tokens",
+            "packages/ui/src/components/atoms",
+            "packages/ui/src/components/molecules",
+            "packages/ui/src/components/organisms",
+            "packages/ui/src/components/templates"
+          ],
+          ["clients/web/src/shared", "clients/web/src/features", "clients/web/src/routes"],
+          ["packages/tv/src/shared", "packages/tv/src/features"]
+        ]
+      }
+    ]
   },
   "ignorePatterns": [
     ".claude/worktrees",
@@ -330,6 +352,7 @@
         "packages/cli/**",
         "packages/installer/**",
         "packages/sonar-tools/**",
+        "packages/quality-tools/**",
         "packages/shots/**",
         "packages/tv-probe/**",
         "packages/workspace-tools/**",
@@ -355,6 +378,249 @@
       "rules": {
         "typescript/no-floating-promises": "off",
         "typescript/no-misused-promises": "off"
+      }
+    },
+    {
+      "files": ["packages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@kromatv/web",
+                  "@kromatv/web/*",
+                  "@kromatv/tizen",
+                  "@kromatv/tizen/*",
+                  "@kromatv/webos",
+                  "@kromatv/webos/*",
+                  "@kromatv/mobile",
+                  "@kromatv/mobile/*",
+                  "@kromatv/desktop",
+                  "@kromatv/desktop/*",
+                  "@kromatv/tv-web",
+                  "@kromatv/tv-web/*",
+                  "@kromatv/tv-native",
+                  "@kromatv/tv-native/*",
+                  "@kromatv/site",
+                  "@kromatv/site/*",
+                  "@kromatv/kit",
+                  "@kromatv/kit/*",
+                  "@kromatv/modules-site",
+                  "@kromatv/modules-site/*",
+                  "@kromatv/package-source",
+                  "@kromatv/package-source/*"
+                ],
+                "message": "A library never imports a shell or a site: the dependency runs from clients and apps down to packages (ARCHITECTURE.md)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/ui/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@kromatv/web",
+                  "@kromatv/web/*",
+                  "@kromatv/tizen",
+                  "@kromatv/tizen/*",
+                  "@kromatv/webos",
+                  "@kromatv/webos/*",
+                  "@kromatv/mobile",
+                  "@kromatv/mobile/*",
+                  "@kromatv/desktop",
+                  "@kromatv/desktop/*",
+                  "@kromatv/tv-web",
+                  "@kromatv/tv-web/*",
+                  "@kromatv/tv-native",
+                  "@kromatv/tv-native/*",
+                  "@kromatv/site",
+                  "@kromatv/site/*",
+                  "@kromatv/kit",
+                  "@kromatv/kit/*",
+                  "@kromatv/modules-site",
+                  "@kromatv/modules-site/*",
+                  "@kromatv/package-source",
+                  "@kromatv/package-source/*"
+                ],
+                "message": "A library never imports a shell or a site: the dependency runs from clients and apps down to packages (ARCHITECTURE.md)."
+              },
+              {
+                "group": ["@kromatv/tv", "@kromatv/tv/*"],
+                "message": "The libraries are ordered client, core, ui, tv, each knowing only the ones before it (ARCHITECTURE.md)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/core/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@kromatv/web",
+                  "@kromatv/web/*",
+                  "@kromatv/tizen",
+                  "@kromatv/tizen/*",
+                  "@kromatv/webos",
+                  "@kromatv/webos/*",
+                  "@kromatv/mobile",
+                  "@kromatv/mobile/*",
+                  "@kromatv/desktop",
+                  "@kromatv/desktop/*",
+                  "@kromatv/tv-web",
+                  "@kromatv/tv-web/*",
+                  "@kromatv/tv-native",
+                  "@kromatv/tv-native/*",
+                  "@kromatv/site",
+                  "@kromatv/site/*",
+                  "@kromatv/kit",
+                  "@kromatv/kit/*",
+                  "@kromatv/modules-site",
+                  "@kromatv/modules-site/*",
+                  "@kromatv/package-source",
+                  "@kromatv/package-source/*"
+                ],
+                "message": "A library never imports a shell or a site: the dependency runs from clients and apps down to packages (ARCHITECTURE.md)."
+              },
+              {
+                "group": ["@kromatv/ui", "@kromatv/ui/*", "@kromatv/tv", "@kromatv/tv/*"],
+                "message": "The libraries are ordered client, core, ui, tv, each knowing only the ones before it (ARCHITECTURE.md)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/client/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@kromatv/web",
+                  "@kromatv/web/*",
+                  "@kromatv/tizen",
+                  "@kromatv/tizen/*",
+                  "@kromatv/webos",
+                  "@kromatv/webos/*",
+                  "@kromatv/mobile",
+                  "@kromatv/mobile/*",
+                  "@kromatv/desktop",
+                  "@kromatv/desktop/*",
+                  "@kromatv/tv-web",
+                  "@kromatv/tv-web/*",
+                  "@kromatv/tv-native",
+                  "@kromatv/tv-native/*",
+                  "@kromatv/site",
+                  "@kromatv/site/*",
+                  "@kromatv/kit",
+                  "@kromatv/kit/*",
+                  "@kromatv/modules-site",
+                  "@kromatv/modules-site/*",
+                  "@kromatv/package-source",
+                  "@kromatv/package-source/*"
+                ],
+                "message": "A library never imports a shell or a site: the dependency runs from clients and apps down to packages (ARCHITECTURE.md)."
+              },
+              {
+                "group": [
+                  "@kromatv/core",
+                  "@kromatv/core/*",
+                  "@kromatv/ui",
+                  "@kromatv/ui/*",
+                  "@kromatv/tv",
+                  "@kromatv/tv/*"
+                ],
+                "message": "The libraries are ordered client, core, ui, tv, each knowing only the ones before it (ARCHITECTURE.md)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["clients/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@kromatv/site",
+                  "@kromatv/site/*",
+                  "@kromatv/kit",
+                  "@kromatv/kit/*",
+                  "@kromatv/modules-site",
+                  "@kromatv/modules-site/*",
+                  "@kromatv/package-source",
+                  "@kromatv/package-source/*"
+                ],
+                "message": "A client ships the product and an app is a website about it. The two never import each other (ARCHITECTURE.md)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@kromatv/web",
+                  "@kromatv/web/*",
+                  "@kromatv/tizen",
+                  "@kromatv/tizen/*",
+                  "@kromatv/webos",
+                  "@kromatv/webos/*",
+                  "@kromatv/mobile",
+                  "@kromatv/mobile/*",
+                  "@kromatv/desktop",
+                  "@kromatv/desktop/*",
+                  "@kromatv/tv-web",
+                  "@kromatv/tv-web/*",
+                  "@kromatv/tv-native",
+                  "@kromatv/tv-native/*"
+                ],
+                "message": "A client ships the product and an app is a website about it. The two never import each other (ARCHITECTURE.md)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/ui/src/components/**/*.fixtures.tsx",
+        "packages/ui/src/components/**/*.fixture.ts",
+        "packages/ui/src/components/**/*.test.ts",
+        "packages/ui/src/components/**/*.test.tsx",
+        "packages/ui/src/components/**/*.demo.tsx"
+      ],
+      "rules": {
+        "kroma/import-boundaries": "off"
       }
     }
   ]
