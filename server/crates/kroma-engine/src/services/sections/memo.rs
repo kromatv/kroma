@@ -139,6 +139,8 @@ pub struct HomeMemo {
     sections: Shelf<Arc<Vec<Section>>>,
     hero: Shelf<SectionItem>,
     candidates: Slot<Arc<Vec<HeroCandidate>>>,
+    pub(super) catalog: crate::services::reco::CatalogMemo,
+    pub(crate) world: super::world::WorldTrending,
 }
 
 // An empty catalogue is read again every time, so the first scan is seen at once.

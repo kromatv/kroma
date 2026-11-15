@@ -1,0 +1,13 @@
+{
+  "vocab.abbreviations": "Dr, Mr, Mrs, Ms, St, Jr, Sr, vs, Prof, Lt, Col, Gen, Sgt, Capt",
+  "vocab.articles": "the, a, an",
+  "vocab.episode": "episode, ep",
+  "vocab.movie": "film, films, movie, movies",
+  "vocab.numbers": "two, three, four, five, six, seven, eight, nine, ten",
+  "vocab.season": "season",
+  "vocab.show": "series, show, shows",
+  "vocab.theme.christmas": "christmas, xmas, santa claus",
+  "vocab.theme.heist": "heist, robbery, bank job",
+  "vocab.theme.summer": "summer, vacation, road trip, beach",
+  "vocab.theme.trueStory": "true story, true events, real events, biopic"
+}

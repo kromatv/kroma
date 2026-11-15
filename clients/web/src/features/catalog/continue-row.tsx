@@ -7,7 +7,7 @@ import { episodeTag, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { SectionHeading } from '#web/features/catalog/cards';
+import { SectionHeading } from '#web/features/catalog/home/section-heading';
 import { useAuth } from '#web/shared/lib/auth';
 
 import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';
@@ -40,7 +40,7 @@ function ContinueRail() {
 
   return (
     <section>
-      <SectionHeading>{t('content.continueWatching')}</SectionHeading>
+      <SectionHeading title={t('content.continueWatching')} />
       <PosterRail
         data={items}
         renderItem={({ item, positionMs, durationMs }) => {

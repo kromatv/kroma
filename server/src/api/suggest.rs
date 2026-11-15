@@ -133,12 +133,7 @@ fn section(
     items: Vec<crate::model::SectionItem>,
 ) -> Response {
     let title = i18n::t(locale, "content.aiSuggestions", &[]);
-    Json(Some(Section {
-        id: "ai:suggest".to_string(),
-        title,
-        reason,
-        items,
-    }))
+    Json(Some(Section::rail("ai:suggest", title, reason, items)))
     .into_response()
 }
 

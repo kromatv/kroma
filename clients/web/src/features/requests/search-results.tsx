@@ -2,14 +2,25 @@
 // decouvrir" (TMDB, gated), each a counted grid. Skeletons while loading, a
 // friendly empty state when nothing matches.
 
-import type { SearchHit } from '@kromatv/client/media';
-import { episodeTag, posterColors } from '@kromatv/core';
+import type { PersonHit, SearchHit } from '@kromatv/client/media';
+import { episodeTag, personSegment, posterColors, sizedImageUrl } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Box, classes, EmptyState, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
+import {
+  Avatar,
+  Box,
+  classes,
+  EmptyState,
+  Focusable,
+  Row,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import type { DiscoverSearchState } from '#web/features/requests/use-discover-search';
+import { imageUrl } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { SkeletonRow } from '#web/shared/ui';
 import { Poster } from '#web/shared/ui/poster';
@@ -26,6 +37,19 @@ const sDefinition = styles({
     animationTimingFunction: 'var(--ease-out)',
   },
   heading: { m: 0 },
+  person: {
+    row: true,
+    align: 'center',
+    gap: 12,
+    pl: 6,
+    pr: 18,
+    py: 6,
+    radius: 'pill',
+    bg: 'white/6',
+    borderWidth: 1,
+    borderColor: 'white/10',
+    maxW: 280,
+  },
 });
 
 function Section({
@@ -91,6 +115,56 @@ function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
   );
 }
 
+const FACE_W = 56;
+
+function PersonChip({ person }: Readonly<{ person: PersonHit }>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  return (
+    <Focusable label={person.name} style={s.person} asChild>
+      <RouteLink to="/people/$person" params={{ person: personSegment(person) }}>
+        <Avatar
+          name={person.name}
+          src={sizedImageUrl(imageUrl(person.profileUrl ?? null), FACE_W)}
+          size={FACE_W}
+          circle
+        />
+        <Box minW={0}>
+          <Text variant="label" lines={1}>
+            {person.name}
+          </Text>
+          <Text variant="meta" color="textMuted" lines={1}>
+            {t('person.titleCount', { count: person.titles })}
+          </Text>
+        </Box>
+      </RouteLink>
+    </Focusable>
+  );
+}
+
+function People({ people }: Readonly<{ people: readonly PersonHit[] }>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  return (
+    <section className={classes(s.band)} aria-label={t('search.people')}>
+      <h2 className={classes(s.heading)}>
+        <Text variant="title" mb={16}>
+          {t('search.people')}
+        </Text>
+      </h2>
+      <Row wrap gap={12}>
+        {people.map((person) => (
+          <PersonChip key={person.tmdbId ?? person.name} person={person} />
+        ))}
+      </Row>
+    </section>
+  );
+}
+
+function foundNothing({ local, discover, people }: Readonly<DiscoverSearchState>): boolean {
+  return local.length === 0 && discover.length === 0 && people.length === 0;
+}
+
 export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }>) {
   const t = useT();
 
@@ -102,8 +176,7 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
     );
   }
 
-  const nothing = state.local.length === 0 && state.discover.length === 0;
-  if (nothing) {
+  if (foundNothing(state)) {
     return (
       <EmptyState.Root icon="mood-empty">
         <EmptyState.Title>{t('discover.noResults')}</EmptyState.Title>
@@ -114,6 +187,7 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
 
   return (
     <Box mt={28}>
+      {state.people.length > 0 ? <People people={state.people} /> : null}
       {state.local.length > 0 ? (
         <Section title={t('discover.sectionLibrary')} count={state.local.length}>
           {(width) =>

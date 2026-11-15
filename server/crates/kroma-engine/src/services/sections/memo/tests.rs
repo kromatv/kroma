@@ -41,6 +41,7 @@ fn titles(home: &[Section]) -> Vec<String> {
 
 fn ids(home: &[Section]) -> Vec<String> {
     home.iter()
+        .filter(|s| !matches!(s.id.as_str(), "recent" | "recent-shows" | "trending"))
         .flat_map(|s| &s.items)
         .map(|entry| entry.id().to_string())
         .collect()

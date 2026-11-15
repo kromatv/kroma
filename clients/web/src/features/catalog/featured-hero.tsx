@@ -1,4 +1,4 @@
-import { metaLine, posterColors } from '@kromatv/core';
+import { metaLine, posterColors, synopsisLead } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
   Badge,
@@ -84,6 +84,7 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
   const colors = posterColors(media.id);
   const gradient = `linear-gradient(158deg, ${colors[0]}, ${colors[1]})`;
   const meta = media.metadata;
+  const synopsis = synopsisLead(meta?.overview, 240);
   const badges = heroBadges(media.video);
   const line =
     entry.type === 'movie'
@@ -125,9 +126,9 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
             </Badge>
           ))}
         </Row>
-        {meta?.overview ? (
-          <Text variant="body" lines={3} maxW={540} mb={20}>
-            {meta.overview}
+        {synopsis ? (
+          <Text variant="body" maxW={540} mb={20}>
+            {synopsis}
           </Text>
         ) : null}
         <Row wrap gap={14}>

@@ -66,6 +66,12 @@ describe('the media endpoints', () => {
       method: 'GET',
       path: '/home?view=card',
     },
+    {
+      name: 'homeCards naming its layouts',
+      call: (c) => c.media.homeCards({ layouts: ['hero', 'ranked'] }),
+      method: 'GET',
+      path: '/home?view=card&layouts=hero%2Cranked',
+    },
     { name: 'featured', call: (c) => c.media.featured(), method: 'GET', path: '/home/featured' },
     {
       name: 'aiSuggest',

@@ -28,12 +28,19 @@ pub fn routes() -> Router<SharedState> {
 #[derive(Debug, Deserialize)]
 pub struct HomeQuery {
     pub view: Option<ListView>,
+    /// The layouts the client draws beyond a rail, comma-separated:
+    /// `hero,spotlight,ranked,wide`.
+    pub layouts: Option<String>,
 }
 
 /// `GET /api/home` (Bearer) → `Section[]`, or with `?view=card` →
 /// `CardSection[]`: every entry slimmed to what a poster draws. Personalized to
 /// the caller and remembered between visits (see `services::sections::home`);
 /// titles are localized via `Accept-Language`.
+///
+/// Every section says how it asks to be drawn. A client names the layouts it
+/// draws in `?layouts=`; one that names none is served rails only, so a client
+/// released before layouts existed keeps the page it knows how to draw.
 pub async fn home(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -49,9 +56,10 @@ pub async fn home(
     {
         Ok(list) => {
             let list = visibility::keep_sections(&user, list);
+            let list = sections::adapt(&list, sections::Accepts::parse(q.layouts.as_deref()));
             match q.view {
                 Some(ListView::Card) => Json(cards(&list)).into_response(),
-                None => Json(list.as_slice()).into_response(),
+                None => Json(list).into_response(),
             }
         }
         Err(resp) => resp,

@@ -48,10 +48,20 @@ describe('useSearchAnswers', () => {
   it('answers the library and the provider for the query that was typed', async () => {
     vi.useFakeTimers();
 
-    const { result } = searching(Promise.resolve({ query: 'bert', results: [HIT] }));
+    const { result } = searching(Promise.resolve({ query: 'bert', results: [HIT], people: [] }));
     await settles(300);
 
-    expect(result.current).toEqual({ query: 'bert', library: [HIT], discover: [] });
+    expect(result.current).toEqual({ query: 'bert', library: [HIT], people: [], discover: [] });
+  });
+
+  it('hands over the people whose name the query matches', async () => {
+    vi.useFakeTimers();
+    const bert = { name: 'Bert Lahr', titles: 2 };
+
+    const { result } = searching(Promise.resolve({ query: 'bert', results: [], people: [bert] }));
+    await settles(300);
+
+    expect(result.current.people).toEqual([bert]);
   });
 
   it('holds the field empty when the answer to a cleared query lands', async () => {
@@ -61,9 +71,9 @@ describe('useSearchAnswers', () => {
     const { result, rerender } = searching(found.promise);
     await settles(300);
     rerender('');
-    found.settle({ query: 'bert', results: [HIT] });
+    found.settle({ query: 'bert', results: [HIT], people: [] });
     await settles(0);
 
-    expect(result.current).toEqual({ query: '', library: [], discover: [] });
+    expect(result.current).toEqual({ query: '', library: [], people: [], discover: [] });
   });
 });

@@ -5,10 +5,21 @@ import { EpisodeHit, MovieHit, ShowHit } from './schemas';
 export const SearchHit = z.discriminatedUnion('type', [MovieHit, ShowHit, EpisodeHit]);
 export type SearchHit = z.infer<typeof SearchHit>;
 
+/** Somebody the catalogue credits whose name matches the query. `titles`
+ * counts the titles the asker may see. */
+export const PersonHit = z.object({
+  name: z.string(),
+  tmdbId: z.number().nullish(),
+  profileUrl: z.string().nullish(),
+  titles: z.number(),
+});
+export type PersonHit = z.infer<typeof PersonHit>;
+
 /** `GET /api/search?q=…`; hits are in descending relevance. */
 export const SearchResponse = z.object({
   query: z.string(),
   results: z.array(SearchHit),
+  people: z.array(PersonHit).default([]),
 });
 export type SearchResponse = z.infer<typeof SearchResponse>;
 

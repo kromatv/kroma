@@ -1,8 +1,9 @@
-//! The home-screen section generator: context (date, daypart, recent history) +
-//! the embedding cache + a phrase bank into an ordered, de-duplicated list of
+//! The home-screen section generator: the viewer's taste, the catalogue and
+//! the moment (date, daypart) into an ordered, de-duplicated list of
 //! [`Section`]s. The client renders the result generically, so all the "what
 //! rows, in what order" logic lives here.
 
+mod board;
 mod cache;
 mod context;
 pub mod curate;
@@ -12,208 +13,38 @@ mod language_name;
 mod localized;
 mod math;
 mod memo;
-mod phrases;
+mod page;
+mod rows;
+mod shelves;
 pub mod taste;
+mod themed;
+mod themes;
+pub mod world;
 
 pub use cache::VectorCache;
 pub use memo::{hero, home, HomeMemo};
-
-use std::collections::HashSet;
+pub use page::{adapt, Accepts};
 
 use crate::db::{self, Pool};
 use crate::i18n;
 use crate::model::Section;
+use crate::services::reco::Viewer;
 use crate::state::SharedState;
 
-use crate::services::embeddings;
 use crate::services::settings;
+use board::Board;
 use context::Context;
-
-const SECTION_CAP: usize = 20;
-// Over-fetch margin so a row still fills after cross-row de-duplication.
-const FETCH: usize = SECTION_CAP + 16;
-const MIN_ITEMS: usize = 5;
-const MIN_AI_ROW: usize = 5;
-const MAX_SECTIONS: usize = 9;
-const MAX_THEMED: usize = 4;
-const MAX_CURATED: usize = 3;
-// Sentinel for rows that make no similarity claim, so nothing is filtered out.
-const NO_FLOOR: f32 = f32::NEG_INFINITY;
 
 /// Build the ordered, de-duplicated home for one user. Infallible: any step that
 /// fails (or comes up thin) simply contributes no section.
 pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Vec<Section> {
     let _ = state.vectors.refresh_if_stale(pool);
     let ctx = Context::build(pool, user_id, settings::played_percent(&state.settings));
-    // Themed rows must clear this cosine floor or they're noise (the lexical
-    // backend's "christmas" → random-classics row is what this kills).
-    let floor = embeddings::relevance_floor(&state.embedder);
-
-    let mut out = Builder {
-        pool,
-        sections: Vec::new(),
-        seen: ctx.in_progress.iter().cloned().collect(),
-    };
-
-    // Reserve the tail slots for the baseline browse rows (Trending, plus
-    // Recently-added when enabled) so heavy personalization can't crowd them out:
-    // the discretionary rows below (AI / curated / themed) stop here, leaving room.
-    let show_recent = state.settings.get_bool("showRecentHome", true);
-    let discretionary_cap = MAX_SECTIONS.saturating_sub(1 + usize::from(show_recent));
-
-    if !ctx.watched.is_empty() {
-        let ranked = state.vectors.for_you(&ctx.watched, FETCH);
-        out.push(
-            "for-you",
-            i18n::t(locale, "content.forYou", &[]),
-            None,
-            ranked,
-            NO_FLOOR,
-        );
-    }
-
-    push_because(&mut out, state, pool, &ctx, locale);
-    push_ai_rows(
-        &mut out,
-        state,
-        pool,
-        user_id,
-        locale,
-        discretionary_cap,
-        floor,
-    );
-    push_curated_rows(&mut out, pool, locale, discretionary_cap);
-    push_themed_rows(&mut out, state, &ctx, locale, discretionary_cap, floor);
-
-    let trending = unscored(trending_ids(pool, FETCH));
-    out.push(
-        "trending",
-        i18n::t(locale, "content.trending", &[]),
-        None,
-        trending,
-        NO_FLOOR,
-    );
-
-    if state.settings.get_bool("showRecentHome", true) {
-        let recent = unscored(db::recently_added_ids(pool, FETCH).unwrap_or_default());
-        out.push(
-            "recent",
-            i18n::t(locale, "content.recentlyAdded", &[]),
-            None,
-            recent,
-            NO_FLOOR,
-        );
-    }
-
-    // Overlay every row's items into the request locale (title/overview/genres).
-    // Best-effort a translation-cache miss leaves the household-language blob.
-    let content_locale = i18n::content_locale(locale);
-    let mut sections = out.sections;
-    for s in &mut sections {
-        let _ = db::localize::overlay_section_items(pool, &mut s.items, content_locale);
-    }
-    sections
-}
-
-// Genre-guarded because the lexical embedder is weakly discriminative item<->item
-// (the catalog clusters in a narrow cosine band, so a drama's nearest can be a
-// horror film) and this row claims a specific resemblance to one seed. No-op when
-// the seed has no genres, or with a discriminative backend.
-fn push_because(out: &mut Builder, state: &SharedState, pool: &Pool, ctx: &Context, locale: &str) {
-    if let Some(last) = &ctx.last_finished {
-        if let Some(title) = last_title(pool, last) {
-            let heading = i18n::t(locale, "content.becauseYouWatched", &[("title", &title)]);
-            let ranked = db::genre_guard(pool, last, state.vectors.similar(last, FETCH));
-            out.push("because", heading, None, ranked, NO_FLOOR);
-        }
-    }
-}
-
-// Authored by the nightly `sections.personalize` job. The model only *names* each
-// row; the items come from the embedder resolving its vibe `query`, so they are
-// always real catalog titles. Empty until the user has enough history.
-fn push_ai_rows(
-    out: &mut Builder,
-    state: &SharedState,
-    pool: &Pool,
-    user_id: &str,
-    locale: &str,
-    discretionary_cap: usize,
-    floor: f32,
-) {
-    for gs in generate::load(pool, user_id) {
-        if out.sections.len() >= discretionary_cap {
-            break;
-        }
-        let query = embeddings::embed(&state.embedder, &gs.query);
-        let ranked = state.vectors.nearest(&query, FETCH, &HashSet::new());
-        if gs.genres.is_empty() {
-            continue;
-        }
-        let ranked = db::keep_shelf(pool, ranked, &gs.genres, gs.form.kinds());
-        if ranked.len() < MIN_AI_ROW {
-            continue;
-        }
-        let reason = gs.reason.get(locale);
-        let reason = (!reason.is_empty()).then(|| reason.to_string());
-        out.push(
-            &format!("ai:{}", gs.key),
-            gs.title.get(locale).to_string(),
-            reason,
-            ranked,
-            floor,
-        );
-    }
-}
-
-// Global, same for everyone. Membership is explicit (resolved ids), hence
-// `NO_FLOOR`; a daily-rotated window keeps the home feeling fresh.
-fn push_curated_rows(out: &mut Builder, pool: &Pool, locale: &str, discretionary_cap: usize) {
-    for (key, title, reason, ids) in curated_rows(pool, locale) {
-        if out.sections.len() >= discretionary_cap {
-            break;
-        }
-        out.push(
-            &format!("curated:{key}"),
-            title,
-            reason,
-            unscored(ids),
-            NO_FLOOR,
-        );
-    }
-}
-
-// Floored: a phrase only becomes a row if the library has matches above the
-// noise level.
-fn push_themed_rows(
-    out: &mut Builder,
-    state: &SharedState,
-    ctx: &Context,
-    locale: &str,
-    discretionary_cap: usize,
-    floor: f32,
-) {
-    let mut themed = 0;
-    for phrase in phrases::eligible(ctx) {
-        if themed >= MAX_THEMED || out.sections.len() >= discretionary_cap {
-            break;
-        }
-        let query = embeddings::embed(&state.embedder, phrase.query);
-        let ranked = state.vectors.nearest(&query, FETCH, &HashSet::new());
-        if out.push(
-            &format!("themed:{}", phrase.key),
-            i18n::t(locale, phrase.title_key, &[]),
-            None,
-            ranked,
-            floor,
-        ) {
-            themed += 1;
-        }
-    }
-}
-
-fn unscored(ids: Vec<String>) -> Vec<(String, f32)> {
-    ids.into_iter().map(|id| (id, 0.0)).collect()
+    let catalog = state.home.catalog.get(state, pool);
+    let now = crate::services::jobs::now_ms().div_euclid(1000);
+    let viewer = Viewer::read(state, pool, &catalog, user_id, now);
+    let board = Board::new(state, pool, locale, &catalog, &viewer, &ctx);
+    page::compose(&board, state.settings.get_bool("showRecentHome", true))
 }
 
 // Logs before falling back to empty: swallowing the error made a broken query
@@ -226,7 +57,11 @@ fn trending_ids(pool: &Pool, n: usize) -> Vec<String> {
     })
 }
 
-fn curated_rows(pool: &Pool, locale: &str) -> Vec<(String, String, Option<String>, Vec<String>)> {
+fn curated_rows(
+    pool: &Pool,
+    locale: &str,
+    max: usize,
+) -> Vec<(String, String, Option<String>, Vec<String>)> {
     let all = db::get_curated(pool).unwrap_or_default();
     if all.is_empty() {
         return Vec::new();
@@ -234,7 +69,7 @@ fn curated_rows(pool: &Pool, locale: &str) -> Vec<(String, String, Option<String
     // Rotate the window once per day (no per-request RNG → stable within a day).
     let day = (crate::services::jobs::now_ms() / 86_400_000) as usize;
     let offset = day % all.len();
-    let n = MAX_CURATED.min(all.len());
+    let n = max.min(all.len());
     (0..n)
         .map(|i| {
             let row = &all[(offset + i) % all.len()];
@@ -245,468 +80,9 @@ fn curated_rows(pool: &Pool, locale: &str) -> Vec<(String, String, Option<String
         .collect()
 }
 
-// Enforces the caps, the quality gate, and cross-row de-duplication: a title
-// shows in at most one row.
-struct Builder<'a> {
-    pool: &'a Pool,
-    sections: Vec<Section>,
-    seen: HashSet<String>,
-}
-
-impl Builder<'_> {
-    // Items below `floor` are dropped before the count gate, so a row of only
-    // weak matches never appears at all.
-    fn push(
-        &mut self,
-        id: &str,
-        title: String,
-        reason: Option<String>,
-        ranked: Vec<(String, f32)>,
-        floor: f32,
-    ) -> bool {
-        if self.sections.len() >= MAX_SECTIONS {
-            return false;
-        }
-        let mut taken: HashSet<&str> = HashSet::new();
-        let fresh: Vec<&str> = ranked
-            .iter()
-            .filter(|(_, score)| *score >= floor)
-            .map(|(id, _)| id.as_str())
-            .filter(|i| !self.seen.contains(*i) && taken.insert(*i))
-            .take(SECTION_CAP)
-            .collect();
-        if fresh.len() < MIN_ITEMS {
-            return false;
-        }
-        // Resolve to movies *or* shows so a row can mix films and séries.
-        let items = match db::entities_by_ids(self.pool, &fresh) {
-            Ok(v) if v.len() >= MIN_ITEMS => v,
-            _ => return false,
-        };
-        for it in &items {
-            self.seen.insert(it.id().to_string());
-        }
-        self.sections.push(Section {
-            id: id.to_string(),
-            title,
-            reason,
-            items,
-        });
-        true
-    }
-}
-
-fn last_title(pool: &Pool, id: &str) -> Option<String> {
-    db::get_title(pool, id).ok()?.map(|t| t.title)
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::db::testing::TempPool;
-    use std::collections::HashMap;
-
-    fn test_pool() -> TempPool {
-        crate::db::testing::temp_pool("sections-mod")
-    }
-
-    #[test]
-    fn unscored_wraps_ids_with_zero_score() {
-        let out = unscored(vec!["a".into(), "b".into()]);
-        assert_eq!(out, vec![("a".to_string(), 0.0), ("b".to_string(), 0.0)]);
-    }
-
-    #[test]
-    fn a_curated_text_is_read_in_the_readers_language_then_english_then_what_there_is() {
-        let text = |pairs: &[(&str, &str)]| -> HashMap<String, String> {
-            pairs
-                .iter()
-                .map(|(locale, text)| ((*locale).to_string(), (*text).to_string()))
-                .collect()
-        };
-        let both = text(&[("fr", "Bonjour"), ("en", "Hello")]);
-        let only_fr = text(&[("fr", "Salut")]);
-
-        assert_eq!(i18n::pick(&both, "fr").map(String::as_str), Some("Bonjour"));
-        assert_eq!(i18n::pick(&both, "de").map(String::as_str), Some("Hello"));
-        assert_eq!(
-            i18n::pick(&only_fr, "en").map(String::as_str),
-            Some("Salut")
-        );
-        assert!(i18n::pick(&text(&[]), "en").is_none());
-    }
-
-    fn curated(key: &str) -> crate::db::CuratedRow {
-        crate::db::CuratedRow {
-            key: key.to_string(),
-            rank: 0,
-            source: "llm".to_string(),
-            item_ids: vec!["x".to_string()],
-            titles: HashMap::from([("en".to_string(), format!("Title {key}"))]),
-            reasons: HashMap::from([("en".to_string(), "because".to_string())]),
-        }
-    }
-
-    #[test]
-    fn curated_rows_returns_capped_window() {
-        let pool = test_pool();
-        let rows = vec![curated("a"), curated("b"), curated("c"), curated("d")];
-        crate::db::set_curated(&pool, &rows).unwrap();
-        let out = curated_rows(&pool, "en");
-        // MAX_CURATED (3) of the 4 stored rows.
-        assert_eq!(out.len(), 3);
-        // Each entry carries a localized title + reason.
-        for (_key, title, reason, ids) in &out {
-            assert!(title.starts_with("Title "));
-            assert_eq!(reason.as_deref(), Some("because"));
-            assert_eq!(ids, &vec!["x".to_string()]);
-        }
-    }
-
-    #[test]
-    fn curated_rows_empty_without_data() {
-        let pool = test_pool();
-        assert!(curated_rows(&pool, "en").is_empty());
-    }
-
-    fn seed_movies(pool: &Pool, ids: &[&str]) {
-        let conn = pool.get().unwrap();
-        conn.execute(
-            "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
-            [],
-        )
-        .unwrap();
-        for id in ids {
-            // Test-controlled literal ids, so inline them.
-            conn.execute(
-                &format!("INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('{id}','movie','Title {id}','mkv','lib','t')"),
-                [],
-            )
-            .unwrap();
-        }
-    }
-
-    #[test]
-    fn builder_push_adds_section_when_enough_fresh_items() {
-        let pool = test_pool();
-        seed_movies(&pool, &["a", "b", "c", "d", "e"]);
-        let mut b = Builder {
-            pool: &pool,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        let ranked: Vec<(String, f32)> = ["a", "b", "c", "d", "e"]
-            .iter()
-            .map(|i| (i.to_string(), 1.0))
-            .collect();
-        assert!(b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
-        assert_eq!(b.sections.len(), 1);
-        assert_eq!(b.sections[0].items.len(), 5);
-        // Every resolved id is now marked seen (cross-row de-duplication).
-        assert!(b.seen.contains("a") && b.seen.contains("e"));
-    }
-
-    #[test]
-    fn builder_push_rejects_thin_row() {
-        let pool = test_pool();
-        seed_movies(&pool, &["a", "b"]);
-        let mut b = Builder {
-            pool: &pool,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        let ranked: Vec<(String, f32)> = ["a", "b"].iter().map(|i| (i.to_string(), 1.0)).collect();
-        // Fewer than MIN_ITEMS survivors -> no section.
-        assert!(!b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
-        assert!(b.sections.is_empty());
-    }
-
-    #[test]
-    fn builder_push_applies_floor_and_seen_filters() {
-        let pool = test_pool();
-        seed_movies(&pool, &["a", "b", "c", "d", "e", "f", "g"]);
-        let mut b = Builder {
-            pool: &pool,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        b.seen.insert("a".to_string()); // already shown in an earlier row
-        let ranked = vec![
-            ("a".to_string(), 1.0), // seen -> dropped
-            ("b".to_string(), 0.1), // below the 0.5 floor -> dropped
-            ("c".to_string(), 0.9),
-            ("d".to_string(), 0.9),
-            ("e".to_string(), 0.9),
-            ("f".to_string(), 0.9),
-            ("g".to_string(), 0.9),
-        ];
-        // Five survive (c..g), so the row is produced without a or b.
-        assert!(b.push("row1", "Row".into(), None, ranked, 0.5));
-        let ids: Vec<&str> = b.sections[0].items.iter().map(|i| i.id()).collect();
-        assert_eq!(ids.len(), 5);
-        assert!(!ids.contains(&"a") && !ids.contains(&"b"));
-    }
-
-    #[test]
-    fn a_ranked_list_that_repeats_a_title_spends_one_slot_on_it() {
-        let pool = test_pool();
-        let ids: Vec<String> = (0..SECTION_CAP).map(|i| format!("m{i}")).collect();
-        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
-        seed_movies(&pool, &refs);
-        let mut b = Builder {
-            pool: &pool,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        let ranked: Vec<(String, f32)> = ids
-            .iter()
-            .flat_map(|id| [(id.clone(), 1.0), (id.clone(), 1.0)])
-            .collect();
-
-        assert!(b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
-
-        let shown: Vec<&str> = b.sections[0].items.iter().map(|i| i.id()).collect();
-        assert_eq!(shown, refs);
-    }
-
-    #[test]
-    fn builder_push_rejects_once_at_max_sections() {
-        let pool = test_pool();
-        seed_movies(&pool, &["a", "b", "c", "d", "e"]);
-        let dummy = || Section {
-            id: "x".into(),
-            title: "x".into(),
-            reason: None,
-            items: Vec::new(),
-        };
-        let mut b = Builder {
-            pool: &pool,
-            sections: (0..MAX_SECTIONS).map(|_| dummy()).collect(),
-            seen: HashSet::new(),
-        };
-        let ranked: Vec<(String, f32)> = ["a", "b", "c", "d", "e"]
-            .iter()
-            .map(|i| (i.to_string(), 1.0))
-            .collect();
-        assert!(!b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
-    }
-
-    #[test]
-    fn a_row_of_ids_the_catalog_no_longer_holds_is_not_emitted() {
-        let pool = test_pool();
-        seed_movies(&pool, &["a"]);
-        let mut b = Builder {
-            pool: &pool,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        let ranked: Vec<(String, f32)> = (0..5).map(|i| (format!("ghost{i}"), 1.0)).collect();
-        assert!(!b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
-        assert!(b.sections.is_empty());
-        assert!(
-            b.seen.is_empty(),
-            "a row that was not emitted claims no titles"
-        );
-    }
-
-    // Every document on the same unit vector, so every pair is a perfect match
-    // and the row is decided by the floor rather than by the similarity.
-    fn uniform() -> crate::point::Point {
-        crate::point::Point::stub("embedder", |method, _| match method {
-            "meta" => Some(serde_json::json!({ "dim": 2, "relevance_floor": 0.5 })),
-            "embed" => Some(serde_json::json!([1.0, 0.0])),
-            _ => None,
-        })
-    }
-
-    #[test]
-    fn a_themed_phrase_the_library_answers_becomes_a_row() {
-        let state = crate::test_support::test_state_with_embedder(uniform());
-        let ids = ["a", "b", "c", "d", "e"];
-        seed_movies(&state.db, &ids);
-        let vector = embeddings::embed(&state.embedder, "anything");
-        assert_eq!(
-            vector.len(),
-            embeddings::dim(&state.embedder),
-            "a stored vector of another width is noise"
-        );
-        for id in ids {
-            crate::db::set_item_vector(&state.db, id, &vector).unwrap();
-        }
-        let _ = state.vectors.refresh_if_stale(&state.db);
-        let ctx = Context::build(&state.db, "u1", 90);
-        let mut out = Builder {
-            pool: &state.db,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-
-        push_themed_rows(
-            &mut out,
-            &state,
-            &ctx,
-            "en",
-            MAX_SECTIONS,
-            embeddings::relevance_floor(&state.embedder),
-        );
-
-        assert_eq!(out.sections.len(), 1);
-        assert!(
-            out.sections[0].id.starts_with("themed:"),
-            "{}",
-            out.sections[0].id
-        );
-        assert_eq!(out.sections[0].items.len(), ids.len());
-    }
-
-    #[test]
-    fn last_title_returns_title_or_none() {
-        let pool = test_pool();
-        seed_movies(&pool, &["a"]);
-        assert_eq!(last_title(&pool, "a").as_deref(), Some("Title a"));
-        assert!(last_title(&pool, "ghost").is_none());
-    }
-
-    // rows (for-you / because / ai / themed resolve to nothing), so the assertions
-    // target the deterministic SQL-sourced rows (trending, recently-added) + a
-    // direct push of a curated row. --------------------------------------------
-
-    use crate::test_support;
-
-    #[test]
-    fn build_home_emits_the_trending_and_recently_added_rows_and_no_thin_rows() {
-        let state = test_support::test_state();
-        let ids: Vec<String> = (0..12).map(|i| format!("m{i}")).collect();
-        let refs: Vec<&str> = ids.iter().map(|s| s.as_str()).collect();
-        seed_movies(&state.db, &refs);
-        // Recent plays of the first six, so `Context` resolves a last-played + watch
-        // history (the "because you watched" branch runs, adding no row under the
-        // no-op embedder) *and* the trending row has enough items to clear the gate.
-        for id in refs.iter().take(6) {
-            test_support::seed_play(&state, "u1", id, test_support::now_secs());
-        }
-
-        let sections = build_home(&state, &state.db, "en", "u1");
-
-        // Trending and recently-added are the deterministic, SQL-sourced rows that
-        // do not depend on the embedder. Trending carries the played titles; the
-        // other six fall through to recently-added (cross-row de-duplication).
-        let trending = sections
-            .iter()
-            .find(|s| s.id == "trending")
-            .expect("trending row present");
-        assert_eq!(trending.items.len(), 6);
-        assert!(trending.items.iter().all(|i| refs[..6].contains(&i.id())));
-        let recent = sections
-            .iter()
-            .find(|s| s.id == "recent")
-            .expect("recent row present");
-        assert_eq!(recent.items.len(), 6);
-        // The quality gate means every emitted row clears MIN_ITEMS (nothing thin).
-        assert!(sections.iter().all(|s| s.items.len() >= MIN_ITEMS));
-    }
-
-    #[test]
-    fn a_film_left_half_watched_is_not_offered_again_under_the_continue_rail() {
-        let state = test_support::test_state();
-        let ids: Vec<String> = (0..8).map(|i| format!("m{i}")).collect();
-        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
-        seed_movies(&state.db, &refs);
-        let user = crate::db::create_user(&state.db, "cw@t.dev", "Cw", "h", &[])
-            .unwrap()
-            .id;
-        crate::db::upsert_progress(&state.db, &user, "m0", 60_000, Some(600_000)).unwrap();
-
-        let sections = build_home(&state, &state.db, "en", &user);
-
-        assert!(sections.iter().any(|s| s.id == "recent"));
-        assert!(sections
-            .iter()
-            .flat_map(|s| &s.items)
-            .all(|i| i.id() != "m0"));
-    }
-
-    #[test]
-    fn push_curated_rows_resolves_membership_into_a_section() {
-        let state = test_support::test_state();
-        let ids = ["a", "b", "c", "d", "e"];
-        seed_movies(&state.db, &ids);
-        let row = crate::db::CuratedRow {
-            key: "dir-spotlight".into(),
-            rank: 0,
-            source: "llm".into(),
-            item_ids: ids.iter().map(|s| s.to_string()).collect(),
-            titles: HashMap::from([("en".to_string(), "Director Spotlight".to_string())]),
-            reasons: HashMap::from([("en".to_string(), "great films".to_string())]),
-        };
-        crate::db::set_curated(&state.db, &[row]).unwrap();
-
-        let mut b = Builder {
-            pool: &state.db,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        push_curated_rows(&mut b, &state.db, "en", MAX_SECTIONS);
-        assert_eq!(b.sections.len(), 1);
-        assert_eq!(b.sections[0].id, "curated:dir-spotlight");
-        assert_eq!(b.sections[0].title, "Director Spotlight");
-        assert_eq!(b.sections[0].reason.as_deref(), Some("great films"));
-        assert_eq!(b.sections[0].items.len(), 5);
-
-        let mut full = Builder {
-            pool: &state.db,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        push_curated_rows(&mut full, &state.db, "en", 0);
-        assert!(full.sections.is_empty());
-    }
-
-    #[test]
-    fn the_ai_rows_a_user_had_authored_are_offered_to_the_embedder() {
-        let state = test_support::test_state();
-        let ids = ["a", "b", "c", "d", "e"];
-        seed_movies(&state.db, &ids);
-        let user = crate::db::create_user(&state.db, "bo@t.dev", "Bo", "h", &[])
-            .unwrap()
-            .id;
-        crate::db::set_user_taste(
-            &state.db,
-            &user,
-            Some("likes slow cinema"),
-            r#"[{"key":"slow","title":"Slow Cinema","query":"quiet contemplative films","reason":"because you watched"}]"#,
-        )
-        .unwrap();
-
-        let mut b = Builder {
-            pool: &state.db,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        push_ai_rows(&mut b, &state, &state.db, &user, "fr", MAX_SECTIONS, 0.0);
-        assert!(b.sections.is_empty());
-
-        let mut capped = Builder {
-            pool: &state.db,
-            sections: Vec::new(),
-            seen: HashSet::new(),
-        };
-        push_ai_rows(&mut capped, &state, &state.db, &user, "fr", 0, 0.0);
-        assert!(capped.sections.is_empty());
-    }
-
-    #[test]
-    fn a_broken_trending_query_costs_the_row_and_nothing_else() {
-        let state = test_support::test_state();
-        state
-            .db
-            .get()
-            .unwrap()
-            .execute("DROP TABLE play_history", [])
-            .unwrap();
-        assert!(trending_ids(&state.db, 10).is_empty());
-
-        let sections = build_home(&state, &state.db, "en", "u1");
-        assert!(sections.iter().all(|s| s.id != "trending"));
-    }
-}
+mod fixtures;
+#[cfg(test)]
+mod tests;
+#[cfg(test)]
+mod trending_tests;

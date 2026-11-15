@@ -1,12 +1,5 @@
-import type { KromaClient } from '@kromatv/client';
-import type { MediaCard, Section, SectionItem, Show } from '@kromatv/client/media';
-import {
-  formatRuntime,
-  genreLabels,
-  posterColors,
-  qualityBadge,
-  qualityBadgeForVideo,
-} from '@kromatv/core';
+import type { MediaCard } from '@kromatv/client/media';
+import { formatRuntime, genreLabels, posterColors, synopsisLead } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
@@ -14,6 +7,7 @@ import {
   Box,
   Button,
   colors,
+  type FocusHandle,
   FocusRegion,
   Img,
   ScrollMask,
@@ -27,7 +21,15 @@ import {
   useStyles,
   Veil,
 } from '@kromatv/ui/kit';
-import { entryId, entryMetadata, type HomeEntry } from '#tv/features/catalog/home/sectionEntry';
+import { useEffect, useRef, useState } from 'react';
+import type { HeroSlide } from '#tv/features/catalog/home/hero-slides';
+import {
+  entryId,
+  entryMetadata,
+  entryTitle,
+  type HomeEntry,
+} from '#tv/features/catalog/home/sectionEntry';
+import { useHeroPager } from '#tv/features/catalog/home/use-hero-pager';
 
 const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
 const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
@@ -36,9 +38,10 @@ const HERO_VEIL = `${HERO_VEIL_VERTICAL}, ${HERO_VEIL_HORIZONTAL}`;
 const HERO_HEIGHT = 691;
 const HERO_EMPTY_HEIGHT = 432;
 
-// The hero fills the 1920 stage, but a backdrop master is a TMDB w1280, so
-// there is nothing sharper to ask for.
-const HERO_W = 1280;
+const DOT = 8;
+const DOT_SHOWN = 28;
+
+const SYNOPSIS_BUDGET = 220;
 
 const sDefinition = styles({
   titleGap: { mt: 16, mb: 14 },
@@ -61,72 +64,54 @@ const sDefinition = styles({
   },
 });
 
-export interface HeroInfo {
-  hero: HomeEntry | null;
-  heroId: string | null;
-  heroMeta: ReturnType<typeof entryMetadata> | null;
-  heroBackdrop: string | null;
-  heroBadge: string | null;
-}
-
-// The featured spotlight: the server's daily pick, falling back to the first
-// entry of the top server section, then to the first catalog movie so the
-// hero is never empty.
-export function computeHero(
-  featured: SectionItem | null,
-  sections: Section[],
-  movies: MediaCard[],
-  client: KromaClient,
-): HeroInfo {
-  const hero: HomeEntry | null =
-    featured ?? sections[0]?.items[0] ?? (movies[0] ? { type: 'movie', item: movies[0] } : null);
-  const heroId = hero ? entryId(hero) : null;
-  const heroMeta = hero ? entryMetadata(hero) : null;
-  let heroBackdrop: string | null = null;
-  if (hero) {
-    heroBackdrop =
-      hero.type === 'show'
-        ? (client.media.artwork.backdropFor(hero.show, HERO_W) ??
-          client.media.artwork.showPosterFor(hero.show, HERO_W))
-        : (client.media.artwork.backdropFor(hero.item, HERO_W) ??
-          client.media.artwork.posterFor(hero.item, HERO_W));
-  }
-  let heroBadge: string | null = null;
-  if (hero) {
-    heroBadge =
-      hero.type === 'show' ? qualityBadgeForVideo(hero.show.video) : qualityBadge(hero.item);
-  }
-  return { hero, heroId, heroMeta, heroBackdrop, heroBadge };
-}
+type HeroButton = 'primary' | 'secondary';
 
 export interface HeroProps {
-  info: HeroInfo;
+  slides: readonly HeroSlide[];
   onPlay: (m: MediaCard) => void;
-  onSelectShow: (show: Show) => void;
   onSelectEntry: (e: HomeEntry) => void;
   maskInset: number;
 }
 
-/** The home screen's cinematic spotlight, or a spacer while there is nothing to feature. */
-export function Hero({
-  info,
-  onPlay,
-  onSelectShow,
-  onSelectEntry,
-  maskInset,
-}: Readonly<HeroProps>) {
+/** The home screen's cinematic spotlight, one entry at a time, or a spacer
+ * while there is nothing to feature. Left on its first button and Right on its
+ * last page through the entries. */
+export function Hero({ slides, onPlay, onSelectEntry, maskInset }: Readonly<HeroProps>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const { hero, heroId, heroMeta, heroBackdrop, heroBadge } = info;
-  if (!hero || !heroId) {
+  const primary = useRef<FocusHandle>(null);
+  const [focused, setFocused] = useState<HeroButton | null>(null);
+  const held = focused !== null;
+  const { index, page, touch } = useHeroPager({ count: slides.length, held });
+
+  const shownBefore = useRef(index);
+  useEffect(() => {
+    if (shownBefore.current === index) {
+      return;
+    }
+    shownBefore.current = index;
+    if (held) {
+      primary.current?.focus();
+    }
+  }, [index, held]);
+
+  const slide = slides[index];
+  if (!slide) {
     return <Box h={HERO_EMPTY_HEIGHT} />;
   }
+  const { entry } = slide;
+  const id = entryId(entry);
+  const meta = entryMetadata(entry);
+  const synopsis = synopsisLead(meta?.overview, SYNOPSIS_BUDGET);
+  const last: HeroButton = entry.type === 'movie' ? 'secondary' : 'primary';
+  const leave = (button: HeroButton) => setFocused((at) => (at === button ? null : at));
+
   return (
     <Box h={HERO_HEIGHT}>
       <Img
-        src={heroBackdrop}
-        background={tintGradient(posterColors(heroId))}
+        src={slide.backdrop}
+        background={tintGradient(posterColors(id))}
         position="50% 22%"
         priority
         fill
@@ -136,16 +121,16 @@ export function Hero({
       <Veil ramp={HERO_VEIL} />
       <ScrollMask inset={maskInset} style={s.copy}>
         <Text variant="overlineTv" style={s.featuredLabel} color="accentText">
-          {t('content.featured')}
+          {slide.note ?? t('content.featured')}
         </Text>
         <Text variant="hero" style={[s.heroTitle, s.titleGap]}>
-          {hero.type === 'show' ? hero.show.title : hero.item.title}
+          {entryTitle(entry)}
         </Text>
         <Box row wrap align="center" gap={12} mb={14}>
-          {heroMeta?.rating ? (
+          {meta?.rating ? (
             <>
               <Text variant="strongTv" color="accentText">
-                {`${heroMeta.rating.toFixed(1)}\u2605`}
+                {`${meta.rating.toFixed(1)}★`}
               </Text>
               <Text variant="labelTv" color="textDim">
                 ·
@@ -153,44 +138,78 @@ export function Hero({
             </>
           ) : null}
           <Text variant="labelTv" color="textMuted">
-            {heroLine(t, hero)}
+            {heroLine(t, entry)}
           </Text>
-          {heroBadge ? <Badge tone={qualityTone(heroBadge)}>{heroBadge}</Badge> : null}
+          {slide.badge ? <Badge tone={qualityTone(slide.badge)}>{slide.badge}</Badge> : null}
         </Box>
-        {heroMeta?.overview ? (
-          <Text lines={3} variant="bodyTv" maxW={720} mb={22} color="text/82">
-            {heroMeta.overview}
+        {synopsis ? (
+          <Text variant="bodyTv" maxW={720} mb={22} color="text/82">
+            {synopsis}
           </Text>
         ) : null}
-        <FocusRegion style={s.heroActions}>
-          {hero.type === 'movie' ? (
-            <>
-              <Button
-                size="tv"
-                // Home's entry point: the hero's own action, which is what the
-                // design puts the eye on.
-                autoFocus
-                icon="player-play-filled"
-                label={t('player.play')}
-                onPress={() => onPlay(hero.item)}
-              />
-              <Button
-                size="tv"
-                variant="outline"
-                label={t('content.moreInfo')}
-                onPress={() => onSelectEntry(hero)}
-                style={s.moreInfo}
-              />
-            </>
-          ) : (
+        <FocusRegion
+          style={s.heroActions}
+          onKey={(direction) => {
+            touch();
+            if (slides.length < 2) {
+              return false;
+            }
+            if (direction === 'left' && focused === 'primary') {
+              page(-1);
+            } else if (direction === 'right' && focused === last) {
+              page(1);
+            } else {
+              return false;
+            }
+            return true;
+          }}
+        >
+          <Button
+            size="tv"
+            // Home's entry point: the hero's own action, which is what the
+            // design puts the eye on.
+            autoFocus
+            focusHandle={primary}
+            icon={entry.type === 'movie' ? 'player-play-filled' : undefined}
+            label={entry.type === 'movie' ? t('content.play') : t('content.moreInfo')}
+            onPress={() => (entry.type === 'movie' ? onPlay(entry.item) : onSelectEntry(entry))}
+            onFocus={() => setFocused('primary')}
+            onBlur={() => leave('primary')}
+          />
+          {entry.type === 'movie' ? (
             <Button
               size="tv"
-              autoFocus
+              variant="outline"
               label={t('content.moreInfo')}
-              onPress={() => onSelectShow(hero.show)}
+              onPress={() => onSelectEntry(entry)}
+              onFocus={() => setFocused('secondary')}
+              onBlur={() => leave('secondary')}
+              style={s.moreInfo}
             />
-          )}
+          ) : null}
         </FocusRegion>
+        {slides.length > 1 ? (
+          <Box
+            row
+            gap={DOT}
+            mt={24}
+            role="img"
+            accessibilityLabel={t('content.heroPosition', {
+              current: index + 1,
+              total: slides.length,
+            })}
+          >
+            {slides.map((each, at) => (
+              <Box
+                key={entryId(each.entry)}
+                w={at === index ? DOT_SHOWN : DOT}
+                h={DOT}
+                radius="pill"
+                bg={at === index ? 'accent' : 'text/30'}
+              />
+            ))}
+          </Box>
+        ) : null}
       </ScrollMask>
     </Box>
   );

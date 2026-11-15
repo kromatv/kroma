@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type CardModel, movieCard, PosterCard, showCard } from '#mobile/components/cards';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
+import { PeopleStrip } from '#mobile/components/people-strip';
 import { EmptyState, Loading, SectionTitle } from '#mobile/components/ui';
 import { discoverCard } from '#mobile/lib/discover';
 import { useT } from '#mobile/lib/i18n';
@@ -103,6 +104,7 @@ export default function Search() {
   const elsewhere: CardModel[] = (beyond.data?.results ?? [])
     .filter((entry) => !entry.inLibrary)
     .map((entry) => discoverCard(entry, client, cardW));
+  const people = results.data?.people ?? [];
 
   const beyondBlock =
     elsewhere.length > 0 ? (
@@ -120,15 +122,18 @@ export default function Search() {
     if (q.length >= 2 && results.isPending) {
       return <Loading label={t('common.loading')} />;
     }
-    if (q.length >= 2 && (cards.length > 0 || beyondBlock)) {
+    if (q.length >= 2 && (cards.length > 0 || people.length > 0 || beyondBlock)) {
       return (
         <PosterGrid
           cards={cards}
           gutters={gutters}
           header={
-            cards.length > 0 ? (
-              <SectionTitle>{t('discover.sectionLibrary')}</SectionTitle>
-            ) : undefined
+            <>
+              <PeopleStrip people={people} />
+              {cards.length > 0 ? (
+                <SectionTitle>{t('discover.sectionLibrary')}</SectionTitle>
+              ) : null}
+            </>
           }
           footer={beyondBlock}
         />

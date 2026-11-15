@@ -3,7 +3,9 @@ import {
   Box,
   FocusScroll,
   Grid,
+  PersonCard,
   PosterCard,
+  Rail,
   styles,
   Text,
   TopFade,
@@ -27,7 +29,16 @@ export interface SearchSection {
   hits: SearchResult[];
 }
 
+export interface SearchPerson {
+  id: string;
+  name: string;
+  photo: string | null;
+  titles: number;
+  onOpen: () => void;
+}
+
 interface TvSearchResultsProps {
+  people: readonly SearchPerson[];
   sections: readonly SearchSection[];
   query: string;
   width?: number;
@@ -35,6 +46,7 @@ interface TvSearchResultsProps {
 }
 
 export function TvSearchResults({
+  people,
   sections,
   query,
   width,
@@ -56,7 +68,26 @@ export function TvSearchResults({
             {t('search.results')}
           </Text>
         </Box>
-        {found.length === 0 ? (
+        {people.length > 0 ? (
+          <Box gap={14} mb={34}>
+            <Text variant="overlineTv" color="textDim">
+              {t('search.people')}
+            </Text>
+            <Rail.Root inset={6} grow={false}>
+              {people.map((person) => (
+                <PersonCard
+                  key={person.id}
+                  name={person.name}
+                  role={t('person.titleCount', { count: person.titles })}
+                  photo={person.photo}
+                  label={t('person.viewWorks', { name: person.name })}
+                  onPress={person.onOpen}
+                />
+              ))}
+            </Rail.Root>
+          </Box>
+        ) : null}
+        {found.length === 0 && people.length === 0 ? (
           <Text variant="leadTv" pt={20} color="text/40">
             {emptyMessage}
           </Text>

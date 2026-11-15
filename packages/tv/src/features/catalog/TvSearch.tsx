@@ -1,11 +1,4 @@
-import type { DiscoverEntry } from '@kromatv/client/discovery';
-import {
-  genreLabels,
-  posterColors,
-  qualityBadge,
-  qualityBadgeForVideo,
-  type TitleGenres,
-} from '@kromatv/core';
+import { genreLabels, type TitleGenres } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { useDeviceStore } from '@kromatv/ui/device-store';
 import {
@@ -23,22 +16,18 @@ import {
   useFocusNav,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
-import { useClient, useNav } from '#tv/app/router';
+import { useNav } from '#tv/app/router';
 import { useSearchRequests } from '#tv/app/searchRequest';
 import { useSearchShell } from '#tv/app/searchShell';
 import { useVoiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
-import {
-  type SearchResult,
-  type SearchSection,
-  TvSearchResults,
-} from '#tv/features/catalog/TvSearchResults';
-
+import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
+import { useSearchTiles } from '#tv/features/catalog/use-search-tiles';
 import { type LibraryHit, useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 import { KromaMark, SearchKeyboard, WallClock } from '#tv/shared/ui';
@@ -55,7 +44,6 @@ export function TvSearch() {
   const { onSearchRequest, takePendingSearch, onListenRequest, takePendingListen } =
     useSearchRequests();
   const { movies, shows } = useConnection();
-  const client = useClient();
   const t = useT();
   const nav = useNav();
   // A query spoken to Siri (or handed over by any other shell) is waiting here
@@ -87,61 +75,9 @@ export function TvSearch() {
     [onListenRequest, takePendingListen],
   );
 
-  // A search "counts" once the user opens one of its results, and `found` is the
-  // query that produced that result, not the prefix left in the box by then.
-  const toHit = useCallback(
-    (hit: LibraryHit, found: string): SearchResult => {
-      const remember = () => setRecent(addRecentSearch(found, storage));
-      if (hit.type === 'show') {
-        const show = hit.show;
-        return {
-          id: show.id,
-          title: show.title,
-          badge: qualityBadgeForVideo(show.video),
-          poster: client.media.artwork.showPosterFor(show, RESULT_W),
-          colors: posterColors(show.id),
-          onOpen: () => {
-            remember();
-            nav.go('show', { show });
-          },
-          onLongPress: () => hold({ kind: 'show', item: show }),
-        };
-      }
-      const m = hit.item;
-      return {
-        id: m.id,
-        title: hit.type === 'episode' ? (hit.item.episodeTitle ?? m.title) : m.title,
-        badge: qualityBadge(m),
-        poster: client.media.artwork.posterFor(m, RESULT_W),
-        colors: posterColors(m.id),
-        onOpen: () => {
-          remember();
-          nav.go('movie', { item: m });
-        },
-        onLongPress: () =>
-          hold(
-            hit.type === 'episode'
-              ? { kind: 'episode', item: hit.item }
-              : { kind: 'movie', item: hit.item },
-          ),
-      };
-    },
-    [client, nav, hold, storage],
-  );
-
-  const toEntry = useCallback(
-    (entry: DiscoverEntry, found: string): SearchResult => ({
-      id: `tmdb:${entry.tmdbId}`,
-      title: entry.title,
-      badge: null,
-      poster: client.media.artwork.resolve(entry.posterUrl, RESULT_W),
-      colors: posterColors(String(entry.tmdbId)),
-      onOpen: () => {
-        setRecent(addRecentSearch(found, storage));
-        nav.go('discover', { entry });
-      },
-    }),
-    [client, nav, storage],
+  const remember = useCallback(
+    (found: string) => setRecent(addRecentSearch(found, storage)),
+    [storage],
   );
 
   // Offline fallback: filter the already-loaded catalogue by title / genre.
@@ -164,22 +100,7 @@ export function TvSearch() {
   );
 
   const answers = useSearchAnswers(query, localHits);
-
-  const sections = useMemo<SearchSection[]>(() => {
-    const { query: found, library, discover } = answers;
-    return [
-      {
-        key: 'library',
-        title: t('discover.sectionLibrary'),
-        hits: library.map((hit) => toHit(hit, found)),
-      },
-      {
-        key: 'discover',
-        title: t('discover.sectionDiscover'),
-        hits: discover.filter((entry) => !entry.inLibrary).map((entry) => toEntry(entry, found)),
-      },
-    ];
-  }, [answers, toEntry, toHit, t]);
+  const { people, sections } = useSearchTiles(answers, { remember, hold });
 
   const recentPills = recent.length ? (
     <Box mt={28} gap={12} minH={0}>
@@ -212,6 +133,7 @@ export function TvSearch() {
         <Shell value={query} onChange={setQuery} placeholder={t('nav.search')}>
           {({ width }) => (
             <TvSearchResults
+              people={people}
               sections={sections}
               query={query}
               width={width - RESULTS_PADDING}
@@ -276,7 +198,7 @@ export function TvSearch() {
           {recentPills}
         </FocusColumn>
 
-        <TvSearchResults sections={sections} query={query} width={RESULTS_WIDTH} />
+        <TvSearchResults people={people} sections={sections} query={query} width={RESULTS_WIDTH} />
       </FocusRegion>
 
       {/* Spoken words land in the same `query` typing feeds, so the grid behind
@@ -306,6 +228,3 @@ const sDefinition = styles({
   recentRow: { row: true, wrap: true, gap: 10 },
   recentChip: { maxW: 240, px: 18, py: 8 },
 });
-
-// The results grid draws 254pt posters, served from the server's 320 bucket.
-const RESULT_W = 320;

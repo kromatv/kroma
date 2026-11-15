@@ -64,16 +64,32 @@ export function ExpandableText({
   );
 }
 
-export function SectionTitle({ children }: Readonly<{ children: ReactNode }>) {
+/** A section's heading. `reason` is the quiet line under it saying why the
+ *  section is offered. */
+export function SectionTitle({
+  children,
+  reason,
+}: Readonly<{ children: ReactNode; reason?: string | null }>) {
   const s = useStyles(sDefinition);
 
   // Section titles sit on full-bleed pages, so they clear the notch themselves.
   const gutters = useGutters();
-  return <Text style={[s.sectionTitle, gutters.style]}>{children}</Text>;
+  return (
+    <Box style={[s.sectionHead, gutters.style]}>
+      <Text style={s.sectionTitle}>{children}</Text>
+      {reason ? (
+        <Text lines={2} style={s.sectionReason}>
+          {reason}
+        </Text>
+      ) : null}
+    </Box>
+  );
 }
 
 const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   expandable: { ...type.body, color: 'textMuted', lineHeight: 22 },
-  sectionTitle: { ...type.section, mt: spacing.lg, mb: spacing.sm },
+  sectionHead: { gap: 2, mt: spacing.lg, mb: spacing.sm },
+  sectionTitle: { ...type.section },
+  sectionReason: { ...type.caption },
 });

@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
-use crate::api::dto::{PersonDetailResponse, PersonResponse, SearchHit};
+use crate::api::dto::{one_per_title, PersonDetailResponse, PersonResponse, SearchHit};
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
@@ -157,7 +157,7 @@ fn hits_best_known_first(
         }
     }
     rows.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-    rows.into_iter().map(|(_, hit)| hit).collect()
+    one_per_title(rows.into_iter().map(|(_, hit)| hit).collect())
 }
 
 fn best_known_rank(meta: Option<&Metadata>, year: Option<u32>) -> (f32, i32) {

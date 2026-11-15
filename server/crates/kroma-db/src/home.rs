@@ -5,17 +5,23 @@
 use super::{params, Pool, Result};
 
 mod activity;
+mod engagement;
+mod fresh;
 mod genre_guard;
 mod hero_candidates;
 mod hydration;
+mod title_facts;
 
 #[cfg(test)]
 mod test_support;
 
 pub use activity::*;
+pub use engagement::*;
+pub use fresh::*;
 pub use genre_guard::*;
 pub use hero_candidates::*;
 pub use hydration::*;
+pub use title_facts::*;
 
 /// Top `n` *entity* ids by recency-weighted play count over the last 30 days a
 /// half-life decay so a burst last week outranks a stale all-time favourite.
