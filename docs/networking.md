@@ -5,8 +5,8 @@ what is recorded, and what keeps a module from going around it. The design and
 its reasoning are in [RFC 480](rfcs/480-network-firewall.md). This page says
 how it works.
 
-Part of this is on `main` and part is planned. The [status table](#status) at
-the end says which, and the text below describes the design they build to.
+Everything described here is on `main`. The [status table](#status) at the end
+names the pull request behind each part, and the few that were dropped.
 
 ## The rule
 
