@@ -4324,7 +4324,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 92,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A module is checked against the module interface the server implements,",
     "file": "docs/spec/modules/README.md",
     "line": 293
@@ -4334,7 +4334,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 93,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "`minServer` is the floor for a server capability the module needs. It is",
     "file": "docs/spec/modules/README.md",
     "line": 298

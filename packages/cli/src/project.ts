@@ -11,7 +11,11 @@ export const AuthoredManifest = Manifest.strict()
   .refine((m) => m.schemaVersion === MODULE_SCHEMA_VERSION, {
     message: `schemaVersion must be ${MODULE_SCHEMA_VERSION}`,
   })
-  .refine((m) => REVERSE_DNS_ID.test(m.id), { message: 'id must be reverse-DNS, lowercase' });
+  .refine((m) => REVERSE_DNS_ID.test(m.id), { message: 'id must be reverse-DNS, lowercase' })
+  .refine((m) => m.engines?.host === undefined, {
+    message: 'engines.host is recorded by `kroma build` from the component: remove it',
+    path: ['engines', 'host'],
+  });
 
 const CargoManifest = z.object({
   package: z.object({

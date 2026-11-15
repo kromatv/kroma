@@ -64,3 +64,30 @@ pub fn tar_with_files(files: &[(&str, &str)]) -> Vec<u8> {
     }
     builder.into_inner().unwrap()
 }
+
+pub fn tar_with_component(manifest: &str, component: &[u8]) -> Vec<u8> {
+    let mut builder = tar::Builder::new(Vec::new());
+    for (path, body) in [("module.json", manifest.as_bytes()), ("module.wasm", component)] {
+        let mut header = tar::Header::new_gnu();
+        header.set_size(body.len() as u64);
+        header.set_mode(0o600);
+        header.set_cksum();
+        builder.append_data(&mut header, path, body).unwrap();
+    }
+    builder.into_inner().unwrap()
+}
+
+pub fn component_importing(interface: &str) -> Vec<u8> {
+    let section = |id: u8, body: &[u8]| {
+        let mut out = vec![id, u8::try_from(body.len()).unwrap()];
+        out.extend_from_slice(body);
+        out
+    };
+    let mut import = vec![1, 0, u8::try_from(interface.len()).unwrap()];
+    import.extend_from_slice(interface.as_bytes());
+    import.extend_from_slice(&[0x05, 0]);
+    let mut wasm = b"\0asm\x0d\0\x01\0".to_vec();
+    wasm.extend(section(7, &[1, 0x42, 0]));
+    wasm.extend(section(10, &import));
+    wasm
+}

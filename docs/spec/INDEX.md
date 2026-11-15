@@ -454,8 +454,8 @@
 - **MOD-89** (SHIPPED) - Installing, updating, updating everything and automatic updates all take <sub>[README.md](modules/README.md)</sub>
 - **MOD-90** (SHIPPED) - The Store never downgrades an installed module unless the operator asks. <sub>[README.md](modules/README.md)</sub>
 - **MOD-91** (SHIPPED) - Each dependency resolves to its own newest version that runs here. A <sub>[README.md](modules/README.md)</sub>
-- **MOD-92** (AGREED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
-- **MOD-93** (AGREED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
+- **MOD-92** (SHIPPED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
+- **MOD-93** (SHIPPED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
 - **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)

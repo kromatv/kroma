@@ -45,6 +45,10 @@ trust grant. Every install still goes through the same gate:
   registry it came from and for an upload too,
 - the module's `engines` are enforced at install **and** at spawn, and an engine
   the server cannot check is refused rather than ignored,
+- the component imports a version of the `kroma:module` interface this server
+  implements, read from the component's own bytes at install **and** at spawn,
+  so a module built against another interface is refused by name whatever its
+  manifest says,
 - the catalog fetch is bounded by a timeout and a size cap, and an entry's
   `icon` is only accepted as a small inline `data:` image.
 

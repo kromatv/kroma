@@ -175,8 +175,11 @@ editor. `npm-pick-manifest` skips versions whose `engines` the running Node does
 - **Third-party registries** are unaffected. RFC 110 does not change, and `kroma registry`
   can fold the same history in a follow-up.
 - **Modules.** A server released before part 3 refuses an engine it does not know, so a
-  module that declares `engines.host` would be refused by it. The server side of part 3
-  therefore ships one release before `kroma build` starts writing the field.
+  module that declares `engines.host` would be refused by it. `kroma build` therefore
+  writes the field only for a module whose own server floor is 0.1.40 or later, the
+  release after the one that first checks it: no older server could run that module
+  anyway. The check on the component's own imports needs no field and covers every
+  module from 0.1.39 on.
 - **Apps already installed** send no header. The server treats a missing header as an
   unknown version, never as too old, because it cannot tell. The device list shows those
   sessions as "version unknown".

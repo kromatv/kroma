@@ -6,6 +6,7 @@ use kroma_module_host::NetworkAction;
 use kroma_module_supervisor::MODULE_COMPONENT;
 
 mod component_support;
+mod install_support;
 
 use component_support::wasm::guest_component;
 use component_support::{DECLARES, FIRST_PARTY, GUEST, STORES, Server, place_component, seed_core};
@@ -43,6 +44,28 @@ fn a_module_holding_its_own_folder_reaches_none_of_what_the_host_installed() {
         .map(|name| std::fs::read(installed.join(name)).unwrap())
         .collect();
     assert_eq!(before, after);
+}
+
+#[test]
+fn a_component_built_against_another_interface_does_not_start_and_says_which() {
+    let server = Server::new("component-installed-interface", NetworkAction::Direct);
+    let installed = server.installed(GUEST, DECLARES, FIRST_PARTY);
+    place_component(
+        &installed,
+        &install_support::component_importing("kroma:module/net@9.0.0"),
+        FIRST_PARTY,
+    );
+
+    let refused = server.supervisor.spawn(GUEST).unwrap_err().to_string();
+
+    assert_eq!(
+        refused,
+        format!(
+            "'{GUEST}' was built against module interface 9.0.0 (this server implements {})",
+            kroma_module_manifest::HOST_INTERFACE
+        )
+    );
+    assert!(!server.supervisor.is_running(GUEST));
 }
 
 #[test]

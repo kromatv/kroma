@@ -119,5 +119,17 @@ pub(super) fn check_manifest_schema(id: &str, manifest: &ModuleManifest) -> anyh
     Ok(())
 }
 
+/// Refuses a component whose own imports name a version of the host interface
+/// this server does not implement, whatever its manifest says.
+pub(crate) fn check_interface(id: &str, wasm: &[u8]) -> anyhow::Result<()> {
+    let built = kroma_wasm_host::imported_interfaces(wasm)
+        .map_err(|error| anyhow::anyhow!("'{id}' has a component this server cannot read: {error}"))?;
+    for version in &built {
+        kroma_module_manifest::interface_satisfied(version)
+            .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests;
