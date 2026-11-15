@@ -1,4 +1,7 @@
 {
+  "account.appOutdated": "À mettre à jour",
+  "account.appVersion": "Version {version}",
+  "account.appVersionUnknown": "Version inconnue",
   "account.audioDesc": "Choisie automatiquement quand un titre la propose.",
   "account.audioLanguage": "Langue audio préférée",
   "account.avatarFailed": "Échec de l'envoi de l'image",

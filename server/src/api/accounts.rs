@@ -105,11 +105,20 @@ pub(crate) fn accept_language(headers: &HeaderMap) -> Option<String> {
     (!tag.is_empty()).then_some(tag)
 }
 
+fn app_version(headers: &HeaderMap) -> Option<crate::model::AppVersion> {
+    headers
+        .get(crate::model::APP_VERSION_HEADER)?
+        .to_str()
+        .ok()
+        .and_then(crate::model::AppVersion::parse)
+}
+
 /// What the calling device says about itself on this request.
 pub(crate) fn device_hints(headers: &HeaderMap) -> db::DeviceHints {
     db::DeviceHints {
         user_agent: user_agent(headers),
         language: accept_language(headers),
+        app: app_version(headers),
     }
 }
 
@@ -213,15 +222,20 @@ mod tests {
     }
 
     #[test]
-    fn the_hints_carry_both_labels_or_neither() {
+    fn the_hints_carry_every_label_or_none() {
         let mut h = headers("fr");
         h.insert(axum::http::header::USER_AGENT, "Kroma/1.0".parse().unwrap());
+        h.insert(
+            crate::model::APP_VERSION_HEADER,
+            "webos/0.1.39".parse().unwrap(),
+        );
 
         assert_eq!(
             device_hints(&h),
             db::DeviceHints {
                 user_agent: Some("Kroma/1.0".to_string()),
                 language: Some("fr".to_string()),
+                app: crate::model::AppVersion::parse("webos/0.1.39"),
             }
         );
         assert_eq!(device_hints(&HeaderMap::new()), db::DeviceHints::default());
