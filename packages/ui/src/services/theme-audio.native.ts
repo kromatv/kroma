@@ -111,11 +111,11 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- keyed on the theme and its player only. Re-running when `fadeTo` changes identity would restart the film's theme from the top on an unrelated render.
   useEffect(() => {
     if (!themeUrl || readThemeMuted(storage)) {
-      return;
+      return undefined;
     }
     setLevel(player, level, 0);
     if (!playQuietly(player)) {
-      return;
+      return undefined;
     }
     fadeTo(TARGET_VOLUME, FADE_IN_MS);
     return () => {

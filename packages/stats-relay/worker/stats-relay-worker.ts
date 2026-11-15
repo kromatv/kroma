@@ -176,6 +176,7 @@ export function createApp(storeFor: (env: Env) => Store) {
       c.set('body', body);
     }
     await next();
+    return undefined;
   });
 
   // Reachable or not, answered rather than thrown: an unreachable database is

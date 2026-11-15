@@ -21,7 +21,7 @@ export function useRootBack(): FocusNavHandlers['onBack'] {
     }
     if (!exitNeedsConfirm()) {
       back();
-      return;
+      return undefined;
     }
     asking.current = true;
     void confirm({
@@ -34,6 +34,7 @@ export function useRootBack(): FocusNavHandlers['onBack'] {
         back();
       }
     });
+    return undefined;
   }, [back, t, confirm]);
   return canExit ? ask : undefined;
 }

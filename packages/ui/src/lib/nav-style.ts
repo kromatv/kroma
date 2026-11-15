@@ -8,4 +8,4 @@ import { registered } from '#ui/core';
 type NavigatorStyle = NavigatorViewProps['style'];
 
 export const flat = (style: StyleProp<ViewStyle>[] | StyleProp<ViewStyle>): NavigatorStyle =>
-  registered(style as never) as NavigatorStyle;
+  registered(style as never);

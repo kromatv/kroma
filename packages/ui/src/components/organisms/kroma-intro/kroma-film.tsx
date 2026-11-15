@@ -176,7 +176,7 @@ function VideoIntro({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) {
-      return;
+      return undefined;
     }
 
     // Sound-first autoplay; muted fallback when the browser blocks it. A
@@ -263,7 +263,7 @@ function VideoIntro({
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !tagline) {
-      return;
+      return undefined;
     }
     const onTime = () => {
       if (

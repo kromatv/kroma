@@ -147,12 +147,7 @@ function DrawerSurface({
   const panel = (
     <Box flex style={s.fill}>
       <Box
-        style={[
-          StyleSheet.absoluteFill,
-          s.scrim,
-          FADE as ViewStyle,
-          shown ? s.scrimActive : s.scrimInert,
-        ]}
+        style={[StyleSheet.absoluteFill, s.scrim, FADE, shown ? s.scrimActive : s.scrimInert]}
         opacity={shown ? 1 : 0}
       >
         <DismissBackdrop onPress={onClose} />

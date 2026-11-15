@@ -59,7 +59,7 @@ function useVisibleLetters(
   const [range, setRange] = useState<LetterRange | undefined>();
   useEffect(() => {
     if (!enabled || marks.length === 0) {
-      return;
+      return undefined;
     }
     let raf = 0;
     const measure = () => {
@@ -172,7 +172,7 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   }
   useEffect(() => {
     if (featuredPool.length < 2) {
-      return;
+      return undefined;
     }
     const timer = setInterval(() => setSlide((s) => s + 1), 8000);
     return () => clearInterval(timer);

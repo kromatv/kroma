@@ -16,13 +16,13 @@ type Half = { BUILD: BuildInfo };
 async function metro(config: Record<string, unknown> | null): Promise<Half> {
   expoConfig.value = config;
   vi.resetModules();
-  return (await import('./build-info')) as Half;
+  return await import('./build-info');
 }
 
 async function vite(defined?: BuildInfo): Promise<Half> {
   vi.stubGlobal('__KROMA_BUILD__', defined);
   vi.resetModules();
-  return (await import('./build-info.web')) as Half;
+  return await import('./build-info.web');
 }
 
 const STAMPED: BuildInfo = {

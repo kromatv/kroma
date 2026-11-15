@@ -17,7 +17,7 @@ const { players, FakePlayer } = vi.hoisted(() => {
     removed: boolean;
   }
 
-  class FakePlayer {
+  class RecordedPlayer {
     uri: string;
     currentTime = 0;
     timeUpdateEventInterval = 0;
@@ -98,7 +98,7 @@ const { players, FakePlayer } = vi.hoisted(() => {
     }
   }
 
-  return { players: [] as FakePlayer[], FakePlayer };
+  return { players: [] as RecordedPlayer[], FakePlayer: RecordedPlayer };
 });
 
 vi.mock('expo-video', () => ({
@@ -667,10 +667,10 @@ describe('ExpoVideoEngine player lifetime', () => {
   });
 });
 
-describe('what the stats panel asks the engine', () => {
-  const rowsOf = (e: ReturnType<typeof make>['e']) =>
-    Object.fromEntries((e.debugRows?.() ?? []).map((r) => [r.label, r.value]));
+const rowsOf = (e: ReturnType<typeof make>['e']) =>
+  Object.fromEntries((e.debugRows?.() ?? []).map((r) => [r.label, r.value]));
 
+describe('what the stats panel asks the engine', () => {
   it('names the plane even before a player exists', () => {
     const { e } = make({ direct: true });
     e.destroy();

@@ -41,7 +41,7 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
 
   useEffect(() => {
     if (!ready || !user || !client) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.media

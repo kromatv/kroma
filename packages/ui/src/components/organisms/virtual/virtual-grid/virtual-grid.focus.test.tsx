@@ -53,7 +53,7 @@ function open(initialIndex: number) {
       )}
     </StrictMode>,
   );
-  layout(contentRoot(view.container) as Element, { width: 520, height: LIST });
+  layout(contentRoot(view.container), { width: 520, height: LIST });
   return view;
 }
 
@@ -140,7 +140,7 @@ function openWithHeader(initialIndex: number) {
       )}
     </StrictMode>,
   );
-  layout(contentRoot(view.container) as Element, { width: 520, height: LIST });
+  layout(contentRoot(view.container), { width: 520, height: LIST });
   return view;
 }
 

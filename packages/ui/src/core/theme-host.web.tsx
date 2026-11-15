@@ -45,6 +45,7 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
     if (host.current && themeScope) {
       return runtime.theme.attach(host.current, id);
     }
+    return undefined;
   }, [runtime, id, themeScope]);
   const outermost = parent === null;
   useLayoutEffect(() => {

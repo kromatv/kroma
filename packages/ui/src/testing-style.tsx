@@ -39,21 +39,21 @@ import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
 
 export interface StyleTestHost {
   runtime: StyleRuntime;
-  Host(props: Readonly<{ children?: ReactNode }>): ReactNode;
-  render(ui: ReactNode, options?: RenderOptions): RenderResult;
-  renderHook<Result, Props>(
+  Host: (props: Readonly<{ children?: ReactNode }>) => ReactNode;
+  render: (ui: ReactNode, options?: RenderOptions) => RenderResult;
+  renderHook: <Result, Props>(
     callback: (props: Props) => Result,
     options?: RenderHookOptions<Props>,
-  ): RenderHookResult<Result, Props>;
+  ) => RenderHookResult<Result, Props>;
   setTheme: StyleRuntime['theme']['setTheme'];
   applyTheme: StyleRuntime['theme']['applyTheme'];
   activeTheme: StyleRuntime['theme']['activeTheme'];
   themeVersion: StyleRuntime['theme']['themeVersion'];
   onThemeChange: StyleRuntime['theme']['onThemeChange'];
   pinDesignWidth: StyleRuntime['breakpoints']['pinDesignWidth'];
-  currentBreakpoint(): ReturnType<typeof readCurrentBreakpoint>;
-  breakpointIndex(): number;
-  styles<const S extends Record<string, StyleDecl>>(decls: S): Styles<S>;
+  currentBreakpoint: () => ReturnType<typeof readCurrentBreakpoint>;
+  breakpointIndex: () => number;
+  styles: <const S extends Record<string, StyleDecl>>(decls: S) => Styles<S>;
   sv: typeof defineRecipe;
   color: typeof resolveColor;
   normalize: typeof normalizeDecl;
@@ -66,8 +66,8 @@ export interface StyleTestHost {
   scaledRadius: typeof scaled;
   themed: typeof memoTheme;
   themedCache: typeof memoCache;
-  applyMode(mode: ThemeMode): void;
-  writeMode(mode: ThemeMode): void;
+  applyMode: (mode: ThemeMode) => void;
+  writeMode: (mode: ThemeMode) => void;
 }
 
 /** A test owns the same style stores as its rendered root; no process-wide setters. */
@@ -97,9 +97,10 @@ export function createStyleTestHost(options: StyleRuntimeOptions = {}): StyleTes
     pinDesignWidth: runtime.breakpoints.pinDesignWidth,
     currentBreakpoint: () => readCurrentBreakpoint(runtime.breakpoints),
     breakpointIndex: () => readBreakpoint(runtime.breakpoints),
-    render: (ui, options) => renderTree(ui, { ...options, wrapper: wrapper(options?.wrapper) }),
-    renderHook: (callback, options) =>
-      renderReactHook(callback, { ...options, wrapper: wrapper(options?.wrapper) }),
+    render: (ui, renderOptions) =>
+      renderTree(ui, { ...renderOptions, wrapper: wrapper(renderOptions?.wrapper) }),
+    renderHook: (callback, hookOptions) =>
+      renderReactHook(callback, { ...hookOptions, wrapper: wrapper(hookOptions?.wrapper) }),
     styles: (decls) => defineStyles(decls, runtime),
     sv: ((config: Parameters<typeof defineRecipe>[0]) =>
       bindRecipe(defineRecipe(config), runtime)) as typeof defineRecipe,

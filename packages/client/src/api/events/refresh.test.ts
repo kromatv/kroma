@@ -13,6 +13,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+let handOver: (token: string | undefined) => void = () => undefined;
+
 describe('KromaEvents bearer refresh', () => {
   it('refreshes once and reconnects with the bearer the handler returned', async () => {
     const refresh = vi.fn(async () => 'fresh');
@@ -188,7 +190,6 @@ describe('KromaEvents bearer refresh', () => {
   });
 
   it('abandons an in-flight refresh when the caller closes the socket', async () => {
-    let handOver: (token: string | undefined) => void = () => undefined;
     const refresh = vi.fn(
       () =>
         new Promise<string | undefined>((resolve) => {

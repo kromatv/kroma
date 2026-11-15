@@ -12,7 +12,7 @@ import { stubScreens } from '#tv/app/router.fixtures';
 import { fakeClipBackend } from '#tv/features/playback/player/clip-backend.fixture';
 import { TvTrailerPlayer } from '#tv/features/playback/tv-trailer-player';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const SUPERMAN = 1061474;
 
@@ -49,7 +49,7 @@ async function open(status: TrailerPreparation['status']) {
         `stream ${kind} ${tmdbId} ${video}`,
     },
   });
-  render(
+  inputHost.render(
     onScreen(
       <TvClientProvider client={client}>
         <TvNavProvider screens={stubScreens({ trailer: TrailerScreen })}>
@@ -73,7 +73,7 @@ async function press(key: string) {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   sessionStorage.clear();
   clips.built.length = 0;
 });

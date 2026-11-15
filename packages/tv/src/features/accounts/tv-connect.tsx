@@ -57,7 +57,7 @@ export function TvConnect() {
   useEffect(() => {
     const address = value.trim();
     if (!address) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     // Debounced: each keystroke would otherwise cost a pair of requests.

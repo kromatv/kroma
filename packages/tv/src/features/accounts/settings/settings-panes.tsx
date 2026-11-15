@@ -60,10 +60,11 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
       }
       if (onLeft.current || !active) {
         nav.back();
-        return;
+        return undefined;
       }
       setVisit((n) => n + 1);
       rows.current.get(paneId(active))?.focus();
+      return undefined;
     },
   });
 

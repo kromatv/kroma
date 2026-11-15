@@ -36,7 +36,7 @@ export function useShellPip(pip: PipBinding, aspect: number | undefined): void {
   useEffect(() => {
     const bridge = getTauri();
     if (!bridge || !shellPip()) {
-      return;
+      return undefined;
     }
     attach({
       startPictureInPicture: () =>
@@ -79,7 +79,7 @@ export function useVideoPip(pip: PipBinding, video: HTMLVideoElement | null): vo
   useEffect(() => {
     const doc = webDocument();
     if (!video || !doc || !videoPip()) {
-      return;
+      return undefined;
     }
     attach({
       startPictureInPicture: () => video.requestPictureInPicture().then(() => undefined),

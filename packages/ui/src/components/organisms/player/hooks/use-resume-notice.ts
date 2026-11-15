@@ -56,7 +56,7 @@ export function useResumeNotice(opts: {
 
   useEffect(() => {
     if (phase !== 'counting') {
-      return;
+      return undefined;
     }
     const tick = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(tick);

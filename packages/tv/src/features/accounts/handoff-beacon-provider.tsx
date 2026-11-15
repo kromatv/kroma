@@ -68,7 +68,7 @@ export function HandoffBeaconProvider({
     // session is not signed out either, or the beacon goes up and is retracted
     // a round trip later.
     if (!ready || !client || !activeServerUrl || signedIn) {
-      return;
+      return undefined;
     }
     const handoff = startHandoff({
       client,

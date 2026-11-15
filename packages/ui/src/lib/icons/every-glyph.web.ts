@@ -6,6 +6,6 @@ import type { GlyphExports } from './glyphs';
 
 /** All of Tabler, fetched on demand. Null where the platform cannot fetch. */
 const everyGlyph: (() => Promise<GlyphExports>) | null = async () =>
-  (await import('@tabler/icons-react-native')) as GlyphExports;
+  await import('@tabler/icons-react-native');
 
 export { everyGlyph };

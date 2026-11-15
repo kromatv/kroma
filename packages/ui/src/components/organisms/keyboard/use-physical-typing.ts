@@ -21,7 +21,7 @@ function usePhysicalTyping(
   useEffect(() => {
     const w = physicalKeyboard ? webWindow() : null;
     if (!w) {
-      return;
+      return undefined;
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) {

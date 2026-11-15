@@ -18,7 +18,7 @@ export function useFullItem(title: MediaCard): MediaItem | null {
 
   useEffect(() => {
     if (isFullItem(title)) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.media.item(title.id).then(

@@ -164,22 +164,22 @@ describe('rendering', () => {
   });
 });
 
+const secret = (configured: boolean) =>
+  group([{ kind: 'secret', value: '', configured, label: 'Auth key' }]);
+
+const secretField = (container: HTMLElement) =>
+  container.querySelector('textarea') as HTMLTextAreaElement;
+
 // A `secret` row holds an APNs signing key or a Firebase service account. The
 // server never sends one back, so the two things that must hold are that a
 // pasted key does not survive in the page, and that walking past the field
 // cannot erase a working one.
 describe('secret rows', () => {
-  const secret = (configured: boolean) =>
-    group([{ kind: 'secret', value: '', configured, label: 'Auth key' }]);
-
-  const field = (container: HTMLElement) =>
-    container.querySelector('textarea') as HTMLTextAreaElement;
-
   it('says whether a key is stored, without showing it', async () => {
     const { container } = mount([secret(true)]);
     await waitFor(() => expect(container.textContent).toContain('Auth key'));
     expect(container.textContent).toContain('Configured');
-    expect(field(container).value).toBe('');
+    expect(secretField(container).value).toBe('');
   });
 
   it('reports an unset key rather than looking the same as a set one', async () => {
@@ -191,7 +191,7 @@ describe('secret rows', () => {
   it('sends a pasted key once, then forgets it', async () => {
     const { container, admin } = mount([secret(false)]);
     await waitFor(() => expect(container.textContent).toContain('Auth key'));
-    const input = field(container);
+    const input = secretField(container);
     fireEvent.change(input, { target: { value: '-----BEGIN PRIVATE KEY-----' } });
     fireEvent.blur(input);
     await waitFor(() =>
@@ -199,19 +199,19 @@ describe('secret rows', () => {
     );
     // Not left in the textarea, and not written back into the row's value by the
     // optimistic update either.
-    expect(field(container).value).toBe('');
+    expect(secretField(container).value).toBe('');
     expect(container.textContent).not.toContain('BEGIN PRIVATE KEY');
     expect(container.textContent).toContain('Configured');
   });
 
   // The whole reason blur does not commit blindly: tabbing through the form
   // would otherwise silently turn iOS push off.
-  it('does not erase a stored key when the field is left empty', async () => {
+  it('does not erase a stored key when the secretField is left empty', async () => {
     const { container, admin } = mount([secret(true)]);
     await waitFor(() => expect(container.textContent).toContain('Auth key'));
-    fireEvent.blur(field(container));
-    fireEvent.change(field(container), { target: { value: '   ' } });
-    fireEvent.blur(field(container));
+    fireEvent.blur(secretField(container));
+    fireEvent.change(secretField(container), { target: { value: '   ' } });
+    fireEvent.blur(secretField(container));
     expect(admin.updateSettings).not.toHaveBeenCalled();
     expect(container.textContent).toContain('Configured');
   });
@@ -229,10 +229,10 @@ describe('secret rows', () => {
   });
 });
 
-describe('select rows', () => {
-  const language = (options: string[], value = 'fr') =>
-    group([{ kind: 'select', value, options, label: 'Language' }]);
+const language = (options: string[], value = 'fr') =>
+  group([{ kind: 'select', value, options, label: 'Language' }]);
 
+describe('select rows', () => {
   it('saves the option that was picked', async () => {
     const { container, admin } = mount([language(['fr', 'en'])]);
     await waitFor(() => expect(container.textContent).toContain('Language'));
@@ -253,18 +253,18 @@ describe('select rows', () => {
   });
 });
 
+const textField = (container: HTMLElement) => container.querySelector('input') as HTMLInputElement;
+
 describe('text rows', () => {
   const name = group([{ kind: 'text', value: 'kroma', label: 'Server name' }]);
 
-  const field = (container: HTMLElement) => container.querySelector('input') as HTMLInputElement;
-
-  it('commits what was typed when the field is left', async () => {
+  it('commits what was typed when the textField is left', async () => {
     const { container, admin } = mount([name]);
-    await waitFor(() => expect(field(container)).not.toBeNull());
+    await waitFor(() => expect(textField(container)).not.toBeNull());
 
     // The row holds a draft and commits it against the value it was given, so
     // the typing has to have landed before the blur means anything.
-    const input = field(container);
+    const input = textField(container);
     fireEvent.change(input, { target: { value: 'salon' } });
     await waitFor(() => expect(input.value).toBe('salon'));
 
@@ -272,11 +272,11 @@ describe('text rows', () => {
     await waitFor(() => expect(admin.updateSettings).toHaveBeenCalledWith({ k0: 'salon' }));
   });
 
-  it('says nothing when the field is left as it was found', async () => {
+  it('says nothing when the textField is left as it was found', async () => {
     const { container, admin } = mount([name]);
-    await waitFor(() => expect(field(container)).not.toBeNull());
+    await waitFor(() => expect(textField(container)).not.toBeNull());
 
-    fireEvent.blur(field(container));
+    fireEvent.blur(textField(container));
     expect(admin.updateSettings).not.toHaveBeenCalled();
   });
 });

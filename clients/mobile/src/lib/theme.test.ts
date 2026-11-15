@@ -101,6 +101,16 @@ describe('the type ramp', () => {
   });
 });
 
+const columns = (width: number) => {
+  if (width >= 900) {
+    return 6;
+  }
+  if (width >= 600) {
+    return 4;
+  }
+  return 3;
+};
+
 describe('posterWidth', () => {
   it('fits three columns on a phone', () => {
     const w = posterWidth(390);
@@ -120,15 +130,6 @@ describe('posterWidth', () => {
   });
 
   it('always leaves room for the padding and the gutters', () => {
-    const columns = (width: number) => {
-      if (width >= 900) {
-        return 6;
-      }
-      if (width >= 600) {
-        return 4;
-      }
-      return 3;
-    };
     for (const width of [320, 390, 430, 600, 768, 900, 1024, 1366]) {
       const cols = columns(width);
       const used = posterWidth(width) * cols + 12 * (cols - 1) + 32;

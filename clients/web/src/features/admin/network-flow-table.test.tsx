@@ -15,18 +15,18 @@ vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ client: { modules: { list: modules } } }),
 }));
 
-const { pinDesignWidth, render } = createStyleTestHost();
+const styleHost = createStyleTestHost();
 
 afterEach(() => {
   cleanup();
-  pinDesignWidth();
+  styleHost.pinDesignWidth();
 });
 
 function mount(flows: readonly Flow[]) {
-  pinDesignWidth(1600);
+  styleHost.pinDesignWidth(1600);
   modules.mockResolvedValue([{ id: 'tv.kroma.torrents', name: 'Torrent downloads' }]);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+  styleHost.render(
     <QueryClientProvider client={queryClient}>
       <I18nProvider locale="en">
         <FlowTable flows={flows} rules={RULES_VIEW.rules} />

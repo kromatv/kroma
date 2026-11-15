@@ -157,6 +157,6 @@ export class SdbStream {
     const expiry = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new Error(message)), timeoutMs);
     });
-    return Promise.race([promise, expiry]).finally(() => clearTimeout(timer)) as Promise<T>;
+    return Promise.race([promise, expiry]).finally(() => clearTimeout(timer));
   }
 }

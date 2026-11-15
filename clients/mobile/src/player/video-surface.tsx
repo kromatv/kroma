@@ -5,12 +5,12 @@ import { usePipSubtitles } from './use-pip-subtitles';
 import { useVisiblePlayback } from './use-visible-playback';
 
 export interface PlayerVideoHandle {
-  startPip(): void;
+  startPip: () => void;
 }
 
 interface VideoPip {
   inPip: boolean;
-  startPip(): void;
+  startPip: () => void;
 }
 
 /** The picture under a phone player's chrome: one `VideoView` with picture in

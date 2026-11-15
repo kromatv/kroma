@@ -260,7 +260,7 @@ function Anchor({ to, onNavigate, onClick, ...host }: Readonly<Record<string, un
     event.preventDefault();
     (onNavigate as (() => void) | undefined)?.();
   };
-  return <View {...(host as object)} {...({ href: to, onClick: click } as object)} />;
+  return <View {...host} {...({ href: to, onClick: click } as object)} />;
 }
 
 describe('a Menu.Item that delegates its host to a link', () => {

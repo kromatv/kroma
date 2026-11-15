@@ -25,7 +25,7 @@ import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voice-sear
 import { addRecentSearch } from '#tv/features/catalog/search-history';
 import { TvSearch } from '#tv/features/catalog/tv-search';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const movie = (id: string, title: string, genre = 'sci-fi'): MediaItem =>
   ({ id, title, video: null, metadata: { genres: [genre] } }) as unknown as MediaItem;
@@ -92,7 +92,7 @@ function mount({
     discovery: { search: discover },
   });
   let nav!: TvNav;
-  render(
+  inputHost.render(
     onScreen(
       <SearchRequestsProvider value={requests}>
         <VoiceSearchProvider value={voiceSearch}>
@@ -118,7 +118,7 @@ function mount({
   );
   // The screen arms the press guard as it mounts, and would otherwise swallow
   // the test's first press.
-  clearPressGuard();
+  inputHost.clearPressGuard();
   return { nav: () => nav, search, discover };
 }
 
@@ -143,7 +143,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   vi.unstubAllGlobals();
 });
 

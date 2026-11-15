@@ -149,10 +149,10 @@ describe('stackBase', () => {
   });
 });
 
+const curves = (d: string) => (d.match(/A/g) ?? []).length;
+
 describe('barPath', () => {
   const BAR = { x: 0, width: 20, y: 0, height: 40 };
-  const curves = (d: string) => (d.match(/A/g) ?? []).length;
-
   it('rounds all four corners of a column that is one segment', () => {
     expect(curves(barPath(BAR, BAR, 4))).toBe(4);
   });

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { sockets, interfaces } = vi.hoisted(() => ({
   sockets: [] as FakeSocket[],
-  interfaces: { value: {} as Record<string, NetworkInterfaceInfo[] | undefined> },
+  interfaces: { value: {} },
 }));
 
 interface Sent {

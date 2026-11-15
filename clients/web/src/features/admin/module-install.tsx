@@ -131,7 +131,7 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
 
   useEffect(() => {
     if (stage !== 'plan') {
-      return;
+      return undefined;
     }
     let alive = true;
     setPlanBusy(true);

@@ -10,6 +10,8 @@ const transform = (code: string, id = '/app/src/styles.css') => {
 
 const source = (part?: string) => (part ? `@kromatv/ui/css/${part}` : '@kromatv/ui/css');
 
+const configOf = (...names: string[]) => ({ plugins: names.map((name) => ({ name })) });
+const under = (name: string) => join(SOURCE_ROOTS[0] ?? '', 'ui', 'src', 'components', name);
 const resolved = (part = 'kroma') => `\0kroma-css:${part}.css`;
 
 const served = (id: string, command: 'serve' | 'build' = 'build', base?: string) => {
@@ -104,27 +106,24 @@ describe('the plugin', () => {
 });
 
 describe('the plugin order', () => {
-  const resolved = (...names: string[]) => ({ plugins: names.map((name) => ({ name })) });
-
   it('fails the build when Tailwind would reach the stylesheet first', () => {
     expect(() =>
       kromaTokens().configResolved(
-        resolved('@tailwindcss/vite:scan', '@tailwindcss/vite:generate:build', 'kroma-tokens'),
+        configOf('@tailwindcss/vite:scan', '@tailwindcss/vite:generate:build', 'kroma-tokens'),
       ),
     ).toThrow(/must come before tailwindcss/);
   });
 
   it('says nothing when it runs first, or where Tailwind is not installed', () => {
     expect(() =>
-      kromaTokens().configResolved(resolved('kroma-tokens', '@tailwindcss/vite:generate:serve')),
+      kromaTokens().configResolved(configOf('kroma-tokens', '@tailwindcss/vite:generate:serve')),
     ).not.toThrow();
-    expect(() => kromaTokens().configResolved(resolved('vite:css', 'kroma-tokens'))).not.toThrow();
+    expect(() => kromaTokens().configResolved(configOf('vite:css', 'kroma-tokens'))).not.toThrow();
   });
 });
 
 describe('a step written mid-session', () => {
   const STYLES = '/app/src/styles.css';
-  const under = (name: string) => join(SOURCE_ROOTS[0] ?? '', 'ui', 'src', 'components', name);
 
   function devServer() {
     const module = { id: STYLES };

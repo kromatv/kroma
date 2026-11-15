@@ -184,20 +184,20 @@ describe('the server source', () => {
   });
 });
 
-describe('the link source', () => {
-  function bridgeWith(services: LanService[]) {
-    let publish: ((found: LanService[]) => void) | undefined;
-    const stop = vi.fn();
-    const browse = vi.fn((onFound: (found: LanService[]) => void) => {
-      publish = onFound;
-      onFound(services);
-      return stop;
-    });
-    return { bridge: { browse }, stop, push: (next: LanService[]) => publish?.(next) };
-  }
+function controllableBridge(services: LanService[]) {
+  let publish: ((found: LanService[]) => void) | undefined;
+  const stop = vi.fn();
+  const browse = vi.fn((onFound: (found: LanService[]) => void) => {
+    publish = onFound;
+    onFound(services);
+    return stop;
+  });
+  return { bridge: { browse }, stop, push: (next: LanService[]) => publish?.(next) };
+}
 
+describe('the link source', () => {
   it('turns records it heard into rows that carry their proof', () => {
-    const { bridge } = bridgeWith([{ name: 'Salon', txt: beaconTxt(RECORD) }]);
+    const { bridge } = controllableBridge([{ name: 'Salon', txt: beaconTxt(RECORD) }]);
     const seen: unknown[][] = [];
     lanSource(bridge).start((rows) => seen.push(rows));
 
@@ -216,7 +216,7 @@ describe('the link source', () => {
   });
 
   it('skips a record it cannot read rather than showing half of one', () => {
-    const { bridge } = bridgeWith([
+    const { bridge } = controllableBridge([
       { name: 'Salon', txt: beaconTxt(RECORD) },
       { name: 'Mystery', txt: { v: '99', handle: 'x' } },
       { name: 'Empty', txt: {} },
@@ -227,7 +227,7 @@ describe('the link source', () => {
   });
 
   it('falls back to the name the network published it under', () => {
-    const { bridge } = bridgeWith([
+    const { bridge } = controllableBridge([
       { name: 'Salon de Max', txt: { ...beaconTxt(RECORD), name: '' } },
     ]);
     const seen: Array<Array<{ name: string }>> = [];
@@ -236,7 +236,7 @@ describe('the link source', () => {
   });
 
   it('reports again every time the link changes', () => {
-    const { bridge, push } = bridgeWith([]);
+    const { bridge, push } = controllableBridge([]);
     const seen: unknown[][] = [];
     lanSource(bridge).start((rows) => seen.push(rows));
     push([{ name: 'Salon', txt: beaconTxt(RECORD) }]);
@@ -246,7 +246,7 @@ describe('the link source', () => {
   });
 
   it('hands the browse s stop back', () => {
-    const { bridge, stop } = bridgeWith([]);
+    const { bridge, stop } = controllableBridge([]);
     lanSource(bridge).start(() => undefined)();
     expect(stop).toHaveBeenCalled();
   });
@@ -259,18 +259,18 @@ describe('the link source', () => {
   });
 });
 
-describe('watching the link', () => {
-  function bridgeWith(services: LanService[]) {
-    return {
-      browse(onFound: (found: LanService[]) => void) {
-        onFound(services);
-        return () => undefined;
-      },
-    };
-  }
+function fixedBridge(services: LanService[]) {
+  return {
+    browse(onFound: (found: LanService[]) => void) {
+      onFound(services);
+      return () => undefined;
+    },
+  };
+}
 
+describe('watching the link', () => {
   it('splits what it heard by what can be done with it', () => {
-    const bridge = bridgeWith([
+    const bridge = fixedBridge([
       { name: 'Salon', txt: beaconTxt(RECORD) },
       {
         name: 'Chambre',
@@ -290,7 +290,7 @@ describe('watching the link', () => {
     // about the confirmation either way would be a key an attacker writes.
     // There is no such key: the grant is what asks the server, and the server
     // refuses one that wants a check without it.
-    const bridge = bridgeWith([
+    const bridge = fixedBridge([
       { name: 'Salon', txt: { ...beaconTxt(RECORD), confirmRequired: 'true' } },
     ]);
     const seen: Array<{ pairable: Array<{ confirmRequired: boolean }> }> = [];
@@ -300,7 +300,7 @@ describe('watching the link', () => {
   });
 
   it('falls back to the published name for a signed-in television too', () => {
-    const bridge = bridgeWith([
+    const bridge = fixedBridge([
       {
         name: 'Salon de Max',
         txt: beaconTxt({ state: 'ready', name: '', platform: 'tvOS', receiver: 'r1' }),

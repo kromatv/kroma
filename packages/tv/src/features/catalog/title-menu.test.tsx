@@ -9,7 +9,7 @@ import { TvClientProvider, TvNavProvider, TvOutlet } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
 import { type HeldTitle, useTitleMenu } from '#tv/features/catalog/title-menu';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const state = vi.hoisted(() => ({
   listed: new Set<string>(),
@@ -62,7 +62,7 @@ const NEXT = {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   state.listed.clear();
   state.seen.clear();
   vi.clearAllMocks();
@@ -98,7 +98,7 @@ function mount(title: HeldTitle, unbound = false) {
   });
   const onBack = vi.fn();
   let menu!: ReturnType<typeof useTitleMenu>;
-  render(
+  inputHost.render(
     onScreen(
       <TvClientProvider client={client}>
         <TvNavProvider screens={stubScreens()}>
@@ -116,7 +116,7 @@ function mount(title: HeldTitle, unbound = false) {
   );
   const hold = () => {
     fireEvent.click(screen.getByText('hold'));
-    clearPressGuard();
+    inputHost.clearPressGuard();
   };
   return { hold, forget, upNext, onBack, menu: () => menu };
 }

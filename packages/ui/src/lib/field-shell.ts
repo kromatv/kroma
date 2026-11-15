@@ -214,7 +214,7 @@ export function fieldShell(
         ...(at.focused ? fieldRing(scope) : null),
       },
       scope,
-    ) as TextStyle,
+    ),
   };
 }
 

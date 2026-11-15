@@ -132,7 +132,7 @@ function providerValue(node: Node): Node | null {
     const held = attr.value?.type === 'JSXExpressionContainer' ? attr.value.expression : null;
     const kind = held?.type ?? '';
     if (/^(Object|Array|ArrowFunction|Function)Expression$/.test(kind)) {
-      return attr as Node;
+      return attr;
     }
   }
   return null;

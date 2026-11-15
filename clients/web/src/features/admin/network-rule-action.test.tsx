@@ -16,7 +16,7 @@ function Providers({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const { render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const carried = { carries: { tcp: true, udp: false, dns: true }, up: true };
 const DEFAULT: NetworkView = { ...carried, name: 'vpn', label: 'Proton VPN · CH#3' };
@@ -26,7 +26,7 @@ afterEach(cleanup);
 
 describe('where a rule sends what it matches', () => {
   it('offers direct, the VPN and block while there is one network', () => {
-    render(<RuleActionField value="direct" networks={[DEFAULT]} onChange={vi.fn()} />, {
+    inputHost.render(<RuleActionField value="direct" networks={[DEFAULT]} onChange={vi.fn()} />, {
       wrapper: Providers,
     });
 
@@ -38,15 +38,18 @@ describe('where a rule sends what it matches', () => {
   });
 
   it('names the default VPN by the server it follows once there are several', () => {
-    render(<RuleActionField value="vpn" networks={[DEFAULT, NL12]} onChange={vi.fn()} />, {
-      wrapper: Providers,
-    });
+    inputHost.render(
+      <RuleActionField value="vpn" networks={[DEFAULT, NL12]} onChange={vi.fn()} />,
+      {
+        wrapper: Providers,
+      },
+    );
 
     expect(screen.getByText('Default VPN · Proton VPN · CH#3')).toBeTruthy();
   });
 
   it('names a pinned server by the name its module gives it', () => {
-    render(
+    inputHost.render(
       <RuleActionField
         value="vpn-40fd4c79cd7a7537"
         networks={[DEFAULT, NL12]}
@@ -61,7 +64,7 @@ describe('where a rule sends what it matches', () => {
 
 describe('a rule row', () => {
   it('shows the server a rule pins', () => {
-    render(<RuleActionBadge action="vpn-40fd4c79cd7a7537" networks={[DEFAULT, NL12]} />, {
+    inputHost.render(<RuleActionBadge action="vpn-40fd4c79cd7a7537" networks={[DEFAULT, NL12]} />, {
       wrapper: Providers,
     });
 
@@ -69,7 +72,7 @@ describe('a rule row', () => {
   });
 
   it('shows the bare name of a server no longer on offer', () => {
-    render(<RuleActionBadge action="vpn-40fd4c79cd7a7537" networks={[DEFAULT]} />, {
+    inputHost.render(<RuleActionBadge action="vpn-40fd4c79cd7a7537" networks={[DEFAULT]} />, {
       wrapper: Providers,
     });
 

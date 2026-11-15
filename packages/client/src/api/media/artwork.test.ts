@@ -26,16 +26,16 @@ describe('artwork resolution setting', () => {
 
   it('scales every width a caller asks for', () => {
     const { client: scaled } = recordingClient(undefined, { artworkScale: () => 0.5 });
-    const artwork = scaled.media.artwork;
-    expect(artwork.resolve('/api/images/p.webp', 480)).toBe(
+    const art = scaled.media.artwork;
+    expect(art.resolve('/api/images/p.webp', 480)).toBe(
       'http://kroma.test/api/images/p.webp?w=240',
     );
   });
 
   it('leaves an unsized URL unsized: there is no width to scale', () => {
     const { client: scaled } = recordingClient(undefined, { artworkScale: () => 0.5 });
-    const artwork = scaled.media.artwork;
-    expect(artwork.resolve('/api/images/p.webp')).toBe('http://kroma.test/api/images/p.webp');
+    const art = scaled.media.artwork;
+    expect(art.resolve('/api/images/p.webp')).toBe('http://kroma.test/api/images/p.webp');
   });
 
   it('asks for the smallest rendition that exists, however small the art', () => {
@@ -48,11 +48,11 @@ describe('artwork resolution setting', () => {
   });
 });
 
-describe('a media-byte path the server composed itself', () => {
-  async function ticketed() {
-    return (await ticketedClient()).media.artwork;
-  }
+async function ticketed() {
+  return (await ticketedClient()).media.artwork;
+}
 
+describe('a media-byte path the server composed itself', () => {
   it('gains the media ticket, keeping the query the server already wrote', async () => {
     const art = await ticketed();
 

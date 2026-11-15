@@ -6,7 +6,9 @@ type LooseBus = {
   emit(key: string, payload: unknown): void;
   on(key: string, handler: (payload: unknown) => void): () => void;
 };
-const loose = (b: EventBus): LooseBus => b as unknown as LooseBus;
+const loose = (b: EventBus): LooseBus => b;
+
+const unset = () => undefined;
 
 describe('createEventBus', () => {
   it('delivers an emitted payload to every subscriber of that key', () => {
@@ -47,7 +49,7 @@ describe('createEventBus', () => {
   it('uses a snapshot: a handler that unsubscribes another still lets that one fire this round', () => {
     const bus = loose(createEventBus());
     const second = vi.fn();
-    let off2: () => void = () => undefined;
+    let off2: () => void = unset;
     bus.on('evt', () => off2()); // removes the second handler mid-dispatch
     off2 = bus.on('evt', second);
     bus.emit('evt', 1);

@@ -30,7 +30,7 @@ export function usePanelSlide(open: boolean): PanelSlide {
   }
   useEffect(() => {
     if (open) {
-      return;
+      return undefined;
     }
     const out = setTimeout(() => setMounted(false), CARD_MS);
     return () => clearTimeout(out);

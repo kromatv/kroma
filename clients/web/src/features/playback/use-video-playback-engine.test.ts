@@ -65,6 +65,20 @@ function render(item = movie()) {
   return { ...view, v };
 }
 
+const lastBind = () => vi.mocked(bindMediaEvents).mock.calls.at(-1);
+const boundAutoplay = () => lastBind()?.[5];
+
+async function attached() {
+  H.decision = { kind: 'direct', aacMaster: false };
+  const { result } = render();
+  await settle();
+  const v = fakeVideo({ currentTime: 30 });
+  result.current.videoRef.current = v as unknown as HTMLVideoElement;
+  act(() => result.current.setEnginePref('direct'));
+  await settle();
+  return { result, v };
+}
+
 describe('useVideoPlayback preferred audio', () => {
   it('applies the account audio language once the session hydrates', async () => {
     H.user = { audioLanguage: 'fr' };
@@ -251,20 +265,6 @@ describe('useVideoPlayback on Safari', () => {
 });
 
 describe('useVideoPlayback stall recovery', () => {
-  const lastBind = () => vi.mocked(bindMediaEvents).mock.calls.at(-1);
-  const boundAutoplay = () => lastBind()?.[5];
-
-  async function attached() {
-    H.decision = { kind: 'direct', aacMaster: false };
-    const { result } = render();
-    await settle();
-    const v = fakeVideo({ currentTime: 30 });
-    result.current.videoRef.current = v as unknown as HTMLVideoElement;
-    act(() => result.current.setEnginePref('direct'));
-    await settle();
-    return { result, v };
-  }
-
   it('re-anchors where the engine gave up, at the position the picture froze at', async () => {
     const { result, v } = await attached();
     expect(result.current.anchor).toBe(30);

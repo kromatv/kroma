@@ -72,13 +72,13 @@ describe('resolveServer', () => {
 
 const SERVER: Server = { url: 'http://localhost:4040', token: 'tok' };
 
-describe('uploadBundle', () => {
-  const bundle = () => {
-    const path = join(work, 'tv.kroma.notes.kmod');
-    writeFileSync(path, 'kmod bytes');
-    return path;
-  };
+const bundle = () => {
+  const path = join(work, 'tv.kroma.notes.kmod');
+  writeFileSync(path, 'kmod bytes');
+  return path;
+};
 
+describe('uploadBundle', () => {
   it('posts the bundle and gives back what the server answered', async () => {
     let sent = '';
     vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {

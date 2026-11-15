@@ -34,7 +34,7 @@ export interface ProgressQueueApi {
     durationMs: number | null,
     reachedEnd: boolean,
   ): void;
-  settle(itemId: ItemId): void;
+  settle: (itemId: ItemId) => void;
 }
 
 const NOWHERE: ProgressQueueApi = { remember: () => undefined, settle: () => undefined };
@@ -111,7 +111,7 @@ function useReplay(client: KromaClient | null, serverUrl: string | null, userId:
 
   useEffect(() => {
     if (!client || !serverUrl || !userId) {
-      return;
+      return undefined;
     }
     let live = true;
     let failures = 0;

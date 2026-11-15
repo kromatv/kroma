@@ -159,12 +159,13 @@ describe('what the panel is allowed to launch', () => {
   });
 });
 
+const has =
+  (...files: string[]) =>
+  (path: string) =>
+    files.includes(path);
+
 describe('where a file the panel names actually is', () => {
   const root = '/repo/clients/web';
-  const has =
-    (...files: string[]) =>
-    (path: string) =>
-      files.includes(path);
 
   it('takes a path outside the root as it stands', () => {
     const at = resolveFile(

@@ -3,7 +3,7 @@ import { fakeListeners } from './engine.fixture';
 import { ExpoClipEngine } from './expo-clip-engine';
 
 const { players, FakePlayer } = vi.hoisted(() => {
-  class FakePlayer {
+  class RecordedPlayer {
     uri: string;
     currentTime = 0;
     duration = 0;
@@ -42,7 +42,7 @@ const { players, FakePlayer } = vi.hoisted(() => {
       }
     }
   }
-  return { players: [] as FakePlayer[], FakePlayer };
+  return { players: [] as RecordedPlayer[], FakePlayer: RecordedPlayer };
 });
 
 vi.mock('expo-video', () => ({

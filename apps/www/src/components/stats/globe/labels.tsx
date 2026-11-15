@@ -40,7 +40,7 @@ export function Labels({ pins, named, nodes }: Readonly<LabelsProps>) {
           ref={(node) => {
             const measured = node && measure(node);
             if (!measured) {
-              return;
+              return undefined;
             }
             nodes.current.set(pin.code, measured);
             return () => {

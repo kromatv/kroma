@@ -31,13 +31,12 @@ const show = (over: Partial<Show> = {}): SectionItem => ({
   } as unknown as Show,
 });
 
-const resume = (itemId: string, positionMs: number, durationMs: number): ContinueItem =>
-  ({
-    item: { id: itemId } as unknown as MediaItem,
-    positionMs,
-    durationMs,
-    updatedAt: '2026-01-01T00:00:00Z',
-  }) as ContinueItem;
+const resume = (itemId: string, positionMs: number, durationMs: number): ContinueItem => ({
+  item: { id: itemId } as unknown as MediaItem,
+  positionMs,
+  durationMs,
+  updatedAt: '2026-01-01T00:00:00Z',
+});
 
 describe('featuredMetaLine', () => {
   it('reads a year, a runtime and no more than two genres', () => {

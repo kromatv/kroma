@@ -10,7 +10,7 @@ function mount(html: string): readonly Element[] {
 const lines = (html: string) => accessOf(mount(html)).lines;
 const kinds = (html: string) => accessOf(mount(html)).findings.map((finding) => finding.kind);
 const notes = (html: string) => accessOf(mount(html)).findings.map((finding) => finding.note);
-const one = (html: string) => mount(html)[0] as Element;
+const one = (html: string) => mount(html)[0];
 
 describe('roleOf', () => {
   it('reads the role a tag already has', () => {
@@ -33,7 +33,7 @@ describe('nameOf', () => {
     const roots = mount(
       '<div id="ref">By reference</div><div aria-labelledby="ref" aria-label="Own"></div>',
     );
-    expect(nameOf(roots[1] as Element)).toBe('By reference');
+    expect(nameOf(roots[1])).toBe('By reference');
     expect(nameOf(one('<div aria-label="Own" title="Tip">Inside</div>'))).toBe('Own');
     expect(nameOf(one('<img src="a.png" alt="Poster" title="Tip"/>'))).toBe('Poster');
     expect(nameOf(one('<div title="Tip">Inside</div>'))).toBe('Tip');
@@ -140,6 +140,9 @@ describe('what it calls a finding', () => {
   });
 });
 
+const owner = (controls: string) =>
+  `<div role="combobox" tabindex="0" aria-label="Genre" aria-activedescendant="row"${controls}></div>`;
+
 describe('what it calls unreachable', () => {
   it('reads a pressable control the keyboard cannot get to', () => {
     expect(kinds('<div role="button" aria-label="Play"></div>')).toEqual(['unreachable-control']);
@@ -183,8 +186,6 @@ describe('what it calls unreachable', () => {
   it('still reads a row nothing points at as unreachable, wherever the pointer leads', () => {
     const row =
       '<div role="option" id="row" aria-label="Science fiction" aria-selected="true" tabindex="-1"></div>';
-    const owner = (controls: string) =>
-      `<div role="combobox" tabindex="0" aria-label="Genre" aria-activedescendant="row"${controls}></div>`;
 
     expect(kinds(owner('') + row)).toEqual(['unreachable-control']);
     expect(kinds(`${owner(' aria-controls="elsewhere"')}<div id="elsewhere"></div>${row}`)).toEqual(

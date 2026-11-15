@@ -5,7 +5,7 @@ export function useTrailingRow(focused: number, settleMs: number): number {
   const [settled, setSettled] = useState(focused);
   useEffect(() => {
     if (settled === focused) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => startTransition(() => setSettled(focused)), settleMs);
     return () => clearTimeout(timer);

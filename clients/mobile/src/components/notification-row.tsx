@@ -59,7 +59,7 @@ export function NotificationRow({
       void perform(() => client.notifications.markRead([row.id]));
     }
     if (route) {
-      router.push(route as never);
+      router.push(route);
     }
   }
 

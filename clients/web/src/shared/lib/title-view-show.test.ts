@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { build, requester, viewer } from './title-view.fixture';
 
-describe('buildTitleView: show source', () => {
-  const ep = (season: number | null, episode: number | null, id = `e${season}-${episode}`) => ({
-    id,
-    title: `Ep ${episode}`,
-    season,
-    episode,
-    video: {},
-    metadata: null,
-  });
+const ep = (season: number | null, episode: number | null, id = `e${season}-${episode}`) => ({
+  id,
+  title: `Ep ${episode}`,
+  season,
+  episode,
+  video: {},
+  metadata: null,
+});
 
+describe('buildTitleView: show source', () => {
   const showObj = {
     id: 'sh1',
     title: 'Show',

@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { Chapter } from '#ui/components/organisms/player/types';
 import { currentChapter, currentChapterIndex, normalizeChapters } from './chapters';
 
-const raw = (startMs: number, title = `c${startMs}`, kind?: Chapter['kind']): Chapter =>
-  ({ startMs, endMs: 0, title, ...(kind ? { kind } : {}) }) as Chapter;
+const raw = (startMs: number, title = `c${startMs}`, kind?: Chapter['kind']): Chapter => ({
+  startMs,
+  endMs: 0,
+  title,
+  ...(kind ? { kind } : {}),
+});
 
 describe('normalizeChapters', () => {
   it('returns [] when there is nothing meaningful to segment', () => {

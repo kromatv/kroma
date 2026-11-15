@@ -22,7 +22,7 @@ beforeAll(() => {
     }
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver;
+  };
 });
 
 afterEach(() => {

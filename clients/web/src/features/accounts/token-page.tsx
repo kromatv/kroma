@@ -45,7 +45,7 @@ export function useTokenLink(
 
   useEffect(() => {
     if (!token) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     resolve(token)

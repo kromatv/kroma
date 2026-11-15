@@ -24,7 +24,7 @@ export function usePlayableTrailer(
 
   useEffect(() => {
     if (tmdbId == null) {
-      return;
+      return undefined;
     }
     let live = true;
     client.trailers.list(kind, tmdbId).then(

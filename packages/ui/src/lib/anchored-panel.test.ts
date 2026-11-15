@@ -87,6 +87,8 @@ describe('wiring the trigger to a panel it does not contain', () => {
   });
 });
 
+const anchorTo = (el: HTMLElement | null) => ({ current: el });
+
 describe('useAnchoredPlacement', () => {
   const rect = { left: 40, right: 240, top: 100, bottom: 130, width: 200, height: 30 };
 
@@ -95,8 +97,6 @@ describe('useAnchoredPlacement', () => {
     el.getBoundingClientRect = () => ({ ...rect, x: rect.left, y: rect.top, toJSON: () => rect });
     return el;
   }
-
-  const anchorTo = (el: HTMLElement | null) => ({ current: el });
 
   it('measures before paint, so the panel never flashes at the origin', () => {
     const anchor = anchorTo(trigger());

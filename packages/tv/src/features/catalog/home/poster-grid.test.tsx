@@ -6,15 +6,15 @@ import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/poster-grid';
 
-const { clearPressGuard, render: renderRaw } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator; render inside the
 // same scope the router gives a real screen.
-const render = (ui: ReactElement) => renderRaw(onScreen(ui));
+const render = (ui: ReactElement) => inputHost.render(onScreen(ui));
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 function cards(n: number, over: Partial<GridCard> = {}): GridCard[] {

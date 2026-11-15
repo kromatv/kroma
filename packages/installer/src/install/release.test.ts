@@ -97,16 +97,16 @@ describe('releaseAssets', () => {
   });
 });
 
-describe('fetchAsset', () => {
-  const asset = (over: Partial<ReleaseAsset> = {}): ReleaseAsset => ({
-    name: 'KROMA-tizen-0.1.38.wgt',
-    url: 'https://github.com/kromatv/kroma/releases/download/v0.1.38/KROMA-tizen-0.1.38.wgt',
-    size: 6,
-    sha256: digest('widget'),
-    updatedMs: 0,
-    ...over,
-  });
+const asset = (over: Partial<ReleaseAsset> = {}): ReleaseAsset => ({
+  name: 'KROMA-tizen-0.1.38.wgt',
+  url: 'https://github.com/kromatv/kroma/releases/download/v0.1.38/KROMA-tizen-0.1.38.wgt',
+  size: 6,
+  sha256: digest('widget'),
+  updatedMs: 0,
+  ...over,
+});
 
+describe('fetchAsset', () => {
   it('downloads the asset pinned to the size and digest its release lists', async () => {
     const directory = join(base, 'fresh');
 

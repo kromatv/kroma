@@ -13,6 +13,13 @@ const CHIPS = Array.from({ length: 14 }, (_, at) => `Chip ${at + 1}`).map((label
   <Text key={label}>{label}</Text>
 ));
 
+const size = (text: string) => {
+  const nodes = Array.from(document.querySelectorAll('div')).filter(
+    (el) => el.textContent === text,
+  );
+  return getComputedStyle(nodes.at(-1) as HTMLElement).fontSize;
+};
+
 describe('<Rail> parts', () => {
   it('is a namespace of parts, not a component', () => {
     expect(typeof Rail).toBe('object');
@@ -42,12 +49,6 @@ describe('<Rail> parts', () => {
   });
 
   it('lets the title carry its own type instead of being styled through the Root', () => {
-    const size = (text: string) => {
-      const nodes = Array.from(document.querySelectorAll('div')).filter(
-        (el) => el.textContent === text,
-      );
-      return getComputedStyle(nodes.at(-1) as HTMLElement).fontSize;
-    };
     render(
       onScreen(
         <Rail.Root>

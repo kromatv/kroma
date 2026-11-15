@@ -47,7 +47,7 @@ export type SeekPress = 'tap' | 'hold';
 export interface SeekNudge {
   /** The `seekNudge(dir, press)` the nav machine calls for ◀ / ▶ on the progress
    *  bar, the rewind / forward transport buttons and the keyboard's arrows. */
-  nudge(dir: -1 | 1, press: SeekPress): void;
+  nudge: (dir: -1 | 1, press: SeekPress) => void;
   /** Live from the first press until the coalesced seek fires, null after. */
   burst: SeekBurst | null;
 }

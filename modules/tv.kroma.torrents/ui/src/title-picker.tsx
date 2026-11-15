@@ -56,7 +56,7 @@ export function TitlePicker({
 
   useEffect(() => {
     if (!request.text) {
-      return;
+      return undefined;
     }
     let stale = false;
     void torrents

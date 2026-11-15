@@ -37,7 +37,7 @@ function useCrossFade(
   // Drop the underlay once the incoming image has finished fading in over it.
   useEffect(() => {
     if (!loaded || under == null) {
-      return;
+      return undefined;
     }
     const id = setTimeout(() => setUnder(null), duration);
     return () => clearTimeout(id);

@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider } from '#tv/app/router';
 import { TvReleases } from '#tv/features/releases/tv-releases';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 vi.mock('#tv/app/providers/auth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#tv/app/providers/auth')>()),
@@ -17,7 +17,7 @@ vi.mock('#tv/app/providers/auth', async (importOriginal) => ({
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   sessionStorage.clear();
 });
 
@@ -55,7 +55,7 @@ const VIEW: ReleasesView = {
 
 async function openHistory() {
   const client = fakeClient({ releases: { list: vi.fn().mockResolvedValue(VIEW) } });
-  render(
+  inputHost.render(
     onScreen(
       <TvClientProvider client={client}>
         <TvNavProvider screens={{} as never}>
@@ -66,7 +66,7 @@ async function openHistory() {
   );
   await screen.findByText(POSTPLAY.body);
   await waitFor(() => expect(document.activeElement).toBe(screen.getAllByRole('option')[0]));
-  clearPressGuard();
+  inputHost.clearPressGuard();
 }
 
 describe('TvReleases', () => {

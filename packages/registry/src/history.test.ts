@@ -14,7 +14,7 @@ function entry(id: string, version: string, server = '>=0.1.38'): DescribedModul
     version,
     engines: { server },
     artifacts: [{ url: `https://h/${id}@${version}.kmod`, size: 10, sha256: 'ab'.repeat(32) }],
-  } as DescribedModule;
+  };
 }
 
 describe('foldHistory', () => {

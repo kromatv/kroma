@@ -24,7 +24,7 @@ export function MenuRow({
   toggle,
   on,
   autoFocus,
-  style,
+  style: placement,
   onActivate,
 }: Readonly<{
   icon: ReactNode;
@@ -50,7 +50,7 @@ export function MenuRow({
       autoFocus={autoFocus}
       onPress={onActivate}
       states={ROW_FOCUS}
-      style={[panelScoped.menuRow, style]}
+      style={[panelScoped.menuRow, placement]}
     >
       {icon}
       <Box flex style={MIN_W}>

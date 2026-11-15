@@ -46,12 +46,12 @@ function SeasonSwitcher({
   const t = useT();
   return (
     <div className={classes(s.chipScroller)}>
-      {seasons.map((s) => (
+      {seasons.map((one) => (
         <Chip
-          key={s.number}
-          active={s.number === current}
-          label={t('content.season', { number: s.number })}
-          onPress={() => onPick(s.number)}
+          key={one.number}
+          active={one.number === current}
+          label={t('content.season', { number: one.number })}
+          onPress={() => onPick(one.number)}
         />
       ))}
     </div>
@@ -104,7 +104,7 @@ export function SeasonSection({
     ...webRuntime.queries.discoverQueries.season(discoverTmdbId ?? 0, season),
     enabled: discoverTmdbId != null,
   });
-  const picked = seasons.find((s) => s.number === season) ?? seasons[0];
+  const picked = seasons.find((one) => one.number === season) ?? seasons[0];
   const current = picked && listing ? { ...picked, missing: listing.episodes } : picked;
   // The ticks leave the screen with their season, and the request bar counts
   // the whole set: carrying them over would submit episodes nothing on screen
@@ -119,7 +119,7 @@ export function SeasonSection({
   if (!current) {
     return null;
   }
-  const hasOpen = canRequest && seasons.some((s) => !s.available && !s.requested);
+  const hasOpen = canRequest && seasons.some((one) => !one.available && !one.requested);
   const seasonPickable = canRequest && !current.available && !current.requested;
 
   const { ownedByNum, ordered, perEpisode } = mergeEpisodes(current, canRequest);

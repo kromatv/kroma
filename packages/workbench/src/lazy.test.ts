@@ -75,7 +75,7 @@ describe('the index, before anything is fetched', () => {
 
   it('holds no story at all until one is asked for', () => {
     const loaders = modules();
-    const button = vi.fn(loaders[BUTTON] as () => Promise<unknown>);
+    const button = vi.fn(loaders[BUTTON]);
     const index = indexVite({ modules: { ...loaders, [BUTTON]: button }, codes: CODES });
     expect(index).toHaveLength(2);
     expect(button).not.toHaveBeenCalled();
@@ -175,7 +175,7 @@ describe('a story, once it is asked for', () => {
 
   it('fetches a module once, however many views ask for it', async () => {
     const loaders = modules();
-    const button = vi.fn(loaders[BUTTON] as () => Promise<unknown>);
+    const button = vi.fn(loaders[BUTTON]);
     const index = indexVite({ modules: { ...loaders, [BUTTON]: button }, codes: CODES });
     const entry = entryAt(index, AT_BUTTON);
     const [first, second] = await Promise.all([entry.load(), entry.load()]);

@@ -30,7 +30,7 @@ function useWheelTravel(ref: WheelHost, onTravel: (delta: number) => void, enabl
     // The RNW View IS the DOM node, but the types do not say so.
     const node = ref.current as unknown as HTMLElement | null;
     if (!node || !enabled) {
-      return;
+      return undefined;
     }
     const onWheel = (event: WheelEvent) => {
       // ctrl + wheel is pinch zoom. It is the browser's gesture, not the list's.

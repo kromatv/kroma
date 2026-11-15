@@ -78,7 +78,7 @@ function VersionStamp() {
 
   useEffect(() => {
     if (state === 'idle') {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => setState('idle'), CONFIRM_MS);
     return () => clearTimeout(timer);

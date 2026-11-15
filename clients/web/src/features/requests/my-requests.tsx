@@ -49,7 +49,7 @@ export function MyRequestsList() {
     });
     ev.connect();
     return () => ev.close();
-  }, [queryClient, requestsQuery.queryKey, eventClient.sessionToken, eventClient.refreshSession]);
+  }, [queryClient, requestsQuery.queryKey, eventClient.sessionToken, eventClient]);
 
   const cancel = (req: MediaRequest) => {
     setBusyId(req.id);

@@ -38,7 +38,7 @@ export function useServerHealth(
 
   useEffect(() => {
     if (!client || !enabled) {
-      return;
+      return undefined;
     }
     const monitor = startHealthMonitor({
       probe: async () => {

@@ -43,7 +43,7 @@ export function useNotificationStream(): void {
   }, [
     queryClient,
     eventClient.sessionToken,
-    eventClient.refreshSession,
+    eventClient,
     webRuntime.queries.userQueries.notifications,
   ]);
 }

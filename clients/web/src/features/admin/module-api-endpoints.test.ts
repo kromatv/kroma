@@ -23,10 +23,10 @@ const {
 
 installHarness();
 
-describe('the module endpoints', () => {
-  const bodyOf = (init: RequestInit | undefined): unknown =>
-    JSON.parse(typeof init?.body === 'string' ? init.body : 'null');
+const bodyOf = (init: RequestInit | undefined): unknown =>
+  JSON.parse(typeof init?.body === 'string' ? init.body : 'null');
 
+describe('the module endpoints', () => {
   it('lists the installed modules', async () => {
     const rows: AdminModule[] = [
       { id: 'tv.kroma.vpn', enabled: true, configValues: {}, removable: true } as AdminModule,

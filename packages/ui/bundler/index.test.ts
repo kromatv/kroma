@@ -166,13 +166,13 @@ describe('the vite half', () => {
   });
 });
 
-describe('the module path it is keyed on', () => {
-  function rootWithoutTarget() {
-    const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-bundler-'));
-    mkdirSync(join(dir, 'packages', 'ui', 'src', 'lib', 'icons'), { recursive: true });
-    return dir;
-  }
+function rootWithoutTarget() {
+  const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-bundler-'));
+  mkdirSync(join(dir, 'packages', 'ui', 'src', 'lib', 'icons'), { recursive: true });
+  return dir;
+}
 
+describe('the module path it is keyed on', () => {
   it('fails loudly when the target moved, rather than shipping every icon', () => {
     // Both adapters match by path, and a path is what a refactor breaks
     // silently: the swap would simply never fire, under a green build.
@@ -255,40 +255,40 @@ function vi_fn() {
   return Object.assign(fn, { calls });
 }
 
-describe('the workspace walk', () => {
-  function tree(): string {
-    const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-walk-'));
-    mkdirSync(join(dir, 'nested'), { recursive: true });
-    mkdirSync(join(dir, 'node_modules'), { recursive: true });
-    mkdirSync(join(dir, '.expo'), { recursive: true });
-    writeFileSync(join(dir, 'a.ts'), 'a');
-    writeFileSync(join(dir, 'nested', 'b.test.ts'), 'b');
-    writeFileSync(join(dir, 'nested', 'c.tsx'), 'c');
-    writeFileSync(join(dir, 'd.md'), 'd');
-    writeFileSync(join(dir, 'node_modules', 'e.ts'), 'e');
-    writeFileSync(join(dir, '.expo', 'f.ts'), 'f');
-    writeFileSync(join(dir, 'g.page.mdx'), 'g');
-    return dir;
-  }
-
-  function collector(wants: (name: string) => boolean) {
-    const saw: string[] = [];
-    let ended = 0;
-    return {
-      saw,
-      ended: () => ended,
-      pass: {
-        wants,
-        read: (source: string) => {
-          saw.push(source);
-        },
-        done: () => {
-          ended += 1;
-        },
+function collector(wants: (name: string) => boolean) {
+  const saw: string[] = [];
+  let ended = 0;
+  return {
+    saw,
+    ended: () => ended,
+    pass: {
+      wants,
+      read: (source: string) => {
+        saw.push(source);
       },
-    };
-  }
+      done: () => {
+        ended += 1;
+      },
+    },
+  };
+}
 
+function tree(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-walk-'));
+  mkdirSync(join(dir, 'nested'), { recursive: true });
+  mkdirSync(join(dir, 'node_modules'), { recursive: true });
+  mkdirSync(join(dir, '.expo'), { recursive: true });
+  writeFileSync(join(dir, 'a.ts'), 'a');
+  writeFileSync(join(dir, 'nested', 'b.test.ts'), 'b');
+  writeFileSync(join(dir, 'nested', 'c.tsx'), 'c');
+  writeFileSync(join(dir, 'd.md'), 'd');
+  writeFileSync(join(dir, 'node_modules', 'e.ts'), 'e');
+  writeFileSync(join(dir, '.expo', 'f.ts'), 'f');
+  writeFileSync(join(dir, 'g.page.mdx'), 'g');
+  return dir;
+}
+
+describe('the workspace walk', () => {
   it('carries every collector over one traversal, each file read once', () => {
     // The whole point of the pass shape: the icon subset and the token scan read
     // the same four directories, and the traversal is what a scan costs.

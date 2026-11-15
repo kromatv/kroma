@@ -82,7 +82,7 @@ function Root({
   const image = measured?.src === src ? measured.size : null;
   useEffect(() => {
     if (!src) {
-      return;
+      return undefined;
     }
     let current = true;
     void imageSize(src).then((size) => {

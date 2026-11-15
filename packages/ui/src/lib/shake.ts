@@ -24,7 +24,7 @@ export function useShake(at: number): Animated.WithAnimatedValue<ViewStyle> {
 
   useEffect(() => {
     if (at === 0 || reduced) {
-      return;
+      return undefined;
     }
     const wobble = Animated.sequence(
       LEGS.map((to) =>

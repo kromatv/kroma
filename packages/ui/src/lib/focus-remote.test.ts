@@ -58,18 +58,18 @@ beforeEach(() => {
   Reflect.deleteProperty(document, 'activeElement');
 });
 
+function legacyPress(keyCode: number) {
+  const event = new KeyboardEvent('keydown', { cancelable: true });
+  Object.defineProperty(event, 'key', { value: undefined });
+  Object.defineProperty(event, 'keyCode', { value: keyCode });
+  document.dispatchEvent(event);
+  return event;
+}
+
 // An engine below Chrome 51 has no `KeyboardEvent.key` at all, which is the
 // deep tier's floor and also what Samsung's simulator remote posts. Without the
 // keyCode fallback the television paints correctly and cannot be driven.
 describe('a remote that sends only a keyCode', () => {
-  function legacyPress(keyCode: number) {
-    const event = new KeyboardEvent('keydown', { cancelable: true });
-    Object.defineProperty(event, 'key', { value: undefined });
-    Object.defineProperty(event, 'keyCode', { value: keyCode });
-    document.dispatchEvent(event);
-    return event;
-  }
-
   it.each([
     [37, 'left'],
     [38, 'up'],

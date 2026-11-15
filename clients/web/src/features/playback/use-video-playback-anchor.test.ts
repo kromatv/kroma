@@ -47,6 +47,8 @@ const { useVideoPlayback } = await import('#web/features/playback/use-video-play
 
 installHarness();
 
+const unsettled = (): void => undefined;
+
 function render(item = movie()) {
   const view = renderHook(() => useVideoPlayback(item));
   const v = fakeVideo();
@@ -151,7 +153,7 @@ describe('useVideoPlayback resume', () => {
 
   it('ignores a progress reply that lands after unmount', async () => {
     H.user = {};
-    let resolveProgress: (p: unknown) => void = () => undefined;
+    let resolveProgress: (p: unknown) => void = unsettled;
     H.itemProgress.mockReturnValue(
       new Promise((resolve) => {
         resolveProgress = resolve;
@@ -168,7 +170,7 @@ describe('useVideoPlayback resume', () => {
 
   it('ignores a failed progress lookup that lands after unmount', async () => {
     H.user = {};
-    let rejectProgress: (e: unknown) => void = () => undefined;
+    let rejectProgress: (e: unknown) => void = unsettled;
     H.itemProgress.mockReturnValue(
       new Promise((_resolve, reject) => {
         rejectProgress = reject;
@@ -215,7 +217,7 @@ describe('useVideoPlayback HLS master headers', () => {
 
   it('ignores master headers that land after unmount', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
-    let resolveMaster: (r: unknown) => void = () => undefined;
+    let resolveMaster: (r: unknown) => void = unsettled;
     vi.stubGlobal(
       'fetch',
       vi.fn(
@@ -236,7 +238,7 @@ describe('useVideoPlayback HLS master headers', () => {
 
   it('ignores a failed master fetch that lands after unmount', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
-    let rejectMaster: (e: unknown) => void = () => undefined;
+    let rejectMaster: (e: unknown) => void = unsettled;
     vi.stubGlobal(
       'fetch',
       vi.fn(

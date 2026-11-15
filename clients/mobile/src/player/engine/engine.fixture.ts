@@ -7,46 +7,47 @@ import { vi } from 'vitest';
 
 type Listener = (payload: never) => void;
 
-const native = (() => {
-  const make = () => {
-    const listeners = new Map<string, Set<Listener>>();
-    const player = {
-      playing: false,
-      duration: 7200,
-      currentTime: 0,
-      muted: false,
-      playbackRate: 1,
-      timeUpdateEventInterval: 0,
-      staysActiveInBackground: false,
-      showNowPlayingNotification: false,
-      availableAudioTracks: [] as unknown[],
-      audioTrack: null as unknown,
-      play: vi.fn(() => {
-        player.playing = true;
-      }),
-      pause: vi.fn(),
-      replaceAsync: vi.fn((_source: unknown): Promise<void> => Promise.resolve()),
-      addListener: (type: string, fn: Listener) => {
-        let set = listeners.get(type);
-        if (!set) {
-          set = new Set();
-          listeners.set(type, set);
-        }
-        set.add(fn);
-        return {
-          remove: () => {
-            set?.delete(fn);
-          },
-        };
-      },
-      emit: (type: string, payload: unknown) => {
-        for (const fn of listeners.get(type) ?? []) {
-          (fn as (p: unknown) => void)(payload);
-        }
-      },
-    };
-    return player;
+const make = () => {
+  const listeners = new Map<string, Set<Listener>>();
+  const player = {
+    playing: false,
+    duration: 7200,
+    currentTime: 0,
+    muted: false,
+    playbackRate: 1,
+    timeUpdateEventInterval: 0,
+    staysActiveInBackground: false,
+    showNowPlayingNotification: false,
+    availableAudioTracks: [] as unknown[],
+    audioTrack: null as unknown,
+    play: vi.fn(() => {
+      player.playing = true;
+    }),
+    pause: vi.fn(),
+    replaceAsync: vi.fn((_source: unknown): Promise<void> => Promise.resolve()),
+    addListener: (type: string, fn: Listener) => {
+      let set = listeners.get(type);
+      if (!set) {
+        set = new Set();
+        listeners.set(type, set);
+      }
+      set.add(fn);
+      return {
+        remove: () => {
+          set?.delete(fn);
+        },
+      };
+    },
+    emit: (type: string, payload: unknown) => {
+      for (const fn of listeners.get(type) ?? []) {
+        (fn as (p: unknown) => void)(payload);
+      }
+    },
   };
+  return player;
+};
+
+const native = (() => {
   const box = { current: make() };
   return { box, queue: [] as ReturnType<typeof make>[], make, fresh: () => (box.current = make()) };
 })();
@@ -57,9 +58,9 @@ vi.doMock('expo-video', async () => {
   return {
     useVideoPlayer: (_source: unknown, setup?: (p: unknown) => void) => {
       const [instance] = useState(() => {
-        const instance = native.queue.shift() ?? native.box.current;
-        setup?.(instance);
-        return instance;
+        const created = native.queue.shift() ?? native.box.current;
+        setup?.(created);
+        return created;
       });
       return instance;
     },

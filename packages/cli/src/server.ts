@@ -39,7 +39,7 @@ export async function uploadBundle(server: Server, path: string): Promise<string
       authorization: `Bearer ${server.token}`,
       'content-type': 'application/octet-stream',
     },
-    body: new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength),
+    body: new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength),
   });
   const body = await res.text();
   if (!res.ok) {

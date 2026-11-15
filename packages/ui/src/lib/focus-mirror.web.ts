@@ -1,12 +1,14 @@
 import { holdsCaret } from './dom';
 
+function isElement(view: unknown): view is HTMLElement {
+  return typeof HTMLElement !== 'undefined' && view instanceof HTMLElement;
+}
+
+const isFocused = (element: HTMLElement) => element.ownerDocument.activeElement === element;
+
 export function createFocusMirror(pointerDriving: () => boolean) {
   let mirrored: HTMLElement | null = null;
   let keepsScroll: boolean | undefined;
-
-  function isElement(view: unknown): view is HTMLElement {
-    return typeof HTMLElement !== 'undefined' && view instanceof HTMLElement;
-  }
 
   function engineKeepsScroll(document: Document): boolean {
     if (keepsScroll === undefined) {
@@ -48,8 +50,6 @@ export function createFocusMirror(pointerDriving: () => boolean) {
       view.scrollTo(x, y);
     }
   }
-
-  const isFocused = (element: HTMLElement) => element.ownerDocument.activeElement === element;
 
   function letGo(): void {
     const held = mirrored;

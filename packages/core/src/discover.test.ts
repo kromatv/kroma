@@ -225,50 +225,58 @@ describe('discoverServers', () => {
     expect(found.map((f) => f.url)).toEqual(['http://kroma.local:4040']);
   });
 });
-describe('discovery via the DNS-SD browse', () => {
-  const H = '/api/health';
 
+const announcedFirst = async () => [{ host: 'announced.local', port: 9000 }];
+
+const H = '/api/health';
+
+const ghost = async () => [{ host: 'ghost.local', port: 4040 }];
+
+const throwing = async () => {
+  throw new Error('no multicast on this network');
+};
+
+const nothingFound = async () => [];
+
+const unusualPort = async () => [{ host: 'media.local', port: 8443 }];
+
+const announced = async () => [{ host: 'announced.local', port: 9000 }];
+
+describe('discovery via the DNS-SD browse', () => {
   it('prefers an announced server over the named candidate', async () => {
     const fetch = fakeFetch({
       [`http://kroma.local:4040${H}`]: {},
       [`http://announced.local:9000${H}`]: {},
     });
-    const browse = async () => [{ host: 'announced.local', port: 9000 }];
-    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+    await expect(discoverServer({ browse: announced, scanSubnet: false, fetch })).resolves.toBe(
       'http://announced.local:9000',
     );
   });
 
   it('finds a server on a port nothing would have guessed', async () => {
     const fetch = fakeFetch({ [`https://media.local:8443${H}`]: {} });
-    const browse = async () => [{ host: 'media.local', port: 8443 }];
-    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+    await expect(discoverServer({ browse: unusualPort, scanSubnet: false, fetch })).resolves.toBe(
       'https://media.local:8443',
     );
   });
 
   it('falls back to the named candidate when the browse finds nothing', async () => {
     const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
-    const browse = async () => [];
-    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+    await expect(discoverServer({ browse: nothingFound, scanSubnet: false, fetch })).resolves.toBe(
       'http://kroma.local:4040',
     );
   });
 
   it('falls back when the browse throws', async () => {
     const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
-    const browse = async () => {
-      throw new Error('no multicast on this network');
-    };
-    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+    await expect(discoverServer({ browse: throwing, scanSubnet: false, fetch })).resolves.toBe(
       'http://kroma.local:4040',
     );
   });
 
   it('ignores an announced server that does not actually answer', async () => {
     const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
-    const browse = async () => [{ host: 'ghost.local', port: 4040 }];
-    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+    await expect(discoverServer({ browse: ghost, scanSubnet: false, fetch })).resolves.toBe(
       'http://kroma.local:4040',
     );
   });
@@ -278,8 +286,7 @@ describe('discovery via the DNS-SD browse', () => {
       [`http://kroma.local:4040${H}`]: { body: { instanceId: 'named' } },
       [`http://announced.local:9000${H}`]: { body: { instanceId: 'announced' } },
     });
-    const browse = async () => [{ host: 'announced.local', port: 9000 }];
-    const found = await discoverServers({ browse, scanSubnet: false, fetch });
+    const found = await discoverServers({ browse: announcedFirst, scanSubnet: false, fetch });
     expect(found.map((f) => f.url)).toEqual([
       'http://announced.local:9000',
       'http://kroma.local:4040',

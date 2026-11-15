@@ -31,7 +31,7 @@ export function RequestsHubPage({
       <Box mt={20} mb={20} align="flex-start">
         <SegmentGroup.Root
           value={tab}
-          onValueChange={(next) => onTab(next as RequestsTab)}
+          onValueChange={(next) => onTab(next)}
           label={t('requests.myTitle')}
         >
           {TABS.map((one) => (

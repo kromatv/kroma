@@ -107,13 +107,13 @@ describe('discoverVite', () => {
   });
 });
 
-describe('discoverMetro', () => {
-  const context = (): Context => {
-    const found = modules();
-    const load = (id: string) => found[id];
-    return Object.assign(load as Context, { keys: () => Object.keys(found) });
-  };
+const context = (): Context => {
+  const found = modules();
+  const load = (id: string) => found[id];
+  return Object.assign(load as Context, { keys: () => Object.keys(found) });
+};
 
+describe('discoverMetro', () => {
   it('finds the same stories through Metro’s context', () => {
     expect(discoverMetro(context()).map((s) => s.id)).toEqual(['button', 'card']);
   });

@@ -2,10 +2,15 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const noop = () => undefined;
+
+function norm(u: string) {
+  return (u || '').replace(/\/+$/, '');
+}
+
 // The health monitor and event stream are real but inert here: `media.health`
 // resolves and `KromaEvents` never emits.
 const H = vi.hoisted(() => {
-  const norm = (u: string) => (u || '').replace(/\/+$/, '');
   return {
     norm,
     movieCards: vi.fn(),
@@ -263,7 +268,7 @@ describe('useCatalogue discovery', () => {
   });
 
   it('drops a sweep that only finishes after the screen is gone', async () => {
-    let finish: (url: string | null) => void = () => {};
+    let finish: (url: string | null) => void = noop;
     H.discoverServer.mockReturnValue(
       new Promise<string | null>((resolve) => {
         finish = resolve;
@@ -280,7 +285,7 @@ describe('useCatalogue discovery', () => {
 describe('useCatalogue server management', () => {
   it('ignores a catalogue that only arrives after the TV moved to another server', async () => {
     H.initialServers.mockReturnValue([{ url: 'http://a.local', name: 'A' }]);
-    let releaseA: (items: unknown[]) => void = () => {};
+    let releaseA: (items: unknown[]) => void = noop;
     H.movieCards.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -381,7 +386,7 @@ describe('useCatalogue deep links', () => {
   });
 
   it('picks up a link that arrives while the app is already running', async () => {
-    let emit: (link: unknown) => void = () => {};
+    let emit: (link: unknown) => void = noop;
     H.onDeepLink.mockImplementation((cb: (link: unknown) => void) => {
       emit = cb;
       return () => {};

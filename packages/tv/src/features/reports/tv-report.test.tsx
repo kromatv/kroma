@@ -14,11 +14,11 @@ import { TvClientProvider, type TvNav, TvNavProvider, TvOutlet, useNav } from '#
 import { stubScreens } from '#tv/app/router.fixtures';
 import { TvReport } from '#tv/features/reports/tv-report';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   // The router mirrors its stack to sessionStorage under a dev build, which the
   // runner is; without this each mount resumes the previous test's stack.
   sessionStorage.clear();
@@ -47,7 +47,7 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 function mountApp(createReport = vi.fn().mockResolvedValue({})) {
   const fake = fakeClient({ reports: { create: createReport } });
   let nav!: TvNav;
-  render(
+  inputHost.render(
     <EnvProvider platform="TV">
       <I18nProvider locale="en">
         <TvClientProvider client={fake}>
@@ -92,7 +92,7 @@ describe('TvReport in the app', () => {
     const app = mountApp();
     openReport(app);
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByText('Audio problem'));
     fireEvent.click(screen.getByText('Send report'));
 
@@ -109,7 +109,7 @@ describe('TvReport in the app', () => {
     const app = mountApp();
     openReport(app);
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByText('Send report'));
     expect(app.createReport).not.toHaveBeenCalled();
   });
@@ -118,7 +118,7 @@ describe('TvReport in the app', () => {
     const app = mountApp(vi.fn().mockRejectedValue(new Error('offline')));
     openReport(app);
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByText('Audio problem'));
     fireEvent.click(screen.getByText('Send report'));
 
@@ -128,16 +128,16 @@ describe('TvReport in the app', () => {
   });
 });
 
+function openTyping(app: ReturnType<typeof mountApp>) {
+  openReport(app);
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByText('Add details'));
+  inputHost.clearPressGuard();
+}
+
 // The keyboard needs the whole screen, so the details are a step rather than a
 // field on the form.
 describe('the details step', () => {
-  function openTyping(app: ReturnType<typeof mountApp>) {
-    openReport(app);
-    clearPressGuard();
-    fireEvent.click(screen.getByText('Add details'));
-    clearPressGuard();
-  }
-
   it('replaces the form rather than sharing the screen with it', () => {
     const app = mountApp();
     openTyping(app);
@@ -192,7 +192,7 @@ describe('the details step', () => {
     });
     fireEvent.click(screen.getByLabelText('Done'));
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     fireEvent.click(screen.getByText('Audio problem'));
     fireEvent.click(screen.getByText('Send report'));
 

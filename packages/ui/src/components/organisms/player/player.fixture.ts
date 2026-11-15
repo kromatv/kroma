@@ -145,10 +145,11 @@ const TV_STATS: PlayerStats = {
   ],
 };
 
+const noop = () => undefined;
+
 /** A controller that reports a paused 4K session and ignores every command.
  * Overrides are shallow-merged: `fakeController({ playing: true, cur: 1284 })`. */
 function fakeController(over: Partial<PlayerController> = {}): PlayerController {
-  const noop = () => undefined;
   return {
     cur: 164,
     dur: 9840,

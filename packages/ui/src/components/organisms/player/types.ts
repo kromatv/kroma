@@ -220,15 +220,15 @@ export interface PlayerController {
    *  hugging its own shape. */
   aspect?: number;
 
-  togglePlay(): void;
+  togglePlay: () => void;
   /** Seek to an absolute position (seconds). */
-  seekTo(abs: number): void;
+  seekTo: (abs: number) => void;
   /** Relative skip (seconds); negative = back. */
-  skip(delta: number): void;
+  skip: (delta: number) => void;
 
   // Scrub gesture (absolute seconds; shared by pointer + D-pad).
-  scrubPreview(abs: number | null): void;
-  scrubCommit(): void;
+  scrubPreview: (abs: number | null) => void;
+  scrubCommit: () => void;
 
   /** [0, volumeMax]. Above 1 the platform boosts the track past the element's
    *  own ceiling (web: a Web Audio gain behind the <video>). */
@@ -237,47 +237,47 @@ export interface PlayerController {
    *  2 once Web Audio is available. The slider draws its 100% notch from it. */
   volumeMax?: number;
   muted: boolean;
-  setVolume(v: number): void;
-  toggleMute(): void;
+  setVolume: (v: number) => void;
+  toggleMute: () => void;
 
   rate: number;
-  setRate(r: number): void;
+  setRate: (r: number) => void;
 
   audioTracks: PlayerAudioTrack[];
   audioIndex: number;
-  setAudio(index: number): void;
+  setAudio: (index: number) => void;
 
   subtitles: PlayerSub[];
   subtitleIndex: number | null;
-  setSubtitle(index: number | null): void;
-  markSubtitleFailed?(index: number): void;
+  setSubtitle: (index: number | null) => void;
+  markSubtitleFailed?: (index: number) => void;
 
   qualities: PlayerQuality[];
   qualityId: string;
-  setQuality(id: string): void;
+  setQuality: (id: string) => void;
 
   // The engine picker (web: manual override of the auto direct/HLS decision).
   // Absent on platforms with no in-player picker (e.g. TV, which offers the
   // engine in its profile menu), so the Settings row hides itself.
   engines?: PlayerQuality[];
   engineId?: string;
-  setEngine?(id: string): void;
+  setEngine?: (id: string) => void;
 
   audioFilter: AudioFilterMode;
-  setAudioFilter(mode: AudioFilterMode): void;
+  setAudioFilter: (mode: AudioFilterMode) => void;
   audioFilterSupported: boolean;
 
   pipActive: boolean;
-  togglePip(): void;
+  togglePip: () => void;
   fullscreen: boolean;
-  toggleFullscreen(): void;
+  toggleFullscreen: () => void;
 
   /** Resize the NATIVE video plane (TV: AVPlay / mpv / ExoPlayer) to a
    *  fraction-rect, or `null` for fullscreen. Lets the chrome shrink the plane
    *  into the settings card (YouTube-style), since a hardware plane behind the
    *  page can't be CSS-transformed. Absent for an in-page <video> surface, which
    *  the chrome shrinks with a CSS transform. */
-  setPlaneRect?(rect: PlaneRect | null): void;
+  setPlaneRect?: (rect: PlaneRect | null) => void;
 
-  getStats(): PlayerStats;
+  getStats: () => PlayerStats;
 }

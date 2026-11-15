@@ -42,7 +42,7 @@ export function TvQuickConnect() {
 
   useEffect(() => {
     if (!client || !activeServerUrl) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | undefined;

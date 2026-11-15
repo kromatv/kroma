@@ -64,7 +64,7 @@ export function useSubtitleGenerations(
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- `nudge` is a trigger dep, not read in the body; bumping it via refresh() re-arms polling after a new generation is kicked off.
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     let stopped = false;
     let iv: ReturnType<typeof setInterval> | null = null;

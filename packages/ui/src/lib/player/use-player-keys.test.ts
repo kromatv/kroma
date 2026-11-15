@@ -83,6 +83,16 @@ interface Params {
 
 const TV_BROWSER_FLAGS = { ...WEB_FLAGS, pointer: false, arrowSeek: false };
 
+const pressKey = (init: KeyboardEventInit) => {
+  let notPrevented = true;
+  act(() => {
+    notPrevented = window.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
+    );
+  });
+  return notPrevented;
+};
+
 function setup(over: Partial<Params> = {}) {
   const params: Params = {
     nav: makeNav(),
@@ -95,16 +105,7 @@ function setup(over: Partial<Params> = {}) {
     ...over,
   };
   const view = renderHook(() => usePlayerKeys(params));
-  const press = (init: KeyboardEventInit) => {
-    let notPrevented = true;
-    act(() => {
-      notPrevented = window.dispatchEvent(
-        new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
-      );
-    });
-    return notPrevented;
-  };
-  return { ...view, params, press };
+  return { ...view, params, press: pressKey };
 }
 
 const undo: (() => void)[] = [];

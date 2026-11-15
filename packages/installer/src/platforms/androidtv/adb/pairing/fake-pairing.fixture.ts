@@ -35,7 +35,8 @@ async function serve(socket: TLSSocket, code: string, guid: string, fake: FakePa
   socket.write(Buffer.concat([pairingHeader(PACKET.peerInfo, sealed.length), sealed]));
   const theirs = cipher.open(await readPacket(bytes, PACKET.peerInfo, SEALED_PEER_INFO_BYTES));
   if (theirs?.[0] !== PEER.publicKey) {
-    return socket.destroy();
+    socket.destroy();
+    return;
   }
   fake.paired.push(theirs.toString('utf8', 1, theirs.indexOf(0, 1)));
   socket.end();

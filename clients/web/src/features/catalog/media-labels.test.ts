@@ -64,12 +64,12 @@ describe('the loudness warning pill', () => {
   });
 });
 
-describe('the subtitle line', () => {
-  const sub = (language: string | null): MediaItem['subtitles'][number] => ({
-    language,
-    codec: 'subrip',
-  });
+const sub = (language: string | null): MediaItem['subtitles'][number] => ({
+  language,
+  codec: 'subrip',
+});
 
+describe('the subtitle line', () => {
   it('says so when the title carries no subtitles', () => {
     expect(subString(t, { subtitles: [] })).toBe('Aucun');
   });

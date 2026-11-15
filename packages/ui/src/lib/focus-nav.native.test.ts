@@ -79,7 +79,7 @@ function pressBack(): boolean {
 
 function remote(eventType: string, eventKeyAction = 1) {
   act(() => {
-    rn.remote?.({ eventType, eventKeyAction } as HWEvent);
+    rn.remote?.({ eventType, eventKeyAction });
   });
 }
 
@@ -205,7 +205,7 @@ describe('Back on tvOS, where BackHandler is the Menu event wearing a hat', () =
   it('routes Menu through the remote stream exactly once', () => {
     const onBack = vi.fn();
     renderHook(() => useFocusNav({ onBack }));
-    act(() => rn.remote?.({ eventType: 'menu' } as HWEvent));
+    act(() => rn.remote?.({ eventType: 'menu' }));
     expect(onBack).toHaveBeenCalledOnce();
   });
 });

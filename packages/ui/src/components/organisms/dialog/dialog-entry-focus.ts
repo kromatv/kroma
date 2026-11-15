@@ -36,7 +36,7 @@ export function useDialogEntryFocus(panel: RefObject<View | null>): void {
     const document = webDocument();
     const box = panel.current as HTMLElement | null;
     if (!document || typeof box?.querySelectorAll !== 'function') {
-      return;
+      return undefined;
     }
     const was = document.activeElement;
     // react-native-web remembers the opener at its own mount, which is after

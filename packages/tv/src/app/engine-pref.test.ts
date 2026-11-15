@@ -34,17 +34,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+async function fresh(storage: unknown) {
+  vi.resetModules();
+  vi.stubGlobal('localStorage', storage);
+  const { createEnginePref } = await import('./engine-pref');
+  const store = createEnginePref();
+  return { getEnginePref: store.get, setEnginePref: store.set };
+}
+
 describe('getEnginePref / setEnginePref', () => {
   // The pref reads storage on every get until this session picks an engine, so
   // each test imports a fresh module instance to reset that choice.
-  async function fresh(storage: unknown) {
-    vi.resetModules();
-    vi.stubGlobal('localStorage', storage);
-    const { createEnginePref } = await import('./engine-pref');
-    const store = createEnginePref();
-    return { getEnginePref: store.get, setEnginePref: store.set };
-  }
-
   it('defaults to auto when nothing is stored', async () => {
     const m = await fresh(fakeStorage());
     expect(m.getEnginePref()).toBe('auto');

@@ -83,7 +83,7 @@ export function useStreamProbe({
       }
       setFailure(refusal);
     },
-    [restartAt, webRuntime.client.refreshSession],
+    [restartAt, webRuntime.client],
   );
 
   const [seen, setSeen] = useState<ProbeKey | null>(null);
@@ -109,7 +109,7 @@ export function useStreamProbe({
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- `renewals` is the retry trigger.
   useEffect(() => {
     if (!booted || decision.kind === 'direct') {
-      return;
+      return undefined;
     }
     let cancelled = false;
     const url = webRuntime.client.media.hlsMasterUrl(

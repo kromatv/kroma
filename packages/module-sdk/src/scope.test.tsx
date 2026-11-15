@@ -75,9 +75,10 @@ describe('useT inside a module', () => {
   });
 });
 
+let release = () => {};
+
 describe('a module surface under a host that loads its packages on demand', () => {
   it('waits for the shared packages, then renders the module', async () => {
-    let release = () => {};
     const ready = new Promise<void>((resolve) => {
       release = resolve;
     });

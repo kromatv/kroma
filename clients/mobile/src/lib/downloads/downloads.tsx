@@ -19,13 +19,13 @@ interface DownloadsApi {
   downloading: { item: MediaItem; progress: number }[];
   paused: { item: MediaItem; progress: number }[];
   queuedItems: MediaItem[];
-  stateFor(itemId: string): DownloadState;
-  canDownload(item: MediaItem): boolean;
-  start(item: MediaItem): void;
-  pause(itemId: string): void;
-  resume(itemId: string): void;
-  cancel(itemId: string): void;
-  remove(itemId: string): Promise<void>;
+  stateFor: (itemId: string) => DownloadState;
+  canDownload: (item: MediaItem) => boolean;
+  start: (item: MediaItem) => void;
+  pause: (itemId: string) => void;
+  resume: (itemId: string) => void;
+  cancel: (itemId: string) => void;
+  remove: (itemId: string) => Promise<void>;
   totalBytes: number;
 }
 

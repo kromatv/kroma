@@ -12,7 +12,7 @@ import {
   createCastControllerStore,
 } from '#tv/features/cast/controllers';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const phone = (id: string, username: string, name: string): CastController => ({
   id: ControllerId.parse(id),
@@ -24,7 +24,7 @@ const phone = (id: string, username: string, name: string): CastController => ({
 const client = fakeClient({ media: { artwork: { resolve: () => null } } });
 
 function show(store: ReturnType<typeof createCastControllerStore>) {
-  return render(
+  return inputHost.render(
     onScreen(
       <ConnectionProvider value={{ client } as Connection}>
         <CastControllerStoreProvider value={store}>
@@ -39,7 +39,7 @@ function openPanel() {
   fireEvent.click(screen.getByLabelText(/^Remotes/));
   // The dialog arms the press guard as it mounts, and would otherwise swallow
   // the test's next press.
-  clearPressGuard();
+  inputHost.clearPressGuard();
 }
 
 const uplink = vi.fn();
@@ -50,7 +50,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 describe('CastRemotes', () => {

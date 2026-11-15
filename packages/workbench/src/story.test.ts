@@ -12,7 +12,7 @@ describe('the compiled render', () => {
     name: 'Poster card',
     group: 'Media',
     args: { title: 'Declared' },
-    render: (args) => `render:${args.title}` as unknown as null,
+    render: (args) => `render:${args.title}`,
   });
 
   it('slugs the name into a stable id', () => {
@@ -103,7 +103,7 @@ describe('live', () => {
       group: 'Media',
       args: { title: 'Declared' },
       render: (args) => args.title as unknown as null,
-      scenes: [{ name: 'Composed', example: () => 'composed' as unknown as null }],
+      scenes: [{ name: 'Composed', example: () => 'composed' }],
     });
     expect(built.scenes[0]?.live).toBe(false);
     expect(built.scenes[0]?.render({ title: 'Live' })).toBe('composed');
@@ -114,7 +114,7 @@ describe('live', () => {
       name: 'Inherits',
       group: 'Media',
       args: { title: 'Declared' },
-      render: (args) => `render:${args.title}` as unknown as null,
+      render: (args) => `render:${args.title}`,
       scenes: [{ name: 'With action', args: { title: 'Scene' } }],
     });
     const ignores = story({
@@ -135,7 +135,7 @@ describe('scenes and matrix opt-out', () => {
     variants: { options: { tone: ['calm', 'loud'] }, defaults: { tone: 'calm' } },
     matrix: false,
     args: { title: 'Nothing' },
-    render: (args) => `render:${args.title}` as unknown as null,
+    render: (args) => `render:${args.title}`,
     scenes: [{ name: 'With action', args: { title: 'Scene' } }],
   });
 
@@ -183,9 +183,9 @@ describe('controlsRole', () => {
   });
 });
 
-describe('play', () => {
-  const press = async () => {};
+const press = async () => {};
 
+describe('play', () => {
   it('is carried onto the story and onto each scene', () => {
     const built = story({
       name: 'Played',

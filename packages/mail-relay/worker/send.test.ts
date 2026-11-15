@@ -44,6 +44,10 @@ const MESSAGE = {
 const send = async (payload: Record<string, unknown>, by = server) =>
   worker.fetch(post('/v1/send', await signed(by, payload)), env);
 
+const failing = (code: string) => ({
+  send: vi.fn().mockRejectedValue(Object.assign(new Error(code), { code })),
+});
+
 describe('sending from an activated server', () => {
   beforeEach(() => activated(env));
 
@@ -116,9 +120,6 @@ describe('sending from an activated server', () => {
 
   it('blocks a mailbox that bounces, and reports a wobble as transient', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const failing = (code: string) => ({
-      send: vi.fn().mockRejectedValue(Object.assign(new Error(code), { code })),
-    });
 
     env.EMAIL = failing('E_DELIVERY_FAILED');
     expect((await send(MESSAGE)).status).toBe(502);

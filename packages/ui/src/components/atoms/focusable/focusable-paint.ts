@@ -20,7 +20,7 @@ import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import type { Resolve } from './focusable-types';
 
 function coat(decl: StyleDecl | undefined, index: number, theme: Theme): ViewStyle | undefined {
-  return decl ? (stabilise(normalize(decl, index, theme)) as ViewStyle) : undefined;
+  return decl ? stabilise(normalize(decl, index, theme)) : undefined;
 }
 
 const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<AnySv>;
@@ -40,7 +40,7 @@ function deltaOf(base: object | undefined, next: object | undefined): ViewStyle 
     out[key] = value;
     any = true;
   }
-  return any ? (Object.freeze(out) as ViewStyle) : null;
+  return any ? Object.freeze(out) : null;
 }
 
 function statedBy(style: unknown, keys = new Set<string>()): Set<string> {
@@ -67,7 +67,7 @@ function under(delta: ViewStyle | null, style: StyleProp<ViewStyle>): ViewStyle 
   if (kept.length === Object.keys(delta).length) {
     return delta;
   }
-  return kept.length > 0 ? (Object.freeze(Object.fromEntries(kept)) as ViewStyle) : null;
+  return kept.length > 0 ? Object.freeze(Object.fromEntries(kept)) : null;
 }
 
 // `[a, b]` that keeps its identity while `a` and `b` keep theirs, so the

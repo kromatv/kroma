@@ -58,7 +58,7 @@ export function useSubtitles(
 
   useEffect(() => {
     if (offline) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.subtitles
@@ -132,7 +132,7 @@ export function useSubtitles(
   useEffect(() => {
     const track = tracks.find((t) => t.index === active);
     if (active === null || !track) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     // Local sidecar VTTs are file:// URIs; RN fetch cannot read those.

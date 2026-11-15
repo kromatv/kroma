@@ -24,6 +24,12 @@ export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers)
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- resetKey is an intentional re-run trigger (a view switch re-focuses the first element); it is not read inside the effect.
   useEffect(() => {
     registerTvMediaKeys();
+    // Media keys keep their native default (no preventDefault): handlers that
+    // return `false` are treated as "not handled" by dispatchRemoteKey.
+    const media = () => {
+      onPlayPause?.();
+      return false as const;
+    };
     // Arm the guard before the listener attaches, so the press that navigated
     // here cannot beat it and activate the control we auto-focus below.
     armPressGuard();
@@ -35,12 +41,6 @@ export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers)
       // and Backspace (edit); only the vertical keys leave the field. Otherwise
       // typing a server URL is impossible.
       const inText = inTextField();
-      // Media keys keep their native default (no preventDefault): handlers that
-      // return `false` are treated as "not handled" by dispatchRemoteKey.
-      const media = () => {
-        onPlayPause?.();
-        return false as const;
-      };
       dispatchRemoteKey(
         e,
         {

@@ -10,7 +10,7 @@ export function useUpNext(showId: ShowId | null): UpNext | null {
   const [answer, setAnswer] = useState<{ showId: ShowId; next: UpNext | null } | null>(null);
   useEffect(() => {
     if (showId === null) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.playback

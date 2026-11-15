@@ -14,6 +14,7 @@ const withRemote = (id: string) => ({
 
 const oneRemote = (id: string) => listing(withRemote(id));
 
+const noop = (): void => undefined;
 const nothing = listing();
 
 function stubBrowserGlobals() {
@@ -117,7 +118,7 @@ describe('loadRuntimeRemotes (the host contract)', () => {
     const remotes = createRuntimeRemotes(oneRemote('dup'));
     stubBrowserGlobals();
     const reg = new ModuleRegistry();
-    reg.register({ id: 'dup', version: '1.0.0' } as never);
+    reg.register({ id: 'dup', version: '1.0.0' });
     const importRemote = vi.fn(async () => ({ default: { id: 'dup', version: '1.0.0' } as never }));
     await expect(remotes.loadRuntimeRemotes(reg, loaders({ importRemote }))).resolves.toEqual([]);
   });
@@ -199,7 +200,7 @@ it('does not adopt a remote that finishes importing after its host leaves', asyn
   stubBrowserGlobals();
   const remotes = createRuntimeRemotes(oneRemote('late'));
   const registry = new ModuleRegistry();
-  let resolveImport: (value: { default: { id: string; version: string } }) => void = () => {};
+  let resolveImport: (value: { default: { id: string; version: string } }) => void = noop;
   const importing = new Promise<{ default: { id: string; version: string } }>((resolve) => {
     resolveImport = resolve;
   });

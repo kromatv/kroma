@@ -36,7 +36,7 @@ export interface KromaHost {
   bus: EventBus;
   // Only meaningful for a module the caller declared in its `dependencies`,
   // which guarantees it is set up first.
-  getModuleApi<K extends keyof ModuleApiRegistry>(id: K): ModuleApiRegistry[K] | undefined;
+  getModuleApi: <K extends keyof ModuleApiRegistry>(id: K) => ModuleApiRegistry[K] | undefined;
 }
 
 /** What the host provides to the registry; `getModuleApi` is wired by the

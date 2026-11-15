@@ -29,6 +29,8 @@ const ITEMS = [
   at('Field', 'Input'),
 ];
 
+const boost = (item: CommandItem) => (item.id === 'register' ? 40 : 0);
+
 describe('sectionsOf', () => {
   it('groups by section, in the order the items were given', () => {
     const sections = sectionsOf(ITEMS, '');
@@ -57,8 +59,6 @@ describe('sectionsOf', () => {
 
   it('lets a boost lift a row over one that scores the same', () => {
     const items = [at('Regions', 'A'), at('Register', 'A')];
-
-    const boost = (item: CommandItem) => (item.id === 'register' ? 40 : 0);
 
     expect(flatten(sectionsOf(items, 'reg', boost))[0]?.id).toBe('register');
   });
@@ -143,14 +143,15 @@ describe('a row with a tile', () => {
   });
 });
 
-describe('a row with a poster', () => {
-  const titled = (id: string, extra: Partial<CommandItem>): CommandItem => ({
-    id,
-    label: id,
-    ...extra,
-  });
-  const run = (...items: CommandItem[]) => [{ title: '', items }];
+const titled = (id: string, extra: Partial<CommandItem>): CommandItem => ({
+  id,
+  label: id,
+  ...extra,
+});
 
+const run = (...items: CommandItem[]) => [{ title: '', items }];
+
+describe('a row with a poster', () => {
   it('takes the tall height, a poster being taller than a plain row', () => {
     expect(isTall(titled('a', { image: 'poster.jpg' }))).toBe(true);
   });
@@ -209,7 +210,12 @@ describe('the action panel’s geometry', () => {
   const { pad, row, rule } = ACTION_METRICS;
 
   it('draws one rule, above the first dangerous action', () => {
-    expect(ACTIONS.map((_, at) => opensDanger(ACTIONS, at))).toEqual([false, false, true, false]);
+    expect(ACTIONS.map((_, index) => opensDanger(ACTIONS, index))).toEqual([
+      false,
+      false,
+      true,
+      false,
+    ]);
   });
 
   it('draws no rule above a dangerous action that comes first, with nothing to set it apart from', () => {

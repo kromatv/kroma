@@ -17,7 +17,7 @@ export function usePlay() {
         // The TV resumes from the account's own position when none is given.
         const failure = await playOn(active.id, itemId as ItemId, positionMs);
         if (!failure) {
-          router.push('/cast' as never);
+          router.push('/cast');
           return;
         }
         // The set did not take it (switched off, or it let this remote go):

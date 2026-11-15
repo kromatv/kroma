@@ -12,10 +12,10 @@ import { SettingsPanes } from './settings-panes';
 
 vi.mock('#tv/app/providers/handoff-beacon', () => ({ useHandoffBeacon: () => null }));
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(cleanup);
-afterEach(clearPressGuard);
+afterEach(() => inputHost.clearPressGuard());
 
 const toggle = (id: string, label: 'profileMenu.perfHud' | 'settings.blur') =>
   toggleItem({ id, level: 'device', label, icon: 'check', useValue: () => [false, () => {}] });
@@ -62,7 +62,7 @@ function mount(run = vi.fn()) {
       </ListRow.Root>
     ),
   };
-  render(
+  inputHost.render(
     onScreen(
       <I18nProvider locale="en">
         <TvNavProvider screens={{} as never}>
@@ -105,7 +105,7 @@ describe('SettingsPanes', () => {
     press('ArrowDown');
     press('ArrowDown');
     press('ArrowDown');
-    clearPressGuard();
+    inputHost.clearPressGuard();
     expect(screen.getByText(/Closes KROMA/)).toBeTruthy();
     press('Enter');
     expect(run).toHaveBeenCalledTimes(1);
@@ -114,7 +114,7 @@ describe('SettingsPanes', () => {
   it('enters a group on OK, and Back returns to the group it came from', () => {
     mount();
     press('ArrowDown');
-    clearPressGuard();
+    inputHost.clearPressGuard();
     press('Enter');
     expect(wearsRing(screen.getByRole('switch'))).toBe(true);
 
@@ -128,11 +128,11 @@ describe('SettingsPanes', () => {
     press('ArrowDown');
     press('ArrowDown');
     press('ArrowRight');
-    clearPressGuard();
+    inputHost.clearPressGuard();
     press('Enter');
     expect(screen.getByRole('dialog')).toBeTruthy();
 
-    clearPressGuard();
+    inputHost.clearPressGuard();
     press('Escape');
 
     expect(screen.queryByRole('dialog')).toBeNull();

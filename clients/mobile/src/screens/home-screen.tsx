@@ -78,7 +78,7 @@ function HomeHeader() {
           diameter={40}
           glyph={22}
           hitSlop={10}
-          onPress={() => router.push('/downloads' as never)}
+          onPress={() => router.push('/downloads')}
         >
           <DownloadsGlyph />
         </IconButton>

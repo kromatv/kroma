@@ -15,7 +15,7 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
   const [resumed, setResumed] = useState<{ id: string; sec: number } | null>(null);
   useEffect(() => {
     if (!client.hasAuth) {
-      return;
+      return undefined;
     }
     let done = false;
     const settle = (sec: number) => {

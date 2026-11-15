@@ -165,7 +165,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const active = params.active !== false;
   useEffect(() => {
     if (!active) {
-      return;
+      return undefined;
     }
     window.addEventListener('keydown', redeliverKey, true);
     window.addEventListener('keydown', onKeyDown, true);

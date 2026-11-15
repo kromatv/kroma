@@ -15,7 +15,7 @@ import {
 } from '#tv/app/router';
 import { TvGenres } from '#tv/features/catalog/tv-genres';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const movie = (id: string, title: string, genre: string): MediaItem =>
   ({
@@ -46,7 +46,7 @@ function measure(container: HTMLElement) {
 function mount(movies: MediaItem[]) {
   const client = fakeClient({ media: { artwork: { backdropFor: () => 'art:backdrop' } } });
   let nav!: TvNav;
-  const { container } = render(
+  const { container } = inputHost.render(
     onScreen(
       <ConnectionProvider value={{ movies, shows: [] } as unknown as Connection}>
         <TvClientProvider client={client}>
@@ -63,7 +63,7 @@ function mount(movies: MediaItem[]) {
     ),
   );
   measure(container);
-  clearPressGuard();
+  inputHost.clearPressGuard();
   return { nav: () => nav };
 }
 
@@ -73,7 +73,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 describe('TvGenres', () => {

@@ -100,7 +100,7 @@ export function resolveTizenDeviceName(): DeviceNameSource {
   if (sync) {
     name.found(sync);
   } else {
-    readBuild(name.found);
+    readBuild((value) => name.found(value));
   }
   return name;
 }

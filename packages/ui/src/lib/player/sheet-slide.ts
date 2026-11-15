@@ -31,5 +31,5 @@ export function useSheetSlide(open: boolean, by: number): StyleProp<ViewStyle> {
   // remeasured while parked corrects its rest position without a second timing.
   return {
     transform: [{ translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [0, by] }) }],
-  } as unknown as StyleProp<ViewStyle>;
+  };
 }

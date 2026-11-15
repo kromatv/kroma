@@ -18,9 +18,9 @@ export interface ProviderGateDeps {
   clientFor: (url: string) => KromaClient;
   t: Translate;
   serverName: string;
-  enterApp(): void;
-  setBusy(busy: string | null): void;
-  setError(error: string | null): void;
+  enterApp: () => void;
+  setBusy: (busy: string | null) => void;
+  setError: (error: string | null) => void;
 }
 
 /** The provider half of the sign-in screen: which ways in the current server
@@ -35,7 +35,7 @@ export function useProviderGate(deps: ProviderGateDeps) {
 
   useEffect(() => {
     if (!serverUrl) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     clientFor(serverUrl)

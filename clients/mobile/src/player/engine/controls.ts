@@ -15,24 +15,24 @@ import { shutdownEngine } from './shutdown';
 export interface ControlDeps {
   player: VideoPlayer;
   core: EngineCore;
-  load(absSec: number): Promise<void>;
+  load: (absSec: number) => Promise<void>;
   dur: number;
   localUri?: string;
   directPlayable: boolean;
-  setCur(sec: number): void;
-  setAudioIndex(index: number): void;
-  setFilterState(mode: AudioFilterMode): void;
-  setRateState(rate: number): void;
+  setCur: (sec: number) => void;
+  setAudioIndex: (index: number) => void;
+  setFilterState: (mode: AudioFilterMode) => void;
+  setRateState: (rate: number) => void;
 }
 
 export interface Controls {
-  togglePlay(): void;
-  seekTo(abs: number): void;
-  skip(delta: number): void;
-  setAudio(index: number): void;
-  setFilter(mode: AudioFilterMode): void;
-  setRate(rate: number): void;
-  shutdown(): void;
+  togglePlay: () => void;
+  seekTo: (abs: number) => void;
+  skip: (delta: number) => void;
+  setAudio: (index: number) => void;
+  setFilter: (mode: AudioFilterMode) => void;
+  setRate: (rate: number) => void;
+  shutdown: () => void;
 }
 
 export function useEngineControls(deps: ControlDeps): Controls {

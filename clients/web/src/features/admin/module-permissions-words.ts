@@ -108,13 +108,14 @@ export function purposeWord(purpose: string, t: Translate): string {
 
 const ACCOUNT_ORDER = Object.keys(ACCOUNT);
 
+function rank(entry: string): number {
+  const at = ACCOUNT_ORDER.indexOf(entry);
+  return at === -1 ? ACCOUNT_ORDER.length : at;
+}
+
 /** Orders `storage.core` entries the way a reader weighs them: an e-mail address
  *  before a language, and what the core has no word for last. */
 export function byAccountWeight(a: string, b: string): number {
-  const rank = (entry: string) => {
-    const at = ACCOUNT_ORDER.indexOf(entry);
-    return at === -1 ? ACCOUNT_ORDER.length : at;
-  };
   return rank(a) - rank(b);
 }
 

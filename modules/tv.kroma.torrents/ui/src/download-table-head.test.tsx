@@ -12,7 +12,6 @@ import type { DownloadQuery, PageView } from './schemas';
 import { useDownloadsTable } from './use-downloads-table';
 
 const styleHost = createStyleTestHost();
-const { pinDesignWidth, render } = styleHost;
 
 const PAGE: PageView = { page: 1, perPage: 10, total: 3, pageCount: 1 };
 
@@ -63,16 +62,16 @@ function press(label: string) {
 }
 
 beforeEach(() => {
-  pinDesignWidth(1200);
+  styleHost.pinDesignWidth(1200);
 });
 
 afterEach(() => {
-  pinDesignWidth();
+  styleHost.pinDesignWidth();
 });
 
 describe('the downloads heading band', () => {
   it('opens with the newest grab named as the column doing the ordering', () => {
-    render(<Queue />);
+    styleHost.render(<Queue />);
 
     expect(announced(ADDED)).toBe('descending');
     expect(glyph(ADDED)).toContain('tabler-icon-arrow-narrow-down');
@@ -80,7 +79,7 @@ describe('the downloads heading band', () => {
   });
 
   it('moves the announced order onto the column that was pressed', () => {
-    render(<Queue />);
+    styleHost.render(<Queue />);
 
     press(RELEASE);
 
@@ -90,7 +89,7 @@ describe('the downloads heading band', () => {
   });
 
   it('turns the arrow over when the column already ordering is pressed again', () => {
-    render(<Queue />);
+    styleHost.render(<Queue />);
 
     press(RELEASE);
     press(RELEASE);
@@ -100,13 +99,13 @@ describe('the downloads heading band', () => {
   });
 
   it('draws the idle glyph on a column that can order but is not', () => {
-    render(<Queue />);
+    styleHost.render(<Queue />);
 
     expect(glyph(RELEASE)).toContain('tabler-icon-arrows-sort');
   });
 
   it('leaves a column the ledger cannot order alone', () => {
-    render(<Queue />);
+    styleHost.render(<Queue />);
 
     const speed = heading('downloads.colSpeed');
 
@@ -115,8 +114,8 @@ describe('the downloads heading band', () => {
   });
 
   it('keeps every column on a narrow shell, header and all', () => {
-    pinDesignWidth(480);
-    render(<Queue />);
+    styleHost.pinDesignWidth(480);
+    styleHost.render(<Queue />);
 
     expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
       RELEASE,

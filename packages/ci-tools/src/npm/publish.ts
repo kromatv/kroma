@@ -5,11 +5,11 @@ const PackageName = z.object({ name: z.string().nonempty() }).loose();
 
 export interface Registry {
   /** The tarball bytes behind `<name>@<tag>`, or null when nothing is published there. */
-  publishedTarball(name: string, tag: string): Promise<Uint8Array | null>;
-  publish(
+  publishedTarball: (name: string, tag: string) => Promise<Uint8Array | null>;
+  publish: (
     tarball: string,
     options: { tag: string; provenance: boolean; dryRun: boolean },
-  ): Promise<void>;
+  ) => Promise<void>;
 }
 
 export type PublishRequest = {

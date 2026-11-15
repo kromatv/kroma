@@ -8,7 +8,7 @@ import { cloneHost, mergeSlotProps, Slot } from './slot';
 afterEach(cleanup);
 
 function Spreading({ style, ...rest }: Readonly<Record<string, unknown>>) {
-  return <View {...(rest as object)} testID="host" style={{ ...(style as object) }} />;
+  return <View {...rest} testID="host" style={{ ...(style as object) }} />;
 }
 
 describe('mergeSlotProps', () => {

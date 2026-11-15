@@ -83,7 +83,7 @@ export function TvHome() {
   const hold = titleMenu.open;
 
   const onSelectMovie = useCallback((m: MovieCard) => go('movie', { item: m }), [go]);
-  const onSelectShow = useCallback((s: Show) => go('show', { show: s }), [go]);
+  const onSelectShow = useCallback((show: Show) => go('show', { show }), [go]);
   const onPlay = useCallback((m: MediaItem) => go('player', { item: m }), [go]);
   const playTitle = usePlayTitle();
   // Open a recommendation entry: play page for movies, detail for shows.

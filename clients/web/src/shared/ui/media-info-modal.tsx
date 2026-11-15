@@ -20,7 +20,7 @@ import { FileCard } from '#web/shared/ui/media-info-card';
 
 // Open with `await MediaInfoModal.call({ id, title })`; read-only, so it resolves
 // (`void`) purely on dismiss. Its root is mounted once by `CatalogModalHosts`.
-export const MediaInfoModal = createCallable<{ id: string; title: string }, void>(
+export const MediaInfoModal = createCallable<{ id: string; title: string }>(
   ({ call, id, title }) => {
     const webRuntime = useWebRuntime();
 

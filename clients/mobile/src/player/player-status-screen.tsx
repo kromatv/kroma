@@ -27,7 +27,7 @@ export function PlayerStatusScreen({
   title?: string;
   detail?: string;
   loading?: boolean;
-  action?: { icon: IconName; label: string; onPress(): void };
+  action?: { icon: IconName; label: string; onPress: () => void };
   onBack(): void;
   onRetry?(): void;
 }>) {

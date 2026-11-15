@@ -29,6 +29,10 @@ describe('pageHref', () => {
   });
 });
 
+const exportsFn = () => ({ ok: true });
+
+const setup = () => undefined;
+
 describe('defineModule', () => {
   it('builds a module from the explicit (manifest, options) form', () => {
     const m = defineModule(
@@ -99,8 +103,6 @@ describe('defineModule', () => {
   });
 
   it('carries settingsPanels, exports and setup through', () => {
-    const setup = () => undefined;
-    const exportsFn = () => ({ ok: true });
     const panel = { id: 'pnl', label: 'P', component: Page };
     const m = defineModule({
       manifest: { id: 'w', version: '1.0.0' },

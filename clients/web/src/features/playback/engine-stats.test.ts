@@ -99,10 +99,10 @@ describe('readEngineStats', () => {
   });
 });
 
-describe('makeFpsSampler', () => {
-  const video = (totalVideoFrames: number) =>
-    ({ getVideoPlaybackQuality: () => ({ totalVideoFrames }) }) as unknown as HTMLVideoElement;
+const video = (totalVideoFrames: number) =>
+  ({ getVideoPlaybackQuality: () => ({ totalVideoFrames }) }) as unknown as HTMLVideoElement;
 
+describe('makeFpsSampler', () => {
   it('has no answer until it has two samples to compare', () => {
     let t = 1000;
     const sample = makeFpsSampler(() => t);
