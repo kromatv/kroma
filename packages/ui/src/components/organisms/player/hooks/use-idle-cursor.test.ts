@@ -2,7 +2,7 @@
 
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useIdleCursor } from './use-idle-cursor';
+import { useIdleCursor } from './use-idle-cursor.hook';
 
 const rule = () => document.getElementById('kroma-player-idle-cursor')?.textContent ?? null;
 

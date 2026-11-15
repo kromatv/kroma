@@ -5,8 +5,8 @@ import { cleanup, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as sample from './fixtures/sample.story.mdx';
-import { MdxDoc } from './mdx';
-import { StoryDocContext } from './story-blocks';
+import { MdxDoc } from './mdx.component';
+import { StoryDocContext } from './story-blocks.component';
 import { storyFromMdx } from './story-mdx';
 
 afterEach(cleanup);

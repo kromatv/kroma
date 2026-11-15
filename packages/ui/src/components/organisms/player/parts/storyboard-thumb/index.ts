@@ -1,1 +1,1 @@
-export * from './storyboard-thumb';
+export * from './storyboard-thumb.component';

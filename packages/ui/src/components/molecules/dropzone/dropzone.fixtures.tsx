@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Dropzone, type DropzoneRejection, type DropzoneRootProps } from './dropzone';
+import { Dropzone, type DropzoneRejection, type DropzoneRootProps } from './dropzone.component';
 
 export function Demo(props: Readonly<Partial<DropzoneRootProps>>) {
   const [picked, setPicked] = useState<string | null>(null);

@@ -5,10 +5,10 @@ import type { RefObject } from 'react';
 import type { View } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GridRows } from './grid-rows';
-import { useWheelScroll } from './use-wheel-rows';
+import { useWheelScroll } from './use-wheel-rows.hook';
 
 let pan: ((delta: number) => void) | null = null;
-vi.mock('#ui/lib/wheel-pan', () => ({
+vi.mock('#ui/lib/wheel-pan.hook', () => ({
   useWheelTravel: (_viewport: unknown, handler: (delta: number) => void) => {
     pan = handler;
   },

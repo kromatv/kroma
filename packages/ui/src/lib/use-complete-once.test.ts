@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useCompleteOnce } from './use-complete-once';
+import { useCompleteOnce } from './use-complete-once.hook';
 
 describe('useCompleteOnce', () => {
   it('fires on the character that fills the buffer, and not again', () => {

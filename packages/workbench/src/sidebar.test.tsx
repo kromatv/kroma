@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StoryEntry } from './entry';
 import { layoutFor } from './layout';
 import type { Page } from './page';
-import { Sidebar } from './sidebar';
+import { Sidebar } from './sidebar.component';
 
 const at = (name: string, group: string) =>
   ({ id: name.toLowerCase(), name, group, tier: 'Atoms' }) as StoryEntry;

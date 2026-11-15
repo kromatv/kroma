@@ -13,13 +13,13 @@ const lookup = vi.hoisted(() => ({
     | { kind: 'unknown' },
 }));
 
-vi.mock('#web/modules/module-host-provider', () => ({
+vi.mock('#web/modules/module-host-provider.component', () => ({
   useModuleHostValue: () => lookup.host,
   useModuleRouteMatch: () => lookup.match,
   useModuleT: () => (key: string) => key,
 }));
 
-import { ModuleRouteOutlet } from './module-route-outlet';
+import { ModuleRouteOutlet } from './module-route-outlet.component';
 
 afterEach(cleanup);
 

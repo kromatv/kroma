@@ -13,7 +13,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { FolderField, FolderListEditor } from '#web/features/admin/folder-field';
+import { FolderField, FolderListEditor } from '#web/features/admin/folder-field.component';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 

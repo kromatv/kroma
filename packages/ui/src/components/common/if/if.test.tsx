@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { If } from './if';
+import { If } from './if.component';
 
 describe('If', () => {
   it('renders children when the condition is truthy', () => {

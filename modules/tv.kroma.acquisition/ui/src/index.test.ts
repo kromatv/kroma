@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { useAcquisitionApi } from './api';
+import { useAcquisitionApi } from './api.hook';
 import acquisitionModule from './module';
 
 describe('acquisitionModule', () => {

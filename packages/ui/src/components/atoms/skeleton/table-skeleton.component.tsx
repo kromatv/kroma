@@ -1,0 +1,29 @@
+// <TableSkeleton>: the list/table placeholder - a bordered panel of evenly
+// spaced rows, each an icon well + a long bar + two short cells. A fixed-length
+// placeholder that never reorders, so an index key is correct.
+
+import { Box } from '#ui/components/atoms/box';
+import { Skeleton } from './skeleton.component';
+
+interface TableSkeletonProps {
+  rows?: number;
+}
+
+function TableSkeleton({ rows = 8 }: Readonly<TableSkeletonProps>) {
+  return (
+    <Box gap={8} p={12} radius="xl" border="borderStrong" bg="surface1" aria-hidden>
+      {Array.from({ length: rows }, (_, i) => (
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder rows
+        <Box key={i} row align="center" gap={16} py={8}>
+          <Skeleton w={36} h={36} radius="sm" />
+          <Skeleton h={16} flex />
+          <Skeleton h={16} w={96} />
+          <Skeleton h={32} w={80} radius="sm" />
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+export type { TableSkeletonProps };
+export { TableSkeleton };

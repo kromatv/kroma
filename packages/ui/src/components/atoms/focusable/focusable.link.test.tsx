@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme, sv } from '#ui/core';
 import { declared } from '#ui/testing';
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 
 afterEach(cleanup);
 

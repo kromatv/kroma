@@ -1,0 +1,138 @@
+import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import {
+  Box,
+  classes,
+  EmptyState,
+  ListRow,
+  Row,
+  Skeleton,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { NotificationEntry } from '#web/features/notifications/notification-row.component';
+import {
+  NO_STICKY,
+  type NotificationFilter,
+  unreadView,
+} from '#web/features/notifications/use-notifications';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
+const sameMembers = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+  a.size === b.size && [...a].every((id) => b.has(id));
+
+/** The drawer's scrolling half: day headings, and the rows folded under them. */
+export function PanelBody({
+  filter,
+  onNavigate,
+}: Readonly<{ filter: NotificationFilter; onNavigate: () => void }>) {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
+  const t = useT();
+  const shelf = filter === 'archived';
+  const { data, isPending } = useQuery(
+    shelf
+      ? webRuntime.queries.userQueries.archivedNotifications()
+      : webRuntime.queries.userQueries.notifications(),
+  );
+  // Held across renders on purpose: the set is what keeps a row the reader just
+  // marked read from vanishing before they can undo it, and an effect would
+  // only decide that a frame after it had already gone.
+  const [sticky, setSticky] = useState<ReadonlySet<string>>(NO_STICKY);
+
+  if (isPending) {
+    return <PanelSkeleton />;
+  }
+
+  const all = data?.notifications ?? [];
+  let rows = all;
+  if (filter === 'unread') {
+    const view = unreadView(all, sticky);
+    if (!sameMembers(view.sticky, sticky)) {
+      setSticky(view.sticky);
+    }
+    rows = view.items;
+  } else if (sticky !== NO_STICKY) {
+    setSticky(NO_STICKY);
+  }
+
+  if (rows.length === 0) {
+    return (
+      <PanelEmpty shelf={shelf} unreadOnly={filter === 'unread'} inboxEmpty={all.length === 0} />
+    );
+  }
+
+  return (
+    <>
+      {groupNotificationsByDay(rows).map((group) => (
+        // Keyed on the run's first row, not the day: an unsorted inbox can open a
+        // second "Earlier" run, and two sections must not share a key.
+        <section key={group.items[0]?.id}>
+          {/* h3, not h2: the panel header renders the h2. */}
+          <h3 className={classes(s.dayLabel)}>
+            <Box bg="bg" px={8} pt={12} pb={6}>
+              <Text variant="meta" color="textDim">
+                {t(NOTIFICATION_DAY_LABEL[group.day])}
+              </Text>
+            </Box>
+          </h3>
+          <ListRow.Group size="sm">
+            {group.items.map((one) => (
+              <NotificationEntry key={one.id} one={one} archived={shelf} onNavigate={onNavigate} />
+            ))}
+          </ListRow.Group>
+        </section>
+      ))}
+    </>
+  );
+}
+
+const sDefinition = styles({ dayLabel: { position: 'sticky', top: 0, zIndex: 10, m: 0 } });
+
+const EMPTY = {
+  archived: ['archive', 'notifications.emptyArchived', 'notifications.emptyArchivedHint'],
+  allRead: ['checks', 'notifications.emptyUnread', 'notifications.emptyUnreadHint'],
+  none: ['bell', 'notifications.empty', 'notifications.emptyHint'],
+} as const;
+
+function PanelEmpty({
+  shelf,
+  unreadOnly,
+  inboxEmpty,
+}: Readonly<{ shelf: boolean; unreadOnly: boolean; inboxEmpty: boolean }>) {
+  const t = useT();
+  let kind: keyof typeof EMPTY = 'none';
+  if (shelf) {
+    kind = 'archived';
+  } else if (unreadOnly && !inboxEmpty) {
+    kind = 'allRead';
+  }
+  const [icon, title, hint] = EMPTY[kind];
+  return (
+    <EmptyState.Root size="sm" layout="fill" icon={icon}>
+      <EmptyState.Title>{t(title)}</EmptyState.Title>
+      <EmptyState.Hint>{t(hint)}</EmptyState.Hint>
+    </EmptyState.Root>
+  );
+}
+
+function PanelSkeleton() {
+  return (
+    <Box>
+      {[0, 1, 2, 3].map((i) => (
+        <Row key={i} align="flex-start" gap={12} p={10} pl={16}>
+          <Skeleton w={48} h={48} radius="xl" />
+          <Box flex gap={8} pt={4}>
+            <Skeleton h={12} w="40%" radius="pill" />
+            <Skeleton h={10} w="80%" radius="pill" />
+          </Box>
+        </Row>
+      ))}
+    </Box>
+  );
+}

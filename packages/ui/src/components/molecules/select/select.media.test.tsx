@@ -6,7 +6,7 @@ import { Avatar } from '#ui/components/atoms/avatar';
 
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Select, type SelectPresentation } from './select';
+import { Select, type SelectPresentation } from './select.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 

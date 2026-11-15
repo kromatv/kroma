@@ -12,7 +12,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CommandDef, CommandMenuProvider, useCommands } from '#web/shared/lib/command-menu';
 import { readCommandUsage, recordCommandUse } from '#web/shared/lib/command-usage';
-import { CommandPalette } from './command-palette';
+import { CommandPalette } from './command-palette.component';
 
 const mocks = vi.hoisted(() => ({
   user: { id: 'viewer', permissions: ['requests.create'] } as object | null,

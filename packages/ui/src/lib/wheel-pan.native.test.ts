@@ -2,8 +2,8 @@
 
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useWheelTravel as useNativeTravel, type WheelHost } from './wheel-pan';
-import { useWheelTravel } from './wheel-pan.web';
+import { useWheelTravel as useNativeTravel, type WheelHost } from './wheel-pan.hook';
+import { useWheelTravel } from './wheel-pan.hook.web';
 
 function host(): WheelHost {
   const el = document.body.appendChild(document.createElement('div'));

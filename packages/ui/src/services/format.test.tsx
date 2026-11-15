@@ -3,7 +3,7 @@
 import type { Locale } from '@kromatv/i18n';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useFormat } from './format';
+import { useFormat } from './format.hook';
 import { I18nProvider } from './i18n';
 
 function read(locale: Locale, pick: (f: ReturnType<typeof useFormat>) => string): string {

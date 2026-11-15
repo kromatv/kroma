@@ -12,7 +12,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DiscoveredTv, LanService } from '../handoff';
 import { beaconTxt } from '../handoff';
-import { useNearbyTvs } from './nearby-tvs';
+import { useNearbyTvs } from './nearby-tvs.hook';
 
 const SALON: DiscoveredTv = {
   handle: HandoffHandle.parse('h-salon'),

@@ -21,7 +21,7 @@ vi.mock('react-native', () => ({
   },
 }));
 
-import { useVisiblePlayback } from './use-visible-playback';
+import { useVisiblePlayback } from './use-visible-playback.hook';
 
 beforeEach(() => {
   vi.useFakeTimers();

@@ -7,9 +7,9 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { memo, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DOWNLOAD_BOXES } from './download-columns';
-import { DownloadTableHead } from './download-table-head';
+import { DownloadTableHead } from './download-table-head.component';
 import type { DownloadQuery, PageView } from './schemas';
-import { useDownloadsTable } from './use-downloads-table';
+import { useDownloadsTable } from './use-downloads-table.hook';
 
 const styleHost = createStyleTestHost();
 

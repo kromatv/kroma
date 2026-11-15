@@ -9,7 +9,7 @@ const remoteModule = defineModule({
   pages: [
     {
       path: 'remote',
-      component: lazy(() => import('./remote-page')),
+      component: lazy(() => import('./remote-page.component')),
       nav: { label: 'nav.remote', icon: 'cloud', section: 'system', requires: 'settings.manage' },
     },
   ],

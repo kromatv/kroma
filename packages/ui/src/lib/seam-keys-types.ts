@@ -1,9 +1,9 @@
 // The contract both halves of a seam's key layer implement.
 //
-//   seam-keys.ts           native  - Apple TV / a phone. The remote is HELD, so
+//   seam-keys.hook.ts           native  - Apple TV / a phone. The remote is HELD, so
 //                                    the navigator stops moving focus, and the
 //                                    directions are read straight off the OS.
-//   seam-keys.web.ts      web     - Tizen / webOS / desktop / browser. The
+//   seam-keys.hook.web.ts      web     - Tizen / webOS / desktop / browser. The
 //                                    keys are taken on the document's capture
 //                                    phase, where the navigator cannot see them.
 

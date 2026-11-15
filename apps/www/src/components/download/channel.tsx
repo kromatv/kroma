@@ -1,7 +1,7 @@
 import { canary, release } from 'virtual:kroma-releases';
 import { createContext, type ReactNode, useContext, useMemo, useSyncExternalStore } from 'react';
 import { canaryRelease, type DownloadChannel, channelFromSearch } from '#site/lib/download-channel';
-import { useCanaryDownloads } from '#site/lib/use-canary-downloads';
+import { useCanaryDownloads } from '#site/lib/use-canary-downloads.hook';
 import type { SiteRelease } from '#site/lib/releases';
 import { m } from '#site/paraglide/messages';
 

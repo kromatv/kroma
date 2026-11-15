@@ -3,7 +3,7 @@
 import { declared } from '@kromatv/ui/testing';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ConnectionStatus } from './connection-status';
+import { ConnectionStatus } from './connection-status.component';
 
 afterEach(cleanup);
 

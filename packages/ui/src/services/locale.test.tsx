@@ -14,7 +14,7 @@ import { createStyleTestHost } from '#ui/testing-style';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLocale } from './i18n';
-import { LocaleProvider } from './locale';
+import { LocaleProvider } from './locale.component';
 
 /** Prints the active locale, so an assertion can read it off the tree. */
 function Probe() {

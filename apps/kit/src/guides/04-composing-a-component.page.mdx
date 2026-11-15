@@ -1,5 +1,5 @@
-import { CalloutParts, ChoiceDemo } from './composing-demos';
-import { Figure } from './figure';
+import { CalloutParts, ChoiceDemo } from './composing-demos.component';
+import { Figure } from './figure.component';
 
 export const title = 'Composing a component';
 export const summary = 'What becomes a part, what stays a prop, what those things are called, and how a caller gets out.';
@@ -187,7 +187,7 @@ middle-click, copy and hover, rather than a press handler calling the router:
 Radix leans on an implicit merge. This kit cannot, because `style` is a
 positional array whose precedence is order, press is a family with focus and hover
 on top for TV, and a host ref is a component instance with `measure`, not a node.
-So the merge is written down, in `lib/slot.tsx`, and it is deliberately small:
+So the merge is written down, in `lib/slot.component.tsx`, and it is deliberately small:
 
 - the child's own props win, prop by prop;
 - `style` composes as `[slot, child]`, the child's declarations last;

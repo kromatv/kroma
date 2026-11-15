@@ -2,7 +2,7 @@
 
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { FocusRoot } from './focus-root';
+import { FocusRoot } from './focus-root.component';
 
 const hosts = (root: HTMLElement) => root.querySelectorAll('[tabindex]').length;
 

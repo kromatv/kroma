@@ -3,7 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import type { VideoPlayer } from 'expo-video';
 import { describe, expect, it } from 'vitest';
-import { usePipSubtitles } from './use-pip-subtitles';
+import { usePipSubtitles } from './use-pip-subtitles.hook';
 
 function nativePlayer() {
   const listeners = new Map<string, () => void>();

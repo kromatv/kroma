@@ -13,8 +13,8 @@ import type { Page } from './page';
 import { slug } from './registry';
 import { pathRouter, type WorkbenchRouter } from './router';
 import { SourceProvider, type StorySource, useSourceLink } from './source';
-import type { Choice, ToolbarLens } from './toolbar';
-import { Workbench, type WorkbenchProps } from './workbench';
+import type { Choice, ToolbarLens } from './toolbar.component';
+import { Workbench, type WorkbenchProps } from './workbench.component';
 
 // A CONTROLLED provider the workbench is wrapped in, and the values it can take. This exists
 // because of a specific, recurring shape: an app context that every story needs in order to

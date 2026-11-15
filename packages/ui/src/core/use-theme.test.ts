@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createStyleTestHost } from '#ui/testing-style';
 import { createTheme, KROMA } from './theme';
 
-import { ThemeProvider, useSystemGround, useTheme } from './use-theme';
+import { ThemeProvider, useSystemGround, useTheme } from './use-theme.hook';
 
 const styleHost = createStyleTestHost();
 const { renderHook, setTheme, applyMode, writeMode } = styleHost;

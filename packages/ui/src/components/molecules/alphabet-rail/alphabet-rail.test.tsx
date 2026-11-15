@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { declared } from '#ui/testing';
-import { AlphabetRail } from './alphabet-rail';
+import { AlphabetRail } from './alphabet-rail.component';
 
 afterEach(cleanup);
 

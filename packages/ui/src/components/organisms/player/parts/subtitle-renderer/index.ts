@@ -1,1 +1,1 @@
-export * from './subtitle-renderer';
+export * from './subtitle-renderer.component';

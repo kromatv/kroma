@@ -19,7 +19,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
-import type { RoutePath } from '#web/shared/ui/route-link';
+import type { RoutePath } from '#web/shared/ui/route-link.component';
 
 const WARM_DELAY_MS = 2000;
 const NO_COMMANDS: readonly CommandDef[] = [];

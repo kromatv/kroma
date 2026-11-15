@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { bindEngine } from './engine/bind';
 import { type Engine, setEngine } from './engine/engine';
 import { DEVTOOL, ignoreTools } from './overlay/highlight';
-import { Devtools } from './panel/devtools';
+import { Devtools } from './panel/devtools.component';
 import { draggable, EDGE_PX, keepInView, place } from './panel/drag';
 import { type Channel, openChannel } from './server/host';
 import { readSession, writeSession } from './session';

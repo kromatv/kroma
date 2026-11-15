@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { chromeMetrics } from '#ui/components/organisms/player/lib/metrics';
 import { controlOrder } from '#ui/components/organisms/player/lib/nav';
 import { TV_FLAGS } from '#ui/components/organisms/player/types';
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { I18nProvider } from '#ui/services/i18n';
 import { wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { ControlCluster } from './control-cluster';
+import { ControlCluster } from './control-cluster.component';
 
 const host = createInputTestHost();
 

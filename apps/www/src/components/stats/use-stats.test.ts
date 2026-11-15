@@ -7,7 +7,7 @@ const fetchStats = vi.hoisted(() => vi.fn<(signal?: AbortSignal) => Promise<Stat
 
 vi.mock('#site/lib/stats', () => ({ fetchStats }));
 
-import { useStats } from './use-stats';
+import { useStats } from './use-stats.hook';
 
 const STATS: Stats = {
   instances: 12,

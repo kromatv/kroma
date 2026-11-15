@@ -36,7 +36,7 @@ vi.mock('@kromatv/core', () => ({ deviceLocale: () => 'fr', clientUserAgent: () 
 const renameServer = vi.hoisted(() => vi.fn());
 vi.mock('./session', () => ({ useSession: () => ({ renameServer, requestLocale }) }));
 
-import { useServerProbes } from './use-server-probes';
+import { useServerProbes } from './use-server-probes.hook';
 
 const PROBE_TIMEOUT_MS = 4000;
 

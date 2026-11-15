@@ -4,7 +4,7 @@ import { fakeClient } from '@kromatv/client/test';
 import { onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CastReceiverProvider } from '#tv/features/cast/cast-receiver-provider';
+import { CastReceiverProvider } from '#tv/features/cast/cast-receiver-provider.component';
 import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
 interface SocketHooks {

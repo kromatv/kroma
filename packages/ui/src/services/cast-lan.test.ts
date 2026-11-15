@@ -7,7 +7,7 @@
 import { beaconTxt, type LanService } from '@kromatv/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useLanCast } from '#ui/services/cast-lan';
+import { useLanCast } from '#ui/services/cast-lan.hook';
 
 function stubLan(initial: LanService[] = []) {
   let publish: ((found: LanService[]) => void) | undefined;

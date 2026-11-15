@@ -1,8 +1,8 @@
 // One player chrome for web + TV. Styled with Tailwind, legacy-safe: flex only,
 // no /opacity (see ./tw).
 
-export { PLAYER_ROOT_ID } from './hooks/use-idle-cursor';
-export { RESUME_WINDOW, type ResumeNotice, useResumeNotice } from './hooks/use-resume-notice';
+export { PLAYER_ROOT_ID } from './hooks/use-idle-cursor.hook';
+export { RESUME_WINDOW, type ResumeNotice, useResumeNotice } from './hooks/use-resume-notice.hook';
 export {
   AUDIO_FILTER_KEY,
   audioFilterLabels,
@@ -40,21 +40,24 @@ export type {
   PlayerVideoTrack,
 } from './media-types';
 export type { CreditsCardItem } from './parts/credits-card';
-export { SKIP_BACK_ICON, SKIP_FORWARD_ICON } from './parts/icons';
+export { SKIP_BACK_ICON, SKIP_FORWARD_ICON } from './parts/icons.component';
 // The width the end-of-film hero is drawn at, so a host asks for art that size.
 export { POST_PLAY_ART_W, type PostPlayItem } from './parts/post-play';
 export { ResumePrompt, type ResumePromptProps } from './parts/resume-prompt';
 export type { SubtitleGenBundle, SubtitleGenRequest } from './parts/settings-panel/settings/gen';
-export { PICTURE_ID as PLAYER_PICTURE_ID, STAGE_ID as PLAYER_STAGE_ID } from './parts/stage/stage';
+export {
+  PICTURE_ID as PLAYER_PICTURE_ID,
+  STAGE_ID as PLAYER_STAGE_ID,
+} from './parts/stage/stage.component';
 export { StatsPanel } from './parts/stats-panel';
-export { SUBTITLE_LAYER_ID as PLAYER_SUBTITLE_ID } from './parts/subtitle-renderer/subtitle-renderer';
+export { SUBTITLE_LAYER_ID as PLAYER_SUBTITLE_ID } from './parts/subtitle-renderer/subtitle-renderer.component';
 export type { SurfaceRadius } from './parts/surface-radius';
 export { SurfaceRadiusProvider, useSurfaceRadius } from './parts/surface-radius';
 // The width the sheet draws a card at, so a host asks for artwork that size.
 export { UP_NEXT_ART_W } from './parts/up-next-card';
 export type { UpNextData, UpNextItem } from './parts/up-next-sheet';
-export type { PlayerRootProps } from './player-root';
-export { Player } from './player';
+export type { PlayerRootProps } from './player-root.component';
+export { Player } from './player.component';
 export type { PlayerActionsProps, PlayerMediaProps, PlayerPanelProps } from './player-parts';
 export type {
   AudioFilterMode,

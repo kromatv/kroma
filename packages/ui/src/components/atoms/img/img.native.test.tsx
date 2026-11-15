@@ -4,9 +4,9 @@ import { act, render } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KitProvider } from '#ui/configure';
-import type { ImageBackend, ImageBackendProps } from '#ui/lib/image-backend';
+import type { ImageBackend, ImageBackendProps } from '#ui/lib/image-backend.hook';
 import { markImageReady, resetImageReady } from '#ui/lib/image-ready';
-import { Img, type ImgProps } from './img';
+import { Img, type ImgProps } from './img.component';
 
 beforeEach(() => {
   vi.useFakeTimers();

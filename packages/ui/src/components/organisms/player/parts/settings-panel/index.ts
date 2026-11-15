@@ -1,1 +1,1 @@
-export * from './settings-panel';
+export * from './settings-panel.component';

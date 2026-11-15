@@ -16,19 +16,19 @@ import {
   type StyleRuntime,
   type StyleRuntimeOptions,
 } from './core/style-runtime';
-import { ThemeHost } from './core/theme-host';
+import { ThemeHost } from './core/theme-host.component';
 import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
 import { createFocusServices } from './lib/focus-services';
 import { createFrostHost } from './lib/gl-frost/host';
 import { FocusServicesProvider, useFocusServicesParent } from './lib/focus-services-context';
-import type { ImageBackend } from './lib/image-backend';
+import type { ImageBackend } from './lib/image-backend.hook';
 import { createInputGate, InputGateProvider, useInputGateParent } from './lib/input-gate';
 import { createInputSource, InputSourceProvider, useInputSourceParent } from './lib/input-source';
 import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
 import { createMenuKeys } from './lib/menu-keys';
 import { createScrollLock } from './lib/scroll-lock';
-import type { SurfacePresentation } from './lib/surface-presentation';
+import type { SurfacePresentation } from './lib/surface-presentation.hook';
 
 /**
  * How far the reader sits and what they type with. Every consequence follows

@@ -7,8 +7,8 @@
 import { useT } from '@kromatv/ui';
 import { Box } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
-import { NotificationDeliveries } from '#web/features/admin/notification-deliveries';
-import { NotificationBench } from '#web/features/admin/notifications-bench';
+import { NotificationDeliveries } from '#web/features/admin/notification-deliveries.component';
+import { NotificationBench } from '#web/features/admin/notifications-bench.component';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 
 export const Route = createFileRoute('/admin/notifications')({

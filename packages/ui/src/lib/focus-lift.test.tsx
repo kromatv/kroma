@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusLiftHost, FocusLiftView, LIFTED } from '#ui/lib/focus-lift';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { declared } from '#ui/testing';
 
 afterEach(cleanup);

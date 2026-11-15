@@ -1,1 +1,1 @@
-export * from './virtual-rail';
+export * from './virtual-rail.component';

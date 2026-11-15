@@ -6,8 +6,8 @@ import { createStyleTestHost } from '#ui/testing-style';
 import { configureKit, type KitConfig, KitProvider } from './configure';
 import { createTheme, KROMA, useTheme } from './core';
 import { useEntryDefaults } from './lib/field-shell';
-import { type ImageBackend, reactNativeImage, useImageBackend } from './lib/image-backend';
-import { useSurfacePresentation } from './lib/surface-presentation';
+import { type ImageBackend, reactNativeImage, useImageBackend } from './lib/image-backend.hook';
+import { useSurfacePresentation } from './lib/surface-presentation.hook';
 
 const styleHost = createStyleTestHost();
 const { renderHook, setTheme } = styleHost;

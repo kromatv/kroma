@@ -6,7 +6,7 @@ import { Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 
-vi.mock('#ui/lib/svg', () => ({
+vi.mock('#ui/lib/svg.component', () => ({
   Svg: ({ children }: { children?: ReactNode }) => <svg>{children}</svg>,
   Circle: () => <circle />,
 }));

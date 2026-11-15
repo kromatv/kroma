@@ -64,7 +64,7 @@ vi.mock('react-native', () => ({
 }));
 
 import { createFocusEntry, FocusEntryProvider } from './focus-entry';
-import { useFocusNav } from './focus-nav';
+import { useFocusNav } from './focus-nav.hook';
 
 const { clearInputHolds, clearPressGuard, holdInput, pressGuardActive, renderHook } =
   createInputTestHost();
@@ -373,7 +373,7 @@ describe('on a phone, where the TV remote surface does not exist', () => {
       useTVEventHandler: undefined,
     }));
 
-    const { useFocusNav: usePhoneNav } = await import('./focus-nav');
+    const { useFocusNav: usePhoneNav } = await import('./focus-nav.hook');
     const onBack = vi.fn();
     // The same screens compile and run here: no crash from the missing hook, no
     // crash from the missing menu-key switch.

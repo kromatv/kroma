@@ -4,7 +4,7 @@ import { act, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { createI18n } from '../i18n';
 import { useLocale, useScopedT, useT } from './context';
-import { I18nProvider } from './provider';
+import { I18nProvider } from './provider.component';
 
 function build() {
   return createI18n({

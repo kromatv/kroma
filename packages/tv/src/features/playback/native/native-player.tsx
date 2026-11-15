@@ -7,15 +7,15 @@
 
 import type { ReactNode } from 'react';
 import { createTvEngine, planEngine } from '#tv/features/playback/native/backend';
-import { NativeTrailer } from '#tv/features/playback/native/native-trailer';
-import { PlayerSurface } from '#tv/features/playback/native/player-surface';
+import { NativeTrailer } from '#tv/features/playback/native/native-trailer.component';
+import { PlayerSurface } from '#tv/features/playback/native/player-surface.component';
 import { nativePictureInPicture } from '#tv/features/playback/native/pip';
 import {
   type PlaybackBackend,
   PlaybackBackendProvider,
   type PlaybackPlatform,
 } from '#tv/features/playback/player/playback-backend';
-import { TvPlayer } from '#tv/features/playback/tv-player';
+import { TvPlayer } from '#tv/features/playback/tv-player.component';
 
 const NATIVE_BACKEND: PlaybackBackend = {
   planEngine,

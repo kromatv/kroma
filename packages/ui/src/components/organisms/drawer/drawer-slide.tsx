@@ -9,7 +9,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
-import { GlideView } from '#ui/lib/glide-view';
+import { GlideView } from '#ui/lib/glide-view.component';
 
 const SLIDE_MS = motion.duration.slow;
 

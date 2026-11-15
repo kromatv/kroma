@@ -1,1 +1,1 @@
-export * from './search-keyboard';
+export * from './search-keyboard.component';

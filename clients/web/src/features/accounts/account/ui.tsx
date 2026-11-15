@@ -8,7 +8,7 @@ import { useT } from '@kromatv/ui';
 import { type ColorValue, type IconName, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { SaveStatus } from '#web/shared/ui/save-dock';
+import type { SaveStatus } from '#web/shared/ui/save-dock.component';
 
 /** A preference row inside a {@link ListRow.Group}: an amber-tinted glyph, a
  * label with a muted description, and a right-aligned control. */

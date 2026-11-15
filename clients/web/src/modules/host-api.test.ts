@@ -39,7 +39,7 @@ vi.mock('#web/modules/registry', () => ({
 vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'https://kroma.test' }));
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 
-import { useModuleHost } from './host';
+import { useModuleHost } from './host.hook';
 
 installHarness();
 

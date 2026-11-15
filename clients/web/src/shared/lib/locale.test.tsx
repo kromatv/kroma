@@ -13,7 +13,7 @@ const auth = {
 };
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 
-const { LocaleProvider } = await import('#web/shared/lib/locale');
+const { LocaleProvider } = await import('#web/shared/lib/locale.component');
 
 function mount(client: QueryClient, children: ReactNode) {
   return render(

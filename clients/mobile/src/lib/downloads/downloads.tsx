@@ -8,8 +8,8 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useT } from '#mobile/lib/i18n';
-import { useDownloadPrompt } from '#mobile/lib/notifications/use-download-prompt';
-import { useTransferQueue } from './queue';
+import { useDownloadPrompt } from '#mobile/lib/notifications/use-download-prompt.hook';
+import { useTransferQueue } from './queue.hook';
 import type { DownloadEntry, DownloadState } from './store';
 
 export type { DownloadEntry, DownloadState, OfflineSub } from './store';

@@ -1,7 +1,7 @@
-export type { ResizableRootProps } from './resizable';
-export { Resizable } from './resizable';
+export type { ResizableRootProps } from './resizable.component';
+export { Resizable } from './resizable.component';
 export type { ResizableLayoutDetails } from './resizable-context';
-export type { ResizableHandleProps } from './resizable-handle';
+export type { ResizableHandleProps } from './resizable-handle.component';
 export type { ResizableSize } from './resizable-layout';
 export type {
   ResizablePanelDetails,

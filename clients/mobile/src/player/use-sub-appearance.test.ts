@@ -14,7 +14,7 @@ const savePref = vi.hoisted(() => vi.fn(async (_key: string, _value: string) => 
 vi.mock('#mobile/lib/storage', () => ({ loadPref, savePref }));
 
 import { DEFAULT_SUB_APPEARANCE } from '@kromatv/ui';
-import { useSubAppearance } from './use-sub-appearance';
+import { useSubAppearance } from './use-sub-appearance.hook';
 
 const KEY = 'subtitleStyle';
 

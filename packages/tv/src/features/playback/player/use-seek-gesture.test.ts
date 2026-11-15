@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type SeekDeps, useSeekGesture } from './use-seek-gesture';
+import { type SeekDeps, useSeekGesture } from './use-seek-gesture.hook';
 
 function gesture(over: Partial<SeekDeps> = {}) {
   const seekTo = over.seekTo ?? vi.fn();

@@ -4,7 +4,7 @@ import { activeTheme, styles } from '@kromatv/ui/kit';
 import { declared } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useFocusRing } from '#web/shared/lib/use-focus-ring';
+import { useFocusRing } from '#web/shared/lib/use-focus-ring.hook';
 
 afterEach(cleanup);
 

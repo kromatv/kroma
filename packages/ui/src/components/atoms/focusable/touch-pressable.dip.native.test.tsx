@@ -39,7 +39,7 @@ async function control(
   rn.os = platform.os;
   rn.isTV = platform.isTV;
   vi.resetModules();
-  const { TouchPressable } = await import('./touch-pressable');
+  const { TouchPressable } = await import('./touch-pressable.component');
   render(
     <TouchPressable base={[]} a11yState={{}} label="Lire" onPress={() => {}} {...props}>
       {() => null}

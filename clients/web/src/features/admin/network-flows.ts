@@ -1,5 +1,5 @@
 import type { DeclaredPurpose, Flow, FlowQuery, FlowVerdict } from '@kromatv/client/network';
-import { CORE_CALLER } from '#web/features/admin/network-callers';
+import { CORE_CALLER } from '#web/features/admin/network-callers.hook';
 
 export const FLOW_PAGE_SIZE = 50;
 

@@ -3,7 +3,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { Text } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
-import { TopFade } from './top-fade';
+import { TopFade } from './top-fade.component';
 
 afterEach(cleanup);
 

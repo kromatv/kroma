@@ -30,9 +30,9 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { NearbyTvs } from '#mobile/components/connect/nearby-tvs';
-import { ScanCode } from '#mobile/components/connect/scan-code';
-import { PageHeader } from '#mobile/components/page-header';
+import { NearbyTvs } from '#mobile/components/connect/nearby-tvs.component';
+import { ScanCode } from '#mobile/components/connect/scan-code.component';
+import { PageHeader } from '#mobile/components/page-header.component';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';

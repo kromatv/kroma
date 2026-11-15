@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import { createElement, Suspense } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('#tv/features/playback/browser/browser-player', () => ({
+vi.mock('#tv/features/playback/browser/browser-player.component', () => ({
   BrowserPlayer: () => createElement('div', null, 'the player'),
 }));
 

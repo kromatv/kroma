@@ -5,7 +5,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AccountHeader } from './account-header';
+import { AccountHeader } from './account-header.component';
 
 const auth = vi.hoisted(() => ({
   uploadAvatar: vi.fn(),

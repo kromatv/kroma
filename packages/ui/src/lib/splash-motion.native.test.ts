@@ -12,7 +12,7 @@
 import { renderHook } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { GRADE, useDrift } from './splash-motion';
+import { GRADE, useDrift } from './splash-motion.hook';
 
 const SPEC = { x: 0.04, y: 0.03, zoom: 1.12, ms: 12_000, width: 1000, height: 500 };
 

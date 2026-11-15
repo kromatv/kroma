@@ -5,7 +5,7 @@ import { act, cleanup, render, renderHook, screen } from '@testing-library/react
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { msg } from './message';
-import { useForm } from './use-form';
+import { useForm } from './use-form.hook';
 
 afterEach(cleanup);
 

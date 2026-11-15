@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flowOf, RULES_VIEW } from '#web/features/admin/network.fixture';
-import { NetworkConnections } from '#web/features/admin/network-connections';
+import { NetworkConnections } from '#web/features/admin/network-connections.component';
 import { FLOW_PAGE_SIZE } from '#web/features/admin/network-flows';
 
 const api = vi.hoisted(() => ({

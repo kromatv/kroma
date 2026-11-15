@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import type { ControlSize } from '#ui/lib/field-shell';
 
-import { SegmentGroup } from './segment-group';
+import { SegmentGroup } from './segment-group.component';
 
 export function Modes({ size }: Readonly<{ size?: ControlSize }>) {
   const [mode, setMode] = useState('auto');

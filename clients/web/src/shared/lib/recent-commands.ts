@@ -2,7 +2,7 @@ import type { CommandItem, IconName } from '@kromatv/ui/kit';
 import { hasGlyph } from '@kromatv/ui/kit';
 import { z } from 'zod';
 import type { CommandDef } from '#web/shared/lib/command-menu';
-import type { RoutePath } from '#web/shared/ui/route-link';
+import type { RoutePath } from '#web/shared/ui/route-link.component';
 
 const LIMIT = 5;
 const TICKET = /[?&]t=/;

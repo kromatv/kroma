@@ -2,7 +2,7 @@ import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 import { audioTrackLabel, audioTracksOf, langBase, langName, refineTrackLang } from '@kromatv/core';
 import type { useT } from '#mobile/lib/i18n';
 import type { Engine } from './engine';
-import type { Subtitles, SubView } from './use-subtitles';
+import type { Subtitles, SubView } from './use-subtitles.hook';
 
 export interface AudioOption {
   index: number;

@@ -3,7 +3,7 @@
 import { renderHook } from '@testing-library/react';
 import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { useSteps } from './use-steps';
+import { useSteps } from './use-steps.hook';
 
 describe('useSteps', () => {
   const steps = ['account', 'library', 'done'];

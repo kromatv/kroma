@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useControlsHold } from './use-controls-hold';
+import { useControlsHold } from './use-controls-hold.hook';
 
 function controls() {
   const give = vi.fn();

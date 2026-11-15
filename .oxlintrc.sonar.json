@@ -252,7 +252,7 @@
   ],
   "overrides": [
     {
-      "files": ["apps/www/src/components/download/families/nas.tsx"],
+      "files": ["apps/www/src/components/download/families/nas.component.tsx"],
       "rules": {
         "sonarjs/no-clear-text-protocols": "off"
       }
@@ -264,7 +264,7 @@
       }
     },
     {
-      "files": ["clients/mobile/src/player/track-sheet.tsx"],
+      "files": ["clients/mobile/src/player/track-sheet.component.tsx"],
       "rules": {
         "sonarjs/cognitive-complexity": "off"
       }
@@ -294,13 +294,13 @@
       }
     },
     {
-      "files": ["clients/web/src/features/admin/pipeline.tsx"],
+      "files": ["clients/web/src/features/admin/pipeline.component.tsx"],
       "rules": {
         "sonarjs/cognitive-complexity": "off"
       }
     },
     {
-      "files": ["clients/web/src/features/playback/use-video-playback.ts"],
+      "files": ["clients/web/src/features/playback/use-video-playback.hook.ts"],
       "rules": {
         "kroma/use-state-pair": "off"
       }
@@ -324,7 +324,7 @@
       }
     },
     {
-      "files": ["modules/tv.kroma.indexer/ui/src/torznab-indexer-form.tsx"],
+      "files": ["modules/tv.kroma.indexer/ui/src/torznab-indexer-form.component.tsx"],
       "rules": {
         "sonarjs/no-clear-text-protocols": "off"
       }
@@ -390,13 +390,13 @@
       }
     },
     {
-      "files": ["packages/tv/src/features/playback/browser/player-surface.tsx"],
+      "files": ["packages/tv/src/features/playback/browser/player-surface.component.tsx"],
       "rules": {
         "sonarjs/object-alt-content": "off"
       }
     },
     {
-      "files": ["packages/tv/src/features/playback/player/use-direct-playback.ts"],
+      "files": ["packages/tv/src/features/playback/player/use-direct-playback.hook.ts"],
       "rules": {
         "kroma/use-state-pair": "off"
       }
@@ -415,20 +415,20 @@
     },
     {
       "files": [
-        "packages/ui/src/components/organisms/player/parts/subtitle-renderer/subtitle-renderer.tsx"
+        "packages/ui/src/components/organisms/player/parts/subtitle-renderer/subtitle-renderer.component.tsx"
       ],
       "rules": {
         "sonarjs/super-linear-regex": "off"
       }
     },
     {
-      "files": ["packages/ui/src/components/organisms/player/player.tsx"],
+      "files": ["packages/ui/src/components/organisms/player/player.component.tsx"],
       "rules": {
         "sonarjs/cognitive-complexity": "off"
       }
     },
     {
-      "files": ["packages/ui/src/services/playback.ts"],
+      "files": ["packages/ui/src/services/playback.hook.ts"],
       "rules": {
         "sonarjs/pseudo-random": "off"
       }
@@ -440,7 +440,7 @@
       }
     },
     {
-      "files": ["packages/workbench/src/workbench.tsx"],
+      "files": ["packages/workbench/src/workbench.component.tsx"],
       "rules": {
         "kroma/use-state-pair": "off",
         "sonarjs/cognitive-complexity": "off"

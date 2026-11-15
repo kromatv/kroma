@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type TypeRole, typeSpec } from '#ui/core/tokens';
 import type { ControlSize } from '#ui/lib/field-shell';
-import { DataField } from './data-field';
+import { DataField } from './data-field.component';
 
 afterEach(cleanup);
 

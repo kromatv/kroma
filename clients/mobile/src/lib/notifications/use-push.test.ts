@@ -48,7 +48,7 @@ vi.mock('./relay', () => ({ refreshGrant }));
 const handleTap = vi.hoisted(() => vi.fn(async () => '/show/abc' as string | null));
 vi.mock('./taps', () => ({ handleTap }));
 
-const { usePushGrantRefresh, usePushLabels, usePushTaps } = await import('./use-push');
+const { usePushGrantRefresh, usePushLabels, usePushTaps } = await import('./use-push.hook');
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -56,7 +56,7 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 // consumed by the notification API, independently of the hook lifetime.
 async function freshLaunch(): Promise<typeof usePushTaps> {
   vi.resetModules();
-  return (await import('./use-push')).usePushTaps;
+  return (await import('./use-push.hook')).usePushTaps;
 }
 
 beforeEach(() => {

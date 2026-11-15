@@ -1,7 +1,7 @@
 import type { ControlMetrics, ControlSize } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
-import { useStableCallback } from '#ui/lib/stable-callback';
-import type { StepperFlow } from './use-steps';
+import { useStableCallback } from '#ui/lib/stable-callback.hook';
+import type { StepperFlow } from './use-steps.hook';
 
 type StepperOrientation = 'horizontal' | 'vertical';
 

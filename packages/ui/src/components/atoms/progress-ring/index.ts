@@ -1,1 +1,1 @@
-export * from './progress-ring';
+export * from './progress-ring.component';

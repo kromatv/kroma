@@ -2,7 +2,7 @@
 
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { RESUME_WINDOW, useResumeNotice } from './use-resume-notice';
+import { RESUME_WINDOW, useResumeNotice } from './use-resume-notice.hook';
 
 function notice(at: number | undefined, cur = at ?? 0, playing = true) {
   return renderHook(

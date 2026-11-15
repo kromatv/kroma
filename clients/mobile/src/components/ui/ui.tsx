@@ -10,7 +10,7 @@ import { useGutters } from '#mobile/lib/layout';
 import { spacing, type } from '#mobile/lib/theme';
 
 export { SheetBackdrop, SheetBody, SheetTitle, sheetChrome, useSheetMinHeight } from './sheet';
-export { EmptyState, ErrorBanner, ErrorView, Loading } from './states';
+export { EmptyState, ErrorBanner, ErrorView, Loading } from './states.component';
 
 export function Screen({
   children,

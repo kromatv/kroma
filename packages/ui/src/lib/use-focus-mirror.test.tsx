@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useFocusMirror } from './use-focus-mirror';
+import { useFocusMirror } from './use-focus-mirror.hook';
 
 function Control({ focused, label }: Readonly<{ focused: boolean; label: string }>) {
   const mirror = useFocusMirror(focused);

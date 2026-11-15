@@ -6,7 +6,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
-import { CastRemotes } from '#tv/features/cast/cast-remotes';
+import { CastRemotes } from '#tv/features/cast/cast-remotes.component';
 import {
   CastControllerStoreProvider,
   createCastControllerStore,

@@ -236,7 +236,7 @@ The rule is about faces. It does not strip the kit of props.
 
 ### `asChild` is `<Slot>`, and its merge is defined
 
-The kit has one slot primitive, [`lib/slot.tsx`](../lib/slot.tsx), and `asChild`
+The kit has one slot primitive, [`lib/slot.component.tsx`](../lib/slot.component.tsx), and `asChild`
 on a component means exactly `<Slot {...itsProps}>`. Radix leans on an implicit
 merge. This kit cannot, because `style` is a positional array, press is a family
 and a host ref is a component instance, so the merge is written down and it is

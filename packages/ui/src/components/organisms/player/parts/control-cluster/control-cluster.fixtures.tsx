@@ -10,7 +10,7 @@ import { chromeMetrics, GUTTER } from '#ui/components/organisms/player/lib/metri
 
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
 
-import { ControlCluster } from './control-cluster';
+import { ControlCluster } from './control-cluster.component';
 
 export const ALL: ControlId[] = [
   'rewind',

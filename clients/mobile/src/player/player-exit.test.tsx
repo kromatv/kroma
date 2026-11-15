@@ -46,7 +46,7 @@ vi.mock('#mobile/lib/session', () => ({
 vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ kind }: { kind: string }) => (kind === 'item' ? state.item : state.progress),
 }));
-vi.mock('#mobile/player/player-body', () => ({
+vi.mock('#mobile/player/player-body.component', () => ({
   PlayerBody: () => {
     useEffect(() => state.stopped, []);
     return <span>Active player</span>;

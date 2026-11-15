@@ -1,4 +1,4 @@
-import type { usePlayerNav } from './hooks/use-player-nav';
+import type { usePlayerNav } from './hooks/use-player-nav.hook';
 import type { UpNextData } from './parts/up-next-sheet';
 
 function initialSettingsView(overlay: string | null): 'audio' | 'subtitles' | 'menu' {

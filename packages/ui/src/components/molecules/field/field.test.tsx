@@ -8,7 +8,7 @@ import { ButtonGroup } from '#ui/components/molecules/button-group';
 import { Select } from '#ui/components/molecules/select';
 import { KitProvider } from '#ui/configure';
 import { declared, onScreen } from '#ui/testing';
-import { Field } from './field';
+import { Field } from './field.component';
 
 // The browser half of the kit: a shell with a real keyboard says so once.
 

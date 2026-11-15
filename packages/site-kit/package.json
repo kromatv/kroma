@@ -13,9 +13,9 @@
   },
   "sideEffects": false,
   "exports": {
-    "./site-document": "./src/site-document.tsx",
-    "./site-header": "./src/site-header.tsx",
-    "./site-footer": "./src/site-footer.tsx",
+    "./site-document": "./src/site-document.component.tsx",
+    "./site-header": "./src/site-header.component.tsx",
+    "./site-footer": "./src/site-footer.component.tsx",
     "./worker-env": "./src/worker-env.ts"
   },
   "scripts": {

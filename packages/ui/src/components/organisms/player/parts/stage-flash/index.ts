@@ -1,1 +1,1 @@
-export * from './stage-flash';
+export * from './stage-flash.component';

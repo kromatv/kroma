@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useTvPip } from './use-tv-pip';
+import { useTvPip } from './use-tv-pip.hook';
 
 function view() {
   return {

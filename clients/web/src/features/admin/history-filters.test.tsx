@@ -6,7 +6,7 @@ import { LibraryId } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { HistoryFilters } from '#web/features/admin/history-filters';
+import { HistoryFilters } from '#web/features/admin/history-filters.component';
 import type { HistorySearch } from '#web/features/admin/history-query';
 
 const LIBRARIES = [

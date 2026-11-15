@@ -23,11 +23,11 @@ import { Animated, type LayoutChangeEvent } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { motion } from '#ui/core/tokens';
 import { ease } from './ease';
-import { useFocusScale, usePressScale } from './focus-transition';
+import { useFocusScale, usePressScale } from './focus-transition.hook';
 import {
   useFocusScale as useFocusScaleWeb,
   usePressScale as usePressScaleWeb,
-} from './focus-transition.web';
+} from './focus-transition.hook.web';
 import { pressScaleFor } from './press-dip';
 
 afterEach(() => {

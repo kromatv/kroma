@@ -2,7 +2,7 @@
 import { IconFlask } from '@tabler/icons-react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type ChannelCard, ChannelNav } from './channel-nav.tsx';
+import { type ChannelCard, ChannelNav } from './channel-nav.component.tsx';
 
 const card = (over: Partial<ChannelCard> = {}): ChannelCard => ({
   id: 'canary',

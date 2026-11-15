@@ -31,7 +31,7 @@ vi.mock('#tv/app/providers/watched', () => ({
   useWatched: () => ({ has: (id: string) => api.watched.has(id), toggle: api.toggle }),
 }));
 
-import { useShowDetail } from './use-show-detail';
+import { useShowDetail } from './use-show-detail.hook';
 
 const SHOW = ShowId.parse('s1');
 const EPISODE = ItemId.parse('i1');

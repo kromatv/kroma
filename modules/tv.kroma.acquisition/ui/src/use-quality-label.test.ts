@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useQualityLabel } from './use-quality-label';
+import { useQualityLabel } from './use-quality-label.hook';
 
 vi.mock('@kromatv/module-sdk', () => ({ useT: () => (key: string) => key }));
 

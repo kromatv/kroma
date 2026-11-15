@@ -2,7 +2,7 @@
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
-import { useAccountCommands } from './use-account-commands';
+import { useAccountCommands } from './use-account-commands.hook';
 
 const mocks = vi.hoisted(() => ({ logout: vi.fn() }));
 vi.mock('@kromatv/ui', () => ({ useT: () => (key: string) => key }));

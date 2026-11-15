@@ -99,7 +99,7 @@ The patch on react-native-web carries eight hunks, each a few lines:
 - `<Text numberOfLines>` clamps with a registered style per line count rather
   than an inline declaration.
 - The package exports `unstable_TextAncestorContext`, so `<StaticText>`
-  (`lib/static-text.web.tsx`) can tell it is inside another Text from the very
+  (`lib/static-text.component.web.tsx`) can tell it is inside another Text from the very
   context react-native-web's Text provides, whichever build resolved.
 - `ModalPortal` puts its container back into the document when React
   reconnects its effect. React disconnects the effects of a tree it hides

@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Button } from '#ui/components/atoms/button';
 
-import { Drawer, type DrawerRootProps } from './drawer';
+import { Drawer, type DrawerRootProps } from './drawer.component';
 
 export type DemoProps = Omit<DrawerRootProps, 'open' | 'onClose' | 'children'>;
 

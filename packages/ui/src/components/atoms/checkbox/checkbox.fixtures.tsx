@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Checkbox } from './checkbox';
+import { Checkbox } from './checkbox.component';
 
 export function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
   const [subs, setSubs] = useState(true);

@@ -20,7 +20,7 @@ import { createStyleTestHost } from '#ui/testing-style';
 import { fakeClient } from '@kromatv/client/test';
 import { act, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAuthSession } from './auth';
+import { useAuthSession } from './auth.hook';
 
 const user = (over: Partial<User> = {}): User => ({
   id: UserId.parse('u1'),

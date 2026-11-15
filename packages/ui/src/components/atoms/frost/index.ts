@@ -1,1 +1,1 @@
-export * from './frost';
+export * from './frost.component';

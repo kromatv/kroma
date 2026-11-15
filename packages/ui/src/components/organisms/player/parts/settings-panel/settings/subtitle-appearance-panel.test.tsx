@@ -16,7 +16,7 @@ import {
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { I18nProvider } from '#ui/services/i18n';
 import { onScreen } from '#ui/testing';
-import { SubtitleAppearancePanel } from './subtitle-appearance-panel';
+import { SubtitleAppearancePanel } from './subtitle-appearance-panel.component';
 
 afterEach(cleanup);
 

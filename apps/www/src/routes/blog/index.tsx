@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Container } from '#site/components/container';
+import { Container } from '#site/components/container.component';
 import { L } from '#site/components/localized-link';
 import { getLocale, useLang } from '#site/lib/i18n';
 import { getAllPosts } from '#site/lib/posts';

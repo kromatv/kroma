@@ -15,7 +15,7 @@ const cast = vi.hoisted(() => ({
 }));
 vi.mock('@kromatv/ui', () => ({ useCast: () => cast }));
 
-const { usePlay } = await import('./play');
+const { usePlay } = await import('./play.hook');
 
 beforeEach(() => {
   push.mockClear();

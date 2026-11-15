@@ -2,7 +2,7 @@
 import { IndexerId, type ScoredReleaseView } from '@kromatv/client/requests';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTitleSearch } from './use-title-search';
+import { useTitleSearch } from './use-title-search.hook';
 
 const acquisition = { searchTitle: vi.fn(), grabForTitle: vi.fn() };
 

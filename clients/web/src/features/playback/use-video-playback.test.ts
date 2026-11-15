@@ -23,7 +23,7 @@ vi.mock('@kromatv/core', async (importOriginal) => ({
   selectEngine: () => H.decision,
 }));
 
-vi.mock('#web/features/playback/fullscreen-frame', () => ({
+vi.mock('#web/features/playback/fullscreen-frame.component', () => ({
   useFullscreenFrame: () => H.frame,
 }));
 
@@ -50,7 +50,7 @@ vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ client: H.client, user: H.user }),
 }));
 
-const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { useVideoPlayback } = await import('#web/features/playback/use-video-playback.hook');
 
 installHarness();
 

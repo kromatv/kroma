@@ -4,7 +4,7 @@ import type { GenreCount } from '@kromatv/core';
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BrowseFilters } from '#tv/features/catalog/tv-browse-header';
+import { BrowseFilters } from '#tv/features/catalog/tv-browse-header.component';
 
 afterEach(cleanup);
 

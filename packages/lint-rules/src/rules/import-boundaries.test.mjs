@@ -56,7 +56,7 @@ tester.run('import-boundaries', plugin.rules['import-boundaries'], {
     ),
     broken(
       'clients/web/src/features/catalog/list/row.tsx',
-      "import type { Player } from '#web/features/playback/player';",
+      "import type { Player } from '#web/features/playback/player.component';",
       'sibling',
     ),
     broken(
@@ -71,7 +71,7 @@ tester.run('import-boundaries', plugin.rules['import-boundaries'], {
     ),
     broken(
       'clients/web/src/features/catalog/row.tsx',
-      "const player = import('#web/features/playback/player');",
+      "const player = import('#web/features/playback/player.component');",
       'sibling',
     ),
     broken(

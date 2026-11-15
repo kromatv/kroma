@@ -1,3 +1,3 @@
 export * from './confirm-dialog';
-export * from './dialog';
-export type { DialogActionsProps } from './dialog-actions';
+export * from './dialog.component';
+export type { DialogActionsProps } from './dialog-actions.component';

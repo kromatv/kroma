@@ -49,7 +49,7 @@ vi.mock('#ui/lib/focus-remote', () => ({
   },
 }));
 
-import { usePlayerKeys } from './use-player-keys';
+import { usePlayerKeys } from './use-player-keys.hook';
 
 const params = (active: boolean) => ({ active }) as PlayerKeysParams;
 

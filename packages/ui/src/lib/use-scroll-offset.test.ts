@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { useScrollOffset } from './use-scroll-offset';
+import { useScrollOffset } from './use-scroll-offset.hook';
 
 const scrolledTo = (x: number, y: number) =>
   ({ nativeEvent: { contentOffset: { x, y } } }) as NativeSyntheticEvent<NativeScrollEvent>;

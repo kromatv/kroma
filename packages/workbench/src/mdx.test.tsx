@@ -9,7 +9,7 @@ import { Linking } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Markdown } from './docs';
 import KitchenSink from './kitchen-sink.fixture.mdx';
-import { MDX_COMPONENTS, MdxDoc } from './mdx';
+import { MDX_COMPONENTS, MdxDoc } from './mdx.component';
 
 afterEach(cleanup);
 

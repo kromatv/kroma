@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useHoverPassthrough } from './hover-passthrough';
+import { useHoverPassthrough } from './hover-passthrough.hook';
 
 const LOCK = 'react-gui:hover:lock';
 

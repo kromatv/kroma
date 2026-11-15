@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useBlocklist, useCutoffTitles, useRules, useTitleRules } from './use-rules';
+import { useBlocklist, useCutoffTitles, useRules, useTitleRules } from './use-rules.hook';
 
 const acquisition = {
   rules: vi.fn(() => 'rules'),
@@ -16,7 +16,7 @@ vi.mock('@kromatv/module-sdk', () => ({
   useFetch: (...args: unknown[]) => useFetch(...args),
   usePoll: (...args: unknown[]) => usePoll(...args),
 }));
-vi.mock('./api', () => ({ useAcquisitionApi: () => acquisition }));
+vi.mock('./api.hook', () => ({ useAcquisitionApi: () => acquisition }));
 
 beforeEach(() => {
   useFetch.mockReset();

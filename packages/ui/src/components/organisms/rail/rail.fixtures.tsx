@@ -8,7 +8,7 @@ import { MediaCard } from '#ui/components/molecules/media-card';
 
 import { stillArt } from '#ui/lib/sample-art';
 
-import { Rail } from './rail';
+import { Rail } from './rail.component';
 
 export const TINT = ['#3A2E4F', '#1B1524'] as const;
 

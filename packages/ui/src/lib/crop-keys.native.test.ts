@@ -6,13 +6,13 @@ import type { ResizableKeysOptions } from './seam-keys-types';
 
 const seams = vi.hoisted(() => ({ taken: [] as ResizableKeysOptions[] }));
 
-vi.mock('./seam-keys', () => ({
+vi.mock('./seam-keys.hook', () => ({
   useResizableKeys: (options: ResizableKeysOptions) => {
     seams.taken.push(options);
   },
 }));
 
-const { useCropKeys } = await import('./crop-keys');
+const { useCropKeys } = await import('./crop-keys.hook');
 
 afterEach(() => {
   seams.taken.length = 0;

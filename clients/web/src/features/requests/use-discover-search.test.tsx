@@ -20,7 +20,7 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
 
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: null }) }));
 
-const { useTrending } = await import('#web/features/requests/use-discover-search');
+const { useTrending } = await import('#web/features/requests/use-discover-search.hook');
 
 const ENTRY = { tmdbId: 603, title: 'The Matrix' } as DiscoverEntry;
 

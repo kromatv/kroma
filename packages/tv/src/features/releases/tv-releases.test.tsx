@@ -6,7 +6,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider } from '#tv/app/router';
-import { TvReleases } from '#tv/features/releases/tv-releases';
+import { TvReleases } from '#tv/features/releases/tv-releases.component';
 
 const inputHost = createInputTestHost();
 

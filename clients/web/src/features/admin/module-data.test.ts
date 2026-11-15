@@ -23,7 +23,7 @@ vi.mock('#web/features/admin/hooks', () => ({
   },
 }));
 
-vi.mock('#web/modules/module-host-provider', () => ({
+vi.mock('#web/modules/module-host-provider.component', () => ({
   useRefreshModules: () => async () => {
     H.order.push('host');
   },
@@ -39,7 +39,7 @@ vi.mock('#web/shared/lib/web-runtime', () => {
   return { useWebRuntime: () => runtime };
 });
 const { fetchAdminModules, fetchStoreCatalog } = H;
-const { useModuleData, useModuleToggle } = await import('#web/features/admin/module-data');
+const { useModuleData, useModuleToggle } = await import('#web/features/admin/module-data.hook');
 
 const unsettled = (): void => undefined;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));

@@ -1,7 +1,7 @@
 import { Box, Button, classes, Logo, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Spinner } from '#web/features/accounts/auth-gate';
+import { Spinner } from '#web/features/accounts/auth-gate.component';
 import { PAGE_RADIAL } from '#web/shared/ui';
 
 const DONE_DELAY_MS = 2500;

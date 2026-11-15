@@ -4,7 +4,7 @@ import { cleanup, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { onScreen } from '#ui/testing';
-import { Chip } from './chip';
+import { Chip } from './chip.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 

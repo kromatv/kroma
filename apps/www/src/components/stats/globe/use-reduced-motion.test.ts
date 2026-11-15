@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useReducedMotion } from './use-reduced-motion';
+import { useReducedMotion } from './use-reduced-motion.hook';
 
 interface Preference {
   matches: boolean;

@@ -8,11 +8,11 @@ import { Kbd } from '#ui/components/atoms/kbd';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Command } from './command';
+import { Command } from './command.component';
 
-import { useCommandResults } from './command-context';
+import { useCommandResults } from './command-context.hook';
 
-import { CommandKeys } from './command-keys';
+import { CommandKeys } from './command-keys.component';
 
 import type { CommandItem } from './command-list';
 

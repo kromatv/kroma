@@ -7,16 +7,16 @@ import { sizedImageUrl } from '@kromatv/core';
 import type { SplashCover } from '@kromatv/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { CredentialsPhase, PinPhase } from '#mobile/components/auth-phases';
-import { OnboardingScreen } from '#mobile/components/onboarding-screen';
-import { type GateTile, ProfileGate } from '#mobile/components/profile-gate';
-import { ServerPicker } from '#mobile/components/server-picker';
+import { CredentialsPhase, PinPhase } from '#mobile/components/auth-phases.component';
+import { OnboardingScreen } from '#mobile/components/onboarding-screen.component';
+import { type GateTile, ProfileGate } from '#mobile/components/profile-gate.component';
+import { ServerPicker } from '#mobile/components/server-picker.component';
 import {
   type EnterSavedDeps,
   enterSavedAccount,
   type Phase,
 } from '#mobile/components/sign-in-flow';
-import { useProviderGate } from '#mobile/components/sign-in-providers';
+import { useProviderGate } from '#mobile/components/sign-in-providers.hook';
 import {
   hostOf,
   keyOf,
@@ -28,7 +28,7 @@ import {
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
 import type { MobileAccount } from '#mobile/lib/storage';
-import { useServerProbes } from '#mobile/lib/use-server-probes';
+import { useServerProbes } from '#mobile/lib/use-server-probes.hook';
 
 export default function SignIn() {
   const t = useT();

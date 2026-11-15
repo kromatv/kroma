@@ -48,7 +48,7 @@ vi.mock('#web/shared/lib/auth', () => ({
   }),
 }));
 
-const { useWebSubtitles } = await import('#web/features/playback/use-web-subtitles');
+const { useWebSubtitles } = await import('#web/features/playback/use-web-subtitles.hook');
 
 const t = ((k: string) => k) as unknown as Parameters<typeof useWebSubtitles>[1];
 

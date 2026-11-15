@@ -4,7 +4,7 @@ import { AdminHostProvider } from '@kromatv/module-sdk';
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
-import { useAcquisitionApi } from './api';
+import { useAcquisitionApi } from './api.hook';
 
 type Call = { method: string; path: string; body?: unknown };
 

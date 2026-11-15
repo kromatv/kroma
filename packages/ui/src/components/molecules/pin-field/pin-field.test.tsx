@@ -3,7 +3,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PinField } from './pin-field';
+import { PinField } from './pin-field.component';
 
 afterEach(cleanup);
 
