@@ -216,6 +216,19 @@ before mounting and pass it through `KitProvider`; session persistence uses
 `createAccountStorage(backend)`. Browser convenience readers are stateless and
 resolve the platform store on each call.
 
+## Dependencies point one way
+
+The order is written in [`ARCHITECTURE.md`](ARCHITECTURE.md) and lint holds it:
+
+- **Packages:** `@kromatv/client`, then `core`, then `ui`, then `tv`, each
+  importing only the ones before it. No package imports a client or an app, and a
+  client and an app never import each other (`no-restricted-imports`).
+- **Inside a client or `@kromatv/tv`:** `shared/` knows no feature, and a feature
+  knows no sibling feature. What two features need is lifted to `shared/`
+  (`kroma/import-boundaries`).
+- **Inside the kit:** tokens, atoms, molecules, organisms, templates. A level
+  imports its own and the ones below (`kroma/import-boundaries`).
+
 ## A package is reached by name, never by path
 
 `import { tvShellConfig } from '../../packages/bundler/src/shell'` is forbidden,

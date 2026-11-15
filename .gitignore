@@ -116,6 +116,10 @@ coverage/
 # (they are their own workspaces, so `--workspace` from server/ misses them).
 lcov.info
 
+# The quality report (bun run quality:report): the tools' snapshots and the
+# summary built from them. See docs/quality.md.
+.metrics/
+
 # Brand generator intermediate (input to `bunx tauri icon`, not a shipped asset).
 
 # Workbench screenshots (bun run shots): review artefacts, not sources.

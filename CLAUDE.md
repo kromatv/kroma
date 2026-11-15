@@ -70,6 +70,10 @@ has come.
 frontends typed, clippy clean) and `bun run deadcode` (knip) are **not** wired
 into any workflow today. Run them by hand after touching a module.
 
+`bun run quality:report` (CRAP per function and structural duplication) and
+`bun run quality:mutate <package>` are a report, never a gate: see
+[`docs/quality.md`](docs/quality.md).
+
 Rust is pinned by `rust-toolchain.toml` (1.98.0, with clippy + rustfmt); the
 workspace `rust-version` floor is 1.88. `cargo fmt --check` is non-blocking: the
 codebase uses a custom import grouping, so do not reformat files wholesale.

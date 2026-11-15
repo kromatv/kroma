@@ -30,7 +30,7 @@ export async function installOverSdb(
     });
     if (result.verdict !== 'success') {
       const duid = refusedChain(result.output) ? await duidOf(device) : null;
-      throw new Error(installFailure(result.output, profile, duid));
+      throw installFailure(result.output, profile, duid);
     }
     if (launch) {
       await device.launch(tizenPackage.appId);

@@ -301,9 +301,13 @@ Replace `192.168.1.62` with the address of your TV.
 
 A KROMA signed with another certificate is already on the TV. This happens
 when KROMA was installed with Tizen Studio, or when you create a new
-certificate after KROMA was installed. Remove KROMA: in
-**Apps**, hold the select button on the KROMA tile, then choose **Delete**.
-Install again. The TV asks for your server and your sign-in again.
+certificate after KROMA was installed. If your computer has the other
+certificate too, the installer signs KROMA again with it and installs it. It
+remembers that certificate for this TV.
+
+If the error stays, remove KROMA: in **Apps**, hold the select button on the
+KROMA tile, then choose **Delete**. Install again. The TV asks for your server
+and your sign-in again.
 
 ### `nobody signed in to Samsung within five minutes`
 
