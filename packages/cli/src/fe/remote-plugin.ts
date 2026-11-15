@@ -11,7 +11,7 @@ import {
   WHOLE_NAMESPACE,
 } from '@kromatv/module-sdk/shared';
 import { init, parse } from 'es-module-lexer';
-import { MagicString } from 'magic-string';
+import MagicString from 'magic-string';
 import type { Plugin, Rolldown } from 'vite';
 import { fieldsOf, namesTaken, takeBraces, takeNamespace } from './import-clause';
 
@@ -171,7 +171,9 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
     name: 'kroma-remote:manifest',
     enforce: 'pre',
     transform(code, id) {
-      if (posix(clean(id)) !== entry || !OPTIONS_ONLY_CALL.test(code)) return null;
+      if (posix(clean(id)) !== entry || !OPTIONS_ONLY_CALL.test(code)) {
+        return null;
+      }
       const locales = catalogsExpression(options.localesDir, localesGlob);
       const injected = `import __kromaManifest from '${manifestImport}';\n${code}`.replace(
         OPTIONS_ONLY_CALL,

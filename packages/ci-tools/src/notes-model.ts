@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import Anthropic, { AnthropicError } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { oidcFederationProvider } from '@anthropic-ai/sdk/lib/credentials/oidc-federation';
 import { z } from 'zod';
@@ -168,7 +168,7 @@ async function ask<T extends z.ZodType>(
     }
     return response.parsed_output ?? null;
   } catch (error) {
-    if (!(error instanceof AnthropicError)) {
+    if (!(error instanceof Anthropic.AnthropicError)) {
       throw error;
     }
     console.warn(`::warning::the model did not answer (${error.message}); using the plain list`);

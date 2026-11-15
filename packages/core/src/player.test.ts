@@ -37,7 +37,7 @@ function fakeVideo(over: { seekThrows?: boolean; playRejects?: boolean } = {}) {
     play,
   };
   const fire = (type: string) => {
-    for (const fn of Array.from(listeners.get(type) ?? [])) {
+    for (const fn of [...(listeners.get(type) ?? [])]) {
       fn();
     }
   };

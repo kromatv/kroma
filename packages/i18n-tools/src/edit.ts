@@ -22,20 +22,26 @@ function translations(set: CatalogSet, source: Source): string[] {
  * source does not know stays where it is. Returns the files that moved.
  */
 export function mirror(set: CatalogSet, source: Source, locale: string): string[] {
-  if (set.layout === 'flat') return [];
+  if (set.layout === 'flat') {
+    return [];
+  }
   const files = readFiles(set, locale);
   const placed: LocaleFiles = new Map();
   let moved = false;
   for (const [file, catalog] of files) {
     for (const [key, text] of Object.entries(catalog)) {
       const home = source.bases.has(key) || baseOf(key, source) ? fileOf(set, source, key) : file;
-      if (home !== file) moved = true;
+      if (home !== file) {
+        moved = true;
+      }
       const into = placed.get(home) ?? {};
       into[key] = text;
       placed.set(home, into);
     }
   }
-  if (!moved) return [];
+  if (!moved) {
+    return [];
+  }
   const touched = [...new Set([...files.keys(), ...placed.keys()])];
   return touched.filter((file) =>
     writeCatalog(set, locale, file, inSourceOrder(placed.get(file) ?? {}, source)),
@@ -52,7 +58,9 @@ export interface Synced {
 /** Bring every translation in line with the source: its keys in the files the
  *  source keeps them in, and its lock saying what the files now say. */
 export function syncSet(set: CatalogSet): Synced {
-  if (!localesOf(set).includes(set.project.source)) return { mirrored: [], locked: [] };
+  if (!localesOf(set).includes(set.project.source)) {
+    return { mirrored: [], locked: [] };
+  }
   const source = readSource(set);
   const locales = translations(set, source);
   const mirrored = locales.filter((locale) => mirror(set, source, locale).length > 0);
@@ -69,7 +77,9 @@ export function syncSet(set: CatalogSet): Synced {
  * belong to the namespace of the keys, since that is what they are loaded by.
  */
 export function move(set: CatalogSet, prefix: string, file: string): string[] {
-  if (set.layout === 'flat') throw new Error(`${set.name} keeps one file per language`);
+  if (set.layout === 'flat') {
+    throw new Error(`${set.name} keeps one file per language`);
+  }
   const source = readSource(set);
   const keys = [...source.home.keys()].filter((key) => key.startsWith(prefix));
   const foreign = keys.find((key) => namespaceOf(key) !== namespaceOfFile(file));
@@ -79,7 +89,9 @@ export function move(set: CatalogSet, prefix: string, file: string): string[] {
     );
   }
   const moving = keys.filter((key) => source.home.get(key) !== file);
-  if (moving.length === 0) return [];
+  if (moving.length === 0) {
+    return [];
+  }
   const files = readFiles(set, source.locale);
   const into = files.get(file) ?? {};
   for (const key of moving) {
@@ -88,7 +100,9 @@ export function move(set: CatalogSet, prefix: string, file: string): string[] {
     delete from[key];
   }
   files.set(file, Object.fromEntries(Object.entries(into).sort(([a], [b]) => (a < b ? -1 : 1))));
-  for (const [name, catalog] of files) writeCatalog(set, source.locale, name, catalog);
+  for (const [name, catalog] of files) {
+    writeCatalog(set, source.locale, name, catalog);
+  }
   syncSet(set);
   return moving;
 }
@@ -96,7 +110,9 @@ export function move(set: CatalogSet, prefix: string, file: string): string[] {
 /** The message of the source language `key` spells: itself, or the base it
  *  is a plural variant of. `null` for a key that is no message. */
 export function baseOf(key: string, source: Source): string | null {
-  if (source.bases.has(key)) return key;
+  if (source.bases.has(key)) {
+    return key;
+  }
   return variantOf(key, source.bases)?.base ?? null;
 }
 
@@ -106,7 +122,9 @@ function inSourceOrder(catalog: Record<string, string>, source: Source): Record<
   const rank = new Map(Object.keys(source.catalog).map((key, at) => [key, at]));
   const place = (key: string): [number, number] => {
     const own = rank.get(key);
-    if (own !== undefined) return [own, 0];
+    if (own !== undefined) {
+      return [own, 0];
+    }
     const base = baseOf(key, source) ?? key;
     return [rank.get(base) ?? rank.get(`${base}_other`) ?? rank.size, 1];
   };
@@ -147,8 +165,11 @@ export function fill(
     const file = fileOf(set, source, key);
     const catalog = files.get(file) ?? {};
     files.set(file, catalog);
-    if (text === '') delete catalog[key];
-    else catalog[key] = text;
+    if (text === '') {
+      delete catalog[key];
+    } else {
+      catalog[key] = text;
+    }
     touched.add(file);
     written.push(key);
   }
@@ -162,7 +183,9 @@ export function fill(
 export function prune(set: CatalogSet, locale: string): string[] {
   const { strays } = inspectLocale(set, readSource(set), locale);
   const gone = new Set(strays);
-  if (gone.size === 0) return [];
+  if (gone.size === 0) {
+    return [];
+  }
   for (const [file, catalog] of readFiles(set, locale)) {
     const kept = Object.fromEntries(Object.entries(catalog).filter(([key]) => !gone.has(key)));
     writeCatalog(set, locale, file, kept);
@@ -178,7 +201,9 @@ export function markMachine(set: CatalogSet, locale: string, keys: readonly stri
   for (const key of keys) {
     const message = baseOf(key, source);
     const entry = message === null ? undefined : lock.get(message);
-    if (message !== null && entry) lock.set(message, { ...entry, machine: true });
+    if (message !== null && entry) {
+      lock.set(message, { ...entry, machine: true });
+    }
   }
   writeLock(lockPath(set, locale), lock);
 }
@@ -186,7 +211,9 @@ export function markMachine(set: CatalogSet, locale: string, keys: readonly stri
 function nameOf(language: string, inLocale: string): string | null {
   try {
     const name = new Intl.DisplayNames([inLocale], { type: 'language' }).of(language);
-    if (!name || name === language) return null;
+    if (!name || name === language) {
+      return null;
+    }
     return name.charAt(0).toLocaleUpperCase(inLocale) + name.slice(1);
   } catch {
     return null;
@@ -208,8 +235,12 @@ export interface Added {
  * that names no language, a module's, gets an empty catalog to fill.
  */
 export function addLocale(set: CatalogSet, locale: string, name?: string): Added {
-  if (!isLocaleTag(locale)) throw new Error(`"${locale}" is not a language tag, like de or pt-BR`);
-  if (localesOf(set).includes(locale)) throw new Error(`${locale} already exists in ${set.name}`);
+  if (!isLocaleTag(locale)) {
+    throw new Error(`"${locale}" is not a language tag, like de or pt-BR`);
+  }
+  if (localesOf(set).includes(locale)) {
+    throw new Error(`${locale} already exists in ${set.name}`);
+  }
   if (readSource(set).catalog[labelKey(set.project.source)] === undefined) {
     startLocale(set, locale);
     return { locale, name: name ?? nameOf(locale, locale) ?? locale, named: [] };
@@ -226,8 +257,12 @@ export function addLocale(set: CatalogSet, locale: string, name?: string): Added
   writeCatalog(set, locale, file, { [key]: endonym });
   const named: string[] = [];
   for (const other of localesOf(set)) {
-    if (other === locale || other === source || spelled(other)) continue;
-    if (stageOf(set.project, other) !== 'stable') continue;
+    if (other === locale || other === source || spelled(other)) {
+      continue;
+    }
+    if (stageOf(set.project, other) !== 'stable') {
+      continue;
+    }
     fill(set, other, { [key]: nameOf(locale, other) ?? endonym });
     named.push(other);
   }

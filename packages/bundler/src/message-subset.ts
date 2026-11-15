@@ -92,8 +92,12 @@ export function messageSubset(options: MessageSubsetOptions = {}): Plugin {
     load(id) {
       const query = id.indexOf('?');
       const file = query < 0 ? id : id.slice(0, query);
-      if (!file.startsWith(CATALOG_DIR)) return null;
-      if (!parseCatalogPath(file.slice(CATALOG_DIR.length))) return null;
+      if (!file.startsWith(CATALOG_DIR)) {
+        return null;
+      }
+      if (!parseCatalogPath(file.slice(CATALOG_DIR.length))) {
+        return null;
+      }
       keys ??= new Set([
         ...messageKeysIn([KIT_SRC, ...(options.roots ?? [])]),
         ...(options.keep ?? []),

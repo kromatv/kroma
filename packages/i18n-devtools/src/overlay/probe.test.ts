@@ -113,7 +113,7 @@ describe('pointing at a message', () => {
 describe('alt-clicking a message', () => {
   it('still says what it read when the clipboard refuses', async () => {
     const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     page(`<button id="a">${drew('Connexion')}</button>`);
     document.caretPositionFromPoint = (() => ({
       offsetNode: document.querySelector('#a')?.firstChild,
@@ -130,7 +130,7 @@ describe('alt-clicking a message', () => {
 
   it('copies its key instead of pressing the control it sits in', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     page(`<button id="a">${drew('Connexion')}</button>`);
     document.caretPositionFromPoint = (() => ({
       offsetNode: document.querySelector('#a')?.firstChild,
@@ -152,7 +152,7 @@ describe('alt-clicking a message', () => {
   it('opens where it is written on alt-shift-click, without copying', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     const fetched = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     vi.stubGlobal('fetch', fetched);
     page(`<button id="a">${drew('Connexion')}</button>`);
     document.caretPositionFromPoint = (() => ({
@@ -253,7 +253,7 @@ describe('alt-clicking a message', () => {
 
   it('copies nothing for text no catalog answered, having only where it is written', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     page('<button id="a">plain</button>');
     drawnBy('#a', 'http://localhost:3000/@fs/kroma/clients/web/src/app.tsx:12:4');
 

@@ -27,7 +27,9 @@ function byLabel(locale?: string): (a: LangOption, b: LangOption) => number {
     return (a, b) => collator.compare(a.label, b.label);
   } catch {
     return (a, b) => {
-      if (a.label === b.label) return 0;
+      if (a.label === b.label) {
+        return 0;
+      }
       return a.label < b.label ? -1 : 1;
     };
   }
@@ -37,7 +39,9 @@ function byLabel(locale?: string): (a: LangOption, b: LangOption) => number {
  * "fre"/"fra"/"fr-FR" all read "Français"), the upper-cased code if unknown, or
  * null when there is no code at all. */
 export function langName(t: Translate, code: string | null | undefined): string | null {
-  if (!code) return null;
+  if (!code) {
+    return null;
+  }
   const key = langKey(code);
   return key ? t(key) : code.toUpperCase();
 }
@@ -49,7 +53,9 @@ export function audioTrackLabel(
   t: Translate,
   track: AudioTrack | null | undefined,
 ): string | undefined {
-  if (!track) return undefined;
+  if (!track) {
+    return undefined;
+  }
   const name = track.title?.trim() || langName(t, track.language) || undefined;
   const codec = track.codec ? track.codec.toUpperCase() : undefined;
   const label = [name, channelLabel(track.channels), codec].filter(Boolean).join(' · ');

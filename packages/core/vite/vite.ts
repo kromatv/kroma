@@ -12,7 +12,9 @@ export const CORE_LOCALES = fileURLToPath(new URL('../src/locales/', import.meta
 function syncLocks(): void {
   try {
     const [core] = workspace();
-    if (core) syncSet(core);
+    if (core) {
+      syncSet(core);
+    }
   } catch {
     return;
   }

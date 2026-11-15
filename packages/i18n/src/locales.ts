@@ -43,7 +43,9 @@ export function createLocales<
     const parts = subtags(tag);
     for (let length = parts.length; length > 0; length -= 1) {
       const code = folded.get(parts.slice(0, length).join('-'));
-      if (code) return code;
+      if (code) {
+        return code;
+      }
     }
     const language = parts[0];
     return codes.find((code) => subtags(code)[0] === language) ?? null;

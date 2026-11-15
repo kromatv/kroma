@@ -201,8 +201,12 @@ export function formatUptime(t: Translate, seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (days > 0) return t('format.uptimeDays', { days, hours: pad(hours) });
-  if (hours > 0) return t('format.uptimeHours', { hours, minutes: pad(minutes) });
+  if (days > 0) {
+    return t('format.uptimeDays', { days, hours: pad(hours) });
+  }
+  if (hours > 0) {
+    return t('format.uptimeHours', { hours, minutes: pad(minutes) });
+  }
   return t('format.uptimeMinutes', { minutes });
 }
 

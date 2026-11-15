@@ -88,6 +88,7 @@ async function checkTs(project: Project): Promise<string[]> {
   );
   if (!tsconfigDir) {
     return [...problems, `${project.manifest.id}: no tsconfig.json beside the frontend`];
+  }
   writeMessageTypes([project]);
   const tsc = await exec('bun', ['x', 'tsc', '--noEmit', '-p', tsconfigDir], { cwd: tsconfigDir });
   if (tsc.exitCode !== 0) {
@@ -218,8 +219,12 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     problems.push(
       ...notificationProblems(project.manifest, readCatalogs(messages), messages.layout),
     );
-    if (options.ts !== false) problems.push(...(await checkTs(project)));
-    if (options.rust !== false) problems.push(...(await checkRust(project, dir)));
+    if (options.ts !== false) {
+      problems.push(...(await checkTs(project)));
+    }
+    if (options.rust !== false) {
+      problems.push(...(await checkRust(project, dir)));
+    }
   }
 
   if (problems.length > 0) {

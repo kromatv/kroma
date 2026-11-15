@@ -22,7 +22,9 @@ export function serveCatalogs(server: ViteDevServer): void {
       void import('./answer.ts')
         .then(({ answer }) => {
           const said = answer(event, ask);
-          if (said) client.send(event, said);
+          if (said) {
+            client.send(event, said);
+          }
         })
         .catch((error: unknown) => {
           server.config.logger.warn(`[i18n] cannot reach the catalogs: ${String(error)}`);

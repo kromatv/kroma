@@ -73,7 +73,9 @@ export class Namespaces {
     complete: readonly string[] = [],
   ): void {
     const entry = this.entry(file);
-    for (const locale of complete) entry.complete.add(locale);
+    for (const locale of complete) {
+      entry.complete.add(locale);
+    }
     let landed = false;
     for (const [locale, source] of Object.entries(catalogs)) {
       if (typeof source === 'function') {
@@ -91,7 +93,9 @@ export class Namespaces {
     }
     entry.needed ||= needed;
     if (entry.needed) {
-      for (const locale of this.warmed) this.want(file, locale);
+      for (const locale of this.warmed) {
+        this.want(file, locale);
+      }
     }
   }
 
@@ -102,7 +106,9 @@ export class Namespaces {
     }
     this.warmed.add(locale);
     for (const [file, entry] of this.entries) {
-      if (entry.needed) this.want(file, locale);
+      if (entry.needed) {
+        this.want(file, locale);
+      }
     }
   }
 
@@ -149,16 +155,24 @@ export class Namespaces {
     for (const locale of this.reach.chain(rendered)) {
       if (retry || !entry.failed.has(locale)) {
         const flight = this.ensure(file, locale);
-        if (flight) this.flying(rendered).add(flight);
+        if (flight) {
+          this.flying(rendered).add(flight);
+        }
       }
-      if (entry.complete.has(locale) || this.reach.whole(locale)) return;
+      if (entry.complete.has(locale) || this.reach.whole(locale)) {
+        return;
+      }
     }
   }
 
   private ensure(file: string, locale: string): Promise<void> | null {
     const entry = this.entry(file);
-    if (entry.loaded.has(locale)) return null;
-    if (this.shipped.get(locale)?.has(namespaceOfFile(file))) return null;
+    if (entry.loaded.has(locale)) {
+      return null;
+    }
+    if (this.shipped.get(locale)?.has(namespaceOfFile(file))) {
+      return null;
+    }
     const started = entry.loading.get(locale);
     if (started) {
       return started;
@@ -187,9 +201,13 @@ export class Namespaces {
   private landed(flight: Promise<void>): void {
     let whole = false;
     for (const flying of this.inFlight.values()) {
-      if (flying.delete(flight) && flying.size === 0) whole = true;
+      if (flying.delete(flight) && flying.size === 0) {
+        whole = true;
+      }
     }
-    if (whole) this.sink.changed();
+    if (whole) {
+      this.sink.changed();
+    }
   }
 
   private flying(locale: string): Set<Promise<void>> {

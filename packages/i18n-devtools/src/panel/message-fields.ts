@@ -38,7 +38,9 @@ export function changedForms(
   const changed: Record<string, string> = {};
   for (const { form, text } of fields) {
     const draft = drafts[form];
-    if (draft !== undefined && draft !== text) changed[form] = draft;
+    if (draft !== undefined && draft !== text) {
+      changed[form] = draft;
+    }
   }
   return changed;
 }

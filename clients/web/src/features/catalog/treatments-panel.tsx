@@ -102,11 +102,7 @@ export function TreatmentsPanel({
     setBusy(true);
     client.pipeline
       .reprocessSubject(kind, subjectId)
-      .then(() =>
-        setTimeout(() => {
-          void queryClient.invalidateQueries({ queryKey });
-        }, 1500),
-      )
+      .then(() => setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500))
       .catch(() => {})
       .finally(() => setTimeout(() => setBusy(false), 1500));
   };
@@ -120,9 +116,7 @@ export function TreatmentsPanel({
     // The correction re-runs enrichment in the background; give it a beat, then
     // pull the fresh treatments + art.
     if (applied) {
-      setTimeout(() => {
-        void queryClient.invalidateQueries({ queryKey });
-      }, 1500);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
     }
   };
 

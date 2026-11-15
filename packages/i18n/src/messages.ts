@@ -28,14 +28,22 @@ export interface Variant {
  *  `status.other` and `type_other` with no `type` beside it stay messages. */
 export function variantOf(key: string, bases: { has(key: string): boolean }): Variant | null {
   const suffix = VARIANT.exec(key);
-  if (!suffix) return null;
+  if (!suffix) {
+    return null;
+  }
   const category = suffix[1] as PluralCategory;
   const stem = key.slice(0, key.length - suffix[0].length);
-  if (bases.has(stem)) return { base: stem, selector: COUNT, category };
+  if (bases.has(stem)) {
+    return { base: stem, selector: COUNT, category };
+  }
   const cut = stem.lastIndexOf('_');
-  if (cut === -1) return null;
+  if (cut === -1) {
+    return null;
+  }
   const base = stem.slice(0, cut);
-  if (!bases.has(base)) return null;
+  if (!bases.has(base)) {
+    return null;
+  }
   return { base, selector: stem.slice(cut + 1), category };
 }
 
@@ -64,16 +72,22 @@ function baselessStems(keys: ReadonlySet<string>): Set<string> {
   const categories = new Map<string, Set<string>>();
   for (const key of keys) {
     const suffix = VARIANT.exec(key);
-    if (!suffix) continue;
+    if (!suffix) {
+      continue;
+    }
     const stem = key.slice(0, key.length - suffix[0].length);
-    if (keys.has(stem)) continue;
+    if (keys.has(stem)) {
+      continue;
+    }
     const seen = categories.get(stem) ?? new Set();
     seen.add(suffix[1] as string);
     categories.set(stem, seen);
   }
   const stems = new Set<string>();
   for (const [stem, seen] of categories) {
-    if (seen.has(OTHER) && seen.size > 1) stems.add(stem);
+    if (seen.has(OTHER) && seen.size > 1) {
+      stems.add(stem);
+    }
   }
   return stems;
 }
@@ -86,7 +100,9 @@ export function baseKeys(catalog: Catalog): Set<string> {
   const known = new Set([...keys, ...stems]);
   const bases = new Set<string>(stems);
   for (const key of keys) {
-    if (!variantOf(key, known)) bases.add(key);
+    if (!variantOf(key, known)) {
+      bases.add(key);
+    }
   }
   return bases;
 }
@@ -116,10 +132,14 @@ export function groupMessages(catalog: Catalog, bases: Set<string> = baseKeys(ca
     return own;
   };
   for (const key of Object.keys(catalog)) {
-    if (bases.has(key)) formsOf(key)[key] = catalog[key] as string;
+    if (bases.has(key)) {
+      formsOf(key)[key] = catalog[key] as string;
+    }
   }
   for (const [key, template] of Object.entries(catalog)) {
-    if (bases.has(key)) continue;
+    if (bases.has(key)) {
+      continue;
+    }
     const variant = variantOf(key, bases);
     if (!variant) {
       strays.push(key);
@@ -142,8 +162,12 @@ export function groupMessages(catalog: Catalog, bases: Set<string> = baseKeys(ca
 export function variablesOf(message: Message): Map<string, 'number' | 'value'> {
   const variables = new Map<string, 'number' | 'value'>();
   for (const template of Object.values(message.forms)) {
-    for (const name of tokensIn(template)) variables.set(name, 'value');
+    for (const name of tokensIn(template)) {
+      variables.set(name, 'value');
+    }
   }
-  for (const selector of message.selectors) variables.set(selector, 'number');
+  for (const selector of message.selectors) {
+    variables.set(selector, 'number');
+  }
   return variables;
 }

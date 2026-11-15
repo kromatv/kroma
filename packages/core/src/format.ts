@@ -3,11 +3,15 @@ import { match } from './match';
 
 /** Formats a runtime as `"2h08"` or `"47min"`. */
 export function formatRuntime(durationMs: number | null | undefined): string {
-  if (!durationMs || durationMs <= 0) return '';
+  if (!durationMs || durationMs <= 0) {
+    return '';
+  }
   const totalMin = Math.round(durationMs / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h <= 0) return `${m}min`;
+  if (h <= 0) {
+    return `${m}min`;
+  }
   return `${h}h${m.toString().padStart(2, '0')}`;
 }
 

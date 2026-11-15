@@ -22,7 +22,9 @@ function moduleAt(name: string, id: string, entry?: string): void {
   const at = join(dir, 'modules', name);
   mkdirSync(at, { recursive: true });
   writeFileSync(join(at, 'module.json'), JSON.stringify(manifestOf(id)));
-  if (entry === undefined) return;
+  if (entry === undefined) {
+    return;
+  }
   mkdirSync(join(at, 'ui', 'src'), { recursive: true });
   writeFileSync(join(at, 'ui', 'src', 'module.tsx'), entry);
 }

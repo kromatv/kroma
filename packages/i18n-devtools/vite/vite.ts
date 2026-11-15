@@ -249,7 +249,9 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
           hot.send({ type: 'update', updates });
         }
       });
-      if (catalogs) serveCatalogs(server);
+      if (catalogs) {
+        serveCatalogs(server);
+      }
       server.watcher.on('change', forgetMaps);
     },
 

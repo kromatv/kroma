@@ -51,7 +51,9 @@ export function todo(
   const entries: Record<string, TodoEntry> = {};
   const add = (key: string, state: TodoEntry['state']) => {
     const original = source.messages.get(key);
-    if (!original || !wanted(key)) return;
+    if (!original || !wanted(key)) {
+      return;
+    }
     const second = beside.get(key);
     const current = state === 'outdated' ? status.messages.get(key) : undefined;
     entries[key] = {
@@ -62,7 +64,11 @@ export function todo(
       ...(noteFor(notes, key) === undefined ? {} : { note: noteFor(notes, key) }),
     };
   };
-  for (const key of status.outdated) add(key, 'outdated');
-  for (const key of status.missing) add(key, 'missing');
+  for (const key of status.outdated) {
+    add(key, 'outdated');
+  }
+  for (const key of status.missing) {
+    add(key, 'missing');
+  }
   return entries;
 }

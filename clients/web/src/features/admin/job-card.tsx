@@ -207,7 +207,9 @@ function StatusPill({ job }: Readonly<{ job: JobInfo }>) {
     return <Badge tone="warning">{t('jobs.status.running')}</Badge>;
   }
   const status = job.lastRun?.status;
-  if (!status) return null;
+  if (!status) {
+    return null;
+  }
   return <Badge tone={STATUS_TONE[status] ?? 'neutral'}>{t(`jobs.status.${status}`)}</Badge>;
 }
 

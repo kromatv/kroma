@@ -44,7 +44,7 @@ export function pipelineActions(deps: {
   client: KromaClient;
   canManage: boolean;
   t: ReturnType<typeof useT>;
-  reload: () => unknown;
+  reload: () => void;
   paused: boolean;
   setPaused: Dispatch<SetStateAction<boolean>>;
   setBusy: Dispatch<SetStateAction<boolean>>;

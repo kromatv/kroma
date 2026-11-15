@@ -33,8 +33,11 @@ export function MessageForm({ target, message, onClose, onSaved }: Readonly<Mess
     setRefused(null);
     void saveMessage(target, changed).then((reason) => {
       setSaving(false);
-      if (reason === null) onSaved();
-      else setRefused(reason);
+      if (reason === null) {
+        onSaved();
+      } else {
+        setRefused(reason);
+      }
     });
   };
 

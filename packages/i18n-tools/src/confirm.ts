@@ -29,8 +29,9 @@ export function confirm(set: CatalogSet, locale: string, selection: Selection): 
   for (const key of confirmed) {
     const entry = lock.get(key);
     const message = source.messages.get(key);
-    if (entry && message)
+    if (entry && message) {
       lock.set(key, { source: digest(message), translation: entry.translation });
+    }
   }
   writeLock(lockPath(set, locale), lock);
   return confirmed;

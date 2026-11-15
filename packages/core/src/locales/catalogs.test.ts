@@ -58,7 +58,9 @@ describe('the discovered catalogs', () => {
   });
 
   it('resolve every $t() reference they write', () => {
-    for (const { file, locale, catalog } of files) i18n.register(file, { [locale]: catalog });
+    for (const { file, locale, catalog } of files) {
+      i18n.register(file, { [locale]: catalog });
+    }
 
     const dangling = files.flatMap(({ locale, catalog }) =>
       Object.keys(catalog).filter((key) =>

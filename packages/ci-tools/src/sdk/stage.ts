@@ -79,7 +79,9 @@ function shipMessageKeys(from: string, typesDir: string): void {
   copyFileSync(source, target);
   const entry = join(typesDir, 'src', 'i18n.d.ts');
   const text = readFileSync(entry, 'utf8');
-  if (!text.includes(KEYS_REFERENCE.trim())) writeFileSync(entry, `${KEYS_REFERENCE}${text}`);
+  if (!text.includes(KEYS_REFERENCE.trim())) {
+    writeFileSync(entry, `${KEYS_REFERENCE}${text}`);
+  }
 }
 
 /** The one thing the CLI cannot carry: Vite's bundler is a native binary. */
@@ -171,8 +173,12 @@ export async function stage(options: StageOptions): Promise<string> {
   for (const [dir] of BUILT_IN) {
     const from = join(root, 'packages', dir);
     await emitDeclarations(from, join(to, 'types', dir));
-    if (dir === 'ui') inlineIconNames(from, join(to, 'types', dir));
-    if (dir === 'core') shipMessageKeys(from, join(to, 'types', dir));
+    if (dir === 'ui') {
+      inlineIconNames(from, join(to, 'types', dir));
+    }
+    if (dir === 'core') {
+      shipMessageKeys(from, join(to, 'types', dir));
+    }
     manifests.push([dir, readManifest(from)]);
   }
   stageReactNativeTypes(join(root, 'packages', 'ui'), join(to, 'types', 'react-native'));

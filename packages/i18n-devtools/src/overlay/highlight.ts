@@ -71,7 +71,9 @@ export function shows(outline: Outline, grade: Grade): boolean {
  */
 export function gradeOfNode(text: string): Grade | null {
   const marked = markIn(text);
-  if (marked !== 'catalog' || !reviewing()) return marked ?? (WORDS.test(text) ? 'raw' : null);
+  if (marked !== 'catalog' || !reviewing()) {
+    return marked ?? (WORDS.test(text) ? 'raw' : null);
+  }
   const sighting = sightingIn(text);
   return sighting ? shownGrade(sighting) : marked;
 }

@@ -17,7 +17,7 @@ const MAX_FORMS = 16;
 
 const Edit = Target.extend({
   forms: z
-    .record(z.string().min(1).max(MAX_KEY_CHARS), z.string().max(MAX_TEXT_CHARS))
+    .record(z.string().nonempty().max(MAX_KEY_CHARS), z.string().max(MAX_TEXT_CHARS))
     .refine((forms) => Object.keys(forms).length > 0, 'no form to write')
     .refine((forms) => Object.keys(forms).length <= MAX_FORMS, 'too many forms'),
 });
@@ -40,7 +40,9 @@ function strangerVariables(message: Message, texts: readonly string[]): string[]
 
 function refusal(at: Located, locale: string, forms: Readonly<Record<string, string>>) {
   const stranger = strangerForm(at, Object.keys(forms));
-  if (stranger !== undefined) return `${stranger} is not a form of ${at.message.key}`;
+  if (stranger !== undefined) {
+    return `${stranger} is not a form of ${at.message.key}`;
+  }
   const texts = Object.values(forms);
   const unknown = strangerVariables(at.message, texts);
   if (unknown.length > 0) {
@@ -52,7 +54,9 @@ function refusal(at: Located, locale: string, forms: Readonly<Record<string, str
   }
   for (const [form, text] of Object.entries(forms)) {
     const quote = quoteRefusal(at, form, text);
-    if (quote !== null) return quote;
+    if (quote !== null) {
+      return quote;
+    }
   }
   return null;
 }
@@ -67,12 +71,18 @@ function refusal(at: Located, locale: string, forms: Readonly<Record<string, str
  */
 export function editMessage(sets: Sets, payload: unknown): EditAnswer {
   const edit = parsed(Edit, payload);
-  if (typeof edit === 'string') return { written: [], refused: edit };
+  if (typeof edit === 'string') {
+    return { written: [], refused: edit };
+  }
   try {
     const at = locate(sets, edit);
-    if (typeof at === 'string') return { written: [], refused: at };
+    if (typeof at === 'string') {
+      return { written: [], refused: at };
+    }
     const refused = refusal(at, edit.locale, edit.forms);
-    if (refused !== null) return { written: [], refused };
+    if (refused !== null) {
+      return { written: [], refused };
+    }
     const { written } = fill(at.set, edit.locale, edit.forms);
     syncSet(at.set);
     return { written, refused: null };

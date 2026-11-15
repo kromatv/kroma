@@ -59,14 +59,18 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
   }, [outline, editor]);
 
   useEffect(() => {
-    if (!watching) return;
+    if (!watching) {
+      return;
+    }
     void loadStatus(rendered);
     return onCatalogSaved(() => void loadStatus(rendered));
   }, [watching, rendered]);
 
   const confirm = () => {
     const target = confirmTarget(probed());
-    if (target) void confirmMessage(target);
+    if (target) {
+      void confirmMessage(target);
+    }
   };
 
   useShortcut(
@@ -78,8 +82,11 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
       { code: CONFIRM_CODE, run: confirm },
     ],
     () => {
-      if (editing) setEditing(null);
-      else if (open) patch({ open: false });
+      if (editing) {
+        setEditing(null);
+      } else if (open) {
+        patch({ open: false });
+      }
     },
   );
 

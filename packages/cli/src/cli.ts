@@ -31,4 +31,4 @@ const main = defineCommand({
   },
 });
 
-await runMain(main);
+void runMain(main);

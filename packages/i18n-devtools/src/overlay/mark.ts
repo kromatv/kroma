@@ -49,8 +49,12 @@ const remembered = new Map<string, Sighting>();
 
 /** What answered a message: the grade a mark would carry. */
 export function gradeOf({ from, locale, holes }: Rendered): Marked {
-  if (!from) return 'missing';
-  if (holes.length > 0) return 'vars';
+  if (!from) {
+    return 'missing';
+  }
+  if (holes.length > 0) {
+    return 'vars';
+  }
   return from.locale === locale ? 'catalog' : 'fallback';
 }
 
@@ -122,10 +126,16 @@ export function markIn(text: string): Marked | null {
   let worst: Marked | null = null;
   for (let at = 0; at < text.length; at += 1) {
     const code = text.codePointAt(at);
-    if (code === undefined || code < FIRST || code > LAST) continue;
+    if (code === undefined || code < FIRST || code > LAST) {
+      continue;
+    }
     const grade = OF_CODE[code] as Marked;
-    if (grade === 'missing') return grade;
-    if (worst === null || SEVERITY[grade] < SEVERITY[worst]) worst = grade;
+    if (grade === 'missing') {
+      return grade;
+    }
+    if (worst === null || SEVERITY[grade] < SEVERITY[worst]) {
+      worst = grade;
+    }
   }
   return worst;
 }
