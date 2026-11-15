@@ -11,11 +11,11 @@ import { wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
 import { ControlCluster } from './control-cluster';
 
-const { clearPressGuard, render } = createInputTestHost();
+const host = createInputTestHost();
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  host.clearPressGuard();
 });
 
 const lit = (label: string) => wearsRing(screen.getByLabelText(label));
@@ -50,7 +50,7 @@ function Row({ hasNext }: Readonly<{ hasNext: boolean }>) {
 
 describe('the control row under the remote', () => {
   it('stops on a next episode that arrives after the row, between forward and subtitles', () => {
-    const view = render(<Row hasNext={false} />);
+    const view = host.render(<Row hasNext={false} />);
     view.rerender(<Row hasNext />);
 
     press('ArrowRight');
