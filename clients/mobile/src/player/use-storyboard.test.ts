@@ -1,0 +1,230 @@
+// @vitest-environment jsdom
+//
+// Scrub previews: the sprite-sheet manifest, and the tile for a given moment.
+// Getting the tile maths wrong shows a real frame from the wrong place in the
+// film, which reads as the scrubber being inaccurate rather than as a bug.
+// Offline, a local sprite short-circuits the fetch entirely; online, the
+// server answers 202 while still generating, which the client polls.
+
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem, StoryboardManifest } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
+import { renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DownloadEntry } from '#mobile/lib/downloads';
+import { useStoryboard } from './use-storyboard';
+
+const POLL_MS = 5000;
+
+const MANIFEST: StoryboardManifest = {
+  url: '/sb/itm_1.jpg',
+  count: 10,
+  interval: 10,
+  duration: 100,
+  cols: 5,
+  rows: 2,
+  tileW: 160,
+  tileH: 90,
+};
+
+type Storyboard = KromaClient['media']['storyboard'];
+type Manifest = Awaited<ReturnType<Storyboard>>;
+
+const storyboard = vi.fn<Storyboard>(async () => MANIFEST);
+const client = fakeClient({
+  media: { storyboard, artwork: { resolve: (url) => `https://kroma.test${url}` } },
+});
+
+const item = { id: 'itm_1' } as MediaItem;
+
+const offlineWith = (spritePath: string) =>
+  ({ storyboard: { manifest: MANIFEST, spritePath } }) as unknown as DownloadEntry;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  storyboard.mockResolvedValue(MANIFEST);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('fetching the manifest', () => {
+  it('asks for the title being played', async () => {
+    renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(storyboard).toHaveBeenCalledWith('itm_1'));
+  });
+
+  it('asks for nothing while previews are disabled', () => {
+    renderHook(() => useStoryboard(client, item, false));
+    expect(storyboard).not.toHaveBeenCalled();
+  });
+
+  it('POLLS while the server is still generating', async () => {
+    vi.useFakeTimers();
+    storyboard.mockResolvedValue('pending');
+    renderHook(() => useStoryboard(client, item, true));
+    await vi.waitFor(() => expect(storyboard).toHaveBeenCalledOnce());
+
+    // A title opened seconds after being added has no storyboard yet; giving up
+    // means no previews until the player is closed and reopened.
+    await vi.advanceTimersByTimeAsync(POLL_MS + 100);
+    expect(storyboard.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('stops polling once the sheet exists', async () => {
+    vi.useFakeTimers();
+    storyboard.mockResolvedValueOnce('pending').mockResolvedValue(MANIFEST);
+    renderHook(() => useStoryboard(client, item, true));
+    await vi.advanceTimersByTimeAsync(POLL_MS + 100);
+    const settled = storyboard.mock.calls.length;
+
+    await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+    expect(storyboard.mock.calls).toHaveLength(settled);
+  });
+
+  it('stops polling when the player closes', async () => {
+    vi.useFakeTimers();
+    storyboard.mockResolvedValue('pending');
+    const { unmount } = renderHook(() => useStoryboard(client, item, true));
+    await vi.waitFor(() => expect(storyboard).toHaveBeenCalledOnce());
+
+    unmount();
+    await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+    // A poll left running asks the server every five seconds for a film nobody
+    // is watching.
+    expect(storyboard).toHaveBeenCalledOnce();
+  });
+
+  it('stops mid-poll when the player closes before the answer arrives', async () => {
+    vi.useFakeTimers();
+    const answer: { fire: ((m: Manifest) => void) | null } = { fire: null };
+    storyboard.mockReturnValue(
+      new Promise<Manifest>((resolve) => {
+        answer.fire = resolve;
+      }),
+    );
+    const { unmount } = renderHook(() => useStoryboard(client, item, true));
+    await vi.waitFor(() => expect(storyboard).toHaveBeenCalledOnce());
+
+    unmount();
+    answer.fire?.('pending');
+    await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+
+    expect(storyboard).toHaveBeenCalledOnce();
+  });
+
+  it('gives up quietly when the request fails', async () => {
+    storyboard.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(storyboard).toHaveBeenCalled());
+    // No previews is a scrubber without thumbnails, not a broken player.
+    expect(result.current(30)).toBeNull();
+  });
+
+  it('re-fetches for a different title', async () => {
+    const { rerender } = renderHook(({ media }) => useStoryboard(client, media, true), {
+      initialProps: { media: item },
+    });
+    await waitFor(() => expect(storyboard).toHaveBeenCalledOnce());
+
+    rerender({ media: { id: 'itm_2' } as MediaItem });
+    await waitFor(() => expect(storyboard).toHaveBeenCalledWith('itm_2'));
+  });
+});
+
+describe('offline', () => {
+  it('uses the sprite on disk WITHOUT asking the server', async () => {
+    const { result } = renderHook(() =>
+      useStoryboard(client, item, true, offlineWith('file:///sb.img')),
+    );
+    await Promise.resolve();
+    // The phone is on a train; a fetch here is not a fallback, it is a request
+    // that cannot succeed.
+    expect(storyboard).not.toHaveBeenCalled();
+    expect(result.current(0)?.sheet).toBe('file:///sb.img');
+  });
+
+  it('starts from the manifest it downloaded', () => {
+    const { result } = renderHook(() =>
+      useStoryboard(client, item, true, offlineWith('file:///sb.img')),
+    );
+    expect(result.current(0)).not.toBeNull();
+  });
+});
+
+describe('resolving a tile', () => {
+  const tileAt = async (seconds: number) => {
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(result.current(0)).not.toBeNull());
+    return result.current(seconds);
+  };
+
+  it('resolves the sheet against the server', async () => {
+    expect((await tileAt(0))?.sheet).toBe('https://kroma.test/sb/itm_1.jpg');
+  });
+
+  it('takes the first tile at the start', async () => {
+    expect(await tileAt(0)).toMatchObject({ x: 0, y: 0, tileW: 160, tileH: 90 });
+  });
+
+  it('walks along a row by the interval', async () => {
+    // 25s / 10s = index 2, still on row 0.
+    expect(await tileAt(25)).toMatchObject({ x: 2 * 160, y: 0 });
+  });
+
+  it('wraps to the next row at the column count', async () => {
+    // index 5 with 5 columns is the start of row 1.
+    expect(await tileAt(50)).toMatchObject({ x: 0, y: 90 });
+  });
+
+  it('CLAMPS past the end of the film', async () => {
+    // Dragging past the end is one flick. Unclamped, this reads past the last
+    // tile and shows a slice of empty sheet.
+    expect(await tileAt(99_999)).toMatchObject({ x: 4 * 160, y: 90 });
+  });
+
+  it('clamps before the start', async () => {
+    expect(await tileAt(-30)).toMatchObject({ x: 0, y: 0 });
+  });
+
+  it('reports the whole sheet’s size', async () => {
+    expect(await tileAt(0)).toMatchObject({ sheetW: 5 * 160, sheetH: 2 * 90 });
+  });
+
+  it('has no tile before the manifest arrives', () => {
+    storyboard.mockReturnValue(new Promise(() => undefined));
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    expect(result.current(30)).toBeNull();
+  });
+
+  it('has no tile when the server has no storyboard for the title', async () => {
+    storyboard.mockResolvedValue(null);
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(storyboard).toHaveBeenCalled());
+    expect(result.current(30)).toBeNull();
+  });
+
+  it('has no tile for an EMPTY storyboard', async () => {
+    storyboard.mockResolvedValue({ ...MANIFEST, count: 0 });
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(storyboard).toHaveBeenCalled());
+    expect(result.current(0)).toBeNull();
+  });
+
+  it('refuses to divide by a zero interval', async () => {
+    // What a manifest for a file with no duration carries; dividing gives
+    // Infinity and reads off the end of the sheet.
+    storyboard.mockResolvedValue({ ...MANIFEST, interval: 0 });
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(storyboard).toHaveBeenCalled());
+    expect(result.current(30)).toBeNull();
+  });
+
+  it('falls back to the raw url when nothing resolves it', async () => {
+    const bare = fakeClient({ media: { storyboard, artwork: { resolve: () => null } } });
+    const { result } = renderHook(() => useStoryboard(bare, item, true));
+    await waitFor(() => expect(result.current(0)).not.toBeNull());
+    expect(result.current(0)?.sheet).toBe('/sb/itm_1.jpg');
+  });
+});

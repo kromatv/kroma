@@ -6,7 +6,7 @@ import { ExpandableText } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
 import { PlayerRelated } from './player-related';
-import type { SheetView } from './TrackSheet';
+import type { SheetView } from './track-sheet';
 
 export function PlayerDetails({
   item,

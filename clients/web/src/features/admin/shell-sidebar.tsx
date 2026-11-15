@@ -26,7 +26,7 @@ import { usePoll } from '#web/features/admin/hooks';
 import { PillDot } from '#web/features/admin/pill';
 import { useAdmin } from '#web/features/admin/shell-context';
 import { ADMIN_BAR_TOP, ADMIN_RAIL_WIDTH } from '#web/features/admin/web-style';
-import { useModuleNavAll } from '#web/modules/ModuleHostProvider';
+import { useModuleNavAll } from '#web/modules/module-host-provider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { safeAreaTop } from '#web/shared/lib/safe-area';

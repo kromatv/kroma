@@ -1,6 +1,6 @@
 // Makes expo-blur LINK on tvOS at all.
 //
-// The kit's <Frost> renders the shell's registered BlurView (see App.tsx), and
+// The kit's <Frost> renders the shell's registered BlurView (see app.tsx), and
 // expo-blur is the first Expo VIEW module this app ships. Linking it surfaces
 // two facts about the tvOS toolchain that never mattered before:
 //

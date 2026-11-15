@@ -3,7 +3,7 @@
 
 import { KROMA_WORKBENCH } from '@kromatv/ui/workbench-config';
 import { defineWorkbench, memoryRouter } from '@kromatv/workbench';
-import { BuildStamp } from './BuildStamp';
+import { BuildStamp } from './build-stamp';
 import { SOURCE } from './source';
 import { PAGES, STORIES } from './stories';
 

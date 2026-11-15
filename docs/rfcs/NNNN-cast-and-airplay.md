@@ -49,7 +49,7 @@ All on `origin/main`:
   (`packages/ui/src/services/cast.tsx`) already takes an optional `lan` bridge. The remote
   screen, the mini bar and the web cast bar read only `active.nowPlaying` and `positionMs`.
 - **AirPlay, installed and unused.** expo-video 57 is AVPlayer on iOS and ships
-  `VideoAirPlayButton` and `allowsExternalPlayback`. `PlayerBody.tsx` sets neither.
+  `VideoAirPlayButton` and `allowsExternalPlayback`. `player-body.tsx` sets neither.
 - **Safari plays the remux natively** (`video-engine.ts`: `v.src = url`), which is the path
   AirPlay can take.
 

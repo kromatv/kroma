@@ -14,7 +14,7 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { Platform, Pressable, type TextStyle } from 'react-native';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { FadeImage } from '#mobile/components/fade-image';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { radius } from '#mobile/lib/theme';

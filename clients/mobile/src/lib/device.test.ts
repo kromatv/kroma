@@ -17,7 +17,7 @@ vi.mock('expo-device', () => ({
   osName: 'iOS',
   osVersion: '26.0',
 }));
-vi.mock('#mobile/lib/buildInfo', () => ({ buildInfo: { version: '0.1.3' } }));
+vi.mock('#mobile/lib/build-info', () => ({ buildInfo: { version: '0.1.3' } }));
 
 import { Platform } from 'react-native';
 import { deviceInfo } from '#web/shared/lib/device';

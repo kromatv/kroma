@@ -6,10 +6,10 @@ import { LANG_NO_PREF, LANG_OFF, LOCALES, langKey, langOptions, localeLabel } fr
 import type { Locale, MessageKey, Translate } from '@kromatv/i18n';
 import { useLocale, useSetLocale } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
-import { getGpuRendering, gpuToggleAvailable, setGpuRendering } from '#tv/app/desktopGpu';
-import { availableEngines, ENGINE_LABEL_KEY, useEnginePref } from '#tv/app/enginePref';
-import { ALL_KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABEL_KEY } from '#tv/app/keyboardLayoutPref';
-import { prefValue, useLangPrefs } from '#tv/app/langPref';
+import { getGpuRendering, gpuToggleAvailable, setGpuRendering } from '#tv/app/desktop-gpu';
+import { availableEngines, ENGINE_LABEL_KEY, useEnginePref } from '#tv/app/engine-pref';
+import { ALL_KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABEL_KEY } from '#tv/app/keyboard-layout-pref';
+import { prefValue, useLangPrefs } from '#tv/app/lang-pref';
 import { choiceItem, type SettingsItem, toggleItem } from './items';
 import { ARTWORK_SCALE, type ArtworkQuality, useArtworkPref, useStoredPref } from './store';
 

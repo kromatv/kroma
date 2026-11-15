@@ -32,8 +32,8 @@ v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge),
 | 8 | Flickering | 📺 | |
 | 9 | Video full size | 📺 | The player video is full-bleed with no chrome margins. |
 | 10 | UI buttons | 📺 | |
-| 11 | BACK UI button | 📺 | On-screen back affordance plus remote Back at every depth; the router pops to the root, and Back on Home hands webOS its platform Back (`app/appQuit.ts`). |
-| 12 | EXIT UI button | **N/A** | The app deliberately offers no EXIT control on a TV: `canQuitApp()` is false off the desktop shell, because webOS terminates the app through its own system UI (`app/appQuit.ts`). |
+| 11 | BACK UI button | 📺 | On-screen back affordance plus remote Back at every depth; the router pops to the root, and Back on Home hands webOS its platform Back (`app/app-quit.ts`). |
+| 12 | EXIT UI button | **N/A** | The app deliberately offers no EXIT control on a TV: `canQuitApp()` is false off the desktop shell, because webOS terminates the app through its own system UI (`app/app-quit.ts`). |
 | 13 | Lock-up / latch-up | 📺 | |
 | 14 | Abnormal termination | 📺 | |
 | 15 | Keyboard: text/num entry | 📺 | The app draws its own on-screen keyboard for the server address; the LG IME applies where a real input is focused. |
@@ -42,7 +42,7 @@ v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge),
 | 18 | Terms | **N/A** | The app presents no terms or EULA. |
 | 19 | Sign up | **N/A** | No membership is created in the app. Profiles exist on the viewer's own server; the app only pairs an existing one. |
 | 20 | Sign in | Pass | Profile pairing (Quick Connect) plus optional per-profile PIN. Sessions persist across launches, i.e. the "stay signed-in" case. |
-| 21 | Sign out | Pass | Profile menu → Sign out (`TvProfileMenu.tsx`), which clears the session for that profile. |
+| 21 | Sign out | Pass | Profile menu → Sign out (`tv-profile-menu.tsx`), which clears the session for that profile. |
 | 22 | Search | 📺 | Search screen present; confirm with the TV IME and a language change. |
 | 23 | Adult authentication | **N/A** | The app carries no adult content. (The PIN is a per-profile lock, not age verification.) |
 | 24 | Payment | **N/A** | No in-app purchase. |

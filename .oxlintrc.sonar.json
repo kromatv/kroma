@@ -264,7 +264,7 @@
       }
     },
     {
-      "files": ["clients/mobile/src/player/TrackSheet.tsx"],
+      "files": ["clients/mobile/src/player/track-sheet.tsx"],
       "rules": {
         "sonarjs/cognitive-complexity": "off"
       }
@@ -282,7 +282,7 @@
       }
     },
     {
-      "files": ["clients/tizen/src/deviceName.ts"],
+      "files": ["clients/tizen/src/device-name.ts"],
       "rules": {
         "sonarjs/no-clear-text-protocols": "off"
       }
@@ -312,7 +312,7 @@
       }
     },
     {
-      "files": ["clients/webos/src/deviceName.ts"],
+      "files": ["clients/webos/src/device-name.ts"],
       "rules": {
         "sonarjs/no-unused-collection": "off"
       }
@@ -390,13 +390,13 @@
       }
     },
     {
-      "files": ["packages/tv/src/features/playback/browser/PlayerSurface.tsx"],
+      "files": ["packages/tv/src/features/playback/browser/player-surface.tsx"],
       "rules": {
         "sonarjs/object-alt-content": "off"
       }
     },
     {
-      "files": ["packages/tv/src/features/playback/player/useDirectPlayback.ts"],
+      "files": ["packages/tv/src/features/playback/player/use-direct-playback.ts"],
       "rules": {
         "kroma/use-state-pair": "off"
       }

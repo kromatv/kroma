@@ -1,0 +1,53 @@
+import type { KromaClient } from '@kromatv/client';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { buildCrashReport } from '#tv/app/crash-report';
+import { useDevicePreferences } from './device-preferences';
+
+interface Props {
+  client: KromaClient | null;
+  platform: string;
+  /** Rendered instead of the broken tree. Given the reset, so the screen can
+   *  offer to try again rather than only telling the viewer to. */
+  fallback: (retry: () => void) => ReactNode;
+  children: ReactNode;
+}
+
+interface State {
+  crashed: boolean;
+}
+
+/** App-level error boundary: on a render-time crash it shows `fallback` instead
+ * of the broken tree, and, only when the user opted in, posts a
+ * [`CrashReport`] to the connected server (best-effort, never rethrown). */
+class OwnedCrashBoundary extends Component<Props & { reporting: () => boolean }, State> {
+  state: State = { crashed: false };
+
+  static getDerivedStateFromError(): State {
+    return { crashed: true };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo): void {
+    if (!this.props.reporting()) {
+      return;
+    }
+    const { client, platform } = this.props;
+    if (!client) {
+      return;
+    }
+    const report = buildCrashReport(error, info.componentStack, platform, Date.now());
+    client.diagnostics.crash(report).catch(() => {});
+  }
+
+  private readonly retry = (): void => {
+    this.setState({ crashed: false });
+  };
+
+  render(): ReactNode {
+    return this.state.crashed ? this.props.fallback(this.retry) : this.props.children;
+  }
+}
+
+export function CrashBoundary(props: Readonly<Props>) {
+  const { crashReporting } = useDevicePreferences();
+  return <OwnedCrashBoundary {...props} reporting={() => crashReporting.get() === 'on'} />;
+}

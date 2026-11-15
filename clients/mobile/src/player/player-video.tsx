@@ -1,5 +1,5 @@
 import type { ComponentProps, Ref } from 'react';
-import { PlayerChrome } from './PlayerChrome';
+import { PlayerChrome } from './player-chrome';
 import { type PlayerVideoHandle, VideoSurface } from './video-surface';
 
 export function PlayerVideo({

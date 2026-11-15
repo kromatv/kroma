@@ -6,8 +6,8 @@ import { useDeviceStore } from '@kromatv/ui/device-store';
 // no same-tab change events, so writes notify the in-process listeners here.
 
 import { createContext, useContext, useState, useSyncExternalStore } from 'react';
-import { clientHardware } from '#tv/app/clientHardware';
-import { devicePref } from '#tv/app/devicePref';
+import { clientHardware } from '#tv/app/client-hardware';
+import { devicePref } from '#tv/app/device-pref';
 
 /** A subscribable one-of-N device preference (devicePref + change notification). */
 export interface ReactivePref<T extends string> {

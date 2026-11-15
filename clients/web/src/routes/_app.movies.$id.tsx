@@ -5,7 +5,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { TitleDetail } from '#web/features/catalog/title-detail';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { buildTitleView, movieSimilarTargets } from '#web/shared/lib/titleView';
+import { buildTitleView, movieSimilarTargets } from '#web/shared/lib/title-view';
 import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';

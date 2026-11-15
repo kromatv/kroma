@@ -18,7 +18,7 @@ import { useIsFocused } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, SectionList } from 'react-native';
 import { NotificationRow } from '#mobile/components/notification-row';
-import { PageHeader } from '#mobile/components/PageHeader';
+import { PageHeader } from '#mobile/components/page-header';
 import { EmptyState, ErrorBanner, ErrorView, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';

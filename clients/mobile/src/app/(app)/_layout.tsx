@@ -1,7 +1,7 @@
 import { activeTheme, color, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 import { Redirect, Stack } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { CompatGate } from '#mobile/components/CompatGate';
+import { CompatGate } from '#mobile/components/compat-gate';
 import { lockUpright, PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';
 

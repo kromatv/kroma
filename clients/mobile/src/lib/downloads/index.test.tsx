@@ -44,7 +44,7 @@ const translate = vi.hoisted(() => (key: string) => key);
 vi.mock('#mobile/lib/i18n', () => ({ useT: () => translate }));
 
 const prompt = vi.hoisted(() => vi.fn((then: () => void) => then()));
-vi.mock('#mobile/lib/notifications/useDownloadPrompt', () => ({
+vi.mock('#mobile/lib/notifications/use-download-prompt', () => ({
   useDownloadPrompt: () => prompt,
 }));
 

@@ -152,7 +152,7 @@ shell has always been dark.
 `devel.api.version` drops to 3.0 with the floor, because a set refuses a Samsung
 Product API level it does not implement. The visible cost is
 `webapis.network.getTVName()`, which Samsung documents as API 4.0: a 2017 set
-announces its model rather than the name its owner gave it. `deviceName.ts`
+announces its model rather than the name its owner gave it. `device-name.ts`
 feature-detects every source and already falls back that way.
 
 **Two things a build cannot answer, so treat 3.0 as unproven until a 2017 set

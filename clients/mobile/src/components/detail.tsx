@@ -32,9 +32,9 @@ import { useGutters } from '#mobile/lib/layout';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { shades, spacing, type } from '#mobile/lib/theme';
-import { FadeImage } from './FadeImage';
+import { FadeImage } from './fade-image';
 
-export { DetailActions } from './DetailActions';
+export { DetailActions } from './detail-actions';
 
 export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
   const s = useStyles(sDefinition);

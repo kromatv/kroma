@@ -32,7 +32,7 @@ import type { TvTarget } from '@kromatv/bundler/shell';
 // 3.0 with it: a set refuses a Samsung Product API level it does not implement.
 // That costs `webapis.network.getTVName()`, which Samsung documents as API 4.0,
 // so a 2017 set announces its model instead of the name its owner gave it. Every
-// caller in deviceName.ts is feature-detected and already falls back that way.
+// caller in device-name.ts is feature-detected and already falls back that way.
 //
 // Still unverified on hardware, and neither is answerable from a build: whether
 // a 2017 set accepts the manifest's Samsung privileges, and playback, since the

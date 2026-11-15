@@ -63,7 +63,7 @@ clients/desktop/
 ```
 
 The mpv engine itself lives with the shared player:
-`packages/tv/src/features/playback/player/mpvEngine.ts`.
+`packages/tv/src/features/playback/player/mpv-engine.ts`.
 
 ## Develop
 
