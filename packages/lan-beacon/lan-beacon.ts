@@ -9,7 +9,6 @@
 
 import type { LanDiscoveryBridge, LanService } from '@kromatv/core';
 import { type NativeModule, requireOptionalNativeModule } from 'expo';
-import { PermissionsAndroid, Platform } from 'react-native';
 
 // Distinct from the server's `_kroma._tcp`: what is advertised here is a
 // television waiting for an account, not a server offering a library. Both
@@ -54,22 +53,6 @@ export const lanBeacon: LanDiscoveryBridge | null = native ? bridge(native) : nu
  * is tracked by owner instead: releasing a record that has already been replaced
  * must not take down its replacement.
  */
-// Android 13 moved network service discovery behind a RUNTIME permission, so a
-// manifest entry alone leaves `discoverServices`/`registerService` failing on
-// every modern phone and television. Asked once; a refusal simply leaves the
-// server path doing the work it was already doing.
-async function allowedNearby(): Promise<boolean> {
-  if (Platform.OS !== 'android' || Number(Platform.Version) < 33) return true;
-  try {
-    const granted = await PermissionsAndroid.request(
-      'android.permission.NEARBY_WIFI_DEVICES' as never,
-    );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  } catch {
-    return false;
-  }
-}
-
 function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
   const listeners = new Set<(services: LanService[]) => void>();
   let subscription: { remove: () => void } | null = null;
@@ -82,19 +65,16 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
   // report (a worker parked in a resolve, a listener torn down mid-flight) and
   // the event channel is shared, so a report is only ours if it names this one.
   let epoch = 0;
-  let nearby: Promise<boolean> | null = null;
-  const askNearby = () => (nearby ??= allowedNearby());
 
   return {
     publish(service) {
       const owner = Symbol('lan-beacon record');
       published = owner;
-      void askNearby()
-        .then((allowed) => {
-          // Still ours by the time the answer came back?
-          if (allowed && published === owner) module.publish(service.name, service.txt);
-        })
-        .catch(() => undefined);
+      try {
+        module.publish(service.name, service.txt);
+      } catch {
+        // No link to publish on: the server goes on carrying the beacon.
+      }
       return () => {
         // Someone else's record is up now; theirs is not ours to take down.
         if (published !== owner) return;
@@ -112,13 +92,12 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
           for (const listener of listeners) listener(latest);
         });
         subscription = session;
-        void askNearby()
-          .then((allowed) => {
-            if (!allowed || subscription !== session) return;
-            epoch += 1;
-            module.startBrowse(epoch);
-          })
-          .catch(() => undefined);
+        epoch += 1;
+        try {
+          module.startBrowse(epoch);
+        } catch {
+          // No link to browse: the server source still lists what it can place.
+        }
       } else {
         onFound(latest);
       }
