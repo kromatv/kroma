@@ -5,6 +5,7 @@ import { summary } from './actions';
 import { root } from './root';
 import { parseArgs } from 'node:util';
 import { type ComponentRun, componentTable } from './rust-components';
+import { scope, type TestPart, testPart } from './rust-scope';
 import {
   cargoEnv as env,
   featured,
@@ -32,8 +33,6 @@ async function each(
   }
   console.log(`\n${verb}: every workspace passed`);
 }
-
-const scope = (ws: Workspace) => (ws === SERVER ? ['--workspace'] : []);
 
 const COMPONENT = 'wasm32-wasip2';
 const RUNNER_CRATE = join(root, 'server/crates/kroma-wasm-test-runner');
@@ -69,14 +68,14 @@ function chosen(only: string | undefined): Workspace[] {
   return all.filter((ws) => ids.includes(ws.id));
 }
 
-async function test(list: Workspace[]): Promise<void> {
+async function test(list: Workspace[], part?: TestPart): Promise<void> {
   const report = join(root, 'server/lcov.info');
   rmSync(report, { force: true });
   const partial = (ws: Workspace) => join(ws.dir, 'lcov.part.info');
   const featuredPartial = (ws: Workspace) => join(ws.dir, 'lcov.features.info');
   await each(
     'test',
-    (ws) => ['llvm-cov', ...scope(ws), '--lcov', '--output-path', partial(ws)],
+    (ws) => ['llvm-cov', ...scope(ws, part), '--lcov', '--output-path', partial(ws)],
     list,
   );
   await each(
@@ -152,7 +151,7 @@ export async function main(argv: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { only: { type: 'string' } },
+    options: { only: { type: 'string' }, part: { type: 'string' } },
   });
   const [verb] = positionals;
   const list = chosen(values.only);
@@ -160,7 +159,7 @@ export async function main(argv: string[]): Promise<void> {
     return clippy(list);
   }
   if (verb === 'test') {
-    return test(list);
+    return test(list, testPart(values.part));
   }
   if (verb === 'wasm-test') {
     return componentTests(list);
@@ -168,5 +167,7 @@ export async function main(argv: string[]): Promise<void> {
   if (verb === 'audit') {
     return audit(list);
   }
-  throw new Error(`usage: bun run ci rust <clippy|test|wasm-test|audit> [--only id,id]`);
+  throw new Error(
+    `usage: bun run ci rust <clippy|test|wasm-test|audit> [--only id,id] [--part core|host]`,
+  );
 }

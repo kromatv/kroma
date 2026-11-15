@@ -31,6 +31,14 @@ describe('matchLanes', () => {
     );
   });
 
+  it('runs the wasm host on every system only when the host or what it is built with changes', () => {
+    expect(matchLanes(['server/crates/kroma-wasm-host/src/lib.rs'])).toEqual(
+      only('code', 'rust', 'synology', 'wasmhost'),
+    );
+    expect(matchLanes(['server/Cargo.lock'])).toEqual(only('code', 'rust', 'synology', 'wasmhost'));
+    expect(matchLanes(['server/crates/kroma-engine/src/lib.rs']).wasmhost).toBe(false);
+  });
+
   it('opens every lane for a lockfile change', () => {
     expect(matchLanes(['bun.lock'])).toEqual(
       only('code', 'fleet', 'android', 'desktop', 'synology', 'site', 'sdk'),

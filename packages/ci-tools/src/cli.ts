@@ -4,6 +4,7 @@ const COMMANDS = {
   typecheck: async (args: string[]) => (await import('./typecheck')).main(args),
   test: async (args: string[]) => (await import('./test')).main(args),
   rust: async (args: string[]) => (await import('./rust')).main(args),
+  lcov: async (args: string[]) => (await import('./lcov-command')).main(args),
   build: async (args: string[]) => (await import('./build')).main(args),
   version: async (args: string[]) => (await import('./version')).main(args),
   canary: async (args: string[]) => (await import('./canary-command')).main(args),

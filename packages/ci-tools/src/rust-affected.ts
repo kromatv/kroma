@@ -3,11 +3,22 @@ import { matchesAny } from './glob';
 /** Each workspace id and the ids of the workspaces it path-depends on. */
 export type Graph = Readonly<Record<string, readonly string[]>>;
 
+/** Which slice of the server workspace a job takes. */
+export type ServerPart = 'clippy' | 'core' | 'host';
+
 /** One parallel Rust job: a name for its check and the workspaces it runs. */
 export interface Shard {
   name: string;
   workspaces: string[];
+  /** On the server only: its lint, its tests, or the tests that run components. */
+  part?: ServerPart;
 }
+
+const SERVER_JOBS: readonly { name: string; part: ServerPart }[] = [
+  { name: 'server', part: 'core' },
+  { name: 'module host', part: 'host' },
+  { name: 'server clippy', part: 'clippy' },
+];
 
 const EVERY = [
   'rust-toolchain.toml',
@@ -66,11 +77,13 @@ export function affected(files: readonly string[] | 'all', graph: Graph): string
 }
 
 /**
- * The parallel jobs for `ids`: the server on its own, since it is the largest
+ * The parallel jobs for `ids`: the server in three, since it is the largest
  * build, and the modules in groups of at most `size`, in the order given.
  */
 export function shards(ids: readonly string[], size = 5): Shard[] {
-  const out: Shard[] = ids.includes('server') ? [{ name: 'server', workspaces: ['server'] }] : [];
+  const out: Shard[] = ids.includes('server')
+    ? SERVER_JOBS.map(({ name, part }) => ({ name, workspaces: ['server'], part }))
+    : [];
   const modules = ids.filter((id) => id !== 'server');
   for (let i = 0; i < modules.length; i += size) {
     out.push({ name: `modules ${i / size + 1}`, workspaces: modules.slice(i, i + size) });
