@@ -1,5 +1,6 @@
 import { posterColors, sizedImageUrl } from '@kromatv/core';
 import { Box, Focusable, Img, Row, Surface, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { imageUrl } from '#web/shared/lib/api';
 import { cloneElement, type ReactElement, type ReactNode } from 'react';
 import { Skeleton } from '#web/shared/ui';
 
@@ -19,7 +20,7 @@ export function RequestPoster({
   return (
     <Box w={POSTER.w} h={POSTER.h} shrink={0}>
       <Img
-        src={sizedImageUrl(posterUrl, 92)}
+        src={sizedImageUrl(imageUrl(posterUrl), 92)}
         background={`linear-gradient(158deg, ${c1}, ${c2})`}
         radius="sm"
         fill
