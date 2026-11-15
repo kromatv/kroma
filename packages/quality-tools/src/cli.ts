@@ -1,28 +1,29 @@
 import process from 'node:process';
 
-const COMMANDS = {
-  setup: async () => (await import('./setup-command')).main(),
-  crap: async (args: string[]) => (await import('./crap-command')).main(args),
-  dry: async (args: string[]) => (await import('./dry-command')).main(args),
-  mutate: async (args: string[]) => (await import('./mutate-command')).main(args),
-  report: async (args: string[]) => (await import('./report-command')).main(args),
+type Run = (args: string[]) => unknown;
+
+const LOADERS: Record<string, () => Promise<{ main: Run }>> = {
+  setup: () => import('./setup-command'),
+  crap: () => import('./crap-command'),
+  dry: () => import('./dry-command'),
+  mutate: () => import('./mutate-command'),
+  report: () => import('./report-command'),
 };
 
-type Command = keyof typeof COMMANDS;
-
-const isCommand = (v: string | undefined): v is Command => v !== undefined && v in COMMANDS;
-
-const [name, ...rest] = process.argv.slice(2);
-
-if (!isCommand(name)) {
-  console.error(name ? `unknown command '${name}'` : 'usage: bun run quality:<command>');
-  console.error(`commands: ${Object.keys(COMMANDS).join(', ')}`);
+function fail(message: string): never {
+  console.error(message);
   process.exit(1);
 }
 
+const [name = '', ...rest] = process.argv.slice(2);
+const load = LOADERS[name];
+if (!load) {
+  fail(`usage: bun run quality:<command>, one of ${Object.keys(LOADERS).join(', ')}`);
+}
+
 try {
-  await COMMANDS[name](rest);
-} catch (err) {
-  console.error(err instanceof Error ? err.message : String(err));
-  process.exit(1);
+  const { main } = await load();
+  await main(rest);
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
 }
