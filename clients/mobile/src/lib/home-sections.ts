@@ -1,6 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { CardSection, SectionLayout, SectionLayoutRequest } from '@kromatv/client/media';
-import type { TitleFilter } from './homeFilter';
+import type { TitleFilter } from './home-filter';
 
 /** One title of the home as the card feed serves it. Every `SectionItem` is
  *  one too, so the featured pick of an older server reads the same way. */

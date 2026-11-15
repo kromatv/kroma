@@ -18,12 +18,12 @@ import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
 import { useRootBack } from '#tv/app/use-root-back.hook';
 import { usePlayTitle } from '#tv/features/catalog/full-item';
-import { ContinueRail } from '#tv/features/catalog/home/continue-rail';
-import { Hero } from '#tv/features/catalog/home/Hero';
+import { ContinueRail } from '#tv/features/catalog/home/continue-rail.component';
+import { Hero } from '#tv/features/catalog/home/hero.component';
 import { heroSlides } from '#tv/features/catalog/home/hero-slides';
-import { HomeSection } from '#tv/features/catalog/home/home-section';
-import type { HomeEntry } from '#tv/features/catalog/home/sectionEntry';
-import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
+import { HomeSection } from '#tv/features/catalog/home/home-section.component';
+import type { HomeEntry } from '#tv/features/catalog/home/section-entry';
+import { useTitleMenu } from '#tv/features/catalog/title-menu.hook';
 
 const ROW_CHUNK = 3;
 

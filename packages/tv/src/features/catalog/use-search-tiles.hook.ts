@@ -3,13 +3,13 @@ import { posterColors, qualityBadge, qualityBadgeForVideo } from '@kromatv/core'
 import { useT } from '@kromatv/ui';
 import { useMemo } from 'react';
 import { type TvNav, useClient, useNav } from '#tv/app/router';
-import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
+import type { HeldTitle } from '#tv/features/catalog/title-menu.hook';
 import type {
   SearchPerson,
   SearchResult,
   SearchSection,
-} from '#tv/features/catalog/TvSearchResults';
-import type { LibraryHit, SearchAnswers } from '#tv/features/catalog/useSearchAnswers';
+} from '#tv/features/catalog/tv-search-results.component';
+import type { LibraryHit, SearchAnswers } from '#tv/features/catalog/use-search-answers.hook';
 
 // The results grid draws 254pt posters, served from the server's 320 bucket.
 const RESULT_W = 320;

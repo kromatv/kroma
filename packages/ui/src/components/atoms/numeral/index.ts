@@ -1,1 +1,1 @@
-export * from './numeral';
+export * from './numeral.component';

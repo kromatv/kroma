@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { HeroBillboard } from '#mobile/components/HeroBillboard';
+import { HeroBillboard } from '#mobile/components/hero-billboard.component';
 import { featuredProgress } from '#mobile/lib/featured';
 import { entryId, entryTitle, type HomeRow, type RowEntry } from '#mobile/lib/home-sections';
 import { useT } from '#mobile/lib/i18n';

@@ -8,7 +8,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { useWatched } from '#web/shared/lib/watched';
 import { Poster } from '#web/shared/ui';
-import { RouteLink } from '#web/shared/ui/route-link';
+import { RouteLink } from '#web/shared/ui/route-link.component';
 
 // Cards are memo()d: a home page renders hundreds of them, and without memo any
 // parent state change (hover, a poll refetch, router transitions) re-renders every card.

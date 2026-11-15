@@ -7,7 +7,7 @@ import { episodeTag, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { SectionHeading } from '#web/features/catalog/home/section-heading';
+import { SectionHeading } from '#web/features/catalog/home/section-heading.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';

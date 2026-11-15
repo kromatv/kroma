@@ -6,10 +6,10 @@ import { SectionTitle } from '#mobile/components/ui';
 import { entryId, type HomeRow } from '#mobile/lib/home-sections';
 import { useClient } from '#mobile/lib/session';
 import { posterWidth } from '#mobile/lib/theme';
-import { HeroCarousel } from './hero-carousel';
-import { RankedRail } from './ranked-rail';
-import { SpotlightCard } from './spotlight-card';
-import { WideRail } from './wide-rail';
+import { HeroCarousel } from './hero-carousel.component';
+import { RankedRail } from './ranked-rail.component';
+import { SpotlightCard } from './spotlight-card.component';
+import { WideRail } from './wide-rail.component';
 
 function PosterRail({ row }: Readonly<{ row: HomeRow }>) {
   const client = useClient();

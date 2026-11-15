@@ -4,7 +4,7 @@ import { cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { onScreen } from '#ui/testing';
 import { createStyleTestHost } from '#ui/testing-style';
-import { Numeral, numeralColumn, numeralWidth } from './numeral';
+import { Numeral, numeralColumn, numeralWidth } from './numeral.component';
 import { NUMERAL_BOX, NUMERAL_GLYPHS } from './numeral-glyphs.gen';
 
 const styleHost = createStyleTestHost();

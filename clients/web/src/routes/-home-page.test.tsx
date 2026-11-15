@@ -15,19 +15,21 @@ const session = vi.hoisted(() => ({ signedIn: true }));
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ ready: true, user: session.signedIn ? { id: 'u1' } : null }),
 }));
-vi.mock('#web/features/catalog/featured-hero', () => ({
+vi.mock('#web/features/catalog/featured-hero.component', () => ({
   Hero: ({ entry }: { entry: HeroEntry }) => (
     <p>{`hero ${entry.type === 'movie' ? entry.movie.id : entry.show.id}`}</p>
   ),
   HeroSkeleton: () => <p>hero pending</p>,
 }));
-vi.mock('#web/features/catalog/home/hero-carousel', () => ({
+vi.mock('#web/features/catalog/home/hero-carousel.component', () => ({
   HeroCarousel: ({ section }: { section: CardSection }) => (
     <p>{`carousel of ${section.items.length}`}</p>
   ),
 }));
-vi.mock('#web/features/catalog/continue-row', () => ({ ContinueRow: () => <p>continue</p> }));
-vi.mock('#web/features/catalog/home/home-sections', () => ({
+vi.mock('#web/features/catalog/continue-row.component', () => ({
+  ContinueRow: () => <p>continue</p>,
+}));
+vi.mock('#web/features/catalog/home/home-sections.component', () => ({
   HomeSections: () => <p>sections</p>,
   SectionsSkeleton: () => <p>sections pending</p>,
 }));

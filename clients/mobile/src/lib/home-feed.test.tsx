@@ -28,7 +28,7 @@ vi.mock('#mobile/lib/session', () => ({
   }),
 }));
 
-const { useHomeFeed } = await import('./home-feed');
+const { useHomeFeed } = await import('./home-feed.hook');
 
 function renderFeed() {
   const queries = new QueryClient();

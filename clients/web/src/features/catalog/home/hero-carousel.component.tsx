@@ -8,12 +8,12 @@ import {
   type HomeEntry,
   type HomeSection,
 } from '#web/features/catalog/home/entries';
-import { HeroPager } from '#web/features/catalog/home/hero-pager';
-import { HeroSlide } from '#web/features/catalog/home/hero-slide';
-import { type Carousel, useCarousel } from '#web/features/catalog/home/use-carousel';
+import { HeroPager } from '#web/features/catalog/home/hero-pager.component';
+import { HeroSlide } from '#web/features/catalog/home/hero-slide.component';
+import { type Carousel, useCarousel } from '#web/features/catalog/home/use-carousel.hook';
 import { useAuth } from '#web/shared/lib/auth';
-import { useCrossfade } from '#web/shared/lib/use-crossfade';
-import { useReducedMotion } from '#web/shared/lib/use-reduced-motion';
+import { useCrossfade } from '#web/shared/lib/use-crossfade.hook';
+import { useReducedMotion } from '#web/shared/lib/use-reduced-motion.hook';
 import { Image } from '#web/shared/ui';
 
 const BACKDROP_W = 1280;

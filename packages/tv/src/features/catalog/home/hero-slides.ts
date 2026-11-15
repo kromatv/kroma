@@ -1,7 +1,7 @@
 import type { KromaClient } from '@kromatv/client';
 import type { CardSection, MediaCard } from '@kromatv/client/media';
 import { qualityBadgeForVideo } from '@kromatv/core';
-import { entryBackdrop, entryId, type HomeEntry } from '#tv/features/catalog/home/sectionEntry';
+import { entryBackdrop, entryId, type HomeEntry } from '#tv/features/catalog/home/section-entry';
 
 // The hero fills the 1920 stage, but a backdrop master is a TMDB w1280, so
 // there is nothing sharper to ask for.

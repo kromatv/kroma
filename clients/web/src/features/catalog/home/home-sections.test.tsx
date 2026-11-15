@@ -5,16 +5,20 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { HomeSection } from '#web/features/catalog/home/entries';
 
-vi.mock('#web/features/catalog/home/ranked-rail', () => ({ RankedRail: () => <p>ranked</p> }));
-vi.mock('#web/features/catalog/home/wide-rail', () => ({ WideRail: () => <p>wide</p> }));
-vi.mock('#web/features/catalog/home/spotlight', () => ({ Spotlight: () => <p>spotlight</p> }));
-vi.mock('#web/features/catalog/cards', () => ({ SectionPoster: () => <p>poster</p> }));
+vi.mock('#web/features/catalog/home/ranked-rail.component', () => ({
+  RankedRail: () => <p>ranked</p>,
+}));
+vi.mock('#web/features/catalog/home/wide-rail.component', () => ({ WideRail: () => <p>wide</p> }));
+vi.mock('#web/features/catalog/home/spotlight.component', () => ({
+  Spotlight: () => <p>spotlight</p>,
+}));
+vi.mock('#web/features/catalog/cards.component', () => ({ SectionPoster: () => <p>poster</p> }));
 vi.mock('#web/shared/ui', () => ({
   PosterRail: () => <p>posters</p>,
   RailSkeleton: () => <p>pending</p>,
 }));
 
-import { HomeSectionView } from '#web/features/catalog/home/home-sections';
+import { HomeSectionView } from '#web/features/catalog/home/home-sections.component';
 
 const entry = {
   type: 'show',

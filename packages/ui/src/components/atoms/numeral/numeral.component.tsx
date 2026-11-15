@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { activeTheme, color as resolve, useStyleScope } from '#ui/core';
 import type { ColorToken } from '#ui/core/tokens';
-import { G, Path, Svg } from '#ui/lib/svg';
+import { G, Path, Svg } from '#ui/lib/svg.component';
 import { NUMERAL_BOX, NUMERAL_GLYPHS } from './numeral-glyphs.gen';
 
 const TRACKING = 0.08;

@@ -2,7 +2,7 @@ import { sizedImageUrl, synopsisLead } from '@kromatv/core';
 import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, useWindowDimensions } from 'react-native';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { FadeImage } from '#mobile/components/fade-image.component';
 import {
   entryBackdrop,
   entryId,

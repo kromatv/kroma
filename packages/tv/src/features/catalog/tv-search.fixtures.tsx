@@ -13,11 +13,11 @@ import {
   createSearchRequests,
   type SearchRequests,
   SearchRequestsProvider,
-} from '#tv/app/searchRequest';
-import { type SearchShell, SearchShellProvider } from '#tv/app/searchShell';
-import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
+} from '#tv/app/search-request';
+import { type SearchShell, SearchShellProvider } from '#tv/app/search-shell';
+import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voice-search';
 import { mediaItem, metadata, show } from '#tv/features/catalog/media.fixtures';
-import { TvSearch } from '#tv/features/catalog/TvSearch';
+import { TvSearch } from '#tv/features/catalog/tv-search.component';
 
 const host = createInputTestHost();
 

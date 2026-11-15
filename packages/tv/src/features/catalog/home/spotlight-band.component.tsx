@@ -15,9 +15,9 @@ import {
   Veil,
 } from '@kromatv/ui/kit';
 import { useClient } from '#tv/app/router';
-import { entryBackdrop, entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
-import { useHomeTile } from '#tv/features/catalog/home/use-home-tile';
-import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
+import { entryBackdrop, entryId, entryMetadata } from '#tv/features/catalog/home/section-entry';
+import { useHomeTile } from '#tv/features/catalog/home/use-home-tile.hook';
+import type { HeldTitle } from '#tv/features/catalog/title-menu.hook';
 
 const SPOTLIGHT_HEIGHT = 360;
 const SYNOPSIS_BUDGET = 170;

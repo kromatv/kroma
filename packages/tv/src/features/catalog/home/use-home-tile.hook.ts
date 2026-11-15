@@ -2,8 +2,8 @@ import { posterColors } from '@kromatv/core';
 import { useCallback } from 'react';
 import { useWatched } from '#tv/app/providers/watched';
 import { useNav } from '#tv/app/router';
-import type { HomeEntry } from '#tv/features/catalog/home/sectionEntry';
-import type { HeldTitle } from '#tv/features/catalog/TitleMenu';
+import type { HomeEntry } from '#tv/features/catalog/home/section-entry';
+import type { HeldTitle } from '#tv/features/catalog/title-menu.hook';
 
 interface HomeTile {
   title: string;

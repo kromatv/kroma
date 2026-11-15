@@ -1,9 +1,9 @@
 import type { ContinueItem } from '@kromatv/client/media';
 import { episodeTag, sizedImageUrl } from '@kromatv/core';
 import { useWindowDimensions } from 'react-native';
-import { usePlay } from '#mobile/lib/play';
+import { usePlay } from '#mobile/lib/play.hook';
 import { useClient } from '#mobile/lib/session';
-import { LandscapeRail, landscapeWidth } from './landscape-rail';
+import { LandscapeRail, landscapeWidth } from './landscape-rail.component';
 
 const fraction = ({ item, positionMs, durationMs }: ContinueItem): number => {
   const total = durationMs ?? item.durationMs ?? 0;

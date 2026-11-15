@@ -18,7 +18,7 @@ vi.mock('react-native-safe-area-context', () => ({
 }));
 vi.mock('react-native-reanimated', () => ({ useReducedMotion: () => false }));
 vi.mock('@gorhom/bottom-sheet', () => ({}));
-vi.mock('#mobile/lib/play', () => ({ usePlay: () => ({ play: app.play }) }));
+vi.mock('#mobile/lib/play.hook', () => ({ usePlay: () => ({ play: app.play }) }));
 vi.mock('#mobile/lib/i18n', () => ({
   useT: () => (key: string, vars?: Record<string, string | number>) =>
     [key, ...Object.values(vars ?? {})].join(' '),
@@ -39,7 +39,7 @@ vi.mock('#mobile/lib/session', () => ({
   }),
 }));
 
-const { HomeSection } = await import('./home-section');
+const { HomeSection } = await import('./home-section.component');
 
 const movie = (id: string, title: string, overview?: string) => movieEntry(id, { title, overview });
 const show = (id: string, title: string) => showEntry(id, { title });

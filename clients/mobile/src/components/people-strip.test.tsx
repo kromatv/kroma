@@ -19,7 +19,7 @@ vi.mock('#mobile/lib/session', () => ({
   useClient: () => ({ media: { artwork: { resolve: app.resolve } } }),
 }));
 
-const { PeopleStrip } = await import('./people-strip');
+const { PeopleStrip } = await import('./people-strip.component');
 
 const person = (over: Partial<PersonHit> = {}): PersonHit => ({
   name: 'Michael Mann',
