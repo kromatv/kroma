@@ -4,6 +4,7 @@
 
 import { Box, Img, type ImgProps, styles, useStyles } from '@kromatv/ui/kit';
 import type { StyleProp, ViewStyle } from 'react-native';
+import { imageUrl } from '#web/shared/lib/api';
 
 export interface ImageProps extends Omit<ImgProps, 'fill' | 'style'> {
   style?: StyleProp<ViewStyle>;
@@ -20,7 +21,7 @@ export function Image({ style, fill = false, ...img }: Readonly<ImageProps>) {
 
   return (
     <Box style={[fill ? s.fill : s.box, style]}>
-      <Img fill {...img} />
+      <Img fill {...img} src={img.src?.startsWith('/api/') ? imageUrl(img.src) : img.src} />
     </Box>
   );
 }

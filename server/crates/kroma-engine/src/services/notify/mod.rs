@@ -170,12 +170,10 @@ fn deliver<S: HostStorage>(
             db::notifications::subject_facts(&conn, std::slice::from_ref(&stored))
                 .unwrap_or_default(),
         );
-        let rendered = art::sized_for_push(render::render(
-            &stored,
-            render::locale_of(user),
-            &subjects,
-            types,
-        ));
+        let rendered = art::sized_for_push(
+            render::render(&stored, render::locale_of(user), &subjects, types),
+            &state.setting_str(crate::services::media_ticket::SIGNING_KEY_SETTING, ""),
+        );
         drop(conn);
         push::deliver(state, push, &user.id, &rendered);
     } else {

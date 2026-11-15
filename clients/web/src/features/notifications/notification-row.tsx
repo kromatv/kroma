@@ -28,6 +28,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { notificationLink } from '#web/features/notifications/notification-link';
+import { imageUrl } from '#web/shared/lib/api';
 import { useRelativeTime, useStandaloneTime } from '#web/features/notifications/notification-time';
 import { useArchive } from '#web/features/notifications/use-archive';
 import { useReadState } from '#web/features/notifications/use-notifications';
@@ -93,7 +94,7 @@ export function NotificationEntry({
         >
           <NotificationCard
             event={one.event}
-            src={one.imageUrl ? sizedImageUrl(one.imageUrl, 96) : null}
+            src={sizedImageUrl(imageUrl(one.imageUrl), 96)}
             unread={unread}
             title={one.title}
             titleTone={unread ? 'text' : 'textMuted'}

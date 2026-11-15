@@ -8,17 +8,20 @@
 use kroma_domain::Notification;
 
 use crate::infra::image::PUBLIC_PREFIX;
+use crate::services::remote_art;
 
 // Must be one of the buckets `GET /api/images/:name?w=` accepts, or the server
 // ignores it. Wide enough for Android's big-picture style and an iOS attachment.
 const PUSH_WIDTH: u32 = 780;
 
-/// Point `image_url` at a sized rendition, when it is one of ours.
+/// Point `image_url` at this server, at a sized rendition when it has one.
 ///
-/// External art (a TMDB poster) is left alone - it is already sized by whoever
-/// serves it, and appending our query would only break their cache key.
-pub fn sized_for_push(mut n: Notification) -> Notification {
+/// A provider's poster goes out as this server's path for it, signed with
+/// `art_key`, so the device never asks the provider. Any other external art is
+/// left alone: it is already sized by whoever serves it.
+pub fn sized_for_push(mut n: Notification, art_key: &str) -> Notification {
     n.image_url = n.image_url.map(|url| {
+        let url = remote_art::served(art_key, &url).unwrap_or(url);
         if url.starts_with(PUBLIC_PREFIX) && !url.contains('?') {
             format!("{url}?w={PUSH_WIDTH}")
         } else {
@@ -42,7 +45,6 @@ pub fn sized_for_push(mut n: Notification) -> Notification {
 pub fn native_image_url(n: &Notification, public_url: Option<&str>) -> Option<String> {
     let url = n.image_url.as_deref()?;
     if !url.starts_with(PUBLIC_PREFIX) {
-        // Someone else's, and already absolute (a TMDB poster).
         return Some(url.to_string());
     }
     public_url.map(|base| format!("{base}{url}"))
@@ -52,6 +54,8 @@ pub fn native_image_url(n: &Notification, public_url: Option<&str>) -> Option<St
 mod tests {
     use super::*;
     use kroma_domain::{NotificationCategory, NotificationEvent};
+
+    const KEY: &str = "0123456789abcdef0123456789abcdef";
 
     fn with_image(url: Option<&str>) -> Notification {
         Notification {
@@ -79,17 +83,15 @@ mod tests {
 
     #[test]
     fn our_own_art_is_asked_for_at_a_push_size() {
-        let out = sized_for_push(with_image(Some("/api/images/abc.webp")));
+        let out = sized_for_push(with_image(Some("/api/images/abc.webp")), KEY);
         assert_eq!(out.image_url.as_deref(), Some("/api/images/abc.webp?w=780"));
     }
 
     #[test]
     fn someone_elses_art_and_an_already_sized_one_are_left_alone() {
-        // A TMDB poster is already sized by whoever serves it; our query string
-        // would only break their cache key.
-        let external = "https://image.tmdb.org/t/p/w500/x.jpg";
+        let external = "https://img.example/p/x.jpg";
         assert_eq!(
-            sized_for_push(with_image(Some(external)))
+            sized_for_push(with_image(Some(external)), KEY)
                 .image_url
                 .as_deref(),
             Some(external)
@@ -97,18 +99,36 @@ mod tests {
 
         let sized = "/api/images/abc.webp?w=320";
         assert_eq!(
-            sized_for_push(with_image(Some(sized))).image_url.as_deref(),
+            sized_for_push(with_image(Some(sized)), KEY).image_url.as_deref(),
             Some(sized)
         );
 
-        assert!(sized_for_push(with_image(None)).image_url.is_none());
+        assert!(sized_for_push(with_image(None), KEY).image_url.is_none());
+    }
+
+    #[test]
+    fn a_providers_poster_goes_out_as_this_servers_path_for_it() {
+        let poster = "https://image.tmdb.org/t/p/w500/x.jpg";
+        let ours = remote_art::served(KEY, poster).unwrap();
+
+        let n = sized_for_push(with_image(Some(poster)), KEY);
+
+        assert_eq!(
+            n.image_url.as_deref(),
+            Some(format!("{ours}?w=780").as_str())
+        );
+        assert_eq!(
+            native_image_url(&n, Some("https://kroma.example.com")),
+            Some(format!("https://kroma.example.com{ours}?w=780"))
+        );
+        assert_eq!(native_image_url(&n, None), None);
     }
 
     #[test]
     fn a_native_push_names_art_the_device_can_actually_reach() {
         // The device fetches this itself, from wherever it is: a path that only
         // means something on our own network names nothing at all.
-        let n = sized_for_push(with_image(Some("/api/images/abc.webp")));
+        let n = sized_for_push(with_image(Some("/api/images/abc.webp")), KEY);
         assert_eq!(
             native_image_url(&n, Some("https://kroma.example.com")).as_deref(),
             Some("https://kroma.example.com/api/images/abc.webp?w=780"),
@@ -120,17 +140,17 @@ mod tests {
         // The normal case for a NAS on a home LAN. FCM answers 400 to an image
         // URL it cannot fetch, and a 400 is not `gone` - so naming one used to
         // spend a failure strike per notification until the device was dropped.
-        let n = sized_for_push(with_image(Some("/api/images/abc.webp")));
+        let n = sized_for_push(with_image(Some("/api/images/abc.webp")), KEY);
         assert_eq!(native_image_url(&n, None), None);
     }
 
     #[test]
     fn someone_elses_art_needs_no_help_and_travels_either_way() {
-        let n = with_image(Some("https://image.tmdb.org/t/p/w500/x.jpg"));
+        let n = with_image(Some("https://img.example/p/x.jpg"));
         for base in [Some("https://kroma.example.com"), None] {
             assert_eq!(
                 native_image_url(&n, base).as_deref(),
-                Some("https://image.tmdb.org/t/p/w500/x.jpg"),
+                Some("https://img.example/p/x.jpg"),
             );
         }
         assert_eq!(
