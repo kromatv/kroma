@@ -63,6 +63,15 @@ export function controlOrder(flags: PlayerFlags, hasNext: boolean): ControlId[] 
   return row;
 }
 
+const EVERY_CONTROL = controlOrder(
+  { volume: true, pip: true, fullscreen: true, cast: true, pointer: true, arrowSeek: true },
+  true,
+);
+
+/** A control's slot in the row whichever others are present, so one that
+ * arrives late (the next episode, cast) takes its place rather than the end. */
+export const controlSlot = (id: ControlId): number => EVERY_CONTROL.indexOf(id);
+
 /**
  * Imperative handle an open panel exposes so the player shell can give it Back
  * first: `onKey` returns true when the panel took the press (a sub-view stepping

@@ -1,3 +1,4 @@
+import { NavigatorNode } from '@kromatv/spatial-nav/react';
 import { memo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
@@ -10,7 +11,7 @@ import {
   scaler,
   TRANSPORT_GAP,
 } from '#ui/components/organisms/player/lib/metrics';
-import type { ControlId } from '#ui/components/organisms/player/lib/nav';
+import { type ControlId, controlSlot } from '#ui/components/organisms/player/lib/nav';
 import { IconPause, IconPlay } from '#ui/components/organisms/player/parts/icons';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
@@ -80,13 +81,12 @@ export const ControlCluster = memo(function ControlCluster({
   const transport = controls.filter(isTransport);
   const cluster = controls.filter((c) => !isTransport(c));
 
-  const render = (id: ControlId) => {
+  const control = (id: ControlId) => {
     // The two controls that are not a plain circle: play carries the accent fill
     // and its own play/pause glyph, volume owns a slider.
     if (id === 'play') {
       return (
         <IconButton
-          key={id}
           variant="primary"
           diameter={px(CONTROL_SIZE.play)}
           autoFocus
@@ -111,7 +111,6 @@ export const ControlCluster = memo(function ControlCluster({
       if (!rail) {
         return (
           <Circle
-            key={id}
             id={id}
             diameter={px(CONTROL_SIZE.volume)}
             label={t('player.mute')}
@@ -125,7 +124,6 @@ export const ControlCluster = memo(function ControlCluster({
       }
       return (
         <VolumeControl
-          key={id}
           muted={muted}
           volume={volume}
           max={volumeMax}
@@ -142,7 +140,6 @@ export const ControlCluster = memo(function ControlCluster({
     }
     return (
       <CircleControl
-        key={id}
         id={id}
         scale={scale}
         pipActive={pipActive}
@@ -153,6 +150,12 @@ export const ControlCluster = memo(function ControlCluster({
       />
     );
   };
+
+  const render = (id: ControlId) => (
+    <NavigatorNode key={id} index={controlSlot(id)}>
+      {control(id)}
+    </NavigatorNode>
+  );
 
   return (
     <FocusRegion style={[s.row, { gap: px(ROW_GAP), paddingTop: px(4) }]}>
